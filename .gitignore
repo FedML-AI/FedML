@@ -18,6 +18,11 @@ wandb
 ./*/*/*/*/*/wandb
 
 
-data
-
 *.txt
+
+# data
+*.rar
+*.csv
+*.dat
+cifar-10-batches-py
+*.tar.gz
