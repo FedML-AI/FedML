@@ -53,7 +53,7 @@ Under construction
 
 The best way to keep up to date on the latest advancements is to join our community!
 
-[Join fedml.slack.com](https://fedml.slack.com)
+[Join fedml.slack.com](https://join.slack.com/t/fedml/shared_invite/zt-gbpi8y2o-QMU0vhVHjm9Y9gqQu~eygg)
 
 
 
