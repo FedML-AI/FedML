@@ -50,9 +50,10 @@ Please check the README.md in this directory: ./fedml_experiments/distributed/fe
 Under construction
 
 ## Join our Community
-Join slack.fedml.ai
 
-Join our WeChat Group
+The best way to keep up to date on the latest advancements is to join our community!
+
+[Join fedml.slack.com](https://fedml.slack.com)
 
 
 
