@@ -17,7 +17,10 @@ For more details, please read our paper.
 3. System prototype for industrial production.
 4. Self-study FL: understanding code level details of FL algorithms.
 
-## Code Architecture
+## Architecture
+
+![architecture](./img/architecture_for_website.png)
+
 
 The functionality of each package is as follows:
 
