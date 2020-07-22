@@ -19,7 +19,7 @@ For more details, please read our paper.
 
 ## Architecture
 
-![architecture](./img/architecture_for_website.png)
+![architecture](./docs/image/architecture_for_website.png)
 
 
 The functionality of each package is as follows:
