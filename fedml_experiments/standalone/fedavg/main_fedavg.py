@@ -67,7 +67,7 @@ if __name__ == "__main__":
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
 
-    args = add_args(argparse.ArgumentParser(description='Federated Averaging'))
+    args = add_args(argparse.ArgumentParser(description='FedAvg-standalone'))
     device = torch.device("cuda:" + str(args.gpu) if torch.cuda.is_available() else "cpu")
     logger.info(device)
 
@@ -77,13 +77,15 @@ if __name__ == "__main__":
         config=args
     )
 
+    # Set the random seed. The np.random seed determines the dataset partition.
+    # The torch_manual_seed determines the initial weight.
+    # We fix these two, so that we can reproduce the result.
     seed = 0
     np.random.seed(seed)
-
-    # torch.manual_seed(seed)
-    torch.set_printoptions(precision=10)
+    torch.manual_seed(10)
 
     # data
+    # input: args.dataset, args.data_dir
     logger.info("Partitioning data")
     # input:
     # output:

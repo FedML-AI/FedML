@@ -37,6 +37,3 @@ num_sam num_users
 440      0
 460      0
 480      0
-
-
-
