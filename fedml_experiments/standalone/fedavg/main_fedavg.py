@@ -73,7 +73,7 @@ if __name__ == "__main__":
     logger.info(device)
 
     wandb.init(
-        project="federated_nas",
+        project="fedml",
         name="FedAVG-r" + str(args.comm_round) + "-e" + str(args.epochs) + "-lr" + str(args.lr),
         config=args
     )
