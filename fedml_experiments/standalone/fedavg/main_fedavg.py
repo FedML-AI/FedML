@@ -7,9 +7,12 @@ import numpy as np
 import torch
 import wandb
 
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 
 from fedml_api.data_preprocessing.cifar10.data_loader import load_partition_data_cifar10
+from fedml_api.data_preprocessing.cifar100.data_loader import load_partition_data_cifar100
+from fedml_api.data_preprocessing.cinic10.data_loader import load_partition_data_cinic10
 from fedml_api.model.deep_neural_networks.mobilenet import mobilenet
 from fedml_api.model.deep_neural_networks.resnet import resnet56
 from fedml_api.standalone.fedavg.fedavg_trainer import FedAvgTrainer
@@ -85,9 +88,18 @@ if __name__ == "__main__":
     torch.manual_seed(10)
 
     # load data
+    data_loader = None
+    if args.dataset == "cifar10":
+        data_loader = load_partition_data_cifar10
+    elif args.dataset == "cifar100":
+        data_loader = load_partition_data_cifar100
+    elif args.dataset == "cinic10":
+        data_loader = load_partition_data_cinic10
+    else:
+        data_loader = load_partition_data_cifar10
     train_data_num, test_data_num, train_data_global, test_data_global, \
     data_local_num_dict, train_data_local_dict, test_data_local_dict, \
-    class_num = load_partition_data_cifar10(args.dataset, args.data_dir, args.partition_method,
+    class_num = data_loader(args.dataset, args.data_dir, args.partition_method,
                                             args.partition_alpha, args.client_number, args.batch_size)
 
     dataset = [train_data_num, test_data_num, train_data_global, test_data_global,
