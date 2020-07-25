@@ -98,68 +98,54 @@ wandb login ee0b5f53d949c84cee7decbe7a629e63fb2f8408
 #### CIFAR10
 train on IID dataset 
 ```
-sh run_fedavg_distributed_pytorch.sh 4 resnet56 homo 100 20 64 0.001 cifar10 "/home/chaoyanghe/sourcecode/dataset/cv/CIFAR10"
+sh run_fedavg_distributed_pytorch.sh 1 8 resnet56 homo 100 20 64 0.001 cifar10 "./../../../data/cifar10"
 
 ##run on background
-nohup sh run_fedavg_distributed_pytorch.sh 4 resnet56 homo 100 20 64 0.001 cifar10 "/home/chaoyanghe/sourcecode/dataset/cv/CIFAR10" > ./fedavg-resnet-homo-cifar10.txt 2>&1 &
+nohup sh run_fedavg_distributed_pytorch.sh 1 8 resnet56 homo 100 20 64 0.001 cifar10 "./../../../data/cifar10" > ./fedavg-resnet-homo-cifar10.txt 2>&1 &
 ```
+
 train on non-IID dataset
 ```
-sh run_fedavg_distributed_pytorch.sh 4 resnet56 hetero 200 20 64 0.001 cifar10 "/home/chaoyanghe/sourcecode/dataset/cv/CIFAR10"
+sh run_fedavg_distributed_pytorch.sh 1 8 resnet56 hetero 100 20 64 0.001 cifar10 "./../../../data/cifar10"
 
-## run on background
-nohup sh run_fedavg_distributed_pytorch.sh 4 resnet56 hetero-fix 100 20 64 0.001 cifar10 "/home/chaoyanghe/sourcecode/dataset/cv/CIFAR10" > ./fedavg-resnet-hetero-fix-cifar10.txt 2>&1 &
-
-## run on murali
-nohup sh run_fedavg_distributed_pytorch.sh 4 resnet56 hetero 100 20 64 0.001 cifar10 "./data/CIFAR10" > ./fedavg-resnet-hetero-cifar10.txt 2>&1 &
-
-## run on DB2
-nohup sh run_fedavg_distributed_pytorch.sh 4 resnet56 hetero 100 20 64 0.001 cifar10 "/root/code/data/CIFAR10" > ./fedavg-resnet-hetero-cifar10.txt 2>&1 &
+##run on background
+nohup sh run_fedavg_distributed_pytorch.sh 1 8 resnet56 hetero 100 20 64 0.001 cifar10 "./../../../data/cifar10" > ./fedavg-resnet-hetero-cifar10.txt 2>&1 &
 ```
+
 
 #### CIFAR100
 train on IID dataset 
 ```
-sh run_fedavg_distributed_pytorch.sh 4 resnet56 homo 100 20 64 0.001 cifar100 "/home/chaoyanghe/sourcecode/dataset/cv/CIFAR100"
+sh run_fedavg_distributed_pytorch.sh 1 8 resnet56 homo 100 20 64 0.001 cifar100 "./../../../data/cifar100"
 
-## run on background
-nohup sh run_fedavg_distributed_pytorch.sh 4 resnet56 homo 100 20 64 0.001 cifar100 "/home/chaoyanghe/sourcecode/dataset/cv/CIFAR100" > ./fedavg-resnet-homo-cifar100.txt 2>&1 &
-
-## Murali
-nohup sh run_fedavg_distributed_pytorch.sh 4 resnet56 homo 200 20 64 0.001 cifar100 "./data/CIFAR100" > ./fedavg-resnet-homo-cifar100.txt 2>&1 &
-
+##run on background
+nohup sh run_fedavg_distributed_pytorch.sh 1 8 resnet56 homo 100 20 64 0.001 cifar100 "./../../../data/cifar100" > ./fedavg-resnet-homo-cifar100.txt 2>&1 &
 ```
+
 train on non-IID dataset
 ```
-sh run_fedavg_distributed_pytorch.sh 4 resnet56 hetero-fix 100 20 64 0.001 cifar100 "/home/chaoyanghe/sourcecode/dataset/cv/CIFAR100"
+sh run_fedavg_distributed_pytorch.sh 1 8 resnet56 hetero 100 20 64 0.001 cifar100 "./../../../data/cifar100"
 
-## run on background
-nohup sh run_fedavg_distributed_pytorch.sh 4 resnet56 hetero 100 20 64 0.001 cifar100 "/home/chaoyanghe/sourcecode/dataset/cv/CIFAR100" > ./fedavg-resnet-hetero-fix-cifar100.txt 2>&1 & 
-
-## run on murali
-nohup sh run_fedavg_distributed_pytorch.sh 4 resnet56 hetero 200 20 64 0.001 cifar100 "./data/CIFAR100" > ./fedavg-resnet-hetero-cifar100.txt 2>&1 &
+##run on background
+nohup sh run_fedavg_distributed_pytorch.sh 1 8 resnet56 hetero 100 20 64 0.001 cifar100 "./../../../data/cifar100" > ./fedavg-resnet-hetero-cifar100.txt 2>&1 &
 ```
+
 
 #### CINIC10
 train on IID dataset 
 ```
-sh run_fedavg_distributed_pytorch.sh 4 resnet56 homo 100 20 64 0.001 cinic10 "/home/chaoyanghe/sourcecode/dataset/cv/CINIC10"
+sh run_fedavg_distributed_pytorch.sh 1 8 resnet56 homo 100 20 64 0.001 cinic10 "./../../../data/cinic10"
 
-## run on background
-nohup sh run_fedavg_distributed_pytorch.sh 4 resnet56 homo 100 20 64 0.001 cinic10 "/home/chaoyanghe/sourcecode/dataset/cv/CINIC10" > ./fedavg-resnet-homo-cinic10.txt 2>&1 &
-
-## Murali 
-nohup sh run_fedavg_distributed_pytorch.sh 4 resnet56 homo 200 20 64 0.001 cinic10 "./data/CINIC10" > ./fedavg-resnet-homo-cinic10.txt 2>&1 &
+##run on background
+nohup sh run_fedavg_distributed_pytorch.sh 1 8 resnet56 homo 100 20 64 0.001 cinic10 "./../../../data/cinic10" > ./fedavg-resnet-homo-cinic10.txt 2>&1 &
 ```
+
 train on non-IID dataset
 ```
-sh run_fedavg_distributed_pytorch.sh 4 resnet56 hetero 100 20 64 0.001 cinic10 "/home/chaoyanghe/sourcecode/dataset/cv/CINIC10"
+sh run_fedavg_distributed_pytorch.sh 1 8 resnet56 hetero 100 20 64 0.001 cinic10 "./../../../data/cinic10"
 
-## run on background
-nohup sh run_fedavg_distributed_pytorch.sh 4 resnet56 hetero 100 20 64 0.001 cinic10 "/home/chaoyanghe/sourcecode/dataset/cv/CINIC10" > ./fedavg-resnet-hetero-fix-cinic10.txt 2>&1 & 
-
-# DB1
-nohup sh run_fedavg_distributed_pytorch.sh 4 resnet56 hetero 200 20 64 0.001 cinic10 "/root/code/data/CINIC10" > ./fedavg-resnet-hetero-fix-cinic10.txt 2>&1 & 
+##run on background
+nohup sh run_fedavg_distributed_pytorch.sh 1 8 resnet56 hetero 100 20 64 0.001 cinic10 "./../../../data/cinic10" > ./fedavg-resnet-hetero-cinic10.txt 2>&1 &
 ```
 
 
@@ -168,53 +154,52 @@ nohup sh run_fedavg_distributed_pytorch.sh 4 resnet56 hetero 200 20 64 0.001 cin
 #### CIFAR10
 train on IID dataset 
 ```
-sh run_fedavg_distributed_pytorch.sh 1 4 mobilenet homo 100 20 64 0.001 cifar10 "/home/chaoyanghe/sourcecode/dataset/cv/CIFAR10"
+sh run_fedavg_distributed_pytorch.sh 1 8 mobilenet homo 100 20 64 0.001 cifar10 "./../../../data/cifar10"
 
 ##run on background
-nohup sh run_fedavg_distributed_pytorch.sh 1 4 mobilenet homo 100 20 64 0.001 cifar10 "/home/chaoyanghe/sourcecode/dataset/cv/CIFAR10" > ./fedavg-resnet-homo-cifar10.txt 2>&1 &
-
-# Murali Server
-sh run_fedavg_distributed_pytorch.sh 1 4 mobilenet homo 200 20 64 0.005 cifar10 /home/chaoyang/code/FedML/data/cifar10
-
-# Murali
-nohup sh run_fedavg_distributed_pytorch.sh 1 4 mobilenet homo 200 20 64 0.005 cifar10 /home/chaoyang/code/FedML/data/cifar10 > ./fedavg-resnet-homo-cifar10.txt 2>&1 &
+nohup sh run_fedavg_distributed_pytorch.sh 1 8 mobilenet homo 100 20 64 0.001 cifar10 "./../../../data/cifar10" > ./fedavg-mobilenet-homo-cifar10.txt 2>&1 &
 ```
+
 train on non-IID dataset
 ```
-sh run_fedavg_distributed_pytorch.sh 4 mobilenet hetero-fix 100 20 64 0.001 cifar10 "/home/chaoyanghe/sourcecode/dataset/cv/CIFAR10"
+sh run_fedavg_distributed_pytorch.sh 1 8 mobilenet hetero 100 20 64 0.001 cifar10 "./../../../data/cifar10"
 
-## run on background
-nohup sh run_fedavg_distributed_pytorch.sh 4 mobilenet hetero-fix 100 20 64 0.001 cifar10 "/home/chaoyanghe/sourcecode/dataset/cv/CIFAR10" > ./fedavg-resnet-hetero-fix-cifar10.txt 2>&1 &
+##run on background
+nohup sh run_fedavg_distributed_pytorch.sh 1 8 mobilenet hetero 100 20 64 0.001 cifar10 "./../../../data/cifar10" > ./fedavg-mobilenet-hetero-cifar10.txt 2>&1 &
 ```
+
 
 #### CIFAR100
 train on IID dataset 
 ```
-sh run_fedavg_distributed_pytorch.sh 4 mobilenet homo 200 20 64 0.003 cifar100 "/home/chaoyanghe/sourcecode/dataset/cv/CIFAR100"
+sh run_fedavg_distributed_pytorch.sh 1 8 mobilenet homo 100 20 64 0.001 cifar100 "./../../../data/cifar100"
 
-## run on background
-nohup sh run_fedavg_distributed_pytorch.sh 4 mobilenet homo 100 20 64 0.001 cifar100 "/home/chaoyanghe/sourcecode/dataset/cv/CIFAR100" > ./fedavg-mobilenet-homo-cifar100.txt 2>&1 &
+##run on background
+nohup sh run_fedavg_distributed_pytorch.sh 1 8 mobilenet homo 100 20 64 0.001 cifar100 "./../../../data/cifar100" > ./fedavg-mobilenet-homo-cifar100.txt 2>&1 &
 ```
+
 train on non-IID dataset
 ```
-sh run_fedavg_distributed_pytorch.sh 4 mobilenet hetero-fix 300 20 64 0.003 cifar100 "/home/chaoyanghe/sourcecode/dataset/cv/CIFAR100"
+sh run_fedavg_distributed_pytorch.sh 1 8 mobilenet hetero 100 20 64 0.001 cifar100 "./../../../data/cifar100"
 
-## run on background
-nohup sh run_fedavg_distributed_pytorch.sh 4 mobilenet hetero-fix 100 20 64 0.001 cifar100 "/home/chaoyanghe/sourcecode/dataset/cv/CIFAR100" > ./fedavg-mobilenet-hetero-fix-cifar100.txt 2>&1 & 
+##run on background
+nohup sh run_fedavg_distributed_pytorch.sh 1 8 mobilenet hetero 100 20 64 0.001 cifar100 "./../../../data/cifar100" > ./fedavg-mobilenet-hetero-cifar100.txt 2>&1 &
 ```
+
 
 #### CINIC10
 train on IID dataset 
 ```
-sh run_fedavg_distributed_pytorch.sh 4 mobilenet homo 100 20 64 0.001 cinic10 "/home/chaoyanghe/sourcecode/dataset/cv/CINIC10"
+sh run_fedavg_distributed_pytorch.sh 1 8 mobilenet homo 100 20 64 0.001 cinic10 "./../../../data/cinic10"
 
-## run on background
-nohup sh run_fedavg_distributed_pytorch.sh 4 mobilenet homo 100 20 64 0.001 cinic10 "/home/chaoyanghe/sourcecode/dataset/cv/CINIC10" > ./fedavg-mobilenet-homo-cinic10.txt 2>&1 &
+##run on background
+nohup sh run_fedavg_distributed_pytorch.sh 1 8 mobilenet homo 100 20 64 0.001 cinic10 "./../../../data/cinic10" > ./fedavg-mobilenet-homo-cinic10.txt 2>&1 &
 ```
+
 train on non-IID dataset
 ```
-sh run_fedavg_distributed_pytorch.sh 4 mobilenet hetero 100 20 64 0.001 cinic10 "/home/chaoyanghe/sourcecode/dataset/cv/CINIC10"
+sh run_fedavg_distributed_pytorch.sh 1 8 mobilenet hetero 100 20 64 0.001 cinic10 "./../../../data/cinic10"
 
-## run on background
-nohup sh run_fedavg_distributed_pytorch.sh 4 mobilenet hetero 100 20 64 0.001 cinic10 "/home/chaoyanghe/sourcecode/dataset/cv/CINIC10" > ./fedavg-mobilenet-hetero-fix-cinic10.txt 2>&1 & 
+##run on background
+nohup sh run_fedavg_distributed_pytorch.sh 1 8 mobilenet hetero 100 20 64 0.001 cinic10 "./../../../data/cinic10" > ./fedavg-mobilenet-hetero-cinic10.txt 2>&1 &
 ```

@@ -13,10 +13,14 @@ import wandb
 # add the FedML root directory to the python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 
+from fedml_api.data_preprocessing.cifar100.data_loader import load_partition_data_distributed_cifar100
+from fedml_api.data_preprocessing.cinic10.data_loader import load_partition_data_distributed_cinic10
+from fedml_api.data_preprocessing.cifar10.data_loader import load_partition_data_distributed_cifar10
+
 from fedml_api.distributed.fedavg.FedAvgAPI import FedML_init, FedML_FedAvg_distributed
 from fedml_api.model.deep_neural_networks.mobilenet import mobilenet
 from fedml_api.model.deep_neural_networks.resnet import resnet56
-from fedml_api.data_preprocessing.cifar10.data_loader import load_partition_data_distributed_cifar10
+
 
 
 def add_args(parser):
@@ -97,7 +101,7 @@ if __name__ == "__main__":
     args = add_args(parser)
 
     # customize the process name
-    str_process_name = "Federated Learning:" + str(process_id)
+    str_process_name = "FedAvg (distributed):" + str(process_id)
     setproctitle.setproctitle(str_process_name)
 
     # customize the log format
@@ -141,15 +145,19 @@ if __name__ == "__main__":
     device = init_training_device(process_id, worker_number-1, args.gpu_num_per_server)
 
     # load data
-    # input parameters: args.dataset, args.data_dir, args.partition, args.client_number, args.partition_alpha
-    # output parameters: train_data_num, train_data_global, test_data_global
-    # local_data_num, train_local, test_local
+    if args.dataset == "cifar10":
+        data_loader = load_partition_data_distributed_cifar10
+    elif args.dataset == "cifar100":
+        data_loader = load_partition_data_distributed_cifar100
+    elif args.dataset == "cinic10":
+        data_loader = load_partition_data_distributed_cinic10
+    else:
+        data_loader = load_partition_data_distributed_cifar10
     train_data_num, train_data_global, \
     test_data_global, local_data_num, \
-    train_data_local, test_data_local, class_num = load_partition_data_distributed_cifar10(process_id, args.dataset,
-                                                                                           args.data_dir, args.partition_method,
-                                                                                           args.partition_alpha,
-                                                                                           args.client_number, args.batch_size)
+    train_data_local, test_data_local, class_num = data_loader(process_id, args.dataset, args.data_dir,
+                                                               args.partition_method, args.partition_alpha,
+                                                               args.client_number, args.batch_size)
 
     # create the model
     model = None

@@ -10,6 +10,7 @@ class Client:
         self.local_training_data = local_training_data
         self.local_test_data = local_test_data
         self.local_sample_number = local_sample_number
+        logging.info("self.local_sample_number = " + str(self.local_sample_number))
 
         self.args = args
         self.device = device
@@ -41,7 +42,7 @@ class Client:
                            100. * batch_idx / len(self.local_training_data), loss.item()))
                 batch_loss.append(loss.item())
             epoch_loss.append(sum(batch_loss) / len(batch_loss))
-        return net.state_dict(), sum(epoch_loss) / len(epoch_loss)
+        return net.cpu().state_dict(), sum(epoch_loss) / len(epoch_loss)
 
     def local_test(self, model_global, b_use_test_dataset=False):
         model_global.eval()

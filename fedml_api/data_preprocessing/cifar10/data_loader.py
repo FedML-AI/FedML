@@ -256,7 +256,7 @@ def load_partition_data_cifar10(dataset, data_dir, partition_method, partition_a
     for client_idx in range(client_number):
         dataidxs = net_dataidx_map[client_idx]
         local_data_num = len(dataidxs)
-        data_local_num_dict[client_idx] = dataidxs
+        data_local_num_dict[client_idx] = local_data_num
         logging.info("client_idx = %d, local_sample_number = %d" % (client_idx, local_data_num))
 
         # training batch size = 64; algorithms batch size = 32

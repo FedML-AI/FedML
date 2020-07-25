@@ -10,7 +10,7 @@ nohup sh run_fedavg_standalone_pytorch.sh 0 cifar10 ./../../../data/cifar10 resn
 
 2. Heterogeneous distribution (Non-IID) experiment:
 ```
-nohup sh run_fedavg_standalone_pytorch.sh 0 cifar10 ./../../../data/cifar10 resnet56 hetero 100 20 0.001 > ./log/fedavg_standalone.txt 2>&1 &
+nohup sh run_fedavg_standalone_pytorch.sh 0 cifar10 ./../../../data/cifar10 resnet56 hetero 200 20 0.001 > ./log/fedavg_standalone.txt 2>&1 &
 ```
 
 ### Benchmark Results
