@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 from fedml_api.distributed.fedavg.FedAvgAPI import FedML_init, FedML_FedAvg_distributed
 from fedml_api.model.deep_neural_networks.mobilenet import mobilenet
 from fedml_api.model.deep_neural_networks.resnet import resnet56
-from fedml_api.data_preprocessing.cifar10.data_loader import load_partition_data_distributed
+from fedml_api.data_preprocessing.cifar10.data_loader import load_partition_data_distributed_cifar10
 
 
 def add_args(parser):
@@ -115,7 +115,7 @@ if __name__ == "__main__":
     if process_id == 0:
         wandb.init(
             # project="federated_nas",
-            project="knowledge-distillation",
+            project="fedml",
             name="FedAVG(d)" + str(args.partition_method) + "r" + str(args.comm_round) + "-e" + str(args.epochs) + "-lr" + str(
                 args.lr),
             config=args
@@ -146,10 +146,10 @@ if __name__ == "__main__":
     # local_data_num, train_local, test_local
     train_data_num, train_data_global, \
     test_data_global, local_data_num, \
-    train_data_local, test_data_local, class_num = load_partition_data_distributed(process_id, args.dataset,
-                                                                                   args.data_dir, args.partition_method,
-                                                                                   args.partition_alpha,
-                                                                                   args.client_number, args.batch_size)
+    train_data_local, test_data_local, class_num = load_partition_data_distributed_cifar10(process_id, args.dataset,
+                                                                                           args.data_dir, args.partition_method,
+                                                                                           args.partition_alpha,
+                                                                                           args.client_number, args.batch_size)
 
     # create the model
     model = None
