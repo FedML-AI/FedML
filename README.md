@@ -39,26 +39,15 @@ Users can change this package to add more advanced algorithms.
 
 **applications**: This package is a collection of applications based on FedML.
 
-## Installation
-#### 1. Standalone Mode
-Under construction
-
-#### 2. Distributed Computing Mode
-Please check the README.md in this directory: ./fedml_experiments/distributed/fedavg/README.md
-
-#### 3. Mobile Device Training Mode
-Under construction
 
 ## Join our Community
-
 Please join our community. We will post updated features and answer questions on Slack.
 
 [Join fedml.slack.com](https://join.slack.com/t/fedml/shared_invite/zt-gbpi8y2o-QMU0vhVHjm9Y9gqQu~eygg)
 
 
-
 ## Contributing
-We sincerely welcome contributors. Please read this page to know how to start contributing code to FedML. 
+We sincerely welcome contributors. Please email us for further information. 
 
 ## Citation
 Please cite FedML in your publications if it helps your research:
