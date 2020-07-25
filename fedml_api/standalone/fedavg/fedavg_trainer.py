@@ -111,8 +111,8 @@ class FedAvgTrainer(object):
         test_acc = sum(tot_corrects) / sum(num_samples)
         test_loss = sum(losses) / sum(num_samples)
 
-        wandb.log({"Train/AccTop1": test_acc, "round": round_idx})
-        wandb.log({"Train/Loss": test_loss, "round": round_idx})
+        wandb.log({"Test/AccTop1": test_acc, "round": round_idx})
+        wandb.log({"Test/Loss": test_loss, "round": round_idx})
 
         stats = {'test_acc': test_acc, 'test_loss': test_loss, 'num_samples': num_samples}
         logging.info(stats)
