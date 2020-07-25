@@ -1,8 +1,6 @@
 ## 1. FedML: A Flexible Distributed Machine Learning Library for Novel Learning Algorithms and Models
 http://fedml.ai
 
-Python package homepage: http://pypi.org/project/fedml-core
-
 ## 2. Environmental Setups
 
 ### 2.1 Hardware Requirements
@@ -23,7 +21,6 @@ The experiment tracking platform is supported by Weights and Bias: https://www.w
 
 ### **- FedML**
 FedML: A Flexible Distributed Machine Learning Library for Novel Learning Algorithms and Models.
-> pip install fedml-core
 
 ### 2.3 Software Configuration
 Here is a step-by-step configuration to help you quickly set up a multi-GPU computing environment.
@@ -70,7 +67,7 @@ Paste the string in "id_rsa.pub" file on your local computer to the server side 
 For other nodes on your server, use a similar method to configure the SSH.
 
 ### **- config MPI host file**
-Modify the hostname list in "mpi_host_file" to correspond to your actual physical network topology.
+Modify the hostname list in "mpi_host_file" to correspond to your actual physical network topology (in linux, use "hostname" command to get the hostname).
 An example: Let us assume a network has a management node and four compute nodes (hostname: node1, node2, node3, node4).
 If you want use node1 and node2 to run our program, the "mpi_host_file" should be:
 > node1 \
@@ -78,19 +75,12 @@ If you want use node1 and node2 to run our program, the "mpi_host_file" should b
 > node3
 
 
-## 3. download dataset
+## 3. install required packages
+> pip install setproctitle
 
 
 
-## 4. Running Experiments in the Paper
-Note:
-1. Please change the data path (e.g., "/home/chaoyanghe/sourcecode/dataset/cv/CIFAR10") to your own local path.
-2. To fairly compare with other methods, the non-IID dataset used in each experiment is fixed.
-We can also run experiments on other non-IID distribution by changing the partition parameter from "hetero" to "hetero-fix". 
-3. The worker number is all experiments is 16.
-4. The GPU card number we use to run these experiments is 4. Please customize your (GPU ID, worker ID) index at [main.py-init_training_device()].
-5. Batch size is 64. Please adjust this value according to your GPU memory configuration. The larger the batch size is, more memory it cost.
-6. Please remember to login to "wandb" so you can collect your training log and visualize it remotely. \
+## 4. Experimental Tracking Platform (report real-time result to wandb.com)
 wandb login ee0b5f53d949c84cee7decbe7a629e63fb2f8408
 
 ## ResNet56 Federated Training
