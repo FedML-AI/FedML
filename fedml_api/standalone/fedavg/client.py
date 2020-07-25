@@ -24,7 +24,9 @@ class Client:
     def train(self, net):
         net.train()
         # train and update
-        optimizer = torch.optim.SGD(net.parameters(), lr=self.args.lr, momentum=0.5)
+        # optimizer = torch.optim.SGD(net.parameters(), lr=self.args.lr, momentum=0.5)
+        optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, net.parameters()), lr=self.args.lr,
+                                          weight_decay=0.0001, amsgrad=True)
 
         epoch_loss = []
         for epoch in range(self.args.epochs):
