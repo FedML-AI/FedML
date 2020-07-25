@@ -80,8 +80,7 @@ if __name__ == "__main__":
     # Set the random seed. The np.random seed determines the dataset partition.
     # The torch_manual_seed determines the initial weight.
     # We fix these two, so that we can reproduce the result.
-    seed = 0
-    np.random.seed(seed)
+    np.random.seed(0)
     torch.manual_seed(10)
 
     # data
