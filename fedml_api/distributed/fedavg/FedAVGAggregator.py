@@ -78,21 +78,21 @@ class FedAVGAggregator(object):
         train_acc_list = self.train_acc_dict.values()
         train_acc_avg = sum(train_acc_list) / len(train_acc_list)
         logging.info('Round {:3d}, Average Train Accuracy {:.3f}'.format(round_idx, train_acc_avg))
-        wandb.log({"Train/AccTop1": train_acc_avg, "epoch": round_idx + 1})
+        wandb.log({"Train/AccTop1": train_acc_avg, "round": round_idx + 1})
 
         # train loss
         train_loss_list = self.train_loss_dict.values()
         train_loss_avg = sum(train_loss_list) / len(train_loss_list)
         logging.info('Round {:3d}, Average Train Loss {:.3f}'.format(round_idx, train_loss_avg))
-        wandb.log({"Train/Loss": train_loss_avg, "epoch": round_idx + 1})
+        wandb.log({"Train/Loss": train_loss_avg, "round": round_idx + 1})
 
         # algorithms acc
         logging.info('Round {:3d}, Average Validation Accuracy {:.3f}'.format(round_idx, self.test_acc_avg))
-        wandb.log({"Test/AccTop1": self.test_acc_avg, "epoch": round_idx + 1})
+        wandb.log({"Test/AccTop1": self.test_acc_avg, "round": round_idx + 1})
 
         # algorithms loss
         logging.info('Round {:3d}, Average Validation Loss {:.3f}'.format(round_idx, self.test_loss_avg))
-        wandb.log({"Test/Loss": self.test_loss_avg, "epoch": round_idx + 1})
+        wandb.log({"Test/Loss": self.test_loss_avg, "round": round_idx + 1})
 
     def infer(self, round_idx, model_params):
         if round_idx % self.args.frequency_of_the_test == 0 or round_idx == self.args.comm_round - 1:

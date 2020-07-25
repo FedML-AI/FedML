@@ -91,8 +91,8 @@ class FedAvgTrainer(object):
         train_acc = sum(tot_corrects) / sum(num_samples)
         train_loss = sum(losses) / sum(num_samples)
 
-        wandb.log({"Train Accuracy": train_acc, "Round": round_idx})
-        wandb.log({"Train Loss": train_loss, "Round": round_idx})
+        wandb.log({"Train/AccTop1": train_acc, "round": round_idx})
+        wandb.log({"Train/Loss": train_loss, "round": round_idx})
 
         stats = {'training_acc': train_acc, 'training_loss': train_loss, 'num_samples': num_samples}
         logging.info(stats)
@@ -108,13 +108,13 @@ class FedAvgTrainer(object):
             num_samples.append(copy.deepcopy(num_sample))
             losses.append(copy.deepcopy(loss))
 
-        train_acc = sum(tot_corrects) / sum(num_samples)
-        train_loss = sum(losses) / sum(num_samples)
+        test_acc = sum(tot_corrects) / sum(num_samples)
+        test_loss = sum(losses) / sum(num_samples)
 
-        wandb.log({"Validation Accuracy": train_acc, "Round": round_idx})
-        wandb.log({"Validation Loss": train_loss, "Round": round_idx})
+        wandb.log({"Train/AccTop1": test_acc, "round": round_idx})
+        wandb.log({"Train/Loss": test_loss, "round": round_idx})
 
-        stats = {'test_acc': train_acc, 'test_loss': train_loss, 'num_samples': num_samples}
+        stats = {'test_acc': test_acc, 'test_loss': test_loss, 'num_samples': num_samples}
         logging.info(stats)
 
     def global_test(self):
