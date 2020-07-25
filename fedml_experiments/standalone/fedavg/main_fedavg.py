@@ -1,23 +1,18 @@
 import argparse
 import logging
 import os
+import sys
 
 import numpy as np
 import torch
 import wandb
-import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 
-from fedml_api.standalone.fedavg.data_loader import partition_data, get_dataloader
+from fedml_api.data_preprocessing.cifar10.data_loader import load_partition_data
+from fedml_api.model.deep_neural_networks.mobilenet import mobilenet
+from fedml_api.model.deep_neural_networks.resnet import resnet56
 from fedml_api.standalone.fedavg.fedavg_trainer import FedAvgTrainer
-
-args_datadir = "/home/chaoyanghe/sourcecode/dataset/cv/CIFAR10"
-args_logdir = "log/cifar10"
-args_alpha = 0.5
-args_net_config = [3072, 100, 10]
-
-switch_wandb = True
 
 
 def add_args(parser):
@@ -26,14 +21,20 @@ def add_args(parser):
     return a parser added with args required by fit
     """
     # Training settings
-    parser.add_argument('--model', type=str, default='resnet', metavar='N',
+    parser.add_argument('--model', type=str, default='resnet56', metavar='N',
                         help='neural network used in training')
 
     parser.add_argument('--dataset', type=str, default='cifar10', metavar='N',
                         help='dataset used for training')
 
-    parser.add_argument('--partition', type=str, default='homo', metavar='N',
+    parser.add_argument('--data_dir', type=str, default='./../../../data/cifar10',
+                        help='data directory')
+
+    parser.add_argument('--partition_method', type=str, default='hetero', metavar='N',
                         help='how to partition the dataset on local workers')
+
+    parser.add_argument('--partition_alpha', type=float, default=0.5, metavar='PA',
+                        help='partition alpha (default: 0.5)')
 
     parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                         help='input batch size for training (default: 64)')
@@ -83,26 +84,23 @@ if __name__ == "__main__":
     np.random.seed(0)
     torch.manual_seed(10)
 
-    # data
-    # input: args.dataset, args.data_dir
-    logger.info("Partitioning data")
-    # input:
-    # output:
-    X_train, y_train, X_test, y_test, net_dataidx_map, traindata_cls_counts = partition_data(args.dataset, args_datadir,
-                                                                                             args_logdir,
-                                                                                             args.partition,
-                                                                                             args.client_number,
-                                                                                             args_alpha,
-                                                                                             args=args)
-    train_dl_global, test_dl_global = get_dataloader(args.dataset, args_datadir, args.batch_size, 32)
+    # load data
+    train_data_num, test_data_num, train_data_global, test_data_global, \
+    data_local_num_dict, train_data_local_dict, test_data_local_dict, \
+    class_num = load_partition_data(args.dataset, args.data_dir, args.partition_method,
+                                    args.partition_alpha, args.client_number, args.batch_size)
 
-    n_classes = len(np.unique(y_train))
-    print("n_classes = " + str(n_classes))
-    print("traindata_cls_counts = " + str(traindata_cls_counts))
-    print("train_dl_global number = " + str(len(train_dl_global)))
-    print("test_dl_global number = " + str(len(test_dl_global)))
+    dataset = [train_data_num, test_data_num, train_data_global, test_data_global,
+               data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num]
 
-    trainer = FedAvgTrainer(net_dataidx_map, train_dl_global, test_dl_global, device, args, n_classes, logger,
-                            switch_wandb)
+    # create model
+    # create the model
+    model = None
+    if args.model == "resnet56":
+        model = resnet56(class_num)
+    elif args.model == "mobilenet":
+        model = mobilenet(class_num=class_num)
+
+    trainer = FedAvgTrainer(dataset, model, device, args)
     trainer.train()
     trainer.global_test()

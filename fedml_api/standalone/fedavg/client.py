@@ -1,17 +1,18 @@
+import logging
+
 import torch
 from torch import nn
 
 
 class Client:
 
-    def __init__(self, local_training_data, local_test_data, local_sample_number, args, logger, device):
+    def __init__(self, local_training_data, local_test_data, local_sample_number, args, device):
         self.local_training_data = local_training_data
         self.local_test_data = local_test_data
 
         self.local_sample_number = local_sample_number
 
         self.args = args
-        self.logger = logger
 
         self.device = device
 
@@ -35,9 +36,9 @@ class Client:
                 loss = self.criterion(log_probs, labels)
                 loss.backward()
                 optimizer.step()
-                self.logger.info('Update Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                logging.info('Update Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                     epoch, batch_idx * len(images), len(self.local_training_data.dataset),
-                          100. * batch_idx / len(self.local_training_data), loss.item()))
+                           100. * batch_idx / len(self.local_training_data), loss.item()))
                 batch_loss.append(loss.item())
             epoch_loss.append(sum(batch_loss) / len(batch_loss))
         return net.state_dict(), sum(epoch_loss) / len(epoch_loss)

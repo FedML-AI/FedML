@@ -37,7 +37,7 @@ def generate_synthetic(alpha, beta, iid):
 
     for i in range(NUM_USER):
         mean_x[i] = np.random.normal(B[i], 1, dimension)
-        print(mean_x[i])
+        # print(mean_x[i])
 
     for i in range(NUM_USER):
 
