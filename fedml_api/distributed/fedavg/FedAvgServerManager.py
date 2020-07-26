@@ -1,13 +1,11 @@
 import logging
 
-import torch
-
 from fedml_api.distributed.fedavg.message_define import MyMessage
 from fedml_core.distributed.communication import Message
-from fedml_core.distributed.server.server_manager import ServerMananger
+from fedml_core.distributed.server.server_manager import ServerManager
 
 
-class FedAVGServerMananger(ServerMananger):
+class FedAVGServerManager(ServerManager):
     def __init__(self, args, comm, rank, size, aggregator):
         super().__init__(args, comm, rank, size)
 
