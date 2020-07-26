@@ -191,7 +191,6 @@ if __name__ == "__main__":
         genotype = genotypes.FedNAS_V1
         logging.info(genotype)
         model = NetworkCIFAR(args.init_channels, 10, args.layers, args.auxiliary, genotype)
-    model.to(device)
 
     FedML_FedNAS_distributed(process_id, worker_number, device, comm,
                              model, train_data_num, train_data_global, test_data_global,
