@@ -26,7 +26,7 @@ def FedML_FedNAS_distributed(process_id, worker_number, device, comm, model, tra
 def init_server(args, device, comm, rank, size, model, train_data_num, train_data_global, test_data_global):
     # aggregator
     client_num = size - 1
-    aggregator = FedNASAggregator(train_data_global, test_data_global, train_data_num, client_num, device, model, args)
+    aggregator = FedNASAggregator(train_data_global, test_data_global, train_data_num, client_num, model, device, args)
 
     # start the distributed training
     server_manager = FedNASServerManager(args, comm, rank, size, aggregator)
