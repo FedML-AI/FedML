@@ -7,6 +7,7 @@ from torch import nn
 
 
 class FedNASAggregator(object):
+
     def __init__(self, train_global, test_global, all_train_data_num, client_num, model, device, args):
         self.train_global = train_global
         self.test_global = test_global

@@ -8,7 +8,6 @@ from fedml_core.distributed.communication import Message
 
 
 class FedNASClientManager(ClientManager):
-
     def __init__(self, args, comm, rank, size, trainer):
         super().__init__(args, comm, rank, size)
 
@@ -21,9 +20,12 @@ class FedNASClientManager(ClientManager):
 
     def register_message_receive_handlers(self):
         self.register_message_receive_handler(MyMessage.MSG_TYPE_S2C_INIT_CONFIG,
-                                              self.__handle_msg_client_receive_config)
+                                              self.__handle_msg_client_receive_config1)
         self.register_message_receive_handler(MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT,
                                               self.__handle_msg_client_receive_model_from_server)
+
+    def __handle_msg_client_receive_config1(self, msg_params):
+        logging.info("__handle_msg_client_receive_config1")
 
     def __handle_msg_client_receive_config(self, msg_params):
         logging.info("__handle_msg_client_receive_config")
