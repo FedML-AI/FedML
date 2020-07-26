@@ -1,4 +1,5 @@
 import logging
+from time import sleep
 
 import torch
 
@@ -19,6 +20,7 @@ class FedNASServerManager(ServerManager):
     def run(self):
         for process_id in range(1, self.size):
             self.__send_initial_config_to_client(process_id)
+        sleep(1)
         super().run()
 
     def register_message_receive_handlers(self):
