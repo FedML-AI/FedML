@@ -36,7 +36,7 @@ def init_server(args, device, comm, rank, size, model, train_data_num, train_dat
 def init_client(args, device, comm, process_id, size, model, train_data_num, local_data_num, train_data_local, test_data_local):
     # trainer
     client_ID = process_id - 1
-    trainer = FedNASTrainer(client_ID, train_data_local, test_data_local, local_data_num, train_data_num, device, model, args)
+    trainer = FedNASTrainer(client_ID, train_data_local, test_data_local, local_data_num, train_data_num, model, device, args)
 
     client_manager = FedNASClientManager(args, comm, process_id, size, trainer)
     client_manager.run()
