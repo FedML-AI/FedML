@@ -7,7 +7,6 @@ class MyMessage(object):
     MSG_TYPE_C2S_SEND_MODEL_TO_SERVER = 3
     MSG_TYPE_C2S_SEND_STATS_TO_SERVER = 4
 
-    MSG_ARG_KEY_OPERATION = "operation"
     MSG_ARG_KEY_TYPE = "msg_type"
     MSG_ARG_KEY_SENDER = "sender"
     MSG_ARG_KEY_RECEIVER = "receiver"
@@ -19,8 +18,3 @@ class MyMessage(object):
     MSG_ARG_KEY_LOCAL_TRAINING_LOSS = "local_training_loss"
     MSG_ARG_KEY_LOCAL_TEST_ACC = "local_test_acc"
     MSG_ARG_KEY_LOCAL_TEST_LOSS = "local_test_loss"
-
-    MSG_OPERATION_SEND = "send"
-    MSG_OPERATION_RECEIVE = "receive"
-    MSG_OPERATION_BROADCAST = "broadcast"
-    MSG_OPERATION_REDUCE = "reduce"
