@@ -9,7 +9,7 @@ from fedml_core.distributed.communication.mpi_message import MPIMessage
 from fedml_core.distributed.communication.observer import Observer
 
 
-class ServerMananger(Observer):
+class ServerManager(Observer):
 
     def __init__(self, args, comm, rank, size):
         self.args = args
