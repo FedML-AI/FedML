@@ -18,8 +18,6 @@ class FedNASServerManager(ServerManager):
         self.aggregator = aggregator
 
     def run(self):
-        # wait for all processes up
-        sleep(10)
         global_model = self.aggregator.get_model()
         global_model_params = global_model.state_dict()
         global_arch_params = global_model.arch_parameters()

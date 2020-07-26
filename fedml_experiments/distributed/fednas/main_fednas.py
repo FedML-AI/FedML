@@ -186,11 +186,11 @@ if __name__ == "__main__":
     model = None
     criterion = nn.CrossEntropyLoss().to(device)
     if args.stage == "search":
-        model = Network(args.init_channels, 10, args.layers, criterion, device)
+        model = Network(args.init_channels, class_num, args.layers, criterion, device)
     else:
         genotype = genotypes.FedNAS_V1
         logging.info(genotype)
-        model = NetworkCIFAR(args.init_channels, 10, args.layers, args.auxiliary, genotype)
+        model = NetworkCIFAR(args.init_channels, class_num, args.layers, args.auxiliary, genotype)
 
     FedML_FedNAS_distributed(process_id, worker_number, device, comm,
                              model, train_data_num, train_data_global, test_data_global,
