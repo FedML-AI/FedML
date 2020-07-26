@@ -18,20 +18,20 @@ class FedNASServerManager(ServerManager):
         self.aggregator = aggregator
 
     def run(self):
-        for process_id in range(1, self.size):
-            self.__send_initial_config_to_client(process_id)
+        # wait for all processes up
         sleep(1)
+        global_model = self.aggregator.get_model()
+        global_model_params = global_model.state_dict()
+        global_arch_params = global_model.arch_parameters()
+        for process_id in range(1, self.size):
+            self.__send_initial_config_to_client(process_id, global_model_params, global_arch_params)
         super().run()
 
     def register_message_receive_handlers(self):
         self.register_message_receive_handler(MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER,
                                               self.__handle_msg_server_receive_model_from_client_opt_send)
 
-    def __send_initial_config_to_client(self, process_id):
-        global_model = self.aggregator.get_model()
-        global_model_params = global_model.state_dict()
-        global_arch_params = global_model.arch_parameters()
-
+    def __send_initial_config_to_client(self, process_id, global_model_params, global_arch_params):
         message = Message(MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), process_id)
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         message.add_params(MyMessage.MSG_ARG_KEY_ARCH_PARAMS, global_arch_params)
