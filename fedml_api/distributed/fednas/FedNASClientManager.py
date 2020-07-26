@@ -26,11 +26,8 @@ class FedNASClientManager(ClientManager):
 
     def __handle_msg_client_receive_config(self, msg_params):
         logging.info("__handle_msg_client_receive_config")
-        process_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         global_model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         arch_params = msg_params.get(MyMessage.MSG_ARG_KEY_ARCH_PARAMS)
-        if process_id != 0:
-            return
         self.trainer.update_model(global_model_params)
         if self.args.stage == "search":
             self.trainer.update_arch(arch_params)
