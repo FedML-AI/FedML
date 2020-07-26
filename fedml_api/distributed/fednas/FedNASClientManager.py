@@ -26,6 +26,7 @@ class FedNASClientManager(ClientManager):
                                               self.__handle_msg_client_receive_model_from_server)
 
     def __handle_msg_client_receive_config(self, msg_params):
+        logging.info("__handle_msg_client_receive_config")
         process_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         global_model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         arch_params = msg_params.get(MyMessage.MSG_ARG_KEY_ARCH_PARAMS)
