@@ -171,7 +171,7 @@ class ModelForModelSizeMeasure(nn.Module):
 
 class Network(nn.Module):
 
-    def __init__(self, C, num_classes, layers, criterion, device,steps=4, multiplier=4, stem_multiplier=3):
+    def __init__(self, C, num_classes, layers, criterion, device, steps=4, multiplier=4, stem_multiplier=3):
         super(Network, self).__init__()
         print(Network)
         self._C = C

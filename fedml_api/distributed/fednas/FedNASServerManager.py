@@ -26,7 +26,7 @@ class FedNASServerManager(ServerManager):
                                               self.__handle_msg_server_receive_model_from_client_opt_send)
 
     def __send_initial_config_to_client(self, process_id):
-        global_model = self.aggregator.get_model()
+        global_model = self.aggregator.get_model().cpu()
         global_model_params = global_model.state_dict()
         global_arch_params = global_model.arch_parameters()
 
