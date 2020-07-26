@@ -30,7 +30,7 @@ class FedNASServerManager(ServerManager):
         global_model_params = global_model.state_dict()
         global_arch_params = global_model.arch_parameters()
 
-        message = Message(MyMessage.MSG_TYPE_S2C_INIT_CONFIG, 0, process_id)
+        message = Message(MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), process_id)
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         message.add_params(MyMessage.MSG_ARG_KEY_ARCH_PARAMS, global_arch_params)
         logging.info("MSG_TYPE_S2C_INIT_CONFIG. receiver: " + str(process_id))

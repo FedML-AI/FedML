@@ -9,14 +9,14 @@ ROUND=$5
 EPOCH=$6
 BATCH_SIZE=$7
 
-mpirun -np 11 -hostfile ./mpi_host_file python3 ./main_fednas.py \
+mpirun -np 9 -hostfile ./mpi_host_file python3 ./main_fednas.py \
   --gpu_server_num $SERVER_NUM \
   --gpu_num_per_server $GPU_NUM_PER_SERVER \
   --model $MODEL \
   --state "search" \
   --dataset cifar10 \
   --partition $DISTRIBUTION  \
-  --client_number 10 \
+  --client_number 8 \
   --comm_round $ROUND \
   --epochs $EPOCH \
   --batch_size $BATCH_SIZE
