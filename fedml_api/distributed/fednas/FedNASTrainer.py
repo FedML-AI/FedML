@@ -9,7 +9,7 @@ from fedml_api.model.darts.architect import Architect
 
 class FedNASTrainer(object):
 
-    def __init__(self, client_index, train_local, test_local, local_sample_number, all_train_data_num, model, device, 
+    def __init__(self, client_index, train_local, test_local, local_sample_number, all_train_data_num, model, device,
                  args):
         self.client_index = client_index
         self.train_local = train_local
