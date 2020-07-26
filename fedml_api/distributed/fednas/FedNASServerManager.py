@@ -11,7 +11,7 @@ class FedNASServerManager(ServerManager):
     def __init__(self, args, comm, rank, size, aggregator):
         super().__init__(args, comm, rank, size)
 
-        self.num_rounds = args.comm_round
+        self.round_num = args.comm_round
         self.round_idx = 0
 
         self.aggregator = aggregator
@@ -34,7 +34,7 @@ class FedNASServerManager(ServerManager):
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         message.add_params(MyMessage.MSG_ARG_KEY_ARCH_PARAMS, global_arch_params)
         logging.info("MSG_TYPE_S2C_INIT_CONFIG. receiver: " + str(process_id))
-        self.com_manager.send_message(message)
+        self.send_message(message)
 
     def __handle_msg_server_receive_model_from_client_opt_send(self, msg_params):
         process_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
@@ -76,4 +76,4 @@ class FedNASServerManager(ServerManager):
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         message.add_params(MyMessage.MSG_ARG_KEY_ARCH_PARAMS, global_arch_params)
         logging.info("__send_model_to_client_message. MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT. receiver: " + str(process_id))
-        self.com_manager.send_message(message)
+        self.send_message(message)

@@ -20,12 +20,9 @@ class FedNASClientManager(ClientManager):
 
     def register_message_receive_handlers(self):
         self.register_message_receive_handler(MyMessage.MSG_TYPE_S2C_INIT_CONFIG,
-                                              self.__handle_msg_client_receive_config1)
+                                              self.__handle_msg_client_receive_config)
         self.register_message_receive_handler(MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT,
                                               self.__handle_msg_client_receive_model_from_server)
-
-    def __handle_msg_client_receive_config1(self, msg_params):
-        logging.info("__handle_msg_client_receive_config1")
 
     def __handle_msg_client_receive_config(self, msg_params):
         logging.info("__handle_msg_client_receive_config")
@@ -81,4 +78,4 @@ class FedNASClientManager(ClientManager):
         message.add_params(MyMessage.MSG_ARG_KEY_ARCH_PARAMS, alphas)
         message.add_params(MyMessage.MSG_ARG_KEY_LOCAL_TRAINING_ACC, valid_acc)
         message.add_params(MyMessage.MSG_ARG_KEY_LOCAL_TRAINING_LOSS, valid_loss)
-        self.com_manager.send_message(message)
+        self.send_message(message)
