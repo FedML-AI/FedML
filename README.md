@@ -7,9 +7,15 @@ Please read this long vision paper "Advances and Open Problems in Federated Lear
 This publication list is also helpful: https://github.com/chaoyanghe/Awesome-Federated-Learning
 
 ## Introduction
-FedML is a research-oriented federated learning software library. Its primary purpose is to provide researchers and engineers with a flexible and generic experiment platform for developing innovative learning algorithms. It offers a worker-oriented programming interface, reference implementations for baselines, and a curated and comprehensive benchmark datasets for the non-I.I.D setting. With \texttt{FedML}, users can attach any behavior to workers in the arbitrary FL network (e.g., training, aggregation,  attack, and defense, etc.), customize any additional exchanging information, and control information flow among workers. Its reference implementations, benchmark, and datasets aim to promote fast reproducibility for baselines and fair comparison for newly developed algorithms. In this article, we describe the system design, the new programming interface, application examples, benchmark, dataset, and some experimental results. We accept user feedback, and will continuously update our library to support more advanced requirements.
+Federated learning is a rapidly growing research field in the machine learning domain. 
+Although considerable research efforts have been made, existing libraries cannot adequately support diverse algorithmic development (e.g., diverse topology and flexible message exchange), 
+and inconsistent dataset and model usage in experiments make fair comparisons difficult.
+In this work, we introduce FedML, an open research library and benchmark that facilitates the development of new federated learning algorithms and fair performance comparisons. 
+FedML supports three computing paradigms (distributed training, mobile on-device training, and standalone simulation) for users to conduct experiments in different system environments. 
+FedML also promotes diverse algorithmic research with flexible and generic API design and reference baseline implementations. A curated and comprehensive benchmark dataset for the non-I.I.D setting aims at making a fair comparison.
+We believe FedML can provide an efficient and reproducible means of developing and evaluating algorithms for the federated learning research community. We maintain the source code, documents, and user community at https://FedML.ai.
 
-For more details, please read our paper.
+For more details, please read our full paper: http://fedml.ai/publication/fedml.pdf (the Arxiv version will be available in a week.)
 
 ## Usage
 1. Research on FL algorithm or system
@@ -54,8 +60,8 @@ Please cite FedML in your publications if it helps your research:
 ```
 @article{chaoyanghe2020fedml,
   Author = {Chaoyang He},
-  Journal = {arXiv preprint arXiv:1802.05799},
-  Title = {FedML: a Flexible and Generic Federated Learning Library and Benchmark},
+  Journal = {arXiv preprint arXiv:##we've submitted to Arxiv. The link will be available in a week#},
+  Title = {FedML: A Research Library and Benchmark for Federated Machine Learning},
   Year = {2020}
 }
 ```
