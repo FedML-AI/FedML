@@ -2,7 +2,7 @@
 https://www.fedml.ai/publication/fedml.pdf
 
 ## What is Federated Learning?
-Please read this long vision paper "Advances and Open Problems in Federated Learning" (https://arxiv.org/abs/1912.04977).
+Please read this long vision paper [Advances and Open Problems in Federated Learning](https://arxiv.org/abs/1912.04977).
 
 This publication list is also helpful: https://github.com/chaoyanghe/Awesome-Federated-Learning
 
