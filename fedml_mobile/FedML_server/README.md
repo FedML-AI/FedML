@@ -1,1 +1,3 @@
-Flask + PyTorch + RabbitMQ
+Architecture: Flask + PyTorch + RabbitMQ
+
+Stay tuned.
