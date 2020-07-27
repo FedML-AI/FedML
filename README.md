@@ -53,7 +53,26 @@ Please join our community. We will post updated features and answer questions on
 
 
 ## Contributing
-We sincerely welcome contributors. Please email us for further information. 
+We sincerely welcome contributors and believe in the power of the open source. We welcome expertise from two tracks, either research or engineering.
+
+1. If you are a researcher who needs APIs that our library does not support yet, please send us your valuable suggestions.
+
+2. If you are a researcher who has published FL-related algorithm or system-level optimization, we welcome you to submit your source code to FedML, which will then be maintained by our engineers and researchers.
+
+3. If you are an engineer or student who is searching for interesting open source projects to broaden your career, FedML is perfect for you. Currently, we are developing the following urgent features.
+
+i) transplanting more advanced FL algorithms to FedML. We will show you some important research publications once you are involved. 
+For this role, we prefer engineers or students who have a basic understanding of machine learning.
+
+ii) FedML-Mobiel service architecture: Flask + PyTorch + RabbitMQ
+
+iii) upgrading our Android and iOS platform.
+
+iv) building or applying more models in computer vision and NLP domains to FedML.
+
+v) collecting realistic federated datasets by crowdsourcing.
+
+Please email us for further information. 
 
 ## Citation
 Please cite FedML in your publications if it helps your research:
