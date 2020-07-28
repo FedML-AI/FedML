@@ -1,5 +1,5 @@
 # FedML: A Research Library and Benchmark for Federated Machine Learning
-https://www.fedml.ai/publication/fedml.pdf
+[https://arxiv.org/abs/2007.13518](https://arxiv.org/abs/2007.13518)
 
 ## What is Federated Learning?
 Please read this long vision paper [Advances and Open Problems in Federated Learning](https://arxiv.org/abs/1912.04977).
