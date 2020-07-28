@@ -15,7 +15,7 @@ FedML supports three computing paradigms (distributed training, mobile on-device
 FedML also promotes diverse algorithmic research with flexible and generic API design and reference baseline implementations. A curated and comprehensive benchmark dataset for the non-I.I.D setting aims at making a fair comparison.
 We believe FedML can provide an efficient and reproducible means of developing and evaluating algorithms for the federated learning research community. We maintain the source code, documents, and user community at https://FedML.ai.
 
-For more details, please read our full paper: http://fedml.ai/publication/fedml.pdf (the Arxiv version will be available in a week.)
+For more details, please read our full paper: [https://arxiv.org/abs/2007.13518](https://arxiv.org/abs/2007.13518)
 
 ## Usage
 1. Research on FL algorithm or system
@@ -78,8 +78,8 @@ Please email us for further information.
 Please cite FedML in your publications if it helps your research:
 ```
 @article{chaoyanghe2020fedml,
-  Author = {Chaoyang He},
-  Journal = {arXiv preprint arXiv:##we've submitted to Arxiv. The link will be available in a week#},
+  Author = {He, Chaoyang and Li, Songze and So, Jinhyun and Zhang, Mi and Wang, Hongyi and Wang, Xiaoyang and Vepakomma, Praneeth and Singh, Abhishek and Qiu, Hang and Shen, Li and Zhao, Peilin and Kang, Yan and Liu, Yang and Raskar, Ramesh and Yang, Qiang and Annavaram, Murali and Avestimehr, Salman},
+  Journal = {arXiv preprint arXiv:2007.13518},
   Title = {FedML: A Research Library and Benchmark for Federated Machine Learning},
   Year = {2020}
 }
