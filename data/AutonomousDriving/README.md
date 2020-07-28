@@ -5,8 +5,13 @@
 - 3D Object Detection: http://www.cvlibs.net/datasets/kitti/eval_object.php?obj_benchmark=3d
 - 2D Multi-Object Tracking: http://www.cvlibs.net/datasets/kitti/eval_tracking.php
 - 2D Multi-Object Tracking and Segmentation: http://www.cvlibs.net/datasets/kitti/eval_mots.php
-- Semantic Segmentation: http://www.cvlibs.net/datasets/kitti/eval_semseg.php?benchmark=semantics2015
-- Instance Segmentation: http://www.cvlibs.net/datasets/kitti/eval_instance_seg.php?benchmark=instanceSeg2015
+- Pixel-level Semantic Segmentation: http://www.cvlibs.net/datasets/kitti/eval_semseg.php?benchmark=semantics2015
+- Instance-level Semantic Segmentation: http://www.cvlibs.net/datasets/kitti/eval_instance_seg.php?benchmark=instanceSeg2015
+
+[CityScapes](https://www.cityscapes-dataset.com/)
+- Pixel-level Semantic Segmentation
+- Instance-level Semantic Segmentation 
+- Panoptic Semantic Segmentation
 
 [Waymo](https://waymo.com/open/)
 -
