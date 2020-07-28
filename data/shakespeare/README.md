@@ -1,3 +1,6 @@
+# Introduction
+We reuse the dataset preprocessing for Shakespeare published by FedProx (https://arxiv.org/abs/1812.06127).
+
 # Shakespeare Dataset
 The distribution of the dataset is as follows:
 

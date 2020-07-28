@@ -1,3 +1,6 @@
+### Introduction
+We reuse the dataset preprocessing published by FedProx (https://arxiv.org/abs/1812.06127).
+
 ```
 python generate_synthetic.py
 ```
