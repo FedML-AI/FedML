@@ -35,8 +35,8 @@ class FedAVGServerManager(ServerManager):
         b_all_received = self.aggregator.check_whether_all_receive()
         logging.info("b_all_received = " + str(b_all_received))
         if b_all_received:
-            global_model_params = self.aggregator.aggregate()
-            self.aggregator.infer(self.round_idx, global_model_params)
+            self.aggregator.aggregate()
+            self.aggregator.infer(self.round_idx)
             self.aggregator.statistics(self.round_idx)
 
             # start the next round
