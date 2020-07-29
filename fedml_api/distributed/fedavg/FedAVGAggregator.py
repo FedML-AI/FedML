@@ -65,6 +65,10 @@ class FedAVGAggregator(object):
                     averaged_params[k] = local_model_params[k] * w
                 else:
                     averaged_params[k] += local_model_params[k] * w
+
+        # update the global model which is cached at the server side
+        self.model.load_state_dict(averaged_params)
+
         # clear the memory cost
         model_list.clear()
         del model_list
@@ -94,10 +98,9 @@ class FedAVGAggregator(object):
         logging.info('Round {:3d}, Average Validation Loss {:.3f}'.format(round_idx, self.test_loss_avg))
         wandb.log({"Test/Loss": self.test_loss_avg, "round": round_idx + 1})
 
-    def infer(self, round_idx, model_params):
+    def infer(self, round_idx):
         if round_idx % self.args.frequency_of_the_test == 0 or round_idx == self.args.comm_round - 1:
             start_time = time.time()
-            self.model.load_state_dict(model_params)
             self.model.eval()
             self.model.to(self.device)
 
