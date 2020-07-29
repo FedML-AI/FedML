@@ -1,13 +1,8 @@
-import logging
 import datetime
+import logging
 
-import torch
 import torch.nn as nn
 import torch.optim as optim
-
-from fedml_api.distributed.split_nn.message_define import MyMessage
-from fedml_core.distributed.communication import Message
-from fedml_core.distributed.server.server_manager import ServerMananger
 
 
 class SplitNN_server():
@@ -30,14 +25,14 @@ class SplitNN_server():
         self.criterion = nn.CrossEntropyLoss()
 
     def run(self, ):
-        while(True):
+        while (True):
             message = self.comm.recv(source=self.active_node)
             if message == "done":
-		# not a precise estimate of validation loss
+                # not a precise estimate of validation loss
                 self.val_loss /= self.step
                 acc = self.correct / self.total
                 logging.info("phase={} acc={} loss={} epoch={} and step={}"
-	                     .format(self.phase, acc, self.loss.item(), self.epoch, self.step))
+                             .format(self.phase, acc, self.loss.item(), self.epoch, self.step))
 
                 self.epoch += 1
                 self.active_node = (self.active_node % self.MAX_RANK) + 1
@@ -60,7 +55,7 @@ class SplitNN_server():
                 if self.phase == "train":
                     logging.debug("Server-Receive: client={}, index={}, time={}"
                                   .format(self.active_node, self.batch_idx,
-	                                  datetime.datetime.now()))
+                                          datetime.datetime.now()))
                     self.optimizer.zero_grad()
                 input_tensor, labels = message
                 input_tensor.retain_grad()
@@ -85,4 +80,3 @@ class SplitNN_server():
                                  .format("train", acc, loss.item(), self.epoch, self.step))
                 if self.phase == "validation":
                     self.val_loss += loss.item()
-
