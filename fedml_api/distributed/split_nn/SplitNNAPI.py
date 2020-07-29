@@ -1,7 +1,8 @@
 from mpi4py import MPI
 
-from fedml_api.distributed.split_nn.server import SplitNN_server
 from fedml_api.distributed.split_nn.client import SplitNN_client
+from fedml_api.distributed.split_nn.server import SplitNN_server
+
 
 def SplitNN_init():
     comm = MPI.COMM_WORLD
