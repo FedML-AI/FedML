@@ -1,4 +1,4 @@
-Notice: FedML is evolving. We will update more features in next 1-2 months. Please email us if there is misinformation.
+Notice: *FedML is evolving. We will update more features in next 1-2 months. Please email us if there is misinformation.*
 
 # FedML: A Research Library and Benchmark for Federated Machine Learning
 [https://arxiv.org/abs/2007.13518](https://arxiv.org/abs/2007.13518)
