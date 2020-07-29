@@ -75,6 +75,7 @@ class FedAVGAggregator(object):
         self.model_dict.clear()
         end_time = time.time()
         logging.info("aggregate time cost: %d" % (end_time - start_time))
+        return averaged_params
 
     def statistics(self, round_idx):
         # train acc
