@@ -5,39 +5,7 @@ import torch
 import wandb
 from torch import nn
 
-
-def vectorize_weight(state_dict):
-    weight_list = []
-    for (k, v) in state_dict.items():
-        if is_weight_param(k):
-            weight_list.append(v)
-    return torch.cat(weight_list)
-
-
-def load_model_weight_diff(local_state_dict, weight_diff, global_state_dict):
-    """
-    load rule: w_t + clipped(w^{local}_t - w_t)
-    """
-    recons_local_state_dict = {}
-    index_bias = 0
-    for item_index, (k, v) in enumerate(local_state_dict.state_dict().items()):
-        if is_weight_param(k):
-            recons_local_state_dict[k] = weight_diff[index_bias:index_bias+v.numel()].view(v.size()) + global_state_dict[k]
-            index_bias += v.numel()
-        else:
-            recons_local_state_dict[k] = v
-    return recons_local_state_dict
-
-
-def add_noise(local_weight, stddev, device):
-    gaussian_noise = torch.randn(local_weight.size(),
-                            device=device) * self.stddev
-    dp_weight = vectorized_net + gaussian_noise
-    return dp_weight
-
-
-def is_weight_param(key_name):
-    return ("running_mean" not in k and "running_var" not in k and "num_batches_tracked" not in k)
+from fedml_core.robustness.robust_aggregation import RobustAggregator, is_weight_param
 
 
 class FedAvgRobustAggregator(object):
@@ -56,9 +24,7 @@ class FedAvgRobustAggregator(object):
         self.test_loss_avg = 0.0
         self.flag_client_model_uploaded_dict = dict()
 
-        self.defense_type = args.defense_type
-        self.norm_bound = args.norm_bound # for norm diff clipping and weak DP defenses
-        self.stddev = args.stddev # for weak DP defenses
+        self.robust_aggregator = RobustAggregator(args)
 
         for idx in range(self.client_num):
             self.flag_client_model_uploaded_dict[idx] = False
@@ -92,20 +58,14 @@ class FedAvgRobustAggregator(object):
         start_time = time.time()
         model_list = []
         
-        vec_global_weight = vectorize_state_dict(self.model.state_dict())
 
         for idx in range(self.client_num):
             local_sample_number, local_model_params = model_list[i]
             # conduct the defense here:
-            if self.defense_type in ("norm_diff_clipping", "weak_dp"):
-                vec_local_weight = vectorize_state_dict(local_model_params)
-                # clip the norm diff
-                vec_diff = vec_local_weight - vec_global_weight
-                weight_diff_norm = torch.norm(vectorize_diff).item()
-                clipped_weight_diff = vectorize_diff/max(1, weight_diff_norm/self.norm_bound)
-                clipped_local_state_dict = load_model_weight_diff(local_model_params, 
-                                                                  clipped_weight_diff, 
-                                                                  self.model.state_dict())
+            if self.robust_aggregator.defense_type in ("norm_diff_clipping", "weak_dp"):
+                clipped_local_state_dict = self.robust_aggregator.norm_diff_clipping(
+                                                                    local_model_params, 
+                                                                    self.model.state_dict())
             else:
                 raise NotImplementedError("Non-supported Defense type ... ")
 
@@ -122,9 +82,11 @@ class FedAvgRobustAggregator(object):
 
                 local_layer_update = local_model_params[k]
 
-                if self.defense_type == "weak_dp":
+                if self.robust_aggregator.defense_type == "weak_dp":
                     if is_weight_param(k):
-                        local_layer_update = add_noise(local_layer_update, self.stddev, self.device)
+                        local_layer_update = self.robust_aggregator.add_noise(
+                                                    local_layer_update,
+                                                    self.device)
 
                 if i == 0:
                     averaged_params[k] = local_layer_update * w
