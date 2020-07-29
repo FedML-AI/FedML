@@ -1,16 +1,14 @@
 import logging
+
 import torch
 import torch.optim as optim
 
-from fedml_api.distributed.fedavg.message_define import MyMessage
-from fedml_core.distributed.client.client_manager import ClientMananger
-from fedml_core.distributed.communication import Message
 
 class SplitNN_client():
     def __init__(self, args):
         self.comm = args["comm"]
         self.model = args["model"]
-        self.trainloader = args["trainloader"] 
+        self.trainloader = args["trainloader"]
         self.testloader = args["testloader"]
         self.rank = args["rank"]
         self.MAX_RANK = args["max_rank"]
@@ -31,7 +29,7 @@ class SplitNN_client():
                                                                   self.node_right))
             self.comm.send("semaphore", dest=self.node_right)
 
-        while(True):
+        while (True):
             signal = self.comm.recv(source=self.node_left)
 
             if signal == "semaphore":
@@ -72,4 +70,3 @@ class SplitNN_client():
                 self.comm.send("done", dest=self.SERVER_RANK)
                 break
             self.comm.send("done", dest=self.SERVER_RANK)
- 
