@@ -4,7 +4,7 @@ http://fedml.ai
 ## 2. Environmental Setups
 
 ### 2.1 Hardware Requirements
-![multi-gpu-server](./../docs/images/multi-gpu-topo1.png)
+![multi-gpu-server](./../../../docs/image/multi-gpu-topo1.png)
 
 The computing architecture is comprised of \
 N compute nodes, each compute node is a multi-GPU server node (e.g., 8 x NVIDIA V100). \
