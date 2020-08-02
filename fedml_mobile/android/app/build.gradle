@@ -20,6 +20,7 @@ android {
     compileSdkVersion 27
 
     defaultConfig {
+        applicationId "ai.fedml.android"
         minSdkVersion 27
         targetSdkVersion 27
         versionCode 1
@@ -111,6 +112,9 @@ android {
             sourceCompatibility JavaVersion.VERSION_1_8
             targetCompatibility JavaVersion.VERSION_1_8
         }
+
+        compile fileTree(include: ['*.jar'], dir: 'libs')
+        compile project(':fedml-iot-sdk')
     }
 
     useLibrary 'org.apache.http.legacy'
