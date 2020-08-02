@@ -10,5 +10,8 @@ Note that this project is developed based on the [DL4JIrisClassifierDemo](https:
 
 The project is built using Android Studio, so the simplest way to run it is importing it to Android Studio and re-building it.
 
+Android SDK = 27
+Android Studio = 4.0.1
+
 ## Development Status
 Stay tuned. We will release the tested code in 1-2 weeks. 
