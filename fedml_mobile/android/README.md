@@ -12,6 +12,3 @@ The project is built using Android Studio, so the simplest way to run it is impo
 
 Android SDK = 27
 Android Studio = 4.0.1
-
-## Development Status
-Stay tuned. We will release the tested code in 1-2 weeks. 
