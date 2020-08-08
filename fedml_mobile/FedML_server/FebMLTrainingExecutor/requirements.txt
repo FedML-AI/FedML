@@ -11,3 +11,4 @@ flask==1.1.2
 gunicorn==20.0.4
 gevent==20.6.2
 paho-mqtt==1.5.0
+Celery==4.4.7

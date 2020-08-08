@@ -3,8 +3,6 @@
 import paho.mqtt.client as mqtt
 import time
 
-unacked_sub = []
-
 
 class MqttClient(object):
     def __init__(self, host, port, on_message=None, topic='hello'):
@@ -20,7 +18,7 @@ class MqttClient(object):
             self._client.on_message = self._on_message
         self._client.on_subscribe = self._on_subscribe
         # connect broker,connect() or connect_async()
-        self._client.connect_async(host, port, 60)
+        self._client.connect(host, port, 60)
         self._client.loop_start()
         # self._client.loop_forever()
 
@@ -38,8 +36,6 @@ class MqttClient(object):
         result, mid = client.subscribe([("temperature", 0), ("humidity", 0)])
         self._unacked_sub.append(mid)
         print(result)
-        while len(unacked_sub) != 0:
-            time.sleep(1)
         print("Finish subscribe!")
 
     @staticmethod
@@ -50,10 +46,9 @@ class MqttClient(object):
     def _on_disconnect(client, userdata, rc):
         print("Disconnection returned result:" + str(rc))
 
-    @staticmethod
-    def _on_subscribe(client, userdata, mid, granted_qos):
+    def _on_subscribe(self, client, userdata, mid, granted_qos):
         print("onSubscribe :" + str(mid))
-        unacked_sub.remove(mid)
+        self._unacked_sub.remove(mid)
 
     def send(self, topic, msg):
         print("send(%s, %s)" % (topic, msg))
@@ -62,7 +57,7 @@ class MqttClient(object):
 
 if __name__ == '__main__':
     client = MqttClient("127.0.0.1", 1883)
-    time.sleep(5)
+    time.sleep(10)
     client.send("hello", "Hello world!")
     client.send("temperature", "24.0")
     client.send("humidity", "65%")
