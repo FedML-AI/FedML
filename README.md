@@ -1,3 +1,11 @@
+<p align="center">
+
+  <a href="https://github.com/FedML-AI/FedML/projects/1"><img alt="Roadmap" src="https://img.shields.io/badge/roadmap-FedML-informational.svg?style=flat-square"></a>
+  <a href="#"><img alt="Python3" src="https://img.shields.io/badge/Python-3-brightgreen.svg?style=flat-square"></a>
+  <a href="#"><img alt="PyTorch" src="https://img.shields.io/badge/PyTorch-%3E1.0-orange"></a>
+
+</p>
+
 Notice: *FedML is evolving. We will update more features in next 1-2 months. Please email us if there is misinformation.*
 
 # FedML: A Research Library and Benchmark for Federated Machine Learning

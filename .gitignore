@@ -1,3 +1,4 @@
+.DS_Store
 .idea
 .idea/*
 
@@ -33,3 +34,10 @@ data/cifar10/*-python
 data/cifar100/*-python
 data/cinic10/
 
+
+# android
+.gradle
+fedml_mobile/android/.idea
+fedml_mobile/android/app/build
+fedml_mobile/android/fedml-iot-sdk/build
+fedml_mobile/android/build
