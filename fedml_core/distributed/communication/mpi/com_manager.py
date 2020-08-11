@@ -3,13 +3,13 @@ import queue
 import time
 from typing import List
 
-from fedml_core.distributed.communication.mpi_message import MPIMessage
-from fedml_core.distributed.communication.mpi_receive_thread import MPIReceiveThread
-from fedml_core.distributed.communication.mpi_send_thread import MPISendThread
+from fedml_core.distributed.communication.mpi.mpi_message import MPIMessage
+from fedml_core.distributed.communication.mpi.mpi_receive_thread import MPIReceiveThread
+from fedml_core.distributed.communication.mpi.mpi_send_thread import MPISendThread
 from fedml_core.distributed.communication.observer import Observer
 
 
-class CommunicationManager(object):
+class MpiCommunicationManager(object):
     def __init__(self, comm, rank, size, node_type="client"):
         self.comm = comm
         self.rank = rank

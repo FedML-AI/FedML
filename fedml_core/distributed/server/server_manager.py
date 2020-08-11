@@ -4,8 +4,8 @@ from abc import abstractmethod
 
 from mpi4py import MPI
 
-from fedml_core.distributed.communication import CommunicationManager
-from fedml_core.distributed.communication.mpi_message import MPIMessage
+from fedml_core.distributed.communication import MpiCommunicationManager
+from fedml_core.distributed.communication.mpi.mpi_message import MPIMessage
 from fedml_core.distributed.communication.observer import Observer
 
 
@@ -16,7 +16,7 @@ class ServerManager(Observer):
         self.size = size
         self.rank = rank
 
-        self.com_manager = CommunicationManager(comm, rank, size, node_type="server")
+        self.com_manager = MpiCommunicationManager(comm, rank, size, node_type="server")
         self.com_manager.add_observer(self)
         self.message_handler_dict = dict()
 
