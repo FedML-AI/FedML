@@ -46,7 +46,7 @@ android {
 }
 
 dependencies {
-    compile fileTree(include: ['*.jar'], dir: 'libs')
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
     compile files('libs/okio-1.13.0.jar')
     compile files('libs/okhttp-3.9.1.jar')
     compile files('libs/protobuf-java-2.5.0.jar')
