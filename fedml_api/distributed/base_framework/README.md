@@ -1,3 +1,7 @@
+## Installation
+http://doc.fedml.ai/#/installation-distributed-computing
+
+## Algorithm Description
 This is a base framework used to develop new algorithm.
 You can copy this directory and modify directly. The basic message flow is workable. 
 What you need to do is designing the message flow and defining the payload of each message.
