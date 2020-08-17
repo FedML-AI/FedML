@@ -40,6 +40,11 @@ ArgoVerse v1.1
 - Motion Forecasting: [Training](https://s3.amazonaws.com/argoai-argoverse/forecasting_train_v1.1.tar.gz), [Validation](https://s3.amazonaws.com/argoai-argoverse/forecasting_val_v1.1.tar.gz), [Test](https://s3.amazonaws.com/argoai-argoverse/forecasting_test_v1.1.tar.gz)
 - HD Map: https://s3.amazonaws.com/argoai-argoverse/hd_maps.tar.gz
 
+[nuScenes](https://www.nuscenes.org/)
+-
+- Full sensor suite for multimodality object detection, tracking, and prediction
+- HD Map
+
 Uber ATG4D
 -
 Coming soon...
