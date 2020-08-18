@@ -6,5 +6,5 @@ http://doc.fedml.ai/#/installation-distributed-computing
 #### CIFAR10
 train on IID dataset 
 ```
-sh run_fedavg_distributed_pytorch.sh
+sh run_decentralized_demo_distributed_pytorch.sh
 ```
