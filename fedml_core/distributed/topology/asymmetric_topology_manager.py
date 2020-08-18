@@ -8,7 +8,15 @@ from fedml_core.distributed.topology.base_topology_manager import BaseTopologyMa
 
 class AsymmetricTopologyManager(BaseTopologyManager):
 
-    def __init__(self, n, undirected_neighbor_num=5, out_directed_neighbor=5):
+    """
+    The topology definition is determined by this initialization method.
+
+    Arguments:
+        n (int): number of nodes in the topology.
+        undirected_neighbor_num (int): number of undirected (symmetric) neighbors for each node
+        out_directed_neighbor (int): number of out (asymmetric) neighbors for each node
+    """
+    def __init__(self, n, undirected_neighbor_num=3, out_directed_neighbor=3):
         self.n = n
         self.undirected_neighbor_num = undirected_neighbor_num
         self.out_directed_neighbor = out_directed_neighbor
@@ -85,6 +93,11 @@ if __name__ == "__main__":
     tpmgr = AsymmetricTopologyManager(8, 4, 2)
     tpmgr.generate_topology()
     print(tpmgr.topology)
-    print("******************")
-    print(tpmgr.get_out_neighbor_list(1))
-    print(tpmgr.get_in_neighbor_list(1))
+
+    # get the OUT neighbor list for node 1
+    out_neighbor_list = tpmgr.get_out_neighbor_list(1)
+    print(out_neighbor_list)
+
+    # get the IN neighbor list for node 1
+    in_neighbor_list = tpmgr.get_in_neighbor_list(1)
+    print(in_neighbor_list)

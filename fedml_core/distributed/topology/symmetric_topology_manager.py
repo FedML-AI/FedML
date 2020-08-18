@@ -5,7 +5,13 @@ from fedml_core.distributed.topology.base_topology_manager import BaseTopologyMa
 
 
 class SymmetricTopologyManager(BaseTopologyManager):
+    """
+    The topology definition is determined by this initialization method.
 
+    Arguments:
+        n (int): number of nodes in the topology.
+        neighbor_num (int): number of neighbors for each node
+    """
     def __init__(self, n, neighbor_num=2):
         self.n = n
         self.neighbor_num = neighbor_num
@@ -56,6 +62,10 @@ class SymmetricTopologyManager(BaseTopologyManager):
 
 
 if __name__ == "__main__":
-    tpmgr = SymmetricTopologyManager(6, 4)
+    tpmgr = SymmetricTopologyManager(6, 2)
     tpmgr.generate_topology()
     print(tpmgr.topology)
+
+    # get the out neighbor list for node 1
+    out_neighbor_list = tpmgr.get_out_neighbor_list(1)
+    print(out_neighbor_list)
