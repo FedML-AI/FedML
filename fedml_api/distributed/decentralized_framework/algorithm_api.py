@@ -1,5 +1,3 @@
-import logging
-
 from mpi4py import MPI
 
 from fedml_api.distributed.decentralized_framework.decentralized_worker import DecentralizedWorker
