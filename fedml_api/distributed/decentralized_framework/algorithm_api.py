@@ -1,9 +1,10 @@
+import logging
+
 from mpi4py import MPI
 
-from fedml_api.distributed.base_framework.central_manager import BaseCentralManager
-from fedml_api.distributed.base_framework.central_worker import BaseCentralWorker
-from fedml_api.distributed.base_framework.client_manager import BaseClientManager
-from fedml_api.distributed.base_framework.client_worker import BaseClientWorker
+from fedml_api.distributed.decentralized_framework.decentralized_worker import DecentralizedWorker
+from fedml_api.distributed.decentralized_framework.decentralized_worker_manager import DecentralizedWorkerManager
+from fedml_core.distributed.topology.symmetric_topology_manager import SymmetricTopologyManager
 
 
 def FedML_init():
@@ -13,27 +14,15 @@ def FedML_init():
     return comm, process_id, worker_number
 
 
-def FedML_Base_distributed(process_id, worker_number, comm, args):
-    if process_id == 0:
-        init_central_worker(args, comm, process_id, worker_number)
-    else:
-        init_client_worker(args, comm, process_id, worker_number)
+def FedML_Decentralized_Demo_distributed(process_id, worker_number, comm, args):
+    # initialize the topology (ring)
+    tpmgr = SymmetricTopologyManager(worker_number, 2)
+    tpmgr.generate_topology()
+    # logging.info(tpmgr.topology)
 
+    # initialize the decentralized trainer (worker)
+    worker_index = process_id
+    trainer = DecentralizedWorker(worker_index, tpmgr)
 
-def init_central_worker(args, comm, process_id, size):
-    # aggregator
-    client_num = size - 1
-    aggregator = BaseCentralWorker(client_num, args)
-
-    # start the distributed training
-    server_manager = BaseCentralManager(args, comm, process_id, size, aggregator)
-    server_manager.run()
-
-
-def init_client_worker(args, comm, process_id, size):
-    # trainer
-    client_ID = process_id - 1
-    trainer = BaseClientWorker(client_ID)
-
-    client_manager = BaseClientManager(args, comm, process_id, size, trainer)
+    client_manager = DecentralizedWorkerManager(args, comm, process_id, worker_number, trainer, tpmgr)
     client_manager.run()

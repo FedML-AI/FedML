@@ -12,6 +12,7 @@ class SymmetricTopologyManager(BaseTopologyManager):
         n (int): number of nodes in the topology.
         neighbor_num (int): number of neighbors for each node
     """
+
     def __init__(self, n, neighbor_num=2):
         self.n = n
         self.neighbor_num = neighbor_num
@@ -50,15 +51,31 @@ class SymmetricTopologyManager(BaseTopologyManager):
 
         self.topology = topology_symmetric
 
-    def get_in_neighbor_list(self, node_index):
+    def get_in_neighbor_weights(self, node_index):
         if node_index >= self.n:
             return []
         return self.topology[node_index]
 
-    def get_out_neighbor_list(self, node_index):
+    def get_out_neighbor_weights(self, node_index):
         if node_index >= self.n:
             return []
         return self.topology[node_index]
+
+    def get_in_neighbor_idx_list(self, node_index):
+        neighbor_in_idx_list = []
+        neighbor_weights = self.get_in_neighbor_weights(node_index)
+        for idx, neighbor_w in enumerate(neighbor_weights):
+            if neighbor_w > 0 and node_index != idx:
+                neighbor_in_idx_list.append(idx)
+        return neighbor_in_idx_list
+
+    def get_out_neighbor_idx_list(self, node_index):
+        neighbor_out_idx_list = []
+        neighbor_weights = self.get_out_neighbor_weights(node_index)
+        for idx, neighbor_w in enumerate(neighbor_weights):
+            if neighbor_w > 0 and node_index != idx:
+                neighbor_out_idx_list.append(idx)
+        return neighbor_out_idx_list
 
 
 if __name__ == "__main__":
@@ -66,6 +83,18 @@ if __name__ == "__main__":
     tpmgr.generate_topology()
     print(tpmgr.topology)
 
-    # get the out neighbor list for node 1
-    out_neighbor_list = tpmgr.get_out_neighbor_list(1)
-    print(out_neighbor_list)
+    # get the OUT neighbor weights for node 1
+    out_neighbor_weights = tpmgr.get_out_neighbor_weights(1)
+    print(out_neighbor_weights)
+
+    # get the OUT neighbor index list for node 1
+    out_neighbor_idx_list = tpmgr.get_out_neighbor_idx_list(1)
+    print(out_neighbor_idx_list)
+
+    # get the IN neighbor weights for node 1
+    in_neighbor_weights = tpmgr.get_in_neighbor_weights(1)
+    print(in_neighbor_weights)
+
+    # get the IN neighbor index list for node 1
+    in_neighbor_idx_list = tpmgr.get_in_neighbor_idx_list(1)
+    print(in_neighbor_idx_list)

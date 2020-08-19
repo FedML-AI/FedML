@@ -8,11 +8,9 @@ import numpy as np
 import psutil
 import setproctitle
 import torch
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
-
 # add the FedML root directory to the python path
-from fedml_api.distributed.base_framework.algorithm_api import FedML_Base_distributed
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
+from fedml_api.distributed.decentralized_framework.algorithm_api import FedML_Decentralized_Demo_distributed
 from fedml_api.distributed.fedavg.FedAvgAPI import FedML_init
 
 
@@ -61,4 +59,4 @@ if __name__ == "__main__":
     np.random.seed(seed)
     torch.manual_seed(worker_number)
 
-    FedML_Base_distributed(process_id, worker_number, comm, args)
+    FedML_Decentralized_Demo_distributed(process_id, worker_number, comm, args)
