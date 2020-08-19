@@ -104,22 +104,23 @@ class AsymmetricTopologyManager(BaseTopologyManager):
 
 
 if __name__ == "__main__":
+    # generate a asymmetric topology
     tpmgr = AsymmetricTopologyManager(8, 4, 2)
     tpmgr.generate_topology()
-    print(tpmgr.topology)
+    print("tpmgr.topology = " + str(tpmgr.topology))
 
     # get the OUT neighbor weights for node 1
     out_neighbor_weights = tpmgr.get_out_neighbor_weights(1)
-    print(out_neighbor_weights)
+    print("out_neighbor_weights = " + str(out_neighbor_weights))
 
     # get the OUT neighbor index list for node 1
     out_neighbor_idx_list = tpmgr.get_out_neighbor_idx_list(1)
-    print(out_neighbor_idx_list)
+    print("out_neighbor_idx_list = " + str(out_neighbor_idx_list))
 
     # get the IN neighbor weights for node 1
     in_neighbor_weights = tpmgr.get_in_neighbor_weights(1)
-    print(in_neighbor_weights)
+    print("in_neighbor_weights = " + str(in_neighbor_weights))
 
     # get the IN neighbor index list for node 1
     in_neighbor_idx_list = tpmgr.get_in_neighbor_idx_list(1)
-    print(in_neighbor_idx_list)
+    print("in_neighbor_idx_list = " + str(in_neighbor_idx_list))
