@@ -1,5 +1,3 @@
-from abc import ABC
-
 import networkx as nx
 import numpy as np
 
@@ -7,7 +5,6 @@ from fedml_core.distributed.topology.base_topology_manager import BaseTopologyMa
 
 
 class AsymmetricTopologyManager(BaseTopologyManager):
-
     """
     The topology definition is determined by this initialization method.
 
@@ -16,6 +13,7 @@ class AsymmetricTopologyManager(BaseTopologyManager):
         undirected_neighbor_num (int): number of undirected (symmetric) neighbors for each node
         out_directed_neighbor (int): number of out (asymmetric) neighbors for each node
     """
+
     def __init__(self, n, undirected_neighbor_num=3, out_directed_neighbor=3):
         self.n = n
         self.undirected_neighbor_num = undirected_neighbor_num
@@ -75,18 +73,34 @@ class AsymmetricTopologyManager(BaseTopologyManager):
         # print(topology_ring)
         self.topology = topology_ring
 
-    def get_in_neighbor_list(self, node_index):
+    def get_in_neighbor_weights(self, node_index):
         if node_index >= self.n:
             return []
-        in_neighbor_list = []
+        in_neighbor_weights = []
         for row_idx in range(len(self.topology)):
-            in_neighbor_list.append(self.topology[row_idx][node_index])
-        return in_neighbor_list
+            in_neighbor_weights.append(self.topology[row_idx][node_index])
+        return in_neighbor_weights
 
-    def get_out_neighbor_list(self, node_index):
+    def get_out_neighbor_weights(self, node_index):
         if node_index >= self.n:
             return []
         return self.topology[node_index]
+
+    def get_in_neighbor_idx_list(self, node_index):
+        neighbor_in_idx_list = []
+        neighbor_weights = self.get_in_neighbor_weights(node_index)
+        for idx, neighbor_w in enumerate(neighbor_weights):
+            if neighbor_w > 0 and node_index != idx:
+                neighbor_in_idx_list.append(idx)
+        return neighbor_in_idx_list
+
+    def get_out_neighbor_idx_list(self, node_index):
+        neighbor_out_idx_list = []
+        neighbor_weights = self.get_out_neighbor_weights(node_index)
+        for idx, neighbor_w in enumerate(neighbor_weights):
+            if neighbor_w > 0 and node_index != idx:
+                neighbor_out_idx_list.append(idx)
+        return neighbor_out_idx_list
 
 
 if __name__ == "__main__":
@@ -94,10 +108,18 @@ if __name__ == "__main__":
     tpmgr.generate_topology()
     print(tpmgr.topology)
 
-    # get the OUT neighbor list for node 1
-    out_neighbor_list = tpmgr.get_out_neighbor_list(1)
-    print(out_neighbor_list)
+    # get the OUT neighbor weights for node 1
+    out_neighbor_weights = tpmgr.get_out_neighbor_weights(1)
+    print(out_neighbor_weights)
 
-    # get the IN neighbor list for node 1
-    in_neighbor_list = tpmgr.get_in_neighbor_list(1)
-    print(in_neighbor_list)
+    # get the OUT neighbor index list for node 1
+    out_neighbor_idx_list = tpmgr.get_out_neighbor_idx_list(1)
+    print(out_neighbor_idx_list)
+
+    # get the IN neighbor weights for node 1
+    in_neighbor_weights = tpmgr.get_in_neighbor_weights(1)
+    print(in_neighbor_weights)
+
+    # get the IN neighbor index list for node 1
+    in_neighbor_idx_list = tpmgr.get_in_neighbor_idx_list(1)
+    print(in_neighbor_idx_list)

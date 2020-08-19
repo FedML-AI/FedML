@@ -8,9 +8,17 @@ class BaseTopologyManager(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_in_neighbor_list(self, node_index):
+    def get_in_neighbor_idx_list(self, node_index):
         pass
 
     @abc.abstractmethod
-    def get_out_neighbor_list(self, node_index):
+    def get_out_neighbor_idx_list(self, node_index):
+        pass
+
+    @abc.abstractmethod
+    def get_in_neighbor_weights(self, node_index):
+        pass
+
+    @abc.abstractmethod
+    def get_out_neighbor_weights(self, node_index):
         pass

@@ -8,5 +8,5 @@ class BaseClientWorker(object):
         print(self.updated_information)
 
     def train(self):
-        # complete your own algorithm operation here, as am example, we reture the client_index
+        # complete your own algorithm operation here, as am example, we return the client_index
         return self.client_index
