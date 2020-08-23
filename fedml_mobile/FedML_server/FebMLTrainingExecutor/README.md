@@ -91,5 +91,5 @@ sh svr_ctrl.sh status
 	Title: Interaction process with client
 	
 	participant Client
-    participant 控制器
+    participant Controller
 ```
