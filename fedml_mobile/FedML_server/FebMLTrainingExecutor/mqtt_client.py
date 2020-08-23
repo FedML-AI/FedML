@@ -2,6 +2,7 @@
 
 import paho.mqtt.client as mqtt
 import time
+import uuid
 import time
 from typing import List
 
@@ -9,12 +10,16 @@ from fedml_core.distributed.communication import CommunicationManager, Observer
 
 
 class MqttClient(CommunicationManager):
-    def __init__(self, host, port, topic='hello'):
+    def __init__(self, host, port, topic='hello', client_id=None):
         self._unacked_sub = list()
         self._observers: List[Observer] = []
         self._topic = topic
+        if client_id is None:
+            self._client_id = mqtt.base62(uuid.uuid4().int, padding=22)
+        else:
+            self._client_id = client_id
         # Construct a Client
-        self._client = mqtt.Client()
+        self._client = mqtt.Client(client_id=self._client_id)
         self._client.on_connect = self._on_connect
         self._client.on_disconnect = self._on_disconnect
         self._client.on_message = self._on_message
@@ -27,6 +32,14 @@ class MqttClient(CommunicationManager):
     def __del__(self):
         self._client.loop_stop()
         self._client.disconnect()
+
+    @property
+    def client_id(self):
+        return self._client_id
+
+    @property
+    def topic(self):
+        return self._topic
 
     def _on_connect(self, client, userdata, flags, rc):
         print("Connection returned with result code:" + str(rc))
@@ -41,7 +54,7 @@ class MqttClient(CommunicationManager):
         print("Finish subscribe!")
 
     def _on_message(self, client, userdata, msg):
-        print("Received message, topic:" + msg.topic + "payload:" + str(msg.payload))
+        print("Received message, topic:" + msg.topic + " payload:" + str(msg.payload))
         self._notify(msg.topic, str(msg.payload))
 
     @staticmethod
@@ -76,6 +89,7 @@ if __name__ == '__main__':
     client = MqttClient("127.0.0.1", 1883)
     client.add_observer(Obs())
     time.sleep(3)
+    print('client ID:%s' % client.client_id)
     client.send("hello", "Hello world!")
     client.send("temperature", "24.0")
     client.send("humidity", "65%")
