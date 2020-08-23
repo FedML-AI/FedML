@@ -85,3 +85,11 @@ sh svr_ctrl.sh restart
 # query the server status
 sh svr_ctrl.sh status
 ```
+# 4 Interaction process with client
+
+```mermaid
+	Title: Interaction process with client
+	
+	participant Client
+    participant 控制器
+```
