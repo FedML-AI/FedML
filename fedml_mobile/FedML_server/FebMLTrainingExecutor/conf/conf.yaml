@@ -1,5 +1,7 @@
 # out put Dir
 outDirPath: ../output
+modelDirPath: ../models
+resourceDirPath: ../resource
 mqttBroker:
   host: 127.0.0.1
   port: 1883

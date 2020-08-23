@@ -47,17 +47,26 @@ android {
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    compile files('libs/okio-1.13.0.jar')
-    compile files('libs/okhttp-3.9.1.jar')
-    compile files('libs/protobuf-java-2.5.0.jar')
-    compile files('libs/retrofit-2.3.0.jar')
-    compile files('libs/volley-1.0.0-sources.jar')
-    compile files('libs/mirror-1.6.1.jar')
+    implementation group: 'com.squareup.retrofit2', name: 'retrofit', version: retrofit_version
+    implementation group: 'com.squareup.okhttp3', name: 'okhttp', version: okhttp_version
+    implementation group: 'com.squareup.okio', name: 'okio', version: okio_version
+    implementation group: 'com.google.protobuf', name: 'protobuf-java', version: protobuf_version
+    implementation group: 'org.fusesource.hawtdispatch', name: 'hawtdispatch', version: hawtdispatch_version
+    implementation group: 'org.fusesource.hawtdispatch', name: 'hawtdispatch-transport', version: hawtdispatch_version
+    implementation group: 'org.fusesource.hawtbuf', name: 'hawtbuf', version: hawtbuf_version
+    implementation group: 'net.vidageek', name: 'mirror', version: mirror_version
+    implementation group: 'org.fusesource.mqtt-client', name: 'mqtt-client', version: mqtt_client_version
+//    compile files('libs/okio-1.13.0.jar')
+//    compile files('libs/okhttp-3.9.1.jar')
+//    compile files('libs/protobuf-java-2.5.0.jar')
+//    compile files('libs/retrofit-2.3.0.jar')
+//    compile files('libs/volley-1.0.0-sources.jar')
+//    compile files('libs/mirror-1.6.1.jar')
     //mqtt
-    compile files('libs/mqtt-client-1.14.jar')
-    compile files('libs/hawtbuf-1.11.jar')
-    compile files('libs/hawtdispatch-1.22.jar')
-    compile files('libs/hawtdispatch-transport-1.22.jar')
+//    compile files('libs/mqtt-client-1.14.jar')
+//    compile files('libs/hawtbuf-1.11.jar')
+//    compile files('libs/hawtdispatch-1.22.jar')
+//    compile files('libs/hawtdispatch-transport-1.22.jar')
 }
 
 repositories {
