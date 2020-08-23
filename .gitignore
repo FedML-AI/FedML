@@ -34,6 +34,9 @@ data/cifar10/*-python
 data/cifar100/*-python
 data/cinic10/
 
+data/MNIST/train
+data/MNIST/test
+
 
 # android
 .gradle
