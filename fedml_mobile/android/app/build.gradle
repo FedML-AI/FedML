@@ -20,6 +20,7 @@ android {
     compileSdkVersion 27
 
     defaultConfig {
+        applicationId "ai.fedml.android"
         minSdkVersion 27
         targetSdkVersion 27
         versionCode 1
@@ -96,9 +97,8 @@ android {
         implementation group: 'org.bytedeco', name: 'leptonica', version: '1.78.0-1.5', classifier: "android-x86"
         implementation group: 'org.bytedeco', name: 'leptonica', version: '1.78.0-1.5', classifier: "android-x86_64"
 
-        implementation 'com.google.code.gson:gson:2.8.2'
-        annotationProcessor 'org.projectlombok:lombok:1.18.4'
-        implementation 'org.projectlombok:lombok:1.18.4'
+        implementation "com.google.code.gson:gson:$gson_version"
+        annotationProcessor "org.projectlombok:lombok:$lombok_version"
 
         implementation 'org.nanohttpd:nanohttpd:2.2.0'
 
@@ -111,6 +111,9 @@ android {
             sourceCompatibility JavaVersion.VERSION_1_8
             targetCompatibility JavaVersion.VERSION_1_8
         }
+
+        compile fileTree(include: ['*.jar'], dir: 'libs')
+        compile project(':fedml-iot-sdk')
     }
 
     useLibrary 'org.apache.http.legacy'

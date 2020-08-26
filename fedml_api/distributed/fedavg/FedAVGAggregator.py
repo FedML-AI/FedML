@@ -27,7 +27,7 @@ class FedAVGAggregator(object):
 
     def init_model(self, model):
         model_params = model.state_dict()
-        logging.info(model)
+        # logging.info(model)
         return model, model_params
 
     def get_global_model_params(self):
