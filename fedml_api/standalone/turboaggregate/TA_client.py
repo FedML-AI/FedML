@@ -1,10 +1,9 @@
 import logging
-import numpy as np
 
-import torch
 from torch import nn
 
 from fedml_api.standalone.fedavg.client import Client
+
 
 class TA_Client(Client):
     def __init__(self, local_training_data, local_test_data, local_sample_number, args, device, client_idx):
@@ -20,8 +19,8 @@ class TA_Client(Client):
 
         self.isdrop = False
 
-        #self.buffer_in = np.zeros(dtype='int')
-        #self.buffer_out = np.zeros(dtype='int')
+        # self.buffer_in = np.zeros(dtype='int')
+        # self.buffer_out = np.zeros(dtype='int')
 
     def set_dropout(self, isdrop):
         self.isdrop = isdrop

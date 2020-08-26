@@ -38,7 +38,6 @@ class ClientPushsum(object):
         self.loss_in_each_iteration = []
 
         self.omega = 1
-        # self.omega = 1
 
         # the default weight of the model is z_t, while the x weight is another weight used as temporary value
         self.model_x = model_cache

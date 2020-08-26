@@ -1,5 +1,4 @@
 import logging
-import sys
 import time
 
 from fedml_api.distributed.fednas.message_define import MyMessage

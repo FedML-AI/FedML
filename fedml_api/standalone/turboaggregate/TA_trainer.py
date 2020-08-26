@@ -2,11 +2,12 @@ import copy
 import logging
 
 import torch
+import wandb
 from torch import nn
 
 import numpy as np
 
-from mpc_function import *
+from fedml_api.standalone.turboaggregate.mpc_function import *
 from fedml_api.standalone.turboaggregate.TA_client import TA_Client
 
 class TurboAggregateTrainer(object):
@@ -87,7 +88,7 @@ class TurboAggregateTrainer(object):
         return averaged_params
 
     def TA_topology_vanilla(self):
-        logging.info("################aggregate: %d" % len(w_locals))
+        # logging.info("################aggregate: %d" % len(w_locals))
 
         N = self.args.client_number
         n_users_layer = np.ceil(np.log(N)).astype(int)
