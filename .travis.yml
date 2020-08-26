@@ -1,0 +1,14 @@
+env:
+    - ARCH=x86
+language: python
+sudo: false
+python:
+    - "3.5"
+cache:
+  directories:
+    - "$HOME/.pip-cache/"
+    - "/home/travis/virtualenv/python3.5"
+install: 
+    - "pip3 install pyflakes --cache-dir $HOME/.pip-cache"
+script:
+    - "pyflakes ."
