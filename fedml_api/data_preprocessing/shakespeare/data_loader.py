@@ -131,9 +131,9 @@ def load_partition_data_shakespeare(batch_size):
 def main():
     # test the data loader
     # Hyper Parameters
-    num_epochs = 1
-    batch_size = 20
-    learning_rate = 0.03
+    num_epochs = 100
+    batch_size = 10
+    learning_rate = 0.8
 
     np.random.seed(0)
     torch.manual_seed(10)
@@ -164,24 +164,23 @@ def main():
             loss.backward()
             optimizer.step()
 
-            if (i + 1) % 100 == 0:
-                print('Epoch: [%d/%d], Step: [%d/%d], Loss: %.4f'
-                      % (epoch + 1, num_epochs, i + 1, len(train_data_global), loss.item()))
+            # if (i + 1) % 100 == 0:
+            #     print('Epoch: [%d/%d], Step: [%d/%d], Loss: %.4f'
+            #           % (epoch + 1, num_epochs, i + 1, len(train_data_global), loss.item()))
 
-    # Test the Model
-    correct = 0
-    total = 0
-    for x, labels in test_data_global:
-        x = x.to(device)
-        labels = labels.to(device)
-        outputs = model(x)
-        _, predicted = torch.max(outputs.data, -1)
-        total += labels.size(0)
-        correct += (predicted == labels).sum()
-
-    # 86%
-    print('Accuracy of the model: %d %%' % (100 * correct // total))
-
+        # Test the Model
+        # if epoch % 10 == 0:
+        correct = 0
+        total = 0
+        for x, labels in test_data_global:
+            x = x.to(device)
+            labels = labels.to(device)
+            outputs = model(x)
+            _, predicted = torch.max(outputs.data, -1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum()
+            # 52% in the last round
+            print('Accuracy of the model: %d %%' % (100 * correct // total))
 
 if __name__ == '__main__':
     main()
