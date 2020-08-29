@@ -17,7 +17,7 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 27
+    compileSdkVersion 30
 
     defaultConfig {
         applicationId "ai.fedml.android"
@@ -117,5 +117,10 @@ android {
     }
 
     useLibrary 'org.apache.http.legacy'
+    buildToolsVersion '30.0.1'
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_7
+        targetCompatibility JavaVersion.VERSION_1_7
+    }
 }
 
