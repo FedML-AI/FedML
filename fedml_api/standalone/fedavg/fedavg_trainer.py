@@ -11,28 +11,27 @@ class FedAvgTrainer(object):
     def __init__(self, dataset, model, device, args):
         self.device = device
         self.args = args
-
         [train_data_num, test_data_num, train_data_global, test_data_global,
-         data_local_num_dict, train_data_local_dict, test_data_local_dict, output_dim] = dataset
+         train_data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num] = dataset
         self.train_global = train_data_global
         self.test_global = test_data_global
-        self.train_data_num = train_data_num
-        self.test_data_num = test_data_num
+        self.train_data_num_in_total = train_data_num
+        self.test_data_num_in_total = test_data_num
 
         self.model_global = model
         self.model_global.train()
 
         self.client_list = []
-        self.data_local_num_dict = data_local_num_dict
+        self.train_data_local_num_dict = train_data_local_num_dict
         self.train_data_local_dict = train_data_local_dict
         self.test_data_local_dict = test_data_local_dict
-        self.setup_clients(data_local_num_dict, train_data_local_dict, test_data_local_dict)
+        self.setup_clients(train_data_local_num_dict, train_data_local_dict, test_data_local_dict)
 
-    def setup_clients(self, data_local_num_dict, train_data_local_dict, test_data_local_dict):
+    def setup_clients(self, train_data_local_num_dict, train_data_local_dict, test_data_local_dict):
         logging.info("############setup_clients (START)#############")
         for client_idx in range(self.args.client_num_per_round):
             c = Client(client_idx, train_data_local_dict[client_idx], test_data_local_dict[client_idx],
-                       data_local_num_dict[client_idx], self.args, self.device)
+                       train_data_local_num_dict[client_idx], self.args, self.device)
             self.client_list.append(c)
         logging.info("############setup_clients (END)#############")
 
@@ -62,7 +61,7 @@ class FedAvgTrainer(object):
                 client_idx = client_indexes[idx]
                 client.update_local_dataset(client_idx, self.train_data_local_dict[client_idx],
                                             self.test_data_local_dict[client_idx],
-                                            self.data_local_num_dict[client_idx])
+                                            self.train_data_local_num_dict[client_idx])
 
                 # train on new dataset
                 w, loss = client.train(net=copy.deepcopy(self.model_global).to(self.device))
@@ -81,14 +80,20 @@ class FedAvgTrainer(object):
             loss_avg = sum(loss_locals) / len(loss_locals)
             logging.info('Round {:3d}, Average loss {:.3f}'.format(round_idx, loss_avg))
 
-            self.local_test_on_all_clients(self.model_global, round_idx)
+            if round_idx % self.args.frequency_of_the_test == 0 or round_idx == self.args.comm_round - 1:
+                self.local_test_on_all_clients(self.model_global, round_idx)
 
     def aggregate(self, w_locals):
-        (num0, averaged_params) = w_locals[0]
+        training_num = 0
+        for idx in range(len(w_locals)):
+            (sample_num, averaged_params) = w_locals[idx]
+            training_num += sample_num
+
+        (sample_num, averaged_params) = w_locals[0]
         for k in averaged_params.keys():
             for i in range(0, len(w_locals)):
                 local_sample_number, local_model_params = w_locals[i]
-                w = local_sample_number / self.train_data_num
+                w = local_sample_number / training_num
                 if i == 0:
                     averaged_params[k] = local_model_params[k] * w
                 else:
@@ -96,6 +101,7 @@ class FedAvgTrainer(object):
         return averaged_params
 
     def local_test_on_all_clients(self, model_global, round_idx):
+        logging.info("################local_test_on_all_clients : {}".format(round_idx))
         train_num_samples = []
         train_tot_corrects = []
         train_losses = []
@@ -107,7 +113,7 @@ class FedAvgTrainer(object):
         for client_idx in range(self.args.client_num_in_total):
             client.update_local_dataset(0, self.train_data_local_dict[client_idx],
                                         self.test_data_local_dict[client_idx],
-                                        self.data_local_num_dict[client_idx])
+                                        self.train_data_local_num_dict[client_idx])
             # train data
             train_tot_correct, train_num_sample, train_loss = client.local_test(model_global, False)
             train_tot_corrects.append(copy.deepcopy(train_tot_correct))

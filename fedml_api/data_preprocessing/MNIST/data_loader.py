@@ -121,7 +121,7 @@ def main():
     # Hyper Parameters
     input_size = 784
     num_classes = 10
-    num_epochs = 10
+    num_epochs = 50
     batch_size = 10
     learning_rate = 0.03
 
@@ -154,23 +154,22 @@ def main():
             loss.backward()
             optimizer.step()
 
-            if (i + 1) % 100 == 0:
-                print('Epoch: [%d/%d], Step: [%d/%d], Loss: %.4f'
-                      % (epoch + 1, num_epochs, i + 1, len(train_data_global), loss.item()))
+            # if (i + 1) % 100 == 0:
+            #     print('Epoch: [%d/%d], Step: [%d/%d], Loss: %.4f'
+            #           % (epoch + 1, num_epochs, i + 1, len(train_data_global), loss.item()))
 
-    # Test the Model
-    correct = 0
-    total = 0
-    for images, labels in test_data_global:
-        images = images.to(device)
-        labels = labels.to(device)
-        outputs = model(images)
-        _, predicted = torch.max(outputs.data, 1)
-        total += labels.size(0)
-        correct += (predicted == labels).sum()
-
-    # 86%
-    print('Accuracy of the model on the 7371 test images: %d %%' % (100 * correct // total))
+        # Test the Model
+        correct = 0
+        total = 0
+        for x, labels in test_data_global:
+            x = x.to(device)
+            labels = labels.to(device)
+            outputs = model(x)
+            _, predicted = torch.max(outputs.data, -1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum()
+        # 52% in the last round
+        print('Accuracy of the model: %d %%' % (100 * correct // total))
 
 
 if __name__ == '__main__':
