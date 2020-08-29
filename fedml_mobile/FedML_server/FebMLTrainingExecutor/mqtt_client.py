@@ -86,7 +86,7 @@ if __name__ == '__main__':
             print("receive_message(%s,%s)" % (msg_type, msg_params))
 
 
-    client = MqttClient("127.0.0.1", 1883)
+    client = MqttClient("81.71.1.31", 1883)
     client.add_observer(Obs())
     time.sleep(3)
     print('client ID:%s' % client.client_id)
