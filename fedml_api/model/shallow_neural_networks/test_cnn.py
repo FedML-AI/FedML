@@ -1,9 +1,6 @@
-import torch
-import torch.nn as nn
-
 from ptflops import get_model_complexity_info
 
-from fedml_api.model.shallow_neural_networks.cnn import CNN_OriginalFedAvg, CNN_DropOut
+from fedml_api.model.shallow_neural_networks.cnn import CNN_DropOut
 
 if __name__ == "__main__":
     # net = CNN_OriginalFedAvg()

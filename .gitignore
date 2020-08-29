@@ -29,10 +29,16 @@ cifar-10-batches-py
 *.tar.gz
 *.png
 *.zip
+*.json
 
 data/cifar10/*-python
 data/cifar100/*-python
 data/cinic10/
+
+data/MNIST/train
+data/MNIST/test
+data/shakespeare/train
+data/shakespeare/test
 
 
 # android
