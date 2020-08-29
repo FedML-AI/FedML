@@ -70,7 +70,7 @@ class FedAVGTrainer(object):
 
                 pred = self.model(x)
                 loss = self.criterion(pred, target)
-                _, predicted = torch.max(pred, 1)
+                _, predicted = torch.max(pred, -1)
                 correct = predicted.eq(target).sum()
 
                 test_correct += correct.item()
