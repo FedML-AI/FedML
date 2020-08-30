@@ -69,6 +69,9 @@ def add_args(parser):
     parser.add_argument('--comm_round', type=int, default=10,
                         help='how many round of communications we shoud use')
 
+    parser.add_argument('--frequency_of_the_test', type=int, default=20,
+                        help='the frequency of the algorithms')
+
     parser.add_argument('--gpu', type=int, default=0,
                         help='gpu')
     args = parser.parse_args()
@@ -77,6 +80,7 @@ def add_args(parser):
 
 def load_data(args, dataset_name):
     if dataset_name == "mnist":
+        logging.info("load_data. dataset_name = %s" % dataset_name)
         client_num, train_data_num, test_data_num, train_data_global, test_data_global, \
         train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
         class_num = load_partition_data_mnist(args.batch_size)
@@ -86,13 +90,10 @@ def load_data(args, dataset_name):
         """
         args.client_num_in_total = client_num
     elif dataset_name == "shakespeare":
+        logging.info("load_data. dataset_name = %s" % dataset_name)
         client_num, train_data_num, test_data_num, train_data_global, test_data_global, \
         train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
         class_num = load_partition_data_shakespeare(args.batch_size)
-        """
-        For shallow NN or linear models, 
-        we uniformly sample a fraction of clients each round (as the original FedAvg paper)
-        """
         args.client_num_in_total = client_num
     else:
         if dataset_name == "cifar10":
@@ -118,13 +119,14 @@ def load_data(args, dataset_name):
 
 
 def create_model(args, model_name, output_dim):
+    logging.info("create_model. model_name = %s, output_dim = %s" % (model_name, output_dim))
     model = None
     if model_name == "lr" and args.dataset == "mnist":
         model = LogisticRegression(28 * 28, output_dim)
-        args.client_optimizer = 'sgd'
+        args.client_optimizer = "sgd"
     elif model_name == "rnn" and args.dataset == "shakespeare":
         model = RNN_OriginalFedAvg(28 * 28, output_dim)
-        args.client_optimizer = 'adam'
+        args.client_optimizer = "sgd"
     elif model_name == "resnet56":
         model = resnet56(class_num=output_dim)
     elif model_name == "mobilenet":
