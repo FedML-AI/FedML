@@ -4,18 +4,12 @@ android {
     compileSdkVersion 30
 
     defaultConfig {
-        minSdkVersion 27
-        targetSdkVersion 27
+        minSdkVersion 23
+        targetSdkVersion 30
         versionCode 4
         versionName "1.0.0"
         buildConfigField "int", "SDKVersion", "2"
         consumerProguardFiles 'proguard-rules.pro'
-
-        javaCompileOptions {
-            annotationProcessorOptions {
-                includeCompileClasspath true
-            }
-        }
     }
 
     sourceSets.main {
@@ -44,8 +38,8 @@ android {
         exclude 'META-INF/NOTICE.txt'
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_7
-        targetCompatibility JavaVersion.VERSION_1_7
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
     buildToolsVersion '30.0.1'
 
@@ -57,11 +51,12 @@ android {
 }
 
 dependencies {
-    implementation fileTree(include: ['*.jar'], dir: 'libs')
+//    implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation group: 'com.squareup.retrofit2', name: 'retrofit', version: retrofit_version
+    implementation group: 'com.squareup.retrofit2', name: 'converter-gson', version: retrofit_version
     implementation group: 'com.squareup.okhttp3', name: 'okhttp', version: okhttp_version
     implementation group: 'com.squareup.okio', name: 'okio', version: okio_version
-    implementation group: 'com.google.protobuf', name: 'protobuf-java', version: protobuf_version
+//    implementation group: 'com.google.protobuf', name: 'protobuf-java', version: protobuf_version
     implementation group: 'org.fusesource.hawtdispatch', name: 'hawtdispatch', version: hawtdispatch_version
     implementation group: 'org.fusesource.hawtdispatch', name: 'hawtdispatch-transport', version: hawtdispatch_version
     implementation group: 'org.fusesource.hawtbuf', name: 'hawtbuf', version: hawtbuf_version
@@ -71,7 +66,7 @@ dependencies {
     compileOnly "org.projectlombok:lombok:$lombok_version"
     testCompileOnly "org.projectlombok:lombok:$lombok_version"
     testAnnotationProcessor "org.projectlombok:lombok:$lombok_version"
-    implementation "com.google.guava:guava:$guava_version"
+//    implementation "com.google.guava:guava:$guava_version"
     implementation "com.google.dagger:dagger:$dagger_version"
     annotationProcessor "com.google.dagger:dagger-compiler:$dagger_version"
 //    compile files('libs/okio-1.13.0.jar')
