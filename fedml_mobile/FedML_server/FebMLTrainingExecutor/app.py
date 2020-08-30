@@ -15,13 +15,14 @@ from fedml_mobile.FedML_server.FebMLTrainingExecutor.conf.conf import MODEL_FOLD
 
 from fedml_core.distributed.communication.mqtt import MqttClient
 
+
 app = Flask(__name__)
 
 __log.info(MQTT_BROKER_HOST)
 __log.info(MQTT_BROKER_PORT)
 
 HOST = "81.71.1.31"
-client = MqttClient(HOST, MQTT_BROKER_PORT)
+client = MqttClient(HOST, MQTT_BROKER_PORT, "TrainingExecutor")
 
 
 class Obs(Observer):
@@ -56,19 +57,21 @@ def upload_test():
 
 @app.route('/api/upload', methods=['POST'], strict_slashes=False)
 def api_upload():
-    # TODO: parse data_json get training info
-    data_json = request.json
+    # TODO: parse form get training info
+    print(request.values['filename'])
     file_dir = MODEL_FOLDER_PATH
     if not os.path.exists(file_dir):
         os.makedirs(file_dir)
     f = request.files['model_file']
     if f and allowed_file(f.filename):
         fname = f.filename
+        # get file without extension
+        name_without_ext = fname.rsplit('.', 1)[0]
         # get file extension
         ext = fname.rsplit('.', 1)[1]
         unix_time = int(time.time())
         # modify file name
-        new_filename = str(unix_time) + '.' + ext
+        new_filename = '%s_%s.%s' % (name_without_ext, str(unix_time), ext)
         # save to the upload folder
         f.save(os.path.join(file_dir, new_filename))
         return jsonify({"errno": 0, "errmsg": "upload success!"})
@@ -96,4 +99,4 @@ def register_device():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='192.168.3.104', port=5000, debug=True)
