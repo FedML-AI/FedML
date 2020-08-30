@@ -18,19 +18,15 @@ from fedml_core.distributed.communication.mqtt import MqttClient
 
 app = Flask(__name__)
 
-__log.info(MQTT_BROKER_HOST)
-__log.info(MQTT_BROKER_PORT)
-
 HOST = "81.71.1.31"
-client = MqttClient(HOST, MQTT_BROKER_PORT, "TrainingExecutor")
+PORT = 1883
+client = MqttClient(HOST, PORT, "TrainingExecutor")
 
 
 class Obs(Observer):
     def receive_message(self, msg_type, msg_params) -> None:
         global __log
         __log.info("receive_message(%s,%s)" % (msg_type, msg_params))
-        print("receive_message(%s,%s)" % (msg_type, msg_params))
-
 
 client.add_observer(Obs())
 
@@ -84,19 +80,26 @@ def downloader(filename):
     return send_from_directory(RESOURCE_DIR_PATH, filename, as_attachment=True)
 
 
-@app.route('/api/register', methods=['POST', ])
+@app.route('/api/register', methods=['POST'])
 def register_device():
     __log.info("register_device()")
-    __log.info(request)
-    # print(request.json)
-    # device_id = request.json['device_id']
+    __log.info(request.args['device_id'])
     # TODO: save device_id
     client.send("hello", "Hello world!")
     client.send("temperature", "24.0")
     client.send("humidity", "65%")
     # return jsonify({"errno": 0, "executorId": client.client_id, "executorTopic": client.topic})
-    return jsonify({"errno": 0, "executorId": "executorId", "executorTopic": "executorTopic"})
+    training_task_json = {"dataset": 'mnist',
+                    "model": "lr",
+                    "round_num": 100,
+                    "local_epoch_num": 10,
+                    "local_lr": 0.03,
+                    "batch_size": 10}
+    return jsonify({"errno": 0,
+                    "executorId": "executorId",
+                    "executorTopic": "executorTopic",
+                    "training_task": training_task_json})
 
 
 if __name__ == '__main__':
-    app.run(host='192.168.3.104', port=5000, debug=True)
+    app.run(host='127.0.0.1', port=5000, debug=True)
