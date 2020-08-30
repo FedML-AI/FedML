@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
+import sys
 import logging
 import os
 from logging.handlers import TimedRotatingFileHandler
-from conf import ENV
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
+
+from fedml_mobile.FedML_server.FebMLTrainingExecutor.conf import ENV
 
 LOG_FORMAT = "%(asctime)s %(levelname)s %(filename)s:%(lineno)s - %(message)s"
 DATE_FORMAT = "%m/%d/%Y %H:%M:%S %p"
@@ -11,7 +15,7 @@ DATE_FORMAT = "%m/%d/%Y %H:%M:%S %p"
 class LoggerWrapper:
     def __init__(self):
         self._console_init = False
-        self.__logger = self._gen_logger(ENV.current_task_name, 'Heatmap')
+        self.__logger = self._gen_logger(ENV.current_task_name, 'fedml')
         self.debug = self.__logger.debug
         self.info = self.__logger.info
         self.warning = self.__logger.warning
@@ -22,8 +26,7 @@ class LoggerWrapper:
     @staticmethod
     def _get_path(path):
         """
-        根据日志名，创建对应的日志路径
-        :param path:路径
+        :param path:
         :return:
         """
         if path != 'logs':
