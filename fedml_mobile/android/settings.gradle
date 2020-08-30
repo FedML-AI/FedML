@@ -1,2 +1,3 @@
+include ':febmlmobile'
 include ':app',':fedml-iot-sdk'
 rootProject.name='FedML-Android'
