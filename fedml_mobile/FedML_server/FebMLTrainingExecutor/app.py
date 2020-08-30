@@ -1,17 +1,37 @@
 import datetime
 import os
+import sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
+
+from fedml_core.distributed.communication import Observer
+
 import time
 
 from flask import Flask, request, render_template, jsonify, send_from_directory
+from fedml_mobile.FedML_server.FebMLTrainingExecutor.log import __log
+from fedml_mobile.FedML_server.FebMLTrainingExecutor.conf.conf import MODEL_FOLDER_PATH, MQTT_BROKER_HOST, \
+    MQTT_BROKER_PORT, RESOURCE_DIR_PATH
 
-from conf import MODEL_FOLDER_PATH
-from conf import RESOURCE_DIR_PATH
-from conf import MQTT_BROKER_HOST
-from conf import MQTT_BROKER_PORT
-from mqtt_client import MqttClient
+from fedml_core.distributed.communication.mqtt import MqttClient
 
-client = MqttClient(MQTT_BROKER_HOST, MQTT_BROKER_PORT)
 app = Flask(__name__)
+
+__log.info(MQTT_BROKER_HOST)
+__log.info(MQTT_BROKER_PORT)
+
+HOST = "81.71.1.31"
+client = MqttClient(HOST, MQTT_BROKER_PORT)
+
+
+class Obs(Observer):
+    def receive_message(self, msg_type, msg_params) -> None:
+        global __log
+        __log.info("receive_message(%s,%s)" % (msg_type, msg_params))
+        print("receive_message(%s,%s)" % (msg_type, msg_params))
+
+
+client.add_observer(Obs())
 
 ALLOWED_EXTENSIONS = {'txt', 'png', 'jpg', 'JPG', 'PNG'}
 
@@ -61,15 +81,18 @@ def downloader(filename):
     return send_from_directory(RESOURCE_DIR_PATH, filename, as_attachment=True)
 
 
-@app.route('/api/deviceOnLine', methods=['POST', ])
-def device_on_line():
-    print(request.headers)
-    print(type(request.json))
-    print(request.json)
-    device_id = request.json['deviceId']
+@app.route('/api/register', methods=['POST', ])
+def register_device():
+    __log.info("register_device()")
+    __log.info(request)
+    # print(request.json)
+    # device_id = request.json['device_id']
     # TODO: save device_id
-    client.send("hello", str(device_id))
-    return jsonify({"errno": 0, "executorId": client.client_id, "executorTopic": client.topic})
+    client.send("hello", "Hello world!")
+    client.send("temperature", "24.0")
+    client.send("humidity", "65%")
+    # return jsonify({"errno": 0, "executorId": client.client_id, "executorTopic": client.topic})
+    return jsonify({"errno": 0, "executorId": "executorId", "executorTopic": "executorTopic"})
 
 
 if __name__ == '__main__':

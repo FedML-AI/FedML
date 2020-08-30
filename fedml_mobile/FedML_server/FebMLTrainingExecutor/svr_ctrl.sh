@@ -9,7 +9,7 @@ start() {
   if [ "$program_num" -eq 0 ]; then
     echo "start $PROGRAM_NAME"
     today=$(date +%Y%m%d%H)
-    nohup gunicorn -n $PROGRAM_NAME -c conf/gunicornconf.py app:app>>console_$((today)).log 2>&1 &
+    nohup gunicorn -n $PROGRAM_NAME -c conf/gunicornconf.py app:app>>console_$((today)).log app:client>>console_$((today)).log 2>&1 &
   else
     echo "$PROGRAM_NAME is running..."
     ps -ef | grep $PROGRAM_NAME | grep -v grep

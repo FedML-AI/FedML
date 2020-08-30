@@ -17,4 +17,4 @@ pidfile = './gunicorn.pid'
 accesslog = './logs/gunicorn_acess.log'
 errorlog = './logs/gunicorn_error.log'
 # set loglevel
-loglevel = 'warning'
+loglevel = 'info'
