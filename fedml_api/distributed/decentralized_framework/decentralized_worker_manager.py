@@ -2,7 +2,7 @@ import logging
 
 from fedml_api.distributed.decentralized_framework.message_define import MyMessage
 from fedml_core.distributed.client.client_manager import ClientManager
-from fedml_core.distributed.communication import Message
+from fedml_core.distributed.communication.message import Message
 
 
 class DecentralizedWorkerManager(ClientManager):

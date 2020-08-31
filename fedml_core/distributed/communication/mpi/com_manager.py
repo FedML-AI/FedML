@@ -3,13 +3,14 @@ import queue
 import time
 from typing import List
 
-from fedml_core.distributed.communication.mpi.mpi_message import MPIMessage
+from fedml_core.distributed.communication.base_com_manager import BaseCommunicationManager
+from fedml_core.distributed.communication.message import Message
 from fedml_core.distributed.communication.mpi.mpi_receive_thread import MPIReceiveThread
 from fedml_core.distributed.communication.mpi.mpi_send_thread import MPISendThread
 from fedml_core.distributed.communication.observer import Observer
 
 
-class MpiCommunicationManager(object):
+class MpiCommunicationManager(BaseCommunicationManager):
     def __init__(self, comm, rank, size, node_type="client"):
         self.comm = comm
         self.rank = rank
@@ -58,22 +59,8 @@ class MpiCommunicationManager(object):
 
         return client_send_queue, client_receive_queue
 
-    def send_message(self, msg: MPIMessage):
+    def send_message(self, msg: Message):
         self.q_sender.put(msg)
-
-    def send_broadcast_collective_message(self, msg: MPIMessage):
-        operation = msg.get(MPIMessage.MSG_ARG_KEY_OPERATION)
-        if operation == MPIMessage.MSG_OPERATION_BROADCAST:
-            self.comm.bcast(msg.to_string(), root=0)
-
-    def receive_broadcast_collective_message(self):
-        msg_str = None
-        msg_str = self.comm.bcast(msg_str, root=0)
-        if not msg_str:
-            return None
-        msg = MPIMessage()
-        msg.init(msg_str)
-        return msg
 
     def add_observer(self, observer: Observer):
         self._observers.append(observer)
@@ -86,10 +73,6 @@ class MpiCommunicationManager(object):
         while self.is_running:
             if self.q_receiver.qsize() > 0:
                 msg_params = self.q_receiver.get()
-                self.notify(msg_params)
-
-            msg_params = self.receive_broadcast_collective_message()
-            if msg_params:
                 self.notify(msg_params)
 
             time.sleep(0.3)

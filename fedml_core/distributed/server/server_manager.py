@@ -4,19 +4,25 @@ from abc import abstractmethod
 
 from mpi4py import MPI
 
-from fedml_core.distributed.communication import MpiCommunicationManager
-from fedml_core.distributed.communication.mpi.mpi_message import MPIMessage
+from fedml_core.distributed.communication.message import Message
+from fedml_core.distributed.communication.mpi.com_manager import MpiCommunicationManager
+from fedml_core.distributed.communication.mqtt.mqtt_comm_manager import MqttCommManager
 from fedml_core.distributed.communication.observer import Observer
 
 
 class ServerManager(Observer):
 
-    def __init__(self, args, comm, rank, size):
+    def __init__(self, args, comm=None, rank=0, size=0, backend="MPI"):
         self.args = args
         self.size = size
         self.rank = rank
 
-        self.com_manager = MpiCommunicationManager(comm, rank, size, node_type="server")
+        if backend == "MPI":
+            self.com_manager = MpiCommunicationManager(comm, rank, size, node_type="client")
+        elif backend == "MQTT":
+            self.com_manager = MqttCommManager("81.71.1.31", 1883)
+        else:
+            self.com_manager = MpiCommunicationManager(comm, rank, size, node_type="client")
         self.com_manager.add_observer(self)
         self.message_handler_dict = dict()
 
@@ -34,10 +40,10 @@ class ServerManager(Observer):
         handler_callback_func(msg_params)
 
     def send_message(self, message):
-        msg = MPIMessage()
-        msg.add(MPIMessage.MSG_ARG_KEY_TYPE, message.get_type())
-        msg.add(MPIMessage.MSG_ARG_KEY_SENDER, message.get_sender_id())
-        msg.add(MPIMessage.MSG_ARG_KEY_RECEIVER, message.get_receiver_id())
+        msg = Message()
+        msg.add(Message.MSG_ARG_KEY_TYPE, message.get_type())
+        msg.add(Message.MSG_ARG_KEY_SENDER, message.get_sender_id())
+        msg.add(Message.MSG_ARG_KEY_RECEIVER, message.get_receiver_id())
         for key, value in message.get_params().items():
             # logging.info("%s == %s" % (key, value))
             msg.add(key, value)

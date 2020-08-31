@@ -1,14 +1,17 @@
+import os
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../../")))
+
 import logging
 import time
-
+from fedml_core.distributed.communication.message import Message
 from fedml_api.distributed.fedavg.message_define import MyMessage
 from fedml_core.distributed.client.client_manager import ClientManager
-from fedml_core.distributed.communication.message import Message
 
 
-class FedAvgRobustClientManager(ClientManager):
-    def __init__(self, args, comm, rank, size, trainer):
-        super().__init__(args, comm, rank, size)
+class FedAVGClientManager(ClientManager):
+    def __init__(self, args, trainer):
+        super().__init__(args, backend="MQTT")
         self.trainer = trainer
         self.num_rounds = args.comm_round
         self.round_idx = 0
@@ -25,6 +28,10 @@ class FedAvgRobustClientManager(ClientManager):
     def handle_message_init(self, msg_params):
         global_model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         self.trainer.update_model(global_model_params)
+        self.round_idx = 0
+        self.__train()
+
+    def start_training(self):
         self.round_idx = 0
         self.__train()
 

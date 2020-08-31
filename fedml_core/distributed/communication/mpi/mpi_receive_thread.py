@@ -3,7 +3,7 @@ import logging
 import threading
 import traceback
 
-from fedml_core.distributed.communication.mpi.mpi_message import MPIMessage
+from fedml_core.distributed.communication.message import Message
 
 
 class MPIReceiveThread(threading.Thread):
@@ -21,7 +21,7 @@ class MPIReceiveThread(threading.Thread):
         while True:
             try:
                 msg_str = self.comm.recv()
-                msg = MPIMessage()
+                msg = Message()
                 msg.init(msg_str)
                 self.q.put(msg)
             except Exception:

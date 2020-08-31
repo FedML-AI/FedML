@@ -6,7 +6,7 @@ from logging.handlers import TimedRotatingFileHandler
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 
-from fedml_mobile.FedML_server.FebMLTrainingExecutor.conf import ENV
+from fedml_mobile.server.executor.conf import ENV
 
 LOG_FORMAT = "%(asctime)s %(levelname)s %(filename)s:%(lineno)s - %(message)s"
 DATE_FORMAT = "%m/%d/%Y %H:%M:%S %p"
