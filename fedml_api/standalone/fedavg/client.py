@@ -34,7 +34,7 @@ class Client:
             optimizer = torch.optim.SGD(net.parameters(), lr=self.args.lr)
         else:
             optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, net.parameters()), lr=self.args.lr,
-                                              weight_decay=0.0001, amsgrad=True)
+                                              weight_decay=self.args.wd, amsgrad=True)
 
         epoch_loss = []
         for epoch in range(self.args.epochs):

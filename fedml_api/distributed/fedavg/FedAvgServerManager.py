@@ -8,15 +8,18 @@ from fedml_core.distributed.server.server_manager import ServerManager
 class FedAVGServerManager(ServerManager):
     def __init__(self, args, comm, rank, size, aggregator):
         super().__init__(args, comm, rank, size)
-
+        self.args = args
         self.aggregator = aggregator
         self.round_num = args.comm_round
         self.round_idx = 0
 
     def run(self):
+        # sampling clients
+        client_indexes = self.aggregator.client_sampling(self.round_idx, self.args.client_num_in_total,
+                                                         self.args.client_num_per_round)
         global_model_params = self.aggregator.get_global_model_params()
         for process_id in range(1, self.size):
-            self.send_message_init_config(process_id, global_model_params)
+            self.send_message_init_config(process_id, global_model_params, client_indexes[process_id-1])
         super().run()
 
     def register_message_receive_handlers(self):
@@ -27,17 +30,13 @@ class FedAVGServerManager(ServerManager):
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         local_sample_number = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
-        train_acc = msg_params.get(MyMessage.MSG_ARG_KEY_LOCAL_TRAINING_ACC)
-        train_loss = msg_params.get(MyMessage.MSG_ARG_KEY_LOCAL_TRAINING_LOSS)
 
-        self.aggregator.add_local_trained_result(sender_id - 1, model_params, local_sample_number, train_acc,
-                                                 train_loss)
+        self.aggregator.add_local_trained_result(sender_id - 1, model_params, local_sample_number)
         b_all_received = self.aggregator.check_whether_all_receive()
         logging.info("b_all_received = " + str(b_all_received))
         if b_all_received:
             global_model_params = self.aggregator.aggregate()
-            self.aggregator.infer(self.round_idx)
-            self.aggregator.statistics(self.round_idx)
+            self.aggregator.test_on_all_clients(self.round_idx)
 
             # start the next round
             self.round_idx += 1
@@ -45,15 +44,20 @@ class FedAVGServerManager(ServerManager):
                 self.finish()
                 return
 
+            # sampling clients
+            client_indexes = self.aggregator.client_sampling(self.round_idx, self.args.client_num_in_total,
+                                                             self.args.client_num_per_round)
             for receiver_id in range(1, self.size):
-                self.send_message_sync_model_to_client(receiver_id, global_model_params)
+                self.send_message_sync_model_to_client(receiver_id, global_model_params, client_indexes[receiver_id-1])
 
-    def send_message_init_config(self, receive_id, global_model_params):
+    def send_message_init_config(self, receive_id, global_model_params, client_index):
         message = Message(MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id)
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
+        message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, client_index)
         self.send_message(message)
 
-    def send_message_sync_model_to_client(self, receive_id, global_model_params):
+    def send_message_sync_model_to_client(self, receive_id, global_model_params, client_index):
         message = Message(MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT, self.get_sender_id(), receive_id)
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
+        message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, client_index)
         self.send_message(message)

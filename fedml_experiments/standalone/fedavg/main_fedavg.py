@@ -57,9 +57,6 @@ def add_args(parser):
     parser.add_argument('--epochs', type=int, default=5, metavar='EP',
                         help='how many epochs will be trained locally')
 
-    parser.add_argument('--local_points', type=int, default=5000, metavar='LP',
-                        help='the approximate fixed number of data points we will have on each local worker')
-
     parser.add_argument('--client_num_in_total', type=int, default=1000, metavar='NN',
                         help='number of workers in a distributed cluster')
 
@@ -69,7 +66,7 @@ def add_args(parser):
     parser.add_argument('--comm_round', type=int, default=10,
                         help='how many round of communications we shoud use')
 
-    parser.add_argument('--frequency_of_the_test', type=int, default=20,
+    parser.add_argument('--frequency_of_the_test', type=int, default=1,
                         help='the frequency of the algorithms')
 
     parser.add_argument('--gpu', type=int, default=0,

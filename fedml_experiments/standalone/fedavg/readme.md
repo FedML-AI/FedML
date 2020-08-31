@@ -30,7 +30,7 @@ nohup sh run_fedavg_standalone_pytorch.sh 7 10 64 cinic10 ./../../../data/cinic1
 nohup sh run_fedavg_standalone_pytorch.sh 2 10 10 mnist ./../../../data/mnist lr hetero 200 20 0.03 > ./fedavg_standalone.txt 2>&1 &
 
 # shakespeare
-nohup sh run_fedavg_standalone_pytorch.sh 2 10 10 shakespeare ./../../../data/shakespeare rnn hetero 1500 10 1 > ./fedavg_standalone.txt 2>&1 &
+nohup sh run_fedavg_standalone_pytorch.sh 2 10 10 shakespeare ./../../../data/shakespeare rnn hetero 100 10 0.8 > ./fedavg_standalone.txt 2>&1 &
 
 # CIFAR10, ResNet56
 nohup sh run_fedavg_standalone_pytorch.sh 2 10 64 cifar10 ./../../../data/cifar10 resnet56 hetero 200 20 0.001 > ./fedavg_standalone.txt 2>&1 &
