@@ -137,5 +137,3 @@ if __name__ == '__main__':
     client_manager.start_training()
 
     time.sleep(100000)
-
-

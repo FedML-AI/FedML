@@ -1,4 +1,5 @@
 import json
+import sys
 
 
 class Message(object):
@@ -60,7 +61,9 @@ class Message(object):
 
     def to_json(self):
         self.msg_params[Message.MSG_ARG_KEY_MODEL_PARAMS] = None
-        return json.dumps(self.msg_params)
+        json_string = json.dumps(self.msg_params)
+        print("json string size = " + str(sys.getsizeof(json_string)))
+        return json_string
 
     def get_content(self):
         print_dict = self.msg_params.copy()
