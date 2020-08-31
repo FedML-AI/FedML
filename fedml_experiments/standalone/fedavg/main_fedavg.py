@@ -137,6 +137,7 @@ if __name__ == "__main__":
     logger.setLevel(logging.DEBUG)
 
     args = add_args(argparse.ArgumentParser(description='FedAvg-standalone'))
+    logger.info(args)
     device = torch.device("cuda:" + str(args.gpu) if torch.cuda.is_available() else "cpu")
     logger.info(device)
 

@@ -13,10 +13,10 @@ nohup sh run_fedavg_distributed_pytorch.sh 10 10 1 4 lr hetero 200 20 10 0.03 mn
 
 # shakespeare experiments
 ```
-sh run_fedavg_distributed_pytorch.sh 10 10 1 4 rnn hetero 200 20 10 0.8 shakespeare "./../../../data/shakespeare"
+sh run_fedavg_distributed_pytorch.sh 10 10 1 4 rnn hetero 100 10 10 0.8 shakespeare "./../../../data/shakespeare"
 
 ##run on background
-nohup sh run_fedavg_distributed_pytorch.sh 10 10 1 4 rnn hetero 200 20 10 0.8 shakespeare "./../../../data/shakespeare" > ./fedavg-rnn-shakespeare.txt 2>&1 &
+nohup sh run_fedavg_distributed_pytorch.sh 10 10 1 4 rnn hetero 100 10 10 0.8 shakespeare "./../../../data/shakespeare" > ./fedavg-rnn-shakespeare.txt 2>&1 &
 ```
 
 ## ResNet56 Federated Training
