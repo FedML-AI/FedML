@@ -1,3 +1,3 @@
-__all__ = ['MqttClient']
+__all__ = ['MqttCommManager']
 
-from .mqtt_client import MqttClient
+from .mqtt_comm_manager import MqttCommManager

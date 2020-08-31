@@ -1,14 +1,18 @@
+import os
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../../")))
+
 import logging
 
-from fedml_api.distributed.fedavg.message_define import MyMessage
 from fedml_core.distributed.communication.message import Message
+from fedml_api.distributed.fedavg.message_define import MyMessage
 from fedml_core.distributed.server.server_manager import ServerManager
 
 
 class FedAVGServerManager(ServerManager):
-    def __init__(self, args, comm, rank, size, aggregator):
-        super().__init__(args, comm, rank, size)
-
+    def __init__(self, args, aggregator):
+        super().__init__(args, backend="MQTT")
+        self.args = args
         self.aggregator = aggregator
         self.round_num = args.comm_round
         self.round_idx = 0
@@ -45,8 +49,14 @@ class FedAVGServerManager(ServerManager):
                 self.finish()
                 return
 
-            for receiver_id in range(1, self.size):
-                self.send_message_sync_model_to_client(receiver_id, global_model_params)
+            # since we use MQTT, every client can observe this message, so there is no need to send one by one
+            # for receiver_id in range(1, self.args.client_number+1):
+            self.send_message_sync_model_to_client(0, global_model_params)
+
+    def send_init_msg(self):
+        global_model_params = self.aggregator.get_global_model_params()
+        for process_id in range(1, self.size):
+            self.send_message_init_config(process_id, global_model_params)
 
     def send_message_init_config(self, receive_id, global_model_params):
         message = Message(MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id)
@@ -54,6 +64,7 @@ class FedAVGServerManager(ServerManager):
         self.send_message(message)
 
     def send_message_sync_model_to_client(self, receive_id, global_model_params):
+        logging.info("send_message_sync_model_to_client")
         message = Message(MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT, self.get_sender_id(), receive_id)
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         self.send_message(message)

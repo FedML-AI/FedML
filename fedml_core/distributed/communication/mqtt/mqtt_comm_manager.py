@@ -6,11 +6,13 @@ from typing import List
 
 import paho.mqtt.client as mqtt
 
-from fedml_core.distributed.communication import CommunicationManager, Observer
+from fedml_core.distributed.communication.base_com_manager import BaseCommunicationManager
+from fedml_core.distributed.communication.message import Message
+from fedml_core.distributed.communication.observer import Observer
 
 
-class MqttClient(CommunicationManager):
-    def __init__(self, host, port, topic='hello', client_id=None):
+class MqttCommManager(BaseCommunicationManager):
+    def __init__(self, host, port, topic='fedml', client_id=None):
         self._unacked_sub = list()
         self._observers: List[Observer] = []
         self._topic = topic
@@ -47,15 +49,11 @@ class MqttClient(CommunicationManager):
         result, mid = self._client.subscribe(self._topic, 0)
         self._unacked_sub.append(mid)
         print(result)
-        # subscribe topic
-        result, mid = client.subscribe([("temperature", 0), ("humidity", 0)])
-        self._unacked_sub.append(mid)
-        print(result)
-        print("Finish subscribe!")
 
     def _on_message(self, client, userdata, msg):
-        print("Received message, topic:" + msg.topic + " payload:" + str(msg.payload))
-        self._notify(msg.topic, str(msg.payload))
+        msg.payload = str(msg.payload, encoding='utf-8')
+        print("_on_message: " + str(msg.payload))
+        self._notify(str(msg.payload))
 
     @staticmethod
     def _on_disconnect(client, userdata, rc):
@@ -71,27 +69,39 @@ class MqttClient(CommunicationManager):
     def remove_observer(self, observer: Observer):
         self._observers.remove(observer)
 
-    def _notify(self, topic, msg):
+    def _notify(self, msg):
+        print("_notify: " + msg)
+        msg_params = Message()
+        msg_params.init_from_json_string(str(msg))
+        msg_type = msg_params.get_type()
         for observer in self._observers:
-            observer.receive_message(topic, msg)
+            observer.receive_message(msg_type, msg_params)
 
-    def send(self, topic, msg):
-        print("send(%s, %s)" % (topic, msg))
-        self._client.publish(topic, payload=msg)
+    def send_message(self, msg: Message):
+        # print(msg.to_string())
+        self._client.publish(self._topic, payload=msg.to_json())
+
+    def handle_receive_message(self):
+        pass
+
+    def stop_receive_message(self):
+        pass
 
 
 if __name__ == '__main__':
     class Obs(Observer):
         def receive_message(self, msg_type, msg_params) -> None:
-            print("receive_message(%s,%s)" % (msg_type, msg_params))
+            print("receive_message(%s, %s)" % (msg_type, msg_params.to_string()))
 
 
-    client = MqttClient("81.71.1.31", 1883)
+    client = MqttCommManager("81.71.1.31", 1883)
     client.add_observer(Obs())
     time.sleep(3)
     print('client ID:%s' % client.client_id)
-    client.send("hello", "Hello world!")
-    client.send("temperature", "24.0")
-    client.send("humidity", "65%")
-    time.sleep(2)
+
+    message = Message(0, 1, 2)
+    message.add_params("key1", 1)
+    client.send_message(message)
+
+    time.sleep(10)
     print("client, send Fin...")

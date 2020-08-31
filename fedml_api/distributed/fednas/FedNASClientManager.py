@@ -3,7 +3,7 @@ import time
 
 from fedml_api.distributed.fednas.message_define import MyMessage
 from fedml_core.distributed.client.client_manager import ClientManager
-from fedml_core.distributed.communication import Message
+from fedml_core.distributed.communication.message import Message
 
 
 class FedNASClientManager(ClientManager):
