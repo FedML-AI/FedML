@@ -54,6 +54,10 @@ class FedAVGTrainer(object):
         end_time = time.time()
         logging.info("CPU to GPU cost = %d" % (end_time - start_time))
 
+        # transform Tensor to numpy
+        for k in weights.keys():
+            weights[k] = weights[k].detach().numpy().tolist()
+
         return weights, self.local_sample_number
 
     def infer(self):

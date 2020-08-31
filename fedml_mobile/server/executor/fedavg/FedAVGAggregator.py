@@ -4,6 +4,7 @@ import time
 import torch
 import wandb
 from torch import nn
+import numpy as np
 
 
 class FedAVGAggregator(object):
@@ -49,39 +50,38 @@ class FedAVGAggregator(object):
             self.flag_client_model_uploaded_dict[idx] = False
         return True
 
+
     def aggregate(self):
-        averaged_params = self.get_global_model_params()
+        start_time = time.time()
+        model_list = []
+        for idx in range(self.client_num):
+            model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
+
+        # logging.info("################aggregate: %d" % len(model_list))
+        (num0, averaged_params) = model_list[0]
+        for k in averaged_params.keys():
+            for i in range(0, len(model_list)):
+                local_sample_number, local_model_params = model_list[i]
+                w = local_sample_number / self.all_train_data_num
+
+                # transform list to tensor
+                averaged_params[k] = torch.from_numpy(np.asarray(averaged_params[k])).float()
+
+                if i == 0:
+                    averaged_params[k] = local_model_params[k] * w
+                else:
+                    averaged_params[k] += local_model_params[k] * w
+
         # update the global model which is cached at the server side
         self.model.load_state_dict(averaged_params)
-        return averaged_params
 
-    # def aggregate(self):
-    #     start_time = time.time()
-    #     model_list = []
-    #     for idx in range(self.client_num):
-    #         model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
-    #
-    #     # logging.info("################aggregate: %d" % len(model_list))
-    #     (num0, averaged_params) = model_list[0]
-    #     for k in averaged_params.keys():
-    #         for i in range(0, len(model_list)):
-    #             local_sample_number, local_model_params = model_list[i]
-    #             w = local_sample_number / self.all_train_data_num
-    #             if i == 0:
-    #                 averaged_params[k] = local_model_params[k] * w
-    #             else:
-    #                 averaged_params[k] += local_model_params[k] * w
-    #
-    #     # update the global model which is cached at the server side
-    #     self.model.load_state_dict(averaged_params)
-    #
-    #     # clear the memory cost
-    #     model_list.clear()
-    #     del model_list
-    #     self.model_dict.clear()
-    #     end_time = time.time()
-    #     logging.info("aggregate time cost: %d" % (end_time - start_time))
-    #     return averaged_params
+        # clear the memory cost
+        model_list.clear()
+        del model_list
+        self.model_dict.clear()
+        end_time = time.time()
+        logging.info("aggregate time cost: %d" % (end_time - start_time))
+        return averaged_params
 
     def statistics(self, round_idx):
         # train acc
