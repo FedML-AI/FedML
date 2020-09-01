@@ -7,7 +7,6 @@ import torch.nn.functional as F
 import torch.utils.data as data
 import torchvision.transforms as transforms
 
-from fedml_api.data_preprocessing.cifar10.datasets import CIFAR10_truncated
 from fedml_api.data_preprocessing.cinic10.datasets import ImageFolderTruncated
 
 logging.basicConfig()
@@ -159,7 +158,7 @@ def partition_data(dataset, datadir, partition, n_nets, alpha):
     y_train = np.array(y_train)
     y_test = np.array(y_test)
     n_train = len(X_train)
-    n_test = len(X_test)
+    # n_test = len(X_test)
 
     if partition == "homo":
         total_num = n_train

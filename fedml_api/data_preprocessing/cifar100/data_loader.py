@@ -113,7 +113,7 @@ def partition_data(dataset, datadir, partition, n_nets, alpha):
     logging.info("*********partition data***************")
     X_train, y_train, X_test, y_test = load_cifar100_data(datadir)
     n_train = X_train.shape[0]
-    n_test = X_test.shape[0]
+    # n_test = X_test.shape[0]
 
     if partition == "homo":
         total_num = n_train

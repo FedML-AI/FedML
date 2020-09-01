@@ -101,7 +101,7 @@ def prepare_data(file_path):
     print("[INFO] prepare loan data.")
 
     df_loan = pd.read_csv(file_path, low_memory=False)
-    print(f"[INFO] loaded loan data with shape:{df_loan.shape} to :{file_path}")
+    # print(f"[INFO] loaded loan data with shape:{df_loan.shape} to :{file_path}")
 
     df_loan = determine_good_bad_loan(df_loan)
     df_loan = determine_annual_income(df_loan)
