@@ -17,7 +17,6 @@ import wandb
 from fedml_api.model.darts import utils
 from fedml_api.model.darts.architect import Architect
 from fedml_api.model.darts.model_search import Network
-import fedml_api.model.darts.genotypes
 
 parser = argparse.ArgumentParser("cifar")
 parser.add_argument('--run_id', type=int, default=0, help='running id')
