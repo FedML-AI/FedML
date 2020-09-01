@@ -31,7 +31,7 @@ def init_server(args, device, comm, rank, size, model, train_data_num, train_dat
                                   train_data_local_dict, test_data_local_dict, train_data_local_num_dict, worker_num, device, model, args)
 
     # start the distributed training
-    server_manager = FedAVGServerManager(args, comm, rank, size, aggregator)
+    server_manager = FedAVGServerManager(args, aggregator, comm, rank, size)
     server_manager.send_init_msg()
     server_manager.run()
 
@@ -41,5 +41,5 @@ def init_client(args, device, comm, process_id, size, model, train_data_num, tra
     client_index = process_id - 1
     trainer = FedAVGTrainer(client_index, train_data_local_dict, train_data_local_num_dict, train_data_num, device, model, args)
 
-    client_manager = FedAVGClientManager(args, comm, process_id, size, trainer)
+    client_manager = FedAVGClientManager(args, trainer, comm, process_id, size)
     client_manager.run()

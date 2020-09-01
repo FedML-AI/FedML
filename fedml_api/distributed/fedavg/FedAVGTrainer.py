@@ -4,6 +4,8 @@ import time
 import torch
 from torch import nn
 
+from fedml_api.distributed.fedavg.utils import transform_tensor_to_list
+
 
 class FedAVGTrainer(object):
     def __init__(self, client_index, train_data_local_dict, train_data_local_num_dict, train_data_num, device, model,
@@ -62,6 +64,5 @@ class FedAVGTrainer(object):
 
         # transform Tensor to list
         if self.args.is_mobile == 1:
-            for k in weights.keys():
-                weights[k] = weights[k].detach().numpy().tolist()
+            weights = transform_tensor_to_list(weights)
         return weights, self.local_sample_number

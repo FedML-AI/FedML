@@ -7,6 +7,8 @@ import wandb
 import numpy as np
 from torch import nn
 
+from fedml_api.distributed.fedavg.utils import transform_list_to_tensor
+
 
 class FedAVGAggregator(object):
     def __init__(self, train_global, test_global, all_train_data_num,
@@ -57,10 +59,8 @@ class FedAVGAggregator(object):
         training_num = 0
 
         for idx in range(self.worker_num):
-            # when debugging the entire communication process, the model is set to None
-            if self.model_dict[idx] is None:
-                self.model_dict[idx] = self.model.state_dict()
-
+            if self.args.is_mobile == 1:
+                self.model_dict[idx] = transform_list_to_tensor(self.model_dict[idx])
             model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
             training_num += self.sample_num_dict[idx]
 
@@ -72,11 +72,6 @@ class FedAVGAggregator(object):
             for i in range(0, len(model_list)):
                 local_sample_number, local_model_params = model_list[i]
                 w = local_sample_number / training_num
-
-                if self.args.is_mobile == 1:
-                    # transform list to tensor
-                    averaged_params[k] = torch.from_numpy(np.asarray(averaged_params[k])).float()
-
                 if i == 0:
                     averaged_params[k] = local_model_params[k] * w
                 else:
