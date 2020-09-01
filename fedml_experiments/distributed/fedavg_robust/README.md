@@ -8,7 +8,7 @@ http://doc.fedml.ai/#/installation-distributed-computing
 #### CIFAR10
 train on IID dataset 
 ```
-sh run_fedavg_robust_distributed_pytorch.sh 1 8 resnet56 homo 100 20 64 0.001 cifar10 "./../../../data/cifar10" weak-dp 5.0 0.025
+sh run_fedavg_robust_distributed_pytorch.sh 1 4 resnet56 homo 100 20 64 0.001 cifar10 "./../../../data/cifar10" weak-dp 5.0 0.025
 
 ##run on background
 nohup sh run_fedavg_robust_distributed_pytorch.sh 1 8 resnet56 homo 100 20 64 0.001 cifar10 "./../../../data/cifar10" weak-dp 5.0 0.025 > ./fedavg-resnet-homo-cifar10.txt 2>&1 &

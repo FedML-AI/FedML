@@ -15,7 +15,7 @@ NORM_BOUND=$12
 STDDEV=$13
 
 
-mpirun -np 11 -hostfile ./mpi_host_file python3 ./main_fedavg.py \
+mpirun -np 11 -hostfile ./mpi_host_file python3 ./main_fedavg_robust.py \
   --gpu_server_num $SERVER_NUM \
   --gpu_num_per_server $GPU_NUM_PER_SERVER \
   --model $MODEL \
@@ -29,4 +29,4 @@ mpirun -np 11 -hostfile ./mpi_host_file python3 ./main_fedavg.py \
   --lr $LR \
   --defense_type $DEFENSE_TYPE \
   --norm_bound $NORM_BOUND \
-  --stddev $STDDEV \
+  --stddev $STDDEV

@@ -1,9 +1,10 @@
-import setproctitle
 import argparse
 import logging
-import sys
 import os
+import sys
+
 import numpy as np
+import setproctitle
 import torch
 import torch.nn as nn
 
@@ -16,6 +17,7 @@ from fedml_api.data_preprocessing.cifar10.data_loader import load_partition_data
 from fedml_api.distributed.split_nn.SplitNNAPI import SplitNN_init, SplitNN_distributed
 from fedml_api.model.deep_neural_networks.mobilenet import mobilenet
 from fedml_api.model.deep_neural_networks.resnet import resnet56
+
 
 def add_args(parser):
     """
@@ -99,8 +101,8 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=logging.INFO,
                         format=str(
-                                    process_id) + ' - %(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
-                                    datefmt='%a, %d %b %Y %H:%M:%S')
+                            process_id) + ' - %(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+                        datefmt='%a, %d %b %Y %H:%M:%S')
     seed = 0
     np.random.seed(seed)
     torch.manual_seed(worker_number)
@@ -115,7 +117,7 @@ if __name__ == "__main__":
     else:
         data_loader = load_partition_data_distributed_cifar10
 
-    train_data_num, train_data_global,\
+    train_data_num, train_data_global, \
     test_data_global, local_data_num, \
     train_data_local, test_data_local, class_num = data_loader(process_id, args.dataset, args.data_dir,
                                                                args.partition_method, args.partition_alpha,
@@ -131,11 +133,10 @@ if __name__ == "__main__":
 
     fc_features = model.fc.in_features
     model.fc = nn.Sequential(nn.Flatten(),
-			     nn.Linear(fc_features, class_num))
-    #Split The model
+                             nn.Linear(fc_features, class_num))
+    # Split The model
     client_model = nn.Sequential(*nn.ModuleList(model.children())[:split_layer])
     server_model = nn.Sequential(*nn.ModuleList(model.children())[split_layer:])
-        
 
     SplitNN_distributed(process_id, worker_number, device, comm,
                         client_model, server_model, train_data_num,

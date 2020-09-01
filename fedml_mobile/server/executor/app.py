@@ -199,7 +199,7 @@ if __name__ == '__main__':
     wandb.init(
         # project="federated_nas",
         project="fedml",
-        name="FedAVG(d)" + str(args.partition_method) + "r" + str(args.comm_round) + "-e" + str(
+        name="mobile(mqtt)" + str(args.partition_method) + "r" + str(args.comm_round) + "-e" + str(
             args.epochs) + "-lr" + str(
             args.lr),
         config=args

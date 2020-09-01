@@ -20,11 +20,12 @@ Once the hardware and software environment are both ready, you can easily use th
 Note:
 1. you may find other packages are missing. Please install accordingly by "conda" or "pip".
 2. Our default setting is 16 works. Please change parameters in "run_fed_nas_search.sh" based on your own physical servers and requirements.
+3. Please adjust the batch size or worker number to fit your own physical machine configuration.
 
 - Homogeneous distribution (IID) experiment:
 ```
 # search
-sh run_fednas_search.sh 1 4 darts homo 50 5 64
+sh run_fednas_search.sh 1 4 darts homo 50 5 32
 
 # train
 sh run_fednas_train.sh 1 4 darts homo 500 15 64
