@@ -1,6 +1,5 @@
 env:
     - ARCH=x86
-
 dist: bionic
 os:
     - linux
@@ -8,10 +7,6 @@ language: python
 sudo: false
 python:
     - "3.7.4"
-cache:
-  directories:
-    - "$HOME/.pip-cache/"
-    - "/home/travis/virtualenv/python3.5"
 install:
     - "bash CI-install.sh"
 script:
