@@ -1,5 +1,4 @@
 import logging
-import time
 
 import torch
 from torch import nn
@@ -26,7 +25,8 @@ class FedAVGTrainer(object):
         if self.args.client_optimizer == "sgd":
             self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.args.lr)
         else:
-            self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=self.args.lr,
+            self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()),
+                                              lr=self.args.lr,
                                               weight_decay=self.args.wd, amsgrad=True)
 
     def update_model(self, weights):
@@ -58,7 +58,8 @@ class FedAVGTrainer(object):
             if len(batch_loss) > 0:
                 epoch_loss.append(sum(batch_loss) / len(batch_loss))
                 logging.info('(client {}. Local Training Epoch: {} \tLoss: {:.6f}'.format(self.client_index,
-                                                                            epoch, sum(epoch_loss) / len(epoch_loss)))
+                                                                                          epoch, sum(epoch_loss) / len(
+                        epoch_loss)))
 
         weights = self.model.cpu().state_dict()
 

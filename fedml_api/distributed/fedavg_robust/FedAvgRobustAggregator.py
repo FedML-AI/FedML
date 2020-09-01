@@ -57,10 +57,9 @@ class FedAvgRobustAggregator(object):
     def aggregate(self):
         start_time = time.time()
         model_list = []
-        
 
         for idx in range(self.client_num):
-            local_sample_number, local_model_params = model_list[i]
+            local_sample_number, local_model_params = model_list[idx]
             # conduct the defense here:
             if self.robust_aggregator.defense_type in ("norm_diff_clipping", "weak_dp"):
                 clipped_local_state_dict = self.robust_aggregator.norm_diff_clipping(

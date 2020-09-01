@@ -1,6 +1,6 @@
 import logging
 
-from fedml_api.distributed.fedavg.message_define import MyMessage
+from fedml_api.distributed.fedavg_robust.message_define import MyMessage
 from fedml_core.distributed.communication.message import Message
 from fedml_core.distributed.server.server_manager import ServerManager
 
