@@ -3,7 +3,7 @@ env:
 language: python
 sudo: false
 python:
-    - "3.5"
+    - "3.7.4"
 cache:
   directories:
     - "$HOME/.pip-cache/"
