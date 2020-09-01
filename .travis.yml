@@ -12,3 +12,4 @@ install:
     - "pip3 install pyflakes --cache-dir $HOME/.pip-cache"
 script:
     - "pyflakes ."
+    - "sh CI-script.sh"
