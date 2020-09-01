@@ -1,10 +1,7 @@
 import random
 
-import torch
-
 import numpy as np
-
-from fedml_api.model.linear_models.lr import LogisticRegression
+import torch
 
 
 class ClientPushsum(object):
@@ -130,4 +127,3 @@ class ClientPushsum(object):
             # print("1.0 / self.omega=" + str(1.0 / self.omega))
             temp = x_params.data.mul(1.0 / self.omega)
             z_params.data.copy_(temp)
-

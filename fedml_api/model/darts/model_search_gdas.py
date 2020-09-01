@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
 
 from fedml_api.model.darts.genotypes import PRIMITIVES, Genotype
 from fedml_api.model.darts.operations import OPS, FactorizedReduce, ReLUConvBN
@@ -27,6 +26,7 @@ class MixedOp(nn.Module):
             return clist[0]
         else:
             return sum(clist)
+
 
 class Cell(nn.Module):
 

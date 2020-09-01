@@ -86,7 +86,7 @@ class TopologyManager:
 
         np.fill_diagonal(topology_ring, 1)
 
-        k_d = self.out_directed_neighbor
+        # k_d = self.out_directed_neighbor
         # Directed graph
         # Undirected graph
         # randomly delete some links

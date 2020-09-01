@@ -6,7 +6,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 
 
 import time
-from datetime import datetime
 
 import argparse
 import numpy as np
