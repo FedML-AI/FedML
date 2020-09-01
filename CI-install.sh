@@ -13,8 +13,8 @@ conda config --set always_yes yes --set changeps1 no
 conda update -q conda
 conda info -a
 
-echo "conda create -q -n fedml python=3.7.4"
-conda create -q -n fedml python=3.7.4
+echo "conda create -n fedml python=3.7.4"
+conda create -n fedml python=3.7.4
 
 echo "conda activate fedml"
 conda activate fedml
