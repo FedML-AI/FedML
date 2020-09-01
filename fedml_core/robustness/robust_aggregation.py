@@ -25,7 +25,7 @@ def load_model_weight_diff(local_state_dict, weight_diff, global_state_dict):
     return recons_local_state_dict
 
 
-def is_weight_param(key_name):
+def is_weight_param(k):
     return ("running_mean" not in k and "running_var" not in k and "num_batches_tracked" not in k)
 
 
@@ -36,13 +36,14 @@ class RobustAggregator(object):
         self.stddev = args.stddev  # for weak DP defenses
 
     def norm_diff_clipping(self, local_state_dict, global_state_dict):
-        vec_local_weight = vectorize_state_dict(local_state_dict)
-        vec_global_weight = vectorize_state_dict(global_state_dict)
+        vec_local_weight = vectorize_weight(local_state_dict)
+        vec_global_weight = vectorize_weight(global_state_dict)
+
         # clip the norm diff
         vec_diff = vec_local_weight - vec_global_weight
-        weight_diff_norm = torch.norm(vectorize_diff).item()
-        clipped_weight_diff = vectorize_diff / max(1, weight_diff_norm / self.norm_bound)
-        clipped_local_state_dict = load_model_weight_diff(local_model_params,
+        weight_diff_norm = torch.norm(vec_diff).item()
+        clipped_weight_diff = vec_diff / max(1, weight_diff_norm / self.norm_bound)
+        clipped_local_state_dict = load_model_weight_diff(local_state_dict,
                                                           clipped_weight_diff,
                                                           global_state_dict)
         return clipped_local_state_dict
