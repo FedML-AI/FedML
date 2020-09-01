@@ -1,5 +1,6 @@
 env:
     - ARCH=x86
+dist: trusty
 language: python
 sudo: false
 python:

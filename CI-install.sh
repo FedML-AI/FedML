@@ -9,8 +9,8 @@ hash -r
 conda config --set always_yes yes --set changeps1 no
 conda update -q conda
 conda info -a
-conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION
-conda activate test-environment
+conda create -q -n fedml python=$TRAVIS_PYTHON_VERSION
+conda activate fedml
 
 # Install PyTorch (please visit pytorch.org to check your version according to your physical machines
 conda install pytorch torchvision cudatoolkit=10.2 -c pytorch
