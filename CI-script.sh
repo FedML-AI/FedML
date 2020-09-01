@@ -2,6 +2,7 @@
 pyflakes .
 
 # activate the fedml environment
+source "$HOME/miniconda/etc/profile.d/conda.sh"
 conda activate fedml
 
 # test standalone
