@@ -1,5 +1,5 @@
 # -*-coding:utf-8-*-
-
+import logging
 import time
 import uuid
 from typing import List
@@ -110,7 +110,11 @@ class MqttCommManager(BaseCommunicationManager):
         if self.client_id == 0:
             # server
             receiver_id = msg.get_receiver_id()
-            self._client.publish(self._topic + str(0) + "_" + str(receiver_id), payload=msg.to_json())
+            topic = self._topic + str(0) + "_" + str(receiver_id)
+            logging.info("topic = %s" % str(topic))
+            payload = msg.to_json()
+            self._client.publish(topic, payload=payload)
+            logging.info("sent")
         else:
             # client
             self._client.publish(self._topic + str(self.client_id), payload=msg.to_json())
@@ -126,8 +130,7 @@ if __name__ == '__main__':
     class Obs(Observer):
         def receive_message(self, msg_type, msg_params) -> None:
             print("receive_message(%s, %s)" % (msg_type, msg_params.to_string()))
-
-
+    
     client = MqttCommManager("81.71.1.31", 1883)
     client.add_observer(Obs())
     time.sleep(3)

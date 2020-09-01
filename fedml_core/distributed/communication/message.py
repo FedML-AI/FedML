@@ -60,7 +60,6 @@ class Message(object):
         return self.msg_params
 
     def to_json(self):
-        self.msg_params[Message.MSG_ARG_KEY_MODEL_PARAMS] = None
         json_string = json.dumps(self.msg_params)
         print("json string size = " + str(sys.getsizeof(json_string)))
         return json_string
