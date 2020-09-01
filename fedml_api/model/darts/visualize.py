@@ -1,6 +1,5 @@
 import sys
 
-import fedml_api.model.darts.genotypes
 from graphviz import Digraph
 
 
