@@ -1,7 +1,4 @@
-import logging
-
 import torch
-from torch import nn
 
 
 def vectorize_weight(state_dict):
@@ -20,7 +17,8 @@ def load_model_weight_diff(local_state_dict, weight_diff, global_state_dict):
     index_bias = 0
     for item_index, (k, v) in enumerate(local_state_dict.state_dict().items()):
         if is_weight_param(k):
-            recons_local_state_dict[k] = weight_diff[index_bias:index_bias+v.numel()].view(v.size()) + global_state_dict[k]
+            recons_local_state_dict[k] = weight_diff[index_bias:index_bias + v.numel()].view(v.size()) + \
+                                         global_state_dict[k]
             index_bias += v.numel()
         else:
             recons_local_state_dict[k] = v
@@ -34,8 +32,8 @@ def is_weight_param(key_name):
 class RobustAggregator(object):
     def __init__(self, args):
         self.defense_type = args.defense_type
-        self.norm_bound = args.norm_bound # for norm diff clipping and weak DP defenses
-        self.stddev = args.stddev # for weak DP defenses
+        self.norm_bound = args.norm_bound  # for norm diff clipping and weak DP defenses
+        self.stddev = args.stddev  # for weak DP defenses
 
     def norm_diff_clipping(self, local_state_dict, global_state_dict):
         vec_local_weight = vectorize_state_dict(local_state_dict)
@@ -43,15 +41,14 @@ class RobustAggregator(object):
         # clip the norm diff
         vec_diff = vec_local_weight - vec_global_weight
         weight_diff_norm = torch.norm(vectorize_diff).item()
-        clipped_weight_diff = vectorize_diff/max(1, weight_diff_norm/self.norm_bound)
-        clipped_local_state_dict = load_model_weight_diff(local_model_params, 
-                                                          clipped_weight_diff, 
+        clipped_weight_diff = vectorize_diff / max(1, weight_diff_norm / self.norm_bound)
+        clipped_local_state_dict = load_model_weight_diff(local_model_params,
+                                                          clipped_weight_diff,
                                                           global_state_dict)
         return clipped_local_state_dict
 
-
-    def add_noise(local_weight, device):
+    def add_noise(self, local_weight, device):
         gaussian_noise = torch.randn(local_weight.size(),
-                                device=device) * self.stddev
+                                     device=device) * self.stddev
         dp_weight = local_weight + gaussian_noise
         return dp_weight

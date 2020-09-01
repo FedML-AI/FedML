@@ -1,7 +1,7 @@
 import logging
 import time
 
-from fedml_api.distributed.fedavg.message_define import MyMessage
+from fedml_api.distributed.fedavg_robust.message_define import MyMessage
 from fedml_core.distributed.client.client_manager import ClientManager
 from fedml_core.distributed.communication.message import Message
 
