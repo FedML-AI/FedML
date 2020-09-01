@@ -193,7 +193,7 @@ def LCC_encoding_w_Random_partial(X, R_, N, K, T, p, worker_idx):
 
 
 def LCC_decoding(f_eval, f_deg, N, K, T, worker_idx, p):
-    RT_LCC = f_deg * (K + T - 1) + 1
+    # RT_LCC = f_deg * (K + T - 1) + 1
 
     n_beta = K  # +T
     stt_b, stt_a = -int(np.floor(n_beta / 2)), -int(np.floor(N / 2))

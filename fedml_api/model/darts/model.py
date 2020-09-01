@@ -1,6 +1,7 @@
-from torch import torch
-import torch.nn
-from fedml_api.model.darts.operations import *
+import torch
+import torch.nn as nn
+
+from fedml_api.model.darts.operations import FactorizedReduce, ReLUConvBN, OPS, Identity
 from fedml_api.model.darts.utils import drop_path
 
 

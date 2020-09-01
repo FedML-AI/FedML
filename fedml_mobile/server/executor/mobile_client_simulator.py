@@ -44,8 +44,8 @@ def register(uuid):
     r = requests.post(url=URL, params=PARAMS)
     result = r.json()
     client_ID = result['client_id']
-    executorId = result['executorId']
-    executorTopic = result['executorTopic']
+    # executorId = result['executorId']
+    # executorTopic = result['executorTopic']
     training_task_args = result['training_task_args']
 
     class Args:

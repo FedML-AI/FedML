@@ -3,10 +3,10 @@ import logging
 
 import torch
 import wandb
+import numpy as np
 from torch import nn
 
 from fedml_api.standalone.turboaggregate.TA_client import TA_Client
-from fedml_api.standalone.turboaggregate.mpc_function import *
 
 
 class TurboAggregateTrainer(object):
@@ -90,7 +90,7 @@ class TurboAggregateTrainer(object):
 
         N = self.args.client_number
         n_users_layer = np.ceil(np.log(N)).astype(int)
-        n_layer = np.ceil(float(N) / float(n_users_layer)).astype(int)
+        # n_layer = np.ceil(float(N) / float(n_users_layer)).astype(int)
 
         # Set List of send_to, send_from
 

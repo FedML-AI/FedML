@@ -54,7 +54,7 @@ class FederatedLearningFixture(object):
         threshold = 0.5
 
         loss_list = []
-        running_time_list = []
+        # running_time_list = []
         for ep in range(epochs):
             for batch_idx in range(n_batches):
                 global_step += 1
