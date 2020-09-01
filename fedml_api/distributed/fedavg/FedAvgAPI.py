@@ -32,6 +32,7 @@ def init_server(args, device, comm, rank, size, model, train_data_num, train_dat
 
     # start the distributed training
     server_manager = FedAVGServerManager(args, comm, rank, size, aggregator)
+    server_manager.send_init_msg()
     server_manager.run()
 
 

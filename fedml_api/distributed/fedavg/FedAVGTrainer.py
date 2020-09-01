@@ -59,4 +59,9 @@ class FedAVGTrainer(object):
                                                                             epoch, sum(epoch_loss) / len(epoch_loss)))
 
         weights = self.model.cpu().state_dict()
+
+        # transform Tensor to list
+        if self.args.is_mobile == 1:
+            for k in weights.keys():
+                weights[k] = weights[k].detach().numpy().tolist()
         return weights, self.local_sample_number
