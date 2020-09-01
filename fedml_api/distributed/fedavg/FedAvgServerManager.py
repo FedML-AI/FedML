@@ -6,8 +6,8 @@ from fedml_core.distributed.server.server_manager import ServerManager
 
 
 class FedAVGServerManager(ServerManager):
-    def __init__(self, args, comm, rank, size, aggregator):
-        super().__init__(args, comm, rank, size)
+    def __init__(self, args, aggregator, comm=None, rank=0, size=0, backend="MPI"):
+        super().__init__(args, comm, rank, size, backend)
         self.args = args
         self.aggregator = aggregator
         self.round_num = args.comm_round
@@ -49,8 +49,13 @@ class FedAVGServerManager(ServerManager):
             # sampling clients
             client_indexes = self.aggregator.client_sampling(self.round_idx, self.args.client_num_in_total,
                                                              self.args.client_num_per_round)
-            for receiver_id in range(1, self.size):
-                self.send_message_sync_model_to_client(receiver_id, global_model_params, client_indexes[receiver_id-1])
+            if self.args.is_mobile == 1:
+                # since we use MQTT, every client can observe this message, so there is no need to send one by one
+                # for receiver_id in range(1, self.args.client_number+1):
+                self.send_message_sync_model_to_client(0, global_model_params, client_indexes[0])
+            else:
+                for receiver_id in range(1, self.size):
+                    self.send_message_sync_model_to_client(receiver_id, global_model_params, client_indexes[receiver_id-1])
 
     def send_message_init_config(self, receive_id, global_model_params, client_index):
         message = Message(MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id)

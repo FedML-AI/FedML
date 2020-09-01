@@ -7,8 +7,8 @@ from fedml_core.distributed.communication.message import Message
 
 
 class FedAVGClientManager(ClientManager):
-    def __init__(self, args, comm, rank, size, trainer):
-        super().__init__(args, comm, rank, size)
+    def __init__(self, args, trainer, comm=None, rank=0, size=0, backend="MPI"):
+        super().__init__(args, comm, rank, size, backend)
         self.trainer = trainer
         self.num_rounds = args.comm_round
         self.round_idx = 0
@@ -27,6 +27,10 @@ class FedAVGClientManager(ClientManager):
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
         self.trainer.update_model(global_model_params)
         self.trainer.update_dataset(client_index)
+        self.round_idx = 0
+        self.__train()
+
+    def start_training(self):
         self.round_idx = 0
         self.__train()
 

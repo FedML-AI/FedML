@@ -52,7 +52,7 @@ class MqttCommManager(BaseCommunicationManager):
 
     def _on_message(self, client, userdata, msg):
         msg.payload = str(msg.payload, encoding='utf-8')
-        print("_on_message: " + str(msg.payload))
+        # print("_on_message: " + str(msg.payload))
         self._notify(str(msg.payload))
 
     @staticmethod
@@ -70,7 +70,7 @@ class MqttCommManager(BaseCommunicationManager):
         self._observers.remove(observer)
 
     def _notify(self, msg):
-        print("_notify: " + msg)
+        # print("_notify: " + msg)
         msg_params = Message()
         msg_params.init_from_json_string(str(msg))
         msg_type = msg_params.get_type()
