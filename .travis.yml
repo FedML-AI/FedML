@@ -15,4 +15,4 @@ cache:
 install:
     - "bash CI-install.sh"
 script:
-    - "sh CI-script.sh"
+    - "bash CI-script.sh"

@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # install pyflakes to do code error checking
+echo "pip3 install pyflakes --cache-dir $HOME/.pip-cache"
 pip3 install pyflakes --cache-dir $HOME/.pip-cache
 
 # Conda Installation
@@ -11,7 +12,11 @@ hash -r
 conda config --set always_yes yes --set changeps1 no
 conda update -q conda
 conda info -a
-conda create -q -n fedml python=$TRAVIS_PYTHON_VERSION
+
+echo "conda create -q -n fedml python=3.7.4"
+conda create -q -n fedml python=3.7.4
+
+echo "conda activate fedml"
 conda activate fedml
 
 # Install PyTorch (please visit pytorch.org to check your version according to your physical machines
