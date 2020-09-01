@@ -13,6 +13,6 @@ cache:
     - "$HOME/.pip-cache/"
     - "/home/travis/virtualenv/python3.5"
 install:
-    - "sh CI-install.sh"
+    - "bash CI-install.sh"
 script:
     - "sh CI-script.sh"
