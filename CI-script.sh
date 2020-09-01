@@ -1,6 +1,9 @@
 # code checking
 pyflakes .
 
+# activate the fedml environment
+conda activate fedml
+
 # test standalone
 cd ./fedml_experiments/standalone/fedavg
 
