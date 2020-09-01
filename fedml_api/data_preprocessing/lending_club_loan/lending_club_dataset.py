@@ -129,7 +129,7 @@ def load_processed_data(data_dir):
         print(f"[INFO] load processed loan data from {file_path}")
         processed_loan_df = pd.read_csv(file_path, low_memory=False)
     else:
-        print(f"[INFO] start processing loan data.")
+        # print(f"[INFO] start processing loan data.")
         file_path = data_dir + "loan.csv"
         processed_loan_df = process_data(prepare_data(file_path))
         file_path = data_dir + "processed_loan.csv"
@@ -190,4 +190,4 @@ def loan_load_three_party_data(data_dir):
 
 if __name__ == '__main__':
     data_dir = "../../../data/lending_club_loan/"
-    load_two_party_data(data_dir)
+    loan_load_two_party_data(data_dir)

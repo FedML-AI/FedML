@@ -89,7 +89,7 @@ class TurboAggregateTrainer(object):
         # logging.info("################aggregate: %d" % len(w_locals))
 
         N = self.args.client_number
-        n_users_layer = np.ceil(np.log(N)).astype(int)
+        # n_users_layer = np.ceil(np.log(N)).astype(int)
         # n_layer = np.ceil(float(N) / float(n_users_layer)).astype(int)
 
         # Set List of send_to, send_from
