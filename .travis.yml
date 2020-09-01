@@ -1,6 +1,9 @@
 env:
     - ARCH=x86
-dist: trusty
+
+dist: bionic
+os:
+    - linux
 language: python
 sudo: false
 python:
