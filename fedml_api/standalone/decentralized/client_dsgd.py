@@ -2,8 +2,6 @@ import random
 
 import torch
 
-from fedml_api.model.linear_models.lr import LogisticRegression
-
 
 class ClientDSGD(object):
     def __init__(self, model, model_cache, client_id, streaming_data, topology_manager, iteration_number,
@@ -102,4 +100,3 @@ class ClientDSGD(object):
         # update parameter z (self.model)
         for x_params, z_params in zip(list(self.model_x.parameters()), list(self.model.parameters())):
             z_params.data.copy_(x_params)
-

@@ -5,10 +5,9 @@ import torch
 import wandb
 from torch import nn
 
-import numpy as np
-
-from fedml_api.standalone.turboaggregate.mpc_function import *
 from fedml_api.standalone.turboaggregate.TA_client import TA_Client
+from fedml_api.standalone.turboaggregate.mpc_function import *
+
 
 class TurboAggregateTrainer(object):
     def __init__(self, dataset, model, device, args):
@@ -33,7 +32,7 @@ class TurboAggregateTrainer(object):
         logging.info("############setup_clients (START)#############")
         for client_idx in range(self.args.client_number):
             c = TA_Client(train_data_local_dict[client_idx], test_data_local_dict[client_idx],
-                       data_local_num_dict[client_idx], self.args, self.device)
+                          data_local_num_dict[client_idx], self.args, self.device)
             self.client_list.append(c)
         logging.info("############setup_clients (END)#############")
 
@@ -52,10 +51,9 @@ class TurboAggregateTrainer(object):
             #########################################
             # Turbo-Aggregate Protocol Starts HERE. #
             #########################################
-            
-            # create the network topology
-            self.TA_topology_vanilla() 
 
+            # create the network topology
+            self.TA_topology_vanilla()
 
             #######################################
             # Turbo-Aggregate Protocol Ends HERE. #
@@ -95,10 +93,8 @@ class TurboAggregateTrainer(object):
         n_layer = np.ceil(float(N) / float(n_users_layer)).astype(int)
 
         # Set List of send_to, send_from
-        
-        # Initialize the buffer of clients 
-        
 
+        # Initialize the buffer of clients 
 
     def local_test(self, model_global, round_idx):
         self.local_test_on_training_data(model_global, round_idx)

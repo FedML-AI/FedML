@@ -1,4 +1,5 @@
 import logging
+
 import numpy as np
 import wandb
 
@@ -42,7 +43,6 @@ def FedML_decentralized_fl(client_number, client_id_list, streaming_data, model,
 
     # create all client instances (each client will create an independent model instance)
     client_list = []
-    model_list = []
     for client_id in client_id_list:
         client_data = streaming_data[client_id]
         # print("len = " + str(len(client_data)))
@@ -57,19 +57,18 @@ def FedML_decentralized_fl(client_number, client_id_list, streaming_data, model,
         elif args.mode == 'DOL':
 
             client = ClientDSGD(model, model_cache, client_id, client_data, topology_manager,
-                        iteration_number_T, learning_rate=lr_rate, batch_size=batch_size,
+                                iteration_number_T, learning_rate=lr_rate, batch_size=batch_size,
                                 weight_decay=weight_decay, latency=latency, b_symmetric=b_symmetric)
 
         else:
             client = ClientDSGD(model, model_cache, client_id, client_data, topology_manager,
-                        iteration_number_T, learning_rate=lr_rate, batch_size=batch_size,
+                                iteration_number_T, learning_rate=lr_rate, batch_size=batch_size,
                                 weight_decay=weight_decay, latency=latency, b_symmetric=b_symmetric)
 
         client_list.append(client)
-        # model_list.append(client.model_z)
 
     log_file_path = "./log/decentralized_fl.txt"
-    f_log = open(log_file_path, mode ='w+', encoding='utf-8')
+    f_log = open(log_file_path, mode='w+', encoding='utf-8')
 
     for t in range(iteration_number_T * epoch):
         logging.info('--- Iteration %d ---' % t)

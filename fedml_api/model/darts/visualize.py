@@ -1,5 +1,5 @@
 import sys
-from collections import namedtuple
+
 import fedml_api.model.darts.genotypes
 from graphviz import Digraph
 
