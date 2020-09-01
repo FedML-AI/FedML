@@ -29,7 +29,7 @@ def init_server(args, device, comm, rank, size, model, train_data_num, train_dat
     aggregator = FedAvgRobustAggregator(train_data_global, test_data_global, train_data_num, client_num, device, model, args)
 
     # start the distributed training
-    server_manager = FedAvgServerManager(args, comm, rank, size, aggregator)
+    server_manager = FedAvgRobustServerManager(args, comm, rank, size, aggregator)
     server_manager.run()
 
 

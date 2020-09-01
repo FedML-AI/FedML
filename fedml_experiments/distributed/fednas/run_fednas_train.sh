@@ -13,9 +13,9 @@ mpirun -np 9 -hostfile ./mpi_host_file python3 ./main_fednas.py \
   --gpu_server_num $SERVER_NUM \
   --gpu_num_per_server $GPU_NUM_PER_SERVER \
   --model $MODEL \
-  --state "search" \
+  --stage "search" \
   --dataset cifar10 \
-  --partition $DISTRIBUTION  \
+  --partition_method $DISTRIBUTION  \
   --client_number 8 \
   --comm_round $ROUND \
   --epochs $EPOCH \
