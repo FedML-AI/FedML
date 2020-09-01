@@ -12,7 +12,7 @@ from fedml_core.distributed.communication.observer import Observer
 
 
 class MqttCommManager(BaseCommunicationManager):
-    def __init__(self, host, port, topic='fedml', client_id=None):
+    def __init__(self, host, port, topic='fedml', client_id=0, client_num=0):
         self._unacked_sub = list()
         self._observers: List[Observer] = []
         self._topic = topic
@@ -20,8 +20,9 @@ class MqttCommManager(BaseCommunicationManager):
             self._client_id = mqtt.base62(uuid.uuid4().int, padding=22)
         else:
             self._client_id = client_id
+        self.client_num = client_num
         # Construct a Client
-        self._client = mqtt.Client(client_id=self._client_id)
+        self._client = mqtt.Client(client_id=str(self._client_id))
         self._client.on_connect = self._on_connect
         self._client.on_disconnect = self._on_disconnect
         self._client.on_message = self._on_message
@@ -44,11 +45,29 @@ class MqttCommManager(BaseCommunicationManager):
         return self._topic
 
     def _on_connect(self, client, userdata, flags, rc):
+        """
+            [server]
+            sending message topic (publish): serverID_clientID
+            receiving message topic (subscribe): clientID
+
+            [client]
+            sending message topic (publish): clientID
+            receiving message topic (subscribe): serverID_clientID
+
+        """
         print("Connection returned with result code:" + str(rc))
         # subscribe one topic
-        result, mid = self._client.subscribe(self._topic, 0)
-        self._unacked_sub.append(mid)
-        print(result)
+        if self.client_id == 0:
+            # server
+            for client_ID in range(1, self.client_num+1):
+                result, mid = self._client.subscribe(self._topic + str(client_ID), 0)
+                self._unacked_sub.append(mid)
+                print(result)
+        else:
+            # client
+            result, mid = self._client.subscribe(self._topic + str(0) + "_" + str(self.client_id), 0)
+            self._unacked_sub.append(mid)
+            print(result)
 
     def _on_message(self, client, userdata, msg):
         msg.payload = str(msg.payload, encoding='utf-8')
@@ -78,8 +97,23 @@ class MqttCommManager(BaseCommunicationManager):
             observer.receive_message(msg_type, msg_params)
 
     def send_message(self, msg: Message):
-        # print(msg.to_string())
-        self._client.publish(self._topic, payload=msg.to_json())
+        """
+            [server]
+            sending message topic (publish): serverID_clientID
+            receiving message topic (subscribe): clientID
+
+            [client]
+            sending message topic (publish): clientID
+            receiving message topic (subscribe): serverID_clientID
+
+        """
+        if self.client_id == 0:
+            # server
+            receiver_id = msg.get_receiver_id()
+            self._client.publish(self._topic + str(0) + "_" + str(receiver_id), payload=msg.to_json())
+        else:
+            # client
+            self._client.publish(self._topic + str(self.client_id), payload=msg.to_json())
 
     def handle_receive_message(self):
         pass

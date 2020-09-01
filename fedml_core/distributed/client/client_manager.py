@@ -20,7 +20,7 @@ class ClientManager(Observer):
             HOST = "81.71.1.31"
             # HOST = "broker.emqx.io"
             PORT = 1883
-            self.com_manager = MqttCommManager(HOST, PORT)
+            self.com_manager = MqttCommManager(HOST, PORT, client_id=rank, client_num=size-1)
         else:
             self.com_manager = MpiCommunicationManager(comm, rank, size, node_type="client")
         self.com_manager.add_observer(self)
@@ -29,9 +29,6 @@ class ClientManager(Observer):
     def run(self):
         self.register_message_receive_handlers()
         self.com_manager.handle_receive_message()
-
-    def update_sender_id(self, send_id):
-        self.rank = send_id
 
     def get_sender_id(self):
         return self.rank

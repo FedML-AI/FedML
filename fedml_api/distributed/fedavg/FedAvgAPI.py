@@ -38,8 +38,8 @@ def init_server(args, device, comm, rank, size, model, train_data_num, train_dat
 
 def init_client(args, device, comm, process_id, size, model, train_data_num, train_data_local_num_dict, train_data_local_dict):
     # trainer
-    client_ID = process_id - 1
-    trainer = FedAVGTrainer(client_ID, train_data_local_dict, train_data_local_num_dict, train_data_num, device, model, args)
+    client_index = process_id - 1
+    trainer = FedAVGTrainer(client_index, train_data_local_dict, train_data_local_num_dict, train_data_num, device, model, args)
 
     client_manager = FedAVGClientManager(args, comm, process_id, size, trainer)
     client_manager.run()

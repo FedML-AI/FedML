@@ -175,10 +175,11 @@ if __name__ == '__main__':
     # In this case, please use our FedML distributed version (./fedml_experiments/distributed_fedavg)
     model = create_model(args, model_name=args.model, output_dim=dataset[7])
 
-    trainer = FedAVGTrainer(client_ID, train_data_local_dict, train_data_local_num_dict, train_data_num, device, model, args)
+    client_index = client_ID - 1
+    trainer = FedAVGTrainer(client_index, train_data_local_dict, train_data_local_num_dict, train_data_num, device, model, args)
 
-    client_manager = FedAVGClientManager(args, trainer, backend="MQTT")
-    client_manager.update_sender_id(client_ID)
+    size = args.client_num_per_round + 1
+    client_manager = FedAVGClientManager(args, trainer, rank=client_ID, size=size,  backend="MQTT")
     client_manager.run()
     client_manager.start_training()
 
