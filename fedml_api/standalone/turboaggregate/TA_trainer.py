@@ -3,7 +3,6 @@ import logging
 
 import torch
 import wandb
-import numpy as np
 from torch import nn
 
 from fedml_api.standalone.turboaggregate.TA_client import TA_Client
@@ -88,13 +87,14 @@ class TurboAggregateTrainer(object):
     def TA_topology_vanilla(self):
         # logging.info("################aggregate: %d" % len(w_locals))
 
-        N = self.args.client_number
+        # N = self.args.client_number
         # n_users_layer = np.ceil(np.log(N)).astype(int)
         # n_layer = np.ceil(float(N) / float(n_users_layer)).astype(int)
 
         # Set List of send_to, send_from
 
-        # Initialize the buffer of clients 
+        # Initialize the buffer of clients
+        pass
 
     def local_test(self, model_global, round_idx):
         self.local_test_on_training_data(model_global, round_idx)

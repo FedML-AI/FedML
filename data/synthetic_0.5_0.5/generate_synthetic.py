@@ -19,7 +19,7 @@ def generate_synthetic(alpha, beta, iid):
     np.random.seed(0)
     samples_per_user = np.random.lognormal(4, 2, (NUM_USER)).astype(int) + 50
     print(samples_per_user)
-    num_samples = np.sum(samples_per_user)
+    # num_samples = np.sum(samples_per_user)
 
     X_split = [[] for _ in range(NUM_USER)]
     y_split = [[] for _ in range(NUM_USER)]
