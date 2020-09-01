@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # install pyflakes to do code error checking
 pip3 install pyflakes --cache-dir $HOME/.pip-cache
 
