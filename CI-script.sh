@@ -1,3 +1,6 @@
+# code checking
+pyflakes .
+
 # test standalone
 cd ./fedml_experiments/standalone/fedavg
 
