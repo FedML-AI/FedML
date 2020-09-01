@@ -72,6 +72,9 @@ def add_args(parser):
     parser.add_argument('--comm_round', type=int, default=10,
                         help='how many round of communications we shoud use')
 
+    parser.add_argument('--is_mobile', type=int, default=0,
+                        help='whether the program is running on the FedML-Mobile server side')
+
     parser.add_argument('--frequency_of_the_test', type=int, default=1,
                         help='the frequency of the algorithms')
 

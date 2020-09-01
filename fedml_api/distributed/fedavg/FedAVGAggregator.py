@@ -68,6 +68,11 @@ class FedAVGAggregator(object):
             for i in range(0, len(model_list)):
                 local_sample_number, local_model_params = model_list[i]
                 w = local_sample_number / training_num
+
+                if self.args.is_mobile == 1:
+                    # transform list to tensor
+                    averaged_params[k] = torch.from_numpy(np.asarray(averaged_params[k])).float()
+
                 if i == 0:
                     averaged_params[k] = local_model_params[k] * w
                 else:

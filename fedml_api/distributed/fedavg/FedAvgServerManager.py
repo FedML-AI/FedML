@@ -14,13 +14,15 @@ class FedAVGServerManager(ServerManager):
         self.round_idx = 0
 
     def run(self):
+        super().run()
+
+    def send_init_msg(self):
         # sampling clients
         client_indexes = self.aggregator.client_sampling(self.round_idx, self.args.client_num_in_total,
                                                          self.args.client_num_per_round)
         global_model_params = self.aggregator.get_global_model_params()
         for process_id in range(1, self.size):
             self.send_message_init_config(process_id, global_model_params, client_indexes[process_id-1])
-        super().run()
 
     def register_message_receive_handlers(self):
         self.register_message_receive_handler(MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER,
