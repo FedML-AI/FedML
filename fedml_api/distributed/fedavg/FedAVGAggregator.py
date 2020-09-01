@@ -57,6 +57,10 @@ class FedAVGAggregator(object):
         training_num = 0
 
         for idx in range(self.worker_num):
+            # when debugging the entire communication process, the model is set to None
+            if self.model_dict[idx] is None:
+                self.model_dict[idx] = self.model.state_dict()
+
             model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
             training_num += self.sample_num_dict[idx]
 

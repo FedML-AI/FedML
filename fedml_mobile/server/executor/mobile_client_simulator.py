@@ -1,6 +1,10 @@
 import logging
 import os
 import sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
+
+
 import time
 from datetime import datetime
 
@@ -9,18 +13,19 @@ import numpy as np
 import requests
 import torch
 
-# add the FedML root directory to the python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
+from fedml_api.distributed.fedavg.FedAVGTrainer import FedAVGTrainer
+from fedml_api.distributed.fedavg.FedAvgClientManager import FedAVGClientManager
+
+from fedml_api.data_preprocessing.MNIST.data_loader import load_partition_data_mnist
+from fedml_api.data_preprocessing.cifar10.data_loader import load_partition_data_cifar10
+from fedml_api.data_preprocessing.cifar100.data_loader import load_partition_data_cifar100
+from fedml_api.data_preprocessing.cinic10.data_loader import load_partition_data_cinic10
+from fedml_api.data_preprocessing.shakespeare.data_loader import load_partition_data_shakespeare
 
 from fedml_api.model.deep_neural_networks.mobilenet import mobilenet
 from fedml_api.model.deep_neural_networks.resnet import resnet56
-from fedml_mobile.server.executor.fedavg.FedAvgClientManager import FedAVGClientManager
-
-from fedml_mobile.server.executor.fedavg.FedAVGTrainer import FedAVGTrainer
-from fedml_api.data_preprocessing.cifar100.data_loader import load_partition_data_distributed_cifar100
-from fedml_api.data_preprocessing.cinic10.data_loader import load_partition_data_distributed_cinic10
-from fedml_api.data_preprocessing.cifar10.data_loader import load_partition_data_distributed_cifar10
-
+from fedml_api.model.linear_models.lr import LogisticRegression
+from fedml_api.model.shallow_neural_networks.rnn import RNN_OriginalFedAvg
 
 def add_args(parser):
     parser.add_argument('--client_uuid', type=str, default="0",
@@ -51,13 +56,14 @@ def register(uuid):
             self.partition_method = training_task_args['partition_method']
             self.partition_alpha = training_task_args['partition_alpha']
             self.model = training_task_args['model']
-            self.client_number = training_task_args['client_number']
+            self.client_num_per_round = training_task_args['client_num_per_round']
             self.comm_round = training_task_args['comm_round']
             self.epochs = training_task_args['epochs']
             self.lr = training_task_args['lr']
             self.wd = training_task_args['wd']
             self.batch_size = training_task_args['batch_size']
             self.frequency_of_the_test = training_task_args['frequency_of_the_test']
+            self.is_mobile = training_task_args['is_mobile']
 
     args = Args()
     return client_ID, args
@@ -79,6 +85,59 @@ def init_training_device(process_ID, fl_worker_num, gpu_num_per_machine):
     return device
 
 
+def load_data(args, dataset_name):
+    if dataset_name == "mnist":
+        logging.info("load_data. dataset_name = %s" % dataset_name)
+        client_num, train_data_num, test_data_num, train_data_global, test_data_global, \
+        train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
+        class_num = load_partition_data_mnist(args.batch_size)
+        """
+        For shallow NN or linear models, 
+        we uniformly sample a fraction of clients each round (as the original FedAvg paper)
+        """
+        args.client_num_in_total = client_num
+    elif dataset_name == "shakespeare":
+        logging.info("load_data. dataset_name = %s" % dataset_name)
+        client_num, train_data_num, test_data_num, train_data_global, test_data_global, \
+        train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
+        class_num = load_partition_data_shakespeare(args.batch_size)
+        args.client_num_in_total = client_num
+    else:
+        if dataset_name == "cifar10":
+            data_loader = load_partition_data_cifar10
+        elif dataset_name == "cifar100":
+            data_loader = load_partition_data_cifar100
+        elif dataset_name == "cinic10":
+            data_loader = load_partition_data_cinic10
+        else:
+            data_loader = load_partition_data_cifar10
+
+        train_data_num, test_data_num, train_data_global, test_data_global, \
+        train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
+        class_num = data_loader(args.dataset, args.data_dir, args.partition_method,
+                                args.partition_alpha, args.client_num_in_total, args.batch_size)
+
+    dataset = [train_data_num, test_data_num, train_data_global, test_data_global,
+               train_data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num]
+    return dataset
+
+
+def create_model(args, model_name, output_dim):
+    logging.info("create_model. model_name = %s, output_dim = %s" % (model_name, output_dim))
+    model = None
+    if model_name == "lr" and args.dataset == "mnist":
+        model = LogisticRegression(28 * 28, output_dim)
+        args.client_optimizer = "sgd"
+    elif model_name == "rnn" and args.dataset == "shakespeare":
+        model = RNN_OriginalFedAvg(28 * 28, output_dim)
+        args.client_optimizer = "sgd"
+    elif model_name == "resnet56":
+        model = resnet56(class_num=output_dim)
+    elif model_name == "mobilenet":
+        model = mobilenet(class_num=output_dim)
+    return model
+
+
 """
 python mobile_client_simulator.py --client_uuid '0'
 python mobile_client_simulator.py --client_uuid '1'
@@ -95,43 +154,30 @@ if __name__ == '__main__':
     logging.info("client_ID = " + str(client_ID))
     logging.info("dataset = " + str(args.dataset))
     logging.info("model = " + str(args.model))
-    logging.info("client_number = " + str(args.client_number))
+    logging.info("client_num_per_round = " + str(args.client_num_per_round))
 
     # Set the random seed. The np.random seed determines the dataset partition.
     # The torch_manual_seed determines the initial weight.
     # We fix these two, so that we can reproduce the result.
-    seed = 0
-    np.random.seed(seed)
-    torch.manual_seed(args.client_number)
+    np.random.seed(0)
+    torch.manual_seed(10)
 
-    logging.info("client_ID = %d, size = %d" % (client_ID, args.client_number))
-    device = init_training_device(client_ID-1, args.client_number - 1, 4)
+    logging.info("client_ID = %d, size = %d" % (client_ID, args.client_num_per_round))
+    device = init_training_device(client_ID-1, args.client_num_per_round - 1, 4)
 
     # load data
-    if args.dataset == "cifar10":
-        data_loader = load_partition_data_distributed_cifar10
-    elif args.dataset == "cifar100":
-        data_loader = load_partition_data_distributed_cifar100
-    elif args.dataset == "cinic10":
-        data_loader = load_partition_data_distributed_cinic10
-    else:
-        data_loader = load_partition_data_distributed_cifar10
-    train_data_num, train_data_global, \
-    test_data_global, local_data_num, \
-    train_data_local, test_data_local, class_num = data_loader(client_ID, args.dataset, args.data_dir,
-                                                               args.partition_method, args.partition_alpha,
-                                                               args.client_number, args.batch_size)
+    dataset = load_data(args, args.dataset)
+    [train_data_num, test_data_num, train_data_global, test_data_global,
+     train_data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num] = dataset
 
-    # create the model
-    model = None
-    if args.model == "resnet56":
-        model = resnet56(class_num)
-    elif args.model == "mobilenet":
-        model = mobilenet(class_num=class_num)
+    # create model.
+    # Note if the model is DNN (e.g., ResNet), the training will be very slow.
+    # In this case, please use our FedML distributed version (./fedml_experiments/distributed_fedavg)
+    model = create_model(args, model_name=args.model, output_dim=dataset[7])
 
-    trainer = FedAVGTrainer(client_ID, train_data_local, local_data_num, train_data_num, device, model, args)
+    trainer = FedAVGTrainer(client_ID, train_data_local_dict, train_data_local_num_dict, train_data_num, device, model, args)
 
-    client_manager = FedAVGClientManager(args, trainer)
+    client_manager = FedAVGClientManager(args, trainer, backend="MQTT")
     client_manager.update_sender_id(client_ID)
     client_manager.run()
     client_manager.start_training()

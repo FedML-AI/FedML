@@ -139,6 +139,7 @@ def create_model(args, model_name, output_dim):
         model = mobilenet(class_num=output_dim)
     return model
 
+
 def init_training_device(process_ID, fl_worker_num, gpu_num_per_machine):
     # initialize the mapping from process ID to GPU ID: <process ID, GPU ID>
     if process_ID == 0:
@@ -207,7 +208,6 @@ if __name__ == "__main__":
     logging.info("process_id = %d, size = %d" % (process_id, worker_number))
     device = init_training_device(process_id, worker_number-1, args.gpu_num_per_server)
 
-    # load data
     # load data
     dataset = load_data(args, args.dataset)
     [train_data_num, test_data_num, train_data_global, test_data_global,

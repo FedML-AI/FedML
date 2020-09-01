@@ -33,7 +33,7 @@ class Message(object):
         self.type = self.msg_params[Message.MSG_ARG_KEY_TYPE]
         self.sender_id = self.msg_params[Message.MSG_ARG_KEY_SENDER]
         self.receiver_id = self.msg_params[Message.MSG_ARG_KEY_RECEIVER]
-        print("msg_params = " + str(self.msg_params))
+        # print("msg_params = " + str(self.msg_params))
 
     def get_sender_id(self):
         return self.sender_id
@@ -60,7 +60,7 @@ class Message(object):
         return self.msg_params
 
     def to_json(self):
-        # self.msg_params[Message.MSG_ARG_KEY_MODEL_PARAMS] = None
+        self.msg_params[Message.MSG_ARG_KEY_MODEL_PARAMS] = None
         json_string = json.dumps(self.msg_params)
         print("json string size = " + str(sys.getsizeof(json_string)))
         return json_string
