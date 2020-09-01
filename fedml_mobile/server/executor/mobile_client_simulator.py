@@ -141,8 +141,6 @@ def create_model(args, model_name, output_dim):
 """
 python mobile_client_simulator.py --client_uuid '0'
 python mobile_client_simulator.py --client_uuid '1'
-python mobile_client_simulator.py --client_uuid '2'
-python mobile_client_simulator.py --client_uuid '4'
 """
 if __name__ == '__main__':
     # parse python script input parameters
