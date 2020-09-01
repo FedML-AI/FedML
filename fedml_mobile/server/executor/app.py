@@ -227,8 +227,8 @@ if __name__ == '__main__':
     aggregator = FedAVGAggregator(train_data_global, test_data_global, train_data_num,
                                   train_data_local_dict, test_data_local_dict, train_data_local_num_dict,
                                   args.client_num_per_round, device, model, args)
-
-    server_manager = FedAVGServerManager(args, aggregator, backend="MQTT")
+    size = args.client_num_per_round + 1
+    server_manager = FedAVGServerManager(args, aggregator, rank=0, size=size, backend="MQTT")
     server_manager.run()
 
     app.run(host='127.0.0.1', port=5000, debug=False)

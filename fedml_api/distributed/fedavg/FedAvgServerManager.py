@@ -49,13 +49,8 @@ class FedAVGServerManager(ServerManager):
             # sampling clients
             client_indexes = self.aggregator.client_sampling(self.round_idx, self.args.client_num_in_total,
                                                              self.args.client_num_per_round)
-            if self.args.is_mobile == 1:
-                # since we use MQTT, every client can observe this message, so there is no need to send one by one
-                # for receiver_id in range(1, self.args.client_number+1):
-                self.send_message_sync_model_to_client(0, global_model_params, client_indexes[0])
-            else:
-                for receiver_id in range(1, self.size):
-                    self.send_message_sync_model_to_client(receiver_id, global_model_params, client_indexes[receiver_id-1])
+            for receiver_id in range(1, self.size):
+                self.send_message_sync_model_to_client(receiver_id, global_model_params, client_indexes[receiver_id-1])
 
     def send_message_init_config(self, receive_id, global_model_params, client_index):
         message = Message(MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id)
@@ -64,6 +59,7 @@ class FedAVGServerManager(ServerManager):
         self.send_message(message)
 
     def send_message_sync_model_to_client(self, receive_id, global_model_params, client_index):
+        logging.info("send_message_sync_model_to_client. receive_id = %d" % receive_id)
         message = Message(MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT, self.get_sender_id(), receive_id)
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, client_index)
