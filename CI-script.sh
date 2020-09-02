@@ -6,7 +6,6 @@ source "$HOME/miniconda/etc/profile.d/conda.sh"
 conda activate fedml
 
 # MNIST standalone FedAvg
-wandb off
 cd ./fedml_experiments/standalone/fedavg
 sh run_fedavg_standalone_pytorch.sh 2 10 10 mnist ./../../../data/mnist lr hetero 2 2 0.03
 cd ./../../../
@@ -27,7 +26,7 @@ bg_pid_client0=$!
 python3 ./mobile_clent_simulator.py --client_uuid '1'
 bg_pid_client1=$!
 
-sleep 60
+sleep 30
 kill $bg_pid_server
 kill $bg_pid_client0
 kill $bg_pid_client1
