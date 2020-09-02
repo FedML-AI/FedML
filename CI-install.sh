@@ -29,7 +29,11 @@ conda install -c anaconda mpi4py
 pip install --upgrade wandb
 
 # Install other required package
-pip install setproctitle
+conda install numpy
+conda install setproctitle
+cd ./fedml_mobile/server/executor
+pip install -r requirements.txt
+cd ./../../../
 
 # install the dataset
 # 1. MNIST
