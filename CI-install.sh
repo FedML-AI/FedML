@@ -29,6 +29,7 @@ conda install -c anaconda mpi4py
 pip install --upgrade wandb
 
 # Install other required package
+conda install scikit-learn
 conda install numpy
 conda install setproctitle
 conda install networkx
