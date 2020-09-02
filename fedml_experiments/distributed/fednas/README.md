@@ -25,7 +25,7 @@ Note:
 - Homogeneous distribution (IID) experiment:
 ```
 # search
-sh run_fednas_search.sh 1 4 darts homo 50 5 32
+sh run_fednas_search.sh 1 4 darts homo 50 5 64
 
 # train
 sh run_fednas_train.sh 1 4 darts homo 500 15 64
