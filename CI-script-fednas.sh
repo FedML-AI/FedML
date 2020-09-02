@@ -41,6 +41,3 @@ kill $bg_pid_client1
 exit 0
 
 cd ./../../../
-
-
-# 4. 
