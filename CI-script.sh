@@ -17,16 +17,20 @@ cd ./../../../
 
 # MNIST mobile FedAvg
 cd ./fedml_mobile/server/executor/
-python3 -m app.py &
+python3 app.py &
 bg_pid_server=$!
-
-python3 ./mobile_clent_simulator.py --client_uuid '0'
-bg_pid_client0=$!
-
-python3 ./mobile_clent_simulator.py --client_uuid '1'
-bg_pid_client1=$!
+echo "pid="$bg_pid_server
 
 sleep 30
+python3 ./mobile_client_simulator.py --client_uuid '0' &
+bg_pid_client0=$!
+echo $bg_pid_client0
+
+python3 ./mobile_client_simulator.py --client_uuid '1' &
+bg_pid_client1=$!
+echo $bg_pid_client1
+
+sleep 80
 kill $bg_pid_server
 kill $bg_pid_client0
 kill $bg_pid_client1

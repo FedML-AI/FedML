@@ -7,6 +7,7 @@ import numpy as np
 import torch
 import wandb
 
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 
 from fedml_api.distributed.fedavg.FedAVGAggregator import FedAVGAggregator
@@ -23,7 +24,7 @@ from fedml_api.model.deep_neural_networks.resnet import resnet56
 from fedml_api.model.linear_models.lr import LogisticRegression
 from fedml_api.model.shallow_neural_networks.rnn import RNN_OriginalFedAvg
 
-from fedml_core.distributed.communication import Observer
+from fedml_core.distributed.communication.observer import Observer
 
 from fedml_mobile.server.executor.log import __log
 
