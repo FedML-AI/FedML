@@ -30,3 +30,9 @@ pip install --upgrade wandb
 
 # Install other required package
 pip install setproctitle
+
+# install the dataset
+# 1. MNIST
+cd ./data/MNIST
+sh download_and_unzip.sh
+cd ../../

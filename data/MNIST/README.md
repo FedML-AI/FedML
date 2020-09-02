@@ -19,6 +19,10 @@ Federated Optimization in Heterogeneous Networks (https://arxiv.org/pdf/1812.061
 
 To simplify the data preparation, we provide processed non-I.I.D. dataset.
 Please download the dataset [here](https://drive.google.com/file/d/1cU_LcBAUZvfZWveOMhG4G5Fg9uFXhVdf/view?usp=sharing), unzip it and put the `train` and `test` folder under this directory.
+Or you can run the following script:
+```
+sh download_and_unzip.sh
+```
 
 The layout of the folders under `./MNIST` should be:
 
