@@ -27,6 +27,7 @@ bg_pid_client0=$!
 python3 ./mobile_clent_simulator.py --client_uuid '1'
 bg_pid_client1=$!
 
+sleep 60
 kill $bg_pid_server
 kill $bg_pid_client0
 kill $bg_pid_client1
