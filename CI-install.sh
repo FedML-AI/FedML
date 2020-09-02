@@ -36,3 +36,5 @@ pip install setproctitle
 cd ./data/MNIST
 sh download_and_unzip.sh
 cd ../../
+
+# 2.
