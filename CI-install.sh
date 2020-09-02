@@ -31,6 +31,8 @@ pip install --upgrade wandb
 # Install other required package
 conda install numpy
 conda install setproctitle
+conda install networkx
+
 cd ./fedml_mobile/server/executor
 pip install -r requirements.txt
 cd ./../../../
@@ -41,4 +43,7 @@ cd ./data/MNIST
 sh download_and_unzip.sh
 cd ../../
 
-# 2.
+# 2. CIFAR10
+cd ./data/cifar10
+sh download_cifar10.sh
+cd ../../
