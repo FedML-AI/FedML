@@ -47,3 +47,5 @@ fedml_mobile/android/.idea
 fedml_mobile/android/app/build
 fedml_mobile/android/fedml-iot-sdk/build
 fedml_mobile/android/build
+
+mimiconda.sh
