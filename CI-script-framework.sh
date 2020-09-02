@@ -1,3 +1,7 @@
+#!/bin/bash
+
+set -e
+
 # code checking
 pyflakes .
 
