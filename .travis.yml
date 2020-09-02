@@ -12,4 +12,5 @@ install:
 script:
     - "bash CI-script-framework.sh"
     - "bash CI-script-fedavg.sh"
+    - "bash CI-script-fednas.sh"
     - "bash CI-script-fedavg-robust.sh"
