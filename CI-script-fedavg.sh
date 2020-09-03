@@ -12,7 +12,6 @@ conda activate fedml
 wandb login ee0b5f53d949c84cee7decbe7a629e63fb2f8408
 wandb off
 
-
 # 1. MNIST standalone FedAvg
 cd ./fedml_experiments/standalone/fedavg
 sh run_fedavg_standalone_pytorch.sh 2 10 10 mnist ./../../../data/mnist lr hetero 2 2 0.03
@@ -22,7 +21,7 @@ cd ./../../../
 
 # 2. MNIST distributed FedAvg
 cd ./fedml_experiments/distributed/fedavg
-sh run_fedavg_distributed_pytorch.sh 10 10 1 4 lr hetero 2 2 10 0.03 mnist "./../../../data/mnist" & || exit 1
+sh run_fedavg_distributed_pytorch.sh 10 10 1 4 lr hetero 2 2 10 0.03 mnist "./../../../data/mnist" &
 
 sleep 60
 killall mpirun
