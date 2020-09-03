@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -ex
 
 # code checking
 pyflakes .
@@ -12,10 +12,13 @@ conda activate fedml
 wandb login ee0b5f53d949c84cee7decbe7a629e63fb2f8408
 wandb off
 
+
 # 1. MNIST standalone FedAvg
 cd ./fedml_experiments/standalone/fedavg
 sh run_fedavg_standalone_pytorch.sh 2 10 10 mnist ./../../../data/mnist lr hetero 2 2 0.03
 cd ./../../../
+
+
 
 # 2. MNIST distributed FedAvg
 cd ./fedml_experiments/distributed/fedavg
@@ -44,7 +47,5 @@ sleep 80
 kill $bg_pid_server
 kill $bg_pid_client0
 kill $bg_pid_client1
-
-exit 0
 
 cd ./../../../
