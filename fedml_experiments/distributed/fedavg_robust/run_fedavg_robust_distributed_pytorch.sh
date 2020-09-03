@@ -14,6 +14,7 @@ DEFENSE_TYPE=$11
 NORM_BOUND=$12
 STDDEV=$13
 
+hostname > mpi_host_file
 
 mpirun -np 11 -hostfile ./mpi_host_file python3 ./main_fedavg_robust.py \
   --gpu_server_num $SERVER_NUM \
