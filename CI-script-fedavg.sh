@@ -22,7 +22,7 @@ cd ./../../../
 
 # 2. MNIST distributed FedAvg
 cd ./fedml_experiments/distributed/fedavg
-sh run_fedavg_distributed_pytorch.sh 10 10 1 4 lr hetero 2 2 10 0.03 mnist "./../../../data/mnist" &
+sh run_fedavg_distributed_pytorch.sh 10 10 1 4 lr hetero 2 2 10 0.03 mnist "./../../../data/mnist" & || exit 1
 
 sleep 60
 killall mpirun

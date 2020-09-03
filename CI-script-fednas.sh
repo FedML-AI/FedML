@@ -14,7 +14,7 @@ wandb off
 
 # 1. search
 cd ./fedml_experiments/distributed/fednas/
-sh run_fednas_search.sh 1 4 darts homo 50 5 2 &
+sh run_fednas_search.sh 1 4 darts homo 50 5 2 & || exit 1
 
 sleep 60
 killall mpirun
@@ -22,7 +22,7 @@ cd ./../../../
 
 # 2. train
 cd ./fedml_experiments/distributed/fednas/
-sh run_fednas_train.sh 1 4 darts homo 500 15 2 &
+sh run_fednas_train.sh 1 4 darts homo 500 15 2 & || exit 1
 
 sleep 60
 killall mpirun

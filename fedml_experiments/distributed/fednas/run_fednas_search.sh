@@ -9,6 +9,8 @@ ROUND=$5
 EPOCH=$6
 BATCH_SIZE=$7
 
+hostname > mpi_host_file
+
 mpirun -np 9 -hostfile ./mpi_host_file python3 ./main_fednas.py \
   --gpu_server_num $SERVER_NUM \
   --gpu_num_per_server $GPU_NUM_PER_SERVER \
