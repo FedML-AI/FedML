@@ -26,7 +26,7 @@ def FedML_FedAvgRobust_distributed(process_id, worker_number, device, comm, mode
 def init_server(args, device, comm, rank, size, model, train_data_num, train_data_global, test_data_global,
                 train_data_local_dict, test_data_local_dict, train_data_local_num_dict):
     # aggregator
-    client_num = size - 1
+    worker_num = size - 1
     aggregator = FedAvgRobustAggregator(train_data_global, test_data_global, train_data_num,
                                   train_data_local_dict, test_data_local_dict, train_data_local_num_dict, worker_num, device, model, args)
 
@@ -38,7 +38,7 @@ def init_server(args, device, comm, rank, size, model, train_data_num, train_dat
 
 def init_client(args, device, comm, process_id, size, model, train_data_num, train_data_local_num_dict, train_data_local_dict):
     # trainer
-    client_ID = process_id - 1
+    client_index = process_id - 1
     trainer = FedAvgRobustTrainer(client_index, train_data_local_dict, train_data_local_num_dict, train_data_num, device, model, args)
 
     client_manager = FedAvgRobustClientManager(args, trainer, comm, process_id, size)
