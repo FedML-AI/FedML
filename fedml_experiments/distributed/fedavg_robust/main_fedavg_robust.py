@@ -230,4 +230,4 @@ if __name__ == "__main__":
     # start "robust federated averaging (FedAvg)"
     FedML_FedAvgRobust_distributed(process_id, worker_number, device, comm,
                  model, train_data_num, train_data_global, test_data_global,
-                 local_data_num, train_data_local, test_data_local, args)
+                 train_data_local_num_dict, train_data_local_dict, test_data_local_dict, args)
