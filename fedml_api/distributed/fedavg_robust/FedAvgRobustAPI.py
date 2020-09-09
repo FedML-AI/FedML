@@ -14,29 +14,32 @@ def FedML_init():
 
 
 def FedML_FedAvgRobust_distributed(process_id, worker_number, device, comm, model, train_data_num, train_data_global, test_data_global,
-                 local_data_num, train_data_local, test_data_local, args):
+                 train_data_local_num_dict, train_data_local_dict, test_data_local_dict, args):
     if process_id == 0:
         init_server(args, device, comm, process_id, worker_number, model, train_data_num, train_data_global,
-                    test_data_global)
+                    test_data_global, train_data_local_dict, test_data_local_dict, train_data_local_num_dict)
     else:
-        init_client(args, device, comm, process_id, worker_number, model, train_data_num, local_data_num,
-                    train_data_local)
+        init_client(args, device, comm, process_id, worker_number, model, train_data_num, train_data_local_num_dict,
+                    train_data_local_dict)
 
 
-def init_server(args, device, comm, rank, size, model, train_data_num, train_data_global, test_data_global):
+def init_server(args, device, comm, rank, size, model, train_data_num, train_data_global, test_data_global,
+                train_data_local_dict, test_data_local_dict, train_data_local_num_dict):
     # aggregator
     client_num = size - 1
-    aggregator = FedAvgRobustAggregator(train_data_global, test_data_global, train_data_num, client_num, device, model, args)
+    aggregator = FedAvgRobustAggregator(train_data_global, test_data_global, train_data_num,
+                                  train_data_local_dict, test_data_local_dict, train_data_local_num_dict, worker_num, device, model, args)
 
     # start the distributed training
-    server_manager = FedAvgRobustServerManager(args, comm, rank, size, aggregator)
+    server_manager = FedAvgRobustServerManager(args, aggregator, comm, rank, size)
+    server_manager.send_init_msg()
     server_manager.run()
 
 
-def init_client(args, device, comm, process_id, size, model, train_data_num, local_data_num, train_data_local):
+def init_client(args, device, comm, process_id, size, model, train_data_num, train_data_local_num_dict, train_data_local_dict):
     # trainer
     client_ID = process_id - 1
-    trainer = FedAvgRobustTrainer(client_ID, train_data_local, local_data_num, train_data_num, device, model, args)
+    trainer = FedAvgRobustTrainer(client_index, train_data_local_dict, train_data_local_num_dict, train_data_num, device, model, args)
 
-    client_manager = FedAvgRobustClientManager(args, comm, process_id, size, trainer)
+    client_manager = FedAvgRobustClientManager(args, trainer, comm, process_id, size)
     client_manager.run()
