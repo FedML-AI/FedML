@@ -146,7 +146,8 @@ class GuestTrainer(object):
         auc = roc_auc_score(y_test, y_prob_preds)
         ave_loss = np.mean(self.loss_list)
         self.loss_list = list()
-        logging.info("--- round_idx: {%d}, loss: {%s}, acc: {%s}, auc: {%s}" % (round_idx, str(ave_loss), str(acc), str(auc)))
+        logging.info(
+            "--- round_idx: {%d}, loss: {%s}, acc: {%s}, auc: {%s}" % (round_idx, str(ave_loss), str(acc), str(auc)))
         logging.info(precision_recall_fscore_support(y_test, y_hat_lbls, average="macro", warn_for=tuple()))
 
     def _sigmoid(self, x):

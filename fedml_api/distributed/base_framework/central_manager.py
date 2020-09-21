@@ -1,11 +1,11 @@
 import logging
 
 from fedml_api.distributed.base_framework.message_define import MyMessage
-from fedml_core.distributed.communication import Message
-from fedml_core.distributed.server.server_manager import ServerMananger
+from fedml_core.distributed.communication.message import Message
+from fedml_core.distributed.server.server_manager import ServerManager
 
 
-class BaseCentralMananger(ServerMananger):
+class BaseCentralManager(ServerManager):
     def __init__(self, args, comm, rank, size, aggregator):
         super().__init__(args, comm, rank, size)
 

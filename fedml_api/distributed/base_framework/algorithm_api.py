@@ -1,6 +1,6 @@
 from mpi4py import MPI
 
-from fedml_api.distributed.base_framework.central_manager import BaseCentralMananger
+from fedml_api.distributed.base_framework.central_manager import BaseCentralManager
 from fedml_api.distributed.base_framework.central_worker import BaseCentralWorker
 from fedml_api.distributed.base_framework.client_manager import BaseClientManager
 from fedml_api.distributed.base_framework.client_worker import BaseClientWorker
@@ -26,7 +26,7 @@ def init_central_worker(args, comm, process_id, size):
     aggregator = BaseCentralWorker(client_num, args)
 
     # start the distributed training
-    server_manager = BaseCentralMananger(args, comm, process_id, size, aggregator)
+    server_manager = BaseCentralManager(args, comm, process_id, size, aggregator)
     server_manager.run()
 
 

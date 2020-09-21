@@ -113,7 +113,7 @@ def partition_data(dataset, datadir, partition, n_nets, alpha):
     logging.info("*********partition data***************")
     X_train, y_train, X_test, y_test = load_cifar100_data(datadir)
     n_train = X_train.shape[0]
-    n_test = X_test.shape[0]
+    # n_test = X_test.shape[0]
 
     if partition == "homo":
         total_num = n_train
@@ -213,7 +213,6 @@ def load_partition_data_distributed_cifar100(process_id, dataset, data_dir, part
         train_data_global, test_data_global = get_dataloader(dataset, data_dir, batch_size, batch_size)
         logging.info("train_dl_global number = " + str(len(train_data_global)))
         logging.info("test_dl_global number = " + str(len(train_data_global)))
-
         train_data_local = None
         test_data_local = None
         local_data_num = 0
@@ -229,6 +228,7 @@ def load_partition_data_distributed_cifar100(process_id, dataset, data_dir, part
             process_id, len(train_data_local), len(test_data_local)))
         train_data_global = None
         test_data_global = None
+
     return train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, class_num
 
 

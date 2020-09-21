@@ -1,5 +1,9 @@
+import os
+import sys
+
 from sklearn.utils import shuffle
 
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 from fedml_api.data_preprocessing.lending_club_loan.lending_club_dataset import loan_load_two_party_data
 from fedml_api.standalone.classical_vertical_fl.vfl_fixture import FederatedLearningFixture
 from fedml_api.standalone.classical_vertical_fl.party_models import VFLGuestModel, VFLHostModel
