@@ -1,15 +1,32 @@
+<p align="center">
+
+  <a href="https://github.com/FedML-AI/FedML/projects/1"><img alt="Roadmap" src="https://img.shields.io/badge/roadmap-FedML-informational.svg?style=flat-square"></a>
+  <a href="#"><img alt="Python3" src="https://img.shields.io/badge/Python-3-brightgreen.svg?style=flat-square"></a>
+  <a href="#"><img alt="PyTorch" src="https://img.shields.io/badge/PyTorch-%3E1.0-orange"></a>
+  <a href="https://travis-ci.org/FedML-AI/FedML"><img alt="Travis" src="https://img.shields.io/travis/FedML-AI/FedML.svg?style=flat-square"></a>
+
+</p>
+
+Notice: *FedML is evolving. We will update more features in next 1-2 months. Please email us if there is misinformation.*
+
 # FedML: A Research Library and Benchmark for Federated Machine Learning
-http://fedml.ai
+[https://arxiv.org/abs/2007.13518](https://arxiv.org/abs/2007.13518)
 
 ## What is Federated Learning?
-Please read this long vision paper "Advances and Open Problems in Federated Learning" (https://arxiv.org/abs/1912.04977).
+Please read this long vision paper [Advances and Open Problems in Federated Learning](https://arxiv.org/abs/1912.04977).
 
 This publication list is also helpful: https://github.com/chaoyanghe/Awesome-Federated-Learning
 
 ## Introduction
-FedML is a research-oriented federated learning software library. Its primary purpose is to provide researchers and engineers with a flexible and generic experiment platform for developing innovative learning algorithms. It offers a worker-oriented programming interface, reference implementations for baselines, and a curated and comprehensive benchmark datasets for the non-I.I.D setting. With \texttt{FedML}, users can attach any behavior to workers in the arbitrary FL network (e.g., training, aggregation,  attack, and defense, etc.), customize any additional exchanging information, and control information flow among workers. Its reference implementations, benchmark, and datasets aim to promote fast reproducibility for baselines and fair comparison for newly developed algorithms. In this article, we describe the system design, the new programming interface, application examples, benchmark, dataset, and some experimental results. We accept user feedback, and will continuously update our library to support more advanced requirements.
+Federated learning is a rapidly growing research field in the machine learning domain. 
+Although considerable research efforts have been made, existing libraries cannot adequately support diverse algorithmic development (e.g., diverse topology and flexible message exchange), 
+and inconsistent dataset and model usage in experiments make fair comparisons difficult.
+In this work, we introduce FedML, an open research library and benchmark that facilitates the development of new federated learning algorithms and fair performance comparisons. 
+FedML supports three computing paradigms (distributed training, mobile on-device training, and standalone simulation) for users to conduct experiments in different system environments. 
+FedML also promotes diverse algorithmic research with flexible and generic API design and reference baseline implementations. A curated and comprehensive benchmark dataset for the non-I.I.D setting aims at making a fair comparison.
+We believe FedML can provide an efficient and reproducible means of developing and evaluating algorithms for the federated learning research community. We maintain the source code, documents, and user community at https://FedML.ai.
 
-For more details, please read our paper.
+For more details, please read our full paper: [https://arxiv.org/abs/2007.13518](https://arxiv.org/abs/2007.13518)
 
 ## Usage
 1. Research on FL algorithm or system
@@ -43,19 +60,38 @@ Users can change this package to add more advanced algorithms.
 ## Join our Community
 Please join our community. We will post updated features and answer questions on Slack.
 
-[Join fedml.slack.com](https://join.slack.com/t/fedml/shared_invite/zt-gbpi8y2o-QMU0vhVHjm9Y9gqQu~eygg)
-
+[Join fedml.slack.com](https://join.slack.com/t/fedml/shared_invite/zt-havwx1ee-a1xfOUrATNfc9DFqU~r34w)
+(this is a link that never expires)
 
 ## Contributing
-We sincerely welcome contributors. Please email us for further information. 
+We sincerely welcome contributors and believe in the power of the open source. We welcome expertise from two tracks, either research or engineering.
+
+1. If you are a researcher who needs APIs that our library does not support yet, please send us your valuable suggestions.
+
+2. If you are a researcher who has published FL-related algorithm or system-level optimization, we welcome you to submit your source code to FedML, which will then be maintained by our engineers and researchers.
+
+3. If you are an engineer or student who is searching for interesting open source projects to broaden your career, FedML is perfect for you. Currently, we are developing the following urgent features.
+
+i) transplanting more advanced FL algorithms to FedML. We will show you some important research publications once you are involved. 
+For this role, we prefer engineers or students who have a basic understanding of machine learning.
+
+ii) FedML-Mobiel service architecture: Flask + PyTorch + RabbitMQ
+
+iii) upgrading our Android and iOS platform.
+
+iv) building or applying more models in computer vision and NLP domains to FedML.
+
+v) collecting realistic federated datasets by crowdsourcing.
+
+Please email us for further information. 
 
 ## Citation
 Please cite FedML in your publications if it helps your research:
 ```
 @article{chaoyanghe2020fedml,
-  Author = {Chaoyang He},
-  Journal = {arXiv preprint arXiv:1802.05799},
-  Title = {FedML: a Flexible and Generic Federated Learning Library and Benchmark},
+  Author = {He, Chaoyang and Li, Songze and So, Jinhyun and Zhang, Mi and Wang, Hongyi and Wang, Xiaoyang and Vepakomma, Praneeth and Singh, Abhishek and Qiu, Hang and Shen, Li and Zhao, Peilin and Kang, Yan and Liu, Yang and Raskar, Ramesh and Yang, Qiang and Annavaram, Murali and Avestimehr, Salman},
+  Journal = {arXiv preprint arXiv:2007.13518},
+  Title = {FedML: A Research Library and Benchmark for Federated Machine Learning},
   Year = {2020}
 }
 ```

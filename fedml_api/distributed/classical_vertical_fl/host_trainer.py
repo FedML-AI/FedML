@@ -1,6 +1,3 @@
-import logging
-import time
-
 import torch
 from torch import nn, optim
 
@@ -29,12 +26,14 @@ class HostTrainer(object):
         # model
         self.model_feature_extractor = model_feature_extractor
         self.model_feature_extractor.to(device)
-        self.optimizer_fe = optim.SGD(self.model_feature_extractor.parameters(), momentum=0.9, weight_decay=0.01, lr=self.args.lr)
+        self.optimizer_fe = optim.SGD(self.model_feature_extractor.parameters(), momentum=0.9, weight_decay=0.01,
+                                      lr=self.args.lr)
 
         self.model_classifier = model_classifier
         self.model_classifier.to(self.device)
         self.criterion = nn.BCEWithLogitsLoss()
-        self.optimizer_classifier = optim.SGD(self.model_classifier.parameters(), momentum=0.9, weight_decay=0.01, lr=self.args.lr)
+        self.optimizer_classifier = optim.SGD(self.model_classifier.parameters(), momentum=0.9, weight_decay=0.01,
+                                              lr=self.args.lr)
 
         self.cached_extracted_features = None
 

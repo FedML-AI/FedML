@@ -7,7 +7,6 @@ import torch.nn.functional as F
 import torch.utils.data as data
 import torchvision.transforms as transforms
 
-from fedml_api.data_preprocessing.cifar10.datasets import CIFAR10_truncated
 from fedml_api.data_preprocessing.cinic10.datasets import ImageFolderTruncated
 
 logging.basicConfig()
@@ -159,7 +158,7 @@ def partition_data(dataset, datadir, partition, n_nets, alpha):
     y_train = np.array(y_train)
     y_test = np.array(y_test)
     n_train = len(X_train)
-    n_test = len(X_test)
+    # n_test = len(X_test)
 
     if partition == "homo":
         total_num = n_train
@@ -264,7 +263,7 @@ def load_partition_data_distributed_cinic10(process_id, dataset, data_dir, parti
         train_data_global, test_data_global = get_dataloader(dataset, data_dir, batch_size, batch_size)
         logging.info("train_dl_global number = " + str(len(train_data_global)))
         logging.info("test_dl_global number = " + str(len(train_data_global)))
-
+        test_data_num = len(test_data_global)
         train_data_local = None
         test_data_local = None
         local_data_num = 0
@@ -278,9 +277,11 @@ def load_partition_data_distributed_cinic10(process_id, dataset, data_dir, parti
                                                            dataidxs)
         logging.info("process_id = %d, batch_num_train_local = %d, batch_num_test_local = %d" % (
             process_id, len(train_data_local), len(test_data_local)))
+        test_data_num = 0
         train_data_global = None
         test_data_global = None
-    return train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, class_num
+
+    return train_data_num, test_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, class_num
 
 
 def load_partition_data_cinic10(dataset, data_dir, partition_method, partition_alpha, client_number, batch_size):

@@ -1,0 +1,7 @@
+# out put Dir
+outDirPath: ../output
+modelDirPath: ../models
+resourceDirPath: ../resource
+mqttBroker:
+  host: 81.71.1.31
+  port: 1883

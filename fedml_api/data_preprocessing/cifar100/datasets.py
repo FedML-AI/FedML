@@ -4,7 +4,6 @@ import numpy as np
 import torch.utils.data as data
 from PIL import Image
 from torchvision.datasets import CIFAR100
-from torchvision.datasets import DatasetFolder
 
 logging.basicConfig()
 logger = logging.getLogger()

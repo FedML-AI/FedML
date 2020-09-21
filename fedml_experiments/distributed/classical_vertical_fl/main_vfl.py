@@ -18,8 +18,6 @@ from fedml_api.model.linear_models.vfl_feature_extractor import VFLFeatureExtrac
 from fedml_api.data_preprocessing.lending_club_loan.lending_club_dataset import loan_load_three_party_data
 from fedml_api.data_preprocessing.NUS_WIDE.nus_wide_dataset import NUS_WIDE_load_three_party_data
 from fedml_api.distributed.classical_vertical_fl.vfl_api import FedML_VFL_distributed
-
-# add the FedML root directory to the python path
 from fedml_api.distributed.fedavg.FedAvgAPI import FedML_init
 
 

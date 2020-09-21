@@ -1,4 +1,9 @@
+import os
+import sys
+
 from sklearn.utils import shuffle
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 
 from fedml_api.data_preprocessing.NUS_WIDE.nus_wide_dataset import NUS_WIDE_load_two_party_data
 from fedml_api.standalone.classical_vertical_fl.vfl_fixture import FederatedLearningFixture

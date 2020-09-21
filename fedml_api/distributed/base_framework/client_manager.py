@@ -1,9 +1,9 @@
 from fedml_api.distributed.base_framework.message_define import MyMessage
-from fedml_core.distributed.client.client_manager import ClientMananger
-from fedml_core.distributed.communication import Message
+from fedml_core.distributed.client.client_manager import ClientManager
+from fedml_core.distributed.communication.message import Message
 
 
-class BaseClientManager(ClientMananger):
+class BaseClientManager(ClientManager):
     def __init__(self, args, comm, rank, size, trainer):
         super().__init__(args, comm, rank, size)
         self.trainer = trainer

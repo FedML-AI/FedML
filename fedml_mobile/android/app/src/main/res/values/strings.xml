@@ -1,7 +1,7 @@
 
 
 <resources>
-    <string name="app_name">OnDeviceTraining</string>
+    <string name="app_name">FedML-Mobile</string>
     <string name="classify_iris">CLASSIFY IRIS</string>
     <string name="generate_data">generate data</string>
     <string name="petal_length">Petal Length</string>

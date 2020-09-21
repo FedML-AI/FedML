@@ -114,7 +114,7 @@ def partition_data(dataset, datadir, partition, n_nets, alpha):
     logging.info("*********partition data***************")
     X_train, y_train, X_test, y_test = load_cifar10_data(datadir)
     n_train = X_train.shape[0]
-    n_test = X_test.shape[0]
+    # n_test = X_test.shape[0]
 
     if partition == "homo":
         total_num = n_train
@@ -214,7 +214,6 @@ def load_partition_data_distributed_cifar10(process_id, dataset, data_dir, parti
         train_data_global, test_data_global = get_dataloader(dataset, data_dir, batch_size, batch_size)
         logging.info("train_dl_global number = " + str(len(train_data_global)))
         logging.info("test_dl_global number = " + str(len(train_data_global)))
-
         train_data_local = None
         test_data_local = None
         local_data_num = 0
