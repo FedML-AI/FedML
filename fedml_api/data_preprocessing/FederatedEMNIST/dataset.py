@@ -19,8 +19,7 @@ download = False
 def download_and_save_federated_emnist(train_ds_path = './emnist_train.h5', test_ds_path='./emnist_test.h5'):
     
     emnist_train, emnist_test = tff.simulation.datasets.emnist.load_data()
-    emnist_train_ds = []
-    emnist_test_ds = dict()
+    
     emnist_train_ds = [(k, data) for k in emnist_train.client_ids for data in tfds.as_numpy(emnist_train.create_tf_dataset_for_client(k))]
     logging.info("train dataset length : " + str(len(emnist_train_ds)))
     
