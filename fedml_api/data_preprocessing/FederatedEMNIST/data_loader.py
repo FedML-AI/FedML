@@ -12,6 +12,9 @@ logger.setLevel(logging.INFO)
 
 client_map = None
 
+train_file_path = '../../../data/FederatedEMNIST/emnist_train.h5'
+test_file_path = '../../../data/FederatedEMNIST/emnist_test.h5'
+
 def get_clent_map(client_id = None, client_num = None):
     global client_map
     if client_map == None:
@@ -21,8 +24,8 @@ def get_clent_map(client_id = None, client_num = None):
 
 def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx = None):
     
-    train_h5 = h5py.File('./emnist_train.h5','r')
-    test_h5 = h5py.File('./emnist_test.h5','r')
+    train_h5 = h5py.File(train_file_path, 'r')
+    test_h5 = h5py.File(test_file_path,'r')
     train_x, train_y, train_id = train_h5['pixels'], train_h5['label'], train_h5['id']
     test_x, test_y, test_id = test_h5['pixels'], test_h5['label'], test_h5['id']
     
@@ -56,7 +59,9 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx = None):
 
 def load_partition_data_distributed_federated_emnist(process_id, dataset, data_dir, client_number, batch_size):
     
-    class_num = 10 
+    train_h5 = h5py.File(train_file_path, 'r')
+    class_num = len(np.unique(train_h5['label'][()]))
+    train_h5.close()
     
     # get global dataset
     if process_id == 0:
@@ -70,7 +75,7 @@ def load_partition_data_distributed_federated_emnist(process_id, dataset, data_d
         local_data_num = 0
     else:
         # get local dataset
-        train_h5 = h5py.File('./emnist_train.h5','r')
+        train_h5 = h5py.File(train_file_path, 'r')
         get_clent_map(train_h5['id'].value, client_number)
         train_h5.close()
         train_data_local, test_data_local = get_dataloader(dataset, data_dir, batch_size, batch_size, process_id - 1)
@@ -87,14 +92,14 @@ def load_partition_data_federated_emnist(dataset, data_dir, client_number, batch
     train_data_global, test_data_global = get_dataloader(dataset, data_dir, batch_size, batch_size)
     train_data_num = len(train_data_global)
     test_data_num = len(test_data_global)
-    class_num = 10
     
     # get local dataset
     data_local_num_dict = dict()
     train_data_local_dict = dict()
     test_data_local_dict = dict()
-    train_h5 = h5py.File('./emnist_train.h5','r')
+    train_h5 = h5py.File(train_file_path, 'r')
     get_clent_map(np.unique(train_h5['id'][()]), client_number)
+    class_num = len(np.unique(train_h5['label'][()]))
     train_h5.close()
     
     for client_idx in range(client_number):
@@ -110,3 +115,7 @@ def load_partition_data_federated_emnist(dataset, data_dir, client_number, batch
     
     return train_data_num, test_data_num, train_data_global, test_data_global, \
         data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num
+
+
+if __name__ == "__main__":
+    load_partition_data_federated_emnist(None, None, 300, 128)
