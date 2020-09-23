@@ -8,17 +8,16 @@ import tensorflow as tf
 import tensorflow_federated as tff
 import tensorflow_datasets as tfds
 
-from data_loader import *
-
 logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 download = False
+only_digit = False
 
-def download_and_save_federated_emnist(train_ds_path = './emnist_train.h5', test_ds_path='./emnist_test.h5'):
+def download_and_save_federated_emnist(train_ds_path = './emnist_train.h5', test_ds_path = './emnist_test.h5'):
     
-    emnist_train, emnist_test = tff.simulation.datasets.emnist.load_data()
+    emnist_train, emnist_test = tff.simulation.datasets.emnist.load_data(only_digits=only_digit)
     
     emnist_train_ds = [(k, data) for k in emnist_train.client_ids for data in tfds.as_numpy(emnist_train.create_tf_dataset_for_client(k))]
     logging.info("train dataset length : " + str(len(emnist_train_ds)))
@@ -40,7 +39,9 @@ def download_and_save_federated_emnist(train_ds_path = './emnist_train.h5', test
     
 
 def test_federated_emnist():
-    
+    '''
+    this function checks the data from dataloader is the same as the data from tff API
+    '''
     client_num = 300
     test_num = 10 # use 'test_num = client_num' to test on all generated client dataset
     
@@ -80,4 +81,3 @@ def test_federated_emnist():
 if __name__ == "__main__":
     if download:
         download_and_save_federated_emnist()
-    test_federated_emnist()
