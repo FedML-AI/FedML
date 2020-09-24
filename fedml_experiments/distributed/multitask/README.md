@@ -4,6 +4,8 @@ http://doc.fedml.ai/#/installation-distributed-computing
 ## Running Experiments 
 
 ```
+nohup sh run_decentralized_mtl_distributed_pytorch.sh 8 8 500 5 0.5 0 > ./mtl3.txt 2>&1 &
+
 nohup sh run_decentralized_mtl_distributed_pytorch.sh 8 8 500 15 0.1 0 > ./mtl1.txt 2>&1 &
 nohup sh run_decentralized_mtl_distributed_pytorch.sh 8 8 500 1 0.1 0 > ./mtl3.txt 2>&1 &
 

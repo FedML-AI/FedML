@@ -76,10 +76,11 @@ class DecentralizedWorker(object):
         self.model_dict[index] = model_params
         self.sample_num_dict[index] = sample_num
         self.flag_neighbor_result_received_dict[index] = True
-        # Note: Loss doesn't backprop through copy-based reshapes https://github.com/pytorch/xla/issues/870
-        task_specific_weight = model_params['task_specific_layer.weight'].view(-1, )
-        # logging.info("task_specific_weight = " + str(task_specific_weight))
-        self.neighbor_task_specific_weight_dict[index] = task_specific_weight.to(self.device)
+        if self.args.is_mtl == 1:
+            # Note: Loss doesn't backprop through copy-based reshapes https://github.com/pytorch/xla/issues/870
+            task_specific_weight = model_params['task_specific_layer.weight'].view(-1, )
+            # logging.info("task_specific_weight = " + str(task_specific_weight))
+            self.neighbor_task_specific_weight_dict[index] = task_specific_weight.to(self.device)
 
     def check_whether_all_receive(self):
         for neighbor_idx in self.in_neighbor_idx_list:
@@ -209,8 +210,8 @@ class DecentralizedWorker(object):
             # test on test dataset
             test_acc = test_tot_correct / test_num_sample
             test_loss = test_loss / test_num_sample
-            # logging.info("worker_index = %d, train_acc = %f, train_loss = %f, test_acc = %f, test_loss = %f" % (
-            # self.worker_index, train_acc, train_loss, test_acc, test_loss))
+            logging.info("worker_index = %d, train_acc = %f, train_loss = %f, test_acc = %f, test_loss = %f" % (
+                    self.worker_index, train_acc, train_loss, test_acc, test_loss))
             return train_acc, train_loss, test_acc, test_loss
         else:
             return None, None, None, None
