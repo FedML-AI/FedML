@@ -99,8 +99,8 @@ class DecentralizedWorker(object):
         logging.info("neighbor len = %d" % len(self.neighbor_task_specific_weight_dict))
         for neighbor_idx in self.in_neighbor_idx_list:
             tensor_list.append(self.neighbor_task_specific_weight_dict[neighbor_idx])
-            logging.info("worker_index = %d, require_grad = %d" % (self.worker_index,
-                                             self.neighbor_task_specific_weight_dict[neighbor_idx].requires_grad))
+            # logging.info("worker_index = %d, require_grad = %d" % (self.worker_index,
+            #                                  self.neighbor_task_specific_weight_dict[neighbor_idx].requires_grad))
         weight_matrix = torch.stack(tensor_list, 0)
         trans_w = torch.transpose(weight_matrix, 0, 1)
         # (H, N_nb) * (N_nb, N_nb) * (N_nb, H)
@@ -182,8 +182,6 @@ class DecentralizedWorker(object):
                 # iterative step 2: update relationship matrix omega
                 if self.args.is_mtl == 1:
                     self.update_correlation_matrix()
-
-                break
 
             if len(batch_loss) > 0:
                 epoch_loss.append(sum(batch_loss) / len(batch_loss))
