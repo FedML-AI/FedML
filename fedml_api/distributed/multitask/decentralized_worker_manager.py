@@ -35,7 +35,7 @@ class DecentralizedWorkerManager(ClientManager):
 
         self.trainer.add_neighbor_local_result(sender_id, model_params, local_sample_number)
         b_all_received = self.trainer.check_whether_all_receive()
-        logging.info("b_all_received = " + str(b_all_received))
+        # logging.info("b_all_received = " + str(b_all_received))
         if b_all_received:
             self.trainer.aggregate()
             train_acc, train_loss, test_acc, test_loss = self.trainer.test_on_local_data(self.round_idx)
