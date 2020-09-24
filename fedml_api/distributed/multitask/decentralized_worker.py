@@ -180,13 +180,12 @@ class DecentralizedWorker(object):
                 if self.args.is_mtl == 1:
                     self.update_correlation_matrix()
 
-                # batch_loss.append(total_loss.item())
-                # if len(batch_loss) > 0:
-                #     epoch_loss.append(sum(batch_loss) / len(batch_loss))
-                #     logging.info('(client {}. Local Training Epoch: {} \tLoss: {:.6f}'.format(self.worker_index,
-                #                                                     epoch, sum(epoch_loss) / len(epoch_loss)))
-                break
-            break
+            if len(batch_loss) > 0:
+                epoch_loss.append(sum(batch_loss) / len(batch_loss))
+                logging.info('(client {}. Local Training Epoch: {} \tLoss: {:.6f}'.format(self.client_index,
+                                                                                          epoch,
+                                                                                          sum(epoch_loss) / len(
+                                                                                              epoch_loss)))
 
         weights = self.model.cpu().state_dict()
         return weights, self.local_sample_number
