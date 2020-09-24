@@ -194,14 +194,16 @@ class DecentralizedWorker(object):
 
             # test data
             test_tot_correct, test_num_sample, test_loss = self._infer(self.test_data_local_dict[self.worker_index])
+            logging.info("test_tot_correct = %d, test_num_sample = %d, test_loss = %d" % (
+                test_tot_correct, test_num_sample, test_loss))
 
             # test on training dataset
-            train_acc = copy.deepcopy(train_tot_correct) / copy.deepcopy(train_num_sample)
-            train_loss = copy.deepcopy(train_loss) / copy.deepcopy(train_num_sample)
+            train_acc = train_tot_correct / train_num_sample
+            train_loss = train_loss / train_num_sample
 
             # test on test dataset
-            test_acc = copy.deepcopy(test_tot_correct) / copy.deepcopy(test_num_sample)
-            test_loss = copy.deepcopy(test_loss) / copy.deepcopy(test_num_sample)
+            test_acc = test_tot_correct / test_num_sample
+            test_loss = test_loss / test_num_sample
             logging.info("worker_index = %d, train_acc = %f, train_loss = %f, test_acc = %f, test_loss = %f" % (
                     self.worker_index, train_acc, train_loss, test_acc, test_loss))
             return train_acc, train_loss, test_acc, test_loss
