@@ -46,8 +46,8 @@ class SymmetricTopologyManager(BaseTopologyManager):
                 if topology_symmetric[i][j] == 1:
                     row_len_i += 1
             topology_symmetric[i] = topology_symmetric[i] / row_len_i
-        # print("weighted symmetric confusion matrix:")
-        # print(topology_symmetric)
+        print("weighted symmetric confusion matrix:")
+        print(topology_symmetric)
 
         self.topology = topology_symmetric
 
@@ -65,7 +65,7 @@ class SymmetricTopologyManager(BaseTopologyManager):
         neighbor_in_idx_list = []
         neighbor_weights = self.get_in_neighbor_weights(node_index)
         for idx, neighbor_w in enumerate(neighbor_weights):
-            if neighbor_w > 0 and node_index != idx:
+            if neighbor_w > 0:
                 neighbor_in_idx_list.append(idx)
         return neighbor_in_idx_list
 
@@ -73,7 +73,7 @@ class SymmetricTopologyManager(BaseTopologyManager):
         neighbor_out_idx_list = []
         neighbor_weights = self.get_out_neighbor_weights(node_index)
         for idx, neighbor_w in enumerate(neighbor_weights):
-            if neighbor_w > 0 and node_index != idx:
+            if neighbor_w > 0:
                 neighbor_out_idx_list.append(idx)
         return neighbor_out_idx_list
 

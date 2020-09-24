@@ -90,7 +90,7 @@ class AsymmetricTopologyManager(BaseTopologyManager):
         neighbor_in_idx_list = []
         neighbor_weights = self.get_in_neighbor_weights(node_index)
         for idx, neighbor_w in enumerate(neighbor_weights):
-            if neighbor_w > 0 and node_index != idx:
+            if neighbor_w > 0:
                 neighbor_in_idx_list.append(idx)
         return neighbor_in_idx_list
 
@@ -98,7 +98,7 @@ class AsymmetricTopologyManager(BaseTopologyManager):
         neighbor_out_idx_list = []
         neighbor_weights = self.get_out_neighbor_weights(node_index)
         for idx, neighbor_w in enumerate(neighbor_weights):
-            if neighbor_w > 0 and node_index != idx:
+            if neighbor_w > 0:
                 neighbor_out_idx_list.append(idx)
         return neighbor_out_idx_list
 

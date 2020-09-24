@@ -201,7 +201,7 @@ class ResNet(nn.Module):
 
 def resnet56(class_num, pretrained=False, path=None, **kwargs):
     """
-    Constructs a ResNet-110 model.
+    Constructs a ResNet-56 model.
 
     Args:
         pretrained (bool): If True, returns a model pre-trained.
