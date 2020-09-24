@@ -11,6 +11,8 @@ from torch import nn
 class DecentralizedWorker(object):
     def __init__(self, worker_index, topology_manager, train_data_local_dict, test_data_local_dict,
                  train_data_local_num_dict, train_data_num, device, model, args):
+        self.round_index = 0
+
         # topology management
         self.worker_index = worker_index
         self.in_neighbor_idx_list = topology_manager.get_in_neighbor_idx_list(worker_index)
@@ -88,17 +90,19 @@ class DecentralizedWorker(object):
         return True
 
     def calculate_relationship_regularizer_with_trace(self):
+        # for the first round, since there is no exchange information among workers, we do not need to add relationship
+        if self.round_index == 0:
+            return 0.0
         tensor_list = []
         # update local specific weights
         task_specific_weight = self.model.task_specific_layer.weight.view(-1, )
         self.neighbor_task_specific_weight_dict[self.worker_index] = task_specific_weight
 
+        logging.info("neighbor len = %d" % len(self.neighbor_task_specific_weight_dict))
         for neighbor_idx in self.in_neighbor_idx_list:
-            logging.info("worker_index = %d, require_grad = %d" % (self.worker_index,
-                                                                   self.neighbor_task_specific_weight_dict[
-                                                                       neighbor_idx].requires_grad))
             tensor_list.append(self.neighbor_task_specific_weight_dict[neighbor_idx])
-
+            logging.info("worker_index = %d, require_grad = %d" % (self.worker_index,
+                                             self.neighbor_task_specific_weight_dict[neighbor_idx].requires_grad))
         weight_matrix = torch.stack(tensor_list, 0)
         trans_w = torch.transpose(weight_matrix, 0, 1)
         # (H, N_nb) * (N_nb, N_nb) * (N_nb, H)
@@ -107,6 +111,8 @@ class DecentralizedWorker(object):
         return relationship_trace
 
     def update_correlation_matrix(self):
+        if self.round_index == 0:
+            return
         tensor_list = []
         task_specific_weight = self.model.task_specific_layer.weight.view(-1, )
         self.neighbor_task_specific_weight_dict[self.worker_index] = task_specific_weight
@@ -146,7 +152,8 @@ class DecentralizedWorker(object):
         # update the global model which is cached at the server side
         self.model.load_state_dict(averaged_params)
 
-    def train(self):
+    def train(self, round_index):
+        self.round_index = round_index
         self.model.to(self.device)
         # change to train mode
         self.model.train()

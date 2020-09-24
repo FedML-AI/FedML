@@ -59,7 +59,7 @@ class DecentralizedWorkerManager(ClientManager):
         self.trainer.record_average_test_result(sender_id, self.round_idx, train_acc, train_loss, test_acc, test_loss)
 
     def __train(self):
-        weights, local_sample_num = self.trainer.train()
+        weights, local_sample_num = self.trainer.train(self.round_idx)
 
         for neighbor_idx in self.topology_manager.get_out_neighbor_idx_list(self.worker_index):
             self.send_result_to_neighbors(neighbor_idx, weights, local_sample_num)
