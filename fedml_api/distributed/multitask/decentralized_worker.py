@@ -139,6 +139,9 @@ class DecentralizedWorker(object):
         # logging.info("################aggregate: %d" % len(model_list))
         (num0, averaged_params) = model_list[0]
         for k in averaged_params.keys():
+            # only update the shared layers
+            if self.args.is_mtl == 1 and k == "task_specific_layer.weight" or k == "task_specific_layer.bias":
+                continue
             for i in range(0, len(model_list)):
                 local_sample_number, local_model_params = model_list[i]
                 w = local_sample_number / training_num
@@ -179,6 +182,8 @@ class DecentralizedWorker(object):
                 # iterative step 2: update relationship matrix omega
                 if self.args.is_mtl == 1:
                     self.update_correlation_matrix()
+
+                break
 
             if len(batch_loss) > 0:
                 epoch_loss.append(sum(batch_loss) / len(batch_loss))
