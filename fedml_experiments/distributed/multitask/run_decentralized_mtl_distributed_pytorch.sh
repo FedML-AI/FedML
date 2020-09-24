@@ -6,6 +6,7 @@ ROUND=$3
 EPOCH=$4
 LR=$5
 MTL=$6
+DISTRIBUTION=$7
 
 hostname > mpi_host_file
 
@@ -16,4 +17,5 @@ mpirun -np $WORKER_NUM -hostfile ./mpi_host_file python3 ./main_mtl.py \
   --epochs $EPOCH \
   --is_mtl $MTL \
   --gpu_num_per_server $GPU_NUM_PER_SERVER \
-  --lr $LR
+  --lr $LR \
+  --partition_method $DISTRIBUTION
