@@ -39,7 +39,12 @@ class DecentralizedWorker(object):
         # logging.info(self.model)
         self.model.to(self.device)
         self.criterion = nn.CrossEntropyLoss().to(self.device)
-        self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.args.lr, weight_decay=self.args.wd)
+        if self.args.client_optimizer == "sgd":
+            self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.args.lr, weight_decay=self.args.wd)
+        else:
+            self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()),
+                                              lr=self.args.lr,
+                                              weight_decay=self.args.wd, amsgrad=True)
         self.lambda_relationship = 0.1
 
         # initialize the task specific weights

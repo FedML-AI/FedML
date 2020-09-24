@@ -55,6 +55,9 @@ def add_args(parser):
     parser.add_argument('--client_num_per_round', type=int, default=4, metavar='NN',
                         help='number of workers')
 
+    parser.add_argument('--client_optimizer', type=str, default='adam',
+                        help='SGD with momentum; adam')
+
     parser.add_argument('--batch_size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
 
