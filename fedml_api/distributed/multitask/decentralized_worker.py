@@ -47,9 +47,8 @@ class DecentralizedWorker(object):
 
         # correlation matrix
         num_of_neighors = len(self.in_neighbor_idx_list)
-        self.corr_matrix_omega_default = torch.ones([num_of_neighors, num_of_neighors], device=self.device,
-                                                    requires_grad=False) / num_of_neighors
-        self.corr_matrix_omega = self.corr_matrix_omega_default
+        self.corr_matrix_omega = torch.ones([num_of_neighors, num_of_neighors], device=self.device,
+                                            requires_grad=False) / num_of_neighors
 
         # test result
         self.train_acc_dict = []
@@ -71,7 +70,7 @@ class DecentralizedWorker(object):
         self.local_sample_number = self.train_data_local_num_dict[worker_index]
 
     def add_neighbor_local_result(self, index, model_params, sample_num):
-        logging.info("add_model. index = %d" % index)
+        # logging.info("add_model. index = %d" % index)
         self.model_dict[index] = model_params
         self.sample_num_dict[index] = sample_num
         self.flag_neighbor_result_received_dict[index] = True
@@ -96,7 +95,8 @@ class DecentralizedWorker(object):
 
         for neighbor_idx in self.in_neighbor_idx_list:
             logging.info("worker_index = %d, require_grad = %d" % (self.worker_index,
-                                                                   self.neighbor_task_specific_weight_dict[neighbor_idx].requires_grad))
+                                                                   self.neighbor_task_specific_weight_dict[
+                                                                       neighbor_idx].requires_grad))
             tensor_list.append(self.neighbor_task_specific_weight_dict[neighbor_idx])
 
         weight_matrix = torch.stack(tensor_list, 0)
