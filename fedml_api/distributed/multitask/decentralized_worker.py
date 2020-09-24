@@ -44,8 +44,6 @@ class DecentralizedWorker(object):
         self.neighbor_task_specific_weight_dict = dict()
         task_specific_layer = self.model.task_specific_layer
         torch.nn.init.xavier_uniform_(task_specific_layer.weight)
-        for neighbor_idx in self.in_neighbor_idx_list:
-            self.neighbor_task_specific_weight_dict[neighbor_idx] = copy.deepcopy(task_specific_layer.weight.view(-1, ))
 
         # correlation matrix
         num_of_neighors = len(self.in_neighbor_idx_list)
