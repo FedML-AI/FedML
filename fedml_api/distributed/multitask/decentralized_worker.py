@@ -63,14 +63,6 @@ class DecentralizedWorker(object):
 
         # self._register_hooks()
 
-    def update_model(self, weights):
-        self.model.load_state_dict(weights)
-
-    def update_dataset(self, worker_index):
-        self.worker_index = worker_index
-        self.train_local = self.train_data_local_dict[worker_index]
-        self.local_sample_number = self.train_data_local_num_dict[worker_index]
-
     def add_neighbor_local_result(self, index, model_params, sample_num):
         # logging.info("add_model. index = %d" % index)
         self.model_dict[index] = model_params
@@ -204,12 +196,12 @@ class DecentralizedWorker(object):
             test_tot_correct, test_num_sample, test_loss = self._infer(self.test_data_local_dict[self.worker_index])
 
             # test on training dataset
-            train_acc = train_tot_correct / train_num_sample
-            train_loss = train_loss / train_num_sample
+            train_acc = copy.deepcopy(train_tot_correct) / copy.deepcopy(train_num_sample)
+            train_loss = copy.deepcopy(train_loss) / copy.deepcopy(train_num_sample)
 
             # test on test dataset
-            test_acc = test_tot_correct / test_num_sample
-            test_loss = test_loss / test_num_sample
+            test_acc = copy.deepcopy(test_tot_correct) / copy.deepcopy(test_num_sample)
+            test_loss = copy.deepcopy(test_loss) / copy.deepcopy(test_num_sample)
             logging.info("worker_index = %d, train_acc = %f, train_loss = %f, test_acc = %f, test_loss = %f" % (
                     self.worker_index, train_acc, train_loss, test_acc, test_loss))
             return train_acc, train_loss, test_acc, test_loss
@@ -234,7 +226,7 @@ class DecentralizedWorker(object):
                 test_acc += correct.item()
                 test_loss += loss.item() * target.size(0)
                 test_total += target.size(0)
-        # logging.info("worker_index = %d, test_acc = %d, test_total = %d, test_loss = %d" % (self.worker_index, test_acc, test_total, test_loss))
+
         return test_acc, test_total, test_loss
 
     def _check_whether_all_test_result_receive(self):
