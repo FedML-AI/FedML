@@ -126,5 +126,57 @@ def load_partition_data_federated_cifar100(dataset, data_dir, client_number, bat
         data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num
 
 
+import tqdm
+from PIL import Image
+
+def test_federated_cifar100():
+    '''
+    this function checks the data from dataloader is the same as the data from tff API
+    '''
+    import tensorflow as tf
+    import tensorflow_federated as tff
+    import tensorflow_datasets as tfds
+    
+    def array_to_str(x):
+        return ' '.join(map(str,x))
+    
+    client_num = 50
+    test_num = 10 # use 'test_num = client_num' to test on all generated client dataset
+    
+    cifar_train, cifar_test = tff.simulation.datasets.cifar100.load_data()    
+    client_train_ds = list(iter(tfds.as_numpy(cifar_train.create_tf_dataset_from_all_clients())))
+    client_test_ds = list(iter(tfds.as_numpy(cifar_test.create_tf_dataset_from_all_clients())))
+    
+    _, _, train_data_global, test_data_global, data_local_num_dict, train_data_local_dict, test_data_local_dict, _ = load_partition_data_federated_cifar100(None, None, client_num, 1)
+    client_train_dl = list(iter(train_data_global))
+    client_test_dl = list(iter(test_data_global))
+    
+    assert(len(client_train_ds) == len(client_train_dl))
+    assert(len(client_test_ds) == len(client_test_dl))
+    
+    for idx in random.sample(range(client_num),test_num):
+        train_local_dl = list(iter(train_data_local_dict[idx]))
+        train_local_dl = {array_to_str(dl[0].numpy().squeeze()): dl[1].numpy().squeeze() for dl in train_local_dl}
+        test_local_dl = list(iter(test_data_local_dict[idx]))
+        test_local_dl = {array_to_str(dl[0].numpy().squeeze()): dl[1].numpy().squeeze() for dl in test_local_dl}
+        
+        for client_id in get_client_map(client_map_train)[idx]:
+            train_local_ds = list(iter(tfds.as_numpy(cifar_train.create_tf_dataset_for_client(client_id.decode("utf-8")))))
+            train_local_ds = [(array_to_str(ds['image']), ds['label']) for ds in train_local_ds]
+            for ds in train_local_ds:
+                assert(ds[0] in train_local_dl)
+                assert(ds[1] == train_local_dl[ds[0]])
+        for client_id in get_client_map(client_map_test)[idx]:       
+            test_local_ds = list(iter(tfds.as_numpy(cifar_test.create_tf_dataset_for_client(client_id.decode("utf-8")))))
+            test_local_ds = [(array_to_str(ds['image']), ds['label']) for ds in test_local_ds]
+            for ds in test_local_ds:
+                assert(ds[0] in test_local_dl)
+                assert(ds[1] == test_local_dl[ds[0]])
+                
+        logging.info("Test for dataset on client = %d passed."%idx)
+    
+    logging.info("Tests for dataset passed.")
+    
 if __name__ == "__main__":
-    load_partition_data_federated_cifar100(None, None, 100, 128)
+    #load_partition_data_federated_cifar100(None, None, 100, 128)
+    test_federated_cifar100()
