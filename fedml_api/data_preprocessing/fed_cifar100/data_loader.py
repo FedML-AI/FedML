@@ -126,9 +126,6 @@ def load_partition_data_federated_cifar100(dataset, data_dir, client_number, bat
         data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num
 
 
-import tqdm
-from PIL import Image
-
 def test_federated_cifar100():
     '''
     this function checks the data from dataloader is the same as the data from tff API
