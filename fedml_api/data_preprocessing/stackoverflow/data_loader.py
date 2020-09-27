@@ -120,7 +120,5 @@ def load_partition_data_federated_stackoverflow(dataset, data_dir, client_number
         
 if __name__ == "__main__":
     #load_partition_data_federated_stackoverflow(None, None, 100, 128)
-    # print(123)
     train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local = load_partition_data_distributed_federated_stackoverflow(2, None, None, 1000, 128)
     print(train_data_local, test_data_local)
-    # test_federated_stackoverflow()
