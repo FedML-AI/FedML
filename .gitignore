@@ -20,6 +20,7 @@ wandb
 
 
 *.txt
+*.h5
 
 # data
 *.rar
