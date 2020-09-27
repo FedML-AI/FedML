@@ -4,7 +4,6 @@ import h5py
 import random
 import numpy as np
 
-import tensorflow as tf
 import tensorflow_federated as tff
 import tensorflow_datasets as tfds
 

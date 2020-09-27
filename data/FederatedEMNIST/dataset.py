@@ -4,7 +4,6 @@ import h5py
 import random
 import numpy as np
 
-import tensorflow as tf
 import tensorflow_federated as tff
 import tensorflow_datasets as tfds
 
@@ -61,7 +60,7 @@ def test_federated_emnist():
         train_local_dl = {str(dl[0].numpy().squeeze()): dl[1].numpy().squeeze() for dl in train_local_dl}
         test_local_dl = list(iter(test_data_local_dict[idx]))
         test_local_dl = {str(dl[0].numpy().squeeze()): dl[1].numpy().squeeze() for dl in test_local_dl}
-        for client_id in get_clent_map()[idx]:
+        for client_id in get_client_map()[idx]:
             train_local_ds = list(iter(tfds.as_numpy(emnist_train.create_tf_dataset_for_client(client_id.decode("utf-8")))))
             train_local_ds = [(str(ds['pixels']), ds['label']) for ds in train_local_ds]
             for ds in train_local_ds:

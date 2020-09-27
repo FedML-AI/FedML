@@ -85,7 +85,6 @@ def load_partition_data_distributed_federated_cifar100(process_id, dataset, data
         test_h5.close()
         train_data_local, test_data_local = get_dataloader(dataset, data_dir, batch_size, batch_size, process_id - 1)
         train_data_num = local_data_num = len(train_data_local) + len(test_data_local)
-        data_local_num_dict[client_idx] = local_data_num
         logging.info("rank = %d, local_sample_number = %d" % (process_id, local_data_num))
         train_data_global = None
         test_data_global = None
@@ -130,7 +129,6 @@ def test_federated_cifar100():
     '''
     this function checks the data from dataloader is the same as the data from tff API
     '''
-    import tensorflow as tf
     import tensorflow_federated as tff
     import tensorflow_datasets as tfds
     
