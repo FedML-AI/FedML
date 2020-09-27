@@ -1,7 +1,6 @@
 import logging
 
 import h5py
-import random
 import numpy as np
 
 import tensorflow_federated as tff

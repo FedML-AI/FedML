@@ -80,7 +80,6 @@ def load_partition_data_distributed_federated_emnist(process_id, dataset, data_d
         train_h5.close()
         train_data_local, test_data_local = get_dataloader(dataset, data_dir, batch_size, batch_size, process_id - 1)
         train_data_num = local_data_num = len(train_data_local) + len(test_data_local)
-        data_local_num_dict[client_idx] = local_data_num
         logging.info("rank = %d, local_sample_number = %d" % (process_id, local_data_num))
         train_data_global = None
         test_data_global = None
@@ -116,6 +115,49 @@ def load_partition_data_federated_emnist(dataset, data_dir, client_number, batch
     return train_data_num, test_data_num, train_data_global, test_data_global, \
         data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num
 
+    
 
+def test_federated_emnist():
+    '''
+    this function checks the data from dataloader is the same as the data from tff API
+    '''
+    import tensorflow_federated as tff
+    import tensorflow_datasets as tfds
+    client_num = 300
+    test_num = 10 # use 'test_num = client_num' to test on all generated client dataset
+    
+    emnist_train, emnist_test = tff.simulation.datasets.emnist.load_data()    
+    client_train_ds = list(iter(tfds.as_numpy(emnist_train.create_tf_dataset_from_all_clients())))
+    client_test_ds = list(iter(tfds.as_numpy(emnist_test.create_tf_dataset_from_all_clients())))
+    
+    _, _, train_data_global, test_data_global, data_local_num_dict, train_data_local_dict, test_data_local_dict, _ = load_partition_data_federated_emnist(None, None, client_num, 1)
+    client_train_dl = list(iter(train_data_global))
+    client_test_dl = list(iter(test_data_global))
+    
+    assert(len(client_train_ds) == len(client_train_dl))
+    assert(len(client_test_ds) == len(client_test_dl))
+    
+    for idx in random.sample(range(client_num),test_num):
+        train_local_dl = list(iter(train_data_local_dict[idx]))
+        train_local_dl = {str(dl[0].numpy().squeeze()): dl[1].numpy().squeeze() for dl in train_local_dl}
+        test_local_dl = list(iter(test_data_local_dict[idx]))
+        test_local_dl = {str(dl[0].numpy().squeeze()): dl[1].numpy().squeeze() for dl in test_local_dl}
+        for client_id in get_client_map()[idx]:
+            train_local_ds = list(iter(tfds.as_numpy(emnist_train.create_tf_dataset_for_client(client_id.decode("utf-8")))))
+            train_local_ds = [(str(ds['pixels']), ds['label']) for ds in train_local_ds]
+            for ds in train_local_ds:
+                assert(ds[0] in train_local_dl)
+                assert(ds[1] == train_local_dl[ds[0]])
+                
+            test_local_ds = list(iter(tfds.as_numpy(emnist_test.create_tf_dataset_for_client(client_id.decode("utf-8")))))
+            test_local_ds = [(str(ds['pixels']), ds['label']) for ds in test_local_ds]
+            for ds in test_local_ds:
+                assert(ds[0] in test_local_dl)
+                assert(ds[1] == test_local_dl[ds[0]])
+                
+        logging.info("Test for dataset on client = %d passed."%idx)
+
+    logging.info("Tests for dataset passed.")
+    
 if __name__ == "__main__":
     load_partition_data_federated_emnist(None, None, 300, 128)
