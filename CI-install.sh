@@ -32,6 +32,7 @@ pip install --upgrade wandb
 # Install other required package
 conda install scikit-learn
 conda install numpy
+conda install h5py
 conda install setproctitle
 conda install networkx
 
