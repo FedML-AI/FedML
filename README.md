@@ -29,6 +29,8 @@ We believe FedML can provide an efficient and reproducible means of developing a
 For more details, please read our full paper: [https://arxiv.org/abs/2007.13518](https://arxiv.org/abs/2007.13518)
 
 ## News
+<b>2020-09-30</b>: We maintained a comprehensive publication list of Federated Learning here: https://github.com/chaoyanghe/Awesome-Federated-Learning
+
 <b>2020-09-28</b>: Authors of FedML (https://fedml.ai) have 7 papers that got accepted to NeurIPS 2020. Big congratulations!!!
 Here is the publication list. Highlighted ones are related to large-scale distributed learning and federated learning. Can the other papers get marriage with FedML? Let's stay tuned 🙂
 
