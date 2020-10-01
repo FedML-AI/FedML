@@ -10,73 +10,65 @@ class SplitNN_server():
         self.comm = args["comm"]
         self.model = args["model"]
         self.MAX_RANK = args["max_rank"]
-        self.active_node = 1
+        self.init_params()
+
+    def init_params(self):
         self.epoch = 0
-        self.batch_idx = 0
-        self.step = 0
         self.log_step = 50
         self.active_node = 1
-        self.phase = "train"
-        self.val_loss = 0
-        self.total = 0
-        self.correct = 0
+        self.train_mode()
         self.optimizer = optim.SGD(self.model.parameters(), lr=0.1, momentum=0.9,
                                    weight_decay=5e-4)
         self.criterion = nn.CrossEntropyLoss()
 
-    def run(self, ):
-        while (True):
-            message = self.comm.recv(source=self.active_node)
-            if message == "done":
-                # not a precise estimate of validation loss
-                self.val_loss /= self.step
-                acc = self.correct / self.total
-                logging.info("phase={} acc={} loss={} epoch={} and step={}"
-                             .format(self.phase, acc, self.loss.item(), self.epoch, self.step))
+    def reset_local_params(self):
+        self.total = 0
+        self.correct = 0
+        self.val_loss = 0
+        self.step = 0
+        self.batch_idx = 0
 
-                self.epoch += 1
-                self.active_node = (self.active_node % self.MAX_RANK) + 1
-                self.phase = "train"
-                self.total = 0
-                self.correct = 0
-                self.val_loss = 0
-                self.step = 0
-                self.batch_idx = 0
-                logging.info("current active client is {}".format(self.active_node))
-            elif message == "over":
-                logging.info("training over")
-                break
-            elif message == "validation":
-                self.phase = "validation"
-                self.step = 0
-                self.total = 0
-                self.correct = 0
-            else:
-                if self.phase == "train":
-                    logging.debug("Server-Receive: client={}, index={}, time={}"
-                                  .format(self.active_node, self.batch_idx,
-                                          datetime.datetime.now()))
-                    self.optimizer.zero_grad()
-                input_tensor, labels = message
-                input_tensor.retain_grad()
-                logits = self.model(input_tensor)
-                _, predictions = logits.max(1)
+    def train_mode(self):
+        self.model.train()
+        self.phase = "train"
+        self.reset_local_params()
 
-                loss = self.criterion(logits, labels)
-                self.loss = loss
-                self.total += labels.size(0)
-                self.correct += predictions.eq(labels).sum().item()
+    def eval_mode(self):
+        self.model.eval()
+        self.phase = "validation"
+        self.reset_local_params()
 
-                if self.phase == "train":
-                    loss.backward()
-                    self.optimizer.step()
-                    self.comm.send(input_tensor.grad, dest=self.active_node)
-                    self.batch_idx += 1
+    def forward_pass(self, acts, labels):
+        self.acts = acts
+        self.optimizer.zero_grad()
+        self.acts.retain_grad()
+        logits = self.model(acts)
+        _, predictions = logits.max(1)
+        self.loss = self.criterion(logits, labels)
+        self.total += labels.size(0)
+        self.correct += predictions.eq(labels).sum().item()
+        if self.step % self.log_step == 0 and self.phase == "train":
+            acc = self.correct / self.total
+            logging.info("phase={} acc={} loss={} epoch={} and step={}"
+                         .format("train", acc, self.loss.item(), self.epoch, self.step))
+        if self.phase == "validation":
+            self.val_loss += self.loss.item()
+        self.step += 1
 
-                self.step += 1
-                if self.step % self.log_step == 0 and self.phase == "train":
-                    acc = self.correct / self.total
-                    logging.info("phase={} acc={} loss={} epoch={} and step={}"
-                                 .format("train", acc, loss.item(), self.epoch, self.step))
-                if self.phase == "validation":
-                    self.val_loss += loss.item()
+    def backward_pass(self):
+        self.loss.backward()
+        self.optimizer.step()
+        return self.acts.grad
+
+    def validation_over(self):
+        # not precise estimation of validation loss 
+        self.val_loss /= self.step
+        acc = self.correct / self.total
+        logging.info("phase={} acc={} loss={} epoch={} and step={}"
+                     .format(self.phase, acc, self.val_loss, self.epoch, self.step))
+
+        self.epoch += 1
+        self.active_node = (self.active_node % self.MAX_RANK) + 1
+        self.train_mode()
+        logging.info("current active client is {}".format(self.active_node))
+
