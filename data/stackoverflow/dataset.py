@@ -1,10 +1,4 @@
-import logging
-
 import tensorflow_federated as tff
-
-logging.basicConfig()
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
 
 
 def download_and_save_stackoverflow():
