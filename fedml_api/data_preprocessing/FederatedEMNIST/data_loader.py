@@ -11,7 +11,8 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 client_map = None
-
+DEFAULT_CLIENT_NUMBER = 3400
+DEFAULT_BATCH_SIZE = 20
 train_file_path = '../../../data/FederatedEMNIST/emnist_train.h5'
 test_file_path = '../../../data/FederatedEMNIST/emnist_test.h5'
 
@@ -57,7 +58,10 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx = None):
     return train_dl, test_dl
 
 
-def load_partition_data_distributed_federated_emnist(process_id, dataset, data_dir, client_number, batch_size):
+def load_partition_data_distributed_federated_emnist(process_id, dataset, data_dir, client_number = None, batch_size = DEFAULT_BATCH_SIZE):
+    
+    if client_number is None:
+        client_number = DEFAULT_CLIENT_NUMBER
     
     train_h5 = h5py.File(train_file_path, 'r')
     class_num = len(np.unique(train_h5['label'][()]))
@@ -86,7 +90,10 @@ def load_partition_data_distributed_federated_emnist(process_id, dataset, data_d
     return train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, class_num
 
 
-def load_partition_data_federated_emnist(dataset, data_dir, client_number, batch_size):
+def load_partition_data_federated_emnist(dataset, data_dir, client_number = None, batch_size = DEFAULT_BATCH_SIZE):
+    
+    if client_number is None:
+        client_number = DEFAULT_CLIENT_NUMBER
     
     train_data_global, test_data_global = get_dataloader(dataset, data_dir, batch_size, batch_size)
     train_data_num = len(train_data_global)
