@@ -16,12 +16,10 @@ client_map_test = None
 train_file_path = '../../../data/shakespeare/datasets/shakespeare_train.h5'
 test_file_path = '../../../data/shakespeare/datasets/shakespeare_test.h5'
 
-
-
-
 # group name defined by tff in h5 file
 _EXAMPLE = 'examples'
 _SNIPPETS = 'snippets'
+
 
 def get_client_map(client_map, client_id=None, client_num=None):
     if client_map == None:
@@ -108,7 +106,8 @@ def load_partition_data_distributed_federated_stackoverflow(
                      (process_id, local_data_num))
         train_data_global = None
         test_data_global = None
-    return train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local
+    VOCAB_LEN = len(utils.get_word_dict()) + 1
+    return train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, VOCAB_LEN
 
 
 def load_partition_data_federated_stackoverflow(dataset, data_dir,
@@ -147,9 +146,9 @@ def load_partition_data_federated_stackoverflow(dataset, data_dir,
             % (client_idx, len(train_data_local), len(test_data_local)))
         train_data_local_dict[client_idx] = train_data_local
         test_data_local_dict[client_idx] = test_data_local
-
+    VOCAB_LEN = len(utils.get_word_dict()) + 1
     return train_data_num, test_data_num, train_data_global, test_data_global, \
-        data_local_num_dict, train_data_local_dict, test_data_local_dict
+        data_local_num_dict, train_data_local_dict, test_data_local_dict, VOCAB_LEN
 
 
 if __name__ == "__main__":

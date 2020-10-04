@@ -106,7 +106,9 @@ def load_partition_data_distributed_federated_stackoverflow(
                      (process_id, local_data_num))
         train_data_global = None
         test_data_global = None
-    return train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local
+        
+    VOCAB_LEN = len(utils.get_word_dict()) + 1
+    return train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, VOCAB_LEN
 
 
 def load_partition_data_federated_stackoverflow(dataset, data_dir,
@@ -146,12 +148,14 @@ def load_partition_data_federated_stackoverflow(dataset, data_dir,
         train_data_local_dict[client_idx] = train_data_local
         test_data_local_dict[client_idx] = test_data_local
 
+    VOCAB_LEN = len(utils.get_word_dict()) + 1
     return train_data_num, test_data_num, train_data_global, test_data_global, \
-        data_local_num_dict, train_data_local_dict, test_data_local_dict
+        data_local_num_dict, train_data_local_dict, test_data_local_dict, VOCAB_LEN
 
 
 if __name__ == "__main__":
     #load_partition_data_federated_stackoverflow(None, None, 100, 128)
-    train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local = load_partition_data_distributed_federated_stackoverflow(
+    train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, VOCAB_LEN = load_partition_data_distributed_federated_stackoverflow(
         2, None, None, 1000, 128)
     print(train_data_local, test_data_local)
+    print(VOCAB_LEN)
