@@ -3,7 +3,6 @@ import logging
 import h5py
 import torch
 import random
-import numpy as np
 import torch.utils.data as data
 import utils
 
@@ -75,8 +74,12 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
 
 
 def load_partition_data_distributed_federated_shakespeare(
-        process_id, dataset, data_dir, client_number = None, batch_size = DEFAULT_BATCH_SIZE):
-    
+        process_id,
+        dataset,
+        data_dir,
+        client_number=None,
+        batch_size=DEFAULT_BATCH_SIZE):
+
     client_number_train = client_number_test = client_number
     if client_number is None:
         client_number_train = DEFAULT_TRAIN_CLINETS_NUM
@@ -118,13 +121,16 @@ def load_partition_data_distributed_federated_shakespeare(
     return train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, VOCAB_LEN
 
 
-def load_partition_data_federated_shakespeare(dataset, data_dir, client_number = None, batch_size = DEFAULT_BATCH_SIZE):
-    
+def load_partition_data_federated_shakespeare(dataset,
+                                              data_dir,
+                                              client_number=None,
+                                              batch_size=DEFAULT_BATCH_SIZE):
+
     client_number_train = client_number_test = client_number
     if client_number is None:
         client_number_train = DEFAULT_TRAIN_CLINETS_NUM
         client_number_test = DEFAULT_TEST_CLIENTS_NUM
-        
+
     train_data_global, test_data_global = get_dataloader(
         dataset, data_dir, batch_size, batch_size)
     train_data_num = len(train_data_global)
