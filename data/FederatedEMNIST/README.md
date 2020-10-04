@@ -22,3 +22,11 @@ Or with Tensorflow dependencies, you can run this to process the data from Tenso
 python dataset.py
 ```
 
+# Statistics of FederatedEMNIST Dataset
+
+Data partition is the same as [TFF](https://www.tensorflow.org/federated/api_docs/python/tff/simulation/datasets/emnist), with the following statistics.  
+
+| DATASET   | TRAIN CLIENTS | TRAIN EXAMPLES | TEST CLIENTS | TEST EXAMPLES |
+| --------- | ------------- | -------------- | ------------ | ------------- |
+| EMNIST-62 | 3,400         | 671,585        | 3,400        | 77,483        |
+
