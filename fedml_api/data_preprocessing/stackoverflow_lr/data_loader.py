@@ -13,6 +13,9 @@ logger.setLevel(logging.INFO)
 
 client_map_train = None
 client_map_test = None
+DEFAULT_TRAIN_CLINETS_NUM = 342477
+DEFAULT_TEST_CLIENTS_NUM = 204088
+DEFAULT_BATCH_SIZE = 100
 train_file_path = '../../../data/stackoverflow/datasets/stackoverflow_train.h5'
 test_file_path = '../../../data/stackoverflow/datasets/stackoverflow_test.h5'
 heldout_file_path = '../../../data/stackoverflow/datasets/stackoverflow_held_out.h5'
@@ -93,7 +96,12 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
 
 
 def load_partition_data_distributed_federated_stackoverflow(
-        process_id, dataset, data_dir, client_number, batch_size):
+        process_id, dataset, data_dir, client_number = None, batch_size = DEFAULT_BATCH_SIZE):
+    
+    client_number_train = client_number_test = client_number
+    if client_number is None:
+        client_number_train = DEFAULT_TRAIN_CLINETS_NUM
+        client_number_test = DEFAULT_TEST_CLIENTS_NUM
 
     # get global dataset
     if process_id == 0:
@@ -113,10 +121,10 @@ def load_partition_data_distributed_federated_stackoverflow(
         global client_map_train, client_map_test
         client_map_train = get_client_map(client_map_train,
                                           list(train_h5[_EXAMPLE].keys()),
-                                          client_number)
+                                          client_number_train)
         client_map_test = get_client_map(client_map_test,
                                          list(test_h5[_EXAMPLE].keys()),
-                                         client_number)
+                                         client_number_test)
         train_h5.close()
         test_h5.close()
         train_data_local, test_data_local = get_dataloader(
@@ -130,8 +138,13 @@ def load_partition_data_distributed_federated_stackoverflow(
     return train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local
 
 
-def load_partition_data_federated_stackoverflow(dataset, data_dir,
-                                                client_number, batch_size):
+def load_partition_data_federated_stackoverflow(dataset, data_dir, client_number = None, batch_size = DEFAULT_BATCH_SIZE):
+    
+    client_number_train = client_number_test = client_number
+    if client_number is None:
+        client_number_train = DEFAULT_TRAIN_CLINETS_NUM
+        client_number_test = DEFAULT_TEST_CLIENTS_NUM
+        
     train_data_global, test_data_global = get_dataloader(
         dataset, data_dir, batch_size, batch_size)
     train_data_num = len(train_data_global)
@@ -146,10 +159,10 @@ def load_partition_data_federated_stackoverflow(dataset, data_dir,
     global client_map_train, client_map_test
     client_map_train = get_client_map(client_map_train,
                                       list(train_h5[_EXAMPLE].keys()),
-                                      client_number)
+                                      client_number_train)
     client_map_test = get_client_map(client_map_test,
                                      list(test_h5[_EXAMPLE].keys()),
-                                     client_number)
+                                     client_number_test)
     train_h5.close()
     test_h5.close()
 
@@ -174,5 +187,5 @@ def load_partition_data_federated_stackoverflow(dataset, data_dir,
 if __name__ == "__main__":
     #load_partition_data_federated_stackoverflow(None, None, 100, 128)
     train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local = load_partition_data_distributed_federated_stackoverflow(
-        2, None, None, 342477, 128)
+        2, None, None, 300000, 128)
     print(train_data_local, test_data_local)
