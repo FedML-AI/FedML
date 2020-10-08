@@ -10,12 +10,6 @@ You can run the following script to download the dataset:
 sh download_stackoverflow.sh
 ```
 
-Or with Tensorflow dependencies, you can run this to process the data from Tensorflow locally:
-
-```
-python dataset.py
-```
-
 # Statistics of Shakespeare Dataset
 
 Data partition is the same as [TFF](https://www.tensorflow.org/federated/api_docs/python/tff/simulation/datasets/shakespeare), with the following statistics.  Each client corresponds to a speaking role with at least two lines.

@@ -16,11 +16,6 @@ By default, it will download EMNIST dataset which includes digits and characters
 sh download_federatedEMNIST.sh digit
 ```
 
-Or with Tensorflow dependencies, you can run this to process the data from Tensorflow locally:
-
-```
-python dataset.py
-```
 
 # Statistics of FederatedEMNIST Dataset
 

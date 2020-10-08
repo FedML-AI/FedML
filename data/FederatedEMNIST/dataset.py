@@ -35,6 +35,14 @@ def download_and_save_federated_emnist(train_ds_path = './emnist_train.h5', test
     test_h5.create_dataset('label', data = [i[1]['label'] for i in emnist_test_ds])
     test_h5.close()
 
+
+"""
+Or with Tensorflow dependencies, you can run this to process the data from Tensorflow locally:
+
+```
+python dataset.py
+```
+"""
 if __name__ == "__main__":
     if download:
         download_and_save_federated_emnist()

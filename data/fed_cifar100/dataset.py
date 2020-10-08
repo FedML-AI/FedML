@@ -34,7 +34,13 @@ def download_and_save_federated_cifar100(train_ds_path = './cifar100_train.h5', 
     test_h5.create_dataset('label', data = [i[1]['label'] for i in cifar100_test_ds])
     test_h5.close()
     
-    
+"""
+#with Tensorflow dependencies, you can run this python script to process the data from Tensorflow Federated locally:
+python dataset.py
+
+Before downloading, please install TFF as its official instruction:
+pip install --upgrade tensorflow_federated
+"""
 if __name__ == "__main__":
     if download:
         download_and_save_federated_cifar100()
