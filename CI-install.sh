@@ -53,7 +53,8 @@ cd ../../
 
 # 3. FederatedEMNIST
 cd ./data/shakespeare
-sh
+sh download_shakespeare.sh
+cd ../../
 
 # 4. CIFAR10
 cd ./data/cifar10
