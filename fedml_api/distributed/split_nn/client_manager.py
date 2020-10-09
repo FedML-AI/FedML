@@ -74,7 +74,7 @@ class SplitNNClientManager(ClientManager):
         self.send_message(message)
 
     def send_validation_signal_to_server(self, receive_id):
-        message = Message(MyMessage.MSG_TYPE_C2S_VALIDATION_MODE, self.get_sender_id(), receive_id)
+        message = Message(MyMessage.MSG_TYPE_C2S_VALIDATION_MODE, self.get_sender_id(), receive_id) 
         self.send_message(message)
 
     def send_validation_over_to_server(self, receive_id):
@@ -83,3 +83,4 @@ class SplitNNClientManager(ClientManager):
 
     def send_finish_to_server(self, receive_id):
         message = Message(MyMessage.MSG_TYPE_C2S_PROTOCOL_FINISHED, self.get_sender_id(), receive_id)
+        self.send_message(message)
