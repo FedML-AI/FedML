@@ -5,7 +5,8 @@ import torch
 import random
 import numpy as np
 import torch.utils.data as data
-import utils
+
+from fedml_api.data_preprocessing.stackoverflow_lr import utils
 
 logging.basicConfig()
 logger = logging.getLogger()
