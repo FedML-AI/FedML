@@ -2,6 +2,8 @@ import logging
 import sys
 from abc import abstractmethod
 
+from mpi4py import MPI
+
 from fedml_core.distributed.communication.mpi.com_manager import MpiCommunicationManager
 from fedml_core.distributed.communication.message import Message
 from fedml_core.distributed.communication.mqtt.mqtt_comm_manager import MqttCommManager
@@ -14,6 +16,7 @@ class ClientManager(Observer):
         self.args = args
         self.size = size
         self.rank = rank
+        self.backend = backend
         if backend == "MPI":
             self.com_manager = MpiCommunicationManager(comm, rank, size, node_type="client")
         elif backend == "MQTT":
@@ -57,7 +60,6 @@ class ClientManager(Observer):
         self.message_handler_dict[msg_type] = handler_callback_func
 
     def finish(self):
-        logging.info("#######finished###########")
-        self.com_manager.stop_receive_message()
-        logging.info("sys.exit(0)")
-        sys.exit()
+        logging.info("__finish server")
+        if self.backend == "MPI":
+            MPI.COMM_WORLD.Abort()
