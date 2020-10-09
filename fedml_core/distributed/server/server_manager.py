@@ -16,6 +16,7 @@ class ServerManager(Observer):
         self.size = size
         self.rank = rank
 
+        self.backend = backend
         if backend == "MPI":
             self.com_manager = MpiCommunicationManager(comm, rank, size, node_type="server")
         elif backend == "MQTT":
@@ -53,9 +54,7 @@ class ServerManager(Observer):
 
     def finish(self):
         logging.info("__finish server")
-        self.com_manager.stop_receive_message()
-        logging.info("sys.exit(0)")
-        MPI.Finalize()
-        MPI.COMM_WORLD.Abort()
-        sys.exit()
+        if self.backend == "MPI":
+            MPI.COMM_WORLD.Abort()
+
 
