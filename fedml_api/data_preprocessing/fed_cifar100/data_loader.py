@@ -51,7 +51,10 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx = None):
             test_h5_idx = np.concatenate((test_h5_idx, np.argwhere(test_id[()] == client_id)[:,0]))
         test_h5_idx.sort()
         test_ds = data.TensorDataset(torch.tensor(test_x[test_h5_idx,:]), torch.tensor(test_y[test_h5_idx]))
-        test_dl = data.DataLoader(dataset = test_ds, batch_size=test_bs, shuffle = True, drop_last = False)    
+        if len(test_ds) != 0:
+            test_dl = data.DataLoader(dataset = test_ds, batch_size=test_bs, shuffle = True, drop_last = False)
+        else:
+            test_dl = None
     
     train_h5.close()
     test_h5.close()
