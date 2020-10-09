@@ -60,3 +60,13 @@ cd ../../
 cd ./data/cifar10
 sh download_cifar10.sh
 cd ../../
+
+# 5. CIFAR100
+cd ./data/cifar100
+sh download_cifar100.sh
+cd ../../
+
+# 6. CINIC10
+cd ./data/cinic10
+sh download_cinic10.sh
+cd ../../

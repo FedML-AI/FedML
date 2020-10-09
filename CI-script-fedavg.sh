@@ -22,7 +22,15 @@ cd ./../../../
 
 # 2. MNIST distributed FedAvg
 cd ./fedml_experiments/distributed/fedavg
-sh run_fedavg_distributed_pytorch.sh 4 4 1 4 lr hetero 2 2 2 0.03 mnist "./../../../data/mnist" &
+sh run_fedavg_distributed_pytorch.sh 4 4 1 4 lr hetero 2 1 2 0.03 mnist "./../../../data/mnist"
+sh run_fedavg_distributed_pytorch.sh 4 4 1 4 cnn hetero 2 1 10 0.8 femnist "./../../../data/FederatedEMNIST"
+sh run_fedavg_distributed_pytorch.sh 4 4 1 4 rnn hetero 2 1 10 0.8 shakespeare "./../../../data/shakespeare"
+sh run_fedavg_distributed_pytorch.sh 4 4 1 4 resnet56 homo 2 1 64 0.001 cifar10 "./../../../data/cifar10"
+sh run_fedavg_distributed_pytorch.sh 4 4 1 4 resnet56 hetero 2 1 64 0.001 cifar10 "./../../../data/cifar10"
+sh run_fedavg_distributed_pytorch.sh 4 4 1 4 resnet56 homo 2 1 64 0.001 cifar100 "./../../../data/cifar100"
+sh run_fedavg_distributed_pytorch.sh 4 4 1 4 resnet56 hetero 2 1 64 0.001 cifar100 "./../../../data/cifar100"
+sh run_fedavg_distributed_pytorch.sh 4 4 1 4 resnet56 homo 2 1 64 0.001 cinic10 "./../../../data/cinic10"
+sh run_fedavg_distributed_pytorch.sh 4 4 1 4 resnet56 hetero 2 1 64 0.001 cinic10 "./../../../data/cinic10"
 cd ./../../../
 
 # 3. MNIST mobile FedAvg
