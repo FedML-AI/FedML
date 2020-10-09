@@ -20,6 +20,8 @@ EPOCH=$9
 
 LR=$10
 
+OPT=$11
+
 python3 ./main_fedavg.py \
 --gpu $GPU \
 --dataset $DATASET \
@@ -30,4 +32,5 @@ python3 ./main_fedavg.py \
 --comm_round $ROUND \
 --epochs $EPOCH \
 --batch_size $BATCH_SIZE \
+--client_optimizer $OPT \
 --lr $LR
