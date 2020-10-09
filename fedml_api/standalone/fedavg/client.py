@@ -50,13 +50,13 @@ class Client:
                 # torch.nn.utils.clip_grad_norm_(net.parameters(), 0.5)
 
                 optimizer.step()
-                logging.info('Update Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                    epoch, (batch_idx + 1) * self.args.batch_size, len(self.local_training_data) * self.args.batch_size,
-                           100. * (batch_idx + 1) / len(self.local_training_data), loss.item()))
+                # logging.info('Update Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                #     epoch, (batch_idx + 1) * self.args.batch_size, len(self.local_training_data) * self.args.batch_size,
+                #            100. * (batch_idx + 1) / len(self.local_training_data), loss.item()))
                 batch_loss.append(loss.item())
             epoch_loss.append(sum(batch_loss) / len(batch_loss))
-            logging.info('Client Index = {}\tEpoch: {}\tLoss: {:.6f}'.format(
-                self.client_idx, epoch, sum(epoch_loss) / len(epoch_loss)))
+            # logging.info('Client Index = {}\tEpoch: {}\tLoss: {:.6f}'.format(
+            #     self.client_idx, epoch, sum(epoch_loss) / len(epoch_loss)))
         return net.cpu().state_dict(), sum(epoch_loss) / len(epoch_loss)
 
     def local_test(self, model_global, b_use_test_dataset=False):
