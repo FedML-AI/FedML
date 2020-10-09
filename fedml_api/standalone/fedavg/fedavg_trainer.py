@@ -68,6 +68,7 @@ class FedAvgTrainer(object):
                 # self.logger.info("local weights = " + str(w))
                 w_locals.append((client.get_sample_number(), copy.deepcopy(w)))
                 loss_locals.append(copy.deepcopy(loss))
+                logging.info('Client {:3d}, Average loss {:.3f}'.format(idx, loss))
 
             # update global weights
             w_glob = self.aggregate(w_locals)

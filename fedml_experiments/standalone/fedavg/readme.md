@@ -8,11 +8,12 @@ Heterogeneous distribution (Non-IID) experiment:
 # MNIST
 nohup sh run_fedavg_standalone_pytorch.sh 2 10 10 mnist ./../../../data/mnist lr hetero 200 20 0.03 > ./fedavg_standalone.txt 2>&1 &
 
+# shakespeare
+nohup sh run_fedavg_standalone_pytorch.sh 2 10 10 shakespeare ./../../../data/shakespeare rnn hetero 100 10 0.8 > ./fedavg_standalone.txt 2>&1 &
+
 # Federated EMNIST
 nohup sh run_fedavg_standalone_pytorch.sh 2 10 10 femnist ./../../../data/FederatedEMNIST lr hetero 200 20 0.03 > ./fedavg_standalone.txt 2>&1 &
 
-# shakespeare
-nohup sh run_fedavg_standalone_pytorch.sh 2 10 10 shakespeare ./../../../data/shakespeare rnn hetero 100 10 0.8 > ./fedavg_standalone.txt 2>&1 &
 ```
 
 For large DNNs (ResNet, Transformer, etc), please use the distributed computing (fedml_api/distributed). 
