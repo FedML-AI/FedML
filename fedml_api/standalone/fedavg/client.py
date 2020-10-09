@@ -55,8 +55,8 @@ class Client:
                 #            100. * (batch_idx + 1) / len(self.local_training_data), loss.item()))
                 batch_loss.append(loss.item())
             epoch_loss.append(sum(batch_loss) / len(batch_loss))
-            # logging.info('Client Index = {}\tEpoch: {}\tLoss: {:.6f}'.format(
-            #     self.client_idx, epoch, sum(epoch_loss) / len(epoch_loss)))
+            logging.info('Client Index = {}\tEpoch: {}\tLoss: {:.6f}'.format(
+                self.client_idx, epoch, sum(epoch_loss) / len(epoch_loss)))
         return net.cpu().state_dict(), sum(epoch_loss) / len(epoch_loss)
 
     def local_test(self, model_global, b_use_test_dataset=False):
