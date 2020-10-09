@@ -114,16 +114,16 @@ def create_model(args, model_name, output_dim):
     logging.info("create_model. model_name = %s, output_dim = %s" % (model_name, output_dim))
     model = None
     if model_name == "lr" and args.dataset == "mnist":
-        model = LogisticRegression(28 * 28, output_dim)
-        args.client_optimizer = "sgd"
-    elif model_name == "lr" and args.dataset == "femnist":
+        logging.info("LogisticRegression + MNIST")
         model = LogisticRegression(28 * 28, output_dim)
         args.client_optimizer = "sgd"
     elif model_name == "rnn" and args.dataset == "shakespeare":
+        logging.info("RNN + shakespeare")
         model = RNN_OriginalFedAvg(28 * 28, output_dim)
         args.client_optimizer = "sgd"
-    elif model_name == "cnn":
-        model = CNN_OriginalFedAvg()
+    elif model_name == "cnn" and args.dataset == "femnist":
+        logging.info("CNN + FederatedEMNIST")
+        model = CNN_OriginalFedAvg(False)
     return model
 
 
@@ -156,6 +156,7 @@ if __name__ == "__main__":
     # Note if the model is DNN (e.g., ResNet), the training will be very slow.
     # In this case, please use our FedML distributed version (./fedml_experiments/distributed_fedavg)
     model = create_model(args, model_name=args.model, output_dim=dataset[7])
+    logging.info(model)
 
     trainer = FedAvgTrainer(dataset, model, device, args)
     trainer.train()
