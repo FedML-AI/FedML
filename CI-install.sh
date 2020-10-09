@@ -46,7 +46,16 @@ cd ./data/MNIST
 sh download_and_unzip.sh
 cd ../../
 
-# 2. CIFAR10
+# 2. FederatedEMNIST
+cd ./data/FederatedEMNIST
+sh download_federatedEMNIST.sh
+cd ../../
+
+# 3. FederatedEMNIST
+cd ./data/shakespeare
+sh
+
+# 4. CIFAR10
 cd ./data/cifar10
 sh download_cifar10.sh
 cd ../../

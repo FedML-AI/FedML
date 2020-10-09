@@ -14,9 +14,10 @@ wandb off
 
 # 1. MNIST standalone FedAvg
 cd ./fedml_experiments/standalone/fedavg
-sh run_fedavg_standalone_pytorch.sh 2 10 10 mnist ./../../../data/mnist lr hetero 2 2 0.03
+sh run_fedavg_standalone_pytorch.sh 0 4 4 mnist ./../../../data/mnist lr hetero 2 1 0.03 sgd
+sh run_fedavg_standalone_pytorch.sh 0 4 4 shakespeare ./../../../data/shakespeare rnn hetero 2 1 0.8 sgd
+sh run_fedavg_standalone_pytorch.sh 0 4 4 femnist ./../../../data/FederatedEMNIST cnn hetero 2 1 0.03 sgd
 cd ./../../../
-
 
 
 # 2. MNIST distributed FedAvg

@@ -14,8 +14,5 @@ wandb off
 
 # 1. CIFAR10 FedAvg-Robust
 cd ./fedml_experiments/distributed/fedavg_robust
-sh run_fedavg_robust_distributed_pytorch.sh 10 10 1 8 resnet56 homo 100 20 64 0.001 cifar10 "./../../../data/cifar10" weak-dp 5.0 0.025 &
-
-sleep 120
-killall mpirun
+sh run_fedavg_robust_distributed_pytorch.sh 10 10 1 8 resnet56 homo 2 1 64 0.001 cifar10 "./../../../data/cifar10" weak-dp 5.0 0.025 &
 cd ./../../../
