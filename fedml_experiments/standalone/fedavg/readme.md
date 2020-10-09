@@ -22,6 +22,8 @@ sh run_fedavg_standalone_pytorch.sh 0 10 10 femnist ./../../../data/FederatedEMN
 # Fed_CIFAR100
 sh run_fedavg_standalone_pytorch.sh 0 10 10 fed_cifar100 ./../../../data/fed_cifar100 resnet18_gn hetero 200 20 0.03 adam
 
+# Stackoverflow
+sh run_fedavg_standalone_pytorch.sh 0 10 10 stackoverflow_lr ./../../../data/stackoverflow lr hetero 200 20 0.03 sgd
 ```
 
 running on the background:

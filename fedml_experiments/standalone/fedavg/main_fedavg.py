@@ -154,7 +154,7 @@ def create_model(args, model_name, output_dim):
         model = RNN_OriginalFedAvg(28 * 28, output_dim)
     elif model_name == "lr" and args.dataset == "stackoverflow_lr":
         logging.info("RNN + stackoverflow_lr")
-        model = LogisticRegression(28 * 28, output_dim)
+        model = LogisticRegression(10004, output_dim)
     return model
 
 

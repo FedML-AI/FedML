@@ -12,7 +12,7 @@ https://github.com/google-research/federated/blob/master/utils/datasets/stackove
 '''
 
 
-def get_most_frequent_words(vocab_size=10):
+def get_most_frequent_words(vocab_size=10000):
     frequent_words = []
     with open(word_count_file_path, 'r') as f:
         frequent_words = [next(f).split()[0] for i in range(vocab_size)]
