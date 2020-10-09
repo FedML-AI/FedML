@@ -58,7 +58,7 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx = None):
     return train_dl, test_dl
 
 
-def load_partition_data_distributed_federated_cifar100(process_id, dataset, data_dir, client_number, batch_size):
+def load_partition_data_distributed_federated_cifar100(process_id, dataset, data_dir, client_number=500, batch_size=20):
     
     train_h5 = h5py.File(train_file_path, 'r')
     class_num = len(np.unique(train_h5['label'][()]))
@@ -88,10 +88,10 @@ def load_partition_data_distributed_federated_cifar100(process_id, dataset, data
         logging.info("rank = %d, local_sample_number = %d" % (process_id, local_data_num))
         train_data_global = None
         test_data_global = None
-    return train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, class_num
+    return client_number, train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, class_num
 
 
-def load_partition_data_federated_cifar100(dataset, data_dir, client_number, batch_size):
+def load_partition_data_federated_cifar100(dataset, data_dir, client_number=500, batch_size=20):
     
     train_data_global, test_data_global = get_dataloader(dataset, data_dir, batch_size, batch_size)
     train_data_num = len(train_data_global)
@@ -121,7 +121,7 @@ def load_partition_data_federated_cifar100(dataset, data_dir, client_number, bat
         train_data_local_dict[client_idx] = train_data_local
         test_data_local_dict[client_idx] = test_data_local
     
-    return train_data_num, test_data_num, train_data_global, test_data_global, \
+    return client_number, train_data_num, test_data_num, train_data_global, test_data_global, \
         data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num
 
 
