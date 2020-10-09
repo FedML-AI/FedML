@@ -1,11 +1,10 @@
 import logging
-import sys
 from abc import abstractmethod
 
 from mpi4py import MPI
 
-from fedml_core.distributed.communication.mpi.com_manager import MpiCommunicationManager
 from fedml_core.distributed.communication.message import Message
+from fedml_core.distributed.communication.mpi.com_manager import MpiCommunicationManager
 from fedml_core.distributed.communication.mqtt.mqtt_comm_manager import MqttCommManager
 from fedml_core.distributed.communication.observer import Observer
 
@@ -23,7 +22,7 @@ class ClientManager(Observer):
             HOST = "81.71.1.31"
             # HOST = "broker.emqx.io"
             PORT = 1883
-            self.com_manager = MqttCommManager(HOST, PORT, client_id=rank, client_num=size-1)
+            self.com_manager = MqttCommManager(HOST, PORT, client_id=rank, client_num=size - 1)
         else:
             self.com_manager = MpiCommunicationManager(comm, rank, size, node_type="client")
         self.com_manager.add_observer(self)
