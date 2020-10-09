@@ -150,11 +150,11 @@ def create_model(args, model_name, output_dim):
         logging.info("RNN + shakespeare")
         model = RNN_OriginalFedAvg(28 * 28, output_dim)
     elif model_name == "rnn" and args.dataset == "fed_shakespeare":
-        logging.info("RNN + shakespeare")
+        logging.info("RNN + fed_shakespeare")
         model = RNN_OriginalFedAvg(28 * 28, output_dim)
     elif model_name == "lr" and args.dataset == "stackoverflow_lr":
-        logging.info("RNN + shakespeare")
-        model = RNN_OriginalFedAvg(28 * 28, output_dim)
+        logging.info("RNN + stackoverflow_lr")
+        model = LogisticRegression(28 * 28, output_dim)
     return model
 
 
