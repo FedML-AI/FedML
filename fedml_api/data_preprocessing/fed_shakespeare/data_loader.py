@@ -112,8 +112,7 @@ def load_partition_data_distributed_federated_shakespeare(
         test_h5.close()
         train_data_local, test_data_local = get_dataloader(
             dataset, data_dir, batch_size, batch_size, process_id - 1)
-        train_data_num = local_data_num = len(train_data_local) + len(
-            test_data_local)
+        train_data_num = local_data_num = len(train_data_local)
         logging.info("rank = %d, local_sample_number = %d" %
                      (process_id, local_data_num))
         train_data_global = None
@@ -158,7 +157,7 @@ def load_partition_data_federated_shakespeare(dataset,
 
         train_data_local, test_data_local = get_dataloader(
             dataset, data_dir, batch_size, batch_size, client_idx)
-        local_data_num = len(train_data_local) + len(test_data_local)
+        local_data_num = len(train_data_local.dataset)
         data_local_num_dict[client_idx] = local_data_num
         logging.info("client_idx = %d, local_sample_number = %d" %
                      (client_idx, local_data_num))
