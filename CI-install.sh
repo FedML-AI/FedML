@@ -68,5 +68,5 @@ cd ../../
 
 # 6. CINIC10
 cd ./data/cinic10
-sh download_cinic10.sh
+sh download_cinic10.sh > cinic10_downloading_log.txt
 cd ../../
