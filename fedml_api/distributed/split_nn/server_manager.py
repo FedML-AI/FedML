@@ -1,5 +1,3 @@
-import logging
-
 from fedml_api.distributed.split_nn.message_define import MyMessage
 from fedml_core.distributed.server.server_manager import ServerManager
 from fedml_core.distributed.communication.message import Message

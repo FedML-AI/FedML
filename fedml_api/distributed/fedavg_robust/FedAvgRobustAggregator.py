@@ -7,6 +7,7 @@ import wandb
 import numpy as np
 from torch import nn
 
+from fedml_api.distributed.fedavg.utils import transform_list_to_tensor
 from fedml_core.robustness.robust_aggregation import RobustAggregator, is_weight_param
 
 

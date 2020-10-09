@@ -1,4 +1,3 @@
-import datetime
 import logging
 
 import torch.nn as nn
@@ -71,4 +70,3 @@ class SplitNN_server():
         self.active_node = (self.active_node % self.MAX_RANK) + 1
         self.train_mode()
         logging.info("current active client is {}".format(self.active_node))
-

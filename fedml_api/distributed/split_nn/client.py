@@ -1,6 +1,3 @@
-import logging
-
-import torch
 import torch.optim as optim
 
 
@@ -43,4 +40,3 @@ class SplitNN_client():
     def train_mode(self):
         self.dataloader = iter(self.trainloader)
         self.model.train()
-
