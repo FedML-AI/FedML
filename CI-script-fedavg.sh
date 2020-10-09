@@ -22,9 +22,6 @@ cd ./../../../
 # 2. MNIST distributed FedAvg
 cd ./fedml_experiments/distributed/fedavg
 sh run_fedavg_distributed_pytorch.sh 4 4 1 4 lr hetero 2 2 2 0.03 mnist "./../../../data/mnist" &
-
-sleep 60
-killall mpirun
 cd ./../../../
 
 # 3. MNIST mobile FedAvg
