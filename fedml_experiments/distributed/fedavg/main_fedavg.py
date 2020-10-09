@@ -13,6 +13,8 @@ import wandb
 # add the FedML root directory to the python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 
+from fedml_api.data_preprocessing.shakespeare.data_loader import load_partition_data_shakespeare
+
 from fedml_api.distributed.fedavg.FedAvgAPI import FedML_init, FedML_FedAvg_distributed
 
 from fedml_api.model.shallow_neural_networks.rnn import RNN_OriginalFedAvg

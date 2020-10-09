@@ -46,6 +46,7 @@ class CNN_OriginalFedAvg(torch.nn.Module):
 
     def __init__(self, only_digits=True):
         super(CNN_OriginalFedAvg, self).__init__()
+        self.only_digits = only_digits
         self.conv2d_1 = torch.nn.Conv2d(1, 32, kernel_size=5, padding=2)
         self.max_pooling = nn.MaxPool2d(2, stride=2)
         self.conv2d_2 = torch.nn.Conv2d(32, 64, kernel_size=5, padding=2)
@@ -56,6 +57,7 @@ class CNN_OriginalFedAvg(torch.nn.Module):
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x):
+        x = torch.unsqueeze(x, 1)
         x = self.conv2d_1(x)
         x = self.max_pooling(x)
         x = self.conv2d_2(x)
