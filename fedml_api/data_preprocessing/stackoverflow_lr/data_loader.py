@@ -142,6 +142,7 @@ def load_partition_data_federated_stackoverflow(dataset, data_dir, client_number
     
     client_number_train = client_number_test = client_number
     if client_number is None:
+        client_number = DEFAULT_TRAIN_CLINETS_NUM
         client_number_train = DEFAULT_TRAIN_CLINETS_NUM
         client_number_test = DEFAULT_TEST_CLIENTS_NUM
         
@@ -180,7 +181,7 @@ def load_partition_data_federated_stackoverflow(dataset, data_dir, client_number
         train_data_local_dict[client_idx] = train_data_local
         test_data_local_dict[client_idx] = test_data_local
 
-    return train_data_num, test_data_num, train_data_global, test_data_global, \
+    return client_number, train_data_num, test_data_num, train_data_global, test_data_global, \
         data_local_num_dict, train_data_local_dict, test_data_local_dict
 
 

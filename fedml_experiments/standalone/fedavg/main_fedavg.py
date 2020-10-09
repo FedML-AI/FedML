@@ -11,6 +11,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 
 from fedml_api.data_preprocessing.fed_cifar100.data_loader import load_partition_data_federated_cifar100
 from fedml_api.data_preprocessing.shakespeare.data_loader import load_partition_data_shakespeare
+from fedml_api.data_preprocessing.fed_shakespeare.data_loader import load_partition_data_federated_shakespeare
+from fedml_api.data_preprocessing.stackoverflow_lr.data_loader import load_partition_data_federated_stackoverflow
 
 from fedml_api.model.shallow_neural_networks.cnn import CNN_OriginalFedAvg
 from fedml_api.data_preprocessing.FederatedEMNIST.data_loader import load_partition_data_federated_emnist
@@ -102,11 +104,24 @@ def load_data(args, dataset_name):
         class_num = load_partition_data_shakespeare(args.batch_size)
         args.client_num_in_total = client_num
 
+    elif dataset_name == "fed_shakespeare":
+        logging.info("load_data. dataset_name = %s" % dataset_name)
+        client_num, train_data_num, test_data_num, train_data_global, test_data_global, \
+        train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
+        class_num = load_partition_data_federated_shakespeare(args.dataset, args.data_dir)
+        args.client_num_in_total = client_num
+
     elif dataset_name == "fed_cifar100":
         logging.info("load_data. dataset_name = %s" % dataset_name)
         client_num, train_data_num, test_data_num, train_data_global, test_data_global, \
         train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
         class_num = load_partition_data_federated_cifar100(args.dataset, args.data_dir)
+        args.client_num_in_total = client_num
+    elif dataset_name == "stackoverflow_lr":
+        logging.info("load_data. dataset_name = %s" % dataset_name)
+        client_num, train_data_num, test_data_num, train_data_global, test_data_global, \
+        train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
+        class_num = load_partition_data_federated_stackoverflow(args.dataset, args.data_dir)
         args.client_num_in_total = client_num
     else:
         logging.info("load_data. dataset_name = %s" % dataset_name)
@@ -125,15 +140,21 @@ def create_model(args, model_name, output_dim):
     if model_name == "lr" and args.dataset == "mnist":
         logging.info("LogisticRegression + MNIST")
         model = LogisticRegression(28 * 28, output_dim)
-    elif model_name == "rnn" and args.dataset == "shakespeare":
-        logging.info("RNN + shakespeare")
-        model = RNN_OriginalFedAvg(28 * 28, output_dim)
     elif model_name == "cnn" and args.dataset == "femnist":
         logging.info("CNN + FederatedEMNIST")
         model = CNN_OriginalFedAvg(False)
     elif model_name == "resnet18_gn" and args.dataset == "fed_cifar100":
         logging.info("ResNet18_GN + Federated_CIFAR100")
         model = resnet18()
+    elif model_name == "rnn" and args.dataset == "shakespeare":
+        logging.info("RNN + shakespeare")
+        model = RNN_OriginalFedAvg(28 * 28, output_dim)
+    elif model_name == "rnn" and args.dataset == "fed_shakespeare":
+        logging.info("RNN + shakespeare")
+        model = RNN_OriginalFedAvg(28 * 28, output_dim)
+    elif model_name == "lr" and args.dataset == "stackoverflow_lr":
+        logging.info("RNN + shakespeare")
+        model = RNN_OriginalFedAvg(28 * 28, output_dim)
     return model
 
 

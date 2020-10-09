@@ -168,7 +168,7 @@ def load_partition_data_federated_shakespeare(dataset,
         train_data_local_dict[client_idx] = train_data_local
         test_data_local_dict[client_idx] = test_data_local
     VOCAB_LEN = len(utils.get_word_dict()) + 1
-    return train_data_num, test_data_num, train_data_global, test_data_global, \
+    return client_number, train_data_num, test_data_num, train_data_global, test_data_global, \
         data_local_num_dict, train_data_local_dict, test_data_local_dict, VOCAB_LEN
 
 
