@@ -3,7 +3,12 @@ We reuse the dataset preprocessing for Shakespeare published by FedProx (https:/
 
 # Shakespeare Dataset
 
-You can download the dataset [here](https://drive.google.com/file/d/1cVpkJA0cIKN4t-n5Fl95sPlAzhGgE_ZJ/view?usp=sharing), unzip it and put the `train` and `test` folder under this directory.
+You can download the training and testing datasets [here](https://drive.google.com/drive/folders/1jKREFyb4SGLnh8GE5jM6WX3AY_qiEKsY), put them  at `train` and `test` folder under this directory.
+
+Or you can directly use the following command to download it manually:
+```
+sh download_shakespeare.sh.sh
+```
 
 
 # Run Statistics
