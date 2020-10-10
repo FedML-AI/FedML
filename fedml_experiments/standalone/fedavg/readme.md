@@ -11,19 +11,22 @@ Frond-end debugging:
 sh run_fedavg_standalone_pytorch.sh 0 10 10 mnist ./../../../data/mnist lr hetero 200 20 0.03 sgd
 
 ## shakespeare (LEAF)
-sh run_fedavg_standalone_pytorch.sh 0 10 10 shakespeare ./../../../data/shakespeare rnn hetero 100 10 0.8 sgd
+sh run_fedavg_standalone_pytorch.sh 0 10 10 shakespeare ./../../../data/shakespeare rnn hetero 100 1 0.8 sgd
 
 # fed_shakespeare (Google)
-sh run_fedavg_standalone_pytorch.sh 0 10 10 fed_shakespeare ./../../../data/fed_shakespeare rnn hetero 100 10 0.8 sgd
+sh run_fedavg_standalone_pytorch.sh 0 10 10 fed_shakespeare ./../../../data/fed_shakespeare rnn hetero 100 1 0.8 sgd
 
 ## Federated EMNIST
-sh run_fedavg_standalone_pytorch.sh 0 10 10 femnist ./../../../data/FederatedEMNIST cnn hetero 200 20 0.03 sgd
+sh run_fedavg_standalone_pytorch.sh 0 10 10 femnist ./../../../data/FederatedEMNIST cnn hetero 200 1 0.03 sgd
 
 ## Fed_CIFAR100
-sh run_fedavg_standalone_pytorch.sh 0 10 10 fed_cifar100 ./../../../data/fed_cifar100 resnet18_gn hetero 200 20 0.03 adam
+sh run_fedavg_standalone_pytorch.sh 0 10 10 fed_cifar100 ./../../../data/fed_cifar100 resnet18_gn hetero 200 1 0.03 adam
 
-# Stackoverflow
-sh run_fedavg_standalone_pytorch.sh 0 10 10 stackoverflow_lr ./../../../data/stackoverflow lr hetero 200 20 0.03 sgd
+# Stackoverflow_LR
+sh run_fedavg_standalone_pytorch.sh 0 10 10 stackoverflow_lr ./../../../data/stackoverflow lr hetero 200 1 0.03 sgd
+
+# Stackoverflow_NWP
+sh run_fedavg_standalone_pytorch.sh 0 10 10 stackoverflow_lr ./../../../data/stackoverflow cnn hetero 200 1 0.03 sgd
 ```
 
 running on the background:

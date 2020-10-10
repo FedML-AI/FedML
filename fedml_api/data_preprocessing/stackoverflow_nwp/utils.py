@@ -78,7 +78,7 @@ def preprocess(sentences, max_seq_len=20):
 def split(dataset):
     ds = np.array(dataset)
     x = ds[:, :-1]
-    y = ds[:, 1:]
+    y = ds[:, -1]
     return x, y
 
 
