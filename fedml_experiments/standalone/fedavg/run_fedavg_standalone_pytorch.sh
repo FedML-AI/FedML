@@ -22,6 +22,8 @@ LR=$10
 
 OPT=$11
 
+CI=$12
+
 python3 ./main_fedavg.py \
 --gpu $GPU \
 --dataset $DATASET \
@@ -33,4 +35,5 @@ python3 ./main_fedavg.py \
 --epochs $EPOCH \
 --batch_size $BATCH_SIZE \
 --client_optimizer $OPT \
---lr $LR
+--lr $LR \
+--ci $CI

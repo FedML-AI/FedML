@@ -46,11 +46,11 @@ class FedAVGTrainer(object):
         epoch_loss = []
         for epoch in range(self.args.epochs):
             batch_loss = []
-            for batch_idx, (images, labels) in enumerate(self.train_local):
+            for batch_idx, (x, labels) in enumerate(self.train_local):
                 # logging.info(images.shape)
-                images, labels = images.to(self.device), labels.to(self.device)
+                x, labels = x.to(self.device), labels.to(self.device)
                 self.optimizer.zero_grad()
-                log_probs = self.model(images)
+                log_probs = self.model(x)
                 loss = self.criterion(log_probs, labels)
                 loss.backward()
                 self.optimizer.step()
