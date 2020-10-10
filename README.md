@@ -1,14 +1,14 @@
-<p align="center">
+# FedML: A Research Library and Benchmark for Federated Machine Learning
 
+[https://arxiv.org/abs/2007.13518](https://arxiv.org/abs/2007.13518)
+
+<p align="center">
   <a href="https://github.com/FedML-AI/FedML/projects/1"><img alt="Roadmap" src="https://img.shields.io/badge/roadmap-FedML-informational.svg?style=flat-square"></a>
   <a href="#"><img alt="Python3" src="https://img.shields.io/badge/Python-3-brightgreen.svg?style=flat-square"></a>
   <a href="#"><img alt="PyTorch" src="https://img.shields.io/badge/PyTorch-%3E1.0-orange"></a>
   <a href="https://travis-ci.org/FedML-AI/FedML"><img alt="Travis" src="https://img.shields.io/travis/FedML-AI/FedML.svg?style=flat-square"></a>
-
+  <object type="image/svg+xml" data="https://opencollective.com/fedml/tiers/sponsors.svg?avatarHeight=36&width=600"></object>
 </p>
-
-# FedML: A Research Library and Benchmark for Federated Machine Learning
-[https://arxiv.org/abs/2007.13518](https://arxiv.org/abs/2007.13518)
 
 ## News
 <b>2020-10-07</b>: Datasets + Models ALL IN ONE!!! FedML supports comprehensive research-oriented FL datasets and models:
