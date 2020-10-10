@@ -19,7 +19,7 @@ sh run_fedavg_standalone_pytorch.sh 0 4 4 shakespeare ./../../../data/shakespear
 sh run_fedavg_standalone_pytorch.sh 0 4 4 femnist ./../../../data/FederatedEMNIST cnn hetero 1 1 0.03 sgd
 sh run_fedavg_standalone_pytorch.sh 0 4 4 fed_shakespeare ./../../../data/fed_shakespeare rnn hetero 1 1 0.8 sgd
 sh run_fedavg_standalone_pytorch.sh 0 4 4 fed_cifar100 ./../../../data/fed_cifar100 resnet18_gn hetero 1 1 0.03 adam
-sh run_fedavg_standalone_pytorch.sh 0 1 1 stackoverflow_lr ./../../../data/stackoverflow lr hetero 1 1 0.03 sgd
+#sh run_fedavg_standalone_pytorch.sh 0 1 1 stackoverflow_lr ./../../../data/stackoverflow lr hetero 1 1 0.03 sgd
 cd ./../../../
 
 

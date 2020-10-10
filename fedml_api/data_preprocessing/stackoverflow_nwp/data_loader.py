@@ -5,7 +5,7 @@ import torch
 import random
 import torch.utils.data as data
 
-from fedml_api.data_preprocessing.stackoverflow_lr import utils
+from fedml_api.data_preprocessing.stackoverflow_nwp import utils
 
 logging.basicConfig()
 logger = logging.getLogger()
@@ -27,6 +27,7 @@ _TOKENS = 'tokens'
 
 def get_client_map(client_map, client_id=None, client_num=None):
     if client_map == None:
+        logging.info("load_partition_data_federated_stackoverflow_nwp 2")
         random.shuffle(client_id)
         client_map = {
             k: [client_id[i] for i in range(k, len(client_id), client_num)]
@@ -79,7 +80,7 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
     return train_dl, test_dl
 
 
-def load_partition_data_distributed_federated_stackoverflow(
+def load_partition_data_distributed_federated_stackoverflow_nwp(
         process_id, dataset, data_dir, client_number = None, batch_size = DEFAULT_BATCH_SIZE):
 
     client_number_train = client_number_test = client_number
@@ -123,13 +124,13 @@ def load_partition_data_distributed_federated_stackoverflow(
     return train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, VOCAB_LEN
 
 
-def load_partition_data_federated_stackoverflow(dataset, data_dir, client_number = None, batch_size = DEFAULT_BATCH_SIZE):
-    
+def load_partition_data_federated_stackoverflow_nwp(dataset, data_dir, client_number = None, batch_size = DEFAULT_BATCH_SIZE):
+    logging.info("load_partition_data_federated_stackoverflow_nwp START")
     client_number_train = client_number_test = client_number
     if client_number is None:
         client_number_train = DEFAULT_TRAIN_CLINETS_NUM
         client_number_test = DEFAULT_TEST_CLIENTS_NUM
-    
+
     train_data_global, test_data_global = get_dataloader(dataset, data_dir, batch_size, batch_size)
     train_data_num = len(train_data_global)
     test_data_num = len(test_data_global)
@@ -149,7 +150,6 @@ def load_partition_data_federated_stackoverflow(dataset, data_dir, client_number
                                      client_number_test)
     train_h5.close()
     test_h5.close()
-
     for client_idx in range(client_number):
 
         train_data_local, test_data_local = get_dataloader(
@@ -171,7 +171,7 @@ def load_partition_data_federated_stackoverflow(dataset, data_dir, client_number
 
 if __name__ == "__main__":
     #load_partition_data_federated_stackoverflow(None, None, 100, 128)
-    train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, VOCAB_LEN = load_partition_data_distributed_federated_stackoverflow(
+    train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, VOCAB_LEN = load_partition_data_distributed_federated_stackoverflow_nwp(
         2, None, None, 1000, 128)
     print(train_data_local, test_data_local)
     print(VOCAB_LEN)
