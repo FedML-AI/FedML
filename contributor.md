@@ -1,6 +1,6 @@
 ### Co-Authors:
 
-Chaoyang He (USC), Songze Li (Stanford), Jinhyun So (USC), Mi Zhang (USC), Hongyi Wang (Wisconsin Madison), Xiaoyang Wang (UIUC), Praneeth Vepakomma (MIT), Abhishek Singh (MIT), Hang Qiu (USC), Li Shen (Tencent), Peilin Zhao (Tencent), Yan Kang (WeBank), Yang Liu (WeBank), Ramesh Raskar (MIT), Qiang Yang (WeBank, HKUST), Murali Annavaram (USC), Salman Avestimehr (USC)
+Chaoyang He (USC)*, Songze Li (Stanford), Jinhyun So (USC), Mi Zhang (USC), Hongyi Wang (Wisconsin Madison), Xiaoyang Wang (UIUC), Praneeth Vepakomma (MIT), Abhishek Singh (MIT), Hang Qiu (USC), Li Shen (Tencent), Peilin Zhao (Tencent), Yan Kang (WeBank), Yang Liu (WeBank), Ramesh Raskar (MIT), Qiang Yang (WeBank, HKUST), Murali Annavaram (USC), Salman Avestimehr (USC)*
 
 Correponding Authors: Chaoyang He, Salman Avestimehr
 
