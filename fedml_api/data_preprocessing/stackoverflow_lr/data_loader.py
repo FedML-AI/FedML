@@ -100,7 +100,7 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
     return train_dl, test_dl
 
 
-def load_partition_data_distributed_federated_stackoverflow(
+def load_partition_data_distributed_federated_stackoverflow_lr(
         process_id, dataset, data_dir, client_number=None, batch_size=DEFAULT_BATCH_SIZE):
     client_number_train = client_number_test = client_number
     if client_number is None:
@@ -141,7 +141,7 @@ def load_partition_data_distributed_federated_stackoverflow(
     return train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local
 
 
-def load_partition_data_federated_stackoverflow(dataset, data_dir, client_number=None, batch_size=DEFAULT_BATCH_SIZE):
+def load_partition_data_federated_stackoverflow_lr(dataset, data_dir, client_number=None, batch_size=DEFAULT_BATCH_SIZE):
     client_number_train = client_number_test = client_number
     if client_number is None:
         client_number = DEFAULT_TRAIN_CLINETS_NUM
@@ -189,6 +189,6 @@ def load_partition_data_federated_stackoverflow(dataset, data_dir, client_number
 
 if __name__ == "__main__":
     # load_partition_data_federated_stackoverflow(None, None, 100, 128)
-    train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local = load_partition_data_distributed_federated_stackoverflow(
+    train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local = load_partition_data_distributed_federated_stackoverflow_lr(
         2, None, None, 300000, 128)
     print(train_data_local, test_data_local)

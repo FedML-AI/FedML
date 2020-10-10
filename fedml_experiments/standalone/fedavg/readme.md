@@ -26,7 +26,7 @@ sh run_fedavg_standalone_pytorch.sh 0 10 10 fed_cifar100 ./../../../data/fed_cif
 sh run_fedavg_standalone_pytorch.sh 0 10 10 stackoverflow_lr ./../../../data/stackoverflow lr hetero 200 1 0.03 sgd
 
 # Stackoverflow_NWP
-sh run_fedavg_standalone_pytorch.sh 0 10 10 stackoverflow_lr ./../../../data/stackoverflow cnn hetero 200 1 0.03 sgd
+sh run_fedavg_standalone_pytorch.sh 0 10 10 stackoverflow_nwp ./../../../data/stackoverflow cnn hetero 200 1 0.03 sgd
 ```
 
 running on the background:
