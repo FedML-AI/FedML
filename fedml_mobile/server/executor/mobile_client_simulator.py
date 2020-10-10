@@ -21,10 +21,10 @@ from fedml_api.data_preprocessing.cifar100.data_loader import load_partition_dat
 from fedml_api.data_preprocessing.cinic10.data_loader import load_partition_data_cinic10
 from fedml_api.data_preprocessing.shakespeare.data_loader import load_partition_data_shakespeare
 
-from fedml_api.model.deep_neural_networks.mobilenet import mobilenet
-from fedml_api.model.deep_neural_networks.resnet import resnet56
-from fedml_api.model.linear_models.lr import LogisticRegression
-from fedml_api.model.shallow_neural_networks.rnn import RNN_OriginalFedAvg
+from fedml_api.model.cv.mobilenet import mobilenet
+from fedml_api.model.cv.resnet import resnet56
+from fedml_api.model.linear.lr import LogisticRegression
+from fedml_api.model.nlp.rnn import RNN_OriginalFedAvg
 
 def add_args(parser):
     parser.add_argument('--client_uuid', type=str, default="0",

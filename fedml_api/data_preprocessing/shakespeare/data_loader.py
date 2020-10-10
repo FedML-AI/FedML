@@ -7,7 +7,7 @@ import torch.nn as nn
 
 from fedml_api.data_preprocessing.shakespeare.language_utils import word_to_indices, VOCAB_SIZE, \
     letter_to_index
-from fedml_api.model.shallow_neural_networks.rnn import RNN_OriginalFedAvg
+from fedml_api.model.nlp.rnn import RNN_OriginalFedAvg
 
 
 def read_data(train_data_dir, test_data_dir):

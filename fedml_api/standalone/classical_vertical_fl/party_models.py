@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from fedml_api.model.linear_models.vfl_models_standalone import DenseModel
+from fedml_api.model.finance.vfl_models_standalone import DenseModel
 
 
 def sigmoid(x):

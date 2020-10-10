@@ -14,9 +14,9 @@ import torch.utils
 import torchvision.datasets as dset
 import wandb
 
-from fedml_api.model.darts import utils
-from fedml_api.model.darts.architect import Architect
-from fedml_api.model.darts.model_search import Network
+from fedml_api.model.cv.darts import utils
+from fedml_api.model.cv.darts.architect import Architect
+from fedml_api.model.cv.darts.model_search import Network
 
 parser = argparse.ArgumentParser("cifar")
 parser.add_argument('--run_id', type=int, default=0, help='running id')

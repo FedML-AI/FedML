@@ -13,8 +13,8 @@ import torch.utils
 import torchvision.datasets as dset
 import wandb
 
-from fedml_api.model.darts import utils
-from fedml_api.model.darts.model import NetworkCIFAR as Network
+from fedml_api.model.cv.darts import utils
+from fedml_api.model.cv.darts import NetworkCIFAR as Network
 
 parser = argparse.ArgumentParser("cifar")
 parser.add_argument('--data', type=str, default='../data', help='location of the data corpus')

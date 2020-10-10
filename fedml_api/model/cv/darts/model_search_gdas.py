@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from fedml_api.model.darts.genotypes import PRIMITIVES, Genotype
-from fedml_api.model.darts.operations import OPS, FactorizedReduce, ReLUConvBN
+from fedml_api.model.cv.darts.genotypes import PRIMITIVES, Genotype
+from fedml_api.model.cv.darts.operations import OPS, FactorizedReduce, ReLUConvBN
 
 
 class MixedOp(nn.Module):

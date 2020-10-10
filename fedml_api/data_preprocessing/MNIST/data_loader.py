@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from fedml_api.model.linear_models.lr import LogisticRegression
+from fedml_api.model.linear.lr import LogisticRegression
 
 
 def read_data(train_data_dir, test_data_dir):

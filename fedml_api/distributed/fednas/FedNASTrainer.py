@@ -3,8 +3,8 @@ import logging
 import torch
 from torch import nn
 
-from fedml_api.model.darts import utils
-from fedml_api.model.darts.architect import Architect
+from fedml_api.model.cv.darts import utils
+from fedml_api.model.cv.darts.architect import Architect
 
 
 class FedNASTrainer(object):

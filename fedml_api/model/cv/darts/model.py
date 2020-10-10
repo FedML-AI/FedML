@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 
-from fedml_api.model.darts.operations import FactorizedReduce, ReLUConvBN, OPS, Identity
-from fedml_api.model.darts.utils import drop_path
+from fedml_api.model.cv.darts.operations import FactorizedReduce, ReLUConvBN, OPS, Identity
+from fedml_api.model.cv.darts.utils import drop_path
 
 
 class Cell(nn.Module):

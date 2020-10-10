@@ -5,7 +5,7 @@ from sklearn.utils import shuffle
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 from fedml_api.data_preprocessing.NUS_WIDE.nus_wide_dataset import NUS_WIDE_load_three_party_data
-from fedml_api.model.linear_models.vfl_models_standalone import LocalModel, DenseModel
+from fedml_api.model.finance.vfl_models_standalone import LocalModel, DenseModel
 from fedml_api.standalone.classical_vertical_fl.party_models import VFLGuestModel, VFLHostModel
 from fedml_api.standalone.classical_vertical_fl.vfl import VerticalMultiplePartyLogisticRegressionFederatedLearning
 from fedml_api.standalone.classical_vertical_fl.vfl_fixture import FederatedLearningFixture
