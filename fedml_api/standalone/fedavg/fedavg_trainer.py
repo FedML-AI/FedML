@@ -112,6 +112,12 @@ class FedAvgTrainer(object):
         test_losses = []
         client = self.client_list[0]
         for client_idx in range(self.args.client_num_in_total):
+            """
+            Note: for datasets like "fed_CIFAR100" and "fed_shakespheare",
+            the training client number is larger than the testing client number
+            """
+            if self.test_data_local_dict[client_idx] is None:
+                continue
             client.update_local_dataset(0, self.train_data_local_dict[client_idx],
                                         self.test_data_local_dict[client_idx],
                                         self.train_data_local_num_dict[client_idx])

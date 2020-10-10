@@ -15,18 +15,22 @@ client_map_test = None
 train_file_path = '../../../data/fed_cifar100/cifar100_train.h5'
 test_file_path = '../../../data/fed_cifar100/cifar100_test.h5'
 
+
 def get_client_map(client_map, client_id = None, client_num = None):
     if client_map == None:
         random.shuffle(client_id)
         client_map = {k:[client_id[i] for i in range(k, len(client_id), client_num)] for k in range(client_num)}
     return client_map
 
+
 def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx = None):
     
     train_h5 = h5py.File(train_file_path, 'r')
     test_h5 = h5py.File(test_file_path,'r')
     train_x, train_y, train_id = train_h5['image'], train_h5['label'], train_h5['id']
+    train_x = np.moveaxis(train_x[:], -1, 1)
     test_x, test_y, test_id = test_h5['image'], test_h5['label'], test_h5['id']
+    test_x = np.moveaxis(test_x[:], -1, 1)
     
     if client_idx is None:
         train_ds = data.TensorDataset(torch.tensor(train_x[:,:]), torch.tensor(train_y[:]))

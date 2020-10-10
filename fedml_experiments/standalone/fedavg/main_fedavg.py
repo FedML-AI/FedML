@@ -14,7 +14,7 @@ from fedml_api.data_preprocessing.shakespeare.data_loader import load_partition_
 from fedml_api.data_preprocessing.fed_shakespeare.data_loader import load_partition_data_federated_shakespeare
 from fedml_api.data_preprocessing.stackoverflow_lr.data_loader import load_partition_data_federated_stackoverflow
 
-from fedml_api.model.shallow_neural_networks.cnn import CNN_OriginalFedAvg
+from fedml_api.model.shallow_neural_networks.cnn import CNN_OriginalFedAvg, CNN_DropOut
 from fedml_api.data_preprocessing.FederatedEMNIST.data_loader import load_partition_data_federated_emnist
 from fedml_api.model.shallow_neural_networks.rnn import RNN_OriginalFedAvg
 
@@ -142,7 +142,7 @@ def create_model(args, model_name, output_dim):
         model = LogisticRegression(28 * 28, output_dim)
     elif model_name == "cnn" and args.dataset == "femnist":
         logging.info("CNN + FederatedEMNIST")
-        model = CNN_OriginalFedAvg(False)
+        model = CNN_DropOut(False)
     elif model_name == "resnet18_gn" and args.dataset == "fed_cifar100":
         logging.info("ResNet18_GN + Federated_CIFAR100")
         model = resnet18()
@@ -153,7 +153,7 @@ def create_model(args, model_name, output_dim):
         logging.info("RNN + fed_shakespeare")
         model = RNN_OriginalFedAvg(28 * 28, output_dim)
     elif model_name == "lr" and args.dataset == "stackoverflow_lr":
-        logging.info("RNN + stackoverflow_lr")
+        logging.info("lr + stackoverflow_lr")
         model = LogisticRegression(10004, output_dim)
     return model
 
