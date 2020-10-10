@@ -11,9 +11,7 @@ To simulate a heterogeneous setting, we distribute the data among 1000 devices s
 has samples of only 2 digits and the number of samples per device follows a power law. The input of the model is a
 flattened 784-dimensional (28 × 28) image, and the output is a class label between 0 and 9.
 
-This benchmark dataset is aligned with the following publication:
-
-Federated Optimization in Heterogeneous Networks (https://arxiv.org/pdf/1812.06127.pdf). MLSys 2020.
+This benchmark dataset is aligned with the following publication: Federated Optimization in Heterogeneous Networks (https://arxiv.org/pdf/1812.06127.pdf). MLSys 2020.
 
 # Prepare MNIST Dataset
 

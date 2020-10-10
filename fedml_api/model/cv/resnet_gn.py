@@ -1,5 +1,6 @@
-import torch.nn as nn
 import math
+
+import torch.nn as nn
 import torch.utils.model_zoo as model_zoo
 
 __all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101',
@@ -20,6 +21,7 @@ def conv3x3(in_planes, out_planes, stride=1):
     """3x3 convolution with padding"""
     return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
                      padding=1, bias=False)
+
 
 def norm2d(planes, num_channels_per_group=32):
     print("num_channels_per_group:{}".format(num_channels_per_group))
@@ -141,7 +143,6 @@ class ResNet(nn.Module):
                 m.bn3.weight.data.fill_(0)
             if isinstance(m, BasicBlock):
                 m.bn2.weight.data.fill_(0)
-
 
     def _make_layer(self, block, planes, blocks, stride=1, group_norm=0):
         downsample = None
