@@ -37,7 +37,7 @@ We will support more advanced models and datasets, please stay tuned!
 ---
 
 <b>2020-09-28</b>: Authors of FedML (https://fedml.ai) have 7 papers that got accepted to NeurIPS 2020. Big congratulations!!!
-Here is the publication list: https://github.com/FedML-AI/FedML/blob/master/publications.md. Highlighted ones are related to large-scale distributed learning and federated learning. Can the other papers get marriage with FedML? Let's stay tuned 🙂
+Here is the publication list: https://github.com/FedML-AI/FedML/blob/master/publications.md. Highlighted ones are related to large-scale distributed learning and federated learning.
 
 
 ## What is Federated Learning?
