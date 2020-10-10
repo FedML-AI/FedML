@@ -16,7 +16,7 @@ from fedml_api.data_preprocessing.stackoverflow_lr.data_loader import load_parti
 
 from fedml_api.model.shallow_neural_networks.cnn import CNN_OriginalFedAvg, CNN_DropOut
 from fedml_api.data_preprocessing.FederatedEMNIST.data_loader import load_partition_data_federated_emnist
-from fedml_api.model.shallow_neural_networks.rnn import RNN_OriginalFedAvg
+from fedml_api.model.shallow_neural_networks.rnn import RNN_OriginalFedAvg, RNN_StackOverFlow
 
 from fedml_api.data_preprocessing.MNIST.data_loader import load_partition_data_mnist
 from fedml_api.model.linear_models.lr import LogisticRegression
@@ -148,13 +148,16 @@ def create_model(args, model_name, output_dim):
         model = resnet18()
     elif model_name == "rnn" and args.dataset == "shakespeare":
         logging.info("RNN + shakespeare")
-        model = RNN_OriginalFedAvg(28 * 28, output_dim)
+        model = RNN_OriginalFedAvg()
     elif model_name == "rnn" and args.dataset == "fed_shakespeare":
         logging.info("RNN + fed_shakespeare")
-        model = RNN_OriginalFedAvg(28 * 28, output_dim)
+        model = RNN_OriginalFedAvg()
     elif model_name == "lr" and args.dataset == "stackoverflow_lr":
         logging.info("lr + stackoverflow_lr")
         model = LogisticRegression(10004, output_dim)
+    elif model_name == "cnn" and args.dataset == "stackoverflow_nwp":
+        logging.info("CNN + stackoverflow_nwp")
+        model = RNN_StackOverFlow()
     return model
 
 
