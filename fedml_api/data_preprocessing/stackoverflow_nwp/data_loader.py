@@ -41,16 +41,18 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
             test_ds.extend(utils.preprocess(raw_test))
     else:
         client_id_train = client_ids_train[client_idx]
-        client_id_test = client_ids_test[client_idx]
+
         raw_train = train_h5[_EXAMPLE][client_id_train][_TOKENS][()]
         raw_train = [x.decode('utf8') for x in raw_train]
         train_ds.extend(utils.preprocess(raw_train))
-        raw_test = test_h5[_EXAMPLE][client_id_test][_TOKENS][()]
-        raw_test = [x.decode('utf8') for x in raw_test]
-        test_ds.extend(utils.preprocess(raw_test))
+
+        if client_idx <= len(client_ids_test) - 1:
+            client_id_test = client_ids_test[client_idx]
+            raw_test = test_h5[_EXAMPLE][client_id_test][_TOKENS][()]
+            raw_test = [x.decode('utf8') for x in raw_test]
+            test_ds.extend(utils.preprocess(raw_test))
 
     train_x, train_y = utils.split(train_ds)
-    test_x, test_y = utils.split(test_ds)
     train_ds = data.TensorDataset(torch.tensor(train_x[:, :]),
                                   torch.tensor(train_y[:]))
     train_dl = data.DataLoader(dataset=train_ds,
@@ -58,6 +60,7 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
                                shuffle=True,
                                drop_last=False)
 
+    test_x, test_y = utils.split(test_ds)
     test_ds = data.TensorDataset(torch.tensor(test_x[:, :]),
                                  torch.tensor(test_y[:]))
     if len(test_ds) != 0:
