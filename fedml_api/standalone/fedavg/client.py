@@ -41,6 +41,8 @@ class Client:
             batch_loss = []
             for batch_idx, (x, labels) in enumerate(self.local_training_data):
                 x, labels = x.to(self.device), labels.long().to(self.device)
+                # logging.info("x.size = " + str(x.size()))
+                # logging.info("labels.size = " + str(labels.size()))
                 net.zero_grad()
                 log_probs = net(x)
                 loss = self.criterion(log_probs, labels)
