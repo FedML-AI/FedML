@@ -133,6 +133,13 @@ class FedAvgTrainer(object):
             test_num_samples.append(copy.deepcopy(test_num_sample))
             test_losses.append(copy.deepcopy(test_loss))
 
+            """
+            Note: CI environment is CPU-based computing. 
+            The training speed for RNN training is to slow in this setting, so we only test a client to make sure there is no programming error.
+            """
+            if self.args.ci == 1:
+                break
+
         # test on training dataset
         train_acc = sum(train_tot_corrects) / sum(train_num_samples)
         train_loss = sum(train_losses) / sum(train_num_samples)

@@ -40,7 +40,7 @@ class Client:
         for epoch in range(self.args.epochs):
             batch_loss = []
             for batch_idx, (x, labels) in enumerate(self.local_training_data):
-                x, labels = x.to(self.device), labels.long().to(self.device)
+                x, labels = x.to(self.device), labels.to(self.device)
                 # logging.info("x.size = " + str(x.size()))
                 # logging.info("labels.size = " + str(labels.size()))
                 net.zero_grad()
@@ -72,7 +72,7 @@ class Client:
         with torch.no_grad():
             for batch_idx, (x, target) in enumerate(test_data):
                 x = x.to(self.device)
-                target = target.long().to(self.device)
+                target = target.to(self.device)
                 pred = model_global(x)
                 loss = self.criterion(pred, target)
                 _, predicted = torch.max(pred, -1)

@@ -29,7 +29,9 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
     train_h5 = h5py.File(train_file_path, 'r')
     test_h5 = h5py.File(test_file_path, 'r')
     train_x, train_y, train_id = train_h5['pixels'], train_h5['label'], train_h5['id']
+    train_y = train_y[:].astype(np.long)
     test_x, test_y, test_id = test_h5['pixels'], test_h5['label'], test_h5['id']
+    test_y = test_y[:].astype(np.long)
 
     if client_idx is None:
         train_ds = data.TensorDataset(torch.tensor(train_x[:, :]), torch.tensor(train_y[:]))
