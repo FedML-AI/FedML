@@ -7,6 +7,9 @@
 
 </p>
 
+# FedML: A Research Library and Benchmark for Federated Machine Learning
+[https://arxiv.org/abs/2007.13518](https://arxiv.org/abs/2007.13518)
+
 ## News
 <b>2020-10-07</b>: Datasets + Models ALL IN ONE!!! FedML supports comprehensive research-oriented FL datasets and models:
 
@@ -31,9 +34,6 @@ We will support more advanced models and datasets, please stay tuned!
 <b>2020-09-28</b>: Authors of FedML (https://fedml.ai) have 7 papers that got accepted to NeurIPS 2020. Big congratulations!!!
 Here is the publication list: https://github.com/FedML-AI/FedML/blob/master/publications.md. Highlighted ones are related to large-scale distributed learning and federated learning. Can the other papers get marriage with FedML? Let's stay tuned 🙂
 
-
-# FedML: A Research Library and Benchmark for Federated Machine Learning
-[https://arxiv.org/abs/2007.13518](https://arxiv.org/abs/2007.13518)
 
 ## What is Federated Learning?
 Please read this long vision paper [Advances and Open Problems in Federated Learning](https://arxiv.org/abs/1912.04977).
