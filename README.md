@@ -1,13 +1,18 @@
 # FedML: A Research Library and Benchmark for Federated Machine Learning
 
-[https://arxiv.org/abs/2007.13518](https://arxiv.org/abs/2007.13518)
+<p align="center">
+:page_facing_up: <a href="https://arxiv.org/abs/2007.13518">https://arxiv.org/abs/2007.13518</a>
+</p>
 
 <p align="center">
   <a href="https://github.com/FedML-AI/FedML/projects/1"><img alt="Roadmap" src="https://img.shields.io/badge/roadmap-FedML-informational.svg?style=flat-square"></a>
   <a href="#"><img alt="Python3" src="https://img.shields.io/badge/Python-3-brightgreen.svg?style=flat-square"></a>
   <a href="#"><img alt="PyTorch" src="https://img.shields.io/badge/PyTorch-%3E1.0-orange"></a>
-  <a href="https://travis-ci.org/FedML-AI/FedML"><img alt="Travis" src="https://img.shields.io/travis/FedML-AI/FedML.svg?style=flat-square"></a>
-  <object type="image/svg+xml" data="https://opencollective.com/fedml/tiers/sponsors.svg?avatarHeight=36&width=600"></object>
+  <a href="https://opencollective.com/fedml#support"><img alt="Travis" src="https://img.shields.io/travis/FedML-AI/FedML.svg?style=flat-square"></a>
+</p>
+
+<p align="center">
+   <a href="https://opencollective.com/fedml#support" target="_blank"><img src="https://opencollective.com/fedml/tiers/sponsors.svg?avatarHeight=36"></a>
 </p>
 
 ## News
