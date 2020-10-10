@@ -59,11 +59,10 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
                                batch_size=train_bs,
                                shuffle=True,
                                drop_last=False)
-
-    test_x, test_y = utils.split(test_ds)
-    test_ds = data.TensorDataset(torch.tensor(test_x[:, :]),
-                                 torch.tensor(test_y[:]))
     if len(test_ds) != 0:
+        test_x, test_y = utils.split(test_ds)
+        test_ds = data.TensorDataset(torch.tensor(test_x[:, :]),
+                                     torch.tensor(test_y[:]))
         test_dl = data.DataLoader(dataset=test_ds,
                                   batch_size=test_bs,
                                   shuffle=True,
