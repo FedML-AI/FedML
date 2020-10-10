@@ -5,7 +5,7 @@ import torch.utils.model_zoo as model_zoo
 __all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101',
            'resnet152']
 
-from fedml_api.model.deep_neural_networks.group_normalization import GroupNorm2d
+from fedml_api.model.cv.group_normalization import GroupNorm2d
 
 model_urls = {
     'resnet18': 'https://download.pytorch.org/models/resnet18-5c106cde.pth',

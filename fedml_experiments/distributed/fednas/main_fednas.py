@@ -20,9 +20,9 @@ from fedml_api.data_preprocessing.cifar10.data_loader import load_partition_data
 from fedml_api.data_preprocessing.cifar100.data_loader import load_partition_data_distributed_cifar100
 from fedml_api.data_preprocessing.cinic10.data_loader import load_partition_data_distributed_cinic10
 from fedml_api.distributed.fednas.FedNASAPI import FedML_init, FedML_FedNAS_distributed
-from fedml_api.model.darts import genotypes
-from fedml_api.model.darts.model import NetworkCIFAR
-from fedml_api.model.darts.model_search import Network
+from fedml_api.model.cv.darts import genotypes
+from fedml_api.model.cv.darts import NetworkCIFAR
+from fedml_api.model.cv.darts.model_search import Network
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()

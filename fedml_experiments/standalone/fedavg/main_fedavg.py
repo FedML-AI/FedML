@@ -14,13 +14,13 @@ from fedml_api.data_preprocessing.shakespeare.data_loader import load_partition_
 from fedml_api.data_preprocessing.fed_shakespeare.data_loader import load_partition_data_federated_shakespeare
 from fedml_api.data_preprocessing.stackoverflow_lr.data_loader import load_partition_data_federated_stackoverflow
 
-from fedml_api.model.shallow_neural_networks.cnn import CNN_DropOut
+from fedml_api.model.cv.cnn import CNN_DropOut
 from fedml_api.data_preprocessing.FederatedEMNIST.data_loader import load_partition_data_federated_emnist
-from fedml_api.model.shallow_neural_networks.rnn import RNN_OriginalFedAvg, RNN_StackOverFlow
+from fedml_api.model.nlp.rnn import RNN_OriginalFedAvg, RNN_StackOverFlow
 
 from fedml_api.data_preprocessing.MNIST.data_loader import load_partition_data_mnist
-from fedml_api.model.linear_models.lr import LogisticRegression
-from fedml_api.model.deep_neural_networks.resnet_gn import resnet18
+from fedml_api.model.linear.lr import LogisticRegression
+from fedml_api.model.cv.resnet_gn import resnet18
 
 from fedml_api.standalone.fedavg.fedavg_trainer import FedAvgTrainer
 

@@ -15,8 +15,8 @@ from fedml_api.data_preprocessing.cinic10.data_loader import load_partition_data
 from fedml_api.data_preprocessing.cifar10.data_loader import load_partition_data_distributed_cifar10
 
 from fedml_api.distributed.split_nn.SplitNNAPI import SplitNN_init, SplitNN_distributed
-from fedml_api.model.deep_neural_networks.mobilenet import mobilenet
-from fedml_api.model.deep_neural_networks.resnet import resnet56
+from fedml_api.model.cv.mobilenet import mobilenet
+from fedml_api.model.cv.resnet import resnet56
 
 
 def add_args(parser):

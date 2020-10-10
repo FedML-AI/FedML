@@ -13,8 +13,8 @@ import torch
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 
-from fedml_api.model.linear_models.vfl_classifier import VFLClassifier
-from fedml_api.model.linear_models.vfl_feature_extractor import VFLFeatureExtractor
+from fedml_api.model.finance.vfl_classifier import VFLClassifier
+from fedml_api.model.finance.vfl_feature_extractor import VFLFeatureExtractor
 from fedml_api.data_preprocessing.lending_club_loan.lending_club_dataset import loan_load_three_party_data
 from fedml_api.data_preprocessing.NUS_WIDE.nus_wide_dataset import NUS_WIDE_load_three_party_data
 from fedml_api.distributed.classical_vertical_fl.vfl_api import FedML_VFL_distributed
