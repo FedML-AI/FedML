@@ -165,8 +165,8 @@ def create_model(args, model_name, output_dim):
     elif model_name == "lr" and args.dataset == "stackoverflow_lr":
         logging.info("lr + stackoverflow_lr")
         model = LogisticRegression(10004, output_dim)
-    elif model_name == "cnn" and args.dataset == "stackoverflow_nwp":
-        logging.info("CNN + stackoverflow_nwp")
+    elif model_name == "rnn" and args.dataset == "stackoverflow_nwp":
+        logging.info("RNN + stackoverflow_nwp")
         model = RNN_StackOverFlow()
     return model
 

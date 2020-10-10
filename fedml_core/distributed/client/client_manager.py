@@ -19,8 +19,8 @@ class ClientManager(Observer):
         if backend == "MPI":
             self.com_manager = MpiCommunicationManager(comm, rank, size, node_type="client")
         elif backend == "MQTT":
-            HOST = "81.71.1.31"
-            # HOST = "broker.emqx.io"
+            #HOST = "81.71.1.31"
+            HOST = "broker.emqx.io"
             PORT = 1883
             self.com_manager = MqttCommManager(HOST, PORT, client_id=rank, client_num=size - 1)
         else:

@@ -7,7 +7,30 @@
 
 </p>
 
-Notice: *FedML is evolving. Please email us if there is misinformation.*
+## News
+<b>2020-10-07</b>: Datasets + Models ALL IN ONE!!! FedML supports comprehensive research-oriented FL datasets and models:
+
+- cross-device CV: Federated EMNIST + CNN (2 conv layers)
+- cross-device CV: ResNet18 (Group Normalization) + CIFAR100
+- cross-device NLP: shakespeare + RNN (bi-LSTM)
+- cross-device NLP: stackoverflow (NWP) + RNN (bi-LSTM)
+- cross-silo CV: ResNet + CIFAR10, CIFAR100, CINIC10
+- cross-silo CV: MobileNet + CIFAR10, CIFAR100, CINIC10
+- linear: MNIST + Logistic Regression
+
+Please check `create_model(args, model_name, output_dim)` and `load_data(args, dataset_name)` at `fedml_experiments/distributed/fedavg/main_fedavg.py` for details.
+
+We will support more advanced models and datasets, please stay tuned!
+
+---
+
+<b>2020-09-30</b>: We maintained a comprehensive publication list of Federated Learning here: https://github.com/chaoyanghe/Awesome-Federated-Learning
+
+---
+
+<b>2020-09-28</b>: Authors of FedML (https://fedml.ai) have 7 papers that got accepted to NeurIPS 2020. Big congratulations!!!
+Here is the publication list: https://github.com/FedML-AI/FedML/blob/master/publications.md. Highlighted ones are related to large-scale distributed learning and federated learning. Can the other papers get marriage with FedML? Let's stay tuned 🙂
+
 
 # FedML: A Research Library and Benchmark for Federated Machine Learning
 [https://arxiv.org/abs/2007.13518](https://arxiv.org/abs/2007.13518)
@@ -27,26 +50,6 @@ FedML also promotes diverse algorithmic research with flexible and generic API d
 We believe FedML can provide an efficient and reproducible means of developing and evaluating algorithms for the federated learning research community. We maintain the source code, documents, and user community at https://FedML.ai.
 
 For more details, please read our full paper: [https://arxiv.org/abs/2007.13518](https://arxiv.org/abs/2007.13518)
-
-## News
-<b>2020-09-30</b>: We maintained a comprehensive publication list of Federated Learning here: https://github.com/chaoyanghe/Awesome-Federated-Learning
-
-<b>2020-09-28</b>: Authors of FedML (https://fedml.ai) have 7 papers that got accepted to NeurIPS 2020. Big congratulations!!!
-Here is the publication list. Highlighted ones are related to large-scale distributed learning and federated learning. Can the other papers get marriage with FedML? Let's stay tuned 🙂
-
-***[1] J. So, B. Guler, and A.S. Avestimehr, "A Scalable Approach for Privacy-Preserving Collaborative Machine Learning" 
-
-[2] M. Kalan, Z. Fabian, A.S. Avestimehr, and M. Soltanolkotabi, "Minimax Lower Bounds for Transfer Learning with Linear and One-hidden Layer Neural Networks" 
-
-***[3] C. He, M. Annavaram, and A.S. Avestimehr, "Group Knowledge Transfer: Collaborative Training of Large CNNs on the Edge"
-
-[4] Mi Zhang. Does Unsupervised Architecture Representation Learning Help Neural Architecture Search?
-
-***[5] Hongyi Wang. Attack of the Tails: Yes, You Really Can Backdoor Federated Learning
-
-[6] Peilin Zhao. Adversarial Sparse Transformer for Time Series Forecasting
-
-[7] Peilin Zhao. RetroXpert: Decompose Retrosynthesis Prediction like A Chemist
 
 ## Usage
 1. Research on FL algorithm or system
