@@ -19,6 +19,7 @@ import ai.fedml.fedmlsdk.ContextHolder;
 import lombok.Cleanup;
 
 public class StorageUtils {
+    private static final String LOG_DIR = "logs";
     private static final String MODEL_DIR = "models";
     private static final String LABEL_DATA_DIR = "labeldata";
     public static final int BUFFER_SIZE = 8192;
@@ -31,6 +32,19 @@ public class StorageUtils {
     public static long getAvailableSize(@NonNull final String dir) {
         StatFs sf = new StatFs(dir);
         return sf.getAvailableBytes();
+    }
+
+    public static String getLogPath() {
+        Context context = ContextHolder.getAppContext();
+        File dirFile = context.getExternalFilesDir(LOG_DIR);
+        if (dirFile != null) {
+            return dirFile.getAbsolutePath();
+        }
+        dirFile = context.getDir(LOG_DIR, Context.MODE_PRIVATE);
+        if (dirFile == null) {
+            throw new RuntimeException("Log Path create failed!");
+        }
+        return dirFile.getAbsolutePath();
     }
 
     public static String getModelPath() {
