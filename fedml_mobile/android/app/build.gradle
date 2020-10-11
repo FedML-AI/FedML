@@ -17,12 +17,13 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 30
+    buildToolsVersion build_version
+    compileSdkVersion compile_version
 
     defaultConfig {
+        minSdkVersion min_version
+        targetSdkVersion target_version
         applicationId "ai.fedml.android"
-        minSdkVersion 23
-        targetSdkVersion 30
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
@@ -116,6 +117,13 @@ android {
     }
 
     useLibrary 'org.apache.http.legacy'
-    buildToolsVersion '30.0.1'
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    dependenciesInfo {
+        includeInApk true
+        includeInBundle true
+    }
 }
 
