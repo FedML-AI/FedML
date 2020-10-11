@@ -30,3 +30,5 @@ Jinhyun So, PhD, USC, USA
 Yuchen Lin, PhD, USC, USA
 
 Yanfang Li, MS, USC, USA; Project Manager
+
+Rodrigo Pecchio, BA in CS, USC, USA; will join AWS after graduation.
