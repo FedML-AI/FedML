@@ -1,11 +1,12 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 30
+    buildToolsVersion build_version
+    compileSdkVersion compile_version
 
     defaultConfig {
-        minSdkVersion 23
-        targetSdkVersion 30
+        minSdkVersion min_version
+        targetSdkVersion target_version
         versionCode 4
         versionName "1.0.0"
         buildConfigField "int", "SDKVersion", "2"
@@ -41,7 +42,6 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
-    buildToolsVersion '30.0.1'
 
     repositories {
         flatDir {

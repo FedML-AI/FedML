@@ -1,12 +1,12 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 30
-    buildToolsVersion "30.0.2"
+    buildToolsVersion build_version
+    compileSdkVersion compile_version
 
     defaultConfig {
-        minSdkVersion 23
-        targetSdkVersion 30
+        minSdkVersion min_version
+        targetSdkVersion target_version
         versionCode 1
         versionName "1.0"
 
@@ -21,8 +21,8 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_7
-        targetCompatibility JavaVersion.VERSION_1_7
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 }
 
