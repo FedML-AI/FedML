@@ -109,7 +109,7 @@ def load_partition_data_distributed_federated_stackoverflow_nwp(
         test_data_global = None
         
     VOCAB_LEN = len(utils.get_word_dict()) + 1
-    return train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, VOCAB_LEN
+    return DEFAULT_TRAIN_CLINETS_NUM, train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, VOCAB_LEN
 
 
 def load_partition_data_federated_stackoverflow_nwp(dataset, data_dir, batch_size = DEFAULT_BATCH_SIZE):
@@ -162,13 +162,13 @@ def load_partition_data_federated_stackoverflow_nwp(dataset, data_dir, batch_siz
     
     test_data_global = torch.utils.data.DataLoader(
             ConcatDataset(
-                list(dl.dataset for dl in list(test_data_local_dict.values()))
+                list(dl.dataset for dl in list(test_data_local_dict.values()) if dl is not None)
             ),
             batch_size=batch_size, shuffle=True)
     test_data_num = len(test_data_global.dataset)
 
     VOCAB_LEN = len(utils.get_word_dict()) + 1
-    return train_data_num, test_data_num, train_data_global, test_data_global, \
+    return DEFAULT_TRAIN_CLINETS_NUM, train_data_num, test_data_num, train_data_global, test_data_global, \
         data_local_num_dict, train_data_local_dict, test_data_local_dict, VOCAB_LEN
 
 
