@@ -6,14 +6,14 @@ Correponding Authors: Chaoyang He, Salman Avestimehr
 
 ### Project Leader:
 
-Chaoyang He, PhD, former Staff Software Engineer at Tencent
+Chaoyang He, PhD student, former Staff Software Engineer at Tencent
 
 ### Active Source Code Contributors:
-Chaoyang He, PhD, USC, USA
+Chaoyang He, PhD student, USC, USA
 
-Hongyi Wang, PhD, Wisconsin Madison, USA
+Hongyi Wang, PhD student, Wisconsin Madison, USA
 
-Abhishek Singh, PhD, MIT, USA
+Abhishek Singh, PhD student, MIT, USA
 
 Praneeth Vepakomma, MIT, USA
 
@@ -25,7 +25,7 @@ Weizhou Pan, Team Manager, Senior Software Engineer, Tencent
 
 Yufen Huang, MS, USC, USA
 
-Jinhyun So, PhD, USC, USA
+Jinhyun So, PhD student, USC, USA
 
 Bill Yuchen Lin, PhD student, USC, USA
 
