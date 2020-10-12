@@ -27,7 +27,7 @@ Yufen Huang, MS, USC, USA
 
 Jinhyun So, PhD student, USC, USA
 
-Yuchen Lin, PhD student, USC, USA
+Bill Yuchen Lin, PhD student, USC, USA
 
 Yanfang Li, MS, USC, USA; Project Manager
 
