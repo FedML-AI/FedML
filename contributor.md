@@ -32,3 +32,5 @@ Bill Yuchen Lin, PhD student, USC, USA
 Yanfang Li, MS, USC, USA; Project Manager
 
 Rodrigo Pecchio, BA in CS, USC, USA; will join AWS after graduation.
+
+Zihang Zeng, MS, USC, USA
