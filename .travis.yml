@@ -12,8 +12,8 @@ language: python
 sudo: false
 python:
     - "3.7.4"
-# install:
-#     - "bash CI-install.sh"
+install:
+    - "bash CI-install.sh"
 script:
     - "sonar-scanner"
     - "bash CI-script-framework.sh"
