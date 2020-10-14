@@ -33,7 +33,7 @@ class Client:
         net.train()
         # train and update
         opt_cls = OptRepo.name2cls(self.args.client_optimizer)
-        optimizer = opt_cls(net.parameters(), lr=self.args.lr)
+        optimizer = opt_cls(net.parameters(), lr=self.args.lr, weight_decay=self.args.wd)
 
         epoch_loss = []
         for epoch in range(self.args.epochs):
