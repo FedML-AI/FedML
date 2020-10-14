@@ -33,4 +33,6 @@ Yanfang Li, MS, USC, USA; Project Manager
 
 Rodrigo Pecchio, BA in CS, USC, USA; will join AWS after graduation.
 
+Ákos Gángoly, MSc in CS, BME, Hungary
+
 Zihang Zeng, MS, USC, USA
