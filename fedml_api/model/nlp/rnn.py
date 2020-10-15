@@ -58,9 +58,9 @@ class RNN_StackOverFlow(nn.Module):
         self.fc1 = nn.Linear(latent_size, embedding_size)
         self.fc2 = nn.Linear(embedding_size, extended_vocab_size)
 
-    def forward(self, input_seq, hidden_state):
+    def forward(self, input_seq, hidden_state = None):
         embeds = self.word_embeddings(input_seq)
         lstm_out, hidden_state = self.lstm(embeds, hidden_state)
-        fc1_output = self.fc1(lstm_out)
+        fc1_output = self.fc1(lstm_out[:,-1])
         output = self.fc2(fc1_output)
-        return output, (hidden_state[0].detach(), hidden_state[1].detach())
+        return output
