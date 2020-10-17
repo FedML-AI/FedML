@@ -164,7 +164,7 @@ def create_model(args, model_name, output_dim):
         model = RNN_OriginalFedAvg()
     elif model_name == "lr" and args.dataset == "stackoverflow_lr":
         logging.info("lr + stackoverflow_lr")
-        model = LogisticRegression(10004, output_dim)
+        model = LogisticRegression(10000, output_dim) 
     elif model_name == "rnn" and args.dataset == "stackoverflow_nwp":
         logging.info("RNN + stackoverflow_nwp")
         model = RNN_StackOverFlow()

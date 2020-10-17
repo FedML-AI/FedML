@@ -16,7 +16,16 @@ class Client:
         self.args = args
         self.device = device
 
-        self.criterion = nn.CrossEntropyLoss().to(device)
+        '''
+        stackoverflow_lr is the task of multi-label classification
+        please refer to following links for detailed explainations on cross-entropy and corresponding implementation of tff research:
+        https://towardsdatascience.com/cross-entropy-for-classification-d98e7f974451
+        https://github.com/google-research/federated/blob/49a43456aa5eaee3e1749855eed89c0087983541/optimization/stackoverflow_lr/federated_stackoverflow_lr.py#L131
+        '''
+        if self.args.dataset == "stackoverflow_lr":
+            self.criterion = nn.BCELoss(reduction = 'sum').to(device)
+        else:
+            self.criterion = nn.CrossEntropyLoss().to(device)
 
     def update_local_dataset(self, client_idx, local_training_data, local_test_data, local_sample_number):
         self.client_idx = client_idx
@@ -64,7 +73,13 @@ class Client:
     def local_test(self, model_global, b_use_test_dataset=False):
         model_global.eval()
         model_global.to(self.device)
-        test_loss = test_acc = test_total = 0.
+        metrics = { 
+            'test_correct': 0, 
+            'test_loss' : 0, 
+            'test_precision': 0,
+            'test_recall': 0,
+            'test_total' : 0
+        }
         if b_use_test_dataset:
             test_data = self.local_test_data
         else:
@@ -75,11 +90,21 @@ class Client:
                 target = target.to(self.device)
                 pred = model_global(x)
                 loss = self.criterion(pred, target)
-                _, predicted = torch.max(pred, -1)
-                correct = predicted.eq(target).sum()
 
-                test_acc += correct.item()
-                test_loss += loss.item() * target.size(0)
-                test_total += target.size(0)
+                if self.args.dataset == "stackoverflow_lr":
+                    predicted = (pred > .5).int()
+                    correct = predicted.eq(target).sum(axis = -1).eq(target.size(1)).sum()
+                    true_positive = ((target * predicted) > .1).int().sum(axis = -1)
+                    precision = true_positive / (predicted.sum(axis = -1) + 1e-13)
+                    recall = true_positive / (target.sum(axis = -1)  + 1e-13)
+                    metrics['test_precision'] += precision.sum().item()
+                    metrics['test_recall'] += recall.sum().item()
+                else:
+                    _, predicted = torch.max(pred, -1)
+                    correct = predicted.eq(target).sum()
 
-        return test_acc, test_total, test_loss
+                metrics['test_correct'] += correct.item()
+                metrics['test_loss'] += loss.item() * target.size(0)
+                metrics['test_total'] += target.size(0)
+
+        return metrics

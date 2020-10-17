@@ -103,13 +103,22 @@ class FedAvgTrainer(object):
 
     def local_test_on_all_clients(self, model_global, round_idx):
         logging.info("################local_test_on_all_clients : {}".format(round_idx))
-        train_num_samples = []
-        train_tot_corrects = []
-        train_losses = []
+        train_metrics = {
+            'num_samples' : [],
+            'num_correct' : [],
+            'precisions' : [],
+            'recalls' : [],
+            'losses' : []
+        }
+        
+        test_metrics = {
+            'num_samples' : [],
+            'num_correct' : [],
+            'precisions' : [],
+            'recalls' : [],
+            'losses' : []
+        }
 
-        test_num_samples = []
-        test_tot_corrects = []
-        test_losses = []
         client = self.client_list[0]
         for client_idx in range(self.args.client_num_in_total):
             """
@@ -122,16 +131,22 @@ class FedAvgTrainer(object):
                                         self.test_data_local_dict[client_idx],
                                         self.train_data_local_num_dict[client_idx])
             # train data
-            train_tot_correct, train_num_sample, train_loss = client.local_test(model_global, False)
-            train_tot_corrects.append(copy.deepcopy(train_tot_correct))
-            train_num_samples.append(copy.deepcopy(train_num_sample))
-            train_losses.append(copy.deepcopy(train_loss))
+            train_local_metrics = client.local_test(model_global, False)
+            train_metrics['num_samples'].append(copy.deepcopy(train_local_metrics['test_total']))
+            train_metrics['num_correct'].append(copy.deepcopy(train_local_metrics['test_correct']))
+            train_metrics['losses'].append(copy.deepcopy(train_local_metrics['test_loss']))
 
             # test data
-            test_tot_correct, test_num_sample, test_loss = client.local_test(model_global, True)
-            test_tot_corrects.append(copy.deepcopy(test_tot_correct))
-            test_num_samples.append(copy.deepcopy(test_num_sample))
-            test_losses.append(copy.deepcopy(test_loss))
+            test_local_metrics = client.local_test(model_global, True)
+            test_metrics['num_samples'].append(copy.deepcopy(test_local_metrics['test_total']))
+            test_metrics['num_correct'].append(copy.deepcopy(test_local_metrics['test_correct']))
+            test_metrics['losses'].append(copy.deepcopy(test_local_metrics['test_loss']))
+
+            if self.args.dataset == "stackoverflow_lr":
+                train_metrics['precisions'].append(copy.deepcopy(train_local_metrics['test_precision']))
+                train_metrics['recalls'].append(copy.deepcopy(train_local_metrics['test_recall']))
+                test_metrics['precisions'].append(copy.deepcopy(test_local_metrics['test_precision']))
+                test_metrics['recalls'].append(copy.deepcopy(test_local_metrics['test_recall']))
 
             """
             Note: CI environment is CPU-based computing. 
@@ -141,17 +156,39 @@ class FedAvgTrainer(object):
                 break
 
         # test on training dataset
-        train_acc = sum(train_tot_corrects) / sum(train_num_samples)
-        train_loss = sum(train_losses) / sum(train_num_samples)
-        wandb.log({"Train/Acc": train_acc, "round": round_idx})
-        wandb.log({"Train/Loss": train_loss, "round": round_idx})
-        stats = {'training_acc': train_acc, 'training_loss': train_loss}
-        logging.info(stats)
+        train_acc = sum(train_metrics['num_correct']) / sum(train_metrics['num_samples'])
+        train_loss = sum(train_metrics['losses']) / sum(train_metrics['num_samples'])
+        train_precision = sum(train_metrics['precisions']) / sum(train_metrics['num_samples'])
+        train_recall = sum(train_metrics['recalls']) / sum(train_metrics['num_samples'])
 
         # test on test dataset
-        test_acc = sum(test_tot_corrects) / sum(test_num_samples)
-        test_loss = sum(test_losses) / sum(test_num_samples)
-        wandb.log({"Test/Acc": test_acc, "round": round_idx})
-        wandb.log({"Test/Loss": test_loss, "round": round_idx})
-        stats = {'test_acc': test_acc, 'test_loss': test_loss}
-        logging.info(stats)
+        test_acc = sum(test_metrics['num_correct']) / sum(test_metrics['num_samples'])
+        test_loss = sum(test_metrics['losses']) / sum(test_metrics['num_samples'])
+        test_precision = sum(test_metrics['precisions']) / sum(test_metrics['num_samples'])
+        test_recall = sum(test_metrics['recalls']) / sum(test_metrics['num_samples'])
+
+        if self.args.dataset == "stackoverflow_lr":
+            stats = {'training_acc': train_acc, 'training_precision': train_precision, 'training_recall': train_recall, 'training_loss': train_loss}
+            wandb.log({"Train/Acc": train_acc, "round": round_idx})
+            wandb.log({"Train/Pre": train_precision, "round": round_idx})
+            wandb.log({"Train/Rec": train_recall, "round": round_idx})
+            wandb.log({"Train/Loss": train_loss, "round": round_idx})
+            logging.info(stats)
+
+            stats = {'test_acc': test_acc, 'test_precision': test_precision, 'test_recall': test_recall, 'test_loss': test_loss}
+            wandb.log({"Test/Acc": test_acc, "round": round_idx})
+            wandb.log({"Test/Pre": test_precision, "round": round_idx})
+            wandb.log({"Test/Rec": test_recall, "round": round_idx})
+            wandb.log({"Test/Loss": test_loss, "round": round_idx})
+            logging.info(stats)
+
+        else:
+            stats = {'training_acc': train_acc, 'training_loss': train_loss}
+            wandb.log({"Train/Acc": train_acc, "round": round_idx})
+            wandb.log({"Train/Loss": train_loss, "round": round_idx})
+            logging.info(stats)
+
+            stats = {'test_acc': test_acc, 'test_loss': test_loss}
+            wandb.log({"Test/Acc": test_acc, "round": round_idx})
+            wandb.log({"Test/Loss": test_loss, "round": round_idx})
+            logging.info(stats)

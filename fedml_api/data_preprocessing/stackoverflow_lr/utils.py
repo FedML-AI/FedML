@@ -84,7 +84,7 @@ def preprocess_targets(tags):
         tag = [tag_to_id(t) for t in tag]
         onehot = np.zeros((len(tag), tag_size + 1))
         onehot[np.arange(len(tag)), tag] = 1
-        return np.mean(onehot, axis=0)[:tag_size]
+        return np.sum(onehot, axis=0)#[:tag_size]
 
     return [to_bag_of_words(tag) for tag in tags]
 
