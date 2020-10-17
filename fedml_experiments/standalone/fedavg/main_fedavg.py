@@ -9,12 +9,18 @@ import wandb
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 
+
+from fedml_api.data_preprocessing.cifar10.data_loader import load_partition_data_cifar10
+from fedml_api.data_preprocessing.cifar100.data_loader import load_partition_data_cifar100
+from fedml_api.data_preprocessing.cinic10.data_loader import load_partition_data_cinic10
 from fedml_api.data_preprocessing.fed_cifar100.data_loader import load_partition_data_federated_cifar100
 from fedml_api.data_preprocessing.shakespeare.data_loader import load_partition_data_shakespeare
 from fedml_api.data_preprocessing.fed_shakespeare.data_loader import load_partition_data_federated_shakespeare
 from fedml_api.data_preprocessing.stackoverflow_lr.data_loader import load_partition_data_federated_stackoverflow_lr
 from fedml_api.data_preprocessing.stackoverflow_nwp.data_loader import load_partition_data_federated_stackoverflow_nwp
 
+from fedml_api.model.cv.mobilenet import mobilenet
+from fedml_api.model.cv.resnet import resnet56
 from fedml_api.model.cv.cnn import CNN_DropOut
 from fedml_api.data_preprocessing.FederatedEMNIST.data_loader import load_partition_data_federated_emnist
 from fedml_api.model.nlp.rnn import RNN_OriginalFedAvg, RNN_StackOverFlow
@@ -134,11 +140,18 @@ def load_data(args, dataset_name):
         class_num = load_partition_data_federated_stackoverflow_nwp(args.dataset, args.data_dir)
         args.client_num_in_total = client_num
     else:
-        logging.info("load_data. dataset_name = %s" % dataset_name)
-        client_num, train_data_num, test_data_num, train_data_global, test_data_global, \
+        if dataset_name == "cifar10":
+            data_loader = load_partition_data_cifar10
+        elif dataset_name == "cifar100":
+            data_loader = load_partition_data_cifar100
+        elif dataset_name == "cinic10":
+            data_loader = load_partition_data_cinic10
+        else:
+            data_loader = load_partition_data_cifar10
+        train_data_num, test_data_num, train_data_global, test_data_global, \
         train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
-        class_num = load_partition_data_federated_emnist(args.dataset, args.data_dir)
-        args.client_num_in_total = client_num
+        class_num = data_loader(args.dataset, args.data_dir, args.partition_method,
+                                args.partition_alpha, args.client_num_in_total, args.batch_size)
     dataset = [train_data_num, test_data_num, train_data_global, test_data_global,
                train_data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num]
     return dataset
@@ -168,6 +181,10 @@ def create_model(args, model_name, output_dim):
     elif model_name == "rnn" and args.dataset == "stackoverflow_nwp":
         logging.info("RNN + stackoverflow_nwp")
         model = RNN_StackOverFlow()
+    elif model_name == "resnet56":
+        model = resnet56(class_num=output_dim)
+    elif model_name == "mobilenet":
+        model = mobilenet(class_num=output_dim)
     return model
 
 
