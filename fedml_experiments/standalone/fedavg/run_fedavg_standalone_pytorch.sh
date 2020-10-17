@@ -2,27 +2,29 @@
 
 GPU=$1
 
-WORKER_NUM=$2
+CLIENT_NUM=$2
 
-BATCH_SIZE=$3
+WORKER_NUM=$3
 
-DATASET=$4
+BATCH_SIZE=$4
 
-DATA_PATH=$5
+DATASET=$5
 
-MODEL=$6
+DATA_PATH=$6
 
-DISTRIBUTION=$7
+MODEL=$7
 
-ROUND=$8
+DISTRIBUTION=$8
 
-EPOCH=$9
+ROUND=$9
 
-LR=$10
+EPOCH=$10
 
-OPT=$11
+LR=$11
 
-CI=$12
+OPT=$12
+
+CI=$13
 
 python3 ./main_fedavg.py \
 --gpu $GPU \
@@ -30,6 +32,7 @@ python3 ./main_fedavg.py \
 --data_dir $DATA_PATH \
 --model $MODEL \
 --partition_method $DISTRIBUTION  \
+--client_num_in_total $CLIENT_NUM \
 --client_num_per_round $WORKER_NUM \
 --comm_round $ROUND \
 --epochs $EPOCH \
