@@ -36,7 +36,7 @@ def load_data(conversation_file_path, line_file_path, source_max_sequence_length
             line = line.strip()
             if line:
                 temp = line.split("+++$+++")
-                line_dict[temp[0].strip()] = temp[-1].strip()
+                line_dict[temp[0].strip()] = {"utterance": temp[-1].strip(), "character_id": temp[1]}
     x = []
     y = []
     history = []
@@ -45,16 +45,20 @@ def load_data(conversation_file_path, line_file_path, source_max_sequence_length
     history_sequence_lengths = []
     vocab = dict()
     conversation = []
+    attributes = dict()
+    attributes["inputs"] = []
     with open(conversation_file_path, 'r') as f:
         for line in f:
-            print(line)
             line = line.strip()
             if line:
-                conversation_idx = line.split("+++$+++")[-1].strip()
+                temp = line.split("+++$+++")
+                conversation_idx = temp[-1].strip()
                 conversation_idx = eval(conversation_idx)
                 for i in range(len(conversation_idx) - 1):
-                    tokens = word_tokenize(line_dict[conversation_idx[i]])
-                    next_tokens = word_tokenize(line_dict[conversation_idx[i+1]])
+                    tokens = word_tokenize(line_dict[conversation_idx[i]]["utterance"])
+                    character_id = line_dict[conversation_idx[i]]["character_id"]
+                    next_tokens = word_tokenize(line_dict[conversation_idx[i+1]]["utterance"])
+                    next_character_id = line_dict[conversation_idx[i]]["character_id"]
                     for token in tokens:
                         if token not in vocab:
                             vocab[token] = len(vocab)
@@ -68,6 +72,8 @@ def load_data(conversation_file_path, line_file_path, source_max_sequence_length
                     target_sequence_lengths.append(len(next_tokens))
                     history_sequence_lengths.append(len(conversation))
                     conversation += tokens
+                    attributes["inputs"].append({"character_id": character_id, "next_character_id": next_character_id,
+                                                 "movie_id": temp[2]})
                 conversation.clear()
 
     if source_max_sequence_length is None:
@@ -92,12 +98,12 @@ def load_data(conversation_file_path, line_file_path, source_max_sequence_length
         padding_data(history, history_max_sequence_length)
 
     return x, y, history, source_max_sequence_length, target_max_sequence_length, history_max_sequence_length, \
-           source_sequence_lengths, target_sequence_lengths, history_sequence_lengths, vocab
+           source_sequence_lengths, target_sequence_lengths, history_sequence_lengths, vocab, attributes
 
 
 if __name__ == "__main__":
     x, y, history, source_max_sequence_length, target_max_sequence_length, history_max_sequence_length, \
-    source_sequence_lengths, target_sequence_lengths, history_sequence_lengths, vocab = \
+    source_sequence_lengths, target_sequence_lengths, history_sequence_lengths, vocab, attributes = \
         load_data(os.path.join(train_file_path, movie_conversation_file_name),
                   os.path.join(train_file_path, movie_line_file_name))
     print("done")

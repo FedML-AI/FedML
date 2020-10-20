@@ -51,12 +51,14 @@ def load_data(file_path, max_sequence_length=None, padding=True):
     label_vocab = dict()
     single_x = []
     single_y = []
+    attributes = dict()
 
     token_vocab[unk_token] = len(token_vocab)
     if padding:
         token_vocab[pad_token] = len(token_vocab)
         label_vocab[pad_label] = len(label_vocab)
 
+    attributes["inputs"] = []
     for root, dirs, files in os.walk(file_path):
         for name in files:
             path = os.path.join(root, name)
@@ -77,24 +79,25 @@ def load_data(file_path, max_sequence_length=None, padding=True):
                             x.append(single_x.copy())
                             y.append(single_y.copy())
                             sequence_lengths.append(len(single_x))
+                            attributes["inputs"].append({"file_name": name})
                         single_x.clear()
                         single_y.clear()
     if max_sequence_length is None:
         max_sequence_length = max(sequence_lengths)
     if padding:
         padding_data(x, y, max_sequence_length)
-    return x, y, max_sequence_length, sequence_lengths, token_vocab, label_vocab
+    return x, y, max_sequence_length, sequence_lengths, token_vocab, label_vocab, attributes
 
 
 if __name__ == "__main__":
-    train_x, train_y, train_max_sequence_length, train_sequence_lengths, train_token_vocab, train_label_vocab \
-        = load_data(train_file_path)
-    dev_x, dev_y, dev_max_sequence_length, dev_sequence_lengths, dev_token_vocab, dev_label_vocab \
+    train_x, train_y, train_max_sequence_length, train_sequence_lengths, train_token_vocab, train_label_vocab, \
+    train_attributes = load_data(train_file_path)
+    dev_x, dev_y, dev_max_sequence_length, dev_sequence_lengths, dev_token_vocab, dev_label_vocab, dev_attributes \
         = load_data(dev_file_path)
-    test_x, test_y, test_max_sequence_length, test_sequence_lengths, test_token_vocab, test_label_vocab \
+    test_x, test_y, test_max_sequence_length, test_sequence_lengths, test_token_vocab, test_label_vocab, test_attributes \
         = load_data(test_file_path)
     test_2020_x, test_2020_y, test_2020_max_sequence_length, test_2020_sequence_lengths, test_2020_token_vocab, \
-    test_2020_label_vocab = load_data(test_file_path)
+    test_2020_label_vocab, test_2020_attributes = load_data(test_file_path)
 
     train_idx_x, train_idx_y = raw_data_to_idx(train_x, train_y, train_token_vocab, train_label_vocab)
     dev_idx_x, dev_idx_y = raw_data_to_idx(dev_x, dev_y, train_token_vocab, train_label_vocab)
