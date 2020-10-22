@@ -1,8 +1,3 @@
-addons:
-  sonarcloud:
-    organization: "fedml-ai"
-    token:
-      secure: "mQUhF/gOKnfbAIjFYPoTpLjb6QXCyxmxG3mVVYMGD3LJEJlMac0VbNtNdz34/zilmccPnWpq78dqbHuSEEpCajFJ/vZxI2feqQSH+wKEHH8KVJwnI0C2c9RDR1AQdFhibREtnHLt8L4EKke3o8g847akL8tVpv9b/XW94Y3bkIemtYHRwGUxnKFNQCRQv9nar6eBplmpYzJhV+wIKBGPOcjEs2RQbc2kZ/YpVo0SHybMBLz0xH8jWj1/l7IA4uhDCgfh2qZSTUn00IznOpApVTrV1mfKldG01lwyuIKMlyZKKFioqNt5rMdEnkema2xrQmHD5vx5cSj0yTxnaMZN8nnSsU/bVcMCe6NE2XjYPJEGMzP854Z3aF0cf0F6aJ0YtqT9Y+hLSZ1PF2Fj62RpCu6nVoCJPRLVFJXhbWWIUYmPSu/n8cetJmVhrJBB8FnDdTQxX5EPSqiM+NbhL4c+mLvXr7g1nH1fximufnbGHyrloQcDJZRZi3CbUd6siNYpbMc+rbimSZ+uyqDf7/p9bX18O3d1Ftq3k/EWUJ2oCdxdUNhP7DQzXwQyctP0H/hoXni5aYPSHol1pmSAJys1d1ntHcZpvFHXFCGXr43WF1AFdZaq5Pby0j1BYhzUxqe6gsSVoqks9hDbEcj9gIUSue//yJ543YIGrZMdvfjMN1c="
 env:
     - ARCH=x86
 dist: bionic
