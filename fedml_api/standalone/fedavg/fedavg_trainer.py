@@ -3,8 +3,10 @@ import logging
 
 import numpy as np
 import wandb
+import torch
 
 from fedml_api.standalone.fedavg.client import Client
+from fedml_api.standalone.fedavg.optrepo import OptRepo
 
 
 class FedAvgTrainer(object):
@@ -20,6 +22,7 @@ class FedAvgTrainer(object):
 
         self.model_global = model
         self.model_global.train()
+        self.instanciate_opt()
 
         self.client_list = []
         self.train_data_local_num_dict = train_data_local_num_dict
@@ -44,6 +47,12 @@ class FedAvgTrainer(object):
             client_indexes = np.random.choice(range(client_num_in_total), num_clients, replace=False)
         logging.info("client_indexes = %s" % str(client_indexes))
         return client_indexes
+
+    def instanciate_opt(self):
+        if self.args.server_optimizer != "avg":
+            self.opt = OptRepo.name2cls(self.args.server_optimizer)(
+                self.model_global.parameters(), lr=self.args.server_lr
+            )
 
     def train(self):
         for round_idx in range(self.args.comm_round):
@@ -79,7 +88,15 @@ class FedAvgTrainer(object):
             # logging.info("global weights = " + str(w_glob))
 
             # copy weight to net_glob
-            self.model_global.load_state_dict(w_glob)
+            if self.args.server_optimizer == "avg":
+                self.model_global.load_state_dict(w_glob)
+            else:
+                self.opt.zero_grad()
+                opt_state = self.opt.state_dict()
+                self.set_model_global_grads(w_glob)
+                self.instanciate_opt()
+                self.opt.load_state_dict(opt_state)
+                self.opt.step()
 
             # print loss
             loss_avg = sum(loss_locals) / len(loss_locals)
@@ -104,6 +121,21 @@ class FedAvgTrainer(object):
                 else:
                     averaged_params[k] += local_model_params[k] * w
         return averaged_params
+
+    def set_model_global_grads(self, new_state):
+        new_model = copy.deepcopy(self.model_global)
+        new_model.load_state_dict(new_state)
+        with torch.no_grad():
+            for parameter, new_parameter in zip(
+                self.model_global.parameters(), new_model.parameters()
+            ):
+                parameter.grad = parameter.data - new_parameter.data
+                # because we go to the opposite direction of the gradient
+        model_state_dict = self.model_global.state_dict()
+        new_model_state_dict = new_model.state_dict()
+        for k in dict(self.model_global.named_parameters()).keys():
+            new_model_state_dict[k] = model_state_dict[k]
+        self.model_global.load_state_dict(new_model_state_dict)
 
     def local_test_on_all_clients(self, model_global, round_idx):
         logging.info("################local_test_on_all_clients : {}".format(round_idx))
