@@ -57,10 +57,16 @@ def add_args(parser):
                         help='input batch size for training (default: 64)')
 
     parser.add_argument('--client_optimizer', type=str, default='adam',
-                        help='SGD with momentum; adam')
+                        help='Optimizer used on the client. This field can be the name of any subclass of the torch Opimizer class.')
+
+    parser.add_argument('--server_optimizer', type=str, default='avg',
+                        help='Optimizer used on the server. This field can be the name of any subclass of the torch Opimizer class or "avg". In the case of "avg" there is no server side adaptive optimization.')
 
     parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
-                        help='learning rate (default: 0.001)')
+                        help='learning rate on the client (default: 0.001)')
+
+    parser.add_argument('--server_lr', type=float, default=0.001,
+                        help='server learning rate (default: 0.001)')
 
     parser.add_argument('--wd', help='weight decay parameter;', type=float, default=0.001)
 
