@@ -3,8 +3,6 @@ import logging
 import torch
 from torch import nn
 
-from fedml_api.standalone.fedavg.optrepo import OptRepo
-
 
 class Client:
 
@@ -41,8 +39,11 @@ class Client:
     def train(self, net):
         net.train()
         # train and update
-        opt_cls = OptRepo.name2cls(self.args.client_optimizer)
-        optimizer = opt_cls(net.parameters(), lr=self.args.lr, weight_decay=self.args.wd)
+        if self.args.client_optimizer == "sgd":
+            optimizer = torch.optim.SGD(net.parameters(), lr=self.args.lr)
+        else:
+            optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, net.parameters()), lr=self.args.lr,
+                                              weight_decay=self.args.wd, amsgrad=True)
 
         epoch_loss = []
         for epoch in range(self.args.epochs):
