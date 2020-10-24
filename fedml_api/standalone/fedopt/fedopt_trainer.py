@@ -5,11 +5,11 @@ import numpy as np
 import wandb
 import torch
 
-from fedml_api.standalone.fedavg.client import Client
-from fedml_api.standalone.fedavg.optrepo import OptRepo
+from fedml_api.standalone.fedopt.client import Client
+from fedml_api.standalone.fedopt.optrepo import OptRepo
 
 
-class FedAvgTrainer(object):
+class FedOptTrainer(object):
     def __init__(self, dataset, model, device, args):
         self.device = device
         self.args = args
