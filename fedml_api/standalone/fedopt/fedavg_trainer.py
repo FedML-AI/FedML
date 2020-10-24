@@ -49,8 +49,7 @@ class FedAvgTrainer(object):
         return client_indexes
 
     def instanciate_opt(self):
-        if self.args.server_optimizer != "avg":
-            self.opt = OptRepo.name2cls(self.args.server_optimizer)(
+        self.opt = OptRepo.name2cls(self.args.server_optimizer)(
                 self.model_global.parameters(), lr=self.args.server_lr
             )
 
@@ -88,15 +87,12 @@ class FedAvgTrainer(object):
             # logging.info("global weights = " + str(w_glob))
 
             # copy weight to net_glob
-            if self.args.server_optimizer == "avg":
-                self.model_global.load_state_dict(w_glob)
-            else:
-                self.opt.zero_grad()
-                opt_state = self.opt.state_dict()
-                self.set_model_global_grads(w_glob)
-                self.instanciate_opt()
-                self.opt.load_state_dict(opt_state)
-                self.opt.step()
+            self.opt.zero_grad()
+            opt_state = self.opt.state_dict()
+            self.set_model_global_grads(w_glob)
+            self.instanciate_opt()
+            self.opt.load_state_dict(opt_state)
+            self.opt.step()
 
             # print loss
             loss_avg = sum(loss_locals) / len(loss_locals)

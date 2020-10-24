@@ -25,7 +25,7 @@ class Client:
         https://github.com/google-research/federated/blob/49a43456aa5eaee3e1749855eed89c0087983541/optimization/stackoverflow_lr/federated_stackoverflow_lr.py#L131
         '''
         if self.args.dataset == "stackoverflow_lr":
-            self.criterion = nn.BCELoss(reduction = 'sum').to(device)
+            self.criterion = nn.BCELoss(reduction='sum').to(device)
         else:
             self.criterion = nn.CrossEntropyLoss().to(device)
 
@@ -92,7 +92,7 @@ class Client:
 
                 if self.args.dataset == "stackoverflow_lr":
                     predicted = (pred > .5).int()
-                    correct = predicted.eq(target).sum(axis = -1).eq(target.size(1)).sum()
+                    correct = predicted.eq(target).sum(axis=-1).eq(target.size(1)).sum()
                     true_positive = ((target * predicted) > .1).int().sum(axis = -1)
                     precision = true_positive / (predicted.sum(axis = -1) + 1e-13)
                     recall = true_positive / (target.sum(axis = -1)  + 1e-13)
