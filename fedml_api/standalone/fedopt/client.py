@@ -3,6 +3,8 @@ import logging
 import torch
 from torch import nn
 
+from fedml_api.standalone.fedopt.optrepo import OptRepo
+
 
 class Client:
 
@@ -23,7 +25,7 @@ class Client:
         https://github.com/google-research/federated/blob/49a43456aa5eaee3e1749855eed89c0087983541/optimization/stackoverflow_lr/federated_stackoverflow_lr.py#L131
         '''
         if self.args.dataset == "stackoverflow_lr":
-            self.criterion = nn.BCELoss(reduction = 'sum').to(device)
+            self.criterion = nn.BCELoss(reduction='sum').to(device)
         else:
             self.criterion = nn.CrossEntropyLoss().to(device)
 
@@ -39,11 +41,8 @@ class Client:
     def train(self, net):
         net.train()
         # train and update
-        if self.args.client_optimizer == "sgd":
-            optimizer = torch.optim.SGD(net.parameters(), lr=self.args.lr)
-        else:
-            optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, net.parameters()), lr=self.args.lr,
-                                              weight_decay=self.args.wd, amsgrad=True)
+        opt_cls = OptRepo.name2cls(self.args.client_optimizer)
+        optimizer = opt_cls(net.parameters(), lr=self.args.lr, weight_decay=self.args.wd)
 
         epoch_loss = []
         for epoch in range(self.args.epochs):
@@ -93,7 +92,7 @@ class Client:
 
                 if self.args.dataset == "stackoverflow_lr":
                     predicted = (pred > .5).int()
-                    correct = predicted.eq(target).sum(axis = -1).eq(target.size(1)).sum()
+                    correct = predicted.eq(target).sum(axis=-1).eq(target.size(1)).sum()
                     true_positive = ((target * predicted) > .1).int().sum(axis = -1)
                     precision = true_positive / (predicted.sum(axis = -1) + 1e-13)
                     recall = true_positive / (target.sum(axis = -1)  + 1e-13)
