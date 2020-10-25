@@ -3,7 +3,7 @@ import logging
 import torch
 from torch import nn
 
-from fedml_api.standalone.fedavg.optrepo import OptRepo
+from fedml_api.standalone.fedopt.optrepo import OptRepo
 
 
 class Client:

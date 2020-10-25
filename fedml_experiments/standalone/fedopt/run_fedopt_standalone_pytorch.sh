@@ -24,9 +24,13 @@ LR=$11
 
 OPT=$12
 
-CI=$13
+S_LR=$13
 
-python3 ./main_fedavg.py \
+S_OPT=$14
+
+CI=$15
+
+python3 ./main_fedopt.py \
 --gpu $GPU \
 --dataset $DATASET \
 --data_dir $DATA_PATH \
@@ -39,4 +43,6 @@ python3 ./main_fedavg.py \
 --batch_size $BATCH_SIZE \
 --client_optimizer $OPT \
 --lr $LR \
+--server_optimizer $S_OPT \
+--server_lr $S_LR \
 --ci $CI
