@@ -25,6 +25,10 @@ assert_eq() {
   fi
 }
 
+round() {
+  printf "%.${2}f" "${1}"
+}
+
 # 1. MNIST standalone FedAvg
 cd ./fedml_experiments/standalone/fedavg
 sh run_fedavg_standalone_pytorch.sh 0 2 2 4 mnist ./../../../data/mnist lr hetero 1 1 0.03 sgd 1
@@ -35,12 +39,23 @@ sh run_fedavg_standalone_pytorch.sh 0 2 2 4 fed_cifar100 ./../../../data/fed_cif
 #sh run_fedavg_standalone_pytorch.sh 0 1 1 4 stackoverflow_lr ./../../../data/stackoverflow lr hetero 1 1 0.03 sgd 1
 #sh run_fedavg_standalone_pytorch.sh 0 1 1 4 stackoverflow_nwp ./../../../data/stackoverflow cnn hetero 1 1 0.03 sgd 1
 
-# assert that, for full batch and 1 local epoch, the accuracy of federated training(FedAvg) is equal to that of centralized training
+# assert that, for full batch and epochs=1, the accuracy of federated training(FedAvg) is equal to that of centralized training
 sh run_fedavg_standalone_pytorch.sh 0 1 1 -1 mnist ./../../../data/mnist lr hetero 10 1 0.03 sgd 0
-centralized_full_train_acc=$(cat ./../../../fedml_experiments/standalone/fedavg/wandb/latest-run/files/wandb-summary.json | python -c "import sys, json; print(json.load(sys.stdin)['Train/Acc'])")
+centralized_full_train_acc=$(cat wandb/latest-run/files/wandb-summary.json | python -c "import sys, json; print(json.load(sys.stdin)['Train/Acc'])")
 sh run_fedavg_standalone_pytorch.sh 0 1000 1000 -1 mnist ./../../../data/mnist lr hetero 10 1 0.03 sgd 0
-federated_full_train_acc=$(cat ./../../../fedml_experiments/standalone/fedavg/wandb/latest-run/files/wandb-summary.json | python -c "import sys, json; print(json.load(sys.stdin)['Train/Acc'])")
-assert_eq "$centralized_full_train_acc" "$federated_full_train_acc"
+federated_full_train_acc=$(cat wandb/latest-run/files/wandb-summary.json | python -c "import sys, json; print(json.load(sys.stdin)['Train/Acc'])")
+assert_eq $(round $centralized_full_train_acc 3) $(round $federated_full_train_acc 3)
+cd ./../../../
+
+# assert that, for full batch and epochs=1 and when the product of global and group comm. round is fixed,
+# the accuracy of hierarchical federated learning is equal to that of centralized training, regardless of the number of groups
+cd ./fedml_experiments/standalone/hierarchical_fl
+sh run_standalone_pytorch.sh 0 1000 1000 -1 mnist ./../../../data/mnist lr hetero 5 2 1 0.03 sgd random 2 0
+hierarchical_fl_full_train_acc=$(cat wandb/latest-run/files/wandb-summary.json | python -c "import sys, json; print(json.load(sys.stdin)['Train/Acc'])")
+assert_eq $(round $centralized_full_train_acc 3) $(round $hierarchical_fl_full_train_acc 3)
+sh run_standalone_pytorch.sh 0 1000 1000 -1 mnist ./../../../data/mnist lr hetero 2 5 1 0.03 sgd random 2 0
+hierarchical_fl_full_train_acc=$(cat wandb/latest-run/files/wandb-summary.json | python -c "import sys, json; print(json.load(sys.stdin)['Train/Acc'])")
+assert_eq $(round $centralized_full_train_acc 3) $(round $hierarchical_fl_full_train_acc 3)
 cd ./../../../
 
 
