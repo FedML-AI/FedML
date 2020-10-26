@@ -10,13 +10,15 @@ class Group(FedAvgTrainer):
         self.args = args
         self.device = device
         self.client_dict = {}
-        self.group_sample_number = 0
+        self.train_data_local_num_dict = train_data_local_num_dict
         for client_idx in total_client_indexes:
             self.client_dict[client_idx] = Client(client_idx, train_data_local_dict[client_idx], test_data_local_dict[client_idx],
                        train_data_local_num_dict[client_idx], args, device, model)
-            self.group_sample_number += train_data_local_num_dict[client_idx]
 
-    def get_sample_number(self):
+    def get_sample_number(self, sampled_client_indexes):
+        self.group_sample_number = 0
+        for client_idx in sampled_client_indexes:
+            self.group_sample_number += self.train_data_local_num_dict[client_idx]
         return self.group_sample_number
 
     def train(self, w, sampled_client_indexes):

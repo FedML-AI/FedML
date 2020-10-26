@@ -18,7 +18,7 @@ if __name__ == "__main__":
     logger.setLevel(logging.DEBUG)
 
     parser = add_args(argparse.ArgumentParser(description='GroupFedAvg-standalone'))
-    parser.add_argument('--group_method', type=str, default='random', metavar='N', help='how nodes should be grouped')
+    parser.add_argument('--group_method', type=str, default='random', metavar='N', help='how clients should be grouped')
     parser.add_argument('--group_num', type=int, default=1, metavar='N', help='the number of groups')
     parser.add_argument('--global_comm_round', type=int, default=10, help='the number of global communications')
     parser.add_argument('--group_comm_round', type=int, default=10,
@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     wandb.init(
         project="fedml",
-        name="GroupFedAvg-{}-{}-{}-{}".format(args.global_comm_round, args.group_comm_round, args.epochs, args.group_num),
+        name="GroupFedAvg-{}-{}-{}-{}-{}".format(args.group_method, args.group_num, args.global_comm_round, args.group_comm_round, args.epochs),
         config=args
     )
 
