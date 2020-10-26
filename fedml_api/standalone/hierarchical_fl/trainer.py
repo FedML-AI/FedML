@@ -53,7 +53,7 @@ class Trainer(FedAvgTrainer):
                 group = self.group_dict[group_idx]
                 w_group_list = group.train(w_global, sampled_client_indexes)
                 for epoch, w in enumerate(w_group_list):
-                    w_groups_list[epoch].append((group.get_sample_number(), w))
+                    w_groups_list[epoch].append((group.get_sample_number(sampled_client_indexes), w))
 
             # aggregate group weights
             w_global_list = []
