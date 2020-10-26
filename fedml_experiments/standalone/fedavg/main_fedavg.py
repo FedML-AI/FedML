@@ -7,6 +7,8 @@ import numpy as np
 import torch
 import wandb
 
+import time
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 
 
@@ -244,6 +246,11 @@ if __name__ == "__main__":
 
     # load data
     dataset = load_data(args, args.dataset)
+
+    # run scheduler
+    os.system("python -u " + os.getcwd() + "/scheduler.py " + str(args.client_num_in_total) + " " + str(args.client_num_per_round) + " > scheduler.log &")
+    
+    time.sleep(5)
 
     # create model.
     # Note if the model is DNN (e.g., ResNet), the training will be very slow.

@@ -1,5 +1,7 @@
 import logging
 
+import time
+
 import torch
 from torch import nn
 
@@ -36,7 +38,7 @@ class Client:
     def get_sample_number(self):
         return self.local_sample_number
 
-    def train(self, net):
+    def train(self, net, local_iteration):
         net.train()
         # train and update
         if self.args.client_optimizer == "sgd":
@@ -44,9 +46,11 @@ class Client:
         else:
             optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, net.parameters()), lr=self.args.lr,
                                               weight_decay=self.args.wd, amsgrad=True)
+        
+        time_start = float(time.time()) # record the start training time
 
         epoch_loss = []
-        for epoch in range(self.args.epochs):
+        for epoch in range(self.args.epochs * local_iteration):
             batch_loss = []
             for batch_idx, (x, labels) in enumerate(self.local_training_data):
                 x, labels = x.to(self.device), labels.to(self.device)
@@ -68,7 +72,8 @@ class Client:
             epoch_loss.append(sum(batch_loss) / len(batch_loss))
             # logging.info('Client Index = {}\tEpoch: {}\tLoss: {:.6f}'.format(
             #     self.client_idx, epoch, sum(epoch_loss) / len(epoch_loss)))
-        return net.cpu().state_dict(), sum(epoch_loss) / len(epoch_loss)
+        time_end = float(time.time()) # record the end time
+        return net.cpu().state_dict(), sum(epoch_loss) / len(epoch_loss), (time_end - time_start)
 
     def local_test(self, model_global, b_use_test_dataset=False):
         model_global.eval()
