@@ -1,6 +1,7 @@
 .DS_Store
 .idea
 .idea/*
+.vscode/*
 
 *.pyc
 ./*/*.pyc
@@ -40,7 +41,7 @@ data/MNIST/train
 data/MNIST/test
 data/shakespeare/train
 data/shakespeare/test
-
+data/stackoverflow/datasets
 
 # android
 .gradle

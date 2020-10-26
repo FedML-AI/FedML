@@ -38,3 +38,5 @@ Rodrigo Pecchio, BA in CS, USC, USA; will join AWS after graduation.
 Zihang Zeng, MS, USC, USA
 
 Hulin Wang, MS, USC, USA
+
+Jin-woo Lee, Research Professor, KAIST, South Korea

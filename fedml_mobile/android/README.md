@@ -9,3 +9,7 @@ The project is built using Android Studio, so the simplest way to run it is impo
 
 Android SDK = 27
 Android Studio = 4.0.1
+
+
+## Code Architecture
+fedmlmobile -> fedml-iot-sdk -> fedmlsdk
