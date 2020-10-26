@@ -1,18 +1,16 @@
 # FedNAS: Federated Deep Learning via Neural Architecture Search
 This is the source code for the following paper:
-> [FedNAS: Federated Deep Learning via Neural Architecture Search](https://chaoyanghe.com)\
+> [FedNAS: Federated Deep Learning via Neural Architecture Search](https://arxiv.org/abs/2004.08546) \
 > Chaoyang He, Murali Annavaram, Salman Avestimehr
 
 ## 1. Installation
 http://doc.fedml.ai/#/installation-distributed-computing
-
 
 ## 2. Hardware Requirements
 We set up our experiment in a distributed computing network equipped with GPUs. 
 There are 17 nodes in total, one representing the server-side, and the other 16 nodes representing clients, which can be organizations in the real world (e.g., the hospitals). 
 Each node is a physical server that has an NVIDIA RTX 2080Ti GPU card inside. 
 we assume all the clients join the training process for every communication round.
-
 
 
 ## 3. Experiments
@@ -53,9 +51,12 @@ sh run_fednas_search.sh 4 darts hetero 50 5 8
 If you use any part of this code in your research or any engineering project, please cite our paper: 
 
 ```
-FedNAS: Federated Deep Learning via Neural Architecture Search
-Chaoyang He, Murali Annavaram, Salman Avestimehr
-(Under Review)
+@inproceedings{FedNAS,
+  title={FedNAS: Federated Deep Learning via Neural Architecture Search},
+  author={He, Chaoyang and Annavaram, Murali and Avestimehr, Salman},
+  booktitle={CVPR 2020 Workshop on Neural Architecture Search and Beyond for Representation Learning},
+  year={2020},
+}
 ```
 
 ```
