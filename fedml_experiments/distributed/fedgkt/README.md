@@ -33,15 +33,15 @@ nohup sh run_FedGKT.sh 0 cifar10 homo 200 1 20 Adam 0.001 1 0 resnet56 fedml_res
 sh run_FedGKT.sh 0 cifar100 homo 200 1 20 Adam 0.001 1 0 resnet56 fedml_resnet56_homo_cifar100 "./../../../data/cifar100" 256
 
 ##run on background
-nohup sh run_FedGKT.sh 0 cifar100 homo 200 1 20 Adam 0.001 1 0 resnet56 fedml_resnet56_homo_cifar100 "./../../../data/cinic100" 256 > ./FedGKT_resnet56_homo_cifar100.log 2>&1 &
+nohup sh run_FedGKT.sh 0 cifar100 homo 200 1 20 Adam 0.001 1 0 resnet56 fedml_resnet56_homo_cifar100 "./../../../data/cifar100" 256 > ./FedGKT_resnet56_homo_cifar100.log 2>&1 &
 ```
 
 #### CINIC10
 ```
-sh run_FedGKT.sh 0 cinic10 homo 200 1 20 Adam 0.001 1 0 resnet56 fedml_resnet56_homo_cinic10 "./../../../data/cifar100" 256
+sh run_FedGKT.sh 0 cinic10 homo 200 1 20 Adam 0.001 1 0 resnet56 fedml_resnet56_homo_cinic10 "./../../../data/cinic10" 256
 
 ##run on background
-nohup sh run_FedGKT.sh 0 cinic10 homo 200 1 20 Adam 0.001 1 0 resnet56 fedml_resnet56_homo_cinic10 "./../../../data/cifar100" 1024 > ./FedGKT_resnet56_homo_cinic10.log 2>&1 &
+nohup sh run_FedGKT.sh 0 cinic10 homo 200 1 20 Adam 0.001 1 0 resnet56 fedml_resnet56_homo_cinic10 "./../../../data/cinic10" 1024 > ./FedGKT_resnet56_homo_cinic10.log 2>&1 &
 ```
 
 ## 4. Results
