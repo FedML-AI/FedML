@@ -94,7 +94,7 @@ def add_args(parser):
     parser.add_argument('--test', action='store_true',
                         help='test mode, only run 1-2 epochs to test the bug of the program')
 
-    parser.add_argument('--gpu_num_per_server', type=int, default=4,
+    parser.add_argument('--gpu_num_per_server', type=int, default=8,
                         help='gpu_num_per_server')
 
     args = parser.parse_args()
