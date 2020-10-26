@@ -111,9 +111,7 @@ class GKTServerTrainer(object):
         if self.args.test:
             epochs_server, whether_distill_back = self.get_server_epoch_strategy_test()
         else:
-            if self.args.client_model == "mobilenet":
-                epochs_server, whether_distill_back = self.get_server_epoch_strategy_reset56(round_idx)
-            elif self.args.client_model == "resnet56" or self.args.client_model == "resnet110":
+            if self.args.client_model == "resnet56":
                 epochs_server, whether_distill_back = self.get_server_epoch_strategy_reset56_2(round_idx)
             else:
                 epochs_server = self.args.self.args.epochs_server
@@ -136,30 +134,6 @@ class GKTServerTrainer(object):
 
     def get_server_epoch_strategy_test(self):
         return 1, True
-
-    # ResNet110
-    def get_server_epoch_strategy1(self, round_idx):
-        whether_distill_back = True
-        # set the training strategy
-        if round_idx < 20:
-            epochs = 20
-        elif 20 <= round_idx < 30:
-            epochs = 15
-        elif 30 <= round_idx < 40:
-            epochs = 10
-        elif 40 <= round_idx < 50:
-            epochs = 3
-        elif 50 <= round_idx < 100:
-            epochs = 2
-        elif 100 <= round_idx < 150:
-            epochs = 1
-        elif 150 <= round_idx <= 200:
-            epochs = 1
-            whether_distill_back = False
-        else:
-            epochs = 1
-            whether_distill_back = False
-        return epochs, whether_distill_back
 
     # ResNet56
     def get_server_epoch_strategy_reset56(self, round_idx):
