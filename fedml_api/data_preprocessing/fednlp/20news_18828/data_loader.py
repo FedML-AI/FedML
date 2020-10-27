@@ -80,12 +80,6 @@ class Dataloader:
                 document, max_seq_doc =  self.process_data(j)
                 self.X.extend(document)
                 max_sequence_length = max(max_sequence_length,max_seq_doc)
-
-                print(self.X)
-                print(self.sequence_length)
-                print("----------------------------------")
-                print(max_sequence_length)
-                print("-----------------------------------")
         
         self.vocab[self.pad_token] = len(self.vocab)
         self.padding_data(max_sequence_length)
