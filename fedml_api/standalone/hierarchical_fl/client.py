@@ -5,7 +5,7 @@ from fedml_api.standalone.fedavg.client import Client
 
 class Client(Client):
 
-    def train(self, w):
+    def train(self, global_round_idx, group_round_idx, w):
         self.model.load_state_dict(w)
         self.model.to(self.device)
 
@@ -24,5 +24,8 @@ class Client(Client):
                 loss = self.criterion(log_probs, labels)
                 loss.backward()
                 optimizer.step()
-            w_list.append(copy.deepcopy(self.model.state_dict()))
+            global_epoch = global_round_idx*self.args.group_comm_round*self.args.epochs + \
+                            group_round_idx*self.args.epochs + epoch
+            if global_epoch % self.args.frequency_of_the_test == 0 or epoch == self.args.epochs-1:
+                w_list.append((global_epoch, copy.deepcopy(self.model.state_dict())))
         return w_list
