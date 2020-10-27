@@ -30,8 +30,8 @@ sh run_standalone_pytorch.sh 0 1000 100 10 mnist ./../../../data/mnist lr hetero
 # global_comm_round=10 & group_comm_round=1 & epochs=50
 sh run_standalone_pytorch.sh 0 1000 100 10 mnist ./../../../data/mnist lr hetero 0.03 sgd random 10 10 1 50
 
-# global_comm_round=10 & group_comm_round=5 & epochs=25
-sh run_standalone_pytorch.sh 0 1000 100 10 mnist ./../../../data/mnist lr hetero 0.03 sgd random 10 10 5 25
+# global_comm_round=10 & group_comm_round=5 & epochs=10
+sh run_standalone_pytorch.sh 0 1000 100 10 mnist ./../../../data/mnist lr hetero 0.03 sgd random 10 10 5 10
 
 # global_comm_round=10 & group_comm_round=50 & epochs=1
 sh run_standalone_pytorch.sh 0 1000 100 10 mnist ./../../../data/mnist lr hetero 0.03 sgd random 10 10 50 1
