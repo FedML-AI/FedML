@@ -17,6 +17,8 @@
 </p>
 
 ## News
+<b>2020-10-26</b>: V2 of our white paper is released. Please check out here: https://arxiv.org/pdf/2007.13518.pdf
+
 <b>2020-10-07</b>: Datasets + Models ALL IN ONE!!! FedML supports comprehensive research-oriented FL datasets and models:
 
 - cross-device CV: Federated EMNIST + CNN (2 conv layers)
