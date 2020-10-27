@@ -21,23 +21,26 @@ class Group(FedAvgTrainer):
             self.group_sample_number += self.train_data_local_num_dict[client_idx]
         return self.group_sample_number
 
-    def train(self, w, sampled_client_indexes):
+    def train(self, global_round_idx, w, sampled_client_indexes):
         sampled_client_list = [self.client_dict[client_idx] for client_idx in sampled_client_indexes]
         w_group = w
         w_group_list = []
         for group_round_idx in range(self.args.group_comm_round):
             logging.info("Group ID : {} / Group Communication Round : {}".format(self.idx, group_round_idx))
-            w_locals_list = [[] for _ in range(self.args.epochs)]
+            w_locals_dict = {}
+
+            # train each client
             for client in sampled_client_list:
-                # train on new dataset
-                w_local_list = client.train(w_group)
-                for epoch, w in enumerate(w_local_list):
-                    w_locals_list[epoch].append((client.get_sample_number(), w))
+                w_local_list = client.train(global_round_idx, group_round_idx, w_group)
+                for global_epoch, w in w_local_list:
+                    if not global_epoch in w_locals_dict: w_locals_dict[global_epoch] = []
+                    w_locals_dict[global_epoch].append((client.get_sample_number(), w))
 
             # aggregate local weights
-            for w_locals in w_locals_list:
-                w_group_list.append(self.aggregate(w_locals))
+            for global_epoch in sorted(w_locals_dict.keys()):
+                w_locals = w_locals_dict[global_epoch]
+                w_group_list.append((global_epoch, self.aggregate(w_locals)))
 
-            # update last weight
-            w_group = w_group_list[-1]
+            # update the group weight
+            w_group = w_group_list[-1][1]
         return w_group_list
