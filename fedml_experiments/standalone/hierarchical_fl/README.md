@@ -37,7 +37,7 @@ sh run_standalone_pytorch.sh 0 1000 100 10 mnist ./../../../data/mnist lr hetero
 sh run_standalone_pytorch.sh 0 1000 100 10 mnist ./../../../data/mnist lr hetero 0.03 sgd random 10 10 50 1
 ```
 
-![benchmark](./docs/image/hierarchical_fl_benchmark.png)
+![benchmark](/docs/image/hierarchical_fl_benchmark.png)
 
 For large DNNs (ResNet, Transformer, etc), please use the distributed computing (fedml_api/distributed). 
 
