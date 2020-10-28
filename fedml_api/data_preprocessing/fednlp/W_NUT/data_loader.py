@@ -1,5 +1,7 @@
 # use conll format to load the data
 import os
+import sys
+sys.path.append('..')
 from base.data_loader import BaseDataLoader
 from base.globals import *
 from base.partition import *
@@ -89,8 +91,6 @@ class DataLoader(BaseDataLoader):
 
 
 if __name__ == "__main__":
-    import sys
-    sys.path.append('..')
     train_file_path = "../../../../data/fednlp/sequence_tagging/W-NUT 2017/data/train_data/Conll_Format/"
     dev_file_path = "../../../../data/fednlp/sequence_tagging/W-NUT 2017/data/dev_data/Conll_Format/"
     test_file_path = "../../../../data/fednlp/sequence_tagging/W-NUT 2017/data/test_data/Conll_Format/"

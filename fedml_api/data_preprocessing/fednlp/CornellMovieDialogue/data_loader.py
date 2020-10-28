@@ -1,5 +1,6 @@
-from nltk.tokenize import word_tokenize
-
+import os
+import sys
+sys.path.append('..')
 from base.data_loader import BaseDataLoader
 from base.globals import *
 from base.partition import *
@@ -143,9 +144,6 @@ class DataLoader(BaseDataLoader):
 
 
 if __name__ == "__main__":
-    import os
-    import sys
-    sys.path.append('..')
     train_file_path = "../../../../data/fednlp/seq2seq/CornellMovieDialogue/CornellMovieDialogue/"
     data_loader = DataLoader(train_file_path, tokenized=True, source_padding=True, target_padding=True, history_padding=True)
     train_data_loader = data_loader.data_loader()

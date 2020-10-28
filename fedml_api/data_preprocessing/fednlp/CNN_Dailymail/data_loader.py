@@ -1,5 +1,7 @@
 import struct
-from tensorflow.core.example import example_pb2 
+from tensorflow.core.example import example_pb2
+import sys
+sys.path.append('..')
 from base.data_loader import BaseDataLoader
 from base.globals import *
 
@@ -114,8 +116,6 @@ class DataLoader(BaseDataLoader):
 
 
 if __name__ == "__main__":
-    import sys
-    sys.path.append('..')
     train_file_path = "../../../../data/fednlp/seq2seq/CNN_Dailymail/finished_files/train.bin"
     dev_file_path = "../../../../data/fednlp/seq2seq/CNN_Dailymail/finished_files/val.bin"
     test_file_path = "../../../../data/fednlp/seq2seq/CNN_Dailymail/finished_files/test.bin"
