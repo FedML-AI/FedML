@@ -1,14 +1,9 @@
 import struct
-from tensorflow.core.example import example_pb2
-import sys
-sys.path.append('..')
+from tensorflow.core.example import example_pb2 
 from base.data_loader import BaseDataLoader
 from base.globals import *
 
-train_file_path = "../../../../data/fednlp/seq2seq/CNN_Dailymail/finished_files/train.bin"
-dev_file_path = "../../../../data/fednlp/seq2seq/CNN_Dailymail/finished_files/val.bin"
-test_file_path = "../../../../data/fednlp/seq2seq/CNN_Dailymail/finished_files/test.bin"
-vocab_file_path = "../../../../data/fednlp/seq2seq/CNN_Dailymail/finished_files/vocab"
+
 
 
 class DataLoader(BaseDataLoader):
@@ -119,6 +114,12 @@ class DataLoader(BaseDataLoader):
 
 
 if __name__ == "__main__":
+    import sys
+    sys.path.append('..')
+    train_file_path = "../../../../data/fednlp/seq2seq/CNN_Dailymail/finished_files/train.bin"
+    dev_file_path = "../../../../data/fednlp/seq2seq/CNN_Dailymail/finished_files/val.bin"
+    test_file_path = "../../../../data/fednlp/seq2seq/CNN_Dailymail/finished_files/test.bin"
+    vocab_file_path = "../../../../data/fednlp/seq2seq/CNN_Dailymail/finished_files/vocab"
     data_loader = DataLoader(train_file_path, tokenized=True, source_padding=True, target_padding=True)
     train_data_loader = data_loader.data_loader()
     print(train_data_loader["X"][0])
