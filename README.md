@@ -17,7 +17,7 @@
 </p>
 
 ## News
-<b>2020-10-28</b>: We released more advanced federated optimization, more than just FedAvg! http://doc.fedml.ai/#/algorithm-reference-implementation
+<b>2020-10-28</b>: We released more advanced federated optimization algorithms, more than just FedAvg! http://doc.fedml.ai/#/algorithm-reference-implementation
 
 <b>2020-10-26</b>: V2 of our white paper is released. Please check out here: https://arxiv.org/pdf/2007.13518.pdf
 
