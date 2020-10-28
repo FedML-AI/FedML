@@ -4,7 +4,8 @@ import os
 import sys
 sys.path.append('..')
 from base.data_loader import BaseDataLoader
-from base.constants import *
+from base.globals import *
+# from base.partition import *
 
 train_file_path = "../../../../data/fednlp/sequence_tagging/W-NUT 2017/data/train_data/Conll_Format/"
 dev_file_path = "../../../../data/fednlp/sequence_tagging/W-NUT 2017/data/dev_data/Conll_Format/"
@@ -33,6 +34,8 @@ class DataLoader(BaseDataLoader):
             self.process_data(file_path)
 
         result = dict()
+
+        result["attributes"] = self.attributes
 
         self.build_vocab(self.X, self.token_vocab)
         self.build_vocab(self.Y, self.label_vocab)
@@ -69,10 +72,29 @@ class DataLoader(BaseDataLoader):
                     single_x.clear()
                     single_y.clear()
 
+    @staticmethod
+    def partition(X, Y, attributes):
+        file_path_dict = dict()
+        for attribute in attributes["inputs"]:
+            if attribute["file_path"] not in file_path_dict:
+                file_path_dict[attribute["file_path"]] = len(file_path_dict)
+        result = dict()
+        for i, single_x in enumerate(X):
+            client_idx = file_path_dict[attributes["inputs"][i]["file_path"]]
+            if client_idx not in result:
+                result[client_idx] = {"X": [single_x], "Y": [Y[i]]}
+            else:
+                result[client_idx]["X"].append(single_x)
+                result[client_idx]["Y"].append(Y[i])
+        return result
+
+
 
 if __name__ == "__main__":
     train_file_paths = [os.path.join(root, file_name) for root, dirs, files in os.walk(train_file_path)
                         for file_name in files]
     data_loader = DataLoader(train_file_paths)
     train_data_loader = data_loader.data_loader()
+    # result = partition(train_data_loader["X"], train_data_loader["Y"], method=data_loader.partition,
+    #                    attributes=train_data_loader["attributes"])
     print("done")

@@ -5,6 +5,7 @@ import sys
 sys.path.append('..')
 from base.data_loader import BaseDataLoader
 from base.globals import *
+from base.partition import *
 
 train_file_path = "../../../../data/fednlp/seq2seq/CornellMovieDialogue/cornell movie-dialogs corpus/"
 
@@ -123,7 +124,25 @@ class DataLoader(BaseDataLoader):
                     conversation.clear()
 
 
+    @staticmethod
+    def partition(X, Y, attributes):
+        movie_dict = dict()
+        for attribute in attributes["inputs"]:
+            if attribute["movie_id"] not in movie_dict:
+                movie_dict[attribute["movie_id"]] = len(movie_dict)
+        result = dict()
+        for i, single_x in enumerate(X):
+            client_idx = movie_dict[attributes["inputs"][i]["movie_id"]]
+            if client_idx not in result:
+                result[client_idx] = {"X": [single_x], "Y": [Y[i]]}
+            else:
+                result[client_idx]["X"].append(single_x)
+                result[client_idx]["Y"].append(Y[i])
+        return result
+
+
 if __name__ == "__main__":
     data_loader = DataLoader(train_file_path, tokenized=True, source_padding=True, target_padding=True, history_padding=True)
     train_data_loader = data_loader.data_loader()
+    result = partition(train_data_loader["X"], train_data_loader["Y"], method=DataLoader.partition, attributes=train_data_loader["attributes"])
     print("done")

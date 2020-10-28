@@ -8,6 +8,8 @@ EOS_TOKEN = "<EOS>"
 PAD_LABEL = "O"
 UNK_LABEL = "O"
 
+N_CLIENTS = 10
+
 
 # Variables
 from spacy.tokenizer import Tokenizer
