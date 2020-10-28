@@ -18,8 +18,8 @@ class FedAvgTrainer(object):
         self.train_data_num_in_total = train_data_num
         self.test_data_num_in_total = test_data_num
 
-        self.model_global = model
-        self.model_global.train()
+        self.model = model
+        self.model.train()
 
         self.client_list = []
         self.train_data_local_num_dict = train_data_local_num_dict
@@ -31,7 +31,7 @@ class FedAvgTrainer(object):
         logging.info("############setup_clients (START)#############")
         for client_idx in range(self.args.client_num_per_round):
             c = Client(client_idx, train_data_local_dict[client_idx], test_data_local_dict[client_idx],
-                       train_data_local_num_dict[client_idx], self.args, self.device)
+                       train_data_local_num_dict[client_idx], self.args, self.device, self.model)
             self.client_list.append(c)
         logging.info("############setup_clients (END)#############")
 
@@ -46,10 +46,10 @@ class FedAvgTrainer(object):
         return client_indexes
 
     def train(self):
+        w_global = self.model.state_dict()
         for round_idx in range(self.args.comm_round):
             logging.info("################Communication round : {}".format(round_idx))
 
-            self.model_global.train()
             w_locals, loss_locals = [], []
 
             """
@@ -68,25 +68,23 @@ class FedAvgTrainer(object):
                                             self.train_data_local_num_dict[client_idx])
 
                 # train on new dataset
-                w, loss = client.train(net=copy.deepcopy(self.model_global).to(self.device))
+                w, loss = client.train(w_global)
                 # self.logger.info("local weights = " + str(w))
                 w_locals.append((client.get_sample_number(), copy.deepcopy(w)))
                 loss_locals.append(copy.deepcopy(loss))
                 logging.info('Client {:3d}, loss {:.3f}'.format(client_idx, loss))
 
             # update global weights
-            w_glob = self.aggregate(w_locals)
+            w_global = self.aggregate(w_locals)
             # logging.info("global weights = " + str(w_glob))
-
-            # copy weight to net_glob
-            self.model_global.load_state_dict(w_glob)
 
             # print loss
             loss_avg = sum(loss_locals) / len(loss_locals)
             logging.info('Round {:3d}, Average loss {:.3f}'.format(round_idx, loss_avg))
 
             if round_idx % self.args.frequency_of_the_test == 0 or round_idx == self.args.comm_round - 1:
-                self.local_test_on_all_clients(self.model_global, round_idx)
+                self.model.load_state_dict(w_global)
+                self.local_test_on_all_clients(self.model, round_idx)
 
     def aggregate(self, w_locals):
         training_num = 0
@@ -114,7 +112,7 @@ class FedAvgTrainer(object):
             'recalls' : [],
             'losses' : []
         }
-        
+
         test_metrics = {
             'num_samples' : [],
             'num_correct' : [],
