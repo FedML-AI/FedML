@@ -63,6 +63,7 @@ class Trainer(FedAvgTrainer):
                 w_global = self.aggregate(w_groups)
 
                 # evaluate performance
-                if global_epoch % self.args.frequency_of_the_test == 0:
+                if global_epoch % self.args.frequency_of_the_test == 0 or \
+                    global_epoch == self.args.global_comm_round*self.args.group_comm_round*self.args.epochs-1:
                     self.model.load_state_dict(w_global)
                     self.local_test_on_all_clients(self.model, global_epoch)
