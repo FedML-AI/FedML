@@ -1,9 +1,7 @@
-import sys
-sys.path.append('..')
 from base.data_loader import BaseDataLoader
 from base.constants import *
 
-train_file_path = "../../../../data/fednlp/sequence_tagging/wikigold/wikigold/CONLL-format/data/wikigold.conll.txt"
+
 
 
 class DataLoader(BaseDataLoader):
@@ -61,6 +59,9 @@ class DataLoader(BaseDataLoader):
 
 
 if __name__ == "__main__":
+    import sys
+    sys.path.append('..')
+    train_file_path = "../../../../data/fednlp/sequence_tagging/wikigold/wikigold/CONLL-format/data/wikigold.conll.txt"
     data_loader = DataLoader(train_file_path)
     train_data_loader = data_loader.data_loader()
     print("done")

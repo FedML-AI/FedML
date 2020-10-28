@@ -1,2 +1,2 @@
 rm -rf wikigold
-svn checkout https://github.com/juand-r/entity-recognition-datasets/trunk/data/wikigold
+wget https://raw.githubusercontent.com/juand-r/entity-recognition-datasets/master/data/wikigold/CONLL-format/data/wikigold.conll.txt

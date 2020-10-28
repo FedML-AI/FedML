@@ -47,6 +47,8 @@ class BaseDataLoader(ABC):
 
     @staticmethod
     def build_vocab(x, vocab):
+        # Make sure we start with an empty dict.
+        assert len(vocab) == 0
         for single_x in x:
             for token in single_x:
                 if token not in vocab:

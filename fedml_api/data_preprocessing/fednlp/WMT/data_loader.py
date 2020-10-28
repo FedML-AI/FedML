@@ -1,10 +1,8 @@
-import sys
-sys.path.append('..')
 from base.data_loader import BaseDataLoader
 from base.globals import *
 
 
-train_file_path = "../../../../data/fednlp/seq2seq/WMT/training-parallel-nc-v13/news-commentary-v13.{}-{}.{}"
+
 language_pairs = [("cs", "en"), ("de", "en"), ("ru", "en"), ("zh", "en")]
 
 
@@ -110,6 +108,9 @@ class DataLoader(BaseDataLoader):
 
 
 if __name__ == "__main__":
+    import sys
+    sys.path.append('..')
+    train_file_path = "../../../../data/fednlp/seq2seq/WMT/training-parallel-nc-v13/news-commentary-v13.{}-{}.{}"
     data_loader = DataLoader(train_file_path, language_pair=("cs", "en"), tokenized=True, source_padding=True,
                              target_padding=True)
     train_data_loader = data_loader.data_loader()

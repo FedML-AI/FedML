@@ -1,16 +1,10 @@
 # use conll format to load the data
 import os
-
-import sys
-sys.path.append('..')
 from base.data_loader import BaseDataLoader
 from base.globals import *
 from base.partition import *
 
-train_file_path = "../../../../data/fednlp/sequence_tagging/W-NUT 2017/data/train_data/Conll_Format/"
-dev_file_path = "../../../../data/fednlp/sequence_tagging/W-NUT 2017/data/dev_data/Conll_Format/"
-test_file_path = "../../../../data/fednlp/sequence_tagging/W-NUT 2017/data/test_data/Conll_Format/"
-test_2020_file_path = "../../../../data/fednlp/sequence_tagging/W-NUT 2017/data/test_data_2020/Conll_Format/"
+
 
 
 class DataLoader(BaseDataLoader):
@@ -95,6 +89,12 @@ class DataLoader(BaseDataLoader):
 
 
 if __name__ == "__main__":
+    import sys
+    sys.path.append('..')
+    train_file_path = "../../../../data/fednlp/sequence_tagging/W-NUT 2017/data/train_data/Conll_Format/"
+    dev_file_path = "../../../../data/fednlp/sequence_tagging/W-NUT 2017/data/dev_data/Conll_Format/"
+    test_file_path = "../../../../data/fednlp/sequence_tagging/W-NUT 2017/data/test_data/Conll_Format/"
+    test_2020_file_path = "../../../../data/fednlp/sequence_tagging/W-NUT 2017/data/test_data_2020/Conll_Format/"
     train_file_paths = [os.path.join(root, file_name) for root, dirs, files in os.walk(train_file_path)
                         for file_name in files]
     data_loader = DataLoader(train_file_paths)
