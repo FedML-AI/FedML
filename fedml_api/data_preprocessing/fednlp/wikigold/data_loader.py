@@ -1,79 +1,66 @@
+import sys
+sys.path.append('..')
+from base.data_loader import BaseDataLoader
+from base.constants import *
 
-train_file_path = "../../../../data/fednlp/wikigold/wikigold/CONLL-format/data/wikigold.conll.txt"
-pad_token = "<PAD>"
-pad_label = "O"
-
-
-def padding_data(x, y, max_sequence_length):
-    assert len(x) == len(y)
-    for i, single_x in enumerate(x):
-        single_y = y[i]
-        assert len(single_x) == len(single_y)
-        if len(single_x) <= max_sequence_length:
-            for _ in range(len(single_x), max_sequence_length):
-                single_x.append(pad_token)
-                single_y.append(pad_label)
-        else:
-            single_x = single_x[:max_sequence_length]
-            single_y = single_y[:max_sequence_length]
+train_file_path = "../../../../data/fednlp/sequence_tagging/wikigold/wikigold/CONLL-format/data/wikigold.conll.txt"
 
 
-def raw_data_to_idx(x, y, token_vocab, label_vocab):
-    assert len(x) == len(y)
-    idx_x = []
-    idx_y = []
-    for i, single_x in enumerate(x):
-        single_y = y[i]
-        assert len(single_x) == len(single_y)
-        idx_single_x = []
-        idx_single_y = []
-        for j, token in enumerate(single_x):
-            label = single_y[j]
-            idx_single_x.append(token_vocab[token])
-            idx_single_y.append(label_vocab[label])
-        idx_x.append(idx_single_x)
-        idx_y.append(idx_single_y)
-    return idx_x, idx_y
+class DataLoader(BaseDataLoader):
+    def __init__(self, data_path, **kwargs):
+        super().__init__(data_path, **kwargs)
+        allowed_keys = {"padding", "max_sequence_length"}
+        self.__dict__.update((key, False) for key in allowed_keys)
+        self.__dict__.update((key, value) for key, value in kwargs.items() if key in allowed_keys)
 
+        self.sequence_length = []
+        self.token_vocab = dict()
+        self.label_vocab = dict()
+        if self.padding:
+            self.token_vocab[PAD_TOKEN] = len(self.token_vocab)
+            self.label_vocab[PAD_LABEL] = len(self.label_vocab)
 
-def load_data(file_path, max_sequence_length=None, padding=True):
-    x = []
-    y = []
-    sequence_lengths = []
-    token_vocab = dict()
-    label_vocab = dict()
-    single_x = []
-    single_y = []
+    def data_loader(self):
+        self.process_data(self.data_path)
 
-    if padding:
-        token_vocab[pad_token] = len(token_vocab)
-        label_vocab[pad_label] = len(label_vocab)
-    with open(file_path, "r") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                token, label = line.split(" ")
-                single_x.append(token)
-                single_y.append(label)
-                if token not in token_vocab:
-                    token_vocab[token] = len(token_vocab)
-                if label not in label_vocab:
-                    label_vocab[label] = len(label_vocab)
-            else:
-                x.append(single_x.copy())
-                y.append(single_y.copy())
-                sequence_lengths.append(len(single_x))
-                single_x.clear()
-                single_y.clear()
+        result = dict()
 
-    if max_sequence_length is None:
-        max_sequence_length = max(sequence_lengths)
-    if padding:
-        padding_data(x, y, max_sequence_length)
-    return x, y, max_sequence_length, sequence_lengths, token_vocab, label_vocab
+        self.build_vocab(self.X, self.token_vocab)
+        self.build_vocab(self.Y, self.label_vocab)
+
+        result["token_vocab"] = self.token_vocab
+        result["label_vocab"] = self.label_vocab
+        if self.padding:
+            if not self.max_sequence_length:
+                self.max_sequence_length = max(self.sequence_length)
+            self.padding_data(self.X, self.max_sequence_length, False)
+            self.padding_data(self.Y, self.max_sequence_length, False, PAD_LABEL)
+            result["max_sequence_length"] = self.max_sequence_length
+        result["sequence_length"] = self.sequence_length
+        result["X"] = self.X
+        result["Y"] = self.Y
+        return result
+
+    def process_data(self, file_path):
+        single_x = []
+        single_y = []
+        with open(file_path, "r") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    token, label = line.split(" ")
+                    single_x.append(token)
+                    single_y.append(label)
+                else:
+                    if len(single_x) != 0:
+                        self.X.append(single_x.copy())
+                        self.Y.append(single_y.copy())
+                        self.sequence_length.append(len(single_x))
+                    single_x.clear()
+                    single_y.clear()
 
 
 if __name__ == "__main__":
-    x, y, max_sequence_length, sequence_lengths, token_vocab, label_vocab = load_data(train_file_path)
-    idx_x, idx_y = raw_data_to_idx(x, y, token_vocab, label_vocab)
+    data_loader = DataLoader(train_file_path)
+    train_data_loader = data_loader.data_loader()
     print("done")

@@ -1,108 +1,116 @@
-from nltk.tokenize import word_tokenize
-import jieba
-import functools
+import sys
+sys.path.append('..')
+from base.data_loader import BaseDataLoader
+from base.globals import *
 
 
-train_file_path = "../../../../data/fednlp/WMT/training-parallel-nc-v13/news-commentary-v13.{}-{}.{}"
+train_file_path = "../../../../data/fednlp/seq2seq/WMT/training-parallel-nc-v13/news-commentary-v13.{}-{}.{}"
 language_pairs = [("cs", "en"), ("de", "en"), ("ru", "en"), ("zh", "en")]
 
-tokenizer_dict = {"cs": functools.partial(word_tokenize, language="czech"),
-                 "de": functools.partial(word_tokenize, language="german"),
-                 "ru": functools.partial(word_tokenize, language="russian"),
-                 "en": functools.partial(word_tokenize, language="english"),
-                 "zh": jieba.cut}
-pad_token = "<PAD>"
-unk_token = "<UNK>"
-sos_token = "<SOS>"
-eos_token = "<EOS>"
 
+class DataLoader(BaseDataLoader):
+    def __init__(self, data_path, **kwargs):
+        super().__init__(data_path, **kwargs)
+        allowed_keys = {"language_pair", "source_padding", "target_padding", "source_max_sequence_length",
+                        "target_max_sequence_length", "source_vocab_path", "target_vocab_path", "initialize"}
+        self.__dict__.update((key, False) for key in allowed_keys)
+        self.__dict__.update((key, value) for key, value in kwargs.items() if key in allowed_keys)
+        if self.tokenized:
+            self.source_sequence_length = []
+            self.target_sequence_length = []
+            self.source_vocab = dict()
+            self.target_vocab = dict()
+            if self.source_padding:
+                self.source_vocab[PAD_TOKEN] = len(self.source_vocab)
+            if self.target_padding:
+                self.target_vocab[PAD_TOKEN] = len(self.target_vocab)
+            if self.initialize:
+                self.source_vocab[SOS_TOKEN] = len(self.source_vocab)
+                self.source_vocab[EOS_TOKEN] = len(self.source_vocab)
+                self.target_vocab[SOS_TOKEN] = len(self.target_vocab)
+                self.target_vocab[EOS_TOKEN] = len(self.target_vocab)
 
-def padding_data(x, max_sequence_length):
-    for i, single_x in enumerate(x):
-        if len(single_x) <= max_sequence_length:
-            for _ in range(len(single_x), max_sequence_length):
-                single_x.append(pad_token)
+    def data_loader(self):
+        self.process_data(self.data_path.format(self.language_pair[0], self.language_pair[1], self.language_pair[0]),
+                          self.language_pair[0], True)
+        self.process_data(self.data_path.format(self.language_pair[0], self.language_pair[1], self.language_pair[1]),
+                          self.language_pair[1], False)
+
+        result = dict()
+
+        if self.tokenized:
+            if self.source_vocab_path:
+                self.process_vocab(self.source_vocab_path, self.source_vocab)
+            else:
+                self.build_vocab(self.X, self.source_vocab)
+            result["source_vocab"] = self.source_vocab
+
+            if self.target_vocab_path:
+                self.process_vocab(self.target_vocab_path, self.target_vocab)
+            else:
+                self.build_vocab(self.Y, self.target_vocab)
+            result["target_vocab"] = self.target_vocab
+
+            if self.source_padding:
+                if not self.source_max_sequence_length:
+                    self.source_max_sequence_length = max(self.source_sequence_length)
+                    if self.initialize:
+                        self.source_max_sequence_length += 2
+                self.padding_data(self.X, self.source_max_sequence_length, self.initialize)
+                result["source_sequence_length"] = self.source_sequence_length
+                result["source_max_sequence_length"] = self.source_max_sequence_length
+            if self.target_padding:
+                if not self.target_max_sequence_length:
+                    self.target_max_sequence_length = max(self.target_sequence_length)
+                    if self.initialize:
+                        self.target_max_sequence_length += 2
+                self.padding_data(self.Y, self.target_max_sequence_length, self.initialize)
+                result["target_sequence_length"] = self.target_sequence_length
+                result["target_max_sequence_length"] = self.target_max_sequence_length
+
+        result["X"] = self.X
+        result["Y"] = self.Y
+        return result
+
+    @staticmethod
+    def tokenize(document, lang):
+        tokenizer = None
+        if lang == "zh":
+            tokenizer = zh_tokenizer
+        elif lang == "en":
+            tokenizer = en_tokenizer
+        elif lang == "cs":
+            tokenizer = cs_tokenizer
+        elif lang == "de":
+            tokenizer = de_tokenizer
+        elif lang == "ru":
+            tokenizer = ru_tokenizer
         else:
-            single_x = single_x[:max_sequence_length]
+            raise Exception("Unacceptable language.")
+        tokens = [str(token) for token in tokenizer(document)]
+        return tokens
 
+    def process_data(self, file_path, lang, source):
+        if source:
+            X = self.X
+            sequence_length = self.source_sequence_length if self.tokenized else None
+        else:
+            X = self.Y
+            sequence_length = self.target_sequence_length if self.tokenized else None
 
-def raw_data_to_idx(x, token_vocab):
-    idx_x = []
-    for i, single_x in enumerate(x):
-        idx_single_x = []
-        for j, token in enumerate(single_x):
-            idx_single_x.append(token_vocab[token] if token in token_vocab else token_vocab[unk_token])
-        idx_x.append(idx_single_x)
-    return idx_x
-
-
-def load_data(file_path, language_pair, source_max_sequence_length=None, target_max_sequence_length=None,
-              source_padding=True, target_padding=True, sos_and_eos=True):
-    x = []
-    y = []
-    source_sequence_lengths = []
-    target_sequence_lengths = []
-    source_token_vocab = dict()
-    target_token_vocab = dict()
-
-    with open(file_path.format(language_pair[0], language_pair[1], language_pair[0]), "r") as f:
-        for line in f:
-            line = line.strip()
-            tokenizer = tokenizer_dict[language_pair[0]]
-            tokens = tokenizer(line)
-            for token in tokens:
-                if token not in source_token_vocab:
-                    source_token_vocab[token] = len(source_token_vocab)
-            x.append(tokens)
-            source_sequence_lengths.append(len(tokens))
-
-    with open(file_path.format(language_pair[0], language_pair[1], language_pair[1]), "r") as f:
-        for line in f:
-            line = line.strip()
-            tokenizer = tokenizer_dict[language_pair[0]]
-            tokens = tokenizer(line)
-            for token in tokens:
-                if token not in target_token_vocab:
-                    target_token_vocab[token] = len(target_token_vocab)
-            y.append(tokens)
-            target_sequence_lengths.append(len(tokens))
-
-    if source_max_sequence_length is None:
-        source_max_sequence_length = max(source_sequence_lengths)
-
-    if target_max_sequence_length is None:
-        target_max_sequence_length = max(target_sequence_lengths)
-
-    if sos_and_eos:
-        source_token_vocab[sos_token] = len(source_token_vocab)
-        source_token_vocab[eos_token] = len(source_token_vocab)
-
-        target_token_vocab[sos_token] = len(target_token_vocab)
-        target_token_vocab[eos_token] = len(target_token_vocab)
-
-        source_max_sequence_length += 2
-        target_max_sequence_length += 2
-
-        def add_sos_and_eos_token(x):
-            for single_x in x:
-                single_x = [sos_token] + single_x + [eos_token]
-
-        add_sos_and_eos_token(x)
-        add_sos_and_eos_token(y)
-
-    if source_padding:
-        source_token_vocab[pad_token] = len(source_token_vocab)
-        padding_data(x, source_max_sequence_length)
-
-    if target_padding:
-        target_token_vocab[pad_token] = len(target_token_vocab)
-        padding_data(y, target_max_sequence_length)
-
-    return x, y, source_max_sequence_length, target_max_sequence_length, source_sequence_lengths, \
-           target_sequence_lengths, source_token_vocab, target_token_vocab
+        with open(file_path, "r") as f:
+            for line in f:
+                line = line.strip()
+                if self.tokenized:
+                    tokens = self.tokenize(line, lang)
+                    X.append(tokens)
+                    sequence_length.append(len(tokens))
+                else:
+                    X.append(line)
 
 
 if __name__ == "__main__":
-    x, y, source_max_sequence_length, target_max_sequence_length, source_sequence_lengths, \
-    target_sequence_lengths, source_token_vocab, target_token_vocab = load_data(train_file_path, language_pairs[0])
+    data_loader = DataLoader(train_file_path, language_pair=("cs", "en"), tokenized=True, source_padding=True,
+                             target_padding=True)
+    train_data_loader = data_loader.data_loader()
     print("done")

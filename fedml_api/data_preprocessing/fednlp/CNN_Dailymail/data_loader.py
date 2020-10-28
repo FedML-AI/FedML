@@ -1,113 +1,126 @@
 import struct
 from tensorflow.core.example import example_pb2
-train_file_path = "../../../../data/fednlp/CNN_Dailymail/finished_files/train.bin"
-dev_file_path = "../../../../data/fednlp/CNN_Dailymail/finished_files/val.bin"
-test_file_path = "../../../../data/fednlp/CNN_Dailymail/finished_files/test.bin"
-vocab_file_path = "../../../../data/fednlp/CNN_Dailymail/finished_files/vocab"
-pad_token = "<PAD>"
-unk_token = "<UNK>"
-sos_token = "<SOS>"
-eos_token = "<EOS>"
+import sys
+sys.path.append('..')
+from base.data_loader import BaseDataLoader
+from base.globals import *
+
+train_file_path = "../../../../data/fednlp/seq2seq/CNN_Dailymail/finished_files/train.bin"
+dev_file_path = "../../../../data/fednlp/seq2seq/CNN_Dailymail/finished_files/val.bin"
+test_file_path = "../../../../data/fednlp/seq2seq/CNN_Dailymail/finished_files/test.bin"
+vocab_file_path = "../../../../data/fednlp/seq2seq/CNN_Dailymail/finished_files/vocab"
 
 
-def padding_data(x, max_sequence_length):
-    for i, single_x in enumerate(x):
-        if len(single_x) <= max_sequence_length:
-            for _ in range(len(single_x), max_sequence_length):
-                single_x.append(pad_token)
-        else:
-            single_x = single_x[:max_sequence_length]
+class DataLoader(BaseDataLoader):
+    def __init__(self, data_path, **kwargs):
+        super().__init__(data_path, **kwargs)
+        allowed_keys = {"source_padding", "target_padding", "source_max_sequence_length", "target_max_sequence_length",
+                        "source_vocab_path", "target_vocab_path", "initialize"}
+        self.__dict__.update((key, False) for key in allowed_keys)
+        self.__dict__.update((key, value) for key, value in kwargs.items() if key in allowed_keys)
+        if self.tokenized:
+            self.source_sequence_length = []
+            self.target_sequence_length = []
+            self.source_vocab = dict()
+            self.target_vocab = dict()
+            if self.source_padding:
+                self.source_vocab[PAD_TOKEN] = len(self.source_vocab)
+            if self.target_padding:
+                self.target_vocab[PAD_TOKEN] = len(self.target_vocab)
+            if self.initialize:
+                self.source_vocab[SOS_TOKEN] = len(self.source_vocab)
+                self.source_vocab[EOS_TOKEN] = len(self.source_vocab)
+                self.target_vocab[SOS_TOKEN] = len(self.target_vocab)
+                self.target_vocab[EOS_TOKEN] = len(self.target_vocab)
 
+    def data_loader(self):
+        self.process_data(self.data_path)
 
-def raw_data_to_idx(x, token_vocab):
-    idx_x = []
-    for i, single_x in enumerate(x):
-        idx_single_x = []
-        for j, token in enumerate(single_x):
-            idx_single_x.append(token_vocab[token] if token in token_vocab else token_vocab[unk_token])
-        idx_x.append(idx_single_x)
-    return idx_x
+        result = dict()
 
+        if self.tokenized:
+            if self.source_vocab_path:
+                self.process_vocab(self.source_vocab_path, self.source_vocab)
+            else:
+                self.build_vocab(self.X, self.source_vocab)
+            result["source_vocab"] = self.source_vocab
 
-def load_data(file_path, source_max_sequence_length=None, target_max_sequence_length=None, source_padding=True,
-              target_padding=True):
-    x = []
-    y = []
-    source_sequence_lengths = []
-    target_sequence_lengths = []
-    single_x = []
-    single_y = []
+            if self.target_vocab_path:
+                self.process_vocab(self.target_vocab_path, self.target_vocab)
+            else:
+                self.build_vocab(self.Y, self.target_vocab)
+            result["target_vocab"] = self.target_vocab
 
-    file = open(file_path, "rb")
-    while True:
-        len_bytes = file.read(8)
-        if not len_bytes:
-            break
-        str_len = struct.unpack('q', len_bytes)[0]
-        example_str = struct.unpack('%ds' % str_len, file.read(str_len))[0]
-        example = example_pb2.Example.FromString(example_str)
-        article_text = example.features.feature['article'].bytes_list.value[0].decode()
-        abstract_text = example.features.feature['abstract'].bytes_list.value[0].decode()
-        abstract_text = abstract_text.replace("<s>", "").replace("</s>", "")
-        for token in article_text.split(" "):
+            if self.source_padding:
+                if not self.source_max_sequence_length:
+                    self.source_max_sequence_length = max(self.source_sequence_length)
+                    if self.initialize:
+                        self.source_max_sequence_length += 2
+                self.padding_data(self.X, self.source_max_sequence_length, self.initialize)
+                result["source_sequence_length"] = self.source_sequence_length
+                result["source_max_sequence_length"] = self.source_max_sequence_length
+            if self.target_padding:
+                if not self.target_max_sequence_length:
+                    self.target_max_sequence_length = max(self.target_sequence_length)
+                    if self.initialize:
+                        self.target_max_sequence_length += 2
+                self.padding_data(self.Y, self.target_max_sequence_length, self.initialize)
+                result["target_sequence_length"] = self.target_sequence_length
+                result["target_max_sequence_length"] = self.target_max_sequence_length
+
+        result["X"] = self.X
+        result["Y"] = self.Y
+        return result
+
+    @staticmethod
+    def tokenize(document):
+        tokens = []
+        for token in document.split(" "):
             token = token.strip()
             if token:
-                single_x.append(token)
+                tokens.append(token)
+        return tokens
 
-        for token in abstract_text.split(" "):
-            token = token.strip()
-            if token:
-                single_y.append(token)
+    @staticmethod
+    def process_vocab(vocab_path, vocab):
+        with open(vocab_path, "r") as f:
+            for line in f:
+                line = line.strip()
+                token, index = line.split(" ")
+                if token not in vocab:
+                    vocab[token] = len(vocab)
 
-        if len(single_x) != 0 and len(single_y) != 0:
-            x.append(single_x.copy())
-            y.append(single_y.copy())
-            source_sequence_lengths.append(len(single_x))
-            target_sequence_lengths.append(len(single_y))
+    def process_data(self, file_path):
+        file = open(file_path, "rb")
+        while True:
+            len_bytes = file.read(8)
+            if not len_bytes:
+                break
+            str_len = struct.unpack('q', len_bytes)[0]
+            example_str = struct.unpack('%ds' % str_len, file.read(str_len))[0]
+            example = example_pb2.Example.FromString(example_str)
+            article_text = example.features.feature['article'].bytes_list.value[0].decode()
+            abstract_text = example.features.feature['abstract'].bytes_list.value[0].decode()
+            abstract_text = abstract_text.replace("<s>", "").replace("</s>", "")
 
-        single_x.clear()
-        single_y.clear()
+            if self.tokenized:
+                article_tokens = self.tokenize(article_text)
+                abstract_tokens = self.tokenize(abstract_text)
 
-    if source_max_sequence_length is None:
-        source_max_sequence_length = max(source_sequence_lengths)
-    if target_max_sequence_length is None:
-        target_max_sequence_length = max(target_sequence_lengths)
+                self.source_sequence_length.append(len(article_tokens))
+                self.target_sequence_length.append(len(abstract_tokens))
 
-    if source_padding:
-        padding_data(x, source_max_sequence_length)
-    if target_padding:
-        padding_data(y, target_max_sequence_length)
-
-    return x, y, source_max_sequence_length, target_max_sequence_length
-
-
-def load_vocab(file_path, padding=True, start_and_end_token=True):
-    token_vocab = dict()
-    token_vocab[unk_token] = len(token_vocab)
-    if padding:
-        token_vocab[pad_token] = len(token_vocab)
-    if start_and_end_token:
-        token_vocab[sos_token] = len(token_vocab)
-        token_vocab[eos_token] = len(token_vocab)
-    with open(file_path, "r") as f:
-        for line in f:
-            line = line.strip()
-            token, index = line.split(" ")
-            if token not in token_vocab:
-                token_vocab[token] = len(token_vocab)
-    return token_vocab
+                self.X.append(article_tokens)
+                self.Y.append(abstract_tokens)
+            else:
+                self.X.append(article_text)
+                self.Y.append(abstract_text)
 
 
 
 if __name__ == "__main__":
-    train_x, train_y, train_source_max_sequence_length, train_target_max_sequence_length = load_data(train_file_path)
-    dev_x, dev_y, dev_source_max_sequence_length, dev_target_max_sequence_length = load_data(dev_file_path)
-    test_x, test_y, test_source_max_sequence_length, test_target_max_sequence_length = load_data(test_file_path)
-    vocab = load_vocab(vocab_file_path)
-    train_idx_x, train_idx_y, dev_idx_x, dev_idx_y, dev_test_x, dev_test_y = raw_data_to_idx(train_x, vocab), \
-                                                                             raw_data_to_idx(train_y, vocab), \
-                                                                             raw_data_to_idx(dev_x, vocab), \
-                                                                             raw_data_to_idx(dev_y, vocab), \
-                                                                             raw_data_to_idx(test_x, vocab), \
-                                                                             raw_data_to_idx(test_y, vocab)
+    data_loader = DataLoader(train_file_path, tokenized=True, source_padding=True, target_padding=True)
+    train_data_loader = data_loader.data_loader()
+    print(train_data_loader["X"][0])
+    print(train_data_loader["Y"][0])
     print("done")
