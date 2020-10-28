@@ -1,33 +1,62 @@
-from .globals import *
 import random
 import math
+import sys
+from .globals import *
 
 
-def partition(X, Y, method="uniform", n_clients=N_CLIENTS, **kwargs):
+def partition(data_loader, method="uniform", n_clients=N_CLIENTS, partition_keys=PARTITION_KEYS, **kwargs):
+    keys = []
+    values = []
+    for key in partition_keys:
+        if key in data_loader:
+            keys.append(key)
+            values.append(data_loader[key])
+    validate_inputs(values)
+    result = None
     if isinstance(method, str):
         if method == "uniform":
-            return uniform_partition(X, Y, n_clients)
+            result = uniform_partition(keys, values, n_clients)
         else:
             raise Exception("Unimplemented.")
     elif callable(method):
-        return method(X, Y, **kwargs)
+        assert "attributes" in data_loader
+        result = method(keys, values, data_loader["attributes"], **kwargs)
     else:
         raise Exception("Unknown type.")
+    for key, value in result.items():
+        data_loader[key] = value
 
 
-def uniform_partition(X, Y, n_clients):
-    shuffle(X, Y)
-    batch_size = math.ceil(len(X) / n_clients)
-    start = 0
+
+def validate_inputs(values):
+    assert len(values) != 0
+    length = None
+    for value in values:
+        if length is None:
+            length = len(value)
+        else:
+            assert length == len(value)
+
+
+def uniform_partition(keys, values, n_clients):
+    values = shuffle(values)
+    length = len(values[0])
+    batch_size = math.ceil(length / n_clients)
     result = dict()
-    for client_idx in range(n_clients):
-        end = start + batch_size if (start + batch_size) < len(X) else len(X)
-        result[client_idx] = {"X": X[start:end], "Y": Y[start:end]}
-        start = end
+    for i, key in enumerate(keys):
+        result[key] = dict()
+        start = 0
+        for client_idx in range(n_clients):
+            end = start + batch_size if (start + batch_size) < length else length
+            result[key][client_idx] = list(values[i][start:end])
+            start = end
     return result
 
 
-def shuffle(X, Y):
-    temp = list(zip(X, Y))
+def shuffle(values):
+    temp = list(zip(*values))
     random.shuffle(temp)
-    X, Y = zip(*temp)
+    values = zip(*temp)
+    return list(values)
+
+

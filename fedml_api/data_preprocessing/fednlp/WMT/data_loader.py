@@ -76,15 +76,15 @@ class DataLoader(BaseDataLoader):
     def tokenize(document, lang):
         tokenizer = None
         if lang == "zh":
-            tokenizer = zh_tokenizer
+            tokenizer = spacy_tokenizer.zh_tokenizer
         elif lang == "en":
-            tokenizer = en_tokenizer
+            tokenizer = spacy_tokenizer.en_tokenizer
         elif lang == "cs":
-            tokenizer = cs_tokenizer
+            tokenizer = spacy_tokenizer.cs_tokenizer
         elif lang == "de":
-            tokenizer = de_tokenizer
+            tokenizer = spacy_tokenizer.de_tokenizer
         elif lang == "ru":
-            tokenizer = ru_tokenizer
+            tokenizer = spacy_tokenizer.ru_tokenizer
         else:
             raise Exception("Unacceptable language.")
         tokens = [str(token) for token in tokenizer(document)]

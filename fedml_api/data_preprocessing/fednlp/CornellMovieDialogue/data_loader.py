@@ -35,7 +35,7 @@ class DataLoader(BaseDataLoader):
                 self.vocab[EOS_TOKEN] = len(self.vocab)
 
     def tokenize(self, document):
-        tokens = [str(token) for token in en_tokenizer(document)]
+        tokens = [str(token) for token in spacy_tokenizer.en_tokenizer(document)]
         return tokens
 
     def data_loader(self):
@@ -125,24 +125,28 @@ class DataLoader(BaseDataLoader):
 
 
     @staticmethod
-    def partition(X, Y, attributes):
+    def partition(keys, values, attributes):
         movie_dict = dict()
         for attribute in attributes["inputs"]:
             if attribute["movie_id"] not in movie_dict:
                 movie_dict[attribute["movie_id"]] = len(movie_dict)
+        length = len(values[0])
         result = dict()
-        for i, single_x in enumerate(X):
+        for key in keys:
+            result[key] = dict()
+        for i in range(length):
             client_idx = movie_dict[attributes["inputs"][i]["movie_id"]]
-            if client_idx not in result:
-                result[client_idx] = {"X": [single_x], "Y": [Y[i]]}
-            else:
-                result[client_idx]["X"].append(single_x)
-                result[client_idx]["Y"].append(Y[i])
+            for j, key in enumerate(keys):
+                if client_idx not in result[key]:
+                    result[key][client_idx] = [values[j][i]]
+                else:
+                    result[key][client_idx].append(values[j][i])
+                    result[key][client_idx].append(values[j][i])
         return result
 
 
 if __name__ == "__main__":
     data_loader = DataLoader(train_file_path, tokenized=True, source_padding=True, target_padding=True, history_padding=True)
     train_data_loader = data_loader.data_loader()
-    result = partition(train_data_loader["X"], train_data_loader["Y"], method=DataLoader.partition, attributes=train_data_loader["attributes"])
+    partition(train_data_loader, method="uniform")
     print("done")
