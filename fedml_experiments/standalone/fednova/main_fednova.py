@@ -53,16 +53,23 @@ def add_args(parser):
     parser.add_argument('--partition_alpha', type=float, default=0.5, metavar='PA',
                         help='partition alpha (default: 0.5)')
 
-    parser.add_argument('--batch_size', type=int, default=128, metavar='N',
+    parser.add_argument('--batch_size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
-
-    parser.add_argument('--client_optimizer', type=str, default='sgd',
-                        help='SGD with momentum; adam')
 
     parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
                         help='learning rate (default: 0.001)')
 
     parser.add_argument('--wd', help='weight decay parameter;', type=float, default=0.001)
+    
+    parser.add_argument('--gmf', help='global momentum factor;', type=float, default=0)
+    
+    parser.add_argument('--mu', help='mu;', type=float, default=0)
+    
+    parser.add_argument('--momentum', help='momentum factor;', type=float, default=0)
+    
+    parser.add_argument('--dampening', help='dampening factor;', type=float, default=0)
+    
+    parser.add_argument('--nesterov', help='use nesterov;', type=float, default=False)
 
     parser.add_argument('--epochs', type=int, default=5, metavar='EP',
                         help='how many epochs will be trained locally')
@@ -138,18 +145,21 @@ def load_data(args, dataset_name):
         train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
         class_num = load_partition_data_federated_cifar100(args.dataset, args.data_dir)
         args.client_num_in_total = client_num
+        
     elif dataset_name == "stackoverflow_lr":
         logging.info("load_data. dataset_name = %s" % dataset_name)
         client_num, train_data_num, test_data_num, train_data_global, test_data_global, \
         train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
         class_num = load_partition_data_federated_stackoverflow_lr(args.dataset, args.data_dir)
         args.client_num_in_total = client_num
+        
     elif dataset_name == "stackoverflow_nwp":
         logging.info("load_data. dataset_name = %s" % dataset_name)
         client_num, train_data_num, test_data_num, train_data_global, test_data_global, \
         train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
         class_num = load_partition_data_federated_stackoverflow_nwp(args.dataset, args.data_dir)
         args.client_num_in_total = client_num
+        
     else:
         if dataset_name == "cifar10":
             data_loader = load_partition_data_cifar10

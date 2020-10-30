@@ -22,9 +22,21 @@ EPOCH=$10
 
 LR=$11
 
-OPT=$12
+WD=$12
 
-CI=$13
+GMF=$13
+
+MU=$14
+
+MOMENTUM=$15
+
+DAMPENING=$16
+
+WD=$17
+
+NESTEROV=$18
+
+CI==$19
 
 python3 ./main_fednova.py \
 --gpu $GPU \
@@ -37,6 +49,11 @@ python3 ./main_fednova.py \
 --comm_round $ROUND \
 --epochs $EPOCH \
 --batch_size $BATCH_SIZE \
---client_optimizer $OPT \
 --lr $LR \
+--wd $WD \
+--gmf $GMF \
+--mu $MU \
+--momentum $MOMENTUM \
+--dampening $DAMPENING \
+--nesterov $NESTEROV \
 --ci $CI

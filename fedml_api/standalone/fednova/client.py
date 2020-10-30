@@ -44,7 +44,7 @@ class Client:
         grad_dict = {}
         for k in cur_params.keys():
             scale = 1.0/opt.local_normalizing_vec
-            cum_grad = cur_params[k] - init_params[k]
+            cum_grad = init_params[k] - cur_params[k] 
             cum_grad.mul_(weight*scale)
             grad_dict[k] = cum_grad
         return grad_dict
@@ -73,14 +73,13 @@ class Client:
         init_params = copy.deepcopy(net.cpu().state_dict())
         optimizer = FedNova(net.parameters(), 
                             lr=self.args.lr, 
-                            gmf=.9, 
-                            mu=0, 
+                            gmf=self.args.gmf, 
+                            mu=self.args.mu, 
                             ratio=ratio,
-                            momentum=0,
-                            dampening=0,
-                            weight_decay=0, 
-                            nesterov=False, 
-                            variance=0)
+                            momentum=self.args.momentum,
+                            dampening=self.args.dampening,
+                            weight_decay=self.args.wd, 
+                            nesterov=self.args.nesterov)
 
         epoch_loss = []
         for epoch in range(self.args.epochs):
