@@ -8,6 +8,10 @@ import torch
 import torch.distributed as dist
 import functools
 
+"""
+FedNova Optimizer comm_helper implementation cited from https://github.com/JYWa/FedNova/tree/master
+"""
+
 def flatten_tensors(tensors):
     """
     Reference: https://github.com/facebookresearch/stochastic_gradient_push
