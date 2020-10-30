@@ -1,6 +1,7 @@
 import copy
 import logging
 
+import torch
 import numpy as np
 import wandb
 
@@ -52,7 +53,7 @@ class FedNovaTrainer(object):
             self.model_global.train()
             init_params = copy.deepcopy(self.model_global.cpu().state_dict())
             loss_locals, norm_grads, tau_effs = [], [], []
-
+            self.global_momentum_buffer = dict()
             """
             for scalability: following the original FedAvg algorithm, we uniformly sample a fraction of clients in each round.
             Instead of changing the 'Client' instances, our implementation keeps the 'Client' instances and then updates their local dataset 
@@ -106,9 +107,17 @@ class FedNovaTrainer(object):
                 else:
                     cum_grad[k] += norm_grads[i][k] * tau_eff
         # update params
-        # TODO: Add support of global momentum factor
         for k in params.keys():
-            params[k] = params[k] + cum_grad[k]
+            if self.args.gmf != 0:
+                if k not in self.global_momentum_buffer:
+                    buf = self.global_momentum_buffer[k] = torch.clone(cum_grad[k]).detach()
+                    buf.div_(self.args.lr)
+                else:
+                    buf = self.global_momentum_buffer[k]
+                    buf.mul_(self.args.gmf).add_(1/self.args.lr, cum_grad[k])
+                params[k].sub_(self.args.lr, buf)
+            else:
+                params[k].sub_(cum_grad[k])
         return params
 
 
