@@ -6,8 +6,7 @@ import threading
 import numpy as np
 
 """
-FedNova Optimizer implementation cited from 
-https://github.com/JYWa/FedNova/tree/master
+FedNova Optimizer implementation cited from https://github.com/JYWa/FedNova/tree/master
 """
 
 class FedNova(Optimizer):

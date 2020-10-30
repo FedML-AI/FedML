@@ -106,26 +106,11 @@ class FedNovaTrainer(object):
                 else:
                     cum_grad[k] += norm_grads[i][k] * tau_eff
         # update params
-        # param_state['old_init'].sub_(param_state['cum_grad'])
+        # TODO: Add support of global momentum factor
         for k in params.keys():
             params[k] = params[k] + cum_grad[k]
         return params
-    
-        # training_num = 0
-        # for idx in range(len(w_locals)):
-        #     (sample_num, averaged_params) = w_locals[idx]
-        #     training_num += sample_num
 
-        # (sample_num, averaged_params) = w_locals[0]
-        # for k in averaged_params.keys():
-        #     for i in range(0, len(w_locals)):
-        #         local_sample_number, local_model_params = w_locals[i]
-        #         w = local_sample_number / training_num
-        #         if i == 0:
-        #             averaged_params[k] = local_model_params[k] * w
-        #         else:
-        #             averaged_params[k] += local_model_params[k] * w
-        # return averaged_params
 
     def local_test_on_all_clients(self, model_global, round_idx):
         logging.info("################local_test_on_all_clients : {}".format(round_idx))
