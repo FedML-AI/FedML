@@ -47,15 +47,6 @@ class Client:
             cum_grad = cur_params[k] - init_params[k]
             cum_grad.mul_(weight*scale)
             grad_dict[k] = cum_grad
-        '''
-        param_list = []
-        for group in opt.param_groups:
-            for p in group['params']:
-                param_state = opt.state[p]
-                scale = 1.0/opt.local_normalizing_vec
-                param_state['cum_grad'].mul_(weight*scale)
-                param_list.append(param_state['cum_grad'])
-        '''
         return grad_dict
     
     def get_local_tau_eff(self, opt):
@@ -114,8 +105,7 @@ class Client:
             #     self.client_idx, epoch, sum(epoch_loss) / len(epoch_loss)))
         norm_grad = self.get_local_norm_grad(optimizer, net.cpu().state_dict(), init_params)
         tau_eff = self.get_local_tau_eff(optimizer)
-        self.reset_fednova_optimizer(optimizer)
-        # return net.cpu().state_dict(), sum(epoch_loss) / len(epoch_loss), optimizer
+        # self.reset_fednova_optimizer(optimizer)
         return sum(epoch_loss) / len(epoch_loss), norm_grad, tau_eff
     
 
