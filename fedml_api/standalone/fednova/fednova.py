@@ -47,7 +47,7 @@ class FedNova(Optimizer):
         The Nesterov version is analogously modified.
     """
 
-    def __init__(self, params, ratio, gmf, mu = 0, lr=required, momentum=0, dampening=0,
+    def __init__(self, params, ratio, gmf, mu=0, lr=required, momentum=0, dampening=0,
                  weight_decay=0, nesterov=False, variance=0):
         
         self.gmf = gmf
