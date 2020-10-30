@@ -27,6 +27,9 @@ from fedml_api.data_preprocessing.cinic10.data_loader import load_partition_data
 from fedml_api.model.cv.mobilenet import mobilenet
 from fedml_api.model.cv.resnet import resnet56
 
+# for loading poisoned dataset
+from fedml_api.data_preprocessing.edge_case_examples.data_loader import load_poisoned_dataset
+
 
 def add_args(parser):
     """
@@ -64,6 +67,20 @@ def add_args(parser):
     parser.add_argument('--client_num_per_round', type=int, default=4, metavar='NN',
                         help='number of workers')
 
+    #parser.add_argument('--attack_method', type=str, default="blackbox",
+    #                    help='describe the attack type: blackbox|pgd|graybox|no-attack|')
+
+
+    parser.add_argument('--poison_type', type=str, default='southwest',
+                        help='specify source of data poisoning: |ardis|(for EMNIST), |southwest|howto|(for CIFAR-10)')
+
+    # TODO(hwang): we will add PGD attack soon, stay tuned!
+    #parser.add_argument('--adv_lr', type=float, default=0.02,
+    #                   help='learning rate for adv in PGD setting')
+
+    parser.add_argument('--attack_freq', type=int, default=10,
+                        help='a single adversary per X federated learning rounds e.g. 10 means there will be an attacker in each 10 FL rounds.')
+
     parser.add_argument('--batch_size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
 
@@ -97,6 +114,11 @@ def add_args(parser):
 
 
 def load_data(args, dataset_name):
+    # handle the poisoned data loader
+    #  load poisoned dataset
+    poisoned_train_loader, targetted_task_test_loader, num_dps_poisoned_dataset = load_poisoned_dataset(args=args)
+    
+    # handle the normal data partition
     if dataset_name == "mnist":
         logging.info("load_data. dataset_name = %s" % dataset_name)
         client_num, train_data_num, test_data_num, train_data_global, test_data_global, \
@@ -130,7 +152,8 @@ def load_data(args, dataset_name):
 
     dataset = [train_data_num, test_data_num, train_data_global, test_data_global,
                train_data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num]
-    return dataset
+
+    return dataset, poisoned_train_loader, targetted_task_test_loader, num_dps_poisoned_dataset
 
 
 def create_model(args, model_name, output_dim):
@@ -218,7 +241,7 @@ if __name__ == "__main__":
     device = init_training_device(process_id, worker_number-1, args.gpu_num_per_server)
 
     # load data
-    dataset = load_data(args, args.dataset)
+    dataset, poisoned_train_loader, targetted_task_test_loader, num_dps_poisoned_dataset = load_data(args, args.dataset)
     [train_data_num, test_data_num, train_data_global, test_data_global,
      train_data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num] = dataset
 
@@ -230,4 +253,5 @@ if __name__ == "__main__":
     # start "robust federated averaging (FedAvg)"
     FedML_FedAvgRobust_distributed(process_id, worker_number, device, comm,
                  model, train_data_num, train_data_global, test_data_global,
-                 train_data_local_num_dict, train_data_local_dict, test_data_local_dict, args)
+                 train_data_local_num_dict, train_data_local_dict, test_data_local_dict,
+                 poisoned_train_loader, targetted_task_test_loader, num_dps_poisoned_dataset, args)

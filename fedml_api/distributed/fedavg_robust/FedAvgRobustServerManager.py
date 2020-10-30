@@ -41,6 +41,9 @@ class FedAvgRobustServerManager(ServerManager):
             global_model_params = self.aggregator.aggregate()
             self.aggregator.test_on_all_clients(self.round_idx)
 
+            # measure the target task accuracy
+            self.aggregator.test_target_accuracy(self.round_idx)
+
             # start the next round
             self.round_idx += 1
             if self.round_idx == self.round_num:

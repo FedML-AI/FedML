@@ -8,13 +8,24 @@ from fedml_api.distributed.fedavg.utils import transform_tensor_to_list
 
 class FedAvgRobustTrainer(object):
     def __init__(self, client_index, train_data_local_dict, train_data_local_num_dict, train_data_num, device, model,
+                 poisoned_train_loader, num_dps_poisoned_dataset,
                  args):
+        # TODO(@hwang595): double check if this makes sense with Chaoyang
+        # here we always assume the client with `client_index=1` as the attacker
         self.client_index = client_index
         self.train_data_local_dict = train_data_local_dict
         self.train_data_local_num_dict = train_data_local_num_dict
         self.all_train_data_num = train_data_num
-        self.train_local = self.train_data_local_dict[client_index]
-        self.local_sample_number = self.train_data_local_num_dict[client_index]
+
+        self.poisoned_train_loader = poisoned_train_loader
+        self.num_dps_poisoned_dataset = num_dps_poisoned_dataset
+
+        if self.client_index == 1:
+            self.train_local = self.poisoned_train_loader
+            self.local_sample_number = self.num_dps_poisoned_dataset        
+        else:
+            self.train_local = self.train_data_local_dict[client_index]
+            self.local_sample_number = self.train_data_local_num_dict[client_index]
 
         self.device = device
         self.args = args
@@ -22,6 +33,8 @@ class FedAvgRobustTrainer(object):
         # logging.info(self.model)
         self.model.to(self.device)
         self.criterion = nn.CrossEntropyLoss().to(self.device)
+
+        # TODO(hwang): since we only added the black-box attack now, we assume that the attacker uses the same hyper-params with the honest clients
         if self.args.client_optimizer == "sgd":
             self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.args.lr)
         else:
@@ -35,8 +48,12 @@ class FedAvgRobustTrainer(object):
 
     def update_dataset(self, client_index):
         self.client_index = client_index
-        self.train_local = self.train_data_local_dict[client_index]
-        self.local_sample_number = self.train_data_local_num_dict[client_index]
+        if self.client_index == 1: # TODO(@hwang595): double check if this makes sense with Chaoyang, we make it the attacker
+            self.train_local = self.poisoned_train_loader
+            self.local_sample_number = self.num_dps_poisoned_dataset
+        else:
+            self.train_local = self.train_data_local_dict[client_index]
+            self.local_sample_number = self.train_data_local_num_dict[client_index]            
 
     def train(self):
         self.model.to(self.device)
