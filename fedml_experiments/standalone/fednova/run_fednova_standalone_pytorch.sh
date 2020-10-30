@@ -36,7 +36,7 @@ WD=$17
 
 NESTEROV=$18
 
-CI==$19
+CI=$19
 
 python3 ./main_fednova.py \
 --gpu $GPU \
