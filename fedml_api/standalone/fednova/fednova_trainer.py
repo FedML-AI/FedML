@@ -19,7 +19,7 @@ class FedNovaTrainer(object):
         self.train_data_num_in_total = train_data_num
         self.test_data_num_in_total = test_data_num
 
-        self.model_global = model
+        self.model_global = model.to(device)
         self.model_global.train()
 
         self.client_list = []
@@ -51,7 +51,7 @@ class FedNovaTrainer(object):
             logging.info("################Communication round : {}".format(round_idx))
 
             self.model_global.train()
-            init_params = copy.deepcopy(self.model_global.cpu().state_dict())
+            init_params = copy.deepcopy(self.model_global.state_dict())
             loss_locals, norm_grads, tau_effs = [], [], []
             self.global_momentum_buffer = dict()
             """
@@ -71,8 +71,9 @@ class FedNovaTrainer(object):
                                             self.train_data_local_num_dict[client_idx])
 
                 # train on new dataset
-                loss, grad, t_eff = client.train(net=copy.deepcopy(self.model_global).to(self.device), ratio=self.train_data_local_num_dict[client_idx]/round_sample_num)
-                # w_locals.append((client.get_sample_number(), copy.deepcopy(w)))
+                loss, grad, t_eff = client.train(
+                    net=copy.deepcopy(self.model_global).to(self.device), 
+                    ratio=torch.FloatTensor([self.train_data_local_num_dict[client_idx]/round_sample_num]).to(self.device))
                 loss_locals.append(copy.deepcopy(loss))
                 norm_grads.append(copy.deepcopy(grad))
                 tau_effs.append(t_eff)
@@ -118,6 +119,7 @@ class FedNovaTrainer(object):
                 params[k].sub_(self.args.lr, buf)
             else:
                 params[k].sub_(cum_grad[k])
+
         return params
 
 

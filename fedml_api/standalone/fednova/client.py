@@ -70,7 +70,7 @@ class Client:
     def train(self, net, ratio):
         net.train()
         # train and update
-        init_params = copy.deepcopy(net.cpu().state_dict())
+        init_params = copy.deepcopy(net.state_dict())
         optimizer = FedNova(net.parameters(), 
                             lr=self.args.lr, 
                             gmf=self.args.gmf, 
@@ -86,6 +86,7 @@ class Client:
             batch_loss = []
             for batch_idx, (x, labels) in enumerate(self.local_training_data):
                 x, labels = x.to(self.device), labels.to(self.device)
+                net = net.to(self.device)
                 net.zero_grad()
                 log_probs = net(x)
                 loss = self.criterion(log_probs, labels)
@@ -102,7 +103,7 @@ class Client:
             epoch_loss.append(sum(batch_loss) / len(batch_loss))
             # logging.info('Client Index = {}\tEpoch: {}\tLoss: {:.6f}'.format(
             #     self.client_idx, epoch, sum(epoch_loss) / len(epoch_loss)))
-        norm_grad = self.get_local_norm_grad(optimizer, net.cpu().state_dict(), init_params)
+        norm_grad = self.get_local_norm_grad(optimizer, net.state_dict(), init_params)
         tau_eff = self.get_local_tau_eff(optimizer)
         # self.reset_fednova_optimizer(optimizer)
         return sum(epoch_loss) / len(epoch_loss), norm_grad, tau_eff
