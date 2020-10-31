@@ -1,12 +1,4 @@
-import collections
-import logging
-import math
-import sys
-import copy
-
 import torch
-import torch.distributed as dist
-import functools
 
 """
 FedNova Optimizer comm_helper implementation cited from https://github.com/JYWa/FedNova/tree/master

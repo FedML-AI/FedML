@@ -1,9 +1,7 @@
 import torch
 import torch.distributed as dist
 from torch.optim.optimizer import Optimizer, required
-from fedml_api.standalone.fednova.comm_helpers import communicate, flatten_tensors, unflatten_tensors
-import threading
-import numpy as np
+from fedml_api.standalone.fednova.comm_helpers import communicate
 
 """
 FedNova Optimizer implementation cited from https://github.com/JYWa/FedNova/tree/master
