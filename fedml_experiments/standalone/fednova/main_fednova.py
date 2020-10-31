@@ -5,6 +5,7 @@ import sys
 
 import numpy as np
 import torch
+import torchvision.models as models
 import wandb
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
@@ -18,16 +19,16 @@ from fedml_api.data_preprocessing.shakespeare.data_loader import load_partition_
 from fedml_api.data_preprocessing.fed_shakespeare.data_loader import load_partition_data_federated_shakespeare
 from fedml_api.data_preprocessing.stackoverflow_lr.data_loader import load_partition_data_federated_stackoverflow_lr
 from fedml_api.data_preprocessing.stackoverflow_nwp.data_loader import load_partition_data_federated_stackoverflow_nwp
+from fedml_api.data_preprocessing.MNIST.data_loader import load_partition_data_mnist
+from fedml_api.data_preprocessing.FederatedEMNIST.data_loader import load_partition_data_federated_emnist
 
 from fedml_api.model.cv.mobilenet import mobilenet
+from fedml_api.model.cv.resnet_gn import resnet18
 from fedml_api.model.cv.resnet import resnet56
 from fedml_api.model.cv.cnn import CNN_DropOut
-from fedml_api.data_preprocessing.FederatedEMNIST.data_loader import load_partition_data_federated_emnist
 from fedml_api.model.nlp.rnn import RNN_OriginalFedAvg, RNN_StackOverFlow
 
-from fedml_api.data_preprocessing.MNIST.data_loader import load_partition_data_mnist
 from fedml_api.model.linear.lr import LogisticRegression
-from fedml_api.model.cv.resnet_gn import resnet18
 
 from fedml_api.standalone.fednova.fednova_trainer import FedNovaTrainer
 
@@ -208,6 +209,9 @@ def create_model(args, model_name, output_dim):
     elif model_name == "cnn" and args.dataset == "femnist":
         logging.info("CNN + FederatedEMNIST")
         model = CNN_DropOut(False)
+    elif model_name == "vgg" and args.dataset == "cifar10":
+        logging.info("VGG11 + cifar10")
+        model = models.vgg11()
     elif model_name == "resnet18_gn" and args.dataset == "fed_cifar100":
         logging.info("ResNet18_GN + Federated_CIFAR100")
         model = resnet18()
