@@ -85,8 +85,7 @@ def add_args(parser):
 
     parser.add_argument('--ci', type=int, default=0,
                         help='CI')
-    args = parser.parse_args()
-    return args
+    return parser
 
 
 def load_data(args, dataset_name):
@@ -226,7 +225,8 @@ if __name__ == "__main__":
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
 
-    args = add_args(argparse.ArgumentParser(description='FedAvg-standalone'))
+    parser = add_args(argparse.ArgumentParser(description='FedAvg-standalone'))
+    args = parser.parse_args()
     logger.info(args)
     device = torch.device("cuda:" + str(args.gpu) if torch.cuda.is_available() else "cpu")
     logger.info(device)
