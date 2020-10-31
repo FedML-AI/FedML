@@ -6,7 +6,7 @@ from torch import nn
 
 class Client:
 
-    def __init__(self, client_idx, local_training_data, local_test_data, local_sample_number, args, device):
+    def __init__(self, client_idx, local_training_data, local_test_data, local_sample_number, args, device, model):
         self.client_idx = client_idx
         self.local_training_data = local_training_data
         self.local_test_data = local_test_data
@@ -15,6 +15,7 @@ class Client:
 
         self.args = args
         self.device = device
+        self.model = model
 
         '''
         stackoverflow_lr is the task of multi-label classification
@@ -36,13 +37,15 @@ class Client:
     def get_sample_number(self):
         return self.local_sample_number
 
-    def train(self, net):
-        net.train()
+    def train(self, w_global):
+        self.model.load_state_dict(w_global)
+        self.model.to(self.device)
+
         # train and update
         if self.args.client_optimizer == "sgd":
-            optimizer = torch.optim.SGD(net.parameters(), lr=self.args.lr)
+            optimizer = torch.optim.SGD(self.model.parameters(), lr=self.args.lr)
         else:
-            optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, net.parameters()), lr=self.args.lr,
+            optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=self.args.lr,
                                               weight_decay=self.args.wd, amsgrad=True)
 
         epoch_loss = []
@@ -52,13 +55,13 @@ class Client:
                 x, labels = x.to(self.device), labels.to(self.device)
                 # logging.info("x.size = " + str(x.size()))
                 # logging.info("labels.size = " + str(labels.size()))
-                net.zero_grad()
-                log_probs = net(x)
+                self.model.zero_grad()
+                log_probs = self.model(x)
                 loss = self.criterion(log_probs, labels)
                 loss.backward()
 
                 # to avoid nan loss
-                # torch.nn.utils.clip_grad_norm_(net.parameters(), 0.5)
+                # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 0.5)
 
                 optimizer.step()
                 # logging.info('Update Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
@@ -68,7 +71,7 @@ class Client:
             epoch_loss.append(sum(batch_loss) / len(batch_loss))
             # logging.info('Client Index = {}\tEpoch: {}\tLoss: {:.6f}'.format(
             #     self.client_idx, epoch, sum(epoch_loss) / len(epoch_loss)))
-        return net.cpu().state_dict(), sum(epoch_loss) / len(epoch_loss)
+        return self.model.cpu().state_dict(), sum(epoch_loss) / len(epoch_loss)
 
     def local_test(self, model_global, b_use_test_dataset=False):
         model_global.eval()

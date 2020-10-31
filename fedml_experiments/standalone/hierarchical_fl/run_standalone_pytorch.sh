@@ -16,36 +16,33 @@ MODEL=$7
 
 DISTRIBUTION=$8
 
-GLOBAL_COMM_ROUND=$9
+LR=$9
 
-GROUP_COMM_ROUND=$10
+OPT=$10
 
-EPOCH=$11
+GROUP_METHOD=$11
 
-LR=$12
+GROUP_NUM=$12
 
-OPT=$13
+GLOBAL_COMM_ROUND=$13
 
-GROUP_METHOD=$14
+GROUP_COMM_ROUND=$14
 
-GROUP_NUM=$15
-
-CI=$16
+EPOCH=$15
 
 python3 ./main.py \
 --gpu $GPU \
+--client_num_in_total $CLIENT_NUM \
+--client_num_per_round $WORKER_NUM \
+--batch_size $BATCH_SIZE \
 --dataset $DATASET \
 --data_dir $DATA_PATH \
 --model $MODEL \
 --partition_method $DISTRIBUTION  \
---client_num_in_total $CLIENT_NUM \
---client_num_per_round $WORKER_NUM \
---global_comm_round $GLOBAL_COMM_ROUND \
---group_comm_round $GROUP_COMM_ROUND \
---epochs $EPOCH \
---batch_size $BATCH_SIZE \
---client_optimizer $OPT \
 --lr $LR \
+--client_optimizer $OPT \
 --group_method $GROUP_METHOD \
 --group_num $GROUP_NUM \
---ci $CI
+--global_comm_round $GLOBAL_COMM_ROUND \
+--group_comm_round $GROUP_COMM_ROUND \
+--epochs $EPOCH
