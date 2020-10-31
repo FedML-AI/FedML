@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import random
 import socket
 import sys
 
@@ -254,8 +255,10 @@ if __name__ == "__main__":
     # Set the random seed. The np.random seed determines the dataset partition.
     # The torch_manual_seed determines the initial weight.
     # We fix these two, so that we can reproduce the result.
+    random.seed(0)
     np.random.seed(0)
-    torch.manual_seed(10)
+    torch.manual_seed(0)
+    torch.cuda.manual_seed_all(0)
 
     # GPU arrangement: Please customize this function according your own topology.
     # The GPU server list is configured at "mpi_host_file".
