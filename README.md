@@ -18,7 +18,7 @@
 
 ## News
 <b>2020-11-01</b>: Besides the Android devices, do you want to run federated learning on IoT devices? Our architecture design can smoothly transplant the distributed computing code to the IoT platform. We will use Raspberry to demonstrate our idea. Please stay tuned!
-![architecture](./docs/image/raspberry_pi.png)
+<img src=https://github.com/FedML-AI/FedML/blob/master/docs/image/raspberry_pi.png width="20%">
 
 <b>2020-10-28</b>: We released more advanced federated optimization algorithms, more than just FedAvg! http://doc.fedml.ai/#/algorithm-reference-implementation
 
