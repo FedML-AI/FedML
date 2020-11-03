@@ -11,9 +11,110 @@ from fedml_api.distributed.fedavg.utils import transform_list_to_tensor
 from fedml_core.robustness.robust_aggregation import RobustAggregator, is_weight_param
 
 
+def test(model, device, test_loader, criterion, mode="raw-task", dataset="cifar10", poison_type="fashion"):
+    class_correct = list(0. for i in range(10))
+    class_total = list(0. for i in range(10))
+    
+    if dataset in ("mnist", "emnist"):
+        target_class = 7
+        if mode == "raw-task":
+            classes = [str(i) for i in range(10)]
+        elif mode == "targetted-task":
+            if poison_type == 'ardis':
+                classes = [str(i) for i in range(10)]
+            else: 
+                classes = ["T-shirt/top", 
+                            "Trouser",
+                            "Pullover",
+                            "Dress",
+                            "Coat",
+                            "Sandal",
+                            "Shirt",
+                            "Sneaker",
+                            "Bag",
+                            "Ankle boot"]
+    elif dataset == "cifar10":
+        classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+        # target_class = 2 for greencar, 9 for southwest
+        if poison_type in ("howto", "greencar-neo"):
+            target_class = 2
+        else:
+            target_class = 9
+
+    model.eval()
+    test_loss = 0
+    correct = 0
+    backdoor_correct = 0
+    backdoor_tot = 0
+    final_acc = 0
+    task_acc = None
+
+    with torch.no_grad():
+        for data, target in test_loader:
+            data, target = data.to(device), target.to(device)
+            output = model(data)
+            _, predicted = torch.max(output, 1)
+            c = (predicted == target).squeeze()
+
+            #test_loss += F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
+            test_loss += criterion(output, target).item()
+            pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
+            correct += pred.eq(target.view_as(pred)).sum().item()
+            # check backdoor accuracy
+            if poison_type == 'ardis':
+                backdoor_index = torch.where(target == target_class)
+                target_backdoor = torch.ones_like(target[backdoor_index])
+                predicted_backdoor = predicted[backdoor_index]
+                backdoor_correct += (predicted_backdoor == target_backdoor).sum().item()
+                backdoor_tot = backdoor_index[0].shape[0]
+                # logger.info("Target: {}".format(target_backdoor))
+                # logger.info("Predicted: {}".format(predicted_backdoor))
+
+            #for image_index in range(test_batch_size):
+            for image_index in range(len(target)):
+                label = target[image_index]
+                class_correct[label] += c[image_index].item()
+                class_total[label] += 1
+    test_loss /= len(test_loader.dataset)
+
+    if mode == "raw-task":
+        for i in range(10):
+            logger.info('Accuracy of %5s : %.2f %%' % (
+                classes[i], 100 * class_correct[i] / class_total[i]))
+
+            if i == target_class:
+                task_acc = 100 * class_correct[i] / class_total[i]
+
+        logger.info('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
+            test_loss, correct, len(test_loader.dataset),
+            100. * correct / len(test_loader.dataset)))
+        final_acc = 100. * correct / len(test_loader.dataset)
+
+    elif mode == "targetted-task":
+
+        if dataset in ("mnist", "emnist"):
+            for i in range(10):
+                logger.info('Accuracy of %5s : %.2f %%' % (
+                    classes[i], 100 * class_correct[i] / class_total[i]))
+            if poison_type == 'ardis':
+                # ensure 7 is being classified as 1
+                logger.info('Backdoor Accuracy of %.2f : %.2f %%' % (
+                     target_class, 100 * backdoor_correct / backdoor_tot))
+                final_acc = 100 * backdoor_correct / backdoor_tot
+            else:
+                # trouser acc
+                final_acc = 100 * class_correct[1] / class_total[1]
+        
+        elif dataset == "cifar10":
+            logger.info('#### Targetted Accuracy of %5s : %.2f %%' % (classes[target_class], 100 * class_correct[target_class] / class_total[target_class]))
+            final_acc = 100 * class_correct[target_class] / class_total[target_class]
+    return final_acc, task_acc
+
+
 class FedAvgRobustAggregator(object):
     def __init__(self, train_global, test_global, all_train_data_num,
-                 train_data_local_dict, test_data_local_dict, train_data_local_num_dict, worker_num, device, model, args):
+                 train_data_local_dict, test_data_local_dict, train_data_local_num_dict, worker_num, device, model, 
+                 targetted_task_test_loader, num_dps_poisoned_dataset, args):
         self.train_global = train_global
         self.test_global = test_global
         self.all_train_data_num = all_train_data_num
@@ -30,6 +131,11 @@ class FedAvgRobustAggregator(object):
         self.flag_client_model_uploaded_dict = dict()
 
         self.robust_aggregator = RobustAggregator(args)
+
+        self.targetted_task_test_loader = targetted_task_test_loader
+        self.num_dps_poisoned_dataset = num_dps_poisoned_dataset
+
+        self.adversary_fl_rounds = [i for i in range(1, args.comm_round+1) if (i-1)%args.attack_freq == 0]
 
         for idx in range(self.worker_num):
             self.flag_client_model_uploaded_dict[idx] = False
@@ -115,7 +221,10 @@ class FedAvgRobustAggregator(object):
     def client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
         num_clients = min(client_num_per_round, client_num_in_total)
         np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round
-        client_indexes = np.random.choice(range(client_num_in_total), num_clients, replace=False)
+        if round_idx not in adversary_fl_rounds:
+            client_indexes = np.random.choice(range(client_num_in_total), num_clients, replace=False)
+        else:
+            client_indexes = np.array([1] + list(np.random.choice(range(client_num_in_total), num_clients, replace=False))) # we gaurantee that the attacker will participate in a certain frequency
         logging.info("client_indexes = %s" % str(client_indexes))
         return client_indexes
 
@@ -157,6 +266,11 @@ class FedAvgRobustAggregator(object):
             wandb.log({"Test/Loss": test_loss, "round": round_idx})
             stats = {'test_acc': test_acc, 'test_loss': test_loss}
             logging.info(stats)
+
+    def test_target_accuracy(self, round_idx):
+        test(self.model, self.device, self.targetted_task_test_loader, 
+            criterion=nn.CrossEntropyLoss().to(self.device), 
+            mode="targetted-task", dataset=self.args.dataset, poison_type=self.args.poison_type)        
 
     def _infer(self, test_data):
         self.model.eval()
