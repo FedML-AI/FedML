@@ -15,6 +15,9 @@ DATA_DIR=$12
 DEFENSE_TYPE=$11
 NORM_BOUND=$12
 STDDEV=$13
+POISON_TYPE=$14
+ATTACK_FREQ=$15
+
 
 PROCESS_NUM=`expr $WORKER_NUM + 1`
 echo $PROCESS_NUM
@@ -36,4 +39,6 @@ mpirun -np $PROCESS_NUM -hostfile ./mpi_host_file python3 ./main_fedavg_robust.p
   --lr $LR \
   --defense_type $DEFENSE_TYPE \
   --norm_bound $NORM_BOUND \
-  --stddev $STDDEV
+  --stddev $STDDEV \
+  --poison_type $POISON_TYPE \
+  --attack_freq $ATTACK_FREQ
