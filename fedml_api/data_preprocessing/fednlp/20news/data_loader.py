@@ -1,39 +1,49 @@
 import os
 import math
-from spacy.tokenizer import Tokenizer
-from spacy.lang.en import English
+import random
+import sys
+import time
+
+
+sys.path.append('..')
+
+from base.data_loader import BaseDataLoader
+from base.globals import *
+from base.partition import *
 
 # if download with script in data folder 
 # data_dir shoule be '../../../../data/fednlp/text_classification/20Newsgroups/20news-18828'
 
-class Dataloader:
-    def __init__(self,data_dir,batch_size=1):
-        self.data_dir = data_dir
-        self.batch_size  = batch_size
-        self.folders = []
-        self.files = []
-        self.X = []
-        self.sequence_length = []
-        self.labels = []
-        self.vocab = dict()
-        self.pad_token = "<PAD>"
+class DataLoader(BaseDataLoader):
+    def __init__(self, data_path, **kwargs):
+        super().__init__(data_path, **kwargs)
+        allowed_keys = {"source_padding", "target_padding", "source_max_sequence_length",
+                        "target_max_sequence_length", "vocab_path", "initialize"}
+        self.__dict__.update((key, False) for key in allowed_keys)
+        self.__dict__.update((key, value) for key, value in kwargs.items() if key in allowed_keys)
+        self.source_sequence_length = []
+        self.target_sequence_length = []
 
-    def padding_data(self, max_sequence_length):
-        for i, single_x in enumerate(self.X):
-            if len(single_x) <= max_sequence_length:
-                for _ in range(len(single_x), max_sequence_length):
-                    single_x.append(self.pad_token)
-            else:
-                single_x = single_x[:max_sequence_length]
-    
-    def gather_files(self):
-        self.folders = [f for f in os.listdir(self.data_dir)]
-        print( os.listdir(self.data_dir))
-        self.files = []
-        print(self.folders)
-        for folder_name in self.folders:
-            folder_path = os.path.join(self.data_dir, folder_name)
-            self.files.append([os.path.join(folder_path,f) for f in os.listdir(folder_path)])
+
+        if self.tokenized:
+            self.vocab = dict()
+            self.label_vocab = dict()
+            if self.initialize:
+                self.vocab[SOS_TOKEN] = len(self.vocab)
+                self.vocab[EOS_TOKEN] = len(self.vocab)            
+        if self.source_padding or self.target_padding:
+            self.vocab[PAD_TOKEN] = len(self.vocab)
+            self.label_vocab[PAD_TOKEN] = len(self.vocab)
+        
+    def tokenize(self,document):
+        # Create a blank Tokenizer with just the English vocab
+        tokens = [str(token) for token in spacy_tokenizer.en_tokenizer(document)]
+        for i in list(tokens):
+            if i not in self.vocab:
+                self.vocab[i] = len(self.vocab)
+        return tokens
+
+
 
     #remove header
     def remove_header(self,lines):
@@ -44,48 +54,68 @@ class Dataloader:
         new_lines = lines[start:]
         return new_lines
     
-    def tokenize(self,document):
-        nlp = English()
-        # Create a blank Tokenizer with just the English vocab
-        tokenizer = Tokenizer(nlp.vocab)
-        tokens = tokenizer(document)
-        for i in list(tokens):
-            if i not in self.vocab:
-                self.vocab[i] = len(self.vocab)
 
     #parse all the data set 
-    def process_data(self,file_path):
+    def process_data(self,files):
         document = ""
+        file_path = files[0]
         with open(file_path,"r",errors = 'ignore') as f:
             content = f.readlines()
             content = self.remove_header(content)
             for i in content:
                 temp = i.lstrip("> ").replace("/\\","").replace("*","").replace("^","")
-                document = document + temp
-            self.tokenize(document) 
-        sentence_token = document.split("  ")
-        sentence_token = [i for i in sentence_token if len(i) > 0]
-        seq_length = [len(i) for i in sentence_token]
-        self.sequence_length.extend(seq_length)
-        return sentence_token, max(seq_length)
+                document = document + temp   
+            return files[1], document
 
     def data_loader(self):
-        max_sequence_length = -math.inf
+        max_source_length = -1
+        max_target_length = -1
         document = []
-        self.gather_files()
+        result = dict()
 
-        for i in range(len(self.files)):
-            for j in self.files[i]:
-                self.labels.append(self.folders[i])
-                document, max_seq_doc =  self.process_data(j)
-                self.X.extend(document)
-                max_sequence_length = max(max_sequence_length,max_seq_doc)
-        
-        self.vocab[self.pad_token] = len(self.vocab)
-        self.padding_data(max_sequence_length)
+        for j in self.data_path:
+            datas = self.process_data(j)
+            for label, document in datas:
+                tokens = self.tokenize(document) 
+                labels = label.split('.')
+                for i in labels:
+                    if i not in self.label_vocab:
+                        self.label_vocab[i] = len(self.label_vocab)
+                self.Y.append([label])
+                self.X.append(tokens)
+                self.source_sequence_length.append(len(tokens))
+                max_source_length = max(len(tokens),max_source_length)
+                self.target_sequence_length.append(len(labels))
+                max_target_length = max(len(labels),max_target_length)
 
-                
+        self.padding_data(self.X, max_source_length,self.initialize)
+
+        self.padding_data(self.Y,max_target_length,self.initialize)
+
         
-        return self.X, self.labels, self.vocab, \
-            self.sequence_length, max_sequence_length
-    
+        
+        result['X'] = self.X
+        result['Y'] = self.Y
+        result['vocab'] = self.vocab
+        result['label_vocab'] = self.label_vocab
+        result['source_sequence_length'] = self.source_sequence_length
+        result['target_sequence_length'] = self.target_sequence_length
+        result['max_source_length'] = max_source_length
+
+        return result
+
+if __name__ == "__main__":
+    file_path = '../../../../data/fednlp/text_classification/20Newsgroups/20news-18828'
+    folders = [f for f in os.listdir(file_path)]
+    files = []
+    for folder_name in folders:
+        folder_path = os.path.join(file_path, folder_name)
+        files.extend([(os.path.join(folder_path,f), folder_name) for f in os.listdir(folder_path)])
+    random.seed(3)
+    random.shuffle(files)
+    train_files_path = files[0:int(len(files)*0.8)]
+    test_files_path = files[int(len(files)*0.8):]
+    data_loader = DataLoader(train_files_path, tokenized=True, source_padding=True, target_padding=True)
+    train_data_loader = data_loader.data_loader()
+    #print(train_data_loader['Y'])
+    print("done")
