@@ -49,5 +49,3 @@ python fedml_iot_client --client_uuid '3'
 ```
 
 Note please change IP and other configuration according to your local environment.
-
-# The training 
