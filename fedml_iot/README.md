@@ -46,8 +46,8 @@ $ python
 >>> import cv2
 ```
 
-### Install FedML + PyTorch 1.4 on Raspberry Pi 4
-We are still testing the script on NVIDIA Jetson Nano, please stay turned.
+### Install FedML + PyTorch 1.x on NVIDIA Jetson Nano
+Please check here: `fedml_iot/pytorch-pkg-on-jetson-nano/README.md`
 
 # Log Tracking
 Our log tracking platform is wandb.com. Please register your own ID and login as follows.
