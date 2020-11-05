@@ -1,4 +1,4 @@
-# FedML on IoT Devices (Raspberry Pi 4)
+# FedML-IoT: Federated Learning on IoT Devices (Raspberry Pi 4)
 <img src=https://github.com/FedML-AI/FedML/blob/master/docs/image/raspberry_pi.png width="35%">
 
 Our FedML architecture design can smoothly transplant the distributed computing code to the IoT platform. Here we use Raspberry PI to demonstrate our idea. 
