@@ -70,10 +70,21 @@ You can customize `app.py` as your need.
 Here we assume you have FOUR IoT devices. Then you can run script in each one as follows.
 If your RPI device has more memory, you can run multiple `fedavg_rpi_client.py` processes in a single device.
 ```
+# for Raspberry Pi
 cd ./raspberry_pi/fedavg
 python fedavg_rpi_client.py --server_ip http://127.0.0.1:5000 --client_uuid '0'
 python fedavg_rpi_client.py --server_ip http://127.0.0.1:5000 --client_uuid '1'
 python fedavg_rpi_client.py --server_ip http://127.0.0.1:5000 --client_uuid '2'
 python fedavg_rpi_client.py --server_ip http://127.0.0.1:5000 --client_uuid '3'
 ```
+
+```
+# for Raspberry Pi
+cd ./nvidia-jetson-nano/fedavg
+python fedavg_jetson_nano_client.py --server_ip http://127.0.0.1:5000 --client_uuid '0'
+python fedavg_jetson_nano_client.py --server_ip http://127.0.0.1:5000 --client_uuid '1'
+python fedavg_jetson_nano_client.py --server_ip http://127.0.0.1:5000 --client_uuid '2'
+python fedavg_jetson_nano_client.py --server_ip http://127.0.0.1:5000 --client_uuid '3'
+```
+
 Note please change IP and other configuration according to your local environment.
