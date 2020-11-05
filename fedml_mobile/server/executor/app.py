@@ -12,6 +12,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 
 from fedml_api.distributed.fedavg.FedAVGAggregator import FedAVGAggregator
 from fedml_api.distributed.fedavg.FedAvgServerManager import FedAVGServerManager
+from fedml_mobile.server.executor.log import __log
 
 from fedml_api.data_preprocessing.MNIST.data_loader import load_partition_data_mnist
 from fedml_api.data_preprocessing.cifar10.data_loader import load_partition_data_cifar10
@@ -101,7 +102,7 @@ device_id_to_client_id_dict = dict()
 @app.route('/api/register', methods=['POST'])
 def register_device():
     global device_id_to_client_id_dict
-    __log.info("register_device()")
+    # __log.info("register_device()")
     device_id = request.args['device_id']
     registered_client_num = len(device_id_to_client_id_dict)
     if device_id in device_id_to_client_id_dict:
