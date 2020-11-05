@@ -2,10 +2,9 @@
 import sys
 import logging
 import os
-from logging.handlers import TimedRotatingFileHandler
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
-
+from logging.handlers import TimedRotatingFileHandler
 from fedml_mobile.server.executor.conf import ENV
 
 LOG_FORMAT = "%(asctime)s %(levelname)s %(filename)s:%(lineno)s - %(message)s"
