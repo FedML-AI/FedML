@@ -1,6 +1,5 @@
 #!/bin/bash
 
-alias python='/usr/bin/python3.7'
 
 # Conda Installation
 wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-armv7l.sh
@@ -20,7 +19,8 @@ conda create -n fedml
 echo "source activate fedml"
 source activate fedml
 
-alias python='/home/pi/miniconda/envs/fedml/bin/python'
+alias python='/usr/bin/python3.7'
+alias pip=pip3
 
 # Install PyTorch 1.7: https://mathinf.com/pytorch/arm64/
 sudo apt install libopenblas-base libopenblas-dev libblas-dev m4 cmake cython python3-dev python3-yaml python3-setuptools python3-wheel python3-pillow python3-numpy
@@ -29,6 +29,9 @@ sudo pip3 install ./pytorch-pkg-on-rpi/torchvision-0.5.0a0+85b8fbf-cp37-cp37m-li
 cd /usr/local/lib/python3.7/dist-packages/torch
 sudo mv _C.cpython-37m-arm-linux-gnueabi.so _C.so
 sudo mv _dl.cpython-37m-arm-linux-gnueabi.so _dl.so
+
+# install again, to make sure pytorch related packages are installed
+sudo apt install libopenblas-base libopenblas-dev libblas-dev m4 cmake cython python3-dev python3-yaml python3-setuptools python3-wheel python3-pillow python3-numpy
 
 # Install Wandb
 pip3 install --upgrade wandb
@@ -41,9 +44,7 @@ conda install setproctitle
 conda install networkx
 pip3 install requests
 
-cd ./../fedml_mobile/server/executor
-pip install -r requirements.txt
-cd ./../../../fedml_iot
+pip3 install -r requirements.txt
 
 # install the dataset
 # 1. MNIST
