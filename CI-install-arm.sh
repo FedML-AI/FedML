@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -ex
 
-"""
+
 # install pyflakes to do code error checking
 echo "pip3 install pyflakes --cache-dir $HOME/.pip-cache"
 pip3 install pyflakes --cache-dir $HOME/.pip-cache
@@ -11,7 +11,12 @@ wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-armv7l.sh
 bash Miniconda3-latest-Linux-armv7l.sh -b -p $HOME/miniconda
 echo 'export PATH=$PATH:/home/pi/miniconda/bin' >> ~/.bashrc
 source ~/.bashrc
-"""
+
+conda install anaconda-client
+anaconda search -t conda blas
+anaconda search -t conda openblas
+conda config --add channels rpi
+
 hash -r
 conda config --set always_yes yes --set changeps1 no
 conda update -q conda
