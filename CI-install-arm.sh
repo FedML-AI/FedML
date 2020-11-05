@@ -17,19 +17,15 @@ anaconda search -t conda blas
 anaconda search -t conda openblas
 conda config --add channels rpi
 
-hash -r
-conda config --set always_yes yes --set changeps1 no
-conda update -q conda
-conda info -a
-
 echo "conda create -n fedml python=3.7.4"
 conda create -n fedml python=3.7.4
 
 echo "conda activate fedml"
 conda activate fedml
 
-# Install PyTorch (please visit pytorch.org to check your version according to your physical machines
-conda install pytorch torchvision cudatoolkit=10.2 -c pytorch
+# Install PyTorch 1.7: https://mathinf.com/pytorch/arm64/
+sudo apt-get install python3-numpy python3-wheel python3-setuptools python3-future python3-yaml python3-six python3-requests python3-pip python3-pillow
+sudo pip3 install torch*.whl torchvision*.whl
 
 # Install MPI
 conda install -c anaconda mpi4py
