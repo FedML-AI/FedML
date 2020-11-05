@@ -19,7 +19,7 @@ echo "source activate fedml"
 source activate fedml
 
 # Install PyTorch 1.7: https://mathinf.com/pytorch/arm64/
-sudo apt install libopenblas-dev libblas-dev m4 cmake cython python3-dev python3-yaml python3-setuptools python3-wheel python3-pillow python3-numpy
+sudo apt install libopenblas-dev libblas-dev m4 cmake cython python3-dev python3-yaml python3-setuptools python3-wheel python3-pillow python3-numpy libatlas-base-dev
 sudo pip3 install ./pytorch-on-rpi/torch-1.4.0a0+7f73f1d-cp37-cp37m-linux_armv7l.whl ./pytorch-on-rpi/torchvision-0.5.0a0+85b8fbf-cp37-cp37m-linux_armv7l
 
 # Install Wandb
