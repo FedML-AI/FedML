@@ -1,6 +1,7 @@
 # FedML on IoT Devices (Raspberry Pi 4)
-Our FedML architecture design can smoothly transplant the distributed computing code to the IoT platform. Here we use Raspberry PI to demonstrate our idea. 
 <img src=https://github.com/FedML-AI/FedML/blob/master/docs/image/raspberry_pi.png width="35%">
+
+Our FedML architecture design can smoothly transplant the distributed computing code to the IoT platform. Here we use Raspberry PI to demonstrate our idea. 
 
 You can buy RPI 4 devices here: https://www.raspberrypi.org/products/raspberry-pi-4-desktop-kit/?resellerType=home
 
