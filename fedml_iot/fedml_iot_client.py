@@ -27,15 +27,17 @@ from fedml_api.model.linear.lr import LogisticRegression
 from fedml_api.model.nlp.rnn import RNN_OriginalFedAvg
 
 def add_args(parser):
+    parser.add_argument('--server_ip', type=str, default="http://127.0.0.1:5000",
+                        help='IP address of the FedML server')
     parser.add_argument('--client_uuid', type=str, default="0",
                         help='number of workers in a distributed cluster')
     args = parser.parse_args()
     return args
 
 
-def register(uuid):
+def register(args, uuid):
     str_device_UUID = uuid
-    URL = "http://127.0.0.1:5000/api/register"
+    URL = args.server_ip + "/api/register"
 
     # defining a params dict for the parameters to be sent to the API
     PARAMS = {'device_id': str_device_UUID}
@@ -147,7 +149,7 @@ if __name__ == '__main__':
     main_args = add_args(parser)
     uuid = main_args.client_uuid
 
-    client_ID, args = register(uuid)
+    client_ID, args = register(main_args, uuid)
     logging.info("client_ID = " + str(client_ID))
     logging.info("dataset = " + str(args.dataset))
     logging.info("model = " + str(args.model))
