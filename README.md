@@ -17,14 +17,14 @@
 </p>
 
 ## News
-<b>2020-11-01</b>: Besides the Android devices, do you also want to run federated learning on <b>IoT devices</b>? Our architecture design can smoothly transplant the distributed computing code to the IoT platform. We will use Raspberry PI to demonstrate our idea. Please stay tuned! <br>
+<b>2020-11-05 (System)</b>: Besides the Android devices, do you also want to run federated learning on <b>IoT devices</b>? Our architecture design can smoothly transplant the distributed computing code to the IoT platform. We use Raspberry PI to demonstrate our idea. Please check it out here: https://github.com/FedML-AI/FedML/blob/master/fedml_iot/README.md <br>
 <img src=https://github.com/FedML-AI/FedML/blob/master/docs/image/raspberry_pi.png width="35%">
 
-<b>2020-10-28</b>: We released more advanced federated optimization algorithms, more than just FedAvg! http://doc.fedml.ai/#/algorithm-reference-implementation
+<b>2020-10-28 (Algorithms) </b>: We released more advanced federated optimization algorithms, more than just FedAvg! http://doc.fedml.ai/#/algorithm-reference-implementation
 
-<b>2020-10-26</b>: V2 of our white paper is released. Please check out here: https://arxiv.org/pdf/2007.13518.pdf
+<b>2020-10-26 (Publication) </b>: V2 of our white paper is released. Please check out here: https://arxiv.org/pdf/2007.13518.pdf
 
-<b>2020-10-07</b>: Datasets + Models ALL IN ONE!!! FedML supports comprehensive research-oriented FL datasets and models:
+<b>2020-10-07 (Model and Dataset) </b>: Datasets + Models ALL IN ONE!!! FedML supports comprehensive research-oriented FL datasets and models:
 
 - cross-device CV: Federated EMNIST + CNN (2 conv layers)
 - cross-device CV: CIFAR100 + ResNet18 (Group Normalization)
@@ -40,11 +40,11 @@ We will support more advanced models and datasets, please stay tuned!
 
 ---
 
-<b>2020-09-30</b>: We maintained a comprehensive publication list of Federated Learning here: https://github.com/chaoyanghe/Awesome-Federated-Learning
+<b>2020-09-30 (Publication)</b>: We maintained a comprehensive publication list of Federated Learning here: https://github.com/chaoyanghe/Awesome-Federated-Learning
 
 ---
 
-<b>2020-09-28</b>: Authors of FedML (https://fedml.ai) have 7 papers that got accepted to NeurIPS 2020. Big congratulations!!!
+<b>2020-09-28 (Publication)</b>: Authors of FedML (https://fedml.ai) have 7 papers that got accepted to NeurIPS 2020. Big congratulations!!!
 Here is the publication list: https://github.com/FedML-AI/FedML/blob/master/publications.md. Highlighted ones are related to large-scale distributed learning and federated learning.
 
 
