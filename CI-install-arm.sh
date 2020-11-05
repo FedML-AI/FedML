@@ -1,4 +1,6 @@
 #!/bin/bash
+# this script has been tested on Raspberry Pi 4: https://www.raspberrypi.org/products/raspberry-pi-4-desktop-kit/?resellerType=home
+
 # set -ex
 
 
@@ -15,20 +17,20 @@ source ~/.bashrc
 conda install anaconda-client
 anaconda search -t conda blas
 anaconda search -t conda openblas
+anaconda search -t conda python
 conda config --add channels rpi
 
-echo "conda create -n fedml python=3.7.4"
-conda create -n fedml python=3.7.4
+echo "conda create -n fedml"
+conda create -n fedml
 
-echo "conda activate fedml"
-conda activate fedml
+echo "source activate fedml"
+source activate fedml
 
 # Install PyTorch 1.7: https://mathinf.com/pytorch/arm64/
 sudo apt-get install python3-numpy python3-wheel python3-setuptools python3-future python3-yaml python3-six python3-requests python3-pip python3-pillow
+wget https://mathinf.com/pytorch/arm64/torch-1.7.0a0-cp37-cp37m-linux_aarch64.whl
+wget https://mathinf.com/pytorch/arm64/torchvision-0.8.0a0+45f960c-cp37-cp37m-linux_aarch64.whl
 sudo pip3 install torch*.whl torchvision*.whl
-
-# Install MPI
-conda install -c anaconda mpi4py
 
 # Install Wandb
 pip install --upgrade wandb
