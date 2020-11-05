@@ -2,15 +2,26 @@
 Our FedML architecture design can smoothly transplant the distributed computing code to the IoT platform. Here we use Raspberry PI to demonstrate our idea. 
 <img src=https://github.com/FedML-AI/FedML/blob/master/docs/image/raspberry_pi.png width="35%">
 
+You can buy RPI 4 devices here: https://www.raspberrypi.org/products/raspberry-pi-4-desktop-kit/?resellerType=home
 
-# Installation
+
+# Installation 
+### Install FedML + PyTorch 1.4 in Raspberry Pi 4
 Please follow the script `install-arm.sh`.
 
-This script has been tested on Raspberry Pi 4 (RPI 4). 
-You can buy RPI 4 devices here: https://www.raspberrypi.org/products/raspberry-pi-4-desktop-kit/?resellerType=home
+Note: This script has been tested on Raspberry Pi 4 (RPI 4). We welcome users to contribute more scripts for new IoT platforms. 
 
 We currently support PyTorch 1.4 for Raspberry Pi 4.
 If you need newer verion of PyTorch, please compile the wheel file using method here: https://nmilosev.svbtle.com/compling-arm-stuff-without-an-arm-board-build-pytorch-for-the-raspberry-pi
+
+To make sure your PyTorch + RPI environment is ready, please have a check as follows.
+```
+$ python
+
+>>> import torch
+>>> import torchvision
+>>> import cv2
+```
 
 # Log Tracking
 Our log tracking platform is wandb.com. Please register your own ID and login as follows.
