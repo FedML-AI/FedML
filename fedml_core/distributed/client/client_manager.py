@@ -1,8 +1,6 @@
 import logging
 from abc import abstractmethod
 
-from mpi4py import MPI
-
 from fedml_core.distributed.communication.message import Message
 from fedml_core.distributed.communication.mpi.com_manager import MpiCommunicationManager
 from fedml_core.distributed.communication.mqtt.mqtt_comm_manager import MqttCommManager
@@ -17,6 +15,7 @@ class ClientManager(Observer):
         self.rank = rank
         self.backend = backend
         if backend == "MPI":
+            from mpi4py import MPI
             self.com_manager = MpiCommunicationManager(comm, rank, size, node_type="client")
         elif backend == "MQTT":
             #HOST = "81.71.1.31"
