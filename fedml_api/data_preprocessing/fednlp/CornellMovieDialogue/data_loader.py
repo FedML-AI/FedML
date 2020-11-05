@@ -6,11 +6,9 @@ from base.globals import *
 from base.partition import *
 
 
-
-
 class DataLoader(BaseDataLoader):
-    def __init__(self, data_path, **kwargs):
-        super().__init__(data_path, **kwargs)
+    def __init__(self, data_path, partition, **kwargs):
+        super().__init__(data_path, partition, **kwargs)
         allowed_keys = {"source_padding", "target_padding", "history_padding", "source_max_sequence_length",
                         "target_max_sequence_length", "history_max_sequence_length", "vocab_path", "initialize"}
         self.__dict__.update((key, False) for key in allowed_keys)
@@ -18,7 +16,12 @@ class DataLoader(BaseDataLoader):
         self.history = []
         self.movie_conversation_file_name = "movie_conversations.txt"
         self.movie_line_file_name = "movie_lines.txt"
-        self.attributes = dict()
+
+        if callable(self.partition):
+            X, Y, _ = self.process_data(self.data_path)
+            self.attributes = self.partition(X, Y)
+        else:
+            self.attributes = self.process_attributes(self.data_path)
 
         if self.tokenized:
             self.source_sequence_length = []
@@ -36,9 +39,39 @@ class DataLoader(BaseDataLoader):
         tokens = [str(token) for token in spacy_tokenizer.en_tokenizer(document)]
         return tokens
 
-    def data_loader(self):
-        self.process_data(self.data_path)
+    def process_attributes(self, file_path):
+        attributes = dict()
+        attributes["inputs"] = []
+        movie_idx_dict = dict()
+        with open(os.path.join(file_path, self.movie_conversation_file_name), 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    temp = line.split("+++$+++")
+                    conversation_idx = temp[-1].strip()
+                    conversation_idx = eval(conversation_idx)
+                    if temp[2] not in movie_idx_dict:
+                        movie_idx_dict[temp[2]] = len(movie_idx_dict)
+                    for i in range(len(conversation_idx) - 1):
+                        attributes["inputs"].append(movie_idx_dict[temp[2]])
+        attributes["n_clients"] = len(movie_idx_dict)
 
+        return attributes
+
+    def tokenize_data(self, X, Y, history):
+        for i in range(len(X)):
+            X[i] = self.tokenize(X[i])
+            Y[i] = self.tokenize(Y[i])
+            history[i] = self.tokenize(history[i])
+            self.source_sequence_length.append(len(X[i]))
+            self.target_sequence_length.append(len(Y[i]))
+            self.history_sequence_length.append(len(history[i]))
+
+    def data_loader(self, client_idx=None):
+        X, Y, history = self.process_data(self.data_path, client_idx=client_idx)
+        if self.tokenized:
+            self.tokenize_data(X, Y, history)
+        self.X, self.Y, self.history = X, Y, history
         result = dict()
 
         if self.tokenized:
@@ -77,18 +110,21 @@ class DataLoader(BaseDataLoader):
         result["history"] = self.history
         return result
 
-    def process_data(self, file_path):
+    def process_data(self, file_path, client_idx=None):
         line_dict = {}
         with open(os.path.join(file_path, self.movie_line_file_name), "r", errors="ignore") as f:
             for line in f:
                 line = line.strip()
                 if line:
                     temp = line.split("+++$+++")
-                    line_dict[temp[0].strip()] = {"utterance": temp[-1].strip(), "character_id": temp[1]}
+                    line_dict[temp[0].strip()] = {"utterance": temp[-1].strip()}
 
         conversation = []
-        self.attributes["inputs"] = []
+        X = []
+        Y = []
+        history = []
 
+        cnt = 0
         with open(os.path.join(file_path, self.movie_conversation_file_name), 'r') as f:
             for line in f:
                 line = line.strip()
@@ -97,55 +133,114 @@ class DataLoader(BaseDataLoader):
                     conversation_idx = temp[-1].strip()
                     conversation_idx = eval(conversation_idx)
                     for i in range(len(conversation_idx) - 1):
-                        if self.tokenized:
-                            tokens = self.tokenize(line_dict[conversation_idx[i]]["utterance"])
-                            next_tokens = self.tokenize(line_dict[conversation_idx[i+1]]["utterance"])
-                            self.X.append(tokens)
-                            self.Y.append(next_tokens)
-                            self.history.append(conversation.copy())
-                            self.source_sequence_length.append(len(tokens))
-                            self.target_sequence_length.append(len(next_tokens))
-                            self.history_sequence_length.append(len(conversation))
-                            conversation += tokens
-                        else:
-                            self.X.append(line_dict[conversation_idx[i]]["utterance"])
-                            self.Y.append(line_dict[conversation_idx[i + 1]]["utterance"])
-                            self.history.append(" ".join(conversation))
-                            conversation.append(line_dict[conversation_idx[i]]["utterance"])
-
-                        character_id = line_dict[conversation_idx[i]]["character_id"]
-                        next_character_id = line_dict[conversation_idx[i]]["character_id"]
-
-                        self.attributes["inputs"].append(
-                            {"character_id": character_id, "next_character_id": next_character_id,
-                             "movie_id": temp[2]})
+                        if client_idx is not None and self.attributes["inputs"][cnt] != client_idx:
+                            cnt += 1
+                            continue
+                        X.append(line_dict[conversation_idx[i]]["utterance"])
+                        Y.append(line_dict[conversation_idx[i + 1]]["utterance"])
+                        history.append(" ".join(conversation))
+                        conversation.append(line_dict[conversation_idx[i]]["utterance"])
+                        cnt += 1
                     conversation.clear()
+        return X, Y, history
 
+def test_performance():
+    import time
+    from collections import Counter
+    from pympler import asizeof
+    train_file_path = "../../../../data/fednlp/seq2seq/CornellMovieDialogue/cornell movie-dialogs corpus/"
+    print("uniform partition")
+    # load all data
+    start = time.time()
+    data_loader = DataLoader(train_file_path, uniform_partition, tokenized=True, source_padding=True,
+                             target_padding=True, history_padding=True)
+    train_data_loader = data_loader.data_loader()
+    end = time.time()
+    print("all data(tokenized):", end - start)
+    print("size", len(train_data_loader["X"]))
+    print("memory cost", asizeof.asizeof(train_data_loader))
+    # load a part of data
+    start = time.time()
+    data_loader = DataLoader(train_file_path, uniform_partition, tokenized=True, source_padding=True,
+                             target_padding=True, history_padding=True)
+    train_data_loader = data_loader.data_loader(0)
+    end = time.time()
+    print("part of data(tokenized):", end - start)
+    print("size", len(train_data_loader["X"]))
+    print("memory cost", asizeof.asizeof(train_data_loader))
 
-    @staticmethod
-    def partition(keys, values, attributes):
-        movie_dict = dict()
-        for attribute in attributes["inputs"]:
-            if attribute["movie_id"] not in movie_dict:
-                movie_dict[attribute["movie_id"]] = len(movie_dict)
-        length = len(values[0])
-        result = dict()
-        for key in keys:
-            result[key] = dict()
-        for i in range(length):
-            client_idx = movie_dict[attributes["inputs"][i]["movie_id"]]
-            for j, key in enumerate(keys):
-                if client_idx not in result[key]:
-                    result[key][client_idx] = [values[j][i]]
-                else:
-                    result[key][client_idx].append(values[j][i])
-                    result[key][client_idx].append(values[j][i])
-        return result
+    # load all data
+    start = time.time()
+    data_loader = DataLoader(train_file_path, uniform_partition)
+    train_data_loader = data_loader.data_loader()
+    end = time.time()
+    print("all data:", end - start)
+    print("size", len(train_data_loader["X"]))
+    print("memory cost", asizeof.asizeof(train_data_loader))
+    # load a part of data
+    start = time.time()
+    data_loader = DataLoader(train_file_path, uniform_partition)
+    train_data_loader = data_loader.data_loader(0)
+    end = time.time()
+    print("part of data:", end - start)
+    print("size", len(train_data_loader["X"]))
+    print("memory cost", asizeof.asizeof(train_data_loader))
+
+    print("nature partition")
+    # load all data
+    start = time.time()
+    data_loader = DataLoader(train_file_path, "nature", tokenized=True, source_padding=True,
+                             target_padding=True, history_padding=True)
+    train_data_loader = data_loader.data_loader()
+    end = time.time()
+    print("all data(tokenized):", end - start)
+    print("size", len(train_data_loader["X"]))
+    print("memory cost", asizeof.asizeof(train_data_loader))
+    # load a part of data
+    attributes = train_data_loader["attributes"]
+    total_time = 0
+    total_cost = 0
+    for client_idx in range(attributes["n_clients"]):
+        start = time.time()
+        data_loader = DataLoader(train_file_path, "nature", tokenized=True, source_padding=True,
+                                 target_padding=True, history_padding=True)
+
+        train_data_loader = data_loader.data_loader(0)
+        end = time.time()
+        total_time += end - start
+        total_cost += asizeof.asizeof(train_data_loader)
+    print("part of data(tokenized):", total_time / attributes["n_clients"])
+    print("memory cost", total_cost / attributes["n_clients"])
+    # load all data
+    start = time.time()
+    data_loader = DataLoader(train_file_path, uniform_partition)
+    train_data_loader = data_loader.data_loader()
+    end = time.time()
+    print("all data:", end - start)
+    print("size", len(train_data_loader["X"]))
+    print("memory cost", asizeof.asizeof(train_data_loader))
+    # load a part of data
+    attributes = train_data_loader["attributes"]
+    total_time = 0
+    total_cost = 0
+    for client_idx in range(attributes["n_clients"]):
+        start = time.time()
+        data_loader = DataLoader(train_file_path, "nature", tokenized=True, source_padding=True,
+                                 target_padding=True, history_padding=True)
+
+        train_data_loader = data_loader.data_loader(0)
+        end = time.time()
+        total_time += end - start
+        total_cost += asizeof.asizeof(train_data_loader)
+    print("part of data:", total_time / attributes["n_clients"])
+    print("memory cost", total_cost / attributes["n_clients"])
+    print("distribution")
+    print(Counter(attributes["inputs"]))
 
 
 if __name__ == "__main__":
-    train_file_path = "../../../../data/fednlp/seq2seq/CornellMovieDialogue/CornellMovieDialogue/"
-    data_loader = DataLoader(train_file_path, tokenized=True, source_padding=True, target_padding=True, history_padding=True)
-    train_data_loader = data_loader.data_loader()
-    partition(train_data_loader, method="uniform")
-    print("done")
+    # train_file_path = "../../../../data/fednlp/seq2seq/CornellMovieDialogue/cornell movie-dialogs corpus/"
+    # data_loader = DataLoader(train_file_path, uniform_partition, tokenized=True, source_padding=True, target_padding=True, history_padding=True)
+    # train_data_loader = data_loader.data_loader(0)
+    # print("done")
+    test_performance()

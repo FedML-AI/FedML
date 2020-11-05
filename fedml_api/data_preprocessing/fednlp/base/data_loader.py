@@ -4,17 +4,17 @@ from .globals import *
 
 class BaseDataLoader(ABC):
     @abstractmethod
-    def __init__(self, data_path, **kwargs):
+    def __init__(self, data_path, partition, **kwargs):
         allowed_keys = {"tokenized"}
         self.__dict__.update((key, False) for key in allowed_keys)
         self.__dict__.update((key, value) for key, value in kwargs.items() if key in allowed_keys)
         self.data_path = data_path
+        self.partition = partition
         self.X = []
         self.Y = []
-        self.vocab = dict()
 
     @abstractmethod
-    def data_loader(self):
+    def data_loader(self, client_idx=None):
         pass
 
     @abstractmethod
@@ -47,8 +47,6 @@ class BaseDataLoader(ABC):
 
     @staticmethod
     def build_vocab(x, vocab):
-        # Make sure we start with an empty dict.
-        assert len(vocab) == 0
         for single_x in x:
             for token in single_x:
                 if token not in vocab:

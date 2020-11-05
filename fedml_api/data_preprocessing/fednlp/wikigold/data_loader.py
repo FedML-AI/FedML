@@ -1,17 +1,22 @@
 import sys
 sys.path.append('..')
 from base.data_loader import BaseDataLoader
-from base.constants import *
-
-
+from base.globals import *
+from base.partition import *
 
 
 class DataLoader(BaseDataLoader):
-    def __init__(self, data_path, **kwargs):
-        super().__init__(data_path, **kwargs)
+    def __init__(self, data_path, partition, **kwargs):
+        super().__init__(data_path, partition, **kwargs)
         allowed_keys = {"padding", "max_sequence_length"}
         self.__dict__.update((key, False) for key in allowed_keys)
         self.__dict__.update((key, value) for key, value in kwargs.items() if key in allowed_keys)
+
+        if callable(self.partition):
+            X, Y, _ = self.process_data(self.data_path)
+            self.attributes = self.partition(X, Y)
+        else:
+            self.attributes = self.process_attributes()
 
         self.sequence_length = []
         self.token_vocab = dict()
@@ -20,8 +25,13 @@ class DataLoader(BaseDataLoader):
             self.token_vocab[PAD_TOKEN] = len(self.token_vocab)
             self.label_vocab[PAD_LABEL] = len(self.label_vocab)
 
-    def data_loader(self):
-        self.process_data(self.data_path)
+    def data_loader(self, client_idx=None):
+        if client_idx is not None:
+            X, Y, sequence_length = self.process_data(self.data_path, client_idx)
+        else:
+            X, Y, sequence_length = self.process_data(self.data_path)
+
+        self.X, self.Y, self.sequence_length = X, Y, sequence_length
 
         result = dict()
 
@@ -41,9 +51,13 @@ class DataLoader(BaseDataLoader):
         result["Y"] = self.Y
         return result
 
-    def process_data(self, file_path):
+    def process_data(self, file_path, client_idx=None):
+        X = []
+        Y = []
+        sequence_length = []
         single_x = []
         single_y = []
+        cnt = 0
         with open(file_path, "r") as f:
             for line in f:
                 line = line.strip()
@@ -53,15 +67,39 @@ class DataLoader(BaseDataLoader):
                     single_y.append(label)
                 else:
                     if len(single_x) != 0:
-                        self.X.append(single_x.copy())
-                        self.Y.append(single_y.copy())
-                        self.sequence_length.append(len(single_x))
+                        if client_idx is not None and client_idx != self.attributes["inputs"][cnt]:
+                            cnt += 1
+                            continue
+                        X.append(single_x.copy())
+                        Y.append(single_y.copy())
+                        sequence_length.append(len(single_x))
+                        cnt += 1
                     single_x.clear()
                     single_y.clear()
+        return X, Y, sequence_length
+
+def test_performance():
+    import time
+    from pympler import asizeof
+    train_file_path = "../../../../data/fednlp/sequence_tagging/wikigold/wikigold/CONLL-format/data/wikigold.conll.txt"
+    # load all data
+    start = time.time()
+    data_loader = DataLoader(train_file_path, uniform_partition, padding=True)
+    train_data_loader = data_loader.data_loader()
+    end = time.time()
+    print("all data:", end - start)
+    print("size:", len(train_data_loader["X"]))
+    print("memory cost", asizeof.asizeof(train_data_loader))
+    # load a part of data
+    start = time.time()
+    data_loader = DataLoader(train_file_path, uniform_partition, padding=True)
+    train_data_loader = data_loader.data_loader(0)
+    end = time.time()
+    print("part of data:", end - start)
+    print("size:", len(train_data_loader["X"]))
+    print("memory cost", asizeof.asizeof(train_data_loader))
+
 
 
 if __name__ == "__main__":
-    train_file_path = "../../../../data/fednlp/sequence_tagging/wikigold/wikigold/CONLL-format/data/wikigold.conll.txt"
-    data_loader = DataLoader(train_file_path)
-    train_data_loader = data_loader.data_loader()
-    print("done")
+    test_performance()

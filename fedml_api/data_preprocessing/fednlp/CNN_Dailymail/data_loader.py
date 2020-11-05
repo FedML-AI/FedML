@@ -4,17 +4,22 @@ import sys
 sys.path.append('..')
 from base.data_loader import BaseDataLoader
 from base.globals import *
+from base.partition import *
 
 
 
 
 class DataLoader(BaseDataLoader):
-    def __init__(self, data_path, **kwargs):
-        super().__init__(data_path, **kwargs)
+    def __init__(self, data_path, partition, **kwargs):
+        super().__init__(data_path, partition, **kwargs)
         allowed_keys = {"source_padding", "target_padding", "source_max_sequence_length", "target_max_sequence_length",
                         "source_vocab_path", "target_vocab_path", "initialize"}
         self.__dict__.update((key, False) for key in allowed_keys)
         self.__dict__.update((key, value) for key, value in kwargs.items() if key in allowed_keys)
+
+        X, Y = self.process_data(self.data_path)
+        self.attributes = self.partition(X, Y)
+
         if self.tokenized:
             self.source_sequence_length = []
             self.target_sequence_length = []
@@ -30,9 +35,21 @@ class DataLoader(BaseDataLoader):
                 self.target_vocab[SOS_TOKEN] = len(self.target_vocab)
                 self.target_vocab[EOS_TOKEN] = len(self.target_vocab)
 
-    def data_loader(self):
-        self.process_data(self.data_path)
+    def tokenize_data(self, X, Y):
+        for i in range(len(X)):
+            X[i] = self.tokenize(X[i])
+            Y[i] = self.tokenize(Y[i])
+            self.source_sequence_length.append(len(X[i]))
+            self.target_sequence_length.append(len(Y[i]))
 
+    def data_loader(self, client_idx=None):
+        if client_idx is not None:
+            X, Y = self.process_data(self.data_path, client_idx=client_idx)
+        else:
+            X, Y = self.process_data(self.data_path)
+        if self.tokenized:
+            self.tokenize_data(X, Y)
+        self.X, self.Y = X, Y
         result = dict()
 
         if self.tokenized:
@@ -64,7 +81,7 @@ class DataLoader(BaseDataLoader):
                 self.padding_data(self.Y, self.target_max_sequence_length, self.initialize)
                 result["target_sequence_length"] = self.target_sequence_length
                 result["target_max_sequence_length"] = self.target_max_sequence_length
-
+        result["attributes"] = self.attributes
         result["X"] = self.X
         result["Y"] = self.Y
         return result
@@ -87,41 +104,79 @@ class DataLoader(BaseDataLoader):
                 if token not in vocab:
                     vocab[token] = len(vocab)
 
-    def process_data(self, file_path):
+    def process_data(self, file_path, client_idx=None):
         file = open(file_path, "rb")
+        X = []
+        Y = []
+        cnt = 0
         while True:
             len_bytes = file.read(8)
             if not len_bytes:
                 break
             str_len = struct.unpack('q', len_bytes)[0]
             example_str = struct.unpack('%ds' % str_len, file.read(str_len))[0]
+            if client_idx is not None and self.attributes["inputs"][cnt] != client_idx:
+                cnt += 1
+                continue
             example = example_pb2.Example.FromString(example_str)
             article_text = example.features.feature['article'].bytes_list.value[0].decode()
             abstract_text = example.features.feature['abstract'].bytes_list.value[0].decode()
             abstract_text = abstract_text.replace("<s>", "").replace("</s>", "")
 
-            if self.tokenized:
-                article_tokens = self.tokenize(article_text)
-                abstract_tokens = self.tokenize(abstract_text)
+            X.append(article_text)
+            Y.append(abstract_text)
+            cnt += 1
+        return X, Y
 
-                self.source_sequence_length.append(len(article_tokens))
-                self.target_sequence_length.append(len(abstract_tokens))
 
-                self.X.append(article_tokens)
-                self.Y.append(abstract_tokens)
-            else:
-                self.X.append(article_text)
-                self.Y.append(abstract_text)
+def test_performance():
+    import time
+    from pympler import asizeof
+    train_file_path = "../../../../data/fednlp/seq2seq/CNN_Dailymail/finished_files/train.bin"
+    # load all data
+    start = time.time()
+    data_loader = DataLoader(train_file_path, uniform_partition, tokenized=True, source_padding=True,
+                             target_padding=True)
+    train_data_loader = data_loader.data_loader()
+    end = time.time()
+    print("all data(tokenized):", end - start)
+    print("size", len(train_data_loader["X"]))
+    print("memory cost", asizeof.asizeof(train_data_loader))
+    # load a part of data
+    start = time.time()
+    data_loader = DataLoader(train_file_path, uniform_partition, tokenized=True, source_padding=True,
+                             target_padding=True)
+    train_data_loader = data_loader.data_loader(0)
+    end = time.time()
+    print("part of data(tokenized):", end - start)
+    print("size", len(train_data_loader["X"]))
+    print("memory cost", asizeof.asizeof(train_data_loader))
+
+    # load all data
+    start = time.time()
+    data_loader = DataLoader(train_file_path, uniform_partition)
+    train_data_loader = data_loader.data_loader()
+    end = time.time()
+    print("all data:", end - start)
+    print("size", len(train_data_loader["X"]))
+    print("memory cost", asizeof.asizeof(train_data_loader))
+    # load a part of data
+    start = time.time()
+    data_loader = DataLoader(train_file_path, uniform_partition)
+    train_data_loader = data_loader.data_loader(0)
+    end = time.time()
+    print("part of data:", end - start)
+    print("size", len(train_data_loader["X"]))
+    print("memory cost", asizeof.asizeof(train_data_loader))
 
 
 
 if __name__ == "__main__":
-    train_file_path = "../../../../data/fednlp/seq2seq/CNN_Dailymail/finished_files/train.bin"
-    dev_file_path = "../../../../data/fednlp/seq2seq/CNN_Dailymail/finished_files/val.bin"
-    test_file_path = "../../../../data/fednlp/seq2seq/CNN_Dailymail/finished_files/test.bin"
-    vocab_file_path = "../../../../data/fednlp/seq2seq/CNN_Dailymail/finished_files/vocab"
-    data_loader = DataLoader(train_file_path, tokenized=True, source_padding=True, target_padding=True)
-    train_data_loader = data_loader.data_loader()
-    print(train_data_loader["X"][0])
-    print(train_data_loader["Y"][0])
-    print("done")
+    # train_file_path = "../../../../data/fednlp/seq2seq/CNN_Dailymail/finished_files/train.bin"
+    # dev_file_path = "../../../../data/fednlp/seq2seq/CNN_Dailymail/finished_files/val.bin"
+    # test_file_path = "../../../../data/fednlp/seq2seq/CNN_Dailymail/finished_files/test.bin"
+    # vocab_file_path = "../../../../data/fednlp/seq2seq/CNN_Dailymail/finished_files/vocab"
+    # data_loader = DataLoader(train_file_path, uniform_partition, tokenized=True, source_padding=True, target_padding=True)
+    # train_data_loader = data_loader.data_loader(0)
+    # print("done")
+    test_performance()

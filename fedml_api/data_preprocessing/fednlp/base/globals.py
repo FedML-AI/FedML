@@ -10,7 +10,7 @@ PAD_LABEL = "O"
 UNK_LABEL = "O"
 
 # Partition
-N_CLIENTS = 10
+N_CLIENTS = 100
 PARTITION_KEYS = ("X", "Y", "history", "sequence_length", "source_sequence_length", "target_sequence_length",
                   "history_sequence_length")
 # Variables
