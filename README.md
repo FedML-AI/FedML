@@ -17,8 +17,9 @@
 </p>
 
 ## News
-<b>2020-11-05 (System)</b>: Besides the Android devices, do you also want to run federated learning on <b>IoT devices</b>? Our architecture design can smoothly transplant the distributed computing code to the IoT platform. We use Raspberry PI to demonstrate our idea. Please check it out here: https://github.com/FedML-AI/FedML/blob/master/fedml_iot/README.md <br>
+<b>2020-11-05 (System)</b>: Besides the Android devices, do you also want to run federated learning on <b>IoT devices</b>? Our architecture design can smoothly transplant the distributed computing code to the IoT platform. FedML can support edge training on two IoT devices: Raspberry Pi and NVIDIA Jetson Nano!!! Please check it out here: https://github.com/FedML-AI/FedML/blob/master/fedml_iot/README.md <br>
 <img src=https://github.com/FedML-AI/FedML/blob/master/docs/image/raspberry_pi.png width="35%">
+<img src=https://github.com/FedML-AI/FedML/blob/master/docs/image/nvidia-jetson-nano.png width="35%">
 
 <b>2020-10-28 (Algorithms) </b>: We released more advanced federated optimization algorithms, more than just FedAvg! http://doc.fedml.ai/#/algorithm-reference-implementation
 
