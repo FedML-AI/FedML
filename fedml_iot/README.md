@@ -1,13 +1,21 @@
-# FedML on IoT Devices (Raspberry Pi 4)
-Our FedML architecture design can smoothly transplant the distributed computing code to the IoT platform. Here we use Raspberry PI to demonstrate our idea. 
+# FedML-IoT: Federated Learning on IoT Devices (Raspberry Pi 4)
 <img src=https://github.com/FedML-AI/FedML/blob/master/docs/image/raspberry_pi.png width="35%">
+
+Our FedML architecture design can smoothly transplant the distributed computing code to the IoT platform. Here we use Raspberry PI to demonstrate our idea. 
 
 You can buy RPI 4 devices here: https://www.raspberrypi.org/products/raspberry-pi-4-desktop-kit/?resellerType=home
 
 
 # Installation 
-### Install FedML + PyTorch 1.4 in Raspberry Pi 4
-Please follow the script `install-arm.sh`.
+### Install FedML + PyTorch 1.4 on Raspberry Pi 4
+The following commands are running on Raspberry Pi 4
+```
+cd /home/pi
+mkdir sourcecode
+git clone https://github.com/FedML-AI/FedML.git
+cd FedML/fedml_iot
+```
+After the above commands, please follow the script `install-arm.sh`.
 
 Note: This script has been tested on Raspberry Pi 4 (RPI 4). We welcome users to contribute more scripts for new IoT platforms. 
 
