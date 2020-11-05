@@ -4,13 +4,13 @@ Our FedML architecture design can smoothly transplant the distributed computing 
 
 Currently, we support two IoT devices: 
 
-###1. Raspberry PI 4 (Edge CPU Computing - ARMv7l)
+### 1. Raspberry PI 4 (Edge CPU Computing - ARMv7l)
 
 <img src=https://github.com/FedML-AI/FedML/blob/master/docs/image/raspberry_pi.png width="35%">
 
 You can buy RPI 4 devices here: https://www.raspberrypi.org/products/raspberry-pi-4-desktop-kit/?resellerType=home
 
-###1. NVIDIA Jetson Nano (Edge GPU Computing)
+### 2. NVIDIA Jetson Nano (Edge GPU Computing)
 
 <img src=https://github.com/FedML-AI/FedML/blob/master/docs/image/nvidia-jetson-nano.png width="35%">
 
