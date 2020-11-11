@@ -64,7 +64,7 @@ vocab -> (dict) [vocab_size] # vocabulary of inputs
 
 label_vocab -> (dict) [label_vocab_size] # vocabulary of outputs
 
-## Stanford Sentiment Treebank v2(SST-2)
+### Stanford Sentiment Treebank v2(SST-2)
 
 X -> (array) [data_size, source_max_sequence_length] # source inputs
 
