@@ -15,8 +15,130 @@ Counter({289: 1192, 295: 1161, 299: 1095, 82: 974, 105: 961, 428: 922, 238: 920,
 W_NUT Nature Data Distribution
 Counter({359: 181, 28: 159, 291: 159, 2: 113, 44: 111, 138: 98, 325: 93, 222: 88, 227: 84, 137: 77, 3: 72, 329: 71, 263: 69, 243: 67, 63: 65, 120: 65, 356: 65, 217: 64, 265: 63, 368: 56, 261: 54, 5: 52, 45: 51, 27: 49, 155: 46, 49: 45, 68: 45, 110: 44, 313: 44, 157: 43, 205: 43, 43: 42, 85: 42, 103: 42, 139: 42, 150: 42, 279: 42, 4: 41, 77: 41, 23: 40, 331: 40, 136: 39, 166: 39, 267: 39, 322: 39, 39: 38, 124: 38, 303: 38, 109: 37, 115: 37, 154: 37, 201: 37, 249: 37, 269: 37, 360: 37, 310: 36, 343: 36, 53: 35, 122: 35, 213: 35, 237: 35, 42: 34, 86: 33, 146: 33, 170: 33, 174: 33, 183: 33, 212: 33, 25: 32, 48: 32, 58: 32, 207: 32, 239: 32, 260: 32, 66: 31, 70: 31, 95: 31, 148: 31, 230: 31, 266: 31, 311: 31, 327: 31, 344: 31, 362: 31, 0: 30, 47: 30, 91: 30, 132: 30, 186: 30, 290: 30, 361: 30, 15: 29, 67: 29, 81: 29, 89: 29, 101: 29, 188: 29, 204: 29, 215: 29, 248: 29, 307: 29, 22: 28, 24: 28, 29: 28, 52: 28, 56: 28, 147: 28, 156: 28, 177: 28, 187: 28, 229: 28, 317: 28, 326: 28, 335: 28, 352: 28, 36: 27, 93: 27, 130: 27, 171: 27, 225: 27, 278: 27, 346: 27, 353: 27, 17: 26, 40: 26, 71: 26, 98: 26, 100: 26, 153: 26, 270: 26, 345: 26, 16: 25, 73: 25, 104: 25, 144: 25, 241: 25, 354: 25, 62: 24, 90: 24, 99: 24, 134: 24, 184: 24, 282: 24, 323: 24, 342: 24, 363: 24, 366: 24, 7: 23, 59: 23, 76: 23, 82: 23, 92: 23, 116: 23, 123: 23, 140: 23, 141: 23, 193: 23, 211: 23, 245: 23, 247: 23, 254: 23, 256: 23, 268: 23, 297: 23, 355: 23, 10: 22, 51: 22, 55: 22, 69: 22, 246: 22, 259: 22, 284: 22, 295: 22, 298: 22, 33: 21, 74: 21, 78: 21, 87: 21, 105: 21, 142: 21, 145: 21, 172: 21, 206: 21, 226: 21, 274: 21, 277: 21, 293: 21, 338: 21, 348: 21, 20: 20, 75: 20, 114: 20, 117: 20, 151: 20, 152: 20, 161: 20, 190: 20, 209: 20, 223: 20, 308: 20, 312: 20, 324: 20, 351: 20, 364: 20, 162: 19, 176: 19, 218: 19, 242: 19, 258: 19, 283: 19, 305: 19, 315: 19, 341: 19, 9: 18, 18: 18, 32: 18, 54: 18, 61: 18, 79: 18, 129: 18, 164: 18, 216: 18, 328: 18, 357: 18, 1: 17, 19: 17, 26: 17, 30: 17, 111: 17, 128: 17, 160: 17, 169: 17, 234: 17, 281: 17, 304: 17, 12: 16, 127: 16, 133: 16, 159: 16, 173: 16, 191: 16, 203: 16, 250: 16, 41: 15, 125: 15, 208: 15, 210: 15, 238: 15, 264: 15, 287: 15, 300: 15, 11: 14, 13: 14, 88: 14, 135: 14, 158: 14, 195: 14, 198: 14, 199: 14, 235: 14, 286: 14, 289: 14, 302: 14, 336: 14, 350: 14, 8: 13, 21: 13, 97: 13, 149: 13, 167: 13, 179: 13, 185: 13, 224: 13, 276: 13, 334: 13, 358: 13, 365: 13, 37: 12, 84: 12, 94: 12, 119: 12, 121: 12, 181: 12, 189: 12, 251: 12, 252: 12, 257: 12, 271: 12, 306: 12, 319: 12, 321: 12, 340: 12, 31: 11, 34: 11, 64: 11, 72: 11, 106: 11, 178: 11, 196: 11, 214: 11, 232: 11, 244: 11, 273: 11, 288: 11, 296: 11, 299: 11, 314: 11, 347: 11, 349: 11, 369: 11, 38: 10, 57: 10, 60: 10, 65: 10, 112: 10, 163: 10, 165: 10, 175: 10, 182: 10, 197: 10, 220: 10, 221: 10, 240: 10, 309: 10, 320: 10, 333: 10, 337: 10, 367: 10, 14: 9, 46: 9, 50: 9, 83: 9, 107: 9, 126: 9, 236: 9, 253: 9, 6: 8, 35: 8, 96: 8, 108: 8, 113: 8, 131: 8, 143: 8, 192: 8, 228: 8, 231: 8, 233: 8, 262: 8, 272: 8, 285: 8, 292: 8, 301: 8, 339: 8, 102: 7, 180: 7, 194: 7, 219: 7, 280: 7, 294: 7, 330: 7, 332: 7, 168: 6, 200: 6, 202: 6, 275: 6, 318: 6, 118: 5, 316: 5, 80: 4, 255: 4})
 
+SemEval2010Task8 Natural Data Distribution:
+Counter({1: 1410, 5: 844, 4: 659, 9: 612, 10: 568, 7: 490, 0: 471, 12: 470, 2: 407, 8: 394, 6: 374, 11: 344, 14: 323, 16: 166, 15: 148, 13: 144, 17: 97, 3: 78, 18: 1})
+
+Sentiment140 Natural Data Distribution:
+Counter({34: 111676, 29: 110290, 37: 109781, 27: 103673, 35: 96350, 28: 94588, 26: 73827, 38: 67980, 30: 64192, 33: 58757, 42: 45364, 39: 44012, 41: 43136, 40: 43004, 31: 41588, 17: 40154, 20: 39074, 18: 36469, 9: 35333, 4: 27469, 8: 27434, 12: 26029, 3: 21754, 47: 19694, 5: 18460, 15: 17460, 1: 17311, 45: 17002, 43: 16360, 25: 15903, 10: 15481, 44: 12009, 11: 11739, 23: 10778, 16: 9146, 6: 8587, 36: 8272, 32: 7842, 7: 7716, 46: 6299, 13: 4186, 14: 4066, 0: 3360, 2: 3084, 19: 2132, 24: 841, 21: 169, 22: 169})
+
+20News Natural Data Distribution:
+it is split by number of document in this dataset so every single index in attributes only has size one
+
+SQuad 1.1 Natural Data Distribution:
+it is split by number of document in this dataset so every single index in attributes only has size one
 
 ## Data Format
+
+### 20news
+X -> (array) [data_size, source_max_sequence_length] # source inputs
+
+Y -> (array) [data_size, target_max_sequence_length] # target outputs
+
+source_max_sequence_length -> (int) [] # maximum sequence length for source inputs(also can be set up by user)
+
+target_max_sequence_length -> (int) [] # maximum sequence length for target outputs(also can be set up by user)
+
+source_sequence_length -> (array) [data_size] # original sequence lengths for source inputs
+
+target_sequence_length -> (array) [data_size] # original sequence lengths for target outputs
+
+vocab -> (dict) [vocab_size] # vocabulary of inputs
+
+label_vocab -> (dict) [label_vocab_size] # vocabulary of outputs
+
+### AGnews
+
+X -> (array) [data_size, source_max_sequence_length] # source inputs
+
+Y -> (array) [data_size, target_max_sequence_length] # target outputs
+
+source_max_sequence_length -> (int) [] # maximum sequence length for source inputs(also can be set up by user)
+
+target_max_sequence_length -> (int) [] # maximum sequence length for target outputs(also can be set up by user)
+
+source_sequence_length -> (array) [data_size] # original sequence lengths for source inputs
+
+target_sequence_length -> (array) [data_size] # original sequence lengths for target outputs
+
+vocab -> (dict) [vocab_size] # vocabulary of inputs
+
+label_vocab -> (dict) [label_vocab_size] # vocabulary of outputs
+
+## Stanford Sentiment Treebank v2(SST-2)
+
+X -> (array) [data_size, source_max_sequence_length] # source inputs
+
+Y -> (array) [data_size, target_max_sequence_length] # target outputs
+
+source_max_sequence_length -> (int) [] # maximum sequence length for source inputs(also can be set up by user)
+
+target_max_sequence_length -> (int) [] # maximum sequence length for target outputs(also can be set up by user)
+
+source_sequence_length -> (array) [data_size] # original sequence lengths for source inputs
+
+target_sequence_length -> (array) [data_size] # original sequence lengths for target outputs
+
+vocab -> (dict) [vocab_size] # vocabulary of inputs
+
+label_vocab -> (dict) [label_vocab_size] # vocabulary of outputs
+
+### Sentiment140
+
+X -> (array) [data_size, source_max_sequence_length] # source inputs
+
+Y -> (array) [data_size, target_max_sequence_length] # target outputs
+
+source_max_sequence_length -> (int) [] # maximum sequence length for source inputs(also can be set up by user)
+
+target_max_sequence_length -> (int) [] # maximum sequence length for target outputs(also can be set up by user)
+
+source_sequence_length -> (array) [data_size] # original sequence lengths for source inputs
+
+target_sequence_length -> (array) [data_size] # original sequence lengths for target outputs
+
+vocab -> (dict) [vocab_size] # vocabulary of inputs
+
+label_vocab -> (dict) [label_vocab_size] # vocabulary of outputs
+
+### SemEval2010Task8
+
+X -> (array) [data_size, source_max_sequence_length] # source inputs
+
+Y -> (array) [data_size, target_max_sequence_length] # target outputs
+
+source_max_sequence_length -> (int) [] # maximum sequence length for source inputs(also can be set up by user)
+
+target_max_sequence_length -> (int) [] # maximum sequence length for target outputs(also can be set up by user)
+
+source_sequence_length -> (array) [data_size] # original sequence lengths for source inputs
+
+target_sequence_length -> (array) [data_size] # original sequence lengths for target outputs
+
+vocab -> (dict) [vocab_size] # vocabulary of inputs
+
+label_vocab -> (dict) [label_vocab_size] # vocabulary of outputs
+
+### SQuAD_1.1
+
+document_X -> (array) [data_size, max_document_length] # source inputs documents
+
+question_X -> (array) [data_size, max_question_length] # source inputs question
+
+Y -> (array) [data_size, 2] # target answer indices which indicate the start and the end of the target
+
+question_id -> (array) [data_size, 1] # question id correstpond to each answer in Y 
+
+document_max_sequence_length -> (int) [] # maximum sequence length for source document inputs(also can be set up by user)
+
+question_max_sequence_length -> (int) [] # maximum sequence length for question outputs(also can be set up by user)
+
+source_sequence_length -> (array) [data_size] # original sequence lengths for source documents
+
+question_sequence_length -> (array) [data_size] # original sequence lengths for source questions
+
+vocab -> (dict) [vocab_size] # vocabulary of inputs 
+
+question_vocab -> (dict) [question_vocab_size] # vocabulary of questions 
 
 ### Cornell Movie
 X -> (array) [data_size, source_max_sequence_length] # source inputs

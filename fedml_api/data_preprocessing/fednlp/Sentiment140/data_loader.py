@@ -4,6 +4,7 @@ import random
 import sys
 import csv
 import time
+import datetime
 
 
 sys.path.append('..')
@@ -15,8 +16,8 @@ from base.partition import *
 # data_dir shoule be '../../../../data//fednlp/text_classification/Sentiment140/'
 
 class DataLoader(BaseDataLoader):
-    def __init__(self, data_path, **kwargs):
-        super().__init__(data_path, **kwargs)
+    def __init__(self, data_path, partition, **kwargs):
+        super().__init__(data_path, partition, **kwargs)
         allowed_keys = {"source_padding", "target_padding", "source_max_sequence_length",
                         "target_max_sequence_length", "vocab_path", "initialize"}
         self.__dict__.update((key, False) for key in allowed_keys)
@@ -24,6 +25,7 @@ class DataLoader(BaseDataLoader):
         self.source_sequence_length = []
         self.target_sequence_length = []
         self.title = []
+        self.attributes = dict()
 
         if self.tokenized:
             self.vocab = dict()
@@ -43,11 +45,17 @@ class DataLoader(BaseDataLoader):
                 self.vocab[i] = len(self.vocab)
         return tokens
 
-    def process_data(self):
+    def process_data(self,client_idx=None):
         with open(self.data_path ,"r",newline='',encoding='utf-8',errors='ignore') as csvfile:
+            cnt = 0
             data = csv.reader(csvfile,delimiter=',')
             max_source_length = -1
             for line in data:
+                if client_idx is not None and client_idx != self.attributes["inputs"][cnt]:
+                    cnt+=1
+                    continue
+                date_time_obj  = datetime.datetime.strptime(line[2][:-9], "%a %b %d %H:%M:%S")
+                date_time_obj = date_time_obj.replace(year=2009) 
                 tokens = self.tokenize(line[5])
                 self.X.append(tokens)
                 self.source_sequence_length.append(len(tokens))
@@ -57,20 +65,36 @@ class DataLoader(BaseDataLoader):
 
         return max_source_length, 1
 
-
-    def data_loader(self):
+    def process_attributes(self):
+        length = len(set(self.attributes['inputs']))
+        self.attributes['n_clients'] = length
+        return self.attributes
+    
+    def data_loader(self,client_idx=None):
         result = dict()
-        max_source_length, max_target_length = self.process_data()
-        print(max_source_length)
-        self.padding_data(self.X, max_source_length,self.initialize)
+        if client_idx is not None:
+            max_source_length , max_target_length = self.process_data(client_idx)
+        else:
+            max_source_length , max_target_length = self.process_data()
+
+        if callable(self.partition):
+            self.attributes = self.partition(self.X, self.Y)
+        else:
+            self.attributes = self.process_attributes()
+
+        if self.source_padding:
+            self.padding_data(self.X, max_source_length,self.initialize)
 
         result['X'] = self.X
         result['Y'] = self.Y
         result['vocab'] = self.vocab
         result['label_vocab'] = self.label_vocab
+        result['attributes'] = self.attributes
         result['source_sequence_length'] = self.source_sequence_length
         result['target_sequence_length'] = self.target_sequence_length
-        result['max_source_length'] = max_source_length
+        result['source_max_sequence_length'] = max_source_length
+        result['target_max_sequence_length'] = max_target_length
+
 
         return result
 
@@ -82,8 +106,9 @@ if __name__ == "__main__":
     data_path = '../../../../data//fednlp/text_classification/Sentiment140/'
     train_file_path = '../../../../data//fednlp/text_classification/Sentiment140/training.1600000.processed.noemoticon.csv'
 
-    data_loader = DataLoader(train_file_path, tokenized=True, source_padding=True, target_padding=True)
+    data_loader = DataLoader(train_file_path, "",tokenized=True, source_padding=True, target_padding=True)
 
     result = data_loader.data_loader()
-    print(result['X'][0:10])
-
+    print(len(result['X']))
+    print(len(result['attributes']['inputs']))
+    print()

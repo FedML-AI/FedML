@@ -15,15 +15,16 @@ from base.partition import *
 # data_dir shoule be '../../../../data/fednlp/text_classification/20Newsgroups/20news-18828'
 
 class DataLoader(BaseDataLoader):
-    def __init__(self, data_path, **kwargs):
-        super().__init__(data_path, **kwargs)
+    def __init__(self, data_path, partition,**kwargs):
+        super().__init__(data_path, partition, **kwargs)
         allowed_keys = {"source_padding", "target_padding", "source_max_sequence_length",
                         "target_max_sequence_length", "vocab_path", "initialize"}
         self.__dict__.update((key, False) for key in allowed_keys)
         self.__dict__.update((key, value) for key, value in kwargs.items() if key in allowed_keys)
         self.source_sequence_length = []
         self.target_sequence_length = []
-
+        self.attributes = dict()
+        self.attributes['inputs'] = []
 
         if self.tokenized:
             self.vocab = dict()
@@ -53,29 +54,27 @@ class DataLoader(BaseDataLoader):
                 break
         new_lines = lines[start:]
         return new_lines
+    def process_attributes(self):
+        self.attributes["n_clients"] = len(self.data_path)
+        return self.attributes
     
 
     #parse all the data set 
-    def process_data(self,files):
-        document = ""
-        file_path = files[0]
-        with open(file_path,"r",errors = 'ignore') as f:
-            content = f.readlines()
-            content = self.remove_header(content)
-            for i in content:
-                temp = i.lstrip("> ").replace("/\\","").replace("*","").replace("^","")
-                document = document + temp   
-            return files[1], document
-
-    def data_loader(self):
-        max_source_length = -1
-        max_target_length = -1
-        document = []
-        result = dict()
-
-        for j in self.data_path:
-            datas = self.process_data(j)
-            for label, document in datas:
+    def process_data(self,file_path,client_idx=None):
+        cnt = 0
+        for index, files in enumerate(file_path):
+            document = ""
+            file_path = files[0]
+            with open(file_path,"r",errors = 'ignore') as f:
+                content = f.readlines()
+                content = self.remove_header(content)
+                if client_idx is not None and client_idx != self.attributes["inputs"][cnt]:
+                    cnt+=1
+                    continue
+                for i in content:
+                    temp = i.lstrip("> ").replace("/\\","").replace("*","").replace("^","")
+                    document = document + temp   
+                label = files[1]
                 tokens = self.tokenize(document) 
                 labels = label.split('.')
                 for i in labels:
@@ -83,24 +82,47 @@ class DataLoader(BaseDataLoader):
                         self.label_vocab[i] = len(self.label_vocab)
                 self.Y.append([label])
                 self.X.append(tokens)
+                self.attributes['inputs'].append(index)
                 self.source_sequence_length.append(len(tokens))
-                max_source_length = max(len(tokens),max_source_length)
                 self.target_sequence_length.append(len(labels))
-                max_target_length = max(len(labels),max_target_length)
+                
+            
+        return len(tokens), len(labels)
 
-        self.padding_data(self.X, max_source_length,self.initialize)
+    def data_loader(self,client_idx=None):
+        max_source_length = -1
+        max_target_length = -1
+        document = []
+        result = dict()
+        if client_idx is not None:
+            source_length, target_length  = self.process_data(self.data_path, client_idx)
+        else:
+            source_length, target_length  = self.process_data(self.data_path)
 
-        self.padding_data(self.Y,max_target_length,self.initialize)
+        max_source_length = max(source_length, max_source_length)
+        max_target_length = max(target_length, max_target_length)
+
+        if callable(self.partition):
+            self.attributes = self.partition(self.X, self.Y)
+        else:
+            self.attributes = self.process_attributes()
+
+        if self.source_padding:
+            self.padding_data(self.X, max_source_length,self.initialize)
+        if self.target_padding:
+            self.padding_data(self.Y,max_target_length,self.initialize)
 
         
         
         result['X'] = self.X
         result['Y'] = self.Y
         result['vocab'] = self.vocab
+        result['attributes'] = self.attributes
         result['label_vocab'] = self.label_vocab
         result['source_sequence_length'] = self.source_sequence_length
         result['target_sequence_length'] = self.target_sequence_length
-        result['max_source_length'] = max_source_length
+        result['source_max_sequence_length'] = max_source_length
+        result['target_max_sequence_length'] = max_target_length
 
         return result
 
@@ -115,7 +137,7 @@ if __name__ == "__main__":
     random.shuffle(files)
     train_files_path = files[0:int(len(files)*0.8)]
     test_files_path = files[int(len(files)*0.8):]
-    data_loader = DataLoader(train_files_path, tokenized=True, source_padding=True, target_padding=True)
+    data_loader = DataLoader(train_files_path, uniform_partition, tokenized=True, source_padding=True, target_padding=True)
     train_data_loader = data_loader.data_loader()
-    #print(train_data_loader['Y'])
+    print(train_data_loader['attributes']['inputs'])
     print("done")

@@ -16,8 +16,8 @@ from base.partition import *
 # data_dir shoule be '../../../../data//fednlp/text_classification/SST-2/stanfordSentimentTreebank'
 
 class DataLoader(BaseDataLoader):
-    def __init__(self, data_path, sentence_index, label_file, **kwargs):
-        super().__init__(data_path, **kwargs)
+    def __init__(self, data_path, sentence_index, label_file, partition, **kwargs):
+        super().__init__(data_path, partition, **kwargs)
         allowed_keys = {"source_padding", "target_padding", "source_max_sequence_length",
                         "target_max_sequence_length", "vocab_path", "initialize"}
         self.__dict__.update((key, False) for key in allowed_keys)
@@ -26,6 +26,8 @@ class DataLoader(BaseDataLoader):
         self.target_sequence_length = []
         self.sentence_index = sentence_index
         self.label_file = label_file
+        self.attributes = dict()
+        self.attributes['inputs'] = []
 
         if self.tokenized:
             self.vocab = dict()
@@ -60,14 +62,16 @@ class DataLoader(BaseDataLoader):
         else:
             return "very positive"
 
-    def process_data(self):
+    def process_data(self,client_idx=None):
+        cnt = 0
         with open(self.data_path,"r", encoding='utf-8') as f1 , open(self.label_file) as f2:
             max_source_length = -1
             for data_line , label_line in zip(f1,f2):
+                if client_idx is not None and client_idx != self.attributes["inputs"][cnt]:
+                    cnt+=1
+                    continue
                 data = data_line.split('\t')
                 label = label_line.split('|')
-                
-
                 if data[0] in self.sentence_index:
                     tokens = self.tokenize(data[1].strip())
                     self.X.append(tokens)
@@ -81,20 +85,30 @@ class DataLoader(BaseDataLoader):
         return max_source_length, 1
 
 
-    def data_loader(self):
+    def data_loader(self,client_idx=None):
         result = dict()
-        max_source_length, max_target_length = self.process_data()
-        print(max_source_length)
+        if client_idx is not None:
+            max_source_length , max_target_length = self.process_data(client_idx)
+        else:
+            max_source_length , max_target_length = self.process_data()
 
-        self.padding_data(self.X, max_source_length, self.initialize)
+        if callable(self.partition):
+            self.attributes = self.partition(self.X, self.Y)
+        else:
+            self.attributes = self.process_attributes()
+
+        if self.source_padding:
+            self.padding_data(self.X, max_source_length, self.initialize)
 
         result['X'] = self.X
         result['Y'] = self.Y
         result['vocab'] = self.vocab
         result['label_vocab'] = self.label_vocab
+        result['attributes'] = self.attributes
         result['source_sequence_length'] = self.source_sequence_length
         result['target_sequence_length'] = self.target_sequence_length
-        result['max_source_length'] = max_source_length
+        result['source_max_sequence_length'] = max_source_length
+        result['target_max_sequence_length'] = max_target_length
 
         return result
 
@@ -117,8 +131,9 @@ if __name__ == "__main__":
             else:
                 continue
 
-    data_loader = DataLoader(data_file_path, train_indexes, label_file_path, \
+    data_loader = DataLoader(data_file_path, train_indexes, label_file_path, uniform_partition, \
                                 tokenized=True, source_padding=True, target_padding=True)
 
     result = data_loader.data_loader()
-    print(result['X'][-1])
+    print(len(result['X']))
+    print(len(result['attributes']['inputs']))
