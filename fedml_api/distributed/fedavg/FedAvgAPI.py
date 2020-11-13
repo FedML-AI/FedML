@@ -35,10 +35,7 @@ def init_server(args, device, comm, rank, size, model, train_data_num, train_dat
     server_manager.send_init_msg()
     server_manager.run()
 
-# TODO List   
-# - client should be modified to decentralized worker
-# - add group id 
-# - Add MPC related setting
+
 def init_client(args, device, comm, process_id, size, model, train_data_num, train_data_local_num_dict, train_data_local_dict):
     # trainer
     client_index = process_id - 1
