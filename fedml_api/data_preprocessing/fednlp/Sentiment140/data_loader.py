@@ -18,7 +18,7 @@ from base.partition import *
 class DataLoader(BaseDataLoader):
     def __init__(self, data_path, partition, **kwargs):
         super().__init__(data_path, partition, **kwargs)
-        allowed_keys = {"source_padding", "target_padding", "source_max_sequence_length",
+        allowed_keys = {"source_padding", "target_padding", "tokenized", "source_max_sequence_length",
                         "target_max_sequence_length", "vocab_path", "initialize"}
         self.__dict__.update((key, False) for key in allowed_keys)
         self.__dict__.update((key, value) for key, value in kwargs.items() if key in allowed_keys)
@@ -26,10 +26,12 @@ class DataLoader(BaseDataLoader):
         self.target_sequence_length = []
         self.title = []
         self.attributes = dict()
+        self.attributes['inputs'] = []
+        self.label_vocab = {'2':'neutral','0':'negative','4':'positive'}
+
 
         if self.tokenized:
             self.vocab = dict()
-            self.label_vocab = {'2':'neutral','0':'negative','4':'positive'}
             if self.initialize:
                 self.vocab[SOS_TOKEN] = len(self.vocab)
                 self.vocab[EOS_TOKEN] = len(self.vocab)            
@@ -54,10 +56,12 @@ class DataLoader(BaseDataLoader):
                 if client_idx is not None and client_idx != self.attributes["inputs"][cnt]:
                     cnt+=1
                     continue
-                date_time_obj  = datetime.datetime.strptime(line[2][:-9], "%a %b %d %H:%M:%S")
-                date_time_obj = date_time_obj.replace(year=2009) 
-                tokens = self.tokenize(line[5])
-                self.X.append(tokens)
+                if self.tokenized:
+                    tokens = self.tokenize(line[5])
+                    self.X.append(tokens)
+                else:
+                    tokens = line[5]
+                    self.X.append([tokens])
                 self.source_sequence_length.append(len(tokens))
                 max_source_length = max(max_source_length,len(tokens))
                 self.Y.append(self.label_vocab[line[0]])
@@ -84,10 +88,12 @@ class DataLoader(BaseDataLoader):
 
         if self.source_padding:
             self.padding_data(self.X, max_source_length,self.initialize)
+        
+        if self.tokenized:
+            result['vocab'] = self.vocab
 
         result['X'] = self.X
         result['Y'] = self.Y
-        result['vocab'] = self.vocab
         result['label_vocab'] = self.label_vocab
         result['attributes'] = self.attributes
         result['source_sequence_length'] = self.source_sequence_length
@@ -103,12 +109,18 @@ class DataLoader(BaseDataLoader):
 
 
 if __name__ == "__main__":
-    data_path = '../../../../data//fednlp/text_classification/Sentiment140/'
-    train_file_path = '../../../../data//fednlp/text_classification/Sentiment140/training.1600000.processed.noemoticon.csv'
+    data_path = '../../../../data/fednlp/text_classification/Sentiment140/'
+    test_file_path = '../../../../data/fednlp/text_classification/Sentiment140/testdata.manual.2009.06.14.csv'
+    train_file_path = '../../../../data/fednlp/text_classification/Sentiment140/training.1600000.processed.noemoticon.csv'
+    test_data_loader = DataLoader(test_file_path, uniform_partition)
 
-    data_loader = DataLoader(train_file_path, "",tokenized=True, source_padding=True, target_padding=True)
+    train_data_loader = DataLoader(train_file_path, uniform_partition)
 
-    result = data_loader.data_loader()
+    result = train_data_loader.data_loader()
     print(len(result['X']))
     print(len(result['attributes']['inputs']))
-    print()
+    print(result['source_max_sequence_length'])
+    print(result['X'][140:150])
+    print(result['Y'][140:150])
+
+    print(result['source_sequence_length'][140:150])

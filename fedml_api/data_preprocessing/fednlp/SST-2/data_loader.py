@@ -1,6 +1,7 @@
 import os
 import math
 import random
+from random import shuffle
 import sys
 import csv
 import time
@@ -18,7 +19,7 @@ from base.partition import *
 class DataLoader(BaseDataLoader):
     def __init__(self, data_path, sentence_index, label_file, partition, **kwargs):
         super().__init__(data_path, partition, **kwargs)
-        allowed_keys = {"source_padding", "target_padding", "source_max_sequence_length",
+        allowed_keys = {"source_padding", "target_padding", "tokenized", "source_max_sequence_length",
                         "target_max_sequence_length", "vocab_path", "initialize"}
         self.__dict__.update((key, False) for key in allowed_keys)
         self.__dict__.update((key, value) for key, value in kwargs.items() if key in allowed_keys)
@@ -28,10 +29,12 @@ class DataLoader(BaseDataLoader):
         self.label_file = label_file
         self.attributes = dict()
         self.attributes['inputs'] = []
+        self.label_vocab = {1:"very",2:"negative",3:"neutral",4:"positive"}
+        self.label_dict = dict()
+
 
         if self.tokenized:
             self.vocab = dict()
-            self.label_vocab = {1:"very",2:"negative",3:"neutral",4:"positive"}
             if self.initialize:
                 self.vocab[SOS_TOKEN] = len(self.vocab)
                 self.vocab[EOS_TOKEN] = len(self.vocab)            
@@ -64,24 +67,33 @@ class DataLoader(BaseDataLoader):
 
     def process_data(self,client_idx=None):
         cnt = 0
-        with open(self.data_path,"r", encoding='utf-8') as f1 , open(self.label_file) as f2:
-            max_source_length = -1
-            for data_line , label_line in zip(f1,f2):
-                if client_idx is not None and client_idx != self.attributes["inputs"][cnt]:
-                    cnt+=1
-                    continue
-                data = data_line.split('\t')
+        max_source_length = -1
+        
+        with open(self.label_file) as f2:
+            for label_line in f2:
                 label = label_line.split('|')
-                if data[0] in self.sentence_index:
-                    tokens = self.tokenize(data[1].strip())
-                    self.X.append(tokens)
-                    self.source_sequence_length.append(len(tokens))
-                    max_source_length = max(len(tokens),max_source_length)
+                self.label_dict[label[0].strip()] = label[1]
+                
 
-                if label[0] in self.sentence_index:
-                    self.target_sequence_length.append(1)
+        for i in self.sentence_index:
+            if client_idx is not None and client_idx != self.attributes["inputs"][cnt]:
+                cnt+=1
+                continue
+            data = i.split('|')
 
-                    self.Y.append([self.label_level(label[1])])
+            if self.tokenized:
+                tokens = self.tokenize(data[0].strip())
+                self.X.append(tokens)
+            else:
+                tokens = data[0].strip()
+                self.X.append([tokens])
+                
+            self.source_sequence_length.append(len(tokens))
+            max_source_length = max(len(tokens),max_source_length)
+            self.target_sequence_length.append(1)   
+            self.Y.append([self.label_level(self.label_dict[data[1].strip()])])
+
+
         return max_source_length, 1
 
 
@@ -100,9 +112,12 @@ class DataLoader(BaseDataLoader):
         if self.source_padding:
             self.padding_data(self.X, max_source_length, self.initialize)
 
+        if self.tokenized:
+            result['vocab'] = self.vocab
+
+
         result['X'] = self.X
         result['Y'] = self.Y
-        result['vocab'] = self.vocab
         result['label_vocab'] = self.label_vocab
         result['attributes'] = self.attributes
         result['source_sequence_length'] = self.source_sequence_length
@@ -115,25 +130,26 @@ class DataLoader(BaseDataLoader):
 
 if __name__ == "__main__":
     data_path = '../../../../data//fednlp/text_classification/SST-2/stanfordSentimentTreebank/'
-    data_split_file = '../../../../data//fednlp/text_classification/SST-2/stanfordSentimentTreebank/datasetSplit.txt'
-    data_file_path = '../../../../data//fednlp/text_classification/SST-2/stanfordSentimentTreebank/datasetSentences.txt'
+    data_file_path = '../../../../data//fednlp/text_classification/SST-2/stanfordSentimentTreebank/dictionary.txt'
     label_file_path = '../../../../data//fednlp/text_classification/SST-2/stanfordSentimentTreebank/sentiment_labels.txt'
 
     train_indexes = []
     test_indexes = []
-    with open(data_split_file,"r",encoding="utf-8") as f:
-        for line in f:
-            data = line.split(',')
-            if data[1].strip() == '1':
-                train_indexes.append(data[0])
-            elif data[1].strip() == '2':
-                test_indexes.append(data[0]) 
-            else:
-                continue
+    with open(data_file_path,"r",encoding="utf-8") as f:
+        files = f.readlines()
+        shuffle(files)
+        train_indexes = files[0:int(len(files)*0.8)]
+        test_indexes = files[int(len(files)*0.8):]
 
-    data_loader = DataLoader(data_file_path, train_indexes, label_file_path, uniform_partition, \
-                                tokenized=True, source_padding=True, target_padding=True)
+    train_data_loader = DataLoader(data_file_path, train_indexes, label_file_path, uniform_partition)
 
-    result = data_loader.data_loader()
+    test_data_loader = DataLoader(data_file_path, test_indexes, label_file_path, uniform_partition)
+
+
+    result = train_data_loader.data_loader()
     print(len(result['X']))
     print(len(result['attributes']['inputs']))
+    print(result['X'][0:10])
+    print(result['Y'][0:10])
+    print(result['source_sequence_length'][140:150])
+    print(result['source_max_sequence_length'])

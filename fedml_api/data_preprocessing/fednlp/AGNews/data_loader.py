@@ -20,7 +20,7 @@ from base.partition import *
 class DataLoader(BaseDataLoader):
     def __init__(self, data_path, partition, **kwargs):
         super().__init__(data_path, partition,**kwargs)
-        allowed_keys = {"source_padding", "target_padding", "source_max_sequence_length",
+        allowed_keys = {"source_padding", "target_padding", "tokenized", "source_max_sequence_length",
                         "target_max_sequence_length", "vocab_path", "initialize"}
         self.__dict__.update((key, False) for key in allowed_keys)
         self.__dict__.update((key, value) for key, value in kwargs.items() if key in allowed_keys)
@@ -29,10 +29,10 @@ class DataLoader(BaseDataLoader):
         self.title = []
         self.attributes = dict()
         self.attributes['inputs'] = []
-        
+        self.label_vocab = {'1':'World','2':'Sports','3':'Business','4':'Sci/Tech'}
+
         if self.tokenized:
             self.vocab = dict()
-            self.label_vocab = {'1':'World','2':'Sports','3':'Sports','4':'Sci/Tech'}
             if self.initialize:
                 self.vocab[SOS_TOKEN] = len(self.vocab)
                 self.vocab[EOS_TOKEN] = len(self.vocab)            
@@ -61,8 +61,12 @@ class DataLoader(BaseDataLoader):
                 target = self.label_vocab[line[0]]
                 source = line[2].replace('\\','')
                 self.title.append(line[1])
-                source_tokens = self.tokenize(source)
-                self.X.append(source_tokens)
+                if self.tokenized:
+                    source_tokens = self.tokenize(source)
+                    self.X.append(source_tokens)
+                else:
+                    source_tokens = source
+                    self.X.append([source])
                 self.Y.append([target])
                 self.target_sequence_length.append(1)
                 self.source_sequence_length.append(len(source_tokens))
@@ -84,12 +88,12 @@ class DataLoader(BaseDataLoader):
         if self.source_padding:
             self.padding_data(self.X, max_source_length,self.initialize)
 
+        if self.tokenized:
+            result['vocab'] = self.vocab
 
-        
         
         result['X'] = self.X
         result['Y'] = self.Y
-        result['vocab'] = self.vocab
         result['label_vocab'] = self.label_vocab
         result['attributes'] = self.attributes
         result['source_sequence_length'] = self.source_sequence_length
@@ -103,6 +107,14 @@ class DataLoader(BaseDataLoader):
 
 if __name__ == "__main__":
     train_file_path = '../../../../data//fednlp/text_classification/AGNews/train.csv'
-    data_loader = DataLoader(train_file_path, uniform_partition, tokenized=True, source_padding=True, target_padding=True)
-    result = data_loader.data_loader()
+    test_file_path = '../../../../data//fednlp/text_classification/AGNews/test.csv'
+
+    train_data_loader = DataLoader(train_file_path, uniform_partition)
+    result = train_data_loader.data_loader()
+
+    test_data_loader = DataLoader(test_file_path, uniform_partition)
+
+
     print(result['attributes']['inputs'])
+    print(result['X'][140:150])
+    print(result['Y'][140:150])

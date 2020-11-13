@@ -17,7 +17,7 @@ from base.partition import *
 class DataLoader(BaseDataLoader):
     def __init__(self, data_path, partition,**kwargs):
         super().__init__(data_path, partition, **kwargs)
-        allowed_keys = {"source_padding", "target_padding", "source_max_sequence_length",
+        allowed_keys = {"source_padding", "target_padding", "tokenized" "source_max_sequence_length",
                         "target_max_sequence_length", "vocab_path", "initialize"}
         self.__dict__.update((key, False) for key in allowed_keys)
         self.__dict__.update((key, value) for key, value in kwargs.items() if key in allowed_keys)
@@ -25,10 +25,10 @@ class DataLoader(BaseDataLoader):
         self.target_sequence_length = []
         self.attributes = dict()
         self.attributes['inputs'] = []
+        self.label_vocab = dict()
 
         if self.tokenized:
             self.vocab = dict()
-            self.label_vocab = dict()
             if self.initialize:
                 self.vocab[SOS_TOKEN] = len(self.vocab)
                 self.vocab[EOS_TOKEN] = len(self.vocab)            
@@ -75,13 +75,18 @@ class DataLoader(BaseDataLoader):
                     temp = i.lstrip("> ").replace("/\\","").replace("*","").replace("^","")
                     document = document + temp   
                 label = files[1]
-                tokens = self.tokenize(document) 
+                if self.tokenized:
+                    tokens = self.tokenize(document) 
+                    self.X.append(tokens)
+                else:
+                    tokens = document
+                    self.X.append([tokens])
                 labels = label.split('.')
                 for i in labels:
                     if i not in self.label_vocab:
                         self.label_vocab[i] = len(self.label_vocab)
                 self.Y.append([label])
-                self.X.append(tokens)
+                
                 self.attributes['inputs'].append(index)
                 self.source_sequence_length.append(len(tokens))
                 self.target_sequence_length.append(len(labels))
@@ -112,11 +117,13 @@ class DataLoader(BaseDataLoader):
         if self.target_padding:
             self.padding_data(self.Y,max_target_length,self.initialize)
 
+        if self.tokenized:
+            result['vocab'] = self.vocab
+
         
         
         result['X'] = self.X
         result['Y'] = self.Y
-        result['vocab'] = self.vocab
         result['attributes'] = self.attributes
         result['label_vocab'] = self.label_vocab
         result['source_sequence_length'] = self.source_sequence_length
@@ -137,7 +144,13 @@ if __name__ == "__main__":
     random.shuffle(files)
     train_files_path = files[0:int(len(files)*0.8)]
     test_files_path = files[int(len(files)*0.8):]
-    data_loader = DataLoader(train_files_path, uniform_partition, tokenized=True, source_padding=True, target_padding=True)
-    train_data_loader = data_loader.data_loader()
-    print(train_data_loader['attributes']['inputs'])
+
+    train_data_loader = DataLoader(train_files_path, uniform_partition)
+    train_data_loader = train_data_loader.data_loader()
+
+    test_data_loader =  DataLoader(test_files_path, uniform_partition)
+    test_files_path = test_data_loader.data_loader()
+
+    print(len(train_data_loader['attributes']['inputs']))
+    print(train_data_loader['X'][0:5])
     print("done")

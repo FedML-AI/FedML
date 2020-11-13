@@ -19,7 +19,7 @@ from base.partition import *
 class DataLoader(BaseDataLoader):
     def __init__(self, data_path, partition, **kwargs):
         super().__init__(data_path, partition, **kwargs)
-        allowed_keys = {"source_padding", "target_padding", "source_max_sequence_length",
+        allowed_keys = {"document_padding", "question_padding", "tokenized", "source_max_sequence_length",
                         "target_max_sequence_length", "vocab_path", "initialize"}
         self.__dict__.update((key, False) for key in allowed_keys)
         self.__dict__.update((key, value) for key, value in kwargs.items() if key in allowed_keys)
@@ -27,7 +27,6 @@ class DataLoader(BaseDataLoader):
         self.question_sequence_length = []
         self.document_X = []
         self.question_X = []
-        self.question_id = []
         self.answer_X = []
         self.attributes = dict()
         self.attributes['inputs'] = []
@@ -38,7 +37,7 @@ class DataLoader(BaseDataLoader):
             if self.initialize:
                 self.vocab[SOS_TOKEN] = len(self.vocab)
                 self.vocab[EOS_TOKEN] = len(self.vocab)            
-        if self.source_padding or self.target_padding:
+        if self.document_padding or self.question_padding:
             self.vocab[PAD_TOKEN] = len(self.vocab)
             self.qas_vocab[PAD_TOKEN] = len(self.vocab)
     def tokenize(self,document):
@@ -47,7 +46,6 @@ class DataLoader(BaseDataLoader):
         return tokens
     def process_attributes(self):
         self.attributes['n_clients'] = len(self.attributes['inputs'])
-        print(self.attributes['n_clients'])
 
     def process_data(self,client_idx=None):
         with open(self.data_path,"r",encoding='utf-8') as f:
@@ -61,34 +59,52 @@ class DataLoader(BaseDataLoader):
                     continue
                 self.attributes['inputs'].append(index)
                 single_document = "".join([paragraph["context"] for paragraph in document["paragraphs"]])
-                document_tokens = self.tokenize(single_document)
-                self.document_X.append(document_tokens)
-                self.source_sequence_length.append(len(document_tokens))
-                max_document_length = max(max_document_length,len(document_tokens))
-                for i in document_tokens:
-                    if i not in self.vocab:
-                        self.vocab[i] = len(self.vocab)
+
+                if self.tokenized:
+                    document_tokens = self.tokenize(single_document)
+                    self.document_X.append(document_tokens)
+                    self.source_sequence_length.append(len(document_tokens))
+                    max_document_length = max(max_document_length,len(document_tokens))
+                    for i in document_tokens:
+                        if i not in self.vocab:
+                            self.vocab[i] = len(self.vocab)
+                else:
+                    self.document_X.append([single_document])
+
 
                 for paragraph in document["paragraphs"]:
+                    single_doc_question = []
+                    single_doc_answers = []
+                    single_doc_question_length = []
+
 
                     for qas in paragraph["qas"]:
                         question = qas["question"]
-                        question_tokens = self.tokenize(question)
-                        max_question_length = max(max_question_length,len(question_tokens))
-                        for i in question_tokens:
-                            if i not in self.qas_vocab:
-                                self.qas_vocab[i] = len(self.qas_vocab)
+                        if self.tokenized:
+                            question = self.tokenize(question)
+                            single_doc_question.append(question)
+                            max_question_length = max(max_question_length,len(question))
+                            for i in question:
+                                if i not in self.qas_vocab:
+                                    self.qas_vocab[i] = len(self.qas_vocab)
+                        else:
+                            single_doc_question.append([question])
+                            max_question_length =  max(max_question_length,len(question))
+
 
                         answer  = []
                         for answers in qas["answers"]:
                             if(answers["text"] not in answer):
                                 answer.append(answers["text"])
-                                self.question_X.append(question_tokens)
-                                self.question_sequence_length.append(len(question_tokens))
-                                self.question_id.append(qas["id"])
+                                single_doc_question_length.append(len(question))
                                 start = answers["answer_start"]
                                 end = start + len(answers["text"].rstrip())
-                                self.Y.append([start,end])
+                                single_doc_answers.append([start,end])
+                
+                self.Y.append(single_doc_answers)
+                self.question_X.append(single_doc_question)
+                self.question_sequence_length.append(single_doc_question_length)
+
         return max_document_length, max_question_length
 
 
@@ -100,22 +116,23 @@ class DataLoader(BaseDataLoader):
         else:
             max_document_length , max_question_length = self.process_data()
 
-        if self.source_padding:
+        if self.document_padding:
             self.padding_data(self.document_X, max_document_length,self.initialize)
-        if self.target_padding:
+        if self.question_padding:
             self.padding_data(self.question_X, max_question_length,self.initialize)
 
         if callable(self.partition):
             self.attributes = self.partition(self.document_X, self.Y)
         else:
             self.process_attributes()
+        
+        if self.tokenized:
+            result['vocab'] = self.vocab
+            result['question_vocab'] = self.qas_vocab
 
         result['document_X'] = self.document_X
         result['question_X'] = self.question_X
         result['Y'] = self.Y
-        result['question_id'] = self.question_id
-        result['vocab'] = self.vocab
-        result['question_vocab'] = self.qas_vocab
         result['attributes'] = self.attributes
         result['source_sequence_length'] = self.source_sequence_length
         result['question_sequence_length'] = self.question_sequence_length
@@ -127,10 +144,10 @@ class DataLoader(BaseDataLoader):
 if __name__ == "__main__":
     data_path = '../../../../data/fednlp/span_extraction/SQuAD_1.1'
     train_file_path = '../../../../data//fednlp/span_extraction/SQuAD_1.1/train-v1.1.json'
+    test_file_path = '../../../../data//fednlp/span_extraction/SQuAD_1.1/dev-v1.1.json'
 
-    data_loader = DataLoader(train_file_path, uniform_partition, tokenized=True, source_padding=True, target_padding=True)
+    train_data_loader = DataLoader(train_file_path, uniform_partition)
 
-    result = data_loader.data_loader()
-    print(len(result['document_X']))
-    print(len(result['attributes']['inputs']))
-    print(result['attributes']['inputs'])
+    result = train_data_loader.data_loader()
+
+    test_data_loader =  DataLoader(test_file_path, uniform_partition)

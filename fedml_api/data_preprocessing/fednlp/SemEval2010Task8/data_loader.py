@@ -18,7 +18,7 @@ from base.partition import *
 class DataLoader(BaseDataLoader):
     def __init__(self, data_path, partition, **kwargs):
         super().__init__(data_path,partition, **kwargs)
-        allowed_keys = {"source_padding", "target_padding", "source_max_sequence_length",
+        allowed_keys = {"source_padding", "target_padding", "tokenized", "source_max_sequence_length",
                         "target_max_sequence_length", "vocab_path", "initialize"}
         self.__dict__.update((key, False) for key in allowed_keys)
         self.__dict__.update((key, value) for key, value in kwargs.items() if key in allowed_keys)
@@ -26,12 +26,14 @@ class DataLoader(BaseDataLoader):
         self.target_sequence_length = []
         self.title = []
         self.attributes = dict()
+        self.attributes['inputs'] = []
+        self.attr_label = dict()
+        self.label_vocab = dict()
 
 
 
         if self.tokenized:
             self.vocab = dict()
-            self.label_vocab = dict()
             if self.initialize:
                 self.vocab[SOS_TOKEN] = len(self.vocab)
                 self.vocab[EOS_TOKEN] = len(self.vocab)            
@@ -69,10 +71,14 @@ class DataLoader(BaseDataLoader):
                     cnt+=1
                     continue
                 if len(data[i]) > 1 and data[i][0].isdigit():
-                    clean_data = data[i].split('\t')[1]
-                    tokens = self.tokenize(clean_data,'data')
+                    clean_data = data[i].split('\t')[1].strip().replace('"',"")
+                    if self.tokenized:
+                        tokens = self.tokenize(clean_data,'data')
+                        self.X.append(tokens)
+                    else:
+                        tokens = clean_data
+                        self.X.append([tokens])
                     self.source_sequence_length.append(len(tokens))
-                    self.X.append(tokens)
                     max_source_length = max(max_source_length,len(tokens))
 
                 elif len(data[i-1]) > 1 and data[i-1][0].isdigit():
@@ -104,10 +110,12 @@ class DataLoader(BaseDataLoader):
             self.attributes = self.partition(self.X, self.Y)
         else:
             self.attributes = self.process_attributes()
+        
+        if self.tokenized:
+                result['vocab'] = self.vocab
 
         result['X'] = self.X
         result['Y'] = self.Y
-        result['vocab'] = self.vocab
         result['label_vocab'] = self.label_vocab
         result['attributes'] = self.attributes
         result['source_sequence_length'] = self.source_sequence_length
@@ -121,8 +129,14 @@ class DataLoader(BaseDataLoader):
 if __name__ == "__main__":
     data_path = '../../../../data//fednlp/text_classification/SemEval2010Task8/SemEval2010_task8_all_data'
     train_file_path = '../../../../data//fednlp/text_classification/SemEval2010Task8/SemEval2010_task8_all_data/SemEval2010_task8_training/TRAIN_FILE.txt'
-    data_loader = DataLoader(train_file_path, "natural", tokenized=True, source_padding=True, target_padding=True)
+    test_file_path = '../../../../data//fednlp/text_classification/SemEval2010Task8/SemEval2010_task8_all_data/SemEval2010_task8_testing_keys/TEST_FILE_FULL.txt'
+    train_data_loader = DataLoader(train_file_path, uniform_partition)
 
-    result = data_loader.data_loader()
-    print(len(result['X']))
-    print(len(result['attributes']['inputs']))
+    result = train_data_loader.data_loader()
+
+    test_data_loader = DataLoader(test_file_path,uniform_partition)
+
+    print(result['attributes']['inputs'])
+    print(result['X'][140:150])
+    print(result['source_sequence_length'][140:150])
+
