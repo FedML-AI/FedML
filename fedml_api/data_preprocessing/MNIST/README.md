@@ -1,3 +1,8 @@
+## Usage
+data_loader.py - for distributed computing and standalone simulation
+mnist_mobile_preprocessor.py - for IoT/Mobile training. It splits the dataset into small files, so each client only needs to store a small file, which saves the memory cost on edge devices and also largely recudes the loading time.
+
+
 ## Mobile MNIST Data Preprocessing
 
 
