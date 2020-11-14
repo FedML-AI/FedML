@@ -13,7 +13,7 @@ from pycocotools.coco import COCO
 from torchvision import transforms
 from PIL import Image, ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
-from deeplab_utils import RandomGaussianBlur, RandomHorizontalFlip, RandomScaleCrop, Normalize, ToTensor, FixScaleCrop
+from deeplab_utils import *
 
 
 
@@ -119,7 +119,7 @@ class CocoDataset(torch.utils.data.Dataset):
     self.coco = COCO(self.instances_path)
     self.train_pairs = list()
     # self.cat_ids = self.coco.getCatIds(catNms=categories)
-    self.cat_ids = CAT_LIST
+    self.cat_ids = [0, 5, 2, 16, 9, 44, 6, 3, 17, 62, 21, 67, 18, 19, 4,1, 64, 20, 63, 7, 72]
     self.img_ids = self.coco.getImgIds(catIds=self.cat_ids)
     self.base_size = 513
     self.crop_size = 513

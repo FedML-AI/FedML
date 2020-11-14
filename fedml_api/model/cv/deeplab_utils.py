@@ -16,11 +16,11 @@ from torch.utils.data import DataLoader
 from torch.nn.modules.batchnorm import _BatchNorm
 from torch.nn.parallel._functions import ReduceAddCoalesced, Broadcast
 
-from coco import COCODataset
+import coco
 from PIL import Image, ImageOps, ImageFilter
 
 # COCO dataset path
-COCO_PATH =  '/path/to/datasets/coco/'
+COCO_PATH =  './datasets/coco/'
 
 
 class Normalize(object):
@@ -189,8 +189,8 @@ class FixedResize(object):
 
 # Data split into train-val-test
 def prepare_and_split_dataset(batch_size):
-    train_set = COCODataset(split="train")
-    val_set = COCODataset(split="val")
+    train_set = coco.CocoDataset(split="train")
+    val_set = coco.CocoDataset(split="val")
     num_class = train_set.NUM_CLASSES
     train_loader = DataLoader(train_set, batch_size = batch_size, collate_fn = lambda x: x, shuffle = True)
     val_loader = DataLoader(val_set, batch_size = batch_size, collate_fn = lambda x: x, shuffle = False)
@@ -282,7 +282,7 @@ class Saver(object):
 
     def __init__(self, args):
         self.args = args
-        self.directory = os.path.join('run', args.dataset, args.checkname)
+        self.directory = os.path.join('run', 'coco', args.checkname)
         self.runs = sorted(glob.glob(os.path.join(self.directory, 'experiment_*')))
         run_id = int(self.runs[-1].split('_')[-1]) + 1 if self.runs else 0
 
@@ -319,15 +319,15 @@ class Saver(object):
         logfile = os.path.join(self.experiment_dir, 'parameters.txt')
         log_file = open(logfile, 'w')
         p = OrderedDict()
-        p['datset'] = self.args.dataset
+        p['dataset'] = "coco"
         p['backbone'] = self.args.backbone
         p['out_stride'] = self.args.out_stride
         p['lr'] = self.args.lr
         p['lr_scheduler'] = self.args.lr_scheduler
         p['loss_type'] = self.args.loss_type
         p['epoch'] = self.args.epochs
-        p['base_size'] = self.args.base_size    
-        p['crop_size'] = self.args.crop_size
+        p['base_size'] = 513    
+        p['crop_size'] = 513
 
         for key, val in p.items():
             log_file.write(key + ':' + str(val) + '\n')

@@ -2,7 +2,7 @@ import argparse
 import os
 import numpy as np
 from tqdm import tqdm
-from dataloaders import make_data_loader
+import torch
 from deeplab_utils import SegmentationLosses, Evaluator, LR_Scheduler, Saver, prepare_and_split_dataset
 from batchnorm_utils import patch_replication_callback
 
