@@ -239,7 +239,8 @@ if __name__ == "__main__":
 
     # load data.
     # Note: if you use # of client epoch larger than 1,
-    # please set the shuffle=False for the dataloader (CIFAR10/CIFAR100/CINIC10)
+    # please set the shuffle=False for the dataloader (CIFAR10/CIFAR100/CINIC10),
+    # which keeps the batch sequence order across epoches.
     dataset = load_data(args, args.dataset)
     [train_data_num, test_data_num, train_data_global, test_data_global,
      train_data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num] = dataset
