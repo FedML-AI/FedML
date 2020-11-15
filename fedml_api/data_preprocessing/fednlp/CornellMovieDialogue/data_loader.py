@@ -284,6 +284,7 @@ class DataLoader(BaseDataLoader):
                     single_conversation.clear()
         return conversations, attributes
 
+    # TODO: Unified Partition Interface
     @staticmethod
     def nature_partition(attributes):
         movie_set = set(attributes["movie"])
@@ -309,9 +310,14 @@ class DataLoader(BaseDataLoader):
 
 
 if __name__ == "__main__":
+    import pickle
     train_file_path = "../../../../data/fednlp/seq2seq/CornellMovieDialogue/cornell movie-dialogs corpus/"
     data_loader = DataLoader(train_file_path)
     train_data_loader = data_loader.data_loader()
     nature_partition_dict = DataLoader.nature_partition(train_data_loader["attributes"])
     uniform_partition_dict = uniform_partition([train_data_loader["conversations"]])
+
+    # pickle.dump(train_data_loader, open("cornell_movie_dialogue_data_loader.pkl", "wb"))
+    # pickle.dump({"uniform_partition": uniform_partition_dict, "nature_partition": nature_partition_dict},
+    #             open("cornell_movie_dialogue_partition.pkl", "wb"))
     print("done")

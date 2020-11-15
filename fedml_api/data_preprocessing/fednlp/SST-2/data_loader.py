@@ -174,9 +174,12 @@ class DataLoader(BaseDataLoader):
 
 
 if __name__ == "__main__":
+    import pickle
     data_path = '../../../../data//fednlp/text_classification/SST-2/stanfordSentimentTreebank/'
 
     train_data_loader = DataLoader(data_path)
     train_result = train_data_loader.data_loader()
     uniform_partition_dict = uniform_partition([train_result["X"], train_result["Y"]])
+    # pickle.dump(train_result, open("sst_2_data_loader.pkl", "wb"))
+    # pickle.dump({"uniform_partition": uniform_partition_dict}, open("sst_2_partition.pkl", "wb"))
     print("done")

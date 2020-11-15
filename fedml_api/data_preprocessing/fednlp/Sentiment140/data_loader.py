@@ -133,6 +133,7 @@ class DataLoader(BaseDataLoader):
 
 
 if __name__ == "__main__":
+    import pickle
     data_path = '../../../../data/fednlp/text_classification/Sentiment140/'
     test_file_path = '../../../../data/fednlp/text_classification/Sentiment140/testdata.manual.2009.06.14.csv'
     train_file_path = '../../../../data/fednlp/text_classification/Sentiment140/training.1600000.processed.noemoticon.csv'
@@ -145,5 +146,11 @@ if __name__ == "__main__":
 
     uniform_partition_dict = uniform_partition([train_result["X"], train_result["Y"]],
                                                [test_result["X"], test_result["Y"]])
+
+    # pickle_dict = train_result
+    # pickle_dict["X"].extend(test_result["X"])
+    # pickle_dict["Y"].extend(test_result["Y"])
+    # pickle.dump(pickle_dict, open("sentiment_140_data_loader.pkl", "wb"))
+    # pickle.dump({"uniform_partition": uniform_partition_dict}, open("sentiment_140_partition.pkl", "wb"))
 
     print("done")

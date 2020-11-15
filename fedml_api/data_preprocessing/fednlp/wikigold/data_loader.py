@@ -138,8 +138,11 @@ class DataLoder(BaseDataLoader):
 
 
 if __name__ == "__main__":
+    import pickle
     train_file_path = "../../../../data/fednlp/sequence_tagging/wikigold/wikigold/CONLL-format/data/wikigold.conll.txt"
     train_data_loader = DataLoder(train_file_path)
     train_result = train_data_loader.data_loader()
     uniform_partition_dict = uniform_partition([train_result["X"], train_result["Y"]])
+    # pickle.dump(train_result, open("wikigold_data_loader.pkl", "wb"))
+    # pickle.dump({"uniform_partition": uniform_partition_dict}, open("wikigold_partition.pkl", "wb"))
     print("done")

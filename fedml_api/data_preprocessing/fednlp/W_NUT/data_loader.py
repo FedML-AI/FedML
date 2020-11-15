@@ -192,6 +192,7 @@ class DataLoader(BaseDataLoader):
         return X, Y
 
 if __name__ == "__main__":
+    import pickle
     train_file_path = "../../../../data/fednlp/sequence_tagging/W-NUT2017/data/train_data/Conll_Format/"
     dev_file_path = "../../../../data/fednlp/sequence_tagging/W-NUT2017/data/dev_data/Conll_Format/"
     test_file_path = "../../../../data/fednlp/sequence_tagging/W-NUT2017/data/test_data/Conll_Format/"
@@ -202,4 +203,9 @@ if __name__ == "__main__":
     test_result = test_data_loader.data_loader()
     uniform_partition_dict = uniform_partition([train_result["X"], train_result["Y"]],
                                                [test_result["X"], test_result["Y"]])
+    pickle_dict = train_result
+    pickle_dict["X"].extend(test_result["X"])
+    pickle_dict["Y"].extend(test_result["Y"])
+    # pickle.dump(pickle_dict, open("w_nut_data_loader.pkl", "wb"))
+    # pickle.dump({"uniform_partition": uniform_partition_dict}, open("w_nut_partition.pkl", "wb"))
     print("done")

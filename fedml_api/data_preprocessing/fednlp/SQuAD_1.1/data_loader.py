@@ -182,6 +182,7 @@ class DataLoader(BaseDataLoader):
 
         return context_X, question_X, Y, attributes
 
+    # TODO: Unified Partition Interface
     @staticmethod
     def nature_partition(train_attributes, test_attributes):
         train_doc_index_set = set(train_attributes["doc_index"])
@@ -214,6 +215,7 @@ class DataLoader(BaseDataLoader):
 
 
 if __name__ == "__main__":
+    import pickle
     data_path = '../../../../data/fednlp/span_extraction/SQuAD_1.1'
     train_file_path = '../../../../data/fednlp/span_extraction/SQuAD_1.1/train-v1.1.json'
     test_file_path = '../../../../data/fednlp/span_extraction/SQuAD_1.1/dev-v1.1.json'
@@ -228,12 +230,17 @@ if __name__ == "__main__":
     uniform_partition_dict = uniform_partition([train_result["context_X"], train_result["question_X"], train_result["Y"]],
                                                [test_result["context_X"], test_result["question_X"], test_result["Y"]])
 
-    # pickle_dict = {"task_type": train_result["task_type"], "data": {"context_X": train_result["context_X"] + test_result["context_X"],
-    #                                                                "question_X": train_result["question_X"] + test_result["question_X"],
-    #                                                                "Y": train_result["Y"] + test_result["Y"]},
-    #               "attributes": {"doc_index": train_result["attributes"]["doc_index"] +
-    #                                           [idx+len(set(train_result["attributes"]["doc_index"])) for idx in test_result["attributes"]["doc_index"]],
-    #                              "train": [i for i in range(len(train_result["context_X"]))]},
-    #                "test": [i + len(train_result["context_X"]) for i in range(len(test_result["context_X"]))]}
+    # pickle_dict = train_result
+    # pickle_dict["context_X"].extend(test_result["context_X"])
+    # pickle_dict["question_X"].extend(test_result["question_X"])
+    # pickle_dict["Y"].extend(test_result["Y"])
+    # pickle_dict["attributes"]["doc_index"].extend(
+    #     [idx+len(set(train_result["attributes"]["doc_index"])) for idx in test_result["attributes"]["doc_index"]])
+    # pickle_dict["attributes"]["train"] = [i for i in range(len(train_result["context_X"]))]
+    # pickle_dict["attributes"]["test"] = [i + len(train_result["context_X"]) for i in range(len(test_result["context_X"]))]
+    #
+    # pickle.dump(pickle_dict, open("squad_1.1_data_loader.pkl", "wb"))
+    # pickle.dump({"uniform_partition": uniform_partition_dict, "nature_partition": nature_partition},
+    #             open("squad_1.1_partition.pkl", "wb"))
 
     print("done")

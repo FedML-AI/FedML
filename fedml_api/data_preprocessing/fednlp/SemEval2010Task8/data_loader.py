@@ -156,6 +156,7 @@ class DataLoader(BaseDataLoader):
 
 
 if __name__ == "__main__":
+    import pickle
     data_path = '../../../../data//fednlp/text_classification/SemEval2010Task8/SemEval2010_task8_all_data'
     train_file_path = '../../../../data//fednlp/text_classification/SemEval2010Task8/SemEval2010_task8_all_data/SemEval2010_task8_training/TRAIN_FILE.txt'
     test_file_path = '../../../../data//fednlp/text_classification/SemEval2010Task8/SemEval2010_task8_all_data/SemEval2010_task8_testing_keys/TEST_FILE_FULL.txt'
@@ -166,6 +167,11 @@ if __name__ == "__main__":
     test_result = test_data_loader.data_loader()
     uniform_partition_dict = uniform_partition([train_result["X"], train_result["Y"]],
                                                [test_result["X"], test_result["Y"]])
+    # pickle_dict = train_result
+    # pickle_dict["X"].extend(test_result["X"])
+    # pickle_dict["Y"].extend(test_result["Y"])
+    # pickle.dump(pickle_dict, open("semeval_2010_task8_data_loader.pkl", "wb"))
+    # pickle.dump({"uniform_partition": uniform_partition_dict}, open("semeval_2010_task8_partition.pkl", "wb"))
     print("done")
 
 

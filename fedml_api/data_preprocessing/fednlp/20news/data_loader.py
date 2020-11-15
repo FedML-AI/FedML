@@ -178,28 +178,12 @@ class DataLoader(BaseDataLoader):
 
 
 if __name__ == "__main__":
-    # file_path = '../../../../data/fednlp/text_classification/20Newsgroups/20news-18828'
-    # folders = [f for f in os.listdir(file_path)]
-    # files = []
-    # for folder_name in folders:
-    #     folder_path = os.path.join(file_path, folder_name)
-    #     files.extend([(os.path.join(folder_path,f), folder_name) for f in os.listdir(folder_path)])
-    # random.seed(3)
-    # random.shuffle(files)
-    # train_files_path = files[0:int(len(files)*0.8)]
-    # test_files_path = files[int(len(files)*0.8):]
-    #
-    # train_data_loader = DataLoader(train_files_path, uniform_partition)
-    # train_data_loader = train_data_loader.data_loader()
-    #
-    # test_data_loader =  DataLoader(test_files_path, uniform_partition)
-    # test_files_path = test_data_loader.data_loader()
-    #
-    # print(len(train_data_loader['attributes']['inputs']))
-    # print(train_data_loader['X'][0:5])
-    # print("done")
+    import pickle
     file_path = '../../../../data/fednlp/text_classification/20Newsgroups/20news-18828'
     data_loader = DataLoader(file_path)
     train_data_loader = data_loader.data_loader()
     uniform_partition_dict = uniform_partition([train_data_loader["X"], train_data_loader["Y"]])
+
+    # pickle.dump(train_data_loader, open("20news_data_loader.pkl", "wb"))
+    # pickle.dump({"uniform_partition": uniform_partition_dict}, open("20news_partition.pkl", "wb"))
     print("done")

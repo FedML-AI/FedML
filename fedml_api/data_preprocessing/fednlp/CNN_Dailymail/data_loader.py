@@ -198,6 +198,7 @@ class DataLoader(BaseDataLoader):
         return X, Y
 
 if __name__ == "__main__":
+    import pickle
     train_file_path = "../../../../data/fednlp/seq2seq/CNN_Dailymail/finished_files/train.bin"
     dev_file_path = "../../../../data/fednlp/seq2seq/CNN_Dailymail/finished_files/val.bin"
     test_file_path = "../../../../data/fednlp/seq2seq/CNN_Dailymail/finished_files/test.bin"
@@ -210,4 +211,10 @@ if __name__ == "__main__":
 
     uniform_partition_dict = uniform_partition([train_result["X"], train_result["Y"]],
                                                [test_result["X"], test_result["Y"]])
+
+    # pickle_dict = train_result
+    # pickle_dict["X"].extend(test_result["X"])
+    # pickle_dict["Y"].extend(test_result["Y"])
+    # pickle.dump(pickle_dict, open("cnn_daily_mail_data_loader.pkl", "wb"))
+    # pickle.dump({"uniform_partition": uniform_partition_dict}, open("cnn_daily_mail_partition.pkl", "wb"))
     print("done")
