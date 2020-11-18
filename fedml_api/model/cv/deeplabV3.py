@@ -4,7 +4,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.model_zoo as model_zoo
 from xception import *
-from modeling.sync_batchnorm.batchnorm import SynchronizedBatchNorm2d
+# from modeling.sync_batchnorm.batchnorm import SynchronizedBatchNorm2d
+from batchnorm_utils import SynchronizedBatchNorm2d
+
 
 class _ASPPModule(nn.Module):
     def __init__(self, inplanes, planes, dilation, BatchNorm):
@@ -167,19 +169,21 @@ class DeepLabv3_plus(nn.Module):
         else:
             BatchNorm2d = nn.BatchNorm2d
 
-        self.backbone = self.build_backbone(backbone=backbone, n_channels=nInputChannels, output_stride=output_stride, BatchNorm=BatchNorm2d)
+        self.backbone = self.build_backbone(backbone=backbone, n_channels=nInputChannels, output_stride=output_stride, BatchNorm=BatchNorm2d, pretrained=pretrained)
         self.aspp = self.build_aspp(backbone=backbone, output_stride=output_stride, BatchNorm=BatchNorm2d)
         self.decoder = self.build_decoder(num_classes=n_classes, backbone=backbone, BatchNorm=BatchNorm2d)
+
+        self.freeze_bn = freeze_bn
 
         if freeze_bn:
             self._freeze_bn()
 
     def forward(self, input):
-
         x, low_level_feat = self.backbone(input)
         x = self.aspp(x)
         x = self.decoder(x, low_level_feat)
         x = F.interpolate(x, size=input.size()[2:], mode='bilinear', align_corners=True)
+
         return x
 
     def _freeze_bn(self):
@@ -213,31 +217,62 @@ class DeepLabv3_plus(nn.Module):
         return Decoder(num_classes, backbone, BatchNorm)        
 
 
-def get_1x_lr_params(model):
-    """
-    This generator returns all the parameters of the net except for
-    the last classification layer. Note that for each batchnorm layer,
-    requires_grad is set to False in deeplab_resnet.py, therefore this function does not return
-    any batchnorm parameter
-    """
-    b = [model.xception_features]
-    for i in range(len(b)):
-        for k in b[i].parameters():
-            if k.requires_grad:
-                yield k
+# def get_1x_lr_params(model):
+#     """
+#     This generator returns all the parameters of the net except for
+#     the last classification layer. Note that for each batchnorm layer,
+#     requires_grad is set to False in deeplab_resnet.py, therefore this function does not return
+#     any batchnorm parameter
+#     """
+#     b = [model.xception_features]
+#     for i in range(len(b)):
+#         for k in b[i].parameters():
+#             if k.requires_grad:
+#                 yield k
 
 
-def get_10x_lr_params(model):
-    """
-    This generator returns all the parameters for the last layer of the net,
-    which does the classification of pixel into classes
-    """
-    b = [model.aspp1, model.aspp2, model.aspp3, model.aspp4, model.conv1, model.conv2, model.last_conv]
-    for j in range(len(b)):
-        for k in b[j].parameters():
-            if k.requires_grad:
-                yield k
+# def get_10x_lr_params(model):
+#     """
+#     This generator returns all the parameters for the last layer of the net,
+#     which does the classification of pixel into classes
+#     """
+#     b = [model.aspp1, model.aspp2, model.aspp3, model.aspp4, model.conv1, model.conv2, model.last_conv]
+#     for j in range(len(b)):
+#         for k in b[j].parameters():
+#             if k.requires_grad:
+#                 yield k
 
+    def get_1x_lr_params(self):
+            modules = [self.backbone]
+            for i in range(len(modules)):
+                for m in modules[i].named_modules():
+                    if self.freeze_bn:
+                        if isinstance(m[1], nn.Conv2d):
+                            for p in m[1].parameters():
+                                if p.requires_grad:
+                                    yield p
+                    else:
+                        if isinstance(m[1], nn.Conv2d) or isinstance(m[1], SynchronizedBatchNorm2d) \
+                                or isinstance(m[1], nn.BatchNorm2d):
+                            for p in m[1].parameters():
+                                if p.requires_grad:
+                                    yield p
+
+    def get_10x_lr_params(self):
+        modules = [self.aspp, self.decoder]
+        for i in range(len(modules)):
+            for m in modules[i].named_modules():
+                if self.freeze_bn:
+                    if isinstance(m[1], nn.Conv2d):
+                        for p in m[1].parameters():
+                            if p.requires_grad:
+                                yield p
+                else:
+                    if isinstance(m[1], nn.Conv2d) or isinstance(m[1], SynchronizedBatchNorm2d) \
+                            or isinstance(m[1], nn.BatchNorm2d):
+                        for p in m[1].parameters():
+                            if p.requires_grad:
+                                yield p
 
 if __name__ == "__main__":
     model = DeepLabv3_plus(nInputChannels=3, n_classes=21, output_stride=16, pretrained=True, _print=True)

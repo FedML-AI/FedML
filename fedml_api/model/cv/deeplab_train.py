@@ -3,12 +3,13 @@ import os
 import numpy as np
 from tqdm import tqdm
 import torch
-from deeplab_utils import SegmentationLosses, Evaluator, LR_Scheduler, Saver, prepare_and_split_dataset
+from deeplab_utils import *
 from batchnorm_utils import patch_replication_callback
-
+from deeplabV3 import *
+import sys
 
 # COCO dataset path
-COCO_PATH =  '/path/to/datasets/coco/'
+COCO_PATH =  './datasets/coco/'
 
 class Trainer(object):
     def __init__(self, args):
@@ -18,21 +19,19 @@ class Trainer(object):
         # Define Saver
         self.saver = Saver(args)
         self.saver.save_experiment_config()
-
-        # Define Dataloader
-        self.train_loader, self.val_loader, self.test_loader, self.nclass = prepare_and_split_dataset(args.batch_size)
         
         # # Define Dataloader
         # kwargs = {'num_workers': args.workers, 'pin_memory': True}
-        # self.train_loader, self.val_loader, self.test_loader, self.nclass = make_data_loader(args, **kwargs)
-
+        self.train_loader, self.val_loader, self.test_loader, self.nclass = prepare_and_split_dataset(args.batch_size)
 
         # Define network
-        model = DeepLab(num_classes=self.nclass,
-                        backbone=args.backbone,
-                        output_stride=args.out_stride,
-                        sync_bn=args.sync_bn,
-                        freeze_bn=args.freeze_bn)
+        # model = DeepLab(num_classes=self.nclass,
+        #                 backbone=args.backbone,
+        #                 output_stride=args.out_stride,
+        #                 sync_bn=args.sync_bn,
+        #                 freeze_bn=args.freeze_bn)
+
+        model = DeepLabv3_plus(nInputChannels=3, n_classes=self.nclass, output_stride=16, pretrained=True, _print=True)
 
         train_params = [{'params': model.get_1x_lr_params(), 'lr': args.lr},
                         {'params': model.get_10x_lr_params(), 'lr': args.lr * 10}]
@@ -104,9 +103,11 @@ class Trainer(object):
             self.scheduler(self.optimizer, i, epoch, self.best_pred)
             self.optimizer.zero_grad()
             output = self.model(image)
+            # print("================== output done ========================== ", i)
             loss = self.criterion(output, target)
             loss.backward()
             self.optimizer.step()
+            # print("======================== optimizer ========================== ")
             train_loss += loss.item()
             tbar.set_description('Train loss: %.3f' % (train_loss / (i + 1)))
             # self.writer.add_scalar('train/total_loss_iter', loss.item(), i + num_img_tr * epoch)
@@ -174,7 +175,7 @@ class Trainer(object):
             self.best_pred = new_pred
             self.saver.save_checkpoint({
                 'epoch': epoch + 1,
-                'state_dict': self.model.module.state_dict(),
+                'state_dict': self.model.state_dict(),
                 'optimizer': self.optimizer.state_dict(),
                 'best_pred': self.best_pred,
             }, is_best)
@@ -271,7 +272,7 @@ def main():
 
 
     if args.batch_size is None:
-        args.batch_size = 64         # Mentioned in Adarsh's dataloader
+        args.batch_size = 16         # 64 - Mentioned in Adarsh's dataloader
         # args.batch_size = 4 * len(args.gpu_ids)
 
     if args.test_batch_size is None:
@@ -294,9 +295,9 @@ def main():
     print('Total Epoches:', trainer.args.epochs)
     for epoch in range(trainer.args.start_epoch, trainer.args.epochs):
         trainer.training(epoch)
+        # print(" Do we need validation ?????? ",not trainer.args.no_val and epoch % args.eval_interval == (args.eval_interval - 1))
         if not trainer.args.no_val and epoch % args.eval_interval == (args.eval_interval - 1):
             trainer.validation(epoch)
-
 
 if __name__ == "__main__":
    main()
