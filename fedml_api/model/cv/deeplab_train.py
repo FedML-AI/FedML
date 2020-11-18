@@ -3,10 +3,13 @@ import os
 import numpy as np
 from tqdm import tqdm
 import torch
-from deeplab_utils import *
-from batchnorm_utils import patch_replication_callback
-from deeplabV3 import *
+from fedml_api.model.cv.deeplab_utils import *
+from fedml_api.model.cv.batchnorm_utils import patch_replication_callback
+from fedml_api.model.cv.deeplabV3 import *
 import sys
+
+from fedml_api.data_preprocessing.coco.data_loader import get_dataloader
+
 
 # COCO dataset path
 COCO_PATH =  './datasets/coco/'
@@ -22,7 +25,7 @@ class Trainer(object):
         
         # # Define Dataloader
         # kwargs = {'num_workers': args.workers, 'pin_memory': True}
-        self.train_loader, self.val_loader, self.test_loader, self.nclass = prepare_and_split_dataset(args.batch_size)
+        self.train_loader, self.val_loader, self.nclass = get_dataloader(None, './coco_data', args.batch_size, args.batch_size)
 
         # Define network
         # model = DeepLab(num_classes=self.nclass,
@@ -103,11 +106,9 @@ class Trainer(object):
             self.scheduler(self.optimizer, i, epoch, self.best_pred)
             self.optimizer.zero_grad()
             output = self.model(image)
-            # print("================== output done ========================== ", i)
             loss = self.criterion(output, target)
             loss.backward()
             self.optimizer.step()
-            # print("======================== optimizer ========================== ")
             train_loss += loss.item()
             tbar.set_description('Train loss: %.3f' % (train_loss / (i + 1)))
             # self.writer.add_scalar('train/total_loss_iter', loss.item(), i + num_img_tr * epoch)
@@ -225,7 +226,7 @@ def main():
                         help='whether use nesterov (default: False)')
     # cuda, seed and logging
     parser.add_argument('--no-cuda', action='store_true', default=
-                        False, help='disables CUDA training')
+                        True, help='disables CUDA training')
     parser.add_argument('--gpu-ids', type=str, default='0',
                         help='use which gpu to train, must be a \
                         comma-separated list of integers only (default=0)')
@@ -295,7 +296,6 @@ def main():
     print('Total Epoches:', trainer.args.epochs)
     for epoch in range(trainer.args.start_epoch, trainer.args.epochs):
         trainer.training(epoch)
-        # print(" Do we need validation ?????? ",not trainer.args.no_val and epoch % args.eval_interval == (args.eval_interval - 1))
         if not trainer.args.no_val and epoch % args.eval_interval == (args.eval_interval - 1):
             trainer.validation(epoch)
 

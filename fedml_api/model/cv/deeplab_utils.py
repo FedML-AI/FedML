@@ -16,7 +16,8 @@ from torch.utils.data import DataLoader
 from torch.nn.modules.batchnorm import _BatchNorm
 from torch.nn.parallel._functions import ReduceAddCoalesced, Broadcast
 
-import dataloader
+# import coco_dataloader as dataloader
+# import dataloader
 from PIL import Image, ImageOps, ImageFilter
 
 # COCO dataset path
@@ -184,15 +185,18 @@ class FixedResize(object):
                 'label': mask}
 
 # Data split into train-val-test
-def prepare_and_split_dataset(batch_size):
+# def prepare_and_split_dataset(batch_size):
     
-    train_set = dataloader.COCOSegmentation(split="train")
-    val_set = dataloader.COCOSegmentation(split="val")
-    num_class = train_set.NUM_CLASSES
-    train_loader = DataLoader(train_set, batch_size = batch_size, shuffle = True)
-    val_loader = DataLoader(val_set, batch_size = batch_size, shuffle = True)
-    test_loader = None
-    return train_loader, val_loader, test_loader, num_class
+#     train_set = dataloader.CocoDataset(root_dir="/content/coco_data", split="train", transform=dataloader.FixedResize(513), categories=['person', 'dog'])
+#     val_set = dataloader.CocoDataset(root_dir="/content/coco_data", split="val", transform=dataloader.FixedResize(513), categories=['person', 'dog'])
+#     num_class = train_set.num_classes
+#     # train_set = dataloader.COCOSegmentation(split="train")
+#     # val_set = dataloader.COCOSegmentation(split="val")
+#     # num_class = train_set.NUM_CLASSES
+#     train_loader = DataLoader(train_set, batch_size = batch_size, shuffle = True)
+#     val_loader = DataLoader(val_set, batch_size = batch_size, shuffle = True)
+#     test_loader = None
+#     return train_loader, val_loader, test_loader, num_class
 
  
  
@@ -221,7 +225,6 @@ class SegmentationLosses(object):
                                         size_average=self.size_average)
         if self.cuda:
             criterion = criterion.cuda()
-
         loss = criterion(logit, target.long())
 
         if self.batch_average:

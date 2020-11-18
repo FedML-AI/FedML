@@ -3,9 +3,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.model_zoo as model_zoo
-from xception import *
+from fedml_api.model.cv.xception import *
 # from modeling.sync_batchnorm.batchnorm import SynchronizedBatchNorm2d
-from batchnorm_utils import SynchronizedBatchNorm2d
+from fedml_api.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
 
 
 class _ASPPModule(nn.Module):
