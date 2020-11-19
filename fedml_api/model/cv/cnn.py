@@ -54,7 +54,7 @@ class CNN_OriginalFedAvg(torch.nn.Module):
         self.linear_1 = nn.Linear(3136, 512)
         self.linear_2 = nn.Linear(512, 10 if only_digits else 62)
         self.relu = nn.ReLU()
-        self.softmax = nn.Softmax(dim=1)
+        #self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x):
         x = torch.unsqueeze(x, 1)
@@ -64,7 +64,8 @@ class CNN_OriginalFedAvg(torch.nn.Module):
         x = self.max_pooling(x)
         x = self.flatten(x)
         x = self.relu(self.linear_1(x))
-        x = self.softmax(self.linear_2(x))
+        x = self.linear_2(x)
+        #x = self.softmax(self.linear_2(x))
         return x
 
 
@@ -120,7 +121,7 @@ class CNN_DropOut(torch.nn.Module):
         self.dropout_2 = nn.Dropout(0.5)
         self.linear_2 = nn.Linear(128, 10 if only_digits else 62)
         self.relu = nn.ReLU()
-        self.softmax = nn.Softmax(dim=1)
+        #self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x):
         x = torch.unsqueeze(x, 1)
@@ -131,5 +132,6 @@ class CNN_DropOut(torch.nn.Module):
         x = self.flatten(x)
         x = self.relu(self.linear_1(x))
         x = self.dropout_2(x)
-        x = self.softmax(self.linear_2(x))
+        x = self.linear_2(x)
+        #x = self.softmax(self.linear_2(x))
         return x
