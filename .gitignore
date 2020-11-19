@@ -51,3 +51,6 @@ fedml_mobile/android/fedml-iot-sdk/build
 fedml_mobile/android/build
 
 mimiconda.sh
+
+
+data/fednlp/*
