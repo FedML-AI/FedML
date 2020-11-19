@@ -54,7 +54,7 @@ class CocoDataset(torch.utils.data.Dataset):
     if os.path.exists(self.ids_file):
       self.img_ids = torch.load(self.ids_file)
     else:
-      ids = list(self.coco.imgs.keys())[:10]
+      ids = list(self.coco.imgs.keys())
       self.img_ids = self.__preprocess(ids)
 
     if transform == None:
