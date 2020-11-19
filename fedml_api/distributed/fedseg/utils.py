@@ -1,6 +1,28 @@
 import torch
 import numpy as np
 
+import os
+import shutil
+import glob
+import math
+from tqdm import tqdm
+import collections
+import random
+
+from collections import OrderedDict
+
+import numpy as np 
+import torch
+import torch.nn as nn
+import torch.nn.functional as F 
+from torch.utils.data import DataLoader
+from torch.nn.modules.batchnorm import _BatchNorm
+from torch.nn.parallel._functions import ReduceAddCoalesced, Broadcast
+
+# import coco_dataloader as dataloader
+# import dataloader
+from PIL import Image, ImageOps, ImageFilter
+
 
 def transform_list_to_tensor(model_params_list):
     for k in model_params_list.keys():
@@ -12,3 +34,160 @@ def transform_tensor_to_list(model_params):
     for k in model_params.keys():
         model_params[k] = model_params[k].detach().numpy().tolist()
     return model_params
+
+
+# Segmentation Loss
+class SegmentationLosses(object):
+    def __init__(self, size_average=True, batch_average=True, ignore_index=255):
+        self.ignore_index = ignore_index
+        self.size_average = size_average
+        self.batch_average = batch_average
+        self.cuda = cuda
+
+    def build_loss(self, mode='ce'):
+        """Choices: ['ce' or 'focal']"""
+        if mode == 'ce':
+            return self.CrossEntropyLoss
+        elif mode == 'focal':
+            return self.FocalLoss
+        else:
+            raise NotImplementedError
+
+    def CrossEntropyLoss(self, logit, target):
+        n, c, h, w = logit.size()
+        criterion = nn.CrossEntropyLoss(ignore_index=self.ignore_index,
+                                        size_average=self.size_average)
+        # if self.cuda:
+        #     criterion = criterion.cuda()
+        loss = criterion(logit, target.long())
+        if self.batch_average:
+            loss /= n
+        return loss
+
+    def FocalLoss(self, logit, target, gamma=2, alpha=0.5):
+        n, c, h, w = logit.size()
+        criterion = nn.CrossEntropyLoss(ignore_index=self.ignore_index,
+                                        size_average=self.size_average)
+        # if self.cuda:
+        #     criterion = criterion.cuda()
+        logpt = -criterion(logit, target.long())
+        pt = torch.exp(logpt)
+        if alpha is not None:
+            logpt *= alpha
+        loss = -((1 - pt) ** gamma) * logpt
+        if self.batch_average:
+            loss /= n
+        return loss
+
+
+# LR Scheduler
+class LR_Scheduler(object):
+    """Learning Rate Scheduler
+    Step mode: ``lr = baselr * 0.1 ^ {floor(epoch-1 / lr_step)}``
+    Cosine mode: ``lr = baselr * 0.5 * (1 + cos(iter/maxiter))``
+    Poly mode: ``lr = baselr * (1 - iter/maxiter) ^ 0.9``
+    Args:
+        args:
+          :attr:`args.lr_scheduler` lr scheduler mode (`cos`, `poly`,`step`),
+          :attr:`args.lr` base learning rate, :attr:`args.epochs` number of epochs,
+          :attr:`args.lr_step`
+        iters_per_epoch: number of iterations per epoch
+    """
+    def __init__(self, mode, base_lr, num_epochs, iters_per_epoch=0,
+                 lr_step=0, warmup_epochs=0):
+        self.mode = mode
+        print('Using {} LR Scheduler!'.format(self.mode))
+        self.lr = base_lr
+        if mode == 'step':
+            assert lr_step
+        self.lr_step = lr_step
+        self.iters_per_epoch = iters_per_epoch
+        self.N = num_epochs * iters_per_epoch
+        self.epoch = -1
+        self.warmup_iters = warmup_epochs * iters_per_epoch
+
+    def __call__(self, optimizer, i, epoch):
+        T = epoch * self.iters_per_epoch + i
+        if self.mode == 'cos':
+            lr = 0.5 * self.lr * (1 + math.cos(1.0 * T / self.N * math.pi))
+        elif self.mode == 'poly':
+            lr = self.lr * pow((1 - 1.0 * T / self.N), 0.9)
+        elif self.mode == 'step':
+            lr = self.lr * (0.1 ** (epoch // self.lr_step))
+        else:
+            raise NotImplemented
+        # warm up lr schedule
+        if self.warmup_iters > 0 and T < self.warmup_iters:
+            lr = lr * 1.0 * T / self.warmup_iters
+        if epoch > self.epoch:
+            print('\n=>Epoches %i, learning rate = %.4f, \
+                previous best = %.4f' % (epoch, lr))
+            self.epoch = epoch
+        assert lr >= 0
+        self._adjust_learning_rate(optimizer, lr)
+
+    def _adjust_learning_rate(self, optimizer, lr):
+        if len(optimizer.param_groups) == 1:
+            optimizer.param_groups[0]['lr'] = lr
+        else:
+            # enlarge the lr at the head
+            optimizer.param_groups[0]['lr'] = lr
+            for i in range(1, len(optimizer.param_groups)):
+                optimizer.param_groups[i]['lr'] = lr * 10
+
+
+# save model checkpoints (centralized)
+class Saver(object):
+
+    def __init__(self, args):
+        self.args = args
+        self.directory = os.path.join('run', 'coco', args.checkname)
+        self.runs = sorted(glob.glob(os.path.join(self.directory, 'experiment_*')))
+        run_id = int(self.runs[-1].split('_')[-1]) + 1 if self.runs else 0
+
+        self.experiment_dir = os.path.join(self.directory, 'experiment_{}'.format(str(run_id)))
+        if not os.path.exists(self.experiment_dir):
+            os.makedirs(self.experiment_dir)
+
+    def save_checkpoint(self, state, is_best, filename='checkpoint.pth.tar'):
+        """Saves checkpoint to disk"""
+        filename = os.path.join(self.experiment_dir, filename)
+        torch.save(state, filename)
+        if is_best:
+            best_pred = state['best_pred']
+            with open(os.path.join(self.experiment_dir, 'best_pred.txt'), 'w') as f:
+                f.write(str(best_pred))
+            if self.runs:
+                previous_miou = [0.0]
+                for run in self.runs:
+                    run_id = run.split('_')[-1]
+                    path = os.path.join(self.directory, 'experiment_{}'.format(str(run_id)), 'best_pred.txt')
+                    if os.path.exists(path):
+                        with open(path, 'r') as f:
+                            miou = float(f.readline())
+                            previous_miou.append(miou)
+                    else:
+                        continue
+                max_miou = max(previous_miou)
+                if best_pred > max_miou:
+                    shutil.copyfile(filename, os.path.join(self.directory, 'model_best.pth.tar'))
+            else:
+                shutil.copyfile(filename, os.path.join(self.directory, 'model_best.pth.tar'))
+
+    def save_experiment_config(self):
+        logfile = os.path.join(self.experiment_dir, 'parameters.txt')
+        log_file = open(logfile, 'w')
+        p = OrderedDict()
+        p['dataset'] = "coco"
+        p['backbone'] = self.args.backbone
+        p['out_stride'] = self.args.out_stride
+        p['lr'] = self.args.lr
+        p['lr_scheduler'] = self.args.lr_scheduler
+        p['loss_type'] = self.args.loss_type
+        p['epoch'] = self.args.epochs
+        p['base_size'] = 513    
+        p['crop_size'] = 513
+
+        for key, val in p.items():
+            log_file.write(key + ':' + str(val) + '\n')
+        log_file.close()

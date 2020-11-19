@@ -4,6 +4,8 @@ import torch
 from torch import nn
 
 from fedml_api.distributed.fedseg.utils import transform_tensor_to_list
+from fedml_api.distributed.fedseg.utils import SegmentationLosses, LR_Scheduler, Saver
+
 
 
 class FedSegTrainer(object):
@@ -18,16 +20,42 @@ class FedSegTrainer(object):
 
         self.device = device
         self.args = args
+
         self.model = model
-        # logging.info(self.model)
         self.model.to(self.device)
-        self.criterion = nn.CrossEntropyLoss().to(self.device)
+        self.criterion = SegmentationLosses().build_loss(mode=args.loss_type).to(self.device)                   # modified 
+        self.scheduler = LR_Scheduler(args.lr_scheduler, args.lr, args.epochs, len(self.train_local))
+
         if self.args.client_optimizer == "sgd":
             self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.args.lr)
         else:
             self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()),
                                               lr=self.args.lr,
                                               weight_decay=self.args.wd, amsgrad=True)
+
+        self.saver = Saver(args)
+        self.saver.save_experiment_config()
+
+        # Resuming checkpoint
+        self.best_pred = 0.0
+        if args.resume is not None:
+            if not os.path.isfile(args.resume):
+                raise RuntimeError("=> no checkpoint found at '{}'" .format(args.resume))
+            checkpoint = torch.load(args.resume)
+            args.start_epoch = checkpoint['epoch']                                              # add args.start_epoch
+            self.model.load_state_dict(checkpoint['state_dict'])
+            if not args.ft:                                                                     # add args.ft
+                self.optimizer.load_state_dict(checkpoint['optimizer'])
+            self.best_pred = checkpoint['best_pred']
+            print("=> loaded checkpoint '{}' (epoch {})"
+                  .format(args.resume, checkpoint['epoch']))
+
+
+        # Clear start epoch if fine-tuning
+        if args.ft:
+            args.start_epoch = 0
+
+
 
     def update_model(self, weights):
         # logging.info("update_model. client_index = %d" % self.client_index)
@@ -49,6 +77,7 @@ class FedSegTrainer(object):
             for batch_idx, (x, labels) in enumerate(self.train_local):
                 # logging.info(images.shape)
                 x, labels = x.to(self.device), labels.to(self.device)
+                self.scheduler(self.optimizer, batch_idx, epoch)
                 self.optimizer.zero_grad()
                 log_probs = self.model(x)
                 loss = self.criterion(log_probs, labels)
@@ -59,6 +88,17 @@ class FedSegTrainer(object):
                 epoch_loss.append(sum(batch_loss) / len(batch_loss))
                 logging.info('(client {}. Local Training Epoch: {} \tLoss: {:.6f}'.format(self.client_index,
                                                                 epoch, sum(epoch_loss) / len(epoch_loss)))
+
+
+        # if self.args.no_val:                            
+        # save checkpoint every epoch
+        is_best = False
+        self.saver.save_checkpoint({
+            'epoch': epoch + 1,
+            'state_dict': self.model.state_dict(),
+            'optimizer': self.optimizer.state_dict(),
+            'best_pred': self.best_pred,
+        }, is_best)
 
         weights = self.model.cpu().state_dict()
 
