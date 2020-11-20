@@ -3,7 +3,7 @@ Please visit the following link to check the latest benchmark experimental resul
 
 https://app.wandb.ai/automl/fedml/reports/FedML-Benchmark-Experimental-Results--VmlldzoxODE2NTU
 
-### Hyperparameters
+# Hyperparameters
 
 |     Data Set     |              Model              | Alogrithm |   Partition Method  | Partition Alpha | client_num_in_total | client_num_per_round | batch_size | client_optimizer |      lr      |       wd       | epochs | comm_round | accuracy |
 |:----------------:|:-------------------------------:|:---------:|:-------------------:|:---------------:|:-------------------:|:--------------------:|:----------:|:----------------:|:------------:|:--------------:|:------:|:----------:|:--------:|
@@ -16,7 +16,7 @@ https://app.wandb.ai/automl/fedml/reports/FedML-Benchmark-Experimental-Results--
 |   StackOverflow  |       RNN (1 LSTM + 2 FC)       |   FedAvg  |  realistic patition |        　       |        342477       |          50          |     16     |        SGD       | pow(10,-0.5) |        -       |    1   |    >1500   |   19.5   |
 ​
 > for Synthetic(α,β), (α,β) is chosen from (0,0), (0.5,0.5), (1,1)
-### Reference Lists
+# Reference Lists
 We refer the hyper-parameters from many top-tier ML conferences. Please check details of our reference hyperparameters as follows.
 
 - MNIST – Logistic Regression – FedAvg
