@@ -13,7 +13,7 @@ from base.globals import *
 from base.partition import *
 
 
-data_dir shoule be '../../../../data/fednlp/span_extraction/SQuAD_1.1'
+data_dir shoule be '../../../../data/fednlp/span_extraction/SQuAD_1_1.1'
 
 
 class DataLoader(BaseDataLoader):

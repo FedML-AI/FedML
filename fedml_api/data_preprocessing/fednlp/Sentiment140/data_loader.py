@@ -3,28 +3,39 @@ import math
 import random
 import sys
 import csv
-import time
-import datetime
+import pickle
 
 
 sys.path.append('..')
 
-from base.data_loader import BaseDataLoader
+from base.data_loader import BaseRawDataLoader, BaseClientDataLoader
 from base.globals import *
 from base.partition import *
 
-class DataLoader(BaseDataLoader):
+class RawDataLoader(BaseRawDataLoader):
     def __init__(self, data_path):
         super().__init__(data_path)
         self.task_type = "classification"
         self.target_vocab = None
+        self.test_file_name = "testdata.manual.2009.06.14.csv"
+        self.train_file_name = "training.1600000.processed.noemoticon.csv"
 
     def data_loader(self):
         if len(self.X) == 0 or len(self.Y) == 0 or self.target_vocab is None:
-            X, Y = self.process_data(self.data_path)
+            X, Y = self.process_data(os.path.join(self.data_path, self.train_file_name))
+            train_size = len(X)
+            temp = self.process_data(os.path.join(self.data_path, self.test_file_name))
+            X.extend(temp[0])
+            Y.extend(temp[1])
             self.X, self.Y = X, Y
+            train_index_list = [i for i in range(train_size)]
+            test_index_list = [i for i in range(train_size, len(self.X))]
+            index_list = train_index_list + test_index_list
+            self.attributes = {"index_list": index_list, "train_index_list": train_index_list,
+                               "test_index_list": test_index_list}
             self.target_vocab = {key: i for i, key in enumerate(set(Y))}
-        return {"X": self.X, "Y": self.Y, "target_vocab": self.target_vocab, "task_type": self.task_type}
+        return {"X": self.X, "Y": self.Y, "target_vocab": self.target_vocab, "task_type": self.task_type,
+                "attributes": self.attributes}
 
     def process_data(self, file_path):
         X = []
@@ -37,29 +48,37 @@ class DataLoader(BaseDataLoader):
 
         return X, Y
 
+class ClientDataLoader(BaseClientDataLoader):
+
+    def __init__(self, data_path, partition_path, client_idx=None, partition_method="uniform", tokenize=False):
+        data_fields = ("X", "Y")
+        super().__init__(data_path, partition_path, client_idx, partition_method, tokenize, data_fields)
+        if self.tokenize:
+            self.tokenize_data()
+
+    def tokenize_data(self):
+        tokenizer = self.spacy_tokenizer.en_tokenizer
+
+        def __tokenize_data(data):
+            for i in range(len(self.data["X"])):
+                data["X"][i] = [str(token) for token in tokenizer(data["X"][i])]
+                data["Y"][i] = [str(token) for token in tokenizer(data["Y"][i])]
+
+        __tokenize_data(self.train_data)
+        __tokenize_data(self.test_data)
 
 
 
-
-if __name__ == "__main__":
-    import pickle
-    data_path = '../../../../data/fednlp/text_classification/Sentiment140/'
-    test_file_path = '../../../../data/fednlp/text_classification/Sentiment140/testdata.manual.2009.06.14.csv'
-    train_file_path = '../../../../data/fednlp/text_classification/Sentiment140/training.1600000.processed.noemoticon.csv'
-    test_data_loader = DataLoader(test_file_path)
-
-    train_data_loader = DataLoader(train_file_path)
-    train_result = train_data_loader.data_loader()
-
-    test_result = test_data_loader.data_loader()
-
-    uniform_partition_dict = uniform_partition([train_result["X"], train_result["Y"]],
-                                               [test_result["X"], test_result["Y"]])
-
-    # pickle_dict = train_result
-    # pickle_dict["X"].extend(test_result["X"])
-    # pickle_dict["Y"].extend(test_result["Y"])
-    # pickle.dump(pickle_dict, open("sentiment_140_data_loader.pkl", "wb"))
-    # pickle.dump({"uniform_partition": uniform_partition_dict}, open("sentiment_140_partition.pkl", "wb"))
-
-    print("done")
+# if __name__ == "__main__":
+#     data_file_path = '../../../../data/fednlp/text_classification/Sentiment140/'
+#     data_loader = RawDataLoader(data_file_path)
+#
+#     results = data_loader.data_loader()
+#
+#     uniform_partition_dict = uniform_partition(results["attributes"]["train_index_list"],
+#                                                results["attributes"]["test_index_list"])
+#
+#     pickle.dump(results, open("sentiment_140_data_loader.pkl", "wb"))
+#     pickle.dump({"uniform": uniform_partition_dict}, open("sentiment_140_partition.pkl", "wb"))
+#
+#     print("done")

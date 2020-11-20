@@ -1,26 +1,28 @@
 import os
 import sys
 import random
+import pickle
 sys.path.append('..')
-from base.data_loader import BaseDataLoader
+from base.data_loader import BaseRawDataLoader, BaseClientDataLoader
 from base.partition import *
 
 
-class DataLoader(BaseDataLoader):
+class RawDataLoader(BaseRawDataLoader):
     def __init__(self, data_path):
         super().__init__(data_path)
         self.task_type = "dialog_response_generation"
-        self.conversations = []
+        self.history = []
         self.attributes = None
         self.movie_conversation_file_name = "movie_conversations.txt"
         self.movie_line_file_name = "movie_lines.txt"
 
     def data_loader(self):
-        if len(self.conversations) == 0:
-            conversations, attributes = self.process_data(self.data_path)
-            self.conversations, self.attributes = conversations, attributes
-
-        return {"conversations": self.conversations, "attributes": self.attributes,
+        if len(self.history) == 0:
+            X, Y, history, attributes = self.process_data(self.data_path)
+            self.X, self.Y, self.history, self.attributes = X, Y, history, attributes
+            self.index_list = [i for i in range(len(self.X))]
+            self.attributes["index_list"] = self.index_list
+        return {"X": self.X, "Y": self.Y, "history": self.history, "attributes": self.attributes,
                 "task_type": self.task_type}
 
     def process_data(self, file_path):
@@ -30,13 +32,16 @@ class DataLoader(BaseDataLoader):
                 line = line.strip()
                 if line:
                     temp = line.split("+++$+++")
-                    line_dict[temp[0].strip()] = temp[-1].strip()
+                    line_dict[temp[0].strip()] = {"utterance": temp[-1].strip(), "character": temp[1]}
 
-        conversations = []
-        single_conversation = []
         attributes = dict()
         attributes["characters"] = []
         attributes["movie"] = []
+
+        conversation = []
+        X = []
+        Y = []
+        history = []
 
         with open(os.path.join(file_path, self.movie_conversation_file_name), 'r') as f:
             for line in f:
@@ -45,13 +50,16 @@ class DataLoader(BaseDataLoader):
                     temp = line.split("+++$+++")
                     conversation_idx = temp[-1].strip()
                     conversation_idx = eval(conversation_idx)
-                    for i in range(len(conversation_idx)):
+                    for i in range(len(conversation_idx) - 1):
+                        X.append(line_dict[conversation_idx[i]]["utterance"])
+                        Y.append(line_dict[conversation_idx[i + 1]]["utterance"])
+                        history.append(conversation.copy())
                         attributes["movie"].append(temp[2])
-                        attributes["characters"].append((temp[0], temp[1]))
-                        single_conversation.append(line_dict[conversation_idx[i]])
-                    conversations.append(single_conversation.copy())
-                    single_conversation.clear()
-        return conversations, attributes
+                        attributes["characters"].append((line_dict[conversation_idx[i]]["character"],
+                                                         line_dict[conversation_idx[i + 1]]["character"]))
+                        conversation.append(line_dict[conversation_idx[i]]["utterance"])
+                    conversation.clear()
+        return X, Y, history, attributes
 
     # TODO: Unified Partition Interface
     @staticmethod
@@ -62,7 +70,7 @@ class DataLoader(BaseDataLoader):
         partition_dict["partition_data"] = dict()
         for i, movie_id in enumerate(movie_set):
             for j in range(len(attributes["movie"])):
-                if attributes["movie"][i] == movie_id:
+                if attributes["movie"][j] == movie_id:
                     if i not in partition_dict["partition_data"]:
                         partition_dict["partition_data"][i] = dict()
                         partition_dict["partition_data"][i]["train"] = list()
@@ -78,15 +86,36 @@ class DataLoader(BaseDataLoader):
         return partition_dict
 
 
-if __name__ == "__main__":
-    import pickle
-    train_file_path = "../../../../data/fednlp/seq2seq/CornellMovieDialogue/cornell movie-dialogs corpus/"
-    data_loader = DataLoader(train_file_path)
-    train_data_loader = data_loader.data_loader()
-    nature_partition_dict = DataLoader.nature_partition(train_data_loader["attributes"])
-    uniform_partition_dict = uniform_partition([train_data_loader["conversations"]])
+class ClientDataLoader(BaseClientDataLoader):
 
-    # pickle.dump(train_data_loader, open("cornell_movie_dialogue_data_loader.pkl", "wb"))
-    # pickle.dump({"uniform_partition": uniform_partition_dict, "nature_partition": nature_partition_dict},
-    #             open("cornell_movie_dialogue_partition.pkl", "wb"))
-    print("done")
+    def __init__(self, data_path, partition_path, client_idx=None, partition_method="uniform", tokenize=False):
+        data_fields = ("X", "Y", "history")
+        super().__init__(data_path, partition_path, client_idx, partition_method, tokenize, data_fields)
+        if self.tokenize:
+            self.tokenize_data()
+
+    def tokenize_data(self):
+        tokenizer = self.spacy_tokenizer.en_tokenizer
+
+        def __tokenize_data(data):
+            for i in range(len(self.data["X"])):
+                data["X"][i] = [str(token) for token in tokenizer(data["X"][i])]
+                data["Y"][i] = [str(token) for token in tokenizer(data["Y"][i])]
+                for j in range(len(data["history"][i])):
+                    data["history"][i][j] = [str(token) for token in tokenizer(data["history"][i][j])]
+
+        __tokenize_data(self.train_data)
+        __tokenize_data(self.test_data)
+
+
+# if __name__ == "__main__":
+#     data_file_path = "../../../../data/fednlp/seq2seq/CornellMovieDialogue/cornell_movie_dialogs_corpus/"
+#     data_loader = RawDataLoader(data_file_path)
+#     results = data_loader.data_loader()
+#     nature_partition_dict = RawDataLoader.nature_partition(results["attributes"])
+#     uniform_partition_dict = uniform_partition(results["attributes"]["index_list"])
+#
+#     pickle.dump(train_data_loader, open("cornell_movie_dialogue_data_loader.pkl", "wb"))
+#     pickle.dump({"uniform": uniform_partition_dict, "nature": nature_partition_dict},
+#                 open("cornell_movie_dialogue_partition.pkl", "wb"))
+#     print("done")

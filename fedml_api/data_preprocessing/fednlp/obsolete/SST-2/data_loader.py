@@ -14,7 +14,7 @@ from base.globals import *
 from base.partition import *
 
 if download with script in data folder 
-data_dir shoule be '../../../../data//fednlp/text_classification/SST-2/stanfordSentimentTreebank'
+data_dir shoule be '../../../../data//fednlp/text_classification/SST_2/stanfordSentimentTreebank'
 
 class DataLoader(BaseDataLoader):
     def __init__(self, data_path, sentence_index, label_file, partition, **kwargs):

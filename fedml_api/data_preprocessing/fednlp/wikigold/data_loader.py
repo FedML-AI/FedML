@@ -1,9 +1,10 @@
 import sys
+import pickle
 sys.path.append('..')
-from base.data_loader import BaseDataLoader
+from base.data_loader import BaseRawDataLoader, BaseClientDataLoader
 from base.partition import *
 from base.utils import *
-class DataLoder(BaseDataLoader):
+class RawDataLoader(BaseRawDataLoader):
     def __init__(self, data_path):
         super().__init__(data_path)
         self.task_type = "sequence_tagging"
@@ -13,9 +14,12 @@ class DataLoder(BaseDataLoader):
         if len(self.X) == 0 or len(self.Y) == 0 or len(self.target_vocab) == 0:
             X, Y = self.process_data(self.data_path)
             self.X, self.Y = X, Y
+            index_list = [i for i in range(len(self.X))]
+            self.attributes = {"index_list": index_list}
             self.target_vocab = build_vocab(Y)
 
-        return {"X": self.X, "Y": self.Y, "target_vocab": self.target_vocab, "task_type": self.task_type}
+        return {"X": self.X, "Y": self.Y, "target_vocab": self.target_vocab, "task_type": self.task_type,
+                "attributes": self.attributes}
 
     def process_data(self, file_path):
         X = []
@@ -38,13 +42,19 @@ class DataLoder(BaseDataLoader):
         return X, Y
 
 
+class ClientDataLoader(BaseClientDataLoader):
+    def __init__(self, data_path, partition_path, client_idx=None, partition_method="uniform", tokenize=False):
+        data_fields = ("X", "Y")
+        super().__init__(data_path, partition_path, client_idx, partition_method, tokenize, data_fields)
 
-if __name__ == "__main__":
-    import pickle
-    train_file_path = "../../../../data/fednlp/sequence_tagging/wikigold/wikigold/CONLL-format/data/wikigold.conll.txt"
-    train_data_loader = DataLoder(train_file_path)
-    train_result = train_data_loader.data_loader()
-    uniform_partition_dict = uniform_partition([train_result["X"], train_result["Y"]])
-    # pickle.dump(train_result, open("wikigold_data_loader.pkl", "wb"))
-    # pickle.dump({"uniform_partition": uniform_partition_dict}, open("wikigold_partition.pkl", "wb"))
-    print("done")
+
+
+
+# if __name__ == "__main__":
+#     data_file_path = "../../../../data/fednlp/sequence_tagging/wikigold/wikigold/CONLL-format/data/wikigold.conll.txt"
+#     data_loader = RawDataLoader(data_file_path)
+#     results = data_loader.data_loader()
+#     uniform_partition_dict = uniform_partition(results["attributes"]["index_list"])
+#     pickle.dump(results, open("wikigold_data_loader.pkl", "wb"))
+#     pickle.dump({"uniform": uniform_partition_dict}, open("wikigold_partition.pkl", "wb"))
+#     print("done")
