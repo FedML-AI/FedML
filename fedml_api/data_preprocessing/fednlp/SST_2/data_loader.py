@@ -1,7 +1,7 @@
-import sys
-import csv
-import pickle
 import os
+import sys
+import pickle
+
 
 sys.path.append('..')
 
@@ -9,42 +9,51 @@ from base.data_loader import BaseRawDataLoader, BaseClientDataLoader
 from base.globals import *
 from base.partition import *
 
-
 class RawDataLoader(BaseRawDataLoader):
     def __init__(self, data_path):
         super().__init__(data_path)
         self.task_type = "classification"
         self.target_vocab = None
-        self.train_path = "train.csv"
-        self.test_path = "test.csv"
+        self.label_file_name = "sentiment_labels.txt"
+        self.data_file_name = "dictionary.txt"
 
     def data_loader(self):
         if len(self.X) == 0 or len(self.Y) == 0 or self.target_vocab is None:
-            X, Y = self.process_data(os.path.join(self.data_path, self.train_path))
-            train_size = len(X)
-            temp = self.process_data(os.path.join(self.data_path, self.test_path))
-            X.extend(temp[0])
-            Y.extend(temp[1])
+            X, Y = self.process_data(self.data_path)
             self.X, self.Y = X, Y
+            index_list = [i for i in range(len(self.X))]
+            self.attributes = {"index_list": index_list}
             self.target_vocab = {key: i for i, key in enumerate(set(Y))}
-            train_index_list = [i for i in range(train_size)]
-            test_index_list = [i for i in range(train_size, len(X))]
-            index_list = train_index_list + test_index_list
-            self.attributes = {"index_list": index_list, "train_index_list": train_index_list,
-                               "test_index_list": test_index_list}
         return {"X": self.X, "Y": self.Y, "target_vocab": self.target_vocab, "task_type": self.task_type,
                 "attributes": self.attributes}
+
+    def label_level(self, label):
+        label = float(label)
+        if label >= 0.0 and label <= 0.2:
+            return "very negative"
+        elif label > 0.2 and label <= 0.4:
+            return "negative"
+        elif label > 0.4 and label <= 0.6:
+            return "neutral"
+        elif label > 0.6 and label <= 0.8:
+            return "positive"
+        else:
+            return "very positive"
 
     def process_data(self, file_path):
         X = []
         Y = []
-        with open(file_path, "r", newline='') as csvfile:
-            data = csv.reader(csvfile, delimiter=',')
-            for line in data:
-                target = line[0]
-                source = line[2].replace('\\', '')
-                X.append(source)
-                Y.append(target)
+        label_dict = dict()
+        with open(os.path.join(file_path, self.label_file_name)) as f:
+            for label_line in f:
+                label = label_line.split('|')
+                label_dict[label[0].strip()] = label[1]
+
+        with open(os.path.join(file_path, self.data_file_name)) as f:
+            for data_line in f:
+                data = data_line.strip().split("|")
+                X.append(data[0].strip())
+                Y.append(self.label_level(label_dict[data[1].strip()]))
         return X, Y
 
 
@@ -69,14 +78,11 @@ class ClientDataLoader(BaseClientDataLoader):
 
 
 # if __name__ == "__main__":
-#     data_file_path = '../../../../data/fednlp/text_classification/AGNews/'
+#     data_file_path = '../../../../data//fednlp/text_classification/SST-2/stanfordSentimentTreebank/'
 #
-#     data_loader = RawDataLoader(data_file_path)
-#     results = data_loader.data_loader()
-#
-#     uniform_partition_dict = uniform_partition(results["attributes"]["train_index_list"],
-#                                                results["attributes"]["test_index_list"])
-#
-#     pickle.dump(results, open("agnews_data_loader.pkl", "wb"))
-#     pickle.dump({"uniform": uniform_partition_dict}, open("agnews_partition.pkl", "wb"))
+#     train_data_loader = RawDataLoader(data_file_path)
+#     results = train_data_loader.data_loader()
+#     uniform_partition_dict = uniform_partition(results["attributes"]["index_list"])
+#     pickle.dump(results, open("sst_2_data_loader.pkl", "wb"))
+#     pickle.dump({"uniform": uniform_partition_dict}, open("sst_2_partition.pkl", "wb"))
 #     print("done")

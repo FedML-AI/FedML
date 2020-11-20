@@ -1,52 +1,61 @@
-import sys
-import csv
-import pickle
 import os
-
+import math
+import random
+import sys
+import time
+import pickle
 sys.path.append('..')
 
 from base.data_loader import BaseRawDataLoader, BaseClientDataLoader
-from base.globals import *
+from base.utils import *
 from base.partition import *
-
 
 class RawDataLoader(BaseRawDataLoader):
     def __init__(self, data_path):
         super().__init__(data_path)
         self.task_type = "classification"
         self.target_vocab = None
-        self.train_path = "train.csv"
-        self.test_path = "test.csv"
 
     def data_loader(self):
         if len(self.X) == 0 or len(self.Y) == 0 or self.target_vocab is None:
-            X, Y = self.process_data(os.path.join(self.data_path, self.train_path))
-            train_size = len(X)
-            temp = self.process_data(os.path.join(self.data_path, self.test_path))
-            X.extend(temp[0])
-            Y.extend(temp[1])
+            X = []
+            Y = []
+            for root1, dirs, _ in os.walk(self.data_path):
+                for dir in dirs:
+                    for root2, _, files in os.walk(os.path.join(root1, dir)):
+                        for file_name in files:
+                            file_path = os.path.join(root2, file_name)
+                            X.extend(self.process_data(file_path))
+                            Y.append(dir)
             self.X, self.Y = X, Y
             self.target_vocab = {key: i for i, key in enumerate(set(Y))}
-            train_index_list = [i for i in range(train_size)]
-            test_index_list = [i for i in range(train_size, len(X))]
-            index_list = train_index_list + test_index_list
-            self.attributes = {"index_list": index_list, "train_index_list": train_index_list,
-                               "test_index_list": test_index_list}
+            index_list = [i for i in range(len(self.X))]
+            self.attributes = {"index_list": index_list}
         return {"X": self.X, "Y": self.Y, "target_vocab": self.target_vocab, "task_type": self.task_type,
                 "attributes": self.attributes}
 
+    #remove header
+    def remove_header(self, lines):
+        for i in range(len(lines)):
+            if(lines[i] == '\n'):
+                start = i+1
+                break
+        new_lines = lines[start:]
+        return new_lines
+
     def process_data(self, file_path):
         X = []
-        Y = []
-        with open(file_path, "r", newline='') as csvfile:
-            data = csv.reader(csvfile, delimiter=',')
-            for line in data:
-                target = line[0]
-                source = line[2].replace('\\', '')
-                X.append(source)
-                Y.append(target)
-        return X, Y
+        with open(file_path, "r", errors='ignore') as f:
+            document = ""
+            content = f.readlines()
+            content = self.remove_header(content)
 
+            for i in content:
+                temp = i.lstrip("> ").replace("/\\","").replace("*","").replace("^","")
+                document = document + temp
+
+            X.append(document)
+        return X
 
 class ClientDataLoader(BaseClientDataLoader):
 
@@ -69,14 +78,12 @@ class ClientDataLoader(BaseClientDataLoader):
 
 
 # if __name__ == "__main__":
-#     data_file_path = '../../../../data/fednlp/text_classification/AGNews/'
-#
+#     data_file_path = '../../../../data/fednlp/text_classification/20Newsgroups/20news-18828'
 #     data_loader = RawDataLoader(data_file_path)
 #     results = data_loader.data_loader()
+#     uniform_partition_dict = uniform_partition(results["attributes"]["index_list"])
 #
-#     uniform_partition_dict = uniform_partition(results["attributes"]["train_index_list"],
-#                                                results["attributes"]["test_index_list"])
+#     pickle.dump(results, open("20new_data_loader.pkl", "wb"))
+#     pickle.dump({"uniform": uniform_partition_dict}, open("20news_partition.pkl", "wb"))
 #
-#     pickle.dump(results, open("agnews_data_loader.pkl", "wb"))
-#     pickle.dump({"uniform": uniform_partition_dict}, open("agnews_partition.pkl", "wb"))
 #     print("done")
