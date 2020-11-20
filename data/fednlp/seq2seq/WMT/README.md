@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The 20 Newsgroups dataset is a natural language translation dataset. It contains mutiple pairs of languages including: chinese-english, german-english, czech-english, russian-english
+The WMT dataset is a natural language translation dataset. It contains mutiple pairs of languages translation including: czech-english, german-english, russian-english, chinese-english
 
 you can find the processed pickle files for this dataset in this [link](https://drive.google.com/folderview?id=1OhZ5NDaVz0VZX5jy8V_I_sfR25R2k_OE) or you can manully download the dataset
 
