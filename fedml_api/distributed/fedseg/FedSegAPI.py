@@ -14,7 +14,7 @@ def FedML_init():
 
 
 def FedML_FedSeg_distributed(process_id, worker_number, device, comm, model, train_data_num, train_data_global, test_data_global,
-                 train_data_local_num_dict, train_data_local_dict, test_data_local_dict, args):
+                 train_data_local_num_dict, train_data_local_dict, test_data_local_dict, args):                 
     if process_id == 0:
         init_server(args, device, comm, process_id, worker_number, model, train_data_num, train_data_global,
                     test_data_global, train_data_local_dict, test_data_local_dict, train_data_local_num_dict)

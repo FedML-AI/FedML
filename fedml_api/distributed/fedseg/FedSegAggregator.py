@@ -1,26 +1,24 @@
 import copy
 import logging
 import time
-
 import torch
 import wandb
 import numpy as np
 from torch import nn
 
-from fedml_api.distributed.fedseg.utils import transform_list_to_tensor
+from fedml_api.distributed.fedseg.utils import transform_list_to_tensor, SegmentationLosses, Evaluator
 
 
 class FedSegAggregator(object):
     def __init__(self, train_global, test_global, all_train_data_num,
-                 train_data_local_dict, test_data_local_dict, train_data_local_num_dict, worker_num, device, model, args):
+                 train_data_local_dict, test_data_local_dict, train_data_local_num_dict, worker_num, device, model, n_class, args):
         self.train_global = train_global
         self.test_global = test_global
         self.all_train_data_num = all_train_data_num
-
         self.train_data_local_dict = train_data_local_dict
         self.test_data_local_dict = test_data_local_dict
         self.train_data_local_num_dict = train_data_local_num_dict
-
+        self.evaluator = Evaluator(n_class)
         self.worker_num = worker_num
         self.device = device
         self.args = args
@@ -97,25 +95,38 @@ class FedSegAggregator(object):
     def test_on_all_clients(self, round_idx):
         if round_idx % self.args.frequency_of_the_test == 0 or round_idx == self.args.comm_round - 1:
             logging.info("################local_test_on_all_clients : {}".format(round_idx))
-            train_num_samples = []
-            train_tot_corrects = []
-            train_losses = []
+            train_acc_clients = []
+            train_acc_class_clients = []
+            train_mIoU_clients = []
+            train_FWIoU_clients = []
+            train_num_samples_clients = []
+            train_losses_clients = []
 
-            test_num_samples = []
-            test_tot_corrects = []
-            test_losses = []
+            test_acc_clients = []
+            test_acc_class_clients = []
+            test_mIoU_clients = []
+            test_FWIoU_clients = []
+            test_num_samples_clients = []
+            test_losses_clients = []
             for client_idx in range(self.args.client_num_in_total):
+
                 # train data
-                train_tot_correct, train_num_sample, train_loss = self._infer(self.train_data_local_dict[client_idx])
-                train_tot_corrects.append(copy.deepcopy(train_tot_correct))
-                train_num_samples.append(copy.deepcopy(train_num_sample))
-                train_losses.append(copy.deepcopy(train_loss))
+                acc, acc_class, mIoU, FWIoU, num_samples, loss = self._infer(self.train_data_local_dict[client_idx])
+                train_acc_clients.append(acc)
+                train_acc_class_clients.append(acc_class)
+                train_mIoU_clients.append(mIoU)
+                train_FWIoU_clients.append(FWIoU)
+                train_num_samples_clients.append(num_samples)
+                train_losses_clients.append(loss)
 
                 # test data
-                test_tot_correct, test_num_sample, test_loss = self._infer(self.test_data_local_dict[client_idx])
-                test_tot_corrects.append(copy.deepcopy(test_tot_correct))
-                test_num_samples.append(copy.deepcopy(test_num_sample))
-                test_losses.append(copy.deepcopy(test_loss))
+                acc, acc_class, mIoU, FWIoU, num_samples, loss = self._infer(self.test_data_local_dict[client_idx])
+                test_acc_clients.append(acc)
+                test_acc_class_clients.append(acc_class)
+                test_mIoU_clients.append(mIoU)
+                test_FWIoU_clients.append(FWIoU)
+                test_num_samples_clients.append(num_samples)
+                test_losses_clients.append(loss)
 
                 """
                 Note: CI environment is CPU-based computing. 
@@ -125,38 +136,66 @@ class FedSegAggregator(object):
                     break
 
             # test on training dataset
-            train_acc = sum(train_tot_corrects) / sum(train_num_samples)
-            train_loss = sum(train_losses) / sum(train_num_samples)
+            train_acc = sum(train_acc_clients) / sum(train_num_samples_clients)
+            train_acc_class = sum(train_acc_class_clients) / sum(train_num_samples_clients)
+            train_mIoU = sum(train_mIoU_clients) / sum(train_num_samples_clients)
+            train_FWIoU = sum(train_FWIoU_clients) / sum(train_num_samples_clients)
+            train_loss = sum(train_losses_clients) / sum(train_num_samples_clients)
             wandb.log({"Train/Acc": train_acc, "round": round_idx})
+            wandb.log({"Train/Acc_class": train_acc_class, "round": round_idx})
+            wandb.log({"Train/mIoU": train_mIoU, "round": round_idx})
+            wandb.log({"Train/FWIoU": train_FWIoU, "round": round_idx})
             wandb.log({"Train/Loss": train_loss, "round": round_idx})
-            stats = {'training_acc': train_acc, 'training_loss': train_loss}
+            stats = {'training_acc': train_acc, 
+                     'training_acc_class': train_acc_class,
+                     'training_mIoU': train_mIoU,
+                     'training_FWIoU': train_FWIoU,  
+                     'training_loss': train_loss}
             logging.info(stats)
 
             # test on test dataset
-            test_acc = sum(test_tot_corrects) / sum(test_num_samples)
-            test_loss = sum(test_losses) / sum(test_num_samples)
+            test_acc = sum(test_acc_clients) / sum(test_num_samples_clients)
+            test_acc_class = sum(test_acc_class_clients) / sum(test_num_samples_clients)
+            test_mIoU = sum(test_mIoU_clients) / sum(test_num_samples_clients)
+            test_FWIoU = sum(test_FWIoU_clients) / sum(test_num_samples_clients)
+            test_loss = sum(test_losses_clients) / sum(test_num_samples_clients)
             wandb.log({"Test/Acc": test_acc, "round": round_idx})
+            wandb.log({"Test/Acc_class": test_acc_class, "round": round_idx})
+            wandb.log({"Test/mIoU": test_mIoU, "round": round_idx})
+            wandb.log({"Test/FWIoU": test_FWIoU, "round": round_idx})
             wandb.log({"Test/Loss": test_loss, "round": round_idx})
-            stats = {'test_acc': test_acc, 'test_loss': test_loss}
+            stats = {'testing_acc': test_acc, 
+                     'testing_acc_class': test_acc_class,
+                     'testing_mIoU': test_mIoU,
+                     'testing_FWIoU': test_FWIoU,  
+                     'testing_loss': test_loss}
             logging.info(stats)
 
     def _infer(self, test_data):
         self.model.eval()
         self.model.to(self.device)
+        self.evaluator.reset()
 
         test_loss = test_acc = test_total = 0.
-        criterion = nn.CrossEntropyLoss().to(self.device)
+        criterion = SegmentationLosses().build_loss(mode=self.args.loss_type).to(self.device)
         with torch.no_grad():
             for batch_idx, (x, target) in enumerate(test_data):
                 x = x.to(self.device)
                 target = target.to(self.device)
-                pred = self.model(x)
-                loss = criterion(pred, target)
-                _, predicted = torch.max(pred, -1)
-                correct = predicted.eq(target).sum()
-
-                test_acc += correct.item()
-                test_loss += loss.item() * target.size(0)
+                output = self.model(x)
+                loss = criterion(output, target)
+                test_loss += loss.item()
                 test_total += target.size(0)
+                pred = output.data.cpu().numpy
+                target = target.cpu().numpy()
+                pred = np.argmax(pred, axis=1)
+                self.evaluator.add_batch(target, pred)
 
-        return test_acc, test_total, test_loss
+        
+        # Evaluation Metrics
+        test_acc = self.evaluator.Pixel_Accuracy()
+        test_acc_class = self.evaluator.Pixel_Accuracy_Class()
+        test_mIoU = self.evaluator.Mean_Intersection_over_Union()
+        test_FWIoU = self.evaluator.Frequency_Weighted_Intersection_over_Union()
+
+        return test_acc, test_acc_class, test_mIoU, test_FWIoU, test_total, test_loss

@@ -15,25 +15,9 @@ import wandb
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 
-from fedml_api.data_preprocessing.FederatedEMNIST.data_loader import load_partition_data_federated_emnist
-from fedml_api.data_preprocessing.fed_cifar100.data_loader import load_partition_data_federated_cifar100
-from fedml_api.data_preprocessing.fed_shakespeare.data_loader import load_partition_data_federated_shakespeare
-from fedml_api.data_preprocessing.shakespeare.data_loader import load_partition_data_shakespeare
-from fedml_api.data_preprocessing.stackoverflow_lr.data_loader import load_partition_data_federated_stackoverflow_lr
-from fedml_api.data_preprocessing.stackoverflow_nwp.data_loader import load_partition_data_federated_stackoverflow_nwp
-from fedml_api.data_preprocessing.MNIST.data_loader import load_partition_data_mnist
-
-from fedml_api.data_preprocessing.cifar10.data_loader import load_partition_data_cifar10
-from fedml_api.data_preprocessing.cifar100.data_loader import load_partition_data_cifar100
-from fedml_api.data_preprocessing.cinic10.data_loader import load_partition_data_cinic10
-
-from fedml_api.model.cv.cnn import CNN_DropOut
-from fedml_api.model.cv.resnet_gn import resnet18
-from fedml_api.model.cv.mobilenet import mobilenet
-from fedml_api.model.cv.resnet import resnet56
-from fedml_api.model.nlp.rnn import RNN_OriginalFedAvg, RNN_StackOverFlow
-from fedml_api.model.linear.lr import LogisticRegression
-
+from fedml_api.data_preprocessing.coco.data_loader import load_partition_data_coco
+from fedml_api.model.cv.deeplabV3 import DeepLabv3_plus
+from fedml_api.model.cv.xception import AlignedXception
 from fedml_api.distributed.fedseg.FedSegAPI import FedML_init, FedML_FedSeg_distributed
 
 
@@ -43,13 +27,25 @@ def add_args(parser):
     return a parser added with args required by fit
     """
     # Training settings
-    parser.add_argument('--model', type=str, default='mobilenet', metavar='N',
+    parser.add_argument('--model', type=str, default='deeplabV3_plus', metavar='N',
                         help='neural network used in training')
 
-    parser.add_argument('--dataset', type=str, default='cifar10', metavar='N',
+    parser.add_argument('--backbone', type=str, default='xception',
+                        help='employ with backbone (default: xception)')
+
+    parser.add_argument('--backbone_pretrained', type=bool, default=True,
+                        help='pretrained backbone (default: True)')
+
+    parser.add_argument('--outstride', type=int, default=16,
+                        help='network output stride (default: 16)') 
+
+    parser.add_argument('--categories', type=str, default='person,dog,cat',
+                        help='segmentation categories (default: person, dog, cat)')
+
+    parser.add_argument('--dataset', type=str, default='coco', metavar='N',
                         help='dataset used for training')
 
-    parser.add_argument('--data_dir', type=str, default='./../../../data/cifar10',
+    parser.add_argument('--data_dir', type=str, default='./../../../data/coco',
                         help='data directory')
 
     parser.add_argument('--partition_method', type=str, default='hetero', metavar='N',
@@ -67,13 +63,21 @@ def add_args(parser):
     parser.add_argument('--batch_size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
 
-    parser.add_argument('--client_optimizer', type=str, default='adam',
-                        help='SGD with momentum; adam')
+    parser.add_argument('--sync_bn', type=bool, default=None,
+                        help='whether to use sync bn (default: auto)')
+
+    parser.add_argument('--freeze_bn', type=bool, default=False,
+                        help='whether to freeze bn parameters (default: False)')
+    
+    parser.add_argument('--client_optimizer', type=str, default='sgd',
+                        help='SGD')
 
     parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
                         help='learning rate (default: 0.001)')
 
-    parser.add_argument('--wd', help='weight decay parameter;', type=float, default=0.001)
+    parser.add_argument('--lr_scheduler', type=str, default='poly',
+                        choices=['poly', 'step', 'cos'],
+                        help='lr scheduler mode: (default: poly)')                        
 
     parser.add_argument('--epochs', type=int, default=5, metavar='EP',
                         help='how many epochs will be trained locally')
@@ -95,70 +99,25 @@ def add_args(parser):
 
     parser.add_argument('--ci', type=int, default=0,
                         help='CI')
+
     args = parser.parse_args()
+    
     return args
+
+    ### Args to add ###
+    # lr_scheduler
+    # outstride
+    # freeze_bn
+    # sync_bn
+    # categories
+    # backbone
+    # backbone-pretrained
 
 
 def load_data(args, dataset_name):
-    if dataset_name == "mnist":
-        logging.info("load_data. dataset_name = %s" % dataset_name)
-        client_num, train_data_num, test_data_num, train_data_global, test_data_global, \
-        train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
-        class_num = load_partition_data_mnist(args.batch_size)
-        """
-        For shallow NN or linear models, 
-        we uniformly sample a fraction of clients each round (as the original FedAvg paper)
-        """
-        args.client_num_in_total = client_num
 
-    elif dataset_name == "femnist":
-        logging.info("load_data. dataset_name = %s" % dataset_name)
-        client_num, train_data_num, test_data_num, train_data_global, test_data_global, \
-        train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
-        class_num = load_partition_data_federated_emnist(args.dataset, args.data_dir)
-        args.client_num_in_total = client_num
-
-    elif dataset_name == "shakespeare":
-        logging.info("load_data. dataset_name = %s" % dataset_name)
-        client_num, train_data_num, test_data_num, train_data_global, test_data_global, \
-        train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
-        class_num = load_partition_data_shakespeare(args.batch_size)
-        args.client_num_in_total = client_num
-
-    elif dataset_name == "fed_shakespeare":
-        logging.info("load_data. dataset_name = %s" % dataset_name)
-        client_num, train_data_num, test_data_num, train_data_global, test_data_global, \
-        train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
-        class_num = load_partition_data_federated_shakespeare(args.dataset, args.data_dir)
-        args.client_num_in_total = client_num
-
-    elif dataset_name == "fed_cifar100":
-        logging.info("load_data. dataset_name = %s" % dataset_name)
-        client_num, train_data_num, test_data_num, train_data_global, test_data_global, \
-        train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
-        class_num = load_partition_data_federated_cifar100(args.dataset, args.data_dir)
-        args.client_num_in_total = client_num
-    elif dataset_name == "stackoverflow_lr":
-        logging.info("load_data. dataset_name = %s" % dataset_name)
-        client_num, train_data_num, test_data_num, train_data_global, test_data_global, \
-        train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
-        class_num = load_partition_data_federated_stackoverflow_lr(args.dataset, args.data_dir)
-        args.client_num_in_total = client_num
-    elif dataset_name == "stackoverflow_nwp":
-        logging.info("load_data. dataset_name = %s" % dataset_name)
-        client_num, train_data_num, test_data_num, train_data_global, test_data_global, \
-        train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
-        class_num = load_partition_data_federated_stackoverflow_nwp(args.dataset, args.data_dir)
-        args.client_num_in_total = client_num
-    else:
-        if dataset_name == "cifar10":
-            data_loader = load_partition_data_cifar10
-        elif dataset_name == "cifar100":
-            data_loader = load_partition_data_cifar100
-        elif dataset_name == "cinic10":
-            data_loader = load_partition_data_cinic10
-        else:
-            data_loader = load_partition_data_cifar10
+    if dataset_name == "coco":
+        data_loader = load_partition_data_coco
 
         train_data_num, test_data_num, train_data_global, test_data_global, \
         train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
@@ -167,37 +126,25 @@ def load_data(args, dataset_name):
 
     dataset = [train_data_num, test_data_num, train_data_global, test_data_global,
                train_data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num]
+               
     return dataset
 
 
 def create_model(args, model_name, output_dim):
     logging.info("create_model. model_name = %s, output_dim = %s" % (model_name, output_dim))
     model = None
-    if model_name == "lr" and args.dataset == "mnist":
-        logging.info("LogisticRegression + MNIST")
-        model = LogisticRegression(28 * 28, output_dim)
-    elif model_name == "cnn" and args.dataset == "femnist":
-        logging.info("CNN + FederatedEMNIST")
-        model = CNN_DropOut(False)
-    elif model_name == "resnet18_gn" and args.dataset == "fed_cifar100":
-        logging.info("ResNet18_GN + Federated_CIFAR100")
-        model = resnet18()
-    elif model_name == "rnn" and args.dataset == "shakespeare":
-        logging.info("RNN + shakespeare")
-        model = RNN_OriginalFedAvg()
-    elif model_name == "rnn" and args.dataset == "fed_shakespeare":
-        logging.info("RNN + fed_shakespeare")
-        model = RNN_OriginalFedAvg()
-    elif model_name == "lr" and args.dataset == "stackoverflow_lr":
-        logging.info("lr + stackoverflow_lr")
-        model = LogisticRegression(10004, output_dim)
-    elif model_name == "rnn" and args.dataset == "stackoverflow_nwp":
-        logging.info("CNN + stackoverflow_nwp")
-        model = RNN_StackOverFlow()
-    elif model_name == "resnet56":
-        model = resnet56(class_num=output_dim)
-    elif model_name == "mobilenet":
-        model = mobilenet(class_num=output_dim)
+    if model_name == "deeplabV3_plus" and args.dataset == "coco":
+        logging.info("deeplabV3_plus {0} backbone) + coco".format(args.backbone))
+        model = DeepLabv3_plus(backbone=args.backbone, 
+                               n_classes = output_dim,
+                               output_stride=args.output_stride,
+                               pretrained=args.pretrained,
+                               freeze_bn=args.freeze_bn,
+                               sync_bn=args.sync_bn)
+    
+    else:
+        raise('Not Implemented Error')
+
     return model
 
 
@@ -246,7 +193,7 @@ if __name__ == "__main__":
         wandb.init(
             # project="federated_nas",
             project="fedml",
-            name="FedAVG(d)" + str(args.partition_method) + "r" + str(args.comm_round) + "-e" + str(
+            name="FedSeg(d)" + str(args.partition_method) + "r" + str(args.comm_round) + "-e" + str(
                 args.epochs) + "-lr" + str(
                 args.lr),
             config=args
@@ -285,4 +232,4 @@ if __name__ == "__main__":
     # start "federated averaging (FedAvg)"
     FedML_FedSeg_distributed(process_id, worker_number, device, comm,
                              model, train_data_num, train_data_global, test_data_global,
-                             train_data_local_num_dict, train_data_local_dict, test_data_local_dict, args)
+                             train_data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num, args)
