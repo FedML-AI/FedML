@@ -29,7 +29,7 @@ mpirun -np $PROCESS_NUM -hostfile ./mpi_host_file python3 ./main_fedseg.py \
   --model $MODEL \
   --backbone $BACKBONE \
   --backbone_pretrained $BACKBONE_PRETRAINED \
-  --outstride $OUTSTRIDE \
+  --outstride $OUTPUT_STRIDE \
   --dataset $DATASET \
   --data_dir $DATA_DIR \
   --partition_method $DISTRIBUTION  \
