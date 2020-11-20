@@ -14,7 +14,7 @@ sh download.sh
 ## Statistics
 
 |Dataset | Train document | Text document| Train question| Test question|
-|--------| -------- -------| -------------| ------------- | ------------ |
+|--------| ----------------| -------------| ------------- | ------------ |
 | SQuAD  |                 |              |               |              | 
 
 | Partiton methods| client number |
