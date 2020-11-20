@@ -13,11 +13,11 @@ sh download.sh
 
 ## Statistics
 
-|Dataset | Train document | Text document| Train question| Test question
-|--------| -------- | ---| --- | --- |
-| SQuAD  |  |      |   
+|Dataset | Train document | Text document| Train question| Test question|
+|--------| -------- -------| -------------| ------------- | ------------ |
+| SQuAD  |                 |              |               |              | 
 
 | Partiton methods| client number |
 |-----------------| ------------- |
 | uniform partition| 100          |
-| nature partition| |
+| nature partition| 442           |
