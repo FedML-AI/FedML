@@ -8,19 +8,15 @@ MODEL=$5
 BACKBONE=$6
 BACKBONE_PRETRAINED=$7
 OUTPUT_STRIDE=$8
-CATEGORIES=$9
-DISTRIBUTION=$10
-ROUND=$11
-EPOCH=$12
-BATCH_SIZE=$13
-SYNC_BN=$14
-FREEZE_BN=$15
-CLIENT_OPTIMIZER=$16
-LR=$17
-LR_SCHEDULER=$18
-DATASET=$18
-DATA_DIR=$19
-CI=$20
+DISTRIBUTION=$9
+ROUND=$10
+EPOCH=$11
+BATCH_SIZE=$12
+CLIENT_OPTIMIZER=$13
+LR=$14
+DATASET=$15
+DATA_DIR=$16
+CI=$17
 
 PROCESS_NUM=`expr $WORKER_NUM + 1`
 echo $PROCESS_NUM
@@ -34,7 +30,6 @@ mpirun -np $PROCESS_NUM -hostfile ./mpi_host_file python3 ./main_fedseg.py \
   --backbone $BACKBONE \
   --backbone_pretrained $BACKBONE_PRETRAINED \
   --outstride $OUTSTRIDE \
-  --categories $CATEGORIES \
   --dataset $DATASET \
   --data_dir $DATA_DIR \
   --partition_method $DISTRIBUTION  \
@@ -43,9 +38,6 @@ mpirun -np $PROCESS_NUM -hostfile ./mpi_host_file python3 ./main_fedseg.py \
   --comm_round $ROUND \
   --epochs $EPOCH \
   --batch_size $BATCH_SIZE \
-  --sync_bn $SYNC_BN
-  --freeze_bn $FREEZE_BN
   --client_optimizer $CLIENT_OPTIMIZER \
   --lr $LR \
-  --lr_scheduler $LR_SCHEDULER \
   --ci $CI
