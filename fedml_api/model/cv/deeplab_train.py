@@ -10,9 +10,9 @@ import sys
 
 from fedml_api.data_preprocessing.coco.data_loader import get_dataloader
 
-
 # COCO dataset path
-COCO_PATH =  './datasets/coco/'
+COCO_PATH = './datasets/coco/'
+
 
 class Trainer(object):
     def __init__(self, args):
@@ -22,10 +22,11 @@ class Trainer(object):
         # Define Saver
         self.saver = Saver(args)
         self.saver.save_experiment_config()
-        
+
         # # Define Dataloader
         # kwargs = {'num_workers': args.workers, 'pin_memory': True}
-        self.train_loader, self.val_loader, self.nclass = get_dataloader(None, './coco_data', args.batch_size, args.batch_size)
+        self.train_loader, self.val_loader, self.nclass = get_dataloader(None, './coco_data', args.batch_size,
+                                                                         args.batch_size)
 
         # Define network
         # model = DeepLab(num_classes=self.nclass,
@@ -43,7 +44,6 @@ class Trainer(object):
         optimizer = torch.optim.SGD(train_params, momentum=args.momentum,
                                     weight_decay=args.weight_decay, nesterov=args.nesterov)
 
-        
         # whether to use class balanced weights
         if args.use_balanced_weights:
             classes_weights_path = os.path.join(COCO_PATH, 'coco_classes_weights.npy')
@@ -58,13 +58,13 @@ class Trainer(object):
         # Define Criterion
         self.criterion = SegmentationLosses(weight=weight, cuda=args.cuda).build_loss(mode=args.loss_type)
         self.model, self.optimizer = model, optimizer
-        
+
         # Define Evaluator
         self.evaluator = Evaluator(self.nclass)
-        
+
         # Define lr scheduler
         self.scheduler = LR_Scheduler(args.lr_scheduler, args.lr,
-                                            args.epochs, len(self.train_loader))
+                                      args.epochs, len(self.train_loader))
 
         # Using cuda
         if args.cuda:
@@ -76,7 +76,7 @@ class Trainer(object):
         self.best_pred = 0.0
         if args.resume is not None:
             if not os.path.isfile(args.resume):
-                raise RuntimeError("=> no checkpoint found at '{}'" .format(args.resume))
+                raise RuntimeError("=> no checkpoint found at '{}'".format(args.resume))
             checkpoint = torch.load(args.resume)
             args.start_epoch = checkpoint['epoch']
             if args.cuda:
@@ -92,7 +92,6 @@ class Trainer(object):
         # Clear start epoch if fine-tuning
         if args.ft:
             args.start_epoch = 0
-
 
     def training(self, epoch):
         train_loss = 0.0
@@ -133,7 +132,7 @@ class Trainer(object):
                 'best_pred': self.best_pred,
             }, is_best)
 
-        return 
+        return
 
     def validation(self, epoch):
         self.model.eval()
@@ -181,6 +180,7 @@ class Trainer(object):
                 'best_pred': self.best_pred,
             }, is_best)
 
+
 def main():
     parser = argparse.ArgumentParser(description="PyTorch DeeplabV3Plus Training")
     parser.add_argument('--backbone', type=str, default='xception',
@@ -189,7 +189,7 @@ def main():
     parser.add_argument('--out-stride', type=int, default=16,
                         help='network output stride (default: 16)')
     parser.add_argument('--use-sbd', action='store_true', default=True,
-                        help='whether to use SBD dataset (default: True)') # doubt
+                        help='whether to use SBD dataset (default: True)')  # doubt
     parser.add_argument('--workers', type=int, default=4,
                         metavar='N', help='dataloader threads')
     parser.add_argument('--sync-bn', type=bool, default=None,
@@ -210,7 +210,7 @@ def main():
     parser.add_argument('--test-batch-size', type=int, default=None,
                         metavar='N', help='input batch size for \
                                 testing (default: auto)')
-    parser.add_argument('--use-balanced-weights', action='store_true', default=False,               # doubt
+    parser.add_argument('--use-balanced-weights', action='store_true', default=False,  # doubt
                         help='whether to use balanced weights (default: False)')
     # optimizer params
     parser.add_argument('--lr', type=float, default=None, metavar='LR',
@@ -226,7 +226,7 @@ def main():
                         help='whether use nesterov (default: False)')
     # cuda, seed and logging
     parser.add_argument('--no-cuda', action='store_true', default=
-                        True, help='disables CUDA training')
+    True, help='disables CUDA training')
     parser.add_argument('--gpu-ids', type=str, default='0',
                         help='use which gpu to train, must be a \
                         comma-separated list of integers only (default=0)')
@@ -270,10 +270,8 @@ def main():
         # args.epochs = epoches[args.dataset.lower()]
         args.epochs = 30
 
-
-
     if args.batch_size is None:
-        args.batch_size = 16         # 64 - Mentioned in Adarsh's dataloader
+        args.batch_size = 16  # 64 - Mentioned in Adarsh's dataloader
         # args.batch_size = 4 * len(args.gpu_ids)
 
     if args.test_batch_size is None:
@@ -288,7 +286,7 @@ def main():
         args.lr = 0.1 / (4 * len(args.gpu_ids)) * args.batch_size
 
     if args.checkname is None:
-        args.checkname = 'deeplab-'+str(args.backbone)
+        args.checkname = 'deeplab-' + str(args.backbone)
     print(args)
     torch.manual_seed(args.seed)
     trainer = Trainer(args)
@@ -299,5 +297,6 @@ def main():
         if not trainer.args.no_val and epoch % args.eval_interval == (args.eval_interval - 1):
             trainer.validation(epoch)
 
+
 if __name__ == "__main__":
-   main()
+    main()

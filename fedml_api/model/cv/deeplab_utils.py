@@ -250,6 +250,7 @@ class SegmentationLosses(object):
 
         return loss
 
+
 # Calculate weights labels    
 def calculate_weights_labels(dataloader, num_classes):
 
