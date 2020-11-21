@@ -13,6 +13,8 @@ class FedSegServerManager(ServerManager):
         self.aggregator = aggregator
         self.round_num = args.comm_round
         self.round_idx = 0
+        logging.info('Initializing Server Manager')
+
 
     def run(self):
         super().run()
@@ -24,6 +26,8 @@ class FedSegServerManager(ServerManager):
         global_model_params = self.aggregator.get_global_model_params()
         for process_id in range(1, self.size):
             self.send_message_init_config(process_id, global_model_params, client_indexes[process_id-1])
+            logging.info('Initial Configurations sent to client {0}'.format(client_indexes[process_id-1]))
+
 
     def register_message_receive_handlers(self):
         self.register_message_receive_handler(MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER,
@@ -33,6 +37,8 @@ class FedSegServerManager(ServerManager):
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         local_sample_number = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
+
+        logging.info('Received model from client {0}'.format(sender_id))
 
         self.aggregator.add_local_trained_result(sender_id - 1, model_params, local_sample_number)
         b_all_received = self.aggregator.check_whether_all_receive()

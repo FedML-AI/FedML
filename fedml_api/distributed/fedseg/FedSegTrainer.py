@@ -11,7 +11,7 @@ from fedml_api.distributed.fedseg.utils import SegmentationLosses, LR_Scheduler
 class FedSegTrainer(object):
     def __init__(self, client_index, train_data_local_dict, train_data_local_num_dict, train_data_num, device, model,
                  args):
-                 
+
         self.client_index = client_index
         self.train_data_local_dict = train_data_local_dict
         self.train_data_local_num_dict = train_data_local_num_dict
@@ -43,11 +43,15 @@ class FedSegTrainer(object):
         self.local_sample_number = self.train_data_local_num_dict[client_index]
 
     def train(self):
+
         self.model.to(self.device)
         # change to train mode
         self.model.train()
+        
+        logging.info('Training client {0} for {1} Epochs'.format(self.client_index, self.args.epochs))
 
         epoch_loss = []
+        
         for epoch in range(self.args.epochs):
             batch_loss = []
             for batch_idx, (x, labels) in enumerate(self.train_local):

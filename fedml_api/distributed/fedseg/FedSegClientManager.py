@@ -25,6 +25,7 @@ class FedSegClientManager(ClientManager):
     def handle_message_init(self, msg_params):
         global_model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
+        logging.info('Client {0} received global model params from central server'.format(client_index))
 
         if self.args.is_mobile == 1:
             global_model_params = transform_list_to_tensor(global_model_params)

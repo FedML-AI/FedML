@@ -1,3 +1,5 @@
+import logging
+
 from mpi4py import MPI
 
 from fedml_api.distributed.fedseg.FedSegAggregator import FedSegAggregator
@@ -25,6 +27,9 @@ def FedML_FedSeg_distributed(process_id, worker_number, device, comm, model, tra
 
 def init_server(args, device, comm, rank, size, model, train_data_num, train_data_global, test_data_global,
                 train_data_local_dict, test_data_local_dict, train_data_local_num_dict, n_class):
+    
+    logging.info('Initializing Server')
+
     # aggregator
     worker_num = size - 1
     aggregator = FedSegAggregator(train_data_global, test_data_global, train_data_num,
@@ -42,6 +47,7 @@ def init_server(args, device, comm, rank, size, model, train_data_num, train_dat
 def init_client(args, device, comm, process_id, size, model, train_data_num, train_data_local_num_dict, train_data_local_dict):
     # trainer
     client_index = process_id - 1
+    logging.info('Initializing Client: {0}'.format(client_index))
     trainer = FedSegTrainer(client_index, train_data_local_dict, train_data_local_num_dict, train_data_num, device, model, args)
 
     client_manager = FedSegClientManager(args, trainer, comm, process_id, size)
