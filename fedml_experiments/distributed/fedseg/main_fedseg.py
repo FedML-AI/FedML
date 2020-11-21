@@ -138,7 +138,7 @@ def create_model(args, model_name, output_dim):
         model = DeepLabv3_plus(backbone=args.backbone, 
                                n_classes = output_dim,
                                output_stride=args.outstride,
-                               pretrained=args.pretrained,
+                               pretrained=args.backbone_pretrained,
                                freeze_bn=args.freeze_bn,
                                sync_bn=args.sync_bn)
     
