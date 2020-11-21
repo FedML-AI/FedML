@@ -101,7 +101,7 @@ def add_args(parser):
                         help='CI')
 
     args = parser.parse_args()
-    
+
     return args
 
     ### Args to add ###
@@ -137,7 +137,7 @@ def create_model(args, model_name, output_dim):
         logging.info("deeplabV3_plus {0} backbone) + coco".format(args.backbone))
         model = DeepLabv3_plus(backbone=args.backbone, 
                                n_classes = output_dim,
-                               output_stride=args.output_stride,
+                               output_stride=args.outstride,
                                pretrained=args.pretrained,
                                freeze_bn=args.freeze_bn,
                                sync_bn=args.sync_bn)
