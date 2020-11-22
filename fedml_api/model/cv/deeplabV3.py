@@ -1,11 +1,17 @@
+import os, sys
+import numpy as np
 import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.model_zoo as model_zoo
+
+# add the FedML root directory to the python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 from fedml_api.model.cv.xception import *
-# from modeling.sync_batchnorm.batchnorm import SynchronizedBatchNorm2d
 from fedml_api.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
+
+# from batchnorm_utils import SynchronizedBatchNorm2d
 
 
 class _ASPPModule(nn.Module):
@@ -179,11 +185,15 @@ class DeepLabv3_plus(nn.Module):
             self._freeze_bn()
 
     def forward(self, input):
+
+        # with open('input_sample.npy', 'wb') as f:
+        #     np.save(f, input.cpu().numpy(), allow_pickle=True)
+        #     f.close()
+            
         x, low_level_feat = self.backbone(input)
         x = self.aspp(x)
         x = self.decoder(x, low_level_feat)
         x = F.interpolate(x, size=input.size()[2:], mode='bilinear', align_corners=True)
-
         return x
 
     def _freeze_bn(self):
@@ -215,32 +225,6 @@ class DeepLabv3_plus(nn.Module):
     @staticmethod
     def build_decoder(num_classes, backbone, BatchNorm):
         return Decoder(num_classes, backbone, BatchNorm)        
-
-
-# def get_1x_lr_params(model):
-#     """
-#     This generator returns all the parameters of the net except for
-#     the last classification layer. Note that for each batchnorm layer,
-#     requires_grad is set to False in deeplab_resnet.py, therefore this function does not return
-#     any batchnorm parameter
-#     """
-#     b = [model.xception_features]
-#     for i in range(len(b)):
-#         for k in b[i].parameters():
-#             if k.requires_grad:
-#                 yield k
-
-
-# def get_10x_lr_params(model):
-#     """
-#     This generator returns all the parameters for the last layer of the net,
-#     which does the classification of pixel into classes
-#     """
-#     b = [model.aspp1, model.aspp2, model.aspp3, model.aspp4, model.conv1, model.conv2, model.last_conv]
-#     for j in range(len(b)):
-#         for k in b[j].parameters():
-#             if k.requires_grad:
-#                 yield k
 
     def get_1x_lr_params(self):
             modules = [self.backbone]
@@ -275,12 +259,11 @@ class DeepLabv3_plus(nn.Module):
                                 yield p
 
 if __name__ == "__main__":
-    model = DeepLabv3_plus(nInputChannels=3, n_classes=21, output_stride=16, pretrained=True, _print=True)
+    model = DeepLabv3_plus(nInputChannels=3, n_classes=3, output_stride=16, pretrained=True, _print=True)
     model.eval()
-    image = torch.randn(1, 3, 512, 512)
+    image = torch.randn(16,3,513,513)
+    # with open('input_sample.npy', 'rb') as f:
+    #     image = torch.tensor(np.load(f, allow_pickle=True))
     with torch.no_grad():
         output = model.forward(image)
     print(output.size())
-
-
-

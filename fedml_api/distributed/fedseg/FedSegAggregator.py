@@ -28,12 +28,11 @@ class FedSegAggregator(object):
         for idx in range(self.worker_num):
             self.flag_client_model_uploaded_dict[idx] = False
         self.model, _ = self.init_model(model)
-        logging.info('Initializing FedSegAggregator --> workers: {0}, num_classes:{1}'.format(worker_num, n_class))
+        logging.info('Initializing FedSegAggregator with workers: {0}, num_classes:{1}'.format(worker_num, n_class))
 
 
     def init_model(self, model):
         model_params = model.state_dict()
-        # logging.info(model)
         return model, model_params
 
     def get_global_model_params(self):

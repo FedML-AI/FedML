@@ -63,7 +63,7 @@ def add_args(parser):
     parser.add_argument('--batch_size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
 
-    parser.add_argument('--sync_bn', type=bool, default=None,
+    parser.add_argument('--sync_bn', type=bool, default=False,
                         help='whether to use sync bn (default: auto)')
 
     parser.add_argument('--freeze_bn', type=bool, default=False,
@@ -77,7 +77,11 @@ def add_args(parser):
 
     parser.add_argument('--lr_scheduler', type=str, default='poly',
                         choices=['poly', 'step', 'cos'],
-                        help='lr scheduler mode: (default: poly)')                        
+                        help='lr scheduler mode: (default: poly)')   
+
+    parser.add_argument('--loss_type', type=str, default='ce',
+                        choices=['ce', 'focal'],
+                        help='loss func type (default: ce)')                                           
 
     parser.add_argument('--epochs', type=int, default=5, metavar='EP',
                         help='how many epochs will be trained locally')
@@ -118,7 +122,6 @@ def load_data(args, dataset_name):
 
     if dataset_name == "coco":
         data_loader = load_partition_data_coco
-
         train_data_num, test_data_num, train_data_global, test_data_global, \
         train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
         class_num = data_loader(args.dataset, args.data_dir, args.partition_method,
@@ -131,10 +134,8 @@ def load_data(args, dataset_name):
 
 
 def create_model(args, model_name, output_dim):
-    logging.info("create_model. model_name = %s, output_dim = %s" % (model_name, output_dim))
     model = None
     if model_name == "deeplabV3_plus" and args.dataset == "coco":
-        logging.info("deeplabV3_plus {0} backbone) + coco".format(args.backbone))
         model = DeepLabv3_plus(backbone=args.backbone, 
                                n_classes = output_dim,
                                output_stride=args.outstride,
@@ -171,7 +172,6 @@ if __name__ == "__main__":
     # parse python script input parameters
     parser = argparse.ArgumentParser()
     args = add_args(parser)
-    logging.info(args)
 
     # customize the process name
     str_process_name = "FedAvg (distributed):" + str(process_id)

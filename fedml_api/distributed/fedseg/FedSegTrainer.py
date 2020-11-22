@@ -1,4 +1,4 @@
-import logging, os
+import logging, os, time
 
 import torch
 from torch import nn
@@ -22,7 +22,7 @@ class FedSegTrainer(object):
         self.args = args
         self.model = model
         self.model.to(self.device)
-        self.criterion = SegmentationLosses().build_loss(mode=self.args.loss_type).to(self.device)                   # modified 
+        self.criterion = SegmentationLosses().build_loss(mode=self.args.loss_type)                   # modified 
         self.scheduler = LR_Scheduler(self.args.lr_scheduler, self.args.lr, self.args.epochs, self.train_data_local_num_dict[client_index])
 
         if self.args.client_optimizer == "sgd":
@@ -53,22 +53,30 @@ class FedSegTrainer(object):
         epoch_loss = []
         
         for epoch in range(self.args.epochs):
+            t = time.time()
             batch_loss = []
-            for batch_idx, (x, labels) in enumerate(self.train_local):
-                # logging.info(images.shape)
+
+            logging.info('Epoch: {0}, Client Id: {1}'.format(epoch, self.client_index))
+
+            for (batch_idx, batch) in enumerate(self.train_local):
+                x, labels = batch['image'], batch['label']
                 x, labels = x.to(self.device), labels.to(self.device)
                 self.scheduler(self.optimizer, batch_idx, epoch)
                 self.optimizer.zero_grad()
                 log_probs = self.model(x)
-                loss = self.criterion(log_probs, labels)
+                loss = self.criterion(log_probs, labels).to(self.device)
                 loss.backward()
                 self.optimizer.step()
                 batch_loss.append(loss.item())
+                # if batch_idx % 1000 == 0:
+                logging.info('Iteration: {0}, Loss: {1}, Time Elapsed: {2}'.format(batch_idx, loss, (time.time()-t)/1000))
+
             if len(batch_loss) > 0:
                 epoch_loss.append(sum(batch_loss) / len(batch_loss))
                 logging.info('(client {}. Local Training Epoch: {} \tLoss: {:.6f}'.format(self.client_index,
                                                                 epoch, sum(epoch_loss) / len(epoch_loss)))
 
+            logging.info('Epoch: {0}, Loss: {1}, Time Elapsed: {2}'.format(epoch, batch_loss[-1], (time.time()-t)/1000))
         weights = self.model.cpu().state_dict()
 
         # transform Tensor to list

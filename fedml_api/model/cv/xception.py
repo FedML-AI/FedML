@@ -1,9 +1,12 @@
-import math
+import math, logging, sys, os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.model_zoo as model_zoo
-# from modeling.sync_batchnorm.batchnorm import SynchronizedBatchNorm2d
+
+# add the FedML root directory to the python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
+
 from fedml_api.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
 
 def fixed_padding(inputs, kernel_size, dilation):
@@ -84,11 +87,11 @@ class Block(nn.Module):
         if self.skip is not None:
             skip = self.skip(inp)
             skip = self.skipbn(skip)
+
         else:
             skip = inp
 
         x += skip
-
         return x
 
 
@@ -110,8 +113,7 @@ class AlignedXception(nn.Module):
             exit_block_dilations = (2, 4)
         else:
             raise NotImplementedError
-
-
+                  
         # Entry flow
         self.conv1 = nn.Conv2d(inplanes, 32, 3, stride=2, padding=1, bias=False)
         self.bn1 = BatchNorm(32)
@@ -120,7 +122,7 @@ class AlignedXception(nn.Module):
         self.conv2 = nn.Conv2d(32, 64, 3, stride=1, padding=1, bias=False)
         self.bn2 = BatchNorm(64)
 
-        self.block1 = Block(64, 128, reps=2, stride=2, BatchNorm=BatchNorm, start_with_relu=False)
+        self.block1 = Block(64, 128, reps=2, stride=2, BatchNorm=BatchNorm, start_with_relu=False, grow_first=True)
         self.block2 = Block(128, 256, reps=2, stride=2, BatchNorm=BatchNorm, start_with_relu=False,
                             grow_first=True)
         self.block3 = Block(256, 728, reps=2, stride=entry_block3_stride, BatchNorm=BatchNorm,
@@ -181,6 +183,7 @@ class AlignedXception(nn.Module):
             self._load_pretrained_model()
 
     def forward(self, x):
+
         # Entry flow
         x = self.conv1(x)
         x = self.bn1(x)
@@ -190,12 +193,14 @@ class AlignedXception(nn.Module):
         x = self.bn2(x)
         x = self.relu(x)
 
+
         x = self.block1(x)
         # add relu here
         x = self.relu(x)
         low_level_feat = x
         x = self.block2(x)
         x = self.block3(x)
+
 
         # Middle flow
         x = self.block4(x)
