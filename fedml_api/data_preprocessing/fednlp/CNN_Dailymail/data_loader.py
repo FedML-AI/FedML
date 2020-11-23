@@ -1,9 +1,7 @@
-import pickle
 import os
-import sys
-sys.path.append('..')
-from base.data_loader import BaseRawDataLoader, BaseClientDataLoader
-from base.partition import *
+from fedml_api.data_preprocessing.fednlp.base.base_raw_data_loader import BaseRawDataLoader
+from fedml_api.data_preprocessing.fednlp.base.base_client_data_loader import BaseClientDataLoader
+
 
 class RawDataLoader(BaseRawDataLoader):
     def __init__(self, data_path):
@@ -68,17 +66,13 @@ class ClientDataLoader(BaseClientDataLoader):
         tokenizer = self.spacy_tokenizer.en_tokenizer
 
         def __tokenize_data(data):
-            for i in range(len(self.data["X"])):
+            for i in range(len(data["X"])):
                 data["X"][i] = [str(token) for token in tokenizer(data["X"][i])]
                 data["Y"][i] = [str(token) for token in tokenizer(data["Y"][i])]
 
         __tokenize_data(self.train_data)
         __tokenize_data(self.test_data)
 
-
-def generate_pickle_files(train_results_dict, partition_dict, data_path, partition_path):
-    pickle.dump(train_results_dict, open(data_path, "wb"))
-    pickle.dump(partition_dict, open(partition_path, "wb"))
 
 
 # if __name__ == "__main__":

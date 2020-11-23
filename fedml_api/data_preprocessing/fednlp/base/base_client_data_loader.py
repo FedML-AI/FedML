@@ -1,24 +1,6 @@
 from abc import ABC, abstractmethod
-from .utils import SpacyTokenizer
+from fedml_api.data_preprocessing.fednlp.base.utils import SpacyTokenizer
 import pickle
-
-
-class BaseRawDataLoader(ABC):
-    @abstractmethod
-    def __init__(self, data_path):
-        self.data_path = data_path
-        self.X = []
-        self.Y = []
-        self.index_list = None
-        self.attributes = dict()
-
-    @abstractmethod
-    def data_loader(self, client_idx=None):
-        pass
-
-    @abstractmethod
-    def process_data(self, file_path):
-        pass
 
 
 class BaseClientDataLoader(ABC):
@@ -88,5 +70,3 @@ class BaseClientDataLoader(ABC):
             test_index_list = partition_dict[self.partition_method]["partition_data"][self.client_idx]["test"]
             self.train_data = generate_client_data(data_dict, train_index_list)
             self.test_data = generate_client_data(data_dict, test_index_list)
-
-

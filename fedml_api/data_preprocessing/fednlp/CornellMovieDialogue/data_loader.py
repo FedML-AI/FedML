@@ -1,10 +1,8 @@
 import os
-import sys
 import random
-import pickle
-sys.path.append('..')
-from base.data_loader import BaseRawDataLoader, BaseClientDataLoader
-from base.partition import *
+
+from fedml_api.data_preprocessing.fednlp.base.base_raw_data_loader import BaseRawDataLoader
+from fedml_api.data_preprocessing.fednlp.base.base_client_data_loader import BaseClientDataLoader
 
 
 class RawDataLoader(BaseRawDataLoader):
@@ -98,7 +96,7 @@ class ClientDataLoader(BaseClientDataLoader):
         tokenizer = self.spacy_tokenizer.en_tokenizer
 
         def __tokenize_data(data):
-            for i in range(len(self.data["X"])):
+            for i in range(len(data["X"])):
                 data["X"][i] = [str(token) for token in tokenizer(data["X"][i])]
                 data["Y"][i] = [str(token) for token in tokenizer(data["Y"][i])]
                 for j in range(len(data["history"][i])):

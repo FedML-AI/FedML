@@ -1,7 +1,6 @@
 import random
 import math
-import sys
-from .globals import *
+from fedml_api.data_preprocessing.fednlp.base.globals import *
 
 
 def uniform_partition(train_index_list, test_index_list=None, n_clients=N_CLIENTS):

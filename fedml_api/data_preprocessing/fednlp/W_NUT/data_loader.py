@@ -1,11 +1,9 @@
 # use conll format to load the data
 import os
-import sys
-import pickle
-sys.path.append('..')
-from base.data_loader import BaseRawDataLoader, BaseClientDataLoader
-from base.partition import *
-from base.utils import *
+
+from fedml_api.data_preprocessing.fednlp.base.base_raw_data_loader import BaseRawDataLoader
+from fedml_api.data_preprocessing.fednlp.base.base_client_data_loader import BaseClientDataLoader
+
 
 class RawDataLoader(BaseRawDataLoader):
     def __init__(self, data_path):

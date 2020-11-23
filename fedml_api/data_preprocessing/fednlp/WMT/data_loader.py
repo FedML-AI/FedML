@@ -1,9 +1,8 @@
-import sys
 import pickle
-sys.path.append('..')
-from base.data_loader import BaseRawDataLoader, BaseClientDataLoader
-from base.globals import *
-from base.partition import *
+from fedml_api.data_preprocessing.fednlp.base.base_raw_data_loader import BaseRawDataLoader
+from fedml_api.data_preprocessing.fednlp.base.base_client_data_loader import BaseClientDataLoader
+from fedml_api.data_preprocessing.fednlp.base.partition import *
+
 
 class RawDataLoader(BaseRawDataLoader):
     def __init__(self, data_path):
@@ -12,13 +11,15 @@ class RawDataLoader(BaseRawDataLoader):
 
     def data_loader(self):
         if len(self.X) == 0 or len(self.Y) == 0:
-            X, Y = self.process_data(self.data_path[0], self.data_path[1])
+            X, Y = self.process_data(self.data_path)
             self.X, self.Y = X, Y
             index_list = [i for i in range(len(self.X))]
             self.attributes = {"index_list": index_list}
         return {"X": self.X, "Y": self.Y, "task_type": self.task_type, "attributes": self.attributes}
 
-    def process_data(self, source_file_path, target_file_path):
+    def process_data(self, file_path):
+        source_file_path = file_path[0]
+        target_file_path = file_path[1]
         X = []
         Y = []
         with open(source_file_path, "r") as f:

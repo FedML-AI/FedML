@@ -1,25 +1,21 @@
 import argparse
 import logging
-import sys
 import time
 import pickle
-import os
-sys.path.append(os.path.abspath(os.path.join(os.getcwd(), "..")))
-print(sys.path)
 
-import news_20.data_loader
-import AGNews.data_loader
-import CNN_Dailymail.data_loader
-import CornellMovieDialogue.data_loader
-import SemEval2010Task8.data_loader
-import Sentiment140.data_loader
-import SQuAD_1_1.data_loader
-import SST_2.data_loader
-import W_NUT.data_loader
-import wikigold.data_loader
-import WMT.data_loader
+import fedml_api.data_preprocessing.fednlp.news_20.data_loader
+import fedml_api.data_preprocessing.fednlp.AGNews.data_loader
+import fedml_api.data_preprocessing.fednlp.CNN_Dailymail.data_loader
+import fedml_api.data_preprocessing.fednlp.CornellMovieDialogue.data_loader
+import fedml_api.data_preprocessing.fednlp.SemEval2010Task8.data_loader
+import fedml_api.data_preprocessing.fednlp.Sentiment140.data_loader
+import fedml_api.data_preprocessing.fednlp.SQuAD_1_1.data_loader
+import fedml_api.data_preprocessing.fednlp.SST_2.data_loader
+import fedml_api.data_preprocessing.fednlp.W_NUT.data_loader
+import fedml_api.data_preprocessing.fednlp.wikigold.data_loader
+import fedml_api.data_preprocessing.fednlp.WMT.data_loader
 
-from base.partition import *
+from fedml_api.data_preprocessing.fednlp.base.partition import uniform_partition
 
 def add_args(parser):
     """
@@ -49,27 +45,27 @@ def add_args(parser):
 def test_raw_data_loader(args, dataset_name):
     data_loader = None
     if dataset_name == "20news":
-        data_loader = news_20.data_loader.RawDataLoader(args.data_dir)
+        data_loader = fedml_api.data_preprocessing.fednlp.news_20.data_loader.RawDataLoader(args.data_dir)
     elif dataset_name == "agnews":
-        data_loader = AGNews.data_loader.RawDataLoader(args.data_dir)
+        data_loader = fedml_api.data_preprocessing.fednlp.AGNews.data_loader.RawDataLoader(args.data_dir)
     elif dataset_name == "cnn_dailymail":
-        data_loader = CNN_Dailymail.data_loader.RawDataLoader(args.data_dir)
+        data_loader = fedml_api.data_preprocessing.fednlp.CNN_Dailymail.data_loader.RawDataLoader(args.data_dir)
     elif dataset_name == "cornell_movie_dialogue":
-        data_loader = CornellMovieDialogue.data_loader.RawDataLoader(args.data_dir)
+        data_loader = fedml_api.data_preprocessing.fednlp.CornellMovieDialogue.data_loader.RawDataLoader(args.data_dir)
     elif dataset_name == "semeval_2010_task8":
-        data_loader = SemEval2010Task8.data_loader.RawDataLoader(args.data_dir)
+        data_loader = fedml_api.data_preprocessing.fednlp.SemEval2010Task8.data_loader.RawDataLoader(args.data_dir)
     elif dataset_name == "sentiment_140":
-        data_loader = Sentiment140.data_loader.RawDataLoader(args.data_dir)
+        data_loader = fedml_api.data_preprocessing.fednlp.Sentiment140.data_loader.RawDataLoader(args.data_dir)
     elif dataset_name == "squad_1.1":
-        data_loader = SQuAD_1_1.data_loader.RawDataLoader(args.data_dir)
+        data_loader = fedml_api.data_preprocessing.fednlp.SQuAD_1_1.data_loader.RawDataLoader(args.data_dir)
     elif dataset_name == "sst_2":
-        data_loader = SST_2.data_loader.RawDataLoader(args.data_dir)
+        data_loader = fedml_api.data_preprocessing.fednlp.SST_2.data_loader.RawDataLoader(args.data_dir)
     elif dataset_name == "w_nut":
-        data_loader = W_NUT.data_loader.RawDataLoader(args.data_dir)
+        data_loader = fedml_api.data_preprocessing.fednlp.W_NUT.data_loader.RawDataLoader(args.data_dir)
     elif dataset_name == "wikigold":
-        data_loader = wikigold.data_loader.RawDataLoader(args.data_dir)
+        data_loader = fedml_api.data_preprocessing.fednlp.wikigold.data_loader.RawDataLoader(args.data_dir)
     elif dataset_name == "wmt":
-        data_loader = WMT.data_loader.RawDataLoader(args.data_dir.split(","))
+        data_loader = fedml_api.data_preprocessing.fednlp.WMT.data_loader.RawDataLoader(args.data_dir.split(","))
     else:
         raise Exception("No such dataset!!")
     results = data_loader.data_loader()
@@ -100,61 +96,61 @@ def test_client_data_loader(args, dataset_name, data_path, partition_path):
     server_data_loader = None
     client_data_loader = None
     if dataset_name == "20news":
-        server_data_loader = news_20.data_loader.ClientDataLoader(data_path, partition_path, client_idx=None,
+        server_data_loader = fedml_api.data_preprocessing.fednlp.news_20.data_loader.ClientDataLoader(data_path, partition_path, client_idx=None,
                                                           partition_method=args.partition_method)
-        client_data_loader = news_20.data_loader.ClientDataLoader(data_path, partition_path, client_idx=0,
+        client_data_loader = fedml_api.data_preprocessing.fednlp.news_20.data_loader.ClientDataLoader(data_path, partition_path, client_idx=0,
                                                                  partition_method=args.partition_method)
     elif dataset_name == "agnews":
-        server_data_loader = AGNews.data_loader.ClientDataLoader(data_path, partition_path, client_idx=None,
+        server_data_loader = fedml_api.data_preprocessing.fednlp.AGNews.data_loader.ClientDataLoader(data_path, partition_path, client_idx=None,
                                                                  partition_method=args.partition_method)
-        client_data_loader = AGNews.data_loader.ClientDataLoader(data_path, partition_path, client_idx=0,
+        client_data_loader = fedml_api.data_preprocessing.fednlp.AGNews.data_loader.ClientDataLoader(data_path, partition_path, client_idx=0,
                                                                  partition_method=args.partition_method)
     elif dataset_name == "cnn_dailymail":
-        server_data_loader = CNN_Dailymail.data_loader.ClientDataLoader(data_path, partition_path, client_idx=None,
+        server_data_loader = fedml_api.data_preprocessing.fednlp.CNN_Dailymail.data_loader.ClientDataLoader(data_path, partition_path, client_idx=None,
                                                                  partition_method=args.partition_method)
-        client_data_loader = CNN_Dailymail.data_loader.ClientDataLoader(data_path, partition_path, client_idx=0,
+        client_data_loader = fedml_api.data_preprocessing.fednlp.CNN_Dailymail.data_loader.ClientDataLoader(data_path, partition_path, client_idx=0,
                                                                  partition_method=args.partition_method)
     elif dataset_name == "cornell_movie_dialogue":
-        server_data_loader = CornellMovieDialogue.data_loader.ClientDataLoader(data_path, partition_path, client_idx=None,
+        server_data_loader = fedml_api.data_preprocessing.fednlp.CornellMovieDialogue.data_loader.ClientDataLoader(data_path, partition_path, client_idx=None,
                                                                  partition_method=args.partition_method)
-        client_data_loader = CornellMovieDialogue.data_loader.ClientDataLoader(data_path, partition_path, client_idx=0,
+        client_data_loader = fedml_api.data_preprocessing.fednlp.CornellMovieDialogue.data_loader.ClientDataLoader(data_path, partition_path, client_idx=0,
                                                                  partition_method=args.partition_method)
     elif dataset_name == "semeval_2010_task8":
-        server_data_loader = SemEval2010Task8.data_loader.ClientDataLoader(data_path, partition_path, client_idx=None,
+        server_data_loader = fedml_api.data_preprocessing.fednlp.SemEval2010Task8.data_loader.ClientDataLoader(data_path, partition_path, client_idx=None,
                                                                  partition_method=args.partition_method)
-        client_data_loader = SemEval2010Task8.data_loader.ClientDataLoader(data_path, partition_path, client_idx=0,
+        client_data_loader = fedml_api.data_preprocessing.fednlp.SemEval2010Task8.data_loader.ClientDataLoader(data_path, partition_path, client_idx=0,
                                                                  partition_method=args.partition_method)
     elif dataset_name == "sentiment_140":
-        server_data_loader = Sentiment140.data_loader.ClientDataLoader(data_path, partition_path, client_idx=None,
+        server_data_loader = fedml_api.data_preprocessing.fednlp.Sentiment140.data_loader.ClientDataLoader(data_path, partition_path, client_idx=None,
                                                                  partition_method=args.partition_method)
-        client_data_loader = Sentiment140.data_loader.ClientDataLoader(data_path, partition_path, client_idx=0,
+        client_data_loader = fedml_api.data_preprocessing.fednlp.Sentiment140.data_loader.ClientDataLoader(data_path, partition_path, client_idx=0,
                                                                  partition_method=args.partition_method)
     elif dataset_name == "squad_1.1":
-        server_data_loader = SQuAD_1_1.data_loader.ClientDataLoader(data_path, partition_path, client_idx=None,
+        server_data_loader = fedml_api.data_preprocessing.fednlp.SQuAD_1_1.data_loader.ClientDataLoader(data_path, partition_path, client_idx=None,
                                                                  partition_method=args.partition_method)
-        client_data_loader = SQuAD_1_1.data_loader.ClientDataLoader(data_path, partition_path, client_idx=0,
+        client_data_loader = fedml_api.data_preprocessing.fednlp.SQuAD_1_1.data_loader.ClientDataLoader(data_path, partition_path, client_idx=0,
                                                                  partition_method=args.partition_method)
     elif dataset_name == "sst_2":
-        server_data_loader = SST_2.data_loader.ClientDataLoader(data_path, partition_path, client_idx=None,
+        server_data_loader = fedml_api.data_preprocessing.fednlp.SST_2.data_loader.ClientDataLoader(data_path, partition_path, client_idx=None,
                                                                  partition_method=args.partition_method)
-        client_data_loader = SST_2.data_loader.ClientDataLoader(data_path, partition_path, client_idx=0,
+        client_data_loader = fedml_api.data_preprocessing.fednlp.SST_2.data_loader.ClientDataLoader(data_path, partition_path, client_idx=0,
                                                                  partition_method=args.partition_method)
     elif dataset_name == "w_nut":
-        server_data_loader = W_NUT.data_loader.ClientDataLoader(data_path, partition_path, client_idx=None,
+        server_data_loader = fedml_api.data_preprocessing.fednlp.W_NUT.data_loader.ClientDataLoader(data_path, partition_path, client_idx=None,
                                                                  partition_method=args.partition_method)
-        client_data_loader = W_NUT.data_loader.ClientDataLoader(data_path, partition_path, client_idx=0,
+        client_data_loader = fedml_api.data_preprocessing.fednlp.W_NUT.data_loader.ClientDataLoader(data_path, partition_path, client_idx=0,
                                                                  partition_method=args.partition_method)
     elif dataset_name == "wikigold":
-        server_data_loader = wikigold.data_loader.ClientDataLoader(data_path, partition_path, client_idx=None,
+        server_data_loader = fedml_api.data_preprocessing.fednlp.wikigold.data_loader.ClientDataLoader(data_path, partition_path, client_idx=None,
                                                                  partition_method=args.partition_method)
-        client_data_loader = wikigold.data_loader.ClientDataLoader(data_path, partition_path, client_idx=0,
+        client_data_loader = fedml_api.data_preprocessing.fednlp.wikigold.data_loader.ClientDataLoader(data_path, partition_path, client_idx=0,
                                                                  partition_method=args.partition_method)
     elif dataset_name == "wmt":
         data_file_paths = args.data_dir.split(",")
         language_pair = (data_file_paths[0].split(".")[-1], data_file_paths[1].split(".")[-1])
-        server_data_loader = WMT.data_loader.ClientDataLoader(data_path, partition_path, language_pair, client_idx=None,
+        server_data_loader = fedml_api.data_preprocessing.fednlp.WMT.data_loader.ClientDataLoader(data_path, partition_path, language_pair, client_idx=None,
                                                                  partition_method=args.partition_method)
-        client_data_loader = WMT.data_loader.ClientDataLoader(data_path, partition_path, language_pair, client_idx=0,
+        client_data_loader = fedml_api.data_preprocessing.fednlp.WMT.data_loader.ClientDataLoader(data_path, partition_path, language_pair, client_idx=0,
                                                                  partition_method=args.partition_method)
     else:
         raise Exception("No such dataset!!")
