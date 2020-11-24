@@ -17,7 +17,7 @@
 </p>
 
 ## News
-<b>2020-11-24 (Publication)</b>: We are thrilled to share that the short version of our FedML white paper has been accepted to NeurIPS 2020 workshop. Thanks for reviewers from NeurIPS and support us to do a presentationt there. <br>
+<b>2020-11-24 (Publication)</b>: We are thrilled to share that the short version of our FedML white paper has been accepted to NeurIPS 2020 workshop. Thanks for reviewers from NeurIPS, supporting us to do a presentationt there. <br>
 <img src=https://github.com/FedML-AI/FedML/blob/master/docs/image/Neurips-logo.jpg width="35%">
 
 
