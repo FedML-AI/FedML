@@ -49,14 +49,13 @@ class FedSegTrainer(object):
         self.model.train()
         
         logging.info('Training client {0} for {1} Epochs'.format(self.client_index, self.args.epochs))
-
         epoch_loss = []
         
         for epoch in range(self.args.epochs):
             t = time.time()
             batch_loss = []
 
-            logging.info('Epoch: {0}, Client Id: {1}'.format(epoch, self.client_index))
+            logging.info('Client Id: {0}, Epoch: {1}'.format(self.client_index, epoch))
 
             for (batch_idx, batch) in enumerate(self.train_local):
                 x, labels = batch['image'], batch['label']
@@ -68,15 +67,16 @@ class FedSegTrainer(object):
                 loss.backward()
                 self.optimizer.step()
                 batch_loss.append(loss.item())
-                # if batch_idx % 1000 == 0:
-                logging.info('Iteration: {0}, Loss: {1}, Time Elapsed: {2}'.format(batch_idx, loss, (time.time()-t)/1000))
+                if (batch_idx % 500 == 0):
+                    logging.info('Client Id: {0} Iteration: {1}, Loss: {2}, Time Elapsed: {3}'.format(self.client_index, batch_idx, loss, (time.time()-t)/60))
 
             if len(batch_loss) > 0:
                 epoch_loss.append(sum(batch_loss) / len(batch_loss))
-                logging.info('(client {}. Local Training Epoch: {} \tLoss: {:.6f}'.format(self.client_index,
+                logging.info('(Client Id: {}. Local Training Epoch: {} \tLoss: {:.6f}'.format(self.client_index,
                                                                 epoch, sum(epoch_loss) / len(epoch_loss)))
 
-            logging.info('Epoch: {0}, Loss: {1}, Time Elapsed: {2}'.format(epoch, batch_loss[-1], (time.time()-t)/1000))
+            logging.info('Client Id: {0} Epoch: {1}, Loss: {2}, Time Elapsed: {3}'.format(self.client_index, epoch, batch_loss[-1], (time.time()-t)/60))
+
         weights = self.model.cpu().state_dict()
 
         # transform Tensor to list

@@ -6,7 +6,7 @@ import wandb
 import numpy as np
 from torch import nn
 
-from fedml_api.distributed.fedseg.utils import transform_list_to_tensor, SegmentationLosses, Evaluator
+from fedml_api.distributed.fedseg.utils import transform_list_to_tensor, SegmentationLosses, Evaluator, Saver
 
 
 class FedSegAggregator(object):
@@ -137,10 +137,10 @@ class FedSegAggregator(object):
                     break
 
             # test on training dataset
-            train_acc = sum(train_acc_clients) / sum(train_num_samples_clients)
-            train_acc_class = sum(train_acc_class_clients) / sum(train_num_samples_clients)
-            train_mIoU = sum(train_mIoU_clients) / sum(train_num_samples_clients)
-            train_FWIoU = sum(train_FWIoU_clients) / sum(train_num_samples_clients)
+            train_acc = sum(train_acc_clients) / len(train_acc_clients)
+            train_acc_class = sum(train_acc_class_clients) / len(train_acc_class_clients)
+            train_mIoU = sum(train_mIoU_clients) / len(train_mIoU_clients)
+            train_FWIoU = sum(train_FWIoU_clients) / len(train_FWIoU_clients)
             train_loss = sum(train_losses_clients) / sum(train_num_samples_clients)
             wandb.log({"Train/Acc": train_acc, "round": round_idx})
             wandb.log({"Train/Acc_class": train_acc_class, "round": round_idx})
@@ -155,10 +155,10 @@ class FedSegAggregator(object):
             logging.info(stats)
 
             # test on test dataset
-            test_acc = sum(test_acc_clients) / sum(test_num_samples_clients)
-            test_acc_class = sum(test_acc_class_clients) / sum(test_num_samples_clients)
-            test_mIoU = sum(test_mIoU_clients) / sum(test_num_samples_clients)
-            test_FWIoU = sum(test_FWIoU_clients) / sum(test_num_samples_clients)
+            test_acc = sum(test_acc_clients) / len(test_acc_clients)
+            test_acc_class = sum(test_acc_class_clients) / len(test_acc_class_clients)
+            test_mIoU = sum(test_mIoU_clients) / len(test_mIoU_clients)
+            test_FWIoU = sum(test_FWIoU_clients) / len(test_FWIoU_clients)
             test_loss = sum(test_losses_clients) / sum(test_num_samples_clients)
             wandb.log({"Test/Acc": test_acc, "round": round_idx})
             wandb.log({"Test/Acc_class": test_acc_class, "round": round_idx})
@@ -178,16 +178,16 @@ class FedSegAggregator(object):
         self.evaluator.reset()
 
         test_loss = test_acc = test_total = 0.
-        criterion = SegmentationLosses().build_loss(mode=self.args.loss_type).to(self.device)
+        criterion = SegmentationLosses().build_loss(mode=self.args.loss_type)
         with torch.no_grad():
-            for batch_idx, (x, target) in enumerate(test_data):
-                x = x.to(self.device)
-                target = target.to(self.device)
+            for (batch_idx, batch) in enumerate(test_data):
+                x, target = batch['image'], batch['label']
+                x, target = x.to(self.device), target.to(self.device)
                 output = self.model(x)
-                loss = criterion(output, target)
+                loss = criterion(output, target).to(self.device)
                 test_loss += loss.item()
                 test_total += target.size(0)
-                pred = output.data.cpu().numpy
+                pred = output.cpu().numpy()
                 target = target.cpu().numpy()
                 pred = np.argmax(pred, axis=1)
                 self.evaluator.add_batch(target, pred)

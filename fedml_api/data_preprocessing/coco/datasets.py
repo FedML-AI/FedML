@@ -30,7 +30,9 @@ class CocoDataset(torch.utils.data.Dataset):
                  download_dataset=False,
                  year='2017',
                  split='train',
-                 categories=['person', 'dog', 'cat'],
+                 categories=['airplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair', 'cow', 'dining table', 'dog', 'horse', 'motorcycle', 'person', 'potted plant', 'sheep', 'couch', 'train', 'tv'],
+                 #categories=['person', 'cat', 'dog'],
+                #  categories=['person', 'cat', 'dog', 'horse', 'microwave', 'bed', 'airplane', 'bus', 'truck', 'elephant', 'sandwich', 'refrigerator', 'dining table', 'couch', 'stop sign'],
                  dataidxs=None):
         self.dataidxs = dataidxs  # Need torch.tensor to use this
         self.annotations_zip_path = Path('{}/annotations_trainval{}.zip'.format(root_dir, year))
@@ -190,3 +192,10 @@ class CocoDataset(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.img_ids)
+
+
+if __name__ == '__main__':
+    root_dir = './data/coco'
+    train_data = CocoDataset(root_dir=root_dir)
+    val_Data = CocoDataset(root_dir=root_dir, split='val')
+

@@ -95,7 +95,7 @@ def add_args(parser):
     parser.add_argument('--frequency_of_the_test', type=int, default=1,
                         help='the frequency of the algorithms')
 
-    parser.add_argument('--gpu_server_num', type=int, default=1,
+    parser.add_argument('--gpu_server_num', type=int, default=3,
                         help='gpu_server_num')
 
     parser.add_argument('--gpu_num_per_server', type=int, default=4,
@@ -157,7 +157,7 @@ def init_training_device(process_ID, fl_worker_num, gpu_num_per_machine):
     process_gpu_dict = dict()
     for client_index in range(fl_worker_num):
         gpu_index = client_index % gpu_num_per_machine
-        process_gpu_dict[client_index] = gpu_index
+        process_gpu_dict[client_index] = gpu_index + 1
 
     logging.info(process_gpu_dict)
     device = torch.device("cuda:" + str(process_gpu_dict[process_ID - 1]) if torch.cuda.is_available() else "cpu")
@@ -174,14 +174,18 @@ if __name__ == "__main__":
     args = add_args(parser)
 
     # customize the process name
-    str_process_name = "FedAvg (distributed):" + str(process_id)
+    str_process_name = "FedSeg (distributed):" + str(process_id)
     setproctitle.setproctitle(str_process_name)
 
-    # customize the log format
-    logging.basicConfig(level=logging.INFO,
+    
+
+    #customize the log format
+    logging.basicConfig(filename='info.log',
+                        level=logging.INFO,
                         format=str(
                             process_id) + ' - %(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
                         datefmt='%a, %d %b %Y %H:%M:%S')
+
     hostname = socket.gethostname()
     logging.info("#############process ID = " + str(process_id) +
                  ", host name = " + hostname + "########" +
