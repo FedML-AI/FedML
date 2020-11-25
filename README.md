@@ -17,6 +17,10 @@
 </p>
 
 ## News
+<b>2020-11-24 (Publication)</b>: We are thrilled to share that the short version of our FedML white paper has been accepted to NeurIPS 2020 workshop. Thanks for reviewers from NeurIPS, supporting us to do a presentation there. <br>
+<img src=https://github.com/FedML-AI/FedML/blob/master/docs/image/Neurips-logo.jpg width="35%">
+
+
 <b>2020-11-05 (System)</b>: Do you want to run federated learning on <b>IoT devices</b>? FedML architecture design can smoothly transplant the distributed computing code to the IoT platform. FedML can support edge training on two IoT devices: <b>Raspberry Pi 4</b> and <b>NVIDIA Jetson Nano</b>!!! Please check it out here: https://github.com/FedML-AI/FedML/blob/master/fedml_iot/README.md <br>
 <img src=https://github.com/FedML-AI/FedML/blob/master/docs/image/raspberry_pi.png width="35%">
 <img src=https://github.com/FedML-AI/FedML/blob/master/docs/image/nvidia-jetson-nano.png width="35%">

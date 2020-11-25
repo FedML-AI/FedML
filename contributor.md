@@ -40,3 +40,5 @@ Zihang Zeng, MS, USC, USA
 Hulin Wang, MS, USC, USA
 
 Jin-woo Lee, Research Professor, KAIST, South Korea
+
+Zhenheng Tang, PhD student, HKBU, Hong Kong, China
