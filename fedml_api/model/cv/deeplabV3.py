@@ -29,7 +29,6 @@ class _ASPPModule(nn.Module):
                                             stride=1, padding=padding, dilation=dilation, bias=False)
         self.bn = BatchNorm(planes)
         self.relu = nn.ReLU()
-
         self._init_weight()
 
     def forward(self, x):
@@ -156,16 +155,56 @@ class Decoder(nn.Module):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
+class Transformer(nn.Module):
+    def __init__(self, backbone, n_channels, output_stride, BatchNorm, pretrained):
+        super(Transformer, self).__init__()
+        self.backbone = self.build_backbone(backbone=backbone, n_channels=n_channels, output_stride=output_stride, BatchNorm=BatchNorm, pretrained=pretrained)
 
-class DeepLabv3_plus(nn.Module):
-    def __init__(self, backbone='xception', nInputChannels=3, n_classes=21, output_stride=16, pretrained=False, freeze_bn=False, sync_bn=False, _print=True):
+    def forward(self, input):
+        x, low_level_feat = self.backbone(input)
+        return x, low_level_feat
+
+    @staticmethod
+    def build_backbone(backbone='xception', n_channels=3, output_stride=16, BatchNorm=nn.BatchNorm2d, pretrained=True):
+        print(backbone)
+        if backbone == 'xception':
+            return AlignedXception(inplanes = n_channels, output_stride = output_stride, BatchNorm=BatchNorm, pretrained=pretrained)
+        else:
+            raise NotImplementedError
+
+class DeeplabHead(nn.Module):
+    def __init__(self, backbone, image_size, output_stride, BatchNorm, num_classes):
+        super(DeeplabHead, self).__init__()
+        self.aspp = self.build_aspp(backbone, output_stride, BatchNorm)
+        self.decoder = self.build_decoder(num_classes, backbone, BatchNorm)
+        self.img_size = image_size
+
+    @staticmethod
+    def build_aspp(backbone, output_stride, BatchNorm):
+        return ASPP(backbone, output_stride, BatchNorm)        
+
+    @staticmethod
+    def build_decoder(num_classes, backbone, BatchNorm):
+        return Decoder(num_classes, backbone, BatchNorm)
+
+    def forward(self, transformed_input, low_level_feat):
+        x = self.aspp(transformed_input)
+        x = self.decoder(x, low_level_feat)
+        x = F.interpolate(x, size=self.img_size, mode='bilinear', align_corners=True)
+        return x
+
+
+class DeeplabTransformer(nn.Module):
+    def __init__(self, backbone='xception', image_size=torch.Size([513, 513]) , nInputChannels=3, n_classes=21, output_stride=16, pretrained=False, freeze_bn=False, sync_bn=False, _print=True):
+
         if _print:
             print("Constructing DeepLabv3+ model...")
-            print("Backbone: Xception")
+            print("Backbone: {}".format(backbone))
             print("Number of classes: {}".format(n_classes))
-            print("Output stride: {}".format(output_stride))
             print("Number of Input Channels: {}".format(nInputChannels))
-        super(DeepLabv3_plus, self).__init__()
+            print("Output stride: {}".format(output_stride))
+
+        super(DeeplabTransformer, self).__init__()
 
         if backbone == 'drn':
             output_stride = 8        
@@ -175,9 +214,8 @@ class DeepLabv3_plus(nn.Module):
         else:
             BatchNorm2d = nn.BatchNorm2d
 
-        self.backbone = self.build_backbone(backbone=backbone, n_channels=nInputChannels, output_stride=output_stride, BatchNorm=BatchNorm2d, pretrained=pretrained)
-        self.aspp = self.build_aspp(backbone=backbone, output_stride=output_stride, BatchNorm=BatchNorm2d)
-        self.decoder = self.build_decoder(num_classes=n_classes, backbone=backbone, BatchNorm=BatchNorm2d)
+        self.transformer = Transformer(backbone=backbone, n_channels=nInputChannels, output_stride=output_stride, BatchNorm=BatchNorm2d, pretrained=pretrained)
+        self.head = DeeplabHead(backbone=backbone, image_size = torch.Size([513, 513]), output_stride=output_stride, BatchNorm=BatchNorm2d, num_classes=n_classes)
 
         self.freeze_bn = freeze_bn
 
@@ -185,16 +223,10 @@ class DeepLabv3_plus(nn.Module):
             self._freeze_bn()
 
     def forward(self, input):
-
-        # with open('input_sample.npy', 'wb') as f:
-        #     np.save(f, input.cpu().numpy(), allow_pickle=True)
-        #     f.close()
             
-        x, low_level_feat = self.backbone(input)
-        x = self.aspp(x)
-        x = self.decoder(x, low_level_feat)
-        x = F.interpolate(x, size=input.size()[2:], mode='bilinear', align_corners=True)
-        return x
+        transformed_input, low_level_feat = self.transformer(input)
+        segmented_images = self.head(transformed_input, low_level_feat)
+        return segmented_images
 
     def _freeze_bn(self):
         for m in self.modules():
@@ -209,22 +241,6 @@ class DeepLabv3_plus(nn.Module):
             elif isinstance(m, BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
-
-    @staticmethod
-    def build_backbone(backbone='xception', n_channels=3, output_stride=16, BatchNorm=nn.BatchNorm2d, pretrained=True):
-        print(backbone)
-        if backbone == 'xception':
-            return AlignedXception(inplanes = n_channels, output_stride = output_stride, BatchNorm=BatchNorm, pretrained=pretrained)
-        else:
-            raise NotImplementedError
-
-    @staticmethod
-    def build_aspp(backbone, output_stride, BatchNorm):
-        return ASPP(backbone, output_stride, BatchNorm)        
-
-    @staticmethod
-    def build_decoder(num_classes, backbone, BatchNorm):
-        return Decoder(num_classes, backbone, BatchNorm)        
 
     def get_1x_lr_params(self):
             modules = [self.backbone]
@@ -258,10 +274,11 @@ class DeepLabv3_plus(nn.Module):
                             if p.requires_grad:
                                 yield p
 
+
 if __name__ == "__main__":
-    model = DeepLabv3_plus(nInputChannels=3, n_classes=3, output_stride=16, pretrained=True, _print=True)
-    model.eval()
+    model = DeeplabTransformer(nInputChannels=3, n_classes=3, output_stride=16, pretrained=True, _print=True)
     image = torch.randn(16,3,513,513)
+    # print(image.size()[2:])
     # with open('input_sample.npy', 'rb') as f:
     #     image = torch.tensor(np.load(f, allow_pickle=True))
     with torch.no_grad():
