@@ -26,11 +26,21 @@ def transform_list_to_tensor(model_params_list):
         model_params_list[k] = torch.from_numpy(np.asarray(model_params_list[k])).float()
     return model_params_list
 
-
 def transform_tensor_to_list(model_params):
     for k in model_params.keys():
         model_params[k] = model_params[k].detach().numpy().tolist()
     return model_params
+
+def save_as_pickle_file(path, data):
+    pickle.dump(data, open(path, "wb"))
+
+def load_from_pickle_file(path):
+    return pickle.load(open(path, "rb"))  
+
+def count_parameters(model):
+    params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    return params / 1000000      
+
 
 class EvaluationMetricsKeeper:
     def __init__(self, accuracy, accuracy_class, mIoU, FWIoU, loss):
@@ -239,3 +249,4 @@ class Evaluator(object):
 
     def reset(self):
         self.confusion_matrix = np.zeros((self.num_class,) * 2)
+

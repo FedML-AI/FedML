@@ -18,9 +18,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 from fedml_api.data_preprocessing.coco.data_loader import load_partition_data_distributed_coco
 from fedml_api.data_preprocessing.pascal_voc.data_loader import load_partition_data_distributed_pascal_voc
 from fedml_api.model.cv.deeplabV3 import DeepLabv3_plus
-from fedml_api.model.cv.xception import AlignedXception
 from fedml_api.distributed.fedseg.FedSegAPI import FedML_init, FedML_FedSeg_distributed
-
+from fedml_api.distributed.fed_transformer.utils import count_parameters
 
 def add_args(parser):
     """
@@ -134,15 +133,21 @@ def load_data(process_id, args, dataset_name):
     return dataset
 
 
-def create_model(args, model_name, output_dim):
-    model = None
-    if model_name == "deeplabV3_plus" and args.dataset == "coco":
-        model = DeepLabv3_plus(backbone=args.backbone,
-                               n_classes=output_dim,
-                               output_stride=args.outstride,
-                               pretrained=args.backbone_pretrained,
-                               freeze_bn=args.freeze_bn,
-                               sync_bn=args.sync_bn)
+def create_model(args, model_name, output_dim, img_size = torch.Size([513, 513])):
+    if model_name == "deeplab_transformer" and args.dataset == "pascal_voc":
+        model = DeeplabTransformer(backbone=args.backbone,
+                                   image_size=img_size,
+                                   n_classes=output_dim,
+                                   output_stride=args.outstride,
+                                   pretrained=args.backbone_pretrained,
+                                   freeze_bn=args.freeze_bn,
+                                   sync_bn=args.sync_bn)
+        
+        for param in model.transformer.parameters():
+            param.requires_grad = False
+
+        num_params = count_parameters(model)
+        logging.info("Vision Transformer Model Size = " + str(num_params))
 
     else:
         raise ('Not Implemented Error')

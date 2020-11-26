@@ -278,9 +278,6 @@ class DeeplabTransformer(nn.Module):
 if __name__ == "__main__":
     model = DeeplabTransformer(nInputChannels=3, n_classes=3, output_stride=16, pretrained=True, _print=True)
     image = torch.randn(16,3,513,513)
-    # print(image.size()[2:])
-    # with open('input_sample.npy', 'rb') as f:
-    #     image = torch.tensor(np.load(f, allow_pickle=True))
     with torch.no_grad():
         output = model.forward(image)
     print(output.size())

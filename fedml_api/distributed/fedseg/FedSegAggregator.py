@@ -20,7 +20,7 @@ class FedSegAggregator(object):
 
         for idx in range(self.worker_num):
             self.flag_client_model_uploaded_dict[idx] = False
-        self.model, _ = self.init_model(model)
+        self.model = model
 
         self.train_acc_client_dict = dict()
         self.train_acc_class_client_dict = dict()
@@ -42,7 +42,7 @@ class FedSegAggregator(object):
         return model, model_params
 
     def get_global_model_params(self):
-        return self.model.state_dict()
+        return self.model.head.state_dict()
 
     def add_local_trained_result(self, index, model_params, sample_num):
         logging.info("add_model. index = %d" % index)
