@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+import numpy as np
 import scipy.io as sio
 from PIL import Image
 from torch.utils.data import Dataset
@@ -14,6 +15,7 @@ class PascalVocDataset(Dataset):
         self.transform = transform
         self.images = list()
         self.masks = list()
+        self.targets = None
         self.__preprocess()
         if dataidxs is not None:
             self.images = [self.images[i] for i in dataidxs]
@@ -29,6 +31,19 @@ class PascalVocDataset(Dataset):
                 self.images.append(img_path)
                 self.masks.append(mask_path)
             assert len(self.images) == len(self.masks)
+        self.__generate_targets()
+
+    def __generate_targets(self):
+        self.targets = list()
+        for i in range(len(self.images)):
+            mat = sio.loadmat(self.masks[i], mat_dtype=True, squeeze_me=True, struct_as_record=False)
+            categories = mat['GTcls'].CategoriesPresent
+            if isinstance(categories, np.ndarray):
+                categories = np.asarray(list(categories))
+            else:
+                categories = np.asarray([categories]).astype(np.uint8)
+            self.targets.append(categories)
+        self.targets = np.asarray(self.targets)
 
     def __getitem__(self, index):
         img = Image.open(self.images[index]).convert('RGB')
@@ -49,5 +64,5 @@ class PascalVocDataset(Dataset):
         """Category names."""
         return ('background', 'airplane', 'bicycle', 'bird', 'boat', 'bottle',
                 'bus', 'car', 'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse',
-                'motorcycle', 'person', 'potted-plant', 'sheep', 'sofa', 'train',
-                'tv')
+                'motorcycle', 'person', 'potted-plant', 'sheep', 'sofa', 'television',
+                'train')
