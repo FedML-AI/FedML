@@ -1,17 +1,16 @@
 import os
 from pathlib import Path
 
-import numpy as np
+import scipy.io as sio
 from PIL import Image
 from torch.utils.data import Dataset
 
 
 class PascalVocDataset(Dataset):
     def __init__(self, root_dir, split='train', transform=None, dataidxs=None):
-        self.images_dir = Path('{}/JPEGImages'.format(root_dir))
-        self.masks_dir = Path('{}/SegmentationClass'.format(root_dir))
-        self.split_file = Path('{}/ImageSets/Segmentation/{}.txt'.format(root_dir, split))
-        self.num_classes = 21
+        self.images_dir = Path('{}/dataset/img'.format(root_dir))
+        self.masks_dir = Path('{}/dataset/cls'.format(root_dir))
+        self.split_file = Path('{}/dataset/{}.txt'.format(root_dir, split))
         self.transform = transform
         self.images = list()
         self.masks = list()
@@ -24,7 +23,7 @@ class PascalVocDataset(Dataset):
         with open(self.split_file, 'r') as file_names:
             for file_name in file_names:
                 img_path = Path('{}/{}.jpg'.format(self.images_dir, file_name.strip(' \n')))
-                mask_path = Path('{}/{}.png'.format(self.masks_dir, file_name.strip(' \n')))
+                mask_path = Path('{}/{}.mat'.format(self.masks_dir, file_name.strip(' \n')))
                 assert os.path.isfile(img_path)
                 assert os.path.isfile(mask_path)
                 self.images.append(img_path)
@@ -33,7 +32,9 @@ class PascalVocDataset(Dataset):
 
     def __getitem__(self, index):
         img = Image.open(self.images[index]).convert('RGB')
-        mask = Image.open(self.masks[index])
+        mat = sio.loadmat(self.masks[index], mat_dtype=True, squeeze_me=True, struct_as_record=False)
+        mask = mat['GTcls'].Segmentation
+        mask = Image.fromarray(mask)
         sample = {'image': img, 'label': mask}
 
         if self.transform is not None:
