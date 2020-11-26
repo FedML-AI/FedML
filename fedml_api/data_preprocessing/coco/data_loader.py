@@ -196,7 +196,6 @@ def load_partition_data_distributed_coco(process_id, dataset, data_dir, partitio
                                                            partition_method,
                                                            client_number,
                                                            partition_alpha)
-    class_num = len(np.unique(y_train))
     logging.info("traindata_cls_counts = " + str(traindata_cls_counts))
     train_data_num = sum([len(net_dataidx_map[r]) for r in range(client_number)])
 
@@ -205,12 +204,11 @@ def load_partition_data_distributed_coco(process_id, dataset, data_dir, partitio
         train_data_global, test_data_global, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size)
         logging.info("train_dl_global number = " + str(len(train_data_global)))
         logging.info("test_dl_global number = " + str(len(test_data_global)))
-        train_data_local = None
-        test_data_local = None
-        local_data_num = 0
+        train_data_local_dict = None
+        test_data_local_dict = None
+        data_local_num_dict = None
     else:
         # get local dataset
-
         client_id = process_id - 1
         dataidxs = net_dataidx_map[client_id]
         local_data_num = len(dataidxs)
