@@ -16,6 +16,7 @@ import wandb
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 
 from fedml_api.data_preprocessing.coco.data_loader import load_partition_data_distributed_coco
+from fedml_api.data_preprocessing.pascal_voc.data_loader import load_partition_data_pascal_voc
 from fedml_api.model.cv.deeplabV3 import DeepLabv3_plus
 from fedml_api.model.cv.xception import AlignedXception
 from fedml_api.distributed.fedseg.FedSegAPI import FedML_init, FedML_FedSeg_distributed
@@ -42,7 +43,8 @@ def add_args(parser):
     parser.add_argument('--categories', type=str, default='person,dog,cat',
                         help='segmentation categories (default: person, dog, cat)')
 
-    parser.add_argument('--dataset', type=str, default='coco', metavar='N',
+    parser.add_argument('--dataset', type=str, default='pascal_voc', metavar='N',
+                        choices=['coco', 'pascal_voc'],
                         help='dataset used for training')
 
     parser.add_argument('--data_dir', type=str, default='./../../../data/coco',
@@ -121,10 +123,11 @@ def add_args(parser):
 def load_data(process_id, args, dataset_name):
     if dataset_name == "coco":
         data_loader = load_partition_data_distributed_coco
-        train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, class_num = data_loader(
-            process_id, args.dataset, args.data_dir, args.partition_method, args.partition_alpha,
-            args.client_num_in_total, args.batch_size)
-
+    elif dataset_name == "pascal_voc":
+        data_loader = load_partition_data_pascal_voc
+    train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, class_num = data_loader(
+        process_id, args.dataset, args.data_dir, args.partition_method, args.partition_alpha,
+        args.client_num_in_total, args.batch_size)
     dataset = [train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local,
                class_num]
 
