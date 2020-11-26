@@ -233,6 +233,5 @@ if __name__ == "__main__":
     model = create_model(args, model_name=args.model, output_dim=class_num)
 
     # start "federated averaging (FedAvg)"
-    FedML_FedSeg_distributed(process_id, worker_number, device, comm, model, train_data_num, train_data_global,
-                             test_data_global, local_data_num_dict, train_data_local_dict, test_data_local_dict,
-                             class_num, args)
+    FedML_FedSeg_distributed(process_id, worker_number, device, comm, model, train_data_num, local_data_num_dict, 
+                             train_data_local_dict, test_data_local_dict, class_num, args)

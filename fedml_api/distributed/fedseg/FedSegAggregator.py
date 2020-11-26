@@ -6,29 +6,35 @@ import wandb
 import numpy as np
 from torch import nn
 
-from fedml_api.distributed.fedseg.utils import transform_list_to_tensor, SegmentationLosses, Evaluator, Saver
+from fedml_api.distributed.fedseg.utils import transform_list_to_tensor, EvaluationMetricsKeeper
 
 
 class FedSegAggregator(object):
-    def __init__(self, train_global, test_global, all_train_data_num,
-                 train_data_local_dict, test_data_local_dict, train_data_local_num_dict, worker_num, device, model, n_class, args):
-        self.train_global = train_global
-        self.test_global = test_global
-        self.all_train_data_num = all_train_data_num
-        self.train_data_local_dict = train_data_local_dict
-        self.test_data_local_dict = test_data_local_dict
-        self.train_data_local_num_dict = train_data_local_num_dict
-        self.evaluator = Evaluator(n_class)
+    def __init__(self, worker_num, device, model, args):
         self.worker_num = worker_num
         self.device = device
         self.args = args
         self.model_dict = dict()
         self.sample_num_dict = dict()
         self.flag_client_model_uploaded_dict = dict()
+
         for idx in range(self.worker_num):
             self.flag_client_model_uploaded_dict[idx] = False
         self.model, _ = self.init_model(model)
-        logging.info('Initializing FedSegAggregator with workers: {0}, num_classes:{1}'.format(worker_num, n_class))
+
+        self.train_acc_client_dict = dict()
+        self.train_acc_class_client_dict = dict()
+        self.train_mIoU_client_dict = dict()
+        self.train_FWIoU_client_dict = dict()
+        self.train_loss_client_dict = dict()
+
+        self.test_acc_client_dict = dict()
+        self.test_acc_class_client_dict = dict()
+        self.test_mIoU_client_dict = dict()
+        self.test_FWIoU_client_dict = dict()
+        self.test_loss_client_dict = dict()
+
+        logging.info('Initializing FedSegAggregator with workers: {0}'.format(worker_num))
 
 
     def init_model(self, model):
@@ -93,110 +99,63 @@ class FedSegAggregator(object):
         logging.info("client_indexes = %s" % str(client_indexes))
         return client_indexes
 
-    def test_on_all_clients(self, round_idx):
-        if round_idx % self.args.frequency_of_the_test == 0 or round_idx == self.args.comm_round - 1:
-            logging.info("################local_test_on_all_clients : {}".format(round_idx))
-            train_acc_clients = []
-            train_acc_class_clients = []
-            train_mIoU_clients = []
-            train_FWIoU_clients = []
-            train_num_samples_clients = []
-            train_losses_clients = []
-
-            test_acc_clients = []
-            test_acc_class_clients = []
-            test_mIoU_clients = []
-            test_FWIoU_clients = []
-            test_num_samples_clients = []
-            test_losses_clients = []
-            for client_idx in range(self.args.client_num_in_total):
-
-                # train data
-                acc, acc_class, mIoU, FWIoU, num_samples, loss = self._infer(self.train_data_local_dict[client_idx])
-                train_acc_clients.append(acc)
-                train_acc_class_clients.append(acc_class)
-                train_mIoU_clients.append(mIoU)
-                train_FWIoU_clients.append(FWIoU)
-                train_num_samples_clients.append(num_samples)
-                train_losses_clients.append(loss)
-
-                # test data
-                acc, acc_class, mIoU, FWIoU, num_samples, loss = self._infer(self.test_data_local_dict[client_idx])
-                test_acc_clients.append(acc)
-                test_acc_class_clients.append(acc_class)
-                test_mIoU_clients.append(mIoU)
-                test_FWIoU_clients.append(FWIoU)
-                test_num_samples_clients.append(num_samples)
-                test_losses_clients.append(loss)
-
-                """
-                Note: CI environment is CPU-based computing. 
-                The training speed for RNN training is to slow in this setting, so we only test a client to make sure there is no programming error.
-                """
-                if self.args.ci == 1:
-                    break
-
-            # test on training dataset
-            train_acc = sum(train_acc_clients) / len(train_acc_clients)
-            train_acc_class = sum(train_acc_class_clients) / len(train_acc_class_clients)
-            train_mIoU = sum(train_mIoU_clients) / len(train_mIoU_clients)
-            train_FWIoU = sum(train_FWIoU_clients) / len(train_FWIoU_clients)
-            train_loss = sum(train_losses_clients) / sum(train_num_samples_clients)
-            wandb.log({"Train/Acc": train_acc, "round": round_idx})
-            wandb.log({"Train/Acc_class": train_acc_class, "round": round_idx})
-            wandb.log({"Train/mIoU": train_mIoU, "round": round_idx})
-            wandb.log({"Train/FWIoU": train_FWIoU, "round": round_idx})
-            wandb.log({"Train/Loss": train_loss, "round": round_idx})
-            stats = {'training_acc': train_acc, 
-                     'training_acc_class': train_acc_class,
-                     'training_mIoU': train_mIoU,
-                     'training_FWIoU': train_FWIoU,  
-                     'training_loss': train_loss}
-            logging.info(stats)
-
-            # test on test dataset
-            test_acc = sum(test_acc_clients) / len(test_acc_clients)
-            test_acc_class = sum(test_acc_class_clients) / len(test_acc_class_clients)
-            test_mIoU = sum(test_mIoU_clients) / len(test_mIoU_clients)
-            test_FWIoU = sum(test_FWIoU_clients) / len(test_FWIoU_clients)
-            test_loss = sum(test_losses_clients) / sum(test_num_samples_clients)
-            wandb.log({"Test/Acc": test_acc, "round": round_idx})
-            wandb.log({"Test/Acc_class": test_acc_class, "round": round_idx})
-            wandb.log({"Test/mIoU": test_mIoU, "round": round_idx})
-            wandb.log({"Test/FWIoU": test_FWIoU, "round": round_idx})
-            wandb.log({"Test/Loss": test_loss, "round": round_idx})
-            stats = {'testing_acc': test_acc, 
-                     'testing_acc_class': test_acc_class,
-                     'testing_mIoU': test_mIoU,
-                     'testing_FWIoU': test_FWIoU,  
-                     'testing_loss': test_loss}
-            logging.info(stats)
-
-    def _infer(self, test_data):
-        self.model.eval()
-        self.model.to(self.device)
-        self.evaluator.reset()
-
-        test_loss = test_acc = test_total = 0.
-        criterion = SegmentationLosses().build_loss(mode=self.args.loss_type)
-        with torch.no_grad():
-            for (batch_idx, batch) in enumerate(test_data):
-                x, target = batch['image'], batch['label']
-                x, target = x.to(self.device), target.to(self.device)
-                output = self.model(x)
-                loss = criterion(output, target).to(self.device)
-                test_loss += loss.item()
-                test_total += target.size(0)
-                pred = output.cpu().numpy()
-                target = target.cpu().numpy()
-                pred = np.argmax(pred, axis=1)
-                self.evaluator.add_batch(target, pred)
-
+    def add_client_test_result(self, client_idx, train_eval_metrics:EvaluationMetricsKeeper, test_eval_metrics:EvaluationMetricsKeeper):
+        logging.info("################add_client_test_result : {}".format(client_idx))
         
-        # Evaluation Metrics
-        test_acc = self.evaluator.Pixel_Accuracy()
-        test_acc_class = self.evaluator.Pixel_Accuracy_Class()
-        test_mIoU = self.evaluator.Mean_Intersection_over_Union()
-        test_FWIoU = self.evaluator.Frequency_Weighted_Intersection_over_Union()
+        # Populating Training Dictionary
+        self.train_acc_client_dict[client_idx] = train_eval_metrics.acc
+        self.train_acc_class_client_dict[client_idx] = train_eval_metrics.acc_class
+        self.train_mIoU_client_dict[client_idx] = train_eval_metrics.mIoU
+        self.train_FWIoU_client_dict[client_idx] = train_eval_metrics.FWIoU
+        self.train_loss_client_dict[client_idx] = train_eval_metrics.loss
 
-        return test_acc, test_acc_class, test_mIoU, test_FWIoU, test_total, test_loss
+        # Populating Testing Dictionary
+        self.test_acc_client_dict[client_idx] = test_eval_metrics.acc
+        self.test_acc_class_client_dict[client_idx] = test_eval_metrics.acc_class
+        self.test_mIoU_client_dict[client_idx] = test_eval_metrics.mIoU
+        self.test_FWIoU_client_dict[client_idx] = test_eval_metrics.FWIoU
+        self.test_loss_client_dict[client_idx] = test_eval_metrics.loss
+
+
+    def output_global_acc_and_loss(self, round_idx):
+        logging.info("################output_global_acc_and_loss : {}".format(round_idx))
+
+        # Test on training set
+        train_acc = np.array([self.train_acc_client_dict[k] for k in self.train_acc_client_dict.keys()]).mean()
+        train_acc_class = np.array([self.train_acc_class_client_dict[k] for k in self.train_acc_class_client_dict.keys()]).mean()
+        train_mIoU = np.array([self.train_mIoU_client_dict[k] for k in self.train_mIoU_client_dict.keys()]).mean()
+        train_FWIoU = np.array([self.train_FWIoU_client_dict[k] for k in self.train_FWIoU_client_dict.keys()]).mean()
+        train_loss = np.array([self.train_loss_client_dict[k] for k in self.train_loss_client_dict.keys()]).mean()
+
+        # Train Logs
+        wandb.log({"Train/Acc": train_acc, "round": round_idx})
+        wandb.log({"Train/Acc_class": train_acc_class, "round": round_idx})
+        wandb.log({"Train/mIoU": train_mIoU, "round": round_idx})
+        wandb.log({"Train/FWIoU": train_FWIoU, "round": round_idx})
+        wandb.log({"Train/Loss": train_loss, "round": round_idx})
+        stats = {'training_acc': train_acc, 
+                    'training_acc_class': train_acc_class,
+                    'training_mIoU': train_mIoU,
+                    'training_FWIoU': train_FWIoU,  
+                    'training_loss': train_loss}
+        logging.info(stats)
+
+        # Test on testing set
+        test_acc = np.array([self.test_acc_client_dict[k] for k in self.test_acc_client_dict.keys()]).mean()
+        test_acc_class = np.array([self.test_acc_class_client_dict[k] for k in self.test_acc_class_client_dict.keys()]).mean()         
+        test_mIoU = np.array([self.test_mIoU_client_dict[k] for k in self.test_mIoU_client_dict.keys()]).mean() 
+        test_FWIoU = np.array([self.test_FWIoU_client_dict[k] for k in self.test_FWIoU_client_dict.keys()]).mean()
+        test_loss = np.array([self.test_loss_client_dict[k] for k in self.test_loss_client_dict.keys()]).mean()
+
+        # Test Logs
+        wandb.log({"Test/Acc": test_acc, "round": round_idx})
+        wandb.log({"Test/Acc_class": test_acc_class, "round": round_idx})
+        wandb.log({"Test/mIoU": test_mIoU, "round": round_idx})
+        wandb.log({"Test/FWIoU": test_FWIoU, "round": round_idx})
+        wandb.log({"Test/Loss": test_loss, "round": round_idx})
+        stats = {'testing_acc': test_acc, 
+                    'testing_acc_class': test_acc_class,
+                    'testing_mIoU': test_mIoU,
+                    'testing_FWIoU': test_FWIoU,  
+                    'testing_loss': test_loss}
+        logging.info(stats)

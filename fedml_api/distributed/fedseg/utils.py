@@ -1,6 +1,3 @@
-import torch
-import numpy as np
-
 import os
 import shutil
 import glob
@@ -35,6 +32,13 @@ def transform_tensor_to_list(model_params):
         model_params[k] = model_params[k].detach().numpy().tolist()
     return model_params
 
+class EvaluationMetricsKeeper:
+    def __init__(self, accuracy, accuracy_class, mIoU, FWIoU, loss):
+        self.acc = accuracy
+        self.acc_class = accuracy_class
+        self.mIoU = mIoU
+        self.FWIoU = FWIoU
+        self.loss = loss
 
 # Segmentation Loss
 class SegmentationLosses(object):

@@ -1,32 +1,37 @@
 import logging, os, time
-
+from os import path
 import torch
 from torch import nn
+import numpy as np
 
-from fedml_api.distributed.fedseg.utils import transform_tensor_to_list
-from fedml_api.distributed.fedseg.utils import SegmentationLosses, LR_Scheduler
+from fedml_api.distributed.fedseg.utils import transform_tensor_to_list, SegmentationLosses, Evaluator, LR_Scheduler, EvaluationMetricsKeeper
 
 
 
 class FedSegTrainer(object):
-    def __init__(self, client_index, train_data_local_dict, train_data_local_num_dict, train_data_num, device, model,
-                 args):
+    def __init__(self, client_index, train_data_local_dict, train_data_local_num_dict,
+                 train_data_num, test_data_local_dict, device, model, n_class, args):
 
         self.client_index = client_index
         self.train_data_local_dict = train_data_local_dict
         self.train_data_local_num_dict = train_data_local_num_dict
+        self.test_data_local_dict = test_data_local_dict
         self.all_train_data_num = train_data_num
         self.train_local = self.train_data_local_dict[client_index]
         self.local_sample_number = self.train_data_local_num_dict[client_index]
+        self.test_local = self.test_data_local_dict[client_index]
+        
         self.device = device
         self.args = args
         self.model = model
         self.model.to(self.device)
-        self.criterion = SegmentationLosses().build_loss(mode=self.args.loss_type)                   # modified 
+        self.criterion = SegmentationLosses().build_loss(mode=self.args.loss_type) 
+        self.evaluator = Evaluator(n_class)
         self.scheduler = LR_Scheduler(self.args.lr_scheduler, self.args.lr, self.args.epochs, self.train_data_local_num_dict[client_index])
 
+        # Add momentum if needed
         if self.args.client_optimizer == "sgd":
-            self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.args.lr)
+            self.optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, self.model.parameters()), lr=self.args.lr)
         else:
             self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()),
                                               lr=self.args.lr,
@@ -41,6 +46,7 @@ class FedSegTrainer(object):
         self.client_index = client_index
         self.train_local = self.train_data_local_dict[client_index]
         self.local_sample_number = self.train_data_local_num_dict[client_index]
+        self.test_local = self.test_data_local_dict[client_index]
 
     def train(self):
 
@@ -83,3 +89,52 @@ class FedSegTrainer(object):
         if self.args.is_mobile == 1:
             weights = transform_tensor_to_list(weights)
         return weights, self.local_sample_number
+
+    def test(self):
+
+        # Train Data
+        train_evaluation_metrics = self._infer(self.train_local)
+
+        # Test Data        
+        test_evaluation_metrics = self._infer(self.test_local)
+
+        # Test on training dataset
+        return train_evaluation_metrics, test_evaluation_metrics
+
+
+    def _infer(self, test_data):
+        time_start_test_per_batch = time.time()
+        self.model.eval()
+        self.model.to(self.device)
+        self.evaluator.reset()
+
+        test_acc = test_acc_class = test_mIoU = test_FWIoU = test_loss = test_total = 0.
+        criterion = SegmentationLosses().build_loss(mode=self.args.loss_type)
+
+        with torch.no_grad():
+            for (batch_idx, batch) in enumerate(test_data):
+                x, target = batch['image'], batch['label']
+                x, target = x.to(self.device), target.to('device')
+                output = self.model(x)
+                loss = criterion(output, target).to(self.device)
+                test_loss += loss.item()
+                test_total += target.size(0)
+                pred = output.cpu().numpy()
+                target = target.cpu().numpy()
+                pred = np.argmax(pred, axis = 1)
+                self.evaluator.add_batch(target, pred)
+                time_end_test_per_batch = time.time()
+                logging.info("time per batch = " + str(time_end_test_per_batch - time_start_test_per_batch))
+
+        # Evaluation Metrics (Averaged over number of samples)
+        test_acc = self.evaluator.Pixel_Accuracy()
+        test_acc_class = self.evaluator.Pixel_Accuracy_Class()
+        test_mIoU = self.evaluator.Mean_Intersection_over_Union()
+        test_FWIoU = self.evaluator.Frequency_Weighted_Intersection_over_Union()
+        test_loss = test_loss / test_total
+        
+        return EvaluationMetricsKeeper(test_acc, test_acc_class, test_mIoU, test_FWIoU, test_loss)
+
+
+
+        

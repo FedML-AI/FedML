@@ -37,15 +37,19 @@ class FedSegServerManager(ServerManager):
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         local_sample_number = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
+        train_eval_metrics = msg_params.get(MyMessage.MSG_ARG_KEY_TRAIN_EVALUATION_METRICS)
+        test_eval_metrics = msg_params.get(MyMessage.MSG_ARG_KEY_TEST_EVALUATION_METRICS)
 
-        logging.info('Received model from client {0}'.format(sender_id))
+        logging.info('Received model from client {0}'.format(sender_id - 1))
 
         self.aggregator.add_local_trained_result(sender_id - 1, model_params, local_sample_number)
+        self.aggregator.add_client_test_result(sender_id, train_eval_metrics, test_eval_metrics)
+
         b_all_received = self.aggregator.check_whether_all_receive()
         logging.info("b_all_received = " + str(b_all_received))
         if b_all_received:
             global_model_params = self.aggregator.aggregate()
-            self.aggregator.test_on_all_clients(self.round_idx)
+            self.aggregator.output_global_acc_and_loss(self.round_idx)
 
             # start the next round
             self.round_idx += 1
