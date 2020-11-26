@@ -93,9 +93,7 @@ def load_coco_data(datadir):
     transform_train, transform_test = _data_transforms_coco()
 
     train_ds = CocoDataset(datadir, split='train', transform=transform_train, download_dataset=True)
-    train_ds.generate_target()
     test_ds = CocoDataset(datadir, split='val', transform=transform_test, download_dataset=True)
-    test_ds.generate_target()
 
     return train_ds.img_ids, train_ds.target, train_ds.cat_ids, test_ds.img_ids, test_ds.target, test_ds.cat_ids
 
@@ -105,7 +103,7 @@ def partition_data(datadir, partition, n_nets, alpha):
     traindata_cls_counts = None
     net_dataidx_map = None
     logging.info("*********partition data***************")
-    train_images, train_target_categories, cat_ids_train, _, __, ___ = load_coco_data(datadir)
+    train_images, train_targets, train_cat_ids, _, __, ___ = load_coco_data(datadir)
     n_train = len(train_images)  # Number of training samples
 
     if partition == "homo":
@@ -119,7 +117,7 @@ def partition_data(datadir, partition, n_nets, alpha):
     elif partition == "hetero":
         min_size = 0
         # K = train_dataset.num_classes
-        categories = cat_ids_train
+        categories = train_cat_ids # category names
         N = n_train  # Number of labels/training samples
         logging.info("N = " + str(N))
         net_dataidx_map = {}
@@ -131,13 +129,13 @@ def partition_data(datadir, partition, n_nets, alpha):
             for c, cat in enumerate(categories):
                 # print(c, cat)
                 if c > 0:
-                    idx_k = np.asarray([np.any(train_target_categories[i] == cat) and not np.any(
-                        np.in1d(train_target_categories[i], categories[:c])) for i in
-                                        range(len(train_target_categories))])
+                    idx_k = np.asarray([np.any(train_targets[i] == cat) and not np.any(
+                        np.in1d(train_targets[i], categories[:c])) for i in
+                                        range(len(train_targets))])
 
                 else:
                     idx_k = np.asarray(
-                        [np.any(train_target_categories[i] == cat) for i in range(len(train_target_categories))])
+                        [np.any(train_targets[i] == cat) for i in range(len(train_targets))])
 
                 idx_k = np.where(idx_k)[0]  # Get the indices of images that have category = c
                 np.random.shuffle(idx_k)  # Shuffle these indices

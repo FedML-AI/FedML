@@ -47,36 +47,37 @@ def get_dataloader_pascal_voc(datadir, train_bs, test_bs, dataidxs=None):
     transform_train, transform_test = _data_transforms_pascal_voc()
 
     train_ds = PascalVocDataset(datadir,
-                           split='train',
-                           transform=transform_train)
+                                split='train',
+                                transform=transform_train,
+                                dataidxs=dataidxs)
 
     test_ds = PascalVocDataset(datadir,
-                          split='val',
-                          transform=transform_test)
+                               split='val',
+                               transform=transform_test)
 
     train_dl = data.DataLoader(dataset=train_ds, batch_size=train_bs, shuffle=True, drop_last=True)
     test_dl = data.DataLoader(dataset=test_ds, batch_size=test_bs, shuffle=False, drop_last=True)
 
-    return train_dl, test_dl, train_ds.num_classes
+    return train_dl, test_dl, len(train_ds.classes)
 
 
 def get_dataloader_pascal_voc_test(datadir, train_bs, test_bs, dataidxs_train=None, dataidxs_test=None):
     transform_train, transform_test = _data_transforms_pascal_voc()
 
     train_ds = PascalVocDataset(datadir,
-                           split='train',
-                           transform=transform_train,
-                           dataidxs=dataidxs_train)
+                                split='train',
+                                transform=transform_train,
+                                dataidxs=dataidxs_train)
 
     test_ds = PascalVocDataset(datadir,
-                          split='val',
-                          transform=transform_test,
-                          dataidxs=dataidxs_test)
+                               split='val',
+                               transform=transform_test,
+                               dataidxs=dataidxs_test)
 
     train_dl = data.DataLoader(dataset=train_ds, batch_size=train_bs, shuffle=True, drop_last=True)
     test_dl = data.DataLoader(dataset=test_ds, batch_size=test_bs, shuffle=False, drop_last=True)
 
-    return train_dl, test_dl, train_ds.num_classes
+    return train_dl, test_dl, len(train_ds.classes)
 
 
 def record_net_data_stats(y_train, net_dataidx_map):
@@ -94,11 +95,9 @@ def load_pascal_voc_data(datadir):
     transform_train, transform_test = _data_transforms_pascal_voc()
 
     train_ds = PascalVocDataset(datadir, split='train', transform=transform_train)
-    train_ds.generate_target()
     test_ds = PascalVocDataset(datadir, split='val', transform=transform_test)
-    test_ds.generate_target()
 
-    return train_ds.img_ids, train_ds.target, train_ds.cat_ids, test_ds.img_ids, test_ds.target, test_ds.cat_ids
+    return train_ds.images, train_ds.targets, train_ds.classes, test_ds.images, test_ds.targets, test_ds.classes
 
 
 # Get a partition map for each client
@@ -106,7 +105,7 @@ def partition_data(datadir, partition, n_nets, alpha):
     traindata_cls_counts = None
     net_dataidx_map = None
     logging.info("*********partition data***************")
-    train_images, train_target_categories, cat_ids_train, _, __, ___ = load_coco_data(datadir)
+    train_images, train_targets, train_categories, _, __, ___ = load_pascal_voc_data(datadir)
     n_train = len(train_images)  # Number of training samples
 
     if partition == "homo":
@@ -120,7 +119,7 @@ def partition_data(datadir, partition, n_nets, alpha):
     elif partition == "hetero":
         min_size = 0
         # K = train_dataset.num_classes
-        categories = cat_ids_train
+        categories = train_categories
         N = n_train  # Number of labels/training samples
         logging.info("N = " + str(N))
         net_dataidx_map = {}
@@ -129,16 +128,15 @@ def partition_data(datadir, partition, n_nets, alpha):
             idx_batch = [[] for _1 in range(n_nets)]  # Create a list of empty lists for clients
             # for each class in the dataset
             # one image may have multiple categories.
-            for c, cat in enumerate(categories):
-                # print(c, cat)
+            for c in range(len(categories)):
                 if c > 0:
-                    idx_k = np.asarray([np.any(train_target_categories[i] == cat) and not np.any(
-                        np.in1d(train_target_categories[i], categories[:c])) for i in
-                                        range(len(train_target_categories))])
+                    idx_k = np.asarray([np.any(train_targets[i] == c) and not np.any(
+                        train_targets[i][train_targets[i] < c]) for i in
+                                        range(len(train_targets))])
 
                 else:
                     idx_k = np.asarray(
-                        [np.any(train_target_categories[i] == cat) for i in range(len(train_target_categories))])
+                        [np.any(train_targets[i] == c) for i in range(len(train_targets))])
 
                 idx_k = np.where(idx_k)[0]  # Get the indices of images that have category = c
                 np.random.shuffle(idx_k)  # Shuffle these indices
@@ -191,6 +189,45 @@ def partition_data(datadir, partition, n_nets, alpha):
     return net_dataidx_map, traindata_cls_counts
 
 
+def load_partition_data_distributed_pascal_voc(process_id, dataset, data_dir, partition_method, partition_alpha,
+                                               client_number, batch_size):
+    net_dataidx_map, traindata_cls_counts = partition_data(data_dir,
+                                                           partition_method,
+                                                           client_number,
+                                                           partition_alpha)
+    logging.info("traindata_cls_counts = " + str(traindata_cls_counts))
+    train_data_num = sum([len(net_dataidx_map[r]) for r in range(client_number)])
+
+    # get global test data
+    if process_id == 0:
+        train_data_global, test_data_global, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size)
+        logging.info("train_dl_global number = " + str(len(train_data_global)))
+        logging.info("test_dl_global number = " + str(len(test_data_global)))
+        train_data_local_dict = None
+        test_data_local_dict = None
+        data_local_num_dict = None
+    else:
+        # get local dataset
+        client_id = process_id - 1
+        dataidxs = net_dataidx_map[client_id]
+        # print(dataidxs)
+        local_data_num = len(dataidxs)
+        logging.info("rank = %d, number of local samples = %d" % (process_id, local_data_num))
+        # training batch size = 64; algorithms batch size = 32
+        train_data_local, test_data_local, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size,
+                                                                      dataidxs)
+        logging.info("process_id = %d, batch_num_train_local = %d, batch_num_test_local = %d" % (
+            process_id, len(train_data_local), len(test_data_local)))
+
+        data_local_num_dict = {client_id: local_data_num}
+        train_data_local_dict = {client_id: train_data_local}
+        test_data_local_dict = {client_id: test_data_local}
+        train_data_global = None
+        test_data_global = None
+    return train_data_num, train_data_global, test_data_global, data_local_num_dict, train_data_local_dict, \
+           test_data_local_dict, class_num
+
+
 # Called from main_fedseg
 def load_partition_data_pascal_voc(dataset, data_dir, partition_method, partition_alpha, client_number, batch_size):
     net_dataidx_map, traindata_cls_counts = partition_data(data_dir,
@@ -216,7 +253,7 @@ def load_partition_data_pascal_voc(dataset, data_dir, partition_method, partitio
         dataidxs = net_dataidx_map[client_idx]  # get dataId list for client generated using Dirichlet sampling
         local_data_num = len(dataidxs)  # How many samples does client have?
         data_local_num_dict[client_idx] = local_data_num
-        logging.info("client_idx = %d, local_sample_number = %d" % (client_idx, local_data_num))
+        logging.info("client_idx = %d, number of local samples = %d" % (client_idx, local_data_num))
 
         # training batch size = 64; algorithms batch size = 32
         train_data_local, test_data_local, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size,

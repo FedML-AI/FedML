@@ -30,9 +30,12 @@ class CocoDataset(torch.utils.data.Dataset):
                  download_dataset=False,
                  year='2017',
                  split='train',
-                 categories=['airplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair', 'cow', 'dining table', 'dog', 'horse', 'motorcycle', 'person', 'potted plant', 'sheep', 'couch', 'train', 'tv'],
-                 #categories=['person', 'cat', 'dog'],
-                #  categories=['person', 'cat', 'dog', 'horse', 'microwave', 'bed', 'airplane', 'bus', 'truck', 'elephant', 'sandwich', 'refrigerator', 'dining table', 'couch', 'stop sign'],
+                 categories=['airplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair', 'cow',
+                             'dining table', 'dog', 'horse', 'motorcycle', 'person', 'potted plant', 'sheep', 'couch',
+                             'train', 'tv'],
+                 # categories=['person', 'cat', 'dog'],
+                 #  categories=['person', 'cat', 'dog', 'horse', 'microwave', 'bed', 'airplane', 'bus', 'truck',
+                 #  'elephant', 'sandwich', 'refrigerator', 'dining table', 'couch', 'stop sign'],
                  dataidxs=None):
         self.dataidxs = dataidxs  # Need torch.tensor to use this
         self.annotations_zip_path = Path('{}/annotations_trainval{}.zip'.format(root_dir, year))
@@ -70,6 +73,8 @@ class CocoDataset(torch.utils.data.Dataset):
             ])
         else:
             self.transform = transform
+
+        self.__generate__target()
 
     def __download_dataset(self, year, split):
         """
@@ -170,7 +175,7 @@ class CocoDataset(torch.utils.data.Dataset):
 
         return img, mask
 
-    def __get_categories_as_target(self):
+    def __generate_target(self):
         self.target = list()
         for id in self.img_ids:
             annotation_ids = self.coco.getAnnIds(imgIds=id, catIds=self.cat_ids)
@@ -178,12 +183,6 @@ class CocoDataset(torch.utils.data.Dataset):
             category_list = np.asarray([ann['category_id'] for ann in annotations])
             self.target.append(category_list)
         self.target = np.asarray(self.target)
-
-    def generate_target(self):
-        # if len(self.cat_ids) == 1:
-        #   self.target = np.expand_dims(np.repeat(self.cat_ids[0], len(self.img_ids)), axis=1)
-        # else:
-        self.__get_categories_as_target()
 
     def __getitem__(self, index):
         img, mask = self.__get_datapoint(self.img_ids[index])
@@ -198,4 +197,3 @@ if __name__ == '__main__':
     root_dir = './data/coco'
     train_data = CocoDataset(root_dir=root_dir)
     val_Data = CocoDataset(root_dir=root_dir, split='val')
-

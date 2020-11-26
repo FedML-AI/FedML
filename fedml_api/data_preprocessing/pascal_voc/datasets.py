@@ -21,6 +21,8 @@ class PascalVocDataset(Dataset):
             self.images = [self.images[i] for i in dataidxs]
             self.masks = [self.masks[i] for i in dataidxs]
 
+        self.__generate_targets()
+
     def __preprocess(self):
         with open(self.split_file, 'r') as file_names:
             for file_name in file_names:
@@ -31,7 +33,6 @@ class PascalVocDataset(Dataset):
                 self.images.append(img_path)
                 self.masks.append(mask_path)
             assert len(self.images) == len(self.masks)
-        self.__generate_targets()
 
     def __generate_targets(self):
         self.targets = list()
