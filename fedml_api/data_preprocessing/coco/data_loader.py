@@ -190,6 +190,46 @@ def partition_data(datadir, partition, n_nets, alpha):
     return net_dataidx_map, traindata_cls_counts
 
 
+def load_partition_data_distributed_coco(process_id, dataset, data_dir, partition_method, partition_alpha,
+                                         client_number, batch_size):
+    net_dataidx_map, traindata_cls_counts = partition_data(data_dir,
+                                                           partition_method,
+                                                           client_number,
+                                                           partition_alpha)
+    class_num = len(np.unique(y_train))
+    logging.info("traindata_cls_counts = " + str(traindata_cls_counts))
+    train_data_num = sum([len(net_dataidx_map[r]) for r in range(client_number)])
+
+    # get global test data
+    if process_id == 0:
+        train_data_global, test_data_global, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size)
+        logging.info("train_dl_global number = " + str(len(train_data_global)))
+        logging.info("test_dl_global number = " + str(len(test_data_global)))
+        train_data_local = None
+        test_data_local = None
+        local_data_num = 0
+    else:
+        # get local dataset
+
+        client_id = process_id - 1
+        dataidxs = net_dataidx_map[client_id]
+        local_data_num = len(dataidxs)
+        logging.info("rank = %d, local_sample_number = %d" % (process_id, local_data_num))
+        # training batch size = 64; algorithms batch size = 32
+        train_data_local, test_data_local, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size,
+                                                                      dataidxs)
+        logging.info("process_id = %d, batch_num_train_local = %d, batch_num_test_local = %d" % (
+            process_id, len(train_data_local), len(test_data_local)))
+
+        data_local_num_dict = {client_id: local_data_num}
+        train_data_local_dict = {client_id: train_data_local}
+        test_data_local_dict = {client_id: test_data_local}
+        train_data_global = None
+        test_data_global = None
+    return train_data_num, train_data_global, test_data_global, data_local_num_dict, train_data_local_dict, \
+           test_data_local_dict, class_num
+
+
 # Called from main_fedseg
 def load_partition_data_coco(dataset, data_dir, partition_method, partition_alpha, client_number, batch_size):
     net_dataidx_map, traindata_cls_counts = partition_data(data_dir,

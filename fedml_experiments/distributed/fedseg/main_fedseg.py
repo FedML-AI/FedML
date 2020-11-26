@@ -15,7 +15,7 @@ import wandb
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 
-from fedml_api.data_preprocessing.coco.data_loader import load_partition_data_coco
+from fedml_api.data_preprocessing.coco.data_loader import load_partition_data_distributed_coco
 from fedml_api.model.cv.deeplabV3 import DeepLabv3_plus
 from fedml_api.model.cv.xception import AlignedXception
 from fedml_api.distributed.fedseg.FedSegAPI import FedML_init, FedML_FedSeg_distributed
@@ -37,7 +37,7 @@ def add_args(parser):
                         help='pretrained backbone (default: True)')
 
     parser.add_argument('--outstride', type=int, default=16,
-                        help='network output stride (default: 16)') 
+                        help='network output stride (default: 16)')
 
     parser.add_argument('--categories', type=str, default='person,dog,cat',
                         help='segmentation categories (default: person, dog, cat)')
@@ -68,7 +68,7 @@ def add_args(parser):
 
     parser.add_argument('--freeze_bn', type=bool, default=False,
                         help='whether to freeze bn parameters (default: False)')
-    
+
     parser.add_argument('--client_optimizer', type=str, default='sgd',
                         help='SGD')
 
@@ -77,11 +77,11 @@ def add_args(parser):
 
     parser.add_argument('--lr_scheduler', type=str, default='poly',
                         choices=['poly', 'step', 'cos'],
-                        help='lr scheduler mode: (default: poly)')   
+                        help='lr scheduler mode: (default: poly)')
 
     parser.add_argument('--loss_type', type=str, default='ce',
                         choices=['ce', 'focal'],
-                        help='loss func type (default: ce)')                                           
+                        help='loss func type (default: ce)')
 
     parser.add_argument('--epochs', type=int, default=5, metavar='EP',
                         help='how many epochs will be trained locally')
@@ -118,33 +118,31 @@ def add_args(parser):
     # backbone-pretrained
 
 
-def load_data(args, dataset_name):
-
+def load_data(process_id, args, dataset_name):
     if dataset_name == "coco":
-        data_loader = load_partition_data_coco
-        train_data_num, test_data_num, train_data_global, test_data_global, \
-        train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
-        class_num = data_loader(args.dataset, args.data_dir, args.partition_method,
-                                args.partition_alpha, args.client_num_in_total, args.batch_size)
+        data_loader = load_partition_data_distributed_coco
+        train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, class_num = data_loader(
+            process_id, args.dataset, args.data_dir, args.partition_method, args.partition_alpha,
+            args.client_num_in_total, args.batch_size)
 
-    dataset = [train_data_num, test_data_num, train_data_global, test_data_global,
-               train_data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num]
-               
+    dataset = [train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local,
+               class_num]
+
     return dataset
 
 
 def create_model(args, model_name, output_dim):
     model = None
     if model_name == "deeplabV3_plus" and args.dataset == "coco":
-        model = DeepLabv3_plus(backbone=args.backbone, 
-                               n_classes = output_dim,
+        model = DeepLabv3_plus(backbone=args.backbone,
+                               n_classes=output_dim,
                                output_stride=args.outstride,
                                pretrained=args.backbone_pretrained,
                                freeze_bn=args.freeze_bn,
                                sync_bn=args.sync_bn)
-    
+
     else:
-        raise('Not Implemented Error')
+        raise ('Not Implemented Error')
 
     return model
 
@@ -177,9 +175,7 @@ if __name__ == "__main__":
     str_process_name = "FedSeg (distributed):" + str(process_id)
     setproctitle.setproctitle(str_process_name)
 
-    
-
-    #customize the log format
+    # customize the log format
     logging.basicConfig(filename='info.log',
                         level=logging.INFO,
                         format=str(
@@ -224,16 +220,16 @@ if __name__ == "__main__":
     device = init_training_device(process_id, worker_number - 1, args.gpu_num_per_server)
 
     # load data
-    dataset = load_data(args, args.dataset)
-    [train_data_num, test_data_num, train_data_global, test_data_global,
-     train_data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num] = dataset
+    dataset = load_data(process_id, args, args.dataset)
+    [train_data_num, train_data_global, test_data_global, local_data_num_dict, train_data_local_dict,
+     test_data_local_dict, class_num] = dataset
 
     # create model.
     # Note if the model is DNN (e.g., ResNet), the training will be very slow.
     # In this case, please use our FedML distributed version (./fedml_experiments/distributed_fedavg)
-    model = create_model(args, model_name=args.model, output_dim=dataset[7])
+    model = create_model(args, model_name=args.model, output_dim=class_num)
 
     # start "federated averaging (FedAvg)"
-    FedML_FedSeg_distributed(process_id, worker_number, device, comm,
-                             model, train_data_num, train_data_global, test_data_global,
-                             train_data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num, args)
+    FedML_FedSeg_distributed(process_id, worker_number, device, comm, model, train_data_num, train_data_global,
+                             test_data_global, local_data_num_dict, train_data_local_dict, test_data_local_dict,
+                             class_num, args)
