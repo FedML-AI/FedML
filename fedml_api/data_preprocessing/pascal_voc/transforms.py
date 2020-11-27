@@ -111,7 +111,8 @@ class ToTensor(object):
         self.to_tensor = transforms.ToTensor()
 
     def __call__(self, sample):
-        img = self.to_tensor(sample['image'])
+        img = torch.tensor(np.array(sample['image']).astype(np.float32).transpose((2, 0, 1)))
+
         mask = torch.tensor(np.array(sample['label']).astype(np.float32))
         return {
             'image': img,
