@@ -37,6 +37,9 @@ def add_args(parser):
     parser.add_argument('--backbone_pretrained', type=bool, default=True,
                         help='pretrained backbone (default: True)')
 
+    parser.add_argument('--backbone_freezed', type=bool, default=True,
+                        help='Freeze backbone to extract features only once (default: True)')
+
     parser.add_argument('--outstride', type=int, default=16,
                         help='network output stride (default: 16)')
 
@@ -152,12 +155,15 @@ def create_model(args, model_name, output_dim, img_size = torch.Size([513, 513])
                                    freeze_bn=args.freeze_bn,
                                    sync_bn=args.sync_bn)
         
-        for param in model.transformer.parameters():
-            param.requires_grad = False
+        if args.backbone_freezed:
+            logging.info('Freezing Backbone')
+            for param in model.transformer.parameters():
+                param.requires_grad = False
+        else:
+            logging.info('Finetuning Backbone')
 
         num_params = count_parameters(model)
-        logging.info("Vision Transformer Model Size = " + str(num_params))
-
+        logging.info("Deeplab Transformer Model Size = " + str(num_params))
     else:
         raise ('Not Implemented Error')
 

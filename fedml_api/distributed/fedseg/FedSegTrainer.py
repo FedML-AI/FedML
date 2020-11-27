@@ -35,12 +35,18 @@ class FedSegTrainer(object):
                                               lr=self.args.lr,
                                               weight_decay=self.args.wd, amsgrad=True)
 
-        self.train_data_extracted_features, self.test_data_extracted_features = self._extract_features()
+        if self.args.backbone_freezed:
+            self.train_data_extracted_features, self.test_data_extracted_features = self._extract_features()
 
 
     def update_model(self, weights):
-        # logging.info("update_model. client_index = %d" % self.client_index)
-        self.model.head.load_state_dict(weights)
+        
+        if self.args.backbone_freezed:
+            logging.info("update_model. client_index (w\o Backbone) = %d" % self.client_index)
+            self.model.head.load_state_dict(weights)
+        else:
+            logging.info("update_model. client_index = %d" % self.client_index)
+            self.model.load_state_dict(weights)
 
     def update_dataset(self, client_index):
         self.client_index = client_index
@@ -123,7 +129,7 @@ class FedSegTrainer(object):
         # change to train mode
         self.model.train()
         
-        logging.info('Training client {0} for {1} Epochs'.format(self.client_index, self.args.epochs))
+        logging.info('Training client (w/o Backbone) {0} for {1} Epochs'.format(self.client_index, self.args.epochs))
         epoch_loss = []
         
         for epoch in range(self.args.epochs):
@@ -209,10 +215,17 @@ class FedSegTrainer(object):
     def test(self):
 
         # Train Data
-        train_evaluation_metrics = self._infer(self.train_local)
+        if self.args.backbone_freezed:
+            logging.info('Testing client (w/o Backbone) {0}'.format(self.client_index))
+            train_evaluation_metrics = self._infer(self.train_local)
+            test_evaluation_metrics = self._infer(self.test_local)
+
+        else:
+            logging.info('Testing client {0}'.format(self.client_index))
+            train_evaluation_metrics = self._infer_on_raw_data(self.train_local)
+            test_evaluation_metrics = self._infer_on_raw_data(self.test_local)
 
         # Test Data        
-        test_evaluation_metrics = self._infer(self.test_local)
 
         # Test on training dataset
         return train_evaluation_metrics, test_evaluation_metrics

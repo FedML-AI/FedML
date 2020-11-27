@@ -42,7 +42,12 @@ class FedSegAggregator(object):
         return model, model_params
 
     def get_global_model_params(self):
-        return self.model.head.state_dict()
+        if self.args.backbone_freezed:
+            logging.info('Initializing model head; Backbone Freezed')
+            return self.model.head.state_dict()
+        else:
+            logging.info('Initializing end-to-end model')
+            return self.model.state_dict()
 
     def add_local_trained_result(self, index, model_params, sample_num):
         logging.info("add_model. index = %d" % index)
