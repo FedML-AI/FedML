@@ -37,7 +37,7 @@ def add_args(parser):
     parser.add_argument('--backbone_pretrained', type=bool, default=True,
                         help='pretrained backbone (default: True)')
 
-    parser.add_argument('--backbone_freezed', type=bool, default=False,
+    parser.add_argument('--backbone_freezed', type=bool, default=True,
                         help='Freeze backbone to extract features only once (default: False)')
 
     parser.add_argument('--outstride', type=int, default=16,
@@ -66,7 +66,7 @@ def add_args(parser):
     parser.add_argument('--client_num_per_round', type=int, default=2, metavar='NN',
                         help='number of workers')
 
-    parser.add_argument('--batch_size', type=int, default=6, metavar='N',
+    parser.add_argument('--batch_size', type=int, default=16, metavar='N',
                         help='input batch size for training (default: 64)')
 
     parser.add_argument('--sync_bn', type=bool, default=False,
@@ -181,7 +181,7 @@ def init_training_device(process_ID, fl_worker_num, gpu_num_per_machine):
     process_gpu_dict = dict()
     for client_index in range(fl_worker_num):
         gpu_index = client_index % gpu_num_per_machine
-        process_gpu_dict[client_index] = gpu_index + 1
+        process_gpu_dict[client_index] = gpu_index
 
     logging.info(process_gpu_dict)
     device = torch.device("cuda:" + str(process_gpu_dict[process_ID - 1]) if torch.cuda.is_available() else "cpu")
@@ -196,8 +196,7 @@ if __name__ == "__main__":
     # parse python script input parameters
     parser = argparse.ArgumentParser()
     args = add_args(parser)
-    print("Current Arguments :- ",args)
-
+    print(args)
     # customize the process name
     str_process_name = "FedSeg (distributed):" + str(process_id)
     setproctitle.setproctitle(str_process_name)

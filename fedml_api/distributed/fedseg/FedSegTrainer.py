@@ -83,9 +83,11 @@ class FedSegTrainer(object):
         test_data_extracted_features = dict()
 
         if path.exists(path_train):
+            logging.info('Loading Extracted Features for Training Dataset')
             train_data_extracted_features = load_from_pickle_file(path_train)
 
         else:
+            logging.info('Extracting Features for Training Dataset')
             with torch.no_grad():
                 for (batch_idx, batch) in enumerate(self.train_local):
                     time_start_train_per_batch = time.time()
@@ -96,16 +98,18 @@ class FedSegTrainer(object):
                     train_data_extracted_features[batch_idx] = (extracted_inputs.cpu().detach(), extracted_features.cpu().detach(), labels)
                     time_end_train_per_batch = time.time()
 
-                    logging.info("train_local feature extraction - client_id={}, batch_id={}, time per batch = {}".format(self.client_index, batch_idx, str(
-                        time_end_train_per_batch - time_start_train_per_batch)))
+                    # logging.info("train_local feature extraction - client_id={}, batch_id={}, time per batch = {}".format(self.client_index, batch_idx, str(
+                    #     time_end_train_per_batch - time_start_train_per_batch)))
 
                 save_as_pickle_file(path_train, train_data_extracted_features)
 
 
         if path.exists(path_test):
+            logging.info('Loading Extracted Features for Testing Dataset')
             test_data_extracted_features = load_from_pickle_file(path_test)
 
         else:
+            logging.info('Extracting Features for Testing Dataset')
             with torch.no_grad():
                 for (batch_idx, batch) in enumerate(self.test_local):
                     time_start_test_per_batch = time.time()
@@ -116,8 +120,8 @@ class FedSegTrainer(object):
                     test_data_extracted_features[batch_idx] = (extracted_inputs.cpu().detach(), extracted_features.cpu().detach(), labels)
                     time_end_test_per_batch = time.time()
 
-                    logging.info("test_local feature extraction - time per batch = " + str(
-                        time_end_test_per_batch - time_start_test_per_batch))
+                    # logging.info("test_local feature extraction - time per batch = " + str(
+                    #     time_end_test_per_batch - time_start_test_per_batch))
 
                 save_as_pickle_file(path_test, test_data_extracted_features)
 
@@ -153,7 +157,7 @@ class FedSegTrainer(object):
                 batch_loss.append(loss.item())
 
                 # if (batch_idx % 500 == 0):
-                logging.info('Client Id: {0} Iteration: {1}, Loss: {2}, Time Elapsed: {3}'.format(self.client_index, batch_idx, loss, (time.time()-t)/60))
+                # logging.info('Client Id: {0} Iteration: {1}, Loss: {2}, Time Elapsed: {3}'.format(self.client_index, batch_idx, loss, (time.time()-t)/60))
 
             if len(batch_loss) > 0:
                 epoch_loss.append(sum(batch_loss) / len(batch_loss))
@@ -272,7 +276,7 @@ class FedSegTrainer(object):
                 pred = np.argmax(pred, axis = 1)
                 self.evaluator.add_batch(target, pred)
                 time_end_test_per_batch = time.time()
-                logging.info("time per batch = " + str(time_end_test_per_batch - time_start_test_per_batch))
+                # logging.info("time per batch = " + str(time_end_test_per_batch - time_start_test_per_batch))
 
         # Evaluation Metrics (Averaged over number of samples)
         test_acc = self.evaluator.Pixel_Accuracy()

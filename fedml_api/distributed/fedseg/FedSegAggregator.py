@@ -88,7 +88,12 @@ class FedSegAggregator(object):
                     averaged_params[k] += local_model_params[k] * w
 
         # update the global model which is cached at the server side
-        self.model.load_state_dict(averaged_params)
+        if self.args.backbone_freezed:
+            logging.info('Updating Global model head; Backbone Freezed')
+            self.model.head.load_state_dict(averaged_params)
+        else:
+            logging.info('Updating Global model')
+            self.model.load_state_dict(averaged_params)
 
         end_time = time.time()
         logging.info("aggregate time cost: %d" % (end_time - start_time))
