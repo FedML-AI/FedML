@@ -19,7 +19,7 @@ from fedml_api.data_preprocessing.coco.data_loader import load_partition_data_di
 from fedml_api.data_preprocessing.pascal_voc.data_loader import load_partition_data_distributed_pascal_voc
 from fedml_api.model.cv.deeplabV3 import DeeplabTransformer
 from fedml_api.distributed.fedseg.FedSegAPI import FedML_init, FedML_FedSeg_distributed
-from fedml_api.distributed.fed_transformer.utils import count_parameters
+from fedml_api.distributed.fedseg.utils import count_parameters
 
 def add_args(parser):
     """
@@ -39,6 +39,7 @@ def add_args(parser):
     parser.add_argument('--outstride', type=int, default=16,
                         help='network output stride (default: 16)')
 
+    # TODO: Remove this argument
     parser.add_argument('--categories', type=str, default='person,dog,cat',
                         help='segmentation categories (default: person, dog, cat)')
 

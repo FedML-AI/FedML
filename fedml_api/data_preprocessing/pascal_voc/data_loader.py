@@ -4,7 +4,7 @@ import torch.utils.data as data
 import numpy as np
 
 from torchvision import transforms
-from fedml_api.data_preprocessing.pascal_voc import transforms
+import fedml_api.data_preprocessing.pascal_voc.transforms as custom_transforms
 from fedml_api.data_preprocessing.pascal_voc.datasets import PascalVocDataset
 
 logging.basicConfig()
@@ -17,17 +17,17 @@ def _data_transforms_pascal_voc():
     PASCAL_VOC_STD = (0.229, 0.224, 0.225)
 
     train_transform = transforms.Compose([
-        transforms.RandomMirror(),
-        transforms.RandomScaleCrop(),
-        transforms.RandomGaussianBlur(),
-        transforms.ToTensor(),
-        transforms.Normalize([.485, .456, .406], [.229, .224, .225]),
+        custom_transforms.RandomMirror(),
+        custom_transforms.RandomScaleCrop(),
+        custom_transforms.RandomGaussianBlur(),
+        custom_transforms.ToTensor(),
+        custom_transforms.Normalize([.485, .456, .406], [.229, .224, .225]),
     ])
 
     val_transform = transforms.Compose([
-        transforms.FixedScaleCrop(512),
-        transforms.Normalize(mean=PASCAL_VOC_MEAN, std=PASCAL_VOC_STD),
-        transforms.ToTensor()
+        custom_transforms.FixedScaleCrop(512),
+        custom_transforms.Normalize(mean=PASCAL_VOC_MEAN, std=PASCAL_VOC_STD),
+        custom_transforms.ToTensor()
     ])
 
     return train_transform, val_transform
