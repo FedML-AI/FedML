@@ -34,7 +34,9 @@ def transform_tensor_to_list(model_params):
     return model_params
 
 def save_as_pickle_file(path, data):
-    pickle.dump(data, open(path, "wb"))
+    with open(path, "wb") as f:
+        pickle.dump(data, f)
+        f.close()
 
 def load_from_pickle_file(path):
     return pickle.load(open(path, "rb"))  

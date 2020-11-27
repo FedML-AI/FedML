@@ -37,7 +37,7 @@ def add_args(parser):
     parser.add_argument('--backbone_pretrained', type=bool, default=True,
                         help='pretrained backbone (default: True)')
 
-    parser.add_argument('--backbone_freezed', type=bool, default=False,
+    parser.add_argument('--backbone_freezed', type=bool, default=True,
                         help='Freeze backbone to extract features only once (default: False)')
 
     parser.add_argument('--outstride', type=int, default=16,
@@ -78,7 +78,7 @@ def add_args(parser):
     parser.add_argument('--client_optimizer', type=str, default='sgd',
                         help='SGD')
 
-    parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
+    parser.add_argument('--lr', type=float, default=0.007, metavar='LR',
                         help='learning rate (default: 0.001)')
 
     parser.add_argument('--lr_scheduler', type=str, default='poly',
