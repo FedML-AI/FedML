@@ -37,7 +37,7 @@ def add_args(parser):
     parser.add_argument('--backbone_pretrained', type=bool, default=True,
                         help='pretrained backbone (default: True)')
 
-    parser.add_argument('--backbone_freezed', type=bool, default=True,
+    parser.add_argument('--backbone_freezed', type=bool, default=False,
                         help='Freeze backbone to extract features only once (default: False)')
 
     parser.add_argument('--outstride', type=int, default=16,
@@ -66,7 +66,7 @@ def add_args(parser):
     parser.add_argument('--client_num_per_round', type=int, default=4, metavar='NN',
                         help='number of workers')
 
-    parser.add_argument('--batch_size', type=int, default=32, metavar='N',
+    parser.add_argument('--batch_size', type=int, default=6, metavar='N',
                         help='input batch size for training (default: 32)')
 
     parser.add_argument('--sync_bn', type=bool, default=False,
@@ -78,7 +78,7 @@ def add_args(parser):
     parser.add_argument('--client_optimizer', type=str, default='sgd',
                         help='SGD')
 
-    parser.add_argument('--lr', type=float, default=0.007, metavar='LR',
+    parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
                         help='learning rate (default: 0.001)')
 
     parser.add_argument('--lr_scheduler', type=str, default='poly',
@@ -92,13 +92,13 @@ def add_args(parser):
     parser.add_argument('--epochs', type=int, default=1, metavar='EP',
                         help='how many epochs will be trained locally')
 
-    parser.add_argument('--comm_round', type=int, default=3,
+    parser.add_argument('--comm_round', type=int, default=40,
                         help='how many round of communications we shoud use')
 
     parser.add_argument('--is_mobile', type=int, default=0,
                         help='whether the program is running on the FedML-Mobile server side')
 
-    parser.add_argument('--frequency_of_the_test', type=int, default=2,
+    parser.add_argument('--frequency_of_the_test', type=int, default=5,
                         help='the frequency of the algorithms')
 
     parser.add_argument('--gpu_server_num', type=int, default=1,

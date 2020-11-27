@@ -109,15 +109,16 @@ class FedSegAggregator(object):
         logging.info("client_indexes = %s" % str(client_indexes))
         return client_indexes
 
-    def add_client_test_result(self, client_idx, train_eval_metrics:EvaluationMetricsKeeper, test_eval_metrics:EvaluationMetricsKeeper):
+    def add_client_test_result(self, round_idx, client_idx, train_eval_metrics:EvaluationMetricsKeeper, test_eval_metrics:EvaluationMetricsKeeper):
         logging.info("################add_client_test_result : {}".format(client_idx))
         
         # Populating Training Dictionary
-        self.train_acc_client_dict[client_idx] = train_eval_metrics.acc
-        self.train_acc_class_client_dict[client_idx] = train_eval_metrics.acc_class
-        self.train_mIoU_client_dict[client_idx] = train_eval_metrics.mIoU
-        self.train_FWIoU_client_dict[client_idx] = train_eval_metrics.FWIoU
-        self.train_loss_client_dict[client_idx] = train_eval_metrics.loss
+        if round_idx % self.args.frequency_of_the_test == 0:
+            self.train_acc_client_dict[client_idx] = train_eval_metrics.acc
+            self.train_acc_class_client_dict[client_idx] = train_eval_metrics.acc_class
+            self.train_mIoU_client_dict[client_idx] = train_eval_metrics.mIoU
+            self.train_FWIoU_client_dict[client_idx] = train_eval_metrics.FWIoU
+            self.train_loss_client_dict[client_idx] = train_eval_metrics.loss
 
         # Populating Testing Dictionary
         self.test_acc_client_dict[client_idx] = test_eval_metrics.acc

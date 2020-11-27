@@ -3,6 +3,7 @@ from os import path
 import torch
 from torch import nn
 import numpy as np
+import gc
 
 from fedml_api.distributed.fedseg.utils import transform_tensor_to_list, SegmentationLosses, Evaluator, LR_Scheduler, EvaluationMetricsKeeper, save_as_pickle_file, load_from_pickle_file
 
@@ -36,7 +37,7 @@ class FedSegTrainer(object):
                                               weight_decay=self.args.wd, amsgrad=True)
 
         if self.args.backbone_freezed:
-            self.train_data_extracted_features, self.test_data_extracted_features = self._extract_features()
+            self.train_data_extracted_features, self.test_data_extracted_features = self._load_extracted_features()
 
 
     def update_model(self, weights):
@@ -54,7 +55,7 @@ class FedSegTrainer(object):
         self.local_sample_number = self.train_data_local_num_dict[client_index]
         self.test_local = self.test_data_local_dict[client_index]
 
-    def _extract_features(self):
+    def _load_extracted_features(self):
         self.model.eval()
         self.model.to(self.device)
 
@@ -88,44 +89,30 @@ class FedSegTrainer(object):
 
         else:
             logging.info('Extracting Features for Training Dataset')
-            with torch.no_grad():
-                for (batch_idx, batch) in enumerate(self.train_local):
-                    time_start_train_per_batch = time.time()
-                    x, labels = batch['image'], batch['label']
-                    x = x.to(self.device)
-                    extracted_inputs, extracted_features = self.model.transformer(x)
-                    # DEBUG: Verify dimensions
-                    train_data_extracted_features[batch_idx] = (extracted_inputs.cpu().detach(), extracted_features.cpu().detach(), labels)
-                    time_end_train_per_batch = time.time()
-
-                    # logging.info("train_local feature extraction - client_id={}, batch_id={}, time per batch = {}".format(self.client_index, batch_idx, str(
-                    #     time_end_train_per_batch - time_start_train_per_batch)))
-
-                save_as_pickle_file(path_train, train_data_extracted_features)
-
-
+            train_data_extracted_features = self._extract_features(path_train, self.train_local)
+            gc.collect()
+            
         if path.exists(path_test):
             logging.info('Loading Extracted Features for Testing Dataset')
             test_data_extracted_features = load_from_pickle_file(path_test)
 
         else:
             logging.info('Extracting Features for Testing Dataset')
-            with torch.no_grad():
-                for (batch_idx, batch) in enumerate(self.test_local):
-                    time_start_test_per_batch = time.time()
-                    x, labels = batch['image'], batch['label']
-                    x = x.to(self.device)
-                    extracted_inputs, extracted_features = self.model.transformer(x)
-                    # DEBUG: Verify dimensions
-                    test_data_extracted_features[batch_idx] = (extracted_inputs.cpu().detach(), extracted_features.cpu().detach(), labels)
-                    time_end_test_per_batch = time.time()
-
-                    # logging.info("test_local feature extraction - time per batch = " + str(
-                    #     time_end_test_per_batch - time_start_test_per_batch))
-
-                save_as_pickle_file(path_test, test_data_extracted_features)
+            test_data_extracted_features = self._extract_features(path_test, self.test_local)
+            gc.collect()
 
         return train_data_extracted_features, test_data_extracted_features
+
+    def _extract_features(self, path, dataset_loader):
+        extracted_features_dict = dict()
+        with torch.no_grad():
+            for (batch_idx, batch) in enumerate(dataset_loader):
+                x, labels = batch['image'], batch['label']
+                x = x.to(self.device)
+                extracted_inputs, extracted_features = self.model.transformer(x)
+                extracted_features_dict[batch_idx] = (extracted_inputs.cpu().detach(), extracted_features.cpu().detach(), labels)
+            save_as_pickle_file(path, extracted_features_dict)
+        return extracted_features_dict
 
     def train(self):
 
@@ -171,7 +158,6 @@ class FedSegTrainer(object):
         # transform Tensor to list
         if self.args.is_mobile == 1:
             weights = transform_tensor_to_list(weights)
-        self.round_idx+=1
         return weights, self.local_sample_number
 
     def _train_raw_data(self):
@@ -205,10 +191,10 @@ class FedSegTrainer(object):
                 loss.backward()
                 self.optimizer.step()
                 batch_loss.append(loss.item())
-                # if (batch_idx % 500 == 0):
-                logging.info('Client Id: {0} Iteration: {1}, Loss: {2}, Time Elapsed: {3}'.format(self.client_index, batch_idx, loss, (time.time()-t)/60))
-                if batch_idx == 10:
-                    break
+                if (batch_idx % 500 == 0):
+                    logging.info('Client Id: {0} Iteration: {1}, Loss: {2}, Time Elapsed: {3}'.format(self.client_index, batch_idx, loss, (time.time()-t)/60))
+                # if batch_idx == 10:
+                #     break
 
             if len(batch_loss) > 0:
                 epoch_loss.append(sum(batch_loss) / len(batch_loss))
@@ -222,7 +208,7 @@ class FedSegTrainer(object):
         # transform Tensor to list
         if self.args.is_mobile == 1:
             weights = transform_tensor_to_list(weights)
-        self.round_idx+=1
+
         return weights, self.local_sample_number
     
 
@@ -240,14 +226,16 @@ class FedSegTrainer(object):
             test_evaluation_metrics = self._infer(self.test_local)
 
         else:
-            logging.info('Testing client {0} on train dataset'.format(self.client_index))
             if self.round_idx % self.args.frequency_of_the_test == 0:
+                logging.info('Testing client {0} on train dataset'.format(self.client_index))
                 train_evaluation_metrics = self._infer_on_raw_data(self.train_local)
+            logging.info('Testing client {0} on test dataset'.format(self.client_index))                
             test_evaluation_metrics = self._infer_on_raw_data(self.test_local)
 
         # Test Data        
         logging.info("Testing Complete for client {}".format(self.client_index))
         # Test on training dataset
+        self.round_idx+=1
         return train_evaluation_metrics, test_evaluation_metrics
 
 

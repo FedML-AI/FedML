@@ -42,7 +42,7 @@ class FedSegServerManager(ServerManager):
         logging.info('Received model from client {0}'.format(sender_id - 1))
 
         self.aggregator.add_local_trained_result(sender_id - 1, model_params, local_sample_number)
-        self.aggregator.add_client_test_result(sender_id - 1, train_eval_metrics, test_eval_metrics)
+        self.aggregator.add_client_test_result(self.round_idx, sender_id - 1, train_eval_metrics, test_eval_metrics)
 
 
         b_all_received = self.aggregator.check_whether_all_receive()
