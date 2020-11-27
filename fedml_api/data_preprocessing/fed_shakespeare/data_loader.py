@@ -5,7 +5,7 @@ import torch
 import random
 import torch.utils.data as data
 
-from fedml_api.data_preprocessing.shakespeare import utils
+from . import utils
 
 logging.basicConfig()
 logger = logging.getLogger()

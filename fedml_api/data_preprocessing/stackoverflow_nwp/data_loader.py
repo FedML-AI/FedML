@@ -4,7 +4,7 @@ import h5py
 import torch
 import torch.utils.data as data
 
-from fedml_api.data_preprocessing.stackoverflow_nwp import utils
+from . import utils
 
 logging.basicConfig()
 logger = logging.getLogger()

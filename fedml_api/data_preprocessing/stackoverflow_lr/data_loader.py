@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import torch.utils.data as data
 
-from fedml_api.data_preprocessing.stackoverflow_lr import utils
+from . import utils
 logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)

@@ -1,9 +1,9 @@
 from mpi4py import MPI
 
-from fedml_api.distributed.fedavg.FedAVGAggregator import FedAVGAggregator
-from fedml_api.distributed.fedavg.FedAVGTrainer import FedAVGTrainer
-from fedml_api.distributed.fedavg.FedAvgClientManager import FedAVGClientManager
-from fedml_api.distributed.fedavg.FedAvgServerManager import FedAVGServerManager
+from .FedAVGAggregator import FedAVGAggregator
+from .FedAVGTrainer import FedAVGTrainer
+from .FedAvgClientManager import FedAVGClientManager
+from .FedAvgServerManager import FedAVGServerManager
 
 
 def FedML_init():

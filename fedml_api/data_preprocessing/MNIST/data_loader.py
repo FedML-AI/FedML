@@ -3,9 +3,6 @@ import os
 
 import numpy as np
 import torch
-import torch.nn as nn
-
-from fedml_api.model.linear.lr import LogisticRegression
 
 
 def read_data(train_data_dir, test_data_dir):
@@ -114,63 +111,3 @@ def load_partition_data_mnist(batch_size):
 
     return client_num, train_data_num, test_data_num, train_data_global, test_data_global, \
            train_data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num
-
-
-def main():
-    # test the data loader
-    # Hyper Parameters
-    input_size = 784
-    num_classes = 10
-    num_epochs = 50
-    batch_size = 10
-    learning_rate = 0.03
-
-    np.random.seed(0)
-    torch.manual_seed(10)
-
-    device = torch.device("cuda:0")
-    client_num, train_data_num, test_data_num, train_data_global, test_data_global, \
-    train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
-    class_num = load_partition_data_mnist(batch_size)
-
-    model = LogisticRegression(input_size, num_classes).to(device)
-
-    # Loss and Optimizer
-    # Softmax is internally computed.
-    # Set parameters to be updated.
-    criterion = nn.CrossEntropyLoss().to(device)
-    optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
-
-    # Training the Model
-    for epoch in range(num_epochs):
-        for i, (images, labels) in enumerate(train_data_global):
-            images = images.to(device)
-            labels = labels.to(device)
-
-            # Forward + Backward + Optimize
-            optimizer.zero_grad()
-            outputs = model(images)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-
-            # if (i + 1) % 100 == 0:
-            #     print('Epoch: [%d/%d], Step: [%d/%d], Loss: %.4f'
-            #           % (epoch + 1, num_epochs, i + 1, len(train_data_global), loss.item()))
-
-        # Test the Model
-        correct = 0
-        total = 0
-        for x, labels in test_data_global:
-            x = x.to(device)
-            labels = labels.to(device)
-            outputs = model(x)
-            _, predicted = torch.max(outputs.data, -1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum()
-        # 52% in the last round
-        print('Accuracy of the model: %d %%' % (100 * correct // total))
-
-
-if __name__ == '__main__':
-    main()

@@ -4,7 +4,7 @@ import threading
 import time
 import traceback
 
-from fedml_core.distributed.communication.message import Message
+from ..message import Message
 
 
 class MPISendThread(threading.Thread):

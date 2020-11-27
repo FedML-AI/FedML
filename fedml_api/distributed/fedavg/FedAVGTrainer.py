@@ -3,7 +3,7 @@ import logging
 import torch
 from torch import nn
 
-from fedml_api.distributed.fedavg.utils import transform_tensor_to_list
+from .utils import transform_tensor_to_list
 
 
 class FedAVGTrainer(object):

@@ -1,7 +1,7 @@
 import networkx as nx
 import numpy as np
 
-from fedml_core.distributed.topology.base_topology_manager import BaseTopologyManager
+from .base_topology_manager import BaseTopologyManager
 
 
 class AsymmetricTopologyManager(BaseTopologyManager):

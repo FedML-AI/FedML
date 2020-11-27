@@ -1,12 +1,13 @@
+import argparse
 import json
 import os
-import sys
 import shutil
+import sys
+
 import numpy as np
-import logging
-import argparse
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
+
 
 def add_args(parser):
     parser.add_argument('--client_num_per_round', type=int, default=3, metavar='NN',
@@ -15,6 +16,7 @@ def add_args(parser):
                         help='how many round of communications we should use')
     args = parser.parse_args()
     return args
+
 
 def read_data(train_data_dir, test_data_dir):
     '''parses data in given train and test data directories
@@ -61,7 +63,7 @@ def read_data(train_data_dir, test_data_dir):
     main_args = add_args(parser)
 
     class Args:
-        def __init__(self,client_id,client_num_per_round,comm_round):
+        def __init__(self, client_id, client_num_per_round, comm_round):
             self.client_num_per_round = client_num_per_round
             self.comm_round = comm_round
             self.client_id = client_id
@@ -69,51 +71,53 @@ def read_data(train_data_dir, test_data_dir):
 
     client_list = []
     for client_number in range(main_args.client_num_per_round):
-        client_list.append(Args(client_number,main_args.client_num_per_round,main_args.comm_round))
-    return clients, train_num_samples,test_num_samples, train_data, test_data, client_list
- 
+        client_list.append(Args(client_number, main_args.client_num_per_round, main_args.comm_round))
+    return clients, train_num_samples, test_num_samples, train_data, test_data, client_list
+
+
 def client_sampling(round_idx, client_num_in_total, client_num_per_round):
-            if client_num_in_total == client_num_per_round:
-                client_indexes = [client_index for client_index in range(client_num_in_total)]
-            else:
-                num_clients = min(client_num_per_round, client_num_in_total)
-                np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round
-                client_indexes = np.random.choice(range(client_num_in_total), num_clients, replace=False)
-            print("client_indexes = %s" % str(client_indexes))
-            return client_indexes
+    if client_num_in_total == client_num_per_round:
+        client_indexes = [client_index for client_index in range(client_num_in_total)]
+    else:
+        num_clients = min(client_num_per_round, client_num_in_total)
+        np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round
+        client_indexes = np.random.choice(range(client_num_in_total), num_clients, replace=False)
+    print("client_indexes = %s" % str(client_indexes))
+    return client_indexes
+
 
 if __name__ == '__main__':
-    
+
     parser = argparse.ArgumentParser()
     main_args = add_args(parser)
     train_path = "./../../../data/MNIST/train"
     test_path = "./../../../data/MNIST/test"
     new_train = {}
-    new_test = {} 
+    new_test = {}
 
-    users, train_num_samples,test_num_samples, train_data, test_data, client_list = read_data(train_path, test_path)
-    
+    users, train_num_samples, test_num_samples, train_data, test_data, client_list = read_data(train_path, test_path)
+
     for round_idx in range(client_list[0].comm_round):
-        sample_list = client_sampling(round_idx,1000,main_args.client_num_per_round)
+        sample_list = client_sampling(round_idx, 1000, main_args.client_num_per_round)
         for worker in client_list:
             worker.client_sample_list.append(sample_list[worker.client_id])
     os.mkdir('MNIST_mobile_zip')
     for worker in client_list:
-            filetrain = 'MNIST_mobile/{}/train/train.json'.format(worker.client_id)
-            os.makedirs(os.path.dirname(filetrain),mode=0o770, exist_ok=True)
-            filetest = 'MNIST_mobile/{}/test/test.json'.format(worker.client_id)
-            os.makedirs(os.path.dirname(filetest),mode=0o770, exist_ok=True)
-            new_train['num_samples'] = [train_num_samples[i] for i in tuple(worker.client_sample_list)]
-            new_train['users'] = [users[i] for i in tuple(worker.client_sample_list)]
-            client_sample = new_train['users']
-            new_train['user_data']={x:train_data[x] for x in client_sample}
-            with open(filetrain, 'w') as fp:
-                json.dump(new_train, fp)
-            new_test['num_samples'] = [test_num_samples[i] for i in tuple(worker.client_sample_list)]
-            new_test['users'] = [users[i] for i in tuple(worker.client_sample_list)]
-            client_sample = new_test['users']
-            new_test['user_data']={x:test_data[x] for x in client_sample}
-            with open(filetest, 'w') as ff:
-                json.dump(new_test, ff)
-            shutil.make_archive('MNIST_mobile/{}'.format(worker.client_id), 'zip', 'MNIST_mobile')
-            shutil.move('MNIST_mobile/{}.zip'.format(worker.client_id),'MNIST_mobile_zip')
+        filetrain = 'MNIST_mobile/{}/train/train.json'.format(worker.client_id)
+        os.makedirs(os.path.dirname(filetrain), mode=0o770, exist_ok=True)
+        filetest = 'MNIST_mobile/{}/test/test.json'.format(worker.client_id)
+        os.makedirs(os.path.dirname(filetest), mode=0o770, exist_ok=True)
+        new_train['num_samples'] = [train_num_samples[i] for i in tuple(worker.client_sample_list)]
+        new_train['users'] = [users[i] for i in tuple(worker.client_sample_list)]
+        client_sample = new_train['users']
+        new_train['user_data'] = {x: train_data[x] for x in client_sample}
+        with open(filetrain, 'w') as fp:
+            json.dump(new_train, fp)
+        new_test['num_samples'] = [test_num_samples[i] for i in tuple(worker.client_sample_list)]
+        new_test['users'] = [users[i] for i in tuple(worker.client_sample_list)]
+        client_sample = new_test['users']
+        new_test['user_data'] = {x: test_data[x] for x in client_sample}
+        with open(filetest, 'w') as ff:
+            json.dump(new_test, ff)
+        shutil.make_archive('MNIST_mobile/{}'.format(worker.client_id), 'zip', 'MNIST_mobile')
+        shutil.move('MNIST_mobile/{}.zip'.format(worker.client_id), 'MNIST_mobile_zip')

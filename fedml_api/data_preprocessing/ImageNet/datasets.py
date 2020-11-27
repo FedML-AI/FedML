@@ -1,19 +1,8 @@
 import os
 import os.path
-import argparse
-import time
-import math
-import logging
 
-from PIL import Image
-import numpy as np
 import torch.utils.data as data
-
-import torch
-import torchvision
-import torchvision.transforms as transforms
-import torchvision.datasets as datasets
-
+from PIL import Image
 
 
 def has_file_allowed_extension(filename, extensions):
@@ -57,7 +46,7 @@ def make_dataset(dir, class_to_idx, extensions):
                     images.append(item)
                     target_num += 1
 
-        net_dataidx_map[class_to_idx[target]] = (sum_temp, sum_temp+target_num)
+        net_dataidx_map[class_to_idx[target]] = (sum_temp, sum_temp + target_num)
         data_local_num_dict[class_to_idx[target]] = target_num
         sum_temp += target_num
 
@@ -80,13 +69,13 @@ def accimage_loader(path):
         # Potentially a decoding problem, fall back to PIL.Image
         pass
 
+
 def default_loader(path):
     from torchvision import get_image_backend
     if get_image_backend() == 'accimage':
         return accimage_loader(path)
     else:
         return pil_loader(path)
-
 
 
 class ImageNet(data.Dataset):
@@ -122,14 +111,11 @@ class ImageNet(data.Dataset):
     def get_local_data(self):
         return self.local_data
 
-
     def get_net_dataidx_map(self):
         return self.net_dataidx_map
 
-
     def get_data_local_num_dict(self):
         return self.data_local_num_dict
-
 
     def __getdatasets__(self):
         # all_data = datasets.ImageFolder(data_dir, self.transform, self.target_transform)
@@ -138,11 +124,10 @@ class ImageNet(data.Dataset):
         IMG_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.ppm', '.bmp', '.pgm', '.tif']
         all_data, data_local_num_dict, net_dataidx_map = make_dataset(self.data_dir, class_to_idx, IMG_EXTENSIONS)
         if len(all_data) == 0:
-            raise(RuntimeError("Found 0 files in subfolders of: " + self.data_dir + "\n"
-                               "Supported extensions are: " + ",".join(extensions)))
+            raise (RuntimeError("Found 0 files in subfolders of: " + self.data_dir + "\n"
+                                                                                     "Supported extensions are: " + ",".join(
+                extensions)))
         return all_data, data_local_num_dict, net_dataidx_map
-
-
 
     def __getitem__(self, index):
         """
@@ -170,7 +155,8 @@ class ImageNet(data.Dataset):
 
 class ImageNet_truncated(data.Dataset):
 
-    def __init__(self, imagenet_dataset: ImageNet, dataidxs, net_dataidx_map, train=True, transform=None, target_transform=None, download=False):
+    def __init__(self, imagenet_dataset: ImageNet, dataidxs, net_dataidx_map, train=True, transform=None,
+                 target_transform=None, download=False):
 
         self.dataidxs = dataidxs
         self.train = train
@@ -213,10 +199,3 @@ class ImageNet_truncated(data.Dataset):
 
     def __len__(self):
         return len(self.local_data)
-
-
-
-
-
-
-

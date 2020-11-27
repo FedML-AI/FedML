@@ -10,7 +10,7 @@ import torch
 import torch.utils.data as data
 import torchvision.transforms as transforms
 
-from datasets import Landmarks
+from .datasets import Landmarks
 
 logging.basicConfig()
 logger = logging.getLogger()

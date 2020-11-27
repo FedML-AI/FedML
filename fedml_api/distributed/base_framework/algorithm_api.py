@@ -1,9 +1,9 @@
 from mpi4py import MPI
 
-from fedml_api.distributed.base_framework.central_manager import BaseCentralManager
-from fedml_api.distributed.base_framework.central_worker import BaseCentralWorker
-from fedml_api.distributed.base_framework.client_manager import BaseClientManager
-from fedml_api.distributed.base_framework.client_worker import BaseClientWorker
+from .central_manager import BaseCentralManager
+from .central_worker import BaseCentralWorker
+from .client_manager import BaseClientManager
+from .client_worker import BaseClientWorker
 
 
 def FedML_init():
