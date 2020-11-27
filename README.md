@@ -88,7 +88,7 @@ For more details, please read our full paper: [https://arxiv.org/abs/2007.13518]
 
 ## Architecture
 
-<img src="./docs/image/fedml.jpg" width="500">
+<img src="./docs/image/fedml.jpg" width="620">
 
 
 The functionality of each package is as follows:
