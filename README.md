@@ -17,7 +17,7 @@
 </p>
 
 ## News
-<b>2020-11-24 (System)</b>: FedML system architecture has evolved into an ecosystem including multiple repositories. With FedML at its core, we can support more advanced FL applications and platforms. <br>
+<b>2020-11-27 (System)</b>: FedML system architecture has evolved into an ecosystem including multiple repositories. With FedML at its core, we can support more advanced FL applications and platforms. <br>
 FedML: https://github.com/FedML-AI/FedML
 
 FedNLP: https://github.com/FedML-AI/FedNLP
