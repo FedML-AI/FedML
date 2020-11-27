@@ -152,8 +152,8 @@ class FedSegTrainer(object):
                 self.optimizer.step()
                 batch_loss.append(loss.item())
 
-                if (batch_idx % 500 == 0):
-                    logging.info('Client Id: {0} Iteration: {1}, Loss: {2}, Time Elapsed: {3}'.format(self.client_index, batch_idx, loss, (time.time()-t)/60))
+                # if (batch_idx % 500 == 0):
+                logging.info('Client Id: {0} Iteration: {1}, Loss: {2}, Time Elapsed: {3}'.format(self.client_index, batch_idx, loss, (time.time()-t)/60))
 
             if len(batch_loss) > 0:
                 epoch_loss.append(sum(batch_loss) / len(batch_loss))
@@ -177,7 +177,13 @@ class FedSegTrainer(object):
         
         logging.info('Training client {0} for {1} Epochs'.format(self.client_index, self.args.epochs))
         epoch_loss = []
-        
+
+        # for (batch_ix, batch) in enumerate(self.train_local):
+        #     logging.info('Train Batch ID: {}, Images: {}, Masks: {}'.format(batch_ix, batch['image'].shape, batch['label'].shape))
+
+        # for (batch_ix, batch) in enumerate(self.test_local):
+        #     logging.info('Test Batch ID: {}, Images: {}, Masks: {}'.format(batch_ix, batch['image'].shape, batch['label'].shape))
+
         for epoch in range(self.args.epochs):
             t = time.time()
             batch_loss = []
@@ -194,8 +200,10 @@ class FedSegTrainer(object):
                 loss.backward()
                 self.optimizer.step()
                 batch_loss.append(loss.item())
-                if (batch_idx % 500 == 0):
-                    logging.info('Client Id: {0} Iteration: {1}, Loss: {2}, Time Elapsed: {3}'.format(self.client_index, batch_idx, loss, (time.time()-t)/60))
+                # if (batch_idx % 500 == 0):
+                logging.info('Client Id: {0} Iteration: {1}, Loss: {2}, Time Elapsed: {3}'.format(self.client_index, batch_idx, loss, (time.time()-t)/60))
+                if batch_idx == 10:
+                    break
 
             if len(batch_loss) > 0:
                 epoch_loss.append(sum(batch_loss) / len(batch_loss))
@@ -214,6 +222,9 @@ class FedSegTrainer(object):
 
     def test(self):
 
+        self.model.eval()
+        self.model.to(self.device)
+
         # Train Data
         if self.args.backbone_freezed:
             logging.info('Testing client (w/o Backbone) {0}'.format(self.client_index))
@@ -221,12 +232,14 @@ class FedSegTrainer(object):
             test_evaluation_metrics = self._infer(self.test_local)
 
         else:
-            logging.info('Testing client {0}'.format(self.client_index))
+            logging.info('Testing client {0} on train dataset'.format(self.client_index))
             train_evaluation_metrics = self._infer_on_raw_data(self.train_local)
+
+            logging.info('Testing client {0} on test dataset'.format(self.client_index))
             test_evaluation_metrics = self._infer_on_raw_data(self.test_local)
 
         # Test Data        
-
+        logging.info("Testing Complete for client {}".format(self.client_index))
         # Test on training dataset
         return train_evaluation_metrics, test_evaluation_metrics
 
@@ -273,10 +286,7 @@ class FedSegTrainer(object):
 
     def _infer_on_raw_data(self, test_data):
         time_start_test_per_batch = time.time()
-        self.model.eval()
-        self.model.to(self.device)
-        self.evaluator.reset()
-
+        self.evaluator.reset()        
         test_acc = test_acc_class = test_mIoU = test_FWIoU = test_loss = test_total = 0.
         criterion = SegmentationLosses().build_loss(mode=self.args.loss_type)
 
@@ -292,14 +302,21 @@ class FedSegTrainer(object):
                 target = target.cpu().numpy()
                 pred = np.argmax(pred, axis = 1)
                 self.evaluator.add_batch(target, pred)
-                time_end_test_per_batch = time.time()
-                logging.info("time per batch = " + str(time_end_test_per_batch - time_start_test_per_batch))
-
+                if batch_idx == 10:
+                    break
+                # time_end_test_per_batch = time.time()
+                # logging.info("time per batch = " + str(time_end_test_per_batch - time_start_test_per_batch))
+                # logging.info("Client = {0} Batch = {1}".format(self.client_index, batch_idx)
+                                                                            
         # Evaluation Metrics (Averaged over number of samples)
         test_acc = self.evaluator.Pixel_Accuracy()
         test_acc_class = self.evaluator.Pixel_Accuracy_Class()
         test_mIoU = self.evaluator.Mean_Intersection_over_Union()
         test_FWIoU = self.evaluator.Frequency_Weighted_Intersection_over_Union()
         test_loss = test_loss / test_total
+
+        logging.info("Client={0}, test_acc={1}, test_acc_class={2}, test_mIoU={3}, test_FWIoU={4}, test_loss={5}".format(
+            self.client_index, test_acc, test_acc_class, test_mIoU, test_FWIoU, test_loss))
         
-        return EvaluationMetricsKeeper(test_acc, test_acc_class, test_mIoU, test_FWIoU, test_loss)
+        eval_metrics = EvaluationMetricsKeeper(test_acc, test_acc_class, test_mIoU, test_FWIoU, test_loss)
+        return eval_metrics

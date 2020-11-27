@@ -28,7 +28,7 @@ def add_args(parser):
     return a parser added with args required by fit
     """
     # Training settings
-    parser.add_argument('--model', type=str, default='deeplabV3_plus', metavar='N',
+    parser.add_argument('--model', type=str, default='deeplab_transformer', metavar='N',
                         help='neural network used in training')
 
     parser.add_argument('--backbone', type=str, default='xception',
@@ -37,21 +37,21 @@ def add_args(parser):
     parser.add_argument('--backbone_pretrained', type=bool, default=True,
                         help='pretrained backbone (default: True)')
 
-    parser.add_argument('--backbone_freezed', type=bool, default=True,
-                        help='Freeze backbone to extract features only once (default: True)')
+    parser.add_argument('--backbone_freezed', type=bool, default=False,
+                        help='Freeze backbone to extract features only once (default: False)')
 
     parser.add_argument('--outstride', type=int, default=16,
                         help='network output stride (default: 16)')
 
-    # TODO: Remove this argument
-    parser.add_argument('--categories', type=str, default='person,dog,cat',
-                        help='segmentation categories (default: person, dog, cat)')
+    # # TODO: Remove this argument
+    # parser.add_argument('--categories', type=str, default='person,dog,cat',
+    #                     help='segmentation categories (default: person, dog, cat)')
 
     parser.add_argument('--dataset', type=str, default='pascal_voc', metavar='N',
                         choices=['coco', 'pascal_voc'],
                         help='dataset used for training')
 
-    parser.add_argument('--data_dir', type=str, default='./../../../data/coco',
+    parser.add_argument('--data_dir', type=str, default='/home/chaoyanghe/BruteForce/FedML/data/pascal_voc/benchmark_RELEASE',
                         help='data directory')
 
     parser.add_argument('--partition_method', type=str, default='hetero', metavar='N',
@@ -60,13 +60,13 @@ def add_args(parser):
     parser.add_argument('--partition_alpha', type=float, default=0.5, metavar='PA',
                         help='partition alpha (default: 0.5)')
 
-    parser.add_argument('--client_num_in_total', type=int, default=1000, metavar='NN',
+    parser.add_argument('--client_num_in_total', type=int, default=2, metavar='NN',
                         help='number of workers in a distributed cluster')
 
-    parser.add_argument('--client_num_per_round', type=int, default=4, metavar='NN',
+    parser.add_argument('--client_num_per_round', type=int, default=2, metavar='NN',
                         help='number of workers')
 
-    parser.add_argument('--batch_size', type=int, default=64, metavar='N',
+    parser.add_argument('--batch_size', type=int, default=6, metavar='N',
                         help='input batch size for training (default: 64)')
 
     parser.add_argument('--sync_bn', type=bool, default=False,
@@ -78,7 +78,7 @@ def add_args(parser):
     parser.add_argument('--client_optimizer', type=str, default='sgd',
                         help='SGD')
 
-    parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
+    parser.add_argument('--lr', type=float, default=0.007, metavar='LR',
                         help='learning rate (default: 0.001)')
 
     parser.add_argument('--lr_scheduler', type=str, default='poly',
@@ -89,10 +89,10 @@ def add_args(parser):
                         choices=['ce', 'focal'],
                         help='loss func type (default: ce)')
 
-    parser.add_argument('--epochs', type=int, default=5, metavar='EP',
+    parser.add_argument('--epochs', type=int, default=1, metavar='EP',
                         help='how many epochs will be trained locally')
 
-    parser.add_argument('--comm_round', type=int, default=10,
+    parser.add_argument('--comm_round', type=int, default=2,
                         help='how many round of communications we shoud use')
 
     parser.add_argument('--is_mobile', type=int, default=0,
@@ -101,7 +101,7 @@ def add_args(parser):
     parser.add_argument('--frequency_of_the_test', type=int, default=1,
                         help='the frequency of the algorithms')
 
-    parser.add_argument('--gpu_server_num', type=int, default=3,
+    parser.add_argument('--gpu_server_num', type=int, default=1,
                         help='gpu_server_num')
 
     parser.add_argument('--gpu_num_per_server', type=int, default=4,
@@ -154,7 +154,10 @@ def create_model(args, model_name, output_dim, img_size = torch.Size([513, 513])
                                    pretrained=args.backbone_pretrained,
                                    freeze_bn=args.freeze_bn,
                                    sync_bn=args.sync_bn)
-        
+
+
+        logging.info('Args.Backbone: {}'.format(args.backbone_freezed))
+
         if args.backbone_freezed:
             logging.info('Freezing Backbone')
             for param in model.transformer.parameters():
@@ -193,6 +196,7 @@ if __name__ == "__main__":
     # parse python script input parameters
     parser = argparse.ArgumentParser()
     args = add_args(parser)
+    print("Current Arguments :- ",args)
 
     # customize the process name
     str_process_name = "FedSeg (distributed):" + str(process_id)
