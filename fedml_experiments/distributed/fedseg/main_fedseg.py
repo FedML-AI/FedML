@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 
 from fedml_api.data_preprocessing.coco.data_loader import load_partition_data_distributed_coco
 from fedml_api.data_preprocessing.pascal_voc.data_loader import load_partition_data_distributed_pascal_voc
-from fedml_api.model.cv.deeplabV3 import DeepLabv3_plus
+from fedml_api.model.cv.deeplabV3 import DeeplabTransformer
 from fedml_api.distributed.fedseg.FedSegAPI import FedML_init, FedML_FedSeg_distributed
 from fedml_api.distributed.fed_transformer.utils import count_parameters
 
