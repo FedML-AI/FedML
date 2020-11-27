@@ -40,6 +40,9 @@ def add_args(parser):
     parser.add_argument('--backbone_freezed', type=bool, default=True,
                         help='Freeze backbone to extract features only once (default: False)')
 
+    parser.add_argument('--extract_test', type=bool, default=False,
+                        help='Extract Feature Maps of test data (default: False)')
+
     parser.add_argument('--outstride', type=int, default=16,
                         help='network output stride (default: 16)')
 

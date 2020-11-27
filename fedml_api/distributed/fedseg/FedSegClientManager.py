@@ -66,10 +66,11 @@ class FedSegClientManager(ClientManager):
         logging.info("#######training########### round_id = %d" % self.round_idx)
         train_evaluation_metrics =  test_evaluation_metrics = None
 
+        train_evaluation_metrics, test_evaluation_metrics = self.trainer.test()            
+
         if self.args.backbone_freezed:
             weights, local_sample_num = self.trainer.train()
         else:
             weights, local_sample_num = self.trainer._train_raw_data()
 
-        train_evaluation_metrics, test_evaluation_metrics = self.trainer.test()            
         self.send_model_to_server(0, weights, local_sample_num, train_evaluation_metrics, test_evaluation_metrics)

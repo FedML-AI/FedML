@@ -37,7 +37,12 @@ class FedSegTrainer(object):
                                               weight_decay=self.args.wd, amsgrad=True)
 
         if self.args.backbone_freezed:
-            self.train_data_extracted_features, self.test_data_extracted_features = self._load_extracted_features()
+            logging.info('Client:{} Generating Feature Maps for Training Dataset'.format(client_index))
+            self.train_data_extracted_features = self._extract_features(self.train_local, 'train.pkl')
+
+            if self.args.extract_test:
+                logging.info('Client:{} Generating Feature Maps for Testing Dataset'.format(client_index))
+                self.test_data_extracted_features = self._extract_features(self.test_local, 'test.pkl')
 
 
     def update_model(self, weights):
@@ -55,63 +60,36 @@ class FedSegTrainer(object):
         self.local_sample_number = self.train_data_local_num_dict[client_index]
         self.test_local = self.test_data_local_dict[client_index]
 
-    def _load_extracted_features(self):
+    def _extract_features(self, dataset_loader, file_name):
         self.model.eval()
         self.model.to(self.device)
 
         if self.args.partition_method == "hetero":
-           directory_train =  "./extracted_features/" + self.args.dataset + "/hetero/"
-
-           path_train = directory_train + str(self.client_index) + "-train.pkl"
+           directory =  "./extracted_features/" + self.args.dataset + "/hetero/"
+           file_path = directory + str(self.client_index) + '-' + file_name
            
-           directory_test = "./extracted_features/" + self.args.dataset + "/hetero/"
-           path_test = directory_test + str(self.client_index) + "-test.pkl"
-
         else:
-            directory_train = "./extracted_features/" + self.args.dataset + "/homo/"
-            path_train = directory_train + str(self.client_index) + "-train.pkl"
-            
-            directory_test = "./extracted_features/" + self.args.dataset + "/homo/"
-            path_test = directory_test + str(self.client_index) + "-test.pkl"
+            directory = "./extracted_features/" + self.args.dataset + "/homo/"
+            file_path = directory + str(self.client_index) + '-' + file_name
 
-        if not os.path.exists(directory_train):
-            os.makedirs(directory_train)
-
-        if not os.path.exists(directory_test):
-            os.makedirs(directory_test)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
         
-        train_data_extracted_features = dict()
-        test_data_extracted_features = dict()
-
-        if path.exists(path_train):
-            logging.info('Loading Extracted Features for Training Dataset')
-            train_data_extracted_features = load_from_pickle_file(path_train)
-
-        else:
-            logging.info('Extracting Features for Training Dataset')
-            train_data_extracted_features = self._extract_features(path_train, self.train_local)
-            gc.collect()
-            
-        if path.exists(path_test):
-            logging.info('Loading Extracted Features for Testing Dataset')
-            test_data_extracted_features = load_from_pickle_file(path_test)
-
-        else:
-            logging.info('Extracting Features for Testing Dataset')
-            test_data_extracted_features = self._extract_features(path_test, self.test_local)
-            gc.collect()
-
-        return train_data_extracted_features, test_data_extracted_features
-
-    def _extract_features(self, path, dataset_loader):
         extracted_features_dict = dict()
-        with torch.no_grad():
-            for (batch_idx, batch) in enumerate(dataset_loader):
-                x, labels = batch['image'], batch['label']
-                x = x.to(self.device)
-                extracted_inputs, extracted_features = self.model.transformer(x)
-                extracted_features_dict[batch_idx] = (extracted_inputs.cpu().detach(), extracted_features.cpu().detach(), labels)
-            save_as_pickle_file(path, extracted_features_dict)
+
+        if path.exists(file_path):
+            logging.info('Loading Extracted Features')
+            extracted_features_dict = load_from_pickle_file(path)
+            
+        else:
+            logging.info('Extracting Features')
+            with torch.no_grad():
+                for (batch_idx, batch) in enumerate(dataset_loader):
+                    x, labels = batch['image'], batch['label']
+                    x = x.to(self.device)
+                    extracted_inputs, extracted_features = self.model.transformer(x)
+                    extracted_features_dict[batch_idx] = (extracted_inputs.cpu().detach(), extracted_features.cpu().detach(), labels)
+                save_as_pickle_file(path, extracted_features_dict)
         return extracted_features_dict
 
     def train(self):
@@ -166,14 +144,8 @@ class FedSegTrainer(object):
         # change to train mode
         self.model.train()
         
-        logging.info('Training client {0} for {1} Epochs'.format(self.client_index, self.args.epochs))
+        logging.info('Training client {0} for {1} Epochs on raw training data'.format(self.client_index, self.args.epochs))
         epoch_loss = []
-
-        # for (batch_ix, batch) in enumerate(self.train_local):
-        #     logging.info('Train Batch ID: {}, Images: {}, Masks: {}'.format(batch_ix, batch['image'].shape, batch['label'].shape))
-
-        # for (batch_ix, batch) in enumerate(self.test_local):
-        #     logging.info('Test Batch ID: {}, Images: {}, Masks: {}'.format(batch_ix, batch['image'].shape, batch['label'].shape))
 
         for epoch in range(self.args.epochs):
             t = time.time()
@@ -191,10 +163,8 @@ class FedSegTrainer(object):
                 loss.backward()
                 self.optimizer.step()
                 batch_loss.append(loss.item())
-                if (batch_idx % 500 == 0):
+                if (batch_idx % 100 == 0):
                     logging.info('Client Id: {0} Iteration: {1}, Loss: {2}, Time Elapsed: {3}'.format(self.client_index, batch_idx, loss, (time.time()-t)/60))
-                # if batch_idx == 10:
-                #     break
 
             if len(batch_loss) > 0:
                 epoch_loss.append(sum(batch_loss) / len(batch_loss))
@@ -223,13 +193,19 @@ class FedSegTrainer(object):
             logging.info('Testing client (w/o Backbone) {0}'.format(self.client_index))
             if self.round_idx % self.args.frequency_of_the_test == 0:
                 train_evaluation_metrics = self._infer(self.train_local)
-            test_evaluation_metrics = self._infer(self.test_local)
+            
+            if self.args.extract_test:
+                logging.info('Testing client (w/o Backbone) with extracted feature maps {0}'.format(self.client_index))
+                test_evaluation_metrics = self._infer(self.test_local)
+            else:
+                logging.info('Testing client (w/o Backbone) on raw data {0}'.format(self.client_index))                
+                test_evaluation_metrics = self._infer_on_raw_data(self.test_local)
 
         else:
             if self.round_idx % self.args.frequency_of_the_test == 0:
-                logging.info('Testing client {0} on train dataset'.format(self.client_index))
+                logging.info('Testing client {0} on raw train dataset'.format(self.client_index))
                 train_evaluation_metrics = self._infer_on_raw_data(self.train_local)
-            logging.info('Testing client {0} on test dataset'.format(self.client_index))                
+            logging.info('Testing client {0} on raw test dataset'.format(self.client_index))                
             test_evaluation_metrics = self._infer_on_raw_data(self.test_local)
 
         # Test Data        
@@ -280,7 +256,7 @@ class FedSegTrainer(object):
 
 
     def _infer_on_raw_data(self, test_data):
-        time_start_test_per_batch = time.time()
+        t = time.time()
         self.evaluator.reset()        
         test_acc = test_acc_class = test_mIoU = test_FWIoU = test_loss = test_total = 0.
         criterion = SegmentationLosses().build_loss(mode=self.args.loss_type)
@@ -297,8 +273,9 @@ class FedSegTrainer(object):
                 target = target.cpu().numpy()
                 pred = np.argmax(pred, axis = 1)
                 self.evaluator.add_batch(target, pred)
-                if batch_idx == 10:
-                    break
+                if (batch_idx % 100 == 0):
+                    logging.info('Client Id: {0} Iteration: {1}, Loss: {2}, Time Elapsed: {3}'.format(self.client_index, batch_idx, loss, (time.time()-t)/60))
+
                 # time_end_test_per_batch = time.time()
                 # logging.info("time per batch = " + str(time_end_test_per_batch - time_start_test_per_batch))
                 # logging.info("Client = {0} Batch = {1}".format(self.client_index, batch_idx)
