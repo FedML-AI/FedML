@@ -1,8 +1,8 @@
 import logging
 
-from fedml_api.distributed.base_framework.message_define import MyMessage
-from fedml_core.distributed.communication.message import Message
-from fedml_core.distributed.server.server_manager import ServerManager
+from .message_define import MyMessage
+from ....fedml_core.distributed.communication.message import Message
+from ....fedml_core.distributed.server.server_manager import ServerManager
 
 
 class BaseCentralManager(ServerManager):

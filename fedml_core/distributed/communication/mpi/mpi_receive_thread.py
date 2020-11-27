@@ -3,7 +3,7 @@ import logging
 import threading
 import traceback
 
-from fedml_core.distributed.communication.message import Message
+from ..message import Message
 
 
 class MPIReceiveThread(threading.Thread):

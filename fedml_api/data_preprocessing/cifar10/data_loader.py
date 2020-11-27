@@ -5,7 +5,7 @@ import torch
 import torch.utils.data as data
 import torchvision.transforms as transforms
 
-from fedml_api.data_preprocessing.cifar10.datasets import CIFAR10_truncated
+from .datasets import CIFAR10_truncated
 
 logging.basicConfig()
 logger = logging.getLogger()

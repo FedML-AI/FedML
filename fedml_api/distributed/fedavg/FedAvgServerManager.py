@@ -1,7 +1,12 @@
 import logging
+import os
+import sys
 
-from fedml_api.distributed.fedavg.message_define import MyMessage
-from fedml_api.distributed.fedavg.utils import transform_tensor_to_list
+from .message_define import MyMessage
+from .utils import transform_tensor_to_list
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../../FedML")))
 from fedml_core.distributed.communication.message import Message
 from fedml_core.distributed.server.server_manager import ServerManager
 
@@ -23,7 +28,7 @@ class FedAVGServerManager(ServerManager):
                                                          self.args.client_num_per_round)
         global_model_params = self.aggregator.get_global_model_params()
         for process_id in range(1, self.size):
-            self.send_message_init_config(process_id, global_model_params, client_indexes[process_id-1])
+            self.send_message_init_config(process_id, global_model_params, client_indexes[process_id - 1])
 
     def register_message_receive_handlers(self):
         self.register_message_receive_handler(MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER,
@@ -56,7 +61,8 @@ class FedAVGServerManager(ServerManager):
                 global_model_params = transform_tensor_to_list(global_model_params)
 
             for receiver_id in range(1, self.size):
-                self.send_message_sync_model_to_client(receiver_id, global_model_params, client_indexes[receiver_id-1])
+                self.send_message_sync_model_to_client(receiver_id, global_model_params,
+                                                       client_indexes[receiver_id - 1])
 
     def send_message_init_config(self, receive_id, global_model_params, client_index):
         message = Message(MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id)

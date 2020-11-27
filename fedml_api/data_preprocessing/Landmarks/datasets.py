@@ -1,25 +1,19 @@
-import os
-import sys
 import logging
-import csv
-import collections
+import os
 
-import numpy as np
 import torch.utils.data as data
-import PIL
 from PIL import Image
-from torchvision import transforms, utils
-from torchvision.transforms import functional as F
+from torchvision import transforms
 
 logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-
 class Landmarks(data.Dataset):
 
-    def __init__(self, data_dir, allfiles, dataidxs=None, train=True, transform=None, target_transform=None, download=False):
+    def __init__(self, data_dir, allfiles, dataidxs=None, train=True, transform=None, target_transform=None,
+                 download=False):
         """
         allfiles is [{'user_id': xxx, 'image_id': xxx, 'class': xxx} ...  
                      {'user_id': xxx, 'image_id': xxx, 'class': xxx} ... ]
@@ -42,7 +36,6 @@ class Landmarks(data.Dataset):
         #     return len(self.mapping_per_user)
         return len(self.local_files)
 
-
     def __getitem__(self, idx):
         # if self.user_id != None:
         #     img_name = self.mapping_per_user[self.user_id][idx]['image_id']
@@ -53,9 +46,9 @@ class Landmarks(data.Dataset):
         img_name = self.local_files[idx]['image_id']
         label = int(self.local_files[idx]['class'])
 
-        img_name = os.path.join(self.data_dir, str(img_name)+".jpg")
+        img_name = os.path.join(self.data_dir, str(img_name) + ".jpg")
 
-        #convert jpg to PIL (jpg -> Tensor -> PIL)
+        # convert jpg to PIL (jpg -> Tensor -> PIL)
         image = Image.open(img_name)
         jpg_to_tensor = transforms.ToTensor()
         # tensor_to_pil = transforms.ToPILImage()
@@ -69,6 +62,3 @@ class Landmarks(data.Dataset):
             label = self.target_transform(label)
 
         return image, label
-
-
-

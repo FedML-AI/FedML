@@ -7,7 +7,7 @@ import torch.nn.functional as F
 import torch.utils.data as data
 import torchvision.transforms as transforms
 
-from fedml_api.data_preprocessing.cinic10.datasets import ImageFolderTruncated
+from .datasets import ImageFolderTruncated
 
 logging.basicConfig()
 logger = logging.getLogger()

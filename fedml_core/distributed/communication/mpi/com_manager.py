@@ -3,11 +3,11 @@ import queue
 import time
 from typing import List
 
-from fedml_core.distributed.communication.base_com_manager import BaseCommunicationManager
-from fedml_core.distributed.communication.message import Message
-from fedml_core.distributed.communication.mpi.mpi_receive_thread import MPIReceiveThread
-from fedml_core.distributed.communication.mpi.mpi_send_thread import MPISendThread
-from fedml_core.distributed.communication.observer import Observer
+from ..base_com_manager import BaseCommunicationManager
+from ..message import Message
+from .mpi_receive_thread import MPIReceiveThread
+from .mpi_send_thread import MPISendThread
+from ..observer import Observer
 
 
 class MpiCommunicationManager(BaseCommunicationManager):

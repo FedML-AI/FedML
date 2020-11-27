@@ -3,11 +3,9 @@ import os
 
 import numpy as np
 import torch
-import torch.nn as nn
 
-from fedml_api.data_preprocessing.shakespeare.language_utils import word_to_indices, VOCAB_SIZE, \
+from .language_utils import word_to_indices, VOCAB_SIZE, \
     letter_to_index
-from fedml_api.model.nlp.rnn import RNN_OriginalFedAvg
 
 
 def read_data(train_data_dir, test_data_dir):
@@ -126,61 +124,3 @@ def load_partition_data_shakespeare(batch_size):
 
     return client_num, train_data_num, test_data_num, train_data_global, test_data_global, \
            train_data_local_num_dict, train_data_local_dict, test_data_local_dict, output_dim
-
-
-def main():
-    # test the data loader
-    # Hyper Parameters
-    num_epochs = 100
-    batch_size = 10
-    learning_rate = 0.8
-
-    np.random.seed(0)
-    torch.manual_seed(10)
-
-    device = torch.device("cuda:0")
-    client_num, train_data_num, test_data_num, train_data_global, test_data_global, \
-    train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
-    class_num = load_partition_data_shakespeare(batch_size)
-
-    model = RNN_OriginalFedAvg().to(device)
-
-    # Loss and Optimizer
-    # Softmax is internally computed.
-    # Set parameters to be updated.
-    criterion = nn.CrossEntropyLoss().to(device)
-    optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
-
-    # Training the Model
-    for epoch in range(num_epochs):
-        for i, (x, labels) in enumerate(train_data_global):
-            x = x.to(device)
-            labels = labels.to(device)
-
-            # Forward + Backward + Optimize
-            optimizer.zero_grad()
-            output = model(x)
-            loss = criterion(output, labels)
-            loss.backward()
-            optimizer.step()
-
-            # if (i + 1) % 100 == 0:
-            #     print('Epoch: [%d/%d], Step: [%d/%d], Loss: %.4f'
-            #           % (epoch + 1, num_epochs, i + 1, len(train_data_global), loss.item()))
-
-        # Test the Model
-        # if epoch % 10 == 0:
-        correct = 0
-        total = 0
-        for x, labels in test_data_global:
-            x = x.to(device)
-            labels = labels.to(device)
-            outputs = model(x)
-            _, predicted = torch.max(outputs.data, -1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum()
-            # 52% in the last round
-            print('Accuracy of the model: %d %%' % (100 * correct // total))
-
-if __name__ == '__main__':
-    main()

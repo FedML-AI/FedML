@@ -1,21 +1,12 @@
-import os
-import os.path
-import argparse
-import time
-import math
 import logging
 
 import numpy as np
-import torch.utils.data as data
-
 import torch
-import torchvision
+import torch.utils.data as data
 import torchvision.transforms as transforms
-import torchvision.datasets as datasets
 
-
-from datasets import ImageNet
-from datasets import ImageNet_truncated
+from .datasets import ImageNet
+from .datasets import ImageNet_truncated
 
 logging.basicConfig()
 logger = logging.getLogger()
@@ -42,6 +33,7 @@ class Cutout(object):
         mask = mask.expand_as(img)
         img *= mask
         return img
+
 
 def _data_transforms_ImageNet():
     IMAGENET_MEAN = [0.5071, 0.4865, 0.4409]
@@ -77,13 +69,16 @@ def get_dataloader_test(dataset, datadir, train_bs, test_bs, dataidxs_train, dat
     return get_dataloader_test_ImageNet(datadir, train_bs, test_bs, dataidxs_train, dataidxs_test)
 
 
-def get_dataloader_ImageNet_truncated(imagenet_dataset_train: ImageNet, imagenet_dataset_test: ImageNet, train_bs, test_bs, dataidxs=None, net_dataidx_map=None):
+def get_dataloader_ImageNet_truncated(imagenet_dataset_train: ImageNet, imagenet_dataset_test: ImageNet, train_bs,
+                                      test_bs, dataidxs=None, net_dataidx_map=None):
     dl_obj = ImageNet_truncated
 
     transform_train, transform_test = _data_transforms_ImageNet()
 
-    train_ds = dl_obj(imagenet_dataset_train, dataidxs, net_dataidx_map, train=True, transform=transform_train, download=False)
-    test_ds = dl_obj(imagenet_dataset_test, dataidxs=None, net_dataidx_map=None, train=False, transform=transform_test, download=False)
+    train_ds = dl_obj(imagenet_dataset_train, dataidxs, net_dataidx_map, train=True, transform=transform_train,
+                      download=False)
+    test_ds = dl_obj(imagenet_dataset_test, dataidxs=None, net_dataidx_map=None, train=False, transform=transform_test,
+                     download=False)
 
     train_dl = data.DataLoader(dataset=train_ds, batch_size=train_bs, shuffle=True, drop_last=False)
     test_dl = data.DataLoader(dataset=test_ds, batch_size=test_bs, shuffle=False, drop_last=False)
@@ -119,17 +114,15 @@ def get_dataloader_test_ImageNet(datadir, train_bs, test_bs, dataidxs_train=None
     return train_dl, test_dl
 
 
-
-def load_partition_data_ImageNet(dataset, data_dir, 
-                            partition_method=None, partition_alpha=None, client_number=100, batch_size=10):
-
+def load_partition_data_ImageNet(dataset, data_dir,
+                                 partition_method=None, partition_alpha=None, client_number=100, batch_size=10):
     train_dataset = ImageNet(data_dir=data_dir,
                              dataidxs=None,
                              train=True)
 
     test_dataset = ImageNet(data_dir=data_dir,
-                             dataidxs=None,
-                             train=False)
+                            dataidxs=None,
+                            train=False)
 
     net_dataidx_map = train_dataset.get_net_dataidx_map()
 
@@ -141,31 +134,27 @@ def load_partition_data_ImageNet(dataset, data_dir,
     test_data_num = len(test_dataset)
     class_num_dict = train_dataset.get_data_local_num_dict()
 
-
     # train_data_global, test_data_global = get_dataloader(dataset, data_dir, batch_size, batch_size)
 
-    train_data_global, test_data_global = get_dataloader_ImageNet_truncated(train_dataset, test_dataset, 
-                train_bs=batch_size, test_bs=batch_size, 
-                dataidxs=None, net_dataidx_map=None,)
+    train_data_global, test_data_global = get_dataloader_ImageNet_truncated(train_dataset, test_dataset,
+                                                                            train_bs=batch_size, test_bs=batch_size,
+                                                                            dataidxs=None, net_dataidx_map=None, )
 
     logging.info("train_dl_global number = " + str(len(train_data_global)))
     logging.info("test_dl_global number = " + str(len(test_data_global)))
 
-
-
     # get local dataset
-    data_local_num_dict = dict() 
+    data_local_num_dict = dict()
     train_data_local_dict = dict()
     test_data_local_dict = dict()
-
 
     for client_idx in range(client_number):
         if client_number == 1000:
             dataidxs = client_idx
             data_local_num_dict = class_num_dict
         elif client_number == 100:
-            dataidxs = [client_idx*10 + i for i in range(10)]
-            data_local_num_dict[client_idx] = sum(class_num_dict[client_idx+i] for i in range(10))
+            dataidxs = [client_idx * 10 + i for i in range(10)]
+            data_local_num_dict[client_idx] = sum(class_num_dict[client_idx + i] for i in range(10))
         else:
             raise NotImplementedError("Not support other client_number for now!")
 
@@ -176,9 +165,10 @@ def load_partition_data_ImageNet(dataset, data_dir,
         # training batch size = 64; algorithms batch size = 32
         # train_data_local, test_data_local = get_dataloader(dataset, data_dir, batch_size, batch_size,
         #                                          dataidxs)
-        train_data_local, test_data_local = get_dataloader_ImageNet_truncated(train_dataset, test_dataset, 
-                train_bs=batch_size, test_bs=batch_size, 
-                dataidxs=dataidxs, net_dataidx_map=net_dataidx_map)
+        train_data_local, test_data_local = get_dataloader_ImageNet_truncated(train_dataset, test_dataset,
+                                                                              train_bs=batch_size, test_bs=batch_size,
+                                                                              dataidxs=dataidxs,
+                                                                              net_dataidx_map=net_dataidx_map)
 
         logging.info("client_idx = %d, batch_num_train_local = %d, batch_num_test_local = %d" % (
             client_idx, len(train_data_local), len(test_data_local)))
@@ -188,15 +178,15 @@ def load_partition_data_ImageNet(dataset, data_dir,
            data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num
 
 
-
 if __name__ == '__main__':
     data_dir = '/home/datasets/imagenet/ILSVRC2012_dataset'
 
     client_number = 100
     train_data_num, test_data_num, train_data_global, test_data_global, \
-        data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num = \
-        load_partition_data_ImageNet(None, data_dir, 
-                            partition_method=None, partition_alpha=None, client_number=client_number, batch_size=10)
+    data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num = \
+        load_partition_data_ImageNet(None, data_dir,
+                                     partition_method=None, partition_alpha=None, client_number=client_number,
+                                     batch_size=10)
 
     print(train_data_num, test_data_num, class_num)
     print(data_local_num_dict)
@@ -221,8 +211,3 @@ if __name__ == '__main__':
             i += 1
             if i > 5:
                 break
-
-
-
-
-
