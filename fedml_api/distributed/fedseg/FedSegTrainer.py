@@ -90,8 +90,8 @@ class FedSegTrainer(object):
                     train_data_extracted_features[batch_idx] = (extracted_inputs.cpu().detach(), extracted_features.cpu().detach(), labels)
                     time_end_train_per_batch = time.time()
 
-                    logging.info("train_local feature extraction - time per batch = " + str(
-                        time_end_train_per_batch - time_start_train_per_batch))
+                    logging.info("train_local feature extraction - client_id={}, batch_id={}, time per batch = {}".format(self.client_index, batch_idx, str(
+                        time_end_train_per_batch - time_start_train_per_batch)))
 
                 save_as_pickle_file(path_train, train_data_extracted_features)
 
