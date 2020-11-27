@@ -16,7 +16,8 @@ import wandb
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 
 from fedml_api.data_preprocessing.coco.data_loader import load_partition_data_distributed_coco
-from fedml_api.data_preprocessing.pascal_voc.data_loader import load_partition_data_distributed_pascal_voc
+from fedml_api.data_preprocessing.pascal_voc.data_loader import load_partition_data_distributed_pascal_voc, \
+    load_partition_data_pascal_voc
 from fedml_api.model.cv.deeplabV3 import DeeplabTransformer
 from fedml_api.distributed.fedseg.FedSegAPI import FedML_init, FedML_FedSeg_distributed
 from fedml_api.distributed.fedseg.utils import count_parameters
@@ -124,12 +125,19 @@ def load_data(process_id, args, dataset_name):
     if dataset_name == "coco":
         data_loader = load_partition_data_distributed_coco
     elif dataset_name == "pascal_voc":
-        data_loader = load_partition_data_distributed_pascal_voc
-    train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, class_num = data_loader(
-        process_id, args.dataset, args.data_dir, args.partition_method, args.partition_alpha,
+        data_loader = load_partition_data_pascal_voc
+    train_data_num, test_data_num, train_data_global, test_data_global, data_local_num_dict, \
+    train_data_local_dict, test_data_local_dict, class_num = data_loader(args.dataset, args.data_dir, args.partition_method, args.partition_alpha,
         args.client_num_in_total, args.batch_size)
-    dataset = [train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local,
-               class_num]
+
+    dataset = [train_data_num, test_data_num, train_data_global, test_data_global, data_local_num_dict,
+    train_data_local_dict, test_data_local_dict, class_num]
+
+    # train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, class_num = data_loader(
+    #     process_id, args.dataset, args.data_dir, args.partition_method, args.partition_alpha,
+    #     args.client_num_in_total, args.batch_size)
+    # dataset = [train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local,
+    #            class_num]
 
     return dataset
 
@@ -230,14 +238,16 @@ if __name__ == "__main__":
 
     # load data
     dataset = load_data(process_id, args, args.dataset)
-    [train_data_num, train_data_global, test_data_global, local_data_num_dict, train_data_local_dict,
-     test_data_local_dict, class_num] = dataset
+    [train_data_num, test_data_num, train_data_global, test_data_global, data_local_num_dict,
+     train_data_local_dict, test_data_local_dict, class_num] = dataset
 
     # create model.
     # Note if the model is DNN (e.g., ResNet), the training will be very slow.
     # In this case, please use our FedML distributed version (./fedml_experiments/distributed_fedavg)
     model = create_model(args, model_name=args.model, output_dim=class_num)
 
+    logging.info("Calling FedML_FedSeg_distributed")
+
     # start "federated averaging (FedAvg)"
-    FedML_FedSeg_distributed(process_id, worker_number, device, comm, model, train_data_num, local_data_num_dict, 
+    FedML_FedSeg_distributed(process_id, worker_number, device, comm, model, train_data_num, data_local_num_dict,
                              train_data_local_dict, test_data_local_dict, class_num, args)
