@@ -56,3 +56,5 @@ mimiconda.sh
 data/fednlp/*
 
 *.npz
+
+*.jpg
