@@ -60,14 +60,14 @@ def add_args(parser):
     parser.add_argument('--partition_alpha', type=float, default=0.5, metavar='PA',
                         help='partition alpha (default: 0.5)')
 
-    parser.add_argument('--client_num_in_total', type=int, default=2, metavar='NN',
+    parser.add_argument('--client_num_in_total', type=int, default=4, metavar='NN',
                         help='number of workers in a distributed cluster')
 
-    parser.add_argument('--client_num_per_round', type=int, default=2, metavar='NN',
+    parser.add_argument('--client_num_per_round', type=int, default=4, metavar='NN',
                         help='number of workers')
 
-    parser.add_argument('--batch_size', type=int, default=16, metavar='N',
-                        help='input batch size for training (default: 64)')
+    parser.add_argument('--batch_size', type=int, default=32, metavar='N',
+                        help='input batch size for training (default: 32)')
 
     parser.add_argument('--sync_bn', type=bool, default=False,
                         help='whether to use sync bn (default: auto)')
@@ -85,20 +85,20 @@ def add_args(parser):
                         choices=['poly', 'step', 'cos'],
                         help='lr scheduler mode: (default: poly)')
 
-    parser.add_argument('--loss_type', type=str, default='ce',
+    parser.add_argument('--loss_type', type=str, default='focal',
                         choices=['ce', 'focal'],
                         help='loss func type (default: ce)')
 
     parser.add_argument('--epochs', type=int, default=1, metavar='EP',
                         help='how many epochs will be trained locally')
 
-    parser.add_argument('--comm_round', type=int, default=2,
+    parser.add_argument('--comm_round', type=int, default=3,
                         help='how many round of communications we shoud use')
 
     parser.add_argument('--is_mobile', type=int, default=0,
                         help='whether the program is running on the FedML-Mobile server side')
 
-    parser.add_argument('--frequency_of_the_test', type=int, default=1,
+    parser.add_argument('--frequency_of_the_test', type=int, default=2,
                         help='the frequency of the algorithms')
 
     parser.add_argument('--gpu_server_num', type=int, default=1,

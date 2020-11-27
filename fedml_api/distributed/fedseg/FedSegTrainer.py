@@ -18,7 +18,7 @@ class FedSegTrainer(object):
         self.train_local = self.train_data_local_dict[client_index]
         self.local_sample_number = self.train_data_local_num_dict[client_index]
         self.test_local = self.test_data_local_dict[client_index]
-        
+        self.round_idx = 0
         self.device = device
         self.args = args
         self.model = model
@@ -171,6 +171,7 @@ class FedSegTrainer(object):
         # transform Tensor to list
         if self.args.is_mobile == 1:
             weights = transform_tensor_to_list(weights)
+        self.round_idx+=1
         return weights, self.local_sample_number
 
     def _train_raw_data(self):
@@ -221,6 +222,7 @@ class FedSegTrainer(object):
         # transform Tensor to list
         if self.args.is_mobile == 1:
             weights = transform_tensor_to_list(weights)
+        self.round_idx+=1
         return weights, self.local_sample_number
     
 
@@ -228,18 +230,19 @@ class FedSegTrainer(object):
 
         self.model.eval()
         self.model.to(self.device)
+        train_evaluation_metrics = None
 
         # Train Data
         if self.args.backbone_freezed:
             logging.info('Testing client (w/o Backbone) {0}'.format(self.client_index))
-            train_evaluation_metrics = self._infer(self.train_local)
+            if self.round_idx % self.args.frequency_of_the_test == 0:
+                train_evaluation_metrics = self._infer(self.train_local)
             test_evaluation_metrics = self._infer(self.test_local)
 
         else:
             logging.info('Testing client {0} on train dataset'.format(self.client_index))
-            train_evaluation_metrics = self._infer_on_raw_data(self.train_local)
-
-            logging.info('Testing client {0} on test dataset'.format(self.client_index))
+            if self.round_idx % self.args.frequency_of_the_test == 0:
+                train_evaluation_metrics = self._infer_on_raw_data(self.train_local)
             test_evaluation_metrics = self._infer_on_raw_data(self.test_local)
 
         # Test Data        

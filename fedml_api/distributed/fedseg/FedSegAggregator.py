@@ -130,25 +130,26 @@ class FedSegAggregator(object):
     def output_global_acc_and_loss(self, round_idx):
         logging.info("################output_global_acc_and_loss : {}".format(round_idx))
 
-        # Test on training set
-        train_acc = np.array([self.train_acc_client_dict[k] for k in self.train_acc_client_dict.keys()]).mean()
-        train_acc_class = np.array([self.train_acc_class_client_dict[k] for k in self.train_acc_class_client_dict.keys()]).mean()
-        train_mIoU = np.array([self.train_mIoU_client_dict[k] for k in self.train_mIoU_client_dict.keys()]).mean()
-        train_FWIoU = np.array([self.train_FWIoU_client_dict[k] for k in self.train_FWIoU_client_dict.keys()]).mean()
-        train_loss = np.array([self.train_loss_client_dict[k] for k in self.train_loss_client_dict.keys()]).mean()
+        if round_idx % self.args.frequency_of_the_test == 0:
+            # Test on training set
+            train_acc = np.array([self.train_acc_client_dict[k] for k in self.train_acc_client_dict.keys()]).mean()
+            train_acc_class = np.array([self.train_acc_class_client_dict[k] for k in self.train_acc_class_client_dict.keys()]).mean()
+            train_mIoU = np.array([self.train_mIoU_client_dict[k] for k in self.train_mIoU_client_dict.keys()]).mean()
+            train_FWIoU = np.array([self.train_FWIoU_client_dict[k] for k in self.train_FWIoU_client_dict.keys()]).mean()
+            train_loss = np.array([self.train_loss_client_dict[k] for k in self.train_loss_client_dict.keys()]).mean()
 
-        # Train Logs
-        wandb.log({"Train/Acc": train_acc, "round": round_idx})
-        wandb.log({"Train/Acc_class": train_acc_class, "round": round_idx})
-        wandb.log({"Train/mIoU": train_mIoU, "round": round_idx})
-        wandb.log({"Train/FWIoU": train_FWIoU, "round": round_idx})
-        wandb.log({"Train/Loss": train_loss, "round": round_idx})
-        stats = {'training_acc': train_acc, 
-                    'training_acc_class': train_acc_class,
-                    'training_mIoU': train_mIoU,
-                    'training_FWIoU': train_FWIoU,  
-                    'training_loss': train_loss}
-        logging.info(stats)
+            # Train Logs
+            wandb.log({"Train/Acc": train_acc, "round": round_idx})
+            wandb.log({"Train/Acc_class": train_acc_class, "round": round_idx})
+            wandb.log({"Train/mIoU": train_mIoU, "round": round_idx})
+            wandb.log({"Train/FWIoU": train_FWIoU, "round": round_idx})
+            wandb.log({"Train/Loss": train_loss, "round": round_idx})
+            stats = {'training_acc': train_acc, 
+                        'training_acc_class': train_acc_class,
+                        'training_mIoU': train_mIoU,
+                        'training_FWIoU': train_FWIoU,  
+                        'training_loss': train_loss}
+            logging.info(stats)
 
         # Test on testing set
         test_acc = np.array([self.test_acc_client_dict[k] for k in self.test_acc_client_dict.keys()]).mean()
