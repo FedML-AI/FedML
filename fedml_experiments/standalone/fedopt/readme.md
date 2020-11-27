@@ -17,6 +17,7 @@ sh run_fedopt_standalone_pytorch.sh 0 10 10 10 shakespeare ./../../../data/shake
 sh run_fedopt_standalone_pytorch.sh 0 10 10 10 fed_shakespeare ./../../../data/fed_shakespeare rnn hetero 100 1 0.8 sgd 0.008 adam 0
 
 ## Federated EMNIST
+## Note: You may need gradient clipping to get training run on Fed EMNIST dataset successfully. To do this, please uncomment the line "torch.nn.utils.clip_grad_norm_(net.parameters(), 0.5)" in FedML\fedml_api\standalone\fedopt\client.py.
 sh run_fedopt_standalone_pytorch.sh 0 10 10 10 femnist ./../../../data/FederatedEMNIST cnn hetero 200 1 0.03 sgd 0.008 adam 0
 
 ## Fed_CIFAR100
