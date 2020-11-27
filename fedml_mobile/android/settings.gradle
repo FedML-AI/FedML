@@ -1,4 +1,0 @@
-include ':fedmlsdk'
-include ':fedmlmobile'
-include ':app',':fedml-iot-sdk'
-rootProject.name='FedML-Android'
