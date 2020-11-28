@@ -137,3 +137,48 @@ sh run_fedavg_distributed_pytorch.sh 10 1 8 mobilenet hetero 100 20 64 0.001 cin
 ##run on background
 nohup sh run_fedavg_distributed_pytorch.sh 10 1 8 mobilenet hetero 100 20 64 0.001 cinic10 "./../../../data/cinic10" 0 > ./fedavg-mobilenet-hetero-cinic10.txt 2>&1 &
 ```
+
+
+sh run_fedavg_distributed_pytorch.sh 10 10 1 4 lr hetero 200 20 10 0.03 mnist "./../../../data/mnist" 0
+#### ImageNet -- ILSVRC2012
+```
+CLIENT_NUM=$1
+WORKER_NUM=$2
+SERVER_NUM=$3
+GPU_NUM_PER_SERVER=$4
+MODEL=$5
+DISTRIBUTION=$6
+ROUND=$7
+EPOCH=$8
+BATCH_SIZE=$9
+LR=$10
+DATASET=$11
+DATA_DIR=$12
+CI=$13
+```
+train on non-IID dataset
+```
+# 100 clients
+sh run_fedavg_distributed_pytorch.sh 100 2 1 2 mobilenet hetero 100 5 32 0.001 ILSVRC2012 "~/datasets/landmarks/cache" 0
+sh run_fedavg_distributed_pytorch.sh 100 2 1 2 mobilenet hetero 100 5 32 0.001 ILSVRC2012 "your_data_dir" 0
+# 1000 clients
+sh run_fedavg_distributed_pytorch.sh 1000 2 1 2 mobilenet hetero 100 5 32 0.001 ILSVRC2012 "your_data_dir" 0
+```
+#### gld23k
+train on non-IID dataset
+```
+sh run_fedavg_distributed_pytorch.sh 233 2 1 2 mobilenet hetero 100 5 32 0.001 gld23k "~/datasets/landmarks" 0
+sh run_fedavg_distributed_pytorch.sh 233 2 1 2 mobilenet hetero 100 5 32 0.001 gld23k "your_data_dir" 0
+```
+
+#### gld160k
+train on non-IID dataset
+```
+sh run_fedavg_distributed_pytorch.sh 1262 2 1 2 mobilenet hetero 100 5 32 0.001 gld160k "your_data_dir" 0
+```
+
+
+
+
+
+

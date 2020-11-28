@@ -192,10 +192,23 @@ def load_partition_data_landmarks(dataset, data_dir, fed_train_map_file, fed_tes
 
 if __name__ == '__main__':
     data_dir = './cache/images'
-    fed_train_map_file = './cache/datasets/mini_gld_train_split.csv'
-    fed_test_map_file = './cache/datasets/mini_gld_test.csv'
+    fed_g23k_train_map_file = './cache/datasets/mini_gld_train_split.csv'
+    fed_g23k_test_map_file = './cache/datasets/mini_gld_test.csv'
 
-    client_number = 233
+    fed_g160k_train_map_file = './cache/datasets/landmarks-user-160k/federated_train.csv'
+    fed_g160k_map_file = './cache/datasets/landmarks-user-160k/test.csv'
+
+    dataset_name = 'g160k'
+
+    if dataset_name == 'g23k':
+        client_number = 233
+        fed_train_map_file = fed_g23k_train_map_file
+        fed_test_map_file = fed_g23k_test_map_file
+    elif dataset_name == 'g160k':
+        client_number = 1262 
+        fed_train_map_file = fed_g160k_train_map_file
+        fed_test_map_file = fed_g160k_map_file
+
     train_data_num, test_data_num, train_data_global, test_data_global, \
         data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num = \
         load_partition_data_landmarks(None, data_dir, fed_train_map_file, fed_test_map_file, 
