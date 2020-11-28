@@ -41,12 +41,12 @@ def get_dataloader_coco(datadir, train_bs, test_bs, dataidxs=None):
     train_ds = CocoDataset(datadir,
                            split='train',
                            transform=transform_train,
-                           download_dataset=True,
+                           download_dataset=False,
                            dataidxs=dataidxs)
     test_ds = CocoDataset(datadir,
                           split='val',
                           transform=transform_test,
-                          download_dataset=True)
+                          download_dataset=False)
 
     print(len(train_ds))
 
@@ -62,12 +62,12 @@ def get_dataloader_coco_test(datadir, train_bs, test_bs, dataidxs_train=None, da
     train_ds = CocoDataset(datadir,
                            split='train',
                            transform=transform_train,
-                           download_dataset=True,
+                           download_dataset=False,
                            dataidxs=dataidxs_train)
     test_ds = CocoDataset(datadir,
                           split='val',
                           transform=transform_test,
-                          download_dataset=True,
+                          download_dataset=False,
                           dataidxs=dataidxs_test)
 
     print(len(train_ds))
@@ -92,8 +92,8 @@ def record_net_data_stats(y_train, net_dataidx_map):
 def load_coco_data(datadir):
     transform_train, transform_test = _data_transforms_coco()
 
-    train_ds = CocoDataset(datadir, split='train', transform=transform_train, download_dataset=True)
-    test_ds = CocoDataset(datadir, split='val', transform=transform_test, download_dataset=True)
+    train_ds = CocoDataset(datadir, split='train', transform=transform_train, download_dataset=False)
+    test_ds = CocoDataset(datadir, split='val', transform=transform_test, download_dataset=False)
 
     return train_ds.img_ids, train_ds.target, train_ds.cat_ids, test_ds.img_ids, test_ds.target, test_ds.cat_ids
 

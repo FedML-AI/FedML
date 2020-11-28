@@ -74,7 +74,7 @@ class CocoDataset(torch.utils.data.Dataset):
         else:
             self.transform = transform
 
-        self.__generate__target()
+        self.__generate_target()
 
     def __download_dataset(self, year, split):
         """

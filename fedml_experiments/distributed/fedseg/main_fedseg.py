@@ -4,6 +4,7 @@ import os
 import random
 import socket
 import sys
+import datetime
 
 import numpy as np
 import psutil
@@ -15,7 +16,7 @@ import wandb
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 
-from fedml_api.data_preprocessing.coco.data_loader import load_partition_data_distributed_coco
+from fedml_api.data_preprocessing.coco.data_loader import load_partition_data_distributed_coco, load_partition_data_coco
 from fedml_api.data_preprocessing.pascal_voc.data_loader import load_partition_data_distributed_pascal_voc, \
     load_partition_data_pascal_voc
 from fedml_api.model.cv.deeplabV3 import DeeplabTransformer
@@ -37,7 +38,7 @@ def add_args(parser):
     parser.add_argument('--backbone_pretrained', type=bool, default=True,
                         help='pretrained backbone (default: True)')
 
-    parser.add_argument('--backbone_freezed', type=bool, default=True,
+    parser.add_argument('--backbone_freezed', type=bool, default=False,
                         help='Freeze backbone to extract features only once (default: False)')
 
     parser.add_argument('--extract_test', type=bool, default=False,
@@ -54,22 +55,22 @@ def add_args(parser):
                         choices=['coco', 'pascal_voc'],
                         help='dataset used for training')
 
-    parser.add_argument('--data_dir', type=str, default='/home/chaoyanghe/BruteForce/FedML/data/pascal_voc/benchmark_RELEASE',
-                        help='data directory')
-
+    parser.add_argument('--data_dir', type=str, default='/home/chaoyanghe/BruteForce/FedML/data/pascal_voc',
+                        help='data directory (default = /home/chaoyanghe/BruteForce/FedML/data/pascal_voc)')
+ 
     parser.add_argument('--partition_method', type=str, default='hetero', metavar='N',
                         help='how to partition the dataset on local workers')
 
     parser.add_argument('--partition_alpha', type=float, default=0.5, metavar='PA',
                         help='partition alpha (default: 0.5)')
 
-    parser.add_argument('--client_num_in_total', type=int, default=4, metavar='NN',
+    parser.add_argument('--client_num_in_total', type=int, default=1, metavar='NN',
                         help='number of workers in a distributed cluster')
 
-    parser.add_argument('--client_num_per_round', type=int, default=4, metavar='NN',
+    parser.add_argument('--client_num_per_round', type=int, default=1, metavar='NN',
                         help='number of workers')
 
-    parser.add_argument('--batch_size', type=int, default=16, metavar='N',
+    parser.add_argument('--batch_size', type=int, default=8, metavar='N',
                         help='input batch size for training (default: 32)')
 
     parser.add_argument('--sync_bn', type=bool, default=False,
@@ -79,7 +80,7 @@ def add_args(parser):
                         help='whether to freeze bn parameters (default: False)')
 
     parser.add_argument('--client_optimizer', type=str, default='sgd',
-                        help='SGD')
+                        help='adam')
 
     parser.add_argument('--lr', type=float, default=0.007, metavar='LR',
                         help='learning rate (default: 0.001)')
@@ -95,7 +96,7 @@ def add_args(parser):
     parser.add_argument('--epochs', type=int, default=1, metavar='EP',
                         help='how many epochs will be trained locally')
 
-    parser.add_argument('--comm_round', type=int, default=5,
+    parser.add_argument('--comm_round', type=int, default=10,
                         help='how many round of communications we shoud use')
 
     parser.add_argument('--is_mobile', type=int, default=0,
@@ -109,6 +110,7 @@ def add_args(parser):
 
     parser.add_argument('--gpu_num_per_server', type=int, default=4,
                         help='gpu_num_per_server')
+
 
     parser.add_argument('--ci', type=int, default=0,
                         help='CI')
@@ -129,7 +131,7 @@ def add_args(parser):
 
 def load_data(process_id, args, dataset_name):
     if dataset_name == "coco":
-        data_loader = load_partition_data_distributed_coco
+        data_loader = load_partition_data_coco
     elif dataset_name == "pascal_voc":
         data_loader = load_partition_data_pascal_voc
     train_data_num, test_data_num, train_data_global, test_data_global, data_local_num_dict, \
@@ -149,7 +151,7 @@ def load_data(process_id, args, dataset_name):
 
 
 def create_model(args, model_name, output_dim, img_size = torch.Size([513, 513])):
-    if model_name == "deeplab_transformer" and args.dataset == "pascal_voc":
+    if model_name == "deeplab_transformer":
         model = DeeplabTransformer(backbone=args.backbone,
                                    image_size=img_size,
                                    n_classes=output_dim,
@@ -179,11 +181,11 @@ def create_model(args, model_name, output_dim, img_size = torch.Size([513, 513])
 def init_training_device(process_ID, fl_worker_num, gpu_num_per_machine):
     # initialize the mapping from process ID to GPU ID: <process ID, GPU ID>
     if process_ID == 0:
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
         return device
     process_gpu_dict = dict()
     for client_index in range(fl_worker_num):
-        gpu_index = client_index % gpu_num_per_machine
+        gpu_index = (client_index % gpu_num_per_machine) + 2
         process_gpu_dict[client_index] = gpu_index
 
     logging.info(process_gpu_dict)
@@ -193,6 +195,11 @@ def init_training_device(process_ID, fl_worker_num, gpu_num_per_machine):
 
 
 if __name__ == "__main__":
+    now = datetime.datetime.now()
+    time_start = now.strftime("%Y-%m-%d %H:%M:%S")
+    
+    logging.info("Executing Image Segmentation at time: {0}".format(time_start))
+    
     # initialize distributed computing (MPI)
     comm, process_id, worker_number = FedML_init()
 
