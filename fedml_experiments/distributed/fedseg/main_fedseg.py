@@ -89,6 +89,15 @@ def add_args(parser):
                         choices=['poly', 'step', 'cos'],
                         help='lr scheduler mode: (default: poly)')
 
+    parser.add_argument('--momentum', type=float, default=0.9,
+                        metavar='M', help='momentum (default: 0.9)')
+
+    parser.add_argument('--weight-decay', type=float, default=5e-4,
+                        metavar='M', help='w-decay (default: 5e-4)')
+                        
+    parser.add_argument('--nesterov', action='store_true', default=False,
+                        help='whether use nesterov (default: False)')
+
     parser.add_argument('--loss_type', type=str, default='ce',
                         choices=['ce', 'focal'],
                         help='loss func type (default: ce)')

@@ -30,11 +30,11 @@ class FedSegTrainer(object):
 
         # Add momentum if needed
         if self.args.client_optimizer == "sgd":
-            self.optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, self.model.parameters()), lr=self.args.lr)
+            self.optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, self.model.parameters()),
+                                             weight_decay=args.weight_decay, nesterov=args.nesterov)
         else:
             self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()),
-                                              lr=self.args.lr,
-                                              weight_decay=self.args.wd, amsgrad=True)
+                                              lr=self.args.lr, weight_decay=self.args.weight_decay, amsgrad=True)
 
         if self.args.backbone_freezed:
             logging.info('Client:{} Generating Feature Maps for Training Dataset'.format(client_index))

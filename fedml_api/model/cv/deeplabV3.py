@@ -9,6 +9,7 @@ import torch.utils.model_zoo as model_zoo
 # add the FedML root directory to the python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 from fedml_api.model.cv.xception import *
+from fedml_api.model.cv.resnetLab import *
 from fedml_api.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
 
 # from batchnorm_utils import SynchronizedBatchNorm2d
@@ -169,6 +170,8 @@ class Transformer(nn.Module):
         print(backbone)
         if backbone == 'xception':
             return AlignedXception(inplanes = n_channels, output_stride = output_stride, BatchNorm=BatchNorm, pretrained=pretrained)
+        elif backbone == 'resnet':
+            return ResNet101(output_stride, BatchNorm, pretrained=pretrained)
         else:
             raise NotImplementedError
 
@@ -195,7 +198,7 @@ class DeeplabHead(nn.Module):
 
 
 class DeeplabTransformer(nn.Module):
-    def __init__(self, backbone='xception', image_size=torch.Size([513, 513]) , nInputChannels=3, n_classes=21, output_stride=16, pretrained=False, freeze_bn=False, sync_bn=False, _print=True):
+    def __init__(self, backbone='resnet', image_size=torch.Size([513, 513]) , nInputChannels=3, n_classes=21, output_stride=16, pretrained=False, freeze_bn=False, sync_bn=False, _print=True):
 
         if _print:
             print("Constructing DeepLabv3+ model...")
@@ -276,7 +279,7 @@ class DeeplabTransformer(nn.Module):
 
 
 if __name__ == "__main__":
-    model = DeeplabTransformer(nInputChannels=3, n_classes=3, output_stride=16, pretrained=True, _print=True)
+    model = DeeplabTransformer(nInputChannels=3, n_classes=3, output_stride=16, pretrained=False, _print=True)
     image = torch.randn(16,3,513,513)
     with torch.no_grad():
         output = model.forward(image)
