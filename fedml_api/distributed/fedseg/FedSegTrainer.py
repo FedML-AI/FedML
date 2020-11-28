@@ -79,7 +79,7 @@ class FedSegTrainer(object):
 
         if path.exists(file_path):
             logging.info('Loading Extracted Features')
-            extracted_features_dict = load_from_pickle_file(path)
+            extracted_features_dict = load_from_pickle_file(file_path)
             
         else:
             logging.info('Extracting Features')
@@ -89,7 +89,7 @@ class FedSegTrainer(object):
                     x = x.to(self.device)
                     extracted_inputs, extracted_features = self.model.transformer(x)
                     extracted_features_dict[batch_idx] = (extracted_inputs.cpu().detach(), extracted_features.cpu().detach(), labels)
-                save_as_pickle_file(path, extracted_features_dict)
+                save_as_pickle_file(file_path, extracted_features_dict)
         return extracted_features_dict
 
     def train(self):

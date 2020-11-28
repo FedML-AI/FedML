@@ -69,7 +69,7 @@ def add_args(parser):
     parser.add_argument('--client_num_per_round', type=int, default=4, metavar='NN',
                         help='number of workers')
 
-    parser.add_argument('--batch_size', type=int, default=6, metavar='N',
+    parser.add_argument('--batch_size', type=int, default=16, metavar='N',
                         help='input batch size for training (default: 32)')
 
     parser.add_argument('--sync_bn', type=bool, default=False,
@@ -88,14 +88,14 @@ def add_args(parser):
                         choices=['poly', 'step', 'cos'],
                         help='lr scheduler mode: (default: poly)')
 
-    parser.add_argument('--loss_type', type=str, default='focal',
+    parser.add_argument('--loss_type', type=str, default='ce',
                         choices=['ce', 'focal'],
                         help='loss func type (default: ce)')
 
     parser.add_argument('--epochs', type=int, default=1, metavar='EP',
                         help='how many epochs will be trained locally')
 
-    parser.add_argument('--comm_round', type=int, default=40,
+    parser.add_argument('--comm_round', type=int, default=5,
                         help='how many round of communications we shoud use')
 
     parser.add_argument('--is_mobile', type=int, default=0,
