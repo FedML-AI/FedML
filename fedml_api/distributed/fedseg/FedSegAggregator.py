@@ -175,14 +175,17 @@ class FedSegAggregator(object):
                     'testing_mIoU': test_mIoU,
                     'testing_FWIoU': test_FWIoU,  
                     'testing_loss': test_loss}
+
+        logging.info(stats)
         
         if test_mIoU > self.best_mIoU:
-            logging.info('Saving Model Checkpoint --> Previous mIoU:{}; Improved mIoU:{2}'.format(self.best_mIoU, test_mIoU))
+            logging.info('Saving Model Checkpoint --> Previous mIoU:{0}; Improved mIoU:{1}'.format(self.best_mIoU, test_mIoU))
             is_best = True
             self.best_mIoU = test_mIoU
             self.saver.save_checkpoint({
+                'best_pred': self.best_mIoU,
                 'round': round_idx + 1,
-                'state_dict': self.model.module.state_dict(),
+                'state_dict': self.model.state_dict(),
                 'train_data_evaluation_metrics': {
                     'accuracy': train_acc,
                     'accuracy_class': train_acc_class,
@@ -199,4 +202,3 @@ class FedSegAggregator(object):
                 }
             }, is_best)
             
-        logging.info(stats)

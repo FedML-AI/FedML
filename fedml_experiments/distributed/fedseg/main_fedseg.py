@@ -72,7 +72,7 @@ def add_args(parser):
     parser.add_argument('--client_num_per_round', type=int, default=4, metavar='NN',
                         help='number of workers')
 
-    parser.add_argument('--batch_size', type=int, default=8, metavar='N',
+    parser.add_argument('--batch_size', type=int, default=10, metavar='N',
                         help='input batch size for training (default: 32)')
 
     parser.add_argument('--sync_bn', type=bool, default=False,
@@ -113,7 +113,7 @@ def add_args(parser):
     parser.add_argument('--is_mobile', type=int, default=0,
                         help='whether the program is running on the FedML-Mobile server side')
 
-    parser.add_argument('--frequency_of_the_test', type=int, default=5,
+    parser.add_argument('--frequency_of_the_test', type=int, default=1,
                         help='the frequency of the algorithms')
 
     parser.add_argument('--gpu_server_num', type=int, default=1,

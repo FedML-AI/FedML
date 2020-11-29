@@ -209,7 +209,7 @@ class Saver(object):
         p['client_num_in_total'] = self.args.client_num_in_total
         p['client_num_per_round'] = self.args.client_num_per_round
         p['batch_size'] = self.args.batch_size   
-        p['sync_bn'] - self.args.sync_bn
+        p['sync_bn'] = self.args.sync_bn
         p['freeze_bn'] = self.args.freeze_bn
         p['client_optimizer'] = self.args.client_optimizer
         p['lr'] = self.args.lr
