@@ -85,11 +85,12 @@ def record_net_data_stats(y_train, net_dataidx_map):
     net_cls_counts = {}
 
     for net_i, dataidx in net_dataidx_map.items():
-        unq, unq_cnt = np.unique(y_train[dataidx], return_counts=True)
+        unq, unq_cnt = np.unique(np.concatenate(y_train[dataidx]), return_counts=True)
         tmp = {unq[i]: unq_cnt[i] for i in range(len(unq))}
         net_cls_counts[net_i] = tmp
     logging.debug('Data statistics: %s' % str(net_cls_counts))
     return net_cls_counts
+
 
 
 def load_pascal_voc_data(datadir):
@@ -180,7 +181,7 @@ def partition_data(datadir, partition, n_nets, alpha):
             np.random.shuffle(idx_batch[j])
             net_dataidx_map[j] = idx_batch[j]
 
-        traindata_cls_counts = None  # record_net_data_stats(y_train, net_dataidx_map)
+        traindata_cls_counts = record_net_data_stats(train_targets, net_dataidx_map)
 
         # print("Final partition for clients: ")
         # for key in net_dataidx_map:
