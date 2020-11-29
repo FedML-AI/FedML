@@ -30,7 +30,8 @@ def FedML_FedAvg_distributed(process_id, worker_number, device, comm, model, tra
 def init_server(args, device, comm, rank, size, model, train_data_num, train_data_global, test_data_global,
                 train_data_local_dict, test_data_local_dict, train_data_local_num_dict, model_trainer):
     if model_trainer is None:
-        model_trainer = MyModelTrainer(-1, model)
+        model_trainer = MyModelTrainer(model)
+        model_trainer.set_id(-1)
 
     # aggregator
     worker_num = size - 1
@@ -48,7 +49,8 @@ def init_client(args, device, comm, process_id, size, model, train_data_num, tra
                 train_data_local_dict, model_trainer=None):
     client_index = process_id - 1
     if model_trainer is None:
-        model_trainer = MyModelTrainer(client_index, model)
+        model_trainer = MyModelTrainer(model)
+        model_trainer.set_id(client_index)
 
     trainer = FedAVGTrainer(client_index, train_data_local_dict, train_data_local_num_dict, train_data_num, device,
                             args, model_trainer)
