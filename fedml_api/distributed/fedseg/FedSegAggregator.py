@@ -6,7 +6,7 @@ import wandb
 import numpy as np
 from torch import nn
 
-from fedml_api.distributed.fedseg.utils import transform_list_to_tensor, EvaluationMetricsKeeper
+from fedml_api.distributed.fedseg.utils import transform_list_to_tensor, Saver, EvaluationMetricsKeeper
 
 
 class FedSegAggregator(object):
@@ -33,6 +33,11 @@ class FedSegAggregator(object):
         self.test_mIoU_client_dict = dict()
         self.test_FWIoU_client_dict = dict()
         self.test_loss_client_dict = dict()
+
+        self.best_mIoU = 0.
+
+        self.saver = Saver(args)
+        self.saver.save_experiment_config()
 
         logging.info('Initializing FedSegAggregator with workers: {0}'.format(worker_num))
 
@@ -170,4 +175,28 @@ class FedSegAggregator(object):
                     'testing_mIoU': test_mIoU,
                     'testing_FWIoU': test_FWIoU,  
                     'testing_loss': test_loss}
+        
+        if test_mIoU > self.best_mIoU:
+            logging.info('Saving Model Checkpoint --> Previous mIoU:{}; Improved mIoU:{2}'.format(self.best_mIoU, test_mIoU))
+            is_best = True
+            self.best_mIoU = test_mIoU
+            self.saver.save_checkpoint({
+                'round': round_idx + 1,
+                'state_dict': self.model.module.state_dict(),
+                'train_data_evaluation_metrics': {
+                    'accuracy': train_acc,
+                    'accuracy_class': train_acc_class,
+                    'mIou': train_mIoU,
+                    'FWIoU': train_FWIoU,
+                    'loss': train_loss
+                },
+                'test_data_evaluation_metrics': {
+                    'accuracy': test_acc,
+                    'accuracy_class': test_acc_class,
+                    'mIoU': test_mIoU,
+                    'FWIoU': test_FWIoU,
+                    'loss': test_loss
+                }
+            }, is_best)
+            
         logging.info(stats)

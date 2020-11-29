@@ -157,7 +157,7 @@ class Saver(object):
 
     def __init__(self, args):
         self.args = args
-        self.directory = os.path.join('run', 'coco', args.checkname)
+        self.directory = os.path.join('run', args.dataset, args.checkname)
         self.runs = sorted(glob.glob(os.path.join(self.directory, 'experiment_*')))
         run_id = int(self.runs[-1].split('_')[-1]) + 1 if self.runs else 0
 
@@ -191,19 +191,39 @@ class Saver(object):
                 shutil.copyfile(filename, os.path.join(self.directory, 'model_best.pth.tar'))
 
     def save_experiment_config(self):
+        
         logfile = os.path.join(self.experiment_dir, 'parameters.txt')
         log_file = open(logfile, 'w')
+
         p = OrderedDict()
-        p['dataset'] = "coco"
+
+        p['model'] = self.args.model
         p['backbone'] = self.args.backbone
-        p['out_stride'] = self.args.out_stride
+        p['backbone_pretrained'] = self.args.backbone_pretrained
+        p['backbone_freezed'] = self.args.backbone_freezed
+        p['extract_test'] = self.args.extract_test
+        p['outstride'] = self.args.outstride
+        p['dataset'] = self.args.dataset
+        p['partition_method'] = self.args.partition_method
+        p['partition_alpha'] = self.args.partition_alpha
+        p['client_num_in_total'] = self.args.client_num_in_total
+        p['client_num_per_round'] = self.args.client_num_per_round
+        p['batch_size'] = self.args.batch_size   
+        p['sync_bn'] - self.args.sync_bn
+        p['freeze_bn'] = self.args.freeze_bn
+        p['client_optimizer'] = self.args.client_optimizer
         p['lr'] = self.args.lr
         p['lr_scheduler'] = self.args.lr_scheduler
+        p['momentum'] = self.args.momentum
+        p['weight_decay'] = self.args.weight_decay
+        p['nesterov'] = self.args.nesterov
         p['loss_type'] = self.args.loss_type
-        p['epoch'] = self.args.epochs
-        p['base_size'] = 513    
-        p['crop_size'] = 513
-
+        p['epochs'] = self.args.epochs
+        p['comm_round'] = self.args.comm_round
+        p['frequency_of_the_test'] = self.args.frequency_of_the_test
+        p['gpu_server_num'] = self.args.gpu_server_num
+        p['gpu_num_per_server'] = self.args.gpu_num_per_server
+  
         for key, val in p.items():
             log_file.write(key + ':' + str(val) + '\n')
         log_file.close()

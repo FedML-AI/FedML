@@ -58,6 +58,8 @@ def add_args(parser):
     parser.add_argument('--data_dir', type=str, default='/home/chaoyanghe/BruteForce/FedML/data/pascal_voc',
                         help='data directory (default = /home/chaoyanghe/BruteForce/FedML/data/pascal_voc)')
  
+    parser.add_argument('--checkname', type=str, default='deeplab-resnet', help='set the checkpoint name')
+
     parser.add_argument('--partition_method', type=str, default='hetero', metavar='N',
                         help='how to partition the dataset on local workers')
 
@@ -92,9 +94,9 @@ def add_args(parser):
     parser.add_argument('--momentum', type=float, default=0.9,
                         metavar='M', help='momentum (default: 0.9)')
 
-    parser.add_argument('--weight-decay', type=float, default=5e-4,
+    parser.add_argument('--weight_decay', type=float, default=5e-4,
                         metavar='M', help='w-decay (default: 5e-4)')
-                        
+
     parser.add_argument('--nesterov', action='store_true', default=False,
                         help='whether use nesterov (default: False)')
 
