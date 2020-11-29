@@ -199,7 +199,7 @@ class DeeplabHead(nn.Module):
 
 class DeeplabTransformer(nn.Module):
     def __init__(self, backbone='resnet', image_size=torch.Size([513, 513]) , nInputChannels=3, n_classes=21, output_stride=16, pretrained=False, freeze_bn=False, sync_bn=False, _print=True):
-
+        
         if _print:
             print("Constructing DeepLabv3+ model...")
             print("Backbone: {}".format(backbone))
@@ -246,7 +246,7 @@ class DeeplabTransformer(nn.Module):
                 m.bias.data.zero_()
 
     def get_1x_lr_params(self):
-            modules = [self.backbone]
+            modules = [self.transformer.backbone]
             for i in range(len(modules)):
                 for m in modules[i].named_modules():
                     if self.freeze_bn:
@@ -262,7 +262,7 @@ class DeeplabTransformer(nn.Module):
                                     yield p
 
     def get_10x_lr_params(self):
-        modules = [self.aspp, self.decoder]
+        modules = [self.head.aspp, self.head.decoder]
         for i in range(len(modules)):
             for m in modules[i].named_modules():
                 if self.freeze_bn:

@@ -30,8 +30,11 @@ class FedSegTrainer(object):
 
         # Add momentum if needed
         if self.args.client_optimizer == "sgd":
-            self.optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, self.model.parameters()),
-                                             weight_decay=args.weight_decay, nesterov=args.nesterov)
+
+            train_params = [{'params': self.model.get_1x_lr_params(), 'lr': args.lr},
+                            {'params': self.model.get_10x_lr_params(), 'lr': args.lr * 10}]
+
+            self.optimizer = torch.optim.SGD(train_params, momentum=args.momentum, weight_decay=args.weight_decay, nesterov=args.nesterov)
         else:
             self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()),
                                               lr=self.args.lr, weight_decay=self.args.weight_decay, amsgrad=True)
