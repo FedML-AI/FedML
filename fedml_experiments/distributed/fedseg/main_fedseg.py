@@ -32,7 +32,7 @@ def add_args(parser):
     parser.add_argument('--model', type=str, default='deeplab_transformer', metavar='N',
                         help='neural network used in training')
 
-    parser.add_argument('--backbone', type=str, default='xception',
+    parser.add_argument('--backbone', type=str, default='resnet',
                         help='employ with backbone (default: xception)')
 
     parser.add_argument('--backbone_pretrained', type=bool, default=True,
@@ -64,10 +64,10 @@ def add_args(parser):
     parser.add_argument('--partition_alpha', type=float, default=0.5, metavar='PA',
                         help='partition alpha (default: 0.5)')
 
-    parser.add_argument('--client_num_in_total', type=int, default=1, metavar='NN',
+    parser.add_argument('--client_num_in_total', type=int, default=4, metavar='NN',
                         help='number of workers in a distributed cluster')
 
-    parser.add_argument('--client_num_per_round', type=int, default=1, metavar='NN',
+    parser.add_argument('--client_num_per_round', type=int, default=4, metavar='NN',
                         help='number of workers')
 
     parser.add_argument('--batch_size', type=int, default=8, metavar='N',
@@ -102,10 +102,10 @@ def add_args(parser):
                         choices=['ce', 'focal'],
                         help='loss func type (default: ce)')
 
-    parser.add_argument('--epochs', type=int, default=1, metavar='EP',
+    parser.add_argument('--epochs', type=int, default=2, metavar='EP',
                         help='how many epochs will be trained locally')
 
-    parser.add_argument('--comm_round', type=int, default=10,
+    parser.add_argument('--comm_round', type=int, default=200,
                         help='how many round of communications we shoud use')
 
     parser.add_argument('--is_mobile', type=int, default=0,
@@ -190,11 +190,11 @@ def create_model(args, model_name, output_dim, img_size = torch.Size([513, 513])
 def init_training_device(process_ID, fl_worker_num, gpu_num_per_machine):
     # initialize the mapping from process ID to GPU ID: <process ID, GPU ID>
     if process_ID == 0:
-        device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         return device
     process_gpu_dict = dict()
     for client_index in range(fl_worker_num):
-        gpu_index = (client_index % gpu_num_per_machine) + 2
+        gpu_index = (client_index % gpu_num_per_machine)
         process_gpu_dict[client_index] = gpu_index
 
     logging.info(process_gpu_dict)
@@ -217,7 +217,7 @@ if __name__ == "__main__":
     args = add_args(parser)
     print(args)
     # customize the process name
-    str_process_name = "FedSeg (distributed):" + str(process_id)
+    str_process_name = "Deeplab-Resnet-Pascal (distributed):" + str(process_id)
     setproctitle.setproctitle(str_process_name)
 
     # customize the log format
