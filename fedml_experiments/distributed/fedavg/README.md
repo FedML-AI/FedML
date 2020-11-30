@@ -2,6 +2,8 @@
 http://doc.fedml.ai/#/installation-distributed-computing
 
 ## Run Experiments
+Note please tune hyper-parameters accordingly. 
+You can refer the hyper-parameter suggestions at `FedML/benchmark/README.md`), but this may not be the optimal.
 
 ## MNIST experiments
 ```
@@ -13,10 +15,10 @@ nohup sh run_fedavg_distributed_pytorch.sh 10 10 1 4 lr hetero 200 20 10 0.03 mn
 
 # Federated EMNIST experiments
 ```
-sh run_fedavg_distributed_pytorch.sh 10 10 1 4 rnn hetero 100 10 10 0.8 femnist "./../../../data/FederatedEMNIST" 0
+sh run_fedavg_distributed_pytorch.sh 10 10 1 4 cnn hetero 100 1 20 0.1 femnist "./../../../data/FederatedEMNIST" 0
 
 ##run on background
-nohup sh run_fedavg_distributed_pytorch.sh 10 10 1 4 rnn hetero 100 10 10 0.8 femnist "./../../../data/FederatedEMNIST" 0 > ./fedavg-cnn-femnist.txt 2>&1 &
+nohup sh run_fedavg_distributed_pytorch.sh 10 10 1 4 cnn hetero 100 10 20 0.1 femnist "./../../../data/FederatedEMNIST" 0 > ./fedavg-cnn-femnist.txt 2>&1 &
 ```
 
 # shakespeare experiments

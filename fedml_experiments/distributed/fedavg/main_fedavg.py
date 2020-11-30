@@ -176,15 +176,15 @@ def create_model(args, model_name, output_dim):
     if model_name == "lr" and args.dataset == "mnist":
         logging.info("LogisticRegression + MNIST")
         model = LogisticRegression(28 * 28, output_dim)
+    elif model_name == "rnn" and args.dataset == "shakespeare":
+        logging.info("RNN + shakespeare")
+        model = RNN_OriginalFedAvg()
     elif model_name == "cnn" and args.dataset == "femnist":
         logging.info("CNN + FederatedEMNIST")
         model = CNN_DropOut(False)
     elif model_name == "resnet18_gn" and args.dataset == "fed_cifar100":
         logging.info("ResNet18_GN + Federated_CIFAR100")
         model = resnet18()
-    elif model_name == "rnn" and args.dataset == "shakespeare":
-        logging.info("RNN + shakespeare")
-        model = RNN_OriginalFedAvg()
     elif model_name == "rnn" and args.dataset == "fed_shakespeare":
         logging.info("RNN + fed_shakespeare")
         model = RNN_OriginalFedAvg()
