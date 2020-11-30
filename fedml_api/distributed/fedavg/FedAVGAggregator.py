@@ -106,6 +106,8 @@ class FedAVGAggregator(object):
             test_losses = []
             for client_idx in range(self.args.client_num_in_total):
                 # train data
+                if client_idx > 0:
+                    break
                 train_tot_correct, train_num_sample, train_loss = self._infer(self.train_data_local_dict[client_idx])
                 train_tot_corrects.append(copy.deepcopy(train_tot_correct))
                 train_num_samples.append(copy.deepcopy(train_num_sample))
@@ -148,6 +150,7 @@ class FedAVGAggregator(object):
         criterion = nn.CrossEntropyLoss().to(self.device)
         with torch.no_grad():
             for batch_idx, (x, target) in enumerate(test_data):
+                logging.debug('Server is testing... %d-th batch' % batch_idx)
                 x = x.to(self.device)
                 target = target.to(self.device)
                 pred = self.model(x)
