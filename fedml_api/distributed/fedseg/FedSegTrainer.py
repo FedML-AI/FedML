@@ -4,6 +4,7 @@ import torch
 from torch import nn
 import numpy as np
 import gc
+import shelve
 
 from fedml_api.distributed.fedseg.utils import transform_tensor_to_list, SegmentationLosses, Evaluator, LR_Scheduler, EvaluationMetricsKeeper, save_as_pickle_file, load_from_pickle_file
 
@@ -31,21 +32,25 @@ class FedSegTrainer(object):
         # Add momentum if needed
         if self.args.client_optimizer == "sgd":
 
-            train_params = [{'params': self.model.get_1x_lr_params(), 'lr': args.lr},
-                            {'params': self.model.get_10x_lr_params(), 'lr': args.lr * 10}]
+            if self.args.backbone_freezed:
+                self.optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, self.model.parameters()), lr=self.args.lr * 10,
+                                                 momentum=args.momentum, weight_decay=args.weight_decay, nesterov=args.nesterov)
+            else:
+                train_params = [{'params': self.model.get_1x_lr_params(), 'lr': args.lr},
+                                {'params': self.model.get_10x_lr_params(), 'lr': args.lr * 10}]
 
-            self.optimizer = torch.optim.SGD(train_params, momentum=args.momentum, weight_decay=args.weight_decay, nesterov=args.nesterov)
+                self.optimizer = torch.optim.SGD(train_params, momentum=args.momentum, weight_decay=args.weight_decay, nesterov=args.nesterov)
         else:
             self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()),
                                               lr=self.args.lr, weight_decay=self.args.weight_decay, amsgrad=True)
 
         if self.args.backbone_freezed:
             logging.info('Client:{} Generating Feature Maps for Training Dataset'.format(client_index))
-            self.train_data_extracted_features = self._extract_features(self.train_local, 'train.pkl')
+            self.train_data_extracted_features_path = self._extract_features(self.train_local, 'train_features')
 
             if self.args.extract_test:
                 logging.info('Client:{} Generating Feature Maps for Testing Dataset'.format(client_index))
-                self.test_data_extracted_features = self._extract_features(self.test_local, 'test.pkl')
+                self.test_data_extracted_features_path = self._extract_features(self.test_local, 'test_features')
 
 
     def update_model(self, weights):
@@ -78,22 +83,18 @@ class FedSegTrainer(object):
         if not os.path.exists(directory):
             os.makedirs(directory)
         
-        extracted_features_dict = dict()
-
-        if path.exists(file_path):
-            logging.info('Loading Extracted Features')
-            extracted_features_dict = load_from_pickle_file(file_path)
-            
-        else:
+        if not path.exists(file_path):
             logging.info('Extracting Features')
+            features_db = shelve.open(file_path)
             with torch.no_grad():
                 for (batch_idx, batch) in enumerate(dataset_loader):
                     x, labels = batch['image'], batch['label']
                     x = x.to(self.device)
                     extracted_inputs, extracted_features = self.model.transformer(x)
-                    extracted_features_dict[batch_idx] = (extracted_inputs.cpu().detach(), extracted_features.cpu().detach(), labels)
-                save_as_pickle_file(file_path, extracted_features_dict)
-        return extracted_features_dict
+                    features_db[str(batch_idx)] = (extracted_inputs.cpu().detach(), extracted_features.cpu().detach(), labels)
+            features_db.close()
+        logging.info('Client {0}: Returning extracted features database'.format(self.client_index))
+        return file_path
 
     def train(self):
 
@@ -110,23 +111,23 @@ class FedSegTrainer(object):
 
             logging.info('Client Id: {0}, Epoch: {1}'.format(self.client_index, epoch))
 
-            for batch_idx in self.train_data_extracted_features.keys():
+            with shelve.open(self.train_data_extracted_features_path, 'r') as features_db:
+                for batch_idx in features_db.keys():
+                    (x, low_level_feat, labels) = features_db[batch_idx]
+                    x, low_level_feat, labels = x.to(self.device), low_level_feat.to(self.device), labels.to(self.device)
 
-                (x, low_level_feat, labels) = self.train_data_extracted_features[batch_idx]
-                x, low_level_feat, labels = x.to(self.device), low_level_feat.to(self.device), labels.to(self.device)
+                    self.scheduler(self.optimizer, batch_idx, epoch)
+                    self.optimizer.zero_grad()
 
-                self.scheduler(self.optimizer, batch_idx, epoch)
-                self.optimizer.zero_grad()
-
-                log_probs = self.model.head(x, low_level_feat)                
-                loss = self.criterion(log_probs, labels).to(self.device)
-                loss.backward()
-                self.optimizer.step()
-                batch_loss.append(loss.item())
+                    log_probs = self.model.head(x, low_level_feat)                
+                    loss = self.criterion(log_probs, labels).to(self.device)
+                    loss.backward()
+                    self.optimizer.step()
+                    batch_loss.append(loss.item())
 
                 # if (batch_idx % 500 == 0):
                 # logging.info('Client Id: {0} Iteration: {1}, Loss: {2}, Time Elapsed: {3}'.format(self.client_index, batch_idx, loss, (time.time()-t)/60))
-
+            features_db.close()
             if len(batch_loss) > 0:
                 epoch_loss.append(sum(batch_loss) / len(batch_loss))
                 logging.info('(Client Id: {}. Local Training Epoch: {} \tLoss: {:.6f}'.format(self.client_index,
@@ -219,35 +220,34 @@ class FedSegTrainer(object):
 
 
     def _infer(self, test_data):
-        time_start_test_per_batch = time.time()
         self.model.eval()
         self.model.to(self.device)
         self.evaluator.reset()
 
         if test_data == self.train_local:
-            test_data_extracted_features = self.train_data_extracted_features
+            test_data_extracted_features = self.train_data_extracted_features_path
         else:
-            test_data_extracted_features = self.test_data_extracted_features
+            test_data_extracted_features = self.test_data_extracted_features_path
 
         test_acc = test_acc_class = test_mIoU = test_FWIoU = test_loss = test_total = 0.
         criterion = SegmentationLosses().build_loss(mode=self.args.loss_type)
 
 
         with torch.no_grad():
-            for batch_idx in test_data_extracted_features.keys():
-                (x, low_level_feat, target) = self.train_data_extracted_features[batch_idx]
-                x, low_level_feat, target = x.to(self.device), low_level_feat.to(self.device), target.to(self.device)
-                output = self.model.head(x, low_level_feat)
-                loss = criterion(output, target).to(self.device)
-                test_loss += loss.item()
-                test_total += target.size(0)
-                pred = output.cpu().numpy()
-                target = target.cpu().numpy()
-                pred = np.argmax(pred, axis = 1)
-                self.evaluator.add_batch(target, pred)
-                time_end_test_per_batch = time.time()
+            with shelve.open(test_data_extracted_features, 'r') as features_db:
+                for batch_idx in features_db.keys():
+                    (x, low_level_feat, target) = features_db[batch_idx]
+                    x, low_level_feat, target = x.to(self.device), low_level_feat.to(self.device), target.to(self.device)
+                    output = self.model.head(x, low_level_feat)
+                    loss = criterion(output, target).to(self.device)
+                    test_loss += loss.item()
+                    test_total += target.size(0)
+                    pred = output.cpu().numpy()
+                    target = target.cpu().numpy()
+                    pred = np.argmax(pred, axis = 1)
+                    self.evaluator.add_batch(target, pred)
                 # logging.info("time per batch = " + str(time_end_test_per_batch - time_start_test_per_batch))
-
+            features_db.close()
         # Evaluation Metrics (Averaged over number of samples)
         test_acc = self.evaluator.Pixel_Accuracy()
         test_acc_class = self.evaluator.Pixel_Accuracy_Class()
