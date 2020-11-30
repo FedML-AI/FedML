@@ -44,7 +44,7 @@ def add_args(parser):
     parser.add_argument('--extract_test', type=bool, default=False,
                         help='Extract Feature Maps of test data (default: False)')
 
-    parser.add_argument('--outstride', type=int, default=16,
+    parser.add_argument('--outstride', type=int, default=8,
                         help='network output stride (default: 16)')
 
     # # TODO: Remove this argument
@@ -58,7 +58,7 @@ def add_args(parser):
     parser.add_argument('--data_dir', type=str, default='/home/chaoyanghe/BruteForce/FedML/data/pascal_voc',
                         help='data directory (default = /home/chaoyanghe/BruteForce/FedML/data/pascal_voc)')
  
-    parser.add_argument('--checkname', type=str, default='deeplab-resnet', help='set the checkpoint name')
+    parser.add_argument('--checkname', type=str, default='deeplab-resnet-os8', help='set the checkpoint name')
 
     parser.add_argument('--partition_method', type=str, default='hetero', metavar='N',
                         help='how to partition the dataset on local workers')
@@ -66,10 +66,10 @@ def add_args(parser):
     parser.add_argument('--partition_alpha', type=float, default=0.5, metavar='PA',
                         help='partition alpha (default: 0.5)')
 
-    parser.add_argument('--client_num_in_total', type=int, default=4, metavar='NN',
+    parser.add_argument('--client_num_in_total', type=int, default=3, metavar='NN',
                         help='number of workers in a distributed cluster')
 
-    parser.add_argument('--client_num_per_round', type=int, default=4, metavar='NN',
+    parser.add_argument('--client_num_per_round', type=int, default=3, metavar='NN',
                         help='number of workers')
 
     parser.add_argument('--batch_size', type=int, default=10, metavar='N',
@@ -189,16 +189,15 @@ def create_model(args, model_name, output_dim, img_size = torch.Size([513, 513])
     return model
 
 
-def init_training_device(process_ID, fl_worker_num, gpu_num_per_machine):
+def init_training_device(process_ID, fl_worker_num, gpu_num_per_machine, gpu_server_num):
     # initialize the mapping from process ID to GPU ID: <process ID, GPU ID>
     if process_ID == 0:
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda:" + str(gpu_server_num) if torch.cuda.is_available() else "cpu")
         return device
     process_gpu_dict = dict()
     for client_index in range(fl_worker_num):
         gpu_index = (client_index % gpu_num_per_machine)
-        process_gpu_dict[client_index] = gpu_index
-
+        process_gpu_dict[client_index] = gpu_index + gpu_server_num
     logging.info(process_gpu_dict)
     device = torch.device("cuda:" + str(process_gpu_dict[process_ID - 1]) if torch.cuda.is_available() else "cpu")
     logging.info(device)
@@ -264,7 +263,7 @@ if __name__ == "__main__":
     # machine 4: worker3, worker7;
     # Therefore, we can see that workers are assigned according to the order of machine list.
     logging.info("process_id = %d, size = %d" % (process_id, worker_number))
-    device = init_training_device(process_id, worker_number - 1, args.gpu_num_per_server)
+    device = init_training_device(process_id, worker_number - 1, args.gpu_num_per_server, args.gpu_server_num)
 
     # load data
     dataset = load_data(process_id, args, args.dataset)
