@@ -159,22 +159,22 @@ CI=$13
 train on non-IID dataset
 ```
 # 100 clients
-sh run_fedavg_distributed_pytorch.sh 100 2 1 2 mobilenet hetero 100 5 32 0.001 ILSVRC2012 "~/datasets/landmarks/cache" 0
-sh run_fedavg_distributed_pytorch.sh 100 2 1 2 mobilenet hetero 100 5 32 0.001 ILSVRC2012 "your_data_dir" 0
+sh run_fedavg_distributed_pytorch.sh 100 2 1 2 mobilenet hetero 100 1 32 0.001 ILSVRC2012 "~/datasets/landmarks/cache" 0
+sh run_fedavg_distributed_pytorch.sh 100 2 1 2 mobilenet hetero 100 1 32 0.001 ILSVRC2012 "your_data_dir" 0
 # 1000 clients
-sh run_fedavg_distributed_pytorch.sh 1000 2 1 2 mobilenet hetero 100 5 32 0.001 ILSVRC2012 "your_data_dir" 0
+sh run_fedavg_distributed_pytorch.sh 1000 2 1 2 mobilenet hetero 100 1 32 0.001 ILSVRC2012 "your_data_dir" 0
 ```
 #### gld23k
 train on non-IID dataset
 ```
-sh run_fedavg_distributed_pytorch.sh 233 2 1 2 mobilenet hetero 100 5 32 0.001 gld23k "~/datasets/landmarks" 0
-sh run_fedavg_distributed_pytorch.sh 233 2 1 2 mobilenet hetero 100 5 32 0.001 gld23k "your_data_dir" 0
+sh run_fedavg_distributed_pytorch.sh 233 2 1 2 mobilenet hetero 100 1 32 0.001 gld23k "~/datasets/landmarks" 0
+sh run_fedavg_distributed_pytorch.sh 233 2 1 2 mobilenet hetero 100 1 32 0.001 gld23k "your_data_dir" 0
 ```
 
 #### gld160k
 train on non-IID dataset
 ```
-sh run_fedavg_distributed_pytorch.sh 1262 2 1 2 mobilenet hetero 100 5 32 0.001 gld160k "your_data_dir" 0
+sh run_fedavg_distributed_pytorch.sh 1262 2 1 2 mobilenet hetero 100 1 32 0.001 gld160k "your_data_dir" 0
 ```
 
 

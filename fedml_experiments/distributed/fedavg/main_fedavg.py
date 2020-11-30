@@ -5,12 +5,14 @@ import random
 import socket
 import sys
 
+import traceback
+from mpi4py import MPI
+
 import numpy as np
 import psutil
 import setproctitle
 import torch
 import wandb
-
 # add the FedML root directory to the python path
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
@@ -156,20 +158,6 @@ def load_data(args, dataset_name):
         train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
         class_num = load_partition_data_federated_stackoverflow_nwp(args.dataset, args.data_dir)
         args.client_num_in_total = client_num
-    else:
-        if dataset_name == "cifar10":
-            data_loader = load_partition_data_cifar10
-        elif dataset_name == "cifar100":
-            data_loader = load_partition_data_cifar100
-        elif dataset_name == "cinic10":
-            data_loader = load_partition_data_cinic10
-        else:
-            data_loader = load_partition_data_cifar10
-
-        train_data_num, test_data_num, train_data_global, test_data_global, \
-        train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
-        class_num = data_loader(args.dataset, args.data_dir, args.partition_method,
-                                args.partition_alpha, args.client_num_in_total, args.batch_size)
     elif dataset_name == "ILSVRC2012":
         logging.info("load_data. dataset_name = %s" % dataset_name)
         train_data_num, test_data_num, train_data_global, test_data_global, \
@@ -207,6 +195,20 @@ def load_data(args, dataset_name):
             client_number=args.client_num_in_total, batch_size=args.batch_size)
 
 
+    else:
+        if dataset_name == "cifar10":
+            data_loader = load_partition_data_cifar10
+        elif dataset_name == "cifar100":
+            data_loader = load_partition_data_cifar100
+        elif dataset_name == "cinic10":
+            data_loader = load_partition_data_cinic10
+        else:
+            data_loader = load_partition_data_cifar10
+
+        train_data_num, test_data_num, train_data_global, test_data_global, \
+        train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
+        class_num = data_loader(args.dataset, args.data_dir, args.partition_method,
+                                args.partition_alpha, args.client_num_in_total, args.batch_size)
     dataset = [train_data_num, test_data_num, train_data_global, test_data_global,
                train_data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num]
     return dataset
@@ -244,7 +246,7 @@ def create_model(args, model_name, output_dim):
     elif model_name == 'mobilenet_v3':
         '''model_mode \in {LARGE: 5.15M, SMALL: 2.94M}'''
         model = MobileNetV3(model_mode='LARGE')
-    elif model_name == 'efficientnet'
+    elif model_name == 'efficientnet':
         model = EfficientNet()
 
     return model
@@ -280,7 +282,8 @@ if __name__ == "__main__":
     setproctitle.setproctitle(str_process_name)
 
     # customize the log format
-    logging.basicConfig(level=logging.INFO,
+    # logging.basicConfig(level=logging.INFO,
+    logging.basicConfig(level=logging.DEBUG,
                         format=str(
                             process_id) + ' - %(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
                         datefmt='%a, %d %b %Y %H:%M:%S')
@@ -289,6 +292,7 @@ if __name__ == "__main__":
                  ", host name = " + hostname + "########" +
                  ", process ID = " + str(os.getpid()) +
                  ", process Name = " + str(psutil.Process(os.getpid())))
+
 
     # initialize the wandb machine learning experimental tracking platform (https://www.wandb.com/).
     if process_id == 0:
@@ -331,7 +335,14 @@ if __name__ == "__main__":
     # In this case, please use our FedML distributed version (./fedml_experiments/distributed_fedavg)
     model = create_model(args, model_name=args.model, output_dim=dataset[7])
 
+    try:
     # start "federated averaging (FedAvg)"
-    FedML_FedAvg_distributed(process_id, worker_number, device, comm,
+        FedML_FedAvg_distributed(process_id, worker_number, device, comm,
                              model, train_data_num, train_data_global, test_data_global,
                              train_data_local_num_dict, train_data_local_dict, test_data_local_dict, args)
+    except Exception as e:
+        print(e)
+        logging.info('traceback.format_exc():\n%s' % traceback.format_exc())
+        MPI.COMM_WORLD.Abort()
+
+
