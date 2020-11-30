@@ -194,7 +194,7 @@ class FedSegTrainer(object):
         # Train Data
         if self.args.backbone_freezed:
             logging.info('Testing client (w/o Backbone) {0}'.format(self.client_index))
-            if self.round_idx % self.args.frequency_of_the_test == 0:
+            if self.round_idx and self.round_idx % self.args.frequency_of_the_test == 0:
                 train_evaluation_metrics = self._infer(self.train_local)
             
             if self.args.extract_test:
@@ -205,7 +205,7 @@ class FedSegTrainer(object):
                 test_evaluation_metrics = self._infer_on_raw_data(self.test_local)
 
         else:
-            if self.round_idx % self.args.frequency_of_the_test == 0:
+            if self.round_idx and self.round_idx % self.args.frequency_of_the_test == 0:
                 logging.info('Testing client {0} on raw train dataset'.format(self.client_index))
                 train_evaluation_metrics = self._infer_on_raw_data(self.train_local)
             logging.info('Testing client {0} on raw test dataset'.format(self.client_index))                

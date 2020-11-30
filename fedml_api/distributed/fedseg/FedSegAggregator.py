@@ -136,7 +136,7 @@ class FedSegAggregator(object):
     def output_global_acc_and_loss(self, round_idx):
         logging.info("################output_global_acc_and_loss : {}".format(round_idx))
 
-        if round_idx % self.args.frequency_of_the_test == 0:
+        if round_idx and round_idx % self.args.frequency_of_the_test == 0:
             # Test on training set
             train_acc = np.array([self.train_acc_client_dict[k] for k in self.train_acc_client_dict.keys()]).mean()
             train_acc_class = np.array([self.train_acc_class_client_dict[k] for k in self.train_acc_class_client_dict.keys()]).mean()
@@ -182,23 +182,38 @@ class FedSegAggregator(object):
             logging.info('Saving Model Checkpoint --> Previous mIoU:{0}; Improved mIoU:{1}'.format(self.best_mIoU, test_mIoU))
             is_best = True
             self.best_mIoU = test_mIoU
-            self.saver.save_checkpoint({
-                'best_pred': self.best_mIoU,
-                'round': round_idx + 1,
-                'state_dict': self.model.state_dict(),
-                'train_data_evaluation_metrics': {
-                    'accuracy': train_acc,
-                    'accuracy_class': train_acc_class,
-                    'mIou': train_mIoU,
-                    'FWIoU': train_FWIoU,
-                    'loss': train_loss
-                },
-                'test_data_evaluation_metrics': {
-                    'accuracy': test_acc,
-                    'accuracy_class': test_acc_class,
-                    'mIoU': test_mIoU,
-                    'FWIoU': test_FWIoU,
-                    'loss': test_loss
-                }
-            }, is_best)
-            
+            if round_idx and round_idx % self.args.frequency_of_the_test == 0:
+                self.saver.save_checkpoint({
+                    'best_pred': self.best_mIoU,
+                    'round': round_idx + 1,
+                    'state_dict': self.model.state_dict(),
+                    'train_data_evaluation_metrics': {
+                        'accuracy': train_acc,
+                        'accuracy_class': train_acc_class,
+                        'mIou': train_mIoU,
+                        'FWIoU': train_FWIoU,
+                        'loss': train_loss
+                    },
+                    'test_data_evaluation_metrics': {
+                        'accuracy': test_acc,
+                        'accuracy_class': test_acc_class,
+                        'mIoU': test_mIoU,
+                        'FWIoU': test_FWIoU,
+                        'loss': test_loss
+                    }
+                }, is_best)
+            else:
+                self.saver.save_checkpoint({
+                    'best_pred': self.best_mIoU,
+                    'round': round_idx + 1,
+                    'state_dict': self.model.state_dict(),
+                    'test_data_evaluation_metrics': {
+                        'accuracy': test_acc,
+                        'accuracy_class': test_acc_class,
+                        'mIoU': test_mIoU,
+                        'FWIoU': test_FWIoU,
+                        'loss': test_loss
+                    }
+                }, is_best)
+                                
+                
