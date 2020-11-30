@@ -5,11 +5,8 @@ from torch import nn
 import numpy as np
 import gc
 import shelve
-<<<<<<< Updated upstream
-=======
 
 from tqdm import tqdm
->>>>>>> Stashed changes
 
 from fedml_api.distributed.fedseg.utils import transform_tensor_to_list, SegmentationLosses, Evaluator, LR_Scheduler, EvaluationMetricsKeeper, save_as_pickle_file, load_from_pickle_file
 
