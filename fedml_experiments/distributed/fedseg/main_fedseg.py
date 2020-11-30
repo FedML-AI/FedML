@@ -38,10 +38,10 @@ def add_args(parser):
     parser.add_argument('--backbone_pretrained', type=bool, default=True,
                         help='pretrained backbone (default: True)')
 
-    parser.add_argument('--backbone_freezed', type=bool, default=False,
+    parser.add_argument('--backbone_freezed', type=bool, default=True,
                         help='Freeze backbone to extract features only once (default: False)')
 
-    parser.add_argument('--extract_test', type=bool, default=False,
+    parser.add_argument('--extract_test', type=bool, default=True,
                         help='Extract Feature Maps of test data (default: False)')
 
     parser.add_argument('--outstride', type=int, default=8,
@@ -58,7 +58,7 @@ def add_args(parser):
     parser.add_argument('--data_dir', type=str, default='/home/chaoyanghe/BruteForce/FedML/data/pascal_voc',
                         help='data directory (default = /home/chaoyanghe/BruteForce/FedML/data/pascal_voc)')
  
-    parser.add_argument('--checkname', type=str, default='deeplab-resnet-os8', help='set the checkpoint name')
+    parser.add_argument('--checkname', type=str, default='deeplab-resnet', help='set the checkpoint name')
 
     parser.add_argument('--partition_method', type=str, default='hetero', metavar='N',
                         help='how to partition the dataset on local workers')
@@ -113,7 +113,7 @@ def add_args(parser):
     parser.add_argument('--is_mobile', type=int, default=0,
                         help='whether the program is running on the FedML-Mobile server side')
 
-    parser.add_argument('--frequency_of_the_test', type=int, default=1,
+    parser.add_argument('--frequency_of_the_test', type=int, default=10,
                         help='the frequency of the algorithms')
 
     parser.add_argument('--gpu_server_num', type=int, default=1,
@@ -218,7 +218,7 @@ if __name__ == "__main__":
     args = add_args(parser)
     print(args)
     # customize the process name
-    str_process_name = "Deeplab-Resnet-Pascal (distributed):" + str(process_id)
+    str_process_name = "Deeplab-Resnet-Coco (distributed):" + str(process_id)
     setproctitle.setproctitle(str_process_name)
 
     # customize the log format

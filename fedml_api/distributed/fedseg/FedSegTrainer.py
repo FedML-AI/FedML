@@ -5,6 +5,11 @@ from torch import nn
 import numpy as np
 import gc
 import shelve
+<<<<<<< Updated upstream
+=======
+
+from tqdm import tqdm
+>>>>>>> Stashed changes
 
 from fedml_api.distributed.fedseg.utils import transform_tensor_to_list, SegmentationLosses, Evaluator, LR_Scheduler, EvaluationMetricsKeeper, save_as_pickle_file, load_from_pickle_file
 
@@ -87,7 +92,7 @@ class FedSegTrainer(object):
             logging.info('Extracting Features')
             features_db = shelve.open(file_path)
             with torch.no_grad():
-                for (batch_idx, batch) in enumerate(dataset_loader):
+                for (batch_idx, batch) in tqdm(enumerate(dataset_loader)):
                     x, labels = batch['image'], batch['label']
                     x = x.to(self.device)
                     extracted_inputs, extracted_features = self.model.transformer(x)
@@ -124,7 +129,7 @@ class FedSegTrainer(object):
                     loss.backward()
                     self.optimizer.step()
                     batch_loss.append(loss.item())
-
+                    logging.info('Client Id: {0} Iteration: {1}, Loss: {2}, Time Elapsed: {3}'.format(self.client_index, batch_idx, loss, (time.time()-t)/60))
                 # if (batch_idx % 500 == 0):
                 # logging.info('Client Id: {0} Iteration: {1}, Loss: {2}, Time Elapsed: {3}'.format(self.client_index, batch_idx, loss, (time.time()-t)/60))
             features_db.close()
@@ -132,8 +137,6 @@ class FedSegTrainer(object):
                 epoch_loss.append(sum(batch_loss) / len(batch_loss))
                 logging.info('(Client Id: {}. Local Training Epoch: {} \tLoss: {:.6f}'.format(self.client_index,
                                                                 epoch, sum(epoch_loss) / len(epoch_loss)))
-
-            logging.info('Client Id: {0} Epoch: {1}, Loss: {2}, Time Elapsed: {3}'.format(self.client_index, epoch, batch_loss[-1], (time.time()-t)/60))
 
         weights = self.model.head.cpu().state_dict()
 
@@ -254,8 +257,13 @@ class FedSegTrainer(object):
         test_mIoU = self.evaluator.Mean_Intersection_over_Union()
         test_FWIoU = self.evaluator.Frequency_Weighted_Intersection_over_Union()
         test_loss = test_loss / test_total
+
+        logging.info("Client={0}, test_acc={1}, test_acc_class={2}, test_mIoU={3}, test_FWIoU={4}, test_loss={5}".format(
+            self.client_index, test_acc, test_acc_class, test_mIoU, test_FWIoU, test_loss))
         
-        return EvaluationMetricsKeeper(test_acc, test_acc_class, test_mIoU, test_FWIoU, test_loss)
+        eval_metrics = EvaluationMetricsKeeper(test_acc, test_acc_class, test_mIoU, test_FWIoU, test_loss)
+        
+        return eval_metrics
 
 
     def _infer_on_raw_data(self, test_data):
