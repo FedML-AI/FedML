@@ -72,6 +72,9 @@ def add_args(parser):
     parser.add_argument('--client_num_per_round', type=int, default=3, metavar='NN',
                         help='number of workers')
 
+    parser.add_argument('--save_client_model', type=bool, default=True,
+                        help='whether to save locally trained model by clients (default: False')
+
     parser.add_argument('--batch_size', type=int, default=10, metavar='N',
                         help='input batch size for training (default: 32)')
 

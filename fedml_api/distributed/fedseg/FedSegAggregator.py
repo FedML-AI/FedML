@@ -35,6 +35,7 @@ class FedSegAggregator(object):
         self.test_loss_client_dict = dict()
 
         self.best_mIoU = 0.
+        self.best_mIoU_clients = dict()
 
         self.saver = Saver(args)
         self.saver.save_experiment_config()
@@ -132,6 +133,42 @@ class FedSegAggregator(object):
         self.test_FWIoU_client_dict[client_idx] = test_eval_metrics.FWIoU
         self.test_loss_client_dict[client_idx] = test_eval_metrics.loss
 
+        if self.args.save_client_model:
+            best_mIoU = self.best_mIoU_clients.setdefault(client_idx, 0.)
+            test_mIoU = self.test_mIoU_client_dict[client_idx]
+
+            if test_mIoU > best_mIoU:
+                self.best_mIoU_clients[client_idx] = test_mIoU
+                logging.info('Saving Model Checkpoint for Client: {0}--> Previous mIoU:{1}; Improved mIoU:{2}'.format(client_idx, best_mIoU, test_mIoU))
+                is_best = False
+                filename = "client" + str(client_idx) + "_checkpoint.pth.tar"
+                saver_state = {
+                    'best_pred': test_mIoU,
+                    'round': round_idx+1,
+                    'state_dict': self.model_dict[client_idx]                
+                }
+
+                test_eval_metrics_dict = {
+                    'accuracy': self.test_acc_client_dict[client_idx],
+                    'accuracy_class': self.test_acc_class_client_dict[client_idx],
+                    'mIoU' : self.test_mIoU_client_dict[client_idx],
+                    'FWIoU': self.test_FWIoU_client_dict[client_idx],
+                    'loss' : self.test_loss_client_dict[client_idx]                    
+                }
+
+                saver_state['test_data_evaluation_metrics'] = test_eval_metrics_dict
+
+                if round_idx and round_idx % self.args.frequency_of_the_test == 0:
+                    train_eval_metrics_dict = {
+                        'accuracy': self.train_acc_client_dict[client_idx],
+                        'accuracy_class': self.train_acc_class_client_dict[client_idx],
+                        'mIoU' : self.train_mIoU_client_dict[client_idx],
+                        'FWIoU': self.train_FWIoU_client_dict[client_idx],
+                        'loss' : self.train_loss_client_dict[client_idx]                               
+                    }
+                    saver_state['train_data_evaluation_metrics'] = train_eval_metrics_dict
+
+                self.saver.save_checkpoint(saver_state, is_best, filename)
 
     def output_global_acc_and_loss(self, round_idx):
         logging.info("################output_global_acc_and_loss : {}".format(round_idx))
@@ -190,7 +227,7 @@ class FedSegAggregator(object):
                     'train_data_evaluation_metrics': {
                         'accuracy': train_acc,
                         'accuracy_class': train_acc_class,
-                        'mIou': train_mIoU,
+                        'mIoU': train_mIoU,
                         'FWIoU': train_FWIoU,
                         'loss': train_loss
                     },
