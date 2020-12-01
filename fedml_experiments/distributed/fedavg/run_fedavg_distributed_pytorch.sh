@@ -12,7 +12,8 @@ BATCH_SIZE=$9
 LR=${10}
 DATASET=${11}
 DATA_DIR=${12}
-CI=${13}
+CLIENT_OPTIMIZER=${13}
+CI=${14}
 
 PROCESS_NUM=`expr $WORKER_NUM + 1`
 echo $PROCESS_NUM
@@ -30,6 +31,7 @@ mpirun -np $PROCESS_NUM -hostfile ./mpi_host_file python3 ./main_fedavg.py \
   --client_num_per_round $WORKER_NUM \
   --comm_round $ROUND \
   --epochs $EPOCH \
+  --client_optimizer $CLIENT_OPTIMIZER \
   --batch_size $BATCH_SIZE \
   --lr $LR \
   --ci $CI
