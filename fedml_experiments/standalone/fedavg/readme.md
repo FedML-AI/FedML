@@ -8,26 +8,39 @@ Heterogeneous distribution (Non-IID) experiment:
 Frond-end debugging:
 ``` 
 ## MNIST
-sh run_fedavg_standalone_pytorch.sh 0 10 10 10 mnist ./../../../data/mnist lr hetero 200 20 0.03 sgd 0
+sh run_fedavg_standalone_pytorch.sh 0 1000 10 10 mnist ./../../../data/mnist lr hetero 200 1 0.03 sgd 0
+``` 
+reference experimental result: https://wandb.ai/automl/fedml/runs/2kkxtdvc?workspace=user-chaoyanghe-com
 
+``` 
 ## shakespeare (LEAF)
 sh run_fedavg_standalone_pytorch.sh 0 10 10 10 shakespeare ./../../../data/shakespeare rnn hetero 100 1 0.8 sgd 0
+``` 
 
+``` 
 # fed_shakespeare (Google)
 sh run_fedavg_standalone_pytorch.sh 0 10 10 10 fed_shakespeare ./../../../data/fed_shakespeare rnn hetero 100 1 0.8 sgd 0
-
+``` 
+``` 
 ## Federated EMNIST
 sh run_fedavg_standalone_pytorch.sh 0 10 10 10 femnist ./../../../data/FederatedEMNIST cnn hetero 200 1 0.03 sgd 0
-
+``` 
+``` 
 ## Fed_CIFAR100
 sh run_fedavg_standalone_pytorch.sh 0 10 10 10 fed_cifar100 ./../../../data/fed_cifar100 resnet18_gn hetero 200 1 0.03 adam 0
+``` 
 
+``` 
 # Stackoverflow_LR
 sh run_fedavg_standalone_pytorch.sh 0 10 10 10 stackoverflow_lr ./../../../data/stackoverflow lr hetero 200 1 0.03 sgd 0
+``` 
 
+``` 
 # Stackoverflow_NWP
 sh run_fedavg_standalone_pytorch.sh 0 10 10 10 stackoverflow_nwp ./../../../data/stackoverflow rnn hetero 200 1 0.03 sgd 0
+``` 
 
+``` 
 # CIFAR10
 sh run_fedavg_standalone_pytorch.sh 0 10 10 10 cifar10 ./../../../data/cifar10 resnet56 hetero 200 1 0.03 sgd 0
 ```
