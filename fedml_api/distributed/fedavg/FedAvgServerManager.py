@@ -7,9 +7,12 @@ from .utils import transform_tensor_to_list
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../../FedML")))
-from fedml_core.distributed.communication.message import Message
-from fedml_core.distributed.server.server_manager import ServerManager
-
+try:
+    from fedml_core.distributed.communication.message import Message
+    from fedml_core.distributed.server.server_manager import ServerManager
+except ImportError:
+    from FedML.fedml_core.distributed.communication.message import Message
+    from FedML.fedml_core.distributed.server.server_manager import ServerManager
 
 class FedAVGServerManager(ServerManager):
     def __init__(self, args, aggregator, comm=None, rank=0, size=0, backend="MPI"):
