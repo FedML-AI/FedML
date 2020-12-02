@@ -101,7 +101,7 @@ def _data_transforms_landmarks():
 
     image_size = 224
     train_transform = transforms.Compose([
-        transforms.ToPILImage(),
+        # transforms.ToPILImage(),
         transforms.RandomResizedCrop(image_size),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),

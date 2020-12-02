@@ -50,10 +50,10 @@ class Landmarks(data.Dataset):
 
         # convert jpg to PIL (jpg -> Tensor -> PIL)
         image = Image.open(img_name)
-        jpg_to_tensor = transforms.ToTensor()
+        # jpg_to_tensor = transforms.ToTensor()
         # tensor_to_pil = transforms.ToPILImage()
         # image = tensor_to_pil(jpg_to_tensor(image))
-        image = jpg_to_tensor(image)
+        # image = jpg_to_tensor(image)
 
         if self.transform:
             image = self.transform(image)
