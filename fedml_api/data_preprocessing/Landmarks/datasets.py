@@ -23,7 +23,7 @@ class Landmarks(data.Dataset):
             self.local_files = self.allfiles
         else:
             self.local_files = self.allfiles[dataidxs[0]: dataidxs[1]]
-            print("self.local_files: %d, dataidxs: (%d, %d)" % (len(self.local_files), dataidxs[0], dataidxs[1]))
+            # print("self.local_files: %d, dataidxs: (%d, %d)" % (len(self.local_files), dataidxs[0], dataidxs[1]))
         self.data_dir = data_dir
         self.dataidxs = dataidxs
         self.transform = transform
