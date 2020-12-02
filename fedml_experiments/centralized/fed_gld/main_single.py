@@ -4,20 +4,17 @@ import os
 import random
 import socket
 import sys
-import yaml
-
-import traceback
 
 import numpy as np
 import psutil
 import setproctitle
 import torch
 import wandb
+
 # add the FedML root directory to the python path
 
 # sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
-
 
 from fedml_api.data_preprocessing.FederatedEMNIST.data_loader import load_partition_data_federated_emnist
 from fedml_api.data_preprocessing.fed_cifar100.data_loader import load_partition_data_federated_cifar100
@@ -43,6 +40,7 @@ from fedml_api.model.cv.mobilenet_v3 import MobileNetV3
 from fedml_api.model.cv.efficientnet import EfficientNet
 
 from fedml_api.single.single_trainer import Single_Trainer
+
 
 # from fedml_api.distributed.fedavg.FedAvgAPI import FedML_init, FedML_FedAvg_distributed
 
@@ -169,8 +167,8 @@ def load_data(args, dataset_name):
         train_data_num, test_data_num, train_data_global, test_data_global, \
         train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
         class_num = load_partition_data_ImageNet(dataset=dataset_name, data_dir=args.data_dir,
-            partition_method=None, partition_alpha=None, 
-            client_number=args.client_num_in_total, batch_size=args.batch_size)
+                                                 partition_method=None, partition_alpha=None,
+                                                 client_number=args.client_num_in_total, batch_size=args.batch_size)
 
     elif dataset_name == "gld23k":
         logging.info("load_data. dataset_name = %s" % dataset_name)
@@ -182,9 +180,10 @@ def load_data(args, dataset_name):
         train_data_num, test_data_num, train_data_global, test_data_global, \
         train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
         class_num = load_partition_data_landmarks(dataset=dataset_name, data_dir=args.data_dir,
-            fed_train_map_file=fed_train_map_file, fed_test_map_file=fed_test_map_file,
-            partition_method=None, partition_alpha=None, 
-            client_number=args.client_num_in_total, batch_size=args.batch_size)
+                                                  fed_train_map_file=fed_train_map_file,
+                                                  fed_test_map_file=fed_test_map_file,
+                                                  partition_method=None, partition_alpha=None,
+                                                  client_number=args.client_num_in_total, batch_size=args.batch_size)
 
     elif dataset_name == "gld160k":
         logging.info("load_data. dataset_name = %s" % dataset_name)
@@ -196,9 +195,10 @@ def load_data(args, dataset_name):
         train_data_num, test_data_num, train_data_global, test_data_global, \
         train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
         class_num = load_partition_data_landmarks(dataset=dataset_name, data_dir=args.data_dir,
-            fed_train_map_file=fed_train_map_file, fed_test_map_file=fed_test_map_file,
-            partition_method=None, partition_alpha=None, 
-            client_number=args.client_num_in_total, batch_size=args.batch_size)
+                                                  fed_train_map_file=fed_train_map_file,
+                                                  fed_test_map_file=fed_test_map_file,
+                                                  partition_method=None, partition_alpha=None,
+                                                  client_number=args.client_num_in_total, batch_size=args.batch_size)
 
 
     else:
@@ -290,7 +290,7 @@ if __name__ == "__main__":
 
     # customize the log format
     logging.basicConfig(level=logging.INFO,
-    # logging.basicConfig(level=logging.DEBUG,
+                        # logging.basicConfig(level=logging.DEBUG,
                         format=str(
                             process_id) + ' - %(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
                         datefmt='%a, %d %b %Y %H:%M:%S')
@@ -299,7 +299,6 @@ if __name__ == "__main__":
                  ", host name = " + hostname + "########" +
                  ", process ID = " + str(os.getpid()) +
                  ", process Name = " + str(psutil.Process(os.getpid())))
-
 
     # initialize the wandb machine learning experimental tracking platform (https://www.wandb.com/).
     if process_id == 0:
@@ -345,5 +344,3 @@ if __name__ == "__main__":
     # start "federated averaging (FedAvg)"
     single_trainer = Single_Trainer(dataset, model, device, args)
     single_trainer.train()
-
-
