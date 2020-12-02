@@ -7,29 +7,12 @@ Heterogeneous distribution (Non-IID) experiment:
 
 Frond-end debugging:
 ``` 
-## MNIST
-sh run_fednova_standalone_pytorch.sh 0 10 10 10 mnist ./../../../data/mnist lr hetero 200 20 0.03 0 0 0 0 0 0 0 0
+## Sythetic
+sh run_fednova_standalone_pytorch.sh 0 10 10 10 synthetic_1_1 ./../../../data/synthetic_1_1 lr hetero 200 20 0.03 0 0 0 0 0 0 0 0
 
-## shakespeare (LEAF)
-sh run_fednova_standalone_pytorch.sh 0 10 10 10 shakespeare ./../../../data/shakespeare rnn hetero 100 1 0.8 0 0 0 0 0 0 0 0
+## CIFAR10
+sh run_fednova_standalone_pytorch.sh 0 16 10 10 cifar10 ./../../../data/cifar10 vgg hetero 200 20 0.03 0 0 0 0 0 0 0 0
 
-# fed_shakespeare (Google)
-sh run_fednova_standalone_pytorch.sh 0 10 10 10 fed_shakespeare ./../../../data/fed_shakespeare rnn hetero 100 1 0.8 0 0 0 0 0 0 0 0
-
-## Federated EMNIST
-sh run_fednova_standalone_pytorch.sh 0 10 10 10 femnist ./../../../data/FederatedEMNIST cnn hetero 200 1 0.03 0 0 0 0 0 0 0 0
-
-## Fed_CIFAR100
-sh run_fednova_standalone_pytorch.sh 0 10 10 10 fed_cifar100 ./../../../data/fed_cifar100 resnet18_gn hetero 200 1 0.03 0 0 0 0 0 0 0
-
-# Stackoverflow_LR
-sh run_fednova_standalone_pytorch.sh 0 10 10 10 stackoverflow_lr ./../../../data/stackoverflow lr hetero 200 1 0.03 0 0 0 0 0 0 0 0
-
-# Stackoverflow_NWP
-sh run_fednova_standalone_pytorch.sh 0 10 10 10 stackoverflow_nwp ./../../../data/stackoverflow rnn hetero 200 1 0.03 0 0 0 0 0 0 0 0
-
-# CIFAR10
-sh run_fednova_standalone_pytorch.sh 0 10 10 10 cifar10 ./../../../data/cifar10 resnet56 hetero 200 1 0.03 0 0 0 0 0 0 0 0
 ```
 
 Please make sure to run on the background when you start training after debugging. An example to run on the background:
