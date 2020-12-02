@@ -108,6 +108,7 @@ We refer the hyper-parameters and reproduce results from many top-tier ML confer
 |       CV         |     CIFAR10   |       MobileNet       |   FedAvg  |  Latent Dirichlet Allocation |     0.5   　       |        10         |          10          |      64     |        SGD       |          0.001      |        0.001      |    20   |    100   | 91.12 | 86.32 |
 |       CV         |     CIFAR100  |       MobileNet       |   FedAvg  |  Latent Dirichlet Allocation |     0.5   　       |        10       |          10          |     64     |        SGD       |        0.001      |        0.001      |    20   |    100   |  55.12 | 53.54 | 
 |       CV         |     CINIC10  |        MobileNet       |   FedAvg  |  Latent Dirichlet Allocation |     0.5   　       |        10       |          10          |     64     |        SGD       |        0.001      |        0.001      |    20   |    100   |   79.95 | 71.23|
+
 Please check our FedML paper: https://arxiv.org/pdf/2007.13518.pdf 
 
 The experimental tracking is here:
