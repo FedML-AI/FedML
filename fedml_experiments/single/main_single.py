@@ -4,9 +4,9 @@ import os
 import random
 import socket
 import sys
+import yaml
 
 import traceback
-from mpi4py import MPI
 
 import numpy as np
 import psutil
@@ -15,7 +15,9 @@ import torch
 import wandb
 # add the FedML root directory to the python path
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
+# sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../")))
+
 
 from fedml_api.data_preprocessing.FederatedEMNIST.data_loader import load_partition_data_federated_emnist
 from fedml_api.data_preprocessing.fed_cifar100.data_loader import load_partition_data_federated_cifar100
@@ -40,9 +42,9 @@ from fedml_api.model.linear.lr import LogisticRegression
 from fedml_api.model.cv.mobilenet_v3 import MobileNetV3
 from fedml_api.model.cv.efficientnet import EfficientNet
 
+from fedml_api.single.single_trainer import Single_Trainer
 
-
-from fedml_api.distributed.fedavg.FedAvgAPI import FedML_init, FedML_FedAvg_distributed
+# from fedml_api.distributed.fedavg.FedAvgAPI import FedML_init, FedML_FedAvg_distributed
 
 
 def add_args(parser):
@@ -103,6 +105,10 @@ def add_args(parser):
 
     parser.add_argument('--ci', type=int, default=0,
                         help='CI')
+
+    parser.add_argument('--gpu', type=int, default=0,
+                        help='gpu')
+
     args = parser.parse_args()
     return args
 
@@ -220,15 +226,15 @@ def create_model(args, model_name, output_dim):
     if model_name == "lr" and args.dataset == "mnist":
         logging.info("LogisticRegression + MNIST")
         model = LogisticRegression(28 * 28, output_dim)
-    elif model_name == "rnn" and args.dataset == "shakespeare":
-        logging.info("RNN + shakespeare")
-        model = RNN_OriginalFedAvg()
     elif model_name == "cnn" and args.dataset == "femnist":
         logging.info("CNN + FederatedEMNIST")
         model = CNN_DropOut(False)
     elif model_name == "resnet18_gn" and args.dataset == "fed_cifar100":
         logging.info("ResNet18_GN + Federated_CIFAR100")
         model = resnet18()
+    elif model_name == "rnn" and args.dataset == "shakespeare":
+        logging.info("RNN + shakespeare")
+        model = RNN_OriginalFedAvg()
     elif model_name == "rnn" and args.dataset == "fed_shakespeare":
         logging.info("RNN + fed_shakespeare")
         model = RNN_OriginalFedAvg()
@@ -245,45 +251,46 @@ def create_model(args, model_name, output_dim):
     # TODO
     elif model_name == 'mobilenet_v3':
         '''model_mode \in {LARGE: 5.15M, SMALL: 2.94M}'''
-        model = MobileNetV3(model_mode='LARGE')
+        model = MobileNetV3(model_mode='LARGE', num_classes=output_dim)
     elif model_name == 'efficientnet':
-        model = EfficientNet()
+        # model = EfficientNet()
+        efficientnet_dict = {
+            # Coefficients:   width,depth,res,dropout
+            'efficientnet-b0': (1.0, 1.0, 224, 0.2),
+            'efficientnet-b1': (1.0, 1.1, 240, 0.2),
+            'efficientnet-b2': (1.1, 1.2, 260, 0.3),
+            'efficientnet-b3': (1.2, 1.4, 300, 0.3),
+            'efficientnet-b4': (1.4, 1.8, 380, 0.4),
+            'efficientnet-b5': (1.6, 2.2, 456, 0.4),
+            'efficientnet-b6': (1.8, 2.6, 528, 0.5),
+            'efficientnet-b7': (2.0, 3.1, 600, 0.5),
+            'efficientnet-b8': (2.2, 3.6, 672, 0.5),
+            'efficientnet-l2': (4.3, 5.3, 800, 0.5),
+        }
+        # default is 'efficientnet-b0'
+        model = EfficientNet.from_name(
+            model_name='efficientnet-b0', num_classes=output_dim)
+        # model = EfficientNet.from_pretrained(model_name='efficientnet-b0')
 
     return model
 
 
-def init_training_device(process_ID, fl_worker_num, gpu_num_per_machine):
-    # initialize the mapping from process ID to GPU ID: <process ID, GPU ID>
-    if process_ID == 0:
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        return device
-    process_gpu_dict = dict()
-    for client_index in range(fl_worker_num):
-        gpu_index = client_index % gpu_num_per_machine
-        process_gpu_dict[client_index] = gpu_index
-
-    logging.info(process_gpu_dict)
-    device = torch.device("cuda:" + str(process_gpu_dict[process_ID - 1]) if torch.cuda.is_available() else "cpu")
-    logging.info(device)
-    return device
-
-
 if __name__ == "__main__":
-    # initialize distributed computing (MPI)
-    comm, process_id, worker_number = FedML_init()
 
     # parse python script input parameters
     parser = argparse.ArgumentParser()
     args = add_args(parser)
     logging.info(args)
 
+    worker_number = 1
+    process_id = 0
     # customize the process name
-    str_process_name = "FedAvg (distributed):" + str(process_id)
+    str_process_name = "Fedml (single):" + str(process_id)
     setproctitle.setproctitle(str_process_name)
 
     # customize the log format
-    # logging.basicConfig(level=logging.INFO,
-    logging.basicConfig(level=logging.DEBUG,
+    logging.basicConfig(level=logging.INFO,
+    # logging.basicConfig(level=logging.DEBUG,
                         format=str(
                             process_id) + ' - %(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
                         datefmt='%a, %d %b %Y %H:%M:%S')
@@ -299,7 +306,7 @@ if __name__ == "__main__":
         wandb.init(
             # project="federated_nas",
             project="fedml",
-            name="FedAVG(d)" + str(args.partition_method) + "r" + str(args.comm_round) + "-e" + str(
+            name="Fedml (single)" + str(args.partition_method) + "r" + str(args.comm_round) + "-e" + str(
                 args.epochs) + "-lr" + str(
                 args.lr),
             config=args
@@ -323,7 +330,6 @@ if __name__ == "__main__":
     # machine 4: worker3, worker7;
     # Therefore, we can see that workers are assigned according to the order of machine list.
     logging.info("process_id = %d, size = %d" % (process_id, worker_number))
-    device = init_training_device(process_id, worker_number - 1, args.gpu_num_per_server)
 
     # load data
     dataset = load_data(args, args.dataset)
@@ -335,14 +341,9 @@ if __name__ == "__main__":
     # In this case, please use our FedML distributed version (./fedml_experiments/distributed_fedavg)
     model = create_model(args, model_name=args.model, output_dim=dataset[7])
 
-    try:
+    device = torch.device("cuda:" + str(args.gpu) if torch.cuda.is_available() else "cpu")
     # start "federated averaging (FedAvg)"
-        FedML_FedAvg_distributed(process_id, worker_number, device, comm,
-                             model, train_data_num, train_data_global, test_data_global,
-                             train_data_local_num_dict, train_data_local_dict, test_data_local_dict, args)
-    except Exception as e:
-        print(e)
-        logging.info('traceback.format_exc():\n%s' % traceback.format_exc())
-        MPI.COMM_WORLD.Abort()
+    single_trainer = Single_Trainer(dataset, model, device, args)
+    single_trainer.train()
 
 

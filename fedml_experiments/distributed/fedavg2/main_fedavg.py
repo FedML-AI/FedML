@@ -4,6 +4,7 @@ import os
 import random
 import socket
 import sys
+import yaml
 
 import traceback
 from mpi4py import MPI
@@ -103,6 +104,10 @@ def add_args(parser):
 
     parser.add_argument('--ci', type=int, default=0,
                         help='CI')
+
+    parser.add_argument('--gpu_util_file', type=str, default=None,
+                        help='the gpu utilization for servers and clients')
+
     args = parser.parse_args()
     return args
 
@@ -220,15 +225,15 @@ def create_model(args, model_name, output_dim):
     if model_name == "lr" and args.dataset == "mnist":
         logging.info("LogisticRegression + MNIST")
         model = LogisticRegression(28 * 28, output_dim)
-    elif model_name == "rnn" and args.dataset == "shakespeare":
-        logging.info("RNN + shakespeare")
-        model = RNN_OriginalFedAvg()
     elif model_name == "cnn" and args.dataset == "femnist":
         logging.info("CNN + FederatedEMNIST")
         model = CNN_DropOut(False)
     elif model_name == "resnet18_gn" and args.dataset == "fed_cifar100":
         logging.info("ResNet18_GN + Federated_CIFAR100")
         model = resnet18()
+    elif model_name == "rnn" and args.dataset == "shakespeare":
+        logging.info("RNN + shakespeare")
+        model = RNN_OriginalFedAvg()
     elif model_name == "rnn" and args.dataset == "fed_shakespeare":
         logging.info("RNN + fed_shakespeare")
         model = RNN_OriginalFedAvg()
@@ -245,9 +250,26 @@ def create_model(args, model_name, output_dim):
     # TODO
     elif model_name == 'mobilenet_v3':
         '''model_mode \in {LARGE: 5.15M, SMALL: 2.94M}'''
-        model = MobileNetV3(model_mode='LARGE')
+        model = MobileNetV3(model_mode='LARGE', num_classes=output_dim)
     elif model_name == 'efficientnet':
-        model = EfficientNet()
+        # model = EfficientNet()
+        efficientnet_dict = {
+            # Coefficients:   width,depth,res,dropout
+            'efficientnet-b0': (1.0, 1.0, 224, 0.2),
+            'efficientnet-b1': (1.0, 1.1, 240, 0.2),
+            'efficientnet-b2': (1.1, 1.2, 260, 0.3),
+            'efficientnet-b3': (1.2, 1.4, 300, 0.3),
+            'efficientnet-b4': (1.4, 1.8, 380, 0.4),
+            'efficientnet-b5': (1.6, 2.2, 456, 0.4),
+            'efficientnet-b6': (1.8, 2.6, 528, 0.5),
+            'efficientnet-b7': (2.0, 3.1, 600, 0.5),
+            'efficientnet-b8': (2.2, 3.6, 672, 0.5),
+            'efficientnet-l2': (4.3, 5.3, 800, 0.5),
+        }
+        # default is 'efficientnet-b0'
+        model = EfficientNet.from_name(
+            model_name='efficientnet-b0', num_classes=output_dim)
+        # model = EfficientNet.from_pretrained(model_name='efficientnet-b0')
 
     return model
 
@@ -267,6 +289,27 @@ def init_training_device(process_ID, fl_worker_num, gpu_num_per_machine):
     logging.info(device)
     return device
 
+
+def init_training_device_from_gpu_util_file(process_id, worker_number, gpu_util_file):
+    with open(gpu_util_file, 'r') as f:
+        gpu_util_yaml = yaml.load(f, Loader=yaml.FullLoader)
+        gpu_util_num_process = 'gpu_util_' + str(worker_number)
+        gpu_util = gpu_util_yaml[gpu_util_num_process]
+        gpu_util_map = {}
+        i = 0
+        for host, gpus_util_map_host in gpu_util.items():
+            for gpu_j, num_process_on_gpu in enumerate(gpus_util_map_host):
+                for _ in range(num_process_on_gpu):
+                    gpu_util_map[i] = (host, gpu_j)
+                    i += 1
+        logging.info("Process %d running on host: %s,gethostname: %s, gpu: %d ..." % (
+            process_id, gpu_util_map[process_id][0], socket.gethostname(), gpu_util_map[process_id][1]))
+        assert i == worker_number
+
+    device = torch.device("cuda:" + str(gpu_util_map[process_id][1]) if torch.cuda.is_available() else "cpu")
+    logging.info(device)
+    #return gpu_util_map[process_id][1]
+    return device
 
 if __name__ == "__main__":
     # initialize distributed computing (MPI)
@@ -323,7 +366,10 @@ if __name__ == "__main__":
     # machine 4: worker3, worker7;
     # Therefore, we can see that workers are assigned according to the order of machine list.
     logging.info("process_id = %d, size = %d" % (process_id, worker_number))
-    device = init_training_device(process_id, worker_number - 1, args.gpu_num_per_server)
+    if args.gpu_util_file:
+        device = init_training_device_from_gpu_util_file(process_id, worker_number, args.gpu_util_file)
+    else:
+        device = init_training_device(process_id, worker_number - 1, args.gpu_num_per_server)
 
     # load data
     dataset = load_data(args, args.dataset)
