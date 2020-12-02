@@ -14,13 +14,17 @@ DATASET=${11}
 DATA_DIR=${12}
 CLIENT_OPTIMIZER=${13}
 CI=${14}
+PYTHON=${15}
+GPU=${16}
 
-PROCESS_NUM=`expr $WORKER_NUM + 1`
-echo $PROCESS_NUM
+echo $BATCH_SIZE
+echo $LR
 
-hostname > mpi_host_file
 
-mpirun -np $PROCESS_NUM -hostfile ./mpi_host_file python3 ./main_fedavg.py \
+
+
+
+$PYTHON ./main_single.py \
   --gpu_server_num $SERVER_NUM \
   --gpu_num_per_server $GPU_NUM_PER_SERVER \
   --model $MODEL \
@@ -34,4 +38,20 @@ mpirun -np $PROCESS_NUM -hostfile ./mpi_host_file python3 ./main_fedavg.py \
   --client_optimizer $CLIENT_OPTIMIZER \
   --batch_size $BATCH_SIZE \
   --lr $LR \
-  --ci $CI
+  --ci $CI \
+  --gpu $GPU
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

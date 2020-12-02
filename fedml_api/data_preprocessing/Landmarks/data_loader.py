@@ -28,6 +28,48 @@ def _read_csv(path: str):
   with open(path, 'r') as f:
     return list(csv.DictReader(f))
 
+# class Cutout(object):
+#     def __init__(self, length):
+#         self.length = length
+
+#     def __call__(self, img):
+#         h, w = img.size(1), img.size(2)
+#         mask = np.ones((h, w), np.float32)
+#         y = np.random.randint(h)
+#         x = np.random.randint(w)
+
+#         y1 = np.clip(y - self.length // 2, 0, h)
+#         y2 = np.clip(y + self.length // 2, 0, h)
+#         x1 = np.clip(x - self.length // 2, 0, w)
+#         x2 = np.clip(x + self.length // 2, 0, w)
+
+#         mask[y1: y2, x1: x2] = 0.
+#         mask = torch.from_numpy(mask)
+#         mask = mask.expand_as(img)
+#         img *= mask
+#         return img
+
+# def _data_transforms_landmarks():
+#     landmarks_MEAN = [0.5071, 0.4865, 0.4409]
+#     landmarks_STD = [0.2673, 0.2564, 0.2762]
+
+#     train_transform = transforms.Compose([
+#         transforms.ToPILImage(),
+#         transforms.RandomCrop(32, padding=4),
+#         transforms.RandomHorizontalFlip(),
+#         transforms.ToTensor(),
+#         transforms.Normalize(landmarks_MEAN, landmarks_STD),
+#     ])
+
+#     train_transform.transforms.append(Cutout(16))
+
+#     valid_transform = transforms.Compose([
+#         transforms.ToTensor(),
+#         transforms.Normalize(landmarks_MEAN, landmarks_STD),
+#     ])
+
+#     return train_transform, valid_transform
+
 class Cutout(object):
     def __init__(self, length):
         self.length = length
@@ -49,26 +91,33 @@ class Cutout(object):
         img *= mask
         return img
 
-def _data_transforms_landmarks():
-    landmarks_MEAN = [0.5071, 0.4865, 0.4409]
-    landmarks_STD = [0.2673, 0.2564, 0.2762]
 
+def _data_transforms_landmarks():
+    # IMAGENET_MEAN = [0.5071, 0.4865, 0.4409]
+    # IMAGENET_STD = [0.2673, 0.2564, 0.2762]
+
+    IMAGENET_MEAN = [0.485, 0.456, 0.406]
+    IMAGENET_STD = [0.229, 0.224, 0.225]
+
+    image_size = 224
     train_transform = transforms.Compose([
-        transforms.ToPILImage(),
-        transforms.RandomCrop(32, padding=4),
+        # transforms.ToPILImage(),
+        transforms.RandomResizedCrop(image_size),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
-        transforms.Normalize(landmarks_MEAN, landmarks_STD),
+        transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
     ])
 
     train_transform.transforms.append(Cutout(16))
 
     valid_transform = transforms.Compose([
+        transforms.CenterCrop(224),
         transforms.ToTensor(),
-        transforms.Normalize(landmarks_MEAN, landmarks_STD),
+        transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
     ])
 
     return train_transform, valid_transform
+
 
 
 def get_mapping_per_user(fn):
@@ -162,8 +211,8 @@ def load_partition_data_landmarks(dataset, data_dir, fed_train_map_file, fed_tes
     train_data_num = len(train_files)
 
     train_data_global, test_data_global = get_dataloader(dataset, data_dir, train_files, test_files, batch_size, batch_size)
-    logging.info("train_dl_global number = " + str(len(train_data_global)))
-    logging.info("test_dl_global number = " + str(len(test_data_global)))
+    # logging.info("train_dl_global number = " + str(len(train_data_global)))
+    # logging.info("test_dl_global number = " + str(len(test_data_global)))
     test_data_num = len(test_files)
 
     # get local dataset
@@ -177,25 +226,40 @@ def load_partition_data_landmarks(dataset, data_dir, fed_train_map_file, fed_tes
         # local_data_num = len(dataidxs)
         local_data_num = dataidxs[1] - dataidxs[0]
         # data_local_num_dict[client_idx] = local_data_num
-        logging.info("client_idx = %d, local_sample_number = %d" % (client_idx, local_data_num))
+        # logging.info("client_idx = %d, local_sample_number = %d" % (client_idx, local_data_num))
 
         # training batch size = 64; algorithms batch size = 32
         train_data_local, test_data_local = get_dataloader(dataset, data_dir, train_files, test_files, batch_size, batch_size,
                                                  dataidxs)
-        logging.info("client_idx = %d, batch_num_train_local = %d, batch_num_test_local = %d" % (
-            client_idx, len(train_data_local), len(test_data_local)))
+        # logging.info("client_idx = %d, batch_num_train_local = %d, batch_num_test_local = %d" % (
+        #     client_idx, len(train_data_local), len(test_data_local)))
         train_data_local_dict[client_idx] = train_data_local
         test_data_local_dict[client_idx] = test_data_local
+
+    # logging("data_local_num_dict: %s" % data_local_num_dict)
     return train_data_num, test_data_num, train_data_global, test_data_global, \
            data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num
 
 
 if __name__ == '__main__':
     data_dir = './cache/images'
-    fed_train_map_file = './cache/datasets/mini_gld_train_split.csv'
-    fed_test_map_file = './cache/datasets/mini_gld_test.csv'
+    fed_g23k_train_map_file = './cache/datasets/mini_gld_train_split.csv'
+    fed_g23k_test_map_file = './cache/datasets/mini_gld_test.csv'
 
-    client_number = 233
+    fed_g160k_train_map_file = './cache/datasets/landmarks-user-160k/federated_train.csv'
+    fed_g160k_map_file = './cache/datasets/landmarks-user-160k/test.csv'
+
+    dataset_name = 'g160k'
+
+    if dataset_name == 'g23k':
+        client_number = 233
+        fed_train_map_file = fed_g23k_train_map_file
+        fed_test_map_file = fed_g23k_test_map_file
+    elif dataset_name == 'g160k':
+        client_number = 1262 
+        fed_train_map_file = fed_g160k_train_map_file
+        fed_test_map_file = fed_g160k_map_file
+
     train_data_num, test_data_num, train_data_global, test_data_global, \
         data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num = \
         load_partition_data_landmarks(None, data_dir, fed_train_map_file, fed_test_map_file, 
