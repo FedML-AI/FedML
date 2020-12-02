@@ -1,3 +1,7 @@
+## Introduction
+This is used to integrate all training algorithms or tricks into a single framework.
+Now it is under development. Welcome to contribute!
+
 ## Installation
 http://doc.fedml.ai/#/installation-distributed-computing
 
