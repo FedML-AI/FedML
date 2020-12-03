@@ -12,10 +12,11 @@ BATCH_SIZE=$9
 LR=${10}
 DATASET=${11}
 DATA_DIR=${12}
-CI=${13}
-GPU_UTIL_FILE=${14}
-MPI_HOST_FILE=${15}
-PYTHON=${16}
+CLIENT_OPTIMIZER=${13}
+CI=${14}
+GPU_UTIL_FILE=${15}
+MPI_HOST_FILE=${16}
+PYTHON=${17}
 
 echo $GPU_UTIL_FILE
 
@@ -37,6 +38,7 @@ mpirun -np $PROCESS_NUM -hostfile ./$MPI_HOST_FILE $PYTHON ./main_fedavg.py \
   --client_num_per_round $WORKER_NUM \
   --comm_round $ROUND \
   --epochs $EPOCH \
+  --client_optimizer $CLIENT_OPTIMIZER \
   --batch_size $BATCH_SIZE \
   --lr $LR \
   --ci $CI \
