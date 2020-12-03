@@ -248,7 +248,6 @@ def create_model(args, model_name, output_dim):
         model = resnet56(class_num=output_dim)
     elif model_name == "mobilenet":
         model = mobilenet(class_num=output_dim)
-    # TODO
     elif model_name == 'mobilenet_v3':
         '''model_mode \in {LARGE: 5.15M, SMALL: 2.94M}'''
         model = MobileNetV3(model_mode='LARGE', num_classes=output_dim)
@@ -270,7 +269,6 @@ def create_model(args, model_name, output_dim):
         # default is 'efficientnet-b0'
         model = EfficientNet.from_name(
             model_name='efficientnet-b0', num_classes=output_dim)
-        # model = EfficientNet.from_pretrained(model_name='efficientnet-b0')
 
     return model
 
