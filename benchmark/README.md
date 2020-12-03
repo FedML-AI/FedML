@@ -3,7 +3,7 @@ Please visit the following link to check the latest benchmark experimental resul
 
 https://app.wandb.ai/automl/fedml/reports/FedML-Benchmark-Experimental-Results--VmlldzoxODE2NTU
 
-# Hyperparameters
+# Benchmarking and Hyper-parameters
 We refer the hyper-parameters and reproduce results from many top-tier ML conferences. Please check details of our reference hyperparameters as follows.
 
 ### Linear Models
@@ -99,7 +99,7 @@ We refer the hyper-parameters and reproduce results from many top-tier ML confer
     - comm_round: ‘Adaptive federated optimization’, page 7, Section 4, figure 1
     - accuracy: ‘Adaptive federated optimization’, page 7, Section 5, Table1
 
-### modern DNNs
+### Cross-silo benchmarking using modern DNNs
 |     Task     |     Data Set     |              Model              | Alogrithm |   Partition Method  | Partition Alpha | client_num_in_total | client_num_per_round | batch_size | client_optimizer |      lr      |       wd       | epochs | comm_round | IID accuracy | non-IID accuracy |
 |:----------------:|:----------------:|:-------------------------------:|:---------:|:-------------------:|:---------------:|:-------------------:|:--------------------:|:----------:|:----------------:|:------------:|:--------------:|:------:|:----------:|:--------:|:--------:|
 |       CV         |     CIFAR10   |       ResNet-56       |   FedAvg  |  Latent Dirichlet Allocation |     0.5   　       |        10         |          10          |      64     |        SGD       |       0.001      |        0.001      |    20   |    100   | 93.19  | 87.12 |
