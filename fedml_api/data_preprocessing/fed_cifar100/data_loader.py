@@ -5,6 +5,9 @@ import numpy as np
 import torch
 import random
 import torch.utils.data as data
+import os
+from pathlib import Path
+
 
 logging.basicConfig()
 logger = logging.getLogger()
@@ -12,8 +15,31 @@ logger.setLevel(logging.INFO)
 
 client_map_train = None
 client_map_test = None
-train_file_path = '../../../data/fed_cifar100/cifar100_train.h5'
-test_file_path = '../../../data/fed_cifar100/cifar100_test.h5'
+root = Path(os.path.abspath(__file__)).parents[3]
+DEFAULT_TRAIN_FILE_NAME = 'cifar100_train.h5'
+DEFAULT_TEST_FILE_NAME = 'cifar100_test.h5'
+DEFAULT_TRAIN_DIR = root / 'data/fed_cifar100/'
+
+
+def get_data_dir(data_dir: str) -> Path:
+    dir = Path(data_dir)
+    if not dir.exists():
+        raise ValueError('Data directory {0} not found'.format(dir))
+    return dir
+
+
+def get_data_file_path(filepath: Path) -> Path:
+    if not filepath.exists():
+        raise ValueError('Data file {0} not found'.format(filepath))
+    return filepath
+
+
+def get_train_file_path(data_dir: str, train_file_name=DEFAULT_TRAIN_FILE_NAME) -> str:
+    return get_data_file_path(get_data_dir(data_dir) / train_file_name)
+
+
+def get_test_file_path(data_dir: str, test_file_name=DEFAULT_TEST_FILE_NAME) -> str:
+    return get_data_file_path(get_data_dir(data_dir) / test_file_name)
 
 
 def get_client_map(client_map, client_id = None, client_num = None):
@@ -24,7 +50,8 @@ def get_client_map(client_map, client_id = None, client_num = None):
 
 
 def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx = None):
-    
+    train_file_path = get_train_file_path(data_dir)
+    test_file_path = get_test_file_path(data_dir)
     train_h5 = h5py.File(train_file_path, 'r')
     test_h5 = h5py.File(test_file_path,'r')
     train_x, train_y, train_id = train_h5['image'], train_h5['label'], train_h5['id']
@@ -66,7 +93,9 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx = None):
 
 
 def load_partition_data_distributed_federated_cifar100(process_id, dataset, data_dir, client_number=500, batch_size=20):
-    
+    train_file_path = get_train_file_path(data_dir)
+    test_file_path = get_test_file_path(data_dir)
+
     train_h5 = h5py.File(train_file_path, 'r')
     class_num = len(np.unique(train_h5['label'][()]))
     train_h5.close()
@@ -99,7 +128,9 @@ def load_partition_data_distributed_federated_cifar100(process_id, dataset, data
 
 
 def load_partition_data_federated_cifar100(dataset, data_dir, client_number=500, batch_size=20):
-    
+    train_file_path = get_train_file_path(data_dir)
+    test_file_path = get_test_file_path(data_dir)
+
     train_data_global, test_data_global = get_dataloader(dataset, data_dir, batch_size, batch_size)
     train_data_num = len(train_data_global)
     test_data_num = len(test_data_global)
@@ -108,17 +139,14 @@ def load_partition_data_federated_cifar100(dataset, data_dir, client_number=500,
     data_local_num_dict = dict()
     train_data_local_dict = dict()
     test_data_local_dict = dict()
-    train_h5 = h5py.File(train_file_path, 'r')
-    test_h5 = h5py.File(test_file_path, 'r')
-    global client_map_train, client_map_test
-    client_map_train = get_client_map(client_map_train, np.unique(train_h5['id'][()]), client_number)
-    client_map_test = get_client_map(client_map_test, np.unique(test_h5['id'][()]), client_number)
-    class_num = len(np.unique(train_h5['label'][()]))
-    train_h5.close()
-    test_h5.close()
-    
+    with h5py.File(train_file_path, 'r') as train_h5, \
+            h5py.File(test_file_path, 'r') as test_h5:
+        global client_map_train, client_map_test
+        client_map_train = get_client_map(client_map_train, np.unique(train_h5['id'][()]), client_number)
+        client_map_test = get_client_map(client_map_test, np.unique(test_h5['id'][()]), client_number)
+        class_num = len(np.unique(train_h5['label'][()]))
+
     for client_idx in range(client_number):
-    
         train_data_local, test_data_local = get_dataloader(dataset, data_dir, batch_size, batch_size, client_idx)
         local_data_num = len(train_data_local.dataset)
         data_local_num_dict[client_idx] = local_data_num
