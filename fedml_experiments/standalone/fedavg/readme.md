@@ -27,7 +27,7 @@ sh run_fedavg_standalone_pytorch.sh 0 10 10 10 femnist ./../../../data/Federated
 ``` 
 ``` 
 ## Fed_CIFAR100
-sh run_fedavg_standalone_pytorch.sh 0 10 10 10 fed_cifar100 ./../../../data/fed_cifar100 resnet18_gn hetero 200 1 0.03 adam 0
+sh run_fedavg_standalone_pytorch.sh 0 10 10 10 fed_cifar100 ./../../../data/fed_cifar100/datasets resnet18_gn hetero 200 1 0.03 adam 0
 ``` 
 
 ``` 

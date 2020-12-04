@@ -25,7 +25,7 @@ sh run_fedopt_standalone_pytorch.sh 0 10 10 20 femnist ./../../../data/Federated
 
 #### Fed_CIFAR100
 ```
-sh run_fedopt_standalone_pytorch.sh 0 10 10 10 fed_cifar100 ./../../../data/fed_cifar100 resnet18_gn hetero 200 1 0.3 sgd 1 sgd 0
+sh run_fedopt_standalone_pytorch.sh 0 10 10 10 fed_cifar100 ./../../../data/fed_cifar100/datasets resnet18_gn hetero 200 1 0.3 sgd 1 sgd 0
 ```
 #### Stackoverflow_LR
 ```
