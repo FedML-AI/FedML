@@ -159,27 +159,39 @@ BATCH_SIZE=$9
 LR=$10
 DATASET=$11
 DATA_DIR=$12
-CI=$13
+CLIENT_OPTIMIZER=${13}
+CI=${14}
+GPU_UTIL_FILE=${15}
+MPI_HOST_FILE=${16}
+PYTHON=${17}
+
 ```
 train on non-IID dataset
 ```
 # 100 clients
-sh run_fedavg_distributed_pytorch.sh 100 2 1 2 mobilenet hetero 100 1 32 0.001 ILSVRC2012 "~/datasets/landmarks/cache" 0
-sh run_fedavg_distributed_pytorch.sh 100 2 1 2 mobilenet hetero 100 1 32 0.001 ILSVRC2012 "your_data_dir" 0
+sh run_fedavg_distributed_pytorch.sh 100 2 1 2 mobilenet_v3 hetero 100 1 32 "0.1" ILSVRC2012 "~/datasets/landmarks/cache" adam 0 "local_gpu_util.yaml" mpi_host_file ~/anaconda3/envs/py36/bin/python
+
+
+sh run_fedavg_distributed_pytorch.sh 100 2 1 2 efficientnet hetero 100 1 32 0.1 ILSVRC2012 "your_data_dir" adam 0
 # 1000 clients
-sh run_fedavg_distributed_pytorch.sh 1000 2 1 2 mobilenet hetero 100 1 32 0.001 ILSVRC2012 "your_data_dir" 0
+sh run_fedavg_distributed_pytorch.sh 1000 2 1 2 mobilenet_v3 hetero 100 1 32 0.1 ILSVRC2012 "your_data_dir" adam 0
 ```
 #### gld23k
 train on non-IID dataset
 ```
-sh run_fedavg_distributed_pytorch.sh 233 2 1 2 mobilenet hetero 100 1 32 0.001 gld23k "~/datasets/landmarks" 0
-sh run_fedavg_distributed_pytorch.sh 233 2 1 2 mobilenet hetero 100 1 32 0.001 gld23k "your_data_dir" 0
+sh run_fedavg_distributed_pytorch.sh 233 2 1 2 mobilenet_v3 hetero 100 1 32 0.1 gld23k "~/datasets/landmarks" adam 0
+sh run_fedavg_distributed_pytorch.sh 233 2 1 2 mobilenet_v3 hetero 100 1 32 0.1 gld23k "your_data_dir" adam 0
+
+sh run_fedavg_distributed_pytorch.sh 100 2 1 2 efficientnet hetero 100 1 32 "0.1" gld160k ~/datasets/landmarks adam 0 "local_gpu_util.yaml" "mpi_host_file" ~/anaconda3/envs/py36/bin/python
+
+sh run_fedavg_distributed_pytorch.sh 100 2 1 2 efficientnet hetero 100 1 32 "0.1" gld23k "~/datasets/landmarks" adam 0 "local_gpu_util.yaml" "mpi_host_file" ~/anaconda3/envs/py36/bin/python
+
 ```
 
 #### gld160k
 train on non-IID dataset
 ```
-sh run_fedavg_distributed_pytorch.sh 1262 2 1 2 mobilenet hetero 100 1 32 0.001 gld160k "your_data_dir" 0
+sh run_fedavg_distributed_pytorch.sh 1262 2 1 2 mobilenet_v3 hetero 100 1 32 0.1 gld160k "your_data_dir" adam 0
 ```
 
 

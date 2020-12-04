@@ -43,9 +43,16 @@ class Single_Trainer(object):
         # change to train mode
         self.model.train()
 
-        epoch_loss = []
         for epoch in range(self.args.epochs):
-            batch_loss = []
+            # batch_loss = []
+            self.model.train()
+            batch_train_metrics = { 
+                'test_correct': 0, 
+                'test_loss' : 0, 
+                'test_precision': 0,
+                'test_recall': 0,
+                'test_total' : 0
+            }
             for batch_idx, (x, labels) in enumerate(self.train_global):
                 # logging.info(images.shape)
                 x, labels = x.to(self.device), labels.to(self.device)
@@ -54,16 +61,51 @@ class Single_Trainer(object):
                 loss = self.criterion(log_probs, labels)
                 loss.backward()
                 self.optimizer.step()
-                batch_loss.append(loss.item())
-            if len(batch_loss) > 0:
-                epoch_loss.append(sum(batch_loss) / len(batch_loss))
-                logging.info('Local Training Epoch: {} \tLoss: {:.6f}'.format(
-                                 epoch, sum(epoch_loss) / len(epoch_loss)))
+                # batch_loss.append(loss.item())
+
+                target = labels
+                pred = log_probs
+                if self.args.dataset == "stackoverflow_lr":
+                    predicted = (pred > .5).int()
+                    correct = predicted.eq(target).sum(axis = -1).eq(target.size(1)).sum()
+                    true_positive = ((target * predicted) > .1).int().sum(axis = -1)
+                    precision = true_positive / (predicted.sum(axis = -1) + 1e-13)
+                    recall = true_positive / (target.sum(axis = -1)  + 1e-13)
+                    batch_train_metrics['test_precision'] += precision.sum().item()
+                    batch_train_metrics['test_recall'] += recall.sum().item()
+                else:
+                    _, predicted = torch.max(pred, -1)
+                    correct = predicted.eq(target).sum()
+
+                batch_train_metrics['test_correct'] += correct.item()
+                batch_train_metrics['test_loss'] += loss.item() * target.size(0)
+                batch_train_metrics['test_total'] += target.size(0)
+
+                logging.info('Local Training Epoch: {} {}-th iters\t Loss: {:.6f}, Acc: {:.6f}'.format(
+                             epoch, batch_idx, loss.item(), correct/target.size(0)))
+            if batch_train_metrics['test_total'] > 0:
+                # epoch_loss.append(sum(batch_loss) / len(batch_loss))
+                logging.info('Local Training Epoch: {} \t Loss: {:.6f}, Acc: {:.6f}'.format(
+                                 epoch, batch_train_metrics['test_loss'] / batch_train_metrics['test_total'],
+                                 batch_train_metrics['test_correct'] / batch_train_metrics['test_total']))
+
+            self.save_log(train=True, metrics=batch_train_metrics, round_idx=epoch)
             self.local_test_on_all_clients(self.model, round_idx=epoch)
 
         # return weights, self.local_sample_number
 
+
+
+
     def local_test_on_all_clients(self, model_global, round_idx):
+        logging.info("################local_test_on_test_global_data : {}".format(round_idx))
+
+        test_local_metrics = self.local_test(model_global, b_use_test_dataset=True)
+        self.save_log(train=False, metrics=test_local_metrics, round_idx=round_idx)
+
+
+    # maybe discarded
+    def local_test_on_all_clients_origin(self, model_global, round_idx):
         logging.info("################local_test_on_test_global_data : {}".format(round_idx))
         train_metrics = {
             'num_samples' : [],
@@ -177,3 +219,74 @@ class Single_Trainer(object):
                 metrics['test_total'] += target.size(0)
 
         return metrics
+
+
+    def save_log(self, train, metrics, round_idx):
+        prefix = 'Train' if train else 'Test'
+
+        all_metrics = {
+            'num_samples' : [],
+            'num_correct' : [],
+            'precisions' : [],
+            'recalls' : [],
+            'losses' : []
+        }
+
+        all_metrics['num_samples'].append(copy.deepcopy(metrics['test_total']))
+        all_metrics['num_correct'].append(copy.deepcopy(metrics['test_correct']))
+        all_metrics['losses'].append(copy.deepcopy(metrics['test_loss']))
+
+        if self.args.dataset == "stackoverflow_lr":
+            all_metrics['precisions'].append(copy.deepcopy(metrics['test_precision']))
+            all_metrics['recalls'].append(copy.deepcopy(metrics['test_recall']))
+
+        # performance on all clients
+        acc = sum(all_metrics['num_correct']) / sum(all_metrics['num_samples'])
+        loss = sum(all_metrics['losses']) / sum(all_metrics['num_samples'])
+        precision = sum(all_metrics['precisions']) / sum(all_metrics['num_samples'])
+        recall = sum(all_metrics['recalls']) / sum(all_metrics['num_samples'])
+
+        if self.args.dataset == "stackoverflow_lr":
+            stats = {prefix+'_acc': acc, prefix+'_precision': precision, prefix+'_recall': recall, prefix+'_loss': loss}
+            wandb.log({prefix+"/Acc": acc, "round": round_idx})
+            wandb.log({prefix+"/Pre": precision, "round": round_idx})
+            wandb.log({prefix+"/Rec": recall, "round": round_idx})
+            wandb.log({prefix+"/Loss": loss, "round": round_idx})
+            logging.info(stats)
+        else:
+            stats = {prefix+'_acc': acc, prefix+'_loss': loss}
+            wandb.log({prefix+"/Acc": acc, "round": round_idx})
+            wandb.log({prefix+"/Loss": loss, "round": round_idx})
+            logging.info(stats)
+
+        stats = {prefix+'_acc': acc, prefix+'_loss': loss}
+        wandb.log({prefix+"/Acc": acc, "round": round_idx})
+        wandb.log({prefix+"/Loss": loss, "round": round_idx})
+        logging.info(stats)
+
+
+    def calc_acc(self, pred, target):
+        metrics = { 
+            'test_correct': 0, 
+            'test_loss' : 0, 
+            'test_precision': 0,
+            'test_recall': 0,
+            'test_total' : 0
+        }
+        if self.args.dataset == "stackoverflow_lr":
+            predicted = (pred > .5).int()
+            correct = predicted.eq(target).sum(axis = -1).eq(target.size(1)).sum()
+            true_positive = ((target * predicted) > .1).int().sum(axis = -1)
+            precision = true_positive / (predicted.sum(axis = -1) + 1e-13)
+            recall = true_positive / (target.sum(axis = -1)  + 1e-13)
+            metrics['test_precision'] += precision.sum().item()
+            metrics['test_recall'] += recall.sum().item()
+        else:
+            _, predicted = torch.max(pred, -1)
+            correct = predicted.eq(target).sum()
+        metrics['test_correct'] += correct.item()
+        metrics['test_loss'] += 0
+        metrics['test_total'] += target.size(0)
+        return metrics
+
+
