@@ -15,7 +15,7 @@ logger.setLevel(logging.INFO)
 client_ids_train = None
 client_ids_test = None
 DEFAULT_TRAIN_CLINETS_NUM = 500
-DEFAULT_TEST_CLIENTS_NUM = 500
+DEFAULT_TEST_CLIENTS_NUM = 100
 DEFAULT_BATCH_SIZE = 20
 DEFAULT_TRAIN_FILE = 'fed_cifar100_train.h5'
 DEFAULT_TEST_FILE = 'fed_cifar100_test.h5'
@@ -107,8 +107,8 @@ def load_partition_data_federated_cifar100(dataset, data_dir, batch_size=DEFAULT
     class_num = 100
 
     #client id list
-    train_file_path = h5py.File(os.path.join(data_dir, DEFAULT_TRAIN_FILE), 'r')
-    test_file_path = h5py.File(os.path.join(data_dir, DEFAULT_TEST_FILE), 'r')
+    train_file_path = os.path.join(data_dir, DEFAULT_TRAIN_FILE)
+    test_file_path = os.path.join(data_dir, DEFAULT_TEST_FILE)
     with h5py.File(train_file_path, 'r') as train_h5, h5py.File(test_file_path, 'r') as test_h5:
         global client_ids_train, client_ids_test
         client_ids_train = list(train_h5[_EXAMPLE].keys())
