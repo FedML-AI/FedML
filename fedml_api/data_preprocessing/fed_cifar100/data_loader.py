@@ -1,81 +1,92 @@
 import logging
+import os
 
 import h5py
 import numpy as np
 import torch
-import random
 import torch.utils.data as data
+
+from . import utils
 
 logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-client_map_train = None
-client_map_test = None
-train_file_path = '../../../data/fed_cifar100/cifar100_train.h5'
-test_file_path = '../../../data/fed_cifar100/cifar100_test.h5'
+client_ids_train = None
+client_ids_test = None
+DEFAULT_TRAIN_CLINETS_NUM = 500
+DEFAULT_TEST_CLIENTS_NUM = 100
+DEFAULT_BATCH_SIZE = 20
+DEFAULT_TRAIN_FILE = 'fed_cifar100_train.h5'
+DEFAULT_TEST_FILE = 'fed_cifar100_test.h5'
 
-
-def get_client_map(client_map, client_id = None, client_num = None):
-    if client_map == None:
-        random.shuffle(client_id)
-        client_map = {k:[client_id[i] for i in range(k, len(client_id), client_num)] for k in range(client_num)}
-    return client_map
+# group name defined by tff in h5 file
+_EXAMPLE = 'examples'
+_IMGAE = 'image'
+_LABEL = 'label'
 
 
 def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx = None):
     
-    train_h5 = h5py.File(train_file_path, 'r')
-    test_h5 = h5py.File(test_file_path,'r')
-    train_x, train_y, train_id = train_h5['image'], train_h5['label'], train_h5['id']
-    train_x = np.moveaxis(train_x[:].astype(np.float32), -1, 1)
-    test_x, test_y, test_id = test_h5['image'], test_h5['label'], test_h5['id']
-    test_x = np.moveaxis(test_x[:].astype(np.float32), -1, 1)
+    train_h5 = h5py.File(os.path.join(data_dir, DEFAULT_TRAIN_FILE), 'r')
+    test_h5 = h5py.File(os.path.join(data_dir, DEFAULT_TEST_FILE), 'r')
+    train_x = []
+    train_y = []
+    test_x = []
+    test_y = []
     
+    # load data in numpy format from h5 file
     if client_idx is None:
-        train_ds = data.TensorDataset(torch.tensor(train_x[:,:]), torch.tensor(train_y[:]))
-        test_ds = data.TensorDataset(torch.tensor(test_x[:,:]), torch.tensor(test_y[:]))
-        train_dl = data.DataLoader(dataset = train_ds, batch_size=train_bs, shuffle = True, drop_last = False)
-        test_dl = data.DataLoader(dataset = test_ds, batch_size=test_bs, shuffle = True, drop_last = False)
-    
+        train_x = np.vstack([train_h5[_EXAMPLE][client_id][_IMGAE][()] for client_id in client_ids_train])
+        train_y = np.vstack([train_h5[_EXAMPLE][client_id][_LABEL][()] for client_id in client_ids_train]).squeeze()
+        test_x = np.vstack([test_h5[_EXAMPLE][client_id][_IMGAE][()] for client_id in client_ids_test])
+        test_y = np.vstack([test_h5[_EXAMPLE][client_id][_LABEL][()] for client_id in client_ids_test]).squeeze()
     else:
-        global client_map_train, client_map_test
+        client_id_train = client_ids_train[client_idx]
+        train_x = np.vstack([train_h5[_EXAMPLE][client_id_train][_IMGAE][()]])
+        train_y = np.vstack([train_h5[_EXAMPLE][client_id_train][_LABEL][()]]).squeeze()
+        if client_idx <= len(client_ids_test) - 1:
+            client_id_test = client_ids_test[client_idx]
+            test_x = np.vstack([train_h5[_EXAMPLE][client_id_test][_IMGAE][()]])
+            test_y = np.vstack([train_h5[_EXAMPLE][client_id_test][_LABEL][()]]).squeeze()
 
-        client_ids_train = get_client_map(client_map_train)[client_idx]
-        train_h5_idx = np.array([], dtype=int)
-        for client_id in client_ids_train:
-            train_h5_idx = np.concatenate((train_h5_idx, np.argwhere(train_id[()] == client_id)[:,0]))
-        train_h5_idx.sort()
-        train_ds = data.TensorDataset(torch.tensor(train_x[train_h5_idx, :]), torch.tensor(train_y[train_h5_idx]))
-        train_dl = data.DataLoader(dataset = train_ds, batch_size=train_bs, shuffle = True, drop_last = False)    
-        
-        client_ids_test = get_client_map(client_map_test)[client_idx]
-        test_h5_idx = np.array([], dtype=int)
-        for client_id in client_ids_test:
-            test_h5_idx = np.concatenate((test_h5_idx, np.argwhere(test_id[()] == client_id)[:,0]))
-        test_h5_idx.sort()
-        test_ds = data.TensorDataset(torch.tensor(test_x[test_h5_idx,:]), torch.tensor(test_y[test_h5_idx]))
-        if len(test_ds) != 0:
-            test_dl = data.DataLoader(dataset = test_ds, batch_size=test_bs, shuffle = True, drop_last = False)
-        else:
-            test_dl = None
+    # preprocess 
+    train_x = utils.preprocess_cifar_img(torch.tensor(train_x), train=True)
+    train_y = torch.tensor(train_y)
+    if len(test_x) != 0:
+        test_x = utils.preprocess_cifar_img(torch.tensor(test_x), train=False)
+        test_y = torch.tensor(test_y)
     
+    # generate dataloader
+    train_ds = data.TensorDataset(train_x, train_y)
+    train_dl = data.DataLoader(dataset=train_ds,
+                               batch_size=train_bs,
+                               shuffle=True,
+                               drop_last=False)
+
+    if len(test_x) != 0:
+        test_ds = data.TensorDataset(test_x, test_y)
+        test_dl = data.DataLoader(dataset=test_ds,
+                                  batch_size=test_bs,
+                                  shuffle=True,
+                                  drop_last=False)
+    else:
+        test_dl = None
+
     train_h5.close()
     test_h5.close()
     return train_dl, test_dl
 
 
-def load_partition_data_distributed_federated_cifar100(process_id, dataset, data_dir, client_number=500, batch_size=20):
+def load_partition_data_distributed_federated_cifar100(process_id, dataset, data_dir, batch_size=DEFAULT_BATCH_SIZE):
     
-    train_h5 = h5py.File(train_file_path, 'r')
-    class_num = len(np.unique(train_h5['label'][()]))
-    train_h5.close()
-    
-    # get global dataset
+    class_num = 100
+
     if process_id == 0:
-        train_data_global, test_data_global = get_dataloader(dataset, data_dir, batch_size, batch_size, process_id - 1)
-        train_data_num = len(train_data_global)
-        test_data_num = len(test_data_global)
+        # get global dataset
+        train_data_global, test_data_global = get_dataloader(dataset, data_dir, batch_size, batch_size)
+        train_data_num = len(train_data_global.dataset)
+        test_data_num = len(test_data_global.dataset)
         logging.info("train_dl_global number = " + str(train_data_num))
         logging.info("test_dl_global number = " + str(test_data_num))
         train_data_local = None
@@ -83,102 +94,56 @@ def load_partition_data_distributed_federated_cifar100(process_id, dataset, data
         local_data_num = 0
     else:
         # get local dataset
-        train_h5 = h5py.File(train_file_path, 'r')
-        test_h5 = h5py.File(test_file_path, 'r')
-        global client_map_train, client_map_test
-        client_map_train = get_client_map(client_map_train, np.unique(train_h5['id'][()]), client_number)
-        client_map_test = get_client_map(client_map_test, np.unique(test_h5['id'][()]), client_number)
-        train_h5.close()
-        test_h5.close()
         train_data_local, test_data_local = get_dataloader(dataset, data_dir, batch_size, batch_size, process_id - 1)
         train_data_num = local_data_num = len(train_data_local.dataset)
         logging.info("rank = %d, local_sample_number = %d" % (process_id, local_data_num))
         train_data_global = None
         test_data_global = None
-    return client_number, train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, class_num
+    return DEFAULT_TRAIN_CLINETS_NUM, train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, class_num
 
 
-def load_partition_data_federated_cifar100(dataset, data_dir, client_number=500, batch_size=20):
+def load_partition_data_federated_cifar100(dataset, data_dir, batch_size=DEFAULT_BATCH_SIZE):
     
-    train_data_global, test_data_global = get_dataloader(dataset, data_dir, batch_size, batch_size)
-    train_data_num = len(train_data_global)
-    test_data_num = len(test_data_global)
+    class_num = 100
+
+    #client id list
+    train_file_path = os.path.join(data_dir, DEFAULT_TRAIN_FILE)
+    test_file_path = os.path.join(data_dir, DEFAULT_TEST_FILE)
+    with h5py.File(train_file_path, 'r') as train_h5, h5py.File(test_file_path, 'r') as test_h5:
+        global client_ids_train, client_ids_test
+        client_ids_train = list(train_h5[_EXAMPLE].keys())
+        client_ids_test = list(test_h5[_EXAMPLE].keys())
     
     # get local dataset
     data_local_num_dict = dict()
     train_data_local_dict = dict()
     test_data_local_dict = dict()
-    train_h5 = h5py.File(train_file_path, 'r')
-    test_h5 = h5py.File(test_file_path, 'r')
-    global client_map_train, client_map_test
-    client_map_train = get_client_map(client_map_train, np.unique(train_h5['id'][()]), client_number)
-    client_map_test = get_client_map(client_map_test, np.unique(test_h5['id'][()]), client_number)
-    class_num = len(np.unique(train_h5['label'][()]))
-    train_h5.close()
-    test_h5.close()
     
-    for client_idx in range(client_number):
-    
-        train_data_local, test_data_local = get_dataloader(dataset, data_dir, batch_size, batch_size, client_idx)
+    for client_idx in range(DEFAULT_TRAIN_CLINETS_NUM):
+        train_data_local, test_data_local = get_dataloader(
+            dataset, data_dir, batch_size, batch_size, client_idx)
         local_data_num = len(train_data_local.dataset)
         data_local_num_dict[client_idx] = local_data_num
         logging.info("client_idx = %d, local_sample_number = %d" % (client_idx, local_data_num))
-        logging.info("client_idx = %d, batch_num_train_local = %d" % (
-            client_idx, len(train_data_local)))
+        logging.info("client_idx = %d, batch_num_train_local = %d" % (client_idx, len(train_data_local)))
         train_data_local_dict[client_idx] = train_data_local
         test_data_local_dict[client_idx] = test_data_local
     
-    return client_number, train_data_num, test_data_num, train_data_global, test_data_global, \
+    # global dataset
+    train_data_global = data.DataLoader(
+                data.ConcatDataset(
+                    list(dl.dataset for dl in list(train_data_local_dict.values()))
+                ),
+                batch_size=batch_size, shuffle=True)
+    train_data_num = len(train_data_global.dataset)
+    
+    test_data_global = data.DataLoader(
+                data.ConcatDataset(
+                    list(dl.dataset for dl in list(test_data_local_dict.values()) if dl is not None)
+                ),
+                batch_size=batch_size, shuffle=True)
+    test_data_num = len(test_data_global.dataset)
+
+
+    return DEFAULT_TRAIN_CLINETS_NUM, train_data_num, test_data_num, train_data_global, test_data_global, \
         data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num
-
-
-def test_federated_cifar100():
-    '''
-    this function checks the data from dataloader is the same as the data from tff API
-    '''
-    import tensorflow_federated as tff
-    import tensorflow_datasets as tfds
-    
-    def array_to_str(x):
-        return ' '.join(map(str,x))
-    
-    client_num = 50
-    test_num = 10 # use 'test_num = client_num' to test on all generated client dataset
-    
-    cifar_train, cifar_test = tff.simulation.datasets.cifar100.load_data()    
-    client_train_ds = list(iter(tfds.as_numpy(cifar_train.create_tf_dataset_from_all_clients())))
-    client_test_ds = list(iter(tfds.as_numpy(cifar_test.create_tf_dataset_from_all_clients())))
-    
-    _, _, train_data_global, test_data_global, data_local_num_dict, train_data_local_dict, test_data_local_dict, _ = load_partition_data_federated_cifar100(None, None, client_num, 1)
-    client_train_dl = list(iter(train_data_global))
-    client_test_dl = list(iter(test_data_global))
-    
-    assert(len(client_train_ds) == len(client_train_dl))
-    assert(len(client_test_ds) == len(client_test_dl))
-    
-    for idx in random.sample(range(client_num),test_num):
-        train_local_dl = list(iter(train_data_local_dict[idx]))
-        train_local_dl = {array_to_str(dl[0].numpy().squeeze()): dl[1].numpy().squeeze() for dl in train_local_dl}
-        test_local_dl = list(iter(test_data_local_dict[idx]))
-        test_local_dl = {array_to_str(dl[0].numpy().squeeze()): dl[1].numpy().squeeze() for dl in test_local_dl}
-        
-        for client_id in get_client_map(client_map_train)[idx]:
-            train_local_ds = list(iter(tfds.as_numpy(cifar_train.create_tf_dataset_for_client(client_id.decode("utf-8")))))
-            train_local_ds = [(array_to_str(ds['image']), ds['label']) for ds in train_local_ds]
-            for ds in train_local_ds:
-                assert(ds[0] in train_local_dl)
-                assert(ds[1] == train_local_dl[ds[0]])
-        for client_id in get_client_map(client_map_test)[idx]:       
-            test_local_ds = list(iter(tfds.as_numpy(cifar_test.create_tf_dataset_for_client(client_id.decode("utf-8")))))
-            test_local_ds = [(array_to_str(ds['image']), ds['label']) for ds in test_local_ds]
-            for ds in test_local_ds:
-                assert(ds[0] in test_local_dl)
-                assert(ds[1] == test_local_dl[ds[0]])
-                
-        logging.info("Test for dataset on client = %d passed."%idx)
-    
-    logging.info("Tests for dataset passed.")
-    
-if __name__ == "__main__":
-    #load_partition_data_federated_cifar100(None, None, 100, 128)
-    test_federated_cifar100()
