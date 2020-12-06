@@ -36,7 +36,17 @@ sh run_single.sh 100 0 0 0 mobilenet_v3 hetero 100 1 32 0.1 ILSVRC2012 your_data
 #### gld23k
 
 ```
-sh run_single.sh 100 0 0 0 mobilenet_v3 hetero 100 1 32 0.1 gld23k ./../../data/gld/ sgd 0 0
+sh run_single.sh 100 0 0 0 efficientnet hetero 100 1 32 0.1 gld23k ./../../data/gld/ sgd 0 0
+
+sh run_single.sh 100 0 0 0 efficientnet hetero 100 1 32 0.3 gld23k ./../../data/gld/ sgd 0 0
+
+sh run_single.sh 100 0 0 0 efficientnet hetero 100 1 32 0.01 gld23k ./../../data/gld/ sgd 0 0
+
+sh run_single.sh 100 0 0 0 efficientnet hetero 100 1 32 0.03 gld23k ./../../data/gld/ sgd 0 0
+
+sh run_single.sh 100 0 0 0 efficientnet hetero 100 1 32 0.001 gld23k ./../../data/gld/ sgd 0 0
+
+sh run_single.sh 100 0 0 0 efficientnet hetero 100 1 32 0.003 gld23k ./../../data/gld/ sgd 0 0
 ```
 
 
