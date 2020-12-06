@@ -25,6 +25,8 @@ def cifar100_transform(img_mean, img_std, train = True, crop_size = (24,24)):
 
 
 def preprocess_cifar_img(img, train):
+    # scale img to range [0,1] to fit ToTensor api
+    img = img / 255
     transoformed_img = torch.stack([cifar100_transform
         (i.type(torch.DoubleTensor).mean(),
             i.type(torch.DoubleTensor).std(),
