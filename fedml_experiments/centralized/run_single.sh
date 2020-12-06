@@ -14,15 +14,13 @@ DATASET=${11}
 DATA_DIR=${12}
 CLIENT_OPTIMIZER=${13}
 CI=${14}
-PYTHON=${15}
-GPU=${16}
+GPU=${15}
 
 echo $BATCH_SIZE
 echo $LR
 
 
-
-$PYTHON ./main_single.py \
+python ./main.py \
   --gpu_server_num $SERVER_NUM \
   --gpu_num_per_server $GPU_NUM_PER_SERVER \
   --model $MODEL \
