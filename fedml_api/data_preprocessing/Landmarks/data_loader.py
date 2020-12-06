@@ -96,8 +96,8 @@ def _data_transforms_landmarks():
     # IMAGENET_MEAN = [0.5071, 0.4865, 0.4409]
     # IMAGENET_STD = [0.2673, 0.2564, 0.2762]
 
-    IMAGENET_MEAN = [0.485, 0.456, 0.406]
-    IMAGENET_STD = [0.229, 0.224, 0.225]
+    IMAGENET_MEAN = [0.5, 0.5, 0.5]
+    IMAGENET_STD = [0.5, 0.5, 0.5]
 
     image_size = 224
     train_transform = transforms.Compose([
