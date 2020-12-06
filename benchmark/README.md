@@ -7,7 +7,7 @@ https://app.wandb.ai/automl/fedml/reports/FedML-Benchmark-Experimental-Results--
 We refer the hyper-parameters and reproduce results from many top-tier ML conferences. Please check details of our reference hyperparameters as follows.
 
 ### Linear Models
-|     Task     |     Data Set     |              Model              | Alogrithm |   Partition Method  | Partition Alpha | client_num_in_total | client_num_per_round | batch_size | client_optimizer |      lr      |       wd       | epochs | comm_round | accuracy |
+|     Task     |     Data Set     |              Model              | Algorithm |   Partition Method  | Partition Alpha | client_num_in_total | client_num_per_round | batch_size | client_optimizer |      lr      |       wd       | epochs | comm_round | accuracy |
 |:----------------:|:----------------:|:-------------------------------:|:---------:|:-------------------:|:---------------:|:-------------------:|:--------------------:|:----------:|:----------------:|:------------:|:--------------:|:------:|:----------:|:--------:|
 |       CV         |       MNIST      |       Logistic Regression       |   FedAvg  |      Power Law      |        　       |         1000        |          10          |     10     |        SGD       |     0.03     |        -       |    1   |    >100    |    >75   |
 |       CV         | Federated EMNIST |        Logistic Regression       |   FedAvg |      Power Law      |        　       |         200         |          10          |     10     |        SGD       |     0.003    |        -       |    1   |    >200    |   10~40  |
