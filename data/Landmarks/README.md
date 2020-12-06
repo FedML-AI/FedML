@@ -1,15 +1,30 @@
 # Download Google Landmarks datasets (gld160k or gld23k)
 
-You are recommended to manually download images.zip and data_user_dict.zip file from these two .zip files:
+You are recommended to download images.zip and data_user_dict.zip file from these two .zip files at Google Drive:
 https://drive.google.com/file/d/1QyOdNO0LhjVXcGlREz1hMQ8oyPSZm8vn/view?usp=sharing
 
 https://drive.google.com/file/d/17psh9F7vZs_V60AwX4n86dBHNwfujXQK/view?usp=sharing
 
-The images.zip is 23GB and data_user_dict.zip is 2MB. After downloading, please unzip them into your self-defined data path.
+Or you can use the following scripts:
+```
+wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1QyOdNO0LhjVXcGlREz1hMQ8oyPSZm8vn' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1QyOdNO0LhjVXcGlREz1hMQ8oyPSZm8vn" -O "images.zip" && rm -rf /tmp/cookies.txt 
+wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=17psh9F7vZs_V60AwX4n86dBHNwfujXQK' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=17psh9F7vZs_V60AwX4n86dBHNwfujXQK" -O "images.zip" && rm -rf /tmp/cookies.txt
+```
+
+
+The images.zip is 23GB and data_user_dict.zip is 2MB. After downloading, please unzip them and put to this folder as follows:
+```
+images
+user_dict/gld23k_user_dict_train.csv
+user_dict/gld23k_user_dict_test.csv
+user_dict/gld160k_user_dict_train.csv
+user_dict/gld160k_user_dict_test.csv
+```
 
 
 
-We also provide some other scripts to download. These downloading scripts follow tensorflow_federated, which downloads data from http://storage.googleapis.com/gresearch/federated-vision-datasets/%s.zip. The total size of these files is 500GB. And they do not support Breakpoint retransmission. So it is easy to fail to download them. You can use these scripts as following (Not Recommend):
+We also provide some other scripts to download. These downloading scripts follow tensorflow_federated, which downloads data from http://storage.googleapis.com/gresearch/federated-vision-datasets/%s.zip. The total size of these files is 500GB. And they do not support Breakpoint retransmission. So it is easy to fail to download them. You can use these scripts as following 
+(Not Recommended because Google script will down 500G files and extract 24G for federated learning):
 
 If you do not have installed tensorflow, you can run 
 ```

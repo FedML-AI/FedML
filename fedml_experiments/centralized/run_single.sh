@@ -22,8 +22,6 @@ echo $LR
 
 
 
-
-
 $PYTHON ./main_single.py \
   --gpu_server_num $SERVER_NUM \
   --gpu_num_per_server $GPU_NUM_PER_SERVER \

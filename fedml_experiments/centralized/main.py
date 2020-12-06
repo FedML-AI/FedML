@@ -11,11 +11,8 @@ import setproctitle
 import torch
 import wandb
 
-# add the FedML root directory to the python path
-
-# sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
-
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../")))
+from fedml_api.centralized.centralized_trainer import CentralizedTrainer
 from fedml_api.data_preprocessing.FederatedEMNIST.data_loader import load_partition_data_federated_emnist
 from fedml_api.data_preprocessing.fed_cifar100.data_loader import load_partition_data_federated_cifar100
 from fedml_api.data_preprocessing.fed_shakespeare.data_loader import load_partition_data_federated_shakespeare
@@ -38,11 +35,6 @@ from fedml_api.model.nlp.rnn import RNN_OriginalFedAvg, RNN_StackOverFlow
 from fedml_api.model.linear.lr import LogisticRegression
 from fedml_api.model.cv.mobilenet_v3 import MobileNetV3
 from fedml_api.model.cv.efficientnet import EfficientNet
-
-from fedml_api.single.single_trainer import Single_Trainer
-
-
-# from fedml_api.distributed.fedavg.FedAvgAPI import FedML_init, FedML_FedAvg_distributed
 
 
 def add_args(parser):
@@ -340,5 +332,5 @@ if __name__ == "__main__":
 
     device = torch.device("cuda:" + str(args.gpu) if torch.cuda.is_available() else "cpu")
     # start "federated averaging (FedAvg)"
-    single_trainer = Single_Trainer(dataset, model, device, args)
+    single_trainer = CentralizedTrainer(dataset, model, device, args)
     single_trainer.train()

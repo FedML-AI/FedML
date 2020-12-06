@@ -1,16 +1,15 @@
 import copy
 import logging
 
-import numpy as np
-import wandb
-
 import torch
+import wandb
 from torch import nn
 
 
-
-
-class Single_Trainer(object):
+class CentralizedTrainer(object):
+    r"""
+    This class is used to train federated non-IID dataset in a centralized way
+    """
     def __init__(self, dataset, model, device, args):
         self.device = device
         self.args = args
@@ -26,9 +25,6 @@ class Single_Trainer(object):
 
         self.model = model
         self.model.to(self.device)
-
-        self.model.train()
-
         self.criterion = nn.CrossEntropyLoss().to(self.device)
         if self.args.client_optimizer == "sgd":
             self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.args.lr)
@@ -36,7 +32,6 @@ class Single_Trainer(object):
             self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()),
                                               lr=self.args.lr,
                                               weight_decay=self.args.wd, amsgrad=True)
-
 
     def train(self):
         self.model.to(self.device)
@@ -46,12 +41,12 @@ class Single_Trainer(object):
         for epoch in range(self.args.epochs):
             # batch_loss = []
             self.model.train()
-            batch_train_metrics = { 
-                'test_correct': 0, 
-                'test_loss' : 0, 
+            batch_train_metrics = {
+                'test_correct': 0,
+                'test_loss': 0,
                 'test_precision': 0,
                 'test_recall': 0,
-                'test_total' : 0
+                'test_total': 0
             }
             for batch_idx, (x, labels) in enumerate(self.train_global):
                 # logging.info(images.shape)
@@ -67,10 +62,10 @@ class Single_Trainer(object):
                 pred = log_probs
                 if self.args.dataset == "stackoverflow_lr":
                     predicted = (pred > .5).int()
-                    correct = predicted.eq(target).sum(axis = -1).eq(target.size(1)).sum()
-                    true_positive = ((target * predicted) > .1).int().sum(axis = -1)
-                    precision = true_positive / (predicted.sum(axis = -1) + 1e-13)
-                    recall = true_positive / (target.sum(axis = -1)  + 1e-13)
+                    correct = predicted.eq(target).sum(axis=-1).eq(target.size(1)).sum()
+                    true_positive = ((target * predicted) > .1).int().sum(axis=-1)
+                    precision = true_positive / (predicted.sum(axis=-1) + 1e-13)
+                    recall = true_positive / (target.sum(axis=-1) + 1e-13)
                     batch_train_metrics['test_precision'] += precision.sum().item()
                     batch_train_metrics['test_recall'] += recall.sum().item()
                 else:
@@ -82,20 +77,17 @@ class Single_Trainer(object):
                 batch_train_metrics['test_total'] += target.size(0)
 
                 logging.info('Local Training Epoch: {} {}-th iters\t Loss: {:.6f}, Acc: {:.6f}'.format(
-                             epoch, batch_idx, loss.item(), correct/target.size(0)))
+                    epoch, batch_idx, loss.item(), correct / target.size(0)))
             if batch_train_metrics['test_total'] > 0:
                 # epoch_loss.append(sum(batch_loss) / len(batch_loss))
                 logging.info('Local Training Epoch: {} \t Loss: {:.6f}, Acc: {:.6f}'.format(
-                                 epoch, batch_train_metrics['test_loss'] / batch_train_metrics['test_total'],
-                                 batch_train_metrics['test_correct'] / batch_train_metrics['test_total']))
+                    epoch, batch_train_metrics['test_loss'] / batch_train_metrics['test_total'],
+                           batch_train_metrics['test_correct'] / batch_train_metrics['test_total']))
 
             self.save_log(train=True, metrics=batch_train_metrics, round_idx=epoch)
             self.local_test_on_all_clients(self.model, round_idx=epoch)
 
         # return weights, self.local_sample_number
-
-
-
 
     def local_test_on_all_clients(self, model_global, round_idx):
         logging.info("################local_test_on_test_global_data : {}".format(round_idx))
@@ -103,24 +95,23 @@ class Single_Trainer(object):
         test_local_metrics = self.local_test(model_global, b_use_test_dataset=True)
         self.save_log(train=False, metrics=test_local_metrics, round_idx=round_idx)
 
-
     # maybe discarded
     def local_test_on_all_clients_origin(self, model_global, round_idx):
         logging.info("################local_test_on_test_global_data : {}".format(round_idx))
         train_metrics = {
-            'num_samples' : [],
-            'num_correct' : [],
-            'precisions' : [],
-            'recalls' : [],
-            'losses' : []
+            'num_samples': [],
+            'num_correct': [],
+            'precisions': [],
+            'recalls': [],
+            'losses': []
         }
 
         test_metrics = {
-            'num_samples' : [],
-            'num_correct' : [],
-            'precisions' : [],
-            'recalls' : [],
-            'losses' : []
+            'num_samples': [],
+            'num_correct': [],
+            'precisions': [],
+            'recalls': [],
+            'losses': []
         }
 
         # train data
@@ -154,14 +145,16 @@ class Single_Trainer(object):
         test_recall = sum(test_metrics['recalls']) / sum(test_metrics['num_samples'])
 
         if self.args.dataset == "stackoverflow_lr":
-            stats = {'training_acc': train_acc, 'training_precision': train_precision, 'training_recall': train_recall, 'training_loss': train_loss}
+            stats = {'training_acc': train_acc, 'training_precision': train_precision, 'training_recall': train_recall,
+                     'training_loss': train_loss}
             wandb.log({"Train/Acc": train_acc, "round": round_idx})
             wandb.log({"Train/Pre": train_precision, "round": round_idx})
             wandb.log({"Train/Rec": train_recall, "round": round_idx})
             wandb.log({"Train/Loss": train_loss, "round": round_idx})
             logging.info(stats)
 
-            stats = {'test_acc': test_acc, 'test_precision': test_precision, 'test_recall': test_recall, 'test_loss': test_loss}
+            stats = {'test_acc': test_acc, 'test_precision': test_precision, 'test_recall': test_recall,
+                     'test_loss': test_loss}
             wandb.log({"Test/Acc": test_acc, "round": round_idx})
             wandb.log({"Test/Pre": test_precision, "round": round_idx})
             wandb.log({"Test/Rec": test_recall, "round": round_idx})
@@ -179,17 +172,15 @@ class Single_Trainer(object):
             wandb.log({"Test/Loss": test_loss, "round": round_idx})
             logging.info(stats)
 
-
-
     def local_test(self, model_global, b_use_test_dataset=False):
         model_global.eval()
         model_global.to(self.device)
-        metrics = { 
-            'test_correct': 0, 
-            'test_loss' : 0, 
+        metrics = {
+            'test_correct': 0,
+            'test_loss': 0,
             'test_precision': 0,
             'test_recall': 0,
-            'test_total' : 0
+            'test_total': 0
         }
         if b_use_test_dataset:
             test_data = self.test_global
@@ -204,10 +195,10 @@ class Single_Trainer(object):
 
                 if self.args.dataset == "stackoverflow_lr":
                     predicted = (pred > .5).int()
-                    correct = predicted.eq(target).sum(axis = -1).eq(target.size(1)).sum()
-                    true_positive = ((target * predicted) > .1).int().sum(axis = -1)
-                    precision = true_positive / (predicted.sum(axis = -1) + 1e-13)
-                    recall = true_positive / (target.sum(axis = -1)  + 1e-13)
+                    correct = predicted.eq(target).sum(axis=-1).eq(target.size(1)).sum()
+                    true_positive = ((target * predicted) > .1).int().sum(axis=-1)
+                    precision = true_positive / (predicted.sum(axis=-1) + 1e-13)
+                    recall = true_positive / (target.sum(axis=-1) + 1e-13)
                     metrics['test_precision'] += precision.sum().item()
                     metrics['test_recall'] += recall.sum().item()
                 else:
@@ -220,16 +211,15 @@ class Single_Trainer(object):
 
         return metrics
 
-
     def save_log(self, train, metrics, round_idx):
         prefix = 'Train' if train else 'Test'
 
         all_metrics = {
-            'num_samples' : [],
-            'num_correct' : [],
-            'precisions' : [],
-            'recalls' : [],
-            'losses' : []
+            'num_samples': [],
+            'num_correct': [],
+            'precisions': [],
+            'recalls': [],
+            'losses': []
         }
 
         all_metrics['num_samples'].append(copy.deepcopy(metrics['test_total']))
@@ -247,38 +237,38 @@ class Single_Trainer(object):
         recall = sum(all_metrics['recalls']) / sum(all_metrics['num_samples'])
 
         if self.args.dataset == "stackoverflow_lr":
-            stats = {prefix+'_acc': acc, prefix+'_precision': precision, prefix+'_recall': recall, prefix+'_loss': loss}
-            wandb.log({prefix+"/Acc": acc, "round": round_idx})
-            wandb.log({prefix+"/Pre": precision, "round": round_idx})
-            wandb.log({prefix+"/Rec": recall, "round": round_idx})
-            wandb.log({prefix+"/Loss": loss, "round": round_idx})
+            stats = {prefix + '_acc': acc, prefix + '_precision': precision, prefix + '_recall': recall,
+                     prefix + '_loss': loss}
+            wandb.log({prefix + "/Acc": acc, "round": round_idx})
+            wandb.log({prefix + "/Pre": precision, "round": round_idx})
+            wandb.log({prefix + "/Rec": recall, "round": round_idx})
+            wandb.log({prefix + "/Loss": loss, "round": round_idx})
             logging.info(stats)
         else:
-            stats = {prefix+'_acc': acc, prefix+'_loss': loss}
-            wandb.log({prefix+"/Acc": acc, "round": round_idx})
-            wandb.log({prefix+"/Loss": loss, "round": round_idx})
+            stats = {prefix + '_acc': acc, prefix + '_loss': loss}
+            wandb.log({prefix + "/Acc": acc, "round": round_idx})
+            wandb.log({prefix + "/Loss": loss, "round": round_idx})
             logging.info(stats)
 
-        stats = {prefix+'_acc': acc, prefix+'_loss': loss}
-        wandb.log({prefix+"/Acc": acc, "round": round_idx})
-        wandb.log({prefix+"/Loss": loss, "round": round_idx})
+        stats = {prefix + '_acc': acc, prefix + '_loss': loss}
+        wandb.log({prefix + "/Acc": acc, "round": round_idx})
+        wandb.log({prefix + "/Loss": loss, "round": round_idx})
         logging.info(stats)
 
-
     def calc_acc(self, pred, target):
-        metrics = { 
-            'test_correct': 0, 
-            'test_loss' : 0, 
+        metrics = {
+            'test_correct': 0,
+            'test_loss': 0,
             'test_precision': 0,
             'test_recall': 0,
-            'test_total' : 0
+            'test_total': 0
         }
         if self.args.dataset == "stackoverflow_lr":
             predicted = (pred > .5).int()
-            correct = predicted.eq(target).sum(axis = -1).eq(target.size(1)).sum()
-            true_positive = ((target * predicted) > .1).int().sum(axis = -1)
-            precision = true_positive / (predicted.sum(axis = -1) + 1e-13)
-            recall = true_positive / (target.sum(axis = -1)  + 1e-13)
+            correct = predicted.eq(target).sum(axis=-1).eq(target.size(1)).sum()
+            true_positive = ((target * predicted) > .1).int().sum(axis=-1)
+            precision = true_positive / (predicted.sum(axis=-1) + 1e-13)
+            recall = true_positive / (target.sum(axis=-1) + 1e-13)
             metrics['test_precision'] += precision.sum().item()
             metrics['test_recall'] += recall.sum().item()
         else:
@@ -288,5 +278,3 @@ class Single_Trainer(object):
         metrics['test_loss'] += 0
         metrics['test_total'] += target.size(0)
         return metrics
-
-
