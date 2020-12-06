@@ -165,8 +165,8 @@ def load_data(args, dataset_name):
     elif dataset_name == "gld23k":
         logging.info("load_data. dataset_name = %s" % dataset_name)
         args.client_num_in_total = 233
-        fed_train_map_file = os.path.join(args.data_dir, 'mini_gld_train_split.csv')
-        fed_test_map_file = os.path.join(args.data_dir, 'mini_gld_test.csv')
+        fed_train_map_file = os.path.join(args.data_dir, 'data_user_dict/gld23k_user_dict_train.csv')
+        fed_test_map_file = os.path.join(args.data_dir, 'data_user_dict/gld23k_user_dict_test.csv')
         args.data_dir = os.path.join(args.data_dir, 'images')
 
         train_data_num, test_data_num, train_data_global, test_data_global, \
@@ -180,8 +180,8 @@ def load_data(args, dataset_name):
     elif dataset_name == "gld160k":
         logging.info("load_data. dataset_name = %s" % dataset_name)
         args.client_num_in_total = 1262
-        fed_train_map_file = os.path.join(args.data_dir, 'federated_train.csv')
-        fed_test_map_file = os.path.join(args.data_dir, 'test.csv')
+        fed_train_map_file = os.path.join(args.data_dir, 'data_user_dict/gld160k_user_dict_train.csv')
+        fed_test_map_file = os.path.join(args.data_dir, 'data_user_dict/gld160k_user_dict_test.csv')
         args.data_dir = os.path.join(args.data_dir, 'images')
 
         train_data_num, test_data_num, train_data_global, test_data_global, \
