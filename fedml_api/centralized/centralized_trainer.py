@@ -75,9 +75,10 @@ class CentralizedTrainer(object):
                 batch_train_metrics['test_correct'] += correct.item()
                 batch_train_metrics['test_loss'] += loss.item() * target.size(0)
                 batch_train_metrics['test_total'] += target.size(0)
+                acc = float(correct.item()) / float(target.size(0))
 
                 logging.info('Local Training Epoch: {} {}-th iters\t Loss: {:.6f}, Acc: {:.6f}'.format(
-                    epoch, batch_idx, loss.item(), correct / target.size(0)))
+                    epoch, batch_idx, loss.item(), acc))
             if batch_train_metrics['test_total'] > 0:
                 # epoch_loss.append(sum(batch_loss) / len(batch_loss))
                 logging.info('Local Training Epoch: {} \t Loss: {:.6f}, Acc: {:.6f}'.format(
