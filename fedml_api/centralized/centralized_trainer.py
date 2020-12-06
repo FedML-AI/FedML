@@ -10,6 +10,7 @@ class CentralizedTrainer(object):
     r"""
     This class is used to train federated non-IID dataset in a centralized way
     """
+
     def __init__(self, dataset, model, device, args):
         self.device = device
         self.args = args
@@ -75,30 +76,29 @@ class CentralizedTrainer(object):
                 batch_train_metrics['test_correct'] += correct.item()
                 batch_train_metrics['test_loss'] += loss.item() * target.size(0)
                 batch_train_metrics['test_total'] += target.size(0)
-                acc = float(correct.item()) / float(target.size(0))
 
-                logging.info('Local Training Epoch: {} {}-th iters\t Loss: {:.6f}, Acc: {:.6f}'.format(
-                    epoch, batch_idx, loss.item(), acc))
+                logging.info('Local Training Epoch: {} {}-th iters\t Loss: {:.6f}'.format(epoch,
+                                                                                          batch_idx, loss.item()))
             if batch_train_metrics['test_total'] > 0:
                 # epoch_loss.append(sum(batch_loss) / len(batch_loss))
                 logging.info('Local Training Epoch: {} \t Loss: {:.6f}, Acc: {:.6f}'.format(
                     epoch, batch_train_metrics['test_loss'] / batch_train_metrics['test_total'],
                            batch_train_metrics['test_correct'] / batch_train_metrics['test_total']))
 
-            self.save_log(train=True, metrics=batch_train_metrics, round_idx=epoch)
-            self.local_test_on_all_clients(self.model, round_idx=epoch)
+            self.save_log(train=True, metrics=batch_train_metrics, epoch_idx=epoch)
+            self.local_test_on_all_clients(self.model, epoch_idx=epoch)
 
         # return weights, self.local_sample_number
 
-    def local_test_on_all_clients(self, model_global, round_idx):
-        logging.info("################local_test_on_test_global_data : {}".format(round_idx))
+    def local_test_on_all_clients(self, model_global, epoch_idx):
+        logging.info("################local_test_on_test_global_data : {}".format(epoch_idx))
 
         test_local_metrics = self.local_test(model_global, b_use_test_dataset=True)
-        self.save_log(train=False, metrics=test_local_metrics, round_idx=round_idx)
+        self.save_log(train=False, metrics=test_local_metrics, epoch_idx=epoch_idx)
 
     # maybe discarded
-    def local_test_on_all_clients_origin(self, model_global, round_idx):
-        logging.info("################local_test_on_test_global_data : {}".format(round_idx))
+    def local_test_on_all_clients_origin(self, model_global, epoch_idx):
+        logging.info("################local_test_on_test_global_data : {}".format(epoch_idx))
         train_metrics = {
             'num_samples': [],
             'num_correct': [],
@@ -148,29 +148,29 @@ class CentralizedTrainer(object):
         if self.args.dataset == "stackoverflow_lr":
             stats = {'training_acc': train_acc, 'training_precision': train_precision, 'training_recall': train_recall,
                      'training_loss': train_loss}
-            wandb.log({"Train/Acc": train_acc, "round": round_idx})
-            wandb.log({"Train/Pre": train_precision, "round": round_idx})
-            wandb.log({"Train/Rec": train_recall, "round": round_idx})
-            wandb.log({"Train/Loss": train_loss, "round": round_idx})
+            wandb.log({"Train/Acc": train_acc, "epoch": epoch_idx})
+            wandb.log({"Train/Pre": train_precision, "epoch": epoch_idx})
+            wandb.log({"Train/Rec": train_recall, "epoch": epoch_idx})
+            wandb.log({"Train/Loss": train_loss, "epoch": epoch_idx})
             logging.info(stats)
 
             stats = {'test_acc': test_acc, 'test_precision': test_precision, 'test_recall': test_recall,
                      'test_loss': test_loss}
-            wandb.log({"Test/Acc": test_acc, "round": round_idx})
-            wandb.log({"Test/Pre": test_precision, "round": round_idx})
-            wandb.log({"Test/Rec": test_recall, "round": round_idx})
-            wandb.log({"Test/Loss": test_loss, "round": round_idx})
+            wandb.log({"Test/Acc": test_acc, "epoch": epoch_idx})
+            wandb.log({"Test/Pre": test_precision, "epoch": epoch_idx})
+            wandb.log({"Test/Rec": test_recall, "epoch": epoch_idx})
+            wandb.log({"Test/Loss": test_loss, "epoch": epoch_idx})
             logging.info(stats)
 
         else:
             stats = {'training_acc': train_acc, 'training_loss': train_loss}
-            wandb.log({"Train/Acc": train_acc, "round": round_idx})
-            wandb.log({"Train/Loss": train_loss, "round": round_idx})
+            wandb.log({"Train/Acc": train_acc, "epoch": epoch_idx})
+            wandb.log({"Train/Loss": train_loss, "epoch": epoch_idx})
             logging.info(stats)
 
             stats = {'test_acc': test_acc, 'test_loss': test_loss}
-            wandb.log({"Test/Acc": test_acc, "round": round_idx})
-            wandb.log({"Test/Loss": test_loss, "round": round_idx})
+            wandb.log({"Test/Acc": test_acc, "epoch": epoch_idx})
+            wandb.log({"Test/Loss": test_loss, "epoch": epoch_idx})
             logging.info(stats)
 
     def local_test(self, model_global, b_use_test_dataset=False):
@@ -212,7 +212,7 @@ class CentralizedTrainer(object):
 
         return metrics
 
-    def save_log(self, train, metrics, round_idx):
+    def save_log(self, train, metrics, epoch_idx):
         prefix = 'Train' if train else 'Test'
 
         all_metrics = {
@@ -240,20 +240,20 @@ class CentralizedTrainer(object):
         if self.args.dataset == "stackoverflow_lr":
             stats = {prefix + '_acc': acc, prefix + '_precision': precision, prefix + '_recall': recall,
                      prefix + '_loss': loss}
-            wandb.log({prefix + "/Acc": acc, "round": round_idx})
-            wandb.log({prefix + "/Pre": precision, "round": round_idx})
-            wandb.log({prefix + "/Rec": recall, "round": round_idx})
-            wandb.log({prefix + "/Loss": loss, "round": round_idx})
+            wandb.log({prefix + "/Acc": acc, "epoch": epoch_idx})
+            wandb.log({prefix + "/Pre": precision, "epoch": epoch_idx})
+            wandb.log({prefix + "/Rec": recall, "epoch": epoch_idx})
+            wandb.log({prefix + "/Loss": loss, "epoch": epoch_idx})
             logging.info(stats)
         else:
             stats = {prefix + '_acc': acc, prefix + '_loss': loss}
-            wandb.log({prefix + "/Acc": acc, "round": round_idx})
-            wandb.log({prefix + "/Loss": loss, "round": round_idx})
+            wandb.log({prefix + "/Acc": acc, "epoch": epoch_idx})
+            wandb.log({prefix + "/Loss": loss, "epoch": epoch_idx})
             logging.info(stats)
 
         stats = {prefix + '_acc': acc, prefix + '_loss': loss}
-        wandb.log({prefix + "/Acc": acc, "round": round_idx})
-        wandb.log({prefix + "/Loss": loss, "round": round_idx})
+        wandb.log({prefix + "/Acc": acc, "epoch": epoch_idx})
+        wandb.log({prefix + "/Loss": loss, "epoch": epoch_idx})
         logging.info(stats)
 
     def calc_acc(self, pred, target):

@@ -6,15 +6,14 @@ SERVER_NUM=$3
 GPU_NUM_PER_SERVER=$4
 MODEL=$5
 DISTRIBUTION=$6
-ROUND=$7
-EPOCH=$8
-BATCH_SIZE=$9
-LR=${10}
-DATASET=${11}
-DATA_DIR=${12}
-CLIENT_OPTIMIZER=${13}
-CI=${14}
-GPU=${15}
+EPOCH=$7
+BATCH_SIZE=$8
+LR=${9}
+DATASET=${10}
+DATA_DIR=${11}
+CLIENT_OPTIMIZER=${12}
+CI=${13}
+GPU=${14}
 
 echo $BATCH_SIZE
 echo $LR
@@ -29,7 +28,6 @@ python ./main.py \
   --partition_method $DISTRIBUTION  \
   --client_num_in_total $CLIENT_NUM \
   --client_num_per_round $WORKER_NUM \
-  --comm_round $ROUND \
   --epochs $EPOCH \
   --client_optimizer $CLIENT_OPTIMIZER \
   --batch_size $BATCH_SIZE \

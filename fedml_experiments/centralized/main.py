@@ -295,7 +295,7 @@ if __name__ == "__main__":
         wandb.init(
             # project="federated_nas",
             project="fedml",
-            name="Fedml (single)" + str(args.partition_method) + "r" + str(args.comm_round) + "-e" + str(
+            name="Fedml (central)" + str(args.partition_method) + "r" + str(args.comm_round) + "-e" + str(
                 args.epochs) + "-lr" + str(
                 args.lr),
             config=args
