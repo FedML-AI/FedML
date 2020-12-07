@@ -49,6 +49,7 @@ class FedAvgTrainer(object):
     def train(self):
         w_global = self.model.state_dict()
         for round_idx in range(self.args.comm_round):
+            self.model.train()
             logging.info("################Communication round : {}".format(round_idx))
 
             w_locals, loss_locals = [], []
@@ -106,7 +107,7 @@ class FedAvgTrainer(object):
 
     def local_test_on_all_clients(self, model_global, round_idx):
         
-        if self.args.dataset == "stackoverflow_lr":
+        if self.args.dataset in ["stackoverflow_lr",  "stackoverflow_nwp"]:
             # due to the amount of test set, only abount 10000 samples are tested each round
             testlist = random.sample(range(0, self.args.client_num_in_total), 100)
             logging.info("################local_test_round_{}_on_clients : {}".format(round_idx, str(testlist)))
