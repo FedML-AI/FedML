@@ -10,6 +10,7 @@ import psutil
 import setproctitle
 import torch
 import wandb
+from torch.nn.parallel import DistributedDataParallel
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../")))
 from fedml_api.centralized.centralized_trainer import CentralizedTrainer
@@ -21,6 +22,7 @@ from fedml_api.data_preprocessing.stackoverflow_lr.data_loader import load_parti
 from fedml_api.data_preprocessing.stackoverflow_nwp.data_loader import load_partition_data_federated_stackoverflow_nwp
 from fedml_api.data_preprocessing.MNIST.data_loader import load_partition_data_mnist
 from fedml_api.data_preprocessing.ImageNet.data_loader import load_partition_data_ImageNet
+from fedml_api.data_preprocessing.ImageNet.data_loader import distributed_centralized_ImageNet_loader
 from fedml_api.data_preprocessing.Landmarks.data_loader import load_partition_data_landmarks
 
 from fedml_api.data_preprocessing.cifar10.data_loader import load_partition_data_cifar10
@@ -45,6 +47,9 @@ def add_args(parser):
     # Training settings
     parser.add_argument('--model', type=str, default='mobilenet', metavar='N',
                         help='neural network used in training')
+
+    parser.add_argument('--data_parallel', type=int, default=0,
+                        help='if distributed training')
 
     parser.add_argument('--dataset', type=str, default='cifar10', metavar='N',
                         help='dataset used for training')
@@ -84,7 +89,7 @@ def add_args(parser):
     parser.add_argument('--is_mobile', type=int, default=0,
                         help='whether the program is running on the FedML-Mobile server side')
 
-    parser.add_argument('--frequency_of_train_acc_report', type=int, default=3,
+    parser.add_argument('--frequency_of_train_acc_report', type=int, default=10,
                         help='the frequency of training accuracy report')
 
     parser.add_argument('--frequency_of_test_acc_report', type=int, default=1,
@@ -101,6 +106,13 @@ def add_args(parser):
 
     parser.add_argument('--gpu', type=int, default=0,
                         help='gpu')
+
+    parser.add_argument('--gpu_util', type=str, default='0',
+                        help='gpu utils')
+
+    parser.add_argument('--local_rank', type=int, default=0,
+                        help='given by torch.distributed.launch')
+
 
     args = parser.parse_args()
     return args
@@ -157,13 +169,22 @@ def load_data(args, dataset_name):
         train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
         class_num = load_partition_data_federated_stackoverflow_nwp(args.dataset, args.data_dir)
         args.client_num_in_total = client_num
-    elif dataset_name == "ILSVRC2012":
-        logging.info("load_data. dataset_name = %s" % dataset_name)
-        train_data_num, test_data_num, train_data_global, test_data_global, \
-        train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
-        class_num = load_partition_data_ImageNet(dataset=dataset_name, data_dir=args.data_dir,
-                                                 partition_method=None, partition_alpha=None,
-                                                 client_number=args.client_num_in_total, batch_size=args.batch_size)
+    elif dataset_name in ["ILSVRC2012", "ILSVRC2012_hdf5"] :
+        if args.data_parallel == 1:
+            logging.info("load_data. dataset_name = %s" % dataset_name)
+            train_data_num, test_data_num, train_data_global, test_data_global, \
+            train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
+            class_num = distributed_centralized_ImageNet_loader(dataset=dataset_name, data_dir=args.data_dir,
+                                                    world_size=args.world_size, 
+                                                    rank=args.rank, batch_size=args.batch_size)
+
+        else:
+            logging.info("load_data. dataset_name = %s" % dataset_name)
+            train_data_num, test_data_num, train_data_global, test_data_global, \
+            train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
+            class_num = load_partition_data_ImageNet(dataset=dataset_name, data_dir=args.data_dir,
+                                                    partition_method=None, partition_alpha=None,
+                                                    client_number=args.client_num_in_total, batch_size=args.batch_size)
 
     elif dataset_name == "gld23k":
         logging.info("load_data. dataset_name = %s" % dataset_name)
@@ -273,10 +294,26 @@ if __name__ == "__main__":
     # parse python script input parameters
     parser = argparse.ArgumentParser()
     args = add_args(parser)
-    logging.info(args)
-
+    args.world_size = len(args.gpu_util.split(','))
     worker_number = 1
     process_id = 0
+
+    if args.data_parallel == 1:
+        # torch.distributed.init_process_group(
+        #         backend="nccl", world_size=args.world_size, init_method="env://")
+        torch.distributed.init_process_group(
+                backend="nccl", init_method="env://")
+        args.rank = torch.distributed.get_rank()
+        gpu_util = args.gpu_util.split(',')
+        gpu_util = [int(item.strip()) for item in gpu_util]
+        # device = torch.device("cuda", local_rank)
+        torch.cuda.set_device(gpu_util[args.rank])
+        process_id = args.rank
+    else:
+        args.rank = 0
+
+    logging.info(args)
+
     # customize the process name
     str_process_name = "Fedml (single):" + str(process_id)
     setproctitle.setproctitle(str_process_name)
@@ -321,7 +358,7 @@ if __name__ == "__main__":
     # machine 3: worker2, worker6;
     # machine 4: worker3, worker7;
     # Therefore, we can see that workers are assigned according to the order of machine list.
-    logging.info("process_id = %d, size = %d" % (process_id, worker_number))
+    logging.info("process_id = %d, size = %d" % (process_id, args.world_size))
 
     # load data
     dataset = load_data(args, args.dataset)
@@ -333,7 +370,13 @@ if __name__ == "__main__":
     # In this case, please use our FedML distributed version (./fedml_experiments/distributed_fedavg)
     model = create_model(args, model_name=args.model, output_dim=dataset[7])
 
-    device = torch.device("cuda:" + str(args.gpu) if torch.cuda.is_available() else "cpu")
+    if args.data_parallel == 1:
+        device = torch.device("cuda:" + str(gpu_util[args.rank]))
+        model.to(device)
+        model = DistributedDataParallel(model, 
+            device_ids=[gpu_util[args.rank]], output_device=gpu_util[args.rank])
+    else:
+        device = torch.device("cuda:" + str(args.gpu) if torch.cuda.is_available() else "cpu")
     # start "federated averaging (FedAvg)"
     single_trainer = CentralizedTrainer(dataset, model, device, args)
     single_trainer.train()
