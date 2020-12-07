@@ -1,7 +1,9 @@
 import numpy as np
 import collections
+import os
 
-word_count_file_path = '../../../data/stackoverflow/datasets/stackoverflow.word_count'
+DEFAULT_WORD_COUNT_FILE = 'stackoverflow.word_count'
+word_count_file_path = None
 word_dict = None
 word_list = None
 _pad = '<pad>'
@@ -13,17 +15,25 @@ https://github.com/google-research/federated/blob/master/utils/datasets/stackove
 '''
 
 
-def get_most_frequent_words(vocab_size = 10000):
+def get_word_count_file(data_dir):
+    # word_count_file_path
+    global word_count_file_path
+    if word_count_file_path is None:
+        word_count_file_path = os.path.join(data_dir, DEFAULT_WORD_COUNT_FILE)
+    return word_count_file_path
+
+
+def get_most_frequent_words(data_dir, vocab_size=10000):
     frequent_words = []
-    with open(word_count_file_path, 'r') as f:
+    with open(get_word_count_file(data_dir), 'r') as f:
         frequent_words = [next(f).split()[0] for i in range(vocab_size)]
     return frequent_words
 
 
-def get_word_dict():
+def get_word_dict(data_dir):
     global word_dict
     if word_dict == None:
-        frequent_words = get_most_frequent_words()
+        frequent_words = get_most_frequent_words(data_dir)
         words = [_pad] + frequent_words + [_bos] + [_eos]
         word_dict = collections.OrderedDict()
         for i, w in enumerate(words):
@@ -31,7 +41,7 @@ def get_word_dict():
     return word_dict
 
 
-def get_word_list():
+def get_word_list(data_dir):
     global word_list
     if word_list == None:
         word_dict = get_word_dict()
@@ -43,19 +53,16 @@ def id_to_word(idx):
     return get_word_list()[idx]
 
 
-def word_to_id(word, num_oov_buckets=1):
-    word_dict = get_word_dict()
-    if word in word_dict:
-        return word_dict[word]
-    else:
-        return hash(word) % num_oov_buckets + len(word_dict)
+def tokenizer(sentence, data_dir, max_seq_len=20):
 
+    truncated_sentences = sentence.split(' ')[:max_seq_len]
 
-def preprocess(sentences, max_seq_len=20):
-
-    truncated_sentences = [
-        sentence.split(' ')[:max_seq_len] for sentence in sentences
-    ]
+    def word_to_id(word, num_oov_buckets=1):
+        word_dict = get_word_dict(data_dir)
+        if word in word_dict:
+            return word_dict[word]
+        else:
+            return hash(word) % num_oov_buckets + len(word_dict)
 
     def to_ids(sentence, num_oov_buckets=1):
         '''
@@ -72,7 +79,7 @@ def preprocess(sentences, max_seq_len=20):
             tokens += [word_to_id(_pad)] * (max_seq_len + 1 - len(tokens))
         return tokens
 
-    return [to_ids(sentence) for sentence in truncated_sentences]
+    return to_ids(truncated_sentences)
 
 
 def split(dataset):

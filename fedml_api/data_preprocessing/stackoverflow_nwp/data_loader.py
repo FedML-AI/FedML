@@ -1,11 +1,13 @@
 import logging
+import tqdm
+import os
 
 import h5py
 import torch
 import torch.utils.data as data
 
 from . import utils
-
+from .dataset import StackOverflowDataset
 logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -15,77 +17,53 @@ client_ids_test = None
 DEFAULT_TRAIN_CLINETS_NUM = 342477
 DEFAULT_TEST_CLIENTS_NUM = 204088
 DEFAULT_BATCH_SIZE = 16
-train_file_path = '../../../data/stackoverflow/datasets/stackoverflow_train.h5'
-test_file_path = '../../../data/stackoverflow/datasets/stackoverflow_test.h5'
-heldout_file_path = '../../../data/stackoverflow/datasets/stackoverflow_held_out.h5'
-
-# group name defined by tff in h5 file
-_EXAMPLE = 'examples'
-_TOKENS = 'tokens'
+DEFAULT_TRAIN_FILE = 'stackoverflow_train.h5'
+DEFAULT_TEST_FILE = 'stackoverflow_test.h5'
 
 
 def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
-    train_h5 = h5py.File(train_file_path, 'r')
-    test_h5 = h5py.File(test_file_path, 'r')
-    train_ds = []
-    test_ds = []
-    
     if client_idx is None:
-        for client_id in client_ids_train:
-            raw_train = train_h5[_EXAMPLE][client_id][_TOKENS][()]
-            raw_train = [x.decode('utf8') for x in raw_train]
-            train_ds.extend(utils.preprocess(raw_train))
-        for client_id in client_ids_test:
-            raw_test = test_h5[_EXAMPLE][client_id][_TOKENS][()]
-            raw_test = [x.decode('utf8') for x in raw_test]
-            test_ds.extend(utils.preprocess(raw_test))
+
+        train_dl = data.DataLoader(data.ConcatDataset(
+            StackOverflowDataset(
+                os.path.join(data_dir, DEFAULT_TRAIN_FILE), client_idx,
+                lambda x: utils.tokenizer(x, data_dir)) 
+                for client_idx in range(DEFAULT_TRAIN_CLINETS_NUM)),
+                                   batch_size=batch_size,
+                                   shuffle=True)
+
+        test_dl = data.DataLoader(data.ConcatDataset(
+            StackOverflowDataset(
+                os.path.join(data_dir, DEFAULT_TEST_FILE), client_idx, "test",
+                lambda x: utils.tokenizer(x, data_dir)) 
+                for client_idx in range(DEFAULT_TEST_CLINETS_NUM)),
+                                  batch_size=batch_size,
+                                  shuffle=True)
+        return train_dl, test_dl
+
     else:
-        client_id_train = client_ids_train[client_idx]
+        train_ds = StackOverflowDataset(
+            os.path.join(data_dir, DEFAULT_TRAIN_FILE), client_idx, "train", lambda x: utils.tokenizer(x, data_dir)) 
+        train_dl = data.DataLoader(dataset=train_ds,
+                                   batch_size=train_bs,
+                                   shuffle=True,
+                                   drop_last=False)
 
-        raw_train = train_h5[_EXAMPLE][client_id_train][_TOKENS][()]
-        raw_train = [x.decode('utf8') for x in raw_train]
-        train_ds.extend(utils.preprocess(raw_train))
+        if client_idx >= DEFAULT_TEST_CLIENTS_NUM:
+            test_dl = None
+        else:
+            test_ds = StackOverflowDataset(
+                os.path.join(data_dir, DEFAULT_TEST_FILE), client_idx, "test", lambda x: utils.tokenizer(x, data_dir)) 
+            test_dl = data.DataLoader(dataset=test_ds,
+                                      batch_size=test_bs,
+                                      shuffle=True,
+                                      drop_last=False)
 
-        if client_idx <= len(client_ids_test) - 1:
-            client_id_test = client_ids_test[client_idx]
-            raw_test = test_h5[_EXAMPLE][client_id_test][_TOKENS][()]
-            raw_test = [x.decode('utf8') for x in raw_test]
-            test_ds.extend(utils.preprocess(raw_test))
-
-    train_x, train_y = utils.split(train_ds)
-    train_ds = data.TensorDataset(torch.tensor(train_x[:, :]),
-                                  torch.tensor(train_y[:]))
-    train_dl = data.DataLoader(dataset=train_ds,
-                               batch_size=train_bs,
-                               shuffle=True,
-                               drop_last=False)
-    if len(test_ds) != 0:
-        test_x, test_y = utils.split(test_ds)
-        test_ds = data.TensorDataset(torch.tensor(test_x[:, :]),
-                                     torch.tensor(test_y[:]))
-        test_dl = data.DataLoader(dataset=test_ds,
-                                  batch_size=test_bs,
-                                  shuffle=True,
-                                  drop_last=False)
-    else:
-        test_dl = None
-
-    train_h5.close()
-    test_h5.close()
-    return train_dl, test_dl
+        return train_dl, test_dl
 
 
 def load_partition_data_distributed_federated_stackoverflow_nwp(
         process_id, dataset, data_dir, batch_size = DEFAULT_BATCH_SIZE):
-
-    #client id list
-    train_h5 = h5py.File(train_file_path, 'r')
-    test_h5 = h5py.File(test_file_path, 'r')
-    global client_ids_train, client_ids_test
-    client_ids_train = list(train_h5[_EXAMPLE].keys())
-    client_ids_test = list(test_h5[_EXAMPLE].keys())
-    train_h5.close()
-    test_h5.close()
 
     # get global dataset
     if process_id == 0:
@@ -108,66 +86,47 @@ def load_partition_data_distributed_federated_stackoverflow_nwp(
         train_data_global = None
         test_data_global = None
         
-    VOCAB_LEN = len(utils.get_word_dict()) + 1
+    VOCAB_LEN = len(utils.get_word_dict(data_dir)) + 1
     return DEFAULT_TRAIN_CLINETS_NUM, train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, VOCAB_LEN
 
 
 def load_partition_data_federated_stackoverflow_nwp(dataset, data_dir, batch_size = DEFAULT_BATCH_SIZE):
     logging.info("load_partition_data_federated_stackoverflow_nwp START")
-    
-    class ConcatDataset(torch.utils.data.Dataset):
-        def __init__(self, *datasets):
-            self.datasets = datasets
-
-        def __getitem__(self, i):
-            return tuple(d[i] for d in self.datasets)
-
-        def __len__(self):
-            return min(len(d) for d in self.datasets)
-        
-    #client id list
-    train_h5 = h5py.File(train_file_path, 'r')
-    test_h5 = h5py.File(test_file_path, 'r')
-    global client_ids_train, client_ids_test
-    client_ids_train = list(train_h5[_EXAMPLE].keys())
-    client_ids_test = list(test_h5[_EXAMPLE].keys())
-    train_h5.close()
-    test_h5.close()
-    
+            
     # get local dataset
     data_local_num_dict = dict()
     train_data_local_dict = dict()
     test_data_local_dict = dict()
     
-    for client_idx in range(DEFAULT_TRAIN_CLINETS_NUM):
+    for client_idx in tqdm.tqdm(range(DEFAULT_TRAIN_CLINETS_NUM)):
 
         train_data_local, test_data_local = get_dataloader(
             dataset, data_dir, batch_size, batch_size, client_idx)
         local_data_num = len(train_data_local.dataset)
         data_local_num_dict[client_idx] = local_data_num
-        logging.info("client_idx = %d, local_sample_number = %d" %
-                     (client_idx, local_data_num))
-        logging.info(
-            "client_idx = %d, batch_num_train_local = %d"
-            % (client_idx, len(train_data_local)))
+        # logging.info("client_idx = %d, local_sample_number = %d" %
+        #              (client_idx, local_data_num))
+        # logging.info(
+        #     "client_idx = %d, batch_num_train_local = %d"
+        #     % (client_idx, len(train_data_local)))
         train_data_local_dict[client_idx] = train_data_local
         test_data_local_dict[client_idx] = test_data_local
 
-    train_data_global = torch.utils.data.DataLoader(
-                ConcatDataset(
+    train_data_global = data.DataLoader(
+                data.ConcatDataset(
                     list(dl.dataset for dl in list(train_data_local_dict.values()))
                 ),
                 batch_size=batch_size, shuffle=True)
     train_data_num = len(train_data_global.dataset)
     
-    test_data_global = torch.utils.data.DataLoader(
-            ConcatDataset(
+    test_data_global = data.DataLoader(
+            data.ConcatDataset(
                 list(dl.dataset for dl in list(test_data_local_dict.values()) if dl is not None)
             ),
             batch_size=batch_size, shuffle=True)
     test_data_num = len(test_data_global.dataset)
 
-    VOCAB_LEN = len(utils.get_word_dict()) + 1
+    VOCAB_LEN = len(utils.get_word_dict(data_dir)) + 1
     return DEFAULT_TRAIN_CLINETS_NUM, train_data_num, test_data_num, train_data_global, test_data_global, \
         data_local_num_dict, train_data_local_dict, test_data_local_dict, VOCAB_LEN
 

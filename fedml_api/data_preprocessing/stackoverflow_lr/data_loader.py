@@ -97,8 +97,8 @@ def load_partition_data_distributed_federated_stackoverflow_lr(
         #              (process_id, local_data_num))
         train_data_global = None
         test_data_global = None
-    output_dim = len(utils.get_tag_dict()) + 1  #oov
-    return train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, output_dim
+    output_dim = len(utils.get_tag_dict()) 
+    return DEFAULT_TRAIN_CLINETS_NUM, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, output_dim
 
 
 def load_partition_data_federated_stackoverflow_lr(
