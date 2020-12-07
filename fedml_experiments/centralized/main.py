@@ -11,11 +11,8 @@ import setproctitle
 import torch
 import wandb
 
-# add the FedML root directory to the python path
-
-# sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
-
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../")))
+from fedml_api.centralized.centralized_trainer import CentralizedTrainer
 from fedml_api.data_preprocessing.FederatedEMNIST.data_loader import load_partition_data_federated_emnist
 from fedml_api.data_preprocessing.fed_cifar100.data_loader import load_partition_data_federated_cifar100
 from fedml_api.data_preprocessing.fed_shakespeare.data_loader import load_partition_data_federated_shakespeare
@@ -38,11 +35,6 @@ from fedml_api.model.nlp.rnn import RNN_OriginalFedAvg, RNN_StackOverFlow
 from fedml_api.model.linear.lr import LogisticRegression
 from fedml_api.model.cv.mobilenet_v3 import MobileNetV3
 from fedml_api.model.cv.efficientnet import EfficientNet
-
-from fedml_api.single.single_trainer import Single_Trainer
-
-
-# from fedml_api.distributed.fedavg.FedAvgAPI import FedML_init, FedML_FedAvg_distributed
 
 
 def add_args(parser):
@@ -92,8 +84,11 @@ def add_args(parser):
     parser.add_argument('--is_mobile', type=int, default=0,
                         help='whether the program is running on the FedML-Mobile server side')
 
-    parser.add_argument('--frequency_of_the_test', type=int, default=1,
-                        help='the frequency of the algorithms')
+    parser.add_argument('--frequency_of_train_acc_report', type=int, default=3,
+                        help='the frequency of training accuracy report')
+
+    parser.add_argument('--frequency_of_test_acc_report', type=int, default=1,
+                        help='the frequency of test accuracy report')
 
     parser.add_argument('--gpu_server_num', type=int, default=1,
                         help='gpu_server_num')
@@ -173,8 +168,8 @@ def load_data(args, dataset_name):
     elif dataset_name == "gld23k":
         logging.info("load_data. dataset_name = %s" % dataset_name)
         args.client_num_in_total = 233
-        fed_train_map_file = os.path.join(args.data_dir, 'mini_gld_train_split.csv')
-        fed_test_map_file = os.path.join(args.data_dir, 'mini_gld_test.csv')
+        fed_train_map_file = os.path.join(args.data_dir, 'data_user_dict/gld23k_user_dict_train.csv')
+        fed_test_map_file = os.path.join(args.data_dir, 'data_user_dict/gld23k_user_dict_test.csv')
         args.data_dir = os.path.join(args.data_dir, 'images')
 
         train_data_num, test_data_num, train_data_global, test_data_global, \
@@ -188,8 +183,8 @@ def load_data(args, dataset_name):
     elif dataset_name == "gld160k":
         logging.info("load_data. dataset_name = %s" % dataset_name)
         args.client_num_in_total = 1262
-        fed_train_map_file = os.path.join(args.data_dir, 'federated_train.csv')
-        fed_test_map_file = os.path.join(args.data_dir, 'test.csv')
+        fed_train_map_file = os.path.join(args.data_dir, 'data_user_dict/gld160k_user_dict_train.csv')
+        fed_test_map_file = os.path.join(args.data_dir, 'data_user_dict/gld160k_user_dict_test.csv')
         args.data_dir = os.path.join(args.data_dir, 'images')
 
         train_data_num, test_data_num, train_data_global, test_data_global, \
@@ -303,7 +298,7 @@ if __name__ == "__main__":
         wandb.init(
             # project="federated_nas",
             project="fedml",
-            name="Fedml (single)" + str(args.partition_method) + "r" + str(args.comm_round) + "-e" + str(
+            name="Fedml (central)" + str(args.partition_method) + "r" + str(args.comm_round) + "-e" + str(
                 args.epochs) + "-lr" + str(
                 args.lr),
             config=args
@@ -340,5 +335,5 @@ if __name__ == "__main__":
 
     device = torch.device("cuda:" + str(args.gpu) if torch.cuda.is_available() else "cpu")
     # start "federated averaging (FedAvg)"
-    single_trainer = Single_Trainer(dataset, model, device, args)
+    single_trainer = CentralizedTrainer(dataset, model, device, args)
     single_trainer.train()

@@ -54,7 +54,7 @@ We refer the hyper-parameters and reproduce results from many top-tier ML confer
 |       CV         | Federated EMNIST |       CNN (2 Conv + 2 FC)       |   FedAvg  |    Power Law        |        　       |         3400        |          10          |     20     |        SGD       |      0.1     |  -              |   1   |    >1500   |   84.9   |
 |       CV         |     CIFAR-100    | ResNet-18+group   normalization |   FedAvg  | Pachinko Allocation | 100/500(ex/cli) |         500         |          10          |     20     |        SGD       |      0.1     |        -       |    1   |    >4000   |   44.7   |
 |       NLP        |    Shakespeare   |       RNN (2 LSTM + 1 FC)       |   FedAvg  |  realistic patition |        　       |         715         |          10          |      4     |        SGD       |       1      |        -       |    1   |    >1200   |   56.9   |
-|       CV         |   StackOverflow  |       RNN (1 LSTM + 2 FC)       |   FedAvg  | Pachinko Allocation |        　       |        342477       |          50          |     16     |        SGD       | pow(10,-0.5) |        -       |    1   |    >1500   |   19.5   |
+|       NLP         |   StackOverflow  |       RNN (1 LSTM + 2 FC)       |   FedAvg  | Pachinko Allocation |        　       |        342477       |          50          |     16     |        SGD       | pow(10,-0.5) |        -       |    1   |    >1500   |   19.5   |
 
 - Federated EMNIST-CNN-FedAvg (https://openreview.net/pdf?id=LkFG3lB13U5)
     - Patition Method: ‘Adaptive federated optimization’ (https://openreview.net/pdf?id=LkFG3lB13U5),  page 23, Appendix C.2
