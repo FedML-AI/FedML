@@ -96,8 +96,8 @@ def _data_transforms_landmarks():
     # IMAGENET_MEAN = [0.5071, 0.4865, 0.4409]
     # IMAGENET_STD = [0.2673, 0.2564, 0.2762]
 
-    IMAGENET_MEAN = [0.485, 0.456, 0.406]
-    IMAGENET_STD = [0.229, 0.224, 0.225]
+    IMAGENET_MEAN = [0.5, 0.5, 0.5]
+    IMAGENET_STD = [0.5, 0.5, 0.5]
 
     image_size = 224
     train_transform = transforms.Compose([
@@ -199,7 +199,6 @@ def get_dataloader_test_Landmarks(datadir, train_files, test_files, train_bs, te
     return train_dl, test_dl
 
 
-
 def load_partition_data_landmarks(dataset, data_dir, fed_train_map_file, fed_test_map_file, 
                             partition_method=None, partition_alpha=None, client_number=233, batch_size=10):
 
@@ -243,11 +242,11 @@ def load_partition_data_landmarks(dataset, data_dir, fed_train_map_file, fed_tes
 
 if __name__ == '__main__':
     data_dir = './cache/images'
-    fed_g23k_train_map_file = './cache/datasets/mini_gld_train_split.csv'
-    fed_g23k_test_map_file = './cache/datasets/mini_gld_test.csv'
+    fed_g23k_train_map_file = '../../../data/gld/data_user_dict/gld23k_user_dict_train.csv'
+    fed_g23k_test_map_file = '../../../data/gld/data_user_dict/gld23k_user_dict_test.csv'
 
-    fed_g160k_train_map_file = './cache/datasets/landmarks-user-160k/federated_train.csv'
-    fed_g160k_map_file = './cache/datasets/landmarks-user-160k/test.csv'
+    fed_g160k_train_map_file = '../../../data/gld/data_user_dict/gld160k_user_dict_train.csv'
+    fed_g160k_map_file = '../../../data/gld/data_user_dict/gld160k_user_dict_test.csv'
 
     dataset_name = 'g160k'
 
