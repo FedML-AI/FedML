@@ -4,7 +4,7 @@ import logging
 import torch
 import wandb
 from torch import nn
-
+from torch.nn.parallel import DistributedDataParallel
 
 class CentralizedTrainer(object):
     r"""
@@ -25,7 +25,11 @@ class CentralizedTrainer(object):
         self.test_data_local_dict = test_data_local_dict
 
         self.model = model
-        self.model.to(self.device)
+        if args.data_parallel == 1:
+            pass
+        else:
+            self.model.to(self.device)
+
         self.criterion = nn.CrossEntropyLoss().to(self.device)
         if self.args.client_optimizer == "sgd":
             self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.args.lr)
@@ -36,6 +40,8 @@ class CentralizedTrainer(object):
 
     def train(self):
         for epoch in range(self.args.epochs):
+            if self.args.data_parallel == 1:
+                self.train_global.sampler.set_epoch(epoch)
             self.train_impl(epoch)
             self.eval_impl(epoch)
 
@@ -96,8 +102,8 @@ class CentralizedTrainer(object):
                 metrics['test_correct'] += correct.item()
                 metrics['test_loss'] += loss.item() * target.size(0)
                 metrics['test_total'] += target.size(0)
-
-        self.save_log(b_is_train=b_is_train, metrics=metrics, epoch_idx=epoch_idx)
+        if self.args.rank == 0:
+            self.save_log(b_is_train=b_is_train, metrics=metrics, epoch_idx=epoch_idx)
 
     def save_log(self, b_is_train, metrics, epoch_idx):
         prefix = 'Train' if b_is_train else 'Test'
