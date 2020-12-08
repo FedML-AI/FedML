@@ -49,7 +49,7 @@ class FedAvgTrainer(object):
     def train(self):
         w_global = self.model.state_dict()
         for round_idx in range(self.args.comm_round):
-            self.model.train()
+            
             logging.info("################Communication round : {}".format(round_idx))
 
             w_locals, loss_locals = [], []
