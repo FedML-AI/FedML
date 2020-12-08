@@ -51,4 +51,4 @@ class StackOverflowDataset(data.Dataset):
         with h5py.File(self.h5_path, 'r') as h5_file:
             sample = h5_file[self._EXAMPLE][self.client_id][self._TOKENS][()][idx].decode('utf8')
             sample = self.preprocess(sample)
-        return np.asarray(sample[:-1]), np.asarray(sample[-1])
+        return np.asarray(sample[:-1]), np.asarray(sample[1:])
