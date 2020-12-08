@@ -1,14 +1,14 @@
 import numpy as np
 import collections
 
-word_count_file_path = '../../../data/stackoverflow/datasets/stackoverflow.word_count'
+
 word_dict = None
 word_list = None
 _pad = '<pad>'
 _bos = '<bos>'
 _eos = '<eos>'
 '''
-This code follows the steps of preprocessing in tff stackoverflow dataset: 
+This code follows the steps of preprocessing in tff shakespeare dataset: 
 https://github.com/google-research/federated/blob/master/utils/datasets/shakespeare_dataset.py
 '''
 
@@ -77,7 +77,7 @@ def preprocess(sentences, max_seq_len=SEQUENCE_LENGTH):
 def split(dataset):
     ds = np.asarray(dataset)
     x = ds[:, :-1]
-    y = ds[:, -1]
+    y = ds[:, 1:]
     return x, y
 
 
