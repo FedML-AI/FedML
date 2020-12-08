@@ -25,10 +25,12 @@ sh run_fedavg_standalone_pytorch.sh 0 10 10 10 fed_shakespeare ./../../../data/f
 ## Federated EMNIST
 sh run_fedavg_standalone_pytorch.sh 0 10 10 10 femnist ./../../../data/FederatedEMNIST cnn hetero 200 1 0.03 sgd 0
 ``` 
+
 ``` 
 ## Fed_CIFAR100
-sh run_fedavg_standalone_pytorch.sh 0 10 10 10 fed_cifar100 ./../../../data/fed_cifar100/datasets resnet18_gn hetero 200 1 0.03 adam 0
-``` 
+sh run_fedavg_standalone_pytorch.sh 5 10 10 10 fed_cifar100 ./../../../data/fed_cifar100/datasets resnet18_gn hetero 2000 1 0.1 sgd 0
+```
+The experimental results refer to：https://wandb.ai/automl/fedml/runs/1j08ww7v
 
 ``` 
 # Stackoverflow_LR
