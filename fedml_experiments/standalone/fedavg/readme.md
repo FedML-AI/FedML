@@ -21,16 +21,18 @@ sh run_fedavg_standalone_pytorch.sh 0 10 10 10 shakespeare ./../../../data/shake
 # fed_shakespeare (Google)
 sh run_fedavg_standalone_pytorch.sh 0 10 10 10 fed_shakespeare ./../../../data/fed_shakespeare rnn hetero 100 1 0.8 sgd 0
 ``` 
+The experimental result refers to：https://wandb.ai/automl/fedml/runs/1a9mi89i
 ``` 
 ## Federated EMNIST
-sh run_fedavg_standalone_pytorch.sh 0 10 10 10 femnist ./../../../data/FederatedEMNIST cnn hetero 200 1 0.03 sgd 0
+sh run_fedavg_standalone_pytorch.sh 0 10 10 20 femnist ./../../../data/FederatedEMNIST cnn hetero 300 1 0.03 sgd 0
 ``` 
+The experimental result refers to：https://wandb.ai/automl/fedml/runs/1wy488uw
 
 ``` 
 ## Fed_CIFAR100
 sh run_fedavg_standalone_pytorch.sh 5 10 10 10 fed_cifar100 ./../../../data/fed_cifar100/datasets resnet18_gn hetero 2000 1 0.1 sgd 0
 ```
-The experimental results refer to：https://wandb.ai/automl/fedml/runs/1j08ww7v
+The experimental result refers to：https://wandb.ai/automl/fedml/runs/1j08ww7v
 
 ``` 
 # Stackoverflow_LR
