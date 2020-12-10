@@ -41,7 +41,5 @@ sh run_fedopt_standalone_pytorch.sh 0 10 10 10 stackoverflow_nwp ./../../../data
 | Dataset | Model | Accuracy |
 | ------- | ------ | ------- |
 | MNIST | cnn | 0.81 |
-| fed_shakespeare (Google) | rnn | 0.63 |
+| fed_shakespeare (Google) | rnn | 0.49 |
 | Federated EMNIST | cnn | 0.82 |
-
-The training curves are tracked here: https://wandb.ai/elliebababa/fedml/reports/FedOpt-Experiment-Results--VmlldzozNDUwNDY
