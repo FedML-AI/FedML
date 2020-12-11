@@ -38,7 +38,6 @@ class OptRepo:
             logging.error(f"These optimizers are registered: {cls.get_opt_names()}")
             raise e
 
-
     @classmethod
     def supported_parameters(cls, opt: Union[str, torch.optim.Optimizer]) -> List[str]:
         """Returns a lost of __init__ function parametrs of an optimizer.
