@@ -3,11 +3,12 @@ import logging
 import time
 
 import numpy as np
-import wandb
 import torch
+import wandb
 
-from .utils import transform_list_to_tensor
 from .optrepo import OptRepo
+from .utils import transform_list_to_tensor
+
 
 class FedOptAggregator(object):
 
@@ -31,8 +32,8 @@ class FedOptAggregator(object):
         self.sample_num_dict = dict()
         self.flag_client_model_uploaded_dict = dict()
         self.opt = OptRepo.name2cls(self.args.server_optimizer)(
-                self.get_model_params(), lr=self.args.server_lr
-            )
+            self.get_model_params(), lr=self.args.server_lr
+        )
         for idx in range(self.worker_num):
             self.flag_client_model_uploaded_dict[idx] = False
 
@@ -92,8 +93,8 @@ class FedOptAggregator(object):
         # set new aggregated grad
         self.set_model_global_grads(averaged_params)
         self.opt = OptRepo.name2cls(self.args.server_optimizer)(
-                self.get_model_params(), lr=self.args.server_lr
-            )
+            self.get_model_params(), lr=self.args.server_lr
+        )
         # load optimizer state
         self.opt.load_state_dict(opt_state)
         self.opt.step()
@@ -102,13 +103,12 @@ class FedOptAggregator(object):
         logging.info("aggregate time cost: %d" % (end_time - start_time))
         return self.get_global_model_params()
 
-
     def set_model_global_grads(self, new_state):
         new_model = copy.deepcopy(self.trainer.model)
         new_model.load_state_dict(new_state)
         with torch.no_grad():
             for parameter, new_parameter in zip(
-                self.trainer.model.parameters(), new_model.parameters()
+                    self.trainer.model.parameters(), new_model.parameters()
             ):
                 parameter.grad = parameter.data - new_parameter.data
                 # because we go to the opposite direction of the gradient
@@ -118,7 +118,6 @@ class FedOptAggregator(object):
             new_model_state_dict[k] = model_state_dict[k]
         # self.trainer.model.load_state_dict(new_model_state_dict)
         self.set_global_model_params(new_model_state_dict)
-
 
     def client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
         if client_num_in_total == client_num_per_round:
