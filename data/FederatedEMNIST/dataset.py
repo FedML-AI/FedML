@@ -1,6 +1,5 @@
 import tensorflow_federated as tff
 
-download = True
 only_digit = False
 
 def download_and_save_federated_emnist():
@@ -14,5 +13,4 @@ python dataset.py
 ```
 """
 if __name__ == "__main__":
-    if download:
-        download_and_save_federated_emnist()
+    download_and_save_federated_emnist()
