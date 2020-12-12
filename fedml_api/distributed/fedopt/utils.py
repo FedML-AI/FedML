@@ -1,5 +1,5 @@
-import torch
 import numpy as np
+import torch
 
 
 def transform_list_to_tensor(model_params_list):
