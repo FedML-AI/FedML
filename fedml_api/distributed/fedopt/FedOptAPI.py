@@ -1,9 +1,9 @@
 from mpi4py import MPI
 
 from .FedOptAggregator import FedOptAggregator
-from .FedOptTrainer import FedOptTrainer
 from .FedOptClientManager import FedOptClientManager
 from .FedOptServerManager import FedOptServerManager
+from .FedOptTrainer import FedOptTrainer
 from .MyModelTrainer import MyModelTrainer
 
 

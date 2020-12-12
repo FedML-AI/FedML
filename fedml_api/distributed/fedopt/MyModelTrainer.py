@@ -8,7 +8,7 @@ try:
     from fedml_api.standalone.fedopt.optrepo import OptRepo
 except ImportError:
     from FedML.fedml_core.trainer.model_trainer import ModelTrainer
-    
+    from FedML.fedml_api.standalone.fedopt.optrepo import OptRepo
 
 
 class MyModelTrainer(ModelTrainer):
@@ -28,7 +28,6 @@ class MyModelTrainer(ModelTrainer):
         opt_cls = OptRepo.name2cls(args.client_optimizer)
         optimizer = opt_cls(model.parameters(), lr=args.lr, weight_decay=args.wd)
 
-        
         epoch_loss = []
         for epoch in range(args.epochs):
             batch_loss = []
@@ -39,7 +38,7 @@ class MyModelTrainer(ModelTrainer):
                 log_probs = model(x)
                 loss = criterion(log_probs, labels)
                 loss.backward()
-                
+
                 if args.clip:
                     torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
 
@@ -49,7 +48,9 @@ class MyModelTrainer(ModelTrainer):
             if len(batch_loss) > 0:
                 epoch_loss.append(sum(batch_loss) / len(batch_loss))
                 logging.info('(Trainer_ID {}. Local Training Epoch: {} \tLoss: {:.6f}'.format(self.id,
-                        epoch, sum(epoch_loss) / len(epoch_loss)))
+                                                                                              epoch,
+                                                                                              sum(epoch_loss) / len(
+                                                                                                  epoch_loss)))
 
     def test(self, test_data, device, args):
         model = self.model
