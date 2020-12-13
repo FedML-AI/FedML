@@ -1,9 +1,7 @@
 import logging
-import tqdm
 import os
+import tqdm
 
-import numpy as np
-import torch
 import torch.utils.data as data
 
 from . import utils
@@ -14,7 +12,7 @@ logger.setLevel(logging.INFO)
 
 client_ids_train = None
 client_ids_test = None
-DEFAULT_TRAIN_CLINETS_NUM = 342477
+DEFAULT_TRAIN_CLIENTS_NUM = 342477
 DEFAULT_TEST_CLIENTS_NUM = 204088
 DEFAULT_BATCH_SIZE = 100
 DEFAULT_TRAIN_FILE = 'stackoverflow_train.h5'
@@ -31,8 +29,8 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
                 "train", {
                     "input": lambda x: utils.preprocess_input(x, data_dir),
                     "target": lambda y: utils.preprocess_target(y, data_dir)
-                }) for client_idx in range(DEFAULT_TRAIN_CLINETS_NUM)),
-                                   batch_size=batch_size,
+                }) for client_idx in range(DEFAULT_TRAIN_CLIENTS_NUM)),
+                                   batch_size=train_bs,
                                    shuffle=True)
 
         test_dl = data.DataLoader(data.ConcatDataset(
@@ -41,8 +39,8 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
                 {
                     "input": lambda x: utils.preprocess_input(x, data_dir),
                     "target": lambda y: utils.preprocess_target(y, data_dir)
-                }) for client_idx in range(DEFAULT_TEST_CLINETS_NUM)),
-                                  batch_size=batch_size,
+                }) for client_idx in range(DEFAULT_TEST_CLIENTS_NUM)),
+                                  batch_size=test_bs,
                                   shuffle=True)
         return train_dl, test_dl
 
@@ -81,8 +79,8 @@ def load_partition_data_distributed_federated_stackoverflow_lr(
     if process_id == 0:
         train_data_global, test_data_global = get_dataloader(
             dataset, data_dir, batch_size, batch_size, process_id - 1)
-        train_data_num = len(train_data_global.dataset)
-        test_data_num = len(test_data_global.dataset)
+        # train_data_num = len(train_data_global.dataset)
+        # test_data_num = len(test_data_global.dataset)
         # logging.info("train_dl_global number = " + str(train_data_num))
         # logging.info("test_dl_global number = " + str(test_data_num))
         train_data_local = None
@@ -92,13 +90,13 @@ def load_partition_data_distributed_federated_stackoverflow_lr(
         # get local dataset
         train_data_local, test_data_local = get_dataloader(
             dataset, data_dir, batch_size, batch_size, process_id - 1)
-        train_data_num = local_data_num = len(train_data_local.dataset)
+        local_data_num = len(train_data_local.dataset)
         # logging.info("rank = %d, local_sample_number = %d" %
         #              (process_id, local_data_num))
         train_data_global = None
         test_data_global = None
     output_dim = len(utils.get_tag_dict()) 
-    return DEFAULT_TRAIN_CLINETS_NUM, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, output_dim
+    return DEFAULT_TRAIN_CLIENTS_NUM, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, output_dim
 
 
 def load_partition_data_federated_stackoverflow_lr(
@@ -137,7 +135,7 @@ def load_partition_data_federated_stackoverflow_lr(
     test_data_num = len(test_data_global.dataset)
 
     output_dim = len(utils.get_tag_dict(data_dir))
-    return DEFAULT_TRAIN_CLINETS_NUM, train_data_num, test_data_num, train_data_global, test_data_global, \
+    return DEFAULT_TRAIN_CLIENTS_NUM, train_data_num, test_data_num, train_data_global, test_data_global, \
            data_local_num_dict, train_data_local_dict, test_data_local_dict, output_dim
 
 

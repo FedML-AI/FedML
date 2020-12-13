@@ -5,7 +5,6 @@ import sys
 
 import numpy as np
 import torch
-import torchvision.models as models
 import wandb
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
@@ -109,8 +108,6 @@ def load_data(args, dataset_name):
     else:
         if dataset_name == "cifar10":
             data_loader = load_partition_data_cifar10
-        elif dataset_name == "cifar100":
-            data_loader = load_partition_data_cifar100
         else:
             raise("Dataloader not added!")
         train_data_num, test_data_num, train_data_global, test_data_global, \
@@ -151,7 +148,7 @@ def create_model(args, model_name, output_dim):
         model = LogisticRegression(60, output_dim)
     elif model_name == "vgg" and args.dataset == "cifar10":
         logging.info("VGG11 + cifar10")
-        model = models.vgg11()
+        model = vgg11()
     else:
         raise("Model not added!")
     return model

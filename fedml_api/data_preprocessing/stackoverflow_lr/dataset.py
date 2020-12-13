@@ -1,8 +1,5 @@
-import os
-
 import h5py
 
-import torch
 import torch.utils.data as data
 
 class StackOverflowDataset(data.Dataset):
