@@ -8,6 +8,6 @@ You can refer the hyper-parameter suggestions at `FedML/benchmark/README.md`), b
 
 # Federated EMNIST experiments
 ```
-sh run_fedopt_distributed_pytorch.sh 10 10 1 4 cnn 100 1 20 0.1 femnist "./../../../data/FederatedEMNIST" sgd 0
+sh run_fedopt_distributed_pytorch.sh 10 10 1 4 cnn 100 1 20 0.1 femnist "./../../../data/FederatedEMNIST/datasets" sgd 0
 
 ```

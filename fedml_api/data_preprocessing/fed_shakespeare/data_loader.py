@@ -3,7 +3,6 @@ import os
 
 import h5py
 import torch
-import random
 import torch.utils.data as data
 
 from . import utils

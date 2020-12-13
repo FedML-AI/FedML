@@ -87,12 +87,3 @@ def split(dataset):
     x = ds[:, :-1]
     y = ds[:, -1]
     return x, y
-
-
-if __name__ == "__main__":
-    print(
-        split(
-            preprocess([
-                'this will output :',
-                'the simplest way i know how to do that is to move the file , delete the file using svn , and then move the file back .',
-            ])))
