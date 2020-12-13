@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
-from fedml_api.data_preprocessing.lending_club_loan.lending_club_feature_group import all_feature_list, qualification_feat, \
+from .lending_club_feature_group import all_feature_list, qualification_feat, \
     loan_feat, debt_feat, repayment_feat, multi_acc_feat, mal_behavior_feat
 
 target_map = {'Good Loan': 0, 'Bad Loan': 1}

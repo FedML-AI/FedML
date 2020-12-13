@@ -1,7 +1,0 @@
-<resources>
-    <string name="app_name">FebMLMobile</string>
-    <string name="initialize">Initialize</string>
-    <string name="upload">Upload</string>
-    <string name="download">Download</string>
-    <string name="send">Send</string>
-</resources>

@@ -1,9 +1,18 @@
 import logging
+import os
+import sys
 
-from fedml_api.distributed.fedavg.message_define import MyMessage
-from fedml_api.distributed.fedavg.utils import transform_list_to_tensor
-from fedml_core.distributed.client.client_manager import ClientManager
-from fedml_core.distributed.communication.message import Message
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../../FedML")))
+
+try:
+    from fedml_core.distributed.client.client_manager import ClientManager
+    from fedml_core.distributed.communication.message import Message
+except ImportError:
+    from FedML.fedml_core.distributed.client.client_manager import ClientManager
+    from FedML.fedml_core.distributed.communication.message import Message
+from .message_define import MyMessage
+from .utils import transform_list_to_tensor
 
 
 class FedAVGClientManager(ClientManager):

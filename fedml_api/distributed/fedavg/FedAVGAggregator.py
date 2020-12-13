@@ -2,17 +2,19 @@ import copy
 import logging
 import time
 
-import torch
-import wandb
 import numpy as np
-from torch import nn
+import wandb
 
-from fedml_api.distributed.fedavg.utils import transform_list_to_tensor
+from .utils import transform_list_to_tensor
 
 
 class FedAVGAggregator(object):
+
     def __init__(self, train_global, test_global, all_train_data_num,
-                 train_data_local_dict, test_data_local_dict, train_data_local_num_dict, worker_num, device, model, args):
+                 train_data_local_dict, test_data_local_dict, train_data_local_num_dict, worker_num, device,
+                 args, model_trainer):
+        self.trainer = model_trainer
+
         self.train_global = train_global
         self.test_global = test_global
         self.all_train_data_num = all_train_data_num
@@ -29,15 +31,12 @@ class FedAVGAggregator(object):
         self.flag_client_model_uploaded_dict = dict()
         for idx in range(self.worker_num):
             self.flag_client_model_uploaded_dict[idx] = False
-        self.model, _ = self.init_model(model)
-
-    def init_model(self, model):
-        model_params = model.state_dict()
-        # logging.info(model)
-        return model, model_params
 
     def get_global_model_params(self):
-        return self.model.state_dict()
+        return self.trainer.get_model_params()
+
+    def set_global_model_params(self, model_parameters):
+        self.trainer.set_model_params(model_parameters)
 
     def add_local_trained_result(self, index, model_params, sample_num):
         logging.info("add_model. index = %d" % index)
@@ -78,7 +77,7 @@ class FedAVGAggregator(object):
                     averaged_params[k] += local_model_params[k] * w
 
         # update the global model which is cached at the server side
-        self.model.load_state_dict(averaged_params)
+        self.set_global_model_params(averaged_params)
 
         end_time = time.time()
         logging.info("aggregate time cost: %d" % (end_time - start_time))
@@ -106,13 +105,16 @@ class FedAVGAggregator(object):
             test_losses = []
             for client_idx in range(self.args.client_num_in_total):
                 # train data
-                train_tot_correct, train_num_sample, train_loss = self._infer(self.train_data_local_dict[client_idx])
+                train_tot_correct, train_num_sample, train_loss = self.trainer.test(self.train_data_local_dict[
+                                                                                        client_idx],
+                                                                                    self.device, self.args)
                 train_tot_corrects.append(copy.deepcopy(train_tot_correct))
                 train_num_samples.append(copy.deepcopy(train_num_sample))
                 train_losses.append(copy.deepcopy(train_loss))
 
                 # test data
-                test_tot_correct, test_num_sample, test_loss = self._infer(self.test_data_local_dict[client_idx])
+                test_tot_correct, test_num_sample, test_loss = self.trainer.test(self.test_data_local_dict[client_idx],
+                                                                                 self.device, self.args)
                 test_tot_corrects.append(copy.deepcopy(test_tot_correct))
                 test_num_samples.append(copy.deepcopy(test_num_sample))
                 test_losses.append(copy.deepcopy(test_loss))
@@ -139,24 +141,3 @@ class FedAVGAggregator(object):
             wandb.log({"Test/Loss": test_loss, "round": round_idx})
             stats = {'test_acc': test_acc, 'test_loss': test_loss}
             logging.info(stats)
-
-    def _infer(self, test_data):
-        self.model.eval()
-        self.model.to(self.device)
-
-        test_loss = test_acc = test_total = 0.
-        criterion = nn.CrossEntropyLoss().to(self.device)
-        with torch.no_grad():
-            for batch_idx, (x, target) in enumerate(test_data):
-                x = x.to(self.device)
-                target = target.to(self.device)
-                pred = self.model(x)
-                loss = criterion(pred, target)
-                _, predicted = torch.max(pred, -1)
-                correct = predicted.eq(target).sum()
-
-                test_acc += correct.item()
-                test_loss += loss.item() * target.size(0)
-                test_total += target.size(0)
-
-        return test_acc, test_total, test_loss

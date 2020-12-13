@@ -1,18 +1,28 @@
 import logging
+import os
+import sys
 
-from fedml_api.distributed.fedavg.message_define import MyMessage
-from fedml_api.distributed.fedavg.utils import transform_tensor_to_list
-from fedml_core.distributed.communication.message import Message
-from fedml_core.distributed.server.server_manager import ServerManager
+from .message_define import MyMessage
+from .utils import transform_tensor_to_list
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../../FedML")))
+try:
+    from fedml_core.distributed.communication.message import Message
+    from fedml_core.distributed.server.server_manager import ServerManager
+except ImportError:
+    from FedML.fedml_core.distributed.communication.message import Message
+    from FedML.fedml_core.distributed.server.server_manager import ServerManager
 
 
 class FedAVGServerManager(ServerManager):
-    def __init__(self, args, aggregator, comm=None, rank=0, size=0, backend="MPI"):
+    def __init__(self, args, aggregator, comm=None, rank=0, size=0, backend="MPI", is_preprocessed=False):
         super().__init__(args, comm, rank, size, backend)
         self.args = args
         self.aggregator = aggregator
         self.round_num = args.comm_round
         self.round_idx = 0
+        self.is_preprocessed = is_preprocessed
 
     def run(self):
         super().run()
@@ -23,7 +33,7 @@ class FedAVGServerManager(ServerManager):
                                                          self.args.client_num_per_round)
         global_model_params = self.aggregator.get_global_model_params()
         for process_id in range(1, self.size):
-            self.send_message_init_config(process_id, global_model_params, client_indexes[process_id-1])
+            self.send_message_init_config(process_id, global_model_params, client_indexes[process_id - 1])
 
     def register_message_receive_handlers(self):
         self.register_message_receive_handler(MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER,
@@ -33,7 +43,6 @@ class FedAVGServerManager(ServerManager):
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         local_sample_number = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
-
         self.aggregator.add_local_trained_result(sender_id - 1, model_params, local_sample_number)
         b_all_received = self.aggregator.check_whether_all_receive()
         logging.info("b_all_received = " + str(b_all_received))
@@ -47,16 +56,23 @@ class FedAVGServerManager(ServerManager):
                 self.finish()
                 return
 
-            # sampling clients
-            client_indexes = self.aggregator.client_sampling(self.round_idx, self.args.client_num_in_total,
-                                                             self.args.client_num_per_round)
+            if self.is_preprocessed:
+                # sampling has already been done in data preprocessor
+                client_indexes = [self.round_idx] * self.args.client_num_per_round
+                print('indexes of clients: ' + str(client_indexes))
+            else:
+                # # sampling clients
+                client_indexes = self.aggregator.client_sampling(self.round_idx, self.args.client_num_in_total,
+                                                                 self.args.client_num_per_round)
+
             print("size = %d" % self.size)
             if self.args.is_mobile == 1:
                 print("transform_tensor_to_list")
                 global_model_params = transform_tensor_to_list(global_model_params)
 
             for receiver_id in range(1, self.size):
-                self.send_message_sync_model_to_client(receiver_id, global_model_params, client_indexes[receiver_id-1])
+                self.send_message_sync_model_to_client(receiver_id, global_model_params,
+                                                       client_indexes[receiver_id - 1])
 
     def send_message_init_config(self, receive_id, global_model_params, client_index):
         message = Message(MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id)

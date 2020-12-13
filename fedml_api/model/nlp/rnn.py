@@ -1,5 +1,5 @@
 import torch.nn as nn
-
+import torch
 
 class RNN_OriginalFedAvg(nn.Module):
     """Creates a RNN model using LSTM layers for Shakespeare language models (next character prediction task).
@@ -30,6 +30,9 @@ class RNN_OriginalFedAvg(nn.Module):
         # use the final hidden state as the next character prediction
         final_hidden_state = lstm_out[:, -1]
         output = self.fc(final_hidden_state)
+        # For fed_shakespeare
+        # output = self.fc(lstm_out[:,:])
+        # output = torch.transpose(output, 1, 2)
         return output
 
 
@@ -61,6 +64,7 @@ class RNN_StackOverFlow(nn.Module):
     def forward(self, input_seq, hidden_state = None):
         embeds = self.word_embeddings(input_seq)
         lstm_out, hidden_state = self.lstm(embeds, hidden_state)
-        fc1_output = self.fc1(lstm_out[:,-1])
+        fc1_output = self.fc1(lstm_out[:,:])
         output = self.fc2(fc1_output)
+        output = torch.transpose(output, 1, 2)
         return output

@@ -3,9 +3,6 @@ import os
 
 import numpy as np
 import torch
-import torch.nn as nn
-
-from fedml_api.model.linear.lr import LogisticRegression
 
 
 def read_data(train_data_dir, test_data_dir):
@@ -17,7 +14,7 @@ def read_data(train_data_dir, test_data_dir):
     - the set of train set users is the same as the set of test set users
 
     Return:
-        clients: list of client ids
+        clients: list of non-unique client ids
         groups: list of group ids; empty list if none found
         train_data: dictionary of train data
         test_data: dictionary of test data
@@ -46,7 +43,7 @@ def read_data(train_data_dir, test_data_dir):
             cdata = json.load(inf)
         test_data.update(cdata['user_data'])
 
-    clients = list(sorted(train_data.keys()))
+    clients = sorted(cdata['users'])
 
     return clients, groups, train_data, test_data
 
@@ -77,9 +74,18 @@ def batch_data(data, batch_size):
     return batch_data
 
 
-def load_partition_data_mnist(batch_size):
-    train_path = "./../../../data/MNIST/train"
-    test_path = "./../../../data/MNIST/test"
+def load_partition_data_mnist_by_device_id(batch_size,
+                                           device_id,
+                                           train_path="MNIST_mobile",
+                                           test_path="MNIST_mobile"):
+    train_path += '/' + device_id + '/' + 'train'
+    test_path += '/' + device_id + '/' + 'test'
+    return load_partition_data_mnist(batch_size, train_path, test_path)
+
+
+def load_partition_data_mnist(batch_size,
+                              train_path="./../../../data/MNIST/train",
+                              test_path="./../../../data/MNIST/test"):
     users, groups, train_data, test_data = read_data(train_path, test_path)
 
     if len(groups) == 0:
@@ -114,63 +120,3 @@ def load_partition_data_mnist(batch_size):
 
     return client_num, train_data_num, test_data_num, train_data_global, test_data_global, \
            train_data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num
-
-
-def main():
-    # test the data loader
-    # Hyper Parameters
-    input_size = 784
-    num_classes = 10
-    num_epochs = 50
-    batch_size = 10
-    learning_rate = 0.03
-
-    np.random.seed(0)
-    torch.manual_seed(10)
-
-    device = torch.device("cuda:0")
-    client_num, train_data_num, test_data_num, train_data_global, test_data_global, \
-    train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
-    class_num = load_partition_data_mnist(batch_size)
-
-    model = LogisticRegression(input_size, num_classes).to(device)
-
-    # Loss and Optimizer
-    # Softmax is internally computed.
-    # Set parameters to be updated.
-    criterion = nn.CrossEntropyLoss().to(device)
-    optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
-
-    # Training the Model
-    for epoch in range(num_epochs):
-        for i, (images, labels) in enumerate(train_data_global):
-            images = images.to(device)
-            labels = labels.to(device)
-
-            # Forward + Backward + Optimize
-            optimizer.zero_grad()
-            outputs = model(images)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-
-            # if (i + 1) % 100 == 0:
-            #     print('Epoch: [%d/%d], Step: [%d/%d], Loss: %.4f'
-            #           % (epoch + 1, num_epochs, i + 1, len(train_data_global), loss.item()))
-
-        # Test the Model
-        correct = 0
-        total = 0
-        for x, labels in test_data_global:
-            x = x.to(device)
-            labels = labels.to(device)
-            outputs = model(x)
-            _, predicted = torch.max(outputs.data, -1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum()
-        # 52% in the last round
-        print('Accuracy of the model: %d %%' % (100 * correct // total))
-
-
-if __name__ == '__main__':
-    main()

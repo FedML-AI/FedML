@@ -19,7 +19,8 @@ from fedml_api.data_preprocessing.shakespeare.data_loader import load_partition_
 from fedml_api.data_preprocessing.fed_shakespeare.data_loader import load_partition_data_federated_shakespeare
 from fedml_api.data_preprocessing.stackoverflow_lr.data_loader import load_partition_data_federated_stackoverflow_lr
 from fedml_api.data_preprocessing.stackoverflow_nwp.data_loader import load_partition_data_federated_stackoverflow_nwp
-
+from fedml_api.data_preprocessing.ImageNet.data_loader import load_partition_data_ImageNet
+from fedml_api.data_preprocessing.Landmarks.data_loader import load_partition_data_landmarks
 from fedml_api.model.cv.mobilenet import mobilenet
 from fedml_api.model.cv.resnet import resnet56
 from fedml_api.model.cv.cnn import CNN_DropOut
@@ -150,6 +151,41 @@ def load_data(args, dataset_name):
         train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
         class_num = load_partition_data_federated_stackoverflow_nwp(args.dataset, args.data_dir)
         args.client_num_in_total = client_num
+
+    elif dataset_name == "ILSVRC2012":
+        logging.info("load_data. dataset_name = %s" % dataset_name)
+        train_data_num, test_data_num, train_data_global, test_data_global, \
+        train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
+        class_num = load_partition_data_ImageNet(dataset=dataset_name, data_dir=args.data_dir,
+            partition_method=None, partition_alpha=None, 
+            client_number=args.client_num_in_total, batch_size=args.batch_size)
+
+    elif dataset_name == "gld23k":
+        logging.info("load_data. dataset_name = %s" % dataset_name)
+        args.client_num_in_total = 233
+        fed_train_map_file = os.path.join(args.data_dir, 'mini_gld_train_split.csv')
+        fed_test_map_file = os.path.join(args.data_dir, 'mini_gld_test.csv')
+
+        train_data_num, test_data_num, train_data_global, test_data_global, \
+        train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
+        class_num = load_partition_data_landmarks(dataset=dataset_name, data_dir=args.data_dir,
+            fed_train_map_file=fed_train_map_file, fed_test_map_file=fed_test_map_file,
+            partition_method=None, partition_alpha=None, 
+            client_number=args.client_num_in_total, batch_size=args.batch_size)
+
+    elif dataset_name == "gld160k":
+        logging.info("load_data. dataset_name = %s" % dataset_name)
+        args.client_num_in_total = 1262
+        fed_train_map_file = os.path.join(args.data_dir, 'federated_train.csv')
+        fed_test_map_file = os.path.join(args.data_dir, 'test.csv')
+
+        train_data_num, test_data_num, train_data_global, test_data_global, \
+        train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
+        class_num = load_partition_data_landmarks(dataset=dataset_name, data_dir=args.data_dir,
+            fed_train_map_file=fed_train_map_file, fed_test_map_file=fed_test_map_file,
+            partition_method=None, partition_alpha=None, 
+            client_number=args.client_num_in_total, batch_size=args.batch_size)
+
     else:
         if dataset_name == "cifar10":
             data_loader = load_partition_data_cifar10

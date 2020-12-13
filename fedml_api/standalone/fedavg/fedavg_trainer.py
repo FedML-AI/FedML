@@ -2,6 +2,7 @@ import copy
 import logging
 
 import numpy as np
+import random
 import wandb
 
 from fedml_api.standalone.fedavg.client import Client
@@ -48,6 +49,7 @@ class FedAvgTrainer(object):
     def train(self):
         w_global = self.model.state_dict()
         for round_idx in range(self.args.comm_round):
+            
             logging.info("################Communication round : {}".format(round_idx))
 
             w_locals, loss_locals = [], []
@@ -104,7 +106,15 @@ class FedAvgTrainer(object):
         return averaged_params
 
     def local_test_on_all_clients(self, model_global, round_idx):
-        logging.info("################local_test_on_all_clients : {}".format(round_idx))
+        
+        if self.args.dataset in ["stackoverflow_lr",  "stackoverflow_nwp"]:
+            # due to the amount of test set, only abount 10000 samples are tested each round
+            testlist = random.sample(range(0, self.args.client_num_in_total), 100)
+            logging.info("################local_test_round_{}_on_clients : {}".format(round_idx, str(testlist)))
+        else:
+            logging.info("################local_test_on_all_clients : {}".format(round_idx))
+            testlist = list(range(self.args.client_num_in_total))
+
         train_metrics = {
             'num_samples' : [],
             'num_correct' : [],
@@ -122,7 +132,8 @@ class FedAvgTrainer(object):
         }
 
         client = self.client_list[0]
-        for client_idx in range(self.args.client_num_in_total):
+        
+        for client_idx in testlist:
             """
             Note: for datasets like "fed_CIFAR100" and "fed_shakespheare",
             the training client number is larger than the testing client number
@@ -149,6 +160,9 @@ class FedAvgTrainer(object):
                 train_metrics['recalls'].append(copy.deepcopy(train_local_metrics['test_recall']))
                 test_metrics['precisions'].append(copy.deepcopy(test_local_metrics['test_precision']))
                 test_metrics['recalls'].append(copy.deepcopy(test_local_metrics['test_recall']))
+                # due to the amount of test set, only abount 10000 samples are tested each round
+                if sum(test_metrics['num_samples']) >= 10000:
+                    break
 
             """
             Note: CI environment is CPU-based computing. 
