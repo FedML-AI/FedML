@@ -1,5 +1,6 @@
 import copy
 import logging
+import random
 import time
 
 import numpy as np
@@ -169,6 +170,36 @@ class FedOptAggregator(object):
             wandb.log({"Train/Loss": train_loss, "round": round_idx})
             stats = {'training_acc': train_acc, 'training_loss': train_loss}
             logging.info(stats)
+
+            # test on test dataset
+            test_acc = sum(test_tot_corrects) / sum(test_num_samples)
+            test_loss = sum(test_losses) / sum(test_num_samples)
+            wandb.log({"Test/Acc": test_acc, "round": round_idx})
+            wandb.log({"Test/Loss": test_loss, "round": round_idx})
+            stats = {'test_acc': test_acc, 'test_loss': test_loss}
+            logging.info(stats)
+
+
+    def test_on_random_test_samples(self, round_idx, sample_num = 10000):
+
+        if round_idx % self.args.frequency_of_the_test == 0 or round_idx == self.args.comm_round - 1:
+            
+            test_data_num  = len(self.test_global.dataset)
+            sample_indices = random.sample(range(test_data_num), min(sample_num, test_data_num))
+            subset = torch.utils.data.Subset(self.test_global.dataset, sample_indices)
+            sample_testset = torch.utils.data.DataLoader(subset, batch_size=self.args.batch_size)
+
+            logging.info("################ local_test_round_{}: {} test samples".format(round_idx, str(sample_num)))
+
+            test_num_samples = []
+            test_tot_corrects = []
+            test_losses = []
+            
+            # test data
+            test_tot_correct, test_num_sample, test_loss = self.trainer.test(sample_testset, self.device, self.args)
+            test_tot_corrects.append(copy.deepcopy(test_tot_correct))
+            test_num_samples.append(copy.deepcopy(test_num_sample))
+            test_losses.append(copy.deepcopy(test_loss))
 
             # test on test dataset
             test_acc = sum(test_tot_corrects) / sum(test_num_samples)

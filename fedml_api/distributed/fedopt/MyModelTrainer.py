@@ -66,11 +66,15 @@ class MyModelTrainer(ModelTrainer):
                 target = target.to(device)
                 pred = model(x)
                 loss = criterion(pred, target)
-                _, predicted = torch.max(pred, -1)
+                _, predicted = torch.max(pred, 1)
                 correct = predicted.eq(target).sum()
 
                 test_acc += correct.item()
                 test_loss += loss.item() * target.size(0)
-                test_total += target.size(0)
+                
+                if len(target.size()) == 1: # 
+                    test_total += target.size(0)
+                elif len(target.size()) == 2: # for tasks of next word prediction
+                    test_total += target.size(0) * target.size(1)
 
         return test_acc, test_total, test_loss

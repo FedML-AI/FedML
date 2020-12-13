@@ -18,10 +18,10 @@ https://wandb.ai/automl/fedml/runs/2dntp1tv?workspace=user-chaoyanghe-com
 
 # Federated EMNIST experiments
 ```
-sh run_fedavg_distributed_pytorch.sh 10 10 1 4 cnn hetero 100 1 20 0.1 femnist "./../../../data/FederatedEMNIST" sgd 0
+sh run_fedavg_distributed_pytorch.sh 10 10 1 4 cnn hetero 100 1 20 0.1 femnist "./../../../data/FederatedEMNIST/datasets" sgd 0
 
 ##run on background
-nohup sh run_fedavg_distributed_pytorch.sh 10 10 1 4 cnn hetero 100 10 20 0.1 femnist "./../../../data/FederatedEMNIST" sgd 0 > ./fedavg-cnn-femnist.txt 2>&1 &
+nohup sh run_fedavg_distributed_pytorch.sh 10 10 1 4 cnn hetero 100 10 20 0.1 femnist "./../../../data/FederatedEMNIST/datasets" sgd 0 > ./fedavg-cnn-femnist.txt 2>&1 &
 ```
 
 # shakespeare experiments
