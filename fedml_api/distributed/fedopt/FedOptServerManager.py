@@ -48,7 +48,11 @@ class FedOptServerManager(ServerManager):
         logging.info("b_all_received = " + str(b_all_received))
         if b_all_received:
             global_model_params = self.aggregator.aggregate()
-            self.aggregator.test_on_all_clients(self.round_idx)
+            if self.args.dataset.startswith("stackoverflow") and self.round_idx < self.round_num - 1:
+                # because the testset of stackoverflow is large, we test on 10000 random samples
+                self.aggregator.test_on_random_test_samples(self.round_idx, sample_num = 10000)
+            else:
+                self.aggregator.test_on_all_clients(self.round_idx)
 
             # start the next round
             self.round_idx += 1
