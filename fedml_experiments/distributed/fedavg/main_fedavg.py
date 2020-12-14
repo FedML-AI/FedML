@@ -4,15 +4,15 @@ import os
 import random
 import socket
 import sys
-
 import traceback
-from mpi4py import MPI
 
 import numpy as np
 import psutil
 import setproctitle
 import torch
 import wandb
+from mpi4py import MPI
+
 # add the FedML root directory to the python path
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
@@ -39,8 +39,6 @@ from fedml_api.model.nlp.rnn import RNN_OriginalFedAvg, RNN_StackOverFlow
 from fedml_api.model.linear.lr import LogisticRegression
 from fedml_api.model.cv.mobilenet_v3 import MobileNetV3
 from fedml_api.model.cv.efficientnet import EfficientNet
-
-
 
 from fedml_api.distributed.fedavg.FedAvgAPI import FedML_init, FedML_FedAvg_distributed
 
@@ -163,8 +161,8 @@ def load_data(args, dataset_name):
         train_data_num, test_data_num, train_data_global, test_data_global, \
         train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
         class_num = load_partition_data_ImageNet(dataset=dataset_name, data_dir=args.data_dir,
-            partition_method=None, partition_alpha=None, 
-            client_number=args.client_num_in_total, batch_size=args.batch_size)
+                                                 partition_method=None, partition_alpha=None,
+                                                 client_number=args.client_num_in_total, batch_size=args.batch_size)
 
     elif dataset_name == "gld23k":
         logging.info("load_data. dataset_name = %s" % dataset_name)
@@ -176,9 +174,10 @@ def load_data(args, dataset_name):
         train_data_num, test_data_num, train_data_global, test_data_global, \
         train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
         class_num = load_partition_data_landmarks(dataset=dataset_name, data_dir=args.data_dir,
-            fed_train_map_file=fed_train_map_file, fed_test_map_file=fed_test_map_file,
-            partition_method=None, partition_alpha=None, 
-            client_number=args.client_num_in_total, batch_size=args.batch_size)
+                                                  fed_train_map_file=fed_train_map_file,
+                                                  fed_test_map_file=fed_test_map_file,
+                                                  partition_method=None, partition_alpha=None,
+                                                  client_number=args.client_num_in_total, batch_size=args.batch_size)
 
     elif dataset_name == "gld160k":
         logging.info("load_data. dataset_name = %s" % dataset_name)
@@ -190,9 +189,10 @@ def load_data(args, dataset_name):
         train_data_num, test_data_num, train_data_global, test_data_global, \
         train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
         class_num = load_partition_data_landmarks(dataset=dataset_name, data_dir=args.data_dir,
-            fed_train_map_file=fed_train_map_file, fed_test_map_file=fed_test_map_file,
-            partition_method=None, partition_alpha=None, 
-            client_number=args.client_num_in_total, batch_size=args.batch_size)
+                                                  fed_train_map_file=fed_train_map_file,
+                                                  fed_test_map_file=fed_test_map_file,
+                                                  partition_method=None, partition_alpha=None,
+                                                  client_number=args.client_num_in_total, batch_size=args.batch_size)
 
 
     else:
@@ -293,7 +293,6 @@ if __name__ == "__main__":
                  ", process ID = " + str(os.getpid()) +
                  ", process Name = " + str(psutil.Process(os.getpid())))
 
-
     # initialize the wandb machine learning experimental tracking platform (https://www.wandb.com/).
     if process_id == 0:
         wandb.init(
@@ -336,13 +335,11 @@ if __name__ == "__main__":
     model = create_model(args, model_name=args.model, output_dim=dataset[7])
 
     try:
-    # start "federated averaging (FedAvg)"
+        # start "federated averaging (FedAvg)"
         FedML_FedAvg_distributed(process_id, worker_number, device, comm,
-                             model, train_data_num, train_data_global, test_data_global,
-                             train_data_local_num_dict, train_data_local_dict, test_data_local_dict, args)
+                                 model, train_data_num, train_data_global, test_data_global,
+                                 train_data_local_num_dict, train_data_local_dict, test_data_local_dict, args)
     except Exception as e:
         print(e)
         logging.info('traceback.format_exc():\n%s' % traceback.format_exc())
         MPI.COMM_WORLD.Abort()
-
-
