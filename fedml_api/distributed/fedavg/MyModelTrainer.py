@@ -78,14 +78,11 @@ class MyModelTrainer(ModelTrainer):
                     metrics['test_precision'] += precision.sum().item()
                     metrics['test_recall'] += recall.sum().item()
                 else:
-                    _, predicted = torch.max(pred, 1)
+                    _, predicted = torch.max(pred, -1)
                     correct = predicted.eq(target).sum()
 
                 metrics['test_correct'] += correct.item()
                 metrics['test_loss'] += loss.item() * target.size(0)
-                if len(target.size()) == 1:  #
-                    metrics['test_total'] += target.size(0)
-                elif len(target.size()) == 2:  # for tasks of next word prediction
-                    metrics['test_total'] += target.size(0) * target.size(1)
+                metrics['test_total'] += target.size(0)
 
         return metrics
