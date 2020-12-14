@@ -32,13 +32,13 @@ class FedAVGAggregator(object):
         for idx in range(self.worker_num):
             self.flag_client_model_uploaded_dict[idx] = False
 
-        self.train_client_correct_dict = dict()
-        self.train_client_error_dict = dict()
-        self.train_client_num_dict = dict()
+        self.train_client_correct_dict = []
+        self.train_client_error_dict = []
+        self.train_client_num_dict = []
 
-        self.test_client_correct_dict = dict()
-        self.test_client_error_dict = dict()
-        self.test_client_num_dict = dict()
+        self.test_client_correct_dict = []
+        self.test_client_error_dict = []
+        self.test_client_num_dict = []
 
     def get_global_model_params(self):
         return self.trainer.get_model_params()
@@ -103,23 +103,20 @@ class FedAVGAggregator(object):
 
     def add_client_test_result(self, client_index, train_correct, train_error, train_num,
                            test_correct, test_error, test_num):
-        self.train_client_correct_dict[client_index] = train_correct
-        self.train_client_error_dict[client_index] = train_error
-        self.train_client_num_dict[client_index] = train_num
+        self.train_client_correct_dict.append(copy.deepcopy(train_correct))
+        self.train_client_error_dict.append(copy.deepcopy(train_error))
+        self.train_client_num_dict.append(copy.deepcopy(train_num))
 
-        self.test_client_correct_dict[client_index] = test_correct
-        self.test_client_error_dict[client_index] = test_error
-        self.test_client_num_dict[client_index] = test_num
+        self.test_client_correct_dict.append(copy.deepcopy(test_correct))
+        self.test_client_error_dict.append(copy.deepcopy(test_error))
+        self.test_client_num_dict.append(copy.deepcopy(test_num))
 
     def output_global_acc_and_loss(self, round_idx):
         logging.info("################output_global_acc_and_loss : {}".format(round_idx))
 
         # test on training dataset
-        train_correct_sum = np.array([self.train_client_correct_dict[k] for k in self.train_client_correct_dict.keys()]).sum()
-        train_error_sum = np.array([self.train_client_error_dict[k] for k in self.train_client_error_dict.keys()]).sum()
-        train_num_sum = np.array([self.train_client_num_dict[k] for k in self.train_client_num_dict.keys()]).sum()
-        train_acc = train_correct_sum / train_num_sum
-        train_loss = train_error_sum / train_num_sum
+        train_acc = sum(self.train_client_correct_dict) / sum(self.train_client_num_dict)
+        train_loss = sum(self.train_client_error_dict) / sum(self.train_client_num_dict)
 
         wandb.log({"Train/Acc": train_acc, "round": round_idx})
         wandb.log({"Train/Loss": train_loss, "round": round_idx})
@@ -127,21 +124,66 @@ class FedAVGAggregator(object):
         logging.info(stats)
 
         # test on test dataset
-        test_correct_sum = np.array([self.test_client_correct_dict[k] for k in self.test_client_correct_dict.keys()]).sum()
-        test_error_sum = np.array([self.test_client_error_dict[k] for k in self.test_client_error_dict.keys()]).sum()
-        test_num_sum = np.array([self.test_client_num_dict[k] for k in self.test_client_num_dict.keys()]).sum()
-        test_acc = test_correct_sum / test_num_sum
-        test_loss = test_error_sum / test_num_sum
+        test_acc = sum(self.test_client_correct_dict) / sum(self.test_client_num_dict)
+        test_loss = sum(self.test_client_error_dict) / sum(self.test_client_num_dict)
 
         wandb.log({"Test/Acc": test_acc, "round": round_idx})
         wandb.log({"Test/Loss": test_loss, "round": round_idx})
         stats = {'test_acc': test_acc, 'test_loss': test_loss}
         logging.info(stats)
 
-        self.train_client_correct_dict.clear()
-        self.train_client_error_dict.clear()
-        self.train_client_num_dict.clear()
+        self.train_client_correct_dict = []
+        self.train_client_error_dict = []
+        self.train_client_num_dict = []
 
-        self.test_client_correct_dict.clear()
-        self.test_client_error_dict.clear()
-        self.test_client_num_dict.clear()
+        self.test_client_correct_dict = []
+        self.test_client_error_dict = []
+        self.test_client_num_dict = []
+
+    def test_on_server_for_all_clients(self, round_idx):
+        if round_idx % self.args.frequency_of_the_test == 0 or round_idx == self.args.comm_round - 1:
+            logging.info("################test_on_server_for_all_clients : {}".format(round_idx))
+            train_num_samples = []
+            train_tot_corrects = []
+            train_losses = []
+
+            test_num_samples = []
+            test_tot_corrects = []
+            test_losses = []
+            for client_idx in range(self.args.client_num_in_total):
+                # train data
+                metrics = self.trainer.test(self.train_data_local_dict[client_idx], self.device, self.args)
+                train_tot_correct, train_num_sample, train_loss = metrics['test_correct'], metrics['test_total'], metrics['test_loss']
+                train_tot_corrects.append(copy.deepcopy(train_tot_correct))
+                train_num_samples.append(copy.deepcopy(train_num_sample))
+                train_losses.append(copy.deepcopy(train_loss))
+
+                # test data
+                metrics = self.trainer.test(self.test_data_local_dict[client_idx], self.device, self.args)
+                test_tot_correct, test_num_sample, test_loss = metrics['test_correct'], metrics['test_total'], metrics['test_loss']
+                test_tot_corrects.append(copy.deepcopy(test_tot_correct))
+                test_num_samples.append(copy.deepcopy(test_num_sample))
+                test_losses.append(copy.deepcopy(test_loss))
+
+                """
+                Note: CI environment is CPU-based computing. 
+                The training speed for RNN training is to slow in this setting, so we only test a client to make sure there is no programming error.
+                """
+                if self.args.ci == 1:
+                    break
+
+            # test on training dataset
+            train_acc = sum(train_tot_corrects) / sum(train_num_samples)
+            train_loss = sum(train_losses) / sum(train_num_samples)
+            wandb.log({"Train/Acc": train_acc, "round": round_idx})
+            wandb.log({"Train/Loss": train_loss, "round": round_idx})
+            stats = {'training_acc': train_acc, 'training_loss': train_loss}
+            logging.info(stats)
+
+            # test on test dataset
+            test_acc = sum(test_tot_corrects) / sum(test_num_samples)
+            test_loss = sum(test_losses) / sum(test_num_samples)
+            wandb.log({"Test/Acc": test_acc, "round": round_idx})
+            wandb.log({"Test/Loss": test_loss, "round": round_idx})
+            stats = {'test_acc': test_acc, 'test_loss': test_loss}
+            logging.info(stats)
