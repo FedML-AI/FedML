@@ -28,7 +28,6 @@ def _data_transforms_pascal_voc():
         custom_transforms.FixedScaleCrop(513),
         custom_transforms.ToTensor(),
         custom_transforms.Normalize(mean=PASCAL_VOC_MEAN, std=PASCAL_VOC_STD),
-        # custom_transforms.Normalize([.485, .456, .406], [.229, .224, .225])
     ])
 
     return train_transform, val_transform
@@ -92,7 +91,6 @@ def record_net_data_stats(y_train, net_dataidx_map):
     return net_cls_counts
 
 
-
 def load_pascal_voc_data(datadir):
     transform_train, transform_test = _data_transforms_pascal_voc()
 
@@ -120,7 +118,6 @@ def partition_data(datadir, partition, n_nets, alpha):
     # TODO: Add custom non-iid distribution option - hetero-fix
     elif partition == "hetero":
         min_size = 0
-        # K = train_dataset.num_classes
         categories = train_categories
         N = n_train  # Number of labels/training samples
         logging.info("N = " + str(N))
@@ -128,8 +125,7 @@ def partition_data(datadir, partition, n_nets, alpha):
 
         while min_size < 10:
             idx_batch = [[] for _1 in range(n_nets)]  # Create a list of empty lists for clients
-            # for each class in the dataset
-            # one image may have multiple categories.
+
             for c in range(len(categories)):
                 if c > 0:
                     idx_k = np.asarray([np.any(train_targets[i] == c) and not np.any(
@@ -141,40 +137,23 @@ def partition_data(datadir, partition, n_nets, alpha):
                         [np.any(train_targets[i] == c) for i in range(len(train_targets))])
 
                 idx_k = np.where(idx_k)[0]  # Get the indices of images that have category = c
-                np.random.shuffle(idx_k)  # Shuffle these indices
+                np.random.shuffle(idx_k)
 
                 # alpha, parameter for Dirichlet dist, vector containing positive concentration parameters (larger
                 # the value more even the distribution)
 
-                # eg. np.random.dirichlet([10, 20, 30]) -> array([0.12926711, 0.37333834, 0.49739455])
                 proportions = np.random.dirichlet(np.repeat(alpha, n_nets))
 
                 # Balance
-                # If client's index list is smaller than num_labels/num_clients, keep sample value for the
-                # client as it is, else change it to 0.
                 proportions = np.array([p * (len(idx_j) < N / n_nets) for p, idx_j in zip(proportions, idx_batch)])
 
                 # Normalize across all samples
                 proportions = proportions / proportions.sum()
 
-                # eg. For 10 clients, 15 samples -> [0,0,2,2,2,2,14,14,14] -> 9 elements
                 proportions = (np.cumsum(proportions) * len(idx_k)).astype(int)[:-1]
 
                 # Split sample indices based on proportions
-                # eg. Split [1,2,3,4,5,6,7,8,9,0,12,14,15,16,13] based on index values in proportions
-                # eg. np.split(np.asarray([1,2,3,4,5,6,7,8,9,0,12,14,15,16,13]), [0,0,2,2,2,2,14,14,14])
-                # -> [array([], dtype=int64),
-                #  array([], dtype=int64),
-                #  array([1, 2]),
-                #  array([], dtype=int64),
-                #  array([], dtype=int64),
-                #  array([], dtype=int64),
-                #  array([ 3,  4,  5,  6,  7,  8,  9,  0, 12, 14, 15, 16]),
-                #  array([], dtype=int64),
-                #  array([], dtype=int64),
-                #  array([13])]
                 idx_batch = [idx_j + idx.tolist() for idx_j, idx in zip(idx_batch, np.split(idx_k, proportions))]
-
                 min_size = min([len(idx_j) for idx_j in idx_batch])
 
         for j in range(n_nets):
@@ -182,11 +161,6 @@ def partition_data(datadir, partition, n_nets, alpha):
             net_dataidx_map[j] = idx_batch[j]
 
         traindata_cls_counts = record_net_data_stats(train_targets, net_dataidx_map)
-
-        # print("Final partition for clients: ")
-        # for key in net_dataidx_map:
-        #     print('Client: ', key)
-        #     print('Number of samples: ', len(net_dataidx_map[key]))
 
     return net_dataidx_map, traindata_cls_counts
 

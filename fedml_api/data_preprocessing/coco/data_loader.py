@@ -116,39 +116,33 @@ def partition_data(datadir, partition, n_nets, alpha):
     # TODO: Add custom non-iid distribution option - hetero-fix
     elif partition == "hetero":
         min_size = 0
-        # K = train_dataset.num_classes
-        categories = train_cat_ids # category names
+        categories = train_cat_ids  # category names
         N = n_train  # Number of labels/training samples
-        logging.info("N = " + str(N))
         net_dataidx_map = {}
 
         while min_size < 10:
-            idx_batch = [[] for _1 in range(n_nets)]  # Create a list of empty lists for clients
-            # for each class in the dataset
-            # one image may have multiple categories.
+            # Create a list of empty lists for clients
+            idx_batch = [[] for _1 in range(n_nets)]
+
+            # note: one image may have multiple categories.
             for c, cat in enumerate(categories):
                 # print(c, cat)
                 if c > 0:
                     idx_k = np.asarray([np.any(train_targets[i] == cat) and not np.any(
                         np.in1d(train_targets[i], categories[:c])) for i in
                                         range(len(train_targets))])
-
                 else:
                     idx_k = np.asarray(
                         [np.any(train_targets[i] == cat) for i in range(len(train_targets))])
 
                 idx_k = np.where(idx_k)[0]  # Get the indices of images that have category = c
-                np.random.shuffle(idx_k)  # Shuffle these indices
+                np.random.shuffle(idx_k)
 
                 # alpha, parameter for Dirichlet dist, vector containing positive concentration parameters (larger
                 # the value more even the distribution)
-
-                # eg. np.random.dirichlet([10, 20, 30]) -> array([0.12926711, 0.37333834, 0.49739455])
                 proportions = np.random.dirichlet(np.repeat(alpha, n_nets))
 
                 # Balance
-                # If client's index list is smaller than num_labels/num_clients, keep sample value for the
-                # client as it is, else change it to 0.
                 proportions = np.array([p * (len(idx_j) < N / n_nets) for p, idx_j in zip(proportions, idx_batch)])
 
                 # Normalize across all samples
@@ -156,20 +150,6 @@ def partition_data(datadir, partition, n_nets, alpha):
 
                 # eg. For 10 clients, 15 samples -> [0,0,2,2,2,2,14,14,14] -> 9 elements
                 proportions = (np.cumsum(proportions) * len(idx_k)).astype(int)[:-1]
-
-                # Split sample indices based on proportions
-                # eg. Split [1,2,3,4,5,6,7,8,9,0,12,14,15,16,13] based on index values in proportions
-                # eg. np.split(np.asarray([1,2,3,4,5,6,7,8,9,0,12,14,15,16,13]), [0,0,2,2,2,2,14,14,14])
-                # -> [array([], dtype=int64),
-                #  array([], dtype=int64),
-                #  array([1, 2]),
-                #  array([], dtype=int64),
-                #  array([], dtype=int64),
-                #  array([], dtype=int64),
-                #  array([ 3,  4,  5,  6,  7,  8,  9,  0, 12, 14, 15, 16]),
-                #  array([], dtype=int64),
-                #  array([], dtype=int64),
-                #  array([13])]
                 idx_batch = [idx_j + idx.tolist() for idx_j, idx in zip(idx_batch, np.split(idx_k, proportions))]
 
                 min_size = min([len(idx_j) for idx_j in idx_batch])
@@ -179,11 +159,6 @@ def partition_data(datadir, partition, n_nets, alpha):
             net_dataidx_map[j] = idx_batch[j]
 
         traindata_cls_counts = record_net_data_stats(train_targets, net_dataidx_map)
-
-        # print("Final partition for clients: ")
-        # for key in net_dataidx_map:
-        #     print('Client: ', key)
-        #     print('Number of samples: ', len(net_dataidx_map[key]))
 
     return net_dataidx_map, traindata_cls_counts
 
@@ -211,7 +186,6 @@ def load_partition_data_distributed_coco(process_id, dataset, data_dir, partitio
         dataidxs = net_dataidx_map[client_id]
         local_data_num = len(dataidxs)
         logging.info("rank = %d, local_sample_number = %d" % (process_id, local_data_num))
-        # training batch size = 64; algorithms batch size = 32
         train_data_local, test_data_local, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size,
                                                                       dataidxs)
         logging.info("process_id = %d, batch_num_train_local = %d, batch_num_test_local = %d" % (
@@ -243,17 +217,16 @@ def load_partition_data_coco(dataset, data_dir, partition_method, partition_alph
     test_data_num = len(test_data_global)
 
     # get local dataset
-    data_local_num_dict = dict()  # Number of samples for each client
+    data_local_num_dict = dict()
     train_data_local_dict = dict()
     test_data_local_dict = dict()
 
     for client_idx in range(client_number):
-        dataidxs = net_dataidx_map[client_idx]  # get dataId list for client generated using Dirichlet sampling
-        local_data_num = len(dataidxs)  # How many samples does client have?
+        dataidxs = net_dataidx_map[client_idx]
+        local_data_num = len(dataidxs)
         data_local_num_dict[client_idx] = local_data_num
         logging.info("client_idx = %d, local_sample_number = %d" % (client_idx, local_data_num))
 
-        # training batch size = 64; algorithms batch size = 32
         train_data_local, test_data_local, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size,
                                                                       dataidxs)
         logging.info("client_idx = %d, batch_num_train_local = %d, batch_num_test_local = %d" % (
