@@ -63,11 +63,13 @@ def non_iid_partition_with_dirichlet_distribution(label_list, client_num, classi
     return net_dataidx_map
 
 
-def record_data_stats(y_train, net_dataidx_map):
+def record_data_stats(y_train, net_dataidx_map, is_segmentation=False):
     net_cls_counts = {}
 
     for net_i, dataidx in net_dataidx_map.items():
-        unq, unq_cnt = np.unique(y_train[dataidx], return_counts=True)
+
+        unq, unq_cnt = np.unique(np.concatenate(y_train[dataidx]), return_counts=True) if is_segmentation \
+            else np.unique(y_train[dataidx], return_counts=True)
         tmp = {unq[i]: unq_cnt[i] for i in range(len(unq))}
         net_cls_counts[net_i] = tmp
     logging.debug('Data statistics: %s' % str(net_cls_counts))

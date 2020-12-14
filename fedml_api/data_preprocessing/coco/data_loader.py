@@ -6,6 +6,7 @@ import numpy as np
 from torchvision import transforms
 from fedml_api.data_preprocessing.coco.transforms import Normalize, ToTensor, FixedResize
 from fedml_api.data_preprocessing.coco.datasets import CocoDataset
+from fedml_core.non_iid_partition.noniid_partition import record_data_stats
 
 logging.basicConfig()
 logger = logging.getLogger()
@@ -78,17 +79,6 @@ def get_dataloader_coco_test(datadir, train_bs, test_bs, dataidxs_train=None, da
     return train_dl, test_dl, train_ds.num_classes
 
 
-def record_net_data_stats(y_train, net_dataidx_map):
-    net_cls_counts = {}
-
-    for net_i, dataidx in net_dataidx_map.items():
-        unq, unq_cnt = np.unique(np.concatenate(y_train[dataidx]), return_counts=True)
-        tmp = {unq[i]: unq_cnt[i] for i in range(len(unq))}
-        net_cls_counts[net_i] = tmp
-    logging.debug('Data statistics: %s' % str(net_cls_counts))
-    return net_cls_counts
-
-
 def load_coco_data(datadir):
     transform_train, transform_test = _data_transforms_coco()
 
@@ -158,7 +148,7 @@ def partition_data(datadir, partition, n_nets, alpha):
             np.random.shuffle(idx_batch[j])
             net_dataidx_map[j] = idx_batch[j]
 
-        traindata_cls_counts = record_net_data_stats(train_targets, net_dataidx_map)
+        traindata_cls_counts = record_data_stats(train_targets, net_dataidx_map)
 
     return net_dataidx_map, traindata_cls_counts
 
