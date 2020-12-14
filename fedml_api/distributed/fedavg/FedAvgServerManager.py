@@ -59,7 +59,7 @@ class FedAVGServerManager(ServerManager):
         logging.info("b_all_received = " + str(b_all_received))
         if b_all_received:
             global_model_params = self.aggregator.aggregate()
-            # self.aggregator.output_global_acc_and_loss(self.round_idx)
+            self.aggregator.output_global_acc_and_loss(self.round_idx)
             self.aggregator.test_on_server_for_all_clients(self.round_idx)
 
             # start the next round
