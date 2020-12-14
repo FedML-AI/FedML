@@ -115,6 +115,9 @@ class FedAVGAggregator(object):
         logging.info("################output_global_acc_and_loss : {}".format(round_idx))
 
         # test on training dataset
+        logging.info(self.train_client_correct_dict)
+        logging.info(self.train_client_error_dict)
+        logging.info(self.train_client_num_dict)
         train_correct_sum = np.array([self.train_client_correct_dict[k] for k in self.train_client_correct_dict.keys()]).sum()
         train_error_sum = np.array([self.train_client_error_dict[k] for k in self.train_client_error_dict.keys()]).sum()
         train_num_sum = np.array([self.train_client_num_dict[k] for k in self.train_client_num_dict.keys()]).sum()
@@ -137,3 +140,11 @@ class FedAVGAggregator(object):
         wandb.log({"Test/Loss": test_loss, "round": round_idx})
         stats = {'test_acc': test_acc, 'test_loss': test_loss}
         logging.info(stats)
+
+        self.train_client_correct_dict.clear()
+        self.train_client_error_dict.clear()
+        self.train_client_num_dict.clear()
+
+        self.test_client_correct_dict.clear()
+        self.test_client_error_dict.clear()
+        self.test_client_num_dict.clear()

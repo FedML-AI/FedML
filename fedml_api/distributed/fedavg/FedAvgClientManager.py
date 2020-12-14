@@ -80,8 +80,9 @@ class FedAVGClientManager(ClientManager):
 
     def __train(self):
         logging.info("#######training########### round_id = %d" % self.round_idx)
-        weights, local_sample_num = self.trainer.train()
+        # test the global model first
         train_tot_correct, train_loss, train_num_sample, test_tot_correct, test_loss, test_num_sample = self.trainer.test()
+        weights, local_sample_num = self.trainer.train()
         self.send_model_to_server(0, weights, local_sample_num,
                                   train_tot_correct, train_loss, train_num_sample,
                                   test_tot_correct, test_loss, test_num_sample)
