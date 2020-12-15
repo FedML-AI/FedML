@@ -127,28 +127,19 @@ def partition_data(datadir, partition, n_nets, alpha):
 
                 idx_k = np.where(idx_k)[0]  # Get the indices of images that have category = c
                 np.random.shuffle(idx_k)
-
-                # alpha, parameter for Dirichlet dist, vector containing positive concentration parameters (larger
-                # the value more even the distribution)
                 proportions = np.random.dirichlet(np.repeat(alpha, n_nets))
-
-                # Balance
                 proportions = np.array([p * (len(idx_j) < N / n_nets) for p, idx_j in zip(proportions, idx_batch)])
 
-                # Normalize across all samples
                 proportions = proportions / proportions.sum()
-
-                # eg. For 10 clients, 15 samples -> [0,0,2,2,2,2,14,14,14] -> 9 elements
                 proportions = (np.cumsum(proportions) * len(idx_k)).astype(int)[:-1]
                 idx_batch = [idx_j + idx.tolist() for idx_j, idx in zip(idx_batch, np.split(idx_k, proportions))]
-
                 min_size = min([len(idx_j) for idx_j in idx_batch])
 
         for j in range(n_nets):
             np.random.shuffle(idx_batch[j])
             net_dataidx_map[j] = idx_batch[j]
 
-        traindata_cls_counts = record_data_stats(train_targets, net_dataidx_map)
+    traindata_cls_counts = record_data_stats(train_targets, net_dataidx_map, is_segmentation=True)
 
     return net_dataidx_map, traindata_cls_counts
 

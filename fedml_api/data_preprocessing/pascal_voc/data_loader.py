@@ -110,11 +110,11 @@ def partition_data(datadir, partition, n_nets, alpha):
         min_size = 0
         categories = train_categories
         N = n_train  # Number of labels/training samples
-        logging.info("N = " + str(N))
         net_dataidx_map = {}
 
         while min_size < 10:
-            idx_batch = [[] for _1 in range(n_nets)]  # Create a list of empty lists for clients
+            # Create a list of empty lists for clients
+            idx_batch = [[] for _1 in range(n_nets)]
 
             for c in range(len(categories)):
                 if c > 0:
@@ -142,7 +142,6 @@ def partition_data(datadir, partition, n_nets, alpha):
 
                 proportions = (np.cumsum(proportions) * len(idx_k)).astype(int)[:-1]
 
-                # Split sample indices based on proportions
                 idx_batch = [idx_j + idx.tolist() for idx_j, idx in zip(idx_batch, np.split(idx_k, proportions))]
                 min_size = min([len(idx_j) for idx_j in idx_batch])
 
@@ -150,7 +149,7 @@ def partition_data(datadir, partition, n_nets, alpha):
             np.random.shuffle(idx_batch[j])
             net_dataidx_map[j] = idx_batch[j]
 
-        traindata_cls_counts = record_data_stats(train_targets, net_dataidx_map)
+    traindata_cls_counts = record_data_stats(train_targets, net_dataidx_map, is_segmentation=True)
 
     return net_dataidx_map, traindata_cls_counts
 
