@@ -44,22 +44,11 @@ class FedAVGServerManager(ServerManager):
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         local_sample_number = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
 
-        train_correct = msg_params.get(MyMessage.MSG_ARG_KEY_TRAIN_CORRECT)
-        train_error = msg_params.get(MyMessage.MSG_ARG_KEY_TRAIN_ERROR)
-        train_num = msg_params.get(MyMessage.MSG_ARG_KEY_TRAIN_NUM)
-
-        test_correct = msg_params.get(MyMessage.MSG_ARG_KEY_TEST_CORRECT)
-        test_error = msg_params.get(MyMessage.MSG_ARG_KEY_TEST_ERROR)
-        test_num = msg_params.get(MyMessage.MSG_ARG_KEY_TEST_NUM)
-
         self.aggregator.add_local_trained_result(sender_id - 1, model_params, local_sample_number)
-        self.aggregator.add_client_test_result(sender_id - 1, train_correct, train_error, train_num,
-                                               test_correct, test_error, test_num)
         b_all_received = self.aggregator.check_whether_all_receive()
         logging.info("b_all_received = " + str(b_all_received))
         if b_all_received:
             global_model_params = self.aggregator.aggregate()
-            # self.aggregator.output_global_acc_and_loss(self.round_idx)
             self.aggregator.test_on_server_for_all_clients(self.round_idx)
 
             # start the next round
