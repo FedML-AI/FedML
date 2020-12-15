@@ -31,7 +31,9 @@ from fedml_api.model.linear.lr import LogisticRegression
 from fedml_api.model.cv.resnet_gn import resnet18
 
 from fedml_api.standalone.fedavg.fedavg_api import FedAvgAPI
-from fedml_api.standalone.fedavg.my_model_trainer import MyModelTrainer
+from fedml_api.standalone.fedavg.my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
+from fedml_api.standalone.fedavg.my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
+from fedml_api.standalone.fedavg.my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
 
 
 def add_args(parser):
@@ -264,6 +266,15 @@ def create_model(args, model_name, output_dim):
     return model
 
 
+def custom_model_trainer(args, model):
+    if args.dataset == "stackoverflow_lr":
+        return MyModelTrainerTAG(model)
+    elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
+        return MyModelTrainerNWP(model)
+    else: # default model trainer is for classification problem
+        return MyModelTrainerCLS(model)
+
+
 if __name__ == "__main__":
     logging.basicConfig()
     logger = logging.getLogger()
@@ -296,7 +307,7 @@ if __name__ == "__main__":
     # Note if the model is DNN (e.g., ResNet), the training will be very slow.
     # In this case, please use our FedML distributed version (./fedml_experiments/distributed_fedavg)
     model = create_model(args, model_name=args.model, output_dim=dataset[7])
-    model_trainer = MyModelTrainer(model)
+    model_trainer = custom_model_trainer(args, model)
     logging.info(model)
 
     fedavgAPI = FedAvgAPI(dataset, device, args, model_trainer)
