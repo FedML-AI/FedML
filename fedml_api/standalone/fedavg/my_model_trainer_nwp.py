@@ -21,7 +21,7 @@ class MyModelTrainer(ModelTrainer):
         model.train()
 
         # train and update
-        criterion = nn.CrossEntropyLoss().to(device)
+        criterion = nn.CrossEntropyLoss(ignore_index=0).to(device)
         if args.client_optimizer == "sgd":
             optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, self.model.parameters()), lr=args.lr)
         else:
@@ -41,7 +41,7 @@ class MyModelTrainer(ModelTrainer):
                 loss.backward()
 
                 # to avoid nan loss
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), 0.5)
+                # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 0.5)
 
                 optimizer.step()
                 # logging.info('Update Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
@@ -74,9 +74,10 @@ class MyModelTrainer(ModelTrainer):
                 loss = criterion(pred, target)
 
                 _, predicted = torch.max(pred, 1)
-                correct = predicted.eq(target).sum()
+                target_pos = ~(target == 0)
+                correct = (predicted.eq(target) * target_pos).sum()
                 
                 metrics['test_correct'] += correct.item()
                 metrics['test_loss'] += loss.item() * target.size(0)
-                metrics['test_total'] += target.size(0) * target.size(1)
+                metrics['test_total'] += target_pos.sum().item()
         return metrics

@@ -3,6 +3,7 @@ import logging
 import random
 
 import numpy as np
+import torch
 import wandb
 
 from fedml_api.standalone.fedavg.client import Client
@@ -89,7 +90,7 @@ class FedAvgAPI(object):
         logging.info("client_indexes = %s" % str(client_indexes))
         return client_indexes
 
-    def _generate_validation_set(num_samples=10000):
+    def _generate_validation_set(self, num_samples=10000):
         test_data_num  = len(self.test_global.dataset)
         sample_indices = random.sample(range(test_data_num), min(num_samples, test_data_num))
         subset = torch.utils.data.Subset(self.test_global.dataset, sample_indices)
