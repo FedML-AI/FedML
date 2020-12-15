@@ -125,7 +125,7 @@ def load_partition_data_federated_stackoverflow_lr(
         train_data_local_dict = dict()
         test_data_local_dict = dict()
 
-        for client_idx in tqdm.tqdm(range(DEFAULT_TRAIN_CLINETS_NUM)):
+        for client_idx in tqdm.tqdm(range(DEFAULT_TRAIN_CLIENTS_NUM)):
             train_data_local, test_data_local = get_dataloader(
                 dataset, data_dir, batch_size, batch_size, client_idx)
             local_data_num = len(train_data_local.dataset)
