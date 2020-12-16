@@ -17,6 +17,11 @@
 </p>
 
 ## News
+<b>2020-12-12 (Conference Presentation)</b>: #NeurIPS 2020# We gave a contributed talk at NeurIPS 2020. Please check the video here: https://www.youtube.com/watch?v=93SETZGZMyI
+
+The slides of this presentation are also open source (yes, we open source everything of FedML!): 
+https://docs.google.com/presentation/d/1ykAQ_GpzEoRVJeMr1hXUHlJSBpzW2P6Wuzud8RTF0oo/edit#slide=id.p
+
 <b>2020-11-27 (System)</b>: FedML architecture has evolved into an ecosystem including multiple GitHub repositories. With FedML at its core, we can support more advanced FL applications and platforms. <br>
 FedML: https://github.com/FedML-AI/FedML
 

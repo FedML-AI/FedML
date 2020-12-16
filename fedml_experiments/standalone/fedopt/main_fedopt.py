@@ -23,7 +23,11 @@ from fedml_api.data_preprocessing.MNIST.data_loader import load_partition_data_m
 from fedml_api.model.linear.lr import LogisticRegression
 from fedml_api.model.cv.resnet_gn import resnet18
 
-from fedml_api.standalone.fedopt.fedopt_trainer import FedOptTrainer
+from fedml_api.standalone.fedopt.fedopt_api import FedOptAPI
+from fedml_api.standalone.fedopt.my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
+from fedml_api.standalone.fedopt.my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
+from fedml_api.standalone.fedopt.my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
+
 
 
 def add_args(parser):
@@ -32,13 +36,13 @@ def add_args(parser):
     return a parser added with args required by fit
     """
     # Training settings
-    parser.add_argument('--model', type=str, default='resnet56', metavar='N',
+    parser.add_argument('--model', type=str, default='cnn', metavar='N',
                         help='neural network used in training')
 
-    parser.add_argument('--dataset', type=str, default='cifar10', metavar='N',
+    parser.add_argument('--dataset', type=str, default='mnist', metavar='N',
                         help='dataset used for training')
 
-    parser.add_argument('--data_dir', type=str, default='./../../../data/cifar10',
+    parser.add_argument('--data_dir', type=str, default='./../../../data/mnist',
                         help='data directory')
 
     parser.add_argument('--partition_method', type=str, default='hetero', metavar='N',
@@ -140,11 +144,7 @@ def load_data(args, dataset_name):
         class_num = load_partition_data_federated_stackoverflow_nwp(args.dataset, args.data_dir)
         args.client_num_in_total = client_num
     else:
-        logging.info("load_data. dataset_name = %s" % dataset_name)
-        client_num, train_data_num, test_data_num, train_data_global, test_data_global, \
-        train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
-        class_num = load_partition_data_federated_emnist(args.dataset, args.data_dir)
-        args.client_num_in_total = client_num
+        raise Exception("Unknown dataset {} !"%dataset_name)
     dataset = [train_data_num, test_data_num, train_data_global, test_data_global,
                train_data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num]
     return dataset
@@ -174,7 +174,18 @@ def create_model(args, model_name, output_dim):
     elif model_name == "rnn" and args.dataset == "stackoverflow_nwp":
         logging.info("RNN + stackoverflow_nwp")
         model = RNN_StackOverFlow()
+    else:
+        raise Exception("Unknown model {} !"%model_name)
     return model
+
+
+def custom_model_trainer(args, model):
+    if args.dataset == "stackoverflow_lr":
+        return MyModelTrainerTAG(model)
+    elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
+        return MyModelTrainerNWP(model)
+    else: # default model trainer is for classification problem
+        return MyModelTrainerCLS(model)
 
 
 if __name__ == "__main__":
@@ -206,7 +217,8 @@ if __name__ == "__main__":
     # Note if the model is DNN (e.g., ResNet), the training will be very slow.
     # In this case, please use our FedML distributed version
     model = create_model(args, model_name=args.model, output_dim=dataset[7])
+    model_trainer = custom_model_trainer(args, model)
     logging.info(model)
 
-    trainer = FedOptTrainer(dataset, model, device, args)
-    trainer.train()
+    fedoptAPI = FedOptAPI(dataset, device, args, model_trainer)
+    fedoptAPI.train()
