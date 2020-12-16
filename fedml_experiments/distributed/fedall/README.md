@@ -17,10 +17,10 @@ nohup sh run_fedavg_distributed_pytorch.sh 10 10 1 4 lr hetero 200 20 10 0.03 mn
 
 # Federated EMNIST experiments
 ```
-sh run_fedavg_distributed_pytorch.sh 10 10 1 4 rnn hetero 100 10 10 0.8 femnist "./../../../data/FederatedEMNIST" 0
+sh run_fedavg_distributed_pytorch.sh 10 10 1 4 rnn hetero 100 10 10 0.8 femnist "./../../../data/FederatedEMNIST/datasets" 0
 
 ##run on background
-nohup sh run_fedavg_distributed_pytorch.sh 10 10 1 4 rnn hetero 100 10 10 0.8 femnist "./../../../data/FederatedEMNIST" 0 > ./fedavg-cnn-femnist.txt 2>&1 &
+nohup sh run_fedavg_distributed_pytorch.sh 10 10 1 4 rnn hetero 100 10 10 0.8 femnist "./../../../data/FederatedEMNIST/datasets" 0 > ./fedavg-cnn-femnist.txt 2>&1 &
 ```
 
 # shakespeare experiments

@@ -1,9 +1,8 @@
+import dill as pickle
 import logging
-import tqdm
 import os
+import tqdm
 
-import numpy as np
-import torch
 import torch.utils.data as data
 
 from . import utils
@@ -14,12 +13,14 @@ logger.setLevel(logging.INFO)
 
 client_ids_train = None
 client_ids_test = None
-DEFAULT_TRAIN_CLINETS_NUM = 342477
+DEFAULT_TRAIN_CLIENTS_NUM = 342477
 DEFAULT_TEST_CLIENTS_NUM = 204088
 DEFAULT_BATCH_SIZE = 100
 DEFAULT_TRAIN_FILE = 'stackoverflow_train.h5'
 DEFAULT_TEST_FILE = 'stackoverflow_test.h5'
 
+#cache
+DEFAULT_CACHE_FILE = 'stackoverflow_lr.pkl'
 
 def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
 
@@ -31,8 +32,8 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
                 "train", {
                     "input": lambda x: utils.preprocess_input(x, data_dir),
                     "target": lambda y: utils.preprocess_target(y, data_dir)
-                }) for client_idx in range(DEFAULT_TRAIN_CLINETS_NUM)),
-                                   batch_size=batch_size,
+                }) for client_idx in range(DEFAULT_TRAIN_CLIENTS_NUM)),
+                                   batch_size=train_bs,
                                    shuffle=True)
 
         test_dl = data.DataLoader(data.ConcatDataset(
@@ -41,8 +42,8 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
                 {
                     "input": lambda x: utils.preprocess_input(x, data_dir),
                     "target": lambda y: utils.preprocess_target(y, data_dir)
-                }) for client_idx in range(DEFAULT_TEST_CLINETS_NUM)),
-                                  batch_size=batch_size,
+                }) for client_idx in range(DEFAULT_TEST_CLIENTS_NUM)),
+                                  batch_size=test_bs,
                                   shuffle=True)
         return train_dl, test_dl
 
@@ -81,8 +82,8 @@ def load_partition_data_distributed_federated_stackoverflow_lr(
     if process_id == 0:
         train_data_global, test_data_global = get_dataloader(
             dataset, data_dir, batch_size, batch_size, process_id - 1)
-        train_data_num = len(train_data_global.dataset)
-        test_data_num = len(test_data_global.dataset)
+        # train_data_num = len(train_data_global.dataset)
+        # test_data_num = len(test_data_global.dataset)
         # logging.info("train_dl_global number = " + str(train_data_num))
         # logging.info("test_dl_global number = " + str(test_data_num))
         train_data_local = None
@@ -92,52 +93,81 @@ def load_partition_data_distributed_federated_stackoverflow_lr(
         # get local dataset
         train_data_local, test_data_local = get_dataloader(
             dataset, data_dir, batch_size, batch_size, process_id - 1)
-        train_data_num = local_data_num = len(train_data_local.dataset)
+        local_data_num = len(train_data_local.dataset)
         # logging.info("rank = %d, local_sample_number = %d" %
         #              (process_id, local_data_num))
         train_data_global = None
         test_data_global = None
-    output_dim = len(utils.get_tag_dict()) + 1  #oov
-    return train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, output_dim
+    output_dim = len(utils.get_tag_dict()) 
+    return DEFAULT_TRAIN_CLIENTS_NUM, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, output_dim
 
 
 def load_partition_data_federated_stackoverflow_lr(
         dataset, data_dir, batch_size=DEFAULT_BATCH_SIZE):
     logging.info("load_partition_data_federated_stackoverflow_lr START")
 
-    # get local dataset
-    data_local_num_dict = dict()
-    train_data_local_dict = dict()
-    test_data_local_dict = dict()
+    cache_path = os.path.join(data_dir, DEFAULT_CACHE_FILE)
+    if os.path.exists(cache_path):
+        #load cache
+        with open(cache_path, 'rb') as cache_file:
+            cache_data = pickle.load(cache_file)
+            train_data_num = cache_data['train_data_num']
+            test_data_num = cache_data['test_data_num']
+            train_data_global = cache_data['train_data_global']
+            test_data_global = cache_data['test_data_global']
+            data_local_num_dict = cache_data['data_local_num_dict']
+            train_data_local_dict = cache_data['train_data_local_dict']
+            test_data_local_dict = cache_data['test_data_local_dict']
+            output_dim = cache_data['output_dim']
 
-    for client_idx in tqdm.tqdm(range(DEFAULT_TRAIN_CLINETS_NUM)):
-        train_data_local, test_data_local = get_dataloader(
-            dataset, data_dir, batch_size, batch_size, client_idx)
-        local_data_num = len(train_data_local.dataset)
-        data_local_num_dict[client_idx] = local_data_num
-        # logging.info("client_idx = %d, local_sample_number = %d" %
-        #              (client_idx, local_data_num if test_data_local==None else len(test_data_local.dataset)))
-        # logging.info(
-        #     "client_idx = %d, batch_num_train_local = %d"
-        # % (client_idx, len(train_data_local)))
-        train_data_local_dict[client_idx] = train_data_local
-        test_data_local_dict[client_idx] = test_data_local
+    else:
+        # get local dataset
+        data_local_num_dict = dict()
+        train_data_local_dict = dict()
+        test_data_local_dict = dict()
 
-    train_data_global = data.DataLoader(data.ConcatDataset(
-        list(dl.dataset for dl in list(train_data_local_dict.values()))),
+        for client_idx in tqdm.tqdm(range(DEFAULT_TRAIN_CLIENTS_NUM)):
+            train_data_local, test_data_local = get_dataloader(
+                dataset, data_dir, batch_size, batch_size, client_idx)
+            local_data_num = len(train_data_local.dataset)
+            data_local_num_dict[client_idx] = local_data_num
+            # logging.info("client_idx = %d, local_sample_number = %d" %
+            #              (client_idx, local_data_num if test_data_local==None else len(test_data_local.dataset)))
+            # logging.info(
+            #     "client_idx = %d, batch_num_train_local = %d"
+            # % (client_idx, len(train_data_local)))
+            train_data_local_dict[client_idx] = train_data_local
+            test_data_local_dict[client_idx] = test_data_local
+
+        train_data_global = data.DataLoader(data.ConcatDataset(
+            list(dl.dataset for dl in list(train_data_local_dict.values()))),
+                                            batch_size=batch_size,
+                                            shuffle=True)
+        train_data_num = len(train_data_global.dataset)
+
+        test_data_global = data.DataLoader(data.ConcatDataset(
+            list(dl.dataset for dl in list(test_data_local_dict.values())
+                if dl is not None)),
                                         batch_size=batch_size,
                                         shuffle=True)
-    train_data_num = len(train_data_global.dataset)
+        test_data_num = len(test_data_global.dataset)
 
-    test_data_global = data.DataLoader(data.ConcatDataset(
-        list(dl.dataset for dl in list(test_data_local_dict.values())
-             if dl is not None)),
-                                       batch_size=batch_size,
-                                       shuffle=True)
-    test_data_num = len(test_data_global.dataset)
+        output_dim = len(utils.get_tag_dict(data_dir))
 
-    output_dim = len(utils.get_tag_dict(data_dir))
-    return DEFAULT_TRAIN_CLINETS_NUM, train_data_num, test_data_num, train_data_global, test_data_global, \
+        #save cache
+        with open(cache_path, 'wb') as cache_file:
+            cache_data = dict()
+            cache_data['train_data_num'] = train_data_num
+            cache_data['test_data_num'] = test_data_num
+            cache_data['train_data_global'] = train_data_global
+            cache_data['test_data_global'] = test_data_global
+            cache_data['data_local_num_dict'] = data_local_num_dict
+            cache_data['train_data_local_dict'] = train_data_local_dict
+            cache_data['test_data_local_dict'] = test_data_local_dict
+            cache_data['output_dim'] = output_dim
+            cache_data = pickle.dump(cache_data, cache_file)
+
+    return DEFAULT_TRAIN_CLIENTS_NUM, train_data_num, test_data_num, train_data_global, test_data_global, \
            data_local_num_dict, train_data_local_dict, test_data_local_dict, output_dim
 
 

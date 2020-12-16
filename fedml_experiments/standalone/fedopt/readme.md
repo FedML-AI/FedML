@@ -20,7 +20,7 @@ sh run_fedopt_standalone_pytorch.sh 0 10 10 4 fed_shakespeare ./../../../data/fe
 #### Federated EMNIST
  Note: You may need gradient clipping to get training run on Fed EMNIST dataset successfully. To do this, please uncomment the line "torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)" in FedML/fedml_api/standalone/fedopt/client.py.
 ```
-sh run_fedopt_standalone_pytorch.sh 0 10 10 20 femnist ./../../../data/FederatedEMNIST cnn hetero 1500 10 0.1 sgd 1 sgd 0
+sh run_fedopt_standalone_pytorch.sh 0 10 10 20 femnist ./../../../data/FederatedEMNIST/datasets cnn hetero 1500 10 0.1 sgd 1 sgd 0
 ```
 
 #### Fed_CIFAR100
@@ -41,7 +41,5 @@ sh run_fedopt_standalone_pytorch.sh 0 10 10 10 stackoverflow_nwp ./../../../data
 | Dataset | Model | Accuracy |
 | ------- | ------ | ------- |
 | MNIST | cnn | 0.81 |
-| fed_shakespeare (Google) | rnn | 0.63 |
+| fed_shakespeare (Google) | rnn | 0.49 |
 | Federated EMNIST | cnn | 0.82 |
-
-The training curves are tracked here: https://wandb.ai/elliebababa/fedml/reports/FedOpt-Experiment-Results--VmlldzozNDUwNDY

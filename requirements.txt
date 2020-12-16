@@ -1,0 +1,14 @@
+certifi==2020.6.20
+chardet==3.0.4
+et-xmlfile==1.0.1
+idna==2.10
+jdcal==1.4.1
+requests==2.24.0
+ruamel.yaml==0.16.10
+ruamel.yaml.clib==0.2.0
+urllib3==1.25.9
+flask==1.1.2
+gunicorn==20.0.4
+gevent==20.6.2
+paho-mqtt==1.5.0
+Celery==4.4.7

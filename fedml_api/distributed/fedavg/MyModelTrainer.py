@@ -44,7 +44,9 @@ class MyModelTrainer(ModelTrainer):
             if len(batch_loss) > 0:
                 epoch_loss.append(sum(batch_loss) / len(batch_loss))
                 logging.info('(Trainer_ID {}. Local Training Epoch: {} \tLoss: {:.6f}'.format(self.id,
-                        epoch, sum(epoch_loss) / len(epoch_loss)))
+                                                                                              epoch,
+                                                                                              sum(epoch_loss) / len(
+                                                                                                  epoch_loss)))
 
     def test(self, test_data, device, args):
         model = self.model
@@ -52,7 +54,14 @@ class MyModelTrainer(ModelTrainer):
         model.eval()
         model.to(device)
 
-        test_loss = test_acc = test_total = 0.
+        metrics = {
+            'test_correct': 0,
+            'test_loss': 0,
+            'test_precision': 0,
+            'test_recall': 0,
+            'test_total': 0
+        }
+
         criterion = nn.CrossEntropyLoss().to(device)
         with torch.no_grad():
             for batch_idx, (x, target) in enumerate(test_data):
@@ -60,11 +69,20 @@ class MyModelTrainer(ModelTrainer):
                 target = target.to(device)
                 pred = model(x)
                 loss = criterion(pred, target)
-                _, predicted = torch.max(pred, -1)
-                correct = predicted.eq(target).sum()
+                if args.dataset == "stackoverflow_lr":
+                    predicted = (pred > .5).int()
+                    correct = predicted.eq(target).sum(axis=-1).eq(target.size(1)).sum()
+                    true_positive = ((target * predicted) > .1).int().sum(axis=-1)
+                    precision = true_positive / (predicted.sum(axis=-1) + 1e-13)
+                    recall = true_positive / (target.sum(axis=-1) + 1e-13)
+                    metrics['test_precision'] += precision.sum().item()
+                    metrics['test_recall'] += recall.sum().item()
+                else:
+                    _, predicted = torch.max(pred, -1)
+                    correct = predicted.eq(target).sum()
 
-                test_acc += correct.item()
-                test_loss += loss.item() * target.size(0)
-                test_total += target.size(0)
+                metrics['test_correct'] += correct.item()
+                metrics['test_loss'] += loss.item() * target.size(0)
+                metrics['test_total'] += target.size(0)
 
-        return test_acc, test_total, test_loss
+        return metrics

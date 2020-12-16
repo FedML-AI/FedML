@@ -90,8 +90,8 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     main_args = add_args(parser)
-    train_path = "./../../../data/MNIST/train"
-    test_path = "./../../../data/MNIST/test"
+    train_path = "../../FedML/data/MNIST/train"
+    test_path = "../../FedML/data/MNIST/test"
     new_train = {}
     new_test = {}
 
@@ -119,5 +119,5 @@ if __name__ == '__main__':
         new_test['user_data'] = {x: test_data[x] for x in client_sample}
         with open(filetest, 'w') as ff:
             json.dump(new_test, ff)
-        shutil.make_archive('MNIST_mobile/{}'.format(worker.client_id), 'zip', 'MNIST_mobile')
+        shutil.make_archive('MNIST_mobile/{}'.format(worker.client_id), 'zip', 'MNIST_mobile', str(worker.client_id))
         shutil.move('MNIST_mobile/{}.zip'.format(worker.client_id), 'MNIST_mobile_zip')

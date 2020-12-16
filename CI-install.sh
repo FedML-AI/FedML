@@ -35,10 +35,7 @@ conda install numpy
 conda install h5py
 conda install setproctitle
 conda install networkx
-
-cd ./fedml_mobile/server/executor
 pip install -r requirements.txt
-cd ./../../../
 
 # install the dataset
 # 1. MNIST
@@ -68,9 +65,9 @@ sh download_fedcifar100.sh
 cd ../../
 
 # 6. stackoverflow
-cd ./data/stackoverflow
-sh download_stackoverflow.sh
-cd ../../
+# cd ./data/stackoverflow
+# sh download_stackoverflow.sh
+# cd ../../
 
 # 7. CIFAR10
 cd ./data/cifar10
