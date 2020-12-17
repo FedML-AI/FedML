@@ -52,10 +52,18 @@ class FedOptAPI(object):
         logging.info("client_indexes = %s" % str(client_indexes))
         return client_indexes
 
+    def _generate_validation_set(self, num_samples=10000):
+        test_data_num  = len(self.test_global.dataset)
+        sample_indices = random.sample(range(test_data_num), min(num_samples, test_data_num))
+        subset = torch.utils.data.Subset(self.test_global.dataset, sample_indices)
+        sample_testset = torch.utils.data.DataLoader(subset, batch_size=self.args.batch_size)
+        self.val_global = sample_testset
+
     def _instanciate_opt(self):
         self.opt = OptRepo.name2cls(self.args.server_optimizer)(
                 # self.model_global.parameters(), lr=self.args.server_lr
-                self.model_trainer.model.parameters(), lr=self.args.server_lr
+                self.model_trainer.model.parameters(), lr=self.args.server_lr,
+                # momentum=0.9 # fedavgm
             )
 
     def train(self):
@@ -77,12 +85,13 @@ class FedOptAPI(object):
             for idx, client in enumerate(self.client_list):
                 # update dataset
                 client_idx = client_indexes[idx]
+
                 client.update_local_dataset(client_idx, self.train_data_local_dict[client_idx],
                                             self.test_data_local_dict[client_idx],
                                             self.train_data_local_num_dict[client_idx])
 
                 # train on new dataset
-                w = client.train()
+                w = client.train(w_global)
                 # w, loss = client.train(net=copy.deepcopy(self.model_global).to(self.device))
                 w_locals.append((client.get_sample_number(), copy.deepcopy(w)))
                 # loss_locals.append(copy.deepcopy(loss))
