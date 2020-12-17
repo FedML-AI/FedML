@@ -156,9 +156,9 @@ class Decoder(nn.Module):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
-class Transformer(nn.Module):
+class FeatureExtractor(nn.Module):
     def __init__(self, backbone, n_channels, output_stride, BatchNorm, pretrained):
-        super(Transformer, self).__init__()
+        super(FeatureExtractor, self).__init__()
         self.backbone = self.build_backbone(backbone=backbone, n_channels=n_channels, output_stride=output_stride, BatchNorm=BatchNorm, pretrained=pretrained)
 
     def forward(self, input):
@@ -175,10 +175,10 @@ class Transformer(nn.Module):
         else:
             raise NotImplementedError
 
-class DeeplabHead(nn.Module):
+class EncoderDecoder(nn.Module):
     def __init__(self, backbone, image_size, output_stride, BatchNorm, num_classes):
-        super(DeeplabHead, self).__init__()
-        self.aspp = self.build_aspp(backbone, output_stride, BatchNorm)
+        super(EncoderDecoder, self).__init__()
+        self.encoder = self.build_aspp(backbone, output_stride, BatchNorm)
         self.decoder = self.build_decoder(num_classes, backbone, BatchNorm)
         self.img_size = image_size
 
@@ -190,14 +190,13 @@ class DeeplabHead(nn.Module):
     def build_decoder(num_classes, backbone, BatchNorm):
         return Decoder(num_classes, backbone, BatchNorm)
 
-    def forward(self, transformed_input, low_level_feat):
-        x = self.aspp(transformed_input)
+    def forward(self, extracted_features, low_level_feat):
+        x = self.encoder(extracted_features)
         x = self.decoder(x, low_level_feat)
         x = F.interpolate(x, size=self.img_size, mode='bilinear', align_corners=True)
         return x
 
-
-class DeeplabTransformer(nn.Module):
+class DeepLabV3_plus(nn.Module):
     def __init__(self, backbone='resnet', image_size=torch.Size([513, 513]) , nInputChannels=3, n_classes=21, output_stride=16, pretrained=False, freeze_bn=False, sync_bn=False, _print=True):
         
         if _print:
@@ -207,7 +206,7 @@ class DeeplabTransformer(nn.Module):
             print("Number of Input Channels: {}".format(nInputChannels))
             print("Output stride: {}".format(output_stride))
 
-        super(DeeplabTransformer, self).__init__()
+        super(DeepLabV3_plus, self).__init__()
 
         if backbone == 'drn':
             output_stride = 8        
@@ -217,8 +216,8 @@ class DeeplabTransformer(nn.Module):
         else:
             BatchNorm2d = nn.BatchNorm2d
 
-        self.transformer = Transformer(backbone=backbone, n_channels=nInputChannels, output_stride=output_stride, BatchNorm=BatchNorm2d, pretrained=pretrained)
-        self.head = DeeplabHead(backbone=backbone, image_size = torch.Size([513, 513]), output_stride=output_stride, BatchNorm=BatchNorm2d, num_classes=n_classes)
+        self.feature_extractor = FeatureExtractor(backbone=backbone, n_channels=nInputChannels, output_stride=output_stride, BatchNorm=BatchNorm2d, pretrained=pretrained)
+        self.encoder_decoder = EncoderDecoder(backbone=backbone, image_size = torch.Size([513, 513]), output_stride=output_stride, BatchNorm=BatchNorm2d, num_classes=n_classes)
 
         self.freeze_bn = freeze_bn
 
@@ -227,8 +226,8 @@ class DeeplabTransformer(nn.Module):
 
     def forward(self, input):
             
-        transformed_input, low_level_feat = self.transformer(input)
-        segmented_images = self.head(transformed_input, low_level_feat)
+        extracted_features, low_level_feat = self.feature_extractor(input)
+        segmented_images = self.encoder_decoder(extracted_features, low_level_feat)
         return segmented_images
 
     def _freeze_bn(self):
@@ -246,7 +245,7 @@ class DeeplabTransformer(nn.Module):
                 m.bias.data.zero_()
 
     def get_1x_lr_params(self):
-            modules = [self.transformer.backbone]
+            modules = [self.feature_extractor.backbone]
             for i in range(len(modules)):
                 for m in modules[i].named_modules():
                     if self.freeze_bn:
@@ -262,7 +261,7 @@ class DeeplabTransformer(nn.Module):
                                     yield p
 
     def get_10x_lr_params(self):
-        modules = [self.head.aspp, self.head.decoder]
+        modules = [self.encoder_decoder.encoder, self.encoder_decoder.decoder]
         for i in range(len(modules)):
             for m in modules[i].named_modules():
                 if self.freeze_bn:
@@ -279,7 +278,7 @@ class DeeplabTransformer(nn.Module):
 
 
 if __name__ == "__main__":
-    model = DeeplabTransformer(nInputChannels=3, n_classes=3, output_stride=16, pretrained=False, _print=True)
+    model = DeepLabV3_plus(nInputChannels=3, n_classes=3, output_stride=16, pretrained=False, _print=True)
     image = torch.randn(16,3,513,513)
     with torch.no_grad():
         output = model.forward(image)

@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 from fedml_api.data_preprocessing.coco.data_loader import load_partition_data_distributed_coco, load_partition_data_coco
 from fedml_api.data_preprocessing.pascal_voc.data_loader import load_partition_data_distributed_pascal_voc, \
     load_partition_data_pascal_voc
-from fedml_api.model.cv.deeplabV3 import DeeplabTransformer
+from fedml_api.model.cv.deeplabV3_plus import DeepLabV3_plus
 from fedml_api.distributed.fedseg.FedSegAPI import FedML_init, FedML_FedSeg_distributed
 from fedml_api.distributed.fedseg.utils import count_parameters
 
@@ -29,7 +29,7 @@ def add_args(parser):
     return a parser added with args required by fit
     """
     # Training settings
-    parser.add_argument('--model', type=str, default='deeplab_transformer', metavar='N',
+    parser.add_argument('--model', type=str, default='deeplabV3_plus', metavar='N',
                         help='neural network used in training')
 
     parser.add_argument('--backbone', type=str, default='resnet',
@@ -41,8 +41,8 @@ def add_args(parser):
     parser.add_argument('--backbone_freezed', type=bool, default=True,
                         help='Freeze backbone to extract features only once (default: False)')
 
-    parser.add_argument('--extract_test', type=bool, default=True,
-                        help='Extract Feature Maps of test data (default: False)')
+    parser.add_argument('--extract_feat', type=bool, default=True,
+                        help='Extract Feature Maps of (default: False) NOTE: --backbone_freezed has to be True for this argument to be considered')
 
     parser.add_argument('--outstride', type=int, default=8,
                         help='network output stride (default: 16)')
@@ -116,8 +116,8 @@ def add_args(parser):
     parser.add_argument('--is_mobile', type=int, default=0,
                         help='whether the program is running on the FedML-Mobile server side')
 
-    parser.add_argument('--frequency_of_the_test', type=int, default=10,
-                        help='the frequency of the algorithms')
+    parser.add_argument('--evaluation_frequency', type=int, default=5,
+                        help='Frequency of model evaluation on training dataset (Default: every 5th round)')
 
     parser.add_argument('--gpu_server_num', type=int, default=1,
                         help='gpu_server_num')
@@ -165,27 +165,27 @@ def load_data(process_id, args, dataset_name):
 
 
 def create_model(args, model_name, output_dim, img_size = torch.Size([513, 513])):
-    if model_name == "deeplab_transformer":
-        model = DeeplabTransformer(backbone=args.backbone,
-                                   image_size=img_size,
-                                   n_classes=output_dim,
-                                   output_stride=args.outstride,
-                                   pretrained=args.backbone_pretrained,
-                                   freeze_bn=args.freeze_bn,
-                                   sync_bn=args.sync_bn)
+    if model_name == "deeplabV3_plus":
+        model = DeepLabV3_plus(backbone=args.backbone,
+                          image_size=img_size,
+                          n_classes=output_dim,
+                          output_stride=args.outstride,
+                          pretrained=args.backbone_pretrained,
+                          freeze_bn=args.freeze_bn,
+                          sync_bn=args.sync_bn)
 
 
         logging.info('Args.Backbone: {}'.format(args.backbone_freezed))
 
         if args.backbone_freezed:
             logging.info('Freezing Backbone')
-            for param in model.transformer.parameters():
+            for param in model.feature_extractor.parameters():
                 param.requires_grad = False
         else:
             logging.info('Finetuning Backbone')
 
         num_params = count_parameters(model)
-        logging.info("Deeplab Transformer Model Size = " + str(num_params))
+        logging.info("DeepLabV3_plus Model Size = " + str(num_params))
     else:
         raise ('Not Implemented Error')
 

@@ -49,8 +49,8 @@ class FedSegAggregator(object):
 
     def get_global_model_params(self):
         if self.args.backbone_freezed:
-            logging.info('Initializing model head; Backbone Freezed')
-            return self.model.head.state_dict()
+            logging.info('Initializing model; Backbone Freezed')
+            return self.model.encoder_decoder.state_dict()
         else:
             logging.info('Initializing end-to-end model')
             return self.model.state_dict()
@@ -95,8 +95,8 @@ class FedSegAggregator(object):
 
         # update the global model which is cached at the server side
         if self.args.backbone_freezed:
-            logging.info('Updating Global model head; Backbone Freezed')
-            self.model.head.load_state_dict(averaged_params)
+            logging.info('Updating Global model; Backbone Freezed')
+            self.model.encoder_decoder.load_state_dict(averaged_params)
         else:
             logging.info('Updating Global model')
             self.model.load_state_dict(averaged_params)
@@ -119,7 +119,7 @@ class FedSegAggregator(object):
         logging.info("################add_client_test_result : {}".format(client_idx))
         
         # Populating Training Dictionary
-        if round_idx % self.args.frequency_of_the_test == 0:
+        if round_idx % self.args.evaluation_frequency == 0:
             self.train_acc_client_dict[client_idx] = train_eval_metrics.acc
             self.train_acc_class_client_dict[client_idx] = train_eval_metrics.acc_class
             self.train_mIoU_client_dict[client_idx] = train_eval_metrics.mIoU
@@ -158,7 +158,7 @@ class FedSegAggregator(object):
 
                 saver_state['test_data_evaluation_metrics'] = test_eval_metrics_dict
 
-                if round_idx and round_idx % self.args.frequency_of_the_test == 0:
+                if round_idx and round_idx % self.args.evaluation_frequency == 0:
                     train_eval_metrics_dict = {
                         'accuracy': self.train_acc_client_dict[client_idx],
                         'accuracy_class': self.train_acc_class_client_dict[client_idx],
@@ -173,7 +173,7 @@ class FedSegAggregator(object):
     def output_global_acc_and_loss(self, round_idx):
         logging.info("################output_global_acc_and_loss : {}".format(round_idx))
 
-        if round_idx and round_idx % self.args.frequency_of_the_test == 0:
+        if round_idx and round_idx % self.args.evaluation_frequency == 0:
             # Test on training set
             train_acc = np.array([self.train_acc_client_dict[k] for k in self.train_acc_client_dict.keys()]).mean()
             train_acc_class = np.array([self.train_acc_class_client_dict[k] for k in self.train_acc_class_client_dict.keys()]).mean()
@@ -219,38 +219,31 @@ class FedSegAggregator(object):
             logging.info('Saving Model Checkpoint --> Previous mIoU:{0}; Improved mIoU:{1}'.format(self.best_mIoU, test_mIoU))
             is_best = True
             self.best_mIoU = test_mIoU
-            if round_idx and round_idx % self.args.frequency_of_the_test == 0:
-                self.saver.save_checkpoint({
-                    'best_pred': self.best_mIoU,
-                    'round': round_idx + 1,
-                    'state_dict': self.model.state_dict(),
-                    'train_data_evaluation_metrics': {
-                        'accuracy': train_acc,
-                        'accuracy_class': train_acc_class,
-                        'mIoU': train_mIoU,
-                        'FWIoU': train_FWIoU,
-                        'loss': train_loss
-                    },
-                    'test_data_evaluation_metrics': {
+            saver_state = {
+                'best_pred': self.best_mIoU,
+                'round': round_idx + 1,
+                'state_dict': self.model.state_dict(),
+            }
+
+            test_eval_metrics_dict = {
                         'accuracy': test_acc,
                         'accuracy_class': test_acc_class,
                         'mIoU': test_mIoU,
                         'FWIoU': test_FWIoU,
                         'loss': test_loss
-                    }
-                }, is_best)
-            else:
-                self.saver.save_checkpoint({
-                    'best_pred': self.best_mIoU,
-                    'round': round_idx + 1,
-                    'state_dict': self.model.state_dict(),
-                    'test_data_evaluation_metrics': {
-                        'accuracy': test_acc,
-                        'accuracy_class': test_acc_class,
-                        'mIoU': test_mIoU,
-                        'FWIoU': test_FWIoU,
-                        'loss': test_loss
-                    }
-                }, is_best)
+            }           
+            saver_state['test_data_evaluation_metrics'] = test_eval_metrics_dict
+
+            if round_idx and round_idx % self.args.evaluation_frequency == 0:
+                train_eval_metrics_dict = {
+                    'accuracy': train_acc,
+                    'accuracy_class': train_acc_class,
+                    'mIoU': train_mIoU,
+                    'FWIoU': train_FWIoU,
+                    'loss': train_loss
+                }
+                saver_state['train_data_evaluation_metrics'] = train_eval_metrics_dict
+
+            self.saver.save_checkpoint(saver_state, is_best)
                                 
                 
