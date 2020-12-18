@@ -63,7 +63,7 @@ class FedSegClientManager(ClientManager):
         self.send_message(message)
 
     def __train(self):
-        logging.info("#######training########### round_id = %d" % self.round_idx)
+        logging.info("Training for round_id {} ".format(self.round_idx))
         train_evaluation_metrics =  test_evaluation_metrics = None
 
         if self.args.backbone_freezed and self.args.extract_feat:

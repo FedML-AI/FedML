@@ -116,7 +116,7 @@ class FedSegAggregator(object):
         return client_indexes
 
     def add_client_test_result(self, round_idx, client_idx, train_eval_metrics:EvaluationMetricsKeeper, test_eval_metrics:EvaluationMetricsKeeper):
-        logging.info("################add_client_test_result : {}".format(client_idx))
+        logging.info("Adding client test result : {}".format(client_idx))
         
         # Populating Training Dictionary
         if round_idx % self.args.evaluation_frequency == 0:
@@ -171,7 +171,7 @@ class FedSegAggregator(object):
                 self.saver.save_checkpoint(saver_state, is_best, filename)
 
     def output_global_acc_and_loss(self, round_idx):
-        logging.info("################output_global_acc_and_loss : {}".format(round_idx))
+        logging.info("Output global accuracy and loss for round {} :".format(round_idx))
 
         if round_idx and round_idx % self.args.evaluation_frequency == 0:
             # Test on training set
@@ -213,7 +213,7 @@ class FedSegAggregator(object):
                     'testing_FWIoU': test_FWIoU,  
                     'testing_loss': test_loss}
 
-        logging.info(stats)
+        logging.info("Testing statistics: {}".format(stats))
         
         if test_mIoU > self.best_mIoU:
             logging.info('Saving Model Checkpoint --> Previous mIoU:{0}; Improved mIoU:{1}'.format(self.best_mIoU, test_mIoU))
