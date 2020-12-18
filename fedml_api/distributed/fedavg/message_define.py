@@ -21,3 +21,12 @@ class MyMessage(object):
     MSG_ARG_KEY_MODEL_PARAMS = "model_params"
     MSG_ARG_KEY_CLIENT_INDEX = "client_idx"
 
+    MSG_ARG_KEY_TRAIN_CORRECT = "train_correct"
+    MSG_ARG_KEY_TRAIN_ERROR = "train_error"
+    MSG_ARG_KEY_TRAIN_NUM = "train_num_sample"
+
+    MSG_ARG_KEY_TEST_CORRECT = "test_correct"
+    MSG_ARG_KEY_TEST_ERROR = "test_error"
+    MSG_ARG_KEY_TEST_NUM = "test_num_sample"
+
+
