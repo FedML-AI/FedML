@@ -56,7 +56,7 @@ class FedSegAggregator(object):
             return self.model.state_dict()
 
     def add_local_trained_result(self, index, model_params, sample_num):
-        logging.info("add_model. index = %d" % index)
+        logging.info("Add model index: {}".format(index))
         self.model_dict[index] = model_params
         self.sample_num_dict[index] = sample_num
         self.flag_client_model_uploaded_dict[index] = True
@@ -80,9 +80,9 @@ class FedSegAggregator(object):
             model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
             training_num += self.sample_num_dict[idx]
 
-        logging.info("len of self.model_dict[idx] = " + str(len(self.model_dict)))
+        # logging.info("Length of self.model_dict[idx] = " + str(len(self.model_dict)))
 
-        # logging.info("################aggregate: %d" % len(model_list))
+        logging.info("################aggregate: {}".format(len(model_list)))
         (num0, averaged_params) = model_list[0]
         for k in averaged_params.keys():
             for i in range(0, len(model_list)):
@@ -102,7 +102,7 @@ class FedSegAggregator(object):
             self.model.load_state_dict(averaged_params)
 
         end_time = time.time()
-        logging.info("aggregate time cost: %d" % (end_time - start_time))
+        logging.info("Aggregate time cost: %d" % (end_time - start_time))
         return averaged_params
 
     def client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
@@ -112,7 +112,7 @@ class FedSegAggregator(object):
             num_clients = min(client_num_per_round, client_num_in_total)
             np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round
             client_indexes = np.random.choice(range(client_num_in_total), num_clients, replace=False)
-        logging.info("client_indexes = %s" % str(client_indexes))
+        logging.info("client_indexes: {}".format(client_indexes))
         return client_indexes
 
     def add_client_test_result(self, round_idx, client_idx, train_eval_metrics:EvaluationMetricsKeeper, test_eval_metrics:EvaluationMetricsKeeper):
@@ -139,7 +139,7 @@ class FedSegAggregator(object):
 
             if test_mIoU > best_mIoU:
                 self.best_mIoU_clients[client_idx] = test_mIoU
-                logging.info('Saving Model Checkpoint for Client: {0}--> Previous mIoU:{1}; Improved mIoU:{2}'.format(client_idx, best_mIoU, test_mIoU))
+                logging.info('Saving Model Checkpoint for Client: {0} --> Previous mIoU:{1}; Improved mIoU:{2}'.format(client_idx, best_mIoU, test_mIoU))
                 is_best = False
                 filename = "client" + str(client_idx) + "_checkpoint.pth.tar"
                 saver_state = {
@@ -192,7 +192,7 @@ class FedSegAggregator(object):
                         'training_mIoU': train_mIoU,
                         'training_FWIoU': train_FWIoU,  
                         'training_loss': train_loss}
-            logging.info(stats)
+            logging.info("Testing statistics: {}".format(stats))
 
         # Test on testing set
         test_acc = np.array([self.test_acc_client_dict[k] for k in self.test_acc_client_dict.keys()]).mean()

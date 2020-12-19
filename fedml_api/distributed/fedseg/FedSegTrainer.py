@@ -53,10 +53,10 @@ class FedSegTrainer(object):
     def update_model(self, weights):
         
         if self.args.backbone_freezed:
-            logging.info("update_model. client_index (w\o Backbone) = %d" % self.client_index)
+            logging.info("Update_model. client_index (w\o Backbone):{}".format(self.client_index))
             self.model.encoder_decoder.load_state_dict(weights)
         else:
-            logging.info("update_model. client_index = %d" % self.client_index)
+            logging.info("Update_model. client_index:{}".format(self.client_index))
             self.model.load_state_dict(weights)
 
     def update_dataset(self, client_index):
@@ -101,14 +101,13 @@ class FedSegTrainer(object):
         # change to train mode
         self.model.train()
         
-        if self.args.backbone_freezed:
-            logging.info('Training client (Backbone Freezed) {0} for {1} Epochs'.format(self.client_index, self.args.epochs))
+        # if self.args.backbone_freezed:
+        logging.info('Training client {0} for {1} Epochs'.format(self.client_index, self.args.epochs))
             
-        else:
-            logging.info('Training client (Fine-Tuning Backbone) {0} for {1} Epochs'.format(self.client_index, self.args.epochs))
+        # else:
+        #     logging.info('Training client (Fine-Tuning Backbone) {0} for {1} Epochs'.format(self.client_index, self.args.epochs))
 
         epoch_loss = []
-
         for epoch in range(self.args.epochs):
             t = time.time()
             batch_loss = []
