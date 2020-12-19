@@ -46,7 +46,7 @@ class FedSegServerManager(ServerManager):
 
 
         b_all_received = self.aggregator.check_whether_all_receive()
-        # logging.info("b_all_received = " + str(b_all_received))
+        
         if b_all_received:
             global_model_params = self.aggregator.aggregate()
             self.aggregator.output_global_acc_and_loss(self.round_idx)
@@ -60,9 +60,9 @@ class FedSegServerManager(ServerManager):
             # sampling clients
             client_indexes = self.aggregator.client_sampling(self.round_idx, self.args.client_num_in_total,
                                                              self.args.client_num_per_round)
-            # print("size = %d" % self.size)
+            
             if self.args.is_mobile == 1:
-                # print("transform_tensor_to_list")
+                
                 global_model_params = transform_tensor_to_list(global_model_params)
 
             for receiver_id in range(1, self.size):
@@ -76,7 +76,7 @@ class FedSegServerManager(ServerManager):
         self.send_message(message)
 
     def send_message_sync_model_to_client(self, receive_id, global_model_params, client_index):
-        logging.info("send_message_sync_model_to_client. receive_id = %d" % receive_id)
+        logging.info('send_message_sync_model_to_client. receive_id {0}'.format(receive_id))
         message = Message(MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT, self.get_sender_id(), receive_id)
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(client_index))
