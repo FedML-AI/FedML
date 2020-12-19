@@ -8,9 +8,11 @@ class ModelTrainer(ABC):
        2. This class can be used in both server and client side
        3. This class is an operator which does not cache any states inside.
     """
-    def __init__(self, model):
+    def __init__(self, model, args=None):
+        # TODO: Make args mandatory during initialization
         self.model = model
         self.id = 0
+        self.args = args
 
     def set_id(self, trainer_id):
         self.id = trainer_id
@@ -24,9 +26,11 @@ class ModelTrainer(ABC):
         pass
 
     @abstractmethod
-    def train(self, train_data, device, args):
+    def train(self, train_data, device, args=None):
+        # TODO: Remove args after modifying all dependent files
         pass
 
     @abstractmethod
-    def test(self, test_data, device, args):
+    def test(self, test_data, device, args=None):
+        # TODO: Remove args after modifying all dependent files
         pass
