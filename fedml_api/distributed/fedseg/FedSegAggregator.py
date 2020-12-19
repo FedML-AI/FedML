@@ -10,7 +10,8 @@ from fedml_api.distributed.fedseg.utils import transform_list_to_tensor, Saver, 
 
 
 class FedSegAggregator(object):
-    def __init__(self, worker_num, device, model, args):
+    def __init__(self, worker_num, device, model, args, model_trainer):
+        self.trainer = model_trainer
         self.worker_num = worker_num
         self.device = device
         self.args = args
@@ -20,7 +21,6 @@ class FedSegAggregator(object):
 
         for idx in range(self.worker_num):
             self.flag_client_model_uploaded_dict[idx] = False
-        self.model = model
 
         self.train_acc_client_dict = dict()
         self.train_acc_class_client_dict = dict()
@@ -42,18 +42,11 @@ class FedSegAggregator(object):
 
         logging.info('Initializing FedSegAggregator with workers: {0}'.format(worker_num))
 
-
-    def init_model(self, model):
-        model_params = model.state_dict()
-        return model, model_params
-
     def get_global_model_params(self):
-        if self.args.backbone_freezed:
-            logging.info('Initializing model; Backbone Freezed')
-            return self.model.encoder_decoder.state_dict()
-        else:
-            logging.info('Initializing end-to-end model')
-            return self.model.state_dict()
+        return self.trainer.get_model_params()
+
+    def set_global_model_params(self, model_parameters):
+        self.trainer.set_model_params(model_parameters)
 
     def add_local_trained_result(self, index, model_params, sample_num):
         logging.info("add_model. index = %d" % index)
@@ -94,12 +87,7 @@ class FedSegAggregator(object):
                     averaged_params[k] += local_model_params[k] * w
 
         # update the global model which is cached at the server side
-        if self.args.backbone_freezed:
-            logging.info('Updating Global model; Backbone Freezed')
-            self.model.encoder_decoder.load_state_dict(averaged_params)
-        else:
-            logging.info('Updating Global model')
-            self.model.load_state_dict(averaged_params)
+        self.set_global_model_params(averaged_params)
 
         end_time = time.time()
         logging.info("aggregate time cost: %d" % (end_time - start_time))
@@ -222,7 +210,7 @@ class FedSegAggregator(object):
             saver_state = {
                 'best_pred': self.best_mIoU,
                 'round': round_idx + 1,
-                'state_dict': self.model.state_dict(),
+                'state_dict': self.trainer.get_model_params(),
             }
 
             test_eval_metrics_dict = {
