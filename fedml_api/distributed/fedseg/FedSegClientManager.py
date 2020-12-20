@@ -63,9 +63,10 @@ class FedSegClientManager(ClientManager):
         self.send_message(message)
 
     def __train(self):
+    
         train_evaluation_metrics =  test_evaluation_metrics = None
-        logging.info("#######Testing Global Params########### round_id = {}".format(self.round_idx))
+        logging.info("####### Testing Global Params ########### round_id = {}".format(self.round_idx))
         train_evaluation_metrics, test_evaluation_metrics = self.trainer.test()
-        logging.info("#######Training########### round_id = {}".format(self.round_idx))
+        logging.info("####### Training ########### round_id = {}".format(self.round_idx))
         weights, local_sample_num = self.trainer.train()
         self.send_model_to_server(0, weights, local_sample_num, train_evaluation_metrics, test_evaluation_metrics)

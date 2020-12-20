@@ -79,6 +79,7 @@ class MyModelTrainer(ModelTrainer):
 
 
     def test(self, test_data, device):
+        logging.info("Evaluation on trainer ID:{}".format(self.id))
         model = self.model
         args = self.args
         evaluator = Evaluator(model.n_classes)
