@@ -49,7 +49,7 @@ class FedSegAggregator(object):
         self.trainer.set_model_params(model_parameters)
 
     def add_local_trained_result(self, index, model_params, sample_num):
-        logging.info("add_model. index = %d" % index)
+        logging.info("Add model index: {}".format(index))
         self.model_dict[index] = model_params
         self.sample_num_dict[index] = sample_num
         self.flag_client_model_uploaded_dict[index] = True
@@ -73,9 +73,8 @@ class FedSegAggregator(object):
             model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
             training_num += self.sample_num_dict[idx]
 
-        logging.info("len of self.model_dict[idx] = " + str(len(self.model_dict)))
+        logging.info("Aggregating...... {0}, {1}".format(len(self.model_dict),len(model_list)))
 
-        # logging.info("################aggregate: %d" % len(model_list))
         (num0, averaged_params) = model_list[0]
         for k in averaged_params.keys():
             for i in range(0, len(model_list)):
@@ -90,7 +89,7 @@ class FedSegAggregator(object):
         self.set_global_model_params(averaged_params)
 
         end_time = time.time()
-        logging.info("aggregate time cost: %d" % (end_time - start_time))
+        logging.info("Aggregate time cost: %d" % (end_time - start_time))
         return averaged_params
 
     def client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
@@ -100,11 +99,11 @@ class FedSegAggregator(object):
             num_clients = min(client_num_per_round, client_num_in_total)
             np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round
             client_indexes = np.random.choice(range(client_num_in_total), num_clients, replace=False)
-        logging.info("client_indexes = %s" % str(client_indexes))
+        logging.info("client_indexes: {}".format(client_indexes))
         return client_indexes
 
     def add_client_test_result(self, round_idx, client_idx, train_eval_metrics:EvaluationMetricsKeeper, test_eval_metrics:EvaluationMetricsKeeper):
-        logging.info("################add_client_test_result : {}".format(client_idx))
+        logging.info("Adding client test result : {}".format(client_idx))
         
         # Populating Training Dictionary
         if round_idx % self.args.evaluation_frequency == 0:
@@ -127,7 +126,7 @@ class FedSegAggregator(object):
 
             if test_mIoU > best_mIoU:
                 self.best_mIoU_clients[client_idx] = test_mIoU
-                logging.info('Saving Model Checkpoint for Client: {0}--> Previous mIoU:{1}; Improved mIoU:{2}'.format(client_idx, best_mIoU, test_mIoU))
+                logging.info('Saving Model Checkpoint for Client: {0} --> Previous mIoU:{1}; Improved mIoU:{2}'.format(client_idx, best_mIoU, test_mIoU))
                 is_best = False
                 filename = "client" + str(client_idx) + "_checkpoint.pth.tar"
                 saver_state = {
@@ -159,7 +158,7 @@ class FedSegAggregator(object):
                 self.saver.save_checkpoint(saver_state, is_best, filename)
 
     def output_global_acc_and_loss(self, round_idx):
-        logging.info("################output_global_acc_and_loss : {}".format(round_idx))
+        logging.info("################## Output global accuracy and loss for round {} :".format(round_idx))
 
         if round_idx and round_idx % self.args.evaluation_frequency == 0:
             # Test on training set
@@ -180,7 +179,7 @@ class FedSegAggregator(object):
                         'training_mIoU': train_mIoU,
                         'training_FWIoU': train_FWIoU,  
                         'training_loss': train_loss}
-            logging.info(stats)
+            logging.info("Testing statistics: {}".format(stats))
 
         # Test on testing set
         test_acc = np.array([self.test_acc_client_dict[k] for k in self.test_acc_client_dict.keys()]).mean()
@@ -201,7 +200,7 @@ class FedSegAggregator(object):
                     'testing_FWIoU': test_FWIoU,  
                     'testing_loss': test_loss}
 
-        logging.info(stats)
+        logging.info("Testing statistics: {}".format(stats))
         
         if test_mIoU > self.best_mIoU:
             logging.info('Saving Model Checkpoint --> Previous mIoU:{0}; Improved mIoU:{1}'.format(self.best_mIoU, test_mIoU))
