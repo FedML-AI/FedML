@@ -6,7 +6,7 @@ import wandb
 import numpy as np
 from torch import nn
 
-from fedml_api.distributed.fedseg.utils import transform_list_to_tensor, Saver, EvaluationMetricsKeeper
+from .utils import transform_list_to_tensor, Saver, EvaluationMetricsKeeper
 
 
 class FedSegAggregator(object):
@@ -106,7 +106,7 @@ class FedSegAggregator(object):
         logging.info("Adding client test result : {}".format(client_idx))
         
         # Populating Training Dictionary
-        if round_idx % self.args.evaluation_frequency == 0:
+        if round_idx and round_idx % self.args.evaluation_frequency == 0:
             self.train_acc_client_dict[client_idx] = train_eval_metrics.acc
             self.train_acc_class_client_dict[client_idx] = train_eval_metrics.acc_class
             self.train_mIoU_client_dict[client_idx] = train_eval_metrics.mIoU
