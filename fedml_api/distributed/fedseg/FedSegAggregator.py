@@ -158,7 +158,7 @@ class FedSegAggregator(object):
                 self.saver.save_checkpoint(saver_state, is_best, filename)
 
     def output_global_acc_and_loss(self, round_idx):
-        logging.info("Output global accuracy and loss for round {} :".format(round_idx))
+        logging.info("################## Output global accuracy and loss for round {} :".format(round_idx))
 
         if round_idx and round_idx % self.args.evaluation_frequency == 0:
             # Test on training set

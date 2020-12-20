@@ -126,7 +126,7 @@ class LR_Scheduler(object):
     def __init__(self, mode, base_lr, num_epochs, iters_per_epoch=0,
                  lr_step=0, warmup_epochs=0):
         self.mode = mode
-        print('Using {} LR Scheduler!'.format(self.mode))
+        logging.info('Using {} LR Scheduler!'.format(self.mode))
         self.lr = base_lr
         if mode == 'step':
             assert lr_step
