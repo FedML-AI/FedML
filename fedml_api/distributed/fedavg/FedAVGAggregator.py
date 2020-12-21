@@ -1,8 +1,10 @@
 import copy
 import logging
+import random
 import time
 
 import numpy as np
+import torch
 import wandb
 
 from .utils import transform_list_to_tensor
@@ -17,6 +19,7 @@ class FedAVGAggregator(object):
 
         self.train_global = train_global
         self.test_global = test_global
+        self.val_global = self._generate_validation_set()
         self.all_train_data_num = all_train_data_num
 
         self.train_data_local_dict = train_data_local_dict
@@ -93,6 +96,16 @@ class FedAVGAggregator(object):
         logging.info("client_indexes = %s" % str(client_indexes))
         return client_indexes
 
+    def _generate_validation_set(self, num_samples=10000):
+        if self.args.dataset.startswith("stackoverflow"):
+            test_data_num  = len(self.test_global.dataset)
+            sample_indices = random.sample(range(test_data_num), min(num_samples, test_data_num))
+            subset = torch.utils.data.Subset(self.test_global.dataset, sample_indices)
+            sample_testset = torch.utils.data.DataLoader(subset, batch_size=self.args.batch_size)
+            self.val_global = sample_testset
+        else:
+            self.val_global = self.test_global
+
     def test_on_server_for_all_clients(self, round_idx):
         if round_idx % self.args.frequency_of_the_test == 0 or round_idx == self.args.comm_round - 1:
             logging.info("################test_on_server_for_all_clients : {}".format(round_idx))
@@ -126,7 +139,12 @@ class FedAVGAggregator(object):
             test_num_samples = []
             test_tot_corrects = []
             test_losses = []
-            metrics = self.trainer.test(self.test_global, self.device, self.args)
+
+            if round_idx == self.args.comm_round - 1:
+                metrics = self.trainer.test(self.test_global, self.device, self.args)
+            else:
+                metrics = self.trainer.test(self.val_global, self.device, self.args)
+                
             test_tot_correct, test_num_sample, test_loss = metrics['test_correct'], metrics['test_total'], metrics[
                 'test_loss']
             test_tot_corrects.append(copy.deepcopy(test_tot_correct))
