@@ -43,7 +43,7 @@ class FedAvgAPI(object):
 
             logging.info("################Communication round : {}".format(round_idx))
 
-            w_locals, loss_locals = [], []
+            w_locals = []
 
             """
             for scalability: following the original FedAvg algorithm, we uniformly sample a fraction of clients in each round.
