@@ -67,9 +67,8 @@ class FedOptAPI(object):
             )
 
     def train(self):
-        w_global = self.model_trainer.get_model_params()
         for round_idx in range(self.args.comm_round):
-
+            w_global = self.model_trainer.get_model_params()
             logging.info("################ Communication round : {}".format(round_idx))
 
             w_locals = []
@@ -92,18 +91,18 @@ class FedOptAPI(object):
 
                 # train on new dataset
                 w = client.train(w_global)
-                # w, loss = client.train(net=copy.deepcopy(self.model_global).to(self.device))
                 w_locals.append((client.get_sample_number(), copy.deepcopy(w)))
                 # loss_locals.append(copy.deepcopy(loss))
                 # logging.info('Client {:3d}, loss {:.3f}'.format(client_idx, loss))
 
+            # reset weight after standalone simulation
+            self.model_trainer.set_model_params(w_global) 
             # update global weights
-            w_glob = self._aggregate(w_locals)
-
+            w_avg = self._aggregate(w_locals)
             # server optimizer
             self.opt.zero_grad()
             opt_state = self.opt.state_dict()
-            self._set_model_global_grads(w_glob)
+            self._set_model_global_grads(w_avg)
             self._instanciate_opt()
             self.opt.load_state_dict(opt_state)
             self.opt.step()
@@ -149,7 +148,6 @@ class FedOptAPI(object):
         new_model_state_dict = new_model.state_dict()
         for k in dict(self.model_trainer.model.named_parameters()).keys():
             new_model_state_dict[k] = model_state_dict[k]
-        # self.model_global.load_state_dict(new_model_state_dict)
         self.model_trainer.set_model_params(new_model_state_dict)
 
     def _local_test_on_all_clients(self, round_idx):
