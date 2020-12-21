@@ -214,7 +214,7 @@ class Saver(object):
         p['backbone'] = self.args.backbone
         p['backbone_pretrained'] = self.args.backbone_pretrained
         p['backbone_freezed'] = self.args.backbone_freezed
-        p['extract_test'] = self.args.extract_test
+        p['extract_feat'] = self.args.extract_feat
         p['outstride'] = self.args.outstride
         p['dataset'] = self.args.dataset
         p['partition_method'] = self.args.partition_method
@@ -233,7 +233,7 @@ class Saver(object):
         p['loss_type'] = self.args.loss_type
         p['epochs'] = self.args.epochs
         p['comm_round'] = self.args.comm_round
-        p['frequency_of_the_test'] = self.args.frequency_of_the_test
+        p['evaluation_frequency'] = self.args.evaluation_frequency
         p['gpu_server_num'] = self.args.gpu_server_num
         p['gpu_num_per_server'] = self.args.gpu_num_per_server
   
