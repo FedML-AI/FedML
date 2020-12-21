@@ -84,12 +84,21 @@ class MyModelTrainer(ModelTrainer):
                 predicted = (pred > .5).int()
                 correct = predicted.eq(target).sum(axis=-1).eq(target.size(1)).sum()
                 true_positive = ((target * predicted) > .1).int().sum(axis=-1)
+                # precision
                 precision = true_positive / (predicted.sum(axis=-1) + 1e-13)
-                recall = true_positive / (target.sum(axis=-1) + 1e-13)
+                # recall at top 5
+                k = 5
+                predicted_topk = torch.topk(input=pred, k=k, dim=-1)
+                correct_topk = target[:, predicted_topk.indices].sum(axis=-1)
+                recall_topk = correct_topk / (target.sum(axis=-1) + 1e-13)
+
                 metrics['test_precision'] += precision.sum().item()
-                metrics['test_recall'] += recall.sum().item()
+                metrics['test_recall'] += recall_topk.sum().item()
                 metrics['test_correct'] += correct.item()
                 metrics['test_loss'] += loss.item() * target.size(0)
                 metrics['test_total'] += target.size(0)
+                # total recall
+                # recall = true_positive / (target.sum(axis=-1) + 1e-13)
+                # # metrics['test_recall'] += recall.sum().item()
 
         return metrics
