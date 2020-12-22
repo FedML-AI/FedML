@@ -54,7 +54,7 @@ def add_args(parser):
     parser.add_argument('--batch_size', type=int, default=128, metavar='N',
                         help='input batch size for training (default: 64)')
 
-    parser.add_argument('--client_optimizer', type=str, default='adam',
+    parser.add_argument('--client_optimizer', type=str, default='sgd',
                         help='Optimizer used on the client. This field can be the name of any subclass of the torch Opimizer class.')
 
     parser.add_argument('--server_optimizer', type=str, default='sgd',
@@ -200,7 +200,12 @@ if __name__ == "__main__":
 
     wandb.init(
         project="fedml",
-        name="FedOPT-r" + str(args.comm_round) + "-e" + str(args.epochs) + "-lr" + str(args.lr),
+        name="FedOPT-r" + str(args.comm_round) \
+            + "-e" + str(args.epochs) \
+            + "-dataset" + str(args.dataset) \
+            + "-(s)opt." + str(args.server_optimizer) \
+            + "-(s)lr" + str(args.server_lr) \
+            + "-(c)lr" + str(args.lr),
         config=args
     )
 

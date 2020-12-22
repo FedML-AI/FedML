@@ -63,7 +63,8 @@ class FedOptAPI(object):
         self.opt = OptRepo.name2cls(self.args.server_optimizer)(
                 # self.model_global.parameters(), lr=self.args.server_lr
                 self.model_trainer.model.parameters(), lr=self.args.server_lr,
-                # momentum=0.9 # fedavgm
+                # momentum=0.9 # for fedavgm
+                # eps = 1e-3 for adaptive optimizer
             )
 
     def train(self):
@@ -212,35 +213,34 @@ class FedOptAPI(object):
         wandb.log({"Test/Loss": test_loss, "round": round_idx})
         logging.info(stats)
 
-
     def _local_test_on_validation_set(self, round_idx):
-            logging.info("################local_test_on_validation_set : {}".format(round_idx))
+        logging.info("################local_test_on_validation_set : {}".format(round_idx))
 
-            if self.val_global is None:
-                self._generate_validation_set()
+        if self.val_global is None:
+            self._generate_validation_set()
 
-            client = self.client_list[0]
-            client.update_local_dataset(0, None, self.val_global, None)
-            # test data
-            test_metrics = client.local_test(True)
+        client = self.client_list[0]
+        client.update_local_dataset(0, None, self.val_global, None)
+        # test data
+        test_metrics = client.local_test(True)
 
-            if self.args.dataset == "stackoverflow_nwp":
-                test_acc = test_metrics['test_correct'] / test_metrics['test_total']
-                test_loss = test_metrics['test_loss'] / test_metrics['test_total']
-                stats = {'test_acc': test_acc, 'test_loss': test_loss}
-                wandb.log({"Test/Acc": test_acc, "round": round_idx})
-                wandb.log({"Test/Loss": test_loss, "round": round_idx})
-            elif self.args.dataset == "stackoverflow_lr":
-                test_acc = test_metrics['test_correct'] / test_metrics['test_total']
-                test_pre = test_metrics['test_precision'] / test_metrics['test_total']
-                test_rec = test_metrics['test_recall'] / test_metrics['test_total']
-                test_loss = test_metrics['test_loss'] / test_metrics['test_total']
-                stats = {'test_acc': test_acc, 'test_pre': test_pre, 'test_rec': test_rec, 'test_loss': test_loss}
-                wandb.log({"Test/Acc": test_acc, "round": round_idx})
-                wandb.log({"Test/Pre": test_pre, "round": round_idx})
-                wandb.log({"Test/Rec": test_rec, "round": round_idx})
-                wandb.log({"Test/Loss": test_loss, "round": round_idx})
-            else:
-                raise Exception("Unknown format to log metrics for dataset {}!"%self.args.dataset)
+        if self.args.dataset == "stackoverflow_nwp":
+            test_acc = test_metrics['test_correct'] / test_metrics['test_total']
+            test_loss = test_metrics['test_loss'] / test_metrics['test_total']
+            stats = {'test_acc': test_acc, 'test_loss': test_loss}
+            wandb.log({"Test/Acc": test_acc, "round": round_idx})
+            wandb.log({"Test/Loss": test_loss, "round": round_idx})
+        elif self.args.dataset == "stackoverflow_lr":
+            test_acc = test_metrics['test_correct'] / test_metrics['test_total']
+            test_pre = test_metrics['test_precision'] / test_metrics['test_total']
+            test_rec = test_metrics['test_recall'] / test_metrics['test_total']
+            test_loss = test_metrics['test_loss'] / test_metrics['test_total']
+            stats = {'test_acc': test_acc, 'test_pre': test_pre, 'test_rec': test_rec, 'test_loss': test_loss}
+            wandb.log({"Test/Acc": test_acc, "round": round_idx})
+            wandb.log({"Test/Pre": test_pre, "round": round_idx})
+            wandb.log({"Test/Rec": test_rec, "round": round_idx})
+            wandb.log({"Test/Loss": test_loss, "round": round_idx})
+        else:
+            raise Exception("Unknown format to log metrics for dataset {}!"%self.args.dataset)
 
-            logging.info(stats)
+        logging.info(stats)
