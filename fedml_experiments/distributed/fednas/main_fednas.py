@@ -143,8 +143,8 @@ if __name__ == "__main__":
     if process_id == 0:
         wandb.init(
             # project="federated_nas",
-            project="fedml",
-            name="FedNAS(d)" + str(args.partition_method) + "r" + str(args.comm_round) + "-e" + str(
+            project="fednas_extension",
+            name="FedNAS" + str(args.partition_method) + "r" + str(args.comm_round) + "-e" + str(
                 args.epochs),
             config=args
         )
