@@ -21,7 +21,7 @@ from fedml_api.data_preprocessing.cifar100.data_loader import load_partition_dat
 from fedml_api.data_preprocessing.cinic10.data_loader import load_partition_data_distributed_cinic10
 from fedml_api.distributed.fednas.FedNASAPI import FedML_init, FedML_FedNAS_distributed
 from fedml_api.model.cv.darts import genotypes
-from fedml_api.model.cv.darts import NetworkCIFAR
+from fedml_api.model.cv.darts.model import NetworkCIFAR
 from fedml_api.model.cv.darts.model_search import Network
 
 comm = MPI.COMM_WORLD
@@ -143,8 +143,8 @@ if __name__ == "__main__":
     if process_id == 0:
         wandb.init(
             # project="federated_nas",
-            project="fedml",
-            name="FedNAS(d)" + str(args.partition_method) + "r" + str(args.comm_round) + "-e" + str(
+            project="fednas_extension",
+            name="FedNAS" + str(args.partition_method) + "r" + str(args.comm_round) + "-e" + str(
                 args.epochs),
             config=args
         )
