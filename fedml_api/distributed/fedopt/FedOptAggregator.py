@@ -18,6 +18,7 @@ class FedOptAggregator(object):
                  args, model_trainer):
         self.trainer = model_trainer
 
+        self.args = args
         self.train_global = train_global
         self.test_global = test_global
         self.val_global = self._generate_validation_set()
@@ -29,7 +30,6 @@ class FedOptAggregator(object):
 
         self.worker_num = worker_num
         self.device = device
-        self.args = args
         self.model_dict = dict()
         self.sample_num_dict = dict()
         self.flag_client_model_uploaded_dict = dict()
@@ -137,9 +137,9 @@ class FedOptAggregator(object):
             sample_indices = random.sample(range(test_data_num), min(num_samples, test_data_num))
             subset = torch.utils.data.Subset(self.test_global.dataset, sample_indices)
             sample_testset = torch.utils.data.DataLoader(subset, batch_size=self.args.batch_size)
-            self.val_global = sample_testset
+            return sample_testset
         else:
-            self.val_global = self.test_global
+            return self.test_global
 
     def test_on_all_clients(self, round_idx):
         if round_idx % self.args.frequency_of_the_test == 0 or round_idx == self.args.comm_round - 1:
