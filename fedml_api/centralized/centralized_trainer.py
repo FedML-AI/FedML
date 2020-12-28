@@ -26,7 +26,7 @@ class CentralizedTrainer(object):
 
         self.model = model
         self.model.to(self.device)
-        self.criterion = nn.CrossEntropyLoss().to(self.device)
+        self.criterion = nn.CrossEntropyLoss()
         if self.args.client_optimizer == "sgd":
             self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.args.lr)
         else:
