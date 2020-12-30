@@ -33,6 +33,6 @@ class ModelTrainer(ABC):
         pass
 
     @abstractmethod
-    def test_on_the_server(self, train_data_local_dict, test_data_local_dict, args=None) -> bool:
+    def test_on_the_server(self, train_data_local_dict, test_data_local_dict, device, args=None) -> bool:
         pass
 
