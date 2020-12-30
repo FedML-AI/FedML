@@ -80,5 +80,5 @@ class MyModelTrainer(ModelTrainer):
         return test_acc, test_total, test_loss
 
 
-    def test_on_the_server(self, test_data, device, args=None) -> bool:
+    def test_on_the_server(self, train_data_local_dict, test_data_local_dict, device, args=None) -> bool:
         return False
