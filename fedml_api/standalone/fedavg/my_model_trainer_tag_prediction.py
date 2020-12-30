@@ -93,3 +93,6 @@ class MyModelTrainer(ModelTrainer):
                 metrics['test_total'] += target.size(0)
 
         return metrics
+
+    def test_on_the_server(self, test_data, device, args=None) -> bool:
+        return False

@@ -81,3 +81,6 @@ class MyModelTrainer(ModelTrainer):
                 metrics['test_loss'] += loss.item() * target.size(0)
                 metrics['test_total'] += target_pos.sum().item()
         return metrics
+
+    def test_on_the_server(self, test_data, device, args=None) -> bool:
+        return False
