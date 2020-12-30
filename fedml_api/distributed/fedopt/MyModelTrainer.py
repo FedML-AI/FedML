@@ -78,3 +78,7 @@ class MyModelTrainer(ModelTrainer):
                     test_total += target.size(0) * target.size(1)
 
         return test_acc, test_total, test_loss
+
+
+    def test_on_the_server(self, test_data, device, args=None) -> bool:
+        return False
