@@ -25,12 +25,8 @@ class CentralizedTrainer(object):
         self.test_data_local_dict = test_data_local_dict
 
         self.model = model
-        if args.data_parallel == 1:
-            pass
-        else:
-            self.model.to(self.device)
-
-        self.criterion = nn.CrossEntropyLoss().to(self.device)
+        self.model.to(self.device)
+        self.criterion = nn.CrossEntropyLoss()
         if self.args.client_optimizer == "sgd":
             self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.args.lr)
         else:
