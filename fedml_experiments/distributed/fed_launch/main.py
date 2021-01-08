@@ -467,31 +467,6 @@ if __name__ == "__main__":
             FedML_FedAvg_distributed(process_id, worker_number, device, comm,
                                     model, train_data_num, train_data_global, test_data_global,
                                     train_data_local_num_dict, train_data_local_dict, test_data_local_dict, args)
-        elif args.algorithm == 'PSGD':
-            from fedml_api.distributed.PSGD.PSGD_API import FedML_init, FedML_PSGD_distributed
-            FedML_PSGD_distributed(process_id, worker_number, device, comm,
-                                    model, train_data_num, train_data_global, test_data_global,
-                                    train_data_local_num_dict, train_data_local_dict, test_data_local_dict, args)
-        elif args.algorithm == 'DPSGD':
-            from fedml_api.distributed.DPSGD.DPSGD_API import FedML_init, FedML_DPSGD
-            FedML_DPSGD(process_id, worker_number, device, comm,
-                                model, train_data_num, train_data_global, test_data_global,
-                                train_data_local_num_dict, train_data_local_dict, test_data_local_dict, args)
-        elif args.algorithm == 'DCD_PSGD':
-            from fedml_api.distributed.DCD_PSGD.DCD_PSGD_API import FedML_init, FedML_DCD_PSGD
-            FedML_DCD_PSGD(process_id, worker_number, device, comm,
-                                model, train_data_num, train_data_global, test_data_global,
-                                train_data_local_num_dict, train_data_local_dict, test_data_local_dict, args)
-        elif args.algorithm == 'CHOCO_SGD':
-            from fedml_api.distributed.CHOCO_SGD.CHOCO_SGD_API import FedML_init, FedML_CHOCO_SGD
-            FedML_CHOCO_SGD(process_id, worker_number, device, comm,
-                                model, train_data_num, train_data_global, test_data_global,
-                                train_data_local_num_dict, train_data_local_dict, test_data_local_dict, args)
-        elif args.algorithm == 'CHOCO_SGD':
-            from fedml_api.distributed.SAPS_FL.SAPS_FL_API import FedML_init, FedML_SAPS_FL
-            FedML_SAPS_FL(process_id, worker_number, device, comm,
-                                model, train_data_num, train_data_global, test_data_global,
-                                train_data_local_num_dict, train_data_local_dict, test_data_local_dict, args)
         else:
             raise NotImplementedError
 
