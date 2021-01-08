@@ -1,0 +1,24 @@
+# Key is just a name you defined, without actual meaning
+config1_10:
+    # host1 is the name of machine, shoule be same with it in mpi_host_file
+    host1: [2, 2, 3, 3]
+
+config2_10:
+    host1: [2, 2, 3, 3]
+
+config3_20:
+    host1: [2, 2, 3, 3]
+    host2: [2, 2, 3, 3]
+
+# The server will use the first GPU, in this example, etc. GPU:0 on host1.
+config4_11:
+    host1: [3, 2, 3, 3]
+
+config5_11:
+    host1: [3, 2, 3, 3]
+
+config6_21:
+    host1: [3, 2, 3, 3]
+    host2: [2, 2, 3, 3]
+
+
