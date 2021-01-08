@@ -29,7 +29,7 @@ host2 slots=10
 ### GPU UTIL
 The gpu_util.yaml file define the mapping between process with GPUs, i.e. which process uses which GPU.
 
-#### Process-GPU Mapping Format Definition
+#### Process-GPU mapping format definition
 You can define a cluster containing multiple GPUs within multiple machines by defining `gpu_util.yaml` as follows:
 ```
 config_cluster0:
@@ -43,7 +43,7 @@ The above *.yaml file defines a cluster with m machines (node) and n GPUs in eac
 
 You can pass `--gpu_util_file gpu_util.yaml --gpu_util_key config_cluster0` into the `main.py`. Here, the `config_cluster0` is just a string name for `main.py` to find its configuration. We can define any name we like.
 
-#### Example for Different Number of GPUs in Different Machine
+#### Example for different number of GPUs in different machine
 If you have a different number of GPUs on one different machine, you can define your gpu_util.yaml like this:
 ```
 config_11:
@@ -53,7 +53,7 @@ config_11:
 ```
 This example is also used for 11 process. But the mapping is different: Server process -- host1:GPU:0, client 1 -- host1:GPU:0, client 2 -- host1:GPU:1, client 3 -- host1:GPU:1, client 4 -- host2:GPU:0, client 5 -- host2:GPU:1, client 6 -- host2:GPU:2, client 7 -- host3:GPU:0, client 8 -- host3:GPU:1, client 9 -- host3:GPU:2, client 10 -- host3:GPU:3
 
-#### Skip Some GPU Devices inside a Machine
+#### Skip some GPU devices inside a machine
 Sometimes one may want to use some GPUs in one machine, instead of all GPUs. Then you can use this:
 ```
 config_11:
@@ -64,7 +64,7 @@ config_11:
 ```
 Now the mapping become: Server process -- host1:GPU:1, client 1 -- host1:GPU:1, client 2 -- host1:GPU:0, client 3 -- host1:GPU:2, client 4 -- host3:GPU:0, client 5 -- host3:GPU:1, client 6 -- host3:GPU:3, client 7 -- host4:GPU:1, client 8 -- host4:GPU:6, client 9 -- host4:GPU:7, client 10 -- host4:GPU:7.
 
-#### Maintain All Your Mappings in a Single File
+#### Maintain all your mappings in a single file
 Normally, we use multiple GPU clusters to run our experiments, so it is good to manage all your mappings in a single file.
 ```
 config_11:
