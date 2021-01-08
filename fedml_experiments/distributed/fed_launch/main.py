@@ -28,8 +28,6 @@ from fedml_api.data_preprocessing.MNIST.data_loader import load_partition_data_m
 from fedml_api.data_preprocessing.ImageNet.data_loader import load_partition_data_ImageNet
 from fedml_api.data_preprocessing.Landmarks.data_loader import load_partition_data_landmarks
 
-from fedml_api.data_preprocessing.MNIST.iid_data_loader import load_iid_mnist
-from fedml_api.data_preprocessing.cifar10.iid_data_loader import load_iid_cifar10
 from fedml_api.data_preprocessing.cifar10.data_loader import load_partition_data_cifar10
 from fedml_api.data_preprocessing.cifar100.data_loader import load_partition_data_cifar100
 from fedml_api.data_preprocessing.cinic10.data_loader import load_partition_data_cinic10
@@ -42,9 +40,6 @@ from fedml_api.model.nlp.rnn import RNN_OriginalFedAvg, RNN_StackOverFlow
 from fedml_api.model.linear.lr import LogisticRegression
 from fedml_api.model.cv.mobilenet_v3 import MobileNetV3
 from fedml_api.model.cv.efficientnet import EfficientNet
-from fedml_api.model.cv.mnistflnet import MnistFLNet
-from fedml_api.model.cv.cifar10flnet import Cifar10FLNet
-
 
 
 from fedml_api.utils.context import (
@@ -255,17 +250,6 @@ def load_data(args, dataset_name):
             partition_method=None, partition_alpha=None, 
             client_number=args.client_num_in_total, batch_size=args.batch_size)
 
-    elif dataset_name == "cifar10" and args.partition_method == 'iid':
-        train_data_num, test_data_num, train_data_global, test_data_global, \
-        train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
-        class_num = load_iid_cifar10(args.dataset, args.data_dir, args.partition_method,
-                args.partition_alpha, args.client_num_in_total, args.batch_size, args.rank)
-    elif dataset_name == "mnist" and args.partition_method == 'iid':
-        train_data_num, test_data_num, train_data_global, test_data_global, \
-        train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
-        class_num = load_iid_mnist(args.dataset, args.data_dir, args.partition_method,
-                args.partition_alpha, args.client_num_in_total, args.batch_size, args.rank)
-
     else:
         if dataset_name == "cifar10":
             data_loader = load_partition_data_cifar10
@@ -291,12 +275,6 @@ def create_model(args, model_name, output_dim):
     if model_name == "lr" and args.dataset == "mnist":
         logging.info("LogisticRegression + MNIST")
         model = LogisticRegression(28 * 28, output_dim)
-    elif model_name == "mnistflnet" and args.dataset == "mnist":
-        logging.info("MnistFLNet + MNIST")
-        model = MnistFLNet()
-    elif model_name == "cifar10flnet" and args.dataset == "cifar10":
-        logging.info("Cifar10FLNet + CIFAR-10")
-        model = Cifar10FLNet()
     elif model_name == "cnn" and args.dataset == "femnist":
         logging.info("CNN + FederatedEMNIST")
         model = CNN_DropOut(False)
