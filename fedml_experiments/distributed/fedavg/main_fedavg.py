@@ -14,9 +14,9 @@ import wandb
 from mpi4py import MPI
 
 # add the FedML root directory to the python path
-
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 
+from fedml_api.distributed.utils.gpu_mapping import mapping_processes_to_gpu_device_from_yaml_file
 from fedml_api.data_preprocessing.FederatedEMNIST.data_loader import load_partition_data_federated_emnist
 from fedml_api.data_preprocessing.fed_cifar100.data_loader import load_partition_data_federated_cifar100
 from fedml_api.data_preprocessing.fed_shakespeare.data_loader import load_partition_data_federated_shakespeare
@@ -98,6 +98,13 @@ def add_args(parser):
 
     parser.add_argument('--gpu_num_per_server', type=int, default=4,
                         help='gpu_num_per_server')
+
+    parser.add_argument('--gpu_util_file', type=str, default="gpu_mapping.yaml",
+                        help='the gpu utilization file for servers and clients. If there is no \
+                        gpu_util_file, gpu will not be used.')
+
+    parser.add_argument('--gpu_util_key', type=str, default="mapping_default",
+                        help='the key in gpu utilization file')
 
     parser.add_argument('--ci', type=int, default=0,
                         help='CI')
@@ -322,7 +329,7 @@ if __name__ == "__main__":
     # machine 4: worker3, worker7;
     # Therefore, we can see that workers are assigned according to the order of machine list.
     logging.info("process_id = %d, size = %d" % (process_id, worker_number))
-    device = init_training_device(process_id, worker_number - 1, args.gpu_num_per_server)
+    device = mapping_processes_to_gpu_device_from_yaml_file(process_id, worker_number, args.gpu_util_file, args.gpu_util_key)
 
     # load data
     dataset = load_data(args, args.dataset)
