@@ -47,6 +47,17 @@ config_11:
 This example is also used for 11 process. But the mapping is different: Server process -- host1:GPU:0, client 1 -- host1:GPU:0, client 2 -- host1:GPU:1, client 3 -- host1:GPU:1, client 4 -- host2:GPU:0, client 5 -- host2:GPU:1, client 6 -- host2:GPU:2, client 7 -- host3:GPU:0, client 8 -- host3:GPU:1, client 9 -- host3:GPU:2, client 10 -- host3:GPU:3
 
 
+Sometimes one may want to use some GPUs in one machine, instead of all GPUs. Then you can use this:
+```
+config_11:
+    host1: [0, 2]
+    host2: [1, 0, 1]
+    host3: [1, 1, 0, 1]
+    host4: [0, 1, 0, 0, 0, 1, 0, 2]
+```
+Now the mapping become: Server process -- host1:GPU:1, client 1 -- host1:GPU:1, client 2 -- host1:GPU:0, client 3 -- host1:GPU:2, client 4 -- host3:GPU:0, client 5 -- host3:GPU:1, client 6 -- host3:GPU:3, client 7 -- host4:GPU:1, client 8 -- host4:GPU:6, client 9 -- host4:GPU:7, client 10 -- host4:GPU:7.
+
+
 And you also can add many mappings in one yaml file like this:
 ```
 config_11:
