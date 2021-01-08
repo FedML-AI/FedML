@@ -122,6 +122,7 @@ def add_args(parser):
     parser.add_argument('--gpu_util_file', type=str, default=None,
                         help='the gpu utilization file for servers and clients. If there is no \
                         gpu_util_file, gpu will not be used.')
+
     parser.add_argument('--gpu_util_key', type=str, default=None,
                         help='the key in gpu utilization file')
 
