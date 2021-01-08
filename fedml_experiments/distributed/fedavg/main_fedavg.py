@@ -99,11 +99,11 @@ def add_args(parser):
     parser.add_argument('--gpu_num_per_server', type=int, default=4,
                         help='gpu_num_per_server')
 
-    parser.add_argument('--gpu_util_file', type=str, default="gpu_mapping.yaml",
+    parser.add_argument('--gpu_mapping_file', type=str, default="gpu_mapping.yaml",
                         help='the gpu utilization file for servers and clients. If there is no \
                         gpu_util_file, gpu will not be used.')
 
-    parser.add_argument('--gpu_util_key', type=str, default="mapping_default",
+    parser.add_argument('--gpu_mapping_key', type=str, default="mapping_default",
                         help='the key in gpu utilization file')
 
     parser.add_argument('--ci', type=int, default=0,
@@ -259,22 +259,6 @@ def create_model(args, model_name, output_dim):
     return model
 
 
-def init_training_device(process_ID, fl_worker_num, gpu_num_per_machine):
-    # initialize the mapping from process ID to GPU ID: <process ID, GPU ID>
-    if process_ID == 0:
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        return device
-    process_gpu_dict = dict()
-    for client_index in range(fl_worker_num):
-        gpu_index = client_index % gpu_num_per_machine
-        process_gpu_dict[client_index] = gpu_index
-
-    logging.info(process_gpu_dict)
-    device = torch.device("cuda:" + str(process_gpu_dict[process_ID - 1]) if torch.cuda.is_available() else "cpu")
-    logging.info(device)
-    return device
-
-
 if __name__ == "__main__":
     # initialize distributed computing (MPI)
     comm, process_id, worker_number = FedML_init()
@@ -319,17 +303,9 @@ if __name__ == "__main__":
     torch.manual_seed(0)
     torch.cuda.manual_seed_all(0)
 
-    # GPU arrangement: Please customize this function according your own topology.
-    # The GPU server list is configured at "mpi_host_file".
-    # If we have 4 machines and each has two GPUs, and your FL network has 8 workers and a central worker.
-    # The 4 machines will be assigned as follows:
-    # machine 1: worker0, worker4, worker8;
-    # machine 2: worker1, worker5;
-    # machine 3: worker2, worker6;
-    # machine 4: worker3, worker7;
-    # Therefore, we can see that workers are assigned according to the order of machine list.
+    # Please check "GPU_MAPPING.md" to see how to define the topology
     logging.info("process_id = %d, size = %d" % (process_id, worker_number))
-    device = mapping_processes_to_gpu_device_from_yaml_file(process_id, worker_number, args.gpu_util_file, args.gpu_util_key)
+    device = mapping_processes_to_gpu_device_from_yaml_file(process_id, worker_number, args.gpu_mapping_file, args.gpu_mapping_key)
 
     # load data
     dataset = load_data(args, args.dataset)
