@@ -48,7 +48,7 @@ def init_client(args, device, comm, process_id, size, model, train_data_num, tra
     client_index = process_id - 1
     if model_trainer is None:
         model_trainer = MyModelTrainer(model)
-        model_trainer.set_id(client_index)
+    model_trainer.set_id(client_index)
 
     trainer = FedAVGTrainer(client_index, train_data_local_dict, train_data_local_num_dict, test_data_local_dict,
                             train_data_num, device, args, model_trainer)
