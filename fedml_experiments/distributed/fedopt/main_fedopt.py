@@ -165,11 +165,11 @@ def create_model(args, model_name, output_dim):
 def init_training_device(process_ID, fl_worker_num, gpu_num_per_machine):
     # initialize the mapping from process ID to GPU ID: <process ID, GPU ID>
     if process_ID == 0:
-        device = torch.device("cuda:4" if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         return device
     process_gpu_dict = dict()
     for client_index in range(fl_worker_num):
-        gpu_index = client_index % gpu_num_per_machine + 4
+        gpu_index = client_index % gpu_num_per_machine 
         process_gpu_dict[client_index] = gpu_index
 
     logging.info("############# process ID = " + str(process_id) + " process_gpu_dict: " + str(process_gpu_dict))

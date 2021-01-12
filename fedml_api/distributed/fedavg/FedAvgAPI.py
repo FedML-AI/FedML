@@ -4,8 +4,9 @@ from .FedAVGAggregator import FedAVGAggregator
 from .FedAVGTrainer import FedAVGTrainer
 from .FedAvgClientManager import FedAVGClientManager
 from .FedAvgServerManager import FedAVGServerManager
-from .MyModelTrainer import MyModelTrainer
-
+from fedml_api.standalone.fedavg.my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
+from fedml_api.standalone.fedavg.my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
+from fedml_api.standalone.fedavg.my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
 
 def FedML_init():
     comm = MPI.COMM_WORLD
@@ -28,8 +29,13 @@ def FedML_FedAvg_distributed(process_id, worker_number, device, comm, model, tra
 def init_server(args, device, comm, rank, size, model, train_data_num, train_data_global, test_data_global,
                 train_data_local_dict, test_data_local_dict, train_data_local_num_dict, model_trainer):
     if model_trainer is None:
-        model_trainer = MyModelTrainer(model)
-        model_trainer.set_id(-1)
+        if args.dataset == "stackoverflow_lr":
+            model_trainer = MyModelTrainerTAG(model)
+        elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
+            model_trainer = MyModelTrainerNWP(model)
+        else: # default model trainer is for classification problem
+            model_trainer = MyModelTrainerCLS(model)
+    model_trainer.set_id(-1)
 
     # aggregator
     worker_num = size - 1
@@ -47,9 +53,13 @@ def init_client(args, device, comm, process_id, size, model, train_data_num, tra
                 train_data_local_dict, test_data_local_dict, model_trainer=None):
     client_index = process_id - 1
     if model_trainer is None:
-        model_trainer = MyModelTrainer(model)
-        model_trainer.set_id(client_index)
-
+        if args.dataset == "stackoverflow_lr":
+            model_trainer = MyModelTrainerTAG(model)
+        elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
+            model_trainer = MyModelTrainerNWP(model)
+        else: # default model trainer is for classification problem
+            model_trainer = MyModelTrainerCLS(model)
+    model_trainer.set_id(client_index)
     trainer = FedAVGTrainer(client_index, train_data_local_dict, train_data_local_num_dict, test_data_local_dict,
                             train_data_num, device, args, model_trainer)
     client_manager = FedAVGClientManager(args, trainer, comm, process_id, size)

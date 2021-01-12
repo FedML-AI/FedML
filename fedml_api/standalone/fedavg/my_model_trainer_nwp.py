@@ -39,7 +39,6 @@ class MyModelTrainer(ModelTrainer):
                 log_probs = model(x)
                 loss = criterion(log_probs, labels)
                 loss.backward()
-
                 # to avoid nan loss
                 # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 0.5)
 
@@ -63,8 +62,7 @@ class MyModelTrainer(ModelTrainer):
             'test_loss': 0,
             'test_total': 0
         }
-
-        criterion = nn.CrossEntropyLoss().to(device)
+        criterion = nn.CrossEntropyLoss(ignore_index=0).to(device)
 
         with torch.no_grad():
             for batch_idx, (x, target) in enumerate(test_data):

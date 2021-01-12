@@ -33,12 +33,15 @@ class FedOptAggregator(object):
         self.model_dict = dict()
         self.sample_num_dict = dict()
         self.flag_client_model_uploaded_dict = dict()
-        self.opt = OptRepo.name2cls(self.args.server_optimizer)(
-            self.get_model_params(), lr=self.args.server_lr
-        )
+        self.opt = self._instantiate_opt()
         for idx in range(self.worker_num):
             self.flag_client_model_uploaded_dict[idx] = False
 
+    def _instantiate_opt(self):
+        return OptRepo.name2cls(self.args.server_optimizer)(
+            filter(lambda p: p.requires_grad, self.get_model_params()), lr=self.args.server_lr
+        )
+        
     def get_model_params(self):
         # return model parameters in type of generator
         return self.trainer.model.parameters()
@@ -94,9 +97,7 @@ class FedOptAggregator(object):
         opt_state = self.opt.state_dict()
         # set new aggregated grad
         self.set_model_global_grads(averaged_params)
-        self.opt = OptRepo.name2cls(self.args.server_optimizer)(
-            self.get_model_params(), lr=self.args.server_lr
-        )
+        self.opt = self._instantiate_opt()
         # load optimizer state
         self.opt.load_state_dict(opt_state)
         self.opt.step()
@@ -142,6 +143,9 @@ class FedOptAggregator(object):
             return self.test_global
 
     def test_on_all_clients(self, round_idx):
+        if self.trainer.test_on_the_server(self.train_data_local_dict, self.test_data_local_dict, self.device, self.args):
+            return
+
         if round_idx % self.args.frequency_of_the_test == 0 or round_idx == self.args.comm_round - 1:
             logging.info("################local_test_on_all_clients : {}".format(round_idx))
             train_num_samples = []
@@ -153,13 +157,12 @@ class FedOptAggregator(object):
             test_losses = []
             for client_idx in range(self.args.client_num_in_total):
                 # train data
-                train_tot_correct, train_num_sample, train_loss = self.trainer.test(self.train_data_local_dict[
-                                                                                        client_idx],
-                                                                                    self.device, self.args)
+                metrics = self.trainer.test(self.train_data_local_dict[client_idx], self.device, self.args)
+                train_tot_correct, train_num_sample, train_loss = metrics['test_correct'], metrics['test_total'], metrics['test_loss']
                 train_tot_corrects.append(copy.deepcopy(train_tot_correct))
                 train_num_samples.append(copy.deepcopy(train_num_sample))
                 train_losses.append(copy.deepcopy(train_loss))
-
+                
                 """
                 Note: CI environment is CPU-based computing. 
                 The training speed for RNN training is to slow in this setting, so we only test a client to make sure there is no programming error.
@@ -167,7 +170,7 @@ class FedOptAggregator(object):
                 if self.args.ci == 1:
                     break
 
-                        # test on training dataset
+            # test on training dataset
             train_acc = sum(train_tot_corrects) / sum(train_num_samples)
             train_loss = sum(train_losses) / sum(train_num_samples)
             wandb.log({"Train/Acc": train_acc, "round": round_idx})
@@ -184,7 +187,6 @@ class FedOptAggregator(object):
                 metrics = self.trainer.test(self.test_global, self.device, self.args)
             else:
                 metrics = self.trainer.test(self.val_global, self.device, self.args)
-                
             test_tot_correct, test_num_sample, test_loss = metrics['test_correct'], metrics['test_total'], metrics[
                 'test_loss']
             test_tot_corrects.append(copy.deepcopy(test_tot_correct))
