@@ -60,6 +60,7 @@ def init_client(args, device, comm, process_id, size, model, train_data_num, tra
         else: # default model trainer is for classification problem
             model_trainer = MyModelTrainerCLS(model)
     model_trainer.set_id(client_index)
+
     trainer = FedAVGTrainer(client_index, train_data_local_dict, train_data_local_num_dict, test_data_local_dict,
                             train_data_num, device, args, model_trainer)
     client_manager = FedAVGClientManager(args, trainer, comm, process_id, size)
