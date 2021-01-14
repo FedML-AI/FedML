@@ -4,18 +4,11 @@ from .FedAVGAggregator import FedAVGAggregator
 from .FedAVGTrainer import FedAVGTrainer
 from .FedAvgClientManager import FedAVGClientManager
 from .FedAvgServerManager import FedAVGServerManager
-import sys, os
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../../FedML")))
 
-try:
-    from fedml_api.standalone.fedavg.my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
-    from fedml_api.standalone.fedavg.my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
-    from fedml_api.standalone.fedavg.my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
-except ImportError: 
-    from FedML.fedml_api.standalone.fedavg.my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
-    from FedML.fedml_api.standalone.fedavg.my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
-    from FedML.fedml_api.standalone.fedavg.my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
+from ...standalone.fedavg.my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
+from ...standalone.fedavg.my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
+from ...standalone.fedavg.my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
+
 
 def FedML_init():
     comm = MPI.COMM_WORLD

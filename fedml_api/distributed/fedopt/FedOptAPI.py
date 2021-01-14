@@ -4,9 +4,9 @@ from .FedOptAggregator import FedOptAggregator
 from .FedOptClientManager import FedOptClientManager
 from .FedOptServerManager import FedOptServerManager
 from .FedOptTrainer import FedOptTrainer
-from fedml_api.standalone.fedopt.my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
-from fedml_api.standalone.fedopt.my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
-from fedml_api.standalone.fedopt.my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
+from ...standalone.fedopt.my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
+from ...standalone.fedopt.my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
+from ...standalone.fedopt.my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
 
 
 def FedML_init():
