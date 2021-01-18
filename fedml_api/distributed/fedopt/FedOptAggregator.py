@@ -18,8 +18,10 @@ class FedOptAggregator(object):
                  args, model_trainer):
         self.trainer = model_trainer
 
+        self.args = args
         self.train_global = train_global
         self.test_global = test_global
+        self.val_global = self._generate_validation_set()
         self.all_train_data_num = all_train_data_num
 
         self.train_data_local_dict = train_data_local_dict
@@ -28,16 +30,18 @@ class FedOptAggregator(object):
 
         self.worker_num = worker_num
         self.device = device
-        self.args = args
         self.model_dict = dict()
         self.sample_num_dict = dict()
         self.flag_client_model_uploaded_dict = dict()
-        self.opt = OptRepo.name2cls(self.args.server_optimizer)(
-            self.get_model_params(), lr=self.args.server_lr
-        )
+        self.opt = self._instantiate_opt()
         for idx in range(self.worker_num):
             self.flag_client_model_uploaded_dict[idx] = False
 
+    def _instantiate_opt(self):
+        return OptRepo.name2cls(self.args.server_optimizer)(
+            filter(lambda p: p.requires_grad, self.get_model_params()), lr=self.args.server_lr
+        )
+        
     def get_model_params(self):
         # return model parameters in type of generator
         return self.trainer.model.parameters()
@@ -93,9 +97,7 @@ class FedOptAggregator(object):
         opt_state = self.opt.state_dict()
         # set new aggregated grad
         self.set_model_global_grads(averaged_params)
-        self.opt = OptRepo.name2cls(self.args.server_optimizer)(
-            self.get_model_params(), lr=self.args.server_lr
-        )
+        self.opt = self._instantiate_opt()
         # load optimizer state
         self.opt.load_state_dict(opt_state)
         self.opt.step()
@@ -130,7 +132,20 @@ class FedOptAggregator(object):
         logging.info("client_indexes = %s" % str(client_indexes))
         return client_indexes
 
+    def _generate_validation_set(self, num_samples=10000):
+        if self.args.dataset.startswith("stackoverflow"):
+            test_data_num  = len(self.test_global.dataset)
+            sample_indices = random.sample(range(test_data_num), min(num_samples, test_data_num))
+            subset = torch.utils.data.Subset(self.test_global.dataset, sample_indices)
+            sample_testset = torch.utils.data.DataLoader(subset, batch_size=self.args.batch_size)
+            return sample_testset
+        else:
+            return self.test_global
+
     def test_on_all_clients(self, round_idx):
+        if self.trainer.test_on_the_server(self.train_data_local_dict, self.test_data_local_dict, self.device, self.args):
+            return
+
         if round_idx % self.args.frequency_of_the_test == 0 or round_idx == self.args.comm_round - 1:
             logging.info("################local_test_on_all_clients : {}".format(round_idx))
             train_num_samples = []
@@ -142,20 +157,12 @@ class FedOptAggregator(object):
             test_losses = []
             for client_idx in range(self.args.client_num_in_total):
                 # train data
-                train_tot_correct, train_num_sample, train_loss = self.trainer.test(self.train_data_local_dict[
-                                                                                        client_idx],
-                                                                                    self.device, self.args)
+                metrics = self.trainer.test(self.train_data_local_dict[client_idx], self.device, self.args)
+                train_tot_correct, train_num_sample, train_loss = metrics['test_correct'], metrics['test_total'], metrics['test_loss']
                 train_tot_corrects.append(copy.deepcopy(train_tot_correct))
                 train_num_samples.append(copy.deepcopy(train_num_sample))
                 train_losses.append(copy.deepcopy(train_loss))
-
-                # test data
-                test_tot_correct, test_num_sample, test_loss = self.trainer.test(self.test_data_local_dict[client_idx],
-                                                                                 self.device, self.args)
-                test_tot_corrects.append(copy.deepcopy(test_tot_correct))
-                test_num_samples.append(copy.deepcopy(test_num_sample))
-                test_losses.append(copy.deepcopy(test_loss))
-
+                
                 """
                 Note: CI environment is CPU-based computing. 
                 The training speed for RNN training is to slow in this setting, so we only test a client to make sure there is no programming error.
@@ -171,32 +178,17 @@ class FedOptAggregator(object):
             stats = {'training_acc': train_acc, 'training_loss': train_loss}
             logging.info(stats)
 
-            # test on test dataset
-            test_acc = sum(test_tot_corrects) / sum(test_num_samples)
-            test_loss = sum(test_losses) / sum(test_num_samples)
-            wandb.log({"Test/Acc": test_acc, "round": round_idx})
-            wandb.log({"Test/Loss": test_loss, "round": round_idx})
-            stats = {'test_acc': test_acc, 'test_loss': test_loss}
-            logging.info(stats)
-
-
-    def test_on_random_test_samples(self, round_idx, sample_num = 10000):
-
-        if round_idx % self.args.frequency_of_the_test == 0 or round_idx == self.args.comm_round - 1:
-            
-            test_data_num  = len(self.test_global.dataset)
-            sample_indices = random.sample(range(test_data_num), min(sample_num, test_data_num))
-            subset = torch.utils.data.Subset(self.test_global.dataset, sample_indices)
-            sample_testset = torch.utils.data.DataLoader(subset, batch_size=self.args.batch_size)
-
-            logging.info("################ local_test_round_{}: {} test samples".format(round_idx, str(sample_num)))
-
+            # test data
             test_num_samples = []
             test_tot_corrects = []
             test_losses = []
-            
-            # test data
-            test_tot_correct, test_num_sample, test_loss = self.trainer.test(sample_testset, self.device, self.args)
+
+            if round_idx == self.args.comm_round - 1:
+                metrics = self.trainer.test(self.test_global, self.device, self.args)
+            else:
+                metrics = self.trainer.test(self.val_global, self.device, self.args)
+            test_tot_correct, test_num_sample, test_loss = metrics['test_correct'], metrics['test_total'], metrics[
+                'test_loss']
             test_tot_corrects.append(copy.deepcopy(test_tot_correct))
             test_num_samples.append(copy.deepcopy(test_num_sample))
             test_losses.append(copy.deepcopy(test_loss))

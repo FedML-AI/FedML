@@ -11,7 +11,7 @@ BATCH_SIZE=$8
 LR=${9}
 DATASET=${10}
 DATA_DIR=${11}
-CLIENT_OPTIMIZER=${12}
+SERVER_OPTIMIZER=${12}
 CI=${13}
 
 PROCESS_NUM=`expr $WORKER_NUM + 1`
@@ -28,7 +28,7 @@ mpirun -np $PROCESS_NUM -hostfile ./mpi_host_file python3 ./main_fedopt.py \
   --client_num_per_round $WORKER_NUM \
   --comm_round $ROUND \
   --epochs $EPOCH \
-  --client_optimizer $CLIENT_OPTIMIZER \
+  --server_optimizer $SERVER_OPTIMIZER \
   --batch_size $BATCH_SIZE \
   --lr $LR \
   --ci $CI

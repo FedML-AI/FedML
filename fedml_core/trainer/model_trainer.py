@@ -9,7 +9,6 @@ class ModelTrainer(ABC):
        3. This class is an operator which does not cache any states inside.
     """
     def __init__(self, model, args=None):
-        # TODO: Make args mandatory during initialization
         self.model = model
         self.id = 0
         self.args = args
@@ -27,10 +26,13 @@ class ModelTrainer(ABC):
 
     @abstractmethod
     def train(self, train_data, device, args=None):
-        # TODO: Remove args after modifying all dependent files
         pass
 
     @abstractmethod
     def test(self, test_data, device, args=None):
-        # TODO: Remove args after modifying all dependent files
         pass
+
+    @abstractmethod
+    def test_on_the_server(self, train_data_local_dict, test_data_local_dict, device, args=None) -> bool:
+        pass
+
