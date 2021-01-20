@@ -175,7 +175,7 @@ if __name__ == "__main__":
     # load_partition_data_federated_stackoverflow(None, None, 100, 128)
     train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, output_dim = load_partition_data_distributed_federated_stackoverflow_lr(
         2, None, None, 128)
-    DEFAULT_TRAIN_CLINETS_NUM, train_data_num, test_data_num, train_data_global, test_data_global, \
+    DEFAULT_TRAIN_CLIENTS_NUM, train_data_num, test_data_num, train_data_global, test_data_global, \
            data_local_num_dict, train_data_local_dict, test_data_local_dict, output_dim = load_partition_data_federated_stackoverflow_lr(
         None, None, 128)
     print(train_data_local, test_data_local)
