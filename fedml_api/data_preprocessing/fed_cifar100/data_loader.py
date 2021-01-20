@@ -14,7 +14,7 @@ logger.setLevel(logging.INFO)
 
 client_ids_train = None
 client_ids_test = None
-DEFAULT_TRAIN_CLINETS_NUM = 500
+DEFAULT_TRAIN_CLIENTS_NUM = 500
 DEFAULT_TEST_CLIENTS_NUM = 100
 DEFAULT_BATCH_SIZE = 20
 DEFAULT_TRAIN_FILE = 'fed_cifar100_train.h5'
@@ -99,7 +99,7 @@ def load_partition_data_distributed_federated_cifar100(process_id, dataset, data
         logging.info("rank = %d, local_sample_number = %d" % (process_id, local_data_num))
         train_data_global = None
         test_data_global = None
-    return DEFAULT_TRAIN_CLINETS_NUM, train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, class_num
+    return DEFAULT_TRAIN_CLIENTS_NUM, train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, class_num
 
 
 def load_partition_data_federated_cifar100(dataset, data_dir, batch_size=DEFAULT_BATCH_SIZE):
@@ -119,7 +119,7 @@ def load_partition_data_federated_cifar100(dataset, data_dir, batch_size=DEFAULT
     train_data_local_dict = dict()
     test_data_local_dict = dict()
     
-    for client_idx in range(DEFAULT_TRAIN_CLINETS_NUM):
+    for client_idx in range(DEFAULT_TRAIN_CLIENTS_NUM):
         train_data_local, test_data_local = get_dataloader(
             dataset, data_dir, batch_size, batch_size, client_idx)
         local_data_num = len(train_data_local.dataset)
@@ -145,5 +145,5 @@ def load_partition_data_federated_cifar100(dataset, data_dir, batch_size=DEFAULT
     test_data_num = len(test_data_global.dataset)
 
 
-    return DEFAULT_TRAIN_CLINETS_NUM, train_data_num, test_data_num, train_data_global, test_data_global, \
+    return DEFAULT_TRAIN_CLIENTS_NUM, train_data_num, test_data_num, train_data_global, test_data_global, \
         data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num
