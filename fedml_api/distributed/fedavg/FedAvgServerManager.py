@@ -16,13 +16,14 @@ except ImportError:
 
 
 class FedAVGServerManager(ServerManager):
-    def __init__(self, args, aggregator, comm=None, rank=0, size=0, backend="MPI", is_preprocessed=False):
+    def __init__(self, args, aggregator, comm=None, rank=0, size=0, backend="MPI", is_preprocessed=False, preprocessed_client_lists=None):
         super().__init__(args, comm, rank, size, backend)
         self.args = args
         self.aggregator = aggregator
         self.round_num = args.comm_round
         self.round_idx = 0
         self.is_preprocessed = is_preprocessed
+        self.preprocessed_client_lists = preprocessed_client_lists
 
     def run(self):
         super().run()
@@ -58,14 +59,17 @@ class FedAVGServerManager(ServerManager):
                 return
 
             if self.is_preprocessed:
-                # sampling has already been done in data preprocessor
-                client_indexes = [self.round_idx] * self.args.client_num_per_round
-                print('indexes of clients: ' + str(client_indexes))
+                if self.preprocessed_client_lists is None:
+                    # sampling has already been done in data preprocessor
+                    client_indexes = [self.round_idx] * self.args.client_num_per_round
+                else:
+                    client_indexes = self.preprocessed_client_lists[self.round_idx]
             else:
                 # # sampling clients
                 client_indexes = self.aggregator.client_sampling(self.round_idx, self.args.client_num_in_total,
                                                                  self.args.client_num_per_round)
-
+            
+            print('indexes of clients: ' + str(client_indexes))
             print("size = %d" % self.size)
             if self.args.is_mobile == 1:
                 print("transform_tensor_to_list")

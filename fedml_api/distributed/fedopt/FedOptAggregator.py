@@ -142,7 +142,7 @@ class FedOptAggregator(object):
         else:
             return self.test_global
 
-    def test_on_all_clients(self, round_idx):
+    def test_on_server_for_all_clients(self, round_idx):
         if self.trainer.test_on_the_server(self.train_data_local_dict, self.test_data_local_dict, self.device, self.args):
             return
 
