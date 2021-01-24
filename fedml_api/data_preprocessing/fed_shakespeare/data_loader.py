@@ -13,7 +13,7 @@ logger.setLevel(logging.INFO)
 
 client_ids_train = None
 client_ids_test = None
-DEFAULT_TRAIN_CLINETS_NUM = 715
+DEFAULT_TRAIN_CLIENTS_NUM = 715
 DEFAULT_TEST_CLIENTS_NUM = 715
 DEFAULT_BATCH_SIZE = 4
 DEFAULT_TRAIN_FILE = 'shakespeare_train.h5'
@@ -104,7 +104,7 @@ def load_partition_data_distributed_federated_shakespeare(
         test_data_global = None
 
     VOCAB_LEN = len(utils.get_word_dict()) + 1
-    return DEFAULT_TRAIN_CLINETS_NUM, train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, VOCAB_LEN
+    return DEFAULT_TRAIN_CLIENTS_NUM, train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, VOCAB_LEN
 
 
 def load_partition_data_federated_shakespeare(dataset,
@@ -124,7 +124,7 @@ def load_partition_data_federated_shakespeare(dataset,
     train_data_local_dict = dict()
     test_data_local_dict = dict()
 
-    for client_idx in range(DEFAULT_TRAIN_CLINETS_NUM):
+    for client_idx in range(DEFAULT_TRAIN_CLIENTS_NUM):
         train_data_local, test_data_local = get_dataloader(
             dataset, data_dir, batch_size, batch_size, client_idx)
         local_data_num = len(train_data_local.dataset)
@@ -151,7 +151,7 @@ def load_partition_data_federated_shakespeare(dataset,
     test_data_num = len(test_data_global.dataset)
 
     VOCAB_LEN = len(utils.get_word_dict()) + 1
-    return DEFAULT_TRAIN_CLINETS_NUM, train_data_num, test_data_num, train_data_global, test_data_global, \
+    return DEFAULT_TRAIN_CLIENTS_NUM, train_data_num, test_data_num, train_data_global, test_data_global, \
         data_local_num_dict, train_data_local_dict, test_data_local_dict, VOCAB_LEN
 
 
