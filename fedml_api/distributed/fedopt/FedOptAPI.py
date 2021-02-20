@@ -47,7 +47,7 @@ def init_server(args, device, comm, rank, size, model, train_data_num, train_dat
 
     # start the distributed training
     if preprocessed_sampling_lists is None :
-        server_manager = FedOPTServerManager(args, aggregator, comm, rank, size)
+        server_manager = FedOptServerManager(args, aggregator, comm, rank, size)
     else:
         server_manager = FedOptServerManager(args, aggregator, comm, rank, size,
             backend="MPI", 
