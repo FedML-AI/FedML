@@ -17,7 +17,7 @@
 </p>
 
 ## News
-<b>2021-02-01 (Conference Presentation)</b>: #NeurIPS 2020# FedML won <a href="https://chaoyanghe.com/wp-content/uploads/2021/02/NeurIPS-SpicyFL-2020-Baidu-best-paper-award-He-v2.pdf">Best Paper Award</a> at NeurIPS Federated Learning workshop 2020
+<b>2021-02-01 (Award)</b>: #NeurIPS 2020# FedML won <a href="https://chaoyanghe.com/wp-content/uploads/2021/02/NeurIPS-SpicyFL-2020-Baidu-best-paper-award-He-v2.pdf">Best Paper Award</a> at NeurIPS Federated Learning workshop 2020
 
 
 <b>2020-12-12 (Conference Presentation)</b>: #NeurIPS 2020# We gave a contributed talk at NeurIPS 2020. Please check the video here: https://www.youtube.com/watch?v=93SETZGZMyI
