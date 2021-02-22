@@ -28,7 +28,7 @@ https://docs.google.com/presentation/d/1ykAQ_GpzEoRVJeMr1hXUHlJSBpzW2P6Wuzud8RTF
 <b>2020-11-27 (System)</b>: FedML architecture has evolved into an ecosystem including multiple GitHub repositories. With FedML at its core, we can support more advanced FL applications and platforms. <br>
 FedML: https://github.com/FedML-AI/FedML
 
-FedNLP: https://github.com/FedML-AI/FedNLP
+FedNLP: https://github.com/FedML-AI/FedNLP (We plan to release at the end of March. Please stay tuned!)
 
 FedML-IoT: https://github.com/FedML-AI/FedML-IoT
 
