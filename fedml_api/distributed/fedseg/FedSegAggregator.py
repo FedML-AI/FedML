@@ -202,7 +202,7 @@ class FedSegAggregator(object):
 
         logging.info("Testing statistics: {}".format(stats))
         
-        if test_mIoU > self.best_mIoU:
+        if test_mIoU > self.best_mIoU and self.args.save_client_model:
             logging.info('Saving Model Checkpoint --> Previous mIoU:{0}; Improved mIoU:{1}'.format(self.best_mIoU, test_mIoU))
             is_best = True
             self.best_mIoU = test_mIoU
