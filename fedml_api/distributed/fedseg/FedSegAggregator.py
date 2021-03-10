@@ -202,10 +202,13 @@ class FedSegAggregator(object):
 
         logging.info("Testing statistics: {}".format(stats))
         
-        if test_mIoU > self.best_mIoU and self.args.save_client_model:
+        if test_mIoU > self.best_mIoU and self.args.save_model:            
             logging.info('Saving Model Checkpoint --> Previous mIoU:{0}; Improved mIoU:{1}'.format(self.best_mIoU, test_mIoU))
             is_best = True
             self.best_mIoU = test_mIoU
+            wandb.run.summary["best_mIoU"] = self.best_mIoU
+            wandb.run.summary["Round Number for best mIou"] = round_idx                        
+
             saver_state = {
                 'best_pred': self.best_mIoU,
                 'round': round_idx + 1,
