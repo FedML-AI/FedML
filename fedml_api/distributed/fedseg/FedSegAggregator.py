@@ -206,7 +206,7 @@ class FedSegAggregator(object):
             self.best_mIoU = test_mIoU
             wandb.run.summary["best_mIoU"] = self.best_mIoU
             wandb.run.summary["Round Number for best mIou"] = round_idx
-            wandb.run.summary["end_timer"] = time.time()
+            wandb.run.summary["end_timestamp"] = time.time()
 
             if self.args.save_model:
                 logging.info('Saving Model Checkpoint --> Previous mIoU:{0}; Improved mIoU:{1}'.format(self.best_mIoU, test_mIoU))
