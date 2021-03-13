@@ -14,7 +14,7 @@ from FedML.fedml_core.distributed.communication.base_com_manager import BaseComm
 from FedML.fedml_core.distributed.communication.message import Message
 from FedML.fedml_core.distributed.communication.observer import Observer
 from FedML.fedml_core.distributed.communication.gRPC.grpc_server import GRPCCOMMServicer
-
+from FedML.fedml_api.distributed.fedavg.utils import transform_tensor_to_list
 
 class GRPCCommManager(BaseCommunicationManager):
 
@@ -30,8 +30,9 @@ class GRPCCommManager(BaseCommunicationManager):
             self.node_type = "server"
         else:
             self.node_type = "client"
-
-        self.grpc_server = grpc.server(futures.ThreadPoolExecutor(max_workers=client_num))
+        self.opts = [('grpc.max_send_message_length', 100 * 1024 * 1024), \
+                    ('grpc.max_receive_message_length', 100 * 1024 * 1024),('grpc.enable_http_proxy', 0) ]   
+        self.grpc_server = grpc.server(futures.ThreadPoolExecutor(max_workers=client_num), options = self.opts)
         self.grpc_servicer = GRPCCOMMServicer(host, port, client_num, client_id)
         grpc_comm_manager_pb2_grpc.add_gRPCCommManagerServicer_to_server(
             self.grpc_servicer,
@@ -47,19 +48,13 @@ class GRPCCommManager(BaseCommunicationManager):
         payload = msg.to_json()
 
         receiver_id = msg.get_receiver_id()
+        channel_url = '{}:{}'.format('0.0.0.0', str(50000 + receiver_id))
 
-        if receiver_id == 0:
-            channel_url = '{}:{}'.format('67.199.133.186', str(50000 + receiver_id))
-        elif receiver_id == 1:
-            channel_url = '{}:{}'.format('67.199.133.186', str(50000 + receiver_id))
-        elif receiver_id == 2:
-            channel_url = '{}:{}'.format('117.161.90.229', str(50000 + receiver_id))
-
-        channel = grpc.insecure_channel(channel_url)
+        channel = grpc.insecure_channel(channel_url, options = self.opts)
         stub = grpc_comm_manager_pb2_grpc.gRPCCommManagerStub(channel)
 
         request = grpc_comm_manager_pb2.CommRequest()
-        logging.info("sending message to port " + str(50000 + int(msg.get_receiver_id())))
+        logging.info("sending message to port " + str(50000 + receiver_id))
 
         request.client_id = self.client_id
 
@@ -67,6 +62,8 @@ class GRPCCommManager(BaseCommunicationManager):
 
         stub.sendMessage(request)
         logging.info("sent")
+        channel.close()
+
 
     def add_observer(self, observer: Observer):
         self._observers.append(observer)
