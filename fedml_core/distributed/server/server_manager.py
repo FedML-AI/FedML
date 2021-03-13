@@ -3,6 +3,7 @@ from abc import abstractmethod
 
 from mpi4py import MPI
 
+from ..communication.gRPC.grpc_comm_manager import GRPCCommManager
 from ..communication.mpi.com_manager import MpiCommunicationManager
 from ..communication.mqtt.mqtt_comm_manager import MqttCommManager
 from ..communication.observer import Observer
@@ -19,10 +20,15 @@ class ServerManager(Observer):
         if backend == "MPI":
             self.com_manager = MpiCommunicationManager(comm, rank, size, node_type="server")
         elif backend == "MQTT":
-            HOST = "81.71.1.31"
+            HOST = "0.0.0.0"
             # HOST = "broker.emqx.io"
             PORT = 1883
             self.com_manager = MqttCommManager(HOST, PORT, client_id=rank, client_num=size - 1)
+        elif backend == 'gRPC':
+            # TODO
+            HOST = "0.0.0.0"
+            PORT = 50000 + rank
+            self.com_manager = GRPCCommManager(HOST, PORT, client_id=rank, client_num=size-1)
         else:
             self.com_manager = MpiCommunicationManager(comm, rank, size, node_type="server")
         self.com_manager.add_observer(self)
