@@ -46,11 +46,11 @@ def init_server(args, device, comm, rank, size, model, train_data_num, train_dat
                                   worker_num, device, args, model_trainer)
 
     # start the distributed training
+    backend = args.backend
     if preprocessed_sampling_lists is None :
-        server_manager = FedAVGServerManager(args, aggregator, comm, rank, size)
+        server_manager = FedAVGServerManager(args, aggregator, comm, rank, size, backend)
     else:
-        server_manager = FedAVGServerManager(args, aggregator, comm, rank, size, 
-            backend="MPI", 
+        server_manager = FedAVGServerManager(args, aggregator, comm, rank, size, backend,
             is_preprocessed=True, 
             preprocessed_client_lists=preprocessed_sampling_lists)
     server_manager.send_init_msg()
@@ -68,8 +68,8 @@ def init_client(args, device, comm, process_id, size, model, train_data_num, tra
         else: # default model trainer is for classification problem
             model_trainer = MyModelTrainerCLS(model)
     model_trainer.set_id(client_index)
-
+    backend = args.backend
     trainer = FedAVGTrainer(client_index, train_data_local_dict, train_data_local_num_dict, test_data_local_dict,
                             train_data_num, device, args, model_trainer)
-    client_manager = FedAVGClientManager(args, trainer, comm, process_id, size)
+    client_manager = FedAVGClientManager(args, trainer, comm, process_id, size,backend)
     client_manager.run()
