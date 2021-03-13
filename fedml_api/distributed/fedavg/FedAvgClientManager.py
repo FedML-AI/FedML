@@ -52,8 +52,10 @@ class FedAVGClientManager(ClientManager):
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
 
-        if self.args.is_mobile == 1:
-            model_params = transform_list_to_tensor(model_params)
+        model_params = transform_list_to_tensor(model_params)
+
+        # if self.args.is_mobile == 1:
+            # model_params = transform_list_to_tensor(model_params)
 
         self.trainer.update_model(model_params)
         self.trainer.update_dataset(int(client_index))
