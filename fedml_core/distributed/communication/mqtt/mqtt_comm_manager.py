@@ -6,9 +6,9 @@ from typing import List
 
 import paho.mqtt.client as mqtt
 
-from ..base_com_manager import BaseCommunicationManager
-from ..message import Message
-from ..observer import Observer
+from FedML.fedml_core.distributed.communication.base_com_manager import BaseCommunicationManager
+from FedML.fedml_core.distributed.communication.message import Message
+from FedML.fedml_core.distributed.communication.observer import Observer
 
 
 class MqttCommManager(BaseCommunicationManager):
@@ -131,7 +131,7 @@ if __name__ == '__main__':
         def receive_message(self, msg_type, msg_params) -> None:
             print("receive_message(%s, %s)" % (msg_type, msg_params.to_string()))
     
-    client = MqttCommManager("81.71.1.31", 1883)
+    client = MqttCommManager("127.0.0.1", 1883)
     client.add_observer(Obs())
     time.sleep(3)
     print('client ID:%s' % client.client_id)
