@@ -14,8 +14,10 @@ import wandb
 from mpi4py import MPI
 
 # add the FedML root directory to the python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "./../../../../")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "./../../../")))
 
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "")))
 from fedml_api.distributed.utils.gpu_mapping import mapping_processes_to_gpu_device_from_yaml_file
 from fedml_api.data_preprocessing.FederatedEMNIST.data_loader import load_partition_data_federated_emnist
 from fedml_api.data_preprocessing.fed_cifar100.data_loader import load_partition_data_federated_cifar100
@@ -75,6 +77,9 @@ def add_args(parser):
 
     parser.add_argument('--client_optimizer', type=str, default='adam',
                         help='SGD with momentum; adam')
+
+    parser.add_argument('--backend', type=str, default="MPI",
+                        help='Backend for Server and Client')
 
     parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
                         help='learning rate (default: 0.001)')
