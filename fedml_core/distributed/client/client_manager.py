@@ -1,6 +1,6 @@
 import logging
 from abc import abstractmethod
-
+import sys
 from mpi4py import MPI
 
 from ..communication.gRPC.grpc_comm_manager import GRPCCommManager
@@ -67,3 +67,7 @@ class ClientManager(Observer):
         logging.info("__finish server")
         if self.backend == "MPI":
             MPI.COMM_WORLD.Abort()
+        elif self.backend == "MQTT":
+            self.com_manager.stop_receive_message()
+        elif self.backend == "gRPC":
+            self.com_manager.stop_receive_message()

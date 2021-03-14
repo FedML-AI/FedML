@@ -42,6 +42,7 @@ class GRPCCommManager(BaseCommunicationManager):
         self.grpc_server.add_insecure_port("{}:{}".format(host, port))
 
         self.grpc_server.start()
+        self.is_running = True
         print("server started. Listening on port " + str(port))
 
     def send_message(self, msg: Message):
@@ -76,7 +77,7 @@ class GRPCCommManager(BaseCommunicationManager):
         thread.start()
 
     def message_handling_subroutine(self):
-        while True:
+        while self.is_running:
             if self.grpc_servicer.message_q.qsize() > 0:
                 lock.acquire()
                 msg_params_string = self.grpc_servicer.message_q.get()
@@ -86,9 +87,11 @@ class GRPCCommManager(BaseCommunicationManager):
                 for observer in self._observers:
                     observer.receive_message(msg_type, msg_params)
                 lock.release()
+        self.grpc_server.stop(None)
+        return
 
     def stop_receive_message(self):
-        pass
+        self.is_running = False
 
     def notify(self, message: Message):
         msg_type = message.get_type()
