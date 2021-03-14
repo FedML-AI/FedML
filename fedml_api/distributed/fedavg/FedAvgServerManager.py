@@ -1,5 +1,5 @@
 import logging
-import os
+import os, signal
 import sys
 
 from .message_define import MyMessage
@@ -56,9 +56,9 @@ class FedAVGServerManager(ServerManager):
             # start the next round
             self.round_idx += 1
             if self.round_idx == self.round_num:
-                print("here")
                 self.finish()
-                return
+
+                os.kill(os.getpid(), signal.SIGINT)
 
             if self.is_preprocessed:
                 if self.preprocessed_client_lists is None:
