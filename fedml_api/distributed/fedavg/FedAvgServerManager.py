@@ -57,9 +57,8 @@ class FedAVGServerManager(ServerManager):
             self.round_idx += 1
             if self.round_idx == self.round_num:
                 self.finish()
-
-                os.kill(os.getpid(), signal.SIGINT)
-
+                print('here')
+                return
             if self.is_preprocessed:
                 if self.preprocessed_client_lists is None:
                     # sampling has already been done in data preprocessor

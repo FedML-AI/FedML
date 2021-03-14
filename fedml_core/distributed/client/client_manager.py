@@ -24,7 +24,7 @@ class ClientManager(Observer):
             # HOST = "broker.emqx.io"
             PORT = 1883
             self.com_manager = MqttCommManager(HOST, PORT, client_id=rank, client_num=size - 1)
-        elif backend == "gRPC":
+        elif backend == "GRPC":
             HOST = "0.0.0.0"
             PORT = 50000 + rank
             self.com_manager = GRPCCommManager(HOST, PORT, client_id=rank, client_num=size-1)
@@ -69,5 +69,5 @@ class ClientManager(Observer):
             MPI.COMM_WORLD.Abort()
         elif self.backend == "MQTT":
             self.com_manager.stop_receive_message()
-        elif self.backend == "gRPC":
+        elif self.backend == "GRPC":
             self.com_manager.stop_receive_message()

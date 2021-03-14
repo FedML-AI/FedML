@@ -87,10 +87,10 @@ class GRPCCommManager(BaseCommunicationManager):
                 for observer in self._observers:
                     observer.receive_message(msg_type, msg_params)
                 lock.release()
-        self.grpc_server.stop(None)
         return
 
     def stop_receive_message(self):
+        self.grpc_server.stop(None)
         self.is_running = False
 
     def notify(self, message: Message):
