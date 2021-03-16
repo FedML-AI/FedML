@@ -27,7 +27,7 @@ class ServerManager(Observer):
             self.com_manager = MqttCommManager(HOST, PORT, client_id=rank, client_num=size - 1)
         elif backend == "GRPC":
             # TODO
-            HOST = "0.0.0.0"
+            HOST = "0.0.0.0" # ip address of server
             PORT = 50000 + rank
             self.com_manager = GRPCCommManager(HOST, PORT, client_id=rank, client_num=size - 1)
         else:
