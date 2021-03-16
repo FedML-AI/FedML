@@ -111,6 +111,9 @@ def add_args(parser):
     parser.add_argument('--gpu_mapping_key', type=str, default="mapping_default",
                         help='the key in gpu utilization file')
 
+    parser.add_argument('--grpc_server_ip', type=str, default="0.0.0.0",
+                        help='ipv4 address of grpc server')
+
     parser.add_argument('--ci', type=int, default=0,
                         help='CI')
     args = parser.parse_args()
