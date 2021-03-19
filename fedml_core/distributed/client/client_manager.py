@@ -25,14 +25,9 @@ class ClientManager(Observer):
             PORT = 1883
             self.com_manager = MqttCommManager(HOST, PORT, client_id=rank, client_num=size - 1)
         elif backend == "GRPC":
-            try:
-                # ip address of server
-                HOST = args.grpc_server_ip
-            except AttributeError:
-                # server ip is not part of args
-                HOST = "0.0.0.0"
+            HOST = "0.0.0.0"
             PORT = 50000 + rank
-            self.com_manager = GRPCCommManager(HOST, PORT, client_id=rank, client_num=size-1)
+            self.com_manager = GRPCCommManager(HOST, PORT, ip_config_path=args.grpc_ipconfig_path, client_id=rank, client_num=size - 1)
         else:
             self.com_manager = MpiCommunicationManager(comm, rank, size, node_type="client")
         self.com_manager.add_observer(self)

@@ -111,8 +111,8 @@ def add_args(parser):
     parser.add_argument('--gpu_mapping_key', type=str, default="mapping_default",
                         help='the key in gpu utilization file')
 
-    parser.add_argument('--grpc_server_ip', type=str, default="0.0.0.0",
-                        help='ipv4 address of grpc server')
+    parser.add_argument('--grpc_ipconfig_path', type=str, default="grpc_ipconfig.csv",
+                        help='config table containing ipv4 address of grpc server')
 
     parser.add_argument('--ci', type=int, default=0,
                         help='CI')
@@ -268,6 +268,10 @@ def create_model(args, model_name, output_dim):
 
 
 if __name__ == "__main__":
+    # quick fix for issue in MacOS environment: https://github.com/openai/spinningup/issues/16
+    if sys.platform == 'darwin':
+        os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
+
     # initialize distributed computing (MPI)
     comm, process_id, worker_number = FedML_init()
 
@@ -325,12 +329,12 @@ if __name__ == "__main__":
     # In this case, please use our FedML distributed version (./fedml_experiments/distributed_fedavg)
     model = create_model(args, model_name=args.model, output_dim=dataset[7])
 
-    try:
+    # try:
         # start "federated averaging (FedAvg)"
-        FedML_FedAvg_distributed(process_id, worker_number, device, comm,
-                                 model, train_data_num, train_data_global, test_data_global,
-                                 train_data_local_num_dict, train_data_local_dict, test_data_local_dict, args)
-    except Exception as e:
-        print(e)
-        logging.info('traceback.format_exc():\n%s' % traceback.format_exc())
-        MPI.COMM_WORLD.Abort()
+    FedML_FedAvg_distributed(process_id, worker_number, device, comm,
+                             model, train_data_num, train_data_global, test_data_global,
+                             train_data_local_num_dict, train_data_local_dict, test_data_local_dict, args)
+    # except Exception as e:
+    #     print(e)
+    #     logging.info('traceback.format_exc():\n%s' % traceback.format_exc())
+    #     MPI.COMM_WORLD.Abort()

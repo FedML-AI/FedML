@@ -13,7 +13,6 @@ class GRPCCOMMServicer(grpc_comm_manager_pb2_grpc.gRPCCommManagerServicer):
         self.port = port
         self.client_num = client_num
         self.client_id = client_id
-        self.ip_config = {0: self.host}
 
         if self.client_id == 0:
             self.node_type = "server"
@@ -29,8 +28,6 @@ class GRPCCOMMServicer(grpc_comm_manager_pb2_grpc.gRPCCommManagerServicer):
             request.client_id,
             context_ip
         ))
-        if self.node_type == "server":
-            self.ip_config[request.client_id] = context_ip
 
         response = grpc_comm_manager_pb2.CommResponse()
         response.message = "message received"
