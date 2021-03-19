@@ -5,6 +5,39 @@ http://doc.fedml.ai/#/installation-distributed-computing
 Note please tune hyper-parameters accordingly. 
 You can refer the hyper-parameter suggestions at `FedML/benchmark/README.md`), but this may not be the optimal.
 
+
+## Usage
+```
+sh run_fedavg_distributed_pytorch.sh \
+    --client_num_in_total <client_num_in_total> \
+    --client_num_per_round <client_num_per_round> \
+    --model <model> \
+    --partition_method <partition_method> 
+    --comm_round <comm_round> \
+    --epochs <epochs>\
+    --batch_size <batch_size> \
+    --learning_rate <learning_rate> \
+    --dataset <dataset> \
+    --data_dir <data_dir> \
+    --client_optimizer <client_optimizer> \
+    --backend <backend> \
+    --grpc_ipconfig_path <grpc_ipconfig_path> \
+    --ci <ci>
+```
+
+## Setting ip configurations for grpc
+```
+1. create .csv file in the format:
+
+    receiver_id,ip
+    0,<ip_0>
+    ...
+    n,<ip_n>
+    
+    where n = client_num_per_round
+
+2. provide path to file as argument to --grpc_ipconfig_path
+```
 ## MNIST experiments
 ```
 sh run_fedavg_distributed_pytorch.sh 1000 10 1 4 lr hetero 200 1 10 0.03 mnist "./../../../data/mnist" sgd 0
@@ -18,10 +51,10 @@ https://wandb.ai/automl/fedml/runs/2dntp1tv?workspace=user-chaoyanghe-com
 
 # Federated EMNIST experiments
 ```
-sh run_fedavg_distributed_pytorch.sh 10 10 1 4 cnn hetero 100 1 20 0.1 femnist "./../../../data/FederatedEMNIST/datasets" sgd 0
+sh run_fedavg_distributed_pytorch.sh 10 10 1 4 cnn hetero 100 1 20 0.1 femnist "./../../../data/FederatedEMNIST/datasets" sgd sgd GRPC grpc_ipconfig.csv 0
 
 ##run on background
-nohup sh run_fedavg_distributed_pytorch.sh 10 10 1 4 cnn hetero 100 10 20 0.1 femnist "./../../../data/FederatedEMNIST/datasets" sgd 0 > ./fedavg-cnn-femnist.txt 2>&1 &
+nohup sh run_fedavg_distributed_pytorch.sh 10 10 1 4 cnn hetero 100 10 20 0.1 femnist "./../../../data/FederatedEMNIST/datasets" sgd sgd GRPC grpc_ipconfig.csv 0 > ./fedavg-cnn-femnist.txt 2>&1 &
 ```
 
 # shakespeare experiments
