@@ -66,7 +66,7 @@ class FedAVGServerManager(ServerManager):
                 else:
                     client_indexes = self.preprocessed_client_lists[self.round_idx]
             else:
-                # # sampling clients
+                # sampling clients
                 client_indexes = self.aggregator.client_sampling(self.round_idx, self.args.client_num_in_total,
                                                                  self.args.client_num_per_round)
             

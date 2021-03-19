@@ -5,7 +5,7 @@ from concurrent import futures
 import threading
 
 import grpc
-
+import time,os
 from ..gRPC import grpc_comm_manager_pb2_grpc, grpc_comm_manager_pb2
 
 lock = threading.Lock()
@@ -15,11 +15,11 @@ from FedML.fedml_core.distributed.communication.message import Message
 from FedML.fedml_core.distributed.communication.observer import Observer
 from FedML.fedml_core.distributed.communication.gRPC.grpc_server import GRPCCOMMServicer
 from FedML.fedml_api.distributed.fedavg.utils import transform_tensor_to_list
-
+from FedML.fedml_api.distributed.utils.ip_config_utils import build_ip_table
 
 class GRPCCommManager(BaseCommunicationManager):
 
-    def __init__(self, host, port, topic='fedml', client_id=0, client_num=0):
+    def __init__(self, host, port, ip_config_path, topic='fedml', client_id=0, client_num=0):
         # host is the ip address of server
         self.host = host
         self.port = str(port)
@@ -40,6 +40,8 @@ class GRPCCommManager(BaseCommunicationManager):
             self.grpc_servicer,
             self.grpc_server
         )
+        logging.info(os.getcwd())
+        self.ip_config = build_ip_table(ip_config_path)
 
         # starts a grpc_server on local machine using ip address "0.0.0.0"
         self.grpc_server.add_insecure_port("{}:{}".format("0.0.0.0", port))
@@ -53,8 +55,8 @@ class GRPCCommManager(BaseCommunicationManager):
 
         receiver_id = msg.get_receiver_id()
 
-        # lookup ip of receiver from grpc_servicer.ip_config table
-        receiver_ip = self.grpc_servicer.ip_config[receiver_id]
+        # lookup ip of receiver from self.ip_config table
+        receiver_ip = self.ip_config[str(receiver_id)]
         channel_url = '{}:{}'.format(receiver_ip, str(50000 + receiver_id))
 
         channel = grpc.insecure_channel(channel_url, options=self.opts)
