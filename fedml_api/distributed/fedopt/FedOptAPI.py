@@ -19,18 +19,18 @@ def FedML_init():
 def FedML_FedOpt_distributed(process_id, worker_number, device, comm, model, train_data_num, train_data_global,
                              test_data_global,
                              train_data_local_num_dict, train_data_local_dict, test_data_local_dict, args,
-                             model_trainer=None):
+                             model_trainer=None, preprocessed_sampling_lists=None):
     if process_id == 0:
         init_server(args, device, comm, process_id, worker_number, model, train_data_num, train_data_global,
                     test_data_global, train_data_local_dict, test_data_local_dict, train_data_local_num_dict,
-                    model_trainer)
+                    model_trainer, preprocessed_sampling_lists)
     else:
         init_client(args, device, comm, process_id, worker_number, model, train_data_num, train_data_local_num_dict,
                     train_data_local_dict, model_trainer)
 
 
 def init_server(args, device, comm, rank, size, model, train_data_num, train_data_global, test_data_global,
-                train_data_local_dict, test_data_local_dict, train_data_local_num_dict, model_trainer):
+                train_data_local_dict, test_data_local_dict, train_data_local_num_dict, model_trainer, preprocessed_sampling_lists=None):
     if model_trainer is None:
         if args.dataset == "stackoverflow_lr":
             model_trainer = MyModelTrainerTAG(model)
@@ -46,7 +46,13 @@ def init_server(args, device, comm, rank, size, model, train_data_num, train_dat
                                   worker_num, device, args, model_trainer)
 
     # start the distributed training
-    server_manager = FedOptServerManager(args, aggregator, comm, rank, size)
+    if preprocessed_sampling_lists is None :
+        server_manager = FedOptServerManager(args, aggregator, comm, rank, size)
+    else:
+        server_manager = FedOptServerManager(args, aggregator, comm, rank, size,
+            backend="MPI", 
+            is_preprocessed=True, 
+            preprocessed_client_lists=preprocessed_sampling_lists)
     server_manager.send_init_msg()
     server_manager.run()
 

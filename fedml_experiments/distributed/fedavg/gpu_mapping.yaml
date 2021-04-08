@@ -34,3 +34,14 @@ mapping_config5_6:
     host3: [0, 1]
     host4: [0, 1]
     host5: [0, 1]
+# this is used for 4 clients and 1 server training using 2 machines, each machine has 2 GPUs inside, but you hope to use the second GPU.
+mapping_config5_2:
+    gpu-worker2: [1,1]
+    gpu-worker1: [2,1]
+
+# this is used for 10 clients and 1 server training using 4 machines, each machine has 2 GPUs inside, but you hope to use the second GPU.
+mapping_config5_4:
+    gpu-worker2: [1,1]
+    gpu-worker1: [2,1]
+    gpu-worker3: [3,1]
+    gpu-worker4: [1,1]

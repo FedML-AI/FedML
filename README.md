@@ -17,6 +17,9 @@
 </p>
 
 ## News
+<b>2021-02-01 (Award)</b>: #NeurIPS 2020# FedML won <a href="https://chaoyanghe.com/wp-content/uploads/2021/02/NeurIPS-SpicyFL-2020-Baidu-best-paper-award-He-v2.pdf">Best Paper Award</a> at NeurIPS Federated Learning workshop 2020
+
+
 <b>2020-12-12 (Conference Presentation)</b>: #NeurIPS 2020# We gave a contributed talk at NeurIPS 2020. Please check the video here: https://www.youtube.com/watch?v=93SETZGZMyI
 
 The slides of this presentation are also open source (yes, we open source everything of FedML!): 
@@ -25,7 +28,7 @@ https://docs.google.com/presentation/d/1ykAQ_GpzEoRVJeMr1hXUHlJSBpzW2P6Wuzud8RTF
 <b>2020-11-27 (System)</b>: FedML architecture has evolved into an ecosystem including multiple GitHub repositories. With FedML at its core, we can support more advanced FL applications and platforms. <br>
 FedML: https://github.com/FedML-AI/FedML
 
-FedNLP: https://github.com/FedML-AI/FedNLP
+FedNLP: https://github.com/FedML-AI/FedNLP (We plan to release at the end of March 2021. Please stay tuned!)
 
 FedML-IoT: https://github.com/FedML-AI/FedML-IoT
 
