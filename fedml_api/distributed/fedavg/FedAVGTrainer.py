@@ -12,9 +12,6 @@ class FedAVGTrainer(object):
         self.train_data_local_num_dict = train_data_local_num_dict
         self.test_data_local_dict = test_data_local_dict
         self.all_train_data_num = train_data_num
-        # self.train_local = self.train_data_local_dict[client_index]
-        # self.local_sample_number = self.train_data_local_num_dict[client_index]
-        # self.test_local = self.test_data_local_dict[client_index]
         self.train_local = None
         self.local_sample_number = None
         self.test_local = None
