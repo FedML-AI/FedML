@@ -71,5 +71,5 @@ class FedOptClientManager(ClientManager):
 
     def __train(self):
         logging.info("#######training########### round_id = %d" % self.round_idx)
-        weights, local_sample_num = self.trainer.train()
+        weights, local_sample_num = self.trainer.train(self.round_idx)
         self.send_model_to_server(0, weights, local_sample_num)

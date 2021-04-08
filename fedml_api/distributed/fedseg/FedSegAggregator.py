@@ -203,34 +203,38 @@ class FedSegAggregator(object):
         logging.info("Testing statistics: {}".format(stats))
         
         if test_mIoU > self.best_mIoU:
-            logging.info('Saving Model Checkpoint --> Previous mIoU:{0}; Improved mIoU:{1}'.format(self.best_mIoU, test_mIoU))
-            is_best = True
             self.best_mIoU = test_mIoU
-            saver_state = {
-                'best_pred': self.best_mIoU,
-                'round': round_idx + 1,
-                'state_dict': self.trainer.get_model_params(),
-            }
+            wandb.run.summary["best_mIoU"] = self.best_mIoU
+            wandb.run.summary["Round Number for best mIou"] = round_idx
+            if self.args.save_model:
+                logging.info('Saving Model Checkpoint --> Previous mIoU:{0}; Improved mIoU:{1}'.format(self.best_mIoU, test_mIoU))
+                is_best = True
 
-            test_eval_metrics_dict = {
-                        'accuracy': test_acc,
-                        'accuracy_class': test_acc_class,
-                        'mIoU': test_mIoU,
-                        'FWIoU': test_FWIoU,
-                        'loss': test_loss
-            }           
-            saver_state['test_data_evaluation_metrics'] = test_eval_metrics_dict
-
-            if round_idx and round_idx % self.args.evaluation_frequency == 0:
-                train_eval_metrics_dict = {
-                    'accuracy': train_acc,
-                    'accuracy_class': train_acc_class,
-                    'mIoU': train_mIoU,
-                    'FWIoU': train_FWIoU,
-                    'loss': train_loss
+                saver_state = {
+                    'best_pred': self.best_mIoU,
+                    'round': round_idx + 1,
+                    'state_dict': self.trainer.get_model_params(),
                 }
-                saver_state['train_data_evaluation_metrics'] = train_eval_metrics_dict
 
-            self.saver.save_checkpoint(saver_state, is_best)
+                test_eval_metrics_dict = {
+                            'accuracy': test_acc,
+                            'accuracy_class': test_acc_class,
+                            'mIoU': test_mIoU,
+                            'FWIoU': test_FWIoU,
+                            'loss': test_loss
+                }           
+                saver_state['test_data_evaluation_metrics'] = test_eval_metrics_dict
+
+                if round_idx and round_idx % self.args.evaluation_frequency == 0:
+                    train_eval_metrics_dict = {
+                        'accuracy': train_acc,
+                        'accuracy_class': train_acc_class,
+                        'mIoU': train_mIoU,
+                        'FWIoU': train_FWIoU,
+                        'loss': train_loss
+                    }
+                    saver_state['train_data_evaluation_metrics'] = train_eval_metrics_dict
+
+                self.saver.save_checkpoint(saver_state, is_best)
                                 
                 

@@ -12,7 +12,7 @@ logger.setLevel(logging.INFO)
 
 client_ids_train = None
 client_ids_test = None
-DEFAULT_TRAIN_CLINETS_NUM = 3400
+DEFAULT_TRAIN_CLIENTS_NUM = 3400
 DEFAULT_TEST_CLIENTS_NUM = 3400
 DEFAULT_BATCH_SIZE = 20
 DEFAULT_TRAIN_FILE = 'fed_emnist_train.h5'
@@ -94,10 +94,10 @@ def load_partition_data_distributed_federated_emnist(process_id, dataset, data_d
     # class number
     train_file_path = os.path.join(data_dir, DEFAULT_TRAIN_FILE)
     with h5py.File(train_file_path, 'r') as train_h5:
-        class_num = len(np.unique([train_h5[_EXAMPLE][client_ids_train[idx]][_LABEL][0] for idx in range(DEFAULT_TRAIN_CLINETS_NUM)]))
+        class_num = len(np.unique([train_h5[_EXAMPLE][client_ids_train[idx]][_LABEL][0] for idx in range(DEFAULT_TRAIN_CLIENTS_NUM)]))
         logging.info("class_num = %d" % class_num)
 
-    return DEFAULT_TRAIN_CLINETS_NUM, train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, class_num
+    return DEFAULT_TRAIN_CLIENTS_NUM, train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, class_num
 
 
 def load_partition_data_federated_emnist(dataset, data_dir, batch_size=DEFAULT_BATCH_SIZE):
@@ -115,7 +115,7 @@ def load_partition_data_federated_emnist(dataset, data_dir, batch_size=DEFAULT_B
     train_data_local_dict = dict()
     test_data_local_dict = dict()
 
-    for client_idx in range(DEFAULT_TRAIN_CLINETS_NUM):
+    for client_idx in range(DEFAULT_TRAIN_CLIENTS_NUM):
         train_data_local, test_data_local = get_dataloader(dataset, data_dir, batch_size, batch_size, client_idx)
         local_data_num = len(train_data_local) + len(test_data_local)
         data_local_num_dict[client_idx] = local_data_num
@@ -143,9 +143,9 @@ def load_partition_data_federated_emnist(dataset, data_dir, batch_size=DEFAULT_B
     # class number
     train_file_path = os.path.join(data_dir, DEFAULT_TRAIN_FILE)
     with h5py.File(train_file_path, 'r') as train_h5:
-        class_num = len(np.unique([train_h5[_EXAMPLE][client_ids_train[idx]][_LABEL][0] for idx in range(DEFAULT_TRAIN_CLINETS_NUM)]))
+        class_num = len(np.unique([train_h5[_EXAMPLE][client_ids_train[idx]][_LABEL][0] for idx in range(DEFAULT_TRAIN_CLIENTS_NUM)]))
         logging.info("class_num = %d" % class_num)
 
-    return DEFAULT_TRAIN_CLINETS_NUM, train_data_num, test_data_num, train_data_global, test_data_global, \
+    return DEFAULT_TRAIN_CLIENTS_NUM, train_data_num, test_data_num, train_data_global, test_data_global, \
            data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num
 

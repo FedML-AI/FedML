@@ -31,7 +31,8 @@ class FedAVGTrainer(object):
         self.local_sample_number = self.train_data_local_num_dict[client_index]
         self.test_local = self.test_data_local_dict[client_index]
 
-    def train(self):
+    def train(self, round_idx = None):
+        self.args.round_idx = round_idx
         self.trainer.train(self.train_local, self.device, self.args)
 
         weights = self.trainer.get_model_params()
