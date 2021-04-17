@@ -11,8 +11,8 @@ class FedOptTrainer(object):
         self.train_data_local_dict = train_data_local_dict
         self.train_data_local_num_dict = train_data_local_num_dict
         self.all_train_data_num = train_data_num
-        self.train_local = self.train_data_local_dict[client_index]
-        self.local_sample_number = self.train_data_local_num_dict[client_index]
+        # self.train_local = self.train_data_local_dict[client_index]
+        # self.local_sample_number = self.train_data_local_num_dict[client_index]
 
         self.device = device
         self.args = args
