@@ -26,7 +26,7 @@ class MPISendThread(threading.Thread):
                     dest_id = msg.get(Message.MSG_ARG_KEY_RECEIVER)
                     self.comm.send(msg.to_string(), dest=dest_id)
                 else:
-                    time.sleep(0.3)
+                    time.sleep(0.003)
             except Exception:
                 traceback.print_exc()
 
