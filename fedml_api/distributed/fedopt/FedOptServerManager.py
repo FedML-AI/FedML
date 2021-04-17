@@ -3,7 +3,7 @@ import os
 import sys
 
 from .message_define import MyMessage
-from .utils import transform_tensor_to_list
+from .utils import transform_tensor_to_list, post_complete_message_to_sweep_process
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../../FedML")))
@@ -55,6 +55,7 @@ class FedOptServerManager(ServerManager):
             # start the next round
             self.round_idx += 1
             if self.round_idx == self.round_num:
+                post_complete_message_to_sweep_process(self.args)
                 self.finish()
                 return
 
