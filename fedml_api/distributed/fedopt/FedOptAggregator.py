@@ -39,7 +39,7 @@ class FedOptAggregator(object):
 
     def _instantiate_opt(self):
         return OptRepo.name2cls(self.args.server_optimizer)(
-            filter(lambda p: p.requires_grad, self.get_model_params()), lr=self.args.server_lr
+            filter(lambda p: p.requires_grad, self.get_model_params()), lr=self.args.server_lr, momentum=self.args.server_momentum,
         )
         
     def get_model_params(self):
