@@ -12,7 +12,7 @@ except ImportError:
     from FedML.fedml_core.distributed.client.client_manager import ClientManager
     from FedML.fedml_core.distributed.communication.message import Message
 from .message_define import MyMessage
-from .utils import transform_list_to_tensor
+from .utils import transform_list_to_tensor, post_complete_message_to_sweep_process
 
 
 class FedAVGClientManager(ClientManager):
@@ -60,6 +60,7 @@ class FedAVGClientManager(ClientManager):
         self.round_idx += 1
         self.__train()
         if self.round_idx == self.num_rounds - 1:
+            post_complete_message_to_sweep_process(self.args)
             self.finish()
 
     def send_model_to_server(self, receive_id, weights, local_sample_num):
