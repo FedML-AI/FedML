@@ -1,3 +1,5 @@
+import logging
+
 import torch
 from torch import nn
 
@@ -33,8 +35,6 @@ class MyModelTrainer(ModelTrainer):
             batch_loss = []
             for batch_idx, (x, labels) in enumerate(train_data):
                 x, labels = x.to(device), labels.to(device)
-                # logging.info("x.size = " + str(x.size()))
-                # logging.info("labels.size = " + str(labels.size()))
                 model.zero_grad()
                 log_probs = model(x)
                 loss = criterion(log_probs, labels)
@@ -45,12 +45,12 @@ class MyModelTrainer(ModelTrainer):
 
                 optimizer.step()
                 # logging.info('Update Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                #     epoch, (batch_idx + 1) * self.args.batch_size, len(self.local_training_data) * self.args.batch_size,
-                #            100. * (batch_idx + 1) / len(self.local_training_data), loss.item()))
+                #     epoch, (batch_idx + 1) * args.batch_size, len(train_data) * args.batch_size,
+                #            100. * (batch_idx + 1) / len(train_data), loss.item()))
                 batch_loss.append(loss.item())
             epoch_loss.append(sum(batch_loss) / len(batch_loss))
-            # logging.info('Client Index = {}\tEpoch: {}\tLoss: {:.6f}'.format(
-            #     self.client_idx, epoch, sum(epoch_loss) / len(epoch_loss)))
+            logging.info('Client Index = {}\tEpoch: {}\tLoss: {:.6f}'.format(
+                self.id, epoch, sum(epoch_loss) / len(epoch_loss)))
 
     def test(self, test_data, device, args):
         model = self.model

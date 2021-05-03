@@ -11,9 +11,7 @@ LR=$8
 DATASET=$9
 DATA_DIR=${10}
 CLIENT_OPTIMIZER=${11}
-BACKEND=${12}
-IP=${13}
-CI=${14}
+CI=${12}
 
 PROCESS_NUM=`expr $WORKER_NUM + 1`
 echo $PROCESS_NUM
@@ -22,7 +20,7 @@ hostname > mpi_host_file
 
 mpirun -np $PROCESS_NUM -hostfile ./mpi_host_file python3 ./main_fedavg.py \
   --gpu_mapping_file "gpu_mapping.yaml" \
-  --gpu_mapping_key "mapping_config5_2" \
+  --gpu_mapping_key "mapping_default" \
   --model $MODEL \
   --dataset $DATASET \
   --data_dir $DATA_DIR \
@@ -34,6 +32,4 @@ mpirun -np $PROCESS_NUM -hostfile ./mpi_host_file python3 ./main_fedavg.py \
   --client_optimizer $CLIENT_OPTIMIZER \
   --batch_size $BATCH_SIZE \
   --lr $LR \
-  --backend $BACKEND \
-  --grpc_ipconfig_path $IP \
   --ci $CI
