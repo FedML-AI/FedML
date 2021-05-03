@@ -61,7 +61,7 @@ class FedAvgAPI(object):
                                             self.train_data_local_num_dict[client_idx])
 
                 # train on new dataset
-                w = client.train(w_global)
+                w = client.train(copy.deepcopy(w_global))
                 # self.logger.info("local weights = " + str(w))
                 w_locals.append((client.get_sample_number(), copy.deepcopy(w)))
 
@@ -91,7 +91,7 @@ class FedAvgAPI(object):
         return client_indexes
 
     def _generate_validation_set(self, num_samples=10000):
-        test_data_num  = len(self.test_global.dataset)
+        test_data_num = len(self.test_global.dataset)
         sample_indices = random.sample(range(test_data_num), min(num_samples, test_data_num))
         subset = torch.utils.data.Subset(self.test_global.dataset, sample_indices)
         sample_testset = torch.utils.data.DataLoader(subset, batch_size=self.args.batch_size)
@@ -179,7 +179,6 @@ class FedAvgAPI(object):
         wandb.log({"Test/Loss": test_loss, "round": round_idx})
         logging.info(stats)
 
-
     def _local_test_on_validation_set(self, round_idx):
 
         logging.info("################local_test_on_validation_set : {}".format(round_idx))
@@ -209,6 +208,6 @@ class FedAvgAPI(object):
             wandb.log({"Test/Rec": test_rec, "round": round_idx})
             wandb.log({"Test/Loss": test_loss, "round": round_idx})
         else:
-            raise Exception("Unknown format to log metrics for dataset {}!"%self.args.dataset)
+            raise Exception("Unknown format to log metrics for dataset {}!" % self.args.dataset)
 
         logging.info(stats)
