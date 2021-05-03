@@ -227,11 +227,12 @@ def load_data(args, dataset_name):
 
 
 def combine_batches(batches):
-    full_x = torch.from_numpy(np.asarray([])).float()
-    full_y = torch.from_numpy(np.asarray([])).long()
-    for (batched_x, batched_y) in batches:
-        full_x = torch.cat((full_x, batched_x), 0)
-        full_y = torch.cat((full_y, batched_y), 0)
+    if isinstance(batches, list):
+        full_x = torch.cat([batch[0] for batch in batches], 0)
+        full_y = torch.cat([batch[1] for batch in batches], 0)
+    else:
+        batches = torch.utils.data.DataLoader(batches.dataset, batch_size = len(batches.dataset))
+        full_x, full_y = next(iter(batches))
     return [(full_x, full_y)]
 
 
