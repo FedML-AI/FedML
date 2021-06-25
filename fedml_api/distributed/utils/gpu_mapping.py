@@ -30,7 +30,8 @@ def mapping_processes_to_gpu_device_from_yaml_file(process_id, worker_number, gp
             logging.info("Process %d running on host: %s,gethostname: %s, gpu: %d ..." % (
                 process_id, gpu_util_map[process_id][0], socket.gethostname(), gpu_util_map[process_id][1]))
             assert i == worker_number
-
+        if torch.cuda.is_available():
+            torch.cuda.set_device(gpu_util_map[process_id][1])
         device = torch.device("cuda:" + str(gpu_util_map[process_id][1]) if torch.cuda.is_available() else "cpu")
         logging.info(device)
         # return gpu_util_map[process_id][1]
