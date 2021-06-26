@@ -13,20 +13,8 @@ Note please tune hyper-parameters accordingly.
 You can refer the hyper-parameter suggestions at `FedML/benchmark/README.md`), but this may not be the optimal.
 
 ## Usage
-```
-sh run_fedavg_distributed_pytorch.sh \
-    --client_num_in_total <client_num_in_total> \
-    --client_num_per_round <client_num_per_round> \
-    --model <model> \
-    --partition_method <partition_method> 
-    --comm_round <comm_round> \
-    --epochs <epochs>\
-    --batch_size <batch_size> \
-    --learning_rate <learning_rate> \
-    --dataset <dataset> \
-    --data_dir <data_dir> \
-    --client_optimizer <client_optimizer> \
-    --backend <backend> \
-    --grpc_ipconfig_path <grpc_ipconfig_path> \
-    --ci <ci>
-```
+Open fedgan under the fedml_experiments/distributed. Run the following command in terminal.
+``
+sh run_FedGAN.sh 3 3 gan 50 1 64 0.001 
+``
+The created image will be stored in the samples folder.
