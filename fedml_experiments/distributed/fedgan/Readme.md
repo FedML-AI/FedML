@@ -2,7 +2,7 @@
 This is the toy example for the federated learning based gan. 
 
 
-FedGAN Api is created by Lei Gao, Tuo Zhang, Qi Chang ang Zhennan. For any questions during the using, please contact us via the FedML Slack.
+FedGAN Api is created by Lei Gao, Tuo Zhang, Qi Chang ang Zhennan Yan. For any questions during the using, please contact us via the FedML Slack.
 
 ## Installation
 http://doc.fedml.ai/#/installation-distributed-computing
