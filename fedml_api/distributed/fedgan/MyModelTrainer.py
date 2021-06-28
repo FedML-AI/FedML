@@ -14,19 +14,24 @@ except ImportError:
 
 
 class MyModelTrainer(ModelTrainer):
+    def __init__(self, netd, netg):
+        self.netg = netg
+        self.netd = netd
+        super(MyModelTrainer, self).__init__(model=None, args=None)
+
     def get_model_params(self):
-        weights_d = self.model.get_netd().cpu().state_dict()
-        weights_g = self.model.get_netg().cpu().state_dict()
+        weights_d = self.netd.cpu().state_dict()
+        weights_g = self.netg.cpu().state_dict()
         weights = {'netg': weights_g, 'netd': weights_d}
         return weights
 
     def set_model_params(self, model_parameters):
-        self.model.get_netg().load_state_dict(model_parameters['netg'])
-        self.model.get_netd().load_state_dict(model_parameters['netd'])
+        self.netg.load_state_dict(model_parameters['netg'])
+        self.netd.load_state_dict(model_parameters['netd'])
 
     def train(self, train_data, device, args):
-        netg = self.model.get_netg()
-        netd = self.model.get_netd()
+        netg = self.netg
+        netd = self.netd
 
         netg.to(device)
         netg.train()
