@@ -13,6 +13,10 @@ import torch
 import wandb
 from mpi4py import MPI
 
+from torchvision import datasets
+from torchvision import transforms
+from torch.utils.data import DataLoader
+
 
 # add the FedML root directory to the python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "./../../../../")))
@@ -106,14 +110,33 @@ def add_args(parser):
 def load_data(args, dataset_name):
     if dataset_name == "mnist":
         logging.info("load_data. dataset_name = %s" % dataset_name)
-        client_num, train_data_num, test_data_num, train_data_global, test_data_global, \
-        train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
-        class_num = load_partition_data_mnist(args.batch_size)
+        transform = transforms.Compose([transforms.ToTensor(),
+                                        transforms.Normalize(mean=[0.5],
+                                                             std=[0.5])]
+                                       )
+        mnist = datasets.MNIST(root='./data/', train=True, transform=transform, download=True)
+        data_loader = DataLoader(dataset=mnist, batch_size=args.batch_size, shuffle=True, drop_last=True)
+        # client_num, train_data_num, test_data_num, train_data_global, test_data_global, \
+        # train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
+        # class_num = load_partition_data_mnist(args.batch_size)
         """
-        For shallow NN or linear models, 
+        For shallow NN or linear models,
         we uniformly sample a fraction of clients each round (as the original FedAvg paper)
         """
-        args.client_num_in_total = client_num
+
+        test_data_num = 0
+        train_data_local_dict = dict()
+        test_data_local_dict = dict()
+        train_data_local_num_dict = dict()
+        train_data_global = list()
+        test_data_global = list()
+        class_num = 10
+
+        for i in range(args.client_num_in_total):
+            train_data_local_num_dict[i] = len(data_loader) * args.batch_size
+            train_data_local_dict[i] = data_loader
+
+        train_data_num = len(data_loader)
 
         dataset = [train_data_num, test_data_num, train_data_global, test_data_global,
                    train_data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num]
@@ -132,7 +155,6 @@ if __name__ == "__main__":
 
     # initialize distributed computing (MPI)
     comm, process_id, worker_number = FedML_init()
-    print(process_id, worker_number)
     # parse python script input parameters
     parser = argparse.ArgumentParser()
     args = add_args(parser)
@@ -143,6 +165,7 @@ if __name__ == "__main__":
     setproctitle.setproctitle(str_process_name)
 
     # customize the log format
+    logging.getLogger().setLevel(logging.INFO)
     logging.basicConfig(level=logging.INFO,
     # logging.basicConfig(level=logging.DEBUG,
                         format=str(
@@ -177,7 +200,9 @@ if __name__ == "__main__":
     # Note if the model is DNN (e.g., ResNet), the training will be very slow.
     # In this case, please use our FedML distributed version (./fedml_experiments/distributed_fedavg)
     model = create_model()
-    trainer = MyModelTrainer(model)
+    netd = model.get_netd()
+    netg = model.get_netg()
+    trainer = MyModelTrainer(netd, netg)
 
     # try:
         # start "federated averaging (FedAvg)"
