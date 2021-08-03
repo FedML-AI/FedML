@@ -1,16 +1,15 @@
 import os
 import sys
-
 from sklearn.utils import shuffle
-
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
-from fedml_api.data_preprocessing.synthea_medication.medication_dataset import loan_load_two_party_data
-# from fedml_api.data_preprocessing.lending_club_loan.lending_club_dataset import loan_load_two_party_data
+from fedml_api.data_preprocessing.synthea_medication.medication_dataset import synthea_load_two_party_data
 from fedml_api.standalone.classical_vertical_fl.vfl_fixture import FederatedLearningFixture
 from fedml_api.standalone.classical_vertical_fl.party_models import VFLGuestModel, VFLHostModel
 from fedml_api.model.finance.vfl_models_standalone import LocalModel, DenseModel
 from fedml_api.standalone.classical_vertical_fl.vfl import VerticalMultiplePartyLogisticRegressionFederatedLearning
+from tensorflow.keras.utils import to_categorical
 
+import numpy as np
 
 def run_experiment(train_data, test_data, batch_size, learning_rate, epoch):
     print("hyper-parameters:")
@@ -18,13 +17,18 @@ def run_experiment(train_data, test_data, batch_size, learning_rate, epoch):
     print("learning rate: {0}".format(learning_rate))
 
     Xa_train, Xb_train, y_train = train_data
+    # y_train = to_categorical(y_train)
     Xa_test, Xb_test, y_test = test_data
+    # y_test = to_categorical(y_test)
+
 
     print("################################ Wire Federated Models ############################")
 
     # create local models for both party A and party B
     party_a_local_model = LocalModel(input_dim=Xa_train.shape[1], output_dim=10, learning_rate=learning_rate)
+    print("Party A Local Model",party_a_local_model)
     party_b_local_model = LocalModel(input_dim=Xb_train.shape[1], output_dim=20, learning_rate=learning_rate)
+    print("Party B Local Model",party_b_local_model)
 
     # create lr model for both party A and party B. Each party has a part of the whole lr model and only party A has
     # the bias since only party A has the labels.
@@ -52,22 +56,26 @@ def run_experiment(train_data, test_data, batch_size, learning_rate, epoch):
     test_data = {federatedLearning.get_main_party_id(): {"X": Xa_test, "Y": y_test},
                  "party_list": {party_B_id: Xb_test}}
 
+
     fl_fixture.fit(train_data=train_data, test_data=test_data, epochs=epoch, batch_size=batch_size)
 
 
 if __name__ == '__main__':
     print("################################ Prepare Data ############################")
     data_dir = "../../../data/synthea_medication/"
-    train, test = loan_load_two_party_data(data_dir)
+    train, test = synthea_load_two_party_data(data_dir)
     Xa_train, Xb_train, y_train = train
     Xa_test, Xb_test, y_test = test
 
+
     batch_size = 256
-    epoch = 100
-    lr = 0.01
+    epoch = 10
+    lr = 0.0000000000000000000001
 
     Xa_train, Xb_train, y_train = shuffle(Xa_train, Xb_train, y_train)
+    # print("Type Xa_train",type(Xa_train))
     Xa_test, Xb_test, y_test = shuffle(Xa_test, Xb_test, y_test)
+
     train = [Xa_train, Xb_train, y_train]
     test = [Xa_test, Xb_test, y_test]
     run_experiment(train_data=train, test_data=test, batch_size=batch_size, learning_rate=lr, epoch=epoch)

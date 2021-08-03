@@ -84,8 +84,22 @@ class FederatedLearningFixture(object):
                     y_hat_lbls, statistics = compute_correct_prediction(y_targets=y_test,
                                                                         y_prob_preds=y_prob_preds,
                                                                         threshold=threshold)
+                    for i in y_hat_lbls:
+                        if np.isnan(i):
+                            print("isnan")
+                            break
+                        elif i>1.82e308:
+                            print("is inf")
+                            break
+                        elif i < -1.82e308:
+                            print("is neg inf")
+                            break
+
+                    print("y test", y_test)
+                    print("y_hat_lbls", y_hat_lbls)
+
                     acc = accuracy_score(y_test, y_hat_lbls)
-                    auc = roc_auc_score(y_test, y_prob_preds)
+                    auc = 0.5 #roc_auc_score(y_test, y_prob_preds)
                     print("--- epoch: {0}, batch: {1}, loss: {2}, acc: {3}, auc: {4}"
                           .format(ep, batch_idx, ave_loss, acc, auc))
                     print("---", precision_recall_fscore_support(y_test, y_hat_lbls, average="macro", warn_for=tuple()))
