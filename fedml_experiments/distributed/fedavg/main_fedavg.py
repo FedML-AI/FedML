@@ -84,7 +84,7 @@ def add_args(parser):
     parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
                         help='learning rate (default: 0.001)')
 
-    parser.add_argument('--wd', help='weight decay parameter;', type=float, default=0.001)
+    parser.add_argument('--wd', help='weight decay parameter;', type=float, default=0.0001)
 
     parser.add_argument('--epochs', type=int, default=5, metavar='EP',
                         help='how many epochs will be trained locally')
