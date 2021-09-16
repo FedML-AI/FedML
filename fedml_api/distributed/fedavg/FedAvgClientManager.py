@@ -60,7 +60,7 @@ class FedAVGClientManager(ClientManager):
         self.round_idx += 1
         self.__train()
         if self.round_idx == self.num_rounds - 1:
-            post_complete_message_to_sweep_process(self.args)
+            # post_complete_message_to_sweep_process(self.args)
             self.finish()
 
     def send_model_to_server(self, receive_id, weights, local_sample_num):

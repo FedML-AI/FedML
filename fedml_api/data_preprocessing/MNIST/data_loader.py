@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 
 import numpy as np
@@ -98,6 +99,7 @@ def load_partition_data_mnist(batch_size,
     train_data_global = list()
     test_data_global = list()
     client_idx = 0
+    logging.info("loading data...")
     for u, g in zip(users, groups):
         user_train_data_num = len(train_data[u]['x'])
         user_test_data_num = len(test_data[u]['x'])
@@ -115,6 +117,7 @@ def load_partition_data_mnist(batch_size,
         train_data_global += train_batch
         test_data_global += test_batch
         client_idx += 1
+    logging.info("finished the loading data")
     client_num = client_idx
     class_num = 10
 
