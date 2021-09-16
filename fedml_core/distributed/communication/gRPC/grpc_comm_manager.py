@@ -32,8 +32,8 @@ class GRPCCommManager(BaseCommunicationManager):
             self.node_type = "server"
         else:
             self.node_type = "client"
-        self.opts = [('grpc.max_send_message_length', 100 * 1024 * 1024),
-                     ('grpc.max_receive_message_length', 100 * 1024 * 1024), ('grpc.enable_http_proxy', 0)]
+        self.opts = [('grpc.max_send_message_length', 1000 * 1024 * 1024),
+                     ('grpc.max_receive_message_length', 1000 * 1024 * 1024), ('grpc.enable_http_proxy', 0)]
         self.grpc_server = grpc.server(futures.ThreadPoolExecutor(max_workers=client_num), options=self.opts)
         self.grpc_servicer = GRPCCOMMServicer(host, port, client_num, client_id)
         grpc_comm_manager_pb2_grpc.add_gRPCCommManagerServicer_to_server(
@@ -54,23 +54,23 @@ class GRPCCommManager(BaseCommunicationManager):
         payload = msg.to_json()
 
         receiver_id = msg.get_receiver_id()
-
+        PORT_BASE = 8888
         # lookup ip of receiver from self.ip_config table
         receiver_ip = self.ip_config[str(receiver_id)]
-        channel_url = '{}:{}'.format(receiver_ip, str(50000 + receiver_id))
+        channel_url = '{}:{}'.format(receiver_ip, str(PORT_BASE + receiver_id))
 
         channel = grpc.insecure_channel(channel_url, options=self.opts)
         stub = grpc_comm_manager_pb2_grpc.gRPCCommManagerStub(channel)
 
         request = grpc_comm_manager_pb2.CommRequest()
-        logging.info("sending message to port " + str(50000 + receiver_id))
+        logging.info("sending message to {}".format(channel_url))
 
         request.client_id = self.client_id
 
         request.message = payload
 
         stub.sendMessage(request)
-        logging.info("sent")
+        logging.debug("sent successfully")
         channel.close()
 
     def add_observer(self, observer: Observer):
