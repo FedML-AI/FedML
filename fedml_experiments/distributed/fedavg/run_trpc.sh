@@ -1,0 +1,1 @@
+sh run_fedavg_distributed_pytorch.sh 10 10 resnet56 homo 1 20 64 0.001 cifar100 "./../../../data/cifar100" adam TRPC 0
