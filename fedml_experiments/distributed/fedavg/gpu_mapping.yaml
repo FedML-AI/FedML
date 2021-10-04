@@ -54,5 +54,5 @@ mapping_FedML_gRPC:
 
 # for torch RPC GPU mapping
 mapping_FedML_tRPC:
-    lambda-server1: [0, 0, 0, 0, 1, 1, 1, 1]
-    lambda-server2: [1, 1, 1, 1, 0, 0, 0, 0]
+    lambda-server1: [0, 0, 0, 0, 2, 2, 1, 1]
+    lambda-server2: [2, 1, 1, 1, 0, 0, 0, 0]
