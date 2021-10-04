@@ -75,7 +75,7 @@ class TRPCCommManager(BaseCommunicationManager):
             num_send_recv_threads=4, rpc_timeout=0.0, init_method=str_init_method
         )
         rpc.init_rpc(
-            "worker:" + str(worker_idx),
+            WORKER.format(worker_idx),
             backend=dist.rpc.BackendType.PROCESS_GROUP,
             rank=worker_idx,
             world_size=worker_num,
@@ -89,7 +89,7 @@ class TRPCCommManager(BaseCommunicationManager):
 
         logging.info("sending message to {}".format(receiver_id))
 
-        # Shoul I wait?
+        # Should I wait?
         rpc.rpc_sync(WORKER.format(receiver_id), TRPCCOMMServicer.sendMessage, args=(self.process_id, msg))
 
         logging.debug("sent")
