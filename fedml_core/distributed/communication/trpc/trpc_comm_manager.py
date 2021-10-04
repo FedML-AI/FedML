@@ -94,7 +94,7 @@ class TRPCCommManager(BaseCommunicationManager):
         str_init_method = "tcp://" + str(master_addr) + ":" + str(master_port)
         logging.info("str_init_method = {}".format(str_init_method))
         options = rpc.TensorPipeRpcBackendOptions(
-            num_worker_threads=16, rpc_timeout=20, init_method=str_init_method, _transports=["uv"]
+            num_worker_threads=16, rpc_timeout=1800, init_method=str_init_method, _transports=["uv"]
         )
         rpc.init_rpc(
             WORKER.format(worker_idx),
