@@ -72,7 +72,7 @@ class TRPCCommManager(BaseCommunicationManager):
         str_init_method = "tcp://" + str(master_addr) + ":" + str(master_port)
         logging.info("str_init_method = {}".format(str_init_method))
         options = rpc.ProcessGroupRpcBackendOptions(
-            num_send_recv_threads=4, rpc_timeout=0.0, init_method=str_init_method
+            num_send_recv_threads=4, init_method=str_init_method
         )
         rpc.init_rpc(
             WORKER.format(worker_idx),
