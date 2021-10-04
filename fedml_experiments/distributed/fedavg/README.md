@@ -22,6 +22,7 @@ sh run_fedavg_distributed_pytorch.sh \
     --client_optimizer <client_optimizer> \
     --backend <backend> \
     --grpc_ipconfig_path <grpc_ipconfig_path> \
+    --trpc_master_config_path\
     --ci <ci>
 ```
 
@@ -38,6 +39,11 @@ sh run_fedavg_distributed_pytorch.sh \
 
 2. provide path to file as argument to --grpc_ipconfig_path
 ```
+
+## Running using TRPC
+In order to run using TRPC set master's address and port in file trpc_master_config.csv, and use TRPC as backend option.
+
+
 ## MNIST experiments
 ```
 sh run_fedavg_distributed_pytorch.sh 1000 10 1 4 lr hetero 200 1 10 0.03 mnist "./../../../data/mnist" sgd 0

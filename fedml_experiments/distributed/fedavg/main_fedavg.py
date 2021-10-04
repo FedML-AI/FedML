@@ -114,6 +114,9 @@ def add_args(parser):
     parser.add_argument('--grpc_ipconfig_path', type=str, default="grpc_ipconfig.csv",
                         help='config table containing ipv4 address of grpc server')
 
+    parser.add_argument('--trpc_master_config_path', type=str, default="trpc_master_config.csv",
+                        help='config indicating ip address and port of the master (rank 0) node')
+
     parser.add_argument('--ci', type=int, default=0,
                         help='CI')
     args = parser.parse_args()
