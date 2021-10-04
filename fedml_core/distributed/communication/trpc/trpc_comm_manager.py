@@ -79,7 +79,8 @@ class TRPCCommManager(BaseCommunicationManager):
             world_size=worker_num,
             rpc_backend_options=options,
         )
-        logging.info("_init_torch_rpc_pg finished.")
+        # torch.distributed.rpc.init_rpc('worker', rank=self.global_rank, world_size=self.world_size)
+        logging.info("_init_rpc_with_process_group finished.")
 
     def _init_torch_rpc_tp(
         self,
@@ -97,7 +98,7 @@ class TRPCCommManager(BaseCommunicationManager):
         )
         rpc.init_rpc(
             WORKER.format(worker_idx),
-            backend=dist.rpc.BackendType.PROCESS_GROUP,
+            backend=rpc.BackendType.TENSORPIPE,
             rank=worker_idx,
             world_size=worker_num,
             rpc_backend_options=options,
