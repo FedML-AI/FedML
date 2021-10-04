@@ -16,6 +16,16 @@ sh download_and_unzip.sh
 Currently, we use MPI4Py to launch multiple processes across multiple nodes (servers).
 We will remove the dependency of MPI4Py later when using torch RPC.
 
+Note that you may need to set SSH mutual trust for the master node:
+```
+# node master
+cd /home/$USER/.ssh
+ssh-keygen
+
+# other nodes, copy the string in /home/$USER/.ssh/id_rsa.pub to 
+vim /home/$USER/.ssh/authorized_keys
+```
+
 * configure `gpu_mapping.yaml`
 ```
 # When there are 10 clients and 1 FL server, the following mapping means that in the first server, we assign 6 processes, including one for the server, and the 5 others for the clients.
@@ -31,10 +41,13 @@ master_ip, master_port
 192.168.11.1, 29500
 ```
 
+
+
 ### Training Scripts
 ``` training
 FedML_WORKSPACE=/home/$USER/FedML
 cd $FedML_WORKSPACE/fedml_experiments/distributed/fedavg
+sh run_fedavg_trpc.sh
 
 # kill processes
 kill $(ps aux | grep "main_fedavg.py" | grep -v grep | awk '{print $2}')
