@@ -47,7 +47,13 @@ master_ip, master_port
 ``` training
 FedML_WORKSPACE=/home/$USER/FedML
 cd $FedML_WORKSPACE/fedml_experiments/distributed/fedavg
-sh run_fedavg_trpc.sh
+nohup sh run_fedavg_trpc.sh > run_fedavg_trpc.log 2>&1 &
+
+# follow the log
+tail -f run_fedavg_trpc.log
+
+# search error in log
+vim run_fedavg_trpc.log
 
 # kill processes
 kill $(ps aux | grep "main_fedavg.py" | grep -v grep | awk '{print $2}')
