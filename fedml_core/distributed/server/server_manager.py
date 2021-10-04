@@ -12,7 +12,6 @@ from ..communication.observer import Observer
 
 
 class ServerManager(Observer):
-
     def __init__(self, args, comm=None, rank=0, size=0, backend="MPI"):
         self.args = args
         self.size = size
@@ -29,9 +28,11 @@ class ServerManager(Observer):
         elif backend == "GRPC":
             HOST = "0.0.0.0"
             PORT = 50000 + rank
-            self.com_manager = GRPCCommManager(HOST, PORT, ip_config_path=args.grpc_ipconfig_path, client_id=rank, client_num=size - 1)
+            self.com_manager = GRPCCommManager(
+                HOST, PORT, ip_config_path=args.grpc_ipconfig_path, client_id=rank, client_num=size - 1
+            )
         elif backend == "TRPC":
-            self.com_manager = TRPCCommManager(args.trpc_master_config_path,client_id=rank, client_num=size)
+            self.com_manager = TRPCCommManager(args.trpc_master_config_path, process_id=rank, world_size=size)
         else:
             self.com_manager = MpiCommunicationManager(comm, rank, size, node_type="server")
         self.com_manager.add_observer(self)
@@ -40,7 +41,7 @@ class ServerManager(Observer):
     def run(self):
         self.register_message_receive_handlers()
         self.com_manager.handle_receive_message()
-        print('done running')
+        print("done running")
 
     def get_sender_id(self):
         return self.rank
