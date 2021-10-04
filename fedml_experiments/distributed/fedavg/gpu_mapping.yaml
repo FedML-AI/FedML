@@ -52,7 +52,7 @@ mapping_FedML_gRPC:
     hostname_node_1: [1, 0, 0, 0]
     hostname_node_2: [1, 0, 0, 0]
 
-# for gRPC GPU mapping
+# for torch RPC GPU mapping
 mapping_FedML_tRPC:
-    lambda-server1: [1, 0, 0, 0]
-    lambda-server2: [1, 0, 0, 0]
+    lambda-server1: [0, 0, 0, 0, 1, 1, 1, 1]
+    lambda-server2: [1, 1, 1, 1, 0, 0, 0, 0]
