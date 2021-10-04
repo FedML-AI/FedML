@@ -41,6 +41,21 @@ master_ip, master_port
 192.168.11.1, 29500
 ```
 
+* configure network inferface, check `run_fedavg_trpc.sh` for details:
+```
+# enable InfiniBand
+#export NCCL_SOCKET_IFNAME=ib0
+#export GLOO_SOCKET_IFNAME=ib0
+#export TP_SOCKET_IFNAME=ib0
+#export NCCL_IB_HCA=ib0
+
+# disable InfiniBand
+export NCCL_IB_DISABLE=1
+export NCCL_SOCKET_IFNAME=eno2
+export GLOO_SOCKET_IFNAME=eno2
+export TP_SOCKET_IFNAME=eno2
+
+```
 
 
 ### Training Scripts
