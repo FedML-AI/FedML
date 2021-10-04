@@ -25,6 +25,11 @@ mapping_FedML_tRPC:
     lambda-server2: [2, 1, 1, 1, 0, 0, 0, 0]
 ```
 
+* configure `trpc_master_config.csv`
+```
+master_ip, master_port
+192.168.11.1, 29500
+```
 
 ### Training Scripts
 ``` training
