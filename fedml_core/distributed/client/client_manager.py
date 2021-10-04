@@ -31,7 +31,7 @@ class ClientManager(Observer):
                 HOST, PORT, ip_config_path=args.grpc_ipconfig_path, client_id=rank, client_num=size - 1
             )
         elif backend == "TRPC":
-            self.com_manager = TRPCCommManager(args.trpc_master_config_path, client_id=rank, client_num=size)
+            self.com_manager = TRPCCommManager(args.trpc_master_config_path, process_id=rank, world_size=size)
         else:
             self.com_manager = MpiCommunicationManager(comm, rank, size, node_type="client")
         self.com_manager.add_observer(self)

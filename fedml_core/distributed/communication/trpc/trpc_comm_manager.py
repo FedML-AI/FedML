@@ -1,22 +1,21 @@
-import os
-import sys
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../../")))
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../../../FedML")))
-import time
-import decimal
 import csv
-import torch.multiprocessing as mp
-import torch.distributed.rpc as rpc
-import torch
-from fedml_core.distributed.communication.trpc.trpc_server import TRPCCOMMServicer
-from fedml_core.distributed.communication.observer import Observer
-from fedml_core.distributed.communication.message import Message
-from fedml_core.distributed.communication.base_com_manager import BaseCommunicationManager
+import decimal
 import logging
-from typing import List
+import os
 import threading
+import time
+from typing import List
 
+import torch
+import torch.distributed as dist
+import torch.distributed.rpc as rpc
+import torch.multiprocessing as mp
+from torch.distributed import rpc
+
+from .trpc_server import TRPCCOMMServicer
+from ...communication.base_com_manager import BaseCommunicationManager
+from ...communication.message import Message
+from ...communication.observer import Observer
 
 lock = threading.Lock()
 
@@ -28,8 +27,8 @@ class TRPCCommManager(BaseCommunicationManager):
     def __init__(
         self,
         trpc_master_config_path,
-        client_id=0,
-        client_num=0,
+        process_id=0,
+        world_size=0,
     ):
         logging.info("using TRPC backend")
         with open(trpc_master_config_path, newline="") as csv_file:
@@ -39,37 +38,51 @@ class TRPCCommManager(BaseCommunicationManager):
             master_address, master_port = next(csv_reader)
         self.master_address = master_address
         self.master_port = master_port
-        self.client_id = client_id
-        self.client_num = client_num
+        self.process_id = process_id
+        self.world_size = world_size
         self._observers: List[Observer] = []
 
-        if client_id == 0:
+        if process_id == 0:
             self.node_type = "server"
         else:
             self.node_type = "client"
 
-        print(f"Worker rank {client_id} initializing RPC")
+        print(f"Worker rank {process_id} initializing RPC")
 
-        self.trpc_servicer = TRPCCOMMServicer(master_address, master_port, client_num, client_id)
+        self.trpc_servicer = TRPCCOMMServicer(master_address, master_port, world_size, process_id)
         logging.info(os.getcwd())
 
         os.environ["MASTER_ADDR"] = self.master_address
         os.environ["MASTER_PORT"] = self.master_port
 
-        rpc.init_rpc(
-            name=WORKER.format(client_id),
-            rank=client_id,
-            world_size=client_num,
-            backend=rpc.BackendType.TENSORPIPE,
-            rpc_backend_options=rpc.TensorPipeRpcBackendOptions(
-                rpc_timeout=6000,
-                init_method="env://",
-                _transports=["uv"],
-            ),
-        )
+        self._init_torch_rpc(master_address, master_port, process_id, world_size)
 
         self.is_running = True
         print("server started. master address: " + str(master_address))
+
+    def _init_torch_rpc(
+        self,
+        master_addr,
+        master_port,
+        worker_idx,
+        worker_num,
+    ):
+        # https://github.com/pytorch/pytorch/issues/55615
+        # [BC-Breaking][RFC] Retire ProcessGroup Backend for RPC #55615
+        str_init_method = "tcp://" + str(master_addr) + ":" + str(master_port)
+        logging.info("str_init_method = {}".format(str_init_method))
+        options = rpc.ProcessGroupRpcBackendOptions(
+            num_send_recv_threads=4, rpc_timeout=0.0, init_method=str_init_method
+        )
+        rpc.init_rpc(
+            "worker:" + str(worker_idx),
+            backend=dist.rpc.BackendType.PROCESS_GROUP,
+            rank=worker_idx,
+            world_size=worker_num,
+            rpc_backend_options=options,
+        )
+        # torch.distributed.rpc.init_rpc('worker', rank=self.global_rank, world_size=self.world_size)
+        logging.info("_init_rpc_with_process_group finished.")
 
     def send_message(self, msg: Message):
         receiver_id = msg.get_receiver_id()
