@@ -1,10 +1,18 @@
 #!/usr/bin/env bash
 set -x
 
+# enable InfiniBand
 export NCCL_SOCKET_IFNAME=lb0
 export GLOO_SOCKET_IFNAME=lb0
 export TP_SOCKET_IFNAME=lb0
 export NCCL_IB_HCA=lb0
+
+# disable InfiniBand
+#export NCCL_IB_DISABLE=1
+#export NCCL_SOCKET_IFNAME=eno2
+#export GLOO_SOCKET_IFNAME=eno2
+#export TP_SOCKET_IFNAME=eno2
+
 export NCCL_DEBUG=INFO
 export NCCL_MIN_NRINGS=1
 export NCCL_TREE_THRESHOLD=4294967296
