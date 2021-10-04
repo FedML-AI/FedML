@@ -13,3 +13,5 @@ gevent==20.6.2
 paho-mqtt==1.5.0
 Celery==4.4.7
 dill==0.3.3
+protobuf
+grpcio
