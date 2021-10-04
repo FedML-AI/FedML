@@ -1,4 +1,4 @@
-from FedML.fedml_core.distributed.communication.gRPC import grpc_comm_manager_pb2, grpc_comm_manager_pb2_grpc
+from ..gRPC import grpc_comm_manager_pb2, grpc_comm_manager_pb2_grpc
 import queue
 import threading
 import logging
