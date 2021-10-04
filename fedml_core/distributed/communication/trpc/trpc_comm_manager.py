@@ -90,7 +90,7 @@ class TRPCCommManager(BaseCommunicationManager):
         logging.info("sending message to {}".format(receiver_id))
 
         # Shoul I wait?
-        rpc.rpc_sync(WORKER.format(receiver_id), TRPCCOMMServicer.sendMessage, args=(self.client_id, msg))
+        rpc.rpc_sync(WORKER.format(receiver_id), TRPCCOMMServicer.sendMessage, args=(self.process_id, msg))
 
         logging.debug("sent")
 
