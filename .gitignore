@@ -41,6 +41,7 @@ data/MNIST/test
 data/shakespeare/train
 data/shakespeare/test
 data/stackoverflow/datasets
+data/FederatedEMNIST/datasets
 
 # android
 .gradle

@@ -1,6 +1,8 @@
 import queue
 import threading
 import logging
+from time import time
+from ...communication.utils import log_communication_tock
 
 lock = threading.Lock()
 
@@ -27,13 +29,10 @@ class TRPCCOMMServicer:
 
     def receiveMessage(self, clint_id, message):
         print("Recieved")
-        logging.info("client_{} got something from client_{}".format(
+        logging.info("client_{} got something from client_{} at {}".format(
             self.client_id,
             clint_id,
-        ))
-        print("client_{} got something from client_{}".format(
-            self.client_id,
-            clint_id,
+            time()
         ))
         response = "message received"
         lock.acquire()
@@ -43,6 +42,7 @@ class TRPCCOMMServicer:
 
     @classmethod
     def sendMessage(cls, clint_id, message):
+        log_communication_tock(clint_id, cls._instance.client_id)
         cls._instance.receiveMessage(clint_id, message)
 
     @classmethod

@@ -40,7 +40,7 @@ PROCESS_NUM=`expr $WORKER_NUM + 1`
 echo $PROCESS_NUM
 
 
-mpirun -np $PROCESS_NUM -hostfile ./mpi_host_file python3 ./main_fedavg.py \
+(cd .. && mpirun -np $PROCESS_NUM -hostfile ./mpi_host_file python3 ./main_fedavg.py \
   --gpu_mapping_file "gpu_mapping.yaml" \
   --gpu_mapping_key "mapping_FedML_tRPC" \
   --model $MODEL \
@@ -55,5 +55,7 @@ mpirun -np $PROCESS_NUM -hostfile ./mpi_host_file python3 ./main_fedavg.py \
   --batch_size $BATCH_SIZE \
   --lr $LR \
   --backend $BACKEND \
-  --ci $CI
+  --ci $CI > ./communication_benchmark/trpc_InfiniBand_enabled_no_mapping5.log 2>&1
+  # --enable_cuda_rpc \
+)
   

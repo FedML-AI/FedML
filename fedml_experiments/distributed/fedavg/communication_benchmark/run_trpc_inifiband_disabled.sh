@@ -2,16 +2,16 @@
 set -x
 
 # enable InfiniBand
-export NCCL_SOCKET_IFNAME=ib0
-export GLOO_SOCKET_IFNAME=ib0
-export TP_SOCKET_IFNAME=ib0
-export NCCL_IB_HCA=ib0
+# export NCCL_SOCKET_IFNAME=ib0
+# export GLOO_SOCKET_IFNAME=ib0
+# export TP_SOCKET_IFNAME=ib0
+# export NCCL_IB_HCA=ib0
 
 # disable InfiniBand
-# export NCCL_IB_DISABLE=1
-# export NCCL_SOCKET_IFNAME=eno2
-# export GLOO_SOCKET_IFNAME=eno2
-# export TP_SOCKET_IFNAME=eno2
+export NCCL_IB_DISABLE=1
+export NCCL_SOCKET_IFNAME=eno2
+export GLOO_SOCKET_IFNAME=eno2
+export TP_SOCKET_IFNAME=eno2
 
 export NCCL_DEBUG=INFO
 export NCCL_MIN_NRINGS=1
@@ -40,7 +40,7 @@ PROCESS_NUM=`expr $WORKER_NUM + 1`
 echo $PROCESS_NUM
 
 
-mpirun -np $PROCESS_NUM -hostfile ./mpi_host_file python3 ./main_fedavg.py \
+(cd .. && mpirun -np $PROCESS_NUM -hostfile ./mpi_host_file python3 ./main_fedavg.py \
   --gpu_mapping_file "gpu_mapping.yaml" \
   --gpu_mapping_key "mapping_FedML_tRPC" \
   --model $MODEL \
@@ -55,5 +55,6 @@ mpirun -np $PROCESS_NUM -hostfile ./mpi_host_file python3 ./main_fedavg.py \
   --batch_size $BATCH_SIZE \
   --lr $LR \
   --backend $BACKEND \
-  --ci $CI
+  --ci $CI > ./communication_benchmark/trpc_InfiniBand_diabled.log 2>&1
+)
   
