@@ -17,6 +17,13 @@ def add_args(parser):
     parser.add_argument("--backend", type=str, default="GRPC")
 
     parser.add_argument(
+        "--enable_cuda_rpc",
+        default=False,
+        action="store_true",
+        help="Enable cuda rpc (only for TRPC backend)",
+    )
+
+    parser.add_argument(
         "--gpu_mapping_file",
         type=str,
         default="gpu_mapping.yaml",
