@@ -13,6 +13,7 @@ from fedml_core.distributed.test.test_rpc.dummy_algorithm.server_manager import 
 
 
 def add_args(parser):
+    parser.add_argument("--rank", type=int, default=0)
 
     parser.add_argument("--backend", type=str, default="GRPC")
 
@@ -65,14 +66,17 @@ def run_worker(args, rank, size):
 
 
 if __name__ == "__main__":
-
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-    world_size = 2
-
     # parse python script input parameters
     parser = argparse.ArgumentParser()
     args = add_args(parser)
+
+    if args.backend is "GRPC":
+        rank = args.rank
+        world_size = 2
+    else:
+        comm = MPI.COMM_WORLD
+        rank = comm.Get_rank()
+        world_size = 2
 
     # customize the log format
     # logging.basicConfig(level=logging.INFO,
