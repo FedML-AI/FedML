@@ -1,12 +1,11 @@
 import logging
 import os
+import pickle
 import threading
 from concurrent import futures
 from typing import List
 
 import grpc
-
-import pickle
 
 from ..gRPC import grpc_comm_manager_pb2_grpc, grpc_comm_manager_pb2
 
@@ -37,7 +36,7 @@ class GRPCCommManager(BaseCommunicationManager):
             self.node_type = "client"
         self.opts = [
             ("grpc.max_send_message_length", 1000 * 1024 * 1024),
-            ("grpc.max_receive_message_length", 1000 * 1024 * 1024)
+            ("grpc.max_receive_message_length", 1000 * 1024 * 1024),
         ]
         self.grpc_server = grpc.server(futures.ThreadPoolExecutor(max_workers=client_num), options=self.opts)
         self.grpc_servicer = GRPCCOMMServicer(host, port, client_num, client_id)
@@ -45,7 +44,6 @@ class GRPCCommManager(BaseCommunicationManager):
         logging.info(os.getcwd())
         logging.info("&&&&&&&&&&&&&&& " + ip_config_path)
         self.ip_config = self._build_ip_table(ip_config_path)
-        
 
         # starts a grpc_server on local machine using ip address "0.0.0.0"
         # host = self.ip_config[str(self.client_id)]
