@@ -14,7 +14,7 @@ from fedml_core.distributed.server.server_manager import ServerManager
 
 class RPCServerManager(ServerManager):
     def __init__(self, args, comm=None, rank=0, size=0, backend="GRPC"):
-        super().__init__(args, comm, rank, size, backend)
+        super().__init__(args, comm, rank=rank, size=size, backend=backend)
         self.args = args
 
     def run(self):
