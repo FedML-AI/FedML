@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../../")))
 
 from fedml_core.distributed.communication.message import Message
 from fedml_core.distributed.server.server_manager import ServerManager
-from .utils import transform_tensor_to_list
+
 
 class RPCServerManager(ServerManager):
     def __init__(self, args, comm=None, rank=0, size=0, backend="GRPC"):
