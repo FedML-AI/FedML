@@ -10,6 +10,7 @@ import torch
 import torch.distributed as dist
 import torch.distributed.rpc as rpc
 import torch.multiprocessing as mp
+from FedML.fedml_api.distributed.utils.gpu_mapping import get_gpu_util_map
 from torch.distributed import rpc
 
 from .trpc_server import TRPCCOMMServicer
@@ -17,7 +18,6 @@ from ...communication.base_com_manager import BaseCommunicationManager
 from ...communication.message import Message
 from ...communication.observer import Observer
 from ...communication.utils import log_communication_tick
-from FedML.fedml_api.distributed.utils.gpu_mapping import get_gpu_util_map
 
 lock = threading.Lock()
 
@@ -32,8 +32,8 @@ class TRPCCommManager(BaseCommunicationManager):
         process_id=0,
         world_size=0,
         enable_cuda_rpc=False,
-        gpu_util_file=None, 
-        gpu_util_key=None
+        gpu_util_file=None,
+        gpu_util_key=None,
     ):
         logging.info("using TRPC backend")
         with open(trpc_master_config_path, newline="") as csv_file:
@@ -58,22 +58,17 @@ class TRPCCommManager(BaseCommunicationManager):
         logging.info(os.getcwd())
 
         os.environ["MASTER_ADDR"] = self.master_address
-        os.environ["MASTER_PORT"] = self.master_port   
+        os.environ["MASTER_PORT"] = self.master_port
 
-        self._init_torch_rpc_tp(master_address, master_port, process_id, world_size, enable_cuda_rpc,gpu_util_file,gpu_util_key)
+        self._init_torch_rpc_tp(
+            master_address, master_port, process_id, world_size, enable_cuda_rpc, gpu_util_file, gpu_util_key
+        )
 
         self.is_running = True
         print("server started. master address: " + str(master_address))
 
     def _init_torch_rpc_pg(
-        self,
-        master_addr,
-        master_port,
-        worker_idx,
-        worker_num,
-        enable_cuda_rpc,
-        gpu_util_file,
-        gpu_util_key
+        self, master_addr, master_port, worker_idx, worker_num, enable_cuda_rpc, gpu_util_file, gpu_util_key
     ):
         # https://github.com/pytorch/pytorch/issues/55615
         # [BC-Breaking][RFC] Retire ProcessGroup Backend for RPC #55615
@@ -96,29 +91,25 @@ class TRPCCommManager(BaseCommunicationManager):
         logging.info("_init_rpc_with_process_group finished.")
 
     def _init_torch_rpc_tp(
-        self,
-        master_addr,
-        master_port,
-        worker_idx,
-        worker_num,
-        enable_cuda_rpc,
-        gpu_util_file,
-        gpu_util_key
+        self, master_addr, master_port, worker_idx, worker_num, enable_cuda_rpc, gpu_util_file, gpu_util_key
     ):
         # https://github.com/pytorch/pytorch/issues/55615
         # [BC-Breaking][RFC] Retire ProcessGroup Backend for RPC #55615
         str_init_method = "tcp://" + str(master_addr) + ":10000"
         logging.info("str_init_method = {}".format(str_init_method))
         options = rpc.TensorPipeRpcBackendOptions(
-            num_worker_threads=16, rpc_timeout=1800, init_method=str_init_method, _transports=["uv"],
-            _channels=["cuda_gdr"]
+            num_worker_threads=16,
+            rpc_timeout=1800,
+            init_method=str_init_method,
+            _transports=["shm", "uv"],
+            _channels=["cma", "basic", "cuda_xth", "cuda_ipc", "cuda_basic", "cuda_gdr"],
         )
         if enable_cuda_rpc and gpu_util_file:
             trpc_gpu_mapping = self.get_trpc_gpu_mapping(worker_idx, gpu_util_file, gpu_util_key)
             logging.info(trpc_gpu_mapping)
             for key in trpc_gpu_mapping:
                 options.set_device_map(key, trpc_gpu_mapping[key])
-        options.set_device_map("worker1", {7:7})
+        options.set_device_map("worker1", {7: 7})
         rpc.init_rpc(
             WORKER.format(worker_idx),
             backend=rpc.BackendType.TENSORPIPE,
@@ -167,15 +158,14 @@ class TRPCCommManager(BaseCommunicationManager):
         for observer in self._observers:
             observer.receive_message(msg_type, message)
 
-    def get_trpc_gpu_mapping(self,process_id, gpu_util_file, gpu_util_key):
-        gpu_util_map,_ = get_gpu_util_map(process_id, gpu_util_file, gpu_util_key)
+    def get_trpc_gpu_mapping(self, process_id, gpu_util_file, gpu_util_key):
+        gpu_util_map, _ = get_gpu_util_map(process_id, gpu_util_file, gpu_util_key)
         trpc_gpu_mapping = {}
         proccess_gpu = gpu_util_map[process_id][1]
         for key in gpu_util_map:
             if key != process_id:
-                trpc_gpu_mapping[WORKER.format(key)] =  {proccess_gpu: gpu_util_map[key][1]}
+                trpc_gpu_mapping[WORKER.format(key)] = {proccess_gpu: gpu_util_map[key][1]}
         return trpc_gpu_mapping
-
 
 
 def run_worker(rank, world_size):
@@ -235,7 +225,6 @@ def run_worker(rank, world_size):
         com_manager_client = TRPCCommManager("./trpc_master_config.csv", rank, world_size)
 
     rpc.shutdown()
-
 
 
 if __name__ == "__main__":

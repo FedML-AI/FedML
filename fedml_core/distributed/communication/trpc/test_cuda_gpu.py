@@ -26,20 +26,21 @@ class MyModule(nn.Module):
 
 def measure(comm_mode):
     # local module on "worker0/cuda:0"
-    lm = MyModule("cuda:7", comm_mode)
+    lm = MyModule("cuda:5", comm_mode)
     # remote module on "worker1/cuda:1"
-    rm = rpc.remote("worker1", MyModule, args=("cuda:7", comm_mode))
+    rm = rpc.remote("worker1", MyModule, args=("cuda:5", comm_mode))
     # prepare random inputs
     x = torch.randn(5000, 5000).cuda(7)
 
     tik = time.time()
-    for _ in range(10):
+    for iteration_idx in range(10):
+        print("iteration_idx = {}".format(iteration_idx))
         with autograd.context() as ctx:
             y = rm.rpc_sync().forward(lm(x))
             autograd.backward(ctx, [y.sum()])
     # synchronize on "cuda:0" to make sure that all pending CUDA ops are
     # included in the measurements
-    torch.cuda.current_stream("cuda:7").synchronize()
+    torch.cuda.current_stream("cuda:5").synchronize()
     tok = time.time()
     print(f"{comm_mode} RPC total execution time: {tok - tik}")
 
@@ -47,10 +48,14 @@ def measure(comm_mode):
 def run_worker(rank):
     os.environ['MASTER_ADDR'] = '192.168.1.1'
     os.environ['MASTER_PORT'] = '29500'
-    options = rpc.TensorPipeRpcBackendOptions(num_worker_threads=128, _transports=["shm", "uv"], _channels=["cma", "basic", "cuda_xth", "cuda_ipc", "cuda_basic"])
+    options = rpc.TensorPipeRpcBackendOptions(
+        num_worker_threads=128,
+        _transports=["shm", "uv"],
+        _channels=["cma", "basic", "cuda_xth", "cuda_ipc", "cuda_basic"],
+    )
 
     if rank == 0:
-        options.set_device_map("worker1", {7: 7})
+        options.set_device_map("worker1", {5: 5})
         rpc.init_rpc(
             f"worker{rank}",
             rank=rank,

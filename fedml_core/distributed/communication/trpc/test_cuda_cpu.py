@@ -1,12 +1,12 @@
+import os
+import time
+
 import torch
 import torch.distributed.autograd as autograd
 import torch.distributed.rpc as rpc
-import torch.multiprocessing as mp
 import torch.nn as nn
-
-import os
-import time
 from mpi4py import MPI
+
 
 class MyModule(nn.Module):
     def __init__(self, device, comm_mode):
@@ -34,8 +34,9 @@ def measure(comm_mode):
     # x = torch.randn(1000, 1000).cuda(6)
 
     tik = time.time()
-    for _ in range(10):
+    for iteration_idx in range(10):
         with autograd.context() as ctx:
+            print("iteration_idx = {}".format(iteration_idx))
             y = rm.rpc_sync().forward(lm(x))
             autograd.backward(ctx, [y.sum()])
     # synchronize on "cuda:0" to make sure that all pending CUDA ops are
@@ -61,18 +62,13 @@ def run_worker(rank):
         measure(comm_mode="cpu")
         # measure(comm_mode="cuda")
     else:
-        rpc.init_rpc(
-            f"worker{rank}",
-            rank=rank,
-            world_size=2,
-            rpc_backend_options=options
-        )
+        rpc.init_rpc(f"worker{rank}", rank=rank, world_size=2, rpc_backend_options=options)
 
     # block until all rpcs finish
     rpc.shutdown()
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     world_size = 2
