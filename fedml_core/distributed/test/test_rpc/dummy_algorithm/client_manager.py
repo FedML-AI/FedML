@@ -2,6 +2,7 @@ import logging
 
 import numpy as np
 import torch
+from mpi4py import MPI
 
 from fedml_core.distributed.client.client_manager import ClientManager
 from .message_define import MyMessage
