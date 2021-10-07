@@ -72,14 +72,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     args = add_args(parser)
 
-    if args.backend == "GRPC":
-        rank = args.rank
-        world_size = 2
-    else:
-        comm = MPI.COMM_WORLD
-        rank = comm.Get_rank()
-        world_size = 2
-
+    rank = args.rank
+    world_size = 2
+    
     # customize the log format
     # logging.basicConfig(level=logging.INFO,
     logging.basicConfig(
