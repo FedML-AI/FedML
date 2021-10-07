@@ -52,7 +52,7 @@ def run_worker(rank):
     options = rpc.TensorPipeRpcBackendOptions(
         num_worker_threads=128,
         _transports=["shm", "uv"],
-        _channels=["cma", "basic", "cuda_xth", "cuda_ipc", "cuda_basic"],
+        _channels=["cuda_gdr"],
     )
 
     if rank == 0:
