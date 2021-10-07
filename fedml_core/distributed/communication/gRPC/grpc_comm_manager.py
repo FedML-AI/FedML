@@ -42,7 +42,7 @@ class GRPCCommManager(BaseCommunicationManager):
         self.grpc_servicer = GRPCCOMMServicer(host, port, client_num, client_id)
         grpc_comm_manager_pb2_grpc.add_gRPCCommManagerServicer_to_server(self.grpc_servicer, self.grpc_server)
         logging.info(os.getcwd())
-        logging.info("&&&&&&&&&&&&&&& "+ ip_config_path)
+        logging.info("&&&&&&&&&&&&&&& " + ip_config_path)
         self.ip_config = self._build_ip_table(ip_config_path)
 
         # starts a grpc_server on local machine using ip address "0.0.0.0"
@@ -56,7 +56,7 @@ class GRPCCommManager(BaseCommunicationManager):
         payload = msg.to_json()
 
         receiver_id = msg.get_receiver_id()
-        PORT_BASE = 10000
+        PORT_BASE = 22019
         # lookup ip of receiver from self.ip_config table
         receiver_ip = self.ip_config[str(receiver_id)]
         channel_url = "{}:{}".format(receiver_ip, str(PORT_BASE + receiver_id))
