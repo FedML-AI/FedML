@@ -30,7 +30,7 @@ def measure(comm_mode):
     # remote module on "worker1/cuda:1"
     rm = rpc.remote("worker1", MyModule, args=("cuda:5", comm_mode))
     # prepare random inputs
-    x = torch.randn(1000, 1000).cuda(7)
+    x = torch.randn(1000, 1000).cuda(5)
 
     tik = time.time()
     for iteration_idx in range(10):
@@ -51,7 +51,7 @@ def run_worker(rank):
     options = rpc.TensorPipeRpcBackendOptions(num_worker_threads=128)
 
     if rank == 0:
-        options.set_device_map("worker1", {7: 7})
+        options.set_device_map("worker1", {5: 5})
         rpc.init_rpc(
             f"worker{rank}",
             rank=rank,
