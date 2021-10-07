@@ -6,8 +6,6 @@ import torch
 
 from .message_define import MyMessage
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../../../")))
-
 
 from fedml_core.distributed.communication.message import Message
 from fedml_core.distributed.server.server_manager import ServerManager
