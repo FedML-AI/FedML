@@ -1,9 +1,9 @@
 import logging
-import os
-import sys
+
+import numpy as np
+import torch
 
 from fedml_core.distributed.client.client_manager import ClientManager
-
 from .message_define import MyMessage
 
 
@@ -20,5 +20,7 @@ class RPCClientManager(ClientManager):
         )
 
     def handle_message_receive_model_from_server(self, msg_params):
-        logging.info("handle_message_receive_model_from_server. tensor = {}".format(msg_params.get_params()))
+        list_model_params = msg_params.get_params()
+        received_model_tensor = torch.from_numpy(np.asarray(list_model_params)).float()
+        logging.info("handle_message_receive_model_from_server. tensor.shape = {}".format(received_model_tensor.shape))
         self.finish()
