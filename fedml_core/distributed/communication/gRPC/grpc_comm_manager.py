@@ -56,7 +56,7 @@ class GRPCCommManager(BaseCommunicationManager):
         payload = msg.to_json()
 
         receiver_id = msg.get_receiver_id()
-        PORT_BASE = 20000
+        PORT_BASE = 10000
         # lookup ip of receiver from self.ip_config table
         receiver_ip = self.ip_config[str(receiver_id)]
         channel_url = "{}:{}".format(receiver_ip, str(PORT_BASE + receiver_id))
