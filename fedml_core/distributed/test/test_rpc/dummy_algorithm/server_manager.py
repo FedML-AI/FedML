@@ -23,8 +23,10 @@ class RPCServerManager(ServerManager):
     def send_model_params(self):
         global_model_params = torch.randn(5000, 5000)
         if self.args.backend == "GRPC":
+            logging.info("GRPC. start to transform tensor to list")
             # for gRPC, we have to transform it as a list
             global_model_params = global_model_params.cpu().detach().numpy().tolist()
+            logging.info("GRPC. end to transform tensor to list")
         elif self.args.backend == "TRPC":
             global_model_params = global_model_params.to(5)
         self.send_message_model_params_to_client(1, global_model_params)
