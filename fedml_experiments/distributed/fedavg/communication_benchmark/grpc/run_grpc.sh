@@ -23,9 +23,10 @@ PROCESS_NUM=`expr $WORKER_NUM + 1`
 echo $PROCESS_NUM
 
 
-# hostname > mpi_host_file
+unset http_proxy
+unset https_proxy
 
-(cd ../.. && mpirun -np $PROCESS_NUM -hostfile ./communication_benchmark/grpc/mpi_host_file python3 ./main_fedavg.py \
+(cd ../.. && mpirun -np $PROCESS_NUM -hostfile ./communication_benchmark/grpc/mpi_host_file python3 ./main_fedavg_rpc_mpi.py \
   --gpu_mapping_file "./communication_benchmark/grpc/gpu_mapping.yaml" \
   --gpu_mapping_key "mapping_FedMLـgRPC" \
   --model $MODEL \
@@ -43,3 +44,12 @@ echo $PROCESS_NUM
   --grpc_ipconfig_path $GRPC_CONFIG_PATH \
   --ci $CI
 )
+
+
+
+
+
+
+
+
+

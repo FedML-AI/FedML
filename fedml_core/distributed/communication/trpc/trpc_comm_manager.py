@@ -110,14 +110,15 @@ class TRPCCommManager(BaseCommunicationManager):
         str_init_method = "tcp://" + str(master_addr) + ":10000"
         logging.info("str_init_method = {}".format(str_init_method))
         options = rpc.TensorPipeRpcBackendOptions(
-            num_worker_threads=16, rpc_timeout=1800, init_method=str_init_method, _transports=["uv"]
+            num_worker_threads=16, rpc_timeout=1800, init_method=str_init_method, _transports=["uv"],
+            _channels=["cuda_gdr"]
         )
         if enable_cuda_rpc and gpu_util_file:
             trpc_gpu_mapping = self.get_trpc_gpu_mapping(worker_idx, gpu_util_file, gpu_util_key)
             logging.info(trpc_gpu_mapping)
             for key in trpc_gpu_mapping:
                 options.set_device_map(key, trpc_gpu_mapping[key])
-        
+        options.set_device_map("worker1", {7:7})
         rpc.init_rpc(
             WORKER.format(worker_idx),
             backend=rpc.BackendType.TENSORPIPE,

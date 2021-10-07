@@ -4,7 +4,8 @@ import threading
 import traceback
 
 from ..message import Message
-
+from ...communication.utils import log_communication_tock
+from time import time
 
 class MPIReceiveThread(threading.Thread):
     def __init__(self, comm, rank, size, name, q):
@@ -21,8 +22,10 @@ class MPIReceiveThread(threading.Thread):
         while True:
             try:
                 msg_str = self.comm.recv()
+                timestamp = time()
                 msg = Message()
                 msg.init(msg_str)
+                log_communication_tock(msg.get(Message.MSG_ARG_KEY_SENDER) ,self.rank, timestamp=timestamp)
                 self.q.put(msg)
             except Exception:
                 traceback.print_exc()

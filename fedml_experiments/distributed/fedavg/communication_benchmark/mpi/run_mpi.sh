@@ -4,15 +4,16 @@
 
 CLIENT_NUM=10
 WORKER_NUM=10
-MODEL=cnn
-DISTRIBUTION=hetero
+MODEL=resnet56
+DISTRIBUTION=homo
 ROUND=10
 EPOCH=2
-BATCH_SIZE=20
-LR=0.1
-DATASET=femnist
-DATA_DIR="./../../../data/FederatedEMNIST/datasets"
-CLIENT_OPTIMIZER=sgd
+BATCH_SIZE=64
+LR=0.001
+DATASET=cifar100
+DATA_DIR="./../../../data/cifar100"
+CLIENT_OPTIMIZER=adam
+BACKEND=TRPC
 CI=0
 
 
@@ -37,5 +38,5 @@ echo $PROCESS_NUM
   --client_optimizer $CLIENT_OPTIMIZER \
   --batch_size $BATCH_SIZE \
   --lr $LR \
-  --ci $CI > ./communication_benchmark/mpi/mpi.log 2>&1
-)
+  --ci $CI
+)  > ./mpi1.log 2>&1

@@ -44,8 +44,18 @@ def main():
     downlink_delays = {}
     for key in downlink_ticks:
         process_total_delay = 0
-        for i in range(len(downlink_ticks[key])):
+        if (len(downlink_ticks[key]) != len(downlink_tocks[key])):
+            print("DONWLINK AND UPLINK LENGTH DIFFER FOR: "+ key)
+            print(str(len(downlink_ticks[key])) + " != " + str(len(downlink_tocks[key])))
+        for i in range(min(len(downlink_ticks[key]),len(downlink_tocks[key]))):
             process_total_delay += downlink_tocks[key][i] - downlink_ticks[key][i]
+            if (downlink_tocks[key][i] < downlink_ticks[key][i]):
+                print("^^^^^^^^^^^^^^^^")
+                print("key: ", key)
+                print("i: ", i)
+                print(downlink_tocks[key][i])
+                print(downlink_ticks[key][i])
+
         downlink_delays[key] = process_total_delay
 
 

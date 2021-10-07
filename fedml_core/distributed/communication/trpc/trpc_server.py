@@ -47,7 +47,10 @@ class TRPCCOMMServicer:
 
     @classmethod
     def sendMessageTest1(cls, clint_id, message):
-        return message
+        for _ in range(100):
+            message *= 2.0
+            message /= 2.0
+        return message.cuda(7)
         pass
         # cls._instance.receiveMessage(clint_id, message)
         # x = message.get("THE_TENSOR")

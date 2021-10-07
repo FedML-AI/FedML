@@ -34,14 +34,18 @@ DATASET=cifar100
 DATA_DIR="./../../../data/cifar100"
 CLIENT_OPTIMIZER=adam
 BACKEND=TRPC
+TRPC_MASTER_CONFIG_PATH="./communication_benchmark/trpc/trpc_master_config.csv"
 CI=0
 
+date=$(date +%s)
+logfile="rpc_InfiniBand_enabled.$date.log"
 PROCESS_NUM=`expr $WORKER_NUM + 1`
 echo $PROCESS_NUM
 
+echo "Using _transport cuda_gdr" >> ./$logfile
 
-(cd .. && mpirun -np $PROCESS_NUM -hostfile ./mpi_host_file python3 ./main_fedavg.py \
-  --gpu_mapping_file "gpu_mapping.yaml" \
+(cd ../.. && mpirun -np $PROCESS_NUM -hostfile ./communication_benchmark/trpc/mpi_host_file python3 ./main_fedavg.py \
+  --gpu_mapping_file "./communication_benchmark/trpc/gpu_mapping.yaml" \
   --gpu_mapping_key "mapping_FedML_tRPC" \
   --model $MODEL \
   --dataset $DATASET \
@@ -55,7 +59,8 @@ echo $PROCESS_NUM
   --batch_size $BATCH_SIZE \
   --lr $LR \
   --backend $BACKEND \
-  --ci $CI > ./communication_benchmark/trpc_InfiniBand_enabled_no_mapping5.log 2>&1
-  # --enable_cuda_rpc \
-)
+  --enable_cuda_rpc \
+  --ci $CI \
+  --trpc_master_config_path $TRPC_MASTER_CONFIG_PATH
+) >> ./$logfile 2>&1
   
