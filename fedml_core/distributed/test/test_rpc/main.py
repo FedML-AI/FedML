@@ -66,6 +66,10 @@ def run_worker(args, rank, size):
 
 if __name__ == "__main__":
 
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    world_size = 2
+
     # parse python script input parameters
     parser = argparse.ArgumentParser()
     args = add_args(parser)
@@ -74,13 +78,10 @@ if __name__ == "__main__":
     # logging.basicConfig(level=logging.INFO,
     logging.basicConfig(
         level=logging.DEBUG,
-        format=" - %(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s",
+        format="rank - " + str(rank) + " - %(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s",
         datefmt="%a, %d %b %Y %H:%M:%S",
     )
 
     logging.info(args)
 
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-    world_size = 2
     run_worker(args, rank, world_size)
