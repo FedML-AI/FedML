@@ -30,7 +30,7 @@ class GRPCCOMMServicer(grpc_comm_manager_pb2_grpc.gRPCCommManagerServicer):
         ))
 
         response = grpc_comm_manager_pb2.CommResponse()
-        response.message = "message received"
+        # response.message = "message received"
         lock.acquire()
         self.message_q.put(request.message)
         lock.release()
