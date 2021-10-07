@@ -56,7 +56,9 @@ class GRPCCommManager(BaseCommunicationManager):
         print("server started. Listening on {}:{}".format(host, port))
 
     def send_message(self, msg: Message):
+        logging.info("msg.to_json() START")
         payload = msg.to_json()
+        logging.info("msg.to_json() END")
 
         receiver_id = msg.get_receiver_id()
         PORT_BASE = 50000
