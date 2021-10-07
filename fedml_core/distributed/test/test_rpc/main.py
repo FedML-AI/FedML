@@ -70,7 +70,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     args = add_args(parser)
 
-    if args.backend is "GRPC":
+    if args.backend == "GRPC":
         rank = args.rank
         world_size = 2
     else:
