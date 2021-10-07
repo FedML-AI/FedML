@@ -48,7 +48,11 @@ def measure(comm_mode):
 def run_worker(rank):
     os.environ['MASTER_ADDR'] = '192.168.11.1'
     os.environ['MASTER_PORT'] = '29500'
-    options = rpc.TensorPipeRpcBackendOptions(num_worker_threads=128)
+    options = rpc.TensorPipeRpcBackendOptions(
+        num_worker_threads=128,
+        _transports=["shm", "uv"],
+        _channels=["cma", "basic", "cuda_xth", "cuda_ipc", "cuda_basic"],
+    )
 
     if rank == 0:
         options.set_device_map("worker1", {5: 5})
