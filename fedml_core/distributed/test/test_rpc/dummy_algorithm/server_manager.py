@@ -21,7 +21,7 @@ class RPCServerManager(ServerManager):
         super().run()
 
     def send_model_params(self):
-        global_model_params = torch.randn(3, 4).cpu()
+        global_model_params = torch.randn(5000, 5000).cpu()
         # for gRPC, we have to transform it as a list
         global_model_params = global_model_params.detach().numpy().tolist()
         self.send_message_model_params_to_client(1, global_model_params)
