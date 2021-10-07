@@ -23,4 +23,4 @@ class RPCClientManager(ClientManager):
         list_model_params = msg_params.get_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         received_model_tensor = torch.from_numpy(np.asarray(list_model_params)).float()
         logging.info("handle_message_receive_model_from_server. tensor.shape = {}".format(received_model_tensor.shape))
-        self.finish()
+        MPI.COMM_WORLD.Abort()
