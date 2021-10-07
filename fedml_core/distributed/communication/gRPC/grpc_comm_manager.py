@@ -45,7 +45,7 @@ class GRPCCommManager(BaseCommunicationManager):
         self.ip_config = self._build_ip_table(ip_config_path)
 
         # starts a grpc_server on local machine using ip address "0.0.0.0"
-        host = self.ip_config[self.client_id]
+        host = self.ip_config[str(self.client_id)]
         self.grpc_server.add_insecure_port("{}:{}".format(host, port))
         logging.info("{}:{}".format(host, port))
 
