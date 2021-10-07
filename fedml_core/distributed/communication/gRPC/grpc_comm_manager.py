@@ -57,7 +57,7 @@ class GRPCCommManager(BaseCommunicationManager):
 
     def send_message(self, msg: Message):
         logging.info("msg.to_json() START")
-        payload = msg.to_json()
+        # payload = msg.to_json()
         logging.info("msg.to_json() END")
 
         receiver_id = msg.get_receiver_id()
@@ -74,7 +74,7 @@ class GRPCCommManager(BaseCommunicationManager):
 
         request.client_id = self.client_id
 
-        request.message = payload
+        request.message = msg
 
         stub.sendMessage(request)
         logging.debug("sent successfully")
