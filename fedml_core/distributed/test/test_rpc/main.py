@@ -74,7 +74,7 @@ if __name__ == "__main__":
 
     rank = args.rank
     world_size = 2
-    
+
     # customize the log format
     # logging.basicConfig(level=logging.INFO,
     logging.basicConfig(
