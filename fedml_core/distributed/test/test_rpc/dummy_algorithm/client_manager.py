@@ -20,5 +20,5 @@ class RPCClientManager(ClientManager):
         )
 
     def handle_message_receive_model_from_server(self, msg_params):
-        logging.info("handle_message_receive_model_from_server. msg_params = {}".format(msg_params))
+        logging.info("handle_message_receive_model_from_server. tensor = {}".format(msg_params.get_params()))
         self.finish()
