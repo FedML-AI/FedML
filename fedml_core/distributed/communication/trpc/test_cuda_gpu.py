@@ -26,20 +26,21 @@ class MyModule(nn.Module):
 
 def measure(comm_mode):
     # local module on "worker0/cuda:0"
-    lm = MyModule("cuda:7", comm_mode)
+    lm = MyModule("cuda:5", comm_mode)
     # remote module on "worker1/cuda:1"
-    rm = rpc.remote("worker1", MyModule, args=("cuda:7", comm_mode))
+    rm = rpc.remote("worker1", MyModule, args=("cuda:5", comm_mode))
     # prepare random inputs
     x = torch.randn(1000, 1000).cuda(7)
 
     tik = time.time()
-    for _ in range(10):
+    for iteration_idx in range(10):
+        print("iteration_idx = {}".format(iteration_idx))
         with autograd.context() as ctx:
             y = rm.rpc_sync().forward(lm(x))
             autograd.backward(ctx, [y.sum()])
     # synchronize on "cuda:0" to make sure that all pending CUDA ops are
     # included in the measurements
-    torch.cuda.current_stream("cuda:7").synchronize()
+    torch.cuda.current_stream("cuda:5").synchronize()
     tok = time.time()
     print(f"{comm_mode} RPC total execution time: {tok - tik}")
 
