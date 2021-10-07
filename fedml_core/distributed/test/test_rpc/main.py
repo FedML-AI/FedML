@@ -58,7 +58,7 @@ def add_args(parser):
 def run_worker(args, rank, size):
     if rank == 0:
         server_manager = RPCServerManager(args, rank=rank, size=size, backend=args.backend)
-        sleep(5)
+        sleep(1)
         server_manager.send_model_params()
         server_manager.run()
     else:
