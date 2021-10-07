@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../../")))
 
 from fedml_core.distributed.communication.message import Message
 from fedml_core.distributed.server.server_manager import ServerManager
-
+from .utils import transform_tensor_to_list
 
 class RPCServerManager(ServerManager):
     def __init__(self, args, comm=None, rank=0, size=0, backend="GRPC"):
@@ -22,6 +22,7 @@ class RPCServerManager(ServerManager):
 
     def send_model_params(self):
         global_model_params = torch.randn(5000, 5000).cpu()
+        global_model_params = transform_tensor_to_list(global_model_params)
         self.send_message_model_params_to_client(1, global_model_params)
 
     def register_message_receive_handlers(self):
