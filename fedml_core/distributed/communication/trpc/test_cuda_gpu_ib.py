@@ -13,7 +13,7 @@ class MyModule(nn.Module):
     def __init__(self, device, comm_mode):
         super().__init__()
         self.device = device
-        self.linear = nn.Linear(1000, 1000).to(device)
+        self.linear = nn.Linear(5000, 5000).to(device)
         self.comm_mode = comm_mode
 
     def forward(self, x):
