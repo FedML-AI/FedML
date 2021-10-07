@@ -44,10 +44,11 @@ class GRPCCommManager(BaseCommunicationManager):
         logging.info(os.getcwd())
         logging.info("&&&&&&&&&&&&&&& " + ip_config_path)
         self.ip_config = self._build_ip_table(ip_config_path)
+        
+        _host = self.ip_config[str(self.client_id)]
 
         # starts a grpc_server on local machine using ip address "0.0.0.0"
-        self.grpc_server.add_insecure_port("{}:{}".format("0.0.0.0", port))
-        logging.info("port = {}".format(port))
+        self.grpc_server.add_insecure_port("{}:{}".format(_host, port))
 
         self.grpc_server.start()
         self.is_running = True
@@ -117,5 +118,5 @@ class GRPCCommManager(BaseCommunicationManager):
 
             for row in csv_reader:
                 receiver_id, receiver_ip = row
-                ip_config[receiver_id] = receiver_ip
+                ip_config[receiver_id] = receiver_ip.strip()
         return ip_config

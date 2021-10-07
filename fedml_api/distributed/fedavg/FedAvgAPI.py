@@ -33,6 +33,8 @@ def FedML_FedAvg_distributed(
     model_trainer=None,
     preprocessed_sampling_lists=None,
 ):
+    if not 'enable_cuda_rpc' in args:
+        args.enable_cuda_rpc = False
     if process_id == 0:
         init_server(
             args,
@@ -84,11 +86,11 @@ def init_server(
 ):
     if model_trainer is None:
         if args.dataset == "stackoverflow_lr":
-            model_trainer = MyModelTrainerTAG(model)
+            model_trainer = MyModelTrainerTAG(model, args.enable_cuda_rpc)
         elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
-            model_trainer = MyModelTrainerNWP(model)
+            model_trainer = MyModelTrainerNWP(model, args.enable_cuda_rpc)
         else:  # default model trainer is for classification problem
-            model_trainer = MyModelTrainerCLS(model)
+            model_trainer = MyModelTrainerCLS(model, args.enable_cuda_rpc)
     model_trainer.set_id(-1)
 
     # aggregator
@@ -141,11 +143,11 @@ def init_client(
     client_index = process_id - 1
     if model_trainer is None:
         if args.dataset == "stackoverflow_lr":
-            model_trainer = MyModelTrainerTAG(model)
+            model_trainer = MyModelTrainerTAG(model, args.enable_cuda_rpc)
         elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
-            model_trainer = MyModelTrainerNWP(model)
+            model_trainer = MyModelTrainerNWP(model, args.enable_cuda_rpc)
         else:  # default model trainer is for classification problem
-            model_trainer = MyModelTrainerCLS(model)
+            model_trainer = MyModelTrainerCLS(model, args.enable_cuda_rpc)
     model_trainer.set_id(client_index)
     backend = args.backend
     trainer = FedAVGTrainer(

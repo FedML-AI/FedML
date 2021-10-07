@@ -63,7 +63,7 @@ class FedAVGAggregator(object):
 
         for idx in range(self.worker_num):
             if self.args.is_mobile == 1:
-                self.model_dict[idx] = transform_list_to_tensor(self.model_dict[idx])
+                self.model_dict[idx] = transform_list_to_tensor(self.model_dict[idx], self.args.enable_cuda_rpc)
             model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
             training_num += self.sample_num_dict[idx]
 

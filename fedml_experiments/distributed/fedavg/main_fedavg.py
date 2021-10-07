@@ -125,12 +125,12 @@ def add_args(parser):
         help="config indicating ip address and port of the master (rank 0) node",
     )
 
-    parser.add_argument(
-        "--enable_cuda_rpc",
-        default=False,
-        action="store_true",
-        help="Enable cuda rpc (only for TRPC backend)",
-    )
+    # parser.add_argument(
+    #     "--enable_cuda_rpc",
+    #     default=False,
+    #     action="store_true",
+    #     help="Enable cuda rpc (only for TRPC backend)",
+    # )
 
     parser.add_argument("--ci", type=int, default=0, help="CI")
     args = parser.parse_args()

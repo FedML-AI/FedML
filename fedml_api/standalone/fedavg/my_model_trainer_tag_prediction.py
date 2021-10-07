@@ -8,7 +8,10 @@ except ImportError:
 
 
 class MyModelTrainer(ModelTrainer):
+
     def get_model_params(self):
+        if self.enable_cuda_rpc:
+            return self.model.state_dict()
         return self.model.cpu().state_dict()
 
     def set_model_params(self, model_parameters):

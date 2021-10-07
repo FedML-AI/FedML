@@ -34,7 +34,7 @@ class FedAVGServerManager(ServerManager):
                                                          self.args.client_num_per_round)
         global_model_params = self.aggregator.get_global_model_params()
         if self.args.is_mobile == 1:
-            global_model_params = transform_tensor_to_list(global_model_params)
+            global_model_params = transform_tensor_to_list(global_model_params, self.args.enable_cuda_rpc)
         for process_id in range(1, self.size):
             self.send_message_init_config(process_id, global_model_params, client_indexes[process_id - 1])
 
@@ -75,7 +75,7 @@ class FedAVGServerManager(ServerManager):
             print('indexes of clients: ' + str(client_indexes))
             print("size = %d" % self.size)
             if self.args.is_mobile == 1:
-                global_model_params = transform_tensor_to_list(global_model_params)
+                global_model_params = transform_tensor_to_list(global_model_params, self.args.enable_cuda_rpc)
 
             for receiver_id in range(1, self.size):
                 self.send_message_sync_model_to_client(receiver_id, global_model_params,

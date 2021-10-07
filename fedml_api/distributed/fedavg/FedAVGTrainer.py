@@ -36,7 +36,7 @@ class FedAVGTrainer(object):
 
         # transform Tensor to list
         if self.args.is_mobile == 1:
-            weights = transform_tensor_to_list(weights)
+            weights = transform_tensor_to_list(weights, self.args.enable_cuda_rpc)
         return weights, self.local_sample_number
 
     def test(self):

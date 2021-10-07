@@ -22,8 +22,8 @@ export NCCL_SOCKET_NTHREADS=8
 export NCCL_BUFFSIZE=1048576
 
 
-CLIENT_NUM=10
-WORKER_NUM=10
+CLIENT_NUM=3
+WORKER_NUM=3
 MODEL=resnet56
 DISTRIBUTION=homo
 ROUND=10
@@ -62,5 +62,6 @@ echo "Using _transport cuda_gdr" >> ./$logfile
   --enable_cuda_rpc \
   --ci $CI \
   --trpc_master_config_path $TRPC_MASTER_CONFIG_PATH
-) >> ./$logfile 2>&1
+) 
+# >> ./$logfile 2>&1
   
