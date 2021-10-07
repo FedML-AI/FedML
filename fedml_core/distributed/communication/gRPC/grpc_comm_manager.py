@@ -50,7 +50,7 @@ class GRPCCommManager(BaseCommunicationManager):
 
         self.grpc_server.start()
         self.is_running = True
-        print("server started. Listening on port " + str(port))
+        print("server started. Listening on {}:{}".format(host, port))
 
     def send_message(self, msg: Message):
         payload = msg.to_json()
