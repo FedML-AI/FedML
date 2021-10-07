@@ -12,7 +12,7 @@ class MyModule(nn.Module):
     def __init__(self, device, comm_mode):
         super().__init__()
         self.device = device
-        self.linear = nn.Linear(1000, 1000).to(device)
+        self.linear = nn.Linear(5000, 5000).to(device)
         self.comm_mode = comm_mode
 
     def forward(self, x):
@@ -30,7 +30,7 @@ def measure(comm_mode):
     # remote module on "worker1/cuda:1"
     rm = rpc.remote("worker1", MyModule, args=("cuda:7", comm_mode))
     # prepare random inputs
-    x = torch.randn(1000, 1000).cuda(7)
+    x = torch.randn(5000, 5000).cuda(7)
 
     tik = time.time()
     for _ in range(10):
@@ -45,9 +45,9 @@ def measure(comm_mode):
 
 
 def run_worker(rank):
-    os.environ['MASTER_ADDR'] = '192.168.11.1'
+    os.environ['MASTER_ADDR'] = '192.168.1.1'
     os.environ['MASTER_PORT'] = '29500'
-    options = rpc.TensorPipeRpcBackendOptions(num_worker_threads=128)
+    options = rpc.TensorPipeRpcBackendOptions(num_worker_threads=128, _transports=["shm", "uv"], _channels=["cma", "basic", "cuda_xth", "cuda_ipc", "cuda_basic"])
 
     if rank == 0:
         options.set_device_map("worker1", {7: 7})
