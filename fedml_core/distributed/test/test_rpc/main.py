@@ -3,8 +3,8 @@ import logging
 
 from mpi4py import MPI
 
-from fedml_core.distributed.test.test_rpc import RPCClientManager
-from fedml_core.distributed.test.test_rpc import RPCServerManager
+from .dummy_algorithm.client_manager import RPCClientManager
+from .dummy_algorithm.server_manager import RPCServerManager
 
 
 def add_args(parser):
