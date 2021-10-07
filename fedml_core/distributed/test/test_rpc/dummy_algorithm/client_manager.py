@@ -2,6 +2,7 @@ import logging
 import os
 import sys
 
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../../")))
 from fedml_core.distributed.client.client_manager import ClientManager
 
 from .message_define import MyMessage
@@ -22,4 +23,3 @@ class RPCClientManager(ClientManager):
     def handle_message_receive_model_from_server(self, msg_params):
         logging.info("handle_message_receive_model_from_server. msg_params = {}".format(msg_params))
         self.finish()
-
