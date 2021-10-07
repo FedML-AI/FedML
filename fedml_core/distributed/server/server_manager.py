@@ -28,6 +28,7 @@ class ServerManager(Observer):
         elif backend == "GRPC":
             HOST = "0.0.0.0"
             PORT = 50000 + rank
+            logging.info("PORT = {}".format(PORT))
             self.com_manager = GRPCCommManager(
                 HOST, PORT, ip_config_path=args.grpc_ipconfig_path, client_id=rank, client_num=size - 1
             )

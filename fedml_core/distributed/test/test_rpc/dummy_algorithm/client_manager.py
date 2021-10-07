@@ -10,7 +10,7 @@ from .message_define import MyMessage
 from .utils import transform_list_to_tensor
 class RPCClientManager(ClientManager):
     def __init__(self, args, comm=None, rank=0, size=0, backend="GRPC"):
-        super().__init__(args, comm, rank, size, backend)
+        super().__init__(args, comm, rank=rank, size=size, backend=backend)
 
     def run(self):
         super().run()
