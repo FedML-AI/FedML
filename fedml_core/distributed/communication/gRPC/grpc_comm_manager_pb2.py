@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x17grpc_comm_manager.proto\"1\n\x0b\x43ommRequest\x12\x11\n\tclient_id\x18\x01 \x01(\x05\x12\x0f\n\x07message\x18\x02 \x01(\t\"2\n\x0c\x43ommResponse\x12\x11\n\tclient_id\x18\x01 \x01(\x05\x12\x0f\n\x07message\x18\x02 \x01(\t2r\n\x0fgRPCCommManager\x12*\n\x0bsendMessage\x12\x0c.CommRequest\x1a\r.CommResponse\x12\x33\n\x14handleReceiveMessage\x12\x0c.CommRequest\x1a\r.CommResponseb\x06proto3'
+  serialized_pb=b'\n\x17grpc_comm_manager.proto\"1\n\x0b\x43ommRequest\x12\x11\n\tclient_id\x18\x01 \x01(\x05\x12\x0f\n\x07message\x18\x02 \x01(\x0c\"2\n\x0c\x43ommResponse\x12\x11\n\tclient_id\x18\x01 \x01(\x05\x12\x0f\n\x07message\x18\x02 \x01(\x0c\x32r\n\x0fgRPCCommManager\x12*\n\x0bsendMessage\x12\x0c.CommRequest\x1a\r.CommResponse\x12\x33\n\x14handleReceiveMessage\x12\x0c.CommRequest\x1a\r.CommResponseb\x06proto3'
 )
 
 
@@ -42,8 +42,8 @@ _COMMREQUEST = _descriptor.Descriptor(
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
       name='message', full_name='CommRequest.message', index=1,
-      number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=b"".decode('utf-8'),
+      number=2, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"",
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
@@ -81,8 +81,8 @@ _COMMRESPONSE = _descriptor.Descriptor(
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
       name='message', full_name='CommResponse.message', index=1,
-      number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=b"".decode('utf-8'),
+      number=2, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"",
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
