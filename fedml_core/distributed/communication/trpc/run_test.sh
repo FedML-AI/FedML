@@ -25,5 +25,5 @@ kill $(ps aux | grep "test_cuda_gpu.py" | grep -v grep | awk '{print $2}')
 kill $(ps aux | grep "test_cuda_gpu_ib.py" | grep -v grep | awk '{print $2}')
 # mpirun -np 2 -hostfile ./mpi_host_file python3 ./test-p2p.py
 # mpirun -np 2 -hostfile ./mpi_host_file python3 ./test_cuda_gpu.py
-mpirun -np 2 -hostfile ./mpi_host_file python3 ./test_cuda_gpu_ib.py
+# mpirun -np 2 -hostfile ./mpi_host_file python3 ./test_cuda_gpu_ib.py
 mpirun -np 2 -hostfile ./mpi_host_file python3 ./test_cuda_cpu.py
