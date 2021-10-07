@@ -5,8 +5,8 @@ from mpi4py import MPI
 
 from ..communication.gRPC.grpc_comm_manager import GRPCCommManager
 from ..communication.message import Message
-from ..communication.mpi.com_manager import MpiCommunicationManager
-from ..communication.mqtt.mqtt_comm_manager import MqttCommManager
+# from ..communication.mpi.com_manager import MpiCommunicationManager
+# from ..communication.mqtt.mqtt_comm_manager import MqttCommManager
 from ..communication.observer import Observer
 from ..communication.trpc.trpc_comm_manager import TRPCCommManager
 
