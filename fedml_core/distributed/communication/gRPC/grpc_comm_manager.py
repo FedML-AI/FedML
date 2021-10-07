@@ -59,6 +59,7 @@ class GRPCCommManager(BaseCommunicationManager):
 
     def send_message(self, msg: Message):
         logging.info("msg.to_json() START")
+        msg_pkl = pickle.dumps(("grpc_pickle_file", msg))
         # payload = msg.to_json()
         logging.info("msg.to_json() END")
 
@@ -76,7 +77,6 @@ class GRPCCommManager(BaseCommunicationManager):
 
         request.client_id = self.client_id
 
-        msg_pkl = pickle.dumps(("grpc_pickle_file", msg))
         request.message = msg_pkl
 
         stub.sendMessage(request)
@@ -98,6 +98,7 @@ class GRPCCommManager(BaseCommunicationManager):
             if self.grpc_servicer.message_q.qsize() > 0:
                 lock.acquire()
                 msg_params_string = self.grpc_servicer.message_q.get()
+                logging.info("msg_params_string = {}".format(msg_params_string))
                 msg_params = Message()
                 msg_params.init_from_json_string(msg_params_string)
                 msg_type = msg_params.get_type()
