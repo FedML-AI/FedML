@@ -22,5 +22,4 @@ export NCCL_BUFFSIZE=1048576
 
 kill $(ps aux | grep "main.py" | grep -v grep | awk '{print $2}')
 mpirun -np 2 -hostfile ./mpi_host_file python3 ./main.py \
---backend $1 \
---rank $2
+--backend $1
