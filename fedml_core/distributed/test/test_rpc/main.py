@@ -48,12 +48,13 @@ def add_args(parser):
 
 def run_worker(args, rank, size):
     if rank == 0:
-        client_manager = RPCClientManager(args, rank=rank, size=size, backend=args.backend)
-        client_manager.run()
-    else:
         server_manager = RPCServerManager(args, rank=rank, size=size, backend=args.backend)
         server_manager.send_model_params()
         server_manager.run()
+    else:
+
+        client_manager = RPCClientManager(args, rank=rank, size=size, backend=args.backend)
+        client_manager.run()
 
 
 if __name__ == "__main__":
