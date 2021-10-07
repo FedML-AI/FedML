@@ -2,10 +2,9 @@ import logging
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../../")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../../../")))
 
 from fedml_core.distributed.client.client_manager import ClientManager
-from fedml_core.distributed.communication.message import Message
 
 from .message_define import MyMessage
 
