@@ -5,15 +5,20 @@
 #### gRPC
 ```
 # server
-sh run_grpc.sh GRPC 0
+sh run_rpc.sh GRPC 0
 
 
 # client
-sh run_grpc.sh GRPC 1
+sh run_rpc.sh GRPC 1
 ```
 
 
 #### Torch RPC
 ```
-sh run_trpc.sh TRPC
+# server
+sh run_rpc.sh TRPC 0
+
+
+# client
+sh run_rpc.sh TRPC 1
 ```
