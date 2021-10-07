@@ -12,7 +12,7 @@ class MyModule(nn.Module):
     def __init__(self, device, comm_mode):
         super().__init__()
         self.device = device
-        self.linear = nn.Linear(1000, 1000).to(device)
+        self.linear = nn.Linear(5000, 5000).to(device)
         self.comm_mode = comm_mode
 
     def forward(self, x):
@@ -30,7 +30,7 @@ def measure(comm_mode):
     # remote module on "worker1/cuda:1"
     rm = rpc.remote("worker1", MyModule, args=("cuda:5", comm_mode))
     # prepare random inputs
-    x = torch.randn(1000, 1000)
+    x = torch.randn(5000, 5000)
     # x = torch.randn(1000, 1000).cuda(7)
 
     tik = time.time()
