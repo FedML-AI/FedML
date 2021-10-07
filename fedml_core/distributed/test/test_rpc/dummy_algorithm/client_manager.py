@@ -7,10 +7,11 @@ from mpi4py import MPI
 from fedml_core.distributed.client.client_manager import ClientManager
 from .message_define import MyMessage
 
-from .utils import transform_list_to_tensor
+
 class RPCClientManager(ClientManager):
     def __init__(self, args, comm=None, rank=0, size=0, backend="GRPC"):
         super().__init__(args, comm, rank=rank, size=size, backend=backend)
+        self.args = args
 
     def run(self):
         super().run()
@@ -21,7 +22,10 @@ class RPCClientManager(ClientManager):
         )
 
     def handle_message_receive_model_from_server(self, msg_params):
-        list_model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
-        received_model_tensor = torch.from_numpy(np.asarray(list_model_params)).float()
-        logging.info("handle_message_receive_model_from_server. tensor.shape = {}".format(received_model_tensor.shape))
+        model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
+        if self.args.backend == "GRPC":
+            logging.info("GRPC. start to transform from list to tensor")
+            model_params = torch.from_numpy(np.asarray(model_params)).float()
+            logging.info("GRPC. end to transform from list to tensor")
+        logging.info("handle_message_receive_model_from_server. tensor.shape = {}".format(model_params.shape))
         MPI.COMM_WORLD.Abort()

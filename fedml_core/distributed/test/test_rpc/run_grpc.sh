@@ -20,7 +20,7 @@ export NCCL_BUFFSIZE=1048576
 
 
 
-kill $(ps aux | grep "main.py" | grep -v grep | awk '{print $2}')
+#kill $(ps aux | grep "main.py" | grep -v grep | awk '{print $2}')
 python3 ./main.py \
 --backend $1 \
 --rank $2

@@ -67,29 +67,6 @@ class TRPCCommManager(BaseCommunicationManager):
         self.is_running = True
         print("server started. master address: " + str(master_address))
 
-    def _init_torch_rpc_pg(
-        self, master_addr, master_port, worker_idx, worker_num, enable_cuda_rpc, gpu_util_file, gpu_util_key
-    ):
-        # https://github.com/pytorch/pytorch/issues/55615
-        # [BC-Breaking][RFC] Retire ProcessGroup Backend for RPC #55615
-        str_init_method = "tcp://" + str(master_addr) + ":" + str(master_port)
-        logging.info("str_init_method = {}".format(str_init_method))
-        options = rpc.ProcessGroupRpcBackendOptions(num_send_recv_threads=4, init_method=str_init_method)
-        if enable_cuda_rpc and gpu_util_file:
-            trpc_gpu_mapping = self.get_trpc_gpu_mapping(worker_idx, gpu_util_file, gpu_util_key)
-            logging.info(trpc_gpu_mapping)
-            for key in trpc_gpu_mapping:
-                options.set_device_map(key, trpc_gpu_mapping[key])
-        rpc.init_rpc(
-            WORKER.format(worker_idx),
-            backend=dist.rpc.BackendType.PROCESS_GROUP,
-            rank=worker_idx,
-            world_size=worker_num,
-            rpc_backend_options=options,
-        )
-        # torch.distributed.rpc.init_rpc('worker', rank=self.global_rank, world_size=self.world_size)
-        logging.info("_init_rpc_with_process_group finished.")
-
     def _init_torch_rpc_tp(
         self, master_addr, master_port, worker_idx, worker_num, enable_cuda_rpc, gpu_util_file, gpu_util_key
     ):
@@ -97,19 +74,27 @@ class TRPCCommManager(BaseCommunicationManager):
         # [BC-Breaking][RFC] Retire ProcessGroup Backend for RPC #55615
         str_init_method = "tcp://" + str(master_addr) + ":10000"
         logging.info("str_init_method = {}".format(str_init_method))
-        options = rpc.TensorPipeRpcBackendOptions(
-            num_worker_threads=16,
-            rpc_timeout=1800,
-            init_method=str_init_method,
-            _transports=["shm", "uv"],
-            _channels=["cma", "basic", "cuda_xth", "cuda_ipc", "cuda_basic", "cuda_gdr"],
-        )
+        if enable_cuda_rpc:
+            options = rpc.TensorPipeRpcBackendOptions(
+                num_worker_threads=16,
+                rpc_timeout=1800,
+                init_method=str_init_method,
+                _transports=["shm", "uv"],
+                _channels=["cma", "basic", "cuda_xth", "cuda_ipc", "cuda_basic", "cuda_gdr"],
+            )
+        else:
+            options = rpc.TensorPipeRpcBackendOptions(
+                num_worker_threads=16,
+                rpc_timeout=1800,
+                init_method=str_init_method,
+                _transports=["shm", "uv"],
+                _channels=["cma", "basic", "cuda_xth", "cuda_ipc", "cuda_basic"],
+            )
         if enable_cuda_rpc and gpu_util_file:
             trpc_gpu_mapping = self.get_trpc_gpu_mapping(worker_idx, gpu_util_file, gpu_util_key)
             logging.info(trpc_gpu_mapping)
             for key in trpc_gpu_mapping:
                 options.set_device_map(key, trpc_gpu_mapping[key])
-
         rpc.init_rpc(
             WORKER.format(worker_idx),
             backend=rpc.BackendType.TENSORPIPE,

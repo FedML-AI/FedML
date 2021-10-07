@@ -35,8 +35,7 @@ class GRPCCommManager(BaseCommunicationManager):
             self.node_type = "client"
         self.opts = [
             ("grpc.max_send_message_length", 1000 * 1024 * 1024),
-            ("grpc.max_receive_message_length", 1000 * 1024 * 1024),
-            ("grpc.enable_http_proxy", 0),
+            ("grpc.max_receive_message_length", 1000 * 1024 * 1024)
         ]
         self.grpc_server = grpc.server(futures.ThreadPoolExecutor(max_workers=client_num), options=self.opts)
         self.grpc_servicer = GRPCCOMMServicer(host, port, client_num, client_id)
@@ -45,14 +44,16 @@ class GRPCCommManager(BaseCommunicationManager):
         logging.info("&&&&&&&&&&&&&&& " + ip_config_path)
         self.ip_config = self._build_ip_table(ip_config_path)
         
-        _host = self.ip_config[str(self.client_id)]
 
         # starts a grpc_server on local machine using ip address "0.0.0.0"
-        self.grpc_server.add_insecure_port("{}:{}".format(_host, port))
+        # host = self.ip_config[str(self.client_id)]
+        # host = "127.0.0.1"
+        self.grpc_server.add_insecure_port("{}:{}".format(host, port))
+        logging.info("{}:{}".format(host, port))
 
         self.grpc_server.start()
         self.is_running = True
-        print("server started. Listening on port " + str(port))
+        print("server started. Listening on {}:{}".format(host, port))
 
     def send_message(self, msg: Message):
         payload = msg.to_json()

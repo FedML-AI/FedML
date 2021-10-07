@@ -1,14 +1,14 @@
 # enable InfiniBand
-export NCCL_SOCKET_IFNAME=ib0
-export GLOO_SOCKET_IFNAME=ib0
-export TP_SOCKET_IFNAME=ib0
-export NCCL_IB_HCA=ib0
+#export NCCL_SOCKET_IFNAME=ib0
+#export GLOO_SOCKET_IFNAME=ib0
+#export TP_SOCKET_IFNAME=ib0
+#export NCCL_IB_HCA=ib0
 
 # disable InfiniBand
-#export NCCL_IB_DISABLE=1
-#export NCCL_SOCKET_IFNAME=eno2
-#export GLOO_SOCKET_IFNAME=eno2
-#export TP_SOCKET_IFNAME=eno2
+export NCCL_IB_DISABLE=1
+export NCCL_SOCKET_IFNAME=eno2
+export GLOO_SOCKET_IFNAME=eno2
+export TP_SOCKET_IFNAME=eno2
 
 export NCCL_DEBUG=INFO
 export NCCL_MIN_NRINGS=1
@@ -22,5 +22,4 @@ export NCCL_BUFFSIZE=1048576
 
 kill $(ps aux | grep "main.py" | grep -v grep | awk '{print $2}')
 mpirun -np 2 -hostfile ./mpi_host_file python3 ./main.py \
---backend $1 \
---rank $2
+--backend $1
