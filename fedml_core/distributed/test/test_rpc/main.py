@@ -8,6 +8,8 @@ from mpi4py import MPI
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../../")))
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../../FedML")))
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../FedML")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "./../../../../")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "./../../../")))
 
 from fedml_core.distributed.test.test_rpc.dummy_algorithm.client_manager import RPCClientManager
 from fedml_core.distributed.test.test_rpc.dummy_algorithm.server_manager import RPCServerManager
