@@ -6,6 +6,8 @@ from typing import List
 
 import grpc
 
+import pickle
+
 from ..gRPC import grpc_comm_manager_pb2_grpc, grpc_comm_manager_pb2
 
 lock = threading.Lock()
@@ -74,7 +76,8 @@ class GRPCCommManager(BaseCommunicationManager):
 
         request.client_id = self.client_id
 
-        request.message = msg
+        msg_pkl = pickle.dumps(("grpc_pickle_file", msg))
+        request.message = msg_pkl
 
         stub.sendMessage(request)
         logging.debug("sent successfully")
