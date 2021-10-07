@@ -1,10 +1,16 @@
 import argparse
 import logging
+import os
+import sys
 
 from mpi4py import MPI
 
-from .dummy_algorithm.client_manager import RPCClientManager
-from .dummy_algorithm.server_manager import RPCServerManager
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../../../")))
+
+from fedml_core.distributed.test.test_rpc.dummy_algorithm.client_manager import RPCClientManager
+from fedml_core.distributed.test.test_rpc.dummy_algorithm.server_manager import RPCServerManager
+
 
 
 def add_args(parser):
