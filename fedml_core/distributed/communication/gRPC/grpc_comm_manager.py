@@ -73,7 +73,6 @@ class GRPCCommManager(BaseCommunicationManager):
 
         request = grpc_comm_manager_pb2.CommRequest()
 
-
         request.client_id = self.client_id
 
         request.message = msg_pkl
@@ -97,10 +96,9 @@ class GRPCCommManager(BaseCommunicationManager):
             if self.grpc_servicer.message_q.qsize() > 0:
                 lock.acquire()
                 msg_pkl = self.grpc_servicer.message_q.get()
-                logging.info("msg = {}".format(msg))
-
                 logging.info("unpickle START")
                 msg = pickle.loads(msg_pkl)
+                logging.info("msg = {}".format(msg))
                 logging.info("unpickle END")
 
                 # logging.info("msg_params_string = {}".format(msg_params_string))
