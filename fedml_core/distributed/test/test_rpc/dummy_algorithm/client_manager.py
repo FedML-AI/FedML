@@ -1,9 +1,5 @@
 import logging
 
-import numpy as np
-import torch
-from mpi4py import MPI
-
 from fedml_core.distributed.client.client_manager import ClientManager
 from .message_define import MyMessage
 
@@ -23,8 +19,4 @@ class RPCClientManager(ClientManager):
 
     def handle_message_receive_model_from_server(self, msg_params):
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
-        if self.args.backend == "GRPC":
-            logging.info("GRPC. start to transform from list to tensor")
-            # model_params = torch.from_numpy(np.asarray(model_params)).float()
-            logging.info("GRPC. end to transform from list to tensor")
         logging.info("handle_message_receive_model_from_server. tensor.shape = {}".format(model_params.shape))
