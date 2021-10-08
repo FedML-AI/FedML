@@ -72,7 +72,7 @@ class TRPCCommManager(BaseCommunicationManager):
     ):
         # https://github.com/pytorch/pytorch/issues/55615
         # [BC-Breaking][RFC] Retire ProcessGroup Backend for RPC #55615
-        str_init_method = "tcp://" + str(master_addr) + ":10000"
+        str_init_method = "tcp://" + str(master_addr) + ":" + str(master_port)
         logging.info("str_init_method = {}".format(str_init_method))
         if enable_cuda_rpc:
             options = rpc.TensorPipeRpcBackendOptions(
