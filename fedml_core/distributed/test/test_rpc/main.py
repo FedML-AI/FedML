@@ -79,8 +79,10 @@ if __name__ == "__main__":
     # logging.basicConfig(level=logging.INFO,
     logging.basicConfig(
         level=logging.DEBUG,
-        format="rank - " + str(rank) + " - %(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s",
-        datefmt="%a, %d %b %Y %H:%M:%S.%F",
+        format="rank - "
+        + str(rank)
+        + " - %(asctime)s.%(msecs)03d %(filename)s[line:%(lineno)d] %(levelname)s %(message)s",
+        datefmt="%Y-%m-%d,%H:%M:%S",
     )
 
     logging.info(args)
