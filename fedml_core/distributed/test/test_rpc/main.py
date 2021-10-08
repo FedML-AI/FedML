@@ -4,8 +4,6 @@ import os
 import sys
 from time import sleep
 
-from mpi4py import MPI
-
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "./../../../../")))
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "./../../../../../")))
 
