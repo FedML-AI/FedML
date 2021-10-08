@@ -28,4 +28,4 @@ class RPCClientManager(ClientManager):
             model_params = torch.from_numpy(np.asarray(model_params)).float()
             logging.info("GRPC. end to transform from list to tensor")
         logging.info("handle_message_receive_model_from_server. tensor.shape = {}".format(model_params.shape))
-        MPI.COMM_WORLD.Abort()
+        # MPI.COMM_WORLD.Abort()
