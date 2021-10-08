@@ -25,7 +25,8 @@ class RPCServerManager(ServerManager):
         if self.args.backend == "GRPC":
             logging.info("GRPC. start to transform tensor to list")
             # for gRPC, we have to transform it as a list
-            global_model_params = global_model_params.cpu().detach().numpy().tolist()
+            # global_model_params = global_model_params.cpu().detach().numpy().tolist()
+            global_model_params = global_model_params.cpu().detach()
             logging.info("GRPC. end to transform tensor to list")
         elif self.args.backend == "TRPC":
             global_model_params = global_model_params.to(5)
