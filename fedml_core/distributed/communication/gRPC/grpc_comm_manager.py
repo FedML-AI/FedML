@@ -98,7 +98,6 @@ class GRPCCommManager(BaseCommunicationManager):
                 msg_pkl = self.grpc_servicer.message_q.get()
                 logging.info("unpickle START")
                 msg = pickle.loads(msg_pkl)
-                logging.info("msg = {}".format(msg))
                 logging.info("unpickle END")
 
                 # logging.info("msg_params_string = {}".format(msg_params_string))
