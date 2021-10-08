@@ -95,13 +95,16 @@ class GRPCCommManager(BaseCommunicationManager):
         while self.is_running:
             if self.grpc_servicer.message_q.qsize() > 0:
                 lock.acquire()
-                msg_params_string = self.grpc_servicer.message_q.get()
+                msg_pkl = self.grpc_servicer.message_q.get()
+                msg = pickle.loads(msg_pkl)
+
                 # logging.info("msg_params_string = {}".format(msg_params_string))
-                msg_params = Message()
-                msg_params.init_from_json_string(msg_params_string)
-                msg_type = msg_params.get_type()
+                # msg_params = Message()
+                # msg_params.init_from_json_string(msg_params_string)
+                logging.info("msg = {}".format(msg))
+                msg_type = msg.get_type()
                 for observer in self._observers:
-                    observer.receive_message(msg_type, msg_params)
+                    observer.receive_message(msg_type, msg)
                 lock.release()
         return
 
