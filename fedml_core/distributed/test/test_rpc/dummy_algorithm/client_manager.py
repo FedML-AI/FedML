@@ -19,4 +19,5 @@ class RPCClientManager(ClientManager):
 
     def handle_message_receive_model_from_server(self, msg_params):
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
+        model_params = model_params.to(5)
         logging.info("handle_message_receive_model_from_server. tensor.shape = {}".format(model_params.shape))
