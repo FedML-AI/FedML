@@ -95,7 +95,7 @@ class GRPCCommManager(BaseCommunicationManager):
         while self.is_running:
             if self.grpc_servicer.message_q.qsize() > 0:
                 lock.acquire()
-                msg_pkl = self.grpc_servicer.message_q.get()
+                (name, msg_pkl) = self.grpc_servicer.message_q.get()
                 msg = pickle.loads(msg_pkl)
 
                 # logging.info("msg_params_string = {}".format(msg_params_string))
