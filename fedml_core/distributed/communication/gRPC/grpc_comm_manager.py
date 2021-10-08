@@ -56,10 +56,11 @@ class GRPCCommManager(BaseCommunicationManager):
         print("server started. Listening on {}:{}".format(host, port))
 
     def send_message(self, msg: Message):
-        logging.info("msg.to_json() START")
+        logging.info("sending message to {}".format(msg))
+        logging.info("pickle.dumps(msg) START")
         msg_pkl = pickle.dumps(msg)
         # payload = msg.to_json()
-        logging.info("msg.to_json() END")
+        logging.info("pickle.dumps(msg) END")
 
         receiver_id = msg.get_receiver_id()
         PORT_BASE = 50000
@@ -71,7 +72,7 @@ class GRPCCommManager(BaseCommunicationManager):
         stub = grpc_comm_manager_pb2_grpc.gRPCCommManagerStub(channel)
 
         request = grpc_comm_manager_pb2.CommRequest()
-        logging.info("sending message to {}".format(channel_url))
+
 
         request.client_id = self.client_id
 
