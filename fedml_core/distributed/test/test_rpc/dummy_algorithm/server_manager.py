@@ -22,7 +22,7 @@ class RPCServerManager(ServerManager):
 
     def send_model_params(self):
         global_model_params = torch.randn(5000, 5000).to(5)
-        global_model_params = global_model_params.cpu().detach()
+        global_model_params = global_model_params.detach()
         self.send_message_model_params_to_client(1, global_model_params)
 
     def register_message_receive_handlers(self):
