@@ -15,7 +15,7 @@ from ...communication.base_com_manager import BaseCommunicationManager
 from ...communication.message import Message
 from ...communication.observer import Observer
 from ...communication.gRPC.grpc_server import GRPCCOMMServicer
-
+from ...communication.utils import log_communication_tick
 
 import csv
 
@@ -57,12 +57,16 @@ class GRPCCommManager(BaseCommunicationManager):
 
     def send_message(self, msg: Message):
         logging.info("sending message to {}".format(msg))
+
+        receiver_id = msg.get_receiver_id()
+
+        log_communication_tick(self.client_id, receiver_id)
+
         logging.info("pickle.dumps(msg) START")
         msg_pkl = pickle.dumps(msg)
         # payload = msg.to_json()
         logging.info("pickle.dumps(msg) END")
 
-        receiver_id = msg.get_receiver_id()
         PORT_BASE = 50000
         # lookup ip of receiver from self.ip_config table
         receiver_ip = self.ip_config[str(receiver_id)]

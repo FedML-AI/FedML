@@ -75,7 +75,7 @@ class ClientManager(Observer):
         self.message_handler_dict[msg_type] = handler_callback_func
 
     def finish(self):
-        logging.info("__finish server")
+        logging.info("__finish client")
         if self.backend == "MPI":
             MPI.COMM_WORLD.Abort()
         elif self.backend == "MQTT":

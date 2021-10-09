@@ -10,9 +10,11 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../../FedML"
 try:
     from fedml_core.distributed.communication.message import Message
     from fedml_core.distributed.server.server_manager import ServerManager
+    from fedml_core.distributed.communication.utils import log_round_start, log_round_end
 except ImportError:
     from FedML.fedml_core.distributed.communication.message import Message
     from FedML.fedml_core.distributed.server.server_manager import ServerManager
+    from FedML.fedml_core.distributed.communication.utils import log_round_start, log_round_end
 
 
 class FedAVGServerManager(ServerManager):
@@ -30,6 +32,9 @@ class FedAVGServerManager(ServerManager):
 
     def send_init_msg(self):
         # sampling clients
+
+        log_round_start(self.rank,0)
+
         client_indexes = self.aggregator.client_sampling(self.round_idx, self.args.client_num_in_total,
                                                          self.args.client_num_per_round)
         global_model_params = self.aggregator.get_global_model_params()
@@ -53,9 +58,11 @@ class FedAVGServerManager(ServerManager):
         if b_all_received:
             global_model_params = self.aggregator.aggregate()
             self.aggregator.test_on_server_for_all_clients(self.round_idx)
-
+    
             # start the next round
+            log_round_end(self.rank,self.round_idx)
             self.round_idx += 1
+            log_round_start(self.rank, self.round_idx)
             if self.round_idx == self.round_num:
                 # post_complete_message_to_sweep_process(self.args)
                 self.finish()
@@ -80,6 +87,7 @@ class FedAVGServerManager(ServerManager):
             for receiver_id in range(1, self.size):
                 self.send_message_sync_model_to_client(receiver_id, global_model_params,
                                                        client_indexes[receiver_id - 1])
+            
 
     def send_message_init_config(self, receive_id, global_model_params, client_index):
         message = Message(MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id)

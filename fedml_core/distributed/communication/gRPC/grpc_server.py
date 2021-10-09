@@ -2,7 +2,8 @@ from ..gRPC import grpc_comm_manager_pb2, grpc_comm_manager_pb2_grpc
 import queue
 import threading
 import logging
-
+from ...communication.utils import log_communication_tock
+from time import time
 lock = threading.Lock()
 
 
@@ -23,11 +24,15 @@ class GRPCCOMMServicer(grpc_comm_manager_pb2_grpc.gRPCCommManagerServicer):
 
     def sendMessage(self, request, context):
         context_ip = context.peer().split(":")[1]
-        logging.info("client_{} got something from client_{} from ip address {}".format(
-            self.client_id,
-            request.client_id,
-            context_ip
-        ))
+        print(self.client_id)
+        # log_communication_tock(request.clint_id, self.client_id)
+        logging.info("--Benchmark tock from {} to {} at {}".format(request.client_id, self.client_id, time()))
+        
+        logging.info(
+            "client_{} got something from client_{} from ip address {}".format(
+                self.client_id, request.client_id, context_ip
+            )
+        )
 
         response = grpc_comm_manager_pb2.CommResponse()
         # response.message = "message received"
