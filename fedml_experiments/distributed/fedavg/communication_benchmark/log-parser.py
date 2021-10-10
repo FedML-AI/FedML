@@ -43,18 +43,11 @@ class Parser:
         with open(sys.argv[1], "r") as fi:
             for ln in fi:
                 if ln.startswith("INFO:root:--Benchmark end round"):
-                    print("&&&&&&&&&&&&&")
-                    print(ln)
                     parsed = ln.split()
                     _round = int(parsed[3])
                     _client_id = parsed[5]
                     # Making sure we are ending correct round
                     if _round != self.round_numbers[_client_id]:
-                        print("$$$$$$$$$$$$$$$")
-                        print(self.round_numbers[_client_id])
-                        print(_round)
-                        print(ln)
-                        
                         raise Exception("Round Mismatch")
                     if not (_round in self.rounds_end):
                         self.rounds_end[_round] = {}
@@ -62,7 +55,6 @@ class Parser:
                     self.round_numbers[_client_id] += 1
 
                 if ln.startswith("INFO:root:--Benchmark start round"):
-                    print(ln)
                     parsed = ln.split()
                     _round = int(parsed[3])
                     _client_id = parsed[5]
@@ -135,10 +127,11 @@ class Parser:
                     print(str(len(downlink_ticks[key])) + " != " + str(len(downlink_tocks[key])))
                 for i in range(min(len(downlink_ticks[key]), len(downlink_tocks[key]))):
                     process_total_delay += downlink_tocks[key][i] - downlink_ticks[key][i]
-                    # if downlink_tocks[key][i] < downlink_ticks[key][i]:
-                    #     print("^^^^^^^^^^^^^^^^")
-                    #     print("key: ", key)
-                    #     print("i: ", i)
+                    if downlink_tocks[key][i] < downlink_ticks[key][i]:
+                        print("Tock before tick for")
+                        print("Process_id: ", key)
+                        print("Round: ", round_number)
+                        print("Index: ", i)
 
                 downlink_delays[key] = process_total_delay
 
@@ -159,12 +152,21 @@ class Parser:
             round_uplink_delay_sum.append(uplink_sum)
             round_downlink_delay_sum.append(downlink_sum)
 
-            
+        round_durations = {}
+        print(self.rounds_end)
+        print(self.rounds_start)
+        for round_number in self.rounds_end.keys():
+            round_durations[round_number] = {}
+            for client_id in self.rounds_end[round_number].keys():
+                round_durations[round_number][client_id] = float(self.rounds_end[round_number][client_id]) - float(self.rounds_start[round_number][client_id])
+
+
         print("!!!!!!!!!!!!!!!!!!!!!")
-        print("ROUND UPLINK DELAYS: ", round_uplink_delays)
-        print("ROUND DOWNLINK DELAYS: ", round_downlink_delays)
+        # print("ROUND UPLINK DELAYS: ", round_uplink_delays)
+        # print("ROUND DOWNLINK DELAYS: ", round_downlink_delays)
         print("ROUND UPLINK DELAYS SUM: ", round_uplink_delay_sum)
         print("ROUND DOWNLINK DELAYS SUM: ", round_downlink_delay_sum)
+        print("ROUND DURATIONS: ", round_durations)
 
         print(self.round_logs)
 
