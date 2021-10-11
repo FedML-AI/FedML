@@ -5,7 +5,7 @@
 
 ### gRPC
 
-configure `./grpc/mpi_host_file`, `grpc/gpu_mapping.yaml` and `./grpc/grpc_ipconfig.csv`.
+configure `./grpc/mpi_host_file`, `./grpc/gpu_mapping.yaml` and `./grpc/grpc_ipconfig.csv`.
 
 Run gRPC tests.
 ```
@@ -16,7 +16,7 @@ Logs are stored in `./grpc/logs`. Each log's filename contains execution timesta
 
 ### tRPC
 
-configure `./trpc/mpi_host_file`, `grpc/gpu_mapping.yaml` and `./grpc/trpc_master_config.csv`.
+configure `./trpc/mpi_host_file`, `./trpc/gpu_mapping.yaml` and `./trpc/trpc_master_config.csv`.
 
 Run tRPC tests with cuda rpc enabled
 ```
