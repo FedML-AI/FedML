@@ -1,0 +1,44 @@
+Host trpc-server
+  hostname ec2-54-213-200-179.us-west-2.compute.amazonaws.com
+  user ec2-user
+  IdentityFile ~/.ssh/fedml-rpc.pem
+
+Host trpc-client0
+  hostname ec2-54-191-149-236.us-west-2.compute.amazonaws.com
+  user ec2-user
+  IdentityFile ~/.ssh/fedml-rpc-client.pem
+
+Host trpc-client1
+  hostname ec2-54-218-66-159.us-west-2.compute.amazonaws.com
+  user ec2-user
+  IdentityFile ~/.ssh/fedml-rpc-client.pem
+
+Host trpc-client2
+  hostname ec2-34-214-222-151.us-west-2.compute.amazonaws.com
+  user ec2-user
+  IdentityFile ~/.ssh/fedml-rpc-client.pem
+
+Host trpc-client3
+  hostname ec2-34-215-243-142.us-west-2.compute.amazonaws.com
+  user ec2-user
+  IdentityFile ~/.ssh/fedml-rpc-client.pem
+
+Host trpc-client4
+  hostname ec2-34-220-7-229.us-west-2.compute.amazonaws.com
+  user ec2-user
+  IdentityFile ~/.ssh/fedml-rpc-client.pem
+
+Host trpc-client5
+  hostname ec2-54-212-123-14.us-west-2.compute.amazonaws.com
+  user ec2-user
+  IdentityFile ~/.ssh/fedml-rpc-client.pem
+
+Host trpc-client6
+  hostname ec2-18-236-198-36.us-west-2.compute.amazonaws.com
+  user ec2-user
+  IdentityFile ~/.ssh/fedml-rpc-client.pem
+
+Host trpc-client7
+  hostname ec2-52-37-204-213.us-west-2.compute.amazonaws.com
+  user ec2-user
+  IdentityFile ~/.ssh/fedml-rpc-client.pem

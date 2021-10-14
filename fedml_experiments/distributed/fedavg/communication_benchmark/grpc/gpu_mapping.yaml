@@ -46,20 +46,28 @@ mapping_config5_4:
     gpu-worker3: [3,1]
     gpu-worker4: [1,1]
 
-# for gRPC GPU mapping
-mapping_FedML_gRPC:
-    hostname_node_server: [1]
-    hostname_node_1: [1, 0, 0, 0]
-    hostname_node_2: [1, 0, 0, 0]
 
 # for torch RPC GPU mapping
 mapping_FedML_tRPC:
-    lambda-server1: [0, 0, 0, 0, 1, 1, 1, 1]
-    lambda-server2: [1, 1, 1, 1, 1, 1, 1, 0]
+    trpc-client0: [2]
+    trpc-client1: [1]
+    trpc-client2: [1]
+    trpc-client3: [1]
+    trpc-client4: [1]
+    trpc-client5: [1]
+    trpc-client6: [1]
+    trpc-client7: [1]
 
+# for gRPC GPU mapping
 mapping_FedMLـgRPC:
-    lambda-server1: [0, 0, 0, 0, 0, 0, 0, 1]
-    lambda-server2: [0, 0, 0, 0, 0, 0, 0, 1]
+    trpc-client0: [2]
+    trpc-client1: [1]
+    trpc-client2: [1]
+    trpc-client3: [1]
+    trpc-client4: [1]
+    trpc-client5: [1]
+    trpc-client6: [1]
+    trpc-client7: [1]
 
 #mapping_FedML_tRPC:
 #    lambda-server1: [0, 0, 0, 0, 3, 3, 3, 2]

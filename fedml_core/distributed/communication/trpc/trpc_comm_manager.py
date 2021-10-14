@@ -88,7 +88,7 @@ class TRPCCommManager(BaseCommunicationManager):
                 rpc_timeout=1800,
                 init_method=str_init_method,
                 _transports=["shm", "uv"],
-                _channels=["cma", "basic", "cuda_xth", "cuda_ipc", "cuda_basic"],
+                _channels=["cma", "basic", "cuda_xth", "cuda_ipc", "cuda_basic", "cuda_gdr"],
             )
         if enable_cuda_rpc and gpu_util_file:
             trpc_gpu_mapping = self.get_trpc_gpu_mapping(worker_idx, gpu_util_file, gpu_util_key)
@@ -96,7 +96,7 @@ class TRPCCommManager(BaseCommunicationManager):
             for key in trpc_gpu_mapping:
                 options.set_device_map(key, trpc_gpu_mapping[key])
         else:
-            options.set_device_map("worker1", {5: 5})
+            options.set_device_map("worker1", {0: 0})
         rpc.init_rpc(
             WORKER.format(worker_idx),
             backend=rpc.BackendType.TENSORPIPE,
