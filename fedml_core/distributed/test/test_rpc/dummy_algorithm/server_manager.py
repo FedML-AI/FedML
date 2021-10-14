@@ -21,7 +21,7 @@ class RPCServerManager(ServerManager):
         super().run()
 
     def send_model_params(self):
-        global_model_params = torch.randn(5000, 5000).to(0)
+        global_model_params = torch.randn(5000, 5000).to(5)
         # global_model_params = torch.randn(5000, 5000)
         logging.info("send_model_params START")
         if self.args.backend == "GRPC":

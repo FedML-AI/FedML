@@ -96,7 +96,7 @@ class TRPCCommManager(BaseCommunicationManager):
             for key in trpc_gpu_mapping:
                 options.set_device_map(key, trpc_gpu_mapping[key])
         else:
-            options.set_device_map("worker1", {0: 0})
+            options.set_device_map("worker1", {5: 5})
         rpc.init_rpc(
             WORKER.format(worker_idx),
             backend=rpc.BackendType.TENSORPIPE,
