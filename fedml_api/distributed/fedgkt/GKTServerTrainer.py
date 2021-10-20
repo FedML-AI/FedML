@@ -26,7 +26,8 @@ class GKTServerTrainer(object):
         self.model_global = server_model
 
         if args.multi_gpu_server and torch.cuda.device_count() > 1:
-            self.model_global = nn.DataParallel(self.model_global, device_ids=[0, 1, 2, 3]).to(device)
+            device_ids = [i for i in range(torch.cuda.device_count())]
+            self.model_global = nn.DataParallel(self.model_global, device_ids=device_ids)
 
         self.model_global.train()
         self.model_global.to(self.device)
