@@ -4,12 +4,12 @@ import sys
 from sklearn.utils import shuffle
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
+print(os.path.join(os.getcwd()))
 from fedml_api.data_preprocessing.lending_club_loan.lending_club_dataset import loan_load_two_party_data
-from fedml_api.standalone.classical_vertical_fl.vfl_fixture import FederatedLearningFixture
-from fedml_api.standalone.classical_vertical_fl.party_models import VFLGuestModel, VFLHostModel
+from fedml_api.standalone.classical_vertical_fl.vfl_fixture_fascilitator import FederatedLearningFixture
+from fedml_api.standalone.classical_vertical_fl.party_models_fascilitator import VFLGuestModel, VFLHostModel
 from fedml_api.model.finance.vfl_models_standalone import LocalModel, DenseModel
 from fedml_api.standalone.classical_vertical_fl.vfl import VerticalMultiplePartyLogisticRegressionFederatedLearning
-
 
 def run_experiment(train_data, test_data, batch_size, learning_rate, epoch):
     print("hyper-parameters:")
@@ -62,7 +62,7 @@ if __name__ == '__main__':
     Xa_test, Xb_test, y_test = test
 
     batch_size = 256
-    epoch = 100
+    epoch = 2
     lr = 0.01
 
     Xa_train, Xb_train, y_train = shuffle(Xa_train, Xb_train, y_train)
