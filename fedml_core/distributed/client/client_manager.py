@@ -1,5 +1,10 @@
+import json
 import logging
+import os
+import signal
+import sys
 from abc import abstractmethod
+from time import sleep
 
 from mpi4py import MPI
 
@@ -7,6 +12,8 @@ from ..communication.gRPC.grpc_comm_manager import GRPCCommManager
 from ..communication.message import Message
 from ..communication.mpi.com_manager import MpiCommunicationManager
 from ..communication.mqtt.mqtt_comm_manager import MqttCommManager
+from ..communication.mqtt_s3.mqtt_s3_comm_manager import MqttS3CommManager
+from ..communication.mqtt_s3.mqtt_s3_status_manager import MqttS3StatusManager
 from ..communication.observer import Observer
 from ..communication.trpc.trpc_comm_manager import TRPCCommManager
 
@@ -17,6 +24,7 @@ class ClientManager(Observer):
         self.size = size
         self.rank = rank
         self.backend = backend
+
         if backend == "MPI":
             self.com_manager = MpiCommunicationManager(comm, rank, size, node_type="client")
         elif backend == "MQTT":
@@ -24,6 +32,12 @@ class ClientManager(Observer):
             # HOST = "broker.emqx.io"
             PORT = 1883
             self.com_manager = MqttCommManager(HOST, PORT, client_id=rank, client_num=size - 1)
+        elif backend == "MQTT_S3":
+            self.com_manager = MqttS3CommManager(
+                args.mqtt_config_path, args.s3_config_path, topic=args.run_id,
+                client_id=rank, client_num=size - 1, args=args)
+            self.com_manager_status = MqttS3StatusManager(
+                args.mqtt_config_path, args.s3_config_path, topic=args.run_id)
         elif backend == "GRPC":
             HOST = "0.0.0.0"
             PORT = 50000 + rank
@@ -34,6 +48,7 @@ class ClientManager(Observer):
             self.com_manager = TRPCCommManager(args.trpc_master_config_path, process_id=rank, world_size=size)
         else:
             self.com_manager = MpiCommunicationManager(comm, rank, size, node_type="client")
+
         self.com_manager.add_observer(self)
         self.message_handler_dict = dict()
 
@@ -51,14 +66,19 @@ class ClientManager(Observer):
         handler_callback_func(msg_params)
 
     def send_message(self, message):
-        msg = Message()
+        msg = Message(message.get_type(),
+                      message.get_sender_id(), message.get_receiver_id())
         msg.add(Message.MSG_ARG_KEY_TYPE, message.get_type())
         msg.add(Message.MSG_ARG_KEY_SENDER, message.get_sender_id())
         msg.add(Message.MSG_ARG_KEY_RECEIVER, message.get_receiver_id())
         for key, value in message.get_params().items():
             # logging.info("%s == %s" % (key, value))
             msg.add(key, value)
+        logging.info("Sending message (type %d) to server" % message.get_type())
         self.com_manager.send_message(msg)
+        for key, value in msg.get_params().items():
+            # logging.info("%s == %s" % (key, value))
+            message.add(key, value)
 
     @abstractmethod
     def register_message_receive_handlers(self) -> None:
@@ -68,11 +88,14 @@ class ClientManager(Observer):
         self.message_handler_dict[msg_type] = handler_callback_func
 
     def finish(self):
-        logging.info("__finish server")
+        logging.info("__finish client")
         if self.backend == "MPI":
             MPI.COMM_WORLD.Abort()
         elif self.backend == "MQTT":
             self.com_manager.stop_receive_message()
+        elif self.backend == "MQTT_S3":
+            logging.info("MQTT_S3")
+            # self.com_manager.stop_receive_message()
         elif self.backend == "GRPC":
             self.com_manager.stop_receive_message()
         elif self.backend == "TRPC":
