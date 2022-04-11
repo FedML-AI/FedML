@@ -18,25 +18,25 @@ DISTRIBUTION=$8
 
 ROUND=$9
 
-EPOCH=$10
+EPOCH=${10}
 
-LR=$11
+LR=${11}
 
-WD=$12
+WD=${12}
 
-GMF=$13
+GMF=${13}
 
-MU=$14
+MU=${14}
 
-MOMENTUM=$15
+MOMENTUM=${15}
 
-DAMPENING=$16
+DAMPENING=${16}
 
-WD=$17
+WD=${17}
 
-NESTEROV=$18
+NESTEROV=${18}
 
-CI=$19
+CI=${19}
 
 python3 ./main_fednova.py \
 --gpu $GPU \
