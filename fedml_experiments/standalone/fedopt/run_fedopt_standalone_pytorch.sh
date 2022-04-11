@@ -18,17 +18,17 @@ DISTRIBUTION=$8
 
 ROUND=$9
 
-EPOCH=$10
+EPOCH=${10}
 
-LR=$11
+LR=${11}
 
-OPT=$12
+OPT=${12}
 
-S_LR=$13
+S_LR=${13}
 
-S_OPT=$14
+S_OPT=${14}
 
-CI=$15
+CI=${15}
 
 python3 ./main_fedopt.py \
 --gpu $GPU \
