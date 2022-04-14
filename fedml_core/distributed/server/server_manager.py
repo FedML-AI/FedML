@@ -1,9 +1,10 @@
 import logging
 from abc import abstractmethod
-import sys
 
 from mpi4py import MPI
 
+from ..communication.mqtt_s3 import MqttS3CommManager
+from ..communication.mqtt_s3.mqtt_s3_status_manager import MqttS3StatusManager
 from ..communication.trpc.trpc_comm_manager import TRPCCommManager
 from ..communication.gRPC.grpc_comm_manager import GRPCCommManager
 from ..communication.mpi.com_manager import MpiCommunicationManager
@@ -25,6 +26,12 @@ class ServerManager(Observer):
             # HOST = "broker.emqx.io"
             PORT = 1883
             self.com_manager = MqttCommManager(HOST, PORT, client_id=rank, client_num=size - 1)
+        elif backend == "MQTT_S3":
+            self.com_manager = MqttS3CommManager(
+                args.mqtt_config_path, args.s3_config_path, topic=args.run_id,
+                client_id=rank, client_num=size - 1, args=args)
+            self.com_manager_status = MqttS3StatusManager(
+                args.mqtt_config_path, args.s3_config_path, topic=args.run_id)
         elif backend == "GRPC":
             HOST = "0.0.0.0"
             PORT = 50000 + rank
@@ -67,6 +74,8 @@ class ServerManager(Observer):
         if self.backend == "MPI":
             MPI.COMM_WORLD.Abort()
         elif self.backend == "MQTT":
+            self.com_manager.stop_receive_message()
+        elif self.backend == "MQTT_S3":
             self.com_manager.stop_receive_message()
         elif self.backend == "GRPC":
             self.com_manager.stop_receive_message()
