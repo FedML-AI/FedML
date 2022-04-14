@@ -57,3 +57,5 @@ data/fednlp/*
 *.npz
 
 *.jpg
+/build-mlops-package/mlops-core/fedml-client/package/fedml/
+/build-mlops-package/mlops-core/fedml-server/package/fedml/
