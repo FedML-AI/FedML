@@ -1,0 +1,42 @@
+model_config:
+  modelName: lr
+hyperparameters_config:
+  client_learning_rate: 0.001
+  partition_method: homo
+  train_batch_size: 8
+  client_optimizer: sgd
+  comm_round: 2
+  local_epoch: 1
+  dataset: synthetic_1_1
+  communication_backend: MQTT_S3
+  data_silo_num_in_total: 30
+  client_num_in_total: ${FEDSYS.CLIENT_NUM}
+  client_num_per_round: ${FEDSYS.CLIENT_NUM}
+entry_config:
+  entry_file: fedml/fedml_experiments/distributed/fedavg_cross_silo/main_fedavg_cross_silo.py
+entry_arguments:
+  model: ${model_config.modelName}
+  dataset: ${hyperparameters_config.dataset}
+  partition_method: ${hyperparameters_config.partition_method}
+  comm_round: ${hyperparameters_config.comm_round}
+  epochs: ${hyperparameters_config.local_epoch}
+  client_optimizer: ${hyperparameters_config.client_optimizer}
+  batch_size: ${hyperparameters_config.train_batch_size}
+  lr: ${hyperparameters_config.client_learning_rate}
+  backend: ${hyperparameters_config.communication_backend}
+  ci: 0
+  silo_node_rank: 0
+  nproc_per_node: 1
+  silo_rank: 0
+  pg_master_address: 127.0.0.1
+  pg_master_port: 29500
+  run_id: ${FEDSYS.RUN_ID}
+  data_dir: ${FEDSYS.PRIVATE_LOCAL_DATA}
+  mqtt_config_path: /fedml/conf/mqtt_config.yaml
+  s3_config_path: /fedml/conf/s3_config.yaml
+  client_ids: ${FEDSYS.CLIENT_ID_LIST}
+  is_using_local_data: ${FEDSYS.IS_USING_LOCAL_DATA}
+  data_silo_num_in_total: ${hyperparameters_config.data_silo_num_in_total}
+  client_num_in_total: ${hyperparameters_config.client_num_in_total}
+  client_num_per_round: ${hyperparameters_config.client_num_per_round}
+  synthetic_data_url: ${FEDSYS.SYNTHETIC_DATA_URL}

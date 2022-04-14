@@ -6,9 +6,9 @@ from typing import List
 
 import paho.mqtt.client as mqtt
 
-from FedML.fedml_core.distributed.communication.base_com_manager import BaseCommunicationManager
-from FedML.fedml_core.distributed.communication.message import Message
-from FedML.fedml_core.distributed.communication.observer import Observer
+from fedml_core.distributed.communication.base_com_manager import BaseCommunicationManager
+from fedml_core.distributed.communication.message import Message
+from fedml_core.distributed.communication.observer import Observer
 
 
 class MqttCommManager(BaseCommunicationManager):
