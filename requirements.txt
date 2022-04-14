@@ -15,3 +15,9 @@ Celery==4.4.7
 dill==0.3.3
 protobuf
 grpcio
+grpcio-tools
+boto3==1.18.21
+loguru==0.5.3
+wandb==0.12.9
+psutil
+pynvml
