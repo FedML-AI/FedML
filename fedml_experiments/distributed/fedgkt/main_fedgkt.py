@@ -169,18 +169,21 @@ def create_server_model(n_classes):
     return server_model
 
 
-def init_training_device(process_ID, fl_worker_num, gpu_num_per_machine):
+def init_training_device(process_ID, fl_worker_num, gpu, gpu_num_per_machine):
     # initialize the mapping from process ID to GPU ID: <process ID, GPU ID>
     if process_ID == 0:
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         return device
-    process_gpu_dict = dict()
-    for client_index in range(fl_worker_num):
-        gpu_index = client_index % gpu_num_per_machine
-        process_gpu_dict[client_index] = gpu_index
+    if gpu:
+        process_gpu_dict = dict()
+        for client_index in range(fl_worker_num):
+            gpu_index = client_index % gpu_num_per_machine
+            process_gpu_dict[client_index] = gpu_index
 
-    logging.info(process_gpu_dict)
-    device = torch.device("cuda:" + str(process_gpu_dict[process_ID - 1]) if torch.cuda.is_available() else "cpu")
+        logging.info(process_gpu_dict)
+        device = torch.device("cuda:" + str(process_gpu_dict[process_ID - 1]) if torch.cuda.is_available() else "cpu")
+    else:
+        device = torch.device("cpu")
     logging.info(device)
     return device
 
@@ -235,7 +238,7 @@ if __name__ == "__main__":
     # machine 4: worker3, worker7;
     # Therefore, we can see that workers are assigned according to the order of machine list.
     logging.info("process_id = %d, size = %d" % (process_id, worker_number))
-    device = init_training_device(process_id, worker_number - 1, args.gpu_num_per_server)
+    device = init_training_device(process_id, worker_number - 1, args.gpu, args.gpu_num_per_server)
 
     # load data.
     # Note: if you use # of client epoch larger than 1,
