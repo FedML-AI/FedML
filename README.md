@@ -1,7 +1,10 @@
-# FedML: A Research Library and Benchmark for Federated Machine Learning
+# FedML: The Community Connecting and Building AI Anywhere at Any Scale
+
+FedML Inc. provides a research and production integrated edge-cloud ecosystem for Federated/Distributed Machine Learning at anywhere at any scale
+
 
 <p align="center">
-:page_facing_up: <a href="https://arxiv.org/abs/2007.13518">https://arxiv.org/abs/2007.13518</a>
+  <a href="https://fedml.ai">FedML.ai</a>
 </p>
 
 <p align="center">
@@ -17,6 +20,12 @@
 </p>
 
 ## News
+<b>2022-04-15 (Software Upgrading)</b>: For this open-source library, FedML Inc. starts to maintain it using a full-time engineering team, not part-time students anymore!. We will provide more user-friendly APIs and advanced features soon. Stay tuned!
+
+<b>2022-03-15 (Fundraising)</b>: FedML, Inc. has finished the 1st-round fundraising. We are backed by top VCs who focus on AI, SaaS, and Blockchain/Web3/Crypto from the Bay Area, California of the USA.
+
+<b>2022-02-14 (Company)</b>: FedML is upgraded as a Delaware-registered C-Corp company. Our headquarter is in California, USA. The two co-founders are CEO Salman Avestimehr (https://www.avestimehr.com/) and CTO Chaoyang He (https://chaoyanghe.com). We welcome contributors anywhere in the world. We also recruit full-time/part-time engineers/researchers to join us. See https://fedml.ai/careers/ for details. 
+
 <b>2021-02-01 (Award)</b>: #NeurIPS 2020# FedML won <a href="https://chaoyanghe.com/wp-content/uploads/2021/02/NeurIPS-SpicyFL-2020-Baidu-best-paper-award-He-v2.pdf">Best Paper Award</a> at NeurIPS Federated Learning workshop 2020
 
 
