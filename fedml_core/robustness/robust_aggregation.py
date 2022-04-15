@@ -5,7 +5,7 @@ def vectorize_weight(state_dict):
     weight_list = []
     for (k, v) in state_dict.items():
         if is_weight_param(k):
-            weight_list.append(v)
+            weight_list.append(v.flatten())
     return torch.cat(weight_list)
 
 
@@ -53,3 +53,37 @@ class RobustAggregator(object):
                                      device=device) * self.stddev
         dp_weight = local_weight + gaussian_noise
         return dp_weight
+
+    def coordinate_median_agg(self, model_list: list[(int,dict)]) -> dict:
+        """
+        Coordinate-wise Median from "Byzantine-Robust Distributed Learning: Towards Optimal Statistical Rates".
+        This can be called at aggregate() of an Aggregator inplace of parameter averaging after \
+        model_list has been created
+
+        Args:
+            model_list (list[(number of samples, model state_dict)]): list of tuples from Aggregator 
+        
+        Returns: 
+             averaged_params: state dict containing coordinate-wise median of all state dicts 
+        """
+
+        # Initialize state dict
+        (num0, averaged_params) = model_list[0]
+        vectorized_params = []
+
+        for i in range(0, len(model_list)):
+            local_sample_number, local_model_params = model_list[i]
+            vectorized_weight = vectorize_weight(local_model_params)
+            vectorized_params.append(vectorized_weight.unsqueeze(-1))
+
+        # concatenate all weights by the last dimension (number of clients)
+        vectorized_params = torch.cat(vectorized_params, dim=-1)
+        vec_median_params = torch.median(vectorized_params, dim=-1).values
+
+        index = 0
+        for k, params in averaged_params.items():
+            median_params = vec_median_params[index:index + params.numel()].view(params.size())
+            index += params.numel()
+            averaged_params[k] = median_params
+
+        return averaged_params
