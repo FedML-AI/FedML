@@ -113,7 +113,22 @@ class FedAvgAPI(object):
                 else:
                     averaged_params[k] += local_model_params[k] * w
         return averaged_params
-
+    
+    def _aggregate_noniid_avg(self, w_locals):
+        '''
+        The old aggregate method will impact the model performance when it comes to Non-IID setting
+        Args:
+            w_locals:
+        Returns:
+        '''
+        (_, averaged_params) = w_locals[0]
+        for k in averaged_params.keys():
+            temp_w = []
+            for (_,local_w) in w_locals:
+                temp_w.append(local_w[k])
+            averaged_params[k] = sum(temp_w) / len(temp_w)
+        return averaged_params
+    
     def _local_test_on_all_clients(self, round_idx):
 
         logging.info("################local_test_on_all_clients : {}".format(round_idx))
