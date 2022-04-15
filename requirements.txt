@@ -11,7 +11,13 @@ flask==1.1.2
 gunicorn==20.0.4
 gevent==20.6.2
 paho-mqtt==1.5.0
-Celery==4.4.7
+Celery==5.2.2
 dill==0.3.3
 protobuf
 grpcio
+grpcio-tools
+boto3==1.18.21
+loguru==0.5.3
+wandb==0.12.9
+psutil
+pynvml
