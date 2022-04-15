@@ -1,11 +1,6 @@
 # FedML: The Community Connecting and Building AI Anywhere at Any Scale
 
-At the current stage, FedML library provides a research and production integrated edge-cloud platform for Federated/Distributed Machine Learning at anywhere at any scale.
-
-
-<p align="center">
-  <a href="https://fedml.ai">FedML.ai</a>
-</p>
+At the current stage, FedML library provides a research and production integrated edge-cloud platform for Federated/Distributed Machine Learning at anywhere at any scale. See more detaisl at <a href="https://fedml.ai">FedML.ai</a>.
 
 <p align="center">
   <a href="https://github.com/FedML-AI/FedML/projects/1"><img alt="Roadmap" src="https://img.shields.io/badge/roadmap-FedML-informational.svg?style=flat-square"></a>
