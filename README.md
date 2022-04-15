@@ -20,7 +20,7 @@ FedML Inc. provides a research and production integrated edge-cloud ecosystem fo
 </p>
 
 ## News
-<b>2022-04-15 (Software Upgrading)</b>: For this open-source library, FedML Inc. starts to maintain it using a full-time engineering team, not part-time students anymore!. We will provide more user-friendly APIs and advanced features soon. Stay tuned!
+<b>2022-04-15 (Software Upgrading)</b>: This library is maintained by a full-time engineering team, not part-time students anymore!. We will provide high-qualify industry-level software, user-friendly APIs, and advanced features soon. Stay tuned!
 
 <b>2022-03-15 (Fundraising)</b>: FedML, Inc. has finished the 1st-round fundraising. We are backed by top VCs who focus on AI, SaaS, and Blockchain/Web3/Crypto from the Bay Area, California of the USA.
 
