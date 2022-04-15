@@ -1,6 +1,6 @@
 # FedML: The Community Connecting and Building AI Anywhere at Any Scale
 
-FedML Inc. provides a research and production integrated edge-cloud ecosystem for Federated/Distributed Machine Learning at anywhere at any scale
+At the current stage, FedML library provides a research and production integrated edge-cloud platform for Federated/Distributed Machine Learning at anywhere at any scale.
 
 
 <p align="center">
