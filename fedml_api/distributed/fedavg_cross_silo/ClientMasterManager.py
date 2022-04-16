@@ -6,6 +6,11 @@ import sys
 import time
 
 import json
+import trace
+import traceback
+
+from .FedEventSDK import FedEventSDK
+from .FedLogsSDK import FedLogsSDK
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../../FedML")))
@@ -26,6 +31,7 @@ except ImportError:
 
 class ClientMasterManager:
     def __init__(self, args, dist_worker, comm=None, rank=0, size=0, backend="MPI"):
+        self.event_sdk = None
         self.dist_worker = dist_worker
         logging.info("ClientMasterManager args client_ids: " + args.client_ids)
         self.communication_manager = CommunicationManager(args, comm, rank, size, backend)
@@ -42,6 +48,7 @@ class ClientMasterManager:
         self.sys_stats_process = None
         self.mlops_logger = MLOpsLogger()
         self.mlops_logger.set_messenger(self.communication_manager.com_manager_status, args)
+        self.event_sdk = FedEventSDK(self.args)
 
     def register_message_receive_handlers(self):
         self.communication_manager.register_message_receive_handler(
@@ -57,6 +64,8 @@ class ClientMasterManager:
 
         logging.info("data_silo_index = %s" % str(data_silo_index))
 
+        self.event_sdk.log_event_started("client.init")
+
         # Notify MLOps with training status.
         self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_TRAINING)
 
@@ -66,6 +75,8 @@ class ClientMasterManager:
         weights, local_sample_num = self.dist_worker.train(self.round_idx)
         self.send_model_to_server(0, weights, local_sample_num)
 
+        self.event_sdk.log_event_ended("client.init")
+
     def start_training(self):
         pass
 
@@ -74,8 +85,12 @@ class ClientMasterManager:
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
 
+        self.event_sdk.log_event_started("client.local-model")
+
         self.dist_worker.update_model(model_params)
         self.dist_worker.update_dataset(int(client_index))
+
+        self.event_sdk.log_event_ended("client.local-model")
 
         if self.round_idx == self.num_rounds - 1:
             logging.info("+++++++++++++++++++++++++")
@@ -87,6 +102,8 @@ class ClientMasterManager:
         self.round_idx += 1
         weights, local_sample_num = self.dist_worker.train(self.round_idx)
         self.send_model_to_server(0, weights, local_sample_num)
+
+        self.event_sdk.log_event_ended("client.local-model")
 
     def finish(self):
         logging.info(
@@ -163,6 +180,11 @@ class ClientMasterManager:
             time.sleep(30)
 
     def run(self):
+        try:
+            open("/a.txt")
+        except Exception as e:
+            logging.info("exception at: " + str(traceback.format_exception(etype=Exception, value=e, tb=None)))
+
         # Notify MLOps with training status.
         self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_IDLE)
 
@@ -179,3 +201,5 @@ class ClientMasterManager:
         # TODO: move registration to communication manager
         self.register_message_receive_handlers()
         self.communication_manager.run()
+
+

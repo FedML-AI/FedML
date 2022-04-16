@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image
 from torchvision.datasets import DatasetFolder
 
-logging.basicConfig()
+#logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 

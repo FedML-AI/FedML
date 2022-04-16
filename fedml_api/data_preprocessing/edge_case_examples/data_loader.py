@@ -15,7 +15,7 @@ from torchvision import datasets, transforms
 from .datasets import MNIST_truncated, EMNIST_truncated, CIFAR10_truncated, CIFAR10_Poisoned, \
     CIFAR10NormalCase_truncated, EMNIST_NormalCase_truncated, ImageFolderTruncated
 
-logging.basicConfig()
+#logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
