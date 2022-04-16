@@ -27,7 +27,7 @@ entry_arguments:
   ci: 0
   silo_node_rank: 0
   nproc_per_node: 1
-  silo_rank: 1
+  silo_rank: ${FEDSYS.CLIENT_INDEX}
   pg_master_address: 127.0.0.1
   pg_master_port: 29500
   run_id: ${FEDSYS.RUN_ID}
