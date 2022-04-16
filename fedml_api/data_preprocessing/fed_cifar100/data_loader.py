@@ -47,8 +47,8 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx = None):
         train_y = np.vstack([train_h5[_EXAMPLE][client_id_train][_LABEL][()]]).squeeze()
         if client_idx <= len(client_ids_test) - 1:
             client_id_test = client_ids_test[client_idx]
-            test_x = np.vstack([train_h5[_EXAMPLE][client_id_test][_IMGAE][()]])
-            test_y = np.vstack([train_h5[_EXAMPLE][client_id_test][_LABEL][()]]).squeeze()
+            test_x = np.vstack([test_h5[_EXAMPLE][client_id_test][_IMGAE][()]])
+            test_y = np.vstack([test_h5[_EXAMPLE][client_id_test][_LABEL][()]]).squeeze()
 
     # preprocess 
     train_x = utils.preprocess_cifar_img(torch.tensor(train_x), train=True)

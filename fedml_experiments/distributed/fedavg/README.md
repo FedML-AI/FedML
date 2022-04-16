@@ -46,10 +46,10 @@ In order to run using TRPC set master's address and port in file trpc_master_con
 
 ## MNIST experiments
 ```
-sh run_fedavg_distributed_pytorch.sh 1000 10 1 4 lr hetero 200 1 10 0.03 mnist "./../../../data/mnist" sgd 0
+sh run_fedavg_distributed_pytorch.sh 1000 10 lr hetero 200 1 10 0.03 mnist "./../../../data/mnist" sgd 0
 
 ##run on background
-nohup sh run_fedavg_distributed_pytorch.sh 1000 10 1 4 lr hetero 200 1 10 0.03 mnist "./../../../data/mnist" sgd 0 > ./fedavg-lr-mnist.txt 2>&1 &
+nohup sh run_fedavg_distributed_pytorch.sh 1000 10 lr hetero 200 1 10 0.03 mnist "./../../../data/mnist" sgd 0 > ./fedavg-lr-mnist.txt 2>&1 &
 ```
 The reference experimental results using the above hyper-parameters:  
 https://wandb.ai/automl/fedml/runs/2dntp1tv?workspace=user-chaoyanghe-com
@@ -57,18 +57,18 @@ https://wandb.ai/automl/fedml/runs/2dntp1tv?workspace=user-chaoyanghe-com
 
 # Federated EMNIST experiments
 ```
-sh run_fedavg_distributed_pytorch.sh 10 10 1 4 cnn hetero 100 1 20 0.1 femnist "./../../../data/FederatedEMNIST/datasets" sgd sgd GRPC grpc_ipconfig.csv 0
+sh run_fedavg_distributed_pytorch.sh 10 10 cnn hetero 100 1 20 0.1 femnist "./../../../data/FederatedEMNIST/datasets" sgd sgd GRPC grpc_ipconfig.csv 0
 
 ##run on background
-nohup sh run_fedavg_distributed_pytorch.sh 10 10 1 4 cnn hetero 100 10 20 0.1 femnist "./../../../data/FederatedEMNIST/datasets" sgd sgd GRPC grpc_ipconfig.csv 0 > ./fedavg-cnn-femnist.txt 2>&1 &
+nohup sh run_fedavg_distributed_pytorch.sh 10 10 cnn hetero 100 10 20 0.1 femnist "./../../../data/FederatedEMNIST/datasets" sgd sgd GRPC grpc_ipconfig.csv 0 > ./fedavg-cnn-femnist.txt 2>&1 &
 ```
 
 # shakespeare experiments
 ```
-sh run_fedavg_distributed_pytorch.sh 10 10 1 4 rnn hetero 100 10 10 0.8 shakespeare "./../../../data/shakespeare" sgd 0
+sh run_fedavg_distributed_pytorch.sh 10 10 rnn hetero 100 10 10 0.8 shakespeare "./../../../data/shakespeare" sgd 0
 
 ##run on background
-nohup sh run_fedavg_distributed_pytorch.sh 10 10 1 4 rnn hetero 100 10 10 0.8 shakespeare "./../../../data/shakespeare" sgd 0 > ./fedavg-rnn-shakespeare.txt 2>&1 &
+nohup sh run_fedavg_distributed_pytorch.sh 10 10 rnn hetero 100 10 10 0.8 shakespeare "./../../../data/shakespeare" sgd 0 > ./fedavg-rnn-shakespeare.txt 2>&1 &
 ```
 
 ## ResNet56 Federated Training
@@ -195,9 +195,9 @@ DISTRIBUTION=$6
 ROUND=$7
 EPOCH=$8
 BATCH_SIZE=$9
-LR=$10
-DATASET=$11
-DATA_DIR=$12
+LR=${10}
+DATASET=${11}
+DATA_DIR=${12}
 CLIENT_OPTIMIZER=${13}
 CI=${14}
 GPU_UTIL_FILE=${15}

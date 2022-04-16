@@ -18,13 +18,13 @@ DISTRIBUTION=$8
 
 ROUND=$9
 
-EPOCH=$10
+EPOCH=${10}
 
-LR=$11
+LR=${11}
 
-OPT=$12
+OPT=${12}
 
-CI=$13
+CI=${13}
 
 python3 ./main_fedavg.py \
 --gpu $GPU \
