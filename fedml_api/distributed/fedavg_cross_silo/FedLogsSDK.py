@@ -28,8 +28,8 @@ class FedLogsSDK:
 
     def __init__(self, args):
         self.args = args
-        self.should_write_log_file = True
-        self.should_upload_log_file = True
+        self.should_write_log_file = False
+        self.should_upload_log_file = False
         self.log_file_dir = args.log_file_dir
         self.log_file = None
         self.run_id = args.run_id
