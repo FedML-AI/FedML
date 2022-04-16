@@ -5,7 +5,7 @@ import torch.utils.data as data
 from PIL import Image
 from torchvision.datasets import CIFAR10
 
-logging.basicConfig()
+#logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 

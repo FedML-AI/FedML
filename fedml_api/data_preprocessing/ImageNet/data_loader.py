@@ -13,7 +13,7 @@ from .datasets_hdf5 import ImageNet_hdf5
 from .datasets_hdf5 import ImageNet_truncated_hdf5
 
 
-logging.basicConfig()
+#logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
