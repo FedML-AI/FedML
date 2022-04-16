@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import json
 import os
 import platform
 import sys
@@ -40,6 +40,8 @@ from fedml_api.data_preprocessing.FederatedEMNIST.data_loader import load_partit
 from fedml_api.distributed.utils.gpu_mapping_mlops import mapping_processes_to_gpu_device_from_yaml_file
 
 from fedml_api.model.mobile.moble_lenet import create_mobile_lenet_model
+
+from fedml_api.distributed.fedavg_cross_silo.FedLogsSDK import FedLogsSDK
 
 import argparse
 import logging
@@ -236,6 +238,12 @@ def add_args(parser):
         default="",
         help="Synthetic data URL from the run configuration which will be used as training data. " +
              " If you set this URL value, the system will not use local data as training data.",
+    )
+
+    parser.add_argument(
+        "--log_file_dir",
+        type=str,
+        help="Log file directory.",
     )
 
     parser.add_argument("--ci", type=int, default=0, help="CI")
@@ -579,12 +587,7 @@ if __name__ == "__main__":
     str_process_name = "FedAvg (distributed):" + str(args.silo_rank)
     setproctitle.setproctitle(str_process_name)
 
-    # customize the log format
-    logging.basicConfig(
-        level=logging.INFO,
-        format=str(args.silo_rank) + " - %(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s",
-        datefmt="%a, %d %b %Y %H:%M:%S",
-    )
+    FedLogsSDK.get_instance(args).init_logs()
     logging.info(args)
     hostname = socket.gethostname()
     logging.info(

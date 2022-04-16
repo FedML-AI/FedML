@@ -7,7 +7,7 @@ import torch.utils.data as data
 
 from . import utils
 from .dataset import StackOverflowDataset
-logging.basicConfig()
+#logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 

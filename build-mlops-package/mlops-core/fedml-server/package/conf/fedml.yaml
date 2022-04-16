@@ -34,6 +34,7 @@ entry_arguments:
   data_dir: ${FEDSYS.PRIVATE_LOCAL_DATA}
   mqtt_config_path: /fedml/conf/mqtt_config.yaml
   s3_config_path: /fedml/conf/s3_config.yaml
+  log_file_dir: /fedml/data
   client_ids: ${FEDSYS.CLIENT_ID_LIST}
   is_using_local_data: ${FEDSYS.IS_USING_LOCAL_DATA}
   data_silo_num_in_total: ${hyperparameters_config.data_silo_num_in_total}

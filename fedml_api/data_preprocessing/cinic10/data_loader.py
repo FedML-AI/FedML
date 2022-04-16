@@ -9,7 +9,7 @@ import torchvision.transforms as transforms
 
 from .datasets import ImageFolderTruncated
 
-logging.basicConfig()
+#logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
