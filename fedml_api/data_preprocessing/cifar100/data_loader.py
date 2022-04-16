@@ -7,7 +7,7 @@ import torchvision.transforms as transforms
 
 from .datasets import CIFAR100_truncated
 
-logging.basicConfig()
+#logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 

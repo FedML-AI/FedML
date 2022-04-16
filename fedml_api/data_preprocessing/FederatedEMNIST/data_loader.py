@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import torch.utils.data as data
 
-logging.basicConfig()
+#logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 

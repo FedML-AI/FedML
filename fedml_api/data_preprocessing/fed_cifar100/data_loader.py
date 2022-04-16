@@ -8,7 +8,7 @@ import torch.utils.data as data
 
 from . import utils
 
-logging.basicConfig()
+#logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
