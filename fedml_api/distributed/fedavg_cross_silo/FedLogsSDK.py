@@ -107,17 +107,15 @@ class FedLogsSDK:
         response = requests.post(self.log_server_url, headers=log_headers, json=log_upload_request)
         if response.status_code != 200:
             #print('Error for sending log data: ' + str(response.status_code))
-            pass
             self.log_line_index -= len(log_lines)
         else:
             resp_data = response.json()
             #print('The result for sending log data: code %s, content %s' %
             #             (str(response.status_code), str(resp_data)))
-            pass
 
     def log_thread(self):
         while True:
-            time.sleep(30)
+            time.sleep(10)
             self.log_upload(self.run_id, self.edge_id)
 
     def log_relocation(self):
@@ -144,7 +142,7 @@ class FedLogsSDK:
 
         line_count = 0
         log_lines = []
-        while line_count < FedLogsSDK.FED_LOG_LINE_NUMS_PER_UPLOADING:
+        while True:
             line_count += 1
             log_line = self.log_file.readline()
             if not log_line:

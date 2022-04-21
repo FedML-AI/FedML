@@ -12,7 +12,7 @@ from ..communication.gRPC.grpc_comm_manager import GRPCCommManager
 from ..communication.message import Message
 from ..communication.mpi.com_manager import MpiCommunicationManager
 from ..communication.mqtt.mqtt_comm_manager import MqttCommManager
-from ..communication.mqtt_s3.mqtt_s3_comm_manager import MqttS3CommManager
+from ..communication.mqtt_s3.mqtt_s3_multi_clients_comm_manager import MqttS3MultiClientsCommManager
 from ..communication.mqtt_s3.mqtt_s3_status_manager import MqttS3StatusManager
 from ..communication.observer import Observer
 from ..communication.trpc.trpc_comm_manager import TRPCCommManager
@@ -33,7 +33,7 @@ class ClientManager(Observer):
             PORT = 1883
             self.com_manager = MqttCommManager(HOST, PORT, client_id=rank, client_num=size - 1)
         elif backend == "MQTT_S3":
-            self.com_manager = MqttS3CommManager(
+            self.com_manager = MqttS3MultiClientsCommManager(
                 args.mqtt_config_path, args.s3_config_path, topic=args.run_id,
                 client_id=rank, client_num=size - 1, args=args)
             self.com_manager_status = MqttS3StatusManager(

@@ -7,25 +7,41 @@ import uuid
 from typing import List
 
 import paho.mqtt.client as mqtt
+import torch
 import yaml
 
+from fedml_api.model.mobile.model_transfer import pytorch_mnn, mnn_pytorch
 from fedml_core.distributed.communication.base_com_manager import BaseCommunicationManager
 from fedml_core.distributed.communication.message import Message
 from fedml_core.distributed.communication.observer import Observer
 from .remote_storage import S3Storage
 
 
-class MqttS3CommManager(BaseCommunicationManager):
+class MqttS3MultiClientsCommManager(BaseCommunicationManager):
     def __init__(
             self, config_path, s3_config_path, topic="fedml", client_id=0, client_num=0,
-            args=None, bind_port=0, client_ids=None
+            args=None, bind_port=0
     ):
+        client_objects_str = str(args.client_objects).replace('"', '\"')
+        client_objects_str = client_objects_str.replace('\'', '')
+        logging.info("origin client object " + str(args.client_objects))
+        logging.info("client object " + client_objects_str)
+        self.client_objects = json.loads(client_objects_str)
+
         self._topic = "fedml_" + topic + "_"
         self.s3_storage = S3Storage(s3_config_path)
         self.client_real_ids = []
-        if client_ids is not None:
-            logging.info("MqttS3CommManager args client_ids: " + str(client_ids))
-            self.client_real_ids = client_ids
+        if args.client_ids is not None:
+            logging.info("MqttS3CommManager args client_ids: " + str(args.client_ids))
+            self.client_real_ids = json.loads(args.client_ids)
+        self.origin_mnn_file = args.model_file_path
+        if args.silo_rank == 0:
+            self.edge_id = 0
+        else:
+            if len(self.client_real_ids) == 1:
+                self.edge_id = self.client_real_ids[0]
+            else:
+                self.edge_id = 0
 
         self.model_params_key_map = list()
 
@@ -56,6 +72,14 @@ class MqttS3CommManager(BaseCommunicationManager):
 
         logging.info("mqtt_s3.init: connecting to MQTT server(local port %d..." % bind_port)
         self._client.connect(self.broker_host, self.broker_port, 180, bind_port=bind_port)
+
+    def get_client_os_type(self, client_id):
+        for client_obj in self.client_objects:
+            os_type = client_obj.get("os_type", Message.MSG_CLIENT_OS_LINUX)
+            edge_id = client_obj.get("id", None)
+            if str(client_id) != str(edge_id):
+                continue
+            return os_type
 
     def on_log(self, mqttc, obj, level, string):
         logging.info("mqtt_s3.on_log: " + string)
@@ -97,7 +121,7 @@ class MqttS3CommManager(BaseCommunicationManager):
                 self._unacked_sub.append(mid)
 
                 logging.info(
-                    "mqtt_s3.on_connect:  real_topic = %s, mid = %s, result = %s"
+                    "mqtt_s3.on_connect: server subscribes real_topic = %s, mid = %s, result = %s"
                     % (real_topic, mid, str(result))
                 )
 
@@ -155,8 +179,15 @@ class MqttS3CommManager(BaseCommunicationManager):
         logging.info("--------------------------")
         json_payload = str(msg.payload, encoding="utf-8")
         payload_obj = json.loads(json_payload)
+        sender_id = payload_obj.get(Message.MSG_ARG_KEY_SENDER, "")
+        receiver_id = payload_obj.get(Message.MSG_ARG_KEY_RECEIVER, "")
         s3_key_str = payload_obj.get(Message.MSG_ARG_KEY_MODEL_PARAMS, "")
         s3_key_str = str(s3_key_str).strip(" ")
+        if self.client_id == 0:
+            channel_id = sender_id
+        else:
+            channel_id = self.edge_id
+
         if s3_key_str != "":
             logging.info("mqtt_s3.on_message: use s3 pack, s3 message key %s" % s3_key_str)
 
@@ -164,7 +195,13 @@ class MqttS3CommManager(BaseCommunicationManager):
             # s3_obj = self.s3_storage.read_json(s3_key_str)
             # model_params = str(s3_obj, encoding="utf-8")
             # model_params = json.loads(model_params)
-            model_params = self.s3_storage.read_model(s3_key_str)
+            if self.get_client_os_type(channel_id) == Message.MSG_CLIENT_OS_ANDROID:
+                logging.info("mqtt_s3.on_message: from android client.")
+                mnn_file = self.s3_storage.read_model_with_file(s3_key_str)
+                model_params = self.convert_mnn_file_to_pytorch_model(mnn_file)
+            else:
+                logging.info("mqtt_s3.on_message: from python client.")
+                model_params = self.s3_storage.read_model(s3_key_str)
 
             logging.info("mqtt_s3.on_message: model params length %d" % len(model_params))
 
@@ -194,10 +231,9 @@ class MqttS3CommManager(BaseCommunicationManager):
 
         """
         logging.info("mqtt_s3.send_message: starting...")
+        sender_id = msg.get_sender_id()
+        receiver_id = msg.get_receiver_id()
         if self.client_id == 0:
-            # server
-            receiver_id = msg.get_receiver_id()
-
             # topic = "fedml" + "_" + "run_id" + "_0" + "_" + "client_id"
             topic = self._topic + str(0) + "_" + str(receiver_id)
             logging.info("mqtt_s3.send_message: msg topic = %s" % str(topic))
@@ -216,7 +252,13 @@ class MqttS3CommManager(BaseCommunicationManager):
                 #         model_params_key_url = model_params_key_item
                 #         break
                 # if not model_uploaded:
-                model_url = self.s3_storage.write_model(message_key, model_params_obj)
+                if self.get_client_os_type(receiver_id) == Message.MSG_CLIENT_OS_ANDROID:
+                    logging.info("mqtt_s3.send_message: to android client.")
+                    mnn_file = self.convert_pytorch_model_to_mnn_file(model_params_obj)
+                    model_url = self.s3_storage.write_model_with_file(message_key, mnn_file)
+                else:
+                    logging.info("mqtt_s3.send_message: to python client.")
+                    model_url = self.s3_storage.write_model(message_key, model_params_obj)
                 model_params_key_url = {"key": message_key, "url": model_url, "obj": model_params_obj}
                 #self.model_params_key_map.append(model_params_key_url)
                 payload[Message.MSG_ARG_KEY_MODEL_PARAMS] = model_params_key_url["key"]
@@ -245,7 +287,13 @@ class MqttS3CommManager(BaseCommunicationManager):
                 #         model_params_key_url = model_params_key_item
                 #         break
                 # if not model_uploaded:
-                model_url = self.s3_storage.write_model(message_key, model_params_obj)
+                if self.get_client_os_type(sender_id) == Message.MSG_CLIENT_OS_ANDROID:
+                    logging.info("mqtt_s3.send_message: to android client.")
+                    mnn_file = self.convert_pytorch_model_to_mnn_file(model_params_obj)
+                    model_url = self.s3_storage.write_model_with_file(message_key, mnn_file)
+                else:
+                    logging.info("mqtt_s3.send_message: to python client.")
+                    model_url = self.s3_storage.write_model(message_key, model_params_obj)
                 model_params_key_url = {"key": message_key, "url": model_url, "obj": model_params_obj}
                 #self.model_params_key_map.append(model_params_key_url)
                 payload[Message.MSG_ARG_KEY_MODEL_PARAMS] = model_params_key_url["key"]
@@ -283,6 +331,25 @@ class MqttS3CommManager(BaseCommunicationManager):
             if "MQTT_PWD" in config:
                 self.mqtt_pwd = config["MQTT_PWD"]
 
+    def convert_pytorch_model_to_mnn_file(self, pytorch_model_params):
+        pytorch_model_file = "/tmp/" + str(uuid.uuid4()) + ".ckpt"
+        torch.save(pytorch_model_params, pytorch_model_file)
+        logging.info("convert_pytorch_model_to_mnn_file: torch file " + pytorch_model_file)
+
+        mnn_model_file = "/tmp/" + str(uuid.uuid4()) + ".mnn"
+        pytorch_mnn(pytorch_model_file, self.origin_mnn_file, mnn_model_file)
+        self.origin_mnn_file = mnn_model_file
+        logging.info("convert_pytorch_model_to_mnn_file: mnn file " + mnn_model_file)
+
+        return mnn_model_file
+
+    def convert_mnn_file_to_pytorch_model(self, mnn_model_file):
+        pytorch_model_file = "/tmp/" + str(uuid.uuid4()) + ".ckpt"
+        mnn_pytorch(mnn_model_file, pytorch_model_file)
+        logging.info("convert_mnn_file_to_pytorch_model: torch file " + pytorch_model_file)
+
+        return torch.load(pytorch_model_file)
+
 
 if __name__ == "__main__":
 
@@ -292,7 +359,7 @@ if __name__ == "__main__":
 
     mqtt_config = "../../../../fedml_experiments/distributed/fedavg_cross_silo/mqtt_config.yaml"
     s3_config = "../../../../fedml_experiments/distributed/fedavg_cross_silo/s3_config.yaml"
-    client = MqttS3CommManager(mqtt_config, s3_config, topic="fedml_168_", client_id=1, client_num=1)
+    client = MqttS3MultiClientsCommManager(mqtt_config, s3_config, topic="fedml_168_", client_id=1, client_num=1)
     client.add_observer(Obs())
     time.sleep(3)
     print("client ID:%s" % client.client_id)

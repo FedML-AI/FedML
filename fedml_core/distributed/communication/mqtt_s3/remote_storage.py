@@ -31,8 +31,6 @@ class S3Storage():
         return payload
 
     def write_model(self, message_key, model):
-        # obj = self.s3_resource.Object(self.bucket_name, message_key)
-        # obj.put(Body=model)
         with tempfile.TemporaryFile() as fp:
             joblib.dump(model, fp)
             fp.seek(0)
@@ -41,7 +39,13 @@ class S3Storage():
                 "get_object", ExpiresIn=60*60*24*5, Params={"Bucket": self.bucket_name, "Key": message_key}
             )
             return model_url
-        # self.upload_file(model, message_key)
+
+    def write_model_with_file(self, message_key, model_file):
+        self.upload_file(model_file, message_key)
+        model_url = self.s3.generate_presigned_url(
+            "get_object", ExpiresIn=60*60*24*5, Params={"Bucket": self.bucket_name, "Key": message_key}
+        )
+        return model_url
 
     def read_model(self, message_key):
         with tempfile.TemporaryFile() as fp:
@@ -51,10 +55,12 @@ class S3Storage():
                 model = joblib.load(fp)
             except Exception as e:
                 print("Exception "+str(e))
-        # local_path = "./" + str(uuid.uuid4()) + ".ckpt"
-        # self.download_file(message_key, local_path)
-        # return local_path
         return model
+
+    def read_model_with_file(self, message_key):
+        model_file = "./" + str(uuid.uuid4()) + ".mnn"
+        self.download_file(message_key, model_file)
+        return model_file
 
     @logger.catch
     def upload_file(self, src_local_path, dest_s3_path):
