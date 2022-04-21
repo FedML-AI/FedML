@@ -99,4 +99,3 @@ if __name__ == "__main__":
     os.system("cp -f /fedml/conf/fedml.yaml /fedml/fedml-package/conf/")
 
     run_fedml_instance_from_local_package()
-    pass

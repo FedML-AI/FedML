@@ -52,7 +52,8 @@ def pytorch_mnn(pt_model, mnn_ori_path, mnn_save_path):
     # initialize PyTorch model
     T1 = time.time()
     torch_model = LeNet()
-    torch_model.load_state_dict(torch.load(pt_model))
+    model = torch.load(pt_model)
+    torch_model.load_state_dict(model, strict=False)
     torch_model.eval()
     pt_layers = [x.data for x in torch_model.parameters()]
     n_layer = len(pt_layers)
