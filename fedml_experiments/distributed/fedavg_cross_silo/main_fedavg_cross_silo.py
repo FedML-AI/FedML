@@ -233,6 +233,13 @@ def add_args(parser):
     )
 
     parser.add_argument(
+        "--client_objects",
+        type=str,
+        default="[]",
+        help="Client object list in the same federated training run.",
+    )
+
+    parser.add_argument(
         "--synthetic_data_url",
         type=str,
         default="",

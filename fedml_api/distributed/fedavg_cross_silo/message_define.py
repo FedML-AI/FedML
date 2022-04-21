@@ -4,6 +4,9 @@ class MyMessage(object):
     """
         message type definition
     """
+    # connection info
+    MSG_TYPE_CONNECTION_IS_READY = 0
+
     # server to client
     MSG_TYPE_S2C_INIT_CONFIG = 1
     MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT = 2
@@ -12,6 +15,8 @@ class MyMessage(object):
     MSG_TYPE_C2S_SEND_MODEL_TO_SERVER = 3
     MSG_TYPE_C2S_SEND_STATS_TO_SERVER = 4
     MSG_TYPE_C2S_CLIENT_STATUS = 5
+
+
 
     MSG_ARG_KEY_TYPE = "msg_type"
     MSG_ARG_KEY_SENDER = "sender"
@@ -40,6 +45,8 @@ class MyMessage(object):
     MSG_ARG_KEY_EVENT_VALUE = "event_value"
     MSG_ARG_KEY_EVENT_MSG = "event_msg"
 
+    MSG_ARG_KEY_CONNECTION_IS_READY = "connection_is_ready"
+
     """
         MLOps related message 
     """
@@ -61,6 +68,7 @@ class MyMessage(object):
     MSG_MLOPS_SERVER_STATUS_FINISHED = "FINISHED"
 
     # Client OS
-    MSG_CLIENT_OS_ANDROID = "android"
+    MSG_CLIENT_OS_ANDROID = "Android"
     MSG_CLIENT_OS_IOS = "iOS"
-    MSG_CLIENT_OS_IOS = "linux"
+    MSG_CLIENT_OS_MAC = "Mac"
+    MSG_CLIENT_OS_LINUX = "linux"
