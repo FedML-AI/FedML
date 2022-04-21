@@ -36,6 +36,7 @@ entry_arguments:
   s3_config_path: /fedml/conf/s3_config.yaml
   log_file_dir: /fedml/data
   client_ids: ${FEDSYS.CLIENT_ID_LIST}
+  client_objects: ${FEDSYS.CLIENT_OBJECT_LIST}
   is_using_local_data: ${FEDSYS.IS_USING_LOCAL_DATA}
   data_silo_num_in_total: ${hyperparameters_config.data_silo_num_in_total}
   client_num_in_total: ${hyperparameters_config.client_num_in_total}

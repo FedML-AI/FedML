@@ -16,6 +16,12 @@ class Message(object):
 
     MSG_ARG_KEY_MODEL_PARAMS = "model_params"
     MSG_ARG_KEY_MODEL_PARAMS_URL = "model_params_url"
+    MSG_ARG_KEY_CLIENT_OS = "client_os"
+
+    MSG_CLIENT_OS_ANDROID = "Android"
+    MSG_CLIENT_OS_IOS = "iOS"
+    MSG_CLIENT_OS_MAC = "Mac"
+    MSG_CLIENT_OS_LINUX = "Linux"
 
     def __init__(self, type=0, sender_id=0, receiver_id=0):
         self.type = type

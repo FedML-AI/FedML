@@ -45,6 +45,7 @@ class ClientMasterManager:
         else:
             self.client_real_id = self.client_real_ids[0]
 
+        self.has_sent_online_msg = False
         self.sys_stats_process = None
         self.mlops_logger = MLOpsLogger()
         self.mlops_logger.set_messenger(self.communication_manager.com_manager_status, args)
@@ -52,11 +53,27 @@ class ClientMasterManager:
 
     def register_message_receive_handlers(self):
         self.communication_manager.register_message_receive_handler(
+            MyMessage.MSG_TYPE_CONNECTION_IS_READY, self.handle_messag_connection_ready
+        )
+        self.communication_manager.register_message_receive_handler(
             MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.handle_message_init
         )
         self.communication_manager.register_message_receive_handler(
             MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT, self.handle_message_receive_model_from_server
         )
+
+    def handle_messag_connection_ready(self, msg_params):
+        logging.info("Connection is ready!")
+        if not self.has_sent_online_msg:
+            self.has_sent_online_msg = True
+            self.send_client_status(0)
+
+            # Notify MLOps with training status.
+            self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_INITIALIZING)
+
+            # Open new process for report system performances to MQTT server
+            self.sys_stats_process = multiprocessing.Process(target=self.report_sys_performances)
+            self.sys_stats_process.start()
 
     def handle_message_init(self, msg_params):
         global_model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
@@ -69,11 +86,16 @@ class ClientMasterManager:
         # Notify MLOps with training status.
         self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_TRAINING)
 
-        self.dist_worker.update_model(global_model_params)
-        self.dist_worker.update_dataset(int(data_silo_index))
+        if self.args.is_mobile != 1:
+            self.dist_worker.update_model(global_model_params)
+            self.dist_worker.update_dataset(int(data_silo_index))
         self.round_idx = 0
-        weights, local_sample_num = self.dist_worker.train(self.round_idx)
-        self.send_model_to_server(0, weights, local_sample_num)
+        if self.args.is_mobile != 1:
+            weights, local_sample_num = self.dist_worker.train(self.round_idx)
+            self.send_model_to_server(0, weights, local_sample_num)
+        else:
+            self.send_model_to_server(0, global_model_params, 100)
+
 
         self.event_sdk.log_event_ended("client.init")
 
@@ -87,8 +109,9 @@ class ClientMasterManager:
 
         self.event_sdk.log_event_started("client.local-model")
 
-        self.dist_worker.update_model(model_params)
-        self.dist_worker.update_dataset(int(client_index))
+        if self.args.is_mobile != 1:
+            self.dist_worker.update_model(model_params)
+            self.dist_worker.update_dataset(int(client_index))
 
         self.event_sdk.log_event_ended("client.local-model")
 
@@ -100,8 +123,11 @@ class ClientMasterManager:
             logging.info("-----------------------")
 
         self.round_idx += 1
-        weights, local_sample_num = self.dist_worker.train(self.round_idx)
-        self.send_model_to_server(0, weights, local_sample_num)
+        if self.args.is_mobile != 1:
+            weights, local_sample_num = self.dist_worker.train(self.round_idx)
+            self.send_model_to_server(0, weights, local_sample_num)
+        else:
+            self.send_model_to_server(0, model_params, 100)
 
         self.event_sdk.log_event_ended("client.local-model")
 
@@ -122,6 +148,15 @@ class ClientMasterManager:
         message = Message(MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER, self.client_real_id, receive_id)
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, weights)
         message.add_params(MyMessage.MSG_ARG_KEY_NUM_SAMPLES, local_sample_num)
+        sys_name = platform.system()
+        if sys_name == "Darwin":
+            sys_name = "MacOS"
+        # Debug for simulation mobile system
+        if self.args.is_mobile == 1:
+            sys_name = MyMessage.MSG_CLIENT_OS_ANDROID
+
+        message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, sys_name)
+
         self.communication_manager.send_message(message)
         log_round_end(self.rank, self.round_idx)
 
@@ -140,9 +175,10 @@ class ClientMasterManager:
         message = Message(MyMessage.MSG_TYPE_C2S_CLIENT_STATUS, self.client_real_id, receive_id)
         sys_name = platform.system()
         if sys_name == "Darwin":
-            sys_name = "Mac"
+            sys_name = "MacOS"
         # Debug for simulation mobile system
-        # sys_name = MyMessage.MSG_CLIENT_OS_ANDROID
+        if self.args.is_mobile == 1:
+            sys_name = MyMessage.MSG_CLIENT_OS_ANDROID
 
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_STATUS, status)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, sys_name)
@@ -180,24 +216,6 @@ class ClientMasterManager:
             time.sleep(30)
 
     def run(self):
-        try:
-            open("/a.txt")
-        except Exception as e:
-            logging.info("exception at: " + str(traceback.format_exception(etype=Exception, value=e, tb=None)))
-
-        # Notify MLOps with training status.
-        self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_IDLE)
-
-        # Send online message to FLServer
-        self.send_client_status(0)
-
-        # Notify MLOps with training status.
-        self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_INITIALIZING)
-
-        # Open new process for report system performances to MQTT server
-        self.sys_stats_process = multiprocessing.Process(target=self.report_sys_performances)
-        self.sys_stats_process.start()
-
         # TODO: move registration to communication manager
         self.register_message_receive_handlers()
         self.communication_manager.run()
