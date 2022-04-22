@@ -118,9 +118,9 @@ class ClientMasterManager:
 
         self.round_idx += 1
         if self.args.is_mobile != 1:
-            self.event_sdk.log_event_started("client.local_train")
+            self.event_sdk.log_event_started("train")
             weights, local_sample_num = self.dist_worker.train(self.round_idx)
-            self.event_sdk.log_event_ended("client.local_train")
+            self.event_sdk.log_event_ended("train")
             self.send_model_to_server(0, weights, local_sample_num)
         else:
             self.send_model_to_server(0, model_params, 100)
@@ -139,7 +139,7 @@ class ClientMasterManager:
         self.communication_manager.finish()
 
     def send_model_to_server(self, receive_id, weights, local_sample_num):
-        self.event_sdk.log_event_started("client.comm_c2s")
+        self.event_sdk.log_event_started("comm_c2s")
 
         message = Message(MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER, self.client_real_id, receive_id)
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, weights)
