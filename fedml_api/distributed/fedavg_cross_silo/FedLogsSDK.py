@@ -37,15 +37,18 @@ class FedLogsSDK:
             self.edge_id = 0
         else:
             self.edge_id = json.loads(args.client_ids)[0]
-        self.log_server_url = "http://open-test.fedml.ai/fedmlOpsServer/logs/update"
+        if args.log_server_url is None or args.log_server_url == "":
+            self.log_server_url ="https://open.fedml.ai/fedmlOpsServer/logs/update"
+        else:
+            self.log_server_url = args.log_server_url
         self.log_line_index = 0
         self.log_config_file = args.log_file_dir + "/log-config.yaml"
         self.log_config = {}
         self.load_log_config()
         self.origin_log_file_path = self.log_file_dir + "/fedavg-cross-silo-run-" + str(self.run_id) + \
-                             "-edge-" + str(self.edge_id) + ".log"
+                                    "-edge-" + str(self.edge_id) + ".log"
         self.log_file_path = self.log_file_dir + "/fedavg-cross-silo-run-" + str(self.run_id) + \
-                        "-edge-" + str(self.edge_id) + "-upload.log"
+                             "-edge-" + str(self.edge_id) + "-upload.log"
         if self.should_upload_log_file:
             multiprocessing.Process(target=self.log_thread).start()
 
@@ -104,13 +107,13 @@ class FedLogsSDK:
         log_headers = {'Content-Type': 'application/json'}
 
         # send log data to the log server
-        response = requests.post(self.log_server_url, headers=log_headers, json=log_upload_request)
+        response = requests.post(self.log_server_url, headers=log_headers, json=log_upload_request, verify=False)
         if response.status_code != 200:
-            #print('Error for sending log data: ' + str(response.status_code))
+            # print('Error for sending log data: ' + str(response.status_code))
             self.log_line_index -= len(log_lines)
         else:
             resp_data = response.json()
-            #print('The result for sending log data: code %s, content %s' %
+            # print('The result for sending log data: code %s, content %s' %
             #             (str(response.status_code), str(resp_data)))
 
     def log_thread(self):
@@ -131,7 +134,7 @@ class FedLogsSDK:
                 self.log_file = open(self.log_file_path, "r")
                 self.log_relocation()
         except Exception as e:
-            #print("exception at open log file.")
+            # print("exception at open log file.")
             pass
 
     def log_read(self):
@@ -159,7 +162,7 @@ class FedLogsSDK:
             yaml.dump(log_config_object, file)
             file.close()
         except Exception as e:
-            #print("Generate yaml file.")
+            # print("Generate yaml file.")
             pass
 
     @staticmethod
@@ -176,5 +179,5 @@ class FedLogsSDK:
             self.log_config = self.__load_yaml_config(self.log_config_file)
             self.log_line_index = self.log_config["log_config"]["log_line_index"]
         except Exception as e:
-            #print("load_log_config exception")
+            # print("load_log_config exception")
             pass
