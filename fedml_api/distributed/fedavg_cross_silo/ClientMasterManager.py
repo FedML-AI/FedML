@@ -139,7 +139,7 @@ class ClientMasterManager:
         self.communication_manager.finish()
 
     def send_model_to_server(self, receive_id, weights, local_sample_num):
-        self.event_sdk.log_event_started("comm_c2s")
+        self.event_sdk.log_event_started("comm_c2s", event_edge_id=0)
 
         message = Message(MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER, self.client_real_id, receive_id)
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, weights)
