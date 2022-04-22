@@ -118,9 +118,9 @@ class ClientMasterManager:
 
         self.round_idx += 1
         if self.args.is_mobile != 1:
-            self.event_sdk.log_event_started("client.local_training")
+            self.event_sdk.log_event_started("client.local_train")
             weights, local_sample_num = self.dist_worker.train(self.round_idx)
-            self.event_sdk.log_event_ended("client.local_training")
+            self.event_sdk.log_event_ended("client.local_train")
             self.send_model_to_server(0, weights, local_sample_num)
         else:
             self.send_model_to_server(0, model_params, 100)
