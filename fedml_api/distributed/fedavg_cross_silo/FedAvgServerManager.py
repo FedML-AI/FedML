@@ -121,6 +121,7 @@ class FedAVGServerManager(ServerManager):
             self.send_init_msg()
 
     def handle_message_receive_model_from_client(self, msg_params):
+        self.event_sdk.log_event_ended("client.comm_c2s")
         self.event_sdk.log_event_ended("server.wait")
 
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
