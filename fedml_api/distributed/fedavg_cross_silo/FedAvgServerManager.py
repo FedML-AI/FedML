@@ -52,9 +52,6 @@ class FedAVGServerManager(ServerManager):
         self.event_sdk = FedEventSDK(self.args)
 
     def run(self):
-        # notify MLOps with RUNNING status
-        self.mlops_logger.report_server_training_status(self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING)
-
         super().run()
 
     def handle_messag_connection_ready(self, msg_params):
@@ -107,6 +104,9 @@ class FedAVGServerManager(ServerManager):
         )
         if client_status == "ONLINE":
             self.client_online_mapping[str(msg_params.get_sender_id())] = True
+
+        # notify MLOps with RUNNING status
+        self.mlops_logger.report_server_training_status(self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING)
 
         self.event_sdk.log_event_started("aggregator.wait-online")
 
