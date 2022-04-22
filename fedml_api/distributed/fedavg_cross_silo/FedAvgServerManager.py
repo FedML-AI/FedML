@@ -66,8 +66,6 @@ class FedAVGServerManager(ServerManager):
         self.start_running_time = time.time()
         log_round_start(self.rank, 0)
 
-        self.event_sdk.log_event_started("aggregator.init")
-
         global_model_params = self.dist_aggregator.aggregator.get_global_model_params()
 
         client_id_list_in_this_round = self.dist_aggregator.aggregator.client_selection(
@@ -84,7 +82,7 @@ class FedAVGServerManager(ServerManager):
             )
             client_idx_in_this_round += 1
 
-        self.event_sdk.log_event_ended("aggregator.init")
+        self.event_sdk.log_event_started("server.wait")
 
     def register_message_receive_handlers(self):
         print("register_message_receive_handlers------")
@@ -108,8 +106,6 @@ class FedAVGServerManager(ServerManager):
         if client_status == "ONLINE":
             self.client_online_mapping[str(msg_params.get_sender_id())] = True
 
-        self.event_sdk.log_event_started("aggregator.wait-online")
-
         all_client_is_online = True
         for client_id in self.client_real_ids:
             if not self.client_online_mapping.get(str(client_id), False):
@@ -124,14 +120,12 @@ class FedAVGServerManager(ServerManager):
             # send initialization message to all clients to start training
             self.send_init_msg()
 
-        self.event_sdk.log_event_ended("aggregator.wait-online")
-
     def handle_message_receive_model_from_client(self, msg_params):
+        self.event_sdk.log_event_ended("server.wait")
+
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         local_sample_number = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
-
-        self.event_sdk.log_event_started("aggregator.global-aggregate")
 
         self.dist_aggregator.aggregator.add_local_trained_result(
             self.client_real_ids.index(sender_id), model_params, local_sample_number
@@ -139,7 +133,9 @@ class FedAVGServerManager(ServerManager):
         b_all_received = self.dist_aggregator.aggregator.check_whether_all_receive()
         logging.info("b_all_received = %s " % str(b_all_received))
         if b_all_received:
+            self.event_sdk.log_event_started("server.aggregate")
             global_model_params = self.dist_aggregator.aggregator.aggregate()
+            self.event_sdk.log_event_ended("server.aggregate")
             try:
                 self.dist_aggregator.aggregator.test_on_server_for_all_clients(self.round_idx)
             except Exception as e:
@@ -177,8 +173,6 @@ class FedAVGServerManager(ServerManager):
             self.mlops_logger.report_aggregated_model_info(model_info)
             self.aggregated_model_url = None
 
-            self.event_sdk.log_event_ended("aggregator.global-aggregate")
-
             self.round_idx += 1
             if self.round_idx == self.round_num:
                 # post_complete_message_to_sweep_process(self.args)
@@ -187,6 +181,8 @@ class FedAVGServerManager(ServerManager):
                 self.finish()
                 self.dist_aggregator.cleanup_pg()
                 return
+            else:
+                self.event_sdk.log_event_started("server.wait")
 
         log_round_start(self.rank, self.round_idx)
 

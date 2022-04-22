@@ -81,7 +81,7 @@ class ClientMasterManager:
 
         logging.info("data_silo_index = %s" % str(data_silo_index))
 
-        self.event_sdk.log_event_started("client.init")
+
 
         # Notify MLOps with training status.
         self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_TRAINING)
@@ -96,9 +96,6 @@ class ClientMasterManager:
         else:
             self.send_model_to_server(0, global_model_params, 100)
 
-
-        self.event_sdk.log_event_ended("client.init")
-
     def start_training(self):
         pass
 
@@ -107,13 +104,10 @@ class ClientMasterManager:
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
 
-        self.event_sdk.log_event_started("client.local-model")
 
         if self.args.is_mobile != 1:
             self.dist_worker.update_model(model_params)
             self.dist_worker.update_dataset(int(client_index))
-
-        self.event_sdk.log_event_ended("client.local-model")
 
         if self.round_idx == self.num_rounds - 1:
             logging.info("+++++++++++++++++++++++++")
@@ -124,12 +118,12 @@ class ClientMasterManager:
 
         self.round_idx += 1
         if self.args.is_mobile != 1:
+            self.event_sdk.log_event_started("client.local_training")
             weights, local_sample_num = self.dist_worker.train(self.round_idx)
+            self.event_sdk.log_event_ended("client.local_training")
             self.send_model_to_server(0, weights, local_sample_num)
         else:
             self.send_model_to_server(0, model_params, 100)
-
-        self.event_sdk.log_event_ended("client.local-model")
 
     def finish(self):
         logging.info(
