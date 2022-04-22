@@ -253,6 +253,13 @@ def add_args(parser):
         help="Log file directory.",
     )
 
+    parser.add_argument(
+        "--log_server_url",
+        type=str,
+        default="",
+        help="Log server url.",
+    )
+
     parser.add_argument("--ci", type=int, default=0, help="CI")
     args = parser.parse_args()
     return args

@@ -35,6 +35,7 @@ entry_arguments:
   mqtt_config_path: /fedml/conf/mqtt_config.yaml
   s3_config_path: /fedml/conf/s3_config.yaml
   log_file_dir: /fedml/data
+  log_server_url: ${FEDSYS.LOG_SERVER_URL}
   client_ids: ${FEDSYS.CLIENT_ID_LIST}
   client_objects: ${FEDSYS.CLIENT_OBJECT_LIST}
   is_using_local_data: ${FEDSYS.IS_USING_LOCAL_DATA}
