@@ -121,8 +121,8 @@ class FedAVGServerManager(ServerManager):
             self.send_init_msg()
 
     def handle_message_receive_model_from_client(self, msg_params):
-        self.event_sdk.log_event_ended("client.comm_c2s")
-        self.event_sdk.log_event_ended("server.wait")
+        self.event_sdk.log_event_ended("comm_c2s")
+        self.event_sdk.log_event_ended("wait")
 
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
@@ -134,9 +134,9 @@ class FedAVGServerManager(ServerManager):
         b_all_received = self.dist_aggregator.aggregator.check_whether_all_receive()
         logging.info("b_all_received = %s " % str(b_all_received))
         if b_all_received:
-            self.event_sdk.log_event_started("server.aggregate")
+            self.event_sdk.log_event_started("aggregate")
             global_model_params = self.dist_aggregator.aggregator.aggregate()
-            self.event_sdk.log_event_ended("server.aggregate")
+            self.event_sdk.log_event_ended("aggregate")
             try:
                 self.dist_aggregator.aggregator.test_on_server_for_all_clients(self.round_idx)
             except Exception as e:
@@ -183,7 +183,7 @@ class FedAVGServerManager(ServerManager):
                 self.dist_aggregator.cleanup_pg()
                 return
             else:
-                self.event_sdk.log_event_started("server.wait")
+                self.event_sdk.log_event_started("wait")
 
         log_round_start(self.rank, self.round_idx)
 
