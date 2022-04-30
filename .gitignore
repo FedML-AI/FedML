@@ -24,6 +24,7 @@ python/dist
 python/FedML.egg-info
 
 doc/deploy
+doc/en/_build
 
 *.txt
 *.h5
