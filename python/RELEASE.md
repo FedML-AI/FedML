@@ -1,6 +1,6 @@
 Local Installation
 ```
-python setup.py install
+python install -e ./
 ```
 
 Release

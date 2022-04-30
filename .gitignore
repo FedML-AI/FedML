@@ -19,6 +19,9 @@ wandb
 ./*/*/*/*/wandb
 ./*/*/*/*/*/wandb
 
+python/build
+python/dist
+python/FedML.egg-info
 
 *.txt
 *.h5
