@@ -28,7 +28,6 @@ wandb
 *.dat
 cifar-10-batches-py
 *.tar.gz
-*.png
 *.zip
 *.json
 *.tar.bz2
@@ -56,7 +55,3 @@ mimiconda.sh
 data/fednlp/*
 
 *.npz
-
-*.jpg
-/build-mlops-package/mlops-core/fedml-client/package/fedml/
-/build-mlops-package/mlops-core/fedml-server/package/fedml/
