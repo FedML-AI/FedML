@@ -11,7 +11,7 @@ def cli():
 
 
 @cli.command(
-    "login", help="Commands for open.fedml.ai MLOps platform"
+    "login", help="Login to MLOps platform (open.fedml.ai)"
 )
 @click.argument("userid", nargs=-1)
 @click.option(
@@ -37,7 +37,7 @@ def mlops_login(userid, version):
 
 
 @cli.command(
-    "build", help="Commands for open.fedml.ai MLOps platform"
+    "build", help="Build packages for MLOps platform (open.fedml.ai)"
 )
 @click.option(
     "--type",
