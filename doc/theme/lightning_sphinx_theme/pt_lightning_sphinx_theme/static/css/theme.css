@@ -11933,10 +11933,10 @@ pre {
 }
 
 .docs-tutorials-resources {
-  background-color: #262626;
+  /*background-color: #262626;*/
   color: #ffffff;
   padding-top: 2.5rem;
-  padding-bottom: 2.5rem;
+  /*padding-bottom: 2.5rem;*/
   position: relative;
   z-index: 201;
 }
