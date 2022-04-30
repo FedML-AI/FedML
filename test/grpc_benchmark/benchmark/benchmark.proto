@@ -1,0 +1,24 @@
+
+syntax = "proto3";
+// The document of proto3: https://developers.google.com/protocol-buffers/docs/proto3
+
+// Package name definition, which can be omitted in Python.
+package benchmark;
+
+
+// pack everything into a bytes
+message Request {
+    bytes data = 1;
+}
+
+message Response {
+    bytes data = 1;
+}
+
+message EmptyMessage {}
+
+
+service GRPCBenchmark {
+    rpc meta_run (Request) returns (Response);
+    rpc terminate (EmptyMessage) returns (EmptyMessage);
+}

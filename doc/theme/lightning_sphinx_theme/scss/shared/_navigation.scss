@@ -1,0 +1,225 @@
+.header-holder {
+  height: $mobile_header_height;
+
+  @include full-nav-menu-desktop {
+    height: $desktop_header_height;
+  }
+
+  align-items: center;
+  display: flex;
+  left: 0;
+  margin-left: auto;
+  margin-right: auto;
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 100%;
+  z-index: 9999;
+  background-color: $white;
+  border-bottom: 1px solid #e2e2e2;
+}
+
+.header-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  @include clearfix;
+
+  @include full-nav-menu-desktop {
+    display: block;
+  }
+}
+
+.header-logo {
+  height: 32px;
+  width: -moz-calc(100% - 25px);
+  width: -webkit-calc(100% - 25px);
+  width: calc(100% - 25px);
+  background-image: url("../images/logo_light.svg"), url("../images/logo-Info.svg");
+  background-repeat: no-repeat;
+  background-size: contain;
+  display: block;
+  float: left;
+  z-index: 10;
+
+  @include full-nav-menu-desktop {
+    background-size: contain;
+    position: absolute;
+    height: 43px;
+    width: 25%;
+    top: 4px;
+    float: none;
+  }
+
+  @include sphinx-full-size {
+    width: $desktop_menu_width;
+  }
+}
+
+.main-menu-open-button {
+  background-image: url("../images/icon-menu-dots.svg");
+  background-position: center center;
+  background-size: 25px 7px;
+  background-repeat: no-repeat;
+  width: 25px;
+  height: 17px;
+  position: absolute;
+  right: 0;
+  top: 8px;
+  @include full-nav-menu-desktop {
+    display: none;
+  }
+}
+
+.header-holder .main-menu {
+  height: 60px;
+  display: none;
+
+  @include full-nav-menu-desktop {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  ul {
+    display: flex;
+    align-items: center;
+    margin: 0;
+  }
+
+  ul li {
+    display: inline-block;
+    margin-right: 40px;
+    position: relative;
+
+    &.active {
+      &:after {
+        content: "•";
+        bottom: -24px;
+        color: $color_primary;
+        font-size: rem(22px);
+        left: 0;
+        position: absolute;
+        right: 0;
+        text-align: center;
+      }
+
+      a {
+        color: $color_primary;
+      }
+    }
+
+    &.docs-active:after {
+      content: "•";
+      bottom: -24px;
+      color: $color_primary;
+      font-size: rem(22px);
+      left: -24px;
+      position: absolute;
+      right: 0;
+      text-align: center;
+    }
+
+    &:last-of-type {
+      margin-right: 0;
+    }
+  }
+
+  ul li a {
+    color: #1C1C1C;
+    font-family: UCity;
+    font-weight: 600;
+    line-height: rem(20px);
+    letter-spacing: 0px;
+    text-align: left;
+    text-decoration: none;
+
+    @include full-nav-menu-desktop {
+      &:hover {
+        color: $color_primary;
+      }
+    }
+  }
+}
+
+.mobile-main-menu {
+  display: none;
+  &.open {
+    background-color: $slate;
+    display: block;
+    height: 100%;
+    left: 0;
+    margin-left: auto;
+    margin-right: auto;
+    min-height: 100%;
+    position: fixed;
+    right: 0;
+    top: 0;
+    width: 100%;
+    z-index: 99999;
+  }
+}
+
+.mobile-main-menu .container-fluid {
+  align-items: center;
+  display: flex;
+  height: $mobile_header_height;
+  position: relative;
+  @include clearfix;
+}
+
+.mobile-main-menu.open {
+  ul {
+    list-style-type: none;
+    padding: 0;
+  }
+
+  ul li a, .resources-mobile-menu-title {
+    font-size: rem(32px);
+    color: $white;
+    letter-spacing: 0;
+    line-height: rem(64px);
+    text-decoration: none;
+  }
+
+  ul li.active a {
+    color: $color_primary;
+  }
+}
+
+.main-menu-close-button {
+  background-image: url("../images/icon-close.svg");
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: 24px 24px;
+  height: 24px;
+  position: absolute;
+  right: 0;
+  width: 24px;
+  top: 1px;
+}
+
+.mobile-main-menu-header-container {
+  position: relative;
+}
+
+.mobile-main-menu-links-container {
+  display: flex;
+  align-items: center;
+  padding-left: rem(45px);
+  height: -moz-calc(100% - 68px);
+  height: -webkit-calc(100% - 68px);
+  height: calc(100% - 68px);
+  overflow-y: scroll;
+  .main-menu {
+    height: 100%;
+  }
+}
+
+.mobile-main-menu-links-container {
+  ul.resources-mobile-menu-items {
+    li {
+      padding-left: 15px;
+    }
+  }
+}
