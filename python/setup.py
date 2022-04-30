@@ -15,7 +15,7 @@ with open("requirements.txt") as f:
 
 setup(
     name="FedML",
-    version="0.7.0",
+    version="0.7.1",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
