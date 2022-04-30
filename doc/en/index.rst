@@ -37,6 +37,7 @@ This documentation is organized in the following sections:
    starter/examples.md
    starter/mission.md
    starter/overview.md
+   starter/ecosystem.md
    starter/oss_code_architecture.rst
    starter/mlops_video.rst
    starter/faq.md
