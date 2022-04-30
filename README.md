@@ -19,9 +19,9 @@ Homepage: [https://FedML.ai](https://FedML.ai)
 
 
 # News
-* [2022/03/15] (Fundraising)</b>: FedML, Inc. has finished the 1st-round fundraising. We are backed by top VCs who focus on AI, SaaS, and Blockchain/Web3/Crypto from the Bay Area, California of the USA.
-* [2022/02/14] (Company)</b>: FedML is upgraded as a Delaware-registered C-Corp company. Our headquarter is in California, USA. The two co-founders are CEO Salman Avestimehr (https://www.avestimehr.com/) and CTO Chaoyang He (https://chaoyanghe.com). We welcome contributors anywhere in the world. 
-* [2021/02/01] (Award)</b>: #NeurIPS 2020# FedML won <a href="https://chaoyanghe.com/wp-content/uploads/2021/02/NeurIPS-SpicyFL-2020-Baidu-best-paper-award-He-v2.pdf">Best Paper Award</a> at NeurIPS Federated Learning workshop 2020
+* <b>[2022/03/15] (Fundraising)</b>: FedML, Inc. has finished the 1st-round fundraising. We are backed by top VCs who focus on AI, SaaS, and Blockchain/Web3/Crypto from the Bay Area, California of the USA.
+* <b>[2022/02/14] (Company)</b>: FedML is upgraded as a Delaware-registered C-Corp company. Our headquarter is in California, USA. The two co-founders are CEO Salman Avestimehr (https://www.avestimehr.com/) and CTO Chaoyang He (https://chaoyanghe.com). We welcome contributors anywhere in the world. 
+* <b>[2021/02/01] (Award)</b>: #NeurIPS 2020# FedML won <a href="https://chaoyanghe.com/wp-content/uploads/2021/02/NeurIPS-SpicyFL-2020-Baidu-best-paper-award-He-v2.pdf">Best Paper Award</a> at NeurIPS Federated Learning workshop 2020
 
 # Careers
 FedML is hiring! [Come and join us](https://fedml.ai/careers/)!
