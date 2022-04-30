@@ -11943,7 +11943,7 @@ pre {
 @media screen and (min-width: 768px) {
   .docs-tutorials-resources {
     padding-top: 5rem;
-    padding-bottom: 5rem;
+    /*padding-bottom: 5rem;*/
   }
 }
 .docs-tutorials-resources p {
