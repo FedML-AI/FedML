@@ -1,1 +1,0 @@
-You can apply our library to develop new applications

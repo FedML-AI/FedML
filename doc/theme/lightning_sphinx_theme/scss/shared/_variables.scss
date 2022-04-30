@@ -1,0 +1,202 @@
+// new fonts
+$primary_text: #1C1C1C;
+
+// ------
+$custom-font-size: 16px;
+$black: #000000;
+$white: #ffffff;
+$dark_grey: #6c6c6d;
+$dark_grey_alt: #979797;
+$light_grey: #f3f4f7;
+$color_primary: black;
+$medium_grey: #f3f4f7;
+$not_quite_black: #262626;
+$hover_background: #EFEEFF;
+$slate: #262626;
+$very_light_grey: #f3f4f7;
+$very_dark_grey: #CCCDD1;
+$content_text_color: #6c6c6d;
+$code_background_color: #f3f4f7;
+$dark_blue: #3d5a97;
+$quick_start_grey: #6c6c6d;
+$command_block_black: #6c6c6d;
+$smoky_grey: #CCCDD1;
+$medium_smoky_grey: #CCCDD1;
+$code_link_color: #fe6162;
+
+$desktop_menu_width: 350px;
+$sphinx_full_width: 1600px;
+$sphinx_medium_width: 1101px;
+
+$desktop_header_height: 90px;
+$mobile_header_height: 68px;
+$desktop_footer_height: 420px;
+$site_horizontal_padding: 30px;
+
+$baseurl: "";
+
+@mixin code_font_family {
+  font-family: 'Inconsolata', 'IBMPlexMono', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', 'monospace'
+}
+
+@mixin desktop {
+  @media screen and (min-width: 768px) { @content; }
+}
+
+@mixin full-nav-menu-desktop {
+  @media screen and (min-width: 1100px) { @content; }
+}
+
+@mixin max-width-desktop {
+  @media screen and (min-width: 1240px) { @content; }
+}
+
+@mixin small-desktop {
+  @media (min-width: 768px) and (max-width: 1239px) { @content; }
+}
+
+@mixin sphinx-full-size {
+  @media screen and (min-width: $sphinx_full_width) { @content; }
+}
+
+@mixin sphinx-medium-size {
+  @media screen and (min-width: $sphinx_medium_width) { @content; }
+}
+
+@function rem($px) {
+  @return ($px / 16px) * 1rem;
+}
+
+@mixin clearfix {
+  &:before,
+  &:after {
+    content: "";
+    display: table;
+  }
+  &:after {
+    clear: both;
+  }
+  & {
+    *zoom: 1;
+  }
+}
+
+@mixin default_link_styles {
+  a:link,
+  a:visited,
+  a:hover {
+    color: $color_primary;
+    text-decoration: none;
+  }
+
+  @include desktop {
+    a:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+@mixin animated_card_hover {
+  @include desktop {
+    &:after {
+      content: "";
+      display: block;
+      width: 0;
+      height: 2px;
+      position: absolute;
+      top: calc(100% - 12px);
+      left: 15px;
+      background-color: $color_primary;
+      transition: width .25s ease-in-out;
+    }
+
+    &:hover:after {
+      width: calc(100% - 30px);
+    }
+  }
+}
+
+@mixin animated_card_hover_small {
+  @include desktop {
+    &:after {
+      content: "";
+      display: block;
+      width: 0;
+      height: 2px;
+      position: absolute;
+      top: calc(100% - 22px);
+      left: 15px;
+      background-color: $color_primary;
+      transition: width .25s ease-in-out;
+    }
+
+    &:hover:after {
+      width: calc(100% - 30px);
+    }
+  }
+}
+
+@mixin animated_menu_hover {
+  @include desktop {
+    &:after {
+      content: "";
+      display: block;
+      width: 2px;
+      height: 20px;
+      position: inherit;
+      float: left;
+      top: 0px;
+      left: 0px;
+      transition: background-color .3s ease-in-out;
+      margin-right: 5px;
+    }
+
+    &:hover:after {
+      background-color: $color_primary;
+      margin-right: 5px;
+    }
+  }
+}
+
+
+@mixin animated_border_hover_state {
+  @include desktop {
+    &:after {
+      content: "";
+      display: block;
+      width: 0;
+      height: 1px;
+      position: absolute;
+      bottom: -1px;
+      left: 5px;
+      background-color: $color_primary;
+      transition: width .250s ease-in-out;
+    }
+
+    &:hover:after {
+      width: calc(100% - 5px);
+    }
+  }
+}
+
+@mixin animated_radius_border_hover_state {
+  @include desktop {
+    &:after {
+      content: "";
+      display: block;
+      width: 0;
+      height: 50px;
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      border-bottom: 1px solid $color_primary;
+      border-bottom-left-radius: 5px;
+      transition: width .250s ease-in-out, border-bottom-right-radius .01s linear .250s;
+    }
+
+    &:hover:after {
+      width: 100%;
+      border-bottom-right-radius: 5px;
+    }
+  }
+}

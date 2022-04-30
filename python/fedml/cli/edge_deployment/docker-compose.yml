@@ -1,0 +1,54 @@
+version: "3"
+services:
+  docker-daemon:
+    container_name: "fedml-client-agent-docker-daemon"
+    environment:
+      DOCKER_TLS_CERTDIR: ""
+    image: "docker:dind"
+    networks:
+      "fedml-client-network":
+        aliases:
+          - "docker"
+    privileged: true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+  docker-client:
+    command: sh -c 'cp -f /usr/local/bin/docker /usr/bin/docker-exec/docker;while [ 1 ]; do sleep 1000; done'
+    container_name: "fedml-client-agent-docker-client"
+    depends_on:
+      - "docker-daemon"
+    environment:
+      DOCKER_HOST: "tcp://docker:2375"
+    image: "docker:latest"
+    networks:
+      "fedml-client-network": {}
+    volumes:
+      - docker-bin-share:/usr/bin/docker-exec
+      - /var/run/docker.sock:/var/run/docker.sock
+  fedml-client:
+    #command: sh -c 'while [ 1 ]; do sleep 1000; done'
+    container_name: "fedml-client-agent"
+    depends_on:
+      - "docker-client"
+    environment:
+      ACCOUNT_ID: ${ACCOUNT_ID}
+      CONFIG_FILE: ${CONFIG_FILE}
+      CURRENT_RUNNING_DIR: ${CURRENT_RUNNING_DIR}
+      OS_NAME: ${CURRENT_OS_NAME}
+    image: "registry.fedml.ai/fedml-public-server/fedml-distributed-server/fedml-client-agent:latest"
+    networks:
+      "fedml-client-network": { }
+    volumes:
+      - docker-bin-share:/usr/bin/docker-exec
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${CURRENT_RUNNING_DIR}/fedml_data:/fedml/data
+      #- ${CURRENT_RUNNING_DIR}/fedml_config:/fedml/fedml_config
+      - ${CURRENT_RUNNING_DIR}/fedml_run_state:/fedml/fedml_run_state
+      - ${CURRENT_RUNNING_DIR}/fedml-runner:/fedml/fedml-runner
+
+volumes:
+  docker-bin-share:
+
+networks:
+  fedml-client-network:
+    driver: bridge
