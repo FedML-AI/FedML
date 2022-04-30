@@ -8,9 +8,9 @@ Video
 
 
     <iframe id="player" type="text/html" width="800" height="540"
-      src="http://www.youtube.com/embed/U3BiuWjhdaU"
-      frameborder="0"
-      allowfullscreen
+      src="https://www.youtube.com/embed/U3BiuWjhdaU"
+      frameborder=0
+      'allowfullscreen'
       allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"></iframe>
 
 
@@ -21,7 +21,7 @@ Video
 .. raw:: html
 
     <iframe id="player" type="text/html" width="800" height="540"
-      src="http://www.youtube.com/embed/AY7pCYTC8pQ"
+      src="https://www.youtube.com/embed/AY7pCYTC8pQ"
       frameborder="0"
       allowfullscreen
       allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"></iframe>
@@ -33,7 +33,7 @@ Video
 .. raw:: html
 
     <iframe id="player" type="text/html" width="800" height="540"
-      src="http://www.youtube.com/embed/93SETZGZMyI"
+      src="https://www.youtube.com/embed/93SETZGZMyI"
       frameborder="0"
       allowfullscreen
       allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"></iframe>
