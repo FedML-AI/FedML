@@ -2,6 +2,10 @@
 
 FedML supports Linux, MacOS, Windows, and Android.
 
+## FedML Source Code Repository
+[https://github.com/FedML-AI/FedML](https://github.com/FedML-AI/FedML)
+
+
 ## Install Official Release
 
 ```
