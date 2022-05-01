@@ -70,7 +70,7 @@ class FedMLServerManager(ServerManager):
             client_idx_in_this_round += 1
 
         if self.args.using_mlops:
-            self.mlops_event.log_event_started("server.wait")
+            self.mlops_event.log_event_started("server.wait", event_value=str(self.round_idx))
 
     def register_message_receive_handlers(self):
         print("register_message_receive_handlers------")
@@ -132,12 +132,13 @@ class FedMLServerManager(ServerManager):
         logger.info("b_all_received = " + str(b_all_received))
         if b_all_received:
             if self.args.using_mlops:
-                self.mlops_event.log_event_started("aggregate")
+                self.mlops_event.log_event_ended("server.wait", event_value=str(self.round_idx))
+                self.mlops_event.log_event_started("aggregate", event_value=str(self.round_idx))
 
             global_model_params = self.aggregator.aggregate()
 
             if self.args.using_mlops:
-                self.mlops_event.log_event_ended("aggregate")
+                self.mlops_event.log_event_ended("aggregate", event_value=str(self.round_idx))
             try:
                 self.aggregator.test_on_server_for_all_clients(self.round_idx)
             except Exception as e:
@@ -191,7 +192,7 @@ class FedMLServerManager(ServerManager):
                 return
             else:
                 if self.args.using_mlops:
-                    self.mlops_event.log_event_started("wait", event_value=str(self.round_idx))
+                    self.mlops_event.log_event_started("server.wait", event_value=str(self.round_idx))
 
     def send_message_init_config(self, receive_id, global_model_params, datasilo_index):
         message = Message(
