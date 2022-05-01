@@ -2,7 +2,7 @@
 
 MPI-based Federated Learning for cross-GPU/CPU servers.
 
-In this example, we will present how to apply the standalone simulation of FedML in the MINIST image classification using an **MPI-based FL simulator**. The complete code is available at `python/examples/simulation/mpi_torch_fedavg_mnist_lr_example`
+In this example, we will present how to apply the standalone simulation of FedML in the MINIST image classification using an **MPI-based FL simulator**. The complete code is available at [https://github.com/FedML-AI/FedML/tree/master/python/examples/simulation/mpi_torch_fedavg_mnist_lr_example](https://github.com/FedML-AI/FedML/tree/master/python/examples/simulation/mpi_torch_fedavg_mnist_lr_example).
 
 ## One line API
 
@@ -35,7 +35,7 @@ Now that we have configured all the dependencies, we can quickly implement the t
 bash run_one_line_example.sh 4
 ```
 
-Note that if you download the code on windows and upload it to a Linux environment, you will see the following output when the program just starts running.
+Note that if you download the code on Windows and upload it to a Linux environment, you will see the following output when the program just starts running.
 
 > run_one_line_example.sh: line 2: $' \r ':  command not found
 >

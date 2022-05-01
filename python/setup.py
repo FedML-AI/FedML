@@ -39,6 +39,8 @@ setup(
         "Programming Language :: Python :: 3.9",
     ],
     packages=find_packages(),
+    include_package_data=True,
+    data_files=[("fedml", ["fedml/config/simulation_sp/fedml_config.yaml", "fedml/config/simulaton_mpi/fedml_config.yaml"])],
     install_requires=requirements,
     package_data={"": ["py.typed"]},
     license="Apache 2.0",
