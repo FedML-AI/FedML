@@ -53,7 +53,7 @@ class TrainerDistAdapter:
         only_gpu =  args.using_gpu
 
         self.process_group_manager = ProcessGroupManager(
-            args.silo_proc_rank, args.silo_proc_num, args.pg_master_address, args.pg_master_port, only_gpu
+            args.proc_rank_in_silo, args.n_proc_in_silo, args.pg_master_address, args.pg_master_port, only_gpu
         )
 
         # if not args.is_mobile:
@@ -132,6 +132,6 @@ class TrainerDistAdapter:
     def cleanup_pg(self):
         logger.info(
             "Cleaningup process group for client %s in silo %s" % (
-                self.args.silo_proc_rank, self.args.client_rank)
+                self.args.proc_rank_in_silo, self.args.rank_in_node)
         )
         self.process_group_manager.cleanup()

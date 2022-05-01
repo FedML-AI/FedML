@@ -4,22 +4,22 @@ common_args:
   random_seed: 0
 
 data_args:
-  dataset: "cifar10"
-  data_cache_dir: "../../../data/cifar10"
+  dataset: "mnist"
+  data_cache_dir: "../../../data/mnist"
   partition_method: "hetero"
   partition_alpha: 0.5
 
 model_args:
-  model: "resnet56"
+  model: "lr"
   model_file_cache_folder: "./model_file_cache" # will be filled by the server automatically
   global_model_file_path: "./model_file_cache/global_model.pt"
 
 train_args:
   federated_optimizer: "FedAvg"
-  client_id_list: "[1,2]"
-  client_num_in_total: 2
-  client_num_per_round: 2
-  comm_round: 50
+  client_id_list: "[1]"
+  client_num_in_total: 1
+  client_num_per_round: 1
+  comm_round: 4
   epochs: 1
   batch_size: 10
   client_optimizer: sgd
@@ -30,7 +30,7 @@ validation_args:
   frequency_of_the_test: 5
 
 device_args:
-  worker_num: 2
+  worker_num: 1
   using_gpu: false
   # gpu_mapping_file: config/gpu_mapping.yaml
   # gpu_mapping_key: mapping_default
@@ -49,8 +49,8 @@ tracking_args:
 
 
 silo_args:
-  nnode: 1
-  node_rank: 0
-  nproc_per_node: 5
+  n_node_in_silo: 1
+  node_rank_in_silo: 0
+  n_proc_per_node: 2
   pg_master_address: '127.0.0.1'
   pg_master_port: 12345

@@ -149,7 +149,8 @@ class ClientMasterManager:
 
     def finish(self):
         logger.info(
-            "Training finished for master client rank %s in silo %s" % (self.args.silo_proc_rank, self.args.client_rank)
+            "Training finished for master client rank %s in silo %s"
+            % (self.args.proc_rank_in_silo, self.args.rank_in_node)
         )
 
         self.trainer_dist_adapter.cleanup_pg()
@@ -216,6 +217,7 @@ class ClientMasterManager:
             self.mlops_metrics.report_client_training_status(self.client_real_id, status)
 
     def report_sys_performances(self):
+        logger.info("%%%%%%%%%%%%%@#$@#$@#$@$@@@")
         if self.args.using_mlops:
             while self.round_idx != self.num_rounds - 1:
                 # Notify MLOps with system information.
