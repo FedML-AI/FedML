@@ -119,7 +119,7 @@ class FedMLServerManager(ServerManager):
 
     def handle_message_receive_model_from_client(self, msg_params):
         if self.args.using_mlops:
-            self.mlops_event.log_event_ended("comm_c2s", event_edge_id=0)
+            self.mlops_event.log_event_ended("comm_c2s", event_value=str(self.round_idx), event_edge_id=0)
 
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
@@ -191,7 +191,7 @@ class FedMLServerManager(ServerManager):
                 return
             else:
                 if self.args.using_mlops:
-                    self.mlops_event.log_event_started("wait")
+                    self.mlops_event.log_event_started("wait", event_value=str(self.round_idx))
 
     def send_message_init_config(self, receive_id, global_model_params, datasilo_index):
         message = Message(
@@ -217,7 +217,6 @@ class FedMLServerManager(ServerManager):
         self.send_message(message)
 
         if self.aggregated_model_url is None:
-            # self.aggregated_model_url = message.get(
-            #     MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL
-            # )
-            self.aggregated_model_url = "None"
+            self.aggregated_model_url = message.get(
+                MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL
+            )
