@@ -107,22 +107,20 @@ class FedMLClientManager(ClientManager):
 
     def send_model_to_server(self, receive_id, weights, local_sample_num):
         if self.args.using_mlops:
-            self.mlops_event.log_event_started("comm_c2s", event_edge_id=0)
+            self.mlops_event.log_event_started("comm_c2s", event_value=str(self.round_idx), event_edge_id=0)
         message = Message(
             MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER,
             self.client_real_id,
             receive_id,
         )
 
-        model_url = "None"
-
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, weights)
         message.add_params(MyMessage.MSG_ARG_KEY_NUM_SAMPLES, local_sample_num)
-        message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL, model_url)
         self.send_message(message)
 
         # Report client model to MLOps
         if self.args.using_mlops:
+            model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
             model_info = {
                 "run_id": self.args.run_id,
                 "edge_id": self.client_real_id,
@@ -162,10 +160,10 @@ class FedMLClientManager(ClientManager):
     def __train(self):
         logging.info("#######training########### round_id = %d" % self.round_idx)
         if self.args.using_mlops:
-            self.mlops_event.log_event_started("train")
+            self.mlops_event.log_event_started("train", event_value=str(self.round_idx))
         weights, local_sample_num = self.trainer.train(self.round_idx)
         if self.args.using_mlops:
-            self.mlops_event.log_event_ended("train")
+            self.mlops_event.log_event_ended("train", event_value=str(self.round_idx))
         self.send_model_to_server(0, weights, local_sample_num)
 
     def run(self):
