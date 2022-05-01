@@ -74,6 +74,7 @@ def login_with_docker_mode(userid, version):
 
     # Cleanup the running docker
     click.echo("The FedML client agent is being deployed, please wait for a moment...")
+    os.system("sudo chmod 777 /var/run/docker.sock")
     os.system("docker stop `docker ps -a |grep fedml_container_run_ |grep _edge_ |awk -F' ' '{print $1}'` >/dev/null 2>&1")
     os.system("docker rm `docker ps -a |grep fedml_container_run_ |grep _edge_ |awk -F' ' '{print $1}'` >/dev/null 2>&1")
     os.system("docker stop `docker ps -a |grep fedml-container-run- |grep _edge_ |awk -F' ' '{print $1}'` >/dev/null 2>&1")
