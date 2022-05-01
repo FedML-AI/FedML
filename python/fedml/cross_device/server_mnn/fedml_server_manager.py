@@ -187,7 +187,7 @@ class FedMLServerManager(ServerManager):
         self.event_sdk.log_event_ended("aggregator.wait-online")
 
     def handle_message_receive_model_from_client(self, msg_params):
-        self.event_sdk.log_event_ended("comm_c2s", event_edge_id=0)
+        self.event_sdk.log_event_ended("comm_c2s", event_value=str(self.round_idx), event_edge_id=0)
 
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)

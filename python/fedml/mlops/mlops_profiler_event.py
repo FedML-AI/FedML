@@ -1,6 +1,7 @@
 import json
 import threading
 import time
+from ..utils.logging import logger
 
 from ..core.distributed.communication.mqtt_s3.mqtt_s3_status_manager import (
     MqttS3StatusManager,
@@ -49,7 +50,9 @@ class MLOpsProfilerEvent:
             event_name,
             event_value_passed,
         )
-        self.com_manager.send_message_json(event_topic, json.dumps(event_msg))
+        event_msg_str = json.dumps(event_msg)
+        logger.info("Event started, {}".format(event_msg_str))
+        self.com_manager.send_message_json(event_topic, event_msg_str)
 
     def log_event_ended(self, event_name, event_value=None, event_edge_id=None):
         if event_value is None:
@@ -69,7 +72,10 @@ class MLOpsProfilerEvent:
             event_name,
             event_value_passed,
         )
-        self.com_manager.send_message_json(event_topic, json.dumps(event_msg))
+        event_msg_str = json.dumps(event_msg)
+        logger.info("Event ended, {}".format(event_msg_str))
+        self.com_manager.send_message_json(event_topic, event_msg_str)
+        self.com_manager.send_message_json(event_topic, event_msg_str)
 
     @staticmethod
     def __build_event_mqtt_msg(run_id, edge_id, event_type, event_name, event_value):
