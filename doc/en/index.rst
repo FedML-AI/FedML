@@ -8,7 +8,7 @@
 Welcome to FedML
 ========================
 
-Thank you for coming to FedML. This documentation provides all need you to know about using the FedML platform.
+Thank you for coming to FedML. This documentation provides all you need to know about using the FedML platform.
 
 .. image:: ./_static/image/mission.png
    :width: 100%
