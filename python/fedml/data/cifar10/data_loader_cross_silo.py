@@ -122,6 +122,7 @@ def load_cifar10_data(datadir):
 
 def partition_data(dataset, datadir, partition, n_nets, alpha):
     logging.info("*********partition data***************")
+    np.random.seed(10)
     X_train, y_train, X_test, y_test = load_cifar10_data(datadir)
     n_train = X_train.shape[0]
     # n_test = X_test.shape[0]
@@ -183,8 +184,8 @@ def partition_data(dataset, datadir, partition, n_nets, alpha):
 
 
 # for centralized training
-def get_dataloader(dataset, datadir, train_bs, test_bs, dataidxs=None, n_dist_worker=1):
-    return get_dataloader_CIFAR10(datadir, train_bs, test_bs, dataidxs, n_dist_worker)
+def get_dataloader(dataset, datadir, train_bs, test_bs, dataidxs=None, n_dist_trainer=1):
+    return get_dataloader_CIFAR10(datadir, train_bs, test_bs, dataidxs, n_dist_trainer)
 
 
 # for local devices
@@ -196,7 +197,7 @@ def get_dataloader_test(
     )
 
 
-def get_dataloader_CIFAR10(datadir, train_bs, test_bs, dataidxs=None, n_dist_worker=1):
+def get_dataloader_CIFAR10(datadir, train_bs, test_bs, dataidxs=None, n_dist_trainer=1):
     dl_obj = CIFAR10_truncated
 
     transform_train, transform_test = _data_transforms_cifar10()
@@ -209,10 +210,10 @@ def get_dataloader_CIFAR10(datadir, train_bs, test_bs, dataidxs=None, n_dist_wor
     train_data_loaders = []
     test_data_loaders = []
 
-    for rank in range(n_dist_worker):
+    for rank in range(n_dist_trainer):
             train_sampler = data.distributed.DistributedSampler(
                 dataset=train_ds, 
-                num_replicas=n_dist_worker, 
+                num_replicas=n_dist_trainer, 
                 rank=rank,
                 shuffle=True
             )
@@ -222,7 +223,7 @@ def get_dataloader_CIFAR10(datadir, train_bs, test_bs, dataidxs=None, n_dist_wor
             )
             test_sampler = data.distributed.DistributedSampler(
                 dataset=test_ds, 
-                num_replicas=n_dist_worker, 
+                num_replicas=n_dist_trainer, 
                 rank=rank,
                 shuffle=False
             )

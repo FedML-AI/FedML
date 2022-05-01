@@ -232,7 +232,7 @@ def load_partition_data_distributed_cifar10(process_id, dataset, data_dir, parti
     return train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, class_num
 
 
-def load_partition_data_cifar10(dataset, data_dir, partition_method, partition_alpha, client_number, batch_size, silo_proc_num=0):
+def load_partition_data_cifar10(dataset, data_dir, partition_method, partition_alpha, client_number, batch_size, n_proc_in_silo=0):
     X_train, y_train, X_test, y_test, net_dataidx_map, traindata_cls_counts = partition_data(dataset,
                                                                                              data_dir,
                                                                                              partition_method,
