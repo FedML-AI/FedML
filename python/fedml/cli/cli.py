@@ -31,7 +31,7 @@ def mlops_login(userid, version):
         click.echo("Login into the FedML MLOps platform on the Windows platform will be coming soon. Please stay tuned.")
         exit(-1)
 
-    cur_dir = os.path.dirname(__file__)
+    cur_dir = os.path.dirname(os.path.abspath(__file__))
     run_shell = os.path.join(cur_dir, "edge_deployment", "run.sh") + " " + account_id + " " + version
     os.system(run_shell)
 
