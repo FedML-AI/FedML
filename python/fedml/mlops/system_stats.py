@@ -2,7 +2,6 @@ import os
 
 import psutil
 import pynvml
-from pynvml import NVML_TEMPERATURE_GPU
 from wandb.sdk.internal.stats import SystemStats
 
 
@@ -153,7 +152,7 @@ class SysStats:
             gpu_handle = pynvml.nvmlDeviceGetHandleByIndex(i)
             gpu_mem_info = pynvml.nvmlDeviceGetMemoryInfo(gpu_handle)
             gpu_temperature_total += pynvml.nvmlDeviceGetTemperature(
-                gpu_handle, NVML_TEMPERATURE_GPU
+                gpu_handle, pynvml.NVML_TEMPERATURE_GPU
             )
             utilz = pynvml.nvmlDeviceGetUtilizationRates(gpu_handle)
             gpu_mem_used += gpu_mem_info.used
