@@ -1,8 +1,9 @@
 import os
-import platform
 
 import click
 import shutil
+
+from .edge_deployment.login import login_with_docker_mode
 
 
 @click.group()
@@ -26,14 +27,11 @@ def mlops_login(userid, version):
     click.echo("Argument for account Id: " + str(account_id))
     click.echo("Argument for version: " + str(version))
 
-    sys_name = platform.system()
-    if sys_name == "Windows":
-        click.echo("Login into the FedML MLOps platform on the Windows platform will be coming soon. Please stay tuned.")
-        exit(-1)
+    if userid == "":
+        click.echo("Please provide your account id in the MLOps platform (open.fedml.ai).")
+        return
 
-    cur_dir = os.path.dirname(os.path.abspath(__file__))
-    run_shell = os.path.join(cur_dir, "edge_deployment", "run.sh") + " " + account_id + " " + version
-    os.system(run_shell)
+    login_with_docker_mode(account_id, version)
 
 
 @cli.command(
