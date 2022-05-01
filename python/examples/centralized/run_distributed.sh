@@ -17,7 +17,7 @@ CI=${14}
 PYTHON=${15}
 GPU=${16}
 GPU_UTIL=${17} 
-NPROC_PER_NODE=${18}
+n_proc_per_node=${18}
 
 
 echo $BATCH_SIZE
@@ -25,7 +25,7 @@ echo $LR
 
 
 $PYTHON -m torch.distributed.launch \
-    --nproc_per_node=$NPROC_PER_NODE \
+    --n_proc_per_node=$n_proc_per_node \
     ./main.py \
     --gpu_server_num $SERVER_NUM \
     --gpu_num_per_server $GPU_NUM_PER_SERVER \

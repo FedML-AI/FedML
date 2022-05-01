@@ -18,18 +18,19 @@ class ClientSlaveManager:
         if client_index:
             self.trainer_dist_adapter.update_dataset(int(client_index))
 
+        if self.round_idx == self.num_rounds - 1:
+            self.finish()
+            return
+
         self.trainer_dist_adapter.train(self.round_idx)
 
         self.round_idx += 1
-        if self.round_idx == self.num_rounds:
-            # post_complete_message_to_sweep_process(self.args)
-            self.finish()
 
     def finish(self):
         # pass
         self.trainer_dist_adapter.cleanup_pg()
         logger.info(
-            "Training finsihded for slave client rank %s in silo %s" % (self.args.silo_proc_rank, self.args.client_rank)
+            "Training finsihded for slave client rank %s in silo %s" % (self.args.proc_rank_in_silo, self.args.rank_in_node)
         )
         self.finished = True
 

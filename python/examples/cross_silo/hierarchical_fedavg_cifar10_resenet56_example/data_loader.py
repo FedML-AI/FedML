@@ -8,6 +8,7 @@ Changing fedml.data.cifar10.data_loader parts so that it is compatible with dist
 """
 
 def load_data(args):
+    n_dist_trainer = args.n_node_in_silo * args.n_proc_per_node
     (
     train_data_num,
     test_data_num,
@@ -24,7 +25,7 @@ def load_data(args):
         args.partition_alpha,
         args.worker_num,
         args.batch_size,
-        args.silo_proc_num,
+        n_dist_trainer=n_dist_trainer,
     )
     dataset = [
         train_data_num,
@@ -42,13 +43,13 @@ def load_data(args):
 
 
 # for centralized training
-def get_dataloader(dataset, datadir, train_bs, test_bs, dataidxs=None, n_dist_worker=1):
-    return get_dataloader_CIFAR10(datadir, train_bs, test_bs, dataidxs, n_dist_worker)
+def get_dataloader(dataset, datadir, train_bs, test_bs, dataidxs=None, n_dist_trainer=1):
+    return get_dataloader_CIFAR10(datadir, train_bs, test_bs, dataidxs, n_dist_trainer)
 
 
 
 
-def get_dataloader_CIFAR10(datadir, train_bs, test_bs, dataidxs=None, n_dist_worker=1):
+def get_dataloader_CIFAR10(datadir, train_bs, test_bs, dataidxs=None, n_dist_trainer=1):
     dl_obj = CIFAR10_truncated
 
     transform_train, transform_test = _data_transforms_cifar10()
@@ -60,10 +61,10 @@ def get_dataloader_CIFAR10(datadir, train_bs, test_bs, dataidxs=None, n_dist_wor
 
     train_data_loaders = []
 
-    for rank in range(n_dist_worker):
+    for rank in range(n_dist_trainer):
             train_sampler = data.distributed.DistributedSampler(
                 dataset=train_ds, 
-                num_replicas=n_dist_worker, 
+                num_replicas=n_dist_trainer, 
                 rank=rank,
                 shuffle=True,
                 drop_last=False

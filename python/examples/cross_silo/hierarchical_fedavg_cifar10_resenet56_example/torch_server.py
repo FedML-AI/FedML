@@ -15,22 +15,13 @@ if __name__ == "__main__":
     # init FedML framework
     args = fedml.init()
 
-    # Set inra-silo argiments
-    args.local_rank = 0
-    args.nproc_per_node = 1
-    args.silo_proc_num = 1
-    args.silo_proc_rank = 0
-    if not hasattr(args, 'enable_cuda_rpc'):
-        args.enable_cuda_rpc = False
-
-    # init device
     device = fedml.device.get_device(args)
 
     # load data
-    dataset, output_dim = fedml.data.load(args)
+    dataset, output_dim = fedml.data.load_cross_silo(args)
 
-    # model = fedml.model.create(args, output_dim)
-    model = LogisticRegression(3072, output_dim)
+    # load model
+    model = fedml.model.create(args, output_dim)
 
     # start training
     server = Server(args, device, dataset, model)

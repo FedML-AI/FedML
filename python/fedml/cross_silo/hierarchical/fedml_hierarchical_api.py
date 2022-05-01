@@ -38,10 +38,10 @@ def FedML_Hierarchical(
 
 
     # process_device = corss_silo_mapping_processes_to_gpu_device_from_yaml_file(
-    #     args.client_rank, args.silo_proc_rank, args.silo_proc_num, args.client_num_num, args.silo_gpu_mapping_file
+    #     args.rank_in_node, args.proc_rank_in_silo, args.n_proc_in_silo, args.client_num_num, args.silo_gpu_mapping_file
     # )
 
-    # if args.silo_proc_num == 0:
+    # if args.n_proc_in_silo == 0:
     #     assert silo_server_device == process_device, "GPU index mismatch between gpu_mapping and silo_gpu_mapping files"
 
     # if not 'enable_cuda_rpc' in args:
@@ -227,7 +227,7 @@ def init_client(
                                         train_data_local_dict,
                                         test_data_local_dict,
                                         model_trainer)
-    if args.silo_proc_rank == 0:
+    if args.proc_rank_in_silo == 0:
         logger.info("Initiating Client Manager")
         client_manager = get_clinet_manager_master(
             args, trainer_dist_adapter, comm, client_rank, size, backend)
