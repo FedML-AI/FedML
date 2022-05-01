@@ -10,12 +10,10 @@ paho-mqtt
 mpi4py
 joblib
 boto3
-loguru
 pynvml
 MNN==1.1.6
-termcolor==1.1.0
 sklearn
 networkx
-graphviz
 click
 matplotlib
+grpcio

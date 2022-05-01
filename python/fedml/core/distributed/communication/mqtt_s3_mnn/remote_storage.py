@@ -5,7 +5,6 @@ import tempfile
 import boto3
 import joblib
 import yaml
-from loguru import logger
 
 
 class S3Storage:
@@ -88,7 +87,6 @@ class S3Storage:
         # return local_path
         return model
 
-    @logger.catch
     def upload_file(self, src_local_path, dest_s3_path):
         """
         upload file
@@ -139,7 +137,6 @@ class S3Storage:
         if retry >= 3:
             logging.error(f"Download zip failed after max retry.")
 
-    @logger.catch
     def delete_s3_zip(self, path_s3):
         """
         delete s3 object
@@ -156,7 +153,3 @@ class S3Storage:
             self.cn_s3_sak = config["CN_S3_SAK"]
             self.cn_region_name = config["CN_REGION_NAME"]
             self.bucket_name = config["BUCKET_NAME"]
-
-
-# if __name__ == "__main__":
-#     upload_file("./s3_test_file", "run_id_000001/client_id_s3_test_file")
