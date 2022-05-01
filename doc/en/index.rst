@@ -8,7 +8,7 @@
 Welcome to FedML
 ========================
 
-Thank you for coming to FedML. This documentation provides all need you to know about using the FedML platform.
+Thank you for coming to FedML. This documentation provides all you need to know about using the FedML platform.
 
 .. image:: ./_static/image/mission.png
    :width: 100%
@@ -37,6 +37,7 @@ This documentation is organized in the following sections:
    starter/examples.md
    starter/mission.md
    starter/overview.md
+   starter/ecosystem.md
    starter/oss_code_architecture.rst
    starter/mlops_video.rst
    starter/faq.md

@@ -11933,17 +11933,17 @@ pre {
 }
 
 .docs-tutorials-resources {
-  background-color: #262626;
+  /*background-color: #262626;*/
   color: #ffffff;
   padding-top: 2.5rem;
-  padding-bottom: 2.5rem;
+  /*padding-bottom: 2.5rem;*/
   position: relative;
   z-index: 201;
 }
 @media screen and (min-width: 768px) {
   .docs-tutorials-resources {
     padding-top: 5rem;
-    padding-bottom: 5rem;
+    /*padding-bottom: 5rem;*/
   }
 }
 .docs-tutorials-resources p {
