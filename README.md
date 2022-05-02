@@ -307,4 +307,5 @@ Please feel free to ask questions there. We are happy to discuss on supporting y
 
 # Contributing 
 ## Code of Conduct
-This project has adopted [Contributor Covenant](https://github.com/FedML-AI/FedML-refactor/blob/master/CODE_OF_CONDUCT.md)
+FedML embraces and thrive through open-source. We welcome all kinds of contributions from the community. Kudos to all of our amazing contributors!  
+FedML has adopted [Contributor Covenant](https://github.com/FedML-AI/FedML-refactor/blob/master/CODE_OF_CONDUCT.md).
