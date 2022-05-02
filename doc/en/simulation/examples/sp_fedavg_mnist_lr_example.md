@@ -2,7 +2,7 @@
 
 Simulating FL using a single process in your personal laptop or server. This is helpful when researchers hope to try a quick algorithmic idea in small synthetic datasets (MNIST, Shakespeare, etc.) and small models (ResNet-18, Logistic Regression, etc.). 
 
-In this example, we will present how to apply the standalone simulation of FedML in the MINIST image classification **using a single process**. The complete code is available at `python/examples/simulation/sp_fedavg_mnist_lr_example`
+In this example, we will present how to apply the standalone simulation of FedML in the MINIST image classification **using a single process**. The complete code is available at [https://github.com/FedML-AI/FedML/tree/master/python/examples/simulation/sp_fedavg_mnist_lr_example](https://github.com/FedML-AI/FedML/tree/master/python/examples/simulation/sp_fedavg_mnist_lr_example).
 
 ## One line API
 
