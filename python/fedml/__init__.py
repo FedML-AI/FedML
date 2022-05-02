@@ -13,8 +13,8 @@ from .cross_silo import Client as ClientCrossSilo
 from .cross_silo import Server as ServerCrossSilo
 from .simulation.simulator import SimulatorMPI, SimulatorSingleProcess, SimulatorNCCL
 
-_global_training_type = "simulation"
-_global_comm_backend = "single_process"
+_global_training_type = None
+_global_comm_backend = None
 
 
 def init(args=None):
@@ -126,7 +126,7 @@ def run_cross_silo_server():
 def run_cross_silo_client():
     """FedML Octopus"""
     global _global_training_type
-    _global_training_type = "cross_device"
+    _global_training_type = "cross_silo"
 
     args = fedml.init()
 
@@ -146,6 +146,9 @@ def run_cross_silo_client():
 
 def run_mnn_server():
     """FedML BeeHive"""
+    global _global_training_type
+    _global_training_type = "cross_device"
+
     args = fedml.init()
 
     # init device
