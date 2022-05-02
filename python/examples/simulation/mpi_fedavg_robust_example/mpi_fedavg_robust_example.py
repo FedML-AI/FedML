@@ -6,7 +6,7 @@ from fedml.data.edge_case_examples.data_loader import download_edgecase_data
 
 
 def load_poisoned_data(args):
-    fedml.logger.info("load_data. dataset_name = %s" % args.dataset)
+    fedml.logging.info("load_data. dataset_name = %s" % args.dataset)
     download_edgecase_data(args.data_cache_dir)
 
     (

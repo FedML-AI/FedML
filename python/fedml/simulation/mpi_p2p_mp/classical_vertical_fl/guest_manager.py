@@ -28,9 +28,7 @@ class GuestManager(ServerManager):
         self.guest_trainer.add_client_local_result(sender_id - 1, host_train_logits, host_test_logits)
         b_all_received = self.guest_trainer.check_whether_all_receive()
 
-        # logging.info("b_all_received = " + str(b_all_received))
         if b_all_received:
-            # logging.info("**********************************ROUND INDEX = " + str(self.round_idx))
             host_gradient = self.guest_trainer.train(self.round_idx)
 
             for receiver_id in range(1, self.size):
