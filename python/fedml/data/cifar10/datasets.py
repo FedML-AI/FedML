@@ -5,9 +5,6 @@ import torch.utils.data as data
 from PIL import Image
 from torchvision.datasets import CIFAR10
 
-#logging.basicConfig()
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
 
 IMG_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.ppm', '.bmp', '.pgm', '.tif', '.tiff', '.webp')
 

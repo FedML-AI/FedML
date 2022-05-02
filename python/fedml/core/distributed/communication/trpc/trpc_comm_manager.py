@@ -1,6 +1,5 @@
 import csv
 import decimal
-import logging
 import os
 import threading
 import time
@@ -16,6 +15,7 @@ from .trpc_server import TRPCCOMMServicer
 from ..base_com_manager import BaseCommunicationManager
 from ..message import Message
 from ..observer import Observer
+import logging
 
 lock = threading.Lock()
 

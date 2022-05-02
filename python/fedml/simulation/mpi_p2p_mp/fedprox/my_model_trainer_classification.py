@@ -2,7 +2,7 @@ import torch
 from torch import nn
 
 from ....core.alg_frame.client_trainer import ClientTrainer
-from ....utils.logging import logger
+import logging
 
 
 class MyModelTrainer(ClientTrainer):
@@ -47,7 +47,7 @@ class MyModelTrainer(ClientTrainer):
                 # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
 
                 optimizer.step()
-                logger.info(
+                logging.info(
                     "Update Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
                         epoch,
                         (batch_idx + 1) * args.batch_size,
@@ -58,7 +58,7 @@ class MyModelTrainer(ClientTrainer):
                 )
                 batch_loss.append(loss.item())
             epoch_loss.append(sum(batch_loss) / len(batch_loss))
-            logger.info(
+            logging.info(
                 "Client Index = {}\tEpoch: {}\tLoss: {:.6f}".format(
                     self.id, epoch, sum(epoch_loss) / len(epoch_loss)
                 )

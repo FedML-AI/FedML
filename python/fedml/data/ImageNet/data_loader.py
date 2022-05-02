@@ -13,11 +13,6 @@ from .datasets_hdf5 import ImageNet_hdf5
 from .datasets_hdf5 import ImageNet_truncated_hdf5
 
 
-#logging.basicConfig()
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
-
 class Cutout(object):
     def __init__(self, length):
         self.length = length

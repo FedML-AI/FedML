@@ -62,7 +62,7 @@ class TurboAggregateTrainer(object):
                 w, loss = client.train(
                     net=copy.deepcopy(self.model_global).to(self.device)
                 )
-                # self.logger.info("local weights = " + str(w))
+                # self.logging.info("local weights = " + str(w))
                 w_locals.append((client.get_sample_number(), copy.deepcopy(w)))
                 loss_locals.append(copy.deepcopy(loss))
 

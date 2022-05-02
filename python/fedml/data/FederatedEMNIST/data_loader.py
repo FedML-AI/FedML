@@ -6,10 +6,6 @@ import numpy as np
 import torch
 import torch.utils.data as data
 
-#logging.basicConfig()
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
 client_ids_train = None
 client_ids_test = None
 DEFAULT_TRAIN_CLIENTS_NUM = 3400

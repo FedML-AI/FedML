@@ -11,7 +11,7 @@ cwd = os.getcwd()
 import zipfile
 
 from ...constants import FEDML_DATA_MNIST_URL
-from ...utils.logging import logger
+import logging
 
 
 def download_mnist(data_cache_dir):
@@ -19,7 +19,7 @@ def download_mnist(data_cache_dir):
         os.makedirs(data_cache_dir)
 
     file_path = data_cache_dir + "/MNIST.zip"
-    logger.info(file_path)
+    logging.info(file_path)
 
     # Download the file (if we haven't already)
     if not os.path.exists(file_path):

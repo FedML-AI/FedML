@@ -1,6 +1,5 @@
 # -*-coding:utf-8-*-
 import json
-import logging
 import time
 import traceback
 import uuid
@@ -13,7 +12,7 @@ from .remote_storage import S3Storage
 from ..base_com_manager import BaseCommunicationManager
 from ..message import Message
 from ..observer import Observer
-from .....utils.logging import logger
+import logging
 
 
 class MqttS3MNNCommManager(BaseCommunicationManager):
@@ -31,7 +30,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
         self._topic = "fedml_" + str(topic) + "_"
         self.s3_storage = S3Storage(s3_config_path)
         self.client_real_ids = []
-        logger.info("MqttS3CommManager args client_id_list: " + str(args.client_id_list))
+        logging.info("MqttS3CommManager args client_id_list: " + str(args.client_id_list))
         if args is not None:
             self.client_real_ids = json.loads(args.client_id_list)
 
@@ -44,7 +43,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
         else:
             self._client_id = client_id
         self.client_num = client_num
-        logger.info("mqtt_s3.init: client_num = %d" % client_num)
+        logging.info("mqtt_s3.init: client_num = %d" % client_num)
 
         self.set_config_from_file(config_path)
         # Construct a Client
@@ -66,7 +65,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
             "W/topic", payload=json.dumps(_will_msg), qos=0, retain=True
         )
 
-        logger.info(
+        logging.info(
             "mqtt_s3.init: connecting to MQTT server(local port %d..." % bind_port
         )
         self._client.connect(
@@ -113,7 +112,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
                 result, mid = client.subscribe(real_topic, 0)
 
                 self._unacked_sub.append(mid)
-                logger.info(
+                logging.info(
                     "mqtt_s3.on_connect: server subscribes real_topic = %s, mid = %s, result = %s"
                     % (real_topic, mid, str(result))
                 )
@@ -123,7 +122,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
             result, mid = client.subscribe(real_topic, 0)
             self._unacked_sub.append(mid)
 
-            logger.info(
+            logging.info(
                 "mqtt_s3.on_connect: client subscribes real_topic = %s, mid = %s, result = %s"
                 % (real_topic, mid, str(result))
             )
@@ -137,13 +136,13 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
 
     @staticmethod
     def _on_disconnect(client, userdata, rc):
-        logger.info(
+        logging.info(
             "mqtt_s3.on_disconnect: disconnection returned result %s, user data %s"
             % (str(rc), str(userdata))
         )
 
     def _on_subscribe(self, client, userdata, mid, granted_qos):
-        logger.info("mqtt_s3.onSubscribe: mid = %s" % str(mid))
+        logging.info("mqtt_s3.onSubscribe: mid = %s" % str(mid))
         self._unacked_sub.remove(mid)
 
     def add_observer(self, observer: Observer):
@@ -156,7 +155,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
         msg_params = Message()
         msg_params.init_from_json_object(msg_obj)
         msg_type = msg_params.get_type()
-        logger.info("mqtt_s3.notify: msg type = %d" % msg_type)
+        logging.info("mqtt_s3.notify: msg type = %d" % msg_type)
         for observer in self._observers:
             observer.receive_message(msg_type, msg_params)
 
@@ -164,24 +163,24 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
         logging.info("--------------------------")
         json_payload = str(msg.payload, encoding="utf-8")
         payload_obj = json.loads(json_payload)
-        logger.info("mqtt_s3.on_message: payload_obj %s" % payload_obj)
+        logging.info("mqtt_s3.on_message: payload_obj %s" % payload_obj)
         s3_key_str = payload_obj.get(Message.MSG_ARG_KEY_MODEL_PARAMS, "")
         s3_key_str = str(s3_key_str).strip(" ")
         if s3_key_str != "":
-            logger.info(
+            logging.info(
                 "mqtt_s3.on_message: use s3 pack, s3 message key %s" % s3_key_str
             )
             model_params = self.args.model_file_cache_folder + "/" + s3_key_str
             self.s3_storage.download_model_file(s3_key_str, model_params)
 
-            logger.info(
+            logging.info(
                 "mqtt_s3.on_message: model params length %d" % len(model_params)
             )
 
             # replace the S3 object key with raw model params
             payload_obj[Message.MSG_ARG_KEY_MODEL_PARAMS] = model_params
         else:
-            logger.info("mqtt_s3.on_message: not use s3 pack")
+            logging.info("mqtt_s3.on_message: not use s3 pack")
 
         self._notify(payload_obj)
 
@@ -203,21 +202,21 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
         receiving message topic (subscribe): fedml_runid_serverID_clientID
 
         """
-        logger.info("mqtt_s3.send_message: starting...{}".format(msg.to_string()))
+        logging.info("mqtt_s3.send_message: starting...{}".format(msg.to_string()))
         if self.client_id == 0:
             # server
             receiver_id = msg.get_receiver_id()
 
             # topic = "fedml" + "_" + "run_id" + "_0" + "_" + "client_id"
             topic = self._topic + str(0) + "_" + str(receiver_id)
-            logger.info("mqtt_s3.send_message: msg topic = %s" % str(topic))
+            logging.info("mqtt_s3.send_message: msg topic = %s" % str(topic))
 
             payload = msg.get_params()
             model_params_obj = payload.get(Message.MSG_ARG_KEY_MODEL_PARAMS, "")
             message_key = topic + "_" + str(uuid.uuid4())
             if model_params_obj != "":
                 # S3
-                logger.info(
+                logging.info(
                     "mqtt_s3.send_message: S3+MQTT msg sent, s3 message key = %s"
                     % message_key
                 )
@@ -226,7 +225,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
                 self._client.publish(topic, payload=json.dumps(payload))
             else:
                 # pure MQTT
-                logger.info("mqtt_s3.send_message: MQTT msg sent")
+                logging.info("mqtt_s3.send_message: MQTT msg sent")
                 self._client.publish(topic, payload=json.dumps(payload))
 
         else:
@@ -244,7 +243,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
         # logging.info("mqtt_s3.handle_receive_message: completed...")
 
     def stop_receive_message(self):
-        logger.info("mqtt_s3.stop_receive_message: stopping...")
+        logging.info("mqtt_s3.stop_receive_message: stopping...")
         self._client.loop_stop()
         self._client.disconnect()
 
