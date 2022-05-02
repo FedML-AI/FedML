@@ -13,11 +13,17 @@ from .cross_silo import Server as ServerCrossSilo
 from .simulation.simulator import SimulatorMPI, SimulatorSingleProcess, SimulatorNCCL
 from .utils import logger
 
+_global_training_type = "simulation"
+_global_comm_backend = "single_process"
+
 
 def init(args=None):
     """Initialize FedML Engine."""
+    global _global_training_type
+    global _global_comm_backend
+
     if args is None:
-        args = load_arguments()
+        args = load_arguments(_global_training_type, _global_comm_backend)
 
     MLOpsRuntimeLog.get_instance(args).init_logs()
 
@@ -48,12 +54,14 @@ def init(args=None):
         args.comm = comm
         args.process_id = process_id
         args.worker_num = worker_num
+    elif (
+        args.training_type == "simulation"
+        and hasattr(args, "backend")
+        and args.backend == "single_process"
+    ):
+        pass
     elif args.training_type == "cross_silo":
         args.process_id = args.rank
-        # comm = MPI.COMM_WORLD
-        # process_id = comm.Get_rank()
-        # args.comm = comm
-        # args.process_id = process_id
     elif args.training_type == "cross_device":
         args.rank = 0  # only server runs on Python package
     else:
@@ -63,6 +71,11 @@ def init(args=None):
 
 def run_simulation(backend="single_process"):
     """FedML Parrot"""
+    global _global_training_type
+    _global_training_type = "simulation"
+    global _global_comm_backend
+    _global_comm_backend = backend
+
     # init FedML framework
     args = fedml.init()
 
@@ -91,6 +104,9 @@ def run_simulation(backend="single_process"):
 
 def run_cross_silo_server():
     """FedML Octopus"""
+    global _global_training_type
+    _global_training_type = "cross_silo"
+
     args = fedml.init()
 
     # init device
@@ -109,6 +125,9 @@ def run_cross_silo_server():
 
 def run_cross_silo_client():
     """FedML Octopus"""
+    global _global_training_type
+    _global_training_type = "cross_device"
+
     args = fedml.init()
 
     # init device

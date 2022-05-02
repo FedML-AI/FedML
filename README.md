@@ -51,23 +51,77 @@ To get started, let's install FedML first.
 ```Python
 pip install fedml
 ```
-For more installation methods, please refer to [installing FedML](./installation.md).
+For more installation methods, please refer to [installing FedML](https://doc.fedml.ai/starter/installation.html).
+
+
+### A Quick Overview of the Code Architecture
+
+In general, FedML source code architecture follows the paper which won [Best Paper Award at NeurIPS 2020 (FL workshop)](https://chaoyanghe.com/wp-content/uploads/2021/02/NeurIPS-SpicyFL-2020-Baidu-best-paper-award-He-v2.pdf). Its original idea is presented at the live [video](https://www.youtube.com/watch?v=93SETZGZMyI) and 
+[white paper](https://arxiv.org/abs/2007.13518) by FedML co-founder Dr. [Chaoyang He](https://chaoyanghe.com). 
+
+![FedML Code Architecture](./doc/en/_static/image/fedml.png)
+
+After March 2022, FedML has been upgraded as an AI company which aims to provide machine learning capability anywhere at any scale. Now the python version of FedML [https://github.com/FedML-AI/FedML-refactor/tree/master/python](https://github.com/FedML-AI/FedML-refactor/tree/master/python) is reorganized as follows:
+
+**core**: The FedML low-level API package. This package implements distributed computing by communication backend like MPI, NCCL, MQTT, gRPC, PyTorch RPC, and also supports topology management. 
+Other low-level APIs related to security and privacy are also supported. All algorithms and Scenarios are built based on the "core" package.
+
+**data**: FedML will provide some default datasets for users to get started. Customization templates are also provided.
+
+**model**: FedML model zoo.
+
+**device**: FedML computing resource management.
+
+**simulation**: FedML parrot can support (1) simulating FL using a single process (2) MPI-based FL Simulator (3) NCCL-based FL Simulator (fastest)
+
+**cross_silo**: Cross-silo Federated Learning for cross-organization/account training
+
+**cross_device**: Cross-device Federated Learning for Smartphones and IoTs
+
+**distributed**: Distributed Training: Accelerate Model Training with Lightweight Cheetah
+
+**serve**: Model serving, tailored for edge inference
+
+**mlops**: APIs related to machine learning operation platform (open.fedml.ai)
+
+**centralized**: Some centralized trainer code examples for benchmarking purposes.
+
+**utils**: Common utilities shared by other modules.
 
 ## Simplified APIs
 
+<img src="doc/en/_static/image/apioverview.jpg" alt="drawing" style="width:60%;"/> 
+<br />
+
 Our philosophy of API design is to reduce the number of APIs to as few as possible while simultaneously keeping the flexibility.
 
-For Simplicity, FedML Parrot has only one line API as the following example:
+For Simplicity, FedML Parrot has only one line API as the following example with `fedml_config.yaml` (an example is here: [https://github.com/FedML-AI/FedML/blob/master/python/examples/simulation/sp_fedavg_mnist_lr_example/fedml_config.yaml](https://github.com/FedML-AI/FedML/blob/master/python/examples/simulation/sp_fedavg_mnist_lr_example/fedml_config.yaml))
 
 ```Python
+# main.py
+
 import fedml
 
 if __name__ == "__main__":
     fedml.run_simulation()
 ```
+```
+python main.py
+```
 
-For flexibility, one-line API can also be expanded into five lines of APIs. Taking FedML Octopus as an example, the FL Client APIs are as follows:
+You will get the following output:
+```
+[FedML-Server(0) @device-id-0] [Sun, 01 May 2022 14:59:28] [INFO] [__init__.py:30:init] args = {'yaml_config_file': '', 'run_id': '0', 'rank': 0, 'yaml_paths': ['/Users/chaoyanghe/opt/anaconda3/envs/mnn37/lib/python3.7/site-packages/fedml-0.7.8-py3.7.egg/fedml/config/simulation_sp/fedml_config.yaml'], 'training_type': 'simulation', 'using_mlops': False, 'random_seed': 0, 'dataset': 'mnist', 'data_cache_dir': './data/mnist', 'partition_method': 'hetero', 'partition_alpha': 0.5, 'model': 'lr', 'federated_optimizer': 'FedAvg', 'client_id_list': '[]', 'client_num_in_total': 1000, 'client_num_per_round': 10, 'comm_round': 200, 'epochs': 1, 'batch_size': 10, 'client_optimizer': 'sgd', 'learning_rate': 0.03, 'weight_decay': 0.001, 'frequency_of_the_test': 5, 'using_gpu': False, 'gpu_id': 0, 'backend': 'single_process', 'log_file_dir': './log', 'enable_wandb': False}
+[FedML-Server(0) @device-id-0] [Sun, 01 May 2022 14:59:28] [INFO] [device.py:14:get_device] device = cpu
+[FedML-Server(0) @device-id-0] [Sun, 01 May 2022 14:59:28] [INFO] [data_loader.py:22:download_mnist] ./data/mnist/MNIST.zip
+[FedML-Server(0) @device-id-0] [Sun, 01 May 2022 14:59:31] [INFO] [data_loader.py:57:load_synthetic_data] load_data. dataset_name = mnist
+...
+```
+You can also customize the hyper-parameters with `fedml_config.yaml`. Check [this tutorial for one-line example](https://doc.fedml.ai/simulation/examples/sp_fedavg_mnist_lr_example.html) for details.
 
+For flexibility, one-line API can also be expanded into five lines of APIs. To illustrate this, now let's switch to FedML Octopus (cross-silo federated learning) as example (Source code: [https://github.com/FedML-AI/FedML/tree/master/python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example](https://github.com/FedML-AI/FedML/tree/master/python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example)).
+
+In this example, the FL Client APIs are as follows:
 ```Python
 import fedml
 from fedml.cross_silo import Client
@@ -91,32 +145,31 @@ if __name__ == "__main__":
 ```
 
 With these APIs, you only need to tune the hyper-parameters with the configuration file `fedml_config.yaml`. An example is as follows:
+
 ```yaml
 common_args:
-  training_type: "cross_device"
-  using_mlops: false
+  training_type: "cross_silo"
   random_seed: 0
 
 data_args:
   dataset: "mnist"
-  data_cache_dir: "../../../data/mnist"
+  data_cache_dir: "./../../../data"
   partition_method: "hetero"
   partition_alpha: 0.5
 
 model_args:
   model: "lr"
   model_file_cache_folder: "./model_file_cache" # will be filled by the server automatically
-  global_model_file_path: "./model_file_cache/global_model.mnn"
+  global_model_file_path: "./model_file_cache/global_model.pt"
 
 train_args:
   federated_optimizer: "FedAvg"
-  client_id_list: "[138, 27]"
+  client_id_list: "[1, 2]"
   client_num_in_total: 1000
   client_num_per_round: 2
   comm_round: 50
   epochs: 1
-  batch_size: 100
-  batch_num: -1
+  batch_size: 10
   client_optimizer: sgd
   learning_rate: 0.03
   weight_decay: 0.001
@@ -125,14 +178,19 @@ validation_args:
   frequency_of_the_test: 5
 
 device_args:
-  worker_num: 1 # this only reflects on the client number, not including the server
+  worker_num: 2
   using_gpu: false
+  gpu_mapping_file: config/gpu_mapping.yaml
+  gpu_mapping_key: mapping_default
 
 comm_args:
-  backend: "MQTT_S3_MNN"
+  backend: "MQTT_S3"
+  mqtt_config_path: config/mqtt_config.yaml
+  s3_config_path: config/s3_config.yaml
 
 tracking_args:
   log_file_dir: ./log
+  enable_wandb: false
 ```
 
 Now let's run some examples as follows to get a sense of how FedML simplifies federated learning in diverse real-world settings.
@@ -190,40 +248,7 @@ A detailed guidance for the MLOps can be found at [FedML MLOps User Guide](./doc
 
 # **More Resource**
 
-## Open Source Code Architecture
-In general, FedML source code architecture follows the paper which won [Best Paper Award at NeurIPS 2020 (FL workshop)](https://chaoyanghe.com/wp-content/uploads/2021/02/NeurIPS-SpicyFL-2020-Baidu-best-paper-award-He-v2.pdf). Its original idea is presented at the live [video](https://www.youtube.com/watch?v=93SETZGZMyI) and 
-[white paper](https://arxiv.org/abs/2007.13518) by FedML co-founder Dr. [Chaoyang He](https://chaoyanghe.com). 
-
-![FedML Code Architecture](./doc/en/_static/image/fedml.png)
-
-After March 2022, FedML has been upgraded as an AI company which aims to provide machine learning capability anywhere at any scale. Now the python version of FedML [https://github.com/FedML-AI/FedML-refactor/tree/master/python](https://github.com/FedML-AI/FedML-refactor/tree/master/python) is reorganized as follows:
-
-**core**: The FedML low-level API package. This package implements distributed computing by communication backend like MPI, NCCL, MQTT, gRPC, PyTorch RPC, and also supports topology management. 
-Other low-level APIs related to security and privacy are also supported. All algorithms and Scenarios are built based on the "core" package.
-
-**data**: FedML will provide some default datasets for users to get started. Customization templates are also provided.
-
-**model**: FedML model zoo.
-
-**device**: FedML computing resource management.
-
-**simulation**: FedML parrot can support (1) simulating FL using a single process (2) MPI-based FL Simulator (3) NCCL-based FL Simulator (fastest)
-
-**cross-silo**: Cross-silo Federated Learning for cross-organization/account training
-
-**cross-device**: Cross-device Federated Learning for Smartphones and IoTs
-
-**distributed**: Distributed Training: Accelerate Model Training with Lightweight Cheetah
-
-**serve**: Model serving, tailored for edge inference
-
-**mlops**: APIs related to machine learning operation platform (open.fedml.ai)
-
-**centralized**: Some centralized trainer code examples for benchmarking purposes.
-
-**utils**: Common utilities shared by other modules.
-
-- Reference
+### Reference
 ```
 @article{chaoyanghe2020fedml,
   Author = {He, Chaoyang and Li, Songze and So, Jinhyun and Zhang, Mi and Wang, Hongyi and Wang, Xiaoyang and Vepakomma, Praneeth and Singh, Abhishek and Qiu, Hang and Shen, Li and Zhao, Peilin and Kang, Yan and Liu, Yang and Raskar, Ramesh and Yang, Qiang and Annavaram, Murali and Avestimehr, Salman},
@@ -234,6 +259,8 @@ Other low-level APIs related to security and privacy are also supported. All alg
 ```
 
 ## Ecosystem
+<img src="doc/en/_static/image/started_ecosystem.png" alt="drawing" style="width:100%;"/> 
+
 FedML Ecosystem facilitates federated learning research and productization in diverse application domains. With the foundational support from FedML Core Framework, it supports FedNLP (Natural Language Processing), FedCV (Computer Vision), FedGraphNN (Graph Neural Networks), and FedIoT (Internet of Things). 
 Please read this guidance for details: [https://doc.fedml.ai/starter/ecosystem.html](https://doc.fedml.ai/starter/ecosystem.html).
 
