@@ -15,7 +15,7 @@ with open("requirements.txt") as f:
 
 setup(
     name="fedml",
-    version="0.7.9",
+    version="0.7.10",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
@@ -40,7 +40,19 @@ setup(
     ],
     packages=find_packages(),
     include_package_data=True,
-    data_files=[("fedml", ["fedml/config/simulation_sp/fedml_config.yaml", "fedml/config/simulaton_mpi/fedml_config.yaml"])],
+    data_files=[
+        (
+            "fedml",
+            [
+                "fedml/config/simulation_sp/fedml_config.yaml",
+                "fedml/config/simulaton_mpi/fedml_config.yaml",
+                "fedml/cli/build-package/mlops-core/fedml-server/server-package/conf/fedml.yaml",
+                "fedml/cli/build-package/mlops-core/fedml-server/server-package/fedml/config/fedml_config.yaml",
+                "fedml/cli/build-package/mlops-core/fedml-client/client-package/conf/fedml.yaml",
+                "fedml/cli/build-package/mlops-core/fedml-client/client-package/fedml/config/fedml_config.yaml",
+            ],
+        )
+    ],
     install_requires=requirements,
     package_data={"": ["py.typed"]},
     license="Apache 2.0",
