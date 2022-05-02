@@ -1,3 +1,4 @@
+import logging
 import random
 
 import fedml
@@ -11,7 +12,6 @@ from .cross_device import ServerMNN
 from .cross_silo import Client as ClientCrossSilo
 from .cross_silo import Server as ServerCrossSilo
 from .simulation.simulator import SimulatorMPI, SimulatorSingleProcess, SimulatorNCCL
-from .utils import logger
 
 _global_training_type = "simulation"
 _global_comm_backend = "single_process"
@@ -27,7 +27,7 @@ def init(args=None):
 
     MLOpsRuntimeLog.get_instance(args).init_logs()
 
-    logger.info("args = {}".format(vars(args)))
+    logging.info("args = {}".format(vars(args)))
 
     seed = args.random_seed
     random.seed(seed)
@@ -93,10 +93,10 @@ def run_simulation(backend="single_process"):
         simulator = SimulatorSingleProcess(args, device, dataset, model)
     elif backend == "MPI":
         simulator = SimulatorMPI(args, device, dataset, model)
-        logger.info("backend = {}".format(backend))
+        logging.info("backend = {}".format(backend))
     elif backend == "NCCL":
         simulator = SimulatorNCCL(args, device, dataset, model)
-        logger.info("backend = {}".format(backend))
+        logging.info("backend = {}".format(backend))
     else:
         raise Exception("no such backend!")
     simulator.run()
@@ -182,7 +182,6 @@ from fedml import cross_device
 
 
 __all__ = [
-    "logger",
     "device",
     "data",
     "model",

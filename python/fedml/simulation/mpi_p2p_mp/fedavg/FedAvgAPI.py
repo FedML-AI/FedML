@@ -5,7 +5,7 @@ from .FedAVGTrainer import FedAVGTrainer
 from .FedAvgClientManager import FedAVGClientManager
 from .FedAvgServerManager import FedAVGServerManager
 from .my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
-from .my_model_trainer_classification import MyModelTrainer as MyModelTrainerTAG
+from .my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
 from .my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
 
 

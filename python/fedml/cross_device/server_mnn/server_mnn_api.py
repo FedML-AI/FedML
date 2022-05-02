@@ -4,7 +4,7 @@ from .trainer.my_model_trainer_classification import MyModelTrainer as MyModelTr
 from .trainer.my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
 from .trainer.my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
 
-from ...utils.logging import logger
+import logging
 
 
 def fedavg_cross_device(
@@ -18,7 +18,7 @@ def fedavg_cross_device(
     model_trainer=None,
     preprocessed_sampling_lists=None,
 ):
-    logger.info("test_data_global.iter_number = {}".format(test_dataloader.iter_number))
+    logging.info("test_data_global.iter_number = {}".format(test_dataloader.iter_number))
 
     if process_id == 0:
         init_server(
@@ -57,8 +57,8 @@ def init_server(
     # aggregator
 
     td_id = id(test_dataloader)
-    logger.info("test_dataloader = {}".format(td_id))
-    logger.info("test_data_global.iter_number = {}".format(test_dataloader.iter_number))
+    logging.info("test_dataloader = {}".format(td_id))
+    logging.info("test_data_global.iter_number = {}".format(test_dataloader.iter_number))
 
     worker_num = size
     aggregator = FedMLAggregator(

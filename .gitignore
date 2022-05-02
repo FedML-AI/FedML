@@ -75,3 +75,17 @@ test/fedml_user_code/simulation_mpi/data/mnist/MNIST/download_and_unzip.sh
 test/fedml_user_code/simulation_mpi/data/mnist/__MACOSX/MNIST/._train
 test/fedml_user_code/simulation_mpi/data/mnist/__MACOSX/MNIST/._test
 test/fedml_user_code/simulation_mpi/data/mnist/__MACOSX/MNIST/._.DS_Store
+test/fedml_user_code/simulation_sp/data/mnist/__MACOSX/MNIST/._.DS_Store
+test/fedml_user_code/simulation_sp/data/mnist/__MACOSX/MNIST/._test
+test/fedml_user_code/simulation_sp/data/mnist/__MACOSX/MNIST/._train
+test/fedml_user_code/simulation_sp/data/mnist/MNIST/download_and_unzip.sh
+test/fedml_user_code/simulation_sp/data/mnist/MNIST/README.md
+test/fedml_user_code/simulation_sp/data/mnist/MNIST/stats.py
+test/fedml_user_code/simulation_sp/data/mnist/MNIST/stats.sh
+test/fedml_user_code/simulation_mpi/data/mnist/__MACOSX/MNIST/._.DS_Store
+test/fedml_user_code/simulation_mpi/data/mnist/__MACOSX/MNIST/._test
+test/fedml_user_code/simulation_mpi/data/mnist/__MACOSX/MNIST/._train
+test/fedml_user_code/simulation_mpi/data/mnist/MNIST/download_and_unzip.sh
+test/fedml_user_code/simulation_mpi/data/mnist/MNIST/README.md
+test/fedml_user_code/simulation_mpi/data/mnist/MNIST/stats.py
+test/fedml_user_code/simulation_mpi/data/mnist/MNIST/stats.sh

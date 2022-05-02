@@ -1,12 +1,12 @@
 from .server_mnn.server_mnn_api import fedavg_cross_device
 
-from ..utils.logging import logger
+import logging
 
 
 class ServerMNN:
     def __init__(self, args, device, test_dataloader, model, model_trainer=None):
         if args.federated_optimizer == "FedAvg":
-            logger.info(
+            logging.info(
                 "test_data_global.iter_number = {}".format(test_dataloader.iter_number)
             )
 
