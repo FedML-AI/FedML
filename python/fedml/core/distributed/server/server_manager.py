@@ -70,7 +70,7 @@ class ServerManager(Observer):
                 client_id=rank,
                 client_num=size,
             )
-            if self.args.using_mlops:
+            if hasattr(self.args, "backend") and self.args.using_mlops:
                 self.com_manager_status = MqttS3StatusManager(
                     args.mqtt_config_path, args.s3_config_path, topic=args.run_id
                 )
@@ -78,7 +78,7 @@ class ServerManager(Observer):
             self.com_manager = TRPCCommManager(
                 args.trpc_master_config_path, process_id=rank, world_size=size + 1
             )
-            if self.args.using_mlops:
+            if hasattr(self.args, "backend") and self.args.using_mlops:
                 self.com_manager_status = MqttS3StatusManager(
                     args.mqtt_config_path, args.s3_config_path, topic=args.run_id
                 )
@@ -98,7 +98,7 @@ class ServerManager(Observer):
         return self.rank
 
     def receive_message(self, msg_type, msg_params) -> None:
-        if self.args.using_mlops:
+        if hasattr(self.args, "backend") and self.args.using_mlops:
             logging.info("receive_message. rank_id = %d, msg_type = %s." % (
                 self.rank, str(msg_type)))
         else:
