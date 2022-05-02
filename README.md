@@ -51,7 +51,7 @@ To get started, let's install FedML first.
 ```Python
 pip install fedml
 ```
-For more installation methods, please refer to [installing FedML](./installation.md).
+For more installation methods, please refer to [installing FedML](https://doc.fedml.ai/starter/installation.html).
 
 
 ### A Quick Overview of the Code Architecture
