@@ -12,6 +12,11 @@ Please follow the following instruction step by step.
 3. Project Management 
 ```
 
+After you finish the local developing/debugging of the FedML Octopus (cross-silo) project (e.g., successfully run the example [https://doc.fedml.ai/cross-silo/examples/mqtt_s3_fedavg_mnist_lr_example.html](https://doc.fedml.ai/cross-silo/examples/mqtt_s3_fedavg_mnist_lr_example.html)), 
+you can now deploy it into the real-world edge-cloud system. Here, we use the cross-silo project example at
+[https://github.com/FedML-AI/FedML/tree/master/python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line](https://github.com/FedML-AI/FedML/tree/master/python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line)
+to guide you through how to deploy it into the real world and collaborate with others data silos.
+
 ## 1. Install Client Agent and Login
 
 - 1.1 Install Docker Engine (skip this step if you already set it up in your local device)
