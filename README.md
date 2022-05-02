@@ -61,7 +61,8 @@ In general, FedML source code architecture follows the paper which won [Best Pap
 
 ![FedML Code Architecture](./doc/en/_static/image/fedml.png)
 
-After March 2022, FedML has been upgraded as an AI company which aims to provide machine learning capability anywhere at any scale. Now the python version of FedML [https://github.com/FedML-AI/FedML-refactor/tree/master/python](https://github.com/FedML-AI/FedML-refactor/tree/master/python) is reorganized as follows:
+After March 2022, FedML has been upgraded as an AI company which aims to provide machine learning capability anywhere at any scale. Now the python version of FedML [https://github.com/FedML-AI/FedML-
+/tree/master/python](https://github.com/FedML-AI/FedML/tree/master/python) is reorganized as follows:
 
 **core**: The FedML low-level API package. This package implements distributed computing by communication backend like MPI, NCCL, MQTT, gRPC, PyTorch RPC, and also supports topology management. 
 Other low-level APIs related to security and privacy are also supported. All algorithms and Scenarios are built based on the "core" package.
@@ -308,4 +309,4 @@ Please feel free to ask questions there. We are happy to discuss on supporting y
 # Contributing 
 ## Code of Conduct
 FedML embraces and thrive through open-source. We welcome all kinds of contributions from the community. Kudos to all of <a href="https://github.com/fedml-ai/fedml/graphs/contributors" target="_blank">our amazing contributors</a>!  
-FedML has adopted [Contributor Covenant](https://github.com/FedML-AI/FedML-refactor/blob/master/CODE_OF_CONDUCT.md).
+FedML has adopted [Contributor Covenant](https://github.com/FedML-AI/FedML/blob/master/CODE_OF_CONDUCT.md).
