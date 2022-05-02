@@ -34,7 +34,7 @@ def get_device(args):
             args.rank_in_node,
             args.n_proc_per_node,
             args.gpu_mapping_file if args.using_gpu else None,
-            args.gpu_mapping_key,
+            args.gpu_mapping_key if args.using_gpu else None,
         )
         logger.info("device = {}".format(device))
         return device
