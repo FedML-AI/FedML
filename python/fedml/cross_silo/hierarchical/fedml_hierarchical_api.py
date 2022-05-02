@@ -8,7 +8,7 @@ from .fedml_server_manager import FedMLServerManager
 # from .trainer.my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
 # from .trainer.my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
 # from .trainer.my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
-from ...utils.logging import logger
+import logging
 
 # silo_rank -> client_rank
 # worker_silo_num -> client_num
@@ -228,11 +228,11 @@ def init_client(
                                         test_data_local_dict,
                                         model_trainer)
     if args.silo_proc_rank == 0:
-        logger.info("Initiating Client Manager")
+        logging.info("Initiating Client Manager")
         client_manager = get_clinet_manager_master(
             args, trainer_dist_adapter, comm, client_rank, size, backend)
     else:
-        logger.info("Initiating DDP worker")
+        logging.info("Initiating DDP worker")
         client_manager = get_clinet_manager_salve(args, trainer_dist_adapter)
-    logger.info("Ruuning Client")
+    logging.info("Ruuning Client")
     client_manager.run()

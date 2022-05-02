@@ -1,6 +1,6 @@
 import torch
 
-from ..utils.logging import logger
+import logging
 
 
 def get_device(args):
@@ -11,7 +11,7 @@ def get_device(args):
             )
         else:
             device = torch.device("cpu")
-        logger.info("device = {}".format(device))
+        logging.info("device = {}".format(device))
         return device
     elif args.training_type == "simulation" and args.backend == "MPI":
         from .gpu_mapping import (
@@ -32,7 +32,7 @@ def get_device(args):
             )
         else:
             device = torch.device("cpu")
-        logger.info("device = {}".format(device))
+        logging.info("device = {}".format(device))
     elif args.training_type == "cross_device":
         if args.using_gpu:
             device = torch.device(
@@ -40,7 +40,7 @@ def get_device(args):
             )
         else:
             device = torch.device("cpu")
-        logger.info("device = {}".format(device))
+        logging.info("device = {}".format(device))
         return device
     else:
         raise Exception(

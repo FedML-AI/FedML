@@ -9,7 +9,7 @@ F = MNN.expr
 nn = MNN.nn
 
 from .utils import read_mnn_as_tensor_dict
-from ...utils.logging import logger
+import logging
 
 
 class FedMLAggregator(object):
@@ -48,13 +48,13 @@ class FedMLAggregator(object):
         self.trainer.set_model_params(model_parameters)
 
     def add_local_trained_result(self, index, model_params, sample_num):
-        logger.info("add_model. index = %d" % index)
+        logging.info("add_model. index = %d" % index)
         self.model_dict[index] = model_params
         self.sample_num_dict[index] = sample_num
         self.flag_client_model_uploaded_dict[index] = True
 
     def check_whether_all_receive(self):
-        logger.info("worker_num = {}".format(self.worker_num))
+        logging.info("worker_num = {}".format(self.worker_num))
         for idx in range(self.worker_num):
             if not self.flag_client_model_uploaded_dict[idx]:
                 return False
@@ -68,15 +68,15 @@ class FedMLAggregator(object):
         training_num = 0
 
         for idx in range(self.worker_num):
-            logger.info("self.model_dict[idx] = {}".format(self.model_dict[idx]))
+            logging.info("self.model_dict[idx] = {}".format(self.model_dict[idx]))
             mnn_file_path = self.model_dict[idx]
             tensor_params_dict = read_mnn_as_tensor_dict(mnn_file_path)
             model_list.append((self.sample_num_dict[idx], tensor_params_dict))
             training_num += self.sample_num_dict[idx]
-        logger.info("training_num = {}".format(training_num))
-        logger.info("len of self.model_dict[idx] = " + str(len(self.model_dict)))
+        logging.info("training_num = {}".format(training_num))
+        logging.info("len of self.model_dict[idx] = " + str(len(self.model_dict)))
 
-        # logger.info("################aggregate: %d" % len(model_list))
+        # logging.info("################aggregate: %d" % len(model_list))
         (num0, averaged_params) = model_list[0]
         for k in averaged_params.keys():
             for i in range(0, len(model_list)):
@@ -88,7 +88,7 @@ class FedMLAggregator(object):
                     averaged_params[k] += local_model_params[k] * w
 
         end_time = time.time()
-        logger.info("aggregate time cost: %d" % (end_time - start_time))
+        logging.info("aggregate time cost: %d" % (end_time - start_time))
         return averaged_params
 
     def data_silo_selection(
@@ -107,7 +107,7 @@ class FedMLAggregator(object):
                                         this value is the form of [0, 11, 20]
 
         """
-        logger.info(
+        logging.info(
             "data_silo_num_in_total = %d, client_num_in_total = %d"
             % (data_silo_num_in_total, client_num_in_total)
         )
@@ -161,7 +161,7 @@ class FedMLAggregator(object):
             client_indexes = np.random.choice(
                 range(client_num_in_total), num_clients, replace=False
             )
-        logger.info("client_indexes = %s" % str(client_indexes))
+        logging.info("client_indexes = %s" % str(client_indexes))
         return client_indexes
 
     def test_on_server_for_all_clients(self, mnn_file_path):
@@ -197,8 +197,8 @@ class FedMLAggregator(object):
 
         test_accuracy = correct * 100.0 / self.test_global.size
         test_loss = loss.read()
-        fedml.logger.info("test acc = {}".format(test_accuracy))
-        fedml.logger.info("test loss = {}".format(test_loss))
+        fedml.logging.info("test acc = {}".format(test_accuracy))
+        fedml.logging.info("test loss = {}".format(test_loss))
 
         if self.args.enable_wandb:
             wandb.log({"test acc": test_accuracy, "test loss": test_loss})

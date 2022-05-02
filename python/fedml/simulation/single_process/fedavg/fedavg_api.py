@@ -10,7 +10,7 @@ from .client import Client
 from .my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
 from .my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
 from .my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
-from ....utils.logging import logger
+import logging
 
 
 class FedAvgAPI(object):
@@ -38,7 +38,7 @@ class FedAvgAPI(object):
         self.train_data_local_dict = train_data_local_dict
         self.test_data_local_dict = test_data_local_dict
 
-        logger.info("model = {}".format(model))
+        logging.info("model = {}".format(model))
         if args.dataset == "stackoverflow_lr":
             model_trainer = MyModelTrainerTAG(model)
         elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
@@ -47,7 +47,7 @@ class FedAvgAPI(object):
             # default model trainer is for classification problem
             model_trainer = MyModelTrainerCLS(model)
         self.model_trainer = model_trainer
-        logger.info("self.model_trainer = {}".format(self.model_trainer))
+        logging.info("self.model_trainer = {}".format(self.model_trainer))
 
         self._setup_clients(
             train_data_local_num_dict,
@@ -78,7 +78,7 @@ class FedAvgAPI(object):
         logging.info("############setup_clients (END)#############")
 
     def train(self):
-        logger.info("self.model_trainer = {}".format(self.model_trainer))
+        logging.info("self.model_trainer = {}".format(self.model_trainer))
         w_global = self.model_trainer.get_model_params()
         for round_idx in range(self.args.comm_round):
 
@@ -107,7 +107,7 @@ class FedAvgAPI(object):
 
                 # train on new dataset
                 w = client.train(copy.deepcopy(w_global))
-                # self.logger.info("local weights = " + str(w))
+                # self.logging.info("local weights = " + str(w))
                 w_locals.append((client.get_sample_number(), copy.deepcopy(w)))
 
             # update global weights
