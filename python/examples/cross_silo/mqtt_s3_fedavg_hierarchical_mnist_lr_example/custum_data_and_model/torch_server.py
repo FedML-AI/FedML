@@ -1,6 +1,6 @@
 import fedml
 import torch
-from fedml.cross_silo import Server
+from fedml.cross_silo.hierarchical import Server
 from fedml.data.MNIST.data_loader import download_mnist, load_partition_data_mnist
 
 
@@ -23,8 +23,8 @@ def load_data(args):
         class_num,
     ) = load_partition_data_mnist(
         args.batch_size,
-        train_path=args.data_cache_dir + "MNIST/train",
-        test_path=args.data_cache_dir + "MNIST/test",
+        train_path=args.data_cache_dir + "/MNIST/train",
+        test_path=args.data_cache_dir + "/MNIST/test",
     )
     """
     For shallow NN or linear models, 
@@ -53,12 +53,10 @@ class LogisticRegression(torch.nn.Module):
         outputs = torch.sigmoid(self.linear(x))
         return outputs
 
-
 if __name__ == "__main__":
     # init FedML framework
     args = fedml.init()
 
-    # init device
     device = fedml.device.get_device(args)
 
     # load data
