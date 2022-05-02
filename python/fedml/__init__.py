@@ -54,11 +54,17 @@ def init(args=None):
         if not hasattr(args, 'enable_cuda_rpc'):
             args.enable_cuda_rpc = False
         # Set inra-silo argiments
-        args.rank_in_node = int(os.environ["LOCAL_RANK"])
-        args.process_id = args.rank_in_node
-        args.n_proc_in_silo = args.n_node_in_silo * args.n_proc_per_node
-        args.proc_rank_in_silo = args.node_rank_in_silo * args.n_proc_per_node + args.rank_in_node
-        args.pg_master_port += args.rank
+        if args.rank == 0:
+            args.rank_in_node = 0
+            args.process_id = args.rank_in_node
+            args.n_proc_in_silo = 1
+            args.proc_rank_in_silo = 0
+        else:
+            args.rank_in_node = int(os.environ["LOCAL_RANK"])
+            args.process_id = args.rank_in_node
+            args.n_proc_in_silo = args.n_node_in_silo * args.n_proc_per_node
+            args.proc_rank_in_silo = args.node_rank_in_silo * args.n_proc_per_node + args.rank_in_node
+            args.pg_master_port += args.rank
     elif args.training_type == "cross_device":
         args.rank = 0  # only server runs on Python package
     else:
