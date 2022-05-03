@@ -30,6 +30,6 @@ class Lenet5(nn.Module):
 
 def create_mnn_lenet5_model(mnn_file_path):
     net = Lenet5()
-    input_var = MNN.expr.placeholder([1, 3, 32, 32], MNN.expr.NCHW)
+    input_var = MNN.expr.placeholder([1, 1, 28, 28], MNN.expr.NCHW)
     predicts = net.forward(input_var)
     F.save([predicts], mnn_file_path)
