@@ -1,8 +1,9 @@
 from .fedml_hierarchical_api import FedML_Hierarchical
+import os
 
 
 class Client:
-    def __init__(self, args, device, dataset, model, model_trainer=None):
+    def __init__(self, args, device, dataset, model, model_trainer=None, process_rank=0):
         if args.federated_optimizer == "FedAvg":
             self.fl_trainer = FedML_Hierarchical(
                 args,

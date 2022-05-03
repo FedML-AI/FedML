@@ -37,12 +37,12 @@ class FedMLTrainer(object):
 
     def update_dataset(self, client_index):
         self.client_index = client_index
-        # if self.args.silo_proc_num == 1:
+        # if self.args.n_proc_in_silo == 1:
         #     self.train_local = self.train_data_local_dict[client_index]
         #     self.local_sample_number = self.train_data_local_num_dict[client_index]
         #     self.test_local = self.test_data_local_dict[client_index]
         # else:
-        self.train_local = self.train_data_local_dict[client_index][self.args.silo_proc_rank]
+        self.train_local = self.train_data_local_dict[client_index][self.args.proc_rank_in_silo]
         self.local_sample_number = self.train_data_local_num_dict[client_index]
         self.test_local = self.test_data_local_dict[client_index]
 

@@ -6,7 +6,7 @@ import yaml
 
 
 def corss_silo_mapping_processes_to_gpu_device_from_yaml_file(
-    rank, silo_proc_rank, silo_proc_num, client_silo_num_in_total, silo_gpu_util_file
+    rank, proc_rank_in_silo, n_proc_in_silo, client_silo_num_in_total, silo_gpu_util_file
 ):
     if silo_gpu_util_file == None:
         device = torch.device("cpu")
@@ -24,10 +24,10 @@ def corss_silo_mapping_processes_to_gpu_device_from_yaml_file(
             "Silo: %d, Silo proccess rank  %d running on host: %s, gethostname: %s,local_gpu_id: %d ..."
             % (
                 rank,
-                silo_proc_rank,
-                gpu_util_map[silo_proc_rank][0],
+                proc_rank_in_silo,
+                gpu_util_map[proc_rank_in_silo][0],
                 socket.gethostname(),
-                gpu_util_map[silo_proc_rank][1],
+                gpu_util_map[proc_rank_in_silo][1],
             )
         )
         logging.info(
@@ -38,24 +38,24 @@ def corss_silo_mapping_processes_to_gpu_device_from_yaml_file(
 
         logging.info(
             "i = {}, Number of processes in silo = {}".format(
-                len(gpu_util_map.items()), silo_proc_num
+                len(gpu_util_map.items()), n_proc_in_silo
             )
         )
 
         assert (
-            len(gpu_util_map.items()) == silo_proc_num
+            len(gpu_util_map.items()) == n_proc_in_silo
         ), "Number of GPUs in gpu_mapping different from number of processes in the silo"
 
         if torch.cuda.is_available():
-            torch.cuda.set_device(gpu_util_map[silo_proc_rank][1])
+            torch.cuda.set_device(gpu_util_map[proc_rank_in_silo][1])
         device = torch.device(
-            "cuda:" + str(gpu_util_map[silo_proc_rank][1])
+            "cuda:" + str(gpu_util_map[proc_rank_in_silo][1])
             if torch.cuda.is_available()
             else "cpu"
         )
         logging.info(
             "process_id = {}, GPU device = {}".format(
-                gpu_util_map[silo_proc_rank][1], device
+                gpu_util_map[proc_rank_in_silo][1], device
             )
         )
         # return gpu_util_map[process_id][1]

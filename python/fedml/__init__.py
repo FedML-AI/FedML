@@ -7,10 +7,12 @@ import torch
 import wandb
 from fedml.mlops import MLOpsRuntimeLog
 from mpi4py import MPI
-
+import os
 from .cross_device import ServerMNN
 from .cross_silo import Client as ClientCrossSilo
 from .cross_silo import Server as ServerCrossSilo
+from .cross_silo.hierarchical import Client as HierarchicalClientCrossSilo
+from .cross_silo.hierarchical import Server as HierarchicalServerCrossSilo
 from .simulation.simulator import SimulatorMPI, SimulatorSingleProcess, SimulatorNCCL
 
 _global_training_type = None
@@ -61,7 +63,20 @@ def init(args=None):
     ):
         pass
     elif args.training_type == "cross_silo":
-        args.process_id = args.rank
+        if not hasattr(args, 'enable_cuda_rpc'):
+            args.enable_cuda_rpc = False
+        # Set inra-silo argiments
+        if args.rank == 0:
+            args.rank_in_node = 0
+            args.process_id = args.rank_in_node
+            args.n_proc_in_silo = 1
+            args.proc_rank_in_silo = 0
+        else:
+            args.rank_in_node = int(os.environ["LOCAL_RANK"])
+            args.process_id = args.rank_in_node
+            args.n_proc_in_silo = args.n_node_in_silo * args.n_proc_per_node
+            args.proc_rank_in_silo = args.node_rank_in_silo * args.n_proc_per_node + args.rank_in_node
+            args.pg_master_port += args.rank
     elif args.training_type == "cross_device":
         args.rank = 0  # only server runs on Python package
     else:
@@ -142,6 +157,43 @@ def run_cross_silo_client():
     # start training
     client = ClientCrossSilo(args, device, dataset, model)
     client.run()
+
+
+def run_hierarchical_cross_silo_server():
+    """FedML Octopus"""
+    args = fedml.init()
+
+    # init device
+    device = fedml.device.get_device(args)
+
+    # load data
+    dataset, output_dim = fedml.data.load(args)
+
+    # load model
+    model = fedml.model.create(args, output_dim)
+
+    # start training
+    server = HierarchicalServerCrossSilo(args, device, dataset, model)
+    server.run()
+
+
+def run_hierarchical_cross_silo_client():
+    """FedML Octopus"""
+    args = fedml.init()
+
+    # init device
+    device = fedml.device.get_device(args)
+
+    # load data
+    dataset, output_dim = fedml.data.load_cross_silo(args)
+
+    # load model
+    model = fedml.model.create(args, output_dim)
+
+    # start training
+    client = HierarchicalClientCrossSilo(args, device, dataset, model)
+    client.run()
+
 
 
 def run_mnn_server():
