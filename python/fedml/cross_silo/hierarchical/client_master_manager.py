@@ -27,6 +27,7 @@
 #     from fedml_core.distributed.communication.utils import log_round_start, log_round_end
 
 
+from asyncio.log import logger
 import json
 import logging
 import multiprocessing
@@ -149,7 +150,8 @@ class ClientMasterManager:
 
     def finish(self):
         logging.info(
-            "Training finished for master client rank %s in silo %s" % (self.args.silo_proc_rank, self.args.client_rank)
+            "Training finished for master client rank %s in silo %s"
+            % (self.args.proc_rank_in_silo, self.args.rank_in_node)
         )
 
         self.trainer_dist_adapter.cleanup_pg()
