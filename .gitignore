@@ -61,3 +61,4 @@ mimiconda.sh
 data/fednlp/*
 
 *.npz
+/swap/
