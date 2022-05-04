@@ -34,28 +34,29 @@ sh run_single.sh 100 0 0 0 mobilenet_v3 hetero 100 1 32 0.1 ILSVRC2012 your_data
 
 
 #### gld23k
-
+As for dataset download method, you can refer suggestions at `FedML/python/fedml/data/Landmarks/README.md` [README.md](../../fedml/data/Landmarks/README.md)
 ```
-sh run_single.sh 100 0 0 0 efficientnet hetero 100 32 0.1 gld23k ./../../data/gld/ sgd 0 0
+sh run_single.sh 100 0 0 0 efficientnet hetero 100 32 0.1 gld23k your_data_path sgd 0 0
 
-sh run_single.sh 100 0 0 0 efficientnet hetero 100 32 0.3 gld23k ./../../data/gld/ sgd 0 1
+sh run_single.sh 100 0 0 0 efficientnet hetero 100 32 0.3 gld23k your_data_path sgd 0 1
 
-sh run_single.sh 100 0 0 0 efficientnet hetero 100 32 0.01 gld23k ./../../data/gld/ sgd 0 2
+sh run_single.sh 100 0 0 0 efficientnet hetero 100 32 0.01 gld23k your_data_path sgd 0 2
 
-sh run_single.sh 100 0 0 0 efficientnet hetero 100 32 0.03 gld23k ./../../data/gld/ sgd 0 3
+sh run_single.sh 100 0 0 0 efficientnet hetero 100 32 0.03 gld23k your_data_path sgd 0 3
 
-sh run_single.sh 100 0 0 0 efficientnet hetero 100 32 0.001 gld23k ./../../data/gld/ sgd 0 0
+sh run_single.sh 100 0 0 0 efficientnet hetero 100 32 0.001 gld23k your_data_path sgd 0 0
 
-sh run_single.sh 100 0 0 0 efficientnet hetero 100 32 0.003 gld23k ./../../data/gld/ sgd 0 1
+sh run_single.sh 100 0 0 0 efficientnet hetero 100 32 0.003 gld23k your_data_path sgd 0 1
 ```
 
 
 
 #### gld160k
-
+As for dataset download method, you can refer suggestions at `FedML/python/fedml/data/Landmarks/README.md` [README.md](../../fedml/data/Landmarks/README.md)
 ```
 sh run_single.sh 100 0 0 0 mobilenet_v3 hetero 100 1 32 0.1 gld160k your_data_path sgd 0
 ```
+
 
 
 
