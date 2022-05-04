@@ -19,6 +19,7 @@ def login_with_docker_mode(userid, version):
 
     # Get home directory
     cur_dir = expanduser("~")
+    cur_dir = os.path.join(cur_dir, "fedml-client")
 
     # Set default version if the version argument is empty
     if version == "":
