@@ -24,12 +24,12 @@ from .datasets import (
     EMNIST_NormalCase_truncated,
     ImageFolderTruncated,
 )
-from ...utils.logging import logger
+import logging
 
 
 def download_edgecase_data(data_cache_dir):
     file_path = data_cache_dir + "/edge_case_examples.zip"
-    logger.info(file_path)
+    logging.info(file_path)
     URL = "http://pages.cs.wisc.edu/~hongyiwang/edge_case_attack/edge_case_examples.zip"
     # Download the file (if we haven't already)
     if not os.path.exists(file_path):
@@ -518,7 +518,7 @@ def load_poisoned_dataset(args):
                 raise NotImplementedError("Not Matched Attack Case ...")
 
                 #
-            logger.info(
+            logging.info(
                 "OOD (Southwest Airline) train-data shape we collected: {}".format(
                     saved_southwest_dataset_train.shape
                 )
@@ -528,7 +528,7 @@ def load_poisoned_dataset(args):
                 (saved_southwest_dataset_train.shape[0],), dtype=int
             )  # southwest airplane -> label as truck
 
-            logger.info(
+            logging.info(
                 "OOD (Southwest Airline) test-data shape we collected: {}".format(
                     saved_southwest_dataset_test.shape
                 )
@@ -552,7 +552,7 @@ def load_poisoned_dataset(args):
                 sampled_targets_array_train = np.array(sampled_targets_array_train)[
                     samped_poisoned_data_indices
                 ]
-                logger.info(
+                logging.info(
                     "!!!!!!!!!!!Num poisoned data points in the mixed dataset: {}".format(
                         num_sampled_poisoned_data_points
                     )
@@ -578,7 +578,7 @@ def load_poisoned_dataset(args):
             poisoned_trainset.targets = np.array(poisoned_trainset.targets)[
                 samped_data_indices
             ]
-            logger.info(
+            logging.info(
                 "!!!!!!!!!!!Num clean data points in the mixed dataset: {}".format(
                     num_sampled_data_points
                 )
@@ -594,9 +594,9 @@ def load_poisoned_dataset(args):
                 poisoned_trainset.targets, sampled_targets_array_train, axis=0
             )
 
-            logger.info("{}".format(poisoned_trainset.data.shape))
-            logger.info("{}".format(poisoned_trainset.targets.shape))
-            logger.info("{}".format(sum(poisoned_trainset.targets)))
+            logging.info("{}".format(poisoned_trainset.data.shape))
+            logging.info("{}".format(poisoned_trainset.targets.shape))
+            logging.info("{}".format(sum(poisoned_trainset.targets)))
 
             # poisoned_train_loader = torch.utils.data.DataLoader(poisoned_trainset, batch_size=args.batch_size, shuffle=True, num_workers=2)
             # trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=2)
@@ -695,7 +695,7 @@ def load_poisoned_dataset(args):
                 saved_southwest_dataset_test = pickle.load(test_f)
 
             #
-            logger.info(
+            logging.info(
                 "OOD (Southwest Airline) train-data shape we collected: {}".format(
                     saved_southwest_dataset_train.shape
                 )
@@ -704,7 +704,7 @@ def load_poisoned_dataset(args):
                 (saved_southwest_dataset_train.shape[0],), dtype=int
             )  # southwest airplane -> label as truck
 
-            logger.info(
+            logging.info(
                 "OOD (Southwest Airline) test-data shape we collected: {}".format(
                     saved_southwest_dataset_test.shape
                 )
@@ -726,7 +726,7 @@ def load_poisoned_dataset(args):
             sampled_targets_array_train = np.array(sampled_targets_array_train)[
                 samped_poisoned_data_indices
             ]
-            logger.info(
+            logging.info(
                 "!!!!!!!!!!!Num poisoned data points in the mixed dataset: {}".format(
                     num_sampled_poisoned_data_points
                 )
@@ -740,7 +740,7 @@ def load_poisoned_dataset(args):
             )
             tempt_poisoned_trainset = trainset.data[samped_data_indices, :, :, :]
             tempt_poisoned_targets = np.array(trainset.targets)[samped_data_indices]
-            logger.info(
+            logging.info(
                 "!!!!!!!!!!!Num clean data points in the mixed dataset: {}".format(
                     num_sampled_data_points
                 )
@@ -770,8 +770,8 @@ def load_poisoned_dataset(args):
                 tempt_poisoned_targets, sampled_targets_array_train, axis=0
             )
 
-            logger.info("{}".format(poisoned_trainset.data.shape))
-            logger.info("{}".format(poisoned_trainset.target.shape))
+            logging.info("{}".format(poisoned_trainset.data.shape))
+            logging.info("{}".format(poisoned_trainset.target.shape))
 
             poisoned_train_loader = torch.utils.data.DataLoader(
                 poisoned_trainset, batch_size=args.batch_size, shuffle=True
@@ -871,7 +871,7 @@ def load_poisoned_dataset(args):
                 for i in cifar10_whole_range
                 if i not in sampled_indices_train + sampled_indices_test
             ]
-            logger.info(
+            logging.info(
                 "!!!!!!!!!!!Num poisoned data points in the mixed dataset: {}".format(
                     len(sampled_indices_train + sampled_indices_test)
                 )
@@ -890,7 +890,7 @@ def load_poisoned_dataset(args):
             poisoned_trainset.targets = np.array(poisoned_trainset.targets)[
                 samped_data_indices
             ]
-            logger.info(
+            logging.info(
                 "!!!!!!!!!!!Num clean data points in the mixed dataset: {}".format(
                     num_sampled_data_points
                 )
@@ -906,7 +906,7 @@ def load_poisoned_dataset(args):
                 saved_greencar_dataset_test = pickle.load(test_f)
 
             #
-            logger.info(
+            logging.info(
                 "Backdoor (Green car) train-data shape we collected: {}".format(
                     saved_greencar_dataset_train.shape
                 )
@@ -915,7 +915,7 @@ def load_poisoned_dataset(args):
                 (saved_greencar_dataset_train.shape[0],), dtype=int
             )  # green car -> label as bird
 
-            logger.info(
+            logging.info(
                 "Backdoor (Green car) test-data shape we collected: {}".format(
                     saved_greencar_dataset_test.shape
                 )
@@ -931,10 +931,10 @@ def load_poisoned_dataset(args):
                 poisoned_trainset.targets, sampled_targets_array_train, axis=0
             )
 
-            logger.info(
+            logging.info(
                 "Poisoned Trainset Shape: {}".format(poisoned_trainset.data.shape)
             )
-            logger.info(
+            logging.info(
                 "Poisoned Train Target Shape:{}".format(poisoned_trainset.targets.shape)
             )
 
@@ -1060,7 +1060,7 @@ def load_poisoned_dataset(args):
 
             # saved_greencar_dataset_train = np.append(ori_cifar_green_cars, saved_new_green_cars_train, axis=0)
             saved_greencar_dataset_train = saved_new_green_cars_train
-            logger.info(
+            logging.info(
                 "!!!!!!!!!!!Num poisoned data points in the mixed dataset: {}".format(
                     saved_greencar_dataset_train.shape[0]
                 )
@@ -1078,7 +1078,7 @@ def load_poisoned_dataset(args):
             poisoned_trainset.targets = np.array(poisoned_trainset.targets)[
                 samped_data_indices
             ]
-            logger.info(
+            logging.info(
                 "!!!!!!!!!!!Num clean data points in the mixed dataset: {}".format(
                     num_sampled_data_points
                 )
@@ -1087,7 +1087,7 @@ def load_poisoned_dataset(args):
             ##########################################################################################################################
 
             #
-            logger.info(
+            logging.info(
                 "Backdoor (Green car) train-data shape we collected: {}".format(
                     saved_greencar_dataset_train.shape
                 )
@@ -1096,7 +1096,7 @@ def load_poisoned_dataset(args):
                 (saved_greencar_dataset_train.shape[0],), dtype=int
             )  # green car -> label as bird
 
-            logger.info(
+            logging.info(
                 "Backdoor (Green car) test-data shape we collected: {}".format(
                     saved_new_green_cars_test.shape
                 )
@@ -1112,10 +1112,10 @@ def load_poisoned_dataset(args):
                 poisoned_trainset.targets, sampled_targets_array_train, axis=0
             )
 
-            logger.info(
+            logging.info(
                 "Poisoned Trainset Shape: {}".format(poisoned_trainset.data.shape)
             )
-            logger.info(
+            logging.info(
                 "Poisoned Train Target Shape:{}".format(poisoned_trainset.targets.shape)
             )
 
