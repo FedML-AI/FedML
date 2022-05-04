@@ -1,5 +1,4 @@
 import logging
-import sys
 
 log_levels = {
     "debug": logging.DEBUG,

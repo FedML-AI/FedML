@@ -38,7 +38,7 @@ class AggregatorDistAdapter():
 
         # if not self.args.is_mobile:
         self.process_group_manager = ProcessGroupManager(
-            args.silo_proc_rank, args.silo_proc_num, args.pg_master_address, args.pg_master_port, only_gpu)
+            args.proc_rank_in_silo, args.n_proc_in_silo, args.pg_master_address, args.pg_master_port, only_gpu)
 
         model.to(device)
         model = DDP(model, device_ids=[device] if only_gpu else None)

@@ -10,7 +10,7 @@ from torch import nn
 from .utils import transform_list_to_tensor
 from ....core.robustness.robust_aggregation import RobustAggregator, is_weight_param
 
-from ....utils.logging import logger
+import logging
 
 
 def test(
@@ -92,8 +92,8 @@ def test(
                 predicted_backdoor = predicted[backdoor_index]
                 backdoor_correct += (predicted_backdoor == target_backdoor).sum().item()
                 backdoor_tot = backdoor_index[0].shape[0]
-                # logger.info("Target: {}".format(target_backdoor))
-                # logger.info("Predicted: {}".format(predicted_backdoor))
+                # logging.info("Target: {}".format(target_backdoor))
+                # logging.info("Predicted: {}".format(predicted_backdoor))
 
             # for image_index in range(test_batch_size):
             for image_index in range(len(target)):
@@ -104,7 +104,7 @@ def test(
 
     if mode == "raw-task":
         for i in range(10):
-            logger.info(
+            logging.info(
                 "Accuracy of %5s : %.2f %%"
                 % (classes[i], 100 * class_correct[i] / class_total[i])
             )
@@ -112,7 +112,7 @@ def test(
             if i == target_class:
                 task_acc = 100 * class_correct[i] / class_total[i]
 
-        logger.info(
+        logging.info(
             "\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n".format(
                 test_loss,
                 correct,
@@ -126,13 +126,13 @@ def test(
 
         if dataset in ("mnist", "emnist"):
             for i in range(10):
-                logger.info(
+                logging.info(
                     "Accuracy of %5s : %.2f %%"
                     % (classes[i], 100 * class_correct[i] / class_total[i])
                 )
             if poison_type == "ardis":
                 # ensure 7 is being classified as 1
-                logger.info(
+                logging.info(
                     "Backdoor Accuracy of %.2f : %.2f %%"
                     % (target_class, 100 * backdoor_correct / backdoor_tot)
                 )
@@ -142,7 +142,7 @@ def test(
                 final_acc = 100 * class_correct[1] / class_total[1]
 
         elif dataset == "cifar10":
-            logger.info(
+            logging.info(
                 "#### Targetted Accuracy of %5s : %.2f %%"
                 % (
                     classes[target_class],

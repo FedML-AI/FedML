@@ -27,8 +27,9 @@
 #     from fedml_core.distributed.communication.utils import log_round_start, log_round_end
 
 
+from asyncio.log import logger
 import json
-from ...utils.logging import logger
+import logging
 import multiprocessing
 import platform
 import time
@@ -76,7 +77,7 @@ class ClientMasterManager:
         )
 
     def handle_message_connection_ready(self, msg_params):
-        logger.info("Connection is ready!")
+        logging.info("Connection is ready!")
         if not self.has_sent_online_msg:
             self.has_sent_online_msg = True
             self.send_client_status(0)
@@ -92,7 +93,7 @@ class ClientMasterManager:
         global_model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         data_silo_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
 
-        logger.info("data_silo_index = %s" % str(data_silo_index))
+        logging.info("data_silo_index = %s" % str(data_silo_index))
 
         # Notify MLOps with training status.
         self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_TRAINING)
@@ -104,7 +105,7 @@ class ClientMasterManager:
         self.round_idx = 0
 
         # TODO: training to separate method
-        logger.info("#######training########### round_id = %d" % self.round_idx)
+        logging.info("#######training########### round_id = %d" % self.round_idx)
         if hasattr(self.args, "backend") and self.args.using_mlops:
             self.mlops_event.log_event_started("train")
         weights, local_sample_num = self.trainer_dist_adapter.train(self.round_idx)
@@ -116,7 +117,7 @@ class ClientMasterManager:
         pass
 
     def handle_message_receive_model_from_server(self, msg_params):
-        logger.info("handle_message_receive_model_from_server.")
+        logging.info("handle_message_receive_model_from_server.")
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
 
@@ -139,7 +140,7 @@ class ClientMasterManager:
             return
 
         self.round_idx += 1
-        logger.info("#######training########### round_id = %d" % self.round_idx)
+        logging.info("#######training########### round_id = %d" % self.round_idx)
         if hasattr(self.args, "backend") and self.args.using_mlops:
             self.mlops_event.log_event_started("train")
         weights, local_sample_num = self.trainer_dist_adapter.train(self.round_idx)
@@ -148,8 +149,9 @@ class ClientMasterManager:
         self.send_model_to_server(0, weights, local_sample_num)
 
     def finish(self):
-        logger.info(
-            "Training finished for master client rank %s in silo %s" % (self.args.silo_proc_rank, self.args.client_rank)
+        logging.info(
+            "Training finished for master client rank %s in silo %s"
+            % (self.args.proc_rank_in_silo, self.args.rank_in_node)
         )
 
         self.trainer_dist_adapter.cleanup_pg()
@@ -199,7 +201,7 @@ class ClientMasterManager:
             self.mlops_metrics.report_client_model_info(model_info)
 
     def send_client_status(self, receive_id, status="ONLINE"):
-        logger.info("send_client_status")
+        logging.info("send_client_status")
         message = Message(MyMessage.MSG_TYPE_C2S_CLIENT_STATUS, self.client_real_id, receive_id)
         sys_name = platform.system()
         if sys_name == "Darwin":
@@ -223,12 +225,12 @@ class ClientMasterManager:
                 time.sleep(30)
 
     def sync_process_group(self, round_idx, model_params=None, client_index=None, src=0):
-        logger.info("sending round number to pg")
+        logging.info("sending round number to pg")
         round_number = [round_idx, model_params, client_index]
         dist.broadcast_object_list(
             round_number, src=src, group=self.trainer_dist_adapter.process_group_manager.get_process_group()
         )
-        logger.info("round number %d broadcasted to process group" % round_number[0])
+        logging.info("round number %d broadcasted to process group" % round_number[0])
 
     def run(self):
         self.register_message_receive_handlers()
@@ -236,7 +238,7 @@ class ClientMasterManager:
 
         ###############################33
 
-        logger.info("Connection is ready!")
+        logging.info("Connection is ready!")
         if not self.has_sent_online_msg:
             self.has_sent_online_msg = True
             self.send_client_status(0)

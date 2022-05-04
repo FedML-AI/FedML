@@ -7,7 +7,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from .trainer.my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
 from .trainer.my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
 from .trainer.my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
-from ...utils.logging import logger
+import logging
 from .fedml_trainer import FedMLTrainer
 # import torch
 # import time
@@ -53,7 +53,7 @@ class TrainerDistAdapter:
         only_gpu =  args.using_gpu
 
         self.process_group_manager = ProcessGroupManager(
-            args.silo_proc_rank, args.silo_proc_num, args.pg_master_address, args.pg_master_port, only_gpu
+            args.proc_rank_in_silo, args.n_proc_in_silo, args.pg_master_address, args.pg_master_port, only_gpu
         )
 
         # if not args.is_mobile:
@@ -65,7 +65,7 @@ class TrainerDistAdapter:
         if model_trainer is None:
             model_trainer = self.get_model_trainer(model, args)
         model_trainer.set_id(client_index)
-        logger.info("Initiating Trainer")
+        logging.info("Initiating Trainer")
         trainer = self.get_trainer(
             client_index,
             train_data_local_dict,
@@ -130,8 +130,8 @@ class TrainerDistAdapter:
         self.trainer.update_dataset(int(_client_index))
 
     def cleanup_pg(self):
-        logger.info(
+        logging.info(
             "Cleaningup process group for client %s in silo %s" % (
-                self.args.silo_proc_rank, self.args.client_rank)
+                self.args.proc_rank_in_silo, self.args.rank_in_node)
         )
         self.process_group_manager.cleanup()

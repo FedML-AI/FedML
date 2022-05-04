@@ -5,11 +5,6 @@ import numpy as np
 import torch
 import torch.utils.data as data
 
-# logging.basicConfig()
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
-
 DEFAULT_BATCH_SIZE = 16
 train_file_path = "../../../data/synthetic_1_1/train/mytrain.json"
 test_file_path = "../../../data/synthetic_1_1/test/mytest.json"
