@@ -1,8 +1,7 @@
-import logging
-
 from .message_def import MyMessage
 from ....core.distributed.communication.message import Message
 from ....core.distributed.server.server_manager import ServerManager
+import logging
 
 
 class GKTServerMananger(ServerManager):

@@ -15,7 +15,7 @@ from ...communication.message import Message
 from ...communication.observer import Observer
 from ...communication.grpc.grpc_server import GRPCCOMMServicer
 
-from .....utils.logging import logger
+import logging
 
 import csv
 
@@ -34,10 +34,10 @@ class GRPCCommManager(BaseCommunicationManager):
 
         if client_id == 0:
             self.node_type = "server"
-            logger.info("############# THIS IS FL SERVER ################")
+            logging.info("############# THIS IS FL SERVER ################")
         else:
             self.node_type = "client"
-            logger.info("------------- THIS IS FL CLIENT ----------------")
+            logging.info("------------- THIS IS FL CLIENT ----------------")
         self.opts = [
             ("grpc.max_send_message_length", 1000 * 1024 * 1024),
             ("grpc.max_receive_message_length", 1000 * 1024 * 1024),
@@ -50,7 +50,7 @@ class GRPCCommManager(BaseCommunicationManager):
         grpc_comm_manager_pb2_grpc.add_gRPCCommManagerServicer_to_server(
             self.grpc_servicer, self.grpc_server
         )
-        logger.info(os.getcwd())
+        logging.info(os.getcwd())
         self.ip_config = self._build_ip_table(ip_config_path)
 
         # starts a grpc_server on local machine using ip address "0.0.0.0"
@@ -58,15 +58,15 @@ class GRPCCommManager(BaseCommunicationManager):
 
         self.grpc_server.start()
         self.is_running = True
-        logger.info("grpc server started. Listening on port " + str(port))
+        logging.info("grpc server started. Listening on port " + str(port))
 
     def send_message(self, msg: Message):
-        logger.info("msg = {}".format(msg))
+        logging.info("msg = {}".format(msg))
         # payload = msg.to_json()
 
-        logger.info("pickle.dumps(msg) START")
+        logging.info("pickle.dumps(msg) START")
         msg_pkl = pickle.dumps(msg)
-        logger.info("pickle.dumps(msg) END")
+        logging.info("pickle.dumps(msg) END")
 
         receiver_id = msg.get_receiver_id()
         PORT_BASE = 8888
@@ -78,14 +78,14 @@ class GRPCCommManager(BaseCommunicationManager):
         stub = grpc_comm_manager_pb2_grpc.gRPCCommManagerStub(channel)
 
         request = grpc_comm_manager_pb2.CommRequest()
-        logger.info("sending message to {}".format(channel_url))
+        logging.info("sending message to {}".format(channel_url))
 
         request.client_id = self.client_id
 
         request.message = msg_pkl
 
         stub.sendMessage(request)
-        logger.debug("sent successfully")
+        logging.debug("sent successfully")
         channel.close()
 
     def add_observer(self, observer: Observer):
@@ -103,9 +103,9 @@ class GRPCCommManager(BaseCommunicationManager):
             if self.grpc_servicer.message_q.qsize() > 0:
                 lock.acquire()
                 msg_pkl = self.grpc_servicer.message_q.get()
-                logger.info("unpickle START")
+                logging.info("unpickle START")
                 msg = pickle.loads(msg_pkl)
-                logger.info("unpickle END")
+                logging.info("unpickle END")
                 msg_type = msg.get_type()
                 for observer in self._observers:
                     observer.receive_message(msg_type, msg)

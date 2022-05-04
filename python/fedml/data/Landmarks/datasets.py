@@ -4,10 +4,6 @@ import os
 import torch.utils.data as data
 from PIL import Image
 
-# logging.basicConfig()
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
 
 class Landmarks(data.Dataset):
     def __init__(

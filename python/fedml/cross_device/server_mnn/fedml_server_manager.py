@@ -6,7 +6,7 @@ from .utils import write_tensor_dict_to_mnn
 from ...core.distributed.communication.message import Message
 from ...core.distributed.server.server_manager import ServerManager
 from ...mlops import MLOpsMetrics, MLOpsProfilerEvent
-from ...utils.logging import logger
+import logging
 
 
 class FedMLServerManager(ServerManager):
@@ -32,10 +32,10 @@ class FedMLServerManager(ServerManager):
         self.client_stubs = {}
         self.global_model_file_path = self.args.global_model_file_path
         self.model_file_cache_folder = self.args.model_file_cache_folder
-        logger.info(
+        logging.info(
             "self.global_model_file_path = {}".format(self.global_model_file_path)
         )
-        logger.info(
+        logging.info(
             "self.model_file_cache_folder = {}".format(self.model_file_cache_folder)
         )
 
@@ -150,7 +150,7 @@ class FedMLServerManager(ServerManager):
             "timestamp": "1651635148138"
         }
         for client_id in self.client_real_ids:
-            logger.info("com_manager_status - client_id = {}".format(client_id))
+            logging.info("com_manager_status - client_id = {}".format(client_id))
             self.com_manager_status.send_message_json(
                 "flserver_agent/" + str(client_id) + "/start_train",
                 json.dumps(start_train_json),
@@ -173,7 +173,7 @@ class FedMLServerManager(ServerManager):
             self.args.client_num_in_total,
             len(client_id_list_in_this_round),
         )
-        logger.info(
+        logging.info(
             "client_id_list_in_this_round = {}, data_silo_index_list = {}".format(
                 client_id_list_in_this_round, data_silo_index_list
             )
@@ -213,7 +213,7 @@ class FedMLServerManager(ServerManager):
                 all_client_is_online = False
                 break
 
-        logger.info(
+        logging.info(
             "sender_id = %d, all_client_is_online = %s"
             % (msg_params.get_sender_id(), str(all_client_is_online))
         )
@@ -230,13 +230,13 @@ class FedMLServerManager(ServerManager):
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         local_sample_number = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
 
-        logger.info("model_params = {}".format(model_params))
+        logging.info("model_params = {}".format(model_params))
 
         self.aggregator.add_local_trained_result(
             self.client_real_ids.index(sender_id), model_params, local_sample_number
         )
         b_all_received = self.aggregator.check_whether_all_receive()
-        logger.info("b_all_received = %s " % str(b_all_received))
+        logging.info("b_all_received = %s " % str(b_all_received))
         if b_all_received:
             if hasattr(self.args, "backend") and self.args.using_mlops:
                 self.mlops_event.log_event_ended("server.wait", event_value=str(self.round_idx))
@@ -301,7 +301,7 @@ class FedMLServerManager(ServerManager):
         message = Message(
             MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id
         )
-        logger.info("global_model_params = {}".format(global_model_params))
+        logging.info("global_model_params = {}".format(global_model_params))
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(client_index))
         self.send_message(message)
@@ -309,7 +309,7 @@ class FedMLServerManager(ServerManager):
     def send_message_sync_model_to_client(
         self, receive_id, global_model_params, data_silo_index
     ):
-        logger.info("send_message_sync_model_to_client. receive_id = %d" % receive_id)
+        logging.info("send_message_sync_model_to_client. receive_id = %d" % receive_id)
         message = Message(
             MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT,
             self.get_sender_id(),

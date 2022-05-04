@@ -1,8 +1,7 @@
-import logging
-
 from .message_def import MyMessage
 from ....core.distributed.client.client_manager import ClientManager
 from ....core.distributed.communication.message import Message
+import logging
 
 
 class GKTClientMananger(ClientManager):

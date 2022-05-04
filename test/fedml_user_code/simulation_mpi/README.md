@@ -1,0 +1,1 @@
+sh run_one_line_example.sh 4

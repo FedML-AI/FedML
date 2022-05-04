@@ -6,7 +6,7 @@ from fedml.data.MNIST.data_loader import download_mnist, load_partition_data_mni
 
 def load_data(args):
     download_mnist(args.data_cache_dir)
-    fedml.logger.info("load_data. dataset_name = %s" % args.dataset)
+    fedml.logging.info("load_data. dataset_name = %s" % args.dataset)
 
     """
     Please read through the data loader at to see how to customize the dataset for FedML framework.

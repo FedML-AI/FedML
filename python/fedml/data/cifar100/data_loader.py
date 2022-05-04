@@ -7,11 +7,6 @@ import torchvision.transforms as transforms
 
 from .datasets import CIFAR100_truncated
 
-#logging.basicConfig()
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
-
 # generate the non-IID distribution for all methods
 def read_data_distribution(filename='./data_preprocessing/non-iid-distribution/CIFAR10/distribution.txt'):
     distribution = {}
