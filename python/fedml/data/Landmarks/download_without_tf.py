@@ -70,7 +70,7 @@ def _listener_process(queue: multiprocessing.Queue, log_file: str):
             if record is None:
                 break
             logger = logging.getLogger(record.name)
-            logger.handle(record)
+            logging.handle(record)
         except Exception:  # pylint: disable=broad-except
             print("Something went wrong:", file=sys.stderr)
             traceback.print_exc(file=sys.stderr)
@@ -104,20 +104,20 @@ def _filter_images(shard: int, all_images: Set[str], image_dir: str, base_url: s
     # images_md5_url = '%s/md5sum/train/md5.images_%s.txt' % (base_url, shard_str)
     with tempfile.TemporaryDirectory() as tmp_dir:
         logger = logging.getLogger(LOGGER)
-        # logger.info('Start to download checksum for shard %s', shard_str)
+        # logging.info('Start to download checksum for shard %s', shard_str)
         # get_file(
         #     'images_md5_%s.txt' % shard_str,
         #     origin=images_md5_url,
         #     cache_dir=tmp_dir)
-        # logger.info('Downloaded checksum for shard %s successfully.', shard_str)
-        logger.info("Start to download data for shard %s", shard_str)
+        # logging.info('Downloaded checksum for shard %s successfully.', shard_str)
+        logging.info("Start to download data for shard %s", shard_str)
         get_file(
             "images_%s.tar" % shard_str,
             origin=images_tar_url,
             extract=True,
             cache_dir=tmp_dir,
         )
-        logger.info("Data for shard %s was downloaded successfully.", shard_str)
+        logging.info("Data for shard %s was downloaded successfully.", shard_str)
         count = 0
         for root, _, files in os.walk(tmp_dir):
             for filename in files:
@@ -127,7 +127,7 @@ def _filter_images(shard: int, all_images: Set[str], image_dir: str, base_url: s
                     shutil.copyfile(
                         os.path.join(root, filename), os.path.join(image_dir, filename)
                     )
-        logger.info("Moved %d images from shard %s to %s", count, shard_str, image_dir)
+        logging.info("Moved %d images from shard %s to %s", count, shard_str, image_dir)
 
 
 def _download_data(num_worker: int, cache_dir: str, base_url: str):
@@ -141,7 +141,7 @@ def _download_data(num_worker: int, cache_dir: str, base_url: str):
       base_url: The base url for downloading GLD images.
     """
     logger = logging.getLogger(LOGGER)
-    logger.info("Start to download fed gldv2 mapping files")
+    logging.info("Start to download fed gldv2 mapping files")
 
     path = get_file(
         "%s.zip" % FED_GLD_SPLIT_FILE_BUNDLE,
@@ -160,7 +160,7 @@ def _download_data(num_worker: int, cache_dir: str, base_url: str):
         MINI_GLD_TEST_SPLIT_FILE, origin=MINI_GLD_TEST_DOWNLOAD_URL, cache_dir=cache_dir
     )
 
-    logger.info("Fed gldv2 mapping files are downloaded successfully.")
+    logging.info("Fed gldv2 mapping files are downloaded successfully.")
     base_path = os.path.dirname(path)
     train_path = os.path.join(
         base_path, FED_GLD_SPLIT_FILE_BUNDLE, FED_GLD_TRAIN_SPLIT_FILE
@@ -178,14 +178,14 @@ def _download_data(num_worker: int, cache_dir: str, base_url: str):
     image_dir = os.path.join(cache_dir, "images")
     if not os.path.exists(image_dir):
         os.mkdir(image_dir)
-    logger.info("Start to download GLDv2 dataset.")
+    logging.info("Start to download GLDv2 dataset.")
     with multiprocessing.pool.ThreadPool(num_worker) as pool:
         train_args = [
             (i, all_images, image_dir, base_url) for i in range(NUM_SHARD_TRAIN)
         ]
         pool.starmap(_filter_images, train_args)
 
-    logger.info("Finish downloading GLDv2 dataset.")
+    logging.info("Finish downloading GLDv2 dataset.")
 
 
 def load_data(
@@ -204,9 +204,9 @@ def load_data(
     listener.start()
     logger = logging.getLogger(LOGGER)
     qh = logging.handlers.QueueHandler(q)
-    logger.addHandler(qh)
-    logger.info("Start to load data.")
-    logger.info("Loading from cache failed, start to download the data.")
+    logging.addHandler(qh)
+    logging.info("Start to load data.")
+    logging.info("Loading from cache failed, start to download the data.")
 
     _download_data(num_worker, cache_dir, base_url)
 

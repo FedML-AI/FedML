@@ -1,12 +1,14 @@
 import fedml
 import torch
-from fedml.cross_silo import Client
+from fedml.cross_silo.hierarchical import Client
 from fedml.data.MNIST.data_loader import download_mnist, load_partition_data_mnist
+from fedml.data.data_loader_cross_silo import split_data_for_dist_trainers
 
 
 def load_data(args):
+    n_dist_trainer = args.n_proc_in_silo
     download_mnist(args.data_cache_dir)
-    fedml.logger.info("load_data. dataset_name = %s" % args.dataset)
+    fedml.logging.info("load_data. dataset_name = %s" % args.dataset)
 
     """
     Please read through the data loader at to see how to customize the dataset for FedML framework.
@@ -23,14 +25,28 @@ def load_data(args):
         class_num,
     ) = load_partition_data_mnist(
         args.batch_size,
-        train_path=args.data_cache_dir + "MNIST/train",
-        test_path=args.data_cache_dir + "MNIST/test",
+        train_path=args.data_cache_dir + "/MNIST/train",
+        test_path=args.data_cache_dir + "/MNIST/test",
     )
     """
     For shallow NN or linear models, 
     we uniformly sample a fraction of clients each round (as the original FedAvg paper)
     """
     args.client_num_in_total = client_num
+    dataset = [
+        train_data_num,
+        test_data_num,
+        train_data_global,
+        test_data_global,
+        train_data_local_num_dict,
+        train_data_local_dict,
+        test_data_local_dict,
+        class_num,
+    ]
+
+    # Split training data between distributed trainers
+    train_data_local_dict = split_data_for_dist_trainers(train_data_local_dict, n_dist_trainer)
+
     dataset = [
         train_data_num,
         test_data_num,
@@ -54,11 +70,11 @@ class LogisticRegression(torch.nn.Module):
         return outputs
 
 
+
 if __name__ == "__main__":
     # init FedML framework
     args = fedml.init()
 
-    # init device
     device = fedml.device.get_device(args)
 
     # load data

@@ -4,10 +4,6 @@ import numpy as np
 from PIL import Image
 from torchvision.datasets import DatasetFolder
 
-#logging.basicConfig()
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
 IMG_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.ppm', '.bmp', '.pgm', '.tif', '.tiff', '.webp')
 
 

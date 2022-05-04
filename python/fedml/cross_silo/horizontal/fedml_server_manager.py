@@ -5,7 +5,7 @@ from .message_define import MyMessage
 from ...core.distributed.communication.message import Message
 from ...core.distributed.server.server_manager import ServerManager
 from ...mlops import MLOpsProfilerEvent, MLOpsMetrics
-from ...utils.logging import logger
+import logging
 
 
 class FedMLServerManager(ServerManager):
@@ -89,7 +89,7 @@ class FedMLServerManager(ServerManager):
         )
 
     def handle_messag_connection_ready(self, msg_params):
-        logger.info("Connection is ready!")
+        logging.info("Connection is ready!")
 
     def handle_message_client_status_update(self, msg_params):
         client_status = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_STATUS)
@@ -108,7 +108,7 @@ class FedMLServerManager(ServerManager):
                 all_client_is_online = False
                 break
 
-        logger.info(
+        logging.info(
             "sender_id = %d, all_client_is_online = %s"
             % (msg_params.get_sender_id(), str(all_client_is_online))
         )
@@ -129,7 +129,7 @@ class FedMLServerManager(ServerManager):
             self.client_real_ids.index(sender_id), model_params, local_sample_number
         )
         b_all_received = self.aggregator.check_whether_all_receive()
-        logger.info("b_all_received = " + str(b_all_received))
+        logging.info("b_all_received = " + str(b_all_received))
         if b_all_received:
             if hasattr(self.args, "backend") and self.args.using_mlops:
                 self.mlops_event.log_event_ended("server.wait", event_value=str(self.round_idx))
@@ -143,7 +143,7 @@ class FedMLServerManager(ServerManager):
             try:
                 self.aggregator.test_on_server_for_all_clients(self.round_idx)
             except Exception as e:
-                logger.info("aggregator.test exception: " + str(e))
+                logging.info("aggregator.test exception: " + str(e))
 
             # send round info to the MQTT backend
             if hasattr(self.args, "backend") and self.args.using_mlops:
@@ -207,7 +207,7 @@ class FedMLServerManager(ServerManager):
     def send_message_sync_model_to_client(
         self, receive_id, global_model_params, client_index
     ):
-        logger.info("send_message_sync_model_to_client. receive_id = %d" % receive_id)
+        logging.info("send_message_sync_model_to_client. receive_id = %d" % receive_id)
         message = Message(
             MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT,
             self.get_sender_id(),

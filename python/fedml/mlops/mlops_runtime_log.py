@@ -24,8 +24,9 @@ class MLOpsRuntimeLog:
 
     def __init__(self, args):
         self.args = args
-        self.should_write_log_file = args.using_mlops
-        self.should_upload_log_file = args.using_mlops
+        if hasattr(args, "using_mlops"):
+            self.should_write_log_file = args.using_mlops
+            self.should_upload_log_file = args.using_mlops
         self.log_file_dir = args.log_file_dir
         self.log_file = None
         self.run_id = args.run_id
@@ -48,7 +49,7 @@ class MLOpsRuntimeLog:
                                     "-edge-" + str(self.edge_id) + ".log"
         self.log_file_path = self.log_file_dir + "/fedavg-cross-silo-run-" + str(self.run_id) + \
                              "-edge-" + str(self.edge_id) + "-upload.log"
-        if self.should_upload_log_file:
+        if hasattr(self, "should_upload_log_file") and self.should_upload_log_file:
             multiprocessing.Process(target=self.log_thread).start()
 
     @staticmethod
@@ -60,7 +61,7 @@ class MLOpsRuntimeLog:
 
     def init_logs(self):
         log_file_path, program_prefix = MLOpsRuntimeLog.build_log_file_path(self.args)
-        if self.should_write_log_file:
+        if hasattr(self, "should_write_log_file") and self.should_write_log_file:
             logging.basicConfig(
                 filename=log_file_path,
                 filemode="w",

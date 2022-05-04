@@ -14,7 +14,6 @@ from ..communication.mqtt_s3_mnn.mqtt_s3_comm_manager import MqttS3MNNCommManage
 from ..communication.observer import Observer
 from ..communication.trpc.trpc_comm_manager import TRPCCommManager
 
-from ....utils.logging import logger
 
 class ServerManager(Observer):
     def __init__(self, args, comm=None, rank=0, size=0, backend="MPI"):
@@ -92,18 +91,22 @@ class ServerManager(Observer):
     def run(self):
         self.register_message_receive_handlers()
         self.com_manager.handle_receive_message()
-        logger.info("running")
+        logging.info("running")
 
     def get_sender_id(self):
         return self.rank
 
     def receive_message(self, msg_type, msg_params) -> None:
         if hasattr(self.args, "backend") and self.args.using_mlops:
-            logging.info("receive_message. rank_id = %d, msg_type = %s." % (
-                self.rank, str(msg_type)))
+            logging.info(
+                "receive_message. rank_id = %d, msg_type = %s."
+                % (self.rank, str(msg_type))
+            )
         else:
-            logging.info("receive_message. rank_id = %d, msg_type = %s. msg_params = %s" % (
-                self.rank, str(msg_type), str(msg_params.get_content())))
+            logging.info(
+                "receive_message. rank_id = %d, msg_type = %s."
+                % (self.rank, str(msg_type))
+            )
         handler_callback_func = self.message_handler_dict[msg_type]
         handler_callback_func(msg_params)
 
@@ -118,7 +121,7 @@ class ServerManager(Observer):
         self.message_handler_dict[msg_type] = handler_callback_func
 
     def finish(self):
-        logger.info("__finish server")
+        logging.info("__finish server")
         if self.backend == "MPI":
             MPI.COMM_WORLD.Abort()
         elif self.backend == "MQTT":
