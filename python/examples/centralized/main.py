@@ -13,30 +13,31 @@ import wandb
 from torch.nn.parallel import DistributedDataParallel
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../")))
-from fedml_api.centralized.centralized_trainer import CentralizedTrainer
-from fedml_api.data_preprocessing.FederatedEMNIST.data_loader import load_partition_data_federated_emnist
-from fedml_api.data_preprocessing.fed_cifar100.data_loader import load_partition_data_federated_cifar100
-from fedml_api.data_preprocessing.fed_shakespeare.data_loader import load_partition_data_federated_shakespeare
-from fedml_api.data_preprocessing.shakespeare.data_loader import load_partition_data_shakespeare
-from fedml_api.data_preprocessing.stackoverflow_lr.data_loader import load_partition_data_federated_stackoverflow_lr
-from fedml_api.data_preprocessing.stackoverflow_nwp.data_loader import load_partition_data_federated_stackoverflow_nwp
-from fedml_api.data_preprocessing.MNIST.data_loader import load_partition_data_mnist
-from fedml_api.data_preprocessing.ImageNet.data_loader import load_partition_data_ImageNet
-from fedml_api.data_preprocessing.ImageNet.data_loader import distributed_centralized_ImageNet_loader
-from fedml_api.data_preprocessing.Landmarks.data_loader import load_partition_data_landmarks
+from fedml.centralized.centralized_trainer import CentralizedTrainer
+from fedml.data.FederatedEMNIST.data_loader import load_partition_data_federated_emnist
+from fedml.data.fed_cifar100.data_loader import load_partition_data_federated_cifar100
+from fedml.data.fed_shakespeare.data_loader import load_partition_data_federated_shakespeare
+from fedml.data.shakespeare.data_loader import load_partition_data_shakespeare
+from fedml.data.stackoverflow_lr.data_loader import load_partition_data_federated_stackoverflow_lr
+from fedml.data.stackoverflow_nwp.data_loader import load_partition_data_federated_stackoverflow_nwp
+from fedml.data.MNIST.data_loader import load_partition_data_mnist
+from fedml.data.ImageNet.data_loader import load_partition_data_ImageNet
+from fedml.data.ImageNet.data_loader import distributed_centralized_ImageNet_loader
+from fedml.data.Landmarks.data_loader import load_partition_data_landmarks
 
-from fedml_api.data_preprocessing.cifar10.data_loader import load_partition_data_cifar10
-from fedml_api.data_preprocessing.cifar100.data_loader import load_partition_data_cifar100
-from fedml_api.data_preprocessing.cinic10.data_loader import load_partition_data_cinic10
+from fedml.data.cifar10.data_loader import load_partition_data_cifar10
+from fedml.data.cifar100.data_loader import load_partition_data_cifar100
+from fedml.data.cinic10.data_loader import load_partition_data_cinic10
 
-from fedml_api.model.cv.cnn import CNN_DropOut
-from fedml_api.model.cv.resnet_gn import resnet18
-from fedml_api.model.cv.mobilenet import mobilenet
-from fedml_api.model.cv.resnet import resnet56
-from fedml_api.model.nlp.rnn import RNN_OriginalFedAvg, RNN_StackOverFlow
-from fedml_api.model.linear.lr import LogisticRegression
-from fedml_api.model.cv.mobilenet_v3 import MobileNetV3
-from fedml_api.model.cv.efficientnet import EfficientNet
+from fedml.model.cv.cnn import CNN_DropOut
+from fedml.model.cv.resnet_gn import resnet18
+from fedml.model.cv.mobilenet import mobilenet
+from fedml.model.cv.resnet import resnet56
+from fedml.model.nlp.rnn import RNN_OriginalFedAvg, RNN_StackOverFlow
+from fedml.model.linear.lr import LogisticRegression
+from fedml.model.cv.mobilenet_v3 import MobileNetV3
+from fedml.model.cv.efficientnet import EfficientNet
+
 
 
 def add_args(parser):
