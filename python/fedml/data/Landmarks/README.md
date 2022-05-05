@@ -3,8 +3,8 @@
 You are recommended to download images.zip and data_user_dict.zip file from these two .zip files at AWS S3:
 ```
 sh download_from_aws_s3.sh
-upzip data_user_dict.zip
-upzip images.zip
+unzip data_user_dict.zip
+unzip images.zip
 ```
 
 The images.zip is 23GB and data_user_dict.zip is 2MB. After downloading and upzip, please the data related files will look as follows in the current folder.
