@@ -45,7 +45,7 @@ class FedMLServerManager(ServerManager):
         if hasattr(self.args, "backend") and self.args.using_mlops:
             self.mlops_metrics = MLOpsMetrics()
             self.mlops_metrics.set_messenger(self.com_manager_status)
-            self.aggregator.set_mlops_logger(self.mlops_metrics)
+            self.aggregator.set_mlops_metrics_logger(self.mlops_metrics)
 
         self.start_running_time = 0.0
         self.aggregated_model_url = None
