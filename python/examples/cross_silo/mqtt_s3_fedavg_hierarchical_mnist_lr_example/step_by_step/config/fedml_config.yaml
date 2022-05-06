@@ -1,5 +1,6 @@
 common_args:
   training_type: "cross_silo"
+  scenario: "hierarchical"
   using_mlops: false
   random_seed: 0
 
