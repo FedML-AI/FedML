@@ -63,34 +63,40 @@ def init(args=None):
     ):
         pass
     elif args.training_type == "cross_silo":
-        if not hasattr(args, 'enable_cuda_rpc'):
-            args.enable_cuda_rpc = False
-        # Set inra-silo argiments
-        if args.rank == 0:
-            args.rank_in_node = 0
-            args.process_id = args.rank_in_node
-            args.n_proc_in_silo = 1
-            args.proc_rank_in_silo = 0
-            if not hasattr(args, 'n_proc_per_node'):
-                args.n_proc_per_node = 1
-        else:
-            env_local_rank_int = 1
-            env_local_rank_str = os.environ.get("LOCAL_RANK", None)
-            if env_local_rank_str is not None:
-                env_local_rank_int = int(env_local_rank_str)
-            args.rank_in_node = env_local_rank_int
-            args.process_id = args.rank_in_node
-            if not hasattr(args, 'n_node_in_silo'):
-                args.n_node_in_silo = 1
-            if not hasattr(args, 'n_proc_per_node'):
-                args.n_proc_per_node = 1
-            if not hasattr(args, 'node_rank_in_silo'):
-                args.node_rank_in_silo = 1
-            args.n_proc_in_silo = args.n_node_in_silo * args.n_proc_per_node
-            args.proc_rank_in_silo = args.node_rank_in_silo * args.n_proc_per_node + args.rank_in_node
-            if not hasattr(args, 'pg_master_port'):
-                args.pg_master_port = 29500
-            args.pg_master_port += args.rank
+        if args.scenario == "horizontal":
+            
+            args.process_id = args.rank
+
+        elif args.scenario == "hierarchical":
+            if not hasattr(args, 'enable_cuda_rpc'):
+                args.enable_cuda_rpc = False
+            # Set intra-silo argiments
+            if args.rank == 0:
+                args.rank_in_node = 0
+                args.process_id = args.rank_in_node
+                args.n_proc_in_silo = 1
+                args.proc_rank_in_silo = 0
+                if not hasattr(args, 'n_proc_per_node'):
+                    args.n_proc_per_node = 1
+            else:
+                env_local_rank_int = 1
+                env_local_rank_str = os.environ.get("LOCAL_RANK", None)
+                if env_local_rank_str is not None:
+                    env_local_rank_int = int(env_local_rank_str)
+                args.rank_in_node = env_local_rank_int
+                args.process_id = args.rank_in_node
+                if not hasattr(args, 'n_node_in_silo'):
+                    args.n_node_in_silo = 1
+                if not hasattr(args, 'n_proc_per_node'):
+                    args.n_proc_per_node = 1
+                if not hasattr(args, 'node_rank_in_silo'):
+                    args.node_rank_in_silo = 1
+                args.n_proc_in_silo = args.n_node_in_silo * args.n_proc_per_node
+                args.proc_rank_in_silo = args.node_rank_in_silo * args.n_proc_per_node + args.rank_in_node
+                if not hasattr(args, 'pg_master_port'):
+                    args.pg_master_port = 29500
+                args.pg_master_port += args.rank
+
     elif args.training_type == "cross_device":
         args.rank = 0  # only server runs on Python package
     else:
