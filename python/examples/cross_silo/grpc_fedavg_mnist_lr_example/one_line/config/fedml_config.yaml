@@ -2,6 +2,9 @@ common_args:
   training_type: "cross_silo"
   random_seed: 0
 
+environment_args:
+  bootstrap: config/bootstrap.sh
+
 data_args:
   dataset: "mnist"
   data_cache_dir: "../../../../data/mnist"

@@ -3,6 +3,9 @@ common_args:
   using_mlops: false
   random_seed: 0
 
+environment_args:
+  bootstrap: config/bootstrap.sh
+
 data_args:
   dataset: "mnist"
   data_cache_dir: "../../../../data/mnist"
