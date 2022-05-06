@@ -1,5 +1,5 @@
 import MNN
-import mnist
+from torchvision.datasets import MNIST
 
 F = MNN.expr
 
@@ -8,14 +8,14 @@ class MnistDataset(MNN.data.Dataset):
     def __init__(self, training_dataset=True):
         super(MnistDataset, self).__init__()
         self.is_training_dataset = training_dataset
+        trainset = MNIST(root='./data', train=True, download=True)
+        testset = MNIST(root='./data', train=False, download=True)
         if self.is_training_dataset:
-            self.data = (
-                mnist.train_images() / 255.0
-            )  # downloading happens in this function
-            self.labels = mnist.train_labels()
+            self.data = trainset.data / 255.0
+            self.labels = trainset.targets
         else:
-            self.data = mnist.test_images() / 255.0
-            self.labels = mnist.test_labels()
+            self.data = testset.data / 255.0
+            self.labels = testset.targets
 
     def __getitem__(self, index):
         dv = F.const(
@@ -32,3 +32,4 @@ class MnistDataset(MNN.data.Dataset):
             return 60000
         else:
             return 10000
+
