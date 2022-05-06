@@ -42,19 +42,16 @@ class FedMLServerManager(ServerManager):
         self.client_online_mapping = {}
         self.client_real_ids = json.loads(args.client_id_list)
 
-        self.mlops_metrics = MLOpsMetrics()
-        self.mlops_metrics.set_messenger(self.com_manager_status)
-        self.aggregator.set_mlops_logger(self.mlops_metrics)
+        if hasattr(self.args, "backend") and self.args.using_mlops:
+            self.mlops_metrics = MLOpsMetrics()
+            self.mlops_metrics.set_messenger(self.com_manager_status)
+            self.aggregator.set_mlops_logger(self.mlops_metrics)
+
         self.start_running_time = 0.0
         self.aggregated_model_url = None
         self.event_sdk = MLOpsProfilerEvent(self.args)
 
     def run(self):
-        # notify MLOps with RUNNING status
-        self.mlops_metrics.report_server_training_status(
-            self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING
-        )
-
         super().run()
 
     def start_train(self):
@@ -207,6 +204,12 @@ class FedMLServerManager(ServerManager):
         if client_status == "ONLINE":
             self.client_online_mapping[str(msg_params.get_sender_id())] = True
 
+        # notify MLOps with RUNNING status
+        if hasattr(self.args, "backend") and self.args.using_mlops:
+            self.mlops_metrics.report_server_training_status(
+                self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING
+            )
+
         all_client_is_online = True
         for client_id in self.client_real_ids:
             if not self.client_online_mapping.get(str(client_id), False):
@@ -248,7 +251,7 @@ class FedMLServerManager(ServerManager):
             if hasattr(self.args, "backend") and self.args.using_mlops:
                 self.mlops_event.log_event_ended("aggregate", event_value=str(self.round_idx))
 
-            self.aggregator.test_on_server_for_all_clients(self.global_model_file_path)
+            self.aggregator.test_on_server_for_all_clients(self.global_model_file_path, self.round_idx)
 
             # send round info to the MQTT backend
             round_info = {
@@ -257,7 +260,8 @@ class FedMLServerManager(ServerManager):
                 "total_rounds": self.round_num,
                 "running_time": round(time.time() - self.start_running_time, 4),
             }
-            self.mlops_metrics.report_server_training_round_info(round_info)
+            if hasattr(self.args, "backend") and self.args.using_mlops:
+                self.mlops_metrics.report_server_training_round_info(round_info)
 
             client_id_list_in_this_round = self.aggregator.client_selection(
                 self.round_idx, self.client_real_ids, self.args.client_num_per_round
@@ -277,20 +281,21 @@ class FedMLServerManager(ServerManager):
                 )
                 client_idx_in_this_round += 1
 
-            model_info = {
-                "run_id": self.args.run_id,
-                "round_idx": self.round_idx + 1,
-                "global_aggregated_model_s3_address": self.aggregated_model_url,
-            }
-            self.mlops_metrics.report_aggregated_model_info(model_info)
-            self.aggregated_model_url = None
+            if hasattr(self.args, "backend") and self.args.using_mlops:
+                model_info = {
+                    "run_id": self.args.run_id,
+                    "round_idx": self.round_idx + 1,
+                    "global_aggregated_model_s3_address": self.aggregated_model_url,
+                }
+                self.mlops_metrics.report_aggregated_model_info(model_info)
+                self.aggregated_model_url = None
 
             self.round_idx += 1
             if self.round_idx == self.round_num:
-                # post_complete_message_to_sweep_process(self.args)
-                self.mlops_metrics.report_server_id_status(
-                    self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_FINISHED
-                )
+                if hasattr(self.args, "backend") and self.args.using_mlops:
+                    self.mlops_metrics.report_server_id_status(
+                        self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_FINISHED
+                    )
                 self.finish()
                 return
             else:
