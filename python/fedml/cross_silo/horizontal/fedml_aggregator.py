@@ -231,7 +231,8 @@ class FedMLAggregator(object):
                 "accuracy": round(train_acc, 4),
                 "loss": round(train_loss, 4),
             }
-            self.mlops_metrics.report_server_training_metric(train_metric)
+            if self.mlops_metrics is not None:
+                self.mlops_metrics.report_server_training_metric(train_metric)
 
             # test data
             test_num_samples = []
