@@ -34,10 +34,10 @@ class FedMLAggregator(object):
         for idx in range(self.worker_num):
             self.flag_client_model_uploaded_dict[idx] = False
 
-        self.mlops_logger = None
+        self.mlops_metrics = None
 
-    def set_mlops_logger(self, mlops_logger):
-        self.mlops_logger = mlops_logger
+    def set_mlops_metrics_logger(self, mlops_metrics):
+        self.mlops_metrics = mlops_metrics
 
     def get_global_model_params(self):
         return self.trainer.get_model_params()
