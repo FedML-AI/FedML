@@ -1,6 +1,5 @@
 import MNN
 import fedml
-import wandb
 from fedml.cross_device import ServerMNN
 from fedml.model import create_mnn_lenet5_model
 
@@ -9,11 +8,6 @@ from my_dataset import MnistDataset
 if __name__ == "__main__":
     # init FedML framework
     args = fedml.init()
-
-    if args.enable_wandb:
-        args.wandb_obj = wandb.init(
-            entity="fedml", project="mobile", name="MNN-Mobile", config=args
-        )
 
     # init device
     device = fedml.device.get_device(args)
