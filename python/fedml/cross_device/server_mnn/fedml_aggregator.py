@@ -213,4 +213,4 @@ class FedMLAggregator(object):
             self.mlops_metrics.report_server_training_metric(train_metric)
 
         if self.args.enable_wandb:
-            wandb.log({"test acc": test_accuracy, "test loss": test_loss})
+            wandb.log({"round idx": round_idx, "test acc": test_accuracy, "test loss": test_loss})
