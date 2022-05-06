@@ -34,6 +34,8 @@ class FedMLAggregator(object):
         for idx in range(self.worker_num):
             self.flag_client_model_uploaded_dict[idx] = False
 
+        self.mlops_logger = None
+
     def set_mlops_logger(self, mlops_logger):
         self.mlops_logger = mlops_logger
 
@@ -164,7 +166,7 @@ class FedMLAggregator(object):
         logging.info("client_indexes = %s" % str(client_indexes))
         return client_indexes
 
-    def test_on_server_for_all_clients(self, mnn_file_path):
+    def test_on_server_for_all_clients(self, mnn_file_path, round_idx):
         # load global model from MNN
         var_map = F.load_as_dict(mnn_file_path)
         input_dicts, output_dicts = F.get_inputs_and_outputs(var_map)
@@ -199,6 +201,16 @@ class FedMLAggregator(object):
         test_loss = loss.read()
         fedml.logging.info("test acc = {}".format(test_accuracy))
         fedml.logging.info("test loss = {}".format(test_loss))
+
+        train_metric = {
+            "run_id": self.args.run_id,
+            "round_idx": round_idx,
+            "timestamp": time.time(),
+            "accuracy": round(test_accuracy, 4),
+            "loss": round(test_loss, 4),
+        }
+        if self.mlops_metrics is not None:
+            self.mlops_metrics.report_server_training_metric(train_metric)
 
         if self.args.enable_wandb:
             wandb.log({"test acc": test_accuracy, "test loss": test_loss})
