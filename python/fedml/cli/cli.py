@@ -142,8 +142,14 @@ def build_mlops_package(source_folder, entry_point, config_folder, dest_folder,
 
     shutil.rmtree(mlops_dest_conf, ignore_errors=True)
     shutil.rmtree(mlops_dest, ignore_errors=True)
-    shutil.copytree(mlops_src, mlops_dest, copy_function=shutil.copy)
-    shutil.copytree(mlops_conf, mlops_dest_conf, copy_function=shutil.copy)
+    try:
+        shutil.copytree(mlops_src, mlops_dest, copy_function=shutil.copy)
+    except Exception as e:
+        pass
+    try:
+        shutil.copytree(mlops_conf, mlops_dest_conf, copy_function=shutil.copy)
+    except Exception as e:
+        pass
     try:
         os.remove(os.path.join(mlops_dest_conf, "mqtt_config.yaml"))
         os.remove(os.path.join(mlops_dest_conf, "s3_config.yaml"))
