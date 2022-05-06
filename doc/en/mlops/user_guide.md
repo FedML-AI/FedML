@@ -153,7 +153,7 @@ CONFIG=examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line/config
 DEST=./mlops
 fedml build -t client -sf $SOURCE -ep $ENTRY -cf $CONFIG -df $DEST
 ```
-- Note: for ENTRY, please only specify the file name (torch_client.py) under the SOURCE folder, please do not pass the absolute path.
+Note: for ENTRY, please only specify the file name (torch_client.py) under the SOURCE folder, please do not pass the absolute path.
 
 If the script works correctly, the console log should be as follows.
 ```shell
@@ -180,7 +180,7 @@ CONFIG=examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line/config
 DEST=./mlops
 fedml build -t server -sf $SOURCE -ep $ENTRY -cf $CONFIG -df $DEST
 ```
-- Note: for ENTRY, please only specify the file name (torch_server.py) under the SOURCE folder, please do not pass the absolute path.
+Note: for ENTRY, please only specify the file name (torch_server.py) under the SOURCE folder, please do not pass the absolute path.
 
 If the script works correctly, the console log should be as follows.
 ```shell
