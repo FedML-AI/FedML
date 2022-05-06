@@ -27,6 +27,9 @@ class MLOpsRuntimeLog:
         if hasattr(args, "using_mlops"):
             self.should_write_log_file = args.using_mlops
             self.should_upload_log_file = args.using_mlops
+        else:
+            self.should_write_log_file = False
+            self.should_upload_log_file = False
         self.log_file_dir = args.log_file_dir
         self.log_file = None
         self.run_id = args.run_id
