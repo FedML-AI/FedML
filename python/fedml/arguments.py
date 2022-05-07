@@ -36,6 +36,9 @@ def add_args():
     # default arguments
     parser.add_argument("--rank", type=int, default=0)
 
+    
+    parser.add_argument("--node_rank", type=int, help="Rank of the node (for cross-silo hierarchical setting)", default=0)
+
     args = parser.parse_args()
     return args
 
@@ -83,9 +86,7 @@ class Arguments:
         configuration = self.load_yaml_config(cmd_args.yaml_config_file)
 
         # Override class attributes from current yaml config
-        for _, param_family in configuration.items():
-            for key, val in param_family.items():
-                setattr(self, key, val)
+        self.set_attr_from_config(configuration)
 
         path_current_file = path.abspath(path.dirname(__file__))
         if training_type == "simulation" and comm_backend == "single_process":
@@ -94,14 +95,26 @@ class Arguments:
             self.gpu_mapping_file = path.join(
                 path_current_file, "config/simulaton_mpi/gpu_mapping.yaml"
             )
-        elif training_type == "cross_silo":
-            pass
+        elif self.training_type == "cross_silo":
+            if self.scenario == "hierarchical":
+                # Add configs specific for serverf or silos
+                if self.rank == 0:
+                    comp_config_path = self.server_config_path
+                else:
+                    comp_config_path = self.client_silo_config_paths[self.rank - 1]
+                com_config = self.load_yaml_config(comp_config_path)
+                self.set_attr_from_config(com_config)
         elif training_type == "cross_device":
             pass
         else:
             pass
         return configuration
 
+
+    def set_attr_from_config(self,configuration):
+        for _, param_family in configuration.items():
+            for key, val in param_family.items():
+                setattr(self, key, val)
 
 def load_arguments(training_type=None, comm_backend=None):
     cmd_args = add_args()

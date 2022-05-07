@@ -36,8 +36,8 @@ validation_args:
 device_args:
   worker_num: 2
   using_gpu: false
-  # gpu_mapping_file: config/gpu_mapping.yaml
-  # gpu_mapping_key: mapping_default
+  gpu_mapping_file: config/gpu_mapping.yaml
+  gpu_mapping_key: mapping_default
 
 comm_args:
   backend: "MQTT_S3"
@@ -51,11 +51,3 @@ tracking_args:
   wandb_key: ee0b5f53d949c84cee7decbe7a619e63fb1f8408
   wandb_project: fedml
   wandb_name: fedml_torch_fedavg_mnist_lr
-
-
-silo_args:
-  n_node_in_silo: 1
-  node_rank_in_silo: 0
-  n_proc_per_node: 2
-  pg_master_address: '127.0.0.1'
-  pg_master_port: 12345

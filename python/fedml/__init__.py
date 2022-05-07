@@ -68,6 +68,7 @@ def init(args=None):
             args.process_id = args.rank
 
         elif args.scenario == "hierarchical":
+            args.worker_num = args.client_num_per_round
             if not hasattr(args, 'enable_cuda_rpc'):
                 args.enable_cuda_rpc = False
             # Set intra-silo argiments
@@ -79,6 +80,7 @@ def init(args=None):
                 if not hasattr(args, 'n_proc_per_node'):
                     args.n_proc_per_node = 1
             else:
+                # Modify arguments to match info set in env by torchrun
                 env_local_rank_int = 1
                 env_local_rank_str = os.environ.get("LOCAL_RANK", None)
                 if env_local_rank_str is not None:
@@ -89,13 +91,11 @@ def init(args=None):
                     args.n_node_in_silo = 1
                 if not hasattr(args, 'n_proc_per_node'):
                     args.n_proc_per_node = 1
-                if not hasattr(args, 'node_rank_in_silo'):
-                    args.node_rank_in_silo = 1
-                args.n_proc_in_silo = args.n_node_in_silo * args.n_proc_per_node
-                args.proc_rank_in_silo = args.node_rank_in_silo * args.n_proc_per_node + args.rank_in_node
+                args.n_proc_in_silo = int(os.environ.get("WORLD_SIZE", None))
+                args.proc_rank_in_silo = int(os.environ.get("RANK", None))
                 if not hasattr(args, 'pg_master_port'):
                     args.pg_master_port = 29500
-                args.pg_master_port += args.rank
+                # args.pg_master_port += args.rank
 
     elif args.training_type == "cross_device":
         args.rank = 0  # only server runs on Python package
