@@ -68,7 +68,7 @@ Note: please run the server first.
 `config/fedml_config.yaml` is shown below.
 
 Here `common_args.training_type` is "cross_silo" type, and `train_args.client_id_list` needs to correspond to the client id in the client command line.
-You can define your silo's DDP setting using `silo_args` where:
+You can define your silo's DDP setting using `client_silo_args` where:
 
   - `n_node_in_silo` is number of nodes in silo
   - `n_proc_per_node` is number of processes (distributed trainers) in each node
@@ -125,7 +125,7 @@ tracking_args:
   wandb_project: fedml
   wandb_name: fedml_torch_fedavg_mnist_lr
 
-silo_args:
+client_silo_args:
   n_node_in_silo: 1
   n_proc_per_node: 2
   node_rank_in_silo: 0
