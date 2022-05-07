@@ -70,7 +70,7 @@ def init(args=None):
         elif args.scenario == "hierarchical":
             if not hasattr(args, 'enable_cuda_rpc'):
                 args.enable_cuda_rpc = False
-            # Set intra-silo argiments
+            # Set intra-silo arguments
             if args.rank == 0:
                 args.rank_in_node = 0
                 args.process_id = args.rank_in_node
