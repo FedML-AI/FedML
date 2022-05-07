@@ -1,0 +1,11 @@
+dist_training_args:
+  n_node_in_silo: 2
+  n_proc_per_node: 1
+  pg_master_address: '192.168.1.1'
+  pg_master_port: 29400
+
+
+device_args:
+  using_gpu: true
+  gpu_mapping_file: config/gpu_mapping.yaml
+  gpu_mapping_key: mapping_silo_1
