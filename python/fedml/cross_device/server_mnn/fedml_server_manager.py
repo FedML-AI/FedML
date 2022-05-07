@@ -108,16 +108,16 @@ class FedMLServerManager(ServerManager):
                         "mqtt_config_path": "config/mqtt_config.yaml"
                     },
                     "train_args": {
-                        "batch_size": 10,
-                        "weight_decay": 0.001,
-                        "client_num_per_round": 2,
-                        "client_num_in_total": 2,
-                        "comm_round": 50,
-                        "client_optimizer": "sgd",
-                        "client_id_list": "[1, 2]",
-                        "epochs": 1,
-                        "learning_rate": 0.03,
-                        "federated_optimizer": "FedAvg"
+                        "batch_size": self.args.batch_size,
+                        "weight_decay": self.args.weight_decay,
+                        "client_num_per_round": self.args.client_num_per_round,
+                        "client_num_in_total": self.args.client_num_in_total,
+                        "comm_round": self.args.comm_round,
+                        "client_optimizer": self.args.client_optimizer,
+                        "client_id_list": self.args.client_id_list,
+                        "epochs": self.args.epochs,
+                        "learning_rate": self.args.learning_rate,
+                        "federated_optimizer": self.args.federated_optimizer
                     },
                     "environment_args": {
                         "bootstrap": "config/bootstrap.sh"
@@ -131,10 +131,12 @@ class FedMLServerManager(ServerManager):
                         "using_mlops": False
                     },
                     "data_args": {
-                        "partition_method": "hetero",
-                        "partition_alpha": 0.5,
-                        "dataset": "mnist",
-                        "data_cache_dir": "../../../../data/mnist"
+                        "partition_method": self.args.partition_method,
+                        "partition_alpha": self.args.partition_alpha,
+                        "dataset": self.args.dataset,
+                        "data_cache_dir": self.args.data_cache_dir,
+                        "train_size": self.args.train_size,
+                        "test_size": self.args.test_size
                     },
                     "tracking_args": {
                         "wandb_project": "fedml",
