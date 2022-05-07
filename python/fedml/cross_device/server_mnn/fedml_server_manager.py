@@ -45,6 +45,7 @@ class FedMLServerManager(ServerManager):
         if hasattr(self.args, "backend") and self.args.using_mlops:
             self.mlops_metrics = MLOpsMetrics()
             self.mlops_metrics.set_messenger(self.com_manager_status)
+            self.mlops_event = MLOpsProfilerEvent(self.args)
             self.aggregator.set_mlops_metrics_logger(self.mlops_metrics)
 
         self.start_running_time = 0.0
@@ -186,7 +187,7 @@ class FedMLServerManager(ServerManager):
             client_idx_in_this_round += 1
 
         if hasattr(self.args, "backend") and self.args.using_mlops:
-            self.mlops_event.log_event_started("server.wait")
+            self.mlops_event.log_event_started("server.wait", event_value=str(self.round_idx))
 
     def register_message_receive_handlers(self):
         print("register_message_receive_handlers------")
