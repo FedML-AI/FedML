@@ -23,7 +23,7 @@ train_args:
   client_id_list: "[1, 2]"
   client_num_in_total: 2
   client_num_per_round: 2
-  comm_round: 4
+  comm_round: 50
   epochs: 1
   batch_size: 10
   client_optimizer: sgd
@@ -51,7 +51,7 @@ tracking_args:
   wandb_project: fedml
   wandb_name: fedml_torch_fedavg_mnist_lr
 
-complementary_config_paths:
+private_config_paths:
   server_config_path: config/server.yaml
   client_silo_config_paths: [
     config/silo_1.yaml,
