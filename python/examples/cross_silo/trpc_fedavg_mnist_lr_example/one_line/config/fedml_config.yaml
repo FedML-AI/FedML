@@ -1,6 +1,7 @@
 common_args:
   training_type: "cross_silo"
   scenario: "horizontal"
+  using_mlops: false
   random_seed: 0
 
 environment_args:
