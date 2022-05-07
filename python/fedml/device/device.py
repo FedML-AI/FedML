@@ -41,7 +41,7 @@ def get_device(args):
         else:
             device = mapping_processes_to_gpu_device_from_yaml_file(
                 args.process_id,
-                args.worker_num,
+                args.worker_num + 1,
                 args.gpu_mapping_file if args.using_gpu else None,
                 args.gpu_mapping_key if args.using_gpu else None,
             )

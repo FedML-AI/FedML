@@ -7,13 +7,20 @@ class ProcessGroupManager:
 
     def __init__(self, rank, world_size, master_address, master_port, only_gpu):
         logging.info("Start process group")
+        logging.info("rank: %d, world_size: %d, master_address: %s, master_port: %d" % (
+            rank, world_size, master_address, master_port))
+        os.environ['MASTER_ADDR'] = master_address
+        os.environ['MASTER_PORT'] = str(master_port)
+        os.environ['WORLD_SIZE'] = str(world_size)
+        os.environ['RANK'] = str(rank)
 
         env_dict = {
             key: os.environ[key]
-            for key in ("MASTER_ADDR", "MASTER_PORT", "RANK", "WORLD_SIZE")
+            for key in ("MASTER_ADDR", "MASTER_PORT", "RANK", "WORLD_SIZE", "NCCL_SOCKET_IFNAME")
         }
         logging.info(
             f"[{os.getpid()}] Initializing process group with: {env_dict}")
+            
         backend = dist.Backend.NCCL if only_gpu else dist.Backend.GLOO
         # initialize the process group
         dist.init_process_group(

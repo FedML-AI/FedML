@@ -64,7 +64,7 @@ def init(args=None):
         pass
     elif args.training_type == "cross_silo":
         if args.scenario == "horizontal":
-            
+
             args.process_id = args.rank
 
         elif args.scenario == "hierarchical":
@@ -79,6 +79,10 @@ def init(args=None):
                 args.proc_rank_in_silo = 0
                 if not hasattr(args, 'n_proc_per_node'):
                     args.n_proc_per_node = 1
+                if not hasattr(args, 'pg_master_port'):
+                    args.pg_master_port = 29500
+                if not hasattr(args, 'pg_master_address'):
+                    args.pg_master_address = "127.0.0.1"
             else:
                 # Modify arguments to match info set in env by torchrun
                 env_local_rank_int = 1
