@@ -70,7 +70,7 @@ class FedMLServerManager(ServerManager):
             client_idx_in_this_round += 1
 
         if hasattr(self.args, "backend") and self.args.using_mlops:
-            self.mlops_event.log_event_started("server.wait")
+            self.mlops_event.log_event_started("server.wait", event_value=str(self.round_idx))
 
     def register_message_receive_handlers(self):
         print("register_message_receive_handlers------")
