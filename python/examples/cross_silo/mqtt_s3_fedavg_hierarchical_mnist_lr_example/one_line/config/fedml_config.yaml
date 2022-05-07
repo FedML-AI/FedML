@@ -9,7 +9,7 @@ environment_args:
 
 data_args:
   dataset: "mnist"
-  data_cache_dir: "./../../../data/mnist"
+  data_cache_dir: "./../../../../data/MNIST"
   partition_method: "hetero"
   partition_alpha: 0.5
 
@@ -20,10 +20,10 @@ model_args:
 
 train_args:
   federated_optimizer: "FedAvg"
-  client_id_list: "[1,2]"
+  client_id_list: "[1, 2]"
   client_num_in_total: 2
   client_num_per_round: 2
-  comm_round: 4
+  comm_round: 50
   epochs: 1
   batch_size: 10
   client_optimizer: sgd
@@ -34,10 +34,9 @@ validation_args:
   frequency_of_the_test: 5
 
 device_args:
-  worker_num: 2
-  using_gpu: false
+  using_gpu: true
   gpu_mapping_file: config/gpu_mapping.yaml
-  gpu_mapping_key: mapping_default
+  server_gpu_mapping_key: mapping_default
 
 comm_args:
   backend: "MQTT_S3"
@@ -51,3 +50,10 @@ tracking_args:
   wandb_key: ee0b5f53d949c84cee7decbe7a619e63fb1f8408
   wandb_project: fedml
   wandb_name: fedml_torch_fedavg_mnist_lr
+
+private_config_paths:
+  server_config_path: config/server.yaml
+  client_silo_config_paths: [
+    config/silo_1.yaml,
+    config/silo_2.yaml
+  ]
