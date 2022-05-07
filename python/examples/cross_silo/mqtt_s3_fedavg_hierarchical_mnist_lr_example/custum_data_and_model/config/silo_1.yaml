@@ -2,7 +2,7 @@ dist_training_args:
   n_node_in_silo: 2
   n_proc_per_node: 1
   pg_master_address: '192.168.1.1'
-  pg_master_port: 29400
+  pg_master_port: 29401
 
 
 device_args:
