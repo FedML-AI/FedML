@@ -185,3 +185,16 @@ jobs:
           SCIKIT_LEARN_STAGING_UPLOAD_TOKEN: ${{ secrets.FEDML_STAGING_UPLOAD_TOKEN }}
         # Force a replacement if the remote file already exists
         run: bash build_tools/github/upload_anaconda.sh
+
+
+# three errors: 1) from mpi4py import MPI
+        #  ImportError: DLL load failed while importing MPI: The specified module could not be found.
+
+        # 2) ERROR: No matching distribution found for MNN==1.1.6
+
+        # 3) ERROR: Could not find a version that satisfies the requirement torch==1.11.0 (from fedml) (from versions: none)
+        #  ERROR: No matching distribution found for torch==1.11.0
+
+        # 4) INFO:auditwheel.main_repair:This does not look like a platform wheel
+
+        # 5)  _configtest.c:2:10: fatal error: 'mpi.h' file not found
