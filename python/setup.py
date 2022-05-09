@@ -36,6 +36,8 @@ requirements = [
     "grpcio",
     "torch",
     "torchvision",
+    "MNN==1.1.6",
+    "mpi4py",
 ]
 
 setup(
