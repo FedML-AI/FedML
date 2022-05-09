@@ -32,7 +32,6 @@ Please refer to the following command and remember to change `WORKSPACE` to your
 **(1) Pull the Docker image**
 ```
 FEDML_DOCKER_IMAGE=fedml/fedml:cuda-11.6.0-devel-ubuntu20.04
-FEDML_DOCKER_IMAGE=fdb5af2b1fb6
 docker pull FEDML_DOCKER_IMAGE
 ```
 **(2) Run Docker with interactive mode**
