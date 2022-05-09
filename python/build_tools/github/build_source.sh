@@ -14,6 +14,8 @@ python -m pip install numpy scipy cython
 python -m pip install twine
 
 cd FedML/python
+pwd
+ls
 python setup.py sdist
 
 # Check whether the source distribution will render correctly

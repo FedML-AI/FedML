@@ -20,6 +20,10 @@ jobs:
   build_wheels:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: python
 
     strategy:
       # Ensure that a wheel builder finishes even if another fails
@@ -113,7 +117,6 @@ jobs:
         run: python -m pip install cibuildwheel==2.5.0
 
       - name: Build wheels
-        working-directory: ./python
         env:
           CIBW_BUILD: cp${{ matrix.python }}-${{ matrix.platform_id }}
           CIBW_ARCHS: all
@@ -138,6 +141,10 @@ jobs:
   build_sdist:
     name: Source distribution
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: python
     steps:
       - name: Checkout FedML
         uses: actions/checkout@v1
@@ -148,11 +155,9 @@ jobs:
           python-version: '3.9'  # update once build dependencies are available
 
       - name: Build source distribution
-        working-directory: ./python
         run: bash build_tools/github/build_source.sh
 
       - name: Test source distribution
-        working-directory: ./python
         run: bash build_tools/github/test_source.sh
         env:
           OMP_NUM_THREADS: 2
@@ -168,7 +173,10 @@ jobs:
     name: Upload to Anaconda
     needs: [build_wheels, build_sdist]
     runs-on: ubuntu-latest
-
+    defaults:
+      run:
+        shell: bash
+        working-directory: python
     steps:
       - name: Checkout FedML
         uses: actions/checkout@v1
@@ -182,7 +190,6 @@ jobs:
         uses: actions/setup-python@v2
 
       - name: Upload artifacts
-        working-directory: ./python
         env:
           # Secret variables need to be mapped to environment variables explicitly
           SCIKIT_LEARN_NIGHTLY_UPLOAD_TOKEN: ${{ secrets.FEDML_NIGHTLY_UPLOAD_TOKEN }}
