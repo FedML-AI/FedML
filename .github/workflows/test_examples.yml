@@ -12,7 +12,7 @@ on:
       - main
 
 jobs:
-  build_wheels:
+  simulation_sp:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     defaults:
