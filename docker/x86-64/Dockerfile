@@ -154,7 +154,6 @@ RUN sudo apt-get install -y python3-mpi4py
 #    sklearn \
 #    networkx \
 #    click \
-#    matplotlib \
 #    grpcio \
 #    aif360 \
 #    tempeh \
