@@ -3,4 +3,4 @@
 set -e
 set -x
 
-python -c "import fedml"
+python -c "import fedml; fedml.__version__"
