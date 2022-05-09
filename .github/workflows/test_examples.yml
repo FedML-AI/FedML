@@ -1,4 +1,4 @@
-name: Build Cross-platform Wheels
+name: Examples Test
 
 on:
   schedule:
