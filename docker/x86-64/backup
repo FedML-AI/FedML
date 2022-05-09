@@ -1,0 +1,128 @@
+
+##############################################################################
+# NCCL 2.10.3 Upgrade
+##############################################################################
+distro=ubuntu2004
+arch=x86_64
+RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/$distro/$arch/cuda-keyring_1.0-1_all.deb && \
+add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/ /" && \
+apt --allow-downgrades update && \
+apt install -y --allow-change-held-packages libnccl2=2.10.3-1+cuda11.0 libnccl-dev=2.10.3-1+cuda11.0
+
+
+
+##############################################################################
+# PyTorch (latest version: v1.9.0)
+##############################################################################
+RUN sudo pip3 install numpy ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses h5py
+RUN sudo pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu113
+
+
+##############################################################################
+# MPI and other libraries
+##############################################################################
+RUN pip install numpy>=1.21 \
+    PyYAML \
+    h5py \
+    tqdm \
+    wandb \
+    wget \
+    torchvision \
+    paho-mqtt \
+    mpi4py==3.0.3 \
+    joblib \
+    boto3 \
+    pynvml \
+    MNN==1.1.6 \
+    sklearn \
+    networkx \
+    click \
+    matplotlib \
+    grpcio \
+    aif360 \
+    tempeh \
+    imblearn \
+    tabulate
+
+##############################################################################
+# install torch-geometric (https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html)
+##############################################################################
+RUN pip install torch-scatter -f https://pytorch-geometric.com/whl/torch-1.9.0+cu111.html
+RUN pip install torch-sparse -f https://pytorch-geometric.com/whl/torch-1.9.0+cu111.html
+RUN pip install torch-geometric
+
+
+##############################################################################
+# pip install FedML
+##############################################################################
+RUN pip3 install --upgrade fedml
+
+
+##############################################################################
+## Add fedml user
+###############################################################################
+# Add a fedml user with user id 8877
+RUN useradd --create-home --uid 1000 --shell /bin/bash fedml
+RUN usermod -aG sudo fedml
+RUN echo "fedml ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+# Change to non-root privilege
+USER fedml
+
+# Extra installation
+RUN sudo pip3 install sentencepiece
+RUN sudo pip3 install pytorch-ignite
+RUN sudo pip3 install pytest-cov
+
+# Batch Multi Node
+ENV USER fedml
+ENV HOME /home/$USER
+RUN echo $HOME
+RUN sudo pip install supervisor
+
+
+##############################################################################
+# SSH Setup
+##############################################################################
+ENV SSHDIR $HOME/.ssh
+RUN sudo mkdir -p ${SSHDIR}
+RUN sudo touch ${SSHDIR}/sshd_config
+RUN sudo ssh-keygen -t rsa -f ${SSHDIR}/ssh_host_rsa_key -N ''
+RUN sudo cp ${SSHDIR}/ssh_host_rsa_key.pub ${SSHDIR}/authorized_keys
+RUN sudo cp ${SSHDIR}/ssh_host_rsa_key ${SSHDIR}/id_rsa
+RUN sudo chown -R ${USER}:${USER} ${SSHDIR}/
+RUN sudo echo "       IdentityFile ${SSHDIR}/id_rsa" >> ${SSHDIR}/config \
+&& sudo echo "       StrictHostKeyChecking no" >> ${SSHDIR}/config \
+&& sudo echo "       UserKnownHostsFile /dev/null" >> ${SSHDIR}/config \
+&& sudo echo "       Port 2022" >> ${SSHDIR}/config \
+&& sudo echo 'Port 2022' >> ${SSHDIR}/sshd_config \
+&& sudo echo 'UsePrivilegeSeparation no' >> ${SSHDIR}/sshd_config \
+&& sudo echo "HostKey ${SSHDIR}/ssh_host_rsa_key" >> ${SSHDIR}/sshd_config
+RUN sudo echo "PidFile ${SSHDIR}/sshd.pid" >> ${SSHDIR}/sshd_config
+RUN sudo cat ${SSHDIR}/sshd_config
+RUN sudo cat ${SSHDIR}/config
+
+RUN sudo chmod -R 600 ${SSHDIR}/*
+RUN sudo chown -R ${USER}:${USER} ${SSHDIR}/
+RUN eval `ssh-agent -s` && ssh-add ${SSHDIR}/id_rsa
+
+RUN sudo apt install -y iproute2
+
+
+EXPOSE 22
+
+
+USER fedml
+
+##############################################################################
+# Supervisor container startup
+##############################################################################
+ADD supervisord.conf /etc/supervisor/supervisord.conf
+ADD sync_all_nodes.sh /supervised-scripts/sync_all_nodes.sh
+RUN sudo chmod 755 supervised-scripts/sync_all_nodes.sh
+
+##############################################################################
+# Entry Point Script
+##############################################################################
+ADD entry-point.sh /batch-runtime-scripts/entry-point.sh
+RUN sudo chmod 0755 /batch-runtime-scripts/entry-point.sh
+CMD /batch-runtime-scripts/entry-point.sh
