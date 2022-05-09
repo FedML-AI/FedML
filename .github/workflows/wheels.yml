@@ -5,11 +5,7 @@ on:
     # Nightly build at 12:12 A.M.
     - cron: "12 12 */1 * *"
   push:
-    branches:
-      - main
   pull_request:
-    branches:
-      - main
 
 jobs:
   build_wheels:
