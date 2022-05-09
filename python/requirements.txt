@@ -4,7 +4,6 @@ h5py
 tqdm
 wandb
 wget
-torchvision
 paho-mqtt
 joblib
 boto3
