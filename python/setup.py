@@ -21,7 +21,7 @@ setup(
     description="A research and production integrated edge-cloud library for "
     "federated/distributed machine learning at anywhere at any scale.",
     long_description=io.open(
-        os.path.join("./../README.md"), "r", encoding="utf-8"
+        os.path.join("README.md"), "r", encoding="utf-8"
     ).read(),
     long_description_content_type="text/markdown",
     url="https://github.com/FedML-AI/FedML",
