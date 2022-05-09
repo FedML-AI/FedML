@@ -34,6 +34,8 @@ requirements = [
     "networkx",
     "click",
     "grpcio",
+    "torch",
+    "torchvision",
 ]
 
 setup(
