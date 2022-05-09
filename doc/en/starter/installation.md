@@ -99,6 +99,7 @@ cd $WORKSPACE/python/examples/simulation/mpi_torch_fedavg_mnist_lr_example
 sh run_one_line_example.sh
 
 ```
+
 ```
 WORKSPACE=/home/chaoyanghe/sourcecode/FedML_startup/FedML
 
@@ -118,10 +119,12 @@ $FEDML_DOCKER_IMAGE
 **(5) Run the interpreter in PyCharm or Visual Studio using Docker environment**
 
 - PyCharm
-https://www.jetbrains.com/help/pycharm/using-docker-as-a-remote-interpreter.html#summary
+
+[https://www.jetbrains.com/help/pycharm/using-docker-as-a-remote-interpreter.html#summary](https://www.jetbrains.com/help/pycharm/using-docker-as-a-remote-interpreter.html#summary)
 
 - Visual Studio
-https://code.visualstudio.com/docs/remote/containers
+
+[https://code.visualstudio.com/docs/remote/containers](https://www.jetbrains.com/help/pycharm/using-docker-as-a-remote-interpreter.html#summary)
 
 (6) Other useful commands
 ```
