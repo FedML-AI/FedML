@@ -2,7 +2,6 @@ import logging
 
 import numpy as np
 import torch
-from matplotlib.pyplot import imsave
 from torch import nn
 
 from ....core.alg_frame.client_trainer import ClientTrainer
@@ -88,7 +87,7 @@ class MyModelTrainer(ClientTrainer):
                     [x for x in result[j * 10 : (j + 1) * 10]], axis=-1
                 )
 
-            imsave("samples/{}_{}.jpg".format(self.id, epoch), img, cmap="gray")
+            # imsave("samples/{}_{}.jpg".format(self.id, epoch), img, cmap="gray")
             netg.train()
 
     def test(self, test_data, device, args):

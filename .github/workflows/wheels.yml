@@ -26,60 +26,64 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Window 64 bit
-          # Note: windows-2019 is needed for older Python versions:
-          # https://github.com/scikit-learn/scikit-learn/issues/22530
+          # from mpi4py import MPI
+          #  ImportError: DLL load failed while importing MPI: The specified module could not be found.
           - os: windows-2019
             python: 38
             bitness: 64
             platform_id: win_amd64
+          # from mpi4py import MPI
+          #  ImportError: DLL load failed while importing MPI: The specified module could not be found.
           - os: windows-latest
             python: 39
             bitness: 64
             platform_id: win_amd64
+          # ERROR: No matching distribution found for MNN==1.1.6
           - os: windows-latest
             python: 310
             bitness: 64
             platform_id: win_amd64
-
-          # Window 32 bit
+          # #RROR: No matching distribution found for torch==1.11.0
           - os: windows-latest
             python: 38
             bitness: 32
             platform_id: win32
+          # ERROR: No matching distribution found for torch==1.11.0
           - os: windows-latest
             python: 39
             bitness: 32
             platform_id: win32
 
-          # Linux 64 bit manylinux2014
+          # auditwheel.main_repair:This does not look like a platform wheel
           - os: ubuntu-latest
             python: 38
             bitness: 64
             platform_id: manylinux_x86_64
             manylinux_image: manylinux2014
+          # auditwheel.main_repair:This does not look like a platform wheel
           - os: ubuntu-latest
             python: 39
             bitness: 64
             platform_id: manylinux_x86_64
             manylinux_image: manylinux2014
-
-          # NumPy on Python 3.10 only supports 64bit and is only available with manylinux2014
+          # auditwheel.main_repair:This does not look like a platform wheel
           - os: ubuntu-latest
             python: 310
             bitness: 64
             platform_id: manylinux_x86_64
             manylinux_image: manylinux2014
 
-          # MacOS x86_64
+          # _configtest.c:2:10: fatal error: 'mpi.h' file not found
           - os: macos-latest
             bitness: 64
             python: 38
             platform_id: macosx_x86_64
+          # _configtest.c:2:10: fatal error: 'mpi.h' file not found
           - os: macos-latest
             bitness: 64
             python: 39
             platform_id: macosx_x86_64
+          # _configtest.c:2:10: fatal error: 'mpi.h' file not found
           - os: macos-latest
             bitness: 64
             python: 310
