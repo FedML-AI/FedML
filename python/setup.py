@@ -34,7 +34,7 @@ requirements = [
     "networkx",
     "click",
     "grpcio",
-    "torch",
+    "torch==1.11.0",
     "torchvision",
     "MNN==1.1.6",
     "mpi4py",
