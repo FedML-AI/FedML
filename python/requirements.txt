@@ -15,5 +15,4 @@ MNN==1.1.6
 sklearn
 networkx
 click
-matplotlib
 grpcio
