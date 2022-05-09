@@ -1,32 +1,7 @@
 import io
 import os
-import sys
 
 from setuptools import setup, find_packages
-
-# For some commands, use setuptools
-SETUPTOOLS_COMMANDS = {
-    "develop",
-    "release",
-    "bdist_egg",
-    "bdist_rpm",
-    "bdist_wininst",
-    "install_egg_info",
-    "build_sphinx",
-    "egg_info",
-    "easy_install",
-    "upload",
-    "bdist_wheel",
-    "--single-version-externally-managed",
-}
-if SETUPTOOLS_COMMANDS.intersection(sys.argv):
-    extra_setuptools_args = dict(
-        zip_safe=False,  # the package can run out of an .egg file
-        include_package_data=True,
-    )
-else:
-    extra_setuptools_args = dict()
-
 
 try:
     from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
@@ -35,7 +10,6 @@ try:
         def finalize_options(self):
             _bdist_wheel.finalize_options(self)
             self.root_is_pure = False
-
 
 except ImportError:
     bdist_wheel = None
@@ -98,5 +72,4 @@ setup(
         ]
     },
     cmdclass={"bdist_wheel": bdist_wheel},
-    **extra_setuptools_args,
 )
