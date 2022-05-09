@@ -7,7 +7,6 @@ import numpy as np
 import torch
 import wandb
 from fedml.mlops import MLOpsRuntimeLog
-from mpi4py import MPI
 
 from .cross_device import ServerMNN
 from .cross_silo import Client as ClientCrossSilo
@@ -53,6 +52,7 @@ def init(args=None):
         and hasattr(args, "backend")
         and args.backend == "MPI"
     ):
+        from mpi4py import MPI
         comm = MPI.COMM_WORLD
         process_id = comm.Get_rank()
         worker_num = comm.Get_size()
