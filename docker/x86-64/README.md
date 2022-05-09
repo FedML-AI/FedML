@@ -4,13 +4,15 @@
 ```
 sudo chmod 777 /var/run/docker.sock
 docker build . -f Dockerfile
+# Successfully built c56e5f90d546
 ```
 
 3. push docker to the cloud (change image-id obtained at step 2)
 
 ```
-docker tag image-id fedml/fedml:0.7.13
+# c56e5f90d546 is the docker image ID obtained at step 2
+docker tag c56e5f90d546 fedml/fedml:cuda-11.6.0-devel-ubuntu20.04
 
 docker login --username fedml
-docker push fedml/fairfl:0.7.13
+docker push fedml/fedml:cuda-11.6.0-devel-ubuntu20.04
 ```
