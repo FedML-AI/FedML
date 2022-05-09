@@ -29,13 +29,13 @@ We recommend to use FedML in Docker environment to make your life easier without
 
 Please refer to the following command and remember to change `WORKSPACE` to your own.
 
-(1) **Pull the Docker image**
+**(1) Pull the Docker image**
 ```
 FEDML_DOCKER_IMAGE=fedml/fedml:cuda-11.6.0-devel-ubuntu20.04
 FEDML_DOCKER_IMAGE=fdb5af2b1fb6
 docker pull FEDML_DOCKER_IMAGE
 ```
-(2) **Run Docker with interactive mode**
+**(2) Run Docker with interactive mode**
 ```
 FEDML_DOCKER_IMAGE=fedml/fedml:cuda-11.6.0-devel-ubuntu20.04
 WORKSPACE=/home/chaoyanghe/sourcecode/FedML_startup/FedML
@@ -59,7 +59,7 @@ fedml@ChaoyangHe-GPU-RTX2080Tix4:/$ cd $WORKSPACE
 fedml@ChaoyangHe-GPU-RTX2080Tix4:/home/chaoyanghe/sourcecode/FedML_startup/FedML$
 ```
 
-(3) **Run Docker with multiple commands to launch your project immediately**
+**(3) Run Docker with multiple commands to launch your project immediately**
 
 Here is an example to run federated learning with MNIST dataset and Logistic Regression model.
 ```
@@ -77,7 +77,7 @@ $FEDML_DOCKER_IMAGE \
 /bin/bash -c `cd $WORKSPACE/python/examples/simulation/mpi_torch_fedavg_mnist_lr_example; sh run_one_line_example.sh`
 ```
 
-(4) **Run Docker with bootstrap.sh and entry.sh **
+**(4) Run Docker with bootstrap.sh and entry.sh**
 
 For advanced usage, you may need to install additional python packages or set some additional environments for your project.
 In this case, we recommend you to specify the `bootstrap.sh`, where the additional package installation and environment settings, and
@@ -116,7 +116,7 @@ docker run -t -i -v $WORKSPACE:$WORKSPACE --shm-size=64g --ulimit nofile=65535 -
 $FEDML_DOCKER_IMAGE
 ```
 
-(5) Run the interpreter in PyCharm or Visual Studio using Docker environment
+**(5) Run the interpreter in PyCharm or Visual Studio using Docker environment**
 
 - PyCharm
 https://www.jetbrains.com/help/pycharm/using-docker-as-a-remote-interpreter.html#summary
