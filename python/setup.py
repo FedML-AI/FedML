@@ -4,10 +4,46 @@ import sys
 
 from setuptools import setup, find_packages
 
-if sys.platform == "darwin":
-    extra_compile_args = ["-stdlib=libc++", "-O3"]
+# For some commands, use setuptools
+SETUPTOOLS_COMMANDS = {
+    "develop",
+    "release",
+    "bdist_egg",
+    "bdist_rpm",
+    "bdist_wininst",
+    "install_egg_info",
+    "build_sphinx",
+    "egg_info",
+    "easy_install",
+    "upload",
+    "bdist_wheel",
+    "--single-version-externally-managed",
+}
+if SETUPTOOLS_COMMANDS.intersection(sys.argv):
+    extra_setuptools_args = dict(
+        zip_safe=False,  # the package can run out of an .egg file
+        include_package_data=True,
+        extras_require={
+            key: min_deps.tag_to_packages[key]
+            for key in ["examples", "docs", "tests", "benchmark"]
+        },
+    )
 else:
-    extra_compile_args = ["-std=c++11", "-O3"]
+    extra_setuptools_args = dict()
+
+
+try:
+    from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
+
+    class bdist_wheel(_bdist_wheel):
+        def finalize_options(self):
+            _bdist_wheel.finalize_options(self)
+            self.root_is_pure = False
+
+
+except ImportError:
+    bdist_wheel = None
+
 
 with open("requirements.txt") as f:
     requirements = f.read().splitlines()
@@ -20,9 +56,7 @@ setup(
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
     "federated/distributed machine learning at anywhere at any scale.",
-    long_description=io.open(
-        os.path.join("README.md"), "r", encoding="utf-8"
-    ).read(),
+    long_description=io.open(os.path.join("README.md"), "r", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/FedML-AI/FedML",
     keywords=[
@@ -33,10 +67,16 @@ setup(
         "Internet of Things",
     ],
     classifiers=[
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
+        "Operating System :: Microsoft :: Windows",
+        "Operating System :: POSIX",
+        "Operating System :: Unix",
+        "Operating System :: MacOS",
+        "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: Implementation :: CPython",
+        "Programming Language :: Python :: Implementation :: PyPy",
     ],
     packages=find_packages(),
     include_package_data=True,
@@ -61,4 +101,6 @@ setup(
             "fedml=fedml.cli.cli:cli",
         ]
     },
+    cmdclass={"bdist_wheel": bdist_wheel},
+    **extra_setuptools_args,
 )
