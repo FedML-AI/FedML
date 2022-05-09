@@ -23,10 +23,6 @@ if SETUPTOOLS_COMMANDS.intersection(sys.argv):
     extra_setuptools_args = dict(
         zip_safe=False,  # the package can run out of an .egg file
         include_package_data=True,
-        extras_require={
-            key: min_deps.tag_to_packages[key]
-            for key in ["examples", "docs", "tests", "benchmark"]
-        },
     )
 else:
     extra_setuptools_args = dict()
