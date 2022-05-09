@@ -16,8 +16,8 @@ except ImportError:
     bdist_wheel = None
 
 
-with open("requirements.txt") as f:
-    requirements = f.read().splitlines()
+# with open("requirements.txt") as f:
+#     requirements = f.read().splitlines()
 
 requirements = [
     "numpy>=1.21",
