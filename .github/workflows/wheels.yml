@@ -1,6 +1,20 @@
 name: Build Cross-platform Wheels
 
-on: [push, pull_request]
+on:
+  schedule:
+    # Nightly build at 12:12 A.M.
+    - cron: "12 12 */1 * *"
+  push:
+    branches:
+      - main
+      # Release branches
+      - "[0-9]+.[0-9]+.X"
+  pull_request:
+    branches:
+      - main
+      - "[0-9]+.[0-9]+.X"
+  # Manual run
+  workflow_dispatch:
 
 jobs:
   build_wheels:
@@ -97,10 +111,6 @@ jobs:
       - name: Build wheels
         working-directory: ./python
         env:
-          CIBW_ENVIRONMENT: OMP_NUM_THREADS=2
-                            OPENBLAS_NUM_THREADS=2
-                            SKLEARN_SKIP_NETWORK_TESTS=1
-                            SKLEARN_BUILD_PARALLEL=3
           CIBW_BUILD: cp${{ matrix.python }}-${{ matrix.platform_id }}
           CIBW_ARCHS: all
           CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.manylinux_image }}
@@ -119,3 +129,59 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           path: wheelhouse/*.whl
+
+# Build the source distribution under Linux
+  build_sdist:
+    name: Source distribution
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout FedML
+        uses: actions/checkout@v1
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'  # update once build dependencies are available
+
+      - name: Build source distribution
+        working-directory: ./python
+        run: bash build_tools/github/build_source.sh
+
+      - name: Test source distribution
+        working-directory: ./python
+        run: bash build_tools/github/test_source.sh
+        env:
+          OMP_NUM_THREADS: 2
+          OPENBLAS_NUM_THREADS: 2
+
+      - name: Store artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          path: dist/*.tar.gz
+
+  # Upload the wheels and the source distribution
+  upload_anaconda:
+    name: Upload to Anaconda
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout FedML
+        uses: actions/checkout@v1
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: dist
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+
+      - name: Upload artifacts
+        working-directory: ./python
+        env:
+          # Secret variables need to be mapped to environment variables explicitly
+          SCIKIT_LEARN_NIGHTLY_UPLOAD_TOKEN: ${{ secrets.FEDML_NIGHTLY_UPLOAD_TOKEN }}
+          SCIKIT_LEARN_STAGING_UPLOAD_TOKEN: ${{ secrets.FEDML_STAGING_UPLOAD_TOKEN }}
+        # Force a replacement if the remote file already exists
+        run: bash build_tools/github/upload_anaconda.sh
