@@ -12,6 +12,21 @@ FedML supports Linux, MacOS, Windows, and Android.
 pip install fedml
 ```
 
+## Install FedML from Source in a Specific Commit
+```
+git clone https://github.com/FedML-AI/FedML.git && \
+cd ./FedML/python && \
+python setup.py install
+```
+If you need to install from a specific commit (normally used for the debugging/development phase), please follow commands below:
+```
+git clone https://github.com/FedML-AI/FedML.git && \
+cd ./FedML && git checkout e798061d62560b03e049d514e7cc8f1a753fde6b && \
+cd python && \
+python setup.py install
+```
+Please change the above commit id to your own (you can find it at [https://github.com/FedML-AI/FedML/commits/master](https://github.com/FedML-AI/FedML/commits/master))
+
 ## Install FedML with Anaconda
 
 ```
