@@ -173,7 +173,8 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
 
     def _notify_connection_ready(self):
         msg_params = Message()
-        msg_type = 0
+        MSG_TYPE_CONNECTION_IS_READY = 0
+        msg_type = MSG_TYPE_CONNECTION_IS_READY
         for observer in self._observers:
             observer.receive_message(msg_type, msg_params)
 
