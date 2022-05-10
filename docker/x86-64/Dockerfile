@@ -39,6 +39,16 @@ ENV WORKSPACE=/home/fedml
 RUN mkdir -p ${INSTALL_DIR}
 RUN mkdir -p ${WORKSPACE}
 
+
+# ***************************************************************************
+# Python
+# ***************************************************************************
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get --allow-downgrades update
+RUN apt-get install -y python3 python3-pip
+RUN ln -s /usr/bin/python3 /usr/bin/python
+RUN ln -nsf /usr/bin/pip3 /usr/bin/pip
+
 # ***************************************************************************
 # Utilities
 # ***************************************************************************
@@ -82,24 +92,6 @@ RUN mv /usr/local/mpi/bin/mpirun /usr/local/mpi/bin/mpirun.real && \
     echo 'mpirun.real --allow-run-as-root --prefix /usr/local/mpi "$@"' >> /usr/local/mpi/bin/mpirun && \
     chmod a+x /usr/local/mpi/bin/mpirun
 
-# ***************************************************************************
-# Python
-# ***************************************************************************
-ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get install -y python3 python3-dev && \
-    rm -f /usr/bin/python && \
-    ln -s /usr/bin/python3 /usr/bin/python && \
-    curl -O https://bootstrap.pypa.io/get-pip.py && \
-        python get-pip.py && \
-        rm get-pip.py && \
-    pip install --upgrade pip && \
-    # Print python an pip version
-    python -V && pip -V
-RUN sudo sudo -H pip3 install --ignore-installed PyYAML
-RUN pip install ipython
-
-RUN apt-get --allow-downgrades update && \
-    apt-get install -y vim git tmux wget curl autoconf libtool apt-utils
 
 # ***************************************************************************
 # NCCL
@@ -113,7 +105,7 @@ apt install -y --allow-change-held-packages libnccl2=${NCCL_VERSION}-1+cuda${CUD
 # ***************************************************************************
 # PyTorch (install from source)
 # ***************************************************************************
-RUN sudo pip3 install numpy ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses h5py
+RUN sudo pip install numpy ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses h5py
 
 RUN cd ${INSTALL_DIR} && \
 git clone https://github.com/pytorch/pytorch.git && \
@@ -121,7 +113,9 @@ cd pytorch && git checkout v${PYTORCH_VERSION} && \
 git submodule sync && \
 git submodule update --init --recursive --jobs 0 && \
 sudo USE_SYSTEM_NCCL=1 TORCH_CUDA_ARC_LIST="6.0 6.1 7.0 7.5 8.0" CMAKE_CUDA_COMPILER="/usr/local/cuda" python setup.py install
-RUN cd .. && rm -rf ${INSTALL_DIR}/pytorch
+#RUN rm -rf ${INSTALL_DIR}/pytorch
+
+RUN python3 -c "import torch; torch.__version__"
 
 # ***************************************************************************
 # install torch-geometric (https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html)
@@ -132,13 +126,13 @@ cd pytorch_geometric && \
 git submodule sync && \
 git submodule update --init --recursive --jobs 0 && \
 sudo python setup.py install
-RUN cd .. && rm -rf ${INSTALL_DIR}/pytorch_geometric
-
+#RUN rm -rf ${INSTALL_DIR}/pytorch_geometric
 
 # ***************************************************************************
 ## install fedml from source
 # ***************************************************************************
 RUN sudo apt-get install -y python3-mpi4py
+RUN pip install urllib3==1.26.9
 #
 #RUN pip install numpy>=1.21 \
 #    PyYAML \
@@ -162,12 +156,16 @@ RUN sudo apt-get install -y python3-mpi4py
 #    tabulate
 
 RUN cd ${INSTALL_DIR} && \
-git clone https://github.com/FedML-AI/FedML.git && \
-cd FedML/python && \
+git clone https://github.com/FedML-AI/FedML.git && cd ${INSTALL_DIR}/FedML && \
+git pull
+
+RUN cd ${INSTALL_DIR}/FedML/python && \
 git submodule sync && \
 git submodule update --init --recursive --jobs 0 && \
 sudo python setup.py install
-#RUN cd .. && rm -rf ${INSTALL_DIR}/FedML
+#RUN rm -rf ${INSTALL_DIR}/FedML
+
+RUN python -c "import fedml; fedml.__version__"
 
 # ***************************************************************************
 ## Add fedml user
@@ -176,8 +174,9 @@ sudo python setup.py install
 RUN useradd --create-home --uid 1000 --shell /bin/bash fedml
 RUN usermod -aG sudo fedml
 RUN echo "fedml ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+
 # Change to non-root privilege
-USER fedml
+#USER fedml
 
 # Extra installation
 #RUN sudo pip3 install sentencepiece
@@ -218,11 +217,7 @@ RUN eval `ssh-agent -s` && ssh-add ${SSHDIR}/id_rsa
 
 RUN sudo apt install -y iproute2
 
-
 EXPOSE 22
-
-
-USER fedml
 
 ##############################################################################
 # Supervisor container startup

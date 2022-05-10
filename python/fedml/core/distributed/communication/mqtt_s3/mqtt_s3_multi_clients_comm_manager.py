@@ -36,7 +36,9 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         self.s3_storage = S3Storage(s3_config_path)
         self.client_real_ids = []
         if args.client_id_list is not None:
-            logging.info("MqttS3CommManager args client_id_list: " + str(args.client_id_list))
+            logging.info(
+                "MqttS3CommManager args client_id_list: " + str(args.client_id_list)
+            )
             self.client_real_ids = json.loads(args.client_id_list)
         if args.rank == 0:
             self.edge_id = 0
@@ -263,9 +265,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                 #         break
                 # if not model_uploaded:
                 logging.info("mqtt_s3.send_message: to python client.")
-                model_url = self.s3_storage.write_model(
-                    message_key, model_params_obj
-                )
+                model_url = self.s3_storage.write_model(message_key, model_params_obj)
                 model_params_key_url = {
                     "key": message_key,
                     "url": model_url,
@@ -304,9 +304,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                 #         break
                 # if not model_uploaded:
                 logging.info("mqtt_s3.send_message: to python client.")
-                model_url = self.s3_storage.write_model(
-                    message_key, model_params_obj
-                )
+                model_url = self.s3_storage.write_model(message_key, model_params_obj)
                 model_params_key_url = {
                     "key": message_key,
                     "url": model_url,

@@ -18,7 +18,9 @@ def fedavg_cross_device(
     model_trainer=None,
     preprocessed_sampling_lists=None,
 ):
-    logging.info("test_data_global.iter_number = {}".format(test_dataloader.iter_number))
+    logging.info(
+        "test_data_global.iter_number = {}".format(test_dataloader.iter_number)
+    )
 
     if process_id == 0:
         init_server(
@@ -58,7 +60,9 @@ def init_server(
 
     td_id = id(test_dataloader)
     logging.info("test_dataloader = {}".format(td_id))
-    logging.info("test_data_global.iter_number = {}".format(test_dataloader.iter_number))
+    logging.info(
+        "test_data_global.iter_number = {}".format(test_dataloader.iter_number)
+    )
 
     worker_num = size
     aggregator = FedMLAggregator(
@@ -72,9 +76,7 @@ def init_server(
     # start the distributed training
     backend = args.backend
     if preprocessed_sampling_lists is None:
-        server_manager = FedMLServerManager(
-            args, aggregator, comm, rank, size, backend
-        )
+        server_manager = FedMLServerManager(args, aggregator, comm, rank, size, backend)
     else:
         server_manager = FedMLServerManager(
             args,

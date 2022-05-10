@@ -4,8 +4,9 @@ import pt_rpc_server
 import grpc_client
 import grpc_server
 
+
 def main():
-    ctx = mp.get_context('spawn')
+    ctx = mp.get_context("spawn")
 
     print("#######==== PyTorch RPC ===#######")
     targets = [pt_rpc_client.run, pt_rpc_server.run]
@@ -24,6 +25,7 @@ def main():
 
     for p in processes:
         p.join()
+
 
 if __name__ == "__main__":
     main()

@@ -44,16 +44,22 @@ import torch.distributed as dist
 
 
 class ClientMasterManager:
-    def __init__(self, args, trainer_dist_adapter, comm=None, rank=0, size=0, backend="MPI"):
+    def __init__(
+        self, args, trainer_dist_adapter, comm=None, rank=0, size=0, backend="MPI"
+    ):
         self.trainer_dist_adapter = trainer_dist_adapter
-        self.communication_manager = CommunicationManager(args, comm, rank, size, backend)
+        self.communication_manager = CommunicationManager(
+            args, comm, rank, size, backend
+        )
         self.num_rounds = args.comm_round
         self.round_idx = 0
         self.args = args
         self.rank = rank
         self.client_real_ids = json.loads(args.client_id_list)
         # self.get_sender_id() is equal to the client rank (starting from 1)
-        self.client_real_id = self.client_real_ids[self.communication_manager.get_sender_id() - 1]
+        self.client_real_id = self.client_real_ids[
+            self.communication_manager.get_sender_id() - 1
+        ]
 
         self.has_sent_online_msg = False
         self.sys_stats_process = None
@@ -86,7 +92,9 @@ class ClientMasterManager:
             self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_INITIALIZING)
 
             # Open new process for report system performances to MQTT server
-            self.sys_stats_process = multiprocessing.Process(target=self.report_sys_performances)
+            self.sys_stats_process = multiprocessing.Process(
+                target=self.report_sys_performances
+            )
             self.sys_stats_process.start()
 
     def handle_message_init(self, msg_params):
@@ -202,7 +210,9 @@ class ClientMasterManager:
 
     def send_client_status(self, receive_id, status="ONLINE"):
         logging.info("send_client_status")
-        message = Message(MyMessage.MSG_TYPE_C2S_CLIENT_STATUS, self.client_real_id, receive_id)
+        message = Message(
+            MyMessage.MSG_TYPE_C2S_CLIENT_STATUS, self.client_real_id, receive_id
+        )
         sys_name = platform.system()
         if sys_name == "Darwin":
             sys_name = "Mac"
@@ -215,7 +225,9 @@ class ClientMasterManager:
 
     def report_training_status(self, status):
         if hasattr(self.args, "backend") and self.args.using_mlops:
-            self.mlops_metrics.report_client_training_status(self.client_real_id, status)
+            self.mlops_metrics.report_client_training_status(
+                self.client_real_id, status
+            )
 
     def report_sys_performances(self):
         if hasattr(self.args, "backend") and self.args.using_mlops:
@@ -224,11 +236,15 @@ class ClientMasterManager:
                 self.mlops_metrics.report_system_metric()
                 time.sleep(30)
 
-    def sync_process_group(self, round_idx, model_params=None, client_index=None, src=0):
+    def sync_process_group(
+        self, round_idx, model_params=None, client_index=None, src=0
+    ):
         logging.info("sending round number to pg")
         round_number = [round_idx, model_params, client_index]
         dist.broadcast_object_list(
-            round_number, src=src, group=self.trainer_dist_adapter.process_group_manager.get_process_group()
+            round_number,
+            src=src,
+            group=self.trainer_dist_adapter.process_group_manager.get_process_group(),
         )
         logging.info("round number %d broadcasted to process group" % round_number[0])
 
@@ -247,5 +263,7 @@ class ClientMasterManager:
             self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_INITIALIZING)
 
             # Open new process for report system performances to MQTT server
-            self.sys_stats_process = multiprocessing.Process(target=self.report_sys_performances)
+            self.sys_stats_process = multiprocessing.Process(
+                target=self.report_sys_performances
+            )
             self.sys_stats_process.start()

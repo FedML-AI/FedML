@@ -6,11 +6,22 @@ from PIL import Image
 from torchvision.datasets import CIFAR10
 
 
-IMG_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.ppm', '.bmp', '.pgm', '.tif', '.tiff', '.webp')
+IMG_EXTENSIONS = (
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".ppm",
+    ".bmp",
+    ".pgm",
+    ".tif",
+    ".tiff",
+    ".webp",
+)
 
 
 def accimage_loader(path):
     import accimage
+
     try:
         return accimage.Image(path)
     except IOError:
@@ -20,22 +31,30 @@ def accimage_loader(path):
 
 def pil_loader(path):
     # open path as file to avoid ResourceWarning (https://github.com/python-pillow/Pillow/issues/835)
-    with open(path, 'rb') as f:
+    with open(path, "rb") as f:
         img = Image.open(f)
-        return img.convert('RGB')
+        return img.convert("RGB")
 
 
 def default_loader(path):
     from torchvision import get_image_backend
-    if get_image_backend() == 'accimage':
+
+    if get_image_backend() == "accimage":
         return accimage_loader(path)
     else:
         return pil_loader(path)
 
 
 class CIFAR10_truncated(data.Dataset):
-
-    def __init__(self, root, dataidxs=None, train=True, transform=None, target_transform=None, download=False):
+    def __init__(
+        self,
+        root,
+        dataidxs=None,
+        train=True,
+        transform=None,
+        target_transform=None,
+        download=False,
+    ):
 
         self.root = root
         self.dataidxs = dataidxs
@@ -48,7 +67,9 @@ class CIFAR10_truncated(data.Dataset):
 
     def __build_truncated_dataset__(self):
         print("download = " + str(self.download))
-        cifar_dataobj = CIFAR10(self.root, self.train, self.transform, self.target_transform, self.download)
+        cifar_dataobj = CIFAR10(
+            self.root, self.train, self.transform, self.target_transform, self.download
+        )
 
         if self.train:
             # print("train member of the class: {}".format(self.train))

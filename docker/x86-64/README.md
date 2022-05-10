@@ -2,7 +2,11 @@
 
 2. build
 ```
+sudo apt-get update
+sudo apt-get install -y nvidia-docker2
+sudo systemctl restart docker
 sudo chmod 777 /var/run/docker.sock
+
 docker build . -f Dockerfile
 # Successfully built c56e5f90d546
 ```
@@ -12,6 +16,7 @@ docker build . -f Dockerfile
 ```
 # c56e5f90d546 is the docker image ID obtained at step 2
 docker tag c56e5f90d546 fedml/fedml:cuda-11.6.0-devel-ubuntu20.04
+
 
 docker login --username fedml
 docker push fedml/fedml:cuda-11.6.0-devel-ubuntu20.04

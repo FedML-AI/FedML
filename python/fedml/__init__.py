@@ -6,9 +6,19 @@ import fedml
 import numpy as np
 import torch
 import wandb
-from fedml.mlops import MLOpsRuntimeLog
+from .mlops import MLOpsRuntimeLog
 from mpi4py import MPI
 
+import os
+
+from .constants import (
+    FEDML_TRAINING_PLATFORM_SIMULATION,
+    FEDML_SIMULATION_TYPE_SP,
+    FEDML_SIMULATION_TYPE_MPI,
+    FEDML_SIMULATION_TYPE_NCCL,
+    FEDML_TRAINING_PLATFORM_CROSS_SILO,
+    FEDML_TRAINING_PLATFORM_CROSS_DEVICE,
+)
 from .cross_device import ServerMNN
 from .cross_silo import Client as ClientCrossSilo
 from .cross_silo import Server as ServerCrossSilo
@@ -49,7 +59,7 @@ def init(args=None):
         )
 
     if (
-        args.training_type == "simulation"
+        args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
         and hasattr(args, "backend")
         and args.backend == "MPI"
     ):
@@ -60,7 +70,7 @@ def init(args=None):
         args.process_id = process_id
         args.worker_num = worker_num
     elif (
-        args.training_type == "simulation"
+        args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
         and hasattr(args, "backend")
         and args.backend == "single_process"
     ):
@@ -109,10 +119,10 @@ def init(args=None):
     return args
 
 
-def run_simulation(backend="single_process"):
+def run_simulation(backend=FEDML_SIMULATION_TYPE_SP):
     """FedML Parrot"""
     global _global_training_type
-    _global_training_type = "simulation"
+    _global_training_type = FEDML_TRAINING_PLATFORM_SIMULATION
     global _global_comm_backend
     _global_comm_backend = backend
 
@@ -129,12 +139,12 @@ def run_simulation(backend="single_process"):
     model = fedml.model.create(args, output_dim)
 
     # start training
-    if backend == "single_process":
+    if backend == FEDML_SIMULATION_TYPE_SP:
         simulator = SimulatorSingleProcess(args, device, dataset, model)
-    elif backend == "MPI":
+    elif backend == FEDML_SIMULATION_TYPE_MPI:
         simulator = SimulatorMPI(args, device, dataset, model)
         logging.info("backend = {}".format(backend))
-    elif backend == "NCCL":
+    elif backend == FEDML_SIMULATION_TYPE_NCCL:
         simulator = SimulatorNCCL(args, device, dataset, model)
         logging.info("backend = {}".format(backend))
     else:
@@ -145,7 +155,7 @@ def run_simulation(backend="single_process"):
 def run_cross_silo_server():
     """FedML Octopus"""
     global _global_training_type
-    _global_training_type = "cross_silo"
+    _global_training_type = FEDML_TRAINING_PLATFORM_CROSS_SILO
 
     args = fedml.init()
 
@@ -166,7 +176,7 @@ def run_cross_silo_server():
 def run_cross_silo_client():
     """FedML Octopus"""
     global _global_training_type
-    _global_training_type = "cross_silo"
+    _global_training_type = FEDML_TRAINING_PLATFORM_CROSS_SILO
 
     args = fedml.init()
 
@@ -223,7 +233,7 @@ def run_hierarchical_cross_silo_client():
 def run_mnn_server():
     """FedML BeeHive"""
     global _global_training_type
-    _global_training_type = "cross_device"
+    _global_training_type = FEDML_TRAINING_PLATFORM_CROSS_DEVICE
 
     args = fedml.init()
 
@@ -245,7 +255,7 @@ def run_distributed():
     pass
 
 
-from fedml.arguments import (
+from .arguments import (
     load_arguments,
 )
 

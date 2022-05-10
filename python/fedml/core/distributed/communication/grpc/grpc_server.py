@@ -4,6 +4,7 @@ import threading
 import logging
 from ...communication.utils import log_communication_tock
 from time import time
+
 lock = threading.Lock()
 
 
@@ -24,11 +25,11 @@ class GRPCCOMMServicer(grpc_comm_manager_pb2_grpc.gRPCCommManagerServicer):
 
     def sendMessage(self, request, context):
         context_ip = context.peer().split(":")[1]
-        logging.info("client_{} got something from client_{} from ip address {}".format(
-            self.client_id,
-            request.client_id,
-            context_ip
-        ))
+        logging.info(
+            "client_{} got something from client_{} from ip address {}".format(
+                self.client_id, request.client_id, context_ip
+            )
+        )
 
         response = grpc_comm_manager_pb2.CommResponse()
         # response.message = "message received"
