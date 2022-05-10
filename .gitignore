@@ -51,6 +51,7 @@ data/MNIST/test
 data/shakespeare/train
 data/shakespeare/test
 data/stackoverflow/datasets
+data/chexpert/CheXpert-v1.0-small
 
 # android
 .gradle

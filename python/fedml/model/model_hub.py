@@ -8,13 +8,12 @@ from fedml.model.cv.resnet import resnet56
 from fedml.model.cv.resnet_gn import resnet18
 from fedml.model.linear.lr import LogisticRegression
 from fedml.model.nlp.rnn import RNN_OriginalFedAvg, RNN_StackOverFlow
+from fedml.model.cv.densenet import DenseNet, densenet121, densenet161, densenet169, densenet201
 
 
 def create(args, output_dim):
     model_name = args.model
-    logging.info(
-        "create_model. model_name = %s, output_dim = %s" % (model_name, output_dim)
-    )
+    logging.info("create_model. model_name = %s, output_dim = %s" % (model_name, output_dim))
     if model_name == "lr" and args.dataset == "mnist":
         logging.info("LogisticRegression + MNIST")
         model = LogisticRegression(28 * 28, output_dim)
@@ -48,6 +47,8 @@ def create(args, output_dim):
         model = MobileNetV3(model_mode="LARGE")
     elif model_name == "efficientnet":
         model = EfficientNet()
+    elif model_name == "densenet121":
+        model = densenet121(class_num=output_dim)
     else:
         model = LogisticRegression(28 * 28, output_dim)
     return model
