@@ -1,8 +1,10 @@
 FROM arm64v8/ubuntu:20.04
 
+
 ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get clean
 RUN apt-get --allow-downgrades update
-RUN apt-get install -y --no-install-recommends \
+RUN apt-get -f install -y --no-install-recommends \
         software-properties-common build-essential autotools-dev \
         nfs-common pdsh \
         cmake g++ gcc \
@@ -11,7 +13,13 @@ RUN apt-get install -y --no-install-recommends \
         rsync iputils-ping net-tools sudo \
         llvm-9-dev
 
-
+# ***************************************************************************
+# Version and directory Settings
+# ***************************************************************************
+ENV INSTALL_DIR=/tmp
+ENV WORKSPACE=/home/fedml
+RUN mkdir -p ${INSTALL_DIR}
+RUN mkdir -p ${WORKSPACE}
 
 # ***************************************************************************
 # Python
@@ -62,8 +70,7 @@ RUN pip install urllib3==1.26.9
 #    tabulate
 
 RUN cd ${INSTALL_DIR} && \
-git clone https://github.com/FedML-AI/FedML.git && cd ${INSTALL_DIR}/FedML && \
-git pull
+git clone https://github.com/FedML-AI/FedML.git && cd d ${INSTALL_DIR}/FedML && git pull
 
 RUN cd ${INSTALL_DIR}/FedML/python && \
 git submodule sync && \

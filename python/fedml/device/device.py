@@ -7,7 +7,7 @@ def get_device(args):
     if args.training_type == "simulation" and args.backend == "single_process":
         if args.using_gpu:
             device = torch.device(
-                "cuda:" + args.gpu_id if torch.cuda.is_available() else "cpu"
+                "cuda:" + str(args.gpu_id) if torch.cuda.is_available() else "cpu"
             )
         else:
             device = torch.device("cpu")
