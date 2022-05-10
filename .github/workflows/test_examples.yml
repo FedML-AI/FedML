@@ -1,14 +1,18 @@
-name: Build Cross-platform Wheels
+name: Examples Test
 
 on:
   schedule:
     # Nightly build at 12:12 A.M.
     - cron: "12 12 */1 * *"
   push:
+    branches:
+      - main
   pull_request:
+    branches:
+      - main
 
 jobs:
-  build_wheels:
+  simulation_sp:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     defaults:
