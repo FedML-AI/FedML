@@ -148,7 +148,6 @@ RUN pip install urllib3==1.26.9
 #    sklearn \
 #    networkx \
 #    click \
-#    matplotlib \
 #    grpcio \
 #    aif360 \
 #    tempeh \
