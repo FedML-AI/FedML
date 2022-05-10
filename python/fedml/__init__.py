@@ -6,10 +6,6 @@ import fedml
 import numpy as np
 import torch
 import wandb
-from .mlops import MLOpsRuntimeLog
-from mpi4py import MPI
-
-import os
 
 from .constants import (
     FEDML_TRAINING_PLATFORM_SIMULATION,
@@ -24,6 +20,7 @@ from .cross_silo import Client as ClientCrossSilo
 from .cross_silo import Server as ServerCrossSilo
 from .cross_silo.hierarchical import Client as HierarchicalClientCrossSilo
 from .cross_silo.hierarchical import Server as HierarchicalServerCrossSilo
+from .mlops import MLOpsRuntimeLog
 from .simulation.simulator import SimulatorMPI, SimulatorSingleProcess, SimulatorNCCL
 
 _global_training_type = None
@@ -63,6 +60,7 @@ def init(args=None):
         and hasattr(args, "backend")
         and args.backend == "MPI"
     ):
+        from mpi4py import MPI
         comm = MPI.COMM_WORLD
         process_id = comm.Get_rank()
         worker_num = comm.Get_size()
