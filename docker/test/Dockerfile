@@ -9,16 +9,18 @@ RUN ln -s /usr/bin/python3 /usr/bin/python
 RUN ln -nsf /usr/bin/pip3 /usr/bin/pip
 
 RUN apt-get install -y python3-mpi4py
-RUN pip install fedml
+
+RUN git clone https://github.com/FedML-AI/FedML.git && \
+cd ./FedML && git checkout e798061d62560b03e049d514e7cc8f1a753fde6b && \
+RUN cd python && \
+git submodule sync && \
+git submodule update --init --recursive --jobs 0 && \
+sudo python setup.py install
 
 RUN python -c "import torch; torch.__version__"
 RUN python -c "import fedml"
 
-
-# ***************************************************************************
-## Add fedml user
-# ***************************************************************************
-# Add a fedml user with user id
-RUN useradd --create-home --uid 1000 --shell /bin/bash fedml
-RUN usermod -aG sudo fedml
-RUN echo "fedml ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+git clone https://github.com/FedML-AI/FedML.git && \
+cd ./FedML && git checkout e798061d62560b03e049d514e7cc8f1a753fde6b && \
+cd python && \
+python setup.py install
