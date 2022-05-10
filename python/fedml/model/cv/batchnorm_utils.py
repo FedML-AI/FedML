@@ -186,7 +186,7 @@ class _SynchronizedBatchNorm(_BatchNorm):
         # Compute the sum and square-sum.
         sum_size = input.size(0) * input.size(2)
         input_sum = _sum_ft(input)
-        input_ssum = _sum_ft(input ** 2)
+        input_ssum = _sum_ft(input**2)
 
         # Reduce-and-broadcast the statistics.
         if self._parallel_id == 0:

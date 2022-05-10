@@ -42,7 +42,9 @@ class FedMLTrainer(object):
         #     self.local_sample_number = self.train_data_local_num_dict[client_index]
         #     self.test_local = self.test_data_local_dict[client_index]
         # else:
-        self.train_local = self.train_data_local_dict[client_index][self.args.proc_rank_in_silo]
+        self.train_local = self.train_data_local_dict[client_index][
+            self.args.proc_rank_in_silo
+        ]
         self.local_sample_number = self.train_data_local_num_dict[client_index]
         self.test_local = self.test_data_local_dict[client_index]
 
@@ -74,4 +76,11 @@ class FedMLTrainer(object):
             test_metrics["test_loss"],
         )
 
-        return train_tot_correct, train_loss, train_num_sample, test_tot_correct, test_loss, test_num_sample
+        return (
+            train_tot_correct,
+            train_loss,
+            train_num_sample,
+            test_tot_correct,
+            test_loss,
+            test_num_sample,
+        )

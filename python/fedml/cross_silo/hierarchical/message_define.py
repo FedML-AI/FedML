@@ -2,6 +2,7 @@ class MyMessage(object):
     """
     message type definition
     """
+
     # connection info
     MSG_TYPE_CONNECTION_IS_READY = 0
 
@@ -33,7 +34,6 @@ class MyMessage(object):
     MSG_ARG_KEY_TEST_CORRECT = "test_correct"
     MSG_ARG_KEY_TEST_ERROR = "test_error"
     MSG_ARG_KEY_TEST_NUM = "test_num_sample"
-
 
     MSG_ARG_KEY_CLIENT_STATUS = "client_status"
     MSG_ARG_KEY_CLIENT_OS = "client_os"

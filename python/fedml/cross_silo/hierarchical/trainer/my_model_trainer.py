@@ -5,7 +5,6 @@ from ....core.alg_frame.client_trainer import ClientTrainer
 
 
 class MyModelTrainer(ClientTrainer):
-
     def __init__(self, model, args=None, enable_cuda_rpc=False):
         super().__init__(model, args)
         self.enable_cuda_rpc = enable_cuda_rpc

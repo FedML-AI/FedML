@@ -7,7 +7,12 @@ import subprocess
 inputs = sys.argv[1:]
 args = load_arguments()
 nproc_per_node = str(args.n_proc_per_node)
-torchrun_arguments = ["--standalone", "--nnodes=1", "--nproc_per_node="+ nproc_per_node , "torch_client.py"] + inputs
+torchrun_arguments = [
+    "--standalone",
+    "--nnodes=1",
+    "--nproc_per_node=" + nproc_per_node,
+    "torch_client.py",
+] + inputs
 subprocess.run(["torchrun"] + torchrun_arguments)
 
 

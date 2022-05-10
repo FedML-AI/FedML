@@ -56,13 +56,14 @@ def make_dataset(dir, class_to_idx, extensions):
 
 def pil_loader(path):
     # open path as file to avoid ResourceWarning (https://github.com/python-pillow/Pillow/issues/835)
-    with open(path, 'rb') as f:
+    with open(path, "rb") as f:
         img = Image.open(f)
-        return img.convert('RGB')
+        return img.convert("RGB")
 
 
 def accimage_loader(path):
     import accimage
+
     try:
         return accimage.Image(path)
     except IOError:
@@ -72,18 +73,26 @@ def accimage_loader(path):
 
 def default_loader(path):
     from torchvision import get_image_backend
-    if get_image_backend() == 'accimage':
+
+    if get_image_backend() == "accimage":
         return accimage_loader(path)
     else:
         return pil_loader(path)
 
 
 class ImageNet(data.Dataset):
-
-    def __init__(self, data_dir, dataidxs=None, train=True, transform=None, target_transform=None, download=False):
+    def __init__(
+        self,
+        data_dir,
+        dataidxs=None,
+        train=True,
+        transform=None,
+        target_transform=None,
+        download=False,
+    ):
         """
-            Generating this class too many times will be time-consuming.
-            So it will be better calling this once and put it into ImageNet_truncated.
+        Generating this class too many times will be time-consuming.
+        So it will be better calling this once and put it into ImageNet_truncated.
         """
         self.dataidxs = dataidxs
         self.train = train
@@ -92,21 +101,25 @@ class ImageNet(data.Dataset):
         self.download = download
         self.loader = default_loader
         if self.train:
-            self.data_dir = os.path.join(data_dir, 'train')
+            self.data_dir = os.path.join(data_dir, "train")
         else:
-            self.data_dir = os.path.join(data_dir, 'val')
+            self.data_dir = os.path.join(data_dir, "val")
 
-        self.all_data, self.data_local_num_dict, self.net_dataidx_map = self.__getdatasets__()
+        (
+            self.all_data,
+            self.data_local_num_dict,
+            self.net_dataidx_map,
+        ) = self.__getdatasets__()
         if dataidxs == None:
             self.local_data = self.all_data
         elif type(dataidxs) == int:
             (begin, end) = self.net_dataidx_map[dataidxs]
-            self.local_data = self.all_data[begin: end]
+            self.local_data = self.all_data[begin:end]
         else:
             self.local_data = []
             for idxs in dataidxs:
                 (begin, end) = self.net_dataidx_map[idxs]
-                self.local_data += self.all_data[begin: end]
+                self.local_data += self.all_data[begin:end]
 
     def get_local_data(self):
         return self.local_data
@@ -121,12 +134,17 @@ class ImageNet(data.Dataset):
         # all_data = datasets.ImageFolder(data_dir, self.transform, self.target_transform)
 
         classes, class_to_idx = find_classes(self.data_dir)
-        IMG_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.ppm', '.bmp', '.pgm', '.tif']
-        all_data, data_local_num_dict, net_dataidx_map = make_dataset(self.data_dir, class_to_idx, IMG_EXTENSIONS)
+        IMG_EXTENSIONS = [".jpg", ".jpeg", ".png", ".ppm", ".bmp", ".pgm", ".tif"]
+        all_data, data_local_num_dict, net_dataidx_map = make_dataset(
+            self.data_dir, class_to_idx, IMG_EXTENSIONS
+        )
         if len(all_data) == 0:
-            raise (RuntimeError("Found 0 files in subfolders of: " + self.data_dir + "\n"
-                                                                                     "Supported extensions are: " + ",".join(
-                extensions)))
+            raise (
+                RuntimeError(
+                    "Found 0 files in subfolders of: " + self.data_dir + "\n"
+                    "Supported extensions are: " + ",".join(extensions)
+                )
+            )
         return all_data, data_local_num_dict, net_dataidx_map
 
     def __getitem__(self, index):
@@ -154,9 +172,16 @@ class ImageNet(data.Dataset):
 
 
 class ImageNet_truncated(data.Dataset):
-
-    def __init__(self, imagenet_dataset: ImageNet, dataidxs, net_dataidx_map, train=True, transform=None,
-                 target_transform=None, download=False):
+    def __init__(
+        self,
+        imagenet_dataset: ImageNet,
+        dataidxs,
+        net_dataidx_map,
+        train=True,
+        transform=None,
+        target_transform=None,
+        download=False,
+    ):
 
         self.dataidxs = dataidxs
         self.train = train
@@ -170,12 +195,12 @@ class ImageNet_truncated(data.Dataset):
             self.local_data = self.all_data
         elif type(dataidxs) == int:
             (begin, end) = self.net_dataidx_map[dataidxs]
-            self.local_data = self.all_data[begin: end]
+            self.local_data = self.all_data[begin:end]
         else:
             self.local_data = []
             for idxs in dataidxs:
                 (begin, end) = self.net_dataidx_map[idxs]
-                self.local_data += self.all_data[begin: end]
+                self.local_data += self.all_data[begin:end]
 
     def __getitem__(self, index):
         """

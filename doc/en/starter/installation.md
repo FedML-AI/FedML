@@ -29,17 +29,26 @@ We recommend to use FedML in Docker environment to make your life easier without
 
 Please refer to the following command and remember to change `WORKSPACE` to your own.
 
-**(1) Pull the Docker image**
+**(1) Pull the Docker image and prepare the docker environment**
 ```
 FEDML_DOCKER_IMAGE=fedml/fedml:cuda-11.6.0-devel-ubuntu20.04
 docker pull FEDML_DOCKER_IMAGE
+
+# if you want to use GPUs in your host OS, please follow this link [https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker):
+sudo apt-get update
+sudo apt-get install -y nvidia-docker2
+sudo systemctl restart docker
+sudo chmod 777 /var/run/docker.sock
 ```
+
 **(2) Run Docker with interactive mode**
+
 ```
 FEDML_DOCKER_IMAGE=fedml/fedml:cuda-11.6.0-devel-ubuntu20.04
 WORKSPACE=/home/chaoyanghe/sourcecode/FedML_startup/FedML
 
 docker run -t -i -v $WORKSPACE:$WORKSPACE --shm-size=64g --ulimit nofile=65535 --ulimit memlock=-1 --privileged \
+--gpus all \
 --env FEDML_NODE_INDEX=0 \
 --env WORKSPACE=$WORKSPACE \
 --env FEDML_NUM_NODES=1 \
@@ -57,6 +66,13 @@ fedml@ChaoyangHe-GPU-RTX2080Tix4:/$
 fedml@ChaoyangHe-GPU-RTX2080Tix4:/$ cd $WORKSPACE
 fedml@ChaoyangHe-GPU-RTX2080Tix4:/home/chaoyanghe/sourcecode/FedML_startup/FedML$
 ```
+If you want to debug in Docker container, please follow these commands
+```
+cd python
+# You need sudo permission to install your debugging package in editable mode 
+(-e means link the package to the original location, basically meaning any changes to the original package would reflect directly in your environment)
+sudo pip install -e ./
+```
 
 **(3) Run Docker with multiple commands to launch your project immediately**
 
@@ -72,6 +88,7 @@ docker run -t -i -v $WORKSPACE:$WORKSPACE --shm-size=64g --ulimit nofile=65535 -
 --env FEDML_RUN_ID=0 \
 --env FEDML_MAIN_NODE_PRIVATE_IPV4_ADDRESS=127.0.0.1 \
 -u fedml --net=host \
+--gpus all \
 $FEDML_DOCKER_IMAGE \
 /bin/bash -c `cd $WORKSPACE/python/examples/simulation/mpi_torch_fedavg_mnist_lr_example; sh run_one_line_example.sh`
 ```

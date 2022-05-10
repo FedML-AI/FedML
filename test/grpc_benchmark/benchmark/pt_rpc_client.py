@@ -35,7 +35,11 @@ def measure(*, name=None, func=None, args=None, cuda=False, out_file=None):
 
     # warmup done
     timestamps = {}
-    states = {"lock": threading.Lock(), "future": torch.futures.Future(), "pending": NUM_RPC}
+    states = {
+        "lock": threading.Lock(),
+        "future": torch.futures.Future(),
+        "pending": NUM_RPC,
+    }
 
     def mark_complete(index, cuda, fut):
         timestamps[index]["tok"] = stamp_time(cuda)
@@ -66,7 +70,10 @@ def measure(*, name=None, func=None, args=None, cuda=False, out_file=None):
     mean = sum(delays) / len(delays)
     stdv = stdev(delays)
     total = end - start
-    print(f"{name}_{'cuda' if cuda else 'cpu'}: mean = {mean}, stdev = {stdv}, total = {end - start}", flush=True)
+    print(
+        f"{name}_{'cuda' if cuda else 'cpu'}: mean = {mean}, stdev = {stdv}, total = {end - start}",
+        flush=True,
+    )
     if out_file:
         out_file.write(f"{name}, {mean}, {stdv}, {total}\n")
     return mean, stdv, total
@@ -79,7 +86,9 @@ def run(addr="localhost", port="29500"):
     os.environ["MASTER_ADDR"] = addr
     os.environ["MASTER_PORT"] = port
 
-    options = rpc.TensorPipeRpcBackendOptions(num_worker_threads=256, device_maps={"server": {GPU_ID: GPU_ID}})
+    options = rpc.TensorPipeRpcBackendOptions(
+        num_worker_threads=256, device_maps={"server": {GPU_ID: GPU_ID}}
+    )
     rpc.init_rpc("client", rank=1, world_size=2, rpc_backend_options=options)
 
     for size in [100, 1000, 10000]:

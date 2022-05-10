@@ -39,19 +39,31 @@ class MLOpsRuntimeLog:
             self.edge_id = json.loads(args.client_id_list)[0]
         try:
             if args.log_server_url is None or args.log_server_url == "":
-                self.log_server_url ="https://open.fedml.ai/fedmlOpsServer/logs/update"
+                self.log_server_url = "https://open.fedml.ai/fedmlOpsServer/logs/update"
             else:
                 self.log_server_url = args.log_server_url
         except Exception as e:
-            self.log_server_url ="https://open.fedml.ai/fedmlOpsServer/logs/update"
+            self.log_server_url = "https://open.fedml.ai/fedmlOpsServer/logs/update"
         self.log_line_index = 0
         self.log_config_file = args.log_file_dir + "/log-config.yaml"
         self.log_config = {}
         self.load_log_config()
-        self.origin_log_file_path = self.log_file_dir + "/fedavg-cross-silo-run-" + str(self.run_id) + \
-                                    "-edge-" + str(self.edge_id) + ".log"
-        self.log_file_path = self.log_file_dir + "/fedavg-cross-silo-run-" + str(self.run_id) + \
-                             "-edge-" + str(self.edge_id) + "-upload.log"
+        self.origin_log_file_path = (
+            self.log_file_dir
+            + "/fedavg-cross-silo-run-"
+            + str(self.run_id)
+            + "-edge-"
+            + str(self.edge_id)
+            + ".log"
+        )
+        self.log_file_path = (
+            self.log_file_dir
+            + "/fedavg-cross-silo-run-"
+            + str(self.run_id)
+            + "-edge-"
+            + str(self.edge_id)
+            + "-upload.log"
+        )
         if hasattr(self, "should_upload_log_file") and self.should_upload_log_file:
             multiprocessing.Process(target=self.log_thread).start()
 
@@ -70,15 +82,15 @@ class MLOpsRuntimeLog:
                 filemode="w",
                 level=logging.INFO,
                 format="[" + program_prefix + "] [%(asctime)s] [%(levelname)s] "
-                       "[%(filename)s:%(lineno)d:%(funcName)s] %(message)s",
-                datefmt="%a, %d %b %Y %H:%M:%S"
+                "[%(filename)s:%(lineno)d:%(funcName)s] %(message)s",
+                datefmt="%a, %d %b %Y %H:%M:%S",
             )
         else:
             logging.basicConfig(
                 level=logging.INFO,
                 format="[" + program_prefix + "] [%(asctime)s] [%(levelname)s] "
-                       "[%(filename)s:%(lineno)d:%(funcName)s] %(message)s",
-                datefmt="%a, %d %b %Y %H:%M:%S"
+                "[%(filename)s:%(lineno)d:%(funcName)s] %(message)s",
+                datefmt="%a, %d %b %Y %H:%M:%S",
             )
 
     @staticmethod
@@ -88,12 +100,20 @@ class MLOpsRuntimeLog:
             program_prefix = "FedML-Server({}) @device-id-{}".format(args.rank, edge_id)
         else:
             edge_id = json.loads(args.client_id_list)[0]
-            program_prefix = "FedML-Client({rank}) @device-id-{edge}".format(rank=args.rank, edge=edge_id)
+            program_prefix = "FedML-Client({rank}) @device-id-{edge}".format(
+                rank=args.rank, edge=edge_id
+            )
 
         os.system("mkdir -p " + args.log_file_dir)
         client_ids = json.loads(args.client_id_list)
-        log_file_path = args.log_file_dir + "/fedavg-cross-silo-run-" + str(args.run_id) + \
-                        "-edge-" + str(edge_id) + ".log"
+        log_file_path = (
+            args.log_file_dir
+            + "/fedavg-cross-silo-run-"
+            + str(args.run_id)
+            + "-edge-"
+            + str(edge_id)
+            + ".log"
+        )
 
         return log_file_path, program_prefix
 
@@ -104,15 +124,26 @@ class MLOpsRuntimeLog:
             return
 
         self.log_line_index += len(log_lines)
-        log_upload_request = {"run_id": run_id, "edge_id": edge_id, "logs": log_lines,
-                              "create_time": time.time(), "update_time": time.time(),
-                              "created_by": str(edge_id), "updated_by": str(edge_id)}
+        log_upload_request = {
+            "run_id": run_id,
+            "edge_id": edge_id,
+            "logs": log_lines,
+            "create_time": time.time(),
+            "update_time": time.time(),
+            "created_by": str(edge_id),
+            "updated_by": str(edge_id),
+        }
 
         # set request header with the application/json format
-        log_headers = {'Content-Type': 'application/json'}
+        log_headers = {"Content-Type": "application/json"}
 
         # send log data to the log server
-        response = requests.post(self.log_server_url, headers=log_headers, json=log_upload_request, verify=False)
+        response = requests.post(
+            self.log_server_url,
+            headers=log_headers,
+            json=log_upload_request,
+            verify=False,
+        )
         if response.status_code != 200:
             # print('Error for sending log data: ' + str(response.status_code))
             self.log_line_index -= len(log_lines)
@@ -163,7 +194,7 @@ class MLOpsRuntimeLog:
     @staticmethod
     def __generate_yaml_doc(log_config_object, yaml_file):
         try:
-            file = open(yaml_file, 'w', encoding='utf-8')
+            file = open(yaml_file, "w", encoding="utf-8")
             yaml.dump(log_config_object, file)
             file.close()
         except Exception as e:
