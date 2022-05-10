@@ -249,7 +249,6 @@ def load_synthetic_data(args):
             test_data_local_dict,
             class_num,
         ) = load_partition_data_chexpert(
-            dataset=dataset_name,
             data_dir=args.data_cache_dir,
             partition_method="random",
             partition_alpha=None,

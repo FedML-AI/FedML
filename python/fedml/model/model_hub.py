@@ -48,7 +48,7 @@ def create(args, output_dim):
     elif model_name == "efficientnet":
         model = EfficientNet()
     elif model_name == "densenet121":
-        model = densenet121(class_num=output_dim)
+        model = densenet121(num_classes=output_dim)
     else:
         model = LogisticRegression(28 * 28, output_dim)
     return model

@@ -127,29 +127,19 @@ class FedAvgAPI(object):
 
     def _client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
         if client_num_in_total == client_num_per_round:
-            client_indexes = [
-                client_index for client_index in range(client_num_in_total)
-            ]
+            client_indexes = [client_index for client_index in range(client_num_in_total)]
         else:
             num_clients = min(client_num_per_round, client_num_in_total)
-            np.random.seed(
-                round_idx
-            )  # make sure for each comparison, we are selecting the same clients each round
-            client_indexes = np.random.choice(
-                range(client_num_in_total), num_clients, replace=False
-            )
+            np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round
+            client_indexes = np.random.choice(range(client_num_in_total), num_clients, replace=False)
         logging.info("client_indexes = %s" % str(client_indexes))
         return client_indexes
 
     def _generate_validation_set(self, num_samples=10000):
         test_data_num = len(self.test_global.dataset)
-        sample_indices = random.sample(
-            range(test_data_num), min(num_samples, test_data_num)
-        )
+        sample_indices = random.sample(range(test_data_num), min(num_samples, test_data_num))
         subset = torch.utils.data.Subset(self.test_global.dataset, sample_indices)
-        sample_testset = torch.utils.data.DataLoader(
-            subset, batch_size=self.args.batch_size
-        )
+        sample_testset = torch.utils.data.DataLoader(subset, batch_size=self.args.batch_size)
         self.val_global = sample_testset
 
     def _aggregate(self, w_locals):
@@ -207,34 +197,21 @@ class FedAvgAPI(object):
                 self.test_data_local_dict[client_idx],
                 self.train_data_local_num_dict[client_idx],
             )
+            logging.info("start testing on client {}".format(client_idx))
             # train data
             train_local_metrics = client.local_test(False)
-            train_metrics["num_samples"].append(
-                copy.deepcopy(train_local_metrics["test_total"])
-            )
-            train_metrics["num_correct"].append(
-                copy.deepcopy(train_local_metrics["test_correct"])
-            )
-            train_metrics["losses"].append(
-                copy.deepcopy(train_local_metrics["test_loss"])
-            )
+            train_metrics["num_samples"].append(copy.deepcopy(train_local_metrics["test_total"]))
+            train_metrics["num_correct"].append(copy.deepcopy(train_local_metrics["test_correct"]))
+            train_metrics["losses"].append(copy.deepcopy(train_local_metrics["test_loss"]))
 
             # test data
             test_local_metrics = client.local_test(True)
-            test_metrics["num_samples"].append(
-                copy.deepcopy(test_local_metrics["test_total"])
-            )
-            test_metrics["num_correct"].append(
-                copy.deepcopy(test_local_metrics["test_correct"])
-            )
-            test_metrics["losses"].append(
-                copy.deepcopy(test_local_metrics["test_loss"])
-            )
+            test_metrics["num_samples"].append(copy.deepcopy(test_local_metrics["test_total"]))
+            test_metrics["num_correct"].append(copy.deepcopy(test_local_metrics["test_correct"]))
+            test_metrics["losses"].append(copy.deepcopy(test_local_metrics["test_loss"]))
 
         # test on training dataset
-        train_acc = sum(train_metrics["num_correct"]) / sum(
-            train_metrics["num_samples"]
-        )
+        train_acc = sum(train_metrics["num_correct"]) / sum(train_metrics["num_samples"])
         train_loss = sum(train_metrics["losses"]) / sum(train_metrics["num_samples"])
 
         # test on test dataset
@@ -255,9 +232,7 @@ class FedAvgAPI(object):
 
     def _local_test_on_validation_set(self, round_idx):
 
-        logging.info(
-            "################local_test_on_validation_set : {}".format(round_idx)
-        )
+        logging.info("################local_test_on_validation_set : {}".format(round_idx))
 
         if self.val_global is None:
             self._generate_validation_set()
@@ -291,8 +266,6 @@ class FedAvgAPI(object):
                 wandb.log({"Test/Rec": test_rec, "round": round_idx})
                 wandb.log({"Test/Loss": test_loss, "round": round_idx})
         else:
-            raise Exception(
-                "Unknown format to log metrics for dataset {}!" % self.args.dataset
-            )
+            raise Exception("Unknown format to log metrics for dataset {}!" % self.args.dataset)
 
         logging.info(stats)

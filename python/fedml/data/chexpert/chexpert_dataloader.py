@@ -52,7 +52,7 @@ def _data_transforms_chexpert():
     CHEXPERT_MEAN = [0.503, 0.503, 0.503]
     CHEXPERT_STD = [0.291, 0.291, 0.291]
 
-    image_size = 512
+    image_size = 256
     train_transform = transforms.Compose(
         [
             # transforms.ToPILImage(),
@@ -273,8 +273,10 @@ def load_partition_data_chexpert(
         train_dl.append(train_dl_)
         test_dl.append(test_dl_)
 
+        logging.info(f"Client {client_idx} train data num: {len(train_dl_)} test data num: {len(test_dl_)}")
+
     logging.info("Partition data done")
-    logging.info("Partition data for each client: {}".format(dict_client))
+    # logging.info("Partition data for each client: {}".format(dict_client))
 
     train_data_num = len(train_dataset)
     test_data_num = len(test_dataset)

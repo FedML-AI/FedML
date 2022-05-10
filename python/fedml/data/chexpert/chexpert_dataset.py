@@ -69,7 +69,6 @@ class CheXpertSmall(Dataset):
             self.labels = [self.labels[i] for i in self.dataidxs]
 
         assert len(self.images) == len(self.labels)
-        assert len(self.labels[0]) == len(self.label_header)
 
     def _download_data(self):
         # TODO: download and unzip the data
@@ -121,7 +120,7 @@ class CheXpertSmall(Dataset):
         if self.transform is not None:
             img = self.transform(img)
 
-        label = torch.tensor(label, dtype=torch.long)
+        label = torch.tensor(label, dtype=torch.float)
 
         return img, label
 
