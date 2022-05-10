@@ -38,7 +38,9 @@ pip install fedml
 After installation, please use `pip list | grep fedml` to check whether `fedml` is installed.
 
 ## Run FedML in Docker (Recommended)
-We recommend to use FedML in Docker environment to make your life easier without caring complex and tedious installation debugging. Currently, we maintain docker images for two settings:
+FedML Docker Hub: [https://hub.docker.com/repository/docker/fedml/fedml](https://hub.docker.com/repository/docker/fedml/fedml)
+
+We recommend to use FedML in Docker environment to make your life easier without caring for complex and tedious installation debugging. Currently, we maintain docker images for two settings:
 
 - For Linux servers with x86_64 architecture
 
@@ -49,7 +51,7 @@ Please refer to the following command and remember to change `WORKSPACE` to your
 FEDML_DOCKER_IMAGE=fedml/fedml:cuda-11.4.0-devel-ubuntu20.04
 docker pull FEDML_DOCKER_IMAGE
 
-# if you want to use GPUs in your host OS, please follow this link [https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker):
+# if you want to use GPUs in your host OS, please follow this link: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker
 sudo apt-get update
 sudo apt-get install -y nvidia-docker2
 sudo systemctl restart docker
