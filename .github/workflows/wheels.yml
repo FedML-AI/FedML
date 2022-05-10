@@ -122,7 +122,6 @@ jobs:
         # to supply options, put them in 'env', like:
         # env:
         #   CIBW_SOME_OPTION: value
-
       - name: Store artifacts
         uses: actions/upload-artifact@v2
         with:
