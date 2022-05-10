@@ -1,6 +1,7 @@
 import logging
 import torch.distributed as dist
 
+
 class ClientSlaveManager:
     def __init__(self, args, trainer_dist_adapter):
         self.trainer_dist_adapter = trainer_dist_adapter
@@ -30,18 +31,22 @@ class ClientSlaveManager:
         # pass
         self.trainer_dist_adapter.cleanup_pg()
         logging.info(
-            "Training finsihded for slave client rank %s in silo %s" % (self.args.proc_rank_in_silo, self.args.rank_in_node)
+            "Training finsihded for slave client rank %s in silo %s"
+            % (self.args.proc_rank_in_silo, self.args.rank_in_node)
         )
         self.finished = True
 
     def await_sync_process_group(self, src=0):
-        logging.info("prcoess %d waiting for round number" %
-                     dist.get_rank())
+        logging.info("prcoess %d waiting for round number" % dist.get_rank())
         objects = [None, None, None]
         dist.broadcast_object_list(
-            objects, src=src, group=self.trainer_dist_adapter.process_group_manager.get_process_group())
-        logging.info("prcoess %d received round_number %d" %
-                     (dist.get_rank(), objects[0]))
+            objects,
+            src=src,
+            group=self.trainer_dist_adapter.process_group_manager.get_process_group(),
+        )
+        logging.info(
+            "prcoess %d received round_number %d" % (dist.get_rank(), objects[0])
+        )
         return objects
 
     def run(self):

@@ -53,6 +53,7 @@ class LogisticRegression(torch.nn.Module):
         outputs = torch.sigmoid(self.linear(x))
         return outputs
 
+
 if __name__ == "__main__":
     # init FedML framework
     args = fedml.init()

@@ -14,10 +14,13 @@ class BaseClientManager(ClientManager):
         super().run()
 
     def register_message_receive_handlers(self):
-        self.register_message_receive_handler(MyMessage.MSG_TYPE_S2C_INIT_CONFIG,
-                                              self.handle_message_init)
-        self.register_message_receive_handler(MyMessage.MSG_TYPE_S2C_INFORMATION,
-                                              self.handle_message_receive_model_from_server)
+        self.register_message_receive_handler(
+            MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.handle_message_init
+        )
+        self.register_message_receive_handler(
+            MyMessage.MSG_TYPE_S2C_INFORMATION,
+            self.handle_message_receive_model_from_server,
+        )
 
     def handle_message_init(self, msg_params):
         self.trainer.update(0)
@@ -33,7 +36,9 @@ class BaseClientManager(ClientManager):
             self.finish()
 
     def send_model_to_server(self, receive_id, client_gradient):
-        message = Message(MyMessage.MSG_TYPE_C2S_INFORMATION, self.get_sender_id(), receive_id)
+        message = Message(
+            MyMessage.MSG_TYPE_C2S_INFORMATION, self.get_sender_id(), receive_id
+        )
         message.add_params(MyMessage.MSG_ARG_KEY_INFORMATION, client_gradient)
         self.send_message(message)
 
