@@ -20,7 +20,7 @@ conda activate fedml
 conda install --name fedml pip
 pip install fedml
 ```
-After installation, please use `pip list | grep fedml` to check whether `fedml` is installed.
+After installation, please use "pip list | grep fedml" to check whether `fedml` is installed.
 
 
 ## Install FedML from Source
