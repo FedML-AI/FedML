@@ -23,7 +23,9 @@ pip install fedml
 After installation, please use `pip list | grep fedml` to check whether `fedml` is installed.
 
 ## Run FedML in Docker (Recommended)
-We recommend to use FedML in Docker environment to make your life easier without caring complex and tedious installation debugging. Currently, we maintain docker images for two settings:
+FedML Docker Hub: [https://hub.docker.com/repository/docker/fedml/fedml](https://hub.docker.com/repository/docker/fedml/fedml)
+
+We recommend to use FedML in Docker environment to make your life easier without caring for complex and tedious installation debugging. Currently, we maintain docker images for two settings:
 
 - For Linux servers with x86_64 architecture
 
