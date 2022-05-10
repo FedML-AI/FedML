@@ -11,13 +11,34 @@ try:
             _bdist_wheel.finalize_options(self)
             self.root_is_pure = False
 
+
 except ImportError:
     bdist_wheel = None
 
 
-with open("requirements.txt") as f:
-    requirements = f.read().splitlines()
+# with open("requirements.txt") as f:
+#     requirements = f.read().splitlines()
 
+requirements = [
+    "numpy>=1.21",
+    "PyYAML",
+    "h5py",
+    "tqdm",
+    "wandb",
+    "wget",
+    "paho-mqtt",
+    "joblib",
+    "boto3",
+    "pynvml",
+    "sklearn",
+    "networkx",
+    "click",
+    "grpcio",
+    "torch==1.11.0",
+    "torchvision",
+    "MNN==1.1.6",
+    "mpi4py",
+]
 
 setup(
     name="fedml",
