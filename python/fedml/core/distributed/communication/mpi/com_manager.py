@@ -35,12 +35,15 @@ class MpiCommunicationManager(BaseCommunicationManager):
 
     def init_server_communication(self):
         server_send_queue = queue.Queue(0)
-        self.server_send_thread = MPISendThread(self.comm, self.rank, self.size, "ServerSendThread", server_send_queue)
+        self.server_send_thread = MPISendThread(
+            self.comm, self.rank, self.size, "ServerSendThread", server_send_queue
+        )
         self.server_send_thread.start()
 
         server_receive_queue = queue.Queue(0)
-        self.server_receive_thread = MPIReceiveThread(self.comm, self.rank, self.size, "ServerReceiveThread",
-                                                      server_receive_queue)
+        self.server_receive_thread = MPIReceiveThread(
+            self.comm, self.rank, self.size, "ServerReceiveThread", server_receive_queue
+        )
         self.server_receive_thread.start()
 
         return server_send_queue, server_receive_queue
@@ -48,13 +51,16 @@ class MpiCommunicationManager(BaseCommunicationManager):
     def init_client_communication(self):
         # SEND
         client_send_queue = queue.Queue(0)
-        self.client_send_thread = MPISendThread(self.comm, self.rank, self.size, "ClientSendThread", client_send_queue)
+        self.client_send_thread = MPISendThread(
+            self.comm, self.rank, self.size, "ClientSendThread", client_send_queue
+        )
         self.client_send_thread.start()
 
         # RECEIVE
         client_receive_queue = queue.Queue(0)
-        self.client_receive_thread = MPIReceiveThread(self.comm, self.rank, self.size, "ClientReceiveThread",
-                                                      client_receive_queue)
+        self.client_receive_thread = MPIReceiveThread(
+            self.comm, self.rank, self.size, "ClientReceiveThread", client_receive_queue
+        )
         self.client_receive_thread.start()
 
         return client_send_queue, client_receive_queue

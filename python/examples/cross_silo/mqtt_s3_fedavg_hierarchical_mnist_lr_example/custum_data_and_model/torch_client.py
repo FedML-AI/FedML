@@ -45,7 +45,9 @@ def load_data(args):
     ]
 
     # Split training data between distributed trainers
-    train_data_local_dict = split_data_for_dist_trainers(train_data_local_dict, n_dist_trainer)
+    train_data_local_dict = split_data_for_dist_trainers(
+        train_data_local_dict, n_dist_trainer
+    )
 
     dataset = [
         train_data_num,
@@ -68,7 +70,6 @@ class LogisticRegression(torch.nn.Module):
     def forward(self, x):
         outputs = torch.sigmoid(self.linear(x))
         return outputs
-
 
 
 if __name__ == "__main__":

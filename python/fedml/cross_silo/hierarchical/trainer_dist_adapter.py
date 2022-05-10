@@ -9,6 +9,7 @@ from .trainer.my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
 from .trainer.my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
 import logging
 from .fedml_trainer import FedMLTrainer
+
 # import torch
 # import time
 
@@ -50,16 +51,19 @@ class TrainerDistAdapter:
         model_trainer=None,
     ):
 
-        only_gpu =  args.using_gpu
+        only_gpu = args.using_gpu
 
         self.process_group_manager = ProcessGroupManager(
-            args.proc_rank_in_silo, args.n_proc_in_silo, args.pg_master_address, args.pg_master_port, only_gpu
+            args.proc_rank_in_silo,
+            args.n_proc_in_silo,
+            args.pg_master_address,
+            args.pg_master_port,
+            only_gpu,
         )
 
         # if not args.is_mobile:
         model.to(device)
         model = DDP(model, device_ids=[device] if only_gpu else None)
-
 
         client_index = client_rank - 1
         if model_trainer is None:
@@ -131,7 +135,7 @@ class TrainerDistAdapter:
 
     def cleanup_pg(self):
         logging.info(
-            "Cleaningup process group for client %s in silo %s" % (
-                self.args.proc_rank_in_silo, self.args.rank_in_node)
+            "Cleaningup process group for client %s in silo %s"
+            % (self.args.proc_rank_in_silo, self.args.rank_in_node)
         )
         self.process_group_manager.cleanup()

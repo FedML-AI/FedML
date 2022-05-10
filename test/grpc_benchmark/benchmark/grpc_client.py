@@ -44,13 +44,11 @@ class Client:
             channel = grpc.insecure_channel(
                 server_address,
                 options=[
-                    ('grpc.max_send_message_length', MAX_MESSAGE_LENGTH),
-                    ('grpc.max_receive_message_length', MAX_MESSAGE_LENGTH),
-                ]
+                    ("grpc.max_send_message_length", MAX_MESSAGE_LENGTH),
+                    ("grpc.max_receive_message_length", MAX_MESSAGE_LENGTH),
+                ],
             )
             self.stubs.append(benchmark_pb2_grpc.GRPCBenchmarkStub(channel))
-
-
 
     def measure(self, *, name=None, tensor=None, cuda=False, out_file=None):
         # warmup
@@ -68,8 +66,9 @@ class Client:
         states = {
             "lock": threading.Lock(),
             "future": futures.Future(),
-            "pending": NUM_RPC
+            "pending": NUM_RPC,
         }
+
         def mark_complete_cpu(index, cuda, fut):
             tensor = pickle.loads(fut.result().data)
             if cuda:
@@ -102,7 +101,7 @@ class Client:
 
         end = time.time()
 
-        mean = sum(delays)/len(delays)
+        mean = sum(delays) / len(delays)
         stdv = stdev(delays)
         total = end - start
         name = f"{name}_{'cuda' if cuda else 'cpu'}"
@@ -114,18 +113,19 @@ class Client:
     def terminate(self):
         self.stubs[0].terminate(benchmark_pb2.EmptyMessage())
 
+
 def run(addr="localhost", port="29500"):
     os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
     client = Client(f"{addr}:{port}")
 
     for size in [5000]:
-    #for size in [100, 1000]:
+        # for size in [100, 1000]:
         print(f"======= size = {size} =====")
         f = open(f"logs/single_grpc_{size}.log", "w")
 
         tensor = torch.ones(size, size)
-        
+
         # warmup
         client.measure(
             name="identity",
@@ -133,8 +133,6 @@ def run(addr="localhost", port="29500"):
             cuda=False,
             out_file=f,
         )
-
- 
 
         # identity
         client.measure(

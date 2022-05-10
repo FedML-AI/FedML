@@ -7,11 +7,25 @@ F = MNN.expr
 class ResBlock(nn.Module):
     def __init__(self, in_planes, planes, stride=1):
         super(ResBlock, self).__init__()
-        self.conv1 = nn.conv(in_planes, planes, kernel_size=[3, 3], stride=[stride, stride], padding=[1, 1], bias=False,
-                             padding_mode=MNN.expr.Padding_Mode.SAME)
+        self.conv1 = nn.conv(
+            in_planes,
+            planes,
+            kernel_size=[3, 3],
+            stride=[stride, stride],
+            padding=[1, 1],
+            bias=False,
+            padding_mode=MNN.expr.Padding_Mode.SAME,
+        )
         self.bn1 = nn.batch_norm(planes)
-        self.conv2 = nn.conv(planes, planes, kernel_size=[3, 3], stride=[1, 1], padding=[1, 1], bias=False,
-                             padding_mode=MNN.expr.Padding_Mode.SAME)
+        self.conv2 = nn.conv(
+            planes,
+            planes,
+            kernel_size=[3, 3],
+            stride=[1, 1],
+            padding=[1, 1],
+            bias=False,
+            padding_mode=MNN.expr.Padding_Mode.SAME,
+        )
         self.bn2 = nn.batch_norm(planes)
 
     def forward(self, x):
@@ -25,15 +39,35 @@ class ResBlock(nn.Module):
 class ResBlock_conv_shortcut(nn.Module):
     def __init__(self, in_planes, planes, stride=1):
         super(ResBlock_conv_shortcut, self).__init__()
-        self.conv1 = nn.conv(in_planes, planes, kernel_size=[3, 3], stride=[stride, stride], padding=[1, 1], bias=False,
-                             padding_mode=MNN.expr.Padding_Mode.SAME)
+        self.conv1 = nn.conv(
+            in_planes,
+            planes,
+            kernel_size=[3, 3],
+            stride=[stride, stride],
+            padding=[1, 1],
+            bias=False,
+            padding_mode=MNN.expr.Padding_Mode.SAME,
+        )
         self.bn1 = nn.batch_norm(planes)
-        self.conv2 = nn.conv(planes, planes, kernel_size=[3, 3], stride=[1, 1], padding=[1, 1], bias=False,
-                             padding_mode=MNN.expr.Padding_Mode.SAME)
+        self.conv2 = nn.conv(
+            planes,
+            planes,
+            kernel_size=[3, 3],
+            stride=[1, 1],
+            padding=[1, 1],
+            bias=False,
+            padding_mode=MNN.expr.Padding_Mode.SAME,
+        )
         self.bn2 = nn.batch_norm(planes)
 
-        self.conv_shortcut = nn.conv(in_planes, planes, kernel_size=[1, 1], stride=[stride, stride], bias=False,
-                                     padding_mode=MNN.expr.Padding_Mode.SAME)
+        self.conv_shortcut = nn.conv(
+            in_planes,
+            planes,
+            kernel_size=[1, 1],
+            stride=[stride, stride],
+            bias=False,
+            padding_mode=MNN.expr.Padding_Mode.SAME,
+        )
         self.bn_shortcut = nn.batch_norm(planes)
 
     def forward(self, x):
@@ -48,8 +82,15 @@ class Resnet20(nn.Module):
     def __init__(self, num_classes=10):
         super(Resnet20, self).__init__()
 
-        self.conv1 = nn.conv(3, 16, kernel_size=[3, 3], stride=[1, 1], padding=[1, 1], bias=False,
-                             padding_mode=MNN.expr.Padding_Mode.SAME)
+        self.conv1 = nn.conv(
+            3,
+            16,
+            kernel_size=[3, 3],
+            stride=[1, 1],
+            padding=[1, 1],
+            bias=False,
+            padding_mode=MNN.expr.Padding_Mode.SAME,
+        )
         self.bn1 = nn.batch_norm(16)
 
         self.layer1 = ResBlock(16, 16, 1)
@@ -94,4 +135,3 @@ def create_mnn_resnet20_model(mnn_file_path):
     input_var = MNN.expr.placeholder([1, 3, 32, 32], MNN.expr.NCHW)
     predicts = net.forward(input_var)
     F.save([predicts], mnn_file_path)
-
