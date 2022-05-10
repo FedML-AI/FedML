@@ -1,5 +1,7 @@
 import io
 import os
+import platform
+import sys
 
 from setuptools import setup, find_packages
 
@@ -15,9 +17,6 @@ try:
 except ImportError:
     bdist_wheel = None
 
-
-# with open("requirements.txt") as f:
-#     requirements = f.read().splitlines()
 
 requirements = [
     "numpy>=1.21",
@@ -36,9 +35,11 @@ requirements = [
     "grpcio",
     "torch==1.11.0",
     "torchvision",
-    "MNN==1.1.6",
     "mpi4py",
 ]
+
+if platform.machine() == "x86_64":
+    requirements.append("MNN==1.1.6")
 
 setup(
     name="fedml",
