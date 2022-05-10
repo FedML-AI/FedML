@@ -36,7 +36,7 @@ Please refer to the following command and remember to change `WORKSPACE` to your
 FEDML_DOCKER_IMAGE=fedml/fedml:cuda-11.4.0-devel-ubuntu20.04
 docker pull FEDML_DOCKER_IMAGE
 
-# if you want to use GPUs in your host OS, please follow this link [https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker):
+# if you want to use GPUs in your host OS, please follow this link: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker
 sudo apt-get update
 sudo apt-get install -y nvidia-docker2
 sudo systemctl restart docker
