@@ -70,7 +70,7 @@ RUN pip install urllib3==1.26.9
 #    tabulate
 
 RUN cd ${INSTALL_DIR} && \
-git clone https://github.com/FedML-AI/FedML.git && cd d ${INSTALL_DIR}/FedML && git pull
+git clone https://github.com/FedML-AI/FedML.git
 
 RUN cd ${INSTALL_DIR}/FedML/python && \
 git submodule sync && \

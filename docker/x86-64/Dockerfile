@@ -169,7 +169,7 @@ RUN pip3 install --upgrade requests
 #    tabulate
 
 RUN cd ${INSTALL_DIR} && \
-git clone https://github.com/FedML-AI/FedML.git
+git clone https://github.com/FedML-AI/FedML.git && cd ${INSTALL_DIR}/FedML && git pull
 RUN cd ${INSTALL_DIR}/FedML/python && \
 git submodule sync && \
 git submodule update --init --recursive --jobs 0 && \
