@@ -3,7 +3,16 @@ from torch import nn, optim
 
 
 class HostTrainer(object):
-    def __init__(self, client_index, device, X_train, X_test, model_feature_extractor, model_classifier, args):
+    def __init__(
+        self,
+        client_index,
+        device,
+        X_train,
+        X_test,
+        model_feature_extractor,
+        model_classifier,
+        args,
+    ):
         # device information
         self.client_index = client_index
         self.device = device
@@ -26,14 +35,22 @@ class HostTrainer(object):
         # model
         self.model_feature_extractor = model_feature_extractor
         self.model_feature_extractor.to(device)
-        self.optimizer_fe = optim.SGD(self.model_feature_extractor.parameters(), momentum=0.9, weight_decay=0.01,
-                                      lr=self.args.lr)
+        self.optimizer_fe = optim.SGD(
+            self.model_feature_extractor.parameters(),
+            momentum=0.9,
+            weight_decay=0.01,
+            lr=self.args.lr,
+        )
 
         self.model_classifier = model_classifier
         self.model_classifier.to(self.device)
         self.criterion = nn.BCEWithLogitsLoss()
-        self.optimizer_classifier = optim.SGD(self.model_classifier.parameters(), momentum=0.9, weight_decay=0.01,
-                                              lr=self.args.lr)
+        self.optimizer_classifier = optim.SGD(
+            self.model_classifier.parameters(),
+            momentum=0.9,
+            weight_decay=0.01,
+            lr=self.args.lr,
+        )
 
         self.cached_extracted_features = None
 
@@ -41,7 +58,10 @@ class HostTrainer(object):
         return self.n_batches
 
     def computer_logits(self, round_idx):
-        batch_x = self.X_train[self.batch_idx * self.batch_size: self.batch_idx * self.batch_size + self.batch_size]
+        batch_x = self.X_train[
+            self.batch_idx * self.batch_size : self.batch_idx * self.batch_size
+            + self.batch_size
+        ]
         self.batch_x = torch.tensor(batch_x).float().to(self.device)
         self.extracted_feature = self.model_feature_extractor.forward(self.batch_x)
         logits = self.model_classifier.forward(self.extracted_feature)

@@ -6,12 +6,13 @@ import grpc_server
 
 import argparse
 
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--master_addr', type=str, default='127.0.0.1')
-    parser.add_argument('--master_port', type=str, default='29501')
-    parser.add_argument('--role', type=str, default='client')
-    parser.add_argument('--comm', type=str, default='ptrpc')
+    parser.add_argument("--master_addr", type=str, default="127.0.0.1")
+    parser.add_argument("--master_port", type=str, default="29501")
+    parser.add_argument("--role", type=str, default="client")
+    parser.add_argument("--comm", type=str, default="ptrpc")
 
     args = parser.parse_args()
 

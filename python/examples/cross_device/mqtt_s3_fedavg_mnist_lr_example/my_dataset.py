@@ -8,8 +8,8 @@ class MnistDataset(MNN.data.Dataset):
     def __init__(self, training_dataset=True):
         super(MnistDataset, self).__init__()
         self.is_training_dataset = training_dataset
-        trainset = MNIST(root='./data', train=True, download=True)
-        testset = MNIST(root='./data', train=False, download=True)
+        trainset = MNIST(root="./data", train=True, download=True)
+        testset = MNIST(root="./data", train=False, download=True)
         if self.is_training_dataset:
             self.data = trainset.data / 255.0
             self.labels = trainset.targets
@@ -32,4 +32,3 @@ class MnistDataset(MNN.data.Dataset):
             return 60000
         else:
             return 10000
-

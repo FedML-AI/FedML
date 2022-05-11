@@ -5,4 +5,3 @@ from .device import (
 __all__ = [
     "get_device",
 ]
-

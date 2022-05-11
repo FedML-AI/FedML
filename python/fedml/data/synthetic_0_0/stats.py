@@ -110,16 +110,16 @@ def print_dataset_stats(name):
     parent_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     data_dir = os.path.join(parent_path, name)
 
-    plt.hist(num_samples, bins=bins)
-    fig_name = "%s_hist_nolabel.png" % name
-    fig_dir = os.path.join(data_dir, fig_name)
-    plt.savefig(fig_dir)
-    plt.title(name)
-    plt.xlabel("number of samples")
-    plt.ylabel("number of users")
-    fig_name = "%s_hist.png" % name
-    fig_dir = os.path.join(data_dir, fig_name)
-    plt.savefig(fig_dir)
+    # plt.hist(num_samples, bins=bins)
+    # fig_name = "%s_hist_nolabel.png" % name
+    # fig_dir = os.path.join(data_dir, fig_name)
+    # plt.savefig(fig_dir)
+    # plt.title(name)
+    # plt.xlabel("number of samples")
+    # plt.ylabel("number of users")
+    # fig_name = "%s_hist.png" % name
+    # fig_dir = os.path.join(data_dir, fig_name)
+    # plt.savefig(fig_dir)
 
 
 print_dataset_stats(args.name)

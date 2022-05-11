@@ -19,6 +19,14 @@ from os import path
 
 import yaml
 
+from .constants import (
+    FEDML_TRAINING_PLATFORM_SIMULATION,
+    FEDML_SIMULATION_TYPE_MPI,
+    FEDML_SIMULATION_TYPE_SP,
+    FEDML_TRAINING_PLATFORM_CROSS_SILO,
+    FEDML_TRAINING_PLATFORM_CROSS_DEVICE,
+)
+
 
 def add_args():
     parser = argparse.ArgumentParser(description="FedML")
@@ -49,9 +57,7 @@ class Arguments:
         for arg_key, arg_val in cmd_args_dict.items():
             setattr(self, arg_key, arg_val)
 
-        self.get_default_yaml_config(
-            cmd_args, training_type, comm_backend
-        )
+        self.get_default_yaml_config(cmd_args, training_type, comm_backend)
 
     def load_yaml_config(self, yaml_path):
         with open(yaml_path, "r") as stream:
@@ -61,21 +67,30 @@ class Arguments:
                 raise ValueError("Yaml error - check yaml file")
 
     def get_default_yaml_config(self, cmd_args, training_type=None, comm_backend=None):
-        path_current_file = path.abspath(path.dirname(__file__))
-        if training_type == "simulation" and comm_backend == "single_process":
-            config_file = path.join(path_current_file, "config/simulation_sp/fedml_config.yaml")
-            cmd_args.yaml_config_file = config_file
-        elif training_type == "simulation" and comm_backend == "MPI":
-            config_file = path.join(
-                path_current_file, "config/simulaton_mpi/fedml_config.yaml"
-            )
-            cmd_args.yaml_config_file = config_file
-        elif training_type == "cross_silo":
-            pass
-        elif training_type == "cross_device":
-            pass
-        else:
-            pass
+        if cmd_args.yaml_config_file == "":
+            path_current_file = path.abspath(path.dirname(__file__))
+            if (
+                training_type == FEDML_TRAINING_PLATFORM_SIMULATION
+                and comm_backend == FEDML_SIMULATION_TYPE_SP
+            ):
+                config_file = path.join(
+                    path_current_file, "config/simulation_sp/fedml_config.yaml"
+                )
+                cmd_args.yaml_config_file = config_file
+            elif (
+                training_type == FEDML_TRAINING_PLATFORM_SIMULATION
+                and comm_backend == FEDML_SIMULATION_TYPE_MPI
+            ):
+                config_file = path.join(
+                    path_current_file, "config/simulaton_mpi/fedml_config.yaml"
+                )
+                cmd_args.yaml_config_file = config_file
+            elif training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO:
+                pass
+            elif training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE:
+                pass
+            else:
+                pass
 
         self.yaml_paths = [cmd_args.yaml_config_file]
         # Load all arguments from yaml config
@@ -87,19 +102,26 @@ class Arguments:
             for key, val in param_family.items():
                 setattr(self, key, val)
 
-        path_current_file = path.abspath(path.dirname(__file__))
-        if training_type == "simulation" and comm_backend == "single_process":
-            pass
-        elif training_type == "simulation" and comm_backend == "MPI":
-            self.gpu_mapping_file = path.join(
-                path_current_file, "config/simulaton_mpi/gpu_mapping.yaml"
-            )
-        elif training_type == "cross_silo":
-            pass
-        elif training_type == "cross_device":
-            pass
-        else:
-            pass
+        if cmd_args.yaml_config_file == "":
+            path_current_file = path.abspath(path.dirname(__file__))
+            if (
+                training_type == FEDML_TRAINING_PLATFORM_SIMULATION
+                and comm_backend == FEDML_SIMULATION_TYPE_SP
+            ):
+                pass
+            elif (
+                training_type == FEDML_TRAINING_PLATFORM_SIMULATION
+                and comm_backend == FEDML_SIMULATION_TYPE_MPI
+            ):
+                self.gpu_mapping_file = path.join(
+                    path_current_file, "config/simulaton_mpi/gpu_mapping.yaml"
+                )
+            elif training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO:
+                pass
+            elif training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE:
+                pass
+            else:
+                pass
         return configuration
 
 

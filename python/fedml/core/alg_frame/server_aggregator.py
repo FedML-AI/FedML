@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 
 
 class ServerAggregator(ABC):
-    """Abstract base class for federated learning trainer.
-    """
+    """Abstract base class for federated learning trainer."""
+
     def __init__(self, model, args=None):
         self.model = model
         self.id = 0
@@ -29,6 +29,7 @@ class ServerAggregator(ABC):
         pass
 
     @abstractmethod
-    def test_on_the_server(self, train_data_local_dict, test_data_local_dict, device, args=None) -> bool:
+    def test_on_the_server(
+        self, train_data_local_dict, test_data_local_dict, device, args=None
+    ) -> bool:
         pass
-
