@@ -24,12 +24,16 @@ class AsymmetricTopologyManager(BaseTopologyManager):
         # randomly add some links for each node (symmetric)
         k = self.undirected_neighbor_num
         # print("neighbors = " + str(k))
-        topology_random_link = np.array(nx.to_numpy_matrix(nx.watts_strogatz_graph(self.n, k, 0)), dtype=np.float32)
+        topology_random_link = np.array(
+            nx.to_numpy_matrix(nx.watts_strogatz_graph(self.n, k, 0)), dtype=np.float32
+        )
         # print("randomly add some links for each node (symmetric): ")
         # print(topology_random_link)
 
         # first generate a ring topology
-        topology_ring = np.array(nx.to_numpy_matrix(nx.watts_strogatz_graph(self.n, 2, 0)), dtype=np.float32)
+        topology_ring = np.array(
+            nx.to_numpy_matrix(nx.watts_strogatz_graph(self.n, 2, 0)), dtype=np.float32
+        )
 
         for i in range(self.n):
             for j in range(self.n):
@@ -54,7 +58,10 @@ class AsymmetricTopologyManager(BaseTopologyManager):
             for j in range(self.n):
                 out_link = j * self.n + i
                 if topology_ring[i][j] == 0:
-                    if random_selection[index_of_zero] == 1 and out_link not in out_link_set:
+                    if (
+                        random_selection[index_of_zero] == 1
+                        and out_link not in out_link_set
+                    ):
                         topology_ring[i][j] = 1
                         out_link_set.add(i * self.n + j)
                     index_of_zero += 1

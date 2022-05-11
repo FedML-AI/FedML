@@ -274,7 +274,15 @@ class FedMLClientRunner:
         conf_file = entry_file_config["conf_file"]
         FedMLClientRunner.cleanup_edge_learning_process()
         os.chdir(os.path.join(unzip_package_path, "fedml"))
-        process = subprocess.Popen(['python3', entry_file,
+
+        python_program = 'python'
+        python_version_str = os.popen("python --version").read()
+        if python_version_str.find("Python 3.") == -1:
+            python_version_str = os.popen("python3 --version").read()
+            if python_version_str.find("Python 3.") != -1:
+                python_program = 'python3'
+
+        process = subprocess.Popen([python_program, entry_file,
                                     '--cf', conf_file, '--rank', str(dynamic_args_config["rank"])])
         FedMLClientRunner.save_edge_learning_process(process.pid)
         process.wait()
@@ -570,6 +578,7 @@ def __login(args, userid, version):
     setattr(args, "account_id", userid)
     home_dir = expanduser("~")
     setattr(args, "current_running_dir", os.path.join(home_dir, "fedml-client"))
+
     sys_name = platform.system()
     if sys_name == "Darwin":
         sys_name = "MacOS"

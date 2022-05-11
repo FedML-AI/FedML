@@ -4,11 +4,22 @@ import numpy as np
 from PIL import Image
 from torchvision.datasets import DatasetFolder
 
-IMG_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.ppm', '.bmp', '.pgm', '.tif', '.tiff', '.webp')
+IMG_EXTENSIONS = (
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".ppm",
+    ".bmp",
+    ".pgm",
+    ".tif",
+    ".tiff",
+    ".webp",
+)
 
 
 def accimage_loader(path):
     import accimage
+
     try:
         return accimage.Image(path)
     except IOError:
@@ -18,14 +29,15 @@ def accimage_loader(path):
 
 def pil_loader(path):
     # open path as file to avoid ResourceWarning (https://github.com/python-pillow/Pillow/issues/835)
-    with open(path, 'rb') as f:
+    with open(path, "rb") as f:
         img = Image.open(f)
-        return img.convert('RGB')
+        return img.convert("RGB")
 
 
 def default_loader(path):
     from torchvision import get_image_backend
-    if get_image_backend() == 'accimage':
+
+    if get_image_backend() == "accimage":
         return accimage_loader(path)
     else:
         return pil_loader(path)
@@ -58,12 +70,23 @@ class ImageFolderTruncated(DatasetFolder):
         imgs (list): List of (image path, class_index) tuples
     """
 
-    def __init__(self, root, dataidxs=None, transform=None, target_transform=None,
-                 loader=default_loader, is_valid_file=None):
-        super(ImageFolderTruncated, self).__init__(root, loader, IMG_EXTENSIONS if is_valid_file is None else None,
-                                                   transform=transform,
-                                                   target_transform=target_transform,
-                                                   is_valid_file=is_valid_file)
+    def __init__(
+        self,
+        root,
+        dataidxs=None,
+        transform=None,
+        target_transform=None,
+        loader=default_loader,
+        is_valid_file=None,
+    ):
+        super(ImageFolderTruncated, self).__init__(
+            root,
+            loader,
+            IMG_EXTENSIONS if is_valid_file is None else None,
+            transform=transform,
+            target_transform=target_transform,
+            is_valid_file=is_valid_file,
+        )
         self.imgs = self.samples
         self.dataidxs = dataidxs
 

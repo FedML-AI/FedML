@@ -1,0 +1,35 @@
+#!/bin/bash
+
+ARCH=$1
+OS=$2
+DISTRO=$3
+PYTHON_VERSION=$4
+PYTORCH_VERSION=$5
+NCCL_VERSION=$6
+CUDA_VERSION=$7
+
+
+if [[ "$ARCH" == "x86_64" ]]
+then
+  docker build . -f ./x86-64/Dockerfile \
+  --build-arg OS=$OS \
+  --build-arg DISTRO=$DISTRO \
+  --build-arg PYTHON_VERSION=$PYTHON_VERSION \
+  --build-arg PYTORCH_VERSION=$PYTORCH_VERSION \
+  --build-arg NCCL_VERSION=$NCCL_VERSION \
+  --build-arg CUDA_VERSION=$CUDA_VERSION
+
+elif [[  "$ARCH" == "arm64v8" ]]
+  docker build . -f ./arm64v8/Dockerfile \
+  --build-arg OS=$OS \
+  --build-arg DISTRO=$DISTRO \
+  --build-arg PYTHON_VERSION=$PYTHON_VERSION \
+  --build-arg PYTORCH_VERSION=$PYTORCH_VERSION \
+  --build-arg NCCL_VERSION=$NCCL_VERSION \
+  --build-arg CUDA_VERSION=$CUDA_VERSION
+then
+   echo "TBD"
+else
+   echo "TBD"
+fi
+

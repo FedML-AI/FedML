@@ -1,22 +1,32 @@
 import logging
+import os
 import random
 
 import fedml
 import numpy as np
 import torch
 import wandb
-from fedml.mlops import MLOpsRuntimeLog
-from mpi4py import MPI
-import os
+
+from .constants import (
+    FEDML_TRAINING_PLATFORM_SIMULATION,
+    FEDML_SIMULATION_TYPE_SP,
+    FEDML_SIMULATION_TYPE_MPI,
+    FEDML_SIMULATION_TYPE_NCCL,
+    FEDML_TRAINING_PLATFORM_CROSS_SILO,
+    FEDML_TRAINING_PLATFORM_CROSS_DEVICE,
+)
 from .cross_device import ServerMNN
 from .cross_silo import Client as ClientCrossSilo
 from .cross_silo import Server as ServerCrossSilo
 from .cross_silo.hierarchical import Client as HierarchicalClientCrossSilo
 from .cross_silo.hierarchical import Server as HierarchicalServerCrossSilo
+from .mlops import MLOpsRuntimeLog
 from .simulation.simulator import SimulatorMPI, SimulatorSingleProcess, SimulatorNCCL
 
 _global_training_type = None
 _global_comm_backend = None
+
+__version__ = "0.7.27"
 
 
 def init(args=None):
@@ -46,10 +56,11 @@ def init(args=None):
         )
 
     if (
-        args.training_type == "simulation"
+        args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
         and hasattr(args, "backend")
         and args.backend == "MPI"
     ):
+        from mpi4py import MPI
         comm = MPI.COMM_WORLD
         process_id = comm.Get_rank()
         worker_num = comm.Get_size()
@@ -57,7 +68,7 @@ def init(args=None):
         args.process_id = process_id
         args.worker_num = worker_num
     elif (
-        args.training_type == "simulation"
+        args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
         and hasattr(args, "backend")
         and args.backend == "single_process"
     ):
@@ -66,11 +77,11 @@ def init(args=None):
         if not hasattr(args, "scenario"):
             args.scenario = "horizontal"
         if args.scenario == "horizontal":
-            
+
             args.process_id = args.rank
 
         elif args.scenario == "hierarchical":
-            if not hasattr(args, 'enable_cuda_rpc'):
+            if not hasattr(args, "enable_cuda_rpc"):
                 args.enable_cuda_rpc = False
             # Set intra-silo arguments
             if args.rank == 0:
@@ -78,7 +89,7 @@ def init(args=None):
                 args.process_id = args.rank_in_node
                 args.n_proc_in_silo = 1
                 args.proc_rank_in_silo = 0
-                if not hasattr(args, 'n_proc_per_node'):
+                if not hasattr(args, "n_proc_per_node"):
                     args.n_proc_per_node = 1
             else:
                 env_local_rank_int = 1
@@ -87,15 +98,17 @@ def init(args=None):
                     env_local_rank_int = int(env_local_rank_str)
                 args.rank_in_node = env_local_rank_int
                 args.process_id = args.rank_in_node
-                if not hasattr(args, 'n_node_in_silo'):
+                if not hasattr(args, "n_node_in_silo"):
                     args.n_node_in_silo = 1
-                if not hasattr(args, 'n_proc_per_node'):
+                if not hasattr(args, "n_proc_per_node"):
                     args.n_proc_per_node = 1
-                if not hasattr(args, 'node_rank_in_silo'):
+                if not hasattr(args, "node_rank_in_silo"):
                     args.node_rank_in_silo = 1
                 args.n_proc_in_silo = args.n_node_in_silo * args.n_proc_per_node
-                args.proc_rank_in_silo = args.node_rank_in_silo * args.n_proc_per_node + args.rank_in_node
-                if not hasattr(args, 'pg_master_port'):
+                args.proc_rank_in_silo = (
+                    args.node_rank_in_silo * args.n_proc_per_node + args.rank_in_node
+                )
+                if not hasattr(args, "pg_master_port"):
                     args.pg_master_port = 29500
                 args.pg_master_port += args.rank
 
@@ -106,10 +119,10 @@ def init(args=None):
     return args
 
 
-def run_simulation(backend="single_process"):
+def run_simulation(backend=FEDML_SIMULATION_TYPE_SP):
     """FedML Parrot"""
     global _global_training_type
-    _global_training_type = "simulation"
+    _global_training_type = FEDML_TRAINING_PLATFORM_SIMULATION
     global _global_comm_backend
     _global_comm_backend = backend
 
@@ -126,12 +139,12 @@ def run_simulation(backend="single_process"):
     model = fedml.model.create(args, output_dim)
 
     # start training
-    if backend == "single_process":
+    if backend == FEDML_SIMULATION_TYPE_SP:
         simulator = SimulatorSingleProcess(args, device, dataset, model)
-    elif backend == "MPI":
+    elif backend == FEDML_SIMULATION_TYPE_MPI:
         simulator = SimulatorMPI(args, device, dataset, model)
         logging.info("backend = {}".format(backend))
-    elif backend == "NCCL":
+    elif backend == FEDML_SIMULATION_TYPE_NCCL:
         simulator = SimulatorNCCL(args, device, dataset, model)
         logging.info("backend = {}".format(backend))
     else:
@@ -142,7 +155,7 @@ def run_simulation(backend="single_process"):
 def run_cross_silo_server():
     """FedML Octopus"""
     global _global_training_type
-    _global_training_type = "cross_silo"
+    _global_training_type = FEDML_TRAINING_PLATFORM_CROSS_SILO
 
     args = fedml.init()
 
@@ -163,7 +176,7 @@ def run_cross_silo_server():
 def run_cross_silo_client():
     """FedML Octopus"""
     global _global_training_type
-    _global_training_type = "cross_silo"
+    _global_training_type = FEDML_TRAINING_PLATFORM_CROSS_SILO
 
     args = fedml.init()
 
@@ -217,11 +230,10 @@ def run_hierarchical_cross_silo_client():
     client.run()
 
 
-
 def run_mnn_server():
     """FedML BeeHive"""
     global _global_training_type
-    _global_training_type = "cross_device"
+    _global_training_type = FEDML_TRAINING_PLATFORM_CROSS_DEVICE
 
     args = fedml.init()
 
@@ -243,7 +255,7 @@ def run_distributed():
     pass
 
 
-from fedml.arguments import (
+from .arguments import (
     load_arguments,
 )
 
