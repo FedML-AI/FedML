@@ -63,6 +63,8 @@ def init(args=None):
     ):
         pass
     elif args.training_type == "cross_silo":
+        if not hasattr(args, "scenario"):
+            args.scenario = "horizontal"
         if args.scenario == "horizontal":
             
             args.process_id = args.rank
