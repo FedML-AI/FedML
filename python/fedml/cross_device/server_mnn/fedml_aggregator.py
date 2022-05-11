@@ -206,8 +206,8 @@ class FedMLAggregator(object):
             "run_id": self.args.run_id,
             "round_idx": round_idx,
             "timestamp": time.time(),
-            "accuracy": np.round(test_accuracy, 4),
-            "loss": np.round(test_loss, 4),
+            "accuracy": round(np.round(test_accuracy, 4), 4),
+            "loss": round(np.round(test_loss, 4)),
         }
         if self.mlops_metrics is not None:
             self.mlops_metrics.report_server_training_metric(train_metric)
