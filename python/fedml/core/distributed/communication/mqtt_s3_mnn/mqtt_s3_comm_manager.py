@@ -30,7 +30,9 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
         self._topic = "fedml_" + str(topic) + "_"
         self.s3_storage = S3Storage(s3_config_path)
         self.client_real_ids = []
-        logging.info("MqttS3CommManager args client_id_list: " + str(args.client_id_list))
+        logging.info(
+            "MqttS3CommManager args client_id_list: " + str(args.client_id_list)
+        )
         if args is not None:
             self.client_real_ids = json.loads(args.client_id_list)
 

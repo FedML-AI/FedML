@@ -112,7 +112,9 @@ class FedMLClientManager(ClientManager):
 
     def send_model_to_server(self, receive_id, weights, local_sample_num):
         if hasattr(self.args, "backend") and self.args.using_mlops:
-            self.mlops_event.log_event_started("comm_c2s", event_value=str(self.round_idx), event_edge_id=0)
+            self.mlops_event.log_event_started(
+                "comm_c2s", event_value=str(self.round_idx)
+            )
         message = Message(
             MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER,
             self.client_real_id,

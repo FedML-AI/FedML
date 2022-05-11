@@ -8,12 +8,10 @@ class Cifar10Dataset(MNN.data.Dataset):
     def __init__(self, training_dataset=True):
         super(Cifar10Dataset, self).__init__()
         self.is_training_dataset = training_dataset
-        trainset = CIFAR10(root='./data', train=True, download=True)
-        testset = CIFAR10(root='./data', train=False, download=True)
+        trainset = CIFAR10(root="./data", train=True, download=True)
+        testset = CIFAR10(root="./data", train=False, download=True)
         if self.is_training_dataset:
-            self.data = (
-                trainset.data.transpose(0, 3, 1, 2) / 255.0
-            )
+            self.data = trainset.data.transpose(0, 3, 1, 2) / 255.0
             self.labels = trainset.targets
         else:
             self.data = testset.data.transpose(0, 3, 1, 2) / 255.0

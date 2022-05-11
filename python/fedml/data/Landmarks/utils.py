@@ -233,7 +233,6 @@ if sys.version_info[0] == 2:
             for chunk in chunk_read(response, reporthook=reporthook):
                 fd.write(chunk)
 
-
 else:
     from six.moves.urllib.request import urlretrieve
 

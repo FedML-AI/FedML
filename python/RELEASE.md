@@ -1,6 +1,6 @@
 Local Installation
 ```
-python install -e ./
+pip install -e ./
 ```
 
 Release
