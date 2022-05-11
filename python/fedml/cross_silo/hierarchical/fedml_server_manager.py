@@ -135,10 +135,10 @@ class FedMLServerManager(ServerManager):
             self.send_init_msg()
 
     def handle_message_receive_model_from_client(self, msg_params):
-        if hasattr(self.args, "backend") and self.args.using_mlops:
-            self.mlops_event.log_event_ended("comm_c2s", event_edge_id=0)
-
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
+        if hasattr(self.args, "backend") and self.args.using_mlops:
+            self.mlops_event.log_event_ended("comm_c2s",  event_value=str(self.round_idx), event_edge_id=sender_id)
+
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         local_sample_number = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
 
