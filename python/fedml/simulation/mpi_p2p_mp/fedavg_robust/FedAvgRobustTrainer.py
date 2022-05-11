@@ -45,7 +45,9 @@ class FedAvgRobustTrainer(object):
 
         # TODO(hwang): since we only added the black-box attack now, we assume that the attacker uses the same hyper-params with the honest clients
         if self.args.client_optimizer == "sgd":
-            self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.args.learning_rate)
+            self.optimizer = torch.optim.SGD(
+                self.model.parameters(), lr=self.args.learning_rate
+            )
         else:
             self.optimizer = torch.optim.Adam(
                 filter(lambda p: p.requires_grad, self.model.parameters()),

@@ -16,5 +16,3 @@ if __name__ == "__main__":
     # start training
     client = Client(args, device, dataset, model)
     client.run()
-
-

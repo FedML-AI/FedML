@@ -63,11 +63,13 @@ class FedMLServerManager(ServerManager):
 
     def start_train(self):
         start_train_json = {
-            "edges": [{
-                "device_id": "647e593ab312c934",
-                "os_type": "Android",
-                "id": self.args.client_id_list,
-            }],
+            "edges": [
+                {
+                    "device_id": "647e593ab312c934",
+                    "os_type": "Android",
+                    "id": self.args.client_id_list,
+                }
+            ],
             "starttime": 1651635148113,
             "url": "http://fedml-server-agent-svc.fedml-aggregator-dev.svc.cluster.local:5001/api/start_run",
             "edgeids": [145],
@@ -89,29 +91,29 @@ class FedMLServerManager(ServerManager):
                     "linuxClientUrl": "https://fedml.s3.us-west-1.amazonaws.com/1651440442364client-package.zip",
                     "androidClient": "",
                     "androidClientUrl": "",
-                    "androidClientVersion": "0"
+                    "androidClientVersion": "0",
                 },
                 "data_config": {
                     "privateLocalData": "",
                     "syntheticData": "",
-                    "syntheticDataUrl": ""
+                    "syntheticDataUrl": "",
                 },
                 "parameters": {
                     "model_args": {
                         "model_file_cache_folder": "./model_file_cache",
                         "model": "lr",
-                        "global_model_file_path": "./model_file_cache/global_model.pt"
+                        "global_model_file_path": "./model_file_cache/global_model.pt",
                     },
                     "device_args": {
                         "worker_num": 2,
                         "using_gpu": False,
                         "gpu_mapping_key": "mapping_default",
-                        "gpu_mapping_file": "config/gpu_mapping.yaml"
+                        "gpu_mapping_file": "config/gpu_mapping.yaml",
                     },
                     "comm_args": {
                         "s3_config_path": "config/s3_config.yaml",
                         "backend": "MQTT_S3",
-                        "mqtt_config_path": "config/mqtt_config.yaml"
+                        "mqtt_config_path": "config/mqtt_config.yaml",
                     },
                     "train_args": {
                         "batch_size": self.args.batch_size,
@@ -123,18 +125,14 @@ class FedMLServerManager(ServerManager):
                         "client_id_list": self.args.client_id_list,
                         "epochs": self.args.epochs,
                         "learning_rate": self.args.learning_rate,
-                        "federated_optimizer": self.args.federated_optimizer
+                        "federated_optimizer": self.args.federated_optimizer,
                     },
-                    "environment_args": {
-                        "bootstrap": "config/bootstrap.sh"
-                    },
-                    "validation_args": {
-                        "frequency_of_the_test": 1
-                    },
+                    "environment_args": {"bootstrap": "config/bootstrap.sh"},
+                    "validation_args": {"frequency_of_the_test": 1},
                     "common_args": {
                         "random_seed": 0,
                         "training_type": "cross_silo",
-                        "using_mlops": False
+                        "using_mlops": False,
                     },
                     "data_args": {
                         "partition_method": self.args.partition_method,
@@ -142,18 +140,18 @@ class FedMLServerManager(ServerManager):
                         "dataset": self.args.dataset,
                         "data_cache_dir": self.args.data_cache_dir,
                         "train_size": self.args.train_size,
-                        "test_size": self.args.test_size
+                        "test_size": self.args.test_size,
                     },
                     "tracking_args": {
                         "wandb_project": "fedml",
                         "wandb_name": "fedml_torch_fedavg_mnist_lr",
                         "wandb_key": "ee0b5f53d949c84cee7decbe7a629e63fb2f8408",
                         "enable_wandb": False,
-                        "log_file_dir": "./log"
-                    }
-                }
+                        "log_file_dir": "./log",
+                    },
+                },
             },
-            "timestamp": "1651635148138"
+            "timestamp": "1651635148138",
         }
         for client_id in self.client_real_ids:
             logging.info("com_manager_status - client_id = {}".format(client_id))
@@ -195,7 +193,9 @@ class FedMLServerManager(ServerManager):
             client_idx_in_this_round += 1
 
         if hasattr(self.args, "backend") and self.args.using_mlops:
-            self.mlops_event.log_event_started("server.wait", event_value=str(self.round_idx))
+            self.mlops_event.log_event_started(
+                "server.wait", event_value=str(self.round_idx)
+            )
 
     def register_message_receive_handlers(self):
         print("register_message_receive_handlers------")
@@ -236,7 +236,9 @@ class FedMLServerManager(ServerManager):
 
     def handle_message_receive_model_from_client(self, msg_params):
         if hasattr(self.args, "backend") and self.args.using_mlops:
-            self.mlops_event.log_event_ended("comm_c2s", event_value=str(self.round_idx), event_edge_id=0)
+            self.mlops_event.log_event_ended(
+                "comm_c2s", event_value=str(self.round_idx), event_edge_id=0
+            )
 
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
@@ -251,16 +253,24 @@ class FedMLServerManager(ServerManager):
         logging.info("b_all_received = %s " % str(b_all_received))
         if b_all_received:
             if hasattr(self.args, "backend") and self.args.using_mlops:
-                self.mlops_event.log_event_ended("server.wait", event_value=str(self.round_idx))
-                self.mlops_event.log_event_started("aggregate", event_value=str(self.round_idx))
+                self.mlops_event.log_event_ended(
+                    "server.wait", event_value=str(self.round_idx)
+                )
+                self.mlops_event.log_event_started(
+                    "aggregate", event_value=str(self.round_idx)
+                )
 
             global_model_params = self.aggregator.aggregate()
             write_tensor_dict_to_mnn(self.global_model_file_path, global_model_params)
 
             if hasattr(self.args, "backend") and self.args.using_mlops:
-                self.mlops_event.log_event_ended("aggregate", event_value=str(self.round_idx))
+                self.mlops_event.log_event_ended(
+                    "aggregate", event_value=str(self.round_idx)
+                )
 
-            self.aggregator.test_on_server_for_all_clients(self.global_model_file_path, self.round_idx)
+            self.aggregator.test_on_server_for_all_clients(
+                self.global_model_file_path, self.round_idx
+            )
 
             # send round info to the MQTT backend
             round_info = {
@@ -309,7 +319,9 @@ class FedMLServerManager(ServerManager):
                 return
             else:
                 if hasattr(self.args, "backend") and self.args.using_mlops:
-                    self.mlops_event.log_event_started("server.wait", event_value=str(self.round_idx))
+                    self.mlops_event.log_event_started(
+                        "server.wait", event_value=str(self.round_idx)
+                    )
 
     def send_message_init_config(self, receive_id, global_model_params, client_index):
         message = Message(
