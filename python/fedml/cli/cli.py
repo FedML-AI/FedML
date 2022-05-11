@@ -1,10 +1,16 @@
 import os
+import signal
+import subprocess
 from os.path import expanduser
 
 import click
 import shutil
 
-from .edge_deployment.login import login_with_docker_mode
+import psutil
+import yaml
+from fedml.cli.edge_deployment.yaml_utils import load_yaml_config
+from fedml.cli.edge_deployment.login import logout
+from fedml.cli.edge_deployment.login_with_docker import login_with_docker_mode
 
 
 @click.group()
@@ -23,7 +29,14 @@ def cli():
     default="release",
     help="account id at open.fedml.ai MLOps platform",
 )
-def mlops_login(userid, version):
+@click.option(
+    "--docker",
+    "-d",
+    type=bool,
+    default="false",
+    help="using docker as fedml client agent.",
+)
+def mlops_login(userid, version, docker):
     account_id = userid[0]
     click.echo("Argument for account Id: " + str(account_id))
     click.echo("Argument for version: " + str(version))
@@ -32,7 +45,91 @@ def mlops_login(userid, version):
         click.echo("Please provide your account id in the MLOps platform (open.fedml.ai).")
         return
 
-    login_with_docker_mode(account_id, version)
+    if docker:
+        login_with_docker_mode(account_id, version)
+    else:
+        pip_source_dir = os.path.dirname(__file__)
+        login_cmd = os.path.join(pip_source_dir, "edge_deployment", "login.py")
+        click.echo(login_cmd)
+        logout()
+        cleanup_login_process()
+        cleanup_all_fedml_processes(exclude_login=True)
+        login_pid = subprocess.Popen(["python3", login_cmd, "-t", "login", "-u", str(account_id), "-v", version]).pid
+        save_login_process(login_pid)
+
+
+def generate_yaml_doc(yaml_object, yaml_file):
+    try:
+        file = open(yaml_file, 'w', encoding='utf-8')
+        yaml.dump(yaml_object, file)
+        file.close()
+    except Exception as e:
+        pass
+
+
+def cleanup_login_process():
+    try:
+        home_dir = expanduser("~")
+        local_pkg_data_dir = os.path.join(home_dir, "fedml-client", "fedml", "data")
+        edge_process_id_file = os.path.join(local_pkg_data_dir, "edge-process.id")
+        edge_process_info = load_yaml_config(edge_process_id_file)
+        edge_process_id = edge_process_info.get('process_id', None)
+        if edge_process_id is not None:
+            edge_process = psutil.Process(edge_process_id)
+            if edge_process is not None:
+                os.killpg(os.getpgid(edge_process.pid), signal.SIGTERM)
+                #edge_process.terminate()
+                #edge_process.join()
+        yaml_object = {}
+        yaml_object['process_id'] = -1
+        generate_yaml_doc(yaml_object, edge_process_id_file)
+
+    except Exception as e:
+        pass
+
+
+def save_login_process(edge_process_id):
+    try:
+        home_dir = expanduser("~")
+        local_pkg_data_dir = os.path.join(home_dir, "fedml-client", "fedml", "data")
+        edge_process_id_file = os.path.join(local_pkg_data_dir, "edge-process.id")
+        yaml_object = {}
+        yaml_object['process_id'] = edge_process_id
+        generate_yaml_doc(yaml_object, edge_process_id_file)
+    except Exception as e:
+        pass
+
+
+def cleanup_all_fedml_processes(exclude_login=False):
+    # Cleanup all fedml relative processes.
+    for process in psutil.process_iter():
+        try:
+            pinfo = process.as_dict(attrs=['pid', 'name', "cmdline"])
+            for cmd in pinfo["cmdline"]:
+                if exclude_login:
+                    if str(cmd).find("fedml_config.yaml") != -1:
+                        click.echo("find fedml process at {}.".format(process.pid))
+                        os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                        # process.terminate()
+                        # process.join()
+                else:
+                    if str(cmd).find("login.py") != -1 or str(cmd).find("fedml_config.yaml") != -1:
+                        click.echo("find fedml process at {}.".format(process.pid))
+                        os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                        # process.terminate()
+                        # process.join()
+        except Exception as e:
+            pass
+
+
+@cli.command(
+    "logout", help="Logout from MLOps platform (open.fedml.ai)"
+)
+def mlops_logout():
+    logout()
+    cleanup_login_process()
+    cleanup_all_fedml_processes()
+
 
 
 @cli.command(
@@ -207,12 +304,12 @@ def build_mlops_package(source_folder, entry_point, config_folder, dest_folder,
 # fedml mlops --action clean
 # fedml mlops --action exit
 # So we should do as follows
-# fedml mlops-deploy
-# fedml mlops-logout
-# fedml mlops-on
-# fedml mlops-off
-# fedml mlops-clean
-# fedml mlops-exit
+# fedml deploy
+# fedml logout
+# fedml on
+# fedml off
+# fedml clean
+# fedml exit
 
 
 if __name__ == "__main__":
