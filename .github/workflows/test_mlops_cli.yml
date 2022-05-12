@@ -19,6 +19,10 @@ jobs:
   mlops-cli-test:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: python
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
