@@ -367,6 +367,6 @@ if __name__ == "__main__":
     test_login_with_start_run_by_sending_client_agent_msg(args)
 
     #test_login_with_start_run_by_sending_server_agent_msg(args)
-    #time.sleep(10)
+    time.sleep(10)
     test_login_with_stop_run_by_sending_client_agent_msg(args)
 
