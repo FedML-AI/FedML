@@ -493,7 +493,7 @@ class FedMLClientRunner:
         if status_code == "SUCCESS":
             edge_id = response.json().get("data").get("id")
         else:
-            raise Exception("bind_account_and_device_id failed!")
+            return 0
         return edge_id
 
     def fetch_configs(self):
@@ -595,13 +595,27 @@ def __login(args, userid, version):
     client_runner = FedMLClientRunner(args, '')
 
     # Fetch configs from the MLOps config server.
-    mqtt_config, s3_config, mlops_config, docker_config = client_runner.fetch_configs()
     service_config = dict()
-    service_config["mqtt_config"] = mqtt_config
-    service_config["s3_config"] = s3_config
-    service_config["ml_ops_config"] = mlops_config
-    service_config["docker_config"] = docker_config
-    client_runner.agent_config = service_config
+    config_try_count = 0
+    edge_id = 0
+    while config_try_count < 5:
+        try:
+            mqtt_config, s3_config, mlops_config, docker_config = client_runner.fetch_configs()
+            service_config["mqtt_config"] = mqtt_config
+            service_config["s3_config"] = s3_config
+            service_config["ml_ops_config"] = mlops_config
+            service_config["docker_config"] = docker_config
+            client_runner.agent_config = service_config
+            break
+        except Exception as e:
+            config_try_count += 1
+            time.sleep(3)
+            continue
+
+    if config_try_count >= 5:
+        click.echo("Oops, you failed to login the FedML MLOps platform.")
+        click.echo("Please check whether your network is normal!")
+        return
 
     # Build unique device id
     if args.device_id is not None and len(str(args.device_id)) > 0:
@@ -609,6 +623,7 @@ def __login(args, userid, version):
 
     # Bind account id to the MLOps platform.
     register_try_count = 0
+    edge_id = 0
     while register_try_count < 5:
         try:
             edge_id = client_runner.bind_account_and_device_id(
@@ -622,10 +637,17 @@ def __login(args, userid, version):
             time.sleep(3)
             continue
 
+    if edge_id <= 0:
+        click.echo("Oops, you failed to login the FedML MLOps platform.")
+        click.echo("Please check whether your network is normal!")
+        return
+
     # Log arguments and binding results.
     click.echo(args)
     click.echo("login: unique_device_id = %s" % str(unique_device_id))
     click.echo("login: edge_id = %s" % str(edge_id))
+    click.echo("Congratulations, you have logged into the FedML MLOps platform successfully!")
+    click.echo("Your device id is " + str(unique_device_id) + ". You may review the device in the MLOps edge device list.")
 
     # Setup MQTT connection for communication with the FedML server.
     client_runner.setup_mqtt_connection(service_config)
