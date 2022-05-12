@@ -23,7 +23,7 @@ class FedMLServerManager(ServerManager):
         is_preprocessed=False,
         preprocessed_client_lists=None,
     ):
-        if backend == "MQTT_S3":
+        if backend == "MQTT_S3_MNN":
             mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
             args.mqtt_config_path = mqtt_config
             args.s3_config_path = s3_config
