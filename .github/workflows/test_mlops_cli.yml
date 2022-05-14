@@ -31,4 +31,4 @@ jobs:
 
       # Runs a single command using the runners shell
       - name: Run test cases for fedml-build, mlops-build and mlops-login
-        run: . build_tools/github/test_login.sh
+        run: cd build_tools/github/; . build_tools/github/test_login.sh
