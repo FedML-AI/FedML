@@ -574,6 +574,17 @@ def __login_internal(userid, version):
     __login(args, userid, version)
 
 
+def save_edge_infos(unique_device_id, edge_id):
+    home_dir = expanduser("~")
+    local_pkg_data_dir = os.path.join(home_dir, "fedml-client", "fedml", "data")
+    edge_info_file = os.path.join(local_pkg_data_dir, "edge_infos.yaml")
+    edge_info_file_handle = open(edge_info_file, 'w', encoding='utf-8')
+    edge_info_file_handle.writelines(["unique_device_id: {}\n".format(str(unique_device_id)),
+                                      "edge_id: {}\n".format(str(edge_id))])
+    edge_info_file_handle.flush()
+    edge_info_file_handle.close()
+
+
 def __login(args, userid, version):
     setattr(args, "account_id", userid)
     home_dir = expanduser("~")
@@ -646,6 +657,8 @@ def __login(args, userid, version):
     click.echo(args)
     click.echo("login: unique_device_id = %s" % str(unique_device_id))
     click.echo("login: edge_id = %s" % str(edge_id))
+    save_edge_infos(args.device_id + "." + args.os_name, edge_id)
+
     click.echo("Congratulations, you have logged into the FedML MLOps platform successfully!")
     click.echo("Your device id is " + str(unique_device_id) + ". You may review the device in the MLOps edge device list.")
 
