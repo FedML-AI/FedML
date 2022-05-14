@@ -577,6 +577,10 @@ def __login_internal(userid, version):
 def save_edge_infos(unique_device_id, edge_id):
     home_dir = expanduser("~")
     local_pkg_data_dir = os.path.join(home_dir, "fedml-client", "fedml", "data")
+    try:
+        os.makedirs(local_pkg_data_dir)
+    except Exception as e:
+        pass
     edge_info_file = os.path.join(local_pkg_data_dir, "edge_infos.yaml")
     edge_info_file_handle = open(edge_info_file, 'w', encoding='utf-8')
     edge_info_file_handle.writelines(["unique_device_id: {}\n".format(str(unique_device_id)),
