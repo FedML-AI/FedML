@@ -57,9 +57,7 @@ test_mlops_login() {
 
   python3 test_mlops_cli.py -v release
 
-  sleep 20
-
-  fedml logout >/dev/null 2>&1
+  sleep 5
 }
 
 test_python_version_with_new_env() {
