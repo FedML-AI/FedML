@@ -19,6 +19,7 @@ jobs:
   mlops-cli-test:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
+    environment: fedml_dev_env
     defaults:
       run:
         shell: bash
