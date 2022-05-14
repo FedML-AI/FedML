@@ -7,8 +7,18 @@ from os.path import expanduser
 
 import psutil
 import requests
+import yaml
 from fedml.cli.edge_deployment.mqtt_manager import MqttManager
 from fedml.mlops.mlops_configs import MLOpsConfigs
+
+
+def load_yaml_config(yaml_path):
+    """Helper function to load a yaml config file"""
+    with open(yaml_path, "r") as stream:
+        try:
+            return yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            raise ValueError("Yaml error - check yaml file")
 
 
 def test_is_ok(test_run_id, test_edge_id, test_function, ok_message):
@@ -36,9 +46,17 @@ def test_is_ok(test_run_id, test_edge_id, test_function, ok_message):
         print("{} with failure status.".format(test_function.__name__))
 
 
+def load_edge_infos():
+    home_dir = expanduser("~")
+    local_pkg_data_dir = os.path.join(home_dir, "fedml-client", "fedml", "data")
+    edge_info_file = os.path.join(local_pkg_data_dir, "edge_infos.yaml")
+    edge_info_file_handle = load_yaml_config(edge_info_file)
+    return edge_info_file_handle["unique_device_id"], edge_info_file_handle["edge_id"]
+
+
 def test_login_with_start_run_by_sending_client_agent_msg(args):
     test_run_id = 873
-    test_edge_id = 140
+    _, test_edge_id = load_edge_infos()
     start_train_topic = "flserver_agent/{}/start_train".format(str(test_edge_id))
     start_train_msg = {
         "edges": [
@@ -158,7 +176,7 @@ def test_login_with_start_run_by_sending_client_agent_msg(args):
 
 def test_login_with_stop_run_by_sending_client_agent_msg(args):
     test_run_id = 873
-    test_edge_id = 140
+    _, test_edge_id = load_edge_infos()
     stop_train_topic = "flserver_agent/{}/stop_train".format(str(test_edge_id))
     stop_train_msg = {
         "edgeids": [
@@ -227,7 +245,7 @@ def send_request_to_server_agent(args, request_json):
 
 def test_login_with_start_run_by_sending_server_agent_msg(args):
     test_run_id = 873
-    test_edge_id = 140
+    _, test_edge_id = load_edge_infos()
     start_train_topic = "flserver_agent/{}/start_train".format(str(test_edge_id))
     start_train_msg = {
         "edges": [
@@ -337,7 +355,7 @@ def test_login_with_start_run_by_sending_server_agent_msg(args):
 
 def test_login_with_stop_run_by_sending_server_agent_msg(args):
     test_run_id = 873
-    test_edge_id = 122
+    _, test_edge_id = load_edge_infos()
     stop_train_msg = {
         "edgeids": [
             test_edge_id
@@ -357,6 +375,8 @@ if __name__ == "__main__":
     try:
         home_dir = expanduser("~")
         parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        parser.add_argument("--edge_id", "-e", type=int,
+                            default=105)
         parser.add_argument("--config_version", "-v", type=str,
                             default="release")
         parser.add_argument("--log_dir", "-l", type=str,
@@ -366,9 +386,9 @@ if __name__ == "__main__":
         print("Exception when parsing arguments: {}".format(traceback.format_exc()))
         pass
 
-    #test_login_with_start_run_by_sending_client_agent_msg(args)
+    test_login_with_start_run_by_sending_client_agent_msg(args)
 
-    test_login_with_start_run_by_sending_server_agent_msg(args)
+    #test_login_with_start_run_by_sending_server_agent_msg(args)
     time.sleep(10)
-    #test_login_with_stop_run_by_sending_client_agent_msg(args)
+    test_login_with_stop_run_by_sending_client_agent_msg(args)
 
