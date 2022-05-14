@@ -63,9 +63,9 @@ test_python_version_with_new_env() {
     python_venv=$1
     python_ver=$2
 
-    #conda_base_dir=`conda info |grep  'base environment' |awk -F':' '{print $2}' |awk -F'(' '{print $1}' |awk -F' ' '{print $1}'`
-    #conda_env_init="${conda_base_dir}/etc/profile.d/conda.sh"
-    #source ${conda_env_init}
+    conda_base_dir=`conda info |grep  'base environment' |awk -F':' '{print $2}' |awk -F'(' '{print $1}' |awk -F' ' '{print $1}'`
+    conda_env_init="${conda_base_dir}/etc/profile.d/conda.sh"
+    source ${conda_env_init}
     conda env remove --name ${python_venv}
     conda create -y -n ${python_venv} python=${python_ver}
     conda activate ${python_venv}
