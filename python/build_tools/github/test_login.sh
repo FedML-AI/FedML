@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # https://doc.fedml.ai/mlops/api.html
 
 test_build_fedml_package() {
@@ -74,7 +76,7 @@ test_python_version_with_new_env() {
     conda activate ${python_venv}
     conda install -y -c anaconda mpi4py
 
-    test_build_fedml_package
+    #test_build_fedml_package
     #test_mlops_build
     #test_mlops_login
 
