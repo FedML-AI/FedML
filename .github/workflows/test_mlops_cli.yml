@@ -31,4 +31,4 @@ jobs:
 
       # Runs a single command using the runners shell
       - name: Run test cases for fedml-build, mlops-build and mlops-login
-        run: cd build_tools/github/; source ./test_login.sh
+        run: cd build_tools/github/; echo `which conda`; source ./test_login.sh
