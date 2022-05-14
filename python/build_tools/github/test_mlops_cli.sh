@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
-
 # https://doc.fedml.ai/mlops/api.html
 
 test_build_fedml_package() {
-  pip install twine
   pwd=`pwd`
   cd ../../
+#  pip install twine
 #  python3 setup.py sdist bdist_wheel
 #  twine check ./dist/*
   pip uninstall fedml
@@ -64,10 +63,6 @@ test_python_version_with_new_env() {
     python_venv=$1
     python_ver=$2
 
-#    python3 -m venv --clear ${python_venv}
-#    python3 -m venv  ${python_venv}
-#    source ${python_venv}/bin/activate
-
     conda_base_dir=`conda info |grep  'base environment' |awk -F':' '{print $2}' |awk -F'(' '{print $1}' |awk -F' ' '{print $1}'`
     conda_env_init="${conda_base_dir}/etc/profile.d/conda.sh"
     source ${conda_env_init}
@@ -80,8 +75,29 @@ test_python_version_with_new_env() {
     test_mlops_build
     test_mlops_login
 
-#    source ${python_venv}/bin/deactivate
     conda deactivate
 }
 
-test_python_version_with_new_env 'fedml_ci_py_37' '3.7'
+test_logout() {
+    python_venv=$1
+    python_ver=$2
+
+    conda_base_dir=`conda info |grep  'base environment' |awk -F':' '{print $2}' |awk -F'(' '{print $1}' |awk -F' ' '{print $1}'`
+    conda_env_init="${conda_base_dir}/etc/profile.d/conda.sh"
+    source ${conda_env_init}
+    conda activate ${python_venv}
+
+    fedml logout
+
+    conda deactivate
+}
+
+# test action for login and logout
+test_action=$1
+if [ -z $test_action ]; then
+  echo "test mlops cli..."
+  test_python_version_with_new_env 'fedml_ci_py_37' '3.7'
+elif [ "$test_action" = "logout" ]; then
+  echo "test logout..."
+  test_logout 'fedml_ci_py_37' '3.7'
+fi
