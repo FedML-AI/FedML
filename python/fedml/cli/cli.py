@@ -6,6 +6,7 @@ from os.path import expanduser
 import click
 import shutil
 
+import fedml
 import psutil
 import yaml
 from fedml.cli.edge_deployment.yaml_utils import load_yaml_config
@@ -16,6 +17,11 @@ from fedml.cli.edge_deployment.login_with_docker import login_with_docker_mode
 @click.group()
 def cli():
     pass
+
+
+@cli.command("version", help="Display fedml version.")
+def mlops_version():
+    click.echo("fedml version: " + str(fedml.__version__))
 
 
 @cli.command("login", help="Login to MLOps platform (open.fedml.ai)")
