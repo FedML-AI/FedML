@@ -1,4 +1,3 @@
-#!/bin/bash
 # https://doc.fedml.ai/mlops/api.html
 
 test_build_fedml_package() {
@@ -69,6 +68,7 @@ test_python_version_with_new_env() {
 #    python3 -m venv  ${python_venv}
 #    source ${python_venv}/bin/activate
 
+    source ~/anaconda3/etc/profile.d/conda.sh
     conda env remove --name ${python_venv}
     conda create -y -n ${python_venv} python=${python_ver}
     conda activate ${python_venv}
