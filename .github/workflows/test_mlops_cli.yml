@@ -35,5 +35,5 @@ jobs:
         
       # Runs a single command using the runners shell
       - name: Run logout to exit mlops cli
-        run: fedml logout
+        run: cd build_tools/github/; conda info; source ./test_mlops_cli.sh logout
         continue-on-error: true
