@@ -26,7 +26,7 @@ from .simulation.simulator import SimulatorMPI, SimulatorSingleProcess, Simulato
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.7.27"
+__version__ = "0.7.33"
 
 
 def init(args=None):
