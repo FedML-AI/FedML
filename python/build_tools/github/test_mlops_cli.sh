@@ -100,4 +100,5 @@ if [ -z $test_action ]; then
 elif [ "$test_action" = "logout" ]; then
   echo "test logout..."
   test_logout 'fedml_ci_py_37' '3.7'
+  echo "Logout successfully!"
 fi
