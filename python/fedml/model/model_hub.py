@@ -8,6 +8,22 @@ from fedml.model.cv.resnet import resnet56
 from fedml.model.cv.resnet_gn import resnet18
 from fedml.model.linear.lr import LogisticRegression
 from fedml.model.nlp.rnn import RNN_OriginalFedAvg, RNN_StackOverFlow
+from fedml.model.nlp.transformer.bert_model import BertForSequenceClassification
+from fedml.model.nlp.transformer.distilbert_model import DistilBertForSequenceClassification
+from transformers import (
+    BertConfig,
+    BertTokenizer,
+    BertForTokenClassification,
+    BertForQuestionAnswering,
+    DistilBertConfig,
+    DistilBertTokenizer,
+    DistilBertForTokenClassification,
+    DistilBertForQuestionAnswering,
+    BartConfig,
+    BartForConditionalGeneration,
+    BartTokenizer,
+)
+from fedml.model.nlp.transformer.model_args import ClassificationArgs
 
 
 def create(args, output_dim):
@@ -48,6 +64,13 @@ def create(args, output_dim):
         model = MobileNetV3(model_mode="LARGE")
     elif model_name == "efficientnet":
         model = EfficientNet()
+    elif args.model_type == "bert" and args.dataset == "20news":
+        config_class = BertConfig
+        model_class = BertForSequenceClassification
+        model_args = {}
+        model_args["num_labels"] = output_dim
+        config = config_class.from_pretrained(args.model, **model_args)
+        model = model_class.from_pretrained(args.model, config=config)
     else:
         model = LogisticRegression(28 * 28, output_dim)
     return model

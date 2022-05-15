@@ -8,10 +8,12 @@ import wandb
 
 from .client import Client
 from .optrepo import OptRepo
-
+from .my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
+from .my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
+from .my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
 
 class FedOptAPI(object):
-    def __init__(self, dataset, device, args, model_trainer):
+    def __init__(self, args, device, dataset, model):
         self.device = device
         self.args = args
         [
@@ -38,6 +40,16 @@ class FedOptAPI(object):
         self.train_data_local_dict = train_data_local_dict
         self.test_data_local_dict = test_data_local_dict
 
+        logging.info("model = {}".format(model))
+        if args.dataset == "stackoverflow_lr":
+            model_trainer = MyModelTrainerTAG(model)
+        elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
+            model_trainer = MyModelTrainerNWP(model)
+        else:
+            # default model trainer is for classification problem
+            model_trainer = MyModelTrainerCLS(model)
+        self.model_trainer = model_trainer
+        logging.info("self.model_trainer = {}".format(self.model_trainer))
         self.model_trainer = model_trainer
         self._instanciate_opt()
         self._setup_clients(
@@ -106,7 +118,7 @@ class FedOptAPI(object):
 
             """
             for scalability: following the original FedAvg algorithm, we uniformly sample a fraction of clients in each round.
-            Instead of changing the 'Client' instances, our implementation keeps the 'Client' instances and then updates their local dataset 
+            Instead of changing the 'Client' instances, our implementation keeps the 'Client' instances and then updates their local dataset
             """
             client_indexes = self._client_sampling(
                 round_idx, self.args.client_num_in_total, self.args.client_num_per_round
@@ -231,7 +243,7 @@ class FedOptAPI(object):
             )
 
             """
-            Note: CI environment is CPU-based computing. 
+            Note: CI environment is CPU-based computing.
             The training speed for RNN training is to slow in this setting, so we only test a client to make sure there is no programming error.
             """
             if self.args.ci == 1:
@@ -248,13 +260,15 @@ class FedOptAPI(object):
         test_loss = sum(test_metrics["losses"]) / sum(test_metrics["num_samples"])
 
         stats = {"training_acc": train_acc, "training_loss": train_loss}
-        wandb.log({"Train/Acc": train_acc, "round": round_idx})
-        wandb.log({"Train/Loss": train_loss, "round": round_idx})
+        if self.args.enable_wandb:
+            wandb.log({"Train/Acc": train_acc, "round": round_idx})
+            wandb.log({"Train/Loss": train_loss, "round": round_idx})
         logging.info(stats)
 
         stats = {"test_acc": test_acc, "test_loss": test_loss}
-        wandb.log({"Test/Acc": test_acc, "round": round_idx})
-        wandb.log({"Test/Loss": test_loss, "round": round_idx})
+        if self.args.enable_wandb:
+            wandb.log({"Test/Acc": test_acc, "round": round_idx})
+            wandb.log({"Test/Loss": test_loss, "round": round_idx})
         logging.info(stats)
 
     def _local_test_on_validation_set(self, round_idx):

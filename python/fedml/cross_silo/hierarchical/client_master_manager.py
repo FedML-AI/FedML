@@ -42,19 +42,15 @@ from ...core.distributed.communication.message import Message
 from ...mlops import MLOpsMetrics, MLOpsProfilerEvent
 import torch.distributed as dist
 
-from ...mlops.mlops_configs import MLOpsConfigs
-
 
 class ClientMasterManager:
     def __init__(
         self, args, trainer_dist_adapter, comm=None, rank=0, size=0, backend="MPI"
     ):
         self.trainer_dist_adapter = trainer_dist_adapter
-        if hasattr(self.args, "backend") and self.args.backend == "MQTT_S3":
-            mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
-            args.mqtt_config_path = mqtt_config
-            args.s3_config_path = s3_config
-        self.communication_manager = CommunicationManager(args, comm, rank, size, backend)
+        self.communication_manager = CommunicationManager(
+            args, comm, rank, size, backend
+        )
         self.num_rounds = args.comm_round
         self.round_idx = 0
         self.args = args
@@ -188,7 +184,7 @@ class ClientMasterManager:
 
     def send_model_to_server(self, receive_id, weights, local_sample_num):
         if hasattr(self.args, "backend") and self.args.using_mlops:
-            self.mlops_event.log_event_started("comm_c2s", event_value=str(self.round_idx), )
+            self.mlops_event.log_event_started("comm_c2s", event_edge_id=0)
         message = Message(
             MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER,
             self.client_real_id,

@@ -77,17 +77,15 @@ class MLOpsRuntimeLog:
     def init_logs(self):
         log_file_path, program_prefix = MLOpsRuntimeLog.build_log_file_path(self.args)
         if hasattr(self, "should_write_log_file") and self.should_write_log_file:
-            logging.raiseExceptions = True
             logging.basicConfig(
                 filename=log_file_path,
                 filemode="w",
                 level=logging.INFO,
                 format="[" + program_prefix + "] [%(asctime)s] [%(levelname)s] "
-                       "[%(filename)s:%(lineno)d:%(funcName)s] %(message)s",
+                "[%(filename)s:%(lineno)d:%(funcName)s] %(message)s",
                 datefmt="%a, %d %b %Y %H:%M:%S",
             )
         else:
-            logging.raiseExceptions = True
             logging.basicConfig(
                 level=logging.INFO,
                 format="[" + program_prefix + "] [%(asctime)s] [%(levelname)s] "
@@ -136,16 +134,16 @@ class MLOpsRuntimeLog:
             "updated_by": str(edge_id),
         }
 
-        log_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+        # set request header with the application/json format
+        log_headers = {"Content-Type": "application/json"}
 
         # send log data to the log server
-        if str(self.log_server_url).startswith("https://"):
-            cur_source_dir = os.path.dirname(__file__)
-            cert_path = os.path.join(cur_source_dir, "ssl", "open.fedml.ai_bundle.crt")
-            requests.session().verify = cert_path
-            response = requests.post(self.log_server_url, headers=log_headers, json=log_upload_request, verify=True)
-        else:
-            response = requests.post(self.log_server_url, headers=log_headers, json=log_upload_request)
+        response = requests.post(
+            self.log_server_url,
+            headers=log_headers,
+            json=log_upload_request,
+            verify=False,
+        )
         if response.status_code != 200:
             # print('Error for sending log data: ' + str(response.status_code))
             self.log_line_index -= len(log_lines)

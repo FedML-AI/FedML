@@ -6,6 +6,7 @@ from .mpi_p2p_mp.fedavg.FedAvgAPI import FedML_FedAvg_distributed
 from .mpi_p2p_mp.fedavg_robust.FedAvgRobustAPI import FedML_FedAvgRobust_distributed
 
 from .single_process.fedavg import FedAvgAPI
+from .single_process.fedopt import FedOptAPI
 from ..constants import (
     FedML_FEDERATED_OPTIMIZER_BASE_FRAMEWORK,
     FedML_FEDERATED_OPTIMIZER_FEDAVG,
@@ -27,6 +28,8 @@ class SimulatorSingleProcess:
     def __init__(self, args, device, dataset, model):
         if args.federated_optimizer == "FedAvg":
             self.fl_trainer = FedAvgAPI(args, device, dataset, model)
+        elif args.federated_optimizer == "FedOpt":
+            self.fl_trainer = FedOptAPI(args, device, dataset, model)
         else:
             raise Exception("Exception")
 

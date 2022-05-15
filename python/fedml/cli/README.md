@@ -40,9 +40,3 @@ fedml login 90 -v release
 ```
 fedml login -u 90 -v test
 ```
-
-## 3. Logout from the FedML MLOps platform (open.fedml.ai)
-fedml logout 
-
-## 4. Display fedml version
-fedml version
