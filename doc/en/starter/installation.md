@@ -20,10 +20,29 @@ conda activate fedml
 conda install --name fedml pip
 pip install fedml
 ```
-After installation, please use `pip list | grep fedml` to check whether `fedml` is installed.
+After installation, please use "pip list | grep fedml" to check whether `fedml` is installed.
+
+
+## Install FedML from Source
+```
+git clone https://github.com/FedML-AI/FedML.git && \
+cd ./FedML/python && \
+python setup.py install
+```
+If you need to install from a specific commit (normally used for the debugging/development phase), please follow commands below:
+```
+git clone https://github.com/FedML-AI/FedML.git && \
+cd ./FedML && git checkout e798061d62560b03e049d514e7cc8f1a753fde6b && \
+cd python && \
+python setup.py install
+```
+Please change the above commit id to your own (you can find it at [https://github.com/FedML-AI/FedML/commits/master](https://github.com/FedML-AI/FedML/commits/master))
+
 
 ## Run FedML in Docker (Recommended)
-We recommend to use FedML in Docker environment to make your life easier without caring complex and tedious installation debugging. Currently, we maintain docker images for two settings:
+FedML Docker Hub: [https://hub.docker.com/repository/docker/fedml/fedml](https://hub.docker.com/repository/docker/fedml/fedml)
+
+We recommend to use FedML in Docker environment to make your life easier without caring for complex and tedious installation debugging. Currently, we maintain docker images for two settings:
 
 - For Linux servers with x86_64 architecture
 
@@ -31,10 +50,10 @@ Please refer to the following command and remember to change `WORKSPACE` to your
 
 **(1) Pull the Docker image and prepare the docker environment**
 ```
-FEDML_DOCKER_IMAGE=fedml/fedml:cuda-11.6.0-devel-ubuntu20.04
+FEDML_DOCKER_IMAGE=fedml/fedml:cuda-11.4.0-devel-ubuntu20.04
 docker pull FEDML_DOCKER_IMAGE
 
-# if you want to use GPUs in your host OS, please follow this link [https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker):
+# if you want to use GPUs in your host OS, please follow this link: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker
 sudo apt-get update
 sudo apt-get install -y nvidia-docker2
 sudo systemctl restart docker
@@ -44,17 +63,17 @@ sudo chmod 777 /var/run/docker.sock
 **(2) Run Docker with interactive mode**
 
 ```
-FEDML_DOCKER_IMAGE=fedml/fedml:cuda-11.6.0-devel-ubuntu20.04
+FEDML_DOCKER_IMAGE=fedml/fedml:cuda-11.4.0-devel-ubuntu20.04
 WORKSPACE=/home/chaoyanghe/sourcecode/FedML_startup/FedML
 
 docker run -t -i -v $WORKSPACE:$WORKSPACE --shm-size=64g --ulimit nofile=65535 --ulimit memlock=-1 --privileged \
---gpus all \
 --env FEDML_NODE_INDEX=0 \
 --env WORKSPACE=$WORKSPACE \
 --env FEDML_NUM_NODES=1 \
 --env FEDML_MAIN_NODE_INDEX=0 \
 --env FEDML_RUN_ID=0 \
 --env FEDML_MAIN_NODE_PRIVATE_IPV4_ADDRESS=127.0.0.1 \
+--gpus all \
 -u fedml --net=host \
 $FEDML_DOCKER_IMAGE \
 /bin/bash
@@ -129,6 +148,7 @@ docker run -t -i -v $WORKSPACE:$WORKSPACE --shm-size=64g --ulimit nofile=65535 -
 --env FEDML_MAIN_NODE_PRIVATE_IPV4_ADDRESS=127.0.0.1 \
 --env FEDML_BATCH_BOOTSTRAP=$WORKSPACE/python/scripts/docker/bootstrap.sh \
 --env FEDML_BATCH_ENTRY_SCRIPT=$WORKSPACE/python/scripts/docker/entry.sh \
+--gpus all \
 -u fedml --net=host \
 $FEDML_DOCKER_IMAGE
 ```

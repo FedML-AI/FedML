@@ -7,6 +7,8 @@ from ...core.distributed.server.server_manager import ServerManager
 from ...mlops import MLOpsProfilerEvent, MLOpsMetrics
 import logging
 
+from ...mlops.mlops_configs import MLOpsConfigs
+
 
 class FedMLServerManager(ServerManager):
     def __init__(
@@ -20,6 +22,10 @@ class FedMLServerManager(ServerManager):
         is_preprocessed=False,
         preprocessed_client_lists=None,
     ):
+        if backend == "MQTT_S3":
+            mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
+            args.mqtt_config_path = mqtt_config
+            args.s3_config_path = s3_config
         super().__init__(args, comm, client_rank, client_num, backend)
         self.args = args
         self.aggregator_dist_adapter = aggregator_dist_adapter
@@ -129,10 +135,10 @@ class FedMLServerManager(ServerManager):
             self.send_init_msg()
 
     def handle_message_receive_model_from_client(self, msg_params):
-        if hasattr(self.args, "backend") and self.args.using_mlops:
-            self.mlops_event.log_event_ended("comm_c2s", event_edge_id=0)
-
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
+        if hasattr(self.args, "backend") and self.args.using_mlops:
+            self.mlops_event.log_event_ended("comm_c2s",  event_value=str(self.round_idx), event_edge_id=sender_id)
+
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         local_sample_number = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
 

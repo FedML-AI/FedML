@@ -1,25 +1,39 @@
+
 # https://hub.docker.com/r/nvidia/cuda/tags
 # https://hub.docker.com/r/nvidia/cuda/tags?page=1&name=11.6.0-devel-ubuntu was released at May 6th, 2022
-FROM nvidia/cuda:11.6.0-devel-ubuntu20.04
+FROM nvidia/cuda:11.4.0-devel-ubuntu20.04
+ENV OS=ubuntu20.04
+# ARG OS
+
+ENV DISTRO=ubuntu2004
+# ARG DISTRO
+
+ENV ARCH=x86_64
+# ARG ARCH
+
+ENV PYTHON_VERSION=3
+# ARG PYTHON_VERSION
+
+ENV PYTORCH_VERSION=1.11.0
+# ARG PYTORCH_VERSION
+
+
+# https://docs.nvidia.com/deeplearning/nccl/release-notes/rel_2-12-10.html#rel_2-12-10
+ENV NCCL_VERSION=2.11.4
+# ARG NCCL_VERSION
+# NCCL 2.12.10 release supports CUDA 10.2, CUDA 11.0, and CUDA 11.6.
+ENV CUDA_VERSION=11.4
+# ARG CUDA_VERSION
+
+
+RUN echo ${NCCL_VERSION}
+RUN echo ${CUDA_VERSION}
+
 
 ENV PATH=/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 RUN export CUDA_HOME=/usr/local/cuda
 RUN export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64
 RUN export PATH=$PATH:$CUDA_HOME/bin
-
-ENV OS=ubuntu20.04
-ENV DISTRO=ubuntu2004
-
-ENV ARCH=x86_64
-
-ENV PYTHON_VERSION=3
-
-ENV PYTORCH_VERSION=1.11.0
-# https://docs.nvidia.com/deeplearning/nccl/release-notes/rel_2-12-10.html#rel_2-12-10
-ENV NCCL_VERSION=2.12.10
-# NCCL 2.12.10 release supports CUDA 10.2, CUDA 11.0, and CUDA 11.6.
-ENV CUDA_VERSION=11.6
-
 
 ENV OPENMPI_BASEVERSION=4.1
 ENV OPENMPI_VERSION=4.1.2
@@ -52,8 +66,6 @@ RUN ln -nsf /usr/bin/pip3 /usr/bin/pip
 # ***************************************************************************
 # Utilities
 # ***************************************************************************
-ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get --allow-downgrades update
 RUN apt-get install -y --no-install-recommends \
         software-properties-common build-essential autotools-dev \
         nfs-common pdsh \
@@ -67,7 +79,6 @@ RUN apt-get install -y --no-install-recommends \
 # Git
 # ***************************************************************************
 RUN add-apt-repository ppa:git-core/ppa -y && \
-    apt-get --allow-downgrades update && \
     apt-get install -y git && \
     git --version
 
@@ -107,13 +118,14 @@ apt install -y --allow-change-held-packages libnccl2=${NCCL_VERSION}-1+cuda${CUD
 # ***************************************************************************
 RUN sudo pip install numpy ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses h5py
 
-RUN cd ${INSTALL_DIR} && \
-git clone https://github.com/pytorch/pytorch.git && \
-cd pytorch && git checkout v${PYTORCH_VERSION} && \
-git submodule sync && \
-git submodule update --init --recursive --jobs 0 && \
-sudo USE_SYSTEM_NCCL=1 TORCH_CUDA_ARC_LIST="6.0 6.1 7.0 7.5 8.0" CMAKE_CUDA_COMPILER="/usr/local/cuda" python setup.py install
+#RUN cd ${INSTALL_DIR} && \
+#git clone https://github.com/pytorch/pytorch.git && \
+#cd pytorch && git checkout v${PYTORCH_VERSION} && \
+#git submodule sync && \
+#git submodule update --init --recursive --jobs 0 && \
+#sudo USE_SYSTEM_NCCL=1 TORCH_CUDA_ARC_LIST="6.0 6.1 7.0 7.5 8.0" CMAKE_CUDA_COMPILER="/usr/local/cuda" python setup.py install
 #RUN rm -rf ${INSTALL_DIR}/pytorch
+RUN pip install torch==1.11.0
 
 RUN python3 -c "import torch; torch.__version__"
 
@@ -126,13 +138,15 @@ cd pytorch_geometric && \
 git submodule sync && \
 git submodule update --init --recursive --jobs 0 && \
 sudo python setup.py install
-#RUN rm -rf ${INSTALL_DIR}/pytorch_geometric
+RUN rm -rf ${INSTALL_DIR}/pytorch_geometric
 
 # ***************************************************************************
 ## install fedml from source
 # ***************************************************************************
 RUN sudo apt-get install -y python3-mpi4py
 RUN pip install urllib3==1.26.9
+RUN pip3 install --upgrade requests
+
 #
 #RUN pip install numpy>=1.21 \
 #    PyYAML \
@@ -155,14 +169,12 @@ RUN pip install urllib3==1.26.9
 #    tabulate
 
 RUN cd ${INSTALL_DIR} && \
-git clone https://github.com/FedML-AI/FedML.git && cd ${INSTALL_DIR}/FedML && \
-git pull
-
+git clone https://github.com/FedML-AI/FedML.git && cd ${INSTALL_DIR}/FedML && git pull
 RUN cd ${INSTALL_DIR}/FedML/python && \
 git submodule sync && \
 git submodule update --init --recursive --jobs 0 && \
 sudo python setup.py install
-#RUN rm -rf ${INSTALL_DIR}/FedML
+RUN rm -rf ${INSTALL_DIR}/FedML
 
 RUN python -c "import fedml; fedml.__version__"
 
