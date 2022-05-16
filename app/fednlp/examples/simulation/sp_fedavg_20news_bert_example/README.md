@@ -1,4 +1,4 @@
-# Install FedML
+# Install FedML and other dependencies
 ```
 pip install fedml
 pip install transformers
