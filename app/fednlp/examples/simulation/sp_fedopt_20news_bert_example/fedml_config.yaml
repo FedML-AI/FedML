@@ -1,0 +1,62 @@
+common_args:
+  training_type: "simulation"
+  manual_seed: 0
+  random_seed: 0
+
+data_args:
+  dataset: "20news"
+  data_file_path: /home/dbc/fednlp_data/data_files/20news_data.h5
+  partition_file_path: /home/dbc/fednlp_data/partition_files/20news_partition.h5
+  partition_method: "uniform"
+  reprocess_input_data: false
+  #partition_alpha: 0.5
+
+model_args:
+  model_type: bert
+  model_class: transformer
+  model: bert-base-uncased
+  do_lower_case: true
+
+train_args:
+  federated_optimizer: "FedOpt"
+  client_id_list: "[]"
+  client_num_in_total: 10
+  client_num_per_round: 4
+  comm_round: 2
+  epochs: 1
+  batch_size: 8
+  eval_batch_size: 8
+  max_seq_length: 128
+  fp16: false
+  output_dir: "~/output_dir"
+  client_optimizer: sgd
+  server_optimizer: sgd
+  server_lr: 0.01
+  learning_rate: 0.03
+  weight_decay: 0.001
+  gradient_accumulation_steps: 1
+  clip_grad_norm: 0
+  fedprox_mu: 1
+  evaluate_during_training: false
+  evaluate_during_training_steps: 10
+  freeze_layers: ''
+  is_debug_mode: false
+  ci: 0
+
+validation_args:
+  frequency_of_the_test: 5
+
+device_args:
+  using_gpu: false
+  gpu_id: 0
+
+comm_args:
+  backend: "single_process"
+
+tracking_args:
+  log_file_dir: ./log
+  enable_wandb: false
+  wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
+  wandb_entity: fedml-ai
+  wandb_project: simulation
+  run_name: fedml_torch_fedavg_mnist_lr
