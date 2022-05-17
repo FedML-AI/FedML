@@ -9,21 +9,18 @@ docker kill
 ## Run FedML on GPU cluster for high performance simulation
 
 ```
+FEDML_DOCKER_IMAGE=fedml/fedml:cuda-11.4.0-devel-ubuntu20.04
 WORKSPACE=/home/chaoyanghe/sourcecode/FedML_startup/FedML
-nvidia-docker run -t -i -v $WORKSPACE:$WORKSPACE -v --shm-size=64g --ulimit nofile=65535 --ulimit memlock=-1 --privileged \
---env AWS_BATCH_JOB_NODE_INDEX=$index \
---env AWS_BATCH_JOB_NUM_NODES=$node_num_for_training \
---env AWS_BATCH_JOB_MAIN_NODE_INDEX=0 \
---env AWS_BATCH_JOB_ID=string \
---env AWS_BATCH_JOB_MAIN_NODE_PRIVATE_IPV4_ADDRESS=$master_ip \
---env  \
-BATCH_BOOTSTRAP=/fsx-dev/hchaoyan/home/m5/src/MoE-Pretraining/scripts/launcher/4_aws_batch/entry_scripts/p4dn/switch_hi_asg/bootstrap.sh \
---env \
-BATCH_ENTRY_SCRIPT=/fsx-dev/hchaoyan/home/m5/src/MoE-Pretraining/scripts/launcher/4_aws_batch/entry_scripts/p4dn/switch_hi_asg/entry_script.sh \
+docker run -t -i -v $WORKSPACE:$WORKSPACE --shm-size=64g --ulimit nofile=65535 --ulimit memlock=-1 --privileged \
+--env FEDML_NODE_INDEX=0 \
+--env WORKSPACE=$WORKSPACE \
+--env FEDML_NUM_NODES=1 \
+--env FEDML_MAIN_NODE_INDEX=0 \
+--env FEDML_RUN_ID=0 \
+--env FEDML_MAIN_NODE_PRIVATE_IPV4_ADDRESS=127.0.0.1 \
+--env FEDML_BATCH_BOOTSTRAP=$WORKSPACE/python/scripts/docker/bootstrap.sh \
+--env FEDML_BATCH_ENTRY_SCRIPT=$WORKSPACE/python/scripts/docker/entry.sh \
+--gpus all \
 -u fedml --net=host \
---device=/dev/infiniband/uverbs0 \
---device=/dev/infiniband/uverbs1 \
---device=/dev/infiniband/uverbs2 \
---device=/dev/infiniband/uverbs3 \
-fedml/fedml:latest
+FEDML_DOCKER_IMAGE
 ```
