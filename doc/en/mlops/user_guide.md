@@ -7,7 +7,7 @@ Such a workflow is handled by web UI without the need to handle complex deployme
 Please follow the following instruction step by step.
 
 ```angular2html
-1. Install Client Agent and Login
+1. Register an Account and Login
 2. Invite Collaborators and group management
 3. Project Management 
 ```
@@ -18,21 +18,13 @@ you can now deploy it into the real-world edge-cloud system. Here, we use the cr
 [https://github.com/FedML-AI/FedML/tree/master/python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line](https://github.com/FedML-AI/FedML/tree/master/python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line)
 to guide you through how to deploy it and collaborate with others data silos.
 
-## 1. Install Client Agent and Login
+## 1. Register an Account and Login
 
-- 1.1 Install Docker Engine (skip this step if you already set it up in your local device)
-
-Please refer to [https://docs.docker.com/get-docker/](https://docs.docker.com/get-docker/)
-
-Note: if you use MacBook, please install according to [this link](https://docs.docker.com/desktop/mac/install/) . Don't use complex command lines.
-
-Open Docker Engine, and make sure `Docker is running`
-
-- 1.2 Register an Account at MLOps
+- 1.1 Register an Account at MLOps
 
 [https://open.fedml.ai/#/login?isRegister=true](https://open.fedml.ai/#/login?isRegister=true)
 
-- 1.3 Launch our docker for FL Client Agent and login it to the platform
+- 1.2 Launch our pip daemon process for FL Client Agent and login it to the platform
 ```
 fedml login $userid
 ```
@@ -41,36 +33,20 @@ Please change $userid to your own ID (see the screenshot shown below).
 ![image](../_static/image/get_account_id.png)
 Figure 2: login your edge devices to our platform
 
-You will see the log as below if the script works. The docker image downloading process (for the first time) takes about a few minutes.
+You will see the log as below if the script works. 
 
 ```shell
-(mnn37) chaoyanghe@Chaoyangs-MBP one_line % fedml login 11
-Argument for account Id: 11
+(fedml-pip) ALEXQZLIANG-MB2:swap alexliang$ fedml login 105
+Argument for account Id: 105
 Argument for version: release
-Deployment version: release
-OS Name: MacOS
-current dir: /Users/chaoyanghe/sourcecode/FedML_product/FedML-refactor/python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line
-The FedML client agent is being deployed, please wait for a moment...
-Using docker daemon mode
-.........................
-dev: Pulling from x6k8q1x9/fedml-client-agent
-Digest: sha256:3e0b85844b1f94b180025c7db0ac0356ef4934cd6538b4daca10cfe119929f19
-Status: Image is up to date for public.ecr.aws/x6k8q1x9/fedml-client-agent:dev
-public.ecr.aws/x6k8q1x9/fedml-client-agent:dev
-Congratulations, you have deployed the FedML client agent successfully!
-Your device id is C02DK25XMD6N. You may review the device in the MLOps edge device list.
---------------------------------------------------------------------------------------------
-Now the system will post-process to pull the FedML client docker image to your localhost.
-You may do other things to start your FedML flow. (User Guide: https://doc.fedml.ai)
-You just need to keep this window not closed until the processing is finished.
-dev: Pulling from x6k8q1x9/fedml-cross-silo-cpu
-Digest: sha256:72cc4c2cf1c81c69b75793268a60aed12b067f3fefd17a04bc057941f4ad67c3
-Status: Image is up to date for public.ecr.aws/x6k8q1x9/fedml-cross-silo-cpu:dev
-public.ecr.aws/x6k8q1x9/fedml-cross-silo-cpu:dev
-Great, you have succeeded to complete all the running processes.
-
+Namespace(type='login', user='105', version='release')
+Current directory of client agent: /Users/alexliang/fedml-client
+Namespace(account_id=105, cloud_region='', config_version='release', current_running_dir='/Users/alexliang/fedml-client', device_id='0x9801a7a55e85', log_file_dir='/Users/alexliang/fedml-client/fedml-logs', os_name='MacOS', type='login', user=105, version='dev')
+login: unique_device_id = @0x9801a7a55e85.MacOS
+login: edge_id = 140
+Congratulations, you have logged into the FedML MLOps platform successfully!
+Your device id is @0x9801a7a55e85.MacOS. You may review the device in the MLOps edge device list.
 ```
-
 
 ## 2. Invite Collaborators and group management
 - 2.1 Invite Collaborators <br>
