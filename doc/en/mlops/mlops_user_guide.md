@@ -7,43 +7,40 @@ The above figure shows the workflow. Such a workflow is handled by web UI withou
 Please follow the following instruction step by step.
 
 ```angular2html
-1. Install Client Agent and Login
+1. Register an Account and Login
 2. Invite Collaborators and group management
 3. Project Management 
 ```
 
-## 1. Install Client Agent and Login
+## 1. Register an Account and Login
 
-- 1.1 Install Docker Engine (skip this step if you already set it up in your local device)
-
-Please refer to [https://docs.docker.com/get-docker/](https://docs.docker.com/get-docker/)
-
-Note: if you use MacBook, please install according to [this link](https://docs.docker.com/desktop/mac/install/) . Don't use complex command lines.
-
-Open Docker Engine, and make sure `Docker is running`
-
-- 1.2 Register an Account at MLOps
+- 1.1 Register an Account at MLOps
 
 [https://open.fedml.ai/#/login?isRegister=true](https://open.fedml.ai/#/login?isRegister=true)
 
-- 1.3 Launch our docker for FL Client Agent and login it to the platform
+- 1.2 Launch our pip daemon process for FL Client Agent and login it to the platform
 ```
-# download the script for downloading the FL Client Agent 
-git clone https://github.com/FedML-AI/fedml_edge_deployment
-cd fedml_edge_deployment
-
-# start to pull docker image and run the FL Client Agent
-./run.sh $account_id
+fedml login $userid
 ```
-Please change $account_id to your own ID (see the screenshot shown below).
+Please change $userid to your own ID (see the screenshot shown below).
 
 ![image](../_static/image/get_account_id.png)
-Figure 2: bind your edge devices to our platform
+Figure 2: login your edge devices to our platform
 
-When `run.sh` runs correctly, you will see the log as below. The downloading process takes about 10 seconds.
+You will see the log as below if the script works. 
 
-![image](../_static/image/SuccessInfo_ClientAgent.png)
-
+```shell
+(fedml-pip) ALEXQZLIANG-MB2:swap alexliang$ fedml login 105
+Argument for account Id: 105
+Argument for version: release
+Namespace(type='login', user='105', version='release')
+Current directory of client agent: /Users/alexliang/fedml-client
+Namespace(account_id=105, cloud_region='', config_version='release', current_running_dir='/Users/alexliang/fedml-client', device_id='0x9801a7a55e85', log_file_dir='/Users/alexliang/fedml-client/fedml-logs', os_name='MacOS', type='login', user=105, version='dev')
+login: unique_device_id = @0x9801a7a55e85.MacOS
+login: edge_id = 140
+Congratulations, you have logged into the FedML MLOps platform successfully!
+Your device id is @0x9801a7a55e85.MacOS. You may review the device in the MLOps edge device list.
+```
 
 ## 2. Invite Collaborators and group management
 - 2.1 Invite Collaborators <br>
