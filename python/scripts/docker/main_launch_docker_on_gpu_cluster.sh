@@ -11,7 +11,7 @@ set -x
 HOST_FILE_FOR_PDSH=$1
 REGION=$2
 NODE_NUM=$3 # how many nodes to run distributed training
-WORKSPACE=/fsx-dev/hchaoyan/home/m5/src/MoE-Pretraining
+WORKSPACE=/home/chaoyanghe/sourcecode/FedML_startup/FedML
 
 cat $HOST_FILE_FOR_PDSH # only for PDSH (parallel distributed SSH); if you don't have hostfile_pdsh, please check the scripts at "initialize_asg_nodes.sh"
 # cat /job/hostfile # this file will be used by DeepSpeed
