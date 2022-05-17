@@ -601,7 +601,7 @@ def __login(args, userid, version):
     setattr(args, "version", "dev")
     if version == "local":
         setattr(args, "version", "local")
-    setattr(args, "log_file_dir", os.path.join(args.current_running_dir, "fedml-logs"))
+    setattr(args, "log_file_dir", os.path.join(args.current_running_dir, "fedml", "logs"))
     setattr(args, "device_id", FedMLClientRunner.get_device_id())
     setattr(args, "config_version", version)
     setattr(args, "cloud_region", "")
