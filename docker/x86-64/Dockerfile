@@ -118,12 +118,12 @@ apt install -y --allow-change-held-packages libnccl2=${NCCL_VERSION}-1+cuda${CUD
 # ***************************************************************************
 RUN sudo pip install numpy ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses h5py
 
-#RUN cd ${INSTALL_DIR} && \
-#git clone https://github.com/pytorch/pytorch.git && \
-#cd pytorch && git checkout v${PYTORCH_VERSION} && \
-#git submodule sync && \
-#git submodule update --init --recursive --jobs 0 && \
-#sudo USE_SYSTEM_NCCL=1 TORCH_CUDA_ARC_LIST="6.0 6.1 7.0 7.5 8.0" CMAKE_CUDA_COMPILER="/usr/local/cuda" python setup.py install
+RUN cd ${INSTALL_DIR} && \
+git clone https://github.com/pytorch/pytorch.git && \
+cd pytorch && git checkout v${PYTORCH_VERSION} && \
+git submodule sync && \
+git submodule update --init --recursive --jobs 0 && \
+sudo USE_SYSTEM_NCCL=1 TORCH_CUDA_ARC_LIST="6.0 6.1 7.0 7.5 8.0" CMAKE_CUDA_COMPILER="/usr/local/cuda" python setup.py install
 #RUN rm -rf ${INSTALL_DIR}/pytorch
 RUN pip install torch==1.11.0
 
