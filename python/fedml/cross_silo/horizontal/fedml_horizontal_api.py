@@ -152,5 +152,7 @@ def init_client(
         args,
         model_trainer,
     )
-    client_manager = FedMLClientManager(args, trainer, comm, client_rank, client_num, backend)
+    client_manager = FedMLClientManager(
+        args, trainer, comm, client_rank, client_num, backend
+    )
     client_manager.run()

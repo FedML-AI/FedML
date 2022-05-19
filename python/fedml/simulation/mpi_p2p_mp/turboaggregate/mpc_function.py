@@ -271,11 +271,11 @@ def my_pk_gen(my_sk, p, g):
     if g == 0:
         return my_sk
     else:
-        return np.mod(g ** my_sk, p)
+        return np.mod(g**my_sk, p)
 
 
 def my_key_agreement(my_sk, u_pk, p, g):
     if g == 0:
         return np.mod(my_sk * u_pk, p)
     else:
-        return np.mod(u_pk ** my_sk, p)
+        return np.mod(u_pk**my_sk, p)

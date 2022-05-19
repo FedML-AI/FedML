@@ -4,8 +4,20 @@ import torch
 
 
 class ClientDSGD(object):
-    def __init__(self, model, model_cache, client_id, streaming_data, topology_manager, iteration_number,
-                 learning_rate, batch_size, weight_decay, latency, b_symmetric):
+    def __init__(
+        self,
+        model,
+        model_cache,
+        client_id,
+        streaming_data,
+        topology_manager,
+        iteration_number,
+        learning_rate,
+        batch_size,
+        weight_decay,
+        latency,
+        b_symmetric,
+    ):
         # logging.info("streaming_data = %s" % streaming_data)
 
         # Since we use logistic regression, the model size is small.
@@ -23,7 +35,9 @@ class ClientDSGD(object):
             self.topology = topology_manager.get_asymmetric_neighbor_list(client_id)
         # print(self.topology)
 
-        self.optimizer = torch.optim.SGD(self.model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+        self.optimizer = torch.optim.SGD(
+            self.model.parameters(), lr=learning_rate, weight_decay=weight_decay
+        )
         self.criterion = torch.nn.BCELoss()
 
         self.learning_rate = learning_rate
@@ -43,8 +57,8 @@ class ClientDSGD(object):
 
     def train_local(self, iteration_id):
         self.optimizer.zero_grad()
-        train_x = torch.from_numpy(self.streaming_data[iteration_id]['x'])
-        train_y = torch.FloatTensor([self.streaming_data[iteration_id]['y']])
+        train_x = torch.from_numpy(self.streaming_data[iteration_id]["x"])
+        train_y = torch.FloatTensor([self.streaming_data[iteration_id]["y"]])
         outputs = self.model(train_x)
         loss = self.criterion(outputs, train_y)
         loss.backward()
@@ -57,9 +71,9 @@ class ClientDSGD(object):
         if iteration_id >= self.iteration_number:
             iteration_id = iteration_id % self.iteration_number
 
-        train_x = torch.from_numpy(self.streaming_data[iteration_id]['x']).float()
+        train_x = torch.from_numpy(self.streaming_data[iteration_id]["x"]).float()
         # print(train_x)
-        train_y = torch.FloatTensor([self.streaming_data[iteration_id]['y']])
+        train_y = torch.FloatTensor([self.streaming_data[iteration_id]["y"]])
         outputs = self.model(train_x)
         # print(train_y)
         loss = self.criterion(outputs, train_y)
@@ -79,7 +93,9 @@ class ClientDSGD(object):
         for index in range(len(self.topology)):
             if self.topology[index] != 0 and index != self.id:
                 client = client_list[index]
-                client.receive_neighbor_gradients(self.id, self.model_x, self.topology[index])
+                client.receive_neighbor_gradients(
+                    self.id, self.model_x, self.topology[index]
+                )
 
     def receive_neighbor_gradients(self, client_id, model_x, topo_weight):
         self.neighbors_weight_dict[client_id] = model_x
@@ -93,10 +109,14 @@ class ClientDSGD(object):
         for client_id in self.neighbors_weight_dict.keys():
             model_x = self.neighbors_weight_dict[client_id]
             topo_weight = self.neighbors_topo_weight_dict[client_id]
-            for x_paras, x_neighbor in zip(list(self.model_x.parameters()), list(model_x.parameters())):
+            for x_paras, x_neighbor in zip(
+                list(self.model_x.parameters()), list(model_x.parameters())
+            ):
                 temp = x_neighbor.data.mul(topo_weight)
                 x_paras.data.add_(temp)
 
         # update parameter z (self.model)
-        for x_params, z_params in zip(list(self.model_x.parameters()), list(self.model.parameters())):
+        for x_params, z_params in zip(
+            list(self.model_x.parameters()), list(self.model.parameters())
+        ):
             z_params.data.copy_(x_params)
