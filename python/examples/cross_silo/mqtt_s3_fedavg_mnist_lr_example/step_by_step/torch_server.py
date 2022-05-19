@@ -16,5 +16,3 @@ if __name__ == "__main__":
     # start training
     server = Server(args, device, dataset, model)
     server.run()
-
-

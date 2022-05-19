@@ -30,7 +30,9 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
         self._topic = "fedml_" + str(topic) + "_"
         self.s3_storage = S3Storage(s3_config_path)
         self.client_real_ids = []
-        logging.info("MqttS3CommManager args client_id_list: " + str(args.client_id_list))
+        logging.info(
+            "MqttS3CommManager args client_id_list: " + str(args.client_id_list)
+        )
         if args is not None:
             self.client_real_ids = json.loads(args.client_id_list)
 
@@ -46,6 +48,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
         logging.info("mqtt_s3.init: client_num = %d" % client_num)
 
         self.set_config_from_file(config_path)
+        self.set_config_from_objects(config_path)
         # Construct a Client
         self.mqtt_connection_id = mqtt.base62(uuid.uuid4().int, padding=22)
         self._client = mqtt.Client(
@@ -248,16 +251,29 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
         self._client.disconnect()
 
     def set_config_from_file(self, config_file_path):
-        with open(config_file_path, "r") as f:
-            config = yaml.load(f, Loader=yaml.FullLoader)
-            self.broker_host = config["BROKER_HOST"]
-            self.broker_port = config["BROKER_PORT"]
-            self.mqtt_user = None
-            self.mqtt_pwd = None
-            if "MQTT_USER" in config:
-                self.mqtt_user = config["MQTT_USER"]
-            if "MQTT_PWD" in config:
-                self.mqtt_pwd = config["MQTT_PWD"]
+        try:
+            with open(config_file_path, "r") as f:
+                config = yaml.load(f, Loader=yaml.FullLoader)
+                self.broker_host = config["BROKER_HOST"]
+                self.broker_port = config["BROKER_PORT"]
+                self.mqtt_user = None
+                self.mqtt_pwd = None
+                if "MQTT_USER" in config:
+                    self.mqtt_user = config["MQTT_USER"]
+                if "MQTT_PWD" in config:
+                    self.mqtt_pwd = config["MQTT_PWD"]
+        except Exception as e:
+            pass
+
+    def set_config_from_objects(self, mqtt_config):
+        self.broker_host = mqtt_config["BROKER_HOST"]
+        self.broker_port = mqtt_config["BROKER_PORT"]
+        self.mqtt_user = None
+        self.mqtt_pwd = None
+        if "MQTT_USER" in mqtt_config:
+            self.mqtt_user = mqtt_config["MQTT_USER"]
+        if "MQTT_PWD" in mqtt_config:
+            self.mqtt_pwd = mqtt_config["MQTT_PWD"]
 
 
 if __name__ == "__main__":

@@ -11,7 +11,7 @@ class TRPCCOMMServicer:
 
     def __new__(cls, master_address, master_port, client_num, client_id):
         if cls._instance is None:
-            print('Creating the object')
+            print("Creating the object")
             cls._instance = super(TRPCCOMMServicer, cls).__new__(cls)
             cls._instance.master_address = master_address
             cls._instance.master_port = master_port
@@ -27,14 +27,18 @@ class TRPCCOMMServicer:
 
     def receiveMessage(self, clint_id, message):
         print("Recieved")
-        logging.info("client_{} got something from client_{}".format(
-            self.client_id,
-            clint_id,
-        ))
-        print("client_{} got something from client_{}".format(
-            self.client_id,
-            clint_id,
-        ))
+        logging.info(
+            "client_{} got something from client_{}".format(
+                self.client_id,
+                clint_id,
+            )
+        )
+        print(
+            "client_{} got something from client_{}".format(
+                self.client_id,
+                clint_id,
+            )
+        )
         response = "message received"
         lock.acquire()
         self.message_q.put(message)

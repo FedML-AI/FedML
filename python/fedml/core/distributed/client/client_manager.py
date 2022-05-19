@@ -20,7 +20,7 @@ class ClientManager(Observer):
     def __init__(self, args, comm=None, rank=0, size=0, backend="MPI"):
         self.args = args
         self.size = size
-        self.rank = rank
+        self.rank = int(rank)
         self.backend = backend
 
         if backend == "MPI":

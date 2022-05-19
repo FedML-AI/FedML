@@ -13,7 +13,7 @@ In this section, we present how to implement a stand-alone simulated version of 
 First we should  create a new python environment with conda
 
 ```shell
-conda create -n fedml python=3.7
+conda create -n fedml python
 conda activate fedml
 ```
 
@@ -32,12 +32,12 @@ Once we have installed the dependent packages, we can set the parameters by edit
 
 ```YAML
 common_args:
-  training_type: "simulation" 
+  training_type: "simulation"
   random_seed: 0
 
 data_args:
   dataset: "mnist"
-  data_cache_dir: "./"
+  data_cache_dir: "../../../data/mnist"
   partition_method: "hetero"
   partition_alpha: 0.5
 
@@ -46,6 +46,7 @@ model_args:
 
 train_args:
   federated_optimizer: "FedAvg"
+  client_id_list: "[]"
   client_num_in_total: 1000
   client_num_per_round: 10
   comm_round: 200
@@ -62,8 +63,11 @@ device_args:
   using_gpu: false
   gpu_id: 0
 
+comm_args:
+  backend: "single_process"
+
 tracking_args:
-  local_log_output_path: ./log
+  log_file_dir: ./log
   enable_wandb: false
   wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
   wandb_entity: fedml-ai

@@ -7,7 +7,7 @@ def get_device(args):
     if args.training_type == "simulation" and args.backend == "single_process":
         if args.using_gpu:
             device = torch.device(
-                "cuda:" + args.gpu_id if torch.cuda.is_available() else "cpu"
+                "cuda:" + str(args.gpu_id) if torch.cuda.is_available() else "cpu"
             )
         else:
             device = torch.device("cpu")
@@ -30,14 +30,12 @@ def get_device(args):
                 mapping_processes_to_gpu_device_from_yaml_file,
         )
         if args.scenario == "hierarchical":
-
             device = mapping_processes_to_gpu_device_from_yaml_file(
                 args.proc_rank_in_silo,
                 args.n_proc_in_silo,
                 args.gpu_mapping_file if args.using_gpu else None,
                 args.gpu_mapping_key if args.using_gpu else None,
             )
-            logging.info("device = {}".format(device))
         else:
             device = mapping_processes_to_gpu_device_from_yaml_file(
                 args.process_id,
@@ -45,6 +43,7 @@ def get_device(args):
                 args.gpu_mapping_file if args.using_gpu else None,
                 args.gpu_mapping_key if args.using_gpu else None,
             )
+        logging.info("device = {}".format(device))
         return device
     elif args.training_type == "cross_device":
         if args.using_gpu:

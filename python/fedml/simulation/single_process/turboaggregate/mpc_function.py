@@ -41,7 +41,7 @@ def gen_Lagrange_coeffs(alpha_s, beta_s, p, is_K1=0):
         num_alpha = 1
     else:
         num_alpha = len(alpha_s)
-    U = np.zeros((num_alpha, len(beta_s)), dtype='int64')
+    U = np.zeros((num_alpha, len(beta_s)), dtype="int64")
     #         U = [[0 for col in range(len(beta_s))] for row in range(len(alpha_s))]
     # print(alpha_s)
     # print(beta_s)
@@ -55,8 +55,8 @@ def gen_Lagrange_coeffs(alpha_s, beta_s, p, is_K1=0):
             # for debugging
             # print(i,j,cur_beta,alpha_s[i])
             # print(test)
-            # print(den,num) 
-    return U.astype('int64')
+            # print(den,num)
+    return U.astype("int64")
 
 
 def BGW_encoding(X, N, T, p):
@@ -65,7 +65,7 @@ def BGW_encoding(X, N, T, p):
 
     alpha_s = range(1, N + 1)
     alpha_s = np.int64(np.mod(alpha_s, p))
-    X_BGW = np.zeros((N, m, d), dtype='int64')
+    X_BGW = np.zeros((N, m, d), dtype="int64")
     R = np.random.randint(p, size=(T + 1, m, d))
     R[0, :, :] = np.mod(X, p)
 
@@ -76,7 +76,7 @@ def BGW_encoding(X, N, T, p):
 
 
 def gen_BGW_lambda_s(alpha_s, p):
-    lambda_s = np.zeros((1, len(alpha_s)), dtype='int64')
+    lambda_s = np.zeros((1, len(alpha_s)), dtype="int64")
 
     for i in range(len(alpha_s)):
         cur_alpha = alpha_s[i]
@@ -84,7 +84,7 @@ def gen_BGW_lambda_s(alpha_s, p):
         den = PI([cur_alpha - o for o in alpha_s if cur_alpha != o], p)
         num = PI([0 - o for o in alpha_s if cur_alpha != o], p)
         lambda_s[0][i] = divmod(num, den, p)
-    return lambda_s.astype('int64')
+    return lambda_s.astype("int64")
 
 
 def BGW_decoding(f_eval, worker_idx, p):  # decode the output from T+1 evaluation points
@@ -99,7 +99,7 @@ def BGW_decoding(f_eval, worker_idx, p):  # decode the output from T+1 evaluatio
     alpha_s_eval = [alpha_s[i] for i in worker_idx]
     # t1 = time.time()
     # print(alpha_s_eval)
-    lambda_s = gen_BGW_lambda_s(alpha_s_eval, p).astype('int64')
+    lambda_s = gen_BGW_lambda_s(alpha_s_eval, p).astype("int64")
     # t2 = time.time()
     # print(lambda_s.shape)
     f_recon = np.mod(np.dot(lambda_s, f_eval), p)
@@ -112,25 +112,27 @@ def LCC_encoding(X, N, K, T, p):
     m = len(X)
     d = len(X[0])
     # print(m,d,m//K)
-    X_sub = np.zeros((K + T, m // K, d), dtype='int64')
+    X_sub = np.zeros((K + T, m // K, d), dtype="int64")
     for i in range(K):
-        X_sub[i] = X[i * m // K:(i + 1) * m // K:]
+        X_sub[i] = X[i * m // K : (i + 1) * m // K :]
     for i in range(K, K + T):
         X_sub[i] = np.random.randint(p, size=(m // K, d))
 
     n_beta = K + T
     stt_b, stt_a = -int(np.floor(n_beta / 2)), -int(np.floor(N / 2))
     beta_s, alpha_s = range(stt_b, stt_b + n_beta), range(stt_a, stt_a + N)
-    alpha_s = np.array(np.mod(alpha_s, p)).astype('int64')
-    beta_s = np.array(np.mod(beta_s, p)).astype('int64')
+    alpha_s = np.array(np.mod(alpha_s, p)).astype("int64")
+    beta_s = np.array(np.mod(beta_s, p)).astype("int64")
 
     U = gen_Lagrange_coeffs(alpha_s, beta_s, p)
     # print U
 
-    X_LCC = np.zeros((N, m // K, d), dtype='int64')
+    X_LCC = np.zeros((N, m // K, d), dtype="int64")
     for i in range(N):
         for j in range(K + T):
-            X_LCC[i, :, :] = np.mod(X_LCC[i, :, :] + np.mod(U[i][j] * X_sub[j, :, :], p), p)
+            X_LCC[i, :, :] = np.mod(
+                X_LCC[i, :, :] + np.mod(U[i][j] * X_sub[j, :, :], p), p
+            )
     return X_LCC
 
 
@@ -138,18 +140,18 @@ def LCC_encoding_w_Random(X, R_, N, K, T, p):
     m = len(X)
     d = len(X[0])
     # print(m,d,m//K)
-    X_sub = np.zeros((K + T, m // K, d), dtype='int64')
+    X_sub = np.zeros((K + T, m // K, d), dtype="int64")
     for i in range(K):
-        X_sub[i] = X[i * m // K:(i + 1) * m // K:]
+        X_sub[i] = X[i * m // K : (i + 1) * m // K :]
     for i in range(K, K + T):
-        X_sub[i] = R_[i - K, :, :].astype('int64')
+        X_sub[i] = R_[i - K, :, :].astype("int64")
 
     n_beta = K + T
     stt_b, stt_a = -int(np.floor(n_beta / 2)), -int(np.floor(N / 2))
     beta_s, alpha_s = range(stt_b, stt_b + n_beta), range(stt_a, stt_a + N)
 
-    alpha_s = np.array(np.mod(alpha_s, p)).astype('int64')
-    beta_s = np.array(np.mod(beta_s, p)).astype('int64')
+    alpha_s = np.array(np.mod(alpha_s, p)).astype("int64")
+    beta_s = np.array(np.mod(beta_s, p)).astype("int64")
 
     # alpha_s = np.int64(np.mod(alpha_s,p))
     # beta_s = np.int64(np.mod(beta_s,p))
@@ -157,10 +159,12 @@ def LCC_encoding_w_Random(X, R_, N, K, T, p):
     U = gen_Lagrange_coeffs(alpha_s, beta_s, p)
     # print U
 
-    X_LCC = np.zeros((N, m // K, d), dtype='int64')
+    X_LCC = np.zeros((N, m // K, d), dtype="int64")
     for i in range(N):
         for j in range(K + T):
-            X_LCC[i, :, :] = np.mod(X_LCC[i, :, :] + np.mod(U[i][j] * X_sub[j, :, :], p), p)
+            X_LCC[i, :, :] = np.mod(
+                X_LCC[i, :, :] + np.mod(U[i][j] * X_sub[j, :, :], p), p
+            )
     return X_LCC
 
 
@@ -168,27 +172,29 @@ def LCC_encoding_w_Random_partial(X, R_, N, K, T, p, worker_idx):
     m = len(X)
     d = len(X[0])
     # print(m,d,m//K)
-    X_sub = np.zeros((K + T, m // K, d), dtype='int64')
+    X_sub = np.zeros((K + T, m // K, d), dtype="int64")
     for i in range(K):
-        X_sub[i] = X[i * m // K:(i + 1) * m // K:]
+        X_sub[i] = X[i * m // K : (i + 1) * m // K :]
     for i in range(K, K + T):
-        X_sub[i] = R_[i - K, :, :].astype('int64')
+        X_sub[i] = R_[i - K, :, :].astype("int64")
 
     n_beta = K + T
     stt_b, stt_a = -int(np.floor(n_beta / 2)), -int(np.floor(N / 2))
     beta_s, alpha_s = range(stt_b, stt_b + n_beta), range(stt_a, stt_a + N)
-    alpha_s = np.array(np.mod(alpha_s, p)).astype('int64')
-    beta_s = np.array(np.mod(beta_s, p)).astype('int64')
+    alpha_s = np.array(np.mod(alpha_s, p)).astype("int64")
+    beta_s = np.array(np.mod(beta_s, p)).astype("int64")
     alpha_s_eval = [alpha_s[i] for i in worker_idx]
 
     U = gen_Lagrange_coeffs(alpha_s_eval, beta_s, p)
     # print U
 
     N_out = U.shape[0]
-    X_LCC = np.zeros((N_out, m // K, d), dtype='int64')
+    X_LCC = np.zeros((N_out, m // K, d), dtype="int64")
     for i in range(N_out):
         for j in range(K + T):
-            X_LCC[i, :, :] = np.mod(X_LCC[i, :, :] + np.mod(U[i][j] * X_sub[j, :, :], p), p)
+            X_LCC[i, :, :] = np.mod(
+                X_LCC[i, :, :] + np.mod(U[i][j] * X_sub[j, :, :], p), p
+            )
     return X_LCC
 
 
@@ -198,17 +204,17 @@ def LCC_decoding(f_eval, f_deg, N, K, T, worker_idx, p):
     n_beta = K  # +T
     stt_b, stt_a = -int(np.floor(n_beta / 2)), -int(np.floor(N / 2))
     beta_s, alpha_s = range(stt_b, stt_b + n_beta), range(stt_a, stt_a + N)
-    alpha_s = np.array(np.mod(alpha_s, p)).astype('int64')
-    beta_s = np.array(np.mod(beta_s, p)).astype('int64')
+    alpha_s = np.array(np.mod(alpha_s, p)).astype("int64")
+    beta_s = np.array(np.mod(beta_s, p)).astype("int64")
     alpha_s_eval = [alpha_s[i] for i in worker_idx]
 
     U_dec = gen_Lagrange_coeffs(beta_s, alpha_s_eval, p)
 
-    # print U_dec 
+    # print U_dec
 
     f_recon = np.mod((U_dec).dot(f_eval), p)
 
-    return f_recon.astype('int64')
+    return f_recon.astype("int64")
 
 
 def Gen_Additive_SS(d, n_out, p):
@@ -234,10 +240,10 @@ def LCC_encoding_with_points(X, alpha_s, beta_s, p):
     # beta_s = np.concatenate((alpha_s, beta_s))
     # print beta_s
 
-    U = gen_Lagrange_coeffs(beta_s, alpha_s, p).astype('int')
+    U = gen_Lagrange_coeffs(beta_s, alpha_s, p).astype("int")
     # print U
 
-    X_LCC = np.zeros((len(beta_s), d), dtype='int')
+    X_LCC = np.zeros((len(beta_s), d), dtype="int")
     for i in range(len(beta_s)):
         X_LCC[i, :] = np.dot(np.reshape(U[i, :], (1, len(alpha_s))), X)
     # print X
@@ -252,7 +258,7 @@ def LCC_decoding_with_points(f_eval, eval_points, target_points, p):
 
     U_dec = gen_Lagrange_coeffs(beta_s, alpha_s_eval, p)
 
-    # print U_dec 
+    # print U_dec
 
     f_recon = np.mod((U_dec).dot(f_eval), p)
     # print f_recon
@@ -265,11 +271,11 @@ def my_pk_gen(my_sk, p, g):
     if g == 0:
         return my_sk
     else:
-        return np.mod(g ** my_sk, p)
+        return np.mod(g**my_sk, p)
 
 
 def my_key_agreement(my_sk, u_pk, p, g):
     if g == 0:
         return np.mod(my_sk * u_pk, p)
     else:
-        return np.mod(u_pk ** my_sk, p)
+        return np.mod(u_pk**my_sk, p)

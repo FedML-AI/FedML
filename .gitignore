@@ -10,6 +10,10 @@
 ./*/*/*/*/*.pyc
 ./*/*/*/*/*/*.pyc
 
+python/data
+python/fedml.egg-info
+python/examples/simulation/sp_fedavg_mnist_lr_example/data
+
 *.log
 
 wandb
