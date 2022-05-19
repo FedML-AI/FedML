@@ -19,8 +19,10 @@ class BaseCentralManager(ServerManager):
         super().run()
 
     def register_message_receive_handlers(self):
-        self.register_message_receive_handler(MyMessage.MSG_TYPE_C2S_INFORMATION,
-                                              self.handle_message_receive_model_from_client)
+        self.register_message_receive_handler(
+            MyMessage.MSG_TYPE_C2S_INFORMATION,
+            self.handle_message_receive_model_from_client,
+        )
 
     def handle_message_receive_model_from_client(self, msg_params):
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
@@ -31,7 +33,9 @@ class BaseCentralManager(ServerManager):
 
         logging.info("b_all_received = " + str(b_all_received))
         if b_all_received:
-            logging.info("**********************************ROUND INDEX = " + str(self.round_idx))
+            logging.info(
+                "**********************************ROUND INDEX = " + str(self.round_idx)
+            )
             global_result = self.aggregator.aggregate()
 
             # start the next round
@@ -44,10 +48,14 @@ class BaseCentralManager(ServerManager):
                 self.send_message_to_client(receiver_id, global_result)
 
     def send_message_init_config(self, receive_id):
-        message = Message(MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id)
+        message = Message(
+            MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id
+        )
         self.send_message(message)
 
     def send_message_to_client(self, receive_id, global_result):
-        message = Message(MyMessage.MSG_TYPE_S2C_INFORMATION, self.get_sender_id(), receive_id)
+        message = Message(
+            MyMessage.MSG_TYPE_S2C_INFORMATION, self.get_sender_id(), receive_id
+        )
         message.add_params(MyMessage.MSG_ARG_KEY_INFORMATION, global_result)
         self.send_message(message)

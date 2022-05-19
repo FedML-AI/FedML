@@ -8,8 +8,18 @@ from torch import optim, nn
 
 
 class GuestTrainer(object):
-    def __init__(self, client_num, device, X_train, y_train, X_test, y_test, model_feature_extractor, model_classifier,
-                 args):
+    def __init__(
+        self,
+        client_num,
+        device,
+        X_train,
+        y_train,
+        X_test,
+        y_test,
+        model_feature_extractor,
+        model_classifier,
+        args,
+    ):
         self.client_num = client_num
         self.args = args
         self.device = device
@@ -35,14 +45,22 @@ class GuestTrainer(object):
         # model
         self.model_feature_extractor = model_feature_extractor
         self.model_feature_extractor.to(device)
-        self.optimizer_fe = optim.SGD(self.model_feature_extractor.parameters(), momentum=0.9, weight_decay=0.01,
-                                      lr=self.args.lr)
+        self.optimizer_fe = optim.SGD(
+            self.model_feature_extractor.parameters(),
+            momentum=0.9,
+            weight_decay=0.01,
+            lr=self.args.lr,
+        )
 
         self.model_classifier = model_classifier
         self.model_classifier.to(self.device)
         self.criterion = nn.BCEWithLogitsLoss()
-        self.optimizer_classifier = optim.SGD(self.model_classifier.parameters(), momentum=0.9, weight_decay=0.01,
-                                              lr=self.args.lr)
+        self.optimizer_classifier = optim.SGD(
+            self.model_classifier.parameters(),
+            momentum=0.9,
+            weight_decay=0.01,
+            lr=self.args.lr,
+        )
 
         self.host_local_train_logits_list = dict()
         self.host_local_test_logits_list = dict()
@@ -71,8 +89,14 @@ class GuestTrainer(object):
         return True
 
     def train(self, round_idx):
-        batch_x = self.X_train[self.batch_idx * self.batch_size: self.batch_idx * self.batch_size + self.batch_size]
-        batch_y = self.y_train[self.batch_idx * self.batch_size: self.batch_idx * self.batch_size + self.batch_size]
+        batch_x = self.X_train[
+            self.batch_idx * self.batch_size : self.batch_idx * self.batch_size
+            + self.batch_size
+        ]
+        batch_y = self.y_train[
+            self.batch_idx * self.batch_size : self.batch_idx * self.batch_size
+            + self.batch_size
+        ]
         batch_x = torch.tensor(batch_x).float().to(self.device)
         batch_y = torch.tensor(batch_y).float().to(self.device)
 
@@ -87,7 +111,9 @@ class GuestTrainer(object):
             host_logits = self.host_local_train_logits_list[k]
             guest_logits += host_logits
 
-        guest_logits = torch.tensor(guest_logits, requires_grad=True).float().to(self.device)
+        guest_logits = (
+            torch.tensor(guest_logits, requires_grad=True).float().to(self.device)
+        )
         batch_y = batch_y.type_as(guest_logits)
 
         # calculate the gradient until the logits for hosts
@@ -139,16 +165,22 @@ class GuestTrainer(object):
         y_prob_preds = self._sigmoid(np.sum(guest_logits, axis=1))
 
         threshold = 0.5
-        y_hat_lbls, statistics = self._compute_correct_prediction(y_targets=y_test,
-                                                                  y_prob_preds=y_prob_preds,
-                                                                  threshold=threshold)
+        y_hat_lbls, statistics = self._compute_correct_prediction(
+            y_targets=y_test, y_prob_preds=y_prob_preds, threshold=threshold
+        )
         acc = accuracy_score(y_test, y_hat_lbls)
         auc = roc_auc_score(y_test, y_prob_preds)
         ave_loss = np.mean(self.loss_list)
         self.loss_list = list()
         logging.info(
-            "--- round_idx: {%d}, loss: {%s}, acc: {%s}, auc: {%s}" % (round_idx, str(ave_loss), str(acc), str(auc)))
-        logging.info(precision_recall_fscore_support(y_test, y_hat_lbls, average="macro", warn_for=tuple()))
+            "--- round_idx: {%d}, loss: {%s}, acc: {%s}, auc: {%s}"
+            % (round_idx, str(ave_loss), str(acc), str(auc))
+        )
+        logging.info(
+            precision_recall_fscore_support(
+                y_test, y_hat_lbls, average="macro", warn_for=tuple()
+            )
+        )
 
     def _sigmoid(self, x):
         return 1.0 / (1.0 + np.exp(-x))

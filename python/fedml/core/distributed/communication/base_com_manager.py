@@ -5,7 +5,6 @@ from .observer import Observer
 
 
 class BaseCommunicationManager(object):
-
     @abstractmethod
     def send_message(self, msg: Message):
         pass

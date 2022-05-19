@@ -10,8 +10,10 @@ def launch_dist_trainers():
     os.environ['PDSH_RCMD_TYPE'] = 'ssh'
     node_addresses = ",".join(args.node_addresses)
     pdsh_cmd_aruments = ['pdsh', '-w', node_addresses]
+    torchrun_path = subprocess.run(['which', 'torchrun'], capture_output=True, text=True).stdout.strip()
     torchrun_cmd_arguments = [
-        "torchrun",
+        f"cd {os.path.abspath('.')};",
+        torchrun_path,
         f"--nnodes={args.n_node_in_silo}",
         f"--nproc_per_node={args.n_proc_per_node}",
         f"--rdzv_endpoint={args.pg_master_address}:{args.pg_master_port}",

@@ -6,7 +6,6 @@ import logging
 
 
 class MyModelTrainer(MyModelTrainer):
-
     def train(self, train_data, device, args):
         model = self.model
 
@@ -83,4 +82,3 @@ class MyModelTrainer(MyModelTrainer):
                 metrics["test_loss"] += loss.item() * target.size(0)
                 metrics["test_total"] += target.size(0)
         return metrics
-
