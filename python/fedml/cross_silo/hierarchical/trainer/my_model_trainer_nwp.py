@@ -4,7 +4,6 @@ from .my_model_trainer import MyModelTrainer
 
 
 class MyModelTrainer(MyModelTrainer):
-
     def train(self, train_data, device, args):
         model = self.model
 

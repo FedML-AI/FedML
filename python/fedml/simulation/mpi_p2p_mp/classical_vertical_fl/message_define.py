@@ -1,8 +1,8 @@
-
 class MyMessage(object):
     """
-        message type definition
+    message type definition
     """
+
     # server to client
     MSG_TYPE_S2C_INIT_CONFIG = 1
     MSG_TYPE_S2C_GRADIENT = 2

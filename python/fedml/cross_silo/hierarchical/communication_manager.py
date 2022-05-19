@@ -1,5 +1,5 @@
-
 from ...core.distributed.client.client_manager import ClientManager
+
 
 class CommunicationManager(ClientManager):
     def __init__(self, args, comm, rank, size, backend):
