@@ -86,34 +86,47 @@ def init(args=None):
                 args.enable_cuda_rpc = False
             # Set intra-silo arguments
             if args.rank == 0:
-                args.rank_in_node = 0
-                args.process_id = args.rank_in_node
-                args.n_proc_in_silo = 1
-                args.proc_rank_in_silo = 0
+                # Silo Topology
                 if not hasattr(args, "n_proc_per_node"):
                     args.n_proc_per_node = 1
+                args.n_proc_in_silo = 1
+
+                # Rank in node
+                args.rank_in_node = 0
+                args.process_id = args.rank_in_node
+
+                # Rank in silo (process group)
+                args.proc_rank_in_silo = 0
+                
+                # Prcoess group master endpoint
                 if not hasattr(args, 'pg_master_port'):
-                    args.pg_master_port = 29500
+                    args.pg_master_port = 29200
                 if not hasattr(args, 'pg_master_address'):
                     args.pg_master_address = "127.0.0.1"
             else:
                 # Modify arguments to match info set in env by torchrun
-                env_local_rank_int = 1
-                env_local_rank_str = os.environ.get("LOCAL_RANK", None)
-                if env_local_rank_str is not None:
-                    env_local_rank_int = int(env_local_rank_str)
-                args.rank_in_node = env_local_rank_int
-                args.process_id = args.rank_in_node
-                if not hasattr(args, "n_node_in_silo"): 
+                # Silo Topology
+                if not hasattr(args, "n_node_in_silo"):
                     args.n_node_in_silo = 1
                 if not hasattr(args, "n_proc_per_node"):
                     args.n_proc_per_node = 1
-                if not hasattr(args, 'pg_master_port'):
-                    args.pg_master_port = 29500
-                if not hasattr(args, "node_rank_in_silo"):
-                    args.node_rank_in_silo = 1
-                args.n_proc_in_silo = int(os.environ.get("WORLD_SIZE", None))
-                args.proc_rank_in_silo = int(os.environ.get("RANK", None))
+                args.n_proc_in_silo = int(os.environ.get("WORLD_SIZE", 1))
+
+                # Rank in node
+                args.rank_in_node = int(os.environ.get("LOCAL_RANK", 1))
+                args.process_id = args.rank_in_node
+
+                # Rank in silo (process group)
+                args.proc_rank_in_silo = int(os.environ.get("RANK", 0)) 
+
+                # Prcoess group master endpoint
+                args.pg_master_address = os.environ.get("MASTER_ADDR", "127.0.0.1") 
+                args.pg_master_port = os.environ.get("MASTER_PORT", 29300)
+
+                # Launcher Rendezvous
+                if not hasattr(args, "launcher_rdzv_port"):
+                    args.launcher_rdzv_port = 29400
+                
 
 
     elif args.training_type == "cross_device":
