@@ -20,9 +20,9 @@ model_args:
 
 train_args:
   federated_optimizer: "FedAvg"
-  client_id_list: "[1, 2]"
-  client_num_in_total: 2
-  client_num_per_round: 2
+  client_id_list: "[1]"
+  client_num_in_total: 1
+  client_num_per_round: 1
   comm_round: 50
   epochs: 1
   batch_size: 10
@@ -38,11 +38,18 @@ device_args:
   gpu_mapping_file: config/gpu_mapping.yaml
   server_gpu_mapping_key: mapping_default
 
+# comm_args:
+#   backend: "MQTT_S3"
+#   mqtt_config_path: config/mqtt_config.yaml
+#   s3_config_path: config/s3_config.yaml
+
 comm_args:
-  backend: "MQTT_S3"
+  backend: "TRPC"
+  trpc_master_config_path: config/trpc_master_config.csv
   mqtt_config_path: config/mqtt_config.yaml
-  s3_config_path: config/s3_config.yaml
-  
+  s3_config_path: config/s3_config.yaml  
+
+
 tracking_args:
   log_file_dir: ./log
   local_log_output_path: ./log

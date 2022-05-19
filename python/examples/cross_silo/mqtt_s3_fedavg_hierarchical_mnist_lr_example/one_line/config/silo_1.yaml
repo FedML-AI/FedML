@@ -1,9 +1,9 @@
 dist_training_args:
   n_node_in_silo: 2
   n_proc_per_node: 1
-  node_addresses: [172.31.18.237, 172.31.17.27]
-  pg_master_address: '172.31.18.237'
-  pg_master_port: 29401
+  node_addresses: [172.31.25.57, 172.31.28.254]
+  master_address: '172.31.25.57'
+  launcher_rdzv_port: 29410
 
 
 device_args:
