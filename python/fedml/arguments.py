@@ -116,18 +116,23 @@ class Arguments:
                     path_current_file, "config/simulaton_mpi/gpu_mapping.yaml"
                 )
             elif training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO:
-                if self.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
-                    # Add extra configs specific to server or silo
-                    if self.rank == 0:
-                        extra_config_path = self.server_config_path
-                    else:
-                        extra_config_path = self.client_silo_config_paths[self.rank - 1]
-                    com_config = self.load_yaml_config(extra_config_path)
-                    self.set_attr_from_config(com_config)
+                pass
             elif training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE:
                 pass
             else:
                 pass
+        
+        
+        if training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO:
+            if self.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
+                # Add extra configs specific to silos or server
+                if self.rank == 0:
+                    extra_config_path = self.server_config_path
+                else:
+                    extra_config_path = self.client_silo_config_paths[self.rank - 1]
+                extra_config = self.load_yaml_config(extra_config_path)
+                self.set_attr_from_config(extra_config)
+
         return configuration
 
     def set_attr_from_config(self,configuration):
