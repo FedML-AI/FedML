@@ -7,7 +7,7 @@ class ProcessGroupManager:
     def __init__(self, rank, world_size, master_address, master_port, only_gpu):
         logging.info("Start process group")
         logging.info(
-            "rank: %d, world_size: %d, master_address: %s, master_port: %d"
+            "rank: %d, world_size: %d, master_address: %s, master_port: %s"
             % (rank, world_size, master_address, master_port)
         )
         os.environ["MASTER_ADDR"] = master_address
