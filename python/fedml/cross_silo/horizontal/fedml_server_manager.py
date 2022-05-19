@@ -7,6 +7,8 @@ from ...core.distributed.server.server_manager import ServerManager
 from ...mlops import MLOpsProfilerEvent, MLOpsMetrics
 import logging
 
+from ...mlops.mlops_configs import MLOpsConfigs
+
 
 class FedMLServerManager(ServerManager):
     def __init__(
@@ -20,6 +22,10 @@ class FedMLServerManager(ServerManager):
         is_preprocessed=False,
         preprocessed_client_lists=None,
     ):
+        if backend == "MQTT_S3":
+            mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
+            args.mqtt_config_path = mqtt_config
+            args.s3_config_path = s3_config
         super().__init__(args, comm, client_rank, client_num, backend)
         self.args = args
         self.aggregator = aggregator
@@ -40,7 +46,6 @@ class FedMLServerManager(ServerManager):
 
         self.start_running_time = 0.0
         self.aggregated_model_url = None
-
 
     def run(self):
         super().run()
@@ -70,7 +75,9 @@ class FedMLServerManager(ServerManager):
             client_idx_in_this_round += 1
 
         if hasattr(self.args, "backend") and self.args.using_mlops:
-            self.mlops_event.log_event_started("server.wait")
+            self.mlops_event.log_event_started(
+                "server.wait", event_value=str(self.round_idx)
+            )
 
     def register_message_receive_handlers(self):
         print("register_message_receive_handlers------")
@@ -118,10 +125,12 @@ class FedMLServerManager(ServerManager):
             self.send_init_msg()
 
     def handle_message_receive_model_from_client(self, msg_params):
-        if hasattr(self.args, "backend") and self.args.using_mlops:
-            self.mlops_event.log_event_ended("comm_c2s", event_value=str(self.round_idx), event_edge_id=0)
-
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
+        if hasattr(self.args, "backend") and self.args.using_mlops:
+            self.mlops_event.log_event_ended(
+                "comm_c2s", event_value=str(self.round_idx), event_edge_id=sender_id
+            )
+
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         local_sample_number = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
 
@@ -132,13 +141,19 @@ class FedMLServerManager(ServerManager):
         logging.info("b_all_received = " + str(b_all_received))
         if b_all_received:
             if hasattr(self.args, "backend") and self.args.using_mlops:
-                self.mlops_event.log_event_ended("server.wait", event_value=str(self.round_idx))
-                self.mlops_event.log_event_started("aggregate", event_value=str(self.round_idx))
+                self.mlops_event.log_event_ended(
+                    "server.wait", event_value=str(self.round_idx)
+                )
+                self.mlops_event.log_event_started(
+                    "aggregate", event_value=str(self.round_idx)
+                )
 
             global_model_params = self.aggregator.aggregate()
 
             if hasattr(self.args, "backend") and self.args.using_mlops:
-                self.mlops_event.log_event_ended("aggregate", event_value=str(self.round_idx))
+                self.mlops_event.log_event_ended(
+                    "aggregate", event_value=str(self.round_idx)
+                )
 
             try:
                 self.aggregator.test_on_server_for_all_clients(self.round_idx)
@@ -193,7 +208,9 @@ class FedMLServerManager(ServerManager):
                 return
             else:
                 if hasattr(self.args, "backend") and self.args.using_mlops:
-                    self.mlops_event.log_event_started("server.wait", event_value=str(self.round_idx))
+                    self.mlops_event.log_event_started(
+                        "server.wait", event_value=str(self.round_idx)
+                    )
 
     def send_message_init_config(self, receive_id, global_model_params, datasilo_index):
         message = Message(

@@ -8,8 +8,12 @@ fedml login
 # build packages for the MLOps Platform
 fedml build
 
-```
+# Logout from the MLOps platform
+fedml logout
 
+# Display fedml version
+fedml version
+```
 
 ## 1. Login into the FedML MLOps platform (open.fedml.ai)
 
@@ -20,11 +24,13 @@ fedml login userid -v version(release/test)
 ### 1.1. Examples for Logining into the FedML MLOps platform (open.fedml.ai)
 
 ```
-fedml login 90
+fedml login 90 
+Notes: this will login the production environment for FedML MLOps platform 
 ```
 
 ```
 fedml login 90 -v test
+Notes: this will login the test environment for FedML MLOps platform 
 ```
 
 ## 2. Build the client and server package in the FedML MLOps platform (open.fedml.ai)
@@ -61,6 +67,16 @@ fedml build -t server \
 -ep $ENTRY \
 -cf $CONFIG \
 -df $DEST
+```
+
+## 3. Logout from the MLOps platform (open.fedml.ai)
+```
+fedml logout
+```
+
+## 4. Display fedml version
+```
+fedml version
 ```
 
 You can also refer to a sanity check test example here:

@@ -4,7 +4,7 @@
 # 2: GCPE - grpc cpu Python EFA
 # 3: GCSE - grpc cpu script EFA
 # 4: GGPP - grpc GPU Python PCIe
-# 5: 
+# 5:
 # 2: grpc cuda
 # 3: grpc cuda script
 # 4: ptrpc cpu
@@ -62,27 +62,41 @@ import numpy as np
 
 colors = [
     [0.3, 0.3, 0.3],
-    [239/256.0, 74/256.0, 40/256.0],
+    [239 / 256.0, 74 / 256.0, 40 / 256.0],
     [0.6, 0.6, 0.6],
 ]
 
 WIDTH = 0.3
 SHOW = False
-FONT = {'fontname':'Times New Roman', 'size':22}
+FONT = {"fontname": "Times New Roman", "size": 22}
 
 
 def plot_bar(name, ylim):
     mean = np.asarray(data[name + "_mean"]) * 1e3
     stdv = np.asarray(data[name + "_stdv"]) * 1e3
     xs = np.arange(4)
-    #plt.figure(figsize=(6, 3))
+    # plt.figure(figsize=(6, 3))
     handles = []
-    handles.append(plt.bar(
-        xs - WIDTH / 2.0, mean[0], yerr=stdv[0], color=colors[0], width=WIDTH, capsize=6
-    ))
-    handles.append(plt.bar(
-        xs + WIDTH / 2.0, mean[1], yerr=stdv[1], color=colors[1], width=WIDTH, capsize=6
-    ))
+    handles.append(
+        plt.bar(
+            xs - WIDTH / 2.0,
+            mean[0],
+            yerr=stdv[0],
+            color=colors[0],
+            width=WIDTH,
+            capsize=6,
+        )
+    )
+    handles.append(
+        plt.bar(
+            xs + WIDTH / 2.0,
+            mean[1],
+            yerr=stdv[1],
+            color=colors[1],
+            width=WIDTH,
+            capsize=6,
+        )
+    )
 
     plt.xticks(xs, ["CP", "CS", "GP", "GS"], **FONT)
     plt.yticks(**FONT)
@@ -93,9 +107,9 @@ def plot_bar(name, ylim):
         handles=handles,
         loc="upper left",
         labels=["grpc", "PT"],
-        prop={'family':FONT['fontname'], 'size':FONT['size']},
+        prop={"family": FONT["fontname"], "size": FONT["size"]},
         ncol=2,
-        #bbox_to_anchor=(-0.015, 0.3, 0.5, 0.5)
+        # bbox_to_anchor=(-0.015, 0.3, 0.5, 0.5)
     )
 
     plt.ylim(ylim)
@@ -113,31 +127,35 @@ def plot_bar3(name, ylim, ax):
     mean = np.asarray(data[name + "_mean"]) * 1e3
     stdv = np.asarray(data[name + "_stdv"]) * 1e3
     xs = np.arange(4)
-    #plt.figure(figsize=(6, 3))
+    # plt.figure(figsize=(6, 3))
     handles = []
-    handles.append(plt.bar(
-        xs - WIDTH, mean[0], yerr=stdv[0], color=colors[0], width=WIDTH, capsize=6
-    ))
-    handles.append(plt.bar(
-        xs, mean[1], yerr=stdv[1], color=colors[1], width=WIDTH, capsize=6
-    ))
-    handles.append(plt.bar(
-        xs + WIDTH, mean[2], yerr=stdv[2], color=colors[2], width=WIDTH, capsize=6
-    ))
+    handles.append(
+        plt.bar(
+            xs - WIDTH, mean[0], yerr=stdv[0], color=colors[0], width=WIDTH, capsize=6
+        )
+    )
+    handles.append(
+        plt.bar(xs, mean[1], yerr=stdv[1], color=colors[1], width=WIDTH, capsize=6)
+    )
+    handles.append(
+        plt.bar(
+            xs + WIDTH, mean[2], yerr=stdv[2], color=colors[2], width=WIDTH, capsize=6
+        )
+    )
 
     plt.xticks(xs, ["CP", "CS", "GP", "GS"], **FONT)
-    #plt.yticks(**FONT)
+    # plt.yticks(**FONT)
 
-    #plt.ylabel("Delay (ms)", **FONT)
+    # plt.ylabel("Delay (ms)", **FONT)
 
     plt.legend(
         handles=[handles[2]],
         loc="upper left",
         labels=["PT IB"],
-        prop={'family':FONT['fontname'], 'size':FONT['size']},
+        prop={"family": FONT["fontname"], "size": FONT["size"]},
     )
 
-    #plt.ylim(ylim)
+    # plt.ylim(ylim)
     plt.setp(ax.get_yticklabels(), visible=False)
     plt.grid()
 
@@ -153,17 +171,17 @@ data = {}
 
 data["small_light_single_mean"] = [
     [
-        0.026708102226257323,   # GCP
-        0.03247213363647461,    # GCS
-        0.0599402910232544,     # GGP
-        0.030090252685546874,   # GGS
-    ], # grpc
+        0.026708102226257323,  # GCP
+        0.03247213363647461,  # GCS
+        0.0599402910232544,  # GGP
+        0.030090252685546874,  # GGS
+    ],  # grpc
     [
-        0.00871570110321045,    # PCP
-        0.008874011039733887,   # PCS
+        0.00871570110321045,  # PCP
+        0.008874011039733887,  # PCS
         0.004539344000816345,
         0.0014466304063796998,
-    ], # pt rpc
+    ],  # pt rpc
 ]
 
 data["small_light_single_stdv"] = [
@@ -172,13 +190,13 @@ data["small_light_single_stdv"] = [
         0.010037730927172632,
         0.02789967304355296,
         0.006728921952568284,
-    ], #grpc
+    ],  # grpc
     [
         0.003113925632485608,
         0.003417710351898507,
         0.001146082866262916,
-        0.00019359466164992894
-    ], # pt rpc
+        0.00019359466164992894,
+    ],  # pt rpc
 ]
 
 data["small_light_multi_mean"] = [
@@ -186,8 +204,8 @@ data["small_light_multi_mean"] = [
         0.06157054901123047,
         0.05341341495513916,
         0.11209506454467774,
-        0.03241867504119873
-    ],  #grpc
+        0.03241867504119873,
+    ],  # grpc
     [
         0.005541062355041504,
         0.005627202987670899,
@@ -220,7 +238,7 @@ data["small_light_multi_stdv"] = [
         0,  # 0.013056317959832133,
         0.00752183610847404,
         0.0013382178476675506,
-    ]
+    ],
 ]
 
 
@@ -239,26 +257,24 @@ plt.subplots_adjust(wspace=0)
 if SHOW:
     plt.show()
 else:
-    plt.savefig(f"../images/{name}.pdf", bbox_inches='tight')
-
-
+    plt.savefig(f"../images/{name}.pdf", bbox_inches="tight")
 
 
 ########
 
 data["small_heavy_single_mean"] = [
     [
-        0.20356476306915283,    # GCP
-        0.1753929615020752,     # GCS
-        0.1090344779968262,     # GGP
-        0.03455644454956055,    # GGS
+        0.20356476306915283,  # GCP
+        0.1753929615020752,  # GCS
+        0.1090344779968262,  # GGP
+        0.03455644454956055,  # GGS
     ],  # grpc
     [
         0.08173201084136963,
         0.08039040565490722,
         0.01840829429626465,
         0.019564937973022462,
-    ], # PT RPC
+    ],  # PT RPC
 ]
 
 data["small_heavy_single_stdv"] = [
@@ -290,11 +306,11 @@ data["small_heavy_multi_mean"] = [
         0.0370933913230896,
     ],
     [
-        0, # 0.10263054370880127,
-        0, # 0.10391204357147217,
+        0,  # 0.10263054370880127,
+        0,  # 0.10391204357147217,
         0.023845241641998288,
         0.017658985614776614,
-    ], # PT IB
+    ],  # PT IB
 ]
 
 data["small_heavy_multi_stdv"] = [
@@ -311,11 +327,11 @@ data["small_heavy_multi_stdv"] = [
         0.01899507439187126,
     ],
     [
-        0, # 0.010964331419899845,
-        0, # 0.01258920269134317,
+        0,  # 0.010964331419899845,
+        0,  # 0.01258920269134317,
         0.004454980744851911,
         0.0034703982699525286,
-    ], # PT IB
+    ],  # PT IB
 ]
 
 name = "small_heavy"
@@ -333,11 +349,7 @@ plt.subplots_adjust(wspace=0)
 if SHOW:
     plt.show()
 else:
-    plt.savefig(f"../images/{name}.pdf", bbox_inches='tight')
-
-
-
-
+    plt.savefig(f"../images/{name}.pdf", bbox_inches="tight")
 
 
 #######
@@ -347,14 +359,28 @@ def large_plot_bar(name, ylim):
     mean = np.asarray(data[name + "_mean"])
     stdv = np.asarray(data[name + "_stdv"])
     xs = np.arange(4)
-    #plt.figure(figsize=(6, 3))
+    # plt.figure(figsize=(6, 3))
     handles = []
-    handles.append(plt.bar(
-        xs - WIDTH / 2.0, mean[0], yerr=stdv[0], color=colors[0], width=WIDTH, capsize=6
-    ))
-    handles.append(plt.bar(
-        xs + WIDTH / 2.0, mean[1], yerr=stdv[1], color=colors[1], width=WIDTH, capsize=6
-    ))
+    handles.append(
+        plt.bar(
+            xs - WIDTH / 2.0,
+            mean[0],
+            yerr=stdv[0],
+            color=colors[0],
+            width=WIDTH,
+            capsize=6,
+        )
+    )
+    handles.append(
+        plt.bar(
+            xs + WIDTH / 2.0,
+            mean[1],
+            yerr=stdv[1],
+            color=colors[1],
+            width=WIDTH,
+            capsize=6,
+        )
+    )
 
     plt.xticks(xs, ["CP", "CS", "GP", "GS"], **FONT)
     plt.yticks(**FONT)
@@ -365,9 +391,9 @@ def large_plot_bar(name, ylim):
         handles=handles,
         loc="upper left",
         labels=["grpc", "PT"],
-        prop={'family':FONT['fontname'], 'size':FONT['size']},
+        prop={"family": FONT["fontname"], "size": FONT["size"]},
         ncol=2,
-        #bbox_to_anchor=(-0.015, 0.3, 0.5, 0.5)
+        # bbox_to_anchor=(-0.015, 0.3, 0.5, 0.5)
     )
 
     plt.ylim(ylim)
@@ -385,31 +411,35 @@ def large_plot_bar3(name, ylim, ax):
     mean = np.asarray(data[name + "_mean"])
     stdv = np.asarray(data[name + "_stdv"])
     xs = np.arange(4)
-    #plt.figure(figsize=(6, 3))
+    # plt.figure(figsize=(6, 3))
     handles = []
-    handles.append(plt.bar(
-        xs - WIDTH, mean[0], yerr=stdv[0], color=colors[0], width=WIDTH, capsize=6
-    ))
-    handles.append(plt.bar(
-        xs, mean[1], yerr=stdv[1], color=colors[1], width=WIDTH, capsize=6
-    ))
-    handles.append(plt.bar(
-        xs + WIDTH, mean[2], yerr=stdv[2], color=colors[2], width=WIDTH, capsize=6
-    ))
+    handles.append(
+        plt.bar(
+            xs - WIDTH, mean[0], yerr=stdv[0], color=colors[0], width=WIDTH, capsize=6
+        )
+    )
+    handles.append(
+        plt.bar(xs, mean[1], yerr=stdv[1], color=colors[1], width=WIDTH, capsize=6)
+    )
+    handles.append(
+        plt.bar(
+            xs + WIDTH, mean[2], yerr=stdv[2], color=colors[2], width=WIDTH, capsize=6
+        )
+    )
 
     plt.xticks(xs, ["CP", "CS", "GP", "GS"], **FONT)
-    #plt.yticks(**FONT)
+    # plt.yticks(**FONT)
 
-    #plt.ylabel("Delay (ms)", **FONT)
+    # plt.ylabel("Delay (ms)", **FONT)
 
     plt.legend(
         handles=[handles[2]],
         loc="upper left",
         labels=["PT IB"],
-        prop={'family':FONT['fontname'], 'size':FONT['size']},
+        prop={"family": FONT["fontname"], "size": FONT["size"]},
     )
 
-    #plt.ylim(ylim)
+    # plt.ylim(ylim)
     plt.setp(ax.get_yticklabels(), visible=False)
     plt.grid()
 
@@ -421,13 +451,12 @@ def large_plot_bar3(name, ylim, ax):
     """
 
 
-
 data["large_light_single_mean"] = [
     [
-        22.20263538360596,  #GCP
-        24.788425254821778, #GCS
-        23.351867480468748, #GGP
-        11.011896142578125, #GGS
+        22.20263538360596,  # GCP
+        24.788425254821778,  # GCS
+        23.351867480468748,  # GGP
+        11.011896142578125,  # GGS
     ],
     [
         1.2488246440887452,
@@ -438,12 +467,7 @@ data["large_light_single_mean"] = [
 ]
 
 data["large_light_single_stdv"] = [
-    [
-        5.771916091747043,
-        5.364484586934269,
-        6.918799080128208,
-        1.9855945166246234
-    ],
+    [5.771916091747043, 5.364484586934269, 6.918799080128208, 1.9855945166246234],
     [
         0.5846850829686981,
         0.6423697106855647,
@@ -453,12 +477,7 @@ data["large_light_single_stdv"] = [
 ]
 
 data["large_light_multi_mean"] = [
-    [
-        25.670038175582885,
-        26.178440260887147,
-        26.272700683593747,
-        13.444128710937502
-    ],
+    [25.670038175582885, 26.178440260887147, 26.272700683593747, 13.444128710937502],
     [
         0.4566845417022705,
         0.45766301155090333,
@@ -466,8 +485,8 @@ data["large_light_multi_mean"] = [
         3.683140618896484,
     ],
     [
-        0, #2.3643112659454344,
-        0, #2.3529667139053343,
+        0,  # 2.3643112659454344,
+        0,  # 2.3529667139053343,
         0.3194052200317382,
         0.24071654739379883,
     ],  # IB
@@ -487,8 +506,8 @@ data["large_light_multi_stdv"] = [
         1.9379969055436004,
     ],
     [
-        0, #1.0914719969608395,
-        0, #1.0934558992804269,
+        0,  # 1.0914719969608395,
+        0,  # 1.0934558992804269,
         0.14819209802419867,
         0.1078176178281113,
     ],
@@ -497,12 +516,12 @@ data["large_light_multi_stdv"] = [
 name = "large_light"
 plt.figure(figsize=(10, 3))
 ax1 = plt.subplot(121)
-ax1.set_yscale('log')
+ax1.set_yscale("log")
 large_plot_bar(f"{name}_single", [0.05, 10000])
 plt.text(2.7, 80, "intra", **FONT)
 
 ax2 = plt.subplot(122, sharey=ax1)
-ax2.set_yscale('log')
+ax2.set_yscale("log")
 large_plot_bar3(f"{name}_multi", [0.05, 10000], ax2)
 plt.text(-0.5, 80, "cross", **FONT)
 
@@ -511,7 +530,7 @@ plt.subplots_adjust(wspace=0)
 if SHOW:
     plt.show()
 else:
-    plt.savefig(f"../images/{name}.pdf", bbox_inches='tight')
+    plt.savefig(f"../images/{name}.pdf", bbox_inches="tight")
 
 
 data["large_heavy_single_mean"] = [
@@ -537,12 +556,7 @@ data["large_heavy_single_stdv"] = [
         7.488048587705518,
         3.6846603869313106,
     ],
-    [
-        6.58542294507806,
-        5.0298745484719705,
-        0.31908617359309316,
-        0.3272961587238953
-    ],
+    [6.58542294507806, 5.0298745484719705, 0.31908617359309316, 0.3272961587238953],
 ]
 
 data["large_heavy_multi_mean"] = [
@@ -559,8 +573,8 @@ data["large_heavy_multi_mean"] = [
         3.8775099121093755,
     ],
     [
-        0, # 27.967683577537535,
-        0, # 25.08467490673065,
+        0,  # 27.967683577537535,
+        0,  # 25.08467490673065,
         1.8139447509765625,
         1.7794348754882816,
     ],
@@ -579,9 +593,9 @@ data["large_heavy_multi_stdv"] = [
         1.9410518689572116,
         1.9375170968683162,
     ],
-    [  
-        0, # 4.343233661234864,
-        0, # 3.177754522705607,
+    [
+        0,  # 4.343233661234864,
+        0,  # 3.177754522705607,
         0.29057995712800344,
         0.25226875866321113,
     ],
@@ -590,12 +604,12 @@ data["large_heavy_multi_stdv"] = [
 name = "large_heavy"
 plt.figure(figsize=(10, 3))
 ax1 = plt.subplot(121)
-ax1.set_yscale('log')
+ax1.set_yscale("log")
 large_plot_bar(f"{name}_single", [0.05, 10000])
 plt.text(2.7, 80, "intra", **FONT)
 
 ax2 = plt.subplot(122, sharey=ax1)
-ax2.set_yscale('log')
+ax2.set_yscale("log")
 large_plot_bar3(f"{name}_multi", [0.05, 10000], ax2)
 plt.text(-0.5, 80, "cross", **FONT)
 
@@ -604,28 +618,4 @@ plt.subplots_adjust(wspace=0)
 if SHOW:
     plt.show()
 else:
-    plt.savefig(f"../images/{name}.pdf", bbox_inches='tight')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    plt.savefig(f"../images/{name}.pdf", bbox_inches="tight")

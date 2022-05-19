@@ -489,13 +489,15 @@ def load_poisoned_dataset(args):
 
             if args.attack_case == "edge-case":
                 with open(
-                    args.data_cache_dir + "/southwest_cifar10/southwest_images_new_train.pkl",
+                    args.data_cache_dir
+                    + "/southwest_cifar10/southwest_images_new_train.pkl",
                     "rb",
                 ) as train_f:
                     saved_southwest_dataset_train = pickle.load(train_f)
 
                 with open(
-                    args.data_cache_dir + "/southwest_cifar10/southwest_images_new_test.pkl",
+                    args.data_cache_dir
+                    + "/southwest_cifar10/southwest_images_new_test.pkl",
                     "rb",
                 ) as test_f:
                     saved_southwest_dataset_test = pickle.load(test_f)
@@ -504,13 +506,15 @@ def load_poisoned_dataset(args):
                 or args.attack_case == "almost-edge-case"
             ):
                 with open(
-                    args.data_cache_dir + "/southwest_cifar10/southwest_images_adv_p_percent_edge_case.pkl",
+                    args.data_cache_dir
+                    + "/southwest_cifar10/southwest_images_adv_p_percent_edge_case.pkl",
                     "rb",
                 ) as train_f:
                     saved_southwest_dataset_train = pickle.load(train_f)
 
                 with open(
-                    args.data_cache_dir + "/southwest_cifar10/southwest_images_p_percent_edge_case_test.pkl",
+                    args.data_cache_dir
+                    + "/southwest_cifar10/southwest_images_p_percent_edge_case_test.pkl",
                     "rb",
                 ) as test_f:
                     saved_southwest_dataset_test = pickle.load(test_f)
@@ -683,13 +687,15 @@ def load_poisoned_dataset(args):
             )
 
             with open(
-                args.data_cache_dir + "/southwest_cifar10/southwest_images_new_train.pkl",
+                args.data_cache_dir
+                + "/southwest_cifar10/southwest_images_new_train.pkl",
                 "rb",
             ) as train_f:
                 saved_southwest_dataset_train = pickle.load(train_f)
 
             with open(
-                args.data_cache_dir + "/southwest_cifar10/southwest_images_new_test.pkl",
+                args.data_cache_dir
+                + "/southwest_cifar10/southwest_images_new_test.pkl",
                 "rb",
             ) as test_f:
                 saved_southwest_dataset_test = pickle.load(test_f)
@@ -900,7 +906,8 @@ def load_poisoned_dataset(args):
 
             # we load the test since in the original paper they augment the
             with open(
-                args.data_cache_dir + "/greencar_cifar10/green_car_transformed_test.pkl",
+                args.data_cache_dir
+                + "/greencar_cifar10/green_car_transformed_test.pkl",
                 "rb",
             ) as test_f:
                 saved_greencar_dataset_test = pickle.load(test_f)

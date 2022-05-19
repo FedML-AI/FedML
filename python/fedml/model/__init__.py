@@ -4,8 +4,4 @@ from .model_hub import (
     create,
 )
 
-__all__ = [
-    "create",
-    "create_mnn_lenet5_model",
-    "create_mnn_resnet20_model"
-]
+__all__ = ["create", "create_mnn_lenet5_model", "create_mnn_resnet20_model"]

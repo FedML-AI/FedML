@@ -5,12 +5,12 @@ import numpy as np
 colors = [
     [0.3, 0.3, 0.3],
     [0.6, 0.6, 0.6],
-    [239/256.0, 74/256.0, 40/256.0],
+    [239 / 256.0, 74 / 256.0, 40 / 256.0],
 ]
 
 WIDTH = 0.3
 SHOW = False
-FONT = {'fontname':'Times New Roman', 'size':22}
+FONT = {"fontname": "Times New Roman", "size": 22}
 
 # figure 1
 # BS = 32
@@ -40,50 +40,50 @@ FONT = {'fontname':'Times New Roman', 'size':22}
 
 data_fwd_mean = [
     [
-        950.77, 
+        950.77,
         941.81,
         933.35,
         931.17,
-    ], # local pipeline
+    ],  # local pipeline
     [
         957.66,
         958.80,
         954.39,
         959.46,
-    ], # CPU RPC
+    ],  # CPU RPC
     [
         1160.06,
         1105.11,
         1103.12,
         1151.98,
-    ], # CUDA RPC
+    ],  # CUDA RPC
 ]
 
 data_fwd_stdv = [
     [
-        1.26, 
-        1.76, 
+        1.26,
+        1.76,
         2.08,
         2.25,
-    ], # local pipeline
+    ],  # local pipeline
     [
         2.32,
         2.00,
         2.13,
         2.52,
-    ], # CPU RPC
+    ],  # CPU RPC
     [
         18.82,
         128.73,
         185.94,
         644.52,
-    ], # CUDA RPC
+    ],  # CUDA RPC
 ]
 
 data_comm_mean = [
     [
         0.02,
-        1.50, 
+        1.50,
         3.08,
         9.70,
     ],
@@ -104,7 +104,7 @@ data_comm_mean = [
 data_comm_stdv = [
     [
         0,
-        0, 
+        0,
         0,
         0,
     ],
@@ -164,15 +164,15 @@ data_bwd_stdv = [
     ],
 ]
 
+
 def plot_nlp(x_name, f_name, y_lim):
     plt.figure(figsize=(8, 4))
     xs = np.asarray(range(4))
 
-
     for i in range(3):
         fwd = np.asarray(data_fwd_mean[i]) / 1e3
         com = np.asarray(data_comm_mean[i]) / 1e3
-        bwd = np.asarray(data_bwd_mean[i]) / 1e3 
+        bwd = np.asarray(data_bwd_mean[i]) / 1e3
         fwd_stdv = np.asarray(data_fwd_stdv[i]) / 1e3
         com_stdv = np.asarray(data_comm_stdv[i]) / 1e3
         bwd_stdv = np.asarray(data_bwd_stdv[i]) / 1e3
@@ -181,16 +181,29 @@ def plot_nlp(x_name, f_name, y_lim):
         com *= 2
 
         configs = {
-            "width" : WIDTH,
-            "color" : colors[i],
-            "edgecolor" : "black",
-            "capsize" : 6,
+            "width": WIDTH,
+            "color": colors[i],
+            "edgecolor": "black",
+            "capsize": 6,
         }
 
         plt.bar(xs + (i - 1) * WIDTH, fwd, yerr=fwd_stdv, hatch="///", **configs)
-        plt.bar(xs + (i - 1) * WIDTH, com, yerr=com_stdv, hatch="\\\\\\", bottom=fwd, **configs)
-        plt.bar(xs + (i - 1) * WIDTH, bwd, yerr=bwd_stdv, hatch="...", bottom=fwd+com, **configs)
-
+        plt.bar(
+            xs + (i - 1) * WIDTH,
+            com,
+            yerr=com_stdv,
+            hatch="\\\\\\",
+            bottom=fwd,
+            **configs,
+        )
+        plt.bar(
+            xs + (i - 1) * WIDTH,
+            bwd,
+            yerr=bwd_stdv,
+            hatch="...",
+            bottom=fwd + com,
+            **configs,
+        )
 
     color_handles = []
     color_handles.append(plt.bar([4], [0], color=colors[0]))
@@ -211,11 +224,10 @@ def plot_nlp(x_name, f_name, y_lim):
         handles=interleave(color_handles, hatch_handles),
         loc="upper left",
         labels=interleave(color_names, hatch_names),
-        prop={'family':FONT['fontname'], 'size':FONT['size'] - 2},
+        prop={"family": FONT["fontname"], "size": FONT["size"] - 2},
         ncol=3,
-        #bbox_to_anchor=(-0.015, 0.3, 0.5, 0.5)
+        # bbox_to_anchor=(-0.015, 0.3, 0.5, 0.5)
     )
-
 
     plt.xticks(xs, ["1", "2", "4", "8"], **FONT)
     plt.yticks(**FONT)
@@ -229,10 +241,10 @@ def plot_nlp(x_name, f_name, y_lim):
     if SHOW:
         plt.show()
     else:
-        plt.savefig(f"../images/{f_name}.pdf", bbox_inches='tight')
+        plt.savefig(f"../images/{f_name}.pdf", bbox_inches="tight")
 
 
-plot_nlp(x_name = "Number of GPUs", f_name="nlp_single", y_lim = [0, 10])
+plot_nlp(x_name="Number of GPUs", f_name="nlp_single", y_lim=[0, 10])
 
 # figure 2
 # BS = 32 nGPU = 8
@@ -262,46 +274,46 @@ data_fwd_mean = [
         0,
         0,
         0,
-    ], # Local
+    ],  # Local
     [
         959.46,
         961.27,
         956.22,
         955.66,
-    ], # CPU RPC
+    ],  # CPU RPC
     [
         1151.98,
         1255.05,
         1284.88,
         1154.35,
-    ], # CUDA RPC
+    ],  # CUDA RPC
 ]
 
 data_fwd_stdv = [
     [
         2.25,
-        0,          
         0,
         0,
-    ], # Local
+        0,
+    ],  # Local
     [
         1.79,
         6.50,
         11.32,
         7.93,
-    ], # CPU RPC
+    ],  # CPU RPC
     [
         630.23,
         838.80,
         712.13,
         654.59,
-    ], # CUDA RPC
+    ],  # CUDA RPC
 ]
 
 data_comm_mean = [
     [
         0,
-        0, 
+        0,
         0,
         0,
     ],
@@ -311,18 +323,13 @@ data_comm_mean = [
         3322.29,
         3923.92,
     ],
-    [
-        123.31,
-        842.68,
-        997.94,
-        1139.79
-    ],
+    [123.31, 842.68, 997.94, 1139.79],
 ]
 
 data_comm_stdv = [
     [
         0,
-        0, 
+        0,
         0,
         0,
     ],
@@ -343,7 +350,7 @@ data_comm_stdv = [
 data_bwd_mean = [
     [
         1716.74,
-        0, 
+        0,
         0,
         0,
     ],
@@ -364,7 +371,7 @@ data_bwd_mean = [
 data_bwd_stdv = [
     [
         4.84,
-        0, 
+        0,
         0,
         0,
     ],
@@ -407,8 +414,6 @@ plot_nlp(x_name="Number of Machines", f_name="nlp_multi_32", y_lim=[0, 15])
 # c. CUDA RPC fwd-comm-bwd
 
 
-
-
 # figure 4
 # BS = 256 nGPU = 8
 
@@ -432,53 +437,52 @@ plot_nlp(x_name="Number of Machines", f_name="nlp_multi_32", y_lim=[0, 15])
 # c. CUDA RPC fwd-comm-bwd
 
 
-
 data_fwd_mean = [
     [
         6692.10,
         0,
         0,
         0,
-    ], # Local
+    ],  # Local
     [
         0,
         6749.92,
         6729.59,
         6717.90,
-    ], # CPU RPC
+    ],  # CPU RPC
     [
         7683.85,
         7933.53,
         7796.52,
         7731.03,
-    ], # CUDA RPC
+    ],  # CUDA RPC
 ]
 
 data_fwd_stdv = [
     [
         2.25,
-        0,          
         0,
         0,
-    ], # Local
+        0,
+    ],  # Local
     [
         0,
         17.86,
         17.26,
         32.52,
-    ], # CPU RPC
+    ],  # CPU RPC
     [
         105.22,
         127.51,
         77.30,
         125.28,
-    ], # CUDA RPC
+    ],  # CUDA RPC
 ]
 
 data_comm_mean = [
     [
         0,
-        0,          
+        0,
         0,
         0,
     ],
@@ -499,7 +503,7 @@ data_comm_mean = [
 data_comm_stdv = [
     [
         0,
-        0,          
+        0,
         0,
         0,
     ],
@@ -520,12 +524,12 @@ data_comm_stdv = [
 data_bwd_mean = [
     [
         14424.63,
-        0,          
+        0,
         0,
         0,
     ],
     [
-        0, 
+        0,
         34243.01,
         32263.58,
         28555.38,
@@ -541,7 +545,7 @@ data_bwd_mean = [
 data_bwd_stdv = [
     [
         53.63,
-        0,          
+        0,
         0,
         0,
     ],
@@ -560,18 +564,3 @@ data_bwd_stdv = [
 ]
 
 plot_nlp(x_name="Number of Machines", f_name="nlp_multi_128", y_lim=[0, 100])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

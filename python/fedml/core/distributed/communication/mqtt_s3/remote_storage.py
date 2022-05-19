@@ -12,6 +12,7 @@ class S3Storage:
     def __init__(self, s3_config_path):
 
         self.set_config_from_file(s3_config_path)
+        self.set_config_from_objects(s3_config_path)
         self.s3 = boto3.client(
             "s3",
             region_name=self.cn_region_name,
@@ -128,12 +129,21 @@ class S3Storage:
         logging.info(f"Delete s3 file Successful. | path_s3 = {path_s3}")
 
     def set_config_from_file(self, config_file_path):
-        with open(config_file_path, "r") as f:
-            config = yaml.load(f, Loader=yaml.FullLoader)
-            self.cn_s3_aki = config["CN_S3_AKI"]
-            self.cn_s3_sak = config["CN_S3_SAK"]
-            self.cn_region_name = config["CN_REGION_NAME"]
-            self.bucket_name = config["BUCKET_NAME"]
+        try:
+            with open(config_file_path, "r") as f:
+                config = yaml.load(f, Loader=yaml.FullLoader)
+                self.cn_s3_aki = config["CN_S3_AKI"]
+                self.cn_s3_sak = config["CN_S3_SAK"]
+                self.cn_region_name = config["CN_REGION_NAME"]
+                self.bucket_name = config["BUCKET_NAME"]
+        except Exception as e:
+            pass
+
+    def set_config_from_objects(self, s3_config):
+        self.cn_s3_aki = s3_config["CN_S3_AKI"]
+        self.cn_s3_sak = s3_config["CN_S3_SAK"]
+        self.cn_region_name = s3_config["CN_REGION_NAME"]
+        self.bucket_name = s3_config["BUCKET_NAME"]
 
 
 # if __name__ == "__main__":

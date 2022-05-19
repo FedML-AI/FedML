@@ -86,7 +86,6 @@ class MyAggregator:
         print("test loss: ", loss.read())
 
 
-
 def aggregate(model_dict, sample_num_dict, worker_num):
     start_time = time.time()
     model_list = []
@@ -132,9 +131,7 @@ if __name__ == "__main__":
     model1_path = "fedml_189_0_126-095b441b3c044623a36724dde12c2ac5"
     model_dict = dict()
     model_dict[0] = model1_path
-    agg.test_on_server_for_all_clients(
-        model1_path
-    )
+    agg.test_on_server_for_all_clients(model1_path)
     model1_dict = read_mnn_as_tensor_dict(model1_path)
     global_model_dict = read_mnn_as_tensor_dict(global_model_file_path)
     print(len(model1_dict))
@@ -155,8 +152,6 @@ if __name__ == "__main__":
 
     model2_path = read_mnn_as_tensor_dict(model2_path)
     print(len(model2_path))
-
-
 
     fedml.logger.info("--------------------------")
 
