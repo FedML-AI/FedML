@@ -19,6 +19,15 @@ from os import path
 
 import yaml
 
+from .constants import (
+    FEDML_TRAINING_PLATFORM_SIMULATION,
+    FEDML_SIMULATION_TYPE_MPI,
+    FEDML_SIMULATION_TYPE_SP,
+    FEDML_TRAINING_PLATFORM_CROSS_SILO,
+    FEDML_TRAINING_PLATFORM_CROSS_DEVICE,
+    FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
+)
+
 
 def add_args():
     parser = argparse.ArgumentParser(description="FedML")
@@ -36,9 +45,6 @@ def add_args():
     # default arguments
     parser.add_argument("--rank", type=int, default=0)
 
-    
-    parser.add_argument("--node_rank", type=int, help="Rank of the node (for cross-silo hierarchical setting)", default=0)
-
     args = parser.parse_args()
     return args
 
@@ -52,9 +58,7 @@ class Arguments:
         for arg_key, arg_val in cmd_args_dict.items():
             setattr(self, arg_key, arg_val)
 
-        self.get_default_yaml_config(
-            cmd_args, training_type, comm_backend
-        )
+        self.get_default_yaml_config(cmd_args, training_type, comm_backend)
 
     def load_yaml_config(self, yaml_path):
         with open(yaml_path, "r") as stream:
@@ -64,21 +68,30 @@ class Arguments:
                 raise ValueError("Yaml error - check yaml file")
 
     def get_default_yaml_config(self, cmd_args, training_type=None, comm_backend=None):
-        path_current_file = path.abspath(path.dirname(__file__))
-        if training_type == "simulation" and comm_backend == "single_process":
-            config_file = path.join(path_current_file, "config/simulation_sp/fedml_config.yaml")
-            cmd_args.yaml_config_file = config_file
-        elif training_type == "simulation" and comm_backend == "MPI":
-            config_file = path.join(
-                path_current_file, "config/simulaton_mpi/fedml_config.yaml"
-            )
-            cmd_args.yaml_config_file = config_file
-        elif training_type == "cross_silo":
-            pass
-        elif training_type == "cross_device":
-            pass
-        else:
-            pass
+        if cmd_args.yaml_config_file == "":
+            path_current_file = path.abspath(path.dirname(__file__))
+            if (
+                training_type == FEDML_TRAINING_PLATFORM_SIMULATION
+                and comm_backend == FEDML_SIMULATION_TYPE_SP
+            ):
+                config_file = path.join(
+                    path_current_file, "config/simulation_sp/fedml_config.yaml"
+                )
+                cmd_args.yaml_config_file = config_file
+            elif (
+                training_type == FEDML_TRAINING_PLATFORM_SIMULATION
+                and comm_backend == FEDML_SIMULATION_TYPE_MPI
+            ):
+                config_file = path.join(
+                    path_current_file, "config/simulaton_mpi/fedml_config.yaml"
+                )
+                cmd_args.yaml_config_file = config_file
+            elif training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO:
+                pass
+            elif training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE:
+                pass
+            else:
+                pass
 
         self.yaml_paths = [cmd_args.yaml_config_file]
         # Load all arguments from yaml config
@@ -88,28 +101,34 @@ class Arguments:
         # Override class attributes from current yaml config
         self.set_attr_from_config(configuration)
 
-        path_current_file = path.abspath(path.dirname(__file__))
-        if training_type == "simulation" and comm_backend == "single_process":
-            pass
-        elif training_type == "simulation" and comm_backend == "MPI":
-            self.gpu_mapping_file = path.join(
-                path_current_file, "config/simulaton_mpi/gpu_mapping.yaml"
-            )
-        elif self.training_type == "cross_silo":
-            if self.scenario == "hierarchical":
-                # Add configs specific for serverf or silos
-                if self.rank == 0:
-                    comp_config_path = self.server_config_path
-                else:
-                    comp_config_path = self.client_silo_config_paths[self.rank - 1]
-                com_config = self.load_yaml_config(comp_config_path)
-                self.set_attr_from_config(com_config)
-        elif training_type == "cross_device":
-            pass
-        else:
-            pass
+        if cmd_args.yaml_config_file == "":
+            path_current_file = path.abspath(path.dirname(__file__))
+            if (
+                training_type == FEDML_TRAINING_PLATFORM_SIMULATION
+                and comm_backend == FEDML_SIMULATION_TYPE_SP
+            ):
+                pass
+            elif (
+                training_type == FEDML_TRAINING_PLATFORM_SIMULATION
+                and comm_backend == FEDML_SIMULATION_TYPE_MPI
+            ):
+                self.gpu_mapping_file = path.join(
+                    path_current_file, "config/simulaton_mpi/gpu_mapping.yaml"
+                )
+            elif training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO:
+                if self.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
+                    # Add extra configs specific to server or silo
+                    if self.rank == 0:
+                        extra_config_path = self.server_config_path
+                    else:
+                        extra_config_path = self.client_silo_config_paths[self.rank - 1]
+                    com_config = self.load_yaml_config(extra_config_path)
+                    self.set_attr_from_config(com_config)
+            elif training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE:
+                pass
+            else:
+                pass
         return configuration
-
 
     def set_attr_from_config(self,configuration):
         for _, param_family in configuration.items():

@@ -7,6 +7,8 @@ from ...core.distributed.server.server_manager import ServerManager
 from ...mlops import MLOpsProfilerEvent, MLOpsMetrics
 import logging
 
+from ...mlops.mlops_configs import MLOpsConfigs
+
 
 class FedMLServerManager(ServerManager):
     def __init__(
@@ -20,6 +22,10 @@ class FedMLServerManager(ServerManager):
         is_preprocessed=False,
         preprocessed_client_lists=None,
     ):
+        if backend == "MQTT_S3":
+            mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
+            args.mqtt_config_path = mqtt_config
+            args.s3_config_path = s3_config
         super().__init__(args, comm, client_rank, client_num, backend)
         self.args = args
         self.aggregator_dist_adapter = aggregator_dist_adapter
@@ -41,7 +47,6 @@ class FedMLServerManager(ServerManager):
         self.start_running_time = 0.0
         self.aggregated_model_url = None
 
-
     def run(self):
         # notify MLOps with RUNNING status
         if hasattr(self.args, "backend") and self.args.using_mlops:
@@ -55,15 +60,21 @@ class FedMLServerManager(ServerManager):
         # sampling clients
         self.start_running_time = time.time()
 
-        global_model_params = self.aggregator_dist_adapter.aggregator.get_global_model_params()
-
-        client_id_list_in_this_round = self.aggregator_dist_adapter.aggregator.client_selection(
-            self.round_idx, self.client_real_ids, self.args.client_num_per_round
+        global_model_params = (
+            self.aggregator_dist_adapter.aggregator.get_global_model_params()
         )
-        data_silo_index_list = self.aggregator_dist_adapter.aggregator.data_silo_selection(
-            self.round_idx,
-            self.args.client_num_in_total,
-            len(client_id_list_in_this_round),
+
+        client_id_list_in_this_round = (
+            self.aggregator_dist_adapter.aggregator.client_selection(
+                self.round_idx, self.client_real_ids, self.args.client_num_per_round
+            )
+        )
+        data_silo_index_list = (
+            self.aggregator_dist_adapter.aggregator.data_silo_selection(
+                self.round_idx,
+                self.args.client_num_in_total,
+                len(client_id_list_in_this_round),
+            )
         )
 
         client_idx_in_this_round = 0
@@ -124,17 +135,19 @@ class FedMLServerManager(ServerManager):
             self.send_init_msg()
 
     def handle_message_receive_model_from_client(self, msg_params):
-        if hasattr(self.args, "backend") and self.args.using_mlops:
-            self.mlops_event.log_event_ended("comm_c2s", event_edge_id=0)
-
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
+        if hasattr(self.args, "backend") and self.args.using_mlops:
+            self.mlops_event.log_event_ended("comm_c2s",  event_value=str(self.round_idx), event_edge_id=sender_id)
+
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         local_sample_number = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
 
         self.aggregator_dist_adapter.aggregator.add_local_trained_result(
             self.client_real_ids.index(sender_id), model_params, local_sample_number
         )
-        b_all_received = self.aggregator_dist_adapter.aggregator.check_whether_all_receive()
+        b_all_received = (
+            self.aggregator_dist_adapter.aggregator.check_whether_all_receive()
+        )
         logging.info("b_all_received = " + str(b_all_received))
         if b_all_received:
             if hasattr(self.args, "backend") and self.args.using_mlops:
@@ -145,9 +158,13 @@ class FedMLServerManager(ServerManager):
             if hasattr(self.args, "backend") and self.args.using_mlops:
                 self.mlops_event.log_event_ended("aggregate")
             try:
-                self.aggregator_dist_adapter.aggregator.test_on_server_for_all_clients(self.round_idx)
+                self.aggregator_dist_adapter.aggregator.test_on_server_for_all_clients(
+                    self.round_idx
+                )
             except Exception as e:
-                logging.info("aggregator_dist_adapter.aggregator.test exception: " + str(e))
+                logging.info(
+                    "aggregator_dist_adapter.aggregator.test exception: " + str(e)
+                )
 
             # send round info to the MQTT backend
             if hasattr(self.args, "backend") and self.args.using_mlops:
@@ -159,13 +176,17 @@ class FedMLServerManager(ServerManager):
                 }
                 self.mlops_metrics.report_server_training_round_info(round_info)
 
-            client_id_list_in_this_round = self.aggregator_dist_adapter.aggregator.client_selection(
-                self.round_idx, self.client_real_ids, self.args.client_num_per_round
+            client_id_list_in_this_round = (
+                self.aggregator_dist_adapter.aggregator.client_selection(
+                    self.round_idx, self.client_real_ids, self.args.client_num_per_round
+                )
             )
-            data_silo_index_list = self.aggregator_dist_adapter.aggregator.data_silo_selection(
-                self.round_idx,
-                self.args.client_num_in_total,
-                len(client_id_list_in_this_round),
+            data_silo_index_list = (
+                self.aggregator_dist_adapter.aggregator.data_silo_selection(
+                    self.round_idx,
+                    self.args.client_num_in_total,
+                    len(client_id_list_in_this_round),
+                )
             )
 
             client_idx_in_this_round = 0

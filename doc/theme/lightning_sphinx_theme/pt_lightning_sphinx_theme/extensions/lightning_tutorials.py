@@ -13,12 +13,20 @@
 # limitations under the License.
 from docutils import nodes
 from docutils.statemachine import StringList
-from pt_lightning_sphinx_theme.extensions.pytorch_tutorials import TwoColumns, cardnode, CustomCalloutItemDirective, CustomCardItemDirective, DisplayItemDirective, SlackButton
+from pt_lightning_sphinx_theme.extensions.pytorch_tutorials import (
+    TwoColumns,
+    cardnode,
+    CustomCalloutItemDirective,
+    CustomCardItemDirective,
+    DisplayItemDirective,
+    SlackButton,
+)
 from sphinx.util.docutils import SphinxDirective
 
 
 class tutoriallistnode(nodes.General, nodes.Element):
     """A placeholder node that we can use during the first parse to later replace with the card list."""
+
     pass
 
 
@@ -38,7 +46,9 @@ def purge_cards(app, env, docname):
     if not hasattr(env, "all_cardnodes"):
         return
 
-    env.all_cardnodes = [node for node in env.all_cardnodes if node["docname"] != docname]
+    env.all_cardnodes = [
+        node for node in env.all_cardnodes if node["docname"] != docname
+    ]
 
 
 def merge_cards(app, env, docnames, other):
@@ -96,6 +106,7 @@ TUTORIAL_LIST_END = """
 class TutorialListDirective(SphinxDirective):
     """Our custom directive which inserts the header and footer markup for the tutorial block with a placeholder node
     (``tutoriallistnode``) which can be modified inplace later with the list of cards."""
+
     def run(self):
         start_list = StringList(TUTORIAL_LIST_START.split("\n"))
         start_node = nodes.paragraph()
@@ -143,8 +154,8 @@ def setup(app):
     app.add_directive("twocolumns", TwoColumns)
     app.add_directive("customcalloutitem", CustomCalloutItemDirective)
     app.add_directive("tutoriallist", TutorialListDirective)
-    app.add_stylesheet('css/pytorch_theme.css')
-    app.add_stylesheet('https://fonts.googleapis.com/css?family=Lato')
+    app.add_stylesheet("css/pytorch_theme.css")
+    app.add_stylesheet("https://fonts.googleapis.com/css?family=Lato")
 
     app.connect("env-purge-doc", purge_cards)
     app.connect("env-merge-info", merge_cards)

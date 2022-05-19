@@ -6,7 +6,11 @@ import yaml
 
 
 def corss_silo_mapping_processes_to_gpu_device_from_yaml_file(
-    rank, proc_rank_in_silo, n_proc_in_silo, client_silo_num_in_total, silo_gpu_util_file
+    rank,
+    proc_rank_in_silo,
+    n_proc_in_silo,
+    client_silo_num_in_total,
+    silo_gpu_util_file,
 ):
     if silo_gpu_util_file == None:
         device = torch.device("cpu")
