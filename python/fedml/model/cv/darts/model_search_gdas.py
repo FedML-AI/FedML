@@ -7,13 +7,12 @@ from .operations import OPS, FactorizedReduce, ReLUConvBN
 
 
 class MixedOp(nn.Module):
-
     def __init__(self, C, stride):
         super(MixedOp, self).__init__()
         self._ops = nn.ModuleList()
         for primitive in PRIMITIVES:
             op = OPS[primitive](C, stride, False)
-            if 'pool' in primitive:
+            if "pool" in primitive:
                 op = nn.Sequential(op, nn.BatchNorm2d(C, affine=False))
             self._ops.append(op)
 
@@ -29,8 +28,9 @@ class MixedOp(nn.Module):
 
 
 class Cell(nn.Module):
-
-    def __init__(self, steps, multiplier, C_prev_prev, C_prev, C, reduction, reduction_prev):
+    def __init__(
+        self, steps, multiplier, C_prev_prev, C_prev, C, reduction, reduction_prev
+    ):
         super(Cell, self).__init__()
         self.reduction = reduction
 
@@ -59,16 +59,27 @@ class Cell(nn.Module):
         offset = 0
         for i in range(self._steps):
             s = sum(
-                self._ops[offset + j](h, weights[offset + j], cpu_weights[offset + j]) for j, h in enumerate(states))
+                self._ops[offset + j](h, weights[offset + j], cpu_weights[offset + j])
+                for j, h in enumerate(states)
+            )
             offset += len(states)
             states.append(s)
         # logging.info(states)
-        return torch.cat(states[-self._multiplier:], dim=1)
+        return torch.cat(states[-self._multiplier :], dim=1)
 
 
 class Network_GumbelSoftmax(nn.Module):
-
-    def __init__(self, C, num_classes, layers, criterion, device, steps=4, multiplier=4, stem_multiplier=3):
+    def __init__(
+        self,
+        C,
+        num_classes,
+        layers,
+        criterion,
+        device,
+        steps=4,
+        multiplier=4,
+        stem_multiplier=3,
+    ):
         super(Network_GumbelSoftmax, self).__init__()
         self._C = C
         self._num_classes = num_classes
@@ -80,8 +91,7 @@ class Network_GumbelSoftmax(nn.Module):
 
         C_curr = stem_multiplier * C  # 3*16
         self.stem = nn.Sequential(
-            nn.Conv2d(3, C_curr, 3, padding=1, bias=False),
-            nn.BatchNorm2d(C_curr)
+            nn.Conv2d(3, C_curr, 3, padding=1, bias=False), nn.BatchNorm2d(C_curr)
         )
 
         C_prev_prev, C_prev, C_curr = C_curr, C_curr, C
@@ -95,7 +105,15 @@ class Network_GumbelSoftmax(nn.Module):
                 reduction = True
             else:
                 reduction = False
-            cell = Cell(steps, multiplier, C_prev_prev, C_prev, C_curr, reduction, reduction_prev)
+            cell = Cell(
+                steps,
+                multiplier,
+                C_prev_prev,
+                C_prev,
+                C_curr,
+                reduction,
+                reduction_prev,
+            )
             reduction_prev = reduction
             self.cells += [cell]
             C_prev_prev, C_prev = C_prev, multiplier * C_curr
@@ -107,8 +125,9 @@ class Network_GumbelSoftmax(nn.Module):
         self._initialize_alphas()
 
     def new(self):
-        model_new = Network_GumbelSoftmax(self._C, self._num_classes, self._layers, self._criterion, self.device).to(
-            self.device)
+        model_new = Network_GumbelSoftmax(
+            self._C, self._num_classes, self._layers, self._criterion, self.device
+        ).to(self.device)
         for x, y in zip(model_new.arch_parameters(), self.arch_parameters()):
             x.data.copy_(y.data)
         return model_new
@@ -147,7 +166,6 @@ class Network_GumbelSoftmax(nn.Module):
         return self._arch_parameters
 
     def genotype(self):
-
         def _isCNNStructure(k_best):
             return k_best >= 4
 
@@ -159,13 +177,18 @@ class Network_GumbelSoftmax(nn.Module):
             for i in range(self._steps):
                 end = start + n
                 W = weights[start:end].copy()
-                edges = sorted(range(i + 2),
-                               key=lambda x: -max(W[x][k] for k in range(len(W[x])) if k != PRIMITIVES.index('none')))[
-                        :2]
+                edges = sorted(
+                    range(i + 2),
+                    key=lambda x: -max(
+                        W[x][k]
+                        for k in range(len(W[x]))
+                        if k != PRIMITIVES.index("none")
+                    ),
+                )[:2]
                 for j in edges:
                     k_best = None
                     for k in range(len(W[j])):
-                        if k != PRIMITIVES.index('none'):
+                        if k != PRIMITIVES.index("none"):
                             if k_best is None or W[j][k] > W[j][k_best]:
                                 k_best = k
 
@@ -177,12 +200,18 @@ class Network_GumbelSoftmax(nn.Module):
             return gene, cnn_structure_count
 
         with torch.no_grad():
-            gene_normal, cnn_structure_count_normal = _parse(F.softmax(self.alphas_normal, dim=-1).data.cpu().numpy())
-            gene_reduce, cnn_structure_count_reduce = _parse(F.softmax(self.alphas_reduce, dim=-1).data.cpu().numpy())
+            gene_normal, cnn_structure_count_normal = _parse(
+                F.softmax(self.alphas_normal, dim=-1).data.cpu().numpy()
+            )
+            gene_reduce, cnn_structure_count_reduce = _parse(
+                F.softmax(self.alphas_reduce, dim=-1).data.cpu().numpy()
+            )
 
             concat = range(2 + self._steps - self._multiplier, self._steps + 2)
             genotype = Genotype(
-                normal=gene_normal, normal_concat=concat,
-                reduce=gene_reduce, reduce_concat=concat
+                normal=gene_normal,
+                normal_concat=concat,
+                reduce=gene_reduce,
+                reduce_concat=concat,
             )
         return genotype, cnn_structure_count_normal, cnn_structure_count_reduce

@@ -36,7 +36,9 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         self.s3_storage = S3Storage(s3_config_path)
         self.client_real_ids = []
         if args.client_id_list is not None:
-            logging.info("MqttS3CommManager args client_id_list: " + str(args.client_id_list))
+            logging.info(
+                "MqttS3CommManager args client_id_list: " + str(args.client_id_list)
+            )
             self.client_real_ids = json.loads(args.client_id_list)
         if args.rank == 0:
             self.edge_id = 0
@@ -58,6 +60,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         logging.info("mqtt_s3.init: client_num = %d" % client_num)
 
         self.set_config_from_file(config_path)
+        self.set_config_from_objects(config_path)
         # Construct a Client
         self.mqtt_connection_id = mqtt.base62(uuid.uuid4().int, padding=22)
         self._client = mqtt.Client(
@@ -171,7 +174,8 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
 
     def _notify_connection_ready(self):
         msg_params = Message()
-        msg_type = 0
+        MSG_TYPE_CONNECTION_IS_READY = 0
+        msg_type = MSG_TYPE_CONNECTION_IS_READY
         for observer in self._observers:
             observer.receive_message(msg_type, msg_params)
 
@@ -263,9 +267,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                 #         break
                 # if not model_uploaded:
                 logging.info("mqtt_s3.send_message: to python client.")
-                model_url = self.s3_storage.write_model(
-                    message_key, model_params_obj
-                )
+                model_url = self.s3_storage.write_model(message_key, model_params_obj)
                 model_params_key_url = {
                     "key": message_key,
                     "url": model_url,
@@ -304,9 +306,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                 #         break
                 # if not model_uploaded:
                 logging.info("mqtt_s3.send_message: to python client.")
-                model_url = self.s3_storage.write_model(
-                    message_key, model_params_obj
-                )
+                model_url = self.s3_storage.write_model(message_key, model_params_obj)
                 model_params_key_url = {
                     "key": message_key,
                     "url": model_url,
@@ -339,16 +339,29 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         self._client.disconnect()
 
     def set_config_from_file(self, config_file_path):
-        with open(config_file_path, "r") as f:
-            config = yaml.load(f, Loader=yaml.FullLoader)
-            self.broker_host = config["BROKER_HOST"]
-            self.broker_port = config["BROKER_PORT"]
-            self.mqtt_user = None
-            self.mqtt_pwd = None
-            if "MQTT_USER" in config:
-                self.mqtt_user = config["MQTT_USER"]
-            if "MQTT_PWD" in config:
-                self.mqtt_pwd = config["MQTT_PWD"]
+        try:
+            with open(config_file_path, "r") as f:
+                config = yaml.load(f, Loader=yaml.FullLoader)
+                self.broker_host = config["BROKER_HOST"]
+                self.broker_port = config["BROKER_PORT"]
+                self.mqtt_user = None
+                self.mqtt_pwd = None
+                if "MQTT_USER" in config:
+                    self.mqtt_user = config["MQTT_USER"]
+                if "MQTT_PWD" in config:
+                    self.mqtt_pwd = config["MQTT_PWD"]
+        except Exception as e:
+            pass
+
+    def set_config_from_objects(self, mqtt_config):
+        self.broker_host = mqtt_config["BROKER_HOST"]
+        self.broker_port = mqtt_config["BROKER_PORT"]
+        self.mqtt_user = None
+        self.mqtt_pwd = None
+        if "MQTT_USER" in mqtt_config:
+            self.mqtt_user = mqtt_config["MQTT_USER"]
+        if "MQTT_PWD" in mqtt_config:
+            self.mqtt_pwd = mqtt_config["MQTT_PWD"]
 
 
 if __name__ == "__main__":

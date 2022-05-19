@@ -9,12 +9,17 @@ from .utils import transform_list_to_tensor
 from ...core.distributed.client.client_manager import ClientManager
 from ...core.distributed.communication.message import Message
 from ...mlops import MLOpsMetrics, MLOpsProfilerEvent
+from ...mlops.mlops_configs import MLOpsConfigs
 
 
 class FedMLClientManager(ClientManager):
     def __init__(
         self, args, trainer, comm=None, client_rank=0, client_num=0, backend="MPI"
     ):
+        if backend == "MQTT_S3":
+            mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
+            args.mqtt_config_path = mqtt_config
+            args.s3_config_path = s3_config
         super().__init__(args, comm, client_rank, client_num, backend)
         self.args = args
         self.trainer = trainer
@@ -107,7 +112,9 @@ class FedMLClientManager(ClientManager):
 
     def send_model_to_server(self, receive_id, weights, local_sample_num):
         if hasattr(self.args, "backend") and self.args.using_mlops:
-            self.mlops_event.log_event_started("comm_c2s", event_value=str(self.round_idx), event_edge_id=0)
+            self.mlops_event.log_event_started(
+                "comm_c2s", event_value=str(self.round_idx)
+            )
         message = Message(
             MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER,
             self.client_real_id,

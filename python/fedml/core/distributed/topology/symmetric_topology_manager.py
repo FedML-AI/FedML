@@ -20,13 +20,17 @@ class SymmetricTopologyManager(BaseTopologyManager):
 
     def generate_topology(self):
         # first generate a ring topology
-        topology_ring = np.array(nx.to_numpy_matrix(nx.watts_strogatz_graph(self.n, 2, 0)), dtype=np.float32)
+        topology_ring = np.array(
+            nx.to_numpy_matrix(nx.watts_strogatz_graph(self.n, 2, 0)), dtype=np.float32
+        )
         # print(topology_ring)
 
         # randomly add some links for each node (symmetric)
         k = int(self.neighbor_num)
         # print("undirected_neighbor_num = " + str(k))
-        topology_random_link = np.array(nx.to_numpy_matrix(nx.watts_strogatz_graph(self.n, k, 0)), dtype=np.float32)
+        topology_random_link = np.array(
+            nx.to_numpy_matrix(nx.watts_strogatz_graph(self.n, k, 0)), dtype=np.float32
+        )
         # print("randomly add some links for each node (symmetric): ")
         # print(topology_random_link)
 
