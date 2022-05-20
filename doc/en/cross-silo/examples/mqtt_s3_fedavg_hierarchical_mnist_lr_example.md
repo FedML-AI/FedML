@@ -1,9 +1,9 @@
 # FedML Octopus Example with MNIST + Logistic Regression
 
-This example illustrates how to do real-world hierarchical cross-silo federated learning with FedML Octopus. Hierarchical architecture allows each silo/client to do its training on multiple trainers in parallel using PyTorch's Distributed Data Parallel (DDP). Using this feature, a silo/client can have multiple GPUs across different nodes and start parallel training on all of them. 
+This example illustrates how to do real-world hierarchical cross-silo federated learning with FedML Octopus. Hierarchical architecture allows a silo/client to take adavantage of multiple GPUs on different nodes to further accelerate training process. We use PyTorch's Distributed Data Parallel (DDP) to achieve this goal. 
 
 
-The example provided here demonstrates a scenario where there are two silos/clients, and each of them has access to multiple GPUs. Silo-1 trains the model on 2 nodes, with each node having 2 GPUs, while Silo-2 trains its model using 2 GPUs on a single node. The source code locates at `python/examples/cross_silo/mqtt_s3_fedavg_hierarchical_mnist_lr_example`.
+The example provided here demonstrates a scenario where there are two silos/clients, and each of them has access to multiple GPUs. Silo-1 trains the model on 2 nodes, with each node having 1 GPU, while Silo-2 trains its model using 1 GPU on a single node. The source code locates at `python/examples/cross_silo/mqtt_s3_fedavg_hierarchical_mnist_lr_example`.
 
 > **If you have multiple nodes, you should run the client script on each node**
  
@@ -36,14 +36,9 @@ if __name__ == "__main__":
 
 ```shell
 #!/usr/bin/env bash
-NETWORK_INTERFACE=lo
-export NCCL_SOCKET_IFNAME=$NETWORK_INTERFACE
-export GLOO_SOCKET_IFNAME=$NETWORK_INTERFACE
-
 RANK=$1
-NODE_RANK=$2
 
-python3 client_dist_launcher.py --cf config/fedml_config.yaml --rank $RANK --node_rank $NODE_RANK
+python3 client_dist_launcher.py --cf config/fedml_config.yaml --rank $RANK
 
 ```
 
@@ -56,7 +51,7 @@ if __name__ == "__main__":
     fedml.run_hierarchical_cross_silo_client()
 ```
 
-At the client side, the client ID (a.k.a rank) starts from 1. Node rank is the rank of node inside a Silo/Client and starts from 0. In this example, Silo-1 has 2 nodes with ranks 0 and 1, but Silo-2 has only one node with rank 0.
+At the client side, the client ID (a.k.a rank) starts from 1.
 
 At the server side, run the following script:
 ```
@@ -65,18 +60,14 @@ bash run_server.sh
 
 For Silo/Client 1, run the following script on first node:
 ```
-bash run_client.sh 1 0
+bash run_client.sh 1
 ```
-For Silo/Client 1, run the following script on the second node:
-```
-bash run_client.sh 1 1
-```
-
 For Silo/Client 2, run the following script:
 ```
-bash run_client.sh 2 0
+bash run_client.sh 2
 ```
 Note: please run the server first.
+Note: 
 
 
 
@@ -154,20 +145,15 @@ device_args:
   using_gpu: true
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_server
-
-
-dist_training_args:
-  pg_master_address: '127.0.0.1'
-  pg_master_port: 29400
 ```
 ```yaml
 # config/silo-2.yaml
 dist_training_args:
   n_node_in_silo: 2
   n_proc_per_node: 2
-  pg_master_address: '192.168.1.1'
-  pg_master_port: 29401
-
+  node_addresses: [192.168.1.1, 192.168.1.2]
+  master_address: '192.168.1.1'
+  launcher_rdzv_port: 29410
 
 device_args:
   using_gpu: true
@@ -178,28 +164,36 @@ device_args:
 ```yaml
 # config/silo-2.yaml
 dist_training_args:
-  n_node_in_silo: 1
+  n_node_in_silo: 2
   n_proc_per_node: 1
-  pg_master_address: '127.0.0.1'
-  pg_master_port: 29402
-
+  node_addresses: [192.168.1.3]
+  master_address: '192.168.1.3'
+  launcher_rdzv_port: 29410
 
 device_args:
   using_gpu: true
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_silo_2
 
+
 ```
 Here `dist_training_args` defines the distributed training hierarchy for each silo where:
 
   - `n_node_in_silo` is number of nodes in silo
-  - `n_proc_per_node` is number of processes (distributed trainers) in each node
-  - `pg_master_address` is ip address of the process group master. For all nodes in a silo, this should be the ip of the node with rank 0
-  - `pg_master_port` is port of the process group master. For all nodes in a silo, this should be the port of the node with rank 0
+  - `n_proc_per_node` is number of processes (distributed trainers) in each node.
+  - `master_address` is ip address of the process group master. This should be the ip of the first node in node_addresses.
+  - `node_addresses` is addresses of the nodes inside silo.
+  - `launcher_rdzv_port` is port of on the process group master which is used for rendezvous.
 
-Please note in order to join distributed training, all of the nodes inside a silo should be able to access `pg_master_address` through `NETWORK_INTERFACE` defined in `run_client.sh`. You can use the `ifconfig` command to get a list of available interfaces and their ip addresses. For example, here for Silo 1, the node with rank 0 should have ip address of `192.168.1.1`, and this ip address should be accessible to the node with rank 1.
+Please note in order to run distributed training:
+  1. You need to have `pdsh` and `fedml` installed on all nodes in silo.
+  2. Python executable path should be same for all nodes in silo.
+  3. The first node in `dist_training_args.node_addresses` should be the same as master_address.
+  4. The node executing `run_client.sh` should have passwrodless ssh access to the nodes in `dist_training_args.node_addresses`.
+  5. All of the nodes in `dist_training_args.node_addresses` should be able to access `dist_training_args.master_address` through `NETWORK_INTERFACE` defined in `run_client.sh`. You can use the `ifconfig` command to get a list of available interfaces and their ip addresses.
+  
 
-Furthermore, `device_args` in each of the config files defines the device configs for the corresponding server/silo. In this example, as presented by `config/silo-2.yaml`, Silo 1 has 2 nodes with 2 processes on each. Therefore, Silo 1 has 4 processes in total. To match this setting, `mapping_silo_1` defined in `config/gpu_mapping.yaml` should contain 2 nodes with 2 workers each.
+Furthermore, `device_args` in each of the config files defines the device configs for the corresponding server/silo. In this example, as presented by `config/silo-2.yaml`, Silo 1 has 2 nodes with 1 processes on each. Therefore, Silo 1 has 2 processes in total. To match this setting, `mapping_silo_1` defined in `config/gpu_mapping.yaml` should contain 2 nodes with 1 workers each.
 
 
 
@@ -208,112 +202,91 @@ Furthermore, `device_args` in each of the config files defines the device config
 At the end of the 50th training round, the server window will see the following output:
 
 ```shell
-[FedML-Server(0) @device-id-0] [Sat, 07 May 2022 01:31:12] [INFO] [fedml_aggregator.py:197:test_on_server_for_all_clients] ################test_on_server_for_all_clients : 49
-[FedML-Server(0) @device-id-0] [Sat, 07 May 2022 01:31:15] [INFO] [fedml_aggregator.py:224:test_on_server_for_all_clients] {'training_acc': 0.2257070576024909, 'training_loss': 2.2427119419740373}
-[FedML-Server(0) @device-id-0] [Sat, 07 May 2022 01:31:15] [INFO] [fedml_server_manager.py:150:handle_message_receive_model_from_client] aggregator_dist_adapter.aggregator.test exception: 'NoneType' object has no attribute 'report_server_training_metric'
-[FedML-Server(0) @device-id-0] [Sat, 07 May 2022 01:31:15] [INFO] [fedml_aggregator.py:116:data_silo_selection] client_num_in_total = 1000, client_num_per_round = 2
-[FedML-Server(0) @device-id-0] [Sat, 07 May 2022 01:31:15] [INFO] [fedml_server_manager.py:214:send_message_sync_model_to_client] send_message_sync_model_to_client. receive_id =
-1
-[FedML-Server(0) @device-id-0] [Sat, 07 May 2022 01:31:15] [INFO] [mqtt_s3_multi_clients_comm_manager.py:240:send_message] mqtt_s3.send_message: starting...
-[FedML-Server(0) @device-id-0] [Sat, 07 May 2022 01:31:15] [INFO] [mqtt_s3_multi_clients_comm_manager.py:246:send_message] mqtt_s3.send_message: msg topic = fedml_0_0_1
-[FedML-Server(0) @device-id-0] [Sat, 07 May 2022 01:31:15] [INFO] [mqtt_s3_multi_clients_comm_manager.py:253:send_message] mqtt_s3.send_message: S3+MQTT msg sent, s3 message key
-= fedml_0_0_1_1e1beeb9-b122-47ea-9ba5-04da32ebed7f
-[FedML-Server(0) @device-id-0] [Sat, 07 May 2022 01:31:15] [INFO] [mqtt_s3_multi_clients_comm_manager.py:265:send_message] mqtt_s3.send_message: to python client.
-[FedML-Server(0) @device-id-0] [Sat, 07 May 2022 01:31:15] [INFO] [fedml_server_manager.py:214:send_message_sync_model_to_client] send_message_sync_model_to_client. receive_id =
-2
-[FedML-Server(0) @device-id-0] [Sat, 07 May 2022 01:31:15] [INFO] [mqtt_s3_multi_clients_comm_manager.py:240:send_message] mqtt_s3.send_message: starting...
-[FedML-Server(0) @device-id-0] [Sat, 07 May 2022 01:31:15] [INFO] [mqtt_s3_multi_clients_comm_manager.py:246:send_message] mqtt_s3.send_message: msg topic = fedml_0_0_2
-[FedML-Server(0) @device-id-0] [Sat, 07 May 2022 01:31:15] [INFO] [mqtt_s3_multi_clients_comm_manager.py:253:send_message] mqtt_s3.send_message: S3+MQTT msg sent, s3 message key
-= fedml_0_0_2_0292303c-fb8f-4f77-87a3-63615e5b14e4
-[FedML-Server(0) @device-id-0] [Sat, 07 May 2022 01:31:15] [INFO] [mqtt_s3_multi_clients_comm_manager.py:265:send_message] mqtt_s3.send_message: to python client.
-[FedML-Server(0) @device-id-0] [Sat, 07 May 2022 01:31:15] [INFO] [server_manager.py:124:finish] __finish server
-[FedML-Server(0) @device-id-0] [Sat, 07 May 2022 01:31:15] [INFO] [mqtt_s3_multi_clients_comm_manager.py:337:stop_receive_message] mqtt_s3.stop_receive_message: stopping...
-[FedML-Server(0) @device-id-0] [Sat, 07 May 2022 01:31:15] [INFO] [mqtt_s3_multi_clients_comm_manager.py:157:_on_disconnect] mqtt_s3.on_disconnect: disconnection returned result
-0, user data None
-[FedML-Server(0) @device-id-0] [Sat, 07 May 2022 01:31:15] [INFO] [server_manager.py:94:run] running
-[FedML-Server(0) @device-id-0] [Sat, 07 May 2022 01:31:16] [INFO] [mqtt_s3_status_manager.py:78:_on_disconnect] mqtt_s3.on_disconnect: disconnection returned result 0, user data
-None
-...
+[FedML-Server(0) @device-id-0] [Fri, 20 May 2022 04:07:15] [INFO] [fedml_aggregator.py:197:test_on_server_for_all_clients] ################test_on_server_for_all_clients : 49
+[FedML-Server(0) @device-id-0] [Fri, 20 May 2022 04:07:15] [INFO] [fedml_aggregator.py:224:test_on_server_for_all_clients] {'training_acc': 0.37611896730669436, 'training_loss': 2.1912692754254417}
+[FedML-Server(0) @device-id-0] [Fri, 20 May 2022 04:07:15] [INFO] [fedml_server_manager.py:165:handle_message_receive_model_from_client] aggregator_dist_adapter.aggregator.test exception: 'NoneType' object has no attribute 'report_server_training_metric'
+[FedML-Server(0) @device-id-0] [Fri, 20 May 2022 04:07:15] [INFO] [fedml_aggregator.py:116:data_silo_selection] client_num_in_total = 1000, client_num_per_round = 2
+[FedML-Server(0) @device-id-0] [Fri, 20 May 2022 04:07:15] [INFO] [fedml_server_manager.py:235:send_message_sync_model_to_client] send_message_sync_model_to_client. receive_id = 1
+[FedML-Server(0) @device-id-0] [Fri, 20 May 2022 04:07:15] [INFO] [mqtt_s3_multi_clients_comm_manager.py:244:send_message] mqtt_s3.send_message: starting...
+[FedML-Server(0) @device-id-0] [Fri, 20 May 2022 04:07:15] [INFO] [mqtt_s3_multi_clients_comm_manager.py:250:send_message] mqtt_s3.send_message: msg topic = fedml_0_0_1
+[FedML-Server(0) @device-id-0] [Fri, 20 May 2022 04:07:15] [INFO] [mqtt_s3_multi_clients_comm_manager.py:257:send_message] mqtt_s3.send_message: S3+MQTT msg sent, s3 message key = fedml_0_0_1_eecbc3ba-1ba9-4b6d-b6c6-ca9194865e31
+[FedML-Server(0) @device-id-0] [Fri, 20 May 2022 04:07:15] [INFO] [mqtt_s3_multi_clients_comm_manager.py:269:send_message] mqtt_s3.send_message: to python client.
+[FedML-Server(0) @device-id-0] [Fri, 20 May 2022 04:07:16] [INFO] [fedml_server_manager.py:235:send_message_sync_model_to_client] send_message_sync_model_to_client. receive_id = 2
+[FedML-Server(0) @device-id-0] [Fri, 20 May 2022 04:07:16] [INFO] [mqtt_s3_multi_clients_comm_manager.py:244:send_message] mqtt_s3.send_message: starting...
+[FedML-Server(0) @device-id-0] [Fri, 20 May 2022 04:07:16] [INFO] [mqtt_s3_multi_clients_comm_manager.py:250:send_message] mqtt_s3.send_message: msg topic = fedml_0_0_2
+[FedML-Server(0) @device-id-0] [Fri, 20 May 2022 04:07:16] [INFO] [mqtt_s3_multi_clients_comm_manager.py:257:send_message] mqtt_s3.send_message: S3+MQTT msg sent, s3 message key = fedml_0_0_2_8792eda0-6be8-424e-9c71-e2b49004db48
+[FedML-Server(0) @device-id-0] [Fri, 20 May 2022 04:07:16] [INFO] [mqtt_s3_multi_clients_comm_manager.py:269:send_message] mqtt_s3.send_message: to python client.
+[FedML-Server(0) @device-id-0] [Fri, 20 May 2022 04:07:16] [INFO] [server_manager.py:124:finish] __finish server
+[FedML-Server(0) @device-id-0] [Fri, 20 May 2022 04:07:16] [INFO] [mqtt_s3_multi_clients_comm_manager.py:337:stop_receive_message] mqtt_s3.stop_receive_message: stopping...
+[FedML-Server(0) @device-id-0] [Fri, 20 May 2022 04:07:16] [INFO] [mqtt_s3_multi_clients_comm_manager.py:160:_on_disconnect] mqtt_s3.on_disconnect: disconnection returned result 0, user data None
+[FedML-Server(0) @device-id-0] [Fri, 20 May 2022 04:07:16] [INFO] [server_manager.py:94:run] running
+[FedML-Server(0) @device-id-0] [Fri, 20 May 2022 04:07:16] [INFO] [mqtt_s3_status_manager.py:80:_on_disconnect] mqtt_s3.on_disconnect: disconnection returned result 0, user data None
 ```
 
-At the end of the 50th training round, node 0 of client1 window will see the following output:
+At the end of the 50th training round, client1 window will see the following output:
 
 ```shell
-[FedML-Client(1) @device-id-1] [Sat, 07 May 2022 01:31:11] [INFO] [client_master_manager.py:143:handle_message_receive_model_from_server] #######training########### round_id = 49$
-[FedML-Client(1) @device-id-1] [Sat, 07 May 2022 01:31:11] [INFO] [client_slave_manager.py:43:await_sync_process_group] prcoess 1 received round_number 48
-[FedML-Client(1) @device-id-1] [Sat, 07 May 2022 01:31:11] [INFO] [my_model_trainer_classification.py:45:train] Update Epoch: 0 [10/10 (100%)]  Loss: 2.292643
-[FedML-Client(1) @device-id-1] [Sat, 07 May 2022 01:31:11] [INFO] [my_model_trainer_classification.py:56:train] Client Index = 0        Epoch: 0        Loss: 2.292643
-[FedML-Client(1) @device-id-1] [Sat, 07 May 2022 01:31:11] [INFO] [my_model_trainer_classification.py:45:train] Update Epoch: 0 [10/10 (100%)]  Loss: 2.340758
-[FedML-Client(1) @device-id-1] [Sat, 07 May 2022 01:31:11] [INFO] [my_model_trainer_classification.py:56:train] Client Index = 0        Epoch: 0        Loss: 2.340758
-[FedML-Client(1) @device-id-1] [Sat, 07 May 2022 01:31:11] [INFO] [client_slave_manager.py:38:await_sync_process_group] prcoess 1 waiting for round number
-[FedML-Client(1) @device-id-1] [Sat, 07 May 2022 01:31:11] [INFO] [client_manager.py:115:send_message] Sending message (type 3) to server
-[FedML-Client(1) @device-id-1] [Sat, 07 May 2022 01:31:11] [INFO] [mqtt_s3_multi_clients_comm_manager.py:240:send_message] mqtt_s3.send_message: starting...
-[FedML-Client(1) @device-id-1] [Sat, 07 May 2022 01:31:11] [INFO] [mqtt_s3_multi_clients_comm_manager.py:294:send_message] mqtt_s3.send_message: S3+MQTT msg sent, message_key = $
-edml_0_1_7c048901-ce07-4a6a-8b72-4e3bd01d8857
-[FedML-Client(1) @device-id-1] [Sat, 07 May 2022 01:31:11] [INFO] [mqtt_s3_multi_clients_comm_manager.py:306:send_message] mqtt_s3.send_message: to python client.
-[FedML-Client(1) @device-id-1] [Sat, 07 May 2022 01:31:15] [INFO] [mqtt_s3_multi_clients_comm_manager.py:187:_on_message_impl] --------------------------
-[FedML-Client(1) @device-id-1] [Sat, 07 May 2022 01:31:15] [INFO] [mqtt_s3_multi_clients_comm_manager.py:200:_on_message_impl] mqtt_s3.on_message: use s3 pack, s3 message key fe$
-ml_0_0_1_1e1beeb9-b122-47ea-9ba5-04da32ebed7f
-[FedML-Client(1) @device-id-1] [Sat, 07 May 2022 01:31:15] [INFO] [mqtt_s3_multi_clients_comm_manager.py:208:_on_message_impl] mqtt_s3.on_message: from python client.
-[FedML-Client(1) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [mqtt_s3_multi_clients_comm_manager.py:211:_on_message_impl] mqtt_s3.on_message: model params length 2
-[FedML-Client(1) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [mqtt_s3_multi_clients_comm_manager.py:182:_notify] mqtt_s3.notify: msg type = 2
-[FedML-Client(1) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [client_master_manager.py:120:handle_message_receive_model_from_server] handle_message_receive_model_from_serve$
-.
-[FedML-Client(1) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [client_master_manager.py:228:sync_process_group] sending round number to pg
-[FedML-Client(1) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [client_master_manager.py:233:sync_process_group] round number 49 broadcasted to process group
-[FedML-Client(1) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [client_master_manager.py:152:finish] Training finished for master client rank 0 in silo 0
-[FedML-Client(1) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [trainer_dist_adapter.py:133:cleanup_pg] Cleaningup process group for client 0 in silo 0
-[FedML-Client(1) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [client_manager.py:129:finish] __finish client
-[FedML-Client(1) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [mqtt_s3_multi_clients_comm_manager.py:337:stop_receive_message] mqtt_s3.stop_receive_message: stopping...
-[FedML-Client(1) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [mqtt_s3_multi_clients_comm_manager.py:157:_on_disconnect] mqtt_s3.on_disconnect: disconnection returned result
-0, user data None
-[FedML-Client(1) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [client_master_manager.py:241:run] Connection is ready!
-[FedML-Client(1) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [client_slave_manager.py:43:await_sync_process_group] prcoess 1 received round_number 49
-[FedML-Client(1) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [trainer_dist_adapter.py:133:cleanup_pg] Cleaningup process group for client 1 in silo 1
-[FedML-Client(1) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [client_slave_manager.py:32:finish] Training finsihded for slave client rank 1 in silo 1
-[FedML-Client(1) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [mqtt_s3_status_manager.py:78:_on_disconnect] mqtt_s3.on_disconnect: disconnection returned result 0, user data
-None
-(fedml_refactor) amir@lambda-server1:~/FedML/python/examples/cross_silo/mqtt_s3_fedavg_hierarchical_mnist_lr_example/custum_data_and_model$
+172.31.25.57: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:15] [INFO] [client_master_manager.py:155:handle_message_receive_model_from_server] #######training########### round_id = 49
+172.31.28.254: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:15] [INFO] [client_slave_manager.py:47:await_sync_process_group] prcoess 1 received round_number 48
+172.31.25.57: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:15] [INFO] [my_model_trainer_classification.py:44:train] Update Epoch: 0 [10/20 (50%)]     Loss: 2.306870
+172.31.28.254: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:15] [INFO] [my_model_trainer_classification.py:44:train] Update Epoch: 0 [10/20 (50%)]    Loss: 2.276260
+172.31.25.57: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:15] [INFO] [my_model_trainer_classification.py:44:train] Update Epoch: 0 [20/20 (100%)]    Loss: 2.263015
+172.31.25.57: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:15] [INFO] [my_model_trainer_classification.py:55:train] Client Index = 0  Epoch: 0        Loss: 2.284942
+172.31.25.57: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:15] [INFO] [client_manager.py:115:send_message] Sending message (type 3) to server
+172.31.25.57: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:15] [INFO] [mqtt_s3_multi_clients_comm_manager.py:244:send_message] mqtt_s3.send_message: starting...
+172.31.25.57: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:15] [INFO] [mqtt_s3_multi_clients_comm_manager.py:308:send_message] mqtt_s3.send_message: to python client.
+172.31.28.254: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:15] [INFO] [my_model_trainer_classification.py:44:train] Update Epoch: 0 [20/20 (100%)]   Loss: 2.301717
+172.31.28.254: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:15] [INFO] [my_model_trainer_classification.py:55:train] Client Index = 0 Epoch: 0        Loss: 2.288988
+172.31.28.254: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:15] [INFO] [client_slave_manager.py:40:await_sync_process_group] prcoess 1 waiting for round number
+172.31.25.57: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [mqtt_s3_multi_clients_comm_manager.py:191:_on_message_impl] --------------------------
+172.31.25.57: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [mqtt_s3_multi_clients_comm_manager.py:204:_on_message_impl] mqtt_s3.on_message: use s3 pack, s3 message key fedml_0_0_1_eecbc3ba-1ba9-4b6d-b6c6-ca9194865e31
+172.31.25.57: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [mqtt_s3_multi_clients_comm_manager.py:212:_on_message_impl] mqtt_s3.on_message: from python client.
+172.31.25.57: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [mqtt_s3_multi_clients_comm_manager.py:215:_on_message_impl] mqtt_s3.on_message: model params length 2
+172.31.25.57: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [mqtt_s3_multi_clients_comm_manager.py:186:_notify] mqtt_s3.notify: msg type = 2
+172.31.25.57: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [client_master_manager.py:132:handle_message_receive_model_from_server] handle_message_receive_model_from_server.
+172.31.25.57: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [client_master_manager.py:246:sync_process_group] sending round number to pg
+172.31.25.57: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [client_master_manager.py:253:sync_process_group] round number 49 broadcasted to process group
+172.31.25.57: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [client_master_manager.py:164:finish] Training finished for master client rank 0 in silo 0
+172.31.28.254: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [client_slave_manager.py:47:await_sync_process_group] prcoess 1 received round_number 49
+172.31.28.254: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [trainer_dist_adapter.py:137:cleanup_pg] Cleaningup process group for client 1 in silo 0
+172.31.28.254: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [client_slave_manager.py:33:finish] Training finsihded for slave client rank 1 in silo 0
+172.31.25.57: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [trainer_dist_adapter.py:137:cleanup_pg] Cleaningup process group for client 0 in silo 0
+172.31.25.57: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [client_manager.py:129:finish] __finish client
+172.31.25.57: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [mqtt_s3_multi_clients_comm_manager.py:337:stop_receive_message] mqtt_s3.stop_receive_message: stopping...
+172.31.25.57: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [mqtt_s3_multi_clients_comm_manager.py:160:_on_disconnect] mqtt_s3.on_disconnect: disconnection returned result 0, user data None
+172.31.25.57: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [client_master_manager.py:261:run] Connection is ready!
+172.31.25.57: [FedML-Client(1) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [mqtt_s3_status_manager.py:80:_on_disconnect] mqtt_s3.on_disconnect: disconnection returned result 0, user data None
 ```
 
 At the end of the 50th training round, the client2 window will see the following output:
 
 
 ```shell
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:11] [INFO] [client_master_manager.py:143:handle_message_receive_model_from_server] #######training########### round_id = 49
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:11] [INFO] [client_slave_manager.py:43:await_sync_process_group] prcoess 1 received round_number 48
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:11] [INFO] [my_model_trainer_classification.py:45:train] Update Epoch: 0 [10/20 (50%)]   Loss: 2.304126
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:11] [INFO] [my_model_trainer_classification.py:45:train] Update Epoch: 0 [10/20 (50%)]   Loss: 2.340758
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:11] [INFO] [my_model_trainer_classification.py:45:train] Update Epoch: 0 [20/20 (100%)]  Loss: 2.359885
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:11] [INFO] [my_model_trainer_classification.py:56:train] Client Index = 1        Epoch: 0        Loss: 2.332006
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:11] [INFO] [client_slave_manager.py:38:await_sync_process_group] prcoess 1 waiting for round number
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:11] [INFO] [my_model_trainer_classification.py:45:train] Update Epoch: 0 [20/20 (100%)]  Loss: 2.290508
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:11] [INFO] [my_model_trainer_classification.py:56:train] Client Index = 1        Epoch: 0        Loss: 2.315633
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:11] [INFO] [client_manager.py:115:send_message] Sending message (type 3) to server
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:11] [INFO] [mqtt_s3_multi_clients_comm_manager.py:240:send_message] mqtt_s3.send_message: starting...
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:11] [INFO] [mqtt_s3_multi_clients_comm_manager.py:294:send_message] mqtt_s3.send_message: S3+MQTT msg sent, message_key = fedml_0_2_83eed261-9759-4088-ae75-9ee402ebe09a
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:11] [INFO] [mqtt_s3_multi_clients_comm_manager.py:306:send_message] mqtt_s3.send_message: to python client.
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:15] [INFO] [mqtt_s3_multi_clients_comm_manager.py:187:_on_message_impl] --------------------------
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:15] [INFO] [mqtt_s3_multi_clients_comm_manager.py:200:_on_message_impl] mqtt_s3.on_message: use s3 pack, s3 message key fedml_0_0_1_1e1beeb9-b122-47ea-9ba5-04da32ebed7f
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:15] [INFO] [mqtt_s3_multi_clients_comm_manager.py:208:_on_message_impl] mqtt_s3.on_message: from python client.
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [mqtt_s3_multi_clients_comm_manager.py:211:_on_message_impl] mqtt_s3.on_message: model params length 2
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [mqtt_s3_multi_clients_comm_manager.py:182:_notify] mqtt_s3.notify: msg type = 2
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [client_master_manager.py:120:handle_message_receive_model_from_server] handle_message_receive_model_from_server.
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [client_master_manager.py:228:sync_process_group] sending round number to pg
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [client_master_manager.py:233:sync_process_group] round number 49 broadcasted to process group
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [client_master_manager.py:152:finish] Training finished for master client rank 0 in silo 0
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [trainer_dist_adapter.py:133:cleanup_pg] Cleaningup process group for client 0 in silo 0
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [client_manager.py:129:finish] __finish client
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [mqtt_s3_multi_clients_comm_manager.py:337:stop_receive_message] mqtt_s3.stop_receive_message: stopping...
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [mqtt_s3_multi_clients_comm_manager.py:157:_on_disconnect] mqtt_s3.on_disconnect: disconnection returned result
-0, user data None
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [client_master_manager.py:241:run] Connection is ready!
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [client_slave_manager.py:43:await_sync_process_group] prcoess 1 received round_number 49
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [trainer_dist_adapter.py:133:cleanup_pg] Cleaningup process group for client 1 in silo 1
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [client_slave_manager.py:32:finish] Training finsihded for slave client rank 1 in silo 1
-[FedML-Client(2) @device-id-1] [Sat, 07 May 2022 01:31:16] [INFO] [mqtt_s3_status_manager.py:78:_on_disconnect] mqtt_s3.on_disconnect: disconnection returned result 0, user data
-None
-...
+172.31.28.254: [FedML-Client(2) @device-id-1] [Fri, 20 May 2022 04:07:15] [INFO] [client_master_manager.py:155:handle_message_receive_model_from_server] #######training########### round_id = 49
+172.31.28.254: [FedML-Client(2) @device-id-1] [Fri, 20 May 2022 04:07:15] [INFO] [my_model_trainer_classification.py:44:train] Update Epoch: 0 [10/40 (25%)]    Loss: 2.306870
+172.31.28.254: [FedML-Client(2) @device-id-1] [Fri, 20 May 2022 04:07:15] [INFO] [my_model_trainer_classification.py:44:train] Update Epoch: 0 [20/40 (50%)]    Loss: 2.263015
+172.31.28.254: [FedML-Client(2) @device-id-1] [Fri, 20 May 2022 04:07:15] [INFO] [my_model_trainer_classification.py:44:train] Update Epoch: 0 [30/40 (75%)]    Loss: 2.271503
+172.31.28.254: [FedML-Client(2) @device-id-1] [Fri, 20 May 2022 04:07:15] [INFO] [my_model_trainer_classification.py:44:train] Update Epoch: 0 [40/40 (100%)]   Loss: 2.296894
+172.31.28.254: [FedML-Client(2) @device-id-1] [Fri, 20 May 2022 04:07:15] [INFO] [my_model_trainer_classification.py:55:train] Client Index = 1 Epoch: 0        Loss: 2.284570
+172.31.28.254: [FedML-Client(2) @device-id-1] [Fri, 20 May 2022 04:07:15] [INFO] [client_manager.py:115:send_message] Sending message (type 3) to server
+172.31.28.254: [FedML-Client(2) @device-id-1] [Fri, 20 May 2022 04:07:15] [INFO] [mqtt_s3_multi_clients_comm_manager.py:244:send_message] mqtt_s3.send_message: starting...
+172.31.28.254: [FedML-Client(2) @device-id-1] [Fri, 20 May 2022 04:07:15] [INFO] [mqtt_s3_multi_clients_comm_manager.py:296:send_message] mqtt_s3.send_message: S3+MQTT msg sent, message_key = fedml_0_2_565e48cb-d7d0-4d9d-867b-8b7e880db4c5
+172.31.28.254: [FedML-Client(2) @device-id-1] [Fri, 20 May 2022 04:07:15] [INFO] [mqtt_s3_multi_clients_comm_manager.py:308:send_message] mqtt_s3.send_message: to python client.
+172.31.28.254: [FedML-Client(2) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [mqtt_s3_multi_clients_comm_manager.py:191:_on_message_impl] --------------------------
+172.31.28.254: [FedML-Client(2) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [mqtt_s3_multi_clients_comm_manager.py:204:_on_message_impl] mqtt_s3.on_message: use s3 pack, s3 message key fedml_0_0_1_eecbc3ba-1ba9-4b6d-b6c6-ca9194865e31
+172.31.28.254: [FedML-Client(2) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [mqtt_s3_multi_clients_comm_manager.py:212:_on_message_impl] mqtt_s3.on_message: from python client.
+172.31.28.254: [FedML-Client(2) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [mqtt_s3_multi_clients_comm_manager.py:215:_on_message_impl] mqtt_s3.on_message: model params length 2
+172.31.28.254: [FedML-Client(2) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [mqtt_s3_multi_clients_comm_manager.py:186:_notify] mqtt_s3.notify: msg type = 2
+172.31.28.254: [FedML-Client(2) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [client_master_manager.py:132:handle_message_receive_model_from_server] handle_message_receive_model_from_server.
+172.31.28.254: [FedML-Client(2) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [client_master_manager.py:246:sync_process_group] sending round number to pg
+172.31.28.254: [FedML-Client(2) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [client_master_manager.py:253:sync_process_group] round number 49 broadcasted to process group
+172.31.28.254: [FedML-Client(2) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [client_master_manager.py:164:finish] Training finished for master client rank 0 in silo 0
+172.31.28.254: [FedML-Client(2) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [trainer_dist_adapter.py:137:cleanup_pg] Cleaningup process group for client 0 in silo 0
+172.31.28.254: [FedML-Client(2) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [client_manager.py:129:finish] __finish client
+172.31.28.254: [FedML-Client(2) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [mqtt_s3_multi_clients_comm_manager.py:337:stop_receive_message] mqtt_s3.stop_receive_message: stopping...
+172.31.28.254: [FedML-Client(2) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [mqtt_s3_multi_clients_comm_manager.py:160:_on_disconnect] mqtt_s3.on_disconnect: disconnection returned result 0, user data None
+172.31.28.254: [FedML-Client(2) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [client_master_manager.py:261:run] Connection is ready!
+172.31.28.254: [FedML-Client(2) @device-id-1] [Fri, 20 May 2022 04:07:16] [INFO] [mqtt_s3_status_manager.py:80:_on_disconnect] mqtt_s3.on_disconnect: disconnection returned result 0, user data None
 ```
 
 ## Five lines of APIs
