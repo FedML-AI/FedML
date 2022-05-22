@@ -124,7 +124,7 @@ class Arguments:
         
         
         if training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO:
-            if self.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
+            if hasattr(self, "scenario") and self.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
                 # Add extra configs specific to silos or server
                 if self.rank == 0:
                     extra_config_path = self.server_config_path
