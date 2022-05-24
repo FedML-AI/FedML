@@ -79,6 +79,7 @@ class FedMLServerManager(ServerManager):
 
         client_idx_in_this_round = 0
         for client_id in client_id_list_in_this_round:
+            client_id = int(client_id)
             self.send_message_init_config(
                 client_id,
                 global_model_params,
