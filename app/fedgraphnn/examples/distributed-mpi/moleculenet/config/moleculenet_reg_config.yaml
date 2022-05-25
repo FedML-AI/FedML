@@ -3,14 +3,23 @@ common_args:
   random_seed: 0
 
 data_args:
-  dataset: "mnist"
-  data_cache_dir: "../../../data/mnist"
+  dataset: "esol"
+  data_cache_dir: "./../../../data/moleculenet/"
   partition_method: "hetero"
   partition_alpha: 0.5
 
 model_args:
-  model: "lr"
-
+  model: "graphsage"
+  hidden_size: 32
+  node_embedding_dim: 32
+  graph_embedding_dim: 64
+  readout_hidden_dim: 64
+  alpha: 0.2
+  num_heads: 2
+  dropout: 0.3
+  normalize_features: False
+  normalize_adjacency: False
+  sparse_adjacency: False
 train_args:
   federated_optimizer: "FedAvg"
   client_id_list: "[]"
