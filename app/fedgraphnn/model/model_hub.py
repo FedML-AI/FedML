@@ -1,5 +1,6 @@
 import logging
 import torch_geometric
+#Model imports
 from fedgraphnn.model.moleculenet.gat_readout import GatMoleculeNet
 from fedgraphnn.model.moleculenet.gcn_readout import GcnMoleculeNet
 from fedgraphnn.model.moleculenet.sage_readout import SageMoleculeNet
@@ -12,6 +13,15 @@ from fedgraphnn.model.ego_networks.gcn import GCNNodeCLF
 from fedgraphnn.model.ego_networks.sgc import SGCNodeCLF
 from fedgraphnn.model.ego_networks.gat import GATNodeCLF
 from fedgraphnn.model.ego_networks.sage import SAGENodeCLF
+#Trainer Imports
+from fedgraphnn.trainer.moleculenet.moleculenet_classification_trainer import MoleculeNetClfTrainer 
+from fedgraphnn.trainer.moleculenet.moleculenet_regression_trainer import MoleculeNetRegTrainer 
+from fedgraphnn.trainer.ego_networks.federated_lp_trainer import FedLinkPredTrainer
+from fedgraphnn.trainer.ego_networks.federated_nc_trainer import FedNodeClfTrainer
+from fedgraphnn.trainer.recommender_system.fed_subgraph_lp_trainer import *
+from fedgraphnn.trainer.social_networks.gin_trainer import GINSocialNetworkTrainer
+from fedgraphnn.trainer.subgraph_level.fed_subgraph_lp_trainer import FedSubgraphLPTrainer
+
 
 def create(args, model_name, feat_dim, num_cats, output_dim):
     logging.info(
@@ -29,6 +39,7 @@ def create(args, model_name, feat_dim, num_cats, output_dim):
                 args.graph_embedding_dim,
                 num_cats,
             )
+            
         elif model_name == "gat":
             model = GatMoleculeNet(
                 feat_dim,
@@ -52,8 +63,13 @@ def create(args, model_name, feat_dim, num_cats, output_dim):
                 num_cats,
                 sparse_adj=args.sparse_adjacency,
             )
+           
         else:
             raise Exception("such model does not exist !")
+        if  args.dataset in ["sider", "clintox", "bbbp", "esol", "freesolv", "herg", "lipo", "pcba", "tox21", "toxcast", "muv","hiv" , "qm7" , "qm8" , "qm9"]:
+            trainer = MoleculeNetClfTrainer(model, args)
+        else:
+            trainer = MoleculeNetRegTrainer(model, args)
         logging.info("done")
     elif args.dataset in ["ciao","epinions"]:
         #Recommender Systems
@@ -67,9 +83,12 @@ def create(args, model_name, feat_dim, num_cats, output_dim):
             model = SAGELinkPred(args.feature_dim, args.hidden_size, args.node_embedding_dim)
         else:
             raise Exception("such model does not exist !")
+        trainer = FedLinkPredTrainer(model, args)
+      
     elif args.dataset in ["COLLAB","REDDIT-BINARY","REDDIT-MULTI-5K","REDDIT-MULTI-12K","IMDB-BINARY","IMDB-MULTI"]:
         #Social-networks
         model = GIN(args.feature_dim, args.hidden_size,num_cats,args.n_layers,args.dropout,args.eps)
+        trainer = GINSocialNetworkTrainer(model, args)
     elif args.dataset in ["YAGO3-10", "wn18rr", "FB15k-237"]:
         #Subgraph level
         if model_name == "rgcn":
@@ -79,6 +98,7 @@ def create(args, model_name, feat_dim, num_cats, output_dim):
             )
         else:
             raise Exception("such model does not exist !")
+        trainer = FedSubgraphLPTrainer(model, args)
     elif args.dataset in ["CS", "Physics", "cora", "citeseer", "DBLP", "PubMed"]:
         #Federated Node classification
         if model_name == "gcn":
@@ -108,7 +128,8 @@ def create(args, model_name, feat_dim, num_cats, output_dim):
         else:
             # MORE MODELS
             raise Exception("such model does not exist !")
+        trainer = FedNodeClfTrainer(model, args)
     else:
         raise Exception("such dataset does not exist !")
 
-    return model
+    return model, trainer
