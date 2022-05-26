@@ -36,6 +36,7 @@ class FedMLAggregator(object):
         self.test_data_local_dict = test_data_local_dict
         self.train_data_local_num_dict = train_data_local_num_dict
 
+        self.chosen_client_per_round = []   # the indices of chosen clients per round
         self.client_num = client_num
         self.device = device
         self.model_dict = dict()
@@ -63,7 +64,8 @@ class FedMLAggregator(object):
 
     def check_whether_all_receive(self):
         logging.debug("client_num = {}".format(self.client_num))
-        for idx in range(self.client_num):
+        for idx in self.chosen_client_per_round:
+            idx -= 1    # client idx starts from 1
             if not self.flag_client_model_uploaded_dict[idx]:
                 return False
         for idx in range(self.client_num):
@@ -75,14 +77,15 @@ class FedMLAggregator(object):
         model_list = []
         training_num = 0
 
-        for idx in range(self.client_num):
+        for idx in self.chosen_client_per_round:
+            idx -= 1
             self.model_dict[idx] = transform_list_to_tensor(self.model_dict[idx])
             model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
             training_num += self.sample_num_dict[idx]
 
         logging.info("len of self.model_dict[idx] = " + str(len(self.model_dict)))
-
-        # logging.info("################aggregate: %d" % len(model_list))
+        logging.info("################aggregate: %d" % len(model_list))
+        
         (num0, averaged_params) = model_list[0]
         for k in averaged_params.keys():
             for i in range(0, len(model_list)):
@@ -126,7 +129,8 @@ class FedMLAggregator(object):
         data_silo_index_list = np.random.choice(
             range(client_num_in_total), client_num_per_round, replace=False
         )
-        return data_silo_index_list
+        # convert to List[int]
+        return [i.item() for i in data_silo_index_list]
 
     def client_selection(
         self, round_idx, client_id_list_in_total, client_num_per_round
@@ -143,14 +147,16 @@ class FedMLAggregator(object):
             client_id_list_in_this_round: sampled real edge ID list, e.g., [64, 66]
         """
         if client_num_per_round == len(client_id_list_in_total):
-            return client_id_list_in_total
-        np.random.seed(
-            round_idx
-        )  # make sure for each comparison, we are selecting the same clients each round
-        client_id_list_in_this_round = np.random.choice(
-            client_id_list_in_total, client_num_per_round, replace=False
-        )
-        return client_id_list_in_this_round
+            self.chosen_client_per_round = copy.deepcopy(client_id_list_in_total)
+        else:
+            np.random.seed(
+                round_idx
+            )  # make sure for each comparison, we are selecting the same clients each round
+            client_id_list_in_this_round = np.random.choice(
+                client_id_list_in_total, client_num_per_round, replace=False
+            )
+            self.chosen_client_per_round = [i.item() for i in client_id_list_in_this_round]
+        return self.chosen_client_per_round
 
     def client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
         if client_num_in_total == client_num_per_round:

@@ -89,14 +89,10 @@ class FedMLClientManager(ClientManager):
         logging.info("handle_message_receive_model_from_server.")
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
-
-        model_params = transform_list_to_tensor(model_params)
-
-        self.trainer.update_model(model_params)
-        self.trainer.update_dataset(int(client_index))
-
-        if self.round_idx == self.num_rounds - 1:
-
+        
+        # call self.finish() while finshing training or receiving stop signal from serve.
+        if (self.round_idx == self.num_rounds) or \
+            (model_params == "" and int(client_index) == -1):
             # Notify MLOps with the finished message
             if hasattr(self.args, "backend") and self.args.using_mlops:
                 self.mlops_metrics.report_client_id_status(
@@ -104,9 +100,13 @@ class FedMLClientManager(ClientManager):
                     self.client_real_id,
                     MyMessage.MSG_MLOPS_CLIENT_STATUS_FINISHED,
                 )
-
             self.finish()
             return
+
+        model_params = transform_list_to_tensor(model_params)
+
+        self.trainer.update_model(model_params)
+        self.trainer.update_dataset(int(client_index))
         self.round_idx += 1
         self.__train()
 

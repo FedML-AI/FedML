@@ -67,7 +67,6 @@ class FedMLServerManager(ServerManager):
 
         client_idx_in_this_round = 0
         for client_id in client_id_list_in_this_round:
-            client_id = int(client_id)
             self.send_message_init_config(
                 client_id,
                 global_model_params,
@@ -141,6 +140,28 @@ class FedMLServerManager(ServerManager):
         b_all_received = self.aggregator.check_whether_all_receive()
         logging.info("b_all_received = " + str(b_all_received))
         if b_all_received:
+            ### self.finish() should be called after receiving all trained msg from chosen clients.
+            if self.round_idx == self.round_num:
+                # post_complete_message_to_sweep_process(self.args)
+                if hasattr(self.args, "backend") and self.args.using_mlops:
+                    self.mlops_metrics.report_server_id_status(
+                        self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_FINISHED
+                    )
+                # send ending signal to all clients.
+                for receiver_id in self.client_real_ids:
+                    self.send_message_sync_model_to_client(
+                        receiver_id,
+                        "",
+                        -1,
+                    )
+                self.finish()
+                return
+            else:
+                if hasattr(self.args, "backend") and self.args.using_mlops:
+                    self.mlops_event.log_event_started(
+                        "server.wait", event_value=str(self.round_idx)
+                    )
+
             if hasattr(self.args, "backend") and self.args.using_mlops:
                 self.mlops_event.log_event_ended(
                     "server.wait", event_value=str(self.round_idx)
@@ -199,19 +220,7 @@ class FedMLServerManager(ServerManager):
                 self.aggregated_model_url = None
 
             self.round_idx += 1
-            if self.round_idx == self.round_num:
-                # post_complete_message_to_sweep_process(self.args)
-                if hasattr(self.args, "backend") and self.args.using_mlops:
-                    self.mlops_metrics.report_server_id_status(
-                        self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_FINISHED
-                    )
-                self.finish()
-                return
-            else:
-                if hasattr(self.args, "backend") and self.args.using_mlops:
-                    self.mlops_event.log_event_started(
-                        "server.wait", event_value=str(self.round_idx)
-                    )
+            
 
     def send_message_init_config(self, receive_id, global_model_params, datasilo_index):
         message = Message(

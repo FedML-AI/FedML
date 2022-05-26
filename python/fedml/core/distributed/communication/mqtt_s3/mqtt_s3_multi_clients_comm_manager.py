@@ -94,8 +94,8 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         self._client.loop_forever()
 
     def __del__(self):
-        self._client.loop_stop()
         self._client.disconnect()
+        self._client.loop_stop()
 
     @property
     def client_id(self):
@@ -137,7 +137,10 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
             logging.info("mqtt_s3.on_connect: server subscribes")
         else:
             # client
-            real_topic = self._topic + str(0) + "_" + str(self.client_real_ids[0])
+            ### this lead to a situation that all clients only subscribe the topic `fedml_0_0_1` 
+            ### and receive the same msg from it, rather than the msg from their topic "fedml_0_0_x".
+            # real_topic = self._topic + str(0) + "_" + str(self.client_real_ids[0])     
+            real_topic = self._topic + str(0) + "_" + str(self.client_id)
             result, mid = client.subscribe(real_topic, 0)
             self._unacked_sub.append(mid)
 
@@ -191,6 +194,8 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         logging.info("--------------------------")
         json_payload = str(msg.payload, encoding="utf-8")
         payload_obj = json.loads(json_payload)
+        print(payload_obj)
+
         sender_id = payload_obj.get(Message.MSG_ARG_KEY_SENDER, "")
         receiver_id = payload_obj.get(Message.MSG_ARG_KEY_RECEIVER, "")
         s3_key_str = payload_obj.get(Message.MSG_ARG_KEY_MODEL_PARAMS, "")
@@ -278,6 +283,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                 payload[Message.MSG_ARG_KEY_MODEL_PARAMS_URL] = model_params_key_url[
                     "url"
                 ]
+                print(json.dumps(payload,indent=4))
                 self._client.publish(topic, payload=json.dumps(payload))
             else:
                 # pure MQTT
@@ -335,8 +341,8 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
 
     def stop_receive_message(self):
         logging.info("mqtt_s3.stop_receive_message: stopping...")
-        self._client.loop_stop()
         self._client.disconnect()
+        self._client.loop_stop()
 
     def set_config_from_file(self, config_file_path):
         try:
