@@ -238,6 +238,9 @@ if __name__ == "__main__":
         fedml_conf_dir = "/fedml/conf"
         fedml_conf_file = fedml_conf_dir + "/fedml.yaml"
         fedml_package_conf_dir = "/fedml/fedml-package/conf/"
+        os.system("mkdir -p " + fedml_package_local_dir)
+        os.system("mkdir -p " + fedml_conf_dir)
+        os.system("mkdir -p " + fedml_package_conf_dir)
     retrieve_and_unzip_package(
         args.package_name, args.package_url, fedml_package_local_dir
     )
