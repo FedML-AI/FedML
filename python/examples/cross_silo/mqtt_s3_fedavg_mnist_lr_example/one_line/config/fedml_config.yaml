@@ -3,6 +3,7 @@ common_args:
   scenario: "horizontal"
   using_mlops: false
   random_seed: 0
+  config_version: test
 
 environment_args:
   bootstrap: config/bootstrap.sh

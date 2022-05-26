@@ -222,7 +222,7 @@ def mlops_build(type, source_folder, entry_point, config_folder, dest_folder):
         click.echo("You have finished all building process. ")
         click.echo(
             "Now you may use "
-            + os.path.join(dest_folder, "client-package.zip")
+            + os.path.join(dest_folder, "dist-packages", "client-package.zip")
             + " to start your federated "
             "learning run."
         )
@@ -243,7 +243,7 @@ def mlops_build(type, source_folder, entry_point, config_folder, dest_folder):
         click.echo("You have finished all building process. ")
         click.echo(
             "Now you may use "
-            + os.path.join(dest_folder, "server-package.zip")
+            + os.path.join(dest_folder, "dist-packages", "server-package.zip")
             + " to start your federated "
             "learning run."
         )
