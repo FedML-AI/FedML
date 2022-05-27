@@ -479,3 +479,55 @@ def load_partition_data_distributed(process_id, path, client_number, uniform=Tru
         val_data_local,
         test_data_local,
     )
+
+
+def load_moleculenet(args, dataset_name):
+    num_cats, feat_dim = 0, 0
+    if dataset_name not in ["sider", "clintox", "bbbp", "esol", "freesolv", "herg", "lipo", "pcba", "tox21", "toxcast", "muv","hiv" , "qm7" , "qm8" , "qm9"]:
+        raise Exception("no such dataset!")
+
+    compact = args.model == "graphsage"
+
+    _, feature_matrices, labels = get_data(args.data_dir + args.dataset)
+    unif = True if args.partition_method == "homo" else False
+
+    if args.dataset == "pcba":
+        args.metric = "prc-auc"
+    else:
+        args.metric = "roc-auc"
+
+    (
+        train_data_num,
+        val_data_num,
+        test_data_num,
+        train_data_global,
+        val_data_global,
+        test_data_global,
+        data_local_num_dict,
+        train_data_local_dict,
+        val_data_local_dict,
+        test_data_local_dict,
+    ) = load_partition_data(
+        args,
+        args.data_dir + args.dataset,
+        args.client_num_in_total,
+        uniform=unif,
+        compact=compact,
+        normalize_features=args.normalize_features,
+        normalize_adj=args.normalize_adjacency,
+    )
+
+    dataset = [
+        train_data_num,
+        val_data_num,
+        test_data_num,
+        train_data_global,
+        val_data_global,
+        test_data_global,
+        data_local_num_dict,
+        train_data_local_dict,
+        val_data_local_dict,
+        test_data_local_dict,
+    ]
+
+    return dataset, feature_matrices[0].shape[1], labels[0].shape[0]
