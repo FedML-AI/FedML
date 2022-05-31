@@ -2,28 +2,10 @@ import os
 
 import numpy as np
 import torch
-from fedgraphnn.data.moleculenet.data_loader import *
-from fedml.data.FederatedEMNIST.data_loader import load_partition_data_federated_emnist
-from fedml.data.ImageNet.data_loader import load_partition_data_ImageNet
-from fedml.data.Landmarks.data_loader import load_partition_data_landmarks
-from fedml.data.MNIST.data_loader import load_partition_data_mnist
-from fedml.data.cifar10.data_loader import load_partition_data_cifar10
-from fedml.data.cifar100.data_loader import load_partition_data_cifar100
-from fedml.data.cinic10.data_loader import load_partition_data_cinic10
-from fedml.data.fed_cifar100.data_loader import load_partition_data_federated_cifar100
-from fedml.data.fed_shakespeare.data_loader import (
-    load_partition_data_federated_shakespeare,
-)
-from fedml.data.shakespeare.data_loader import load_partition_data_shakespeare
-from fedml.data.stackoverflow_lr.data_loader import (
-    load_partition_data_federated_stackoverflow_lr,
-)
-from fedml.data.stackoverflow_nwp.data_loader import (
-    load_partition_data_federated_stackoverflow_nwp,
-)
-
-from .MNIST.data_loader import download_mnist
-from .edge_case_examples.data_loader import load_poisoned_dataset
+from fedgraphnn.data.moleculenet.data_loader import load_moleculenet
+from fedgraphnn.data.ego_networks import *
+from fedgraphnn.data.recommender_systems import load_recsys_data
+from fedgraphnn.data.subgraphs import load_subgraph_data
 import logging
 
 
@@ -56,224 +38,35 @@ def load_synthetic_data(args):
         args.batch_size = 128  # temporary batch size
     else:
         full_batch = False
+    
 
-    if dataset_name == "mnist":
-        download_mnist(args.data_cache_dir)
+    if dataset_name in ["sider", "clintox", "bbbp", "esol", "freesolv", "herg", "lipo", "pcba", "tox21", "toxcast", "muv","hiv" , "qm7" , "qm8" , "qm9"]:
+        #MoleculeNet datasets
         logging.info("load_data. dataset_name = %s" % dataset_name)
-        (
-            client_num,
-            train_data_num,
-            test_data_num,
-            train_data_global,
-            test_data_global,
-            train_data_local_num_dict,
-            train_data_local_dict,
-            test_data_local_dict,
-            class_num,
-        ) = load_partition_data_mnist(
-            args.batch_size,
-            train_path=args.data_cache_dir + "/MNIST/train",
-            test_path=args.data_cache_dir + "/MNIST/test",
-        )
-        """
-        For shallow NN or linear models, 
-        we uniformly sample a fraction of clients each round (as the original FedAvg paper)
-        """
-        args.client_num_in_total = client_num
-
-    elif dataset_name == "femnist":
+        dataset, num_cats, feat_dim = load_moleculenet(args, dataset_name)
+        return dataset, num_cats, feat_dim
+    elif dataset_name in ["ciao","epinions"]:
+        #Recommender Systems
         logging.info("load_data. dataset_name = %s" % dataset_name)
-        (
-            client_num,
-            train_data_num,
-            test_data_num,
-            train_data_global,
-            test_data_global,
-            train_data_local_num_dict,
-            train_data_local_dict,
-            test_data_local_dict,
-            class_num,
-        ) = load_partition_data_federated_emnist(args.dataset, args.data_cache_dir)
-        args.client_num_in_total = client_num
-
-    elif dataset_name == "shakespeare":
+        dataset, num_cats, feat_dim = load_recsys_data(args, dataset_name)
+        return dataset, num_cats, feat_dim
+    elif dataset_name in ["COLLAB","REDDIT-BINARY","REDDIT-MULTI-5K","REDDIT-MULTI-12K","IMDB-BINARY","IMDB-MULTI"]:
+        #Social-networks
         logging.info("load_data. dataset_name = %s" % dataset_name)
-        (
-            client_num,
-            train_data_num,
-            test_data_num,
-            train_data_global,
-            test_data_global,
-            train_data_local_num_dict,
-            train_data_local_dict,
-            test_data_local_dict,
-            class_num,
-        ) = load_partition_data_shakespeare(args.batch_size)
-        args.client_num_in_total = client_num
-
-    elif dataset_name == "fed_shakespeare":
+        return None
+    elif dataset_name in ["YAGO3-10", "wn18rr", "FB15k-237"]:
+        #Subgraph level
         logging.info("load_data. dataset_name = %s" % dataset_name)
-        (
-            client_num,
-            train_data_num,
-            test_data_num,
-            train_data_global,
-            test_data_global,
-            train_data_local_num_dict,
-            train_data_local_dict,
-            test_data_local_dict,
-            class_num,
-        ) = load_partition_data_federated_shakespeare(args.dataset, args.data_cache_dir)
-        args.client_num_in_total = client_num
-
-    elif dataset_name == "fed_cifar100":
+        dataset = load_subgraph_data(args, dataset_name)
+        return dataset, _ , _
+    elif dataset_name in ["CS", "Physics", "cora", "citeseer", "DBLP", "PubMed"]:
+        #Federated Node classification
         logging.info("load_data. dataset_name = %s" % dataset_name)
-        (
-            client_num,
-            train_data_num,
-            test_data_num,
-            train_data_global,
-            test_data_global,
-            train_data_local_num_dict,
-            train_data_local_dict,
-            test_data_local_dict,
-            class_num,
-        ) = load_partition_data_federated_cifar100(args.dataset, args.data_cache_dir)
-        args.client_num_in_total = client_num
-    elif dataset_name == "stackoverflow_lr":
-        logging.info("load_data. dataset_name = %s" % dataset_name)
-        (
-            client_num,
-            train_data_num,
-            test_data_num,
-            train_data_global,
-            test_data_global,
-            train_data_local_num_dict,
-            train_data_local_dict,
-            test_data_local_dict,
-            class_num,
-        ) = load_partition_data_federated_stackoverflow_lr(
-            args.dataset, args.data_cache_dir
-        )
-        args.client_num_in_total = client_num
-    elif dataset_name == "stackoverflow_nwp":
-        logging.info("load_data. dataset_name = %s" % dataset_name)
-        (
-            client_num,
-            train_data_num,
-            test_data_num,
-            train_data_global,
-            test_data_global,
-            train_data_local_num_dict,
-            train_data_local_dict,
-            test_data_local_dict,
-            class_num,
-        ) = load_partition_data_federated_stackoverflow_nwp(
-            args.dataset, args.data_cache_dir
-        )
-        args.client_num_in_total = client_num
-
-    elif dataset_name == "ILSVRC2012":
-        logging.info("load_data. dataset_name = %s" % dataset_name)
-        (
-            train_data_num,
-            test_data_num,
-            train_data_global,
-            test_data_global,
-            train_data_local_num_dict,
-            train_data_local_dict,
-            test_data_local_dict,
-            class_num,
-        ) = load_partition_data_ImageNet(
-            dataset=dataset_name,
-            data_dir=args.data_cache_dir,
-            partition_method=None,
-            partition_alpha=None,
-            client_number=args.client_num_in_total,
-            batch_size=args.batch_size,
-        )
-
-    elif dataset_name == "gld23k":
-        logging.info("load_data. dataset_name = %s" % dataset_name)
-        args.client_num_in_total = 233
-        fed_train_map_file = os.path.join(
-            args.data_cache_dir, "mini_gld_train_split.csv"
-        )
-        fed_test_map_file = os.path.join(args.data_cache_dir, "mini_gld_test.csv")
-
-        (
-            train_data_num,
-            test_data_num,
-            train_data_global,
-            test_data_global,
-            train_data_local_num_dict,
-            train_data_local_dict,
-            test_data_local_dict,
-            class_num,
-        ) = load_partition_data_landmarks(
-            dataset=dataset_name,
-            data_dir=args.data_cache_dir,
-            fed_train_map_file=fed_train_map_file,
-            fed_test_map_file=fed_test_map_file,
-            partition_method=None,
-            partition_alpha=None,
-            client_number=args.client_num_in_total,
-            batch_size=args.batch_size,
-        )
-
-    elif dataset_name == "gld160k":
-        logging.info("load_data. dataset_name = %s" % dataset_name)
-        args.client_num_in_total = 1262
-        fed_train_map_file = os.path.join(args.data_cache_dir, "federated_train.csv")
-        fed_test_map_file = os.path.join(args.data_cache_dir, "test.csv")
-
-        (
-            train_data_num,
-            test_data_num,
-            train_data_global,
-            test_data_global,
-            train_data_local_num_dict,
-            train_data_local_dict,
-            test_data_local_dict,
-            class_num,
-        ) = load_partition_data_landmarks(
-            dataset=dataset_name,
-            data_dir=args.data_cache_dir,
-            fed_train_map_file=fed_train_map_file,
-            fed_test_map_file=fed_test_map_file,
-            partition_method=None,
-            partition_alpha=None,
-            client_number=args.client_num_in_total,
-            batch_size=args.batch_size,
-        )
-
+        return None
     else:
-        if dataset_name == "cifar10":
-            data_loader = load_partition_data_cifar10
-        elif dataset_name == "cifar100":
-            data_loader = load_partition_data_cifar100
-        elif dataset_name == "cinic10":
-            data_loader = load_partition_data_cinic10
-        else:
-            data_loader = load_partition_data_cifar10
-        (
-            train_data_num,
-            test_data_num,
-            train_data_global,
-            test_data_global,
-            train_data_local_num_dict,
-            train_data_local_dict,
-            test_data_local_dict,
-            class_num,
-        ) = data_loader(
-            args.dataset,
-            args.data_cache_dir,
-            args.partition_method,
-            args.partition_alpha,
-            args.client_num_in_total,
-            args.batch_size,
-        )
+        return None
 
+    
     if centralized:
         train_data_local_num_dict = {
             0: sum(
@@ -321,7 +114,3 @@ def load_synthetic_data(args):
         class_num,
     ]
     return dataset, class_num
-
-
-def load_poisoned_dataset_from_edge_case_examples(args):
-    return load_poisoned_dataset(args=args)
