@@ -1,4 +1,6 @@
+import logging
 import os
+
 import requests
 
 
@@ -26,8 +28,11 @@ class MLOpsConfigs(Singleton):
 
     def fetch_configs(self):
         url = "https://open.fedml.ai/fedmlOpsServer/configs/fetch"
-        config_version = 'release'
-        if hasattr(self.args, "config_version") and self.args.config_version is not None:
+        config_version = "release"
+        if (
+            hasattr(self.args, "config_version")
+            and self.args.config_version is not None
+        ):
             # Setup config url based on selected version.
             config_version = self.args.config_version
             if self.args.config_version == "release":
@@ -39,14 +44,21 @@ class MLOpsConfigs(Singleton):
             elif self.args.config_version == "local":
                 url = "http://localhost:9000/fedmlOpsServer/configs/fetch"
 
+        logging.info(url)
         json_params = {"config_name": ["mqtt_config", "s3_config"]}
         if str(url).startswith("https://"):
             cur_source_dir = os.path.dirname(__file__)
-            cert_path = os.path.join(cur_source_dir, "ssl", "open-" + config_version + ".fedml.ai_bundle.crt")
+            cert_path = os.path.join(
+                cur_source_dir, "ssl", "open-" + config_version + ".fedml.ai_bundle.crt"
+            )
             requests.session().verify = cert_path
-            response = requests.post(url, json=json_params, verify=True, headers={'Connection': 'close'})
+            response = requests.post(
+                url, json=json_params, verify=True, headers={"Connection": "close"}
+            )
         else:
-            response = requests.post(url, json=json_params, headers={'Connection': 'close'})
+            response = requests.post(
+                url, json=json_params, headers={"Connection": "close"}
+            )
         status_code = response.json().get("code")
         if status_code == "SUCCESS":
             mqtt_config = response.json().get("data").get("mqtt_config")

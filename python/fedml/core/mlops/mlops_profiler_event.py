@@ -3,7 +3,7 @@ import threading
 import time
 import logging
 
-from ..core.distributed.communication.mqtt_s3.mqtt_s3_status_manager import (
+from ..distributed.communication.mqtt_s3.mqtt_s3_status_manager import (
     MqttS3StatusManager,
 )
 
