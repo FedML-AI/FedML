@@ -115,7 +115,7 @@ def _subgraphing(g, partion, mapping_item2category):
         if len(nodes) < 2:
             continue
         graph = nx.subgraph(g, nodes)
-        graphs.append(from_networkx(grpah))
+        graphs.append(from_networkx(graph))
     return graphs
 
 
@@ -285,3 +285,45 @@ def load_partition_data(args, path, client_number):
         test_data_local_dict,
         feature_dim,
     )
+
+def load_recsys_data(args, dataset_name):
+    if args.dataset not in ["ciao", "epinions"]:
+        raise Exception("no such dataset!")
+
+    args.pred_task = "link_prediction"
+
+    args.metric = "MAE"
+
+    if args.model == "gcn":
+        args.normalize_features = True
+        args.normalize_adjacency = True
+
+    (
+        train_data_num,
+        val_data_num,
+        test_data_num,
+        train_data_global,
+        val_data_global,
+        test_data_global,
+        data_local_num_dict,
+        train_data_local_dict,
+        val_data_local_dict,
+        test_data_local_dict,
+        feature_dim,
+    ) = load_partition_data(args, args.data_dir, args.client_num_in_total)
+
+    dataset = [
+        train_data_num,
+        val_data_num,
+        test_data_num,
+        train_data_global,
+        val_data_global,
+        test_data_global,
+        data_local_num_dict,
+        train_data_local_dict,
+        val_data_local_dict,
+        test_data_local_dict,
+        feature_dim,
+    ]
+
+    return dataset
