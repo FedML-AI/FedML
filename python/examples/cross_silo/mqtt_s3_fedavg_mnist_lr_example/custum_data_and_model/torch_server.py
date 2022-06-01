@@ -23,8 +23,8 @@ def load_data(args):
         class_num,
     ) = load_partition_data_mnist(
         args.batch_size,
-        train_path=args.data_cache_dir + "MNIST/train",
-        test_path=args.data_cache_dir + "MNIST/test",
+        train_path=args.data_cache_dir + "/MNIST/train",
+        test_path=args.data_cache_dir + "/MNIST/test",
     )
     """
     For shallow NN or linear models, 

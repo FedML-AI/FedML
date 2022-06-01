@@ -20,7 +20,7 @@ from .cross_silo import Client as ClientCrossSilo
 from .cross_silo import Server as ServerCrossSilo
 from .cross_silo.hierarchical import Client as HierarchicalClientCrossSilo
 from .cross_silo.hierarchical import Server as HierarchicalServerCrossSilo
-from .mlops import MLOpsRuntimeLog
+from .core.mlops import MLOpsRuntimeLog
 from .simulation.simulator import SimulatorMPI, SimulatorSingleProcess, SimulatorNCCL
 
 _global_training_type = None
