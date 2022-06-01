@@ -6,9 +6,13 @@ echo "conda set ssl_verify"
 
 conda clean -i
 
-rm ~/.condarc
+conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/msys2/
 
-conda config --set show_channel_urls true
+conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge/
+
+conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/
+
+conda config --set show_channel_urls yes
 
 conda config --set ssl_verify false
 
