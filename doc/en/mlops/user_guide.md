@@ -123,9 +123,9 @@ The following script uses `examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/o
 ```shell
 cd python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line
 
-SOURCE=examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line/client
+SOURCE=client
 ENTRY=torch_client.py
-CONFIG=examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line/config
+CONFIG=config
 DEST=./mlops
 fedml build -t client -sf $SOURCE -ep $ENTRY -cf $CONFIG -df $DEST
 ```
@@ -150,9 +150,9 @@ Now you may use ./mlops/client-package.zip to start your federated learning run.
 
 - Build the deployable package for the server
 ```shell
-SOURCE=examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line/server
+SOURCE=server
 ENTRY=torch_server.py
-CONFIG=examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line/config
+CONFIG=config
 DEST=./mlops
 fedml build -t server -sf $SOURCE -ep $ENTRY -cf $CONFIG -df $DEST
 ```
