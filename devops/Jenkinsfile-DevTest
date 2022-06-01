@@ -63,7 +63,7 @@ pipeline {
       }
       steps {
         container('base') {
-          sh 'cd ./devops;chmod a+x ./build.sh;./build.sh'
+          sh 'echo "building..."'
         }
       }
     }
@@ -74,7 +74,7 @@ pipeline {
       }
       steps {
         container('base') {
-          sh 'cd ./devops;chmod a+x ./build.sh;./build.sh'
+          sh 'echo "building..."'
         }
       }
     }
