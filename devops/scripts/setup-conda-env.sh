@@ -6,13 +6,11 @@ echo "conda set ssl_verify"
 
 cat /root/.condarc
 
-conda remove certifi
-conda install certifi
-conda update --all
+conda config --set ssl_verify false
+
+conda token set --no-ssl-verify `conda install conda-token -n root`
 
 conda info
-
-conda update conda
 
 conda_base_dir=`conda info |grep  'base environment' |awk -F':' '{print $2}' |awk -F'(' '{print $1}' |awk -F' ' '{print $1}'`
 conda_env_init="${conda_base_dir}/etc/profile.d/conda.sh"
