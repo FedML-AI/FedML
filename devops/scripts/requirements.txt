@@ -1,0 +1,4 @@
+protobuf
+grpcio
+grpcio-tools
+loguru
