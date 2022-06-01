@@ -6,6 +6,10 @@ echo "conda set ssl_verify"
 
 cat /root/.condarc
 
+conda remove certifi
+conda install certifi
+conda update --all
+
 conda info
 
 conda update conda
