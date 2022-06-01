@@ -5,10 +5,10 @@ from .message_define import MyMessage
 from .utils import write_tensor_dict_to_mnn
 from ...core.distributed.communication.message import Message
 from ...core.distributed.server.server_manager import ServerManager
-from ...mlops import MLOpsMetrics, MLOpsProfilerEvent
+from ...core.mlops import MLOpsMetrics, MLOpsProfilerEvent
 import logging
 
-from ...mlops.mlops_configs import MLOpsConfigs
+from ...core.mlops.mlops_configs import MLOpsConfigs
 
 
 class FedMLServerManager(ServerManager):
@@ -23,10 +23,6 @@ class FedMLServerManager(ServerManager):
         is_preprocessed=False,
         preprocessed_client_lists=None,
     ):
-        if backend == "MQTT_S3_MNN":
-            mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
-            args.mqtt_config_path = mqtt_config
-            args.s3_config_path = s3_config
         super().__init__(args, comm, rank, size, backend)
         self.args = args
         self.aggregator = aggregator
