@@ -14,6 +14,7 @@ from ..communication.mqtt_s3.mqtt_s3_status_manager import MqttS3StatusManager
 from ..communication.mqtt_s3_mnn.mqtt_s3_comm_manager import MqttS3MNNCommManager
 from ..communication.observer import Observer
 from ..communication.trpc.trpc_comm_manager import TRPCCommManager
+from ...mlops.mlops_configs import MLOpsConfigs
 
 
 class ClientManager(Observer):
@@ -35,6 +36,9 @@ class ClientManager(Observer):
                 HOST, PORT, client_id=rank, client_num=size - 1
             )
         elif backend == "MQTT_S3":
+            mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
+            args.mqtt_config_path = mqtt_config
+            args.s3_config_path = s3_config
             self.com_manager = MqttS3MultiClientsCommManager(
                 args.mqtt_config_path,
                 args.s3_config_path,
@@ -48,6 +52,9 @@ class ClientManager(Observer):
                 args.mqtt_config_path, args.s3_config_path, topic=str(args.run_id)
             )
         elif backend == "MQTT_S3_MNN":
+            mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
+            args.mqtt_config_path = mqtt_config
+            args.s3_config_path = s3_config
             self.com_manager = MqttS3MNNCommManager(
                 args.mqtt_config_path,
                 args.s3_config_path,

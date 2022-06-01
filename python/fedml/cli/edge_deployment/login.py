@@ -23,7 +23,7 @@ import yaml
 from fedml.cli.edge_deployment.mqtt_manager import MqttManager
 from fedml.cli.edge_deployment.yaml_utils import load_yaml_config
 
-from fedml.mlops import MLOpsMetrics
+from fedml.core.mlops import MLOpsMetrics
 
 import click
 
