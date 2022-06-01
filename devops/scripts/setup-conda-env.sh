@@ -6,6 +6,8 @@ echo "conda set ssl_verify"
 
 cat /root/.condarc
 
+source /root/.condarc
+
 conda update conda
 
 conda_base_dir=`conda info |grep  'base environment' |awk -F':' '{print $2}' |awk -F'(' '{print $1}' |awk -F' ' '{print $1}'`
