@@ -39,10 +39,10 @@ from .message_define import MyMessage
 
 # from .utils import transform_list_to_tensor
 from ...core.distributed.communication.message import Message
-from ...mlops import MLOpsMetrics, MLOpsProfilerEvent
+from ...core.mlops import MLOpsMetrics, MLOpsProfilerEvent
 import torch.distributed as dist
 
-from ...mlops.mlops_configs import MLOpsConfigs
+from ...core.mlops.mlops_configs import MLOpsConfigs
 
 
 class ClientMasterManager:
@@ -51,10 +51,6 @@ class ClientMasterManager:
     ):
         self.trainer_dist_adapter = trainer_dist_adapter
         self.args = args
-        if hasattr(self.args, "backend") and self.args.backend == "MQTT_S3":
-            mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
-            args.mqtt_config_path = mqtt_config
-            args.s3_config_path = s3_config
         self.communication_manager = CommunicationManager(args, comm, rank, size, backend)
         self.num_rounds = args.comm_round
         self.round_idx = 0

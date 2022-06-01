@@ -1,0 +1,21 @@
+ARG VERSION=release
+ARG IS_BUILDING_GPU_IMAGE=0
+ARG BASE_IMAGE=continuumio/miniconda3:4.7.12
+FROM ${BASE_IMAGE}
+ADD ./devops/scripts/requirements.txt ./
+ADD ./devops/scripts/setup-conda-env.sh ./
+RUN chmod a+x ./setup-conda-env.sh
+RUN bash ./setup-conda-env.sh ${IS_BUILDING_GPU_IMAGE}
+RUN pip install --upgrade pip
+RUN pip3 uninstall fedml
+RUN pip3 install --upgrade fedml
+RUN pip3 install -r ./requirements.txt
+COPY ./devops/fedml/conf/fedml.yaml ./fedml/conf/fedml.yaml
+COPY ./devops/fedml/main.py ./fedml/main.py
+WORKDIR ./fedml
+
+ENV MODE=normal FEDML_VERSION=${VERSION} \
+    FEDML_PACKAGE_NAME=package FEDML_PACKAGE_URL=s3_url
+
+CMD python ./main.py --mode=${MODE} --version={FEDML_VERSION} \
+    --package_name=${FEDML_PACKAGE_NAME} --package_url=${FEDML_PACKAGE_URL}
