@@ -1,6 +1,6 @@
 ARG VERSION=dev
 ARG IS_BUILDING_GPU_IMAGE=0
-ARG BASE_IMAGE=continuumio/miniconda3:4.7.12
+ARG BASE_IMAGE=continuumio/miniconda3:4.11.0
 FROM ${BASE_IMAGE}
 ADD ./devops/scripts/requirements.txt ./
 ADD ./devops/scripts/setup-conda-env.sh ./
