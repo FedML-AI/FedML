@@ -6,8 +6,7 @@ ADD ./devops/scripts/requirements.txt ./
 ADD ./devops/scripts/setup-conda-env.sh ./
 ADD ./devops/scripts/.condarc /root/
 RUN chmod a+x ./setup-conda-env.sh
-RUN conda create -y -n fedml-pip python=3.7.4
-RUN ./setup-conda-env.sh ${IS_BUILDING_GPU_IMAGE}
+RUN bash ./setup-conda-env.sh ${IS_BUILDING_GPU_IMAGE}
 RUN pip install --upgrade pip
 RUN pip3 uninstall fedml
 RUN pip3 install fedml
