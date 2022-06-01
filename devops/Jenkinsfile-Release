@@ -9,6 +9,7 @@ pipeline {
         GITHUB_CREDENTIAL_ID = 'github-id'
         AWS_IAM_CREDENTIAL_ID_PRODUCTION = 'aws-iam-id-release'
         AWS_ECR_CREDENTIAL_ID_PRODUCTION = 'aws-ecr-id-release'
+        FEDML_PIP_CREDENTIAL_ID_PRODUCTION = 'fedml-pip-upload-id'
 
         REGISTRY_PRODUCTION = 'public.ecr.aws'
         HTTPS_REGISTRY_PRODUCTION = 'https://public.ecr.aws'
@@ -46,7 +47,7 @@ pipeline {
       }
       steps {
         container('base') {
-          withCredentials([usernamePassword(passwordVariable : 'FEDML_PIP_PASSWORD' ,usernameVariable : 'FEDML_PIP_USER' ,credentialsId : "$FEDML_PIP_CREDENTIALS_PRODUCTION" ,)]) {
+          withCredentials([usernamePassword(passwordVariable : 'FEDML_PIP_PASSWORD' ,usernameVariable : 'FEDML_PIP_USER' ,credentialsId : "$FEDML_PIP_CREDENTIAL_ID_PRODUCTION" ,)]) {
             sh 'pip install twine'
             sh 'python setup.py sdist bdist_wheel'
             sh 'twine check dist/*'
