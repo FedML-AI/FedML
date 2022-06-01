@@ -6,6 +6,8 @@ echo "conda set ssl_verify"
 
 conda config --set ssl_verify false
 
+conda update conda
+
 conda_base_dir=`conda info |grep  'base environment' |awk -F':' '{print $2}' |awk -F'(' '{print $1}' |awk -F' ' '{print $1}'`
 conda_env_init="${conda_base_dir}/etc/profile.d/conda.sh"
 source ${conda_env_init}
