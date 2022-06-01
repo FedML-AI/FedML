@@ -4,6 +4,12 @@ is_building_gpu_image=$1
 
 echo "conda set ssl_verify"
 
+conda clean -i
+
+rm ~/.condarc
+
+conda config --set show_channel_urls true
+
 conda config --set ssl_verify false
 
 conda update conda
