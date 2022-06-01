@@ -4,10 +4,10 @@ import time
 from .message_define import MyMessage
 from ...core.distributed.communication.message import Message
 from ...core.distributed.server.server_manager import ServerManager
-from ...mlops import MLOpsProfilerEvent, MLOpsMetrics
+from ...core.mlops import MLOpsProfilerEvent, MLOpsMetrics
 import logging
 
-from ...mlops.mlops_configs import MLOpsConfigs
+from ...core.mlops.mlops_configs import MLOpsConfigs
 
 
 class FedMLServerManager(ServerManager):
@@ -22,10 +22,6 @@ class FedMLServerManager(ServerManager):
         is_preprocessed=False,
         preprocessed_client_lists=None,
     ):
-        if backend == "MQTT_S3":
-            mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
-            args.mqtt_config_path = mqtt_config
-            args.s3_config_path = s3_config
         super().__init__(args, comm, client_rank, client_num, backend)
         self.args = args
         self.aggregator_dist_adapter = aggregator_dist_adapter
