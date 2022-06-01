@@ -6,7 +6,7 @@ echo "conda set ssl_verify"
 
 cat /root/.condarc
 
-source /root/.condarc
+conda info
 
 conda update conda
 
