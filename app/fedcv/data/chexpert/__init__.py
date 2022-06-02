@@ -1,2 +1,2 @@
-from .dataset import CheXpertSmall
-from .dataloader import *
+from .dataset import CheXpert
+from .data_loader import *

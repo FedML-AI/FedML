@@ -5,8 +5,8 @@ import torch
 import torch.utils.data as data
 import torchvision.transforms as transforms
 
-from .datasets import ImageNet
-from .datasets import ImageNet_truncated
+from .dataset import ImageNet
+from .dataset import ImageNet_truncated
 
 logging.basicConfig()
 logger = logging.getLogger()

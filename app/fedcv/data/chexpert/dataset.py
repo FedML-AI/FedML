@@ -6,8 +6,8 @@ from torch.utils.data import Dataset
 import torchvision.transforms as transforms
 
 
-class CheXpertSmall(Dataset):
-    download_url = "http://download.cs.stanford.edu/deep/CheXpert-v1.0-small.zip"
+class CheXpert(Dataset):
+    # download_url = "http://download.cs.stanford.edu/deep/CheXpert-v1.0-small.zip"
     label_header = [
         "No Finding",
         "Enlarged Cardiomediastinum",
@@ -26,7 +26,7 @@ class CheXpertSmall(Dataset):
     ]
 
     def __init__(
-        self, data_dir, label_dir=None, dataidxs=None, train=True, transform=None, download=False, policy="zeros"
+        self, data_dir=None, label_dir=None, dataidxs=None, train=True, transform=None, download=False, policy="zeros"
     ):
         """
         Args:

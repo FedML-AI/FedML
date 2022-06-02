@@ -7,7 +7,7 @@ from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
 from torch.utils.data.distributed import DistributedSampler
 
-from .chexpert_dataset import CheXpertSmall
+from .dataset import CheXpert
 
 
 def _get_mean_and_std(dataset: Dataset):
@@ -87,7 +87,7 @@ def get_dataloader_test(dataset, datadir, train_bs, test_bs, dataidxs_train, dat
 
 
 def get_dataloader_chexpert(datadir, train_bs, test_bs, dataidxs=None, policy="zeros"):
-    dl_obj = CheXpertSmall
+    dl_obj = CheXpert
 
     transform_train, transform_test = _data_transforms_chexpert()
 
@@ -129,7 +129,7 @@ def get_dataloader_chexpert(datadir, train_bs, test_bs, dataidxs=None, policy="z
 
 
 def get_dataloader_test_chexpert(datadir, train_bs, test_bs, dataidxs_train=None, dataidxs_test=None, policy="zeros"):
-    dl_obj = CheXpertSmall
+    dl_obj = CheXpert
 
     transform_train, transform_test = _data_transforms_chexpert()
 
@@ -180,8 +180,8 @@ def distributed_centralized_chexpert_loader(dataset, data_dir, world_size, rank,
     test_bs = batch_size
 
     transform_train, transform_test = _data_transforms_chexpert()
-    train_dataset = CheXpertSmall(data_dir=data_dir, dataidxs=None, train=True, transform=transform_train)
-    test_dataset = CheXpertSmall(data_dir=data_dir, dataidxs=None, train=False, transform=transform_test)
+    train_dataset = CheXpert(data_dir=data_dir, dataidxs=None, train=True, transform=transform_train)
+    test_dataset = CheXpert(data_dir=data_dir, dataidxs=None, train=False, transform=transform_test)
 
     train_sam = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank)
     test_sam = DistributedSampler(test_dataset, num_replicas=world_size, rank=rank)
@@ -219,14 +219,14 @@ def load_partition_data_chexpert(
 ):
     transform_train, transform_test = _data_transforms_chexpert()
 
-    train_dataset = CheXpertSmall(
+    train_dataset = CheXpert(
         data_dir=data_dir,
         dataidxs=None,
         train=True,
         transform=transform_train,
         policy=policy,
     )
-    test_dataset = CheXpertSmall(data_dir=data_dir, dataidxs=None, train=False, transform=transform_test, policy=policy)
+    test_dataset = CheXpert(data_dir=data_dir, dataidxs=None, train=False, transform=transform_test, policy=policy)
 
     # get local dataset
     if partition_method == "random":
@@ -304,7 +304,7 @@ def load_partition_data_chexpert(
 
 if __name__ == "__main__":
     data_path = os.path.join("D:\\", "dataset", "CheXpert", "CheXpert-v1.0-small")
-    data = CheXpertSmall(data_dir=data_path, transform=transforms.ToTensor())
+    data = CheXpert(data_dir=data_path, transform=transforms.ToTensor())
     print(len(data))
     print(data[0][0])
     print(data[0][1])
