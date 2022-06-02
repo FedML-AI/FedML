@@ -40,15 +40,13 @@ def mlops_version():
 @click.option(
     "--client",
     "-c",
-    type=bool,
-    default="false",
+    default=None, is_flag=True,
     help="login as the FedML client.",
 )
 @click.option(
     "--server",
     "-s",
-    type=bool,
-    default="false",
+    default=None, is_flag=True,
     help="login as the FedML server.",
 )
 def mlops_login(userid, version, client, server):
