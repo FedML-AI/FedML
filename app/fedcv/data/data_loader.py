@@ -4,6 +4,7 @@ import numpy as np
 import torch
 from fedcv.data.chexpert.data_loader import load_partition_data_chexpert
 from fedcv.data.imagenet.data_loader import load_partition_data_ImageNet
+from fedcv.data.cityscapes.data_loader import load_partition_data_cityscapes
 import logging
 
 
@@ -63,7 +64,34 @@ def load_synthetic_data(args):
             train_data_local_dict,
             test_data_local_dict,
             class_num,
-        ) = load_partition_data_ImageNet(args, centralized=centralized, full_batch=full_batch)
+        ) = load_partition_data_ImageNet(
+            dataset=dataset_name,
+            data_dir=args.data_cache_dir,
+            partition_method=None,
+            partition_alpha=None,
+            client_number=args.client_num_in_total,
+            batch_size=args.batch_size,
+        )
+    elif dataset_name == "cityscapes":
+        # load cityscapes dataset
+        (
+            train_data_num,
+            test_data_num,
+            train_data_global,
+            test_data_global,
+            data_local_num_dict,
+            train_data_local_dict,
+            test_data_local_dict,
+            class_num,
+        ) = load_partition_data_cityscapes(
+            dataset=args.dataset,
+            data_dir=args.data_dir,
+            partition_method=args.partition_method,
+            partition_alpha=args.partition_alpha,
+            client_number=args.client_num_in_total,
+            batch_size=args.batch_size,
+            image_size=args.image_size,
+        )
     else:
         return None
 
