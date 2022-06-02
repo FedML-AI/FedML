@@ -10,8 +10,12 @@ import fedml
 import psutil
 import yaml
 from fedml.cli.edge_deployment.yaml_utils import load_yaml_config
-from fedml.cli.edge_deployment.login import logout
-from fedml.cli.edge_deployment.login_with_docker import login_with_docker_mode
+from fedml.cli.edge_deployment.client_login import logout as client_logout
+from fedml.cli.edge_deployment.client_login import LOCAL_HOME_RUNNER_DIR_NAME as CLIENT_RUNNER_HOME_DIR
+from fedml.cli.edge_deployment.client_login import LOCAL_RUNNER_INFO_DIR_NAME as CLIENT_RUNNER_INFO_DIR
+from fedml.cli.server_deployment.server_login import logout as server_logout
+from fedml.cli.server_deployment.server_login import LOCAL_HOME_RUNNER_DIR_NAME as SERVER_RUNNER_HOME_DIR
+from fedml.cli.server_deployment.server_login import LOCAL_RUNNER_INFO_DIR_NAME as SERVER_RUNNER_INFO_DIR
 
 
 @click.group()
@@ -24,44 +28,65 @@ def mlops_version():
     click.echo("fedml version: " + str(fedml.__version__))
 
 
-@cli.command("login", help="Login to MLOps platform (open.fedml.ai)")
+@cli.command("login", help="Login to MLOps platform")
 @click.argument("userid", nargs=-1)
 @click.option(
     "--version",
     "-v",
     type=str,
     default="release",
-    help="account id at open.fedml.ai MLOps platform",
+    help="login to which version of MLOps platform. It should be dev, test or release",
 )
 @click.option(
-    "--docker",
-    "-d",
+    "--client",
+    "-c",
     type=bool,
     default="false",
-    help="using docker as fedml client agent.",
+    help="login as the FedML client.",
 )
-def mlops_login(userid, version, docker):
+@click.option(
+    "--server",
+    "-s",
+    type=bool,
+    default="false",
+    help="login as the FedML server.",
+)
+def mlops_login(userid, version, client, server):
     account_id = userid[0]
-    click.echo("Argument for account Id: " + str(account_id))
-    click.echo("Argument for version: " + str(version))
+    platform_url = "open.fedml.ai"
+    if version != "release":
+        platform_url = "open-{}.fedml.ai".format(version)
 
     if userid == "":
         click.echo(
-            "Please provide your account id in the MLOps platform (open.fedml.ai)."
+            "Please provide your account id in the MLOps platform ({}).".format(platform_url)
         )
         return
 
-    if docker:
-        login_with_docker_mode(account_id, version)
-    else:
+    is_client = client
+    is_server = server
+    if client is False and server is False:
+        is_client = True
+
+    if is_client:
         pip_source_dir = os.path.dirname(__file__)
-        login_cmd = os.path.join(pip_source_dir, "edge_deployment", "login.py")
+        login_cmd = os.path.join(pip_source_dir, "edge_deployment", "client_login.py")
         click.echo(login_cmd)
-        logout()
-        cleanup_login_process()
-        cleanup_all_fedml_processes(exclude_login=True)
-        login_pid = subprocess.Popen(["python3", login_cmd, "-t", "login", "-u", str(account_id), "-v", version]).pid
-        save_login_process(login_pid)
+        client_logout()
+        cleanup_login_process(CLIENT_RUNNER_HOME_DIR, CLIENT_RUNNER_INFO_DIR)
+        cleanup_all_fedml_processes("client_login.py", exclude_login=True)
+        login_pid = subprocess.Popen([get_python_program(), login_cmd, "-t", "login", "-u", str(account_id), "-v", version]).pid
+        save_login_process(CLIENT_RUNNER_HOME_DIR, CLIENT_RUNNER_INFO_DIR, login_pid)
+
+    if is_server:
+        pip_source_dir = os.path.dirname(__file__)
+        login_cmd = os.path.join(pip_source_dir, "server_deployment", "server_login.py")
+        click.echo(login_cmd)
+        server_logout()
+        cleanup_login_process(SERVER_RUNNER_HOME_DIR, SERVER_RUNNER_INFO_DIR)
+        cleanup_all_fedml_processes("server_login.py", exclude_login=True)
+        login_pid = subprocess.Popen([get_python_program(), login_cmd, "-t", "login", "-u", str(account_id), "-v", version]).pid
+        save_login_process(SERVER_RUNNER_HOME_DIR, SERVER_RUNNER_INFO_DIR, login_pid)
 
 
 def generate_yaml_doc(yaml_object, yaml_file):
@@ -73,11 +98,22 @@ def generate_yaml_doc(yaml_object, yaml_file):
         pass
 
 
-def cleanup_login_process():
+def get_python_program():
+    python_program = 'python'
+    python_version_str = os.popen("python --version").read()
+    if python_version_str.find("Python 3.") == -1:
+        python_version_str = os.popen("python3 --version").read()
+        if python_version_str.find("Python 3.") != -1:
+            python_program = 'python3'
+
+    return python_program
+
+
+def cleanup_login_process(runner_home_dir, runner_info_dir):
     try:
         home_dir = expanduser("~")
-        local_pkg_data_dir = os.path.join(home_dir, "fedml-client", "fedml", "data")
-        edge_process_id_file = os.path.join(local_pkg_data_dir, "edge-process.id")
+        local_pkg_data_dir = os.path.join(home_dir, runner_home_dir, "fedml", "data")
+        edge_process_id_file = os.path.join(local_pkg_data_dir, runner_info_dir, "edge-process.id")
         edge_process_info = load_yaml_config(edge_process_id_file)
         edge_process_id = edge_process_info.get('process_id', None)
         if edge_process_id is not None:
@@ -94,11 +130,20 @@ def cleanup_login_process():
         pass
 
 
-def save_login_process(edge_process_id):
+def save_login_process(runner_home_dir, runner_info_dir, edge_process_id):
+    home_dir = expanduser("~")
+    local_pkg_data_dir = os.path.join(home_dir, runner_home_dir, "fedml", "data")
     try:
-        home_dir = expanduser("~")
-        local_pkg_data_dir = os.path.join(home_dir, "fedml-client", "fedml", "data")
-        edge_process_id_file = os.path.join(local_pkg_data_dir, "edge-process.id")
+        os.makedirs(local_pkg_data_dir)
+    except Exception as e:
+        pass
+    try:
+        os.makedirs(os.path.join(local_pkg_data_dir, runner_info_dir))
+    except Exception as e:
+        pass
+
+    try:
+        edge_process_id_file = os.path.join(local_pkg_data_dir, runner_info_dir, "edge-process.id")
         yaml_object = {}
         yaml_object['process_id'] = edge_process_id
         generate_yaml_doc(yaml_object, edge_process_id_file)
@@ -106,7 +151,7 @@ def save_login_process(edge_process_id):
         pass
 
 
-def cleanup_all_fedml_processes(exclude_login=False):
+def cleanup_all_fedml_processes(login_program, exclude_login=False):
     # Cleanup all fedml relative processes.
     for process in psutil.process_iter():
         try:
@@ -119,7 +164,7 @@ def cleanup_all_fedml_processes(exclude_login=False):
                         # process.terminate()
                         # process.join()
                 else:
-                    if str(cmd).find("login.py") != -1 or str(cmd).find("fedml_config.yaml") != -1:
+                    if str(cmd).find(login_program) != -1 or str(cmd).find("fedml_config.yaml") != -1:
                         click.echo("find fedml process at {}.".format(process.pid))
                         os.killpg(os.getpgid(process.pid), signal.SIGTERM)
                         # process.terminate()
@@ -131,11 +176,34 @@ def cleanup_all_fedml_processes(exclude_login=False):
 @cli.command(
     "logout", help="Logout from MLOps platform (open.fedml.ai)"
 )
-def mlops_logout():
-    logout()
-    cleanup_login_process()
-    cleanup_all_fedml_processes()
+@click.option(
+    "--client",
+    "-c",
+    type=bool,
+    default="false",
+    help="logout from the FedML client.",
+)
+@click.option(
+    "--server",
+    "-s",
+    type=bool,
+    default="false",
+    help="logout from the FedML server.",
+)
+def mlops_logout(client, server):
+    is_client = client
+    is_server = server
+    if client is False and server is False:
+        is_client = True
 
+    if is_client:
+        client_logout()
+        cleanup_login_process(CLIENT_RUNNER_HOME_DIR, CLIENT_RUNNER_INFO_DIR)
+        cleanup_all_fedml_processes("client_login.py")
+    if is_server:
+        server_logout()
+        cleanup_login_process(CLIENT_RUNNER_HOME_DIR, CLIENT_RUNNER_INFO_DIR)
+        cleanup_all_fedml_processes("server_login.py")
 
 
 @cli.command("build", help="Build packages for MLOps platform (open.fedml.ai)")
