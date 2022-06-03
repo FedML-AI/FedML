@@ -7,6 +7,7 @@ import time
 
 import requests
 import yaml
+from fedml.core.mlops.mlops_configs import MLOpsConfigs
 
 
 class MLOpsRuntimeLog:
@@ -139,7 +140,8 @@ class MLOpsRuntimeLog:
         log_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
 
         # send log data to the log server
-        if str(self.log_server_url).startswith("https://"):
+        _, cert_path = MLOpsConfigs.get_instance(self.args).get_request_params()
+        if cert_path is not None:
             cur_source_dir = os.path.dirname(__file__)
             cert_path = os.path.join(cur_source_dir, "ssl", "open.fedml.ai_bundle.crt")
             requests.session().verify = cert_path
