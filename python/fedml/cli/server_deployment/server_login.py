@@ -1,4 +1,5 @@
 import argparse
+import copy
 import json
 import multiprocessing
 import os
@@ -33,14 +34,17 @@ LOCAL_RUNNER_INFO_DIR_NAME = 'runner_infos'
 
 
 class FedMLServerRunner:
-    def __init__(self, args, edge_id, request_json=None):
+    def __init__(self, args, run_id=0,
+                 request_json=None,
+                 agent_config=None):
         self.mqtt_mgr = None
+        self.running_request_json = dict()
+        self.run_id = run_id
         self.client_mqtt_mgr = None
-        self.run_id = 0
-        self.edge_id = edge_id
+        self.edge_id = 0
         self.process = None
         self.args = args
-        self.request_json = request_json
+        self.request_json = copy.deepcopy(request_json)
         self.version = args.version
         self.device_id = args.device_id
         self.cloud_region = args.cloud_region
@@ -52,7 +56,7 @@ class FedMLServerRunner:
         if platform.system() == "Darwin":
             self.is_mac = True
 
-        self.agent_config = None
+        self.agent_config = agent_config
         self.fedml_data_base_package_dir = os.path.join("/", "fedml", "data")
         self.fedml_data_local_package_dir = os.path.join("/", "fedml", "fedml-package", "fedml", "data")
         self.fedml_data_dir = self.fedml_data_base_package_dir
@@ -68,7 +72,6 @@ class FedMLServerRunner:
                                                   "${FEDSYS.CLIENT_OBJECT_LIST}": "",
                                                   "${FEDSYS.LOG_SERVER_URL}": ""}
 
-        self.container_name = None
         self.mlops_metrics = None
         click.echo("Current directory of client agent: " + self.cur_dir)
 
@@ -254,10 +257,12 @@ class FedMLServerRunner:
         packages_config = run_config["packages_config"]
         self.run_id = run_id
 
+        # set mqtt connection for client
+        self.setup_client_mqtt_mgr()
+
         # report server running status
         self.mlops_metrics.report_server_training_status(run_id,
                                                          MqttManager.MSG_MLOPS_SERVER_STATUS_STARTING)
-
 
         # get training params
         private_local_data_dir = data_config.get("privateLocalData", "")
@@ -280,7 +285,7 @@ class FedMLServerRunner:
         dynamic_args_config = fedml_config_object["dynamic_args"]
         entry_file = os.path.basename(entry_file_config["entry_file"])
         conf_file = entry_file_config["conf_file"]
-        FedMLServerRunner.cleanup_edge_learning_process()
+        FedMLServerRunner.cleanup_learning_process()
         os.chdir(os.path.join(unzip_package_path, "fedml"))
 
         python_program = 'python'
@@ -292,41 +297,42 @@ class FedMLServerRunner:
 
         process = subprocess.Popen([python_program, entry_file,
                                     '--cf', conf_file, '--rank', str(dynamic_args_config["rank"])])
-        FedMLServerRunner.save_edge_learning_process(process.pid)
-        process.wait()
+        FedMLServerRunner.save_learning_process(process.pid)
 
-        self.reset_devices_status(run_id)
+        if self.check_server_is_ready():
+            self.send_training_request_to_edges()
+        else:
+            self.stop_run()
 
-    def reset_devices_status(self, run_id):
-        self.mlops_metrics.report_server_training_status(run_id, MqttManager.MSG_MLOPS_SERVER_STATUS_FINISHED)
+    @staticmethod
+    def exit_process(process):
+        if process is None:
+            return
+
+        try:
+            process.terminate()
+            process.join()
+            process = None
+        except Exception as e:
+            pass
+
+    def reset_all_devices_status(self):
+        edge_id_list = self.request_json["edgeids"]
+        for edge_id in edge_id_list:
+            self.mlops_metrics.report_client_training_status(edge_id, MqttManager.MSG_MLOPS_CLIENT_STATUS_FINISHED)
+            time.sleep(1)
         time.sleep(3)
 
     def stop_run(self):
-        if self.process is not None:
-            try:
-                self.process.terminate()
-                self.process.join()
-                self.process = None
-            except Exception as e:
-                pass
+        self.setup_client_mqtt_mgr()
 
-        FedMLServerRunner.cleanup_edge_learning_process()
-        FedMLServerRunner.cleanup_edge_run_process()
+        self.reset_all_devices_status()
+
+        FedMLServerRunner.cleanup_learning_process()
+
         click.echo("Stop run successfully.")
 
-        self.mlops_metrics.report_server_training_status(self.run_id, MqttManager.MSG_MLOPS_SERVER_STATUS_FINISHED)
-
     def send_training_request_to_edges(self):
-        if self.client_mqtt_mgr is None:
-            self.client_mqtt_mgr = MqttManager(
-                self.agent_config["mqtt_config"]["BROKER_HOST"],
-                self.agent_config["mqtt_config"]["BROKER_PORT"],
-                self.agent_config["mqtt_config"]["MQTT_USER"],
-                self.agent_config["mqtt_config"]["MQTT_PWD"],
-                self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
-                "FLServer_Agent-Train",
-            )
-
         run_id = self.request_json["runId"]
         edge_id_list = self.request_json["edgeids"]
         click.echo("Edge ids: " + str(edge_id_list))
@@ -345,26 +351,16 @@ class FedMLServerRunner:
         run_id = request_json["runId"]
         self.run_id = run_id
 
-        # Terminate previous process about starting or stopping run command
-        if self.process is not None:
-            try:
-                self.process.terminate()
-                self.process.join()
-                self.process = None
-            except Exception as e:
-                pass
-        FedMLServerRunner.cleanup_edge_run_process()
-
         # Start cross-silo server with multi processing mode
         self.request_json = request_json
-        self.container_name = "fedml_container_run_" + str(run_id) + "_edge_" + str(self.edge_id)
-        self.process = multiprocessing.Process(target=self.run)
-        self.process.start()
-        FedMLServerRunner.save_edge_run_process(self.process.pid)
+        self.running_request_json[str(run_id)] = request_json
+        server_runner = FedMLServerRunner(self.args, run_id=run_id,
+                                          request_json=request_json,
+                                          agent_config=self.agent_config)
+        server_process = multiprocessing.Process(target=server_runner.run)
+        server_process.start()
+        FedMLServerRunner.save_run_process(server_process.pid)
         #self.run()
-
-        if self.check_server_is_ready():
-            self.send_training_request_to_edges()
 
     def check_server_is_ready(self):
         home_dir = expanduser("~")
@@ -392,103 +388,147 @@ class FedMLServerRunner:
         time.sleep(2)
         return server_started
 
+    def setup_client_mqtt_mgr(self):
+        if self.client_mqtt_mgr is None:
+            self.client_mqtt_mgr = MqttManager(
+                self.agent_config["mqtt_config"]["BROKER_HOST"],
+                self.agent_config["mqtt_config"]["BROKER_PORT"],
+                self.agent_config["mqtt_config"]["MQTT_USER"],
+                self.agent_config["mqtt_config"]["MQTT_PWD"],
+                self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
+                "ServerAgent_Comm_Server" + str(uuid.uuid4()),
+            )
+            time.sleep(3)
+
+        if self.mlops_metrics is None:
+            self.mlops_metrics = MLOpsMetrics()
+            self.mlops_metrics.set_messenger(self.client_mqtt_mgr)
+
+    def send_training_stop_request_to_edges(self, edge_id_list, payload):
+        for edge_id in edge_id_list:
+            topic_stop_train = "flserver_agent/" + str(edge_id) + "/stop_train"
+            click.echo("stop_train: send topic " + topic_stop_train)
+            self.client_mqtt_mgr.send_message(topic_stop_train, payload)
+
     def callback_stop_train(self, topic, payload):
         click.echo("callback_stop_train: topic = %s, payload = %s" % (topic, payload))
 
         request_json = json.loads(payload)
         run_id = request_json["runId"]
+        edge_id_list_str = request_json["edgeids"]
+        edge_id_list = json.loads(edge_id_list_str)
 
         click.echo("Stopping run...")
         click.echo("Stop run with multiprocessing.")
+
+        # set mqtt connection for client
+        self.setup_client_mqtt_mgr()
 
         # Notify MLOps with the stopping message
         self.mlops_metrics.report_server_training_status(run_id,
                                                          MqttManager.MSG_MLOPS_SERVER_STATUS_STOPPING)
 
-        # Stop cross-silo server with multi processing mode
-        self.request_json = request_json
-        self.container_name = "fedml_container_run_" + str(run_id) + "_edge_" + str(self.edge_id)
-        multiprocessing.Process(target=self.stop_run).start()
+        self.send_training_stop_request_to_edges(edge_id_list, json.dumps(request_json))
 
-        self.mlops_metrics.report_server_training_status(run_id, MqttManager.MSG_MLOPS_SERVER_STATUS_FINISHED)
+        # Stop cross-silo server with multi processing mode
+        stop_request_json = self.running_request_json.get(str(run_id), None)
+        if stop_request_json is None:
+            stop_request_json = request_json
+        server_runner = FedMLServerRunner(self.args, run_id=run_id,
+                                          request_json=stop_request_json,
+                                          agent_config=self.agent_config)
+        multiprocessing.Process(target=server_runner.stop_run).start()
+
+        self.mlops_metrics.report_server_training_status(run_id, MqttManager.MSG_MLOPS_SERVER_STATUS_KILLED)
+        self.running_request_json.pop(str(run_id))
 
     def cleanup_client_with_finished_status(self):
+        # set mqtt connection for client
+        self.setup_client_mqtt_mgr()
+
         self.stop_run()
 
     @staticmethod
-    def cleanup_edge_run_process():
+    def cleanup_run_process():
         try:
             home_dir = expanduser("~")
             local_pkg_data_dir = os.path.join(home_dir, LOCAL_HOME_RUNNER_DIR_NAME, "fedml", "data")
-            edge_process_id_file = os.path.join(local_pkg_data_dir, LOCAL_RUNNER_INFO_DIR_NAME, "edge-sub-process.id")
-            edge_process_info = load_yaml_config(edge_process_id_file)
-            edge_process_id = edge_process_info.get('process_id', None)
-            if edge_process_id is not None:
+            process_id_file = os.path.join(local_pkg_data_dir, LOCAL_RUNNER_INFO_DIR_NAME, "runner-sub-process.id")
+            process_info = load_yaml_config(process_id_file)
+            process_ids_str = process_info.get('process_id', '[]')
+            process_ids = json.loads(process_ids_str)
+            for process_id in process_ids:
                 try:
-                    edge_process = psutil.Process(edge_process_id)
-                    for edge_sub_process in edge_process.children():
-                        os.kill(edge_sub_process.pid, signal.SIGTERM)
+                    process = psutil.Process(process_id)
+                    for sub_process in process.children():
+                        os.kill(sub_process.pid, signal.SIGTERM)
 
-                    if edge_process is not None:
-                        os.kill(edge_process.pid, signal.SIGTERM)
+                    if process is not None:
+                        os.kill(process.pid, signal.SIGTERM)
+                except Exception as e:
+                    pass
+
+            yaml_object = {}
+            yaml_object['process_id'] = '[]'
+            FedMLServerRunner.generate_yaml_doc(yaml_object, process_id_file)
+        except Exception as e:
+            pass
+
+    @staticmethod
+    def save_run_process(process_id):
+        try:
+            home_dir = expanduser("~")
+            local_pkg_data_dir = os.path.join(home_dir, LOCAL_HOME_RUNNER_DIR_NAME, "fedml", "data")
+            process_id_file = os.path.join(local_pkg_data_dir, LOCAL_RUNNER_INFO_DIR_NAME, "runner-sub-process.id")
+            process_ids = []
+            if os.path.exists(process_id_file) is True:
+                yaml_object = load_yaml_config(process_id_file)
+                process_ids_str = yaml_object.get('process_id', '[]')
+                process_ids = json.loads(process_ids_str)
+            process_ids.append(process_id)
+            yaml_object['process_id'] = str(process_ids)
+            FedMLServerRunner.generate_yaml_doc(yaml_object, process_id_file)
+        except Exception as e:
+            pass
+
+    @staticmethod
+    def cleanup_learning_process():
+        try:
+            home_dir = expanduser("~")
+            local_pkg_data_dir = os.path.join(home_dir, LOCAL_HOME_RUNNER_DIR_NAME, "fedml", "data")
+            process_id_file = os.path.join(local_pkg_data_dir, LOCAL_RUNNER_INFO_DIR_NAME, "runner-learning-process.id")
+            process_info = load_yaml_config(process_id_file)
+            process_id = process_info.get('process_id', None)
+            if process_id is not None:
+                try:
+                    process = psutil.Process(process_id)
+                    for sub_process in process.children():
+                        os.kill(sub_process.pid, signal.SIGTERM)
+
+                    if process is not None:
+                        os.kill(process.pid, signal.SIGTERM)
                 except Exception as e:
                     pass
             yaml_object = {}
             yaml_object['process_id'] = -1
-            FedMLServerRunner.generate_yaml_doc(yaml_object, edge_process_id_file)
+            FedMLServerRunner.generate_yaml_doc(yaml_object, process_id_file)
         except Exception as e:
             pass
 
     @staticmethod
-    def save_edge_run_process(edge_process_id):
+    def save_learning_process(learning_id):
         try:
             home_dir = expanduser("~")
             local_pkg_data_dir = os.path.join(home_dir, LOCAL_HOME_RUNNER_DIR_NAME, "fedml", "data")
-            edge_process_id_file = os.path.join(local_pkg_data_dir, LOCAL_RUNNER_INFO_DIR_NAME, "edge-sub-process.id")
+            process_id_file = os.path.join(local_pkg_data_dir, LOCAL_RUNNER_INFO_DIR_NAME, "runner-learning-process.id")
             yaml_object = {}
-            yaml_object['process_id'] = edge_process_id
-            FedMLServerRunner.generate_yaml_doc(yaml_object, edge_process_id_file)
+            yaml_object['process_id'] = learning_id
+            FedMLServerRunner.generate_yaml_doc(yaml_object, process_id_file)
         except Exception as e:
             pass
 
-    @staticmethod
-    def cleanup_edge_learning_process():
-        try:
-            home_dir = expanduser("~")
-            local_pkg_data_dir = os.path.join(home_dir, LOCAL_HOME_RUNNER_DIR_NAME, "fedml", "data")
-            edge_process_id_file = os.path.join(local_pkg_data_dir, LOCAL_RUNNER_INFO_DIR_NAME, "edge-learning-process.id")
-            edge_process_info = load_yaml_config(edge_process_id_file)
-            edge_process_id = edge_process_info.get('process_id', None)
-            if edge_process_id is not None:
-                try:
-                    edge_process = psutil.Process(edge_process_id)
-                    for edge_sub_process in edge_process.children():
-                        os.kill(edge_sub_process.pid, signal.SIGTERM)
-
-                    if edge_process is not None:
-                        os.kill(edge_process.pid, signal.SIGTERM)
-                except Exception as e:
-                    pass
-            yaml_object = {}
-            yaml_object['process_id'] = -1
-            FedMLServerRunner.generate_yaml_doc(yaml_object, edge_process_id_file)
-        except Exception as e:
-            pass
-
-    @staticmethod
-    def save_edge_learning_process(edge_learning_id):
-        try:
-            home_dir = expanduser("~")
-            local_pkg_data_dir = os.path.join(home_dir, LOCAL_HOME_RUNNER_DIR_NAME, "fedml", "data")
-            edge_process_id_file = os.path.join(local_pkg_data_dir, LOCAL_RUNNER_INFO_DIR_NAME, "edge-learning-process.id")
-            yaml_object = {}
-            yaml_object['process_id'] = edge_learning_id
-            FedMLServerRunner.generate_yaml_doc(yaml_object, edge_process_id_file)
-        except Exception as e:
-            pass
-
-    def callback_client_status(self, topic, payload):
-        click.echo("callback_client_status: topic = %s, payload = %s" % (topic, payload))
+    def callback_runner_id_status(self, topic, payload):
+        click.echo("callback_runner_id_status: topic = %s, payload = %s" % (topic, payload))
 
         request_json = json.loads(payload)
         run_id = request_json["run_id"]
@@ -497,20 +537,17 @@ class FedMLServerRunner:
 
         if status == MqttManager.MSG_MLOPS_SERVER_STATUS_FINISHED:
             click.echo("Received training finished message.")
-            if self.process is not None:
-                try:
-                    self.process.terminate()
-                    self.process.join()
-                    self.process = None
-                except Exception as e:
-                    pass
 
-            click.echo("Stopping training client.")
+            click.echo("Stopping training server.")
 
             # Stop cross-silo server with multi processing mode
-            self.request_json = request_json
-            self.container_name = "fedml_container_run_" + str(run_id) + "_edge_" + str(self.edge_id)
-            multiprocessing.Process(target=self.cleanup_client_with_finished_status).start()
+            stop_request_json = self.running_request_json.get(str(run_id), None)
+            if stop_request_json is None:
+                stop_request_json = request_json
+            server_runner = FedMLServerRunner(self.args, run_id=run_id,
+                                              request_json=stop_request_json,
+                                              agent_config=self.agent_config)
+            multiprocessing.Process(target=server_runner.cleanup_client_with_finished_status).start()
 
             self.mlops_metrics.report_server_training_status(run_id, MqttManager.MSG_MLOPS_SERVER_STATUS_FINISHED)
 
@@ -556,6 +593,7 @@ class FedMLServerRunner:
             service_config["mqtt_config"]["MQTT_KEEPALIVE"],
             self.edge_id,
         )
+
         self.mlops_metrics = MLOpsMetrics()
         self.mlops_metrics.set_messenger(self.mqtt_mgr)
 
@@ -567,9 +605,9 @@ class FedMLServerRunner:
         topic_stop_train = "flclient_agent/" + str(self.edge_id) + "/stop_train"
         self.mqtt_mgr.add_message_listener(topic_stop_train, self.callback_stop_train)
 
-        # Setup MQTT message listener for client status switching
-        topic_client_status = "fl_server/mlops/" + str(self.edge_id) + "/status"
-        self.mqtt_mgr.add_message_listener(topic_client_status, self.callback_client_status)
+        # Setup MQTT message listener for server status switching
+        topic_runner_id_status = "fl_server/mlops/id/status"
+        self.mqtt_mgr.add_message_listener(topic_runner_id_status, self.callback_runner_id_status)
 
         # Start MQTT message loop
         self.mqtt_mgr.loop_forever()
@@ -592,7 +630,7 @@ def __login_internal(userid, version):
     __login(args, userid, version)
 
 
-def save_edge_infos(unique_device_id, edge_id):
+def save_runner_infos(unique_device_id, edge_id):
     home_dir = expanduser("~")
     local_pkg_data_dir = os.path.join(home_dir, LOCAL_HOME_RUNNER_DIR_NAME, "fedml", "data")
     try:
@@ -604,12 +642,12 @@ def save_edge_infos(unique_device_id, edge_id):
     except Exception as e:
         pass
 
-    edge_info_file = os.path.join(local_pkg_data_dir, LOCAL_RUNNER_INFO_DIR_NAME, "edge_infos.yaml")
-    edge_info_file_handle = open(edge_info_file, 'w', encoding='utf-8')
-    edge_info_file_handle.writelines(["unique_device_id: {}\n".format(str(unique_device_id)),
+    runner_info_file = os.path.join(local_pkg_data_dir, LOCAL_RUNNER_INFO_DIR_NAME, "runner_infos.yaml")
+    runner_info_file_handle = open(runner_info_file, 'w', encoding='utf-8')
+    runner_info_file_handle.writelines(["unique_device_id: {}\n".format(str(unique_device_id)),
                                       "edge_id: {}\n".format(str(edge_id))])
-    edge_info_file_handle.flush()
-    edge_info_file_handle.close()
+    runner_info_file_handle.flush()
+    runner_info_file_handle.close()
 
 
 def __login(args, userid, version):
@@ -629,7 +667,7 @@ def __login(args, userid, version):
     click.echo(args)
 
     # Create server runner for communication with the FedML client.
-    runner = FedMLServerRunner(args, '')
+    runner = FedMLServerRunner(args)
 
     # Fetch configs from the MLOps config server.
     service_config = dict()
@@ -683,7 +721,7 @@ def __login(args, userid, version):
     # Log arguments and binding results.
     click.echo("login: unique_device_id = %s" % str(unique_device_id))
     click.echo("login: server_id = %s" % str(edge_id))
-    save_edge_infos(args.device_id + "." + args.os_name, edge_id)
+    save_runner_infos(args.device_id + "." + args.os_name, edge_id)
 
     click.echo("Congratulations, you have logged into the FedML MLOps platform successfully!")
     click.echo("Your server unique device id is " + str(unique_device_id))
@@ -697,7 +735,7 @@ def login(args):
 
 
 def logout():
-    FedMLServerRunner.cleanup_edge_run_process()
+    FedMLServerRunner.cleanup_run_process()
 
 
 if __name__ == "__main__":

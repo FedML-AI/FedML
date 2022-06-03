@@ -113,7 +113,7 @@ def cleanup_login_process(runner_home_dir, runner_info_dir):
     try:
         home_dir = expanduser("~")
         local_pkg_data_dir = os.path.join(home_dir, runner_home_dir, "fedml", "data")
-        edge_process_id_file = os.path.join(local_pkg_data_dir, runner_info_dir, "edge-process.id")
+        edge_process_id_file = os.path.join(local_pkg_data_dir, runner_info_dir, "runner-process.id")
         edge_process_info = load_yaml_config(edge_process_id_file)
         edge_process_id = edge_process_info.get('process_id', None)
         if edge_process_id is not None:
@@ -143,7 +143,7 @@ def save_login_process(runner_home_dir, runner_info_dir, edge_process_id):
         pass
 
     try:
-        edge_process_id_file = os.path.join(local_pkg_data_dir, runner_info_dir, "edge-process.id")
+        edge_process_id_file = os.path.join(local_pkg_data_dir, runner_info_dir, "runner-process.id")
         yaml_object = {}
         yaml_object['process_id'] = edge_process_id
         generate_yaml_doc(yaml_object, edge_process_id_file)
