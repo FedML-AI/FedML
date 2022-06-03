@@ -26,9 +26,7 @@ from .simulation.simulator import SimulatorMPI, SimulatorSingleProcess, Simulato
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.7.39"
-
-os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
+__version__ = "0.7.77"
 
 
 def init(args=None):
