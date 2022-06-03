@@ -29,6 +29,9 @@ class MLOpsMetrics(Singleton):
             self.edge_id = client_id_list[0]
 
     def report_client_training_status(self, edge_id, status):
+        """
+            this is used for notifying the client status to MLOps (both web UI and backend can consume it)
+        """
         topic_name = "fl_client/mlops/status"
         msg = {"edge_id": edge_id, "status": status}
         message_json = json.dumps(msg)
@@ -36,6 +39,9 @@ class MLOpsMetrics(Singleton):
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_client_id_status(self, run_id, edge_id, status):
+        """
+            this is used for communication between client agent (FedML cli module) and client
+        """
         topic_name = "fl_client/mlops/" + str(edge_id) + "/status"
         msg = {"run_id": run_id, "edge_id": edge_id, "status": status}
         message_json = json.dumps(msg)
