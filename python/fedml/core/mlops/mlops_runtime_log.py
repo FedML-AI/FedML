@@ -11,6 +11,7 @@ import yaml
 
 class MLOpsRuntimeLog:
     FED_LOG_LINE_NUMS_PER_UPLOADING = 100
+    FED_LOG_UPLOAD_FREQUENCY = 3
 
     _log_sdk_instance = None
     _instance_lock = threading.Lock()
@@ -156,7 +157,7 @@ class MLOpsRuntimeLog:
 
     def log_thread(self):
         while True:
-            time.sleep(10)
+            time.sleep(MLOpsRuntimeLog.FED_LOG_UPLOAD_FREQUENCY)
             self.log_upload(self.run_id, self.edge_id)
 
     def log_relocation(self):
