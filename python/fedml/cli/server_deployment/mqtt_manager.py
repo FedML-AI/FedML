@@ -14,6 +14,13 @@ class MqttManager(object):
     MSG_MLOPS_SERVER_STATUS_FAILED = "FAILED"
     MSG_MLOPS_SERVER_STATUS_FINISHED = "FINISHED"
 
+    MSG_MLOPS_CLIENT_STATUS_IDLE = "IDLE"
+    MSG_MLOPS_CLIENT_STATUS_UPGRADING = "UPGRADING"
+    MSG_MLOPS_CLIENT_STATUS_INITIALIZING = "INITIALIZING"
+    MSG_MLOPS_CLIENT_STATUS_TRAINING = "TRAINING"
+    MSG_MLOPS_CLIENT_STATUS_STOPPING = "STOPPING"
+    MSG_MLOPS_CLIENT_STATUS_FINISHED = "FINISHED"
+
     def __init__(self, host, port, user, pwd, keepalive_time, id):
         self._host = host
         self._port = port
@@ -47,12 +54,13 @@ class MqttManager(object):
         # <sender>/<receiver>/<action>
         topic_start_train = "flclient_agent/" + str(self._client_id) + "/start_train"
         topic_stop_train = "flclient_agent/" + str(self._client_id) + "/stop_train"
-        topic_server_status = "fl_server/mlops/" + str(self._client_id) + "/status"
+        topic_server_status = "fl_server/mlops/id/status"
         client.subscribe(topic_start_train)
         client.subscribe(topic_stop_train)
         client.subscribe(topic_server_status)
         logging.info("subscribe: " + topic_start_train)
         logging.info("subscribe: " + topic_stop_train)
+        logging.info("subscribe: " + topic_server_status)
 
     def on_message(self, client, userdata, msg):
         logging.info(f"on_message({msg.topic}, {str(msg.payload)})")
