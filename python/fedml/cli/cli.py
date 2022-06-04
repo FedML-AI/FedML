@@ -33,13 +33,13 @@ def mlops_version():
 @click.option(
     "--client",
     "-c",
-    default=None, is_flag=False,
+    default=None, is_flag=True,
     help="Display client logs.",
 )
 @click.option(
     "--server",
     "-s",
-    default=None, is_flag=False,
+    default=None, is_flag=True,
     help="Display server logs.",
 )
 def mlops_logs(client, server):
@@ -104,13 +104,13 @@ def display_server_logs():
 @click.option(
     "--client",
     "-c",
-    default=None, is_flag=False,
+    default=None, is_flag=True,
     help="login as the FedML client.",
 )
 @click.option(
     "--server",
     "-s",
-    default=None, is_flag=False,
+    default=None, is_flag=True,
     help="login as the FedML server.",
 )
 def mlops_login(userid, version, client, server):
