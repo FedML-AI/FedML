@@ -104,7 +104,7 @@ def display_server_logs():
 @click.option(
     "--client",
     "-c",
-    default=None, is_flag=True,
+    default=True, is_flag=True,
     help="login as the FedML client.",
 )
 @click.option(
