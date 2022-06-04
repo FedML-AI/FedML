@@ -132,7 +132,6 @@ def mlops_login(userid, version, client, server):
 
     click.echo("login...{}, {}".format(is_client, is_server))
     if is_client:
-        click.echo("yyy...")
         pip_source_dir = os.path.dirname(__file__)
         login_cmd = os.path.join(pip_source_dir, "edge_deployment", "client_login.py")
         click.echo(login_cmd)
@@ -143,9 +142,7 @@ def mlops_login(userid, version, client, server):
             [get_python_program(), login_cmd, "-t", "login", "-u", str(account_id), "-v", version]).pid
         save_login_process(CLIENT_RUNNER_HOME_DIR, CLIENT_RUNNER_INFO_DIR, login_pid)
 
-    click.echo("server...")
     if is_server:
-        click.echo("xxx...")
         pip_source_dir = os.path.dirname(__file__)
         login_cmd = os.path.join(pip_source_dir, "server_deployment", "server_login.py")
         click.echo(login_cmd)
