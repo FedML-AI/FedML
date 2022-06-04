@@ -178,10 +178,10 @@ class FedMLClientRunner:
                     container_dynamic_args_config[argument_key] = replaced_argument_value
 
         # Merge all container new config sections as new config dictionary
-        container_config_to_yaml = dict()
-        container_config_to_yaml["entry_config"] = container_entry_file_config
-        container_config_to_yaml["dynamic_args"] = container_dynamic_args_config
-        container_config_to_yaml["dynamic_args"]["config_version"] = self.args.config_version
+        package_conf_object = dict()
+        package_conf_object["entry_config"] = container_entry_file_config
+        package_conf_object["dynamic_args"] = container_dynamic_args_config
+        package_conf_object["dynamic_args"]["config_version"] = self.args.config_version
         container_dynamic_args_config["mqtt_config_path"] = os.path.join(unzip_package_path,
                                                                          "fedml", "config",
                                                                          os.path.basename(container_dynamic_args_config[
@@ -195,22 +195,28 @@ class FedMLClientRunner:
             os.makedirs(log_file_dir)
         except Exception as e:
             pass
-        container_config_to_yaml["dynamic_args"]["log_file_dir"] = log_file_dir
+        package_conf_object["dynamic_args"]["log_file_dir"] = log_file_dir
 
         # Save new config dictionary to local file
         fedml_updated_config_file = os.path.join(unzip_package_path, "conf", "fedml.yaml")
-        FedMLClientRunner.generate_yaml_doc(container_config_to_yaml, fedml_updated_config_file)
+        FedMLClientRunner.generate_yaml_doc(package_conf_object, fedml_updated_config_file)
 
         # Build dynamic arguments and set arguments to fedml config object
-        self.build_dynamic_args(container_config_to_yaml, unzip_package_path)
+        self.build_dynamic_args(run_config, package_conf_object, unzip_package_path)
 
-        return unzip_package_path, container_config_to_yaml
+        return unzip_package_path, package_conf_object
 
-    def build_dynamic_args(self, package_conf_object, base_dir):
+    def build_dynamic_args(self, run_config, package_conf_object, base_dir):
         fedml_conf_file = package_conf_object["entry_config"]["conf_file"]
         print("fedml_conf_file:" + fedml_conf_file)
         fedml_conf_path = os.path.join(base_dir, "fedml", "config", os.path.basename(fedml_conf_file))
         fedml_conf_object = load_yaml_config(fedml_conf_path)
+
+        # Replace local fedml config objects with parameters from MLOps web
+        parameters_object = run_config.get("parameters", None)
+        if parameters_object is not None:
+            fedml_conf_object = parameters_object
+
         package_dynamic_args = package_conf_object["dynamic_args"]
         fedml_conf_object["comm_args"]["mqtt_config_path"] = package_dynamic_args["mqtt_config_path"]
         fedml_conf_object["comm_args"]["s3_config_path"] = package_dynamic_args["s3_config_path"]
@@ -301,7 +307,6 @@ class FedMLClientRunner:
         self.reset_devices_status(self.edge_id)
 
         FedMLClientRunner.cleanup_learning_process()
-        # FedMLClientRunner.cleanup_run_process()
         click.echo("Stop run successfully.")
 
     def setup_client_mqtt_mgr(self):
@@ -342,6 +347,7 @@ class FedMLClientRunner:
         # Terminate previous process about starting or stopping run command
         FedMLClientRunner.exit_process(self.process)
         FedMLClientRunner.cleanup_run_process()
+        save_runner_infos(self.args.device_id + "." + self.args.os_name, self.edge_id, run_id=run_id)
 
         # Start cross-silo server with multi processing mode
         self.request_json = request_json
@@ -547,7 +553,7 @@ def __login_internal(userid, version):
     __login(args, userid, version)
 
 
-def save_runner_infos(unique_device_id, edge_id):
+def save_runner_infos(unique_device_id, edge_id, run_id=None):
     home_dir = expanduser("~")
     local_pkg_data_dir = os.path.join(home_dir, LOCAL_HOME_RUNNER_DIR_NAME, "fedml", "data")
     try:
@@ -560,11 +566,11 @@ def save_runner_infos(unique_device_id, edge_id):
         pass
 
     runner_info_file = os.path.join(local_pkg_data_dir, LOCAL_RUNNER_INFO_DIR_NAME, "runner_infos.yaml")
-    runner_info_file_handle = open(runner_info_file, 'w', encoding='utf-8')
-    runner_info_file_handle.writelines(["unique_device_id: {}\n".format(str(unique_device_id)),
-                                      "edge_id: {}\n".format(str(edge_id))])
-    runner_info_file_handle.flush()
-    runner_info_file_handle.close()
+    running_info = dict()
+    running_info["unique_device_id"] = str(unique_device_id)
+    running_info["edge_id"] = str(edge_id)
+    running_info["run_id"] = run_id
+    FedMLClientRunner.generate_yaml_doc(running_info, runner_info_file)
 
 
 def __login(args, userid, version):
@@ -637,7 +643,7 @@ def __login(args, userid, version):
     # Log arguments and binding results.
     click.echo("login: unique_device_id = %s" % str(unique_device_id))
     click.echo("login: edge_id = %s" % str(edge_id))
-    save_runner_infos(args.device_id + "." + args.os_name, edge_id)
+    save_runner_infos(args.device_id + "." + args.os_name, edge_id, run_id=0)
 
     click.echo("Congratulations, you have logged into the FedML MLOps platform successfully!")
     click.echo("Your device id is " + str(unique_device_id) + ". You may review the device in the MLOps edge device list.")
