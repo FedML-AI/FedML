@@ -137,20 +137,20 @@ class FedMLServerManager(ServerManager):
                     "server.wait", event_value=str(self.round_idx)
                 )
                 self.mlops_event.log_event_started(
-                    "aggregate", event_value=str(self.round_idx)
+                    "server.agg_and_eval", event_value=str(self.round_idx)
                 )
 
             global_model_params = self.aggregator.aggregate()
-
-            if hasattr(self.args, "backend") and self.args.using_mlops:
-                self.mlops_event.log_event_ended(
-                    "aggregate", event_value=str(self.round_idx)
-                )
 
             try:
                 self.aggregator.test_on_server_for_all_clients(self.round_idx)
             except Exception as e:
                 logging.info("aggregator.test exception: " + str(e))
+
+            if hasattr(self.args, "backend") and self.args.using_mlops:
+                self.mlops_event.log_event_ended(
+                    "server.agg_and_eval", event_value=str(self.round_idx)
+                )
 
             # send round info to the MQTT backend
             if hasattr(self.args, "backend") and self.args.using_mlops:
