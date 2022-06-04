@@ -1,6 +1,7 @@
 import os
 import signal
 import subprocess
+from os import listdir
 from os.path import expanduser
 
 import click
@@ -26,6 +27,69 @@ def cli():
 @cli.command("version", help="Display fedml version.")
 def mlops_version():
     click.echo("fedml version: " + str(fedml.__version__))
+
+
+@cli.command("logs", help="Display fedml logs.")
+@click.option(
+    "--client",
+    "-c",
+    default=None, is_flag=True,
+    help="Display client logs.",
+)
+@click.option(
+    "--server",
+    "-s",
+    default=None, is_flag=True,
+    help="Display server logs.",
+)
+def mlops_logs(client, server):
+    is_client = client
+    is_server = server
+    if client is False and server is False:
+        is_client = True
+
+    if is_client:
+        display_client_logs()
+
+    if is_server:
+        display_server_logs()
+
+
+def get_running_info(cs_home_dir, cs_info_dir):
+    home_dir = expanduser("~")
+    runner_info_file = os.path.join(home_dir, cs_home_dir, "fedml", "data", cs_info_dir, "runner_infos.yaml")
+    if os.path.exists(runner_info_file):
+        running_info = load_yaml_config(runner_info_file)
+        return running_info["run_id"], running_info["edge_id"]
+    return 0, 0
+
+
+def display_client_logs():
+    run_id, edge_id = get_running_info(CLIENT_RUNNER_HOME_DIR, CLIENT_RUNNER_INFO_DIR)
+    home_dir = expanduser("~")
+    log_file = "{}/{}/fedml/logs/fedavg-cross-silo-run-{}-edge-{}.log".format(home_dir,
+                                                                              CLIENT_RUNNER_HOME_DIR,
+                                                                              str(run_id),
+                                                                              str(edge_id))
+    if os.path.exists(log_file):
+        with open(log_file) as file_handle:
+            log_lines = file_handle.readlines()
+        for log_line in log_lines:
+            click.echo(log_line)
+
+
+def display_server_logs():
+    run_id, edge_id = get_running_info(SERVER_RUNNER_HOME_DIR, SERVER_RUNNER_INFO_DIR)
+    home_dir = expanduser("~")
+    log_file = "{}/{}/fedml/logs/fedavg-cross-silo-run-{}-edge-{}.log".format(home_dir,
+                                                                              SERVER_RUNNER_HOME_DIR,
+                                                                              str(run_id),
+                                                                              str(edge_id))
+    if os.path.exists(log_file):
+        with open(log_file) as file_handle:
+            log_lines = file_handle.readlines()
+        for log_line in log_lines:
+            click.echo(log_line)
 
 
 @cli.command("login", help="Login to MLOps platform")
@@ -73,7 +137,8 @@ def mlops_login(userid, version, client, server):
         client_logout()
         cleanup_login_process(CLIENT_RUNNER_HOME_DIR, CLIENT_RUNNER_INFO_DIR)
         cleanup_all_fedml_processes("client_login.py", exclude_login=True)
-        login_pid = subprocess.Popen([get_python_program(), login_cmd, "-t", "login", "-u", str(account_id), "-v", version]).pid
+        login_pid = subprocess.Popen(
+            [get_python_program(), login_cmd, "-t", "login", "-u", str(account_id), "-v", version]).pid
         save_login_process(CLIENT_RUNNER_HOME_DIR, CLIENT_RUNNER_INFO_DIR, login_pid)
 
     if is_server:
@@ -83,7 +148,8 @@ def mlops_login(userid, version, client, server):
         server_logout()
         cleanup_login_process(SERVER_RUNNER_HOME_DIR, SERVER_RUNNER_INFO_DIR)
         cleanup_all_fedml_processes("server_login.py", exclude_login=True)
-        login_pid = subprocess.Popen([get_python_program(), login_cmd, "-t", "login", "-u", str(account_id), "-v", version]).pid
+        login_pid = subprocess.Popen(
+            [get_python_program(), login_cmd, "-t", "login", "-u", str(account_id), "-v", version]).pid
         save_login_process(SERVER_RUNNER_HOME_DIR, SERVER_RUNNER_INFO_DIR, login_pid)
 
 
@@ -118,8 +184,8 @@ def cleanup_login_process(runner_home_dir, runner_info_dir):
             edge_process = psutil.Process(edge_process_id)
             if edge_process is not None:
                 os.killpg(os.getpgid(edge_process.pid), signal.SIGTERM)
-                #edge_process.terminate()
-                #edge_process.join()
+                # edge_process.terminate()
+                # edge_process.join()
         yaml_object = {}
         yaml_object['process_id'] = -1
         generate_yaml_doc(yaml_object, edge_process_id_file)
@@ -177,15 +243,13 @@ def cleanup_all_fedml_processes(login_program, exclude_login=False):
 @click.option(
     "--client",
     "-c",
-    type=bool,
-    default="false",
+    default=None, is_flag=False,
     help="logout from the FedML client.",
 )
 @click.option(
     "--server",
     "-s",
-    type=bool,
-    default="false",
+    default=None, is_flag=False,
     help="logout from the FedML server.",
 )
 def mlops_logout(client, server):
@@ -290,7 +354,7 @@ def mlops_build(type, source_folder, entry_point, config_folder, dest_folder):
             "Now you may use "
             + os.path.join(dest_folder, "dist-packages", "client-package.zip")
             + " to start your federated "
-            "learning run."
+              "learning run."
         )
     elif type == "server":
         result = build_mlops_package(
@@ -311,19 +375,19 @@ def mlops_build(type, source_folder, entry_point, config_folder, dest_folder):
             "Now you may use "
             + os.path.join(dest_folder, "dist-packages", "server-package.zip")
             + " to start your federated "
-            "learning run."
+              "learning run."
         )
 
 
 def build_mlops_package(
-    source_folder,
-    entry_point,
-    config_folder,
-    dest_folder,
-    mlops_build_path,
-    mlops_package_parent_dir,
-    mlops_package_name,
-    rank,
+        source_folder,
+        entry_point,
+        config_folder,
+        dest_folder,
+        mlops_build_path,
+        mlops_package_parent_dir,
+        mlops_package_name,
+        rank,
 ):
     if not os.path.exists(source_folder):
         click.echo("source folder is not exist: " + source_folder)
