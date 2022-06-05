@@ -15,7 +15,7 @@ from .constants import (
     FEDML_TRAINING_PLATFORM_CROSS_SILO,
     FEDML_TRAINING_PLATFORM_CROSS_DEVICE,
 )
-from .cross_device import ServerMNN
+
 from .cross_silo import Client as ClientCrossSilo
 from .cross_silo import Server as ServerCrossSilo
 from .cross_silo.hierarchical import Client as HierarchicalClientCrossSilo
@@ -254,6 +254,8 @@ def run_hierarchical_cross_silo_client():
 
 
 def run_mnn_server():
+    from .cross_device import ServerMNN
+
     """FedML BeeHive"""
     global _global_training_type
     _global_training_type = FEDML_TRAINING_PLATFORM_CROSS_DEVICE
