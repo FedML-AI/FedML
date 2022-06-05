@@ -475,7 +475,14 @@ class FedMLClientRunner:
     @staticmethod
     def get_device_id():
         if "nt" in os.name:
-            device_id = subprocess.Popen("dmidecode.exe -s system-uuid".split())
+            def GetUUID():
+                cmd = 'wmic csproduct get uuid'
+                uuid = str(subprocess.check_output(cmd))
+                pos1 = uuid.find("\\n") + 2
+                uuid = uuid[pos1:-15]
+                return str(uuid)
+            device_id = GetUUID()
+            click.echo(device_id)
         elif "posix" in os.name:
             device_id = hex(uuid.getnode())
         else:
