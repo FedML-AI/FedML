@@ -23,6 +23,8 @@ class FedMLClientManager(ClientManager):
 
         self.client_real_ids = json.loads(args.client_id_list)
         # self.get_sender_id() is equal to the client rank (starting from 1)
+        logging.info("self.client_real_ids = {}".format(self.client_real_ids))
+        logging.info("self.get_sender_id() = {}".format(self.get_sender_id()))
         self.client_real_id = self.client_real_ids[self.get_sender_id() - 1]
 
         self.has_sent_online_msg = False
