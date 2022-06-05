@@ -85,6 +85,7 @@ pipeline {
       }
       steps {
         container('base') {
+          sh 'chmod a+x ./devops/scripts/build.sh;./devops/scripts/build.sh'
           sh 'docker build -f ./devops/Dockerfile-Dev -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME:$VERSION_DEV-SNAPSHOT-$BUILD_NUMBER .'
         }
       }
