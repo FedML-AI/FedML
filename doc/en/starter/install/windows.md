@@ -19,6 +19,9 @@ conda install --name fedml pip
 pip install fedml
 ```
 
+## Install MPI on Windows
+https://stackoverflow.com/questions/54615336/how-to-install-mpi4py-on-windows-10-with-msmpi
+
 ## Install from the source code
 First please install "Microsoft C++ Build Tools":
 https://visualstudio.microsoft.com/visual-cpp-build-tools/
