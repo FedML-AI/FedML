@@ -42,7 +42,7 @@ class MLOpsConfigs(Singleton):
             elif self.args.config_version == "dev":
                 url = "https://open-dev.fedml.ai/fedmlOpsServer/configs/fetch"
             elif self.args.config_version == "local":
-                url = "http://localhost:9000/fedmlOpsServer/configs/fetch"
+                url = "http://192.168.1.160:9000/fedmlOpsServer/configs/fetch"
 
         cert_path = None
         if str(url).startswith("https://"):
