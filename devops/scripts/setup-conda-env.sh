@@ -1,14 +1,8 @@
 #!/bin/bash
 
-is_building_gpu_image=$1
-
 echo "conda set ssl_verify"
 
-cat /root/.condarc
-
 conda config --set ssl_verify false
-
-conda token set --no-ssl-verify `conda install conda-token -n root`
 
 conda info
 
