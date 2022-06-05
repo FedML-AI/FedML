@@ -1,16 +1,4 @@
-ARG VERSION=dev
-ARG IS_BUILDING_GPU_IMAGE=0
-ARG BASE_IMAGE=continuumio/miniconda3:4.11.0
-FROM ${BASE_IMAGE}
-ADD ./devops/scripts/requirements.txt ./
-ADD ./devops/scripts/setup-conda-env.sh ./
-ADD ./devops/scripts/.condarc /root/
-RUN chmod a+x ./setup-conda-env.sh
-RUN bash ./setup-conda-env.sh ${IS_BUILDING_GPU_IMAGE}
-RUN pip install --upgrade pip
-RUN pip3 uninstall fedml
-RUN pip3 install fedml
-RUN pip3 install -r ./requirements.txt
+FROM fedml/fedml:cuda-11.4.0-devel-ubuntu20.04
 COPY ./python/fedml ./fedml-pip
 COPY ./devops/fedml/conf/fedml.yaml ./fedml/conf/fedml.yaml
 COPY ./devops/fedml/main.py ./fedml/main.py
