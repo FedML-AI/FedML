@@ -153,19 +153,20 @@ def load_arguments(training_type=None, comm_backend=None):
         In MLOps mode, args.client_id_list will be set to real-time client id list selected by UI (not starting from 1)
     """
     print("args.client_id_list = {}".format(print(args.client_id_list)))
-    if args.client_id_list is None or args.client_id_list == "None":
-        if (
-            training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE
-            or training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO
-        ):
-            if args.rank == 0:
-                client_id_list = []
-                for client_idx in range(args.client_num_per_round):
-                    client_id_list.append(client_idx + 1)
-                args.client_id_list = str(client_id_list)
-            else:
-                # for the client, we only specify its client id in the list, not including others.
-                client_id_list = []
-                client_id_list.append(args.rank)
-                args.client_id_list = str(client_id_list)
+    if not args.using_mlops:
+        if args.client_id_list is None or args.client_id_list == "None":
+            if (
+                training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE
+                or training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO
+            ):
+                if args.rank == 0:
+                    client_id_list = []
+                    for client_idx in range(args.client_num_per_round):
+                        client_id_list.append(client_idx + 1)
+                    args.client_id_list = str(client_id_list)
+                else:
+                    # for the client, we only specify its client id in the list, not including others.
+                    client_id_list = []
+                    client_id_list.append(args.rank)
+                    args.client_id_list = str(client_id_list)
     return args
