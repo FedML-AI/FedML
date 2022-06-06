@@ -34,6 +34,7 @@ LOCAL_RUNNER_INFO_DIR_NAME = 'runner_infos'
 
 class FedMLClientRunner:
     def __init__(self, args, edge_id=0, request_json=None, agent_config=None):
+        self.current_training_status = None
         self.mqtt_mgr = None
         self.client_mqtt_mgr = None
         self.edge_id = edge_id
@@ -473,6 +474,13 @@ class FedMLClientRunner:
             self.request_json = request_json
             multiprocessing.Process(target=self.cleanup_client_with_finished_status).start()
 
+    def callback_training_status(self, topic, payload):
+        request_json = json.loads(payload)
+        edge_id = request_json["edge_id"]
+        training_status = request_json["status"]
+        if edge_id == self.edge_id:
+            self.current_training_status = training_status
+
     @staticmethod
     def get_device_id():
         if "nt" in os.name:
@@ -541,6 +549,10 @@ class FedMLClientRunner:
         topic_client_status = "fl_client/mlops/" + str(self.edge_id) + "/status"
         self.mqtt_mgr.add_message_listener(topic_client_status, self.callback_runner_id_status)
 
+        # Setup MQTT message listener for client status
+        topic_training_status = "fl_client/mlops/status"
+        self.mqtt_mgr.add_message_listener(topic_training_status, self.callback_training_status)
+
         # Start MQTT message loop
         self.mqtt_mgr.loop_forever()
 
@@ -580,6 +592,37 @@ def save_runner_infos(unique_device_id, edge_id, run_id=None):
     running_info["edge_id"] = str(edge_id)
     running_info["run_id"] = run_id
     FedMLClientRunner.generate_yaml_doc(running_info, runner_info_file)
+
+
+def save_training_infos(training_status):
+    home_dir = expanduser("~")
+    local_pkg_data_dir = os.path.join(home_dir, LOCAL_HOME_RUNNER_DIR_NAME, "fedml", "data")
+    try:
+        os.makedirs(local_pkg_data_dir)
+    except Exception as e:
+        pass
+    try:
+        os.makedirs(os.path.join(local_pkg_data_dir, LOCAL_RUNNER_INFO_DIR_NAME))
+    except Exception as e:
+        pass
+
+    training_info_file = os.path.join(local_pkg_data_dir, LOCAL_RUNNER_INFO_DIR_NAME, "training_infos.yaml")
+    training_info = dict()
+    training_info["training_status"] = str(training_status)
+    FedMLClientRunner.generate_yaml_doc(training_info, training_info_file)
+
+
+def get_training_infos():
+    home_dir = expanduser("~")
+    local_pkg_data_dir = os.path.join(home_dir, LOCAL_HOME_RUNNER_DIR_NAME, "fedml", "data")
+    training_info_file = os.path.join(local_pkg_data_dir, LOCAL_RUNNER_INFO_DIR_NAME, "training_infos.yaml")
+    training_info = dict()
+    training_info["training_status"] = "INITIALIZING"
+    try:
+        training_info = load_yaml_config(training_info_file)
+    except Exception as e:
+        pass
+    return training_info
 
 
 def __login(args, userid, version):
