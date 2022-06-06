@@ -333,13 +333,9 @@ class FedMLServerRunner:
         edge_id_list = self.request_json["edgeids"]
         for edge_id in edge_id_list:
             self.mlops_metrics.report_client_training_status(edge_id, MqttManager.MSG_MLOPS_CLIENT_STATUS_IDLE)
-            time.sleep(1)
-        time.sleep(3)
 
     def stop_run(self):
         self.setup_client_mqtt_mgr()
-
-        self.reset_all_devices_status()
 
         FedMLServerRunner.cleanup_learning_process()
 
@@ -781,6 +777,7 @@ if __name__ == "__main__":
     parser.add_argument("--user", "-u", type=str,
                         help='account id at MLOps platform')
     parser.add_argument("--version", "-v", type=str, default="release")
+    parser.add_argument("--local_server", "-ls", type=str, default="127.0.0.1")
     args = parser.parse_args()
     click.echo(args)
     args.user = int(args.user)
