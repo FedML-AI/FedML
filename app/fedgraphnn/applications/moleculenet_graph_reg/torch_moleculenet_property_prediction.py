@@ -1,5 +1,4 @@
 import fedml
-import fedgraphnn
 from fedml.simulation import SimulatorMPI
 
 if __name__ == "__main__":
