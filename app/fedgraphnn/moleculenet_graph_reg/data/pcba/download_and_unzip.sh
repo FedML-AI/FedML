@@ -1,1 +1,0 @@
-wget --no-check-certificate --no-proxy https://fedmol.s3-us-west-1.amazonaws.com/datasets/pcba/pcba.zip && unzip pcba.zip && rm pcba.zip
