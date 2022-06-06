@@ -1,15 +1,10 @@
-import copy
 import logging
-import os
 import pickle
 import random
-from math import log2
 
 import torch.utils.data as data
 
-from FedML.fedml_core.non_iid_partition.noniid_partition import (
-    partition_class_samples_with_dirichlet_distribution,
-)
+from fedml.core import partition_class_samples_with_dirichlet_distribution
 from .datasets import MoleculesDataset
 from .utils import *
 
