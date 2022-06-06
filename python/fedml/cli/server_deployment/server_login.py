@@ -334,13 +334,9 @@ class FedMLServerRunner:
         edge_id_list = self.request_json["edgeids"]
         for edge_id in edge_id_list:
             self.mlops_metrics.report_client_training_status(edge_id, MqttManager.MSG_MLOPS_CLIENT_STATUS_IDLE)
-            time.sleep(1)
-        time.sleep(3)
 
     def stop_run(self):
         self.setup_client_mqtt_mgr()
-
-        self.reset_all_devices_status()
 
         FedMLServerRunner.cleanup_learning_process()
 
