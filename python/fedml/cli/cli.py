@@ -113,7 +113,14 @@ def display_server_logs():
     default=None, is_flag=True,
     help="login as the FedML server.",
 )
-def mlops_login(userid, version, client, server):
+@click.option(
+    "--local_server",
+    "-ls",
+    type=str,
+    default="127.0.0.1",
+    help="local server address.",
+)
+def mlops_login(userid, version, client, server, local_server):
     account_id = userid[0]
     platform_url = "open.fedml.ai"
     if version != "release":
@@ -139,7 +146,8 @@ def mlops_login(userid, version, client, server):
         cleanup_login_process(CLIENT_RUNNER_HOME_DIR, CLIENT_RUNNER_INFO_DIR)
         cleanup_all_fedml_processes("client_login.py", exclude_login=True)
         login_pid = subprocess.Popen(
-            [get_python_program(), login_cmd, "-t", "login", "-u", str(account_id), "-v", version]).pid
+            [get_python_program(), login_cmd, "-t", "login", "-u", str(account_id),
+             "-v", version, "-ls", local_server]).pid
         save_login_process(CLIENT_RUNNER_HOME_DIR, CLIENT_RUNNER_INFO_DIR, login_pid)
 
     if is_server:
@@ -150,7 +158,8 @@ def mlops_login(userid, version, client, server):
         cleanup_login_process(SERVER_RUNNER_HOME_DIR, SERVER_RUNNER_INFO_DIR)
         cleanup_all_fedml_processes("server_login.py", exclude_login=True)
         login_pid = subprocess.Popen(
-            [get_python_program(), login_cmd, "-t", "login", "-u", str(account_id), "-v", version]).pid
+            [get_python_program(), login_cmd, "-t", "login", "-u", str(account_id),
+             "-v", version, "-ls", local_server]).pid
         save_login_process(SERVER_RUNNER_HOME_DIR, SERVER_RUNNER_INFO_DIR, login_pid)
 
 
