@@ -19,8 +19,8 @@ then
   --build-arg NCCL_VERSION=$NCCL_VERSION \
   --build-arg CUDA_VERSION=$CUDA_VERSION
 
-elif [[  "$ARCH" == "arm64v8" ]]
-  docker build . -f ./arm64v8/Dockerfile \
+elif [[  "$ARCH" == "arm64v8_m1" ]]
+  docker build . -f ./arm64v8-apple-m1/Dockerfile \
   --build-arg OS=$OS \
   --build-arg DISTRO=$DISTRO \
   --build-arg PYTHON_VERSION=$PYTHON_VERSION \
