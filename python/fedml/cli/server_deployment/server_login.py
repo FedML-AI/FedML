@@ -589,8 +589,10 @@ class FedMLServerRunner:
     @staticmethod
     def get_device_id():
         if "nt" in os.name:
+            # Windows will go this path
             device_id = subprocess.Popen("dmidecode.exe -s system-uuid".split())
         elif "posix" in os.name:
+            # MacBook Pro and Linux (e.g., Ubuntu 20.04) will go this path
             device_id = hex(uuid.getnode())
         else:
             device_id = subprocess.Popen(
