@@ -9,4 +9,4 @@ hostname > mpi_host_file
 
 $(which mpirun) -np $PROCESS_NUM \
 -hostfile mpi_host_file \
-python torch_subgraph_link_prediction.py --cf config/subgraph_link_pred_config.yaml
+python torch_subgraph_link_prediction.py --cf config/fedml_config.yaml
