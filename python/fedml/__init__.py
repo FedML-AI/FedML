@@ -70,7 +70,7 @@ def init(args=None):
     elif (
             args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
             and hasattr(args, "backend")
-            and args.backend == "single_process"
+            and args.backend == "sp"
     ):
         pass
     elif args.training_type == "cross_silo":
