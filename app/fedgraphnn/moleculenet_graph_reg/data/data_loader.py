@@ -7,9 +7,8 @@ from math import log2
 
 import torch.utils.data as data
 
-from FedML.fedml_core.non_iid_partition.noniid_partition import (
-    partition_class_samples_with_dirichlet_distribution,
-)
+from fedml.core import partition_class_samples_with_dirichlet_distribution
+
 from .datasets import MoleculesDataset
 from .utils import *
 
@@ -483,7 +482,7 @@ def load_partition_data_distributed(process_id, path, client_number, uniform=Tru
 
 def load_moleculenet(args, dataset_name):
     num_cats, feat_dim = 0, 0
-    if dataset_name not in ["sider", "clintox", "bbbp", "esol", "freesolv", "herg", "lipo", "pcba", "tox21", "toxcast", "muv","hiv" , "qm7" , "qm8" , "qm9"]:
+    if dataset_name not in ["esol", "freesolv", "herg", "lipo", "qm9"]:
         raise Exception("no such dataset!")
 
     compact = args.model == "graphsage"
