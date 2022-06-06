@@ -139,5 +139,6 @@ if __name__ == "__main__":
     try:
         simulator = SimulatorMPI(args, device, dataset, model, trainer)
         simulator.run()
-    except:
-        raise Exception("debugging on MPI?")
+    except Exception as e:
+        raise e
+
