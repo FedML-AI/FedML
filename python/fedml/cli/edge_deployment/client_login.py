@@ -377,8 +377,11 @@ class FedMLClientRunner:
 
         # Stop cross-silo server with multi processing mode
         self.request_json = request_json
+        client_runner = FedMLClientRunner(self.args, edge_id=self.edge_id,
+                                          request_json=request_json,
+                                          agent_config=self.agent_config)
         try:
-            multiprocessing.Process(target=self.stop_run).start()
+            multiprocessing.Process(target=client_runner.stop_run).start()
         except Exception as e:
             pass
 
@@ -472,14 +475,19 @@ class FedMLClientRunner:
 
             # Stop cross-silo server with multi processing mode
             self.request_json = request_json
-            multiprocessing.Process(target=self.cleanup_client_with_finished_status).start()
+            client_runner = FedMLClientRunner(self.args, edge_id=self.edge_id,
+                                              request_json=request_json,
+                                              agent_config=self.agent_config)
+            multiprocessing.Process(target=client_runner.cleanup_client_with_finished_status).start()
 
     def callback_training_status(self, topic, payload):
         request_json = json.loads(payload)
+        click.echo("callback_training_status: " + payload + ", self.edge_id " + str(self.edge_id))
         edge_id = request_json["edge_id"]
         training_status = request_json["status"]
         if edge_id == self.edge_id:
             self.current_training_status = training_status
+            save_training_infos(training_status)
 
     @staticmethod
     def get_device_id():
