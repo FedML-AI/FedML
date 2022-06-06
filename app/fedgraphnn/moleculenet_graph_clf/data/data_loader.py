@@ -478,7 +478,7 @@ def load_partition_data_distributed(process_id, path, client_number, uniform=Tru
 
 def load_moleculenet(args, dataset_name):
     num_cats, feat_dim = 0, 0
-    if dataset_name not in ["sider", "clintox", "bbbp", "esol", "freesolv", "herg", "lipo", "pcba", "tox21", "toxcast", "muv","hiv" , "qm7" , "qm8" , "qm9"]:
+    if dataset_name not in ["sider", "clintox", "bbbp", "pcba", "tox21", "toxcast", "muv","hiv" ]:
         raise Exception("no such dataset!")
 
     compact = args.model == "graphsage"
