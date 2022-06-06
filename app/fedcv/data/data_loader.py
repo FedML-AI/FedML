@@ -5,6 +5,7 @@ import torch
 from fedcv.data.chexpert.data_loader import load_partition_data_chexpert
 from fedcv.data.imagenet.data_loader import load_partition_data_ImageNet
 from fedcv.data.cityscapes.data_loader import load_partition_data_cityscapes
+from fedcv.data.landmarks.data_loader import load_partition_data_landmarks
 import logging
 
 
@@ -34,7 +35,7 @@ def load_synthetic_data(args):
     else:
         full_batch = False
 
-    if dataset_name in ["chexpert", "chexpert_small"]:
+    if dataset_name.lower() in ["chexpert", "chexpert_small"]:
         # load chexpert dataset
         logging.info("load_data. dataset_name = %s" % dataset_name)
         (
@@ -53,7 +54,7 @@ def load_synthetic_data(args):
             client_number=args.client_num_in_total,
             batch_size=args.batch_size,
         )
-    elif dataset_name == "imagenet":
+    elif dataset_name.lower() == "imagenet":
         # load imagenet dataset
         (
             train_data_num,
@@ -72,7 +73,7 @@ def load_synthetic_data(args):
             client_number=args.client_num_in_total,
             batch_size=args.batch_size,
         )
-    elif dataset_name == "cityscapes":
+    elif dataset_name.lower() == "cityscapes":
         # load cityscapes dataset
         (
             train_data_num,
@@ -91,6 +92,27 @@ def load_synthetic_data(args):
             client_number=args.client_num_in_total,
             batch_size=args.batch_size,
             image_size=args.image_size,
+        )
+    elif dataset_name.lower() == "landmark":
+        # load landmark dataset
+        (
+            train_data_num,
+            test_data_num,
+            train_data_global,
+            test_data_global,
+            data_local_num_dict,
+            train_data_local_dict,
+            test_data_local_dict,
+            class_num,
+        ) = load_partition_data_landmarks(
+            dataset=args.dataset,
+            data_dir=args.data_dir,
+            fed_train_map_file=args.fed_train_map_file,
+            fed_test_map_file=args.fed_test_map_file,
+            partition_method=args.partition_method,
+            partition_alpha=args.partition_alpha,
+            client_number=args.client_num_in_total,
+            batch_size=args.batch_size,
         )
     else:
         return None
