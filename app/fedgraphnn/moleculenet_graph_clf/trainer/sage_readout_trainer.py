@@ -150,10 +150,12 @@ class SageMoleculeNetTrainer(ClientTrainer):
             model_list.append(model)
             score_list.append(score)
             logging.info("Client {}, Test ROC-AUC score = {}".format(client_idx, score))
-            wandb.log({"Client {} Test/ROC-AUC".format(client_idx): score})
+            if args.enable_wandb:
+                wandb.log({"Client {} Test/ROC-AUC".format(client_idx): score})
         avg_score = np.mean(np.array(score_list))
         logging.info("Test ROC-AUC Score = {}".format(avg_score))
-        wandb.log({"Test/ROC-AUC": avg_score})
+        if args.enable_wandb:
+            wandb.log({"Test/ROC-AUC": avg_score})
         return True
 
     def _compare_models(self, model_1, model_2):
