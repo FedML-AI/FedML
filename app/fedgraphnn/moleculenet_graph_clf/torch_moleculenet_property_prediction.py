@@ -61,15 +61,13 @@ def load_data(args, dataset_name):
 
     dataset = [
         train_data_num,
-        val_data_num,
         test_data_num,
         train_data_global,
-        val_data_global,
         test_data_global,
         data_local_num_dict,
         train_data_local_dict,
-        val_data_local_dict,
         test_data_local_dict,
+        labels[0].shape[0],
     ]
 
     return dataset, feature_matrices[0].shape[1], labels[0].shape[0]
@@ -130,18 +128,7 @@ if __name__ == "__main__":
 
     # load data
     dataset, feat_dim, num_cats = load_data(args, args.dataset)
-    [
-        train_data_num,
-        val_data_num,
-        test_data_num,
-        train_data_global,
-        val_data_global,
-        test_data_global,
-        data_local_num_dict,
-        train_data_local_dict,
-        val_data_local_dict,
-        test_data_local_dict,
-    ] = dataset
+   
 
     # create model.
     # Note if the model is DNN (e.g., ResNet), the training will be very slow.
