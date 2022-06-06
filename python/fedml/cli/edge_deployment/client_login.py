@@ -481,7 +481,7 @@ class FedMLClientRunner:
                 pos1 = uuid.find("\\n") + 2
                 uuid = uuid[pos1:-15]
                 return str(uuid)
-            device_id = hex(GetUUID())
+            device_id = str(GetUUID())
             click.echo(device_id)
         elif "posix" in os.name:
             device_id = hex(uuid.getnode())

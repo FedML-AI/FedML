@@ -1,11 +1,13 @@
-from .mpi_p2p_mp.base_framework.algorithm_api import FedML_Base_distributed
-from .mpi_p2p_mp.decentralized_framework.algorithm_api import (
+from .mpi.base_framework.algorithm_api import FedML_Base_distributed
+from .mpi.decentralized_framework.algorithm_api import (
     FedML_Decentralized_Demo_distributed,
 )
-from .mpi_p2p_mp.fedavg.FedAvgAPI import FedML_FedAvg_distributed
-from .mpi_p2p_mp.fedavg_robust.FedAvgRobustAPI import FedML_FedAvgRobust_distributed
+from .mpi.fedavg.FedAvgAPI import FedML_FedAvg_distributed
+from .mpi.fedavg_robust.FedAvgRobustAPI import FedML_FedAvgRobust_distributed
+from .mpi.fedopt.FedOptAPI import FedML_FedOpt_distributed
+from .mpi.fedprox.FedProxAPI import FedML_FedProx_distributed
 
-from .single_process.fedavg import FedAvgAPI
+from .sp.fedavg import FedAvgAPI
 from ..constants import (
     FedML_FEDERATED_OPTIMIZER_BASE_FRAMEWORK,
     FedML_FEDERATED_OPTIMIZER_FEDAVG,
@@ -53,9 +55,29 @@ class SimulatorMPI:
                 args, args.process_id, args.worker_num, args.comm
             )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDOPT:
-            pass
+            self.simulator = FedML_FedOpt_distributed(
+                args,
+                args.process_id,
+                args.worker_number,
+                args.comm,
+                device,
+                dataset,
+                model,
+                model_trainer=model_trainer,
+                preprocessed_sampling_lists=None
+            )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDPROX:
-            pass
+            self.simulator = FedML_FedProx_distributed(
+                args,
+                args.process_id,
+                args.worker_number,
+                args.comm,
+                device,
+                dataset,
+                model,
+                model_trainer=model_trainer,
+                preprocessed_sampling_lists=None
+            )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_CLASSICAL_VFL:
             pass
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_SPLIT_NN:

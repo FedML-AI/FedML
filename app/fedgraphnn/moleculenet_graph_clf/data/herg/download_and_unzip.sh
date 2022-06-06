@@ -1,0 +1,1 @@
+wget --no-check-certificate --no-proxy https://fedmol.s3-us-west-1.amazonaws.com/datasets/herg/herg.zip && unzip herg.zip && rm herg.zip

@@ -110,7 +110,6 @@ class MLOpsRuntimeLog:
             )
 
         os.system("mkdir -p " + args.log_file_dir)
-        client_ids = json.loads(args.client_id_list)
         log_file_path = (
             args.log_file_dir
             + "/fedavg-cross-silo-run-"
