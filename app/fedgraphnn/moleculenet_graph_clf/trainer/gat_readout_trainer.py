@@ -33,9 +33,9 @@ class GatMoleculeNetTrainer(ClientTrainer):
 
         criterion = torch.nn.BCEWithLogitsLoss(reduction="none")
         if args.client_optimizer == "sgd":
-            optimizer = torch.optim.SGD(model.parameters(), lr=args.lr)
+            optimizer = torch.optim.SGD(model.parameters(), lr=args.learning_rate)
         else:
-            optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+            optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
 
         max_test_score = 0
         best_model_params = {}
