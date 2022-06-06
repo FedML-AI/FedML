@@ -9,4 +9,4 @@ hostname > mpi_host_file
 
 $(which mpirun) -np $PROCESS_NUM \
 -hostfile mpi_host_file \
-python torch_fedavg_mnist_lr_step_by_step_example.py --cf config/fedml_config.yaml
+python torch_fedavg_20news_bert_step_by_step_example.py --cf config/fedml_config.yaml
