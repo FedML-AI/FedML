@@ -2,6 +2,7 @@ import json
 import logging
 import multiprocessing
 import os
+import shutil
 import threading
 import time
 
@@ -169,7 +170,7 @@ class MLOpsRuntimeLog:
 
     def log_open(self):
         try:
-            os.system("cp -f " + self.origin_log_file_path + " " + self.log_file_path)
+            shutil.copyfile(self.origin_log_file_path, self.log_file_path)
             if self.log_file is None:
                 self.log_file = open(self.log_file_path, "r")
                 self.log_relocation()

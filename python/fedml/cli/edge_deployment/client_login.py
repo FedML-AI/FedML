@@ -299,14 +299,16 @@ class FedMLClientRunner:
 
     def reset_devices_status(self, edge_id):
         self.mlops_metrics.report_client_training_status(edge_id, MqttManager.MSG_MLOPS_CLIENT_STATUS_FINISHED)
-        time.sleep(3)
 
     def stop_run(self):
         self.setup_client_mqtt_mgr()
 
         self.reset_devices_status(self.edge_id)
 
-        FedMLClientRunner.cleanup_learning_process()
+        try:
+            FedMLClientRunner.cleanup_learning_process()
+        except Exception as e:
+            pass
         click.echo("Stop run successfully.")
 
     def setup_client_mqtt_mgr(self):
@@ -374,9 +376,10 @@ class FedMLClientRunner:
 
         # Stop cross-silo server with multi processing mode
         self.request_json = request_json
-        multiprocessing.Process(target=self.stop_run).start()
-
-        self.mlops_metrics.report_client_training_status(self.edge_id, MqttManager.MSG_MLOPS_CLIENT_STATUS_FINISHED)
+        try:
+            multiprocessing.Process(target=self.stop_run).start()
+        except Exception as e:
+            pass
 
     def cleanup_client_with_finished_status(self):
         self.setup_client_mqtt_mgr()
@@ -469,8 +472,6 @@ class FedMLClientRunner:
             # Stop cross-silo server with multi processing mode
             self.request_json = request_json
             multiprocessing.Process(target=self.cleanup_client_with_finished_status).start()
-
-            self.mlops_metrics.report_client_training_status(self.edge_id, MqttManager.MSG_MLOPS_CLIENT_STATUS_FINISHED)
 
     @staticmethod
     def get_device_id():
@@ -674,6 +675,7 @@ if __name__ == "__main__":
     parser.add_argument("--user", "-u", type=str,
                         help='account id at MLOps platform')
     parser.add_argument("--version", "-v", type=str, default="release")
+    parser.add_argument("--local_server", "-ls", type=str, default="127.0.0.1")
     args = parser.parse_args()
     click.echo(args)
     args.user = int(args.user)
