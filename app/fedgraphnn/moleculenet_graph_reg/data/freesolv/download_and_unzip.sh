@@ -1,0 +1,1 @@
+wget --no-check-certificate --no-proxy https://fedmol.s3-us-west-1.amazonaws.com/datasets/freesolv/freesolv.zip && unzip freesolv.zip && rm freesolv.zip
