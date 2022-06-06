@@ -6,7 +6,7 @@ from fedml.device.gpu_mapping import mapping_processes_to_gpu_device
 
 
 def get_device(args):
-    if args.training_type == "simulation" and args.backend == "single_process":
+    if args.training_type == "simulation" and args.backend == "sp":
         if args.using_gpu:
             device = torch.device(
                 "cuda:" + str(args.gpu_id) if torch.cuda.is_available() else "cpu"
