@@ -1,1 +1,0 @@
-wget --no-check-certificate --no-proxy https://fedmol.s3-us-west-1.amazonaws.com/datasets/qm7/qm7.zip && unzip qm7.zip && rm qm7.zip
