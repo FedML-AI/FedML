@@ -152,8 +152,8 @@ def load_arguments(training_type=None, comm_backend=None):
         generate args.client_id_list for CLI mode where args.client_id_list is set to None
         In MLOps mode, args.client_id_list will be set to real-time client id list selected by UI (not starting from 1)
     """
-    print("args.using_mlops = {}, args.client_id_list = {}".format(args.using_mlops, print(args.client_id_list)))
     if not hasattr(args, "using_mlops") or (hasattr(args, "using_mlops") and not args.using_mlops):
+        print("args.using_mlops = {}, args.client_id_list = {}".format(args.using_mlops, print(args.client_id_list)))
         if args.client_id_list is None or args.client_id_list == "None":
             if (
                 training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE
