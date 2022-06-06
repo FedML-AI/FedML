@@ -64,7 +64,7 @@ device_args:
   gpu_id: 0
 
 comm_args:
-  backend: "single_process"
+  backend: "sp"
 
 tracking_args:
   log_file_dir: ./log
