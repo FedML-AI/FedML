@@ -20,10 +20,13 @@ def create(args, output_dim):
         model = LogisticRegression(28 * 28, output_dim)
     elif model_name == "cnn" and args.dataset == "mnist":
         logging.info("CNN + MNIST")
-        model = CNN_DropOut(False)
+        model = CNN_DropOut(1, False)
+    # elif model_name == "cnn" and args.dataset == "cifar10":
+    #     logging.info("CNN + Cifar10")
+    #     model = CNN_DropOut(False)
     elif model_name == "cnn" and args.dataset == "femnist":
         logging.info("CNN + FederatedEMNIST")
-        model = CNN_DropOut(False)
+        model = CNN_DropOut(1, False)
     elif model_name == "resnet18_gn" and args.dataset == "fed_cifar100":
         logging.info("ResNet18_GN + Federated_CIFAR100")
         model = resnet18()
@@ -50,4 +53,5 @@ def create(args, output_dim):
         model = EfficientNet()
     else:
         model = LogisticRegression(28 * 28, output_dim)
+
     return model
