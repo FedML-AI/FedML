@@ -5,6 +5,7 @@ from .mpi.decentralized_framework.algorithm_api import (
 from .mpi.fedavg.FedAvgAPI import FedML_FedAvg_distributed
 from .mpi.fedavg_robust.FedAvgRobustAPI import FedML_FedAvgRobust_distributed
 from .mpi.fedopt.FedOptAPI import FedML_FedOpt_distributed
+from .mpi.fedprox.FedProxAPI import FedML_FedProx_distributed
 
 from .sp.fedavg import FedAvgAPI
 from ..constants import (
@@ -58,7 +59,6 @@ class SimulatorMPI:
                 args,
                 args.process_id,
                 args.worker_number,
-                args.device,
                 args.comm,
                 device,
                 dataset,
@@ -67,7 +67,17 @@ class SimulatorMPI:
                 preprocessed_sampling_lists=None
             )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDPROX:
-            pass
+            self.simulator = FedML_FedProx_distributed(
+                args,
+                args.process_id,
+                args.worker_number,
+                args.comm,
+                device,
+                dataset,
+                model,
+                model_trainer=model_trainer,
+                preprocessed_sampling_lists=None
+            )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_CLASSICAL_VFL:
             pass
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_SPLIT_NN:
