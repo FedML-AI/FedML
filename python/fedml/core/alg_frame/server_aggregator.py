@@ -13,23 +13,21 @@ class ServerAggregator(ABC):
         self.id = trainer_id
 
     @abstractmethod
-    def get_model_params(self):
+    def init_global_model_params(self):
         pass
 
     @abstractmethod
-    def set_model_params(self, model_parameters):
+    def set_global_model_params(self, model_parameters):
         pass
 
     @abstractmethod
-    def train(self, train_data, device, args=None):
+    def aggregate(self):
         pass
 
     @abstractmethod
-    def test(self, test_data, device, args=None):
+    def client_selection(self):
         pass
 
     @abstractmethod
-    def test_on_the_server(
-        self, train_data_local_dict, test_data_local_dict, device, args=None
-    ) -> bool:
+    def eval(self):
         pass
