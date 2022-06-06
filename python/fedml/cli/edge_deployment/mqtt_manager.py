@@ -47,9 +47,11 @@ class MqttManager(object):
         topic_start_train = "flserver_agent/" + str(self._client_id) + "/start_train"
         topic_stop_train = "flserver_agent/" + str(self._client_id) + "/stop_train"
         topic_client_status = "fl_client/mlops/" + str(self._client_id) + "/status"
+        topic_training_status = "fl_client/mlops/status"
         client.subscribe(topic_start_train)
         client.subscribe(topic_stop_train)
         client.subscribe(topic_client_status)
+        client.subscribe(topic_training_status)
         logging.info("subscribe: " + topic_start_train)
         logging.info("subscribe: " + topic_stop_train)
 
