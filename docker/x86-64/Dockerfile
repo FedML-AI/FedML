@@ -58,9 +58,10 @@ RUN mkdir -p ${WORKSPACE}
 # Python
 # ***************************************************************************
 ARG DEBIAN_FRONTEND=noninteractive
-RUN add-apt-repository universe
 RUN apt-get --allow-downgrades update
-RUN apt-get install -y python3 python3-pip
+RUN apt-get install python3-setuptools
+RUN apt-get install -y python3
+RUN easy_install3 pip
 RUN ln -s /usr/bin/python3 /usr/bin/python
 RUN ln -nsf /usr/bin/pip3 /usr/bin/pip
 
