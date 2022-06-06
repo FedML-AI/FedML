@@ -149,5 +149,8 @@ if __name__ == "__main__":
     model, trainer = create_model(args, args.model, feat_dim, num_cats, output_dim=None)
 
     # start training
-    simulator = SimulatorMPI(args, device, dataset, model, trainer)
-    simulator.run()
+    try:
+        simulator = SimulatorMPI(args, device, dataset, model, trainer)
+        simulator.run()
+    except:
+        raise Exception("debugging on MPI?")
