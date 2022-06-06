@@ -1,18 +1,18 @@
 from mpi4py import MPI
 
+from .FedProxAggregator import FedProxAggregator
+from .FedProxClientManager import FedProxClientManager
+from .FedProxServerManager import FedProxServerManager
+from .FedProxTrainer import FedProxTrainer
+from .my_model_trainer_classification import (
+    MyModelTrainer as MyModelTrainerCLS,
+)
 from .my_model_trainer_nwp import (
     MyModelTrainer as MyModelTrainerNWP,
 )
 from .my_model_trainer_tag_prediction import (
     MyModelTrainer as MyModelTrainerTAG,
 )
-from .my_model_trainer_classification import (
-    MyModelTrainer as MyModelTrainerCLS,
-)
-from .FedProxAggregator import FedProxAggregator
-from .FedProxClientManager import FedProxClientManager
-from .FedProxServerManager import FedProxServerManager
-from .FedProxTrainer import FedProxTrainer
 
 
 def FedML_init():
@@ -23,21 +23,26 @@ def FedML_init():
 
 
 def FedML_FedProx_distributed(
-    process_id,
-    worker_number,
-    device,
-    comm,
-    model,
-    train_data_num,
-    train_data_global,
-    test_data_global,
-    train_data_local_num_dict,
-    train_data_local_dict,
-    test_data_local_dict,
-    args,
-    model_trainer=None,
-    preprocessed_sampling_lists=None,
+        args,
+        process_id,
+        worker_number,
+        comm,
+        device,
+        dataset,
+        model,
+        model_trainer=None,
+        preprocessed_sampling_lists=None,
 ):
+    [
+        train_data_num,
+        test_data_num,
+        train_data_global,
+        test_data_global,
+        train_data_local_num_dict,
+        train_data_local_dict,
+        test_data_local_dict,
+        class_num,
+    ] = dataset
     if process_id == 0:
         init_server(
             args,

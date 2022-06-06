@@ -4,15 +4,9 @@ from .FedOptAggregator import FedOptAggregator
 from .FedOptClientManager import FedOptClientManager
 from .FedOptServerManager import FedOptServerManager
 from .FedOptTrainer import FedOptTrainer
-from .my_model_trainer_classification import (
-    MyModelTrainer as MyModelTrainerCLS,
-)
-from .my_model_trainer_nwp import (
-    MyModelTrainer as MyModelTrainerNWP,
-)
-from .my_model_trainer_tag_prediction import (
-    MyModelTrainer as MyModelTrainerTAG,
-)
+from .my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
+from .my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
+from .my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
 
 
 def FedML_init():
@@ -23,21 +17,26 @@ def FedML_init():
 
 
 def FedML_FedOpt_distributed(
+    args,
     process_id,
     worker_number,
-    device,
     comm,
+    device,
+    dataset,
     model,
-    train_data_num,
-    train_data_global,
-    test_data_global,
-    train_data_local_num_dict,
-    train_data_local_dict,
-    test_data_local_dict,
-    args,
-    model_trainer=None,
-    preprocessed_sampling_lists=None,
+    model_trainer,
+    preprocessed_sampling_lists = None
 ):
+    [
+        train_data_num,
+        test_data_num,
+        train_data_global,
+        test_data_global,
+        train_data_local_num_dict,
+        train_data_local_dict,
+        test_data_local_dict,
+        class_num,
+    ] = dataset
     if process_id == 0:
         init_server(
             args,
@@ -66,6 +65,7 @@ def FedML_FedOpt_distributed(
             train_data_num,
             train_data_local_num_dict,
             train_data_local_dict,
+            test_data_local_dict,
             model_trainer,
         )
 
@@ -137,6 +137,7 @@ def init_client(
     train_data_num,
     train_data_local_num_dict,
     train_data_local_dict,
+    test_data_local_dict,
     model_trainer=None,
 ):
     client_index = process_id - 1
