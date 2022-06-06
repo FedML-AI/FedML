@@ -17,6 +17,7 @@ from fedml.cli.edge_deployment.client_login import LOCAL_RUNNER_INFO_DIR_NAME as
 from fedml.cli.server_deployment.server_login import logout as server_logout
 from fedml.cli.server_deployment.server_login import LOCAL_HOME_RUNNER_DIR_NAME as SERVER_RUNNER_HOME_DIR
 from fedml.cli.server_deployment.server_login import LOCAL_RUNNER_INFO_DIR_NAME as SERVER_RUNNER_INFO_DIR
+from fedml.cli.edge_deployment.client_login import get_training_infos
 
 
 @click.group()
@@ -27,6 +28,12 @@ def cli():
 @cli.command("version", help="Display fedml version.")
 def mlops_version():
     click.echo("fedml version: " + str(fedml.__version__))
+
+
+@cli.command("status", help="Display fedml client training status.")
+def mlops_status():
+    training_infos = get_training_infos()
+    click.echo("Client training status: " + str(training_infos["training_status"]).upper())
 
 
 @cli.command("logs", help="Display fedml logs.")
@@ -253,19 +260,19 @@ def cleanup_all_fedml_processes(login_program, exclude_login=False):
 @click.option(
     "--client",
     "-c",
-    default=None, is_flag=False,
+    default=None, is_flag=True,
     help="logout from the FedML client.",
 )
 @click.option(
     "--server",
     "-s",
-    default=None, is_flag=False,
+    default=None, is_flag=True,
     help="logout from the FedML server.",
 )
 def mlops_logout(client, server):
     is_client = client
     is_server = server
-    if client is False and server is False:
+    if client is None and server is None:
         is_client = True
 
     if is_client:
