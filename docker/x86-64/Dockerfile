@@ -59,7 +59,6 @@ RUN mkdir -p ${WORKSPACE}
 # ***************************************************************************
 ARG DEBIAN_FRONTEND=noninteractive
 RUN echo "nameserver 8.8.8.8" >> /etc/resolv.conf
-RUN systemctl restart systemd-resolved.service
 RUN apt-get update
 RUN cat /etc/apt/sources.list
 RUN apt-get install software-properties-common
