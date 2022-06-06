@@ -9,4 +9,4 @@ hostname > mpi_host_file
 
 $(which mpirun) -np $PROCESS_NUM \
 -hostfile mpi_host_file \
-python torch_fedavg_moleculenet_property_prediction.py --cf config/moleculenet_clf_config.yaml
+python torch_fedavg_moleculenet_property_prediction.py --cf config/fedml_config.yaml
