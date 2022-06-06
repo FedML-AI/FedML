@@ -376,8 +376,6 @@ class FedMLClientRunner:
         self.request_json = request_json
         multiprocessing.Process(target=self.stop_run).start()
 
-        self.mlops_metrics.report_client_training_status(self.edge_id, MqttManager.MSG_MLOPS_CLIENT_STATUS_FINISHED)
-
     def cleanup_client_with_finished_status(self):
         self.setup_client_mqtt_mgr()
 
@@ -469,8 +467,6 @@ class FedMLClientRunner:
             # Stop cross-silo server with multi processing mode
             self.request_json = request_json
             multiprocessing.Process(target=self.cleanup_client_with_finished_status).start()
-
-            self.mlops_metrics.report_client_training_status(self.edge_id, MqttManager.MSG_MLOPS_CLIENT_STATUS_FINISHED)
 
     @staticmethod
     def get_device_id():
