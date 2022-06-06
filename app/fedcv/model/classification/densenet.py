@@ -108,7 +108,7 @@ class _DenseBlock(nn.Module):
         return torch.cat(features, 1)
 
 
-class DenseNet(nn.Module):
+class DenseNet_(nn.Module):
     r"""Densenet-BC model class, based on
     `"Densely Connected Convolutional Networks" <https://arxiv.org/pdf/1608.06993.pdf>`
     Args:
@@ -137,7 +137,7 @@ class DenseNet(nn.Module):
         efficient=False,
     ):
 
-        super(DenseNet, self).__init__()
+        super(DenseNet_, self).__init__()
         assert 0 < compression <= 1, "compression of densenet should be between 0 and 1"
 
         # First convolution
@@ -237,25 +237,39 @@ def _densenet(
     block_config,
     num_init_features: int,
     **kwargs,
-) -> DenseNet:
+) -> DenseNet_:
     if "num_init_features" in kwargs:
         num_init_features = kwargs["num_init_features"]
 
-    model = DenseNet(growth_rate, block_config, num_init_features, **kwargs)
+    model = DenseNet_(growth_rate, block_config, num_init_features, **kwargs)
     return model
 
 
-def densenet121(**kwargs) -> DenseNet:
+def densenet121(**kwargs) -> DenseNet_:
     return _densenet(growth_rate=32, block_config=(6, 12, 24, 16), num_init_features=64, **kwargs)
 
 
-def densenet161(**kwargs) -> DenseNet:
+def densenet161(**kwargs) -> DenseNet_:
     return _densenet(growth_rate=48, block_config=(6, 12, 36, 24), num_init_features=96, **kwargs)
 
 
-def densenet169(**kwargs) -> DenseNet:
+def densenet169(**kwargs) -> DenseNet_:
     return _densenet(growth_rate=32, block_config=(6, 12, 32, 32), num_init_features=64, **kwargs)
 
 
-def densenet201(**kwargs) -> DenseNet:
+def densenet201(**kwargs) -> DenseNet_:
     return _densenet(growth_rate=32, block_config=(6, 12, 48, 32), num_init_features=64, **kwargs)
+
+
+VALID_MODELS = {
+    "densenet121": densenet121,
+    "densenet161": densenet161,
+    "densenet169": densenet169,
+    "densenet201": densenet201,
+}
+
+
+def DenseNet(model_name: str, **kwargs) -> DenseNet_:
+    if model_name not in VALID_MODELS:
+        raise ValueError(f"Invalid model name: {model_name}")
+    return VALID_MODELS[model_name](**kwargs)
