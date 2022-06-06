@@ -39,8 +39,9 @@ def get_device(args):
                 args.gpu_mapping_key if args.using_gpu else None,
             )
         else:
+            device_type = "gpu" if not hasattr(args, "device_type") else args.device_type
             device = mapping_processes_to_gpu_device(
-                args.using_gpu, args.device_type
+                args.using_gpu, device_type
             )
         logging.info("device = {}".format(device))
         return device
