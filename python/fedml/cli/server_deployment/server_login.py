@@ -312,7 +312,6 @@ class FedMLServerRunner:
                                     '--cf', conf_file, '--rank', str(dynamic_args_config["rank"])])
         FedMLServerRunner.save_learning_process(process.pid)
 
-        click.echo("test...")
         if self.check_server_is_ready():
             self.send_training_request_to_edges()
         else:
