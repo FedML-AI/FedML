@@ -25,7 +25,7 @@ from .constants import (
     FEDML_SIMULATION_TYPE_SP,
     FEDML_TRAINING_PLATFORM_CROSS_SILO,
     FEDML_TRAINING_PLATFORM_CROSS_DEVICE,
-    FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
+    FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL,
 )
 
 
@@ -121,10 +121,12 @@ class Arguments:
                 pass
             else:
                 pass
-        
-        
+
         if training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO:
-            if hasattr(self, "scenario") and self.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
+            if (
+                hasattr(self, "scenario")
+                and self.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
+            ):
                 # Add extra configs specific to silos or server
                 if self.rank == 0:
                     extra_config_path = self.server_config_path
@@ -135,13 +137,36 @@ class Arguments:
 
         return configuration
 
-    def set_attr_from_config(self,configuration):
+    def set_attr_from_config(self, configuration):
         for _, param_family in configuration.items():
             for key, val in param_family.items():
                 setattr(self, key, val)
+
 
 def load_arguments(training_type=None, comm_backend=None):
     cmd_args = add_args()
     # Load all arguments from YAML config file
     args = Arguments(cmd_args, training_type, comm_backend)
+
+    """
+        generate args.client_id_list for CLI mode where args.client_id_list is set to None
+        In MLOps mode, args.client_id_list will be set to real-time client id list selected by UI (not starting from 1)
+    """
+    print("args.using_mlops = {}, args.client_id_list = {}".format(args.using_mlops, print(args.client_id_list)))
+    if not args.using_mlops:
+        if args.client_id_list is None or args.client_id_list == "None":
+            if (
+                training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE
+                or training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO
+            ):
+                if args.rank == 0:
+                    client_id_list = []
+                    for client_idx in range(args.client_num_per_round):
+                        client_id_list.append(client_idx + 1)
+                    args.client_id_list = str(client_id_list)
+                else:
+                    # for the client, we only specify its client id in the list, not including others.
+                    client_id_list = []
+                    client_id_list.append(args.rank)
+                    args.client_id_list = str(client_id_list)
     return args

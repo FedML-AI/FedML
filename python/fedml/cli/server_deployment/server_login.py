@@ -312,6 +312,7 @@ class FedMLServerRunner:
                                     '--cf', conf_file, '--rank', str(dynamic_args_config["rank"])])
         FedMLServerRunner.save_learning_process(process.pid)
 
+        click.echo("test...")
         if self.check_server_is_ready():
             self.send_training_request_to_edges()
         else:
@@ -589,8 +590,10 @@ class FedMLServerRunner:
     @staticmethod
     def get_device_id():
         if "nt" in os.name:
+            # Windows will go this path
             device_id = subprocess.Popen("dmidecode.exe -s system-uuid".split())
         elif "posix" in os.name:
+            # MacBook Pro and Linux (e.g., Ubuntu 20.04) will go this path
             device_id = hex(uuid.getnode())
         else:
             device_id = subprocess.Popen(
