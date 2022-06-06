@@ -1,16 +1,22 @@
 from collections import OrderedDict
 
 from torch import nn
-from torchvision.models.utils import load_state_dict_from_url
+
+try:
+    from torch.hub import load_state_dict_from_url  # noqa: 401
+except ImportError:
+    from torch.utils.model_zoo import load_url as load_state_dict_from_url  # noqa: 401
+
 import torch.nn.functional as F
 
-from FedML.fedml_api.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
+from fedml.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
 
 ##############################################################################
 # The following implementation was taken from the following repo with slight #
 # structural modifications to suit our architecture.                         #
 # Source: https://github.com/VainF/DeepLabV3Plus-Pytorch                     #
 ##############################################################################
+
 
 def _make_divisible(v, divisor, min_value=None):
     """
@@ -42,11 +48,11 @@ def fixed_padding(kernel_size, dilation):
 
 class ConvBNReLU(nn.Sequential):
     def __init__(self, in_planes, out_planes, batch_norm, kernel_size=3, stride=1, dilation=1, groups=1):
-        #padding = (kernel_size - 1) // 2
+        # padding = (kernel_size - 1) // 2
         super(ConvBNReLU, self).__init__(
             nn.Conv2d(in_planes, out_planes, kernel_size, stride, 0, dilation=dilation, groups=groups, bias=False),
             batch_norm(out_planes),
-            nn.ReLU6(inplace=True)
+            nn.ReLU6(inplace=True),
         )
 
 
@@ -64,16 +70,20 @@ class InvertedResidual(nn.Module):
             # pw
             layers.append(ConvBNReLU(inp, hidden_dim, kernel_size=1, batch_norm=batch_norm))
 
-        layers.extend([
-            # dw
-            ConvBNReLU(hidden_dim, hidden_dim, stride=stride, dilation=dilation, groups=hidden_dim, batch_norm=batch_norm),
-            # pw-linear
-            nn.Conv2d(hidden_dim, oup, 1, 1, 0, bias=False),
-            batch_norm(oup),
-        ])
+        layers.extend(
+            [
+                # dw
+                ConvBNReLU(
+                    hidden_dim, hidden_dim, stride=stride, dilation=dilation, groups=hidden_dim, batch_norm=batch_norm
+                ),
+                # pw-linear
+                nn.Conv2d(hidden_dim, oup, 1, 1, 0, bias=False),
+                batch_norm(oup),
+            ]
+        )
         self.conv = nn.Sequential(*layers)
 
-        self.input_padding = fixed_padding( 3, dilation )
+        self.input_padding = fixed_padding(3, dilation)
 
     def forward(self, x):
         x_pad = F.pad(x, self.input_padding)
@@ -84,7 +94,16 @@ class InvertedResidual(nn.Module):
 
 
 class MobileNetV2(nn.Module):
-    def __init__(self, output_stride, batch_norm, num_classes=1000, width_mult=1.0, inverted_residual_setting=None, round_nearest=8, pretrained=True):
+    def __init__(
+        self,
+        output_stride,
+        batch_norm,
+        num_classes=1000,
+        width_mult=1.0,
+        inverted_residual_setting=None,
+        round_nearest=8,
+        pretrained=True,
+    ):
         """
         MobileNet V2 main class
         Args:
@@ -114,15 +133,17 @@ class MobileNetV2(nn.Module):
 
         # only check the first element, assuming user knows t,c,n,s are required
         if len(inverted_residual_setting) == 0 or len(inverted_residual_setting[0]) != 4:
-            raise ValueError("inverted_residual_setting should be non-empty "
-                             "or a 4-element list, got {}".format(inverted_residual_setting))
+            raise ValueError(
+                "inverted_residual_setting should be non-empty "
+                "or a 4-element list, got {}".format(inverted_residual_setting)
+            )
 
         # building first layer
         input_channel = _make_divisible(input_channel * width_mult, round_nearest)
         self.last_channel = _make_divisible(last_channel * max(1.0, width_mult), round_nearest)
         features = [ConvBNReLU(3, input_channel, batch_norm=batch_norm, stride=2)]
         current_stride *= 2
-        dilation=1
+        dilation = 1
 
         # building inverted residual blocks
         for t, c, n, s in inverted_residual_setting:
@@ -137,9 +158,20 @@ class MobileNetV2(nn.Module):
 
             for i in range(n):
                 if i == 0:
-                    features.append(block(input_channel, output_channel, stride, previous_dilation, expand_ratio=t, batch_norm=batch_norm))
+                    features.append(
+                        block(
+                            input_channel,
+                            output_channel,
+                            stride,
+                            previous_dilation,
+                            expand_ratio=t,
+                            batch_norm=batch_norm,
+                        )
+                    )
                 else:
-                    features.append(block(input_channel, output_channel, 1, dilation, expand_ratio=t, batch_norm=batch_norm))
+                    features.append(
+                        block(input_channel, output_channel, 1, dilation, expand_ratio=t, batch_norm=batch_norm)
+                    )
                 input_channel = output_channel
         # building last several layers
         features.append(ConvBNReLU(input_channel, self.last_channel, kernel_size=1, batch_norm=batch_norm))
@@ -166,7 +198,7 @@ class MobileNetV2(nn.Module):
     def _init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out')
+                nn.init.kaiming_normal_(m.weight, mode="fan_out")
                 if m.bias is not None:
                     nn.init.zeros_(m.bias)
             elif isinstance(m, nn.BatchNorm2d):
@@ -180,7 +212,9 @@ class MobileNetV2(nn.Module):
                 nn.init.zeros_(m.bias)
 
     def _load_pretrained_model(self):
-        pretrain_dict =load_state_dict_from_url('https://download.pytorch.org/models/mobilenet_v2-b0353104.pth', progress=True)
+        pretrain_dict = load_state_dict_from_url(
+            "https://download.pytorch.org/models/mobilenet_v2-b0353104.pth", progress=True
+        )
         self.load_state_dict(pretrain_dict)
 
 
@@ -209,7 +243,7 @@ class IntermediateLayerGetter(nn.ModuleDict):
             if name in self.return_layers:
                 out_name = self.return_layers[name]
                 out[out_name] = x
-        return out['out'], out['low_level']
+        return out["out"], out["low_level"]
 
 
 def MobileNetV2Encoder(**kwargs):

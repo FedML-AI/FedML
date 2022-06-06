@@ -8,15 +8,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from FedML.fedml_api.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
-from model.segmentation.unet_utils import Conv2dReLU, Activation, Attention
-from model.segmentation.resnet import ResNet101
+from fedml.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
+from unet_utils import Conv2dReLU, Activation, Attention
+from fedcv.model.segmentation.resnet import ResNet101
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../FedML")))
-from fedml_api.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
 
 class SegmentationHead(nn.Sequential):
-
     def __init__(self, in_channels, out_channels, kernel_size=3, activation=None, upsampling=1):
         conv2d = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=kernel_size // 2)
         upsampling = nn.UpsamplingBilinear2d(scale_factor=upsampling) if upsampling > 1 else nn.Identity()
@@ -26,12 +23,12 @@ class SegmentationHead(nn.Sequential):
 
 class DecoderBlock(nn.Module):
     def __init__(
-            self,
-            in_channels,
-            skip_channels,
-            out_channels,
-            use_batchnorm=True,
-            attention_type=None,
+        self,
+        in_channels,
+        skip_channels,
+        out_channels,
+        use_batchnorm=True,
+        attention_type=None,
     ):
         super().__init__()
         self.conv1 = Conv2dReLU(
@@ -86,13 +83,13 @@ class CenterBlock(nn.Sequential):
 
 class UnetDecoder(nn.Module):
     def __init__(
-            self,
-            encoder_channels,
-            decoder_channels,
-            n_blocks=5,
-            use_batchnorm=True,
-            attention_type=None,
-            center=False,
+        self,
+        encoder_channels,
+        decoder_channels,
+        n_blocks=5,
+        use_batchnorm=True,
+        attention_type=None,
+        center=False,
     ):
         super().__init__()
 
@@ -112,12 +109,8 @@ class UnetDecoder(nn.Module):
         skip_channels = list(encoder_channels[1:]) + [0]
         out_channels = decoder_channels
 
-
-
         if center:
-            self.center = CenterBlock(
-                head_channels, head_channels, use_batchnorm=use_batchnorm
-            )
+            self.center = CenterBlock(head_channels, head_channels, use_batchnorm=use_batchnorm)
         else:
             self.center = nn.Identity()
 
@@ -131,7 +124,7 @@ class UnetDecoder(nn.Module):
 
     def forward(self, *features):
 
-        features = features[1:]    # remove first skip with same spatial resolution
+        features = features[1:]  # remove first skip with same spatial resolution
         features = features[::-1]  # reverse channels to start from head of encoder
 
         head = features[0]
@@ -147,21 +140,21 @@ class UnetDecoder(nn.Module):
 
 class FeatureExtractor(nn.Module):
     def __init__(self, backbone, output_stride, BatchNorm, pretrained):
-        super(FeatureExtractor,self).__init__()
-        self.backbone = self.build_backbone(backbone=backbone, output_stride=output_stride, BatchNorm=BatchNorm, pretrained=pretrained)
+        super(FeatureExtractor, self).__init__()
+        self.backbone = self.build_backbone(
+            backbone=backbone, output_stride=output_stride, BatchNorm=BatchNorm, pretrained=pretrained
+        )
 
     def forward(self, input):
         features = self.backbone(input)
         return features
 
     @staticmethod
-    def build_backbone(backbone='resnet', 
-                        output_stride=16, 
-                        BatchNorm=nn.BatchNorm2d, 
-                        pretrained=False, 
-                        model_name="unet"):
- 
-        if backbone == 'resnet':
+    def build_backbone(
+        backbone="resnet", output_stride=16, BatchNorm=nn.BatchNorm2d, pretrained=False, model_name="unet"
+    ):
+
+        if backbone == "resnet":
             return ResNet101(output_stride, BatchNorm, model_name, pretrained=False)
         else:
             raise NotImplementedError
@@ -170,20 +163,20 @@ class FeatureExtractor(nn.Module):
 class UNet(nn.Module):
     def __init__(
         self,
-        backbone = "resnet",
-        encoder_depth = 5,
-        encoder_weights = "imagenet",
-        decoder_use_batchnorm = True,
-        encoder_out_channels = [3, 64, 256, 512, 1024, 2048],
-        decoder_channels = [256, 128, 64, 32, 16],
-        decoder_attention_type = None,
-        in_channels = 3,
-        n_classes = 21,
-        activation = None,
-        aux_params = None,
-        output_stride = 16,
+        backbone="resnet",
+        encoder_depth=5,
+        encoder_weights="imagenet",
+        decoder_use_batchnorm=True,
+        encoder_out_channels=[3, 64, 256, 512, 1024, 2048],
+        decoder_channels=[256, 128, 64, 32, 16],
+        decoder_attention_type=None,
+        in_channels=3,
+        n_classes=21,
+        activation=None,
+        aux_params=None,
+        output_stride=16,
         pretrained=False,
-        sync_bn=False
+        sync_bn=False,
     ):
         super(UNet, self).__init__()
 
@@ -191,21 +184,21 @@ class UNet(nn.Module):
             BatchNorm2d = SynchronizedBatchNorm2d
         else:
             BatchNorm2d = nn.BatchNorm2d
-        
+
         self.n_classes = n_classes
 
-        logging.info("Constructing UNet model with Backbone {0}, number of classes {1}, output stride {2}".format(backbone,n_classes,output_stride))
-
-        self.encoder = FeatureExtractor(
-            backbone=backbone, 
-            output_stride=output_stride,
-            BatchNorm=BatchNorm2d,
-            pretrained=pretrained
+        logging.info(
+            "Constructing UNet model with Backbone {0}, number of classes {1}, output stride {2}".format(
+                backbone, n_classes, output_stride
+            )
         )
 
- 
+        self.encoder = FeatureExtractor(
+            backbone=backbone, output_stride=output_stride, BatchNorm=BatchNorm2d, pretrained=pretrained
+        )
+
         self.decoder = UnetDecoder(
-            encoder_channels=encoder_out_channels[: encoder_depth+1],
+            encoder_channels=encoder_out_channels[: encoder_depth + 1],
             decoder_channels=decoder_channels,
             n_blocks=encoder_depth,
             use_batchnorm=decoder_use_batchnorm,
@@ -220,7 +213,6 @@ class UNet(nn.Module):
             kernel_size=3,
         )
 
-        
     def initialize_decoder(self, module):
         for m in module.modules():
 
@@ -238,7 +230,6 @@ class UNet(nn.Module):
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0)
 
-
     def initialize_head(self, module):
         for m in module.modules():
             if isinstance(m, (nn.Linear, nn.Conv2d)):
@@ -246,11 +237,9 @@ class UNet(nn.Module):
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0)
 
-
     def initialize(self):
         self.initialize_decoder(self.decoder)
         self.initialize_head(self.segmentation_head)
-
 
     def forward(self, x):
         features = self.encoder(x)
@@ -262,19 +251,22 @@ class UNet(nn.Module):
         return masks
 
     def get_1x_lr_params(self):
-            modules = [self.encoder.backbone]
-            for i in range(len(modules)):
-                for m in modules[i].named_modules():
-                    if isinstance(m[1], nn.Conv2d):
+        modules = [self.encoder.backbone]
+        for i in range(len(modules)):
+            for m in modules[i].named_modules():
+                if isinstance(m[1], nn.Conv2d):
+                    for p in m[1].parameters():
+                        if p.requires_grad:
+                            yield p
+                else:
+                    if (
+                        isinstance(m[1], nn.Conv2d)
+                        or isinstance(m[1], SynchronizedBatchNorm2d)
+                        or isinstance(m[1], nn.BatchNorm2d)
+                    ):
                         for p in m[1].parameters():
                             if p.requires_grad:
                                 yield p
-                    else:
-                        if isinstance(m[1], nn.Conv2d) or isinstance(m[1], SynchronizedBatchNorm2d) \
-                                or isinstance(m[1], nn.BatchNorm2d):
-                            for p in m[1].parameters():
-                                if p.requires_grad:
-                                    yield p
 
     def get_10x_lr_params(self):
         modules = [self.decoder, self.segmentation_head]
@@ -285,8 +277,11 @@ class UNet(nn.Module):
                         if p.requires_grad:
                             yield p
                 else:
-                    if isinstance(m[1], nn.Conv2d) or isinstance(m[1], SynchronizedBatchNorm2d) \
-                            or isinstance(m[1], nn.BatchNorm2d):
+                    if (
+                        isinstance(m[1], nn.Conv2d)
+                        or isinstance(m[1], SynchronizedBatchNorm2d)
+                        or isinstance(m[1], nn.BatchNorm2d)
+                    ):
                         for p in m[1].parameters():
                             if p.requires_grad:
                                 yield p
