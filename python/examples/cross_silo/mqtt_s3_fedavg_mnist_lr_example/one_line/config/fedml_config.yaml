@@ -21,7 +21,8 @@ model_args:
 
 train_args:
   federated_optimizer: "FedAvg"
-  client_id_list: "[1, 2]"
+  # for CLI running, this can be None; in MLOps deployment, `client_id_list` will be replaced with real-time selected devices
+  client_id_list:
   client_num_in_total: 2
   client_num_per_round: 2
   comm_round: 50
@@ -36,9 +37,8 @@ validation_args:
 
 device_args:
   worker_num: 2
-  using_gpu: false
-  gpu_mapping_file: config/gpu_mapping.yaml
-  gpu_mapping_key: mapping_default
+  using_gpu: true
+  device_type: mps
 
 comm_args:
   backend: "MQTT_S3"
