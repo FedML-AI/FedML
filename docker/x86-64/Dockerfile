@@ -58,6 +58,7 @@ RUN mkdir -p ${WORKSPACE}
 # Python
 # ***************************************************************************
 ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get install software-properties-common
 RUN add-apt-repository universe
 RUN apt-get --allow-downgrades update
 RUN cat /etc/apt/sources.list
