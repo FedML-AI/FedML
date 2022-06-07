@@ -5,21 +5,19 @@ import logging
 import pickle
 import numpy as np
 
-import matplotlib.pyplot as plt
-import seaborn as sns
-
 from torch_geometric.data import DataLoader
-from ..utils import DefaultCollator, WalkForestCollator
+from .utils import DefaultCollator, WalkForestCollator
 
+from fedml.core import partition_class_samples_with_dirichlet_distribution
 
-from FedML.fedml_core.non_iid_partition.noniid_partition import (
-    partition_class_samples_with_dirichlet_distribution,
-)
-
-
-def get_data_community(path, data, pred_task, algo):
+def get_data_community(path, data, pred_task, algo = "Louvain"):
     assert pred_task in ["relation", "link"]
     assert data in ["wn18rr", "FB15k-237", "YAGO3-10"]
+
+    if pred_task == "link":
+        # for link prediction with communities grouped by the relation type
+        subdir = "subgraphs_byRelType"
+        num_of_classes = 2
 
     if pred_task == "relation" and algo == "Louvain":
         # for relation type prediction
@@ -31,10 +29,7 @@ def get_data_community(path, data, pred_task, algo):
         if data == "YAGO3-10":
             num_of_classes = 37
 
-    if pred_task == "link":
-        # for link prediction with communities grouped by the relation type
-        subdir = "subgraphs_byRelType"
-        num_of_classes = 2
+    
 
     graphs_train = pickle.load(
         open(os.path.join(path, data, subdir, "train.pkl"), "rb")
