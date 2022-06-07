@@ -1,4 +1,4 @@
-from data_manager.base_data_manager import BaseDataManager
+from data.data_manager.base_data_manager import BaseDataManager
 from torch.utils.data import DataLoader
 import h5py
 import json

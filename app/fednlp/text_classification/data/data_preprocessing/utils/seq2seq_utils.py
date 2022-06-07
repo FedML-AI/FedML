@@ -11,8 +11,8 @@ from tokenizers.processors import BertProcessing
 from torch.utils.data import Dataset
 from tqdm.auto import tqdm
 from transformers import PreTrainedTokenizer
-from transformers.modeling_bart import shift_tokens_right
 
+from transformers.models.bart.modeling_bart import shift_tokens_right
 logger = logging.getLogger(__name__)
 
 

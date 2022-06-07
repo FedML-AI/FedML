@@ -3,12 +3,12 @@ from torch import nn
 
 from fedml.core import ClientTrainer
 import logging
-from text_classification_utils import *
+from trainer.text_classification_utils import *
 import copy
 import logging
 import math
 import os
-from model_args import ClassificationArgs
+from trainer.model_args import ClassificationArgs
 import numpy as np
 import sklearn
 import wandb
@@ -36,7 +36,7 @@ class MyModelTrainer(ClientTrainer):
         "learning_rate": args.learning_rate,
         "gradient_accumulation_steps": args.gradient_accumulation_steps,
         "do_lower_case": args.do_lower_case,
-        "manual_seed": args.manual_seed,
+        "manual_seed": args.random_seed,
         # for ignoring the cache features.
         "reprocess_input_data": args.reprocess_input_data,
         "overwrite_output_dir": True,
@@ -174,17 +174,15 @@ class MyModelTrainer(ClientTrainer):
                 metrics["test_total"] += target.size(0)
         return metrics
 
-    def test_on_the_server(
-        self, train_data_local_dict, test_data_local_dict, device, args=None
-    ) -> bool:
-         logging.info("----------test_on_the_server--------")
-         accuracy_list, metric_list = [], []
-         for client_idx in test_data_local_dict.keys():
-             test_data = test_data_local_dict[client_idx]
-              metrics = self.test(test_data, device, args)
-              metric_list.append(metrics)
-              accuracy_list.append(metrics['test_correct']/metrics["test_total"])
-              logging.info("Client {}, Test accuracy = {}".format(client_idx, metrics['test_correct']/metrics["test_total"]))
-          avg_accuracy = np.mean(np.array(accuracy_list))
-          logging.info("Test Accuracy = {}".format(avg_accuracy))
+    def test_on_the_server(self, train_data_local_dict, test_data_local_dict, device, args=None) -> bool:
+        logging.info("----------test_on_the_server--------")
+        accuracy_list, metric_list = [], []
+        for client_idx in test_data_local_dict.keys():
+            test_data = test_data_local_dict[client_idx]
+            metrics = self.test(test_data, device, args)
+            metric_list.append(metrics)
+            accuracy_list.append(metrics['test_correct']/metrics["test_total"])
+            logging.info("Client {}, Test accuracy = {}".format(client_idx, metrics['test_correct']/metrics["test_total"]))
+        avg_accuracy = np.mean(np.array(accuracy_list))
+        logging.info("Test Accuracy = {}".format(avg_accuracy))
         return False
