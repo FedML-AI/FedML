@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import h5py
 import json
 
-from data_preprocessing.base.base_data_loader import BaseDataLoader
+from data.data_preprocessing.base.base_data_loader import BaseDataLoader
 from tqdm import tqdm
 import logging
 import h5py
