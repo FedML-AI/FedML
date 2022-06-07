@@ -7,6 +7,6 @@ echo $PROCESS_NUM
 
 hostname > mpi_host_file
 
-$(which mpirun) -np $PROCESS_NUM \
+$(which mpirun) -m mpi4py -np $PROCESS_NUM \
 -hostfile mpi_host_file \
 python torch_subgraph_fedgnn_main.py --cf config/fedml_config.yaml
