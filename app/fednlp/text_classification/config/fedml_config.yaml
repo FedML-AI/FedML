@@ -10,10 +10,11 @@ data_args:
   reprocess_input_data: false
 
 model_args:
-  model_type: bert
-  model_class: transformer
-  model: bert-base-uncased
+  model_type: "bert"
+  model_class: "transformer"
+  model: "bert-base-uncased"
   do_lower_case: true
+  formulation: "classification"
 
 train_args:
   federated_optimizer: "FedAvg"

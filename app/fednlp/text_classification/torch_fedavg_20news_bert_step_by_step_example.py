@@ -5,6 +5,20 @@ from model.bert_model import BertForSequenceClassification
 from trainer.classification_trainer import MyModelTrainer as MyCLSTrainer
 from data.data_loader import load
 from fedml.simulation import SimulatorMPI as Simulator
+import logging
+from transformers import (
+    BertConfig,
+    BertTokenizer,
+    BertForTokenClassification,
+    BertForQuestionAnswering,
+    DistilBertConfig,
+    DistilBertTokenizer,
+    DistilBertForTokenClassification,
+    DistilBertForQuestionAnswering,
+    BartConfig,
+    BartForConditionalGeneration,
+    BartTokenizer,
+)
 
 def create_model(args, output_dim = 1):
     model_name = args.model
