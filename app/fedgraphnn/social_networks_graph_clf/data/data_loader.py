@@ -1,17 +1,14 @@
 import copy
 import logging
 import os
-import pickle
 import random
-from math import log2
 
+import matplotlib as plt
 import torch.utils.data as data
-
-from torch_geometric.datasets import TUDataset
 from torch_geometric.data import DataLoader
+from torch_geometric.datasets import TUDataset
 
 from fedml.core import partition_class_samples_with_dirichlet_distribution
-
 from .datasets import MoleculesDataset
 from .utils import *
 
