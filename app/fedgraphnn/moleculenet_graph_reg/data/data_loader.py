@@ -41,6 +41,7 @@ def create_random_split(path):
     train_adj_matrices = [
         adj_matrices[all_idxs[i]] for i in range(train_range[0], train_range[1])
     ]
+
     train_feature_matrices = [
         feature_matrices[all_idxs[i]] for i in range(train_range[0], train_range[1])
     ]
@@ -234,6 +235,7 @@ def partition_data_by_sample_size(
 
     return global_data_dict, partition_dicts
 
+
 # For centralized training
 def get_dataloader(path, compact=True, normalize_features=False, normalize_adj=False):
     (
@@ -293,6 +295,7 @@ def get_dataloader(path, compact=True, normalize_features=False, normalize_adj=F
     )
 
     return train_dataloader, val_dataloader, test_dataloader
+
 
 # Single process sequential
 def load_partition_data(
@@ -474,6 +477,7 @@ def load_partition_data_distributed(process_id, path, client_number, uniform=Tru
         val_data_local,
         test_data_local,
     )
+
 
 def load_moleculenet(args, dataset_name):
     num_cats, feat_dim = 0, 0

@@ -1,12 +1,14 @@
 import logging
 
 import fedml
+from trainer.gat_readout_trainer_regression import GatMoleculeNetTrainer
+from trainer.sage_readout_trainer_regression import SageMoleculeNetTrainer
+from trainer.gcn_trainer_readout_regression import GcnMoleculeNetTrainer
 from data.data_loader import load_partition_data, get_data
 from fedml.simulation import SimulatorMPI
 from model.gat_readout import GatMoleculeNet
 from model.gcn_readout import GcnMoleculeNet
 from model.sage_readout import SageMoleculeNet
-from trainer.moleculenet_regression_trainer import MoleculeNetRegTrainer
 
 
 def load_data(args, dataset_name):
@@ -23,7 +25,7 @@ def load_data(args, dataset_name):
         args.normalize_features = True
         args.normalize_adjacency = True
 
-    args.metric = 'rmse'
+    args.metric = "rmse"
 
     (
         train_data_num,
@@ -59,6 +61,7 @@ def load_data(args, dataset_name):
 
     return dataset, feature_matrices[0].shape[1], labels[0].shape[0]
 
+
 def create_model(args, model_name, feat_dim, num_cats, output_dim):
     logging.info(
         "create_model. model_name = %s, output_dim = %s" % (model_name, output_dim)
@@ -73,6 +76,7 @@ def create_model(args, model_name, feat_dim, num_cats, output_dim):
             args.graph_embedding_dim,
             num_cats,
         )
+        trainer = SageMoleculeNetTrainer(model)
     elif model_name == "gat":
         model = GatMoleculeNet(
             feat_dim,
@@ -85,6 +89,7 @@ def create_model(args, model_name, feat_dim, num_cats, output_dim):
             args.graph_embedding_dim,
             num_cats,
         )
+        trainer = GatMoleculeNetTrainer(model)
     elif model_name == "gcn":
         model = GcnMoleculeNet(
             feat_dim,
@@ -96,13 +101,11 @@ def create_model(args, model_name, feat_dim, num_cats, output_dim):
             num_cats,
             sparse_adj=args.sparse_adjacency,
         )
+        trainer = GcnMoleculeNetTrainer(model)
     else:
         raise Exception("such model does not exist !")
-    logging.info("done")
-    trainer = MoleculeNetRegTrainer(model)
+
     return model, trainer
-
-
 
 
 if __name__ == "__main__":

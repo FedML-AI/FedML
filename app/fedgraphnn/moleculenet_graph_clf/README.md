@@ -2,8 +2,7 @@
 
 1. download the dataset
 ```
-WORKSPACE=./FedML/app/fedgraphnn/data/moleculenet/sider
-cd $WORKSPACE
+cd data/sider
 sh download_and_unzip.sh
 ```
 
