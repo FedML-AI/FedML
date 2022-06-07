@@ -1,6 +1,7 @@
 import argparse
 import copy
 import json
+import logging
 import multiprocessing
 import os
 import platform
@@ -359,8 +360,6 @@ class FedMLServerRunner:
             click.echo("start_train: send topic " + topic_start_train + " to client...")
             self.client_mqtt_mgr.send_message(topic_start_train, json.dumps(self.request_json))
 
-        time.sleep(2)
-
     def callback_start_train(self, topic, payload):
         click.echo("callback_start_train: topic = %s, payload = %s" % (topic, payload))
 
@@ -406,7 +405,7 @@ class FedMLServerRunner:
             if server_started:
                 break
             else:
-                time.sleep(3)
+                time.sleep(1)
 
         if not server_started:
             click.echo("Server can not be started.")
@@ -414,7 +413,6 @@ class FedMLServerRunner:
             return
 
         click.echo("server_started: "+str(server_started))
-        time.sleep(2)
         return server_started
 
     def setup_client_mqtt_mgr(self):
@@ -427,7 +425,6 @@ class FedMLServerRunner:
                 self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
                 "ServerAgent_Comm_Server" + str(uuid.uuid4()),
             )
-            time.sleep(3)
 
         if self.mlops_metrics is None:
             self.mlops_metrics = MLOpsMetrics()
@@ -717,7 +714,7 @@ def __login(args, userid, version):
             break
         except Exception as e:
             config_try_count += 1
-            time.sleep(3)
+            time.sleep(1)
             continue
 
     if config_try_count >= 5:
