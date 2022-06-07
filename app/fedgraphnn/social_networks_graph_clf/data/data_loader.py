@@ -18,7 +18,7 @@ from .utils import *
 
 def get_data(path, data, convert_x=True):
 
-    tudataset = TUDataset(f"{path}/TUDataset", data)
+    tudataset = TUDataset(f"{path}", data)
 
     if not tudataset[0].__contains__("x") or convert_x:
         new_graphs = convert_to_nodeDegreeFeatures(tudataset)
