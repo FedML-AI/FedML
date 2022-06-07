@@ -8,4 +8,4 @@ hostname > mpi_host_file
 
 $(which mpirun) -np $PROCESS_NUM \
 -hostfile mpi_host_file \
-/home/dbc/fednlp_migration/bin/python3.7 torch_fedavg_20news_bert_step_by_step_example.py --cf config/fedml_config.yaml
+/home/ubuntu/fednlp_migration/bin/python3.8 torch_fedavg_20news_bert_step_by_step_example.py --cf config/fedml_config.yaml
