@@ -150,9 +150,7 @@ class GatMoleculeNetTrainer(ClientTrainer):
                 wandb.log(
                     {"Client {} Test/{}".format(client_idx, args.metric.upper()): score}
                 )
-
-        avg_score = list(map(lambda x: sum(x) / len(x), zip(score_list)))
-
+        avg_score = np.mean(np.array(score_list))
         logging.info("Test {} score = {}".format(args.metric.upper(), avg_score))
         if args.enable_wandb:
             wandb.log({"Test/{}}".format(args.metric.upper()): avg_score})
