@@ -1,14 +1,10 @@
-import copy
 import logging
-import os
 import pickle
 import random
-from math import log2
 
 import torch.utils.data as data
 
 from fedml.core import partition_class_samples_with_dirichlet_distribution
-
 from .datasets import MoleculesDataset
 from .utils import *
 
@@ -478,7 +474,6 @@ def load_partition_data_distributed(process_id, path, client_number, uniform=Tru
         val_data_local,
         test_data_local,
     )
-
 
 def load_moleculenet(args, dataset_name):
     num_cats, feat_dim = 0, 0
