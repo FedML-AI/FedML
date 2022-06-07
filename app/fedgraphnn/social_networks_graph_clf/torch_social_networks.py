@@ -79,6 +79,7 @@ def create_model(args, model_name, feat_dim, num_cats, output_dim):
     logging.info("done")
     return model, trainer
 
+
 if __name__ == "__main__":
     # init FedML framework
     args = fedml.init()
@@ -88,9 +89,8 @@ if __name__ == "__main__":
 
     # load data
     dataset, feat_dim, num_cats = load_data(args, args.dataset)
-   
 
-    # create model.
+    # create model
     # Note if the model is DNN (e.g., ResNet), the training will be very slow.
     # In this case, please use our FedML distributed version (./fedml_experiments/distributed_fedavg)
     model, trainer = create_model(args, args.model, feat_dim, num_cats, output_dim=None)
