@@ -56,6 +56,8 @@ class MoleculeNetRegTrainer(ClientTrainer):
                 loss = criterion(logits, label)
                 loss.backward()
                 optimizer.step()
+                print(mol_idxs)
+            print(epoch)
 
    
 
