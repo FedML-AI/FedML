@@ -152,14 +152,7 @@ class SageMoleculeNetTrainer(ClientTrainer):
                 wandb.log(
                     {"Client {} Test/{}".format(client_idx, args.metric.upper()): score}
                 )
-
-        """
-        # TODO: @emir, please double check line #161
-        [FedML-Server(0) @device-id-0] [Tue, 07 Jun 2022 13:39:22] [INFO] [sage_readout_trainer_regression.py:149:test_on_the_server] Client 3, Test RMSE = 1.600169062614441
-        [FedML-Server(0) @device-id-0] [Tue, 07 Jun 2022 13:39:22] [INFO] [sage_readout_trainer_regression.py:158:test_on_the_server] Test RMSE score = [1.6069356203079224, 1.624732255935669, 1.622247338294983, 1.600169062614441]
-        """
-        avg_score = list(map(lambda x: sum(x) / len(x), zip(score_list)))
-
+        avg_score = np.mean(np.array(score_list))
         logging.info("Test {} score = {}".format(args.metric.upper(), avg_score))
         if args.enable_wandb:
             wandb.log({"Test/{}}".format(args.metric.upper()): avg_score})
