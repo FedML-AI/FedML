@@ -3,9 +3,10 @@ common_args:
   random_seed: 0
 
 data_args:
-  dataset: "Cora"
-  data_cache_dir: "./../../../data/ego-networks/"
+  dataset: "cora"
+  data_cache_dir: "./data/ego-networks/"
   partition_method: "hetero"
+  part_file: "./data/ego-networks/partition/"
   partition_alpha: 0.5
   ego_number: 10
   hop_number: 2
