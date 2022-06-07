@@ -7,11 +7,9 @@ import random
 import numpy as np
 from torch_geometric.data import DataLoader
 
-from fedml.python.core.non_iid_partition import (
-    partition_class_samples_with_dirichlet_distribution,
-)
-from ..utils import DefaultCollator, WalkForestCollator
+from fedml.core import partition_class_samples_with_dirichlet_distribution
 
+from .utils import *
 
 def get_data(path, data):
     subgraphs, num_graphs, num_features, num_labels = pickle.load(
