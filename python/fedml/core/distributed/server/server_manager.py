@@ -104,7 +104,9 @@ class ServerManager(Observer):
         return self.rank
 
     def receive_message(self, msg_type, msg_params) -> None:
-        if hasattr(self.args, "backend") and self.args.using_mlops:
+        if hasattr(self.args, "backend") and (
+            hasattr(self.args, "using_mlops") and self.args.using_mlops
+        ):
             logging.info(
                 "receive_message. rank_id = %d, msg_type = %s."
                 % (self.rank, str(msg_type))

@@ -1,4 +1,4 @@
-Local Installation
+Local Installation (real-time editable)
 ```
 pip install -e ./
 ```
