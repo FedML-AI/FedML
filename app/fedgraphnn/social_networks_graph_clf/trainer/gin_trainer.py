@@ -108,16 +108,18 @@ class GINSocialNetworkTrainer(ClientTrainer):
         for client_idx in test_data_local_dict.keys():
             test_data = test_data_local_dict[client_idx]
             score, model = self.test(test_data, device)
-            for idx in range(len(model_list)):
-                self._compare_models(model, model_list[idx])
+            # for idx in range(len(model_list)):
+            #     self._compare_models(model, model_list[idx])
             model_list.append(model)
             score_list.append(score)
             logging.info("Client {}, Test accuracy = {}".format(client_idx, score))
-            wandb.log({"Client {} Test/accuracy".format(client_idx): score})
+            if args.enable_wandb:
+                wandb.log({"Client {} Test/accuracy".format(client_idx): score})
 
         avg_score = np.mean(np.array(score_list))
         logging.info("Test accuracy = {}".format(avg_score))
-        wandb.log({"Test/accuracy": avg_score})
+        if args.enable_wandb:
+            wandb.log({"Test/accuracy": avg_score})
 
         return True
 
