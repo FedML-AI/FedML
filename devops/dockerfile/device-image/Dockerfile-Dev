@@ -1,6 +1,6 @@
 ARG VERSION=dev
 ARG IS_BUILDING_GPU_IMAGE=0
-ARG BASE_IMAGE=centos
+ARG BASE_IMAGE=continuumio/miniconda3
 FROM ${BASE_IMAGE}
 
 ADD ./devops/scripts/requirements.txt ./fedml/requirements.txt
@@ -9,27 +9,14 @@ ADD ./devops/scripts/copy-fedml-package.sh ./fedml/copy-fedml-package.sh
 ADD ./devops/scripts/runner.sh ./fedml/runner.sh
 
 # Create the environment:
-COPY ./devops/scripts/environment.yml .
-RUN wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh -q;\
-    bash miniconda.sh -b -p $HOME/miniconda;\
-    . $HOME/miniconda/etc/profile.d/conda.sh; \
-    hash -r; \
-    conda config --set always_yes yes --set changeps1 no;\
-    conda update -q conda;\
-    conda info -a;\
-    conda env create -q -p ./fedml_env -f environment.yml;
-
-#RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf;\
-#    conda config --set ssl_verify false;\
-#    conda update --all;\
-#    conda env create -f environment.yml
+COPY ./devops/scripts/environment.yml ./fedml/environment.yml
+RUN chmod a+x ./fedml/setup-conda-env.sh
+RUN bash ./fedml/setup-conda-env.sh ${IS_BUILDING_GPU_IMAGE}
 
 # Make RUN commands use the new environment:
 RUN echo "conda activate fedml_env" >> ~/.bashrc
 SHELL ["/bin/bash", "--login", "-c"]
 
-RUN chmod a+x ./fedml/setup-conda-env.sh
-RUN bash ./fedml/setup-conda-env.sh ${IS_BUILDING_GPU_IMAGE}
 RUN pip install --upgrade pip
 RUN pip3 uninstall fedml
 RUN pip3 install fedml
