@@ -7,11 +7,9 @@ import random
 import numpy as np
 from torch_geometric.data import DataLoader
 
-from fedml.python.core.non_iid_partition import (
-    partition_class_samples_with_dirichlet_distribution,
-)
-from ..utils import DefaultCollator, WalkForestCollator
+from fedml.core import partition_class_samples_with_dirichlet_distribution
 
+from .utils import *
 
 def get_data(path, data):
     subgraphs, num_graphs, num_features, num_labels = pickle.load(
@@ -51,7 +49,7 @@ def create_non_uniform_split(args, idxs, client_number, data_type="train", is_lo
     alpha = args.partition_alpha
     logging.info("sample number = %d, client_number = %d" % (N, client_number))
     logging.info(idxs)
-    partition_cache_file_path = args.part_file + "-" + str(client_number) + "-" + str(alpha) + "-" + data_type + ".pkl"
+    partition_cache_file_path = args.part_file + data_type + "-" + str(client_number) + "-" + str(alpha) + ".pkl"
     logging.info("partition_cache_file_path = {}".format(partition_cache_file_path))
     if is_loading_cache and os.path.exists(partition_cache_file_path):
         logging.info("loading preset partition")
