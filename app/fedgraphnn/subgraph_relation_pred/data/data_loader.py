@@ -5,17 +5,10 @@ import logging
 import pickle
 import numpy as np
 
-import matplotlib.pyplot as plt
-import seaborn as sns
-
 from torch_geometric.data import DataLoader
-from ..utils import DefaultCollator, WalkForestCollator
+from .utils import DefaultCollator, WalkForestCollator
 
-
-from FedML.fedml_core.non_iid_partition.noniid_partition import (
-    partition_class_samples_with_dirichlet_distribution,
-)
-
+from fedml.core import partition_class_samples_with_dirichlet_distribution
 
 def get_data_community(path, data, pred_task, algo):
     assert pred_task in ["relation", "link"]
@@ -100,7 +93,7 @@ def create_non_uniform_split(args, idxs, client_number, is_train=True):
 def partition_data_by_sample_size(
     args, path, client_number, uniform=True, compact=True
 ):
-    graphs_train, graphs_val, graphs_test = create_random_split(
+    graphs_train, graphs_val, graphs_test, num_classes = create_random_split(
         path, args.dataset, args.pred_task, args.part_algo
     )
 
