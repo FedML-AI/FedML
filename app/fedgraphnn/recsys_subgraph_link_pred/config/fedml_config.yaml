@@ -4,7 +4,7 @@ common_args:
 
 data_args:
   dataset: "ciao"
-  data_cache_dir: "./../../../data/recommender_system"
+  data_cache_dir: "./data/recommender_system"
   partition_method: "hetero"
   partition_alpha: 0.5
   ego_number: 10
