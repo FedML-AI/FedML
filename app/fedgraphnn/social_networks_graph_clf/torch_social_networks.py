@@ -1,4 +1,7 @@
 import logging
+import traceback
+
+from mpi4py import MPI
 
 import fedml
 from data.data_loader import load_partition_data, get_data
@@ -99,4 +102,5 @@ if __name__ == "__main__":
         simulator = SimulatorMPI(args, device, dataset, model, trainer)
         simulator.run()
     except Exception as e:
-        raise e
+        logging.info('traceback.format_exc():\n%s' % traceback.format_exc())
+        MPI.COMM_WORLD.Abort()
