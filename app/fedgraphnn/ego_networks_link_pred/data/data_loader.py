@@ -49,7 +49,7 @@ def create_non_uniform_split(args, idxs, client_number, data_type="train", is_lo
     alpha = args.partition_alpha
     logging.info("sample number = %d, client_number = %d" % (N, client_number))
     logging.info(idxs)
-    partition_cache_file_path = args.part_file + data_type + "-" + str(client_number) + "-" + str(alpha) + "-" +  ".pkl"
+    partition_cache_file_path = args.part_file + data_type + "-" + str(client_number) + "-" + str(alpha) + ".pkl"
     logging.info("partition_cache_file_path = {}".format(partition_cache_file_path))
     if is_loading_cache and os.path.exists(partition_cache_file_path):
         logging.info("loading preset partition")
