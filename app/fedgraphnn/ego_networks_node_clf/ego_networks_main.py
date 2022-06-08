@@ -1,6 +1,107 @@
 import fedml
-import fedgraphnn
+from data.data_loader import *
+from model.gcn import GCNNodeCLF
+from model.sgc import SGCNodeCLF
+from model.gat import GATNodeCLF
+from model.sage import SAGENodeCLF
+
+from trainer.federated_nc_trainer import FedNodeClfTrainer
+
 from fedml.simulation import SimulatorMPI
+
+def load_data(args):
+    num_cats, feat_dim = 0, 0
+    if args.dataset not in ["CS", "Physics", "cora", "citeseer", "DBLP", "PubMed"]:
+        raise Exception("no such dataset!")
+    elif args.dataset in ["CS", "Physics"]:
+        args.type_network = "coauthor"
+    else:
+        args.type_network = "citation"
+
+    compact = args.model == "graphsage"
+
+    unif = True if args.partition_method == "homo" else False
+
+    if args.model == "gcn":
+        args.normalize_features = True
+        args.normalize_adjacency = True
+
+    _, _, feat_dim, num_cats = get_data(args.data_cache_dir, args.dataset)
+
+    (
+        train_data_num,
+        val_data_num,
+        test_data_num,
+        train_data_global,
+        val_data_global,
+        test_data_global,
+        data_local_num_dict,
+        train_data_local_dict,
+        val_data_local_dict,
+        test_data_local_dict,
+    ) = load_partition_data(
+        args,
+        args.data_cache_dir,
+        args.client_num_in_total,
+        uniform=unif,
+        compact=compact,
+        normalize_features=args.normalize_features,
+        normalize_adj=args.normalize_adjacency,
+    )
+
+    dataset = [
+        train_data_num,
+        test_data_num,
+        train_data_global,
+        test_data_global,
+        data_local_num_dict,
+        train_data_local_dict,
+        test_data_local_dict,
+        num_cats,
+    ]
+
+    return dataset, num_cats, feat_dim
+
+
+def create_model(args, model_name, feat_dim, num_cats, output_dim= None):
+    logging.info(
+        "create_model. model_name = %s, output_dim = %s" % (model_name, num_cats)
+    )
+    if model_name == "gcn":
+        model = GCNNodeCLF(
+            nfeat=feat_dim,
+            nhid=args.hidden_size,
+            nclass=num_cats,
+            nlayer=args.n_layers,
+            dropout=args.dropout,
+        )
+    elif model_name == "sgc":
+        model = SGCNodeCLF(in_dim=feat_dim, num_classes=num_cats, K=args.n_layers)
+    elif model_name == "sage":
+        model = SAGENodeCLF(
+            nfeat=feat_dim,
+            nhid=args.hidden_size,
+            nclass=num_cats,
+            nlayer=args.n_layers,
+            dropout=args.dropout,
+        )
+    elif model_name == "gat":
+        model = GATNodeCLF(
+            in_channels = feat_dim,
+            out_channels = num_cats, 
+            dropout=args.dropout,
+        )
+    else:
+        # MORE MODELS
+        raise Exception("such model does not exist !")
+    trainer = FedNodeClfTrainer(model)
+    logging.info("Model and Trainer  - done")
+    return model, trainer
+
+
+
+
+
 
 if __name__ == "__main__":
     # init FedML framework
@@ -10,10 +111,10 @@ if __name__ == "__main__":
     device = fedml.device.get_device(args)
 
     # load data
-    dataset, output_dim = fedgraphnn.data.load(args)
+    dataset, num_cats, feat_dim = load_data(args)
 
     # load model
-    model, trainer = fedgraphnn.model.create(args, output_dim)
+    model, trainer = create_model(args, args.model_name, feat_dim, num_cats)
 
     # start training
     simulator = SimulatorMPI(args, device, dataset, model, trainer)
