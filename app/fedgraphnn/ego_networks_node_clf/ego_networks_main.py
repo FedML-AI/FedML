@@ -65,7 +65,7 @@ def load_data(args):
 
 def create_model(args, feat_dim, num_cats, output_dim= None):
     logging.info(
-        "create_model. model_name = %s, output_dim = %s" % (model_name, num_cats)
+        "create_model. model_name = %s, output_dim = %s" % (args.model, num_cats)
     )
     if args.model == "gcn":
         model = GCNNodeCLF(
