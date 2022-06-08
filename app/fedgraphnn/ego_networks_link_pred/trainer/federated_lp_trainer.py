@@ -39,13 +39,13 @@ class FedLinkPredTrainer(ClientTrainer):
             optimizer = torch.optim.SGD(
                 filter(lambda p: p.requires_grad, model.parameters()),
                 lr=args.learning_rate,
-                weight_decay=args.wd,
+                weight_decay=args.weight_decay,
             )
         else:
             optimizer = torch.optim.Adam(
                 filter(lambda p: p.requires_grad, model.parameters()),
                 lr=args.learning_rate,
-                weight_decay=args.wd,
+                weight_decay=args.weight_decay,
             )
 
         max_test_score = 0
