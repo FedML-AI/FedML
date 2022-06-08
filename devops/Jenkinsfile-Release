@@ -86,7 +86,7 @@ pipeline {
                 sh 'unzip awscliv2.zip'
                 sh './aws/install'
                 sh 'chmod a+x ./devops/scripts/set-aws-credentials.sh;./devops/scripts/set-aws-credentials.sh $AWS_IAM_ACCESS_ID $AWS_IAM_ACCESS_KEY $AWS_REGION'
-                sh 'docker login $REGISTRY_PRODUCTION -u $AWS_ECR_USERNAME -p $(/usr/local/bin/aws ecr-public get-login-password --region $AWS_REGION)'
+                sh 'docker login --username $AWS_ECR_USERNAME --password $(/usr/local/bin/aws ecr-public get-login-password --region $AWS_REGION) $REGISTRY_PRODUCTION'
              }
           }
 
