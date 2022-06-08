@@ -98,3 +98,5 @@ app/fedgraphnn/subgraph_link_pred/data/wn18rr/*.dict
 app/fedgraphnn/subgraph_link_pred/data/wn18rr/*.txt
 app/fedgraphnn/subgraph_link_pred/data/YAGO3-10/*.dict
 app/fedgraphnn/subgraph_link_pred/data/YAGO3-10/*.txt
+
+app/fedgraphnn/ego_networks_link_pred/data/ego-networks

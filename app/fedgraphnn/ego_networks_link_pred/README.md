@@ -6,24 +6,22 @@
 
 For each dataset, ego-networks needs to be sampled first.  
 ```
-WORKSPACE=/home/$USER/FedGraphNN
-# WORKSPACE=/Users/chaoyanghe/sourcecode/FedGraphNN
-cd $WORKSPACE/data_preprocessing/ego_networks
+cd data/ego-networks
 
-mkdir $WORKSPACE/data/ego-networks/
-mkdir $WORKSPACE/data/ego-networks/cora
-mkdir $WORKSPACE/data/ego-networks/citeseer
-mkdir $WORKSPACE/data/ego-networks/DBLP
-mkdir $WORKSPACE/data/ego-networks/PubMed
-mkdir $WORKSPACE/data/ego-networks/CS
-mkdir $WORKSPACE/data/ego-networks/Physics
+mkdir cora
+mkdir citeseer
+mkdir DBLP
+mkdir PubMed
+mkdir CS
+mkdir Physics
 
-python sampleEgonetworks.py --path ./../../ego_networks_link_pred/data/ego-networks/ --data cora --ego_number 1000 --hop_number 2
-python sampleEgonetworks.py --path ./../../ego_networks_link_pred/data/ego-networks/ --data citeseer --ego_number 1000 --hop_number 2
-python sampleEgonetworks.py --path ./../../ego_networks_link_pred/data/ego-networks/ --data DBLP --ego_number 1000 --hop_number 2
-python sampleEgonetworks.py --path ./../../ego_networks_link_pred/data/ego-networks/ --data PubMed --ego_number 1000 --hop_number 2
-python sampleEgonetworks.py --path ./../../ego_networks_link_pred/data/ego-networks/ --data CS --ego_number 1000 --hop_number 2
-python sampleEgonetworks.py --path ./../../ego_networks_link_pred/data/ego-networks/ --data Physics --ego_number 1000 --hop_number 2
+cd ..
+python sampleEgonetworks.py --path ego-networks/ --data cora --ego_number 1000 --hop_number 2
+python sampleEgonetworks.py --path ego-networks/ --data citeseer --ego_number 1000 --hop_number 2
+python sampleEgonetworks.py --path ego-networks/ --data DBLP --ego_number 1000 --hop_number 2
+python sampleEgonetworks.py --path ego-networks/ --data PubMed --ego_number 1000 --hop_number 2
+python sampleEgonetworks.py --path ego-networks/ --data CS --ego_number 1000 --hop_number 2
+python sampleEgonetworks.py --path ego-networks/ --data Physics --ego_number 1000 --hop_number 2
 ```
 
 #### Arguments for Data Preparation code
@@ -46,6 +44,6 @@ citation networks (# nodes): e.g. DBLP (17716), Cora (2708), CiteSeer (3327), Pu
 
 collaboration networks (# nodes): e.g. CS (18333), Physics (34493)
  
- social networks (# ego-networks): e.g. COLLAB, IMDB, DEEZER_EGO_NETS (9629), TWITCH_EGOS (127094)
+social networks (# ego-networks): e.g. COLLAB, IMDB, DEEZER_EGO_NETS (9629), TWITCH_EGOS (127094)
 
 
