@@ -27,11 +27,11 @@ class FedNodeClfTrainer(ClientTrainer):
 
         if args.client_optimizer == "sgd":
             optimizer = torch.optim.SGD(
-                model.parameters(), lr=args.lr, weight_decay=args.wd
+                model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay
             )
         else:
             optimizer = torch.optim.Adam(
-                model.parameters(), lr=args.lr, weight_decay=args.wd
+                model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay
             )
 
         max_test_score, max_val_score = 0, 0
