@@ -72,7 +72,7 @@ def read_data(train_data_dir, test_data_dir):
     return clients, groups, train_data, test_data
 
 
-def batch_data(data, batch_size):
+def batch_data(args, data, batch_size):
     """
     data is a dict := {'x': [numpy array], 'y': [numpy array]} (on one client)
     returns x, y, which are both numpy array of length: batch_size
@@ -90,9 +90,13 @@ def batch_data(data, batch_size):
     # loop through mini-batches
     batch_data = list()
     for i in range(0, len(data_x), batch_size):
-        batched_x = data_x[i : i + batch_size]
-        batched_y = data_y[i : i + batch_size]
-        batched_x = torch.from_numpy(np.asarray(batched_x)).float()
+        batched_x = data_x[i: i + batch_size]
+        batched_y = data_y[i: i + batch_size]
+        if args.model == 'lr':
+            batched_x = torch.from_numpy(np.asarray(batched_x)).float()  # LR_MINST
+        else:
+            batched_x = torch.from_numpy(np.asarray(batched_x)).float().reshape(-1, 28, 28) #CNN_MINST
+
         batched_y = torch.from_numpy(np.asarray(batched_y)).long()
         batch_data.append((batched_x, batched_y))
     return batch_data
