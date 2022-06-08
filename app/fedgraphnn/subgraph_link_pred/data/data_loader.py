@@ -79,16 +79,7 @@ def create_non_uniform_split(args, idxs, client_number, is_train=True):
         )
     logging.info("create_non_uniform_split******************************************")
 
-    # plot the (#client, #sample) distribution
-    if is_train:
-        logging.info(sample_num_distribution)
-        plt.hist(sample_num_distribution)
-        plt.title("Sample Number Distribution")
-        plt.xlabel("number of samples")
-        plt.ylabel("number of clients")
-        fig_name = "x_hist.png"
-        fig_dir = os.path.join("./visualization", fig_name)
-        plt.savefig(fig_dir)
+   
     return idx_batch_per_client
 
 
@@ -204,11 +195,6 @@ def visualize_label_distribution_similarity_score(labels_of_all_clients):
             label_distribution_similarity_score_matrix[client_j][client_i] = distance
         # break
     logging.info(label_distribution_similarity_score_matrix)
-    plt.title("Label Distribution Similarity Score")
-    ax = sns.heatmap(label_distribution_similarity_score_matrix, annot=True, fmt=".3f")
-    # # ax.invert_yaxis()
-    # plt.show()
-
 
 # Single process sequential
 def load_partition_data(
