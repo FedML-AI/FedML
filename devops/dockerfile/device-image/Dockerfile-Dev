@@ -10,7 +10,7 @@ ADD ./devops/scripts/runner.sh ./fedml/runner.sh
 
 # Create the environment:
 COPY ./devops/scripts/environment.yml .
-RUN conda env create -f environment.yml
+RUN source /opt/conda/etc/profile.d/conda.sh;conda env create -f environment.yml
 
 # Make RUN commands use the new environment:
 RUN echo "conda activate fedml_env" >> ~/.bashrc
