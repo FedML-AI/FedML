@@ -8,6 +8,14 @@ ADD ./devops/scripts/setup-conda-env.sh ./fedml/setup-conda-env.sh
 ADD ./devops/scripts/copy-fedml-package.sh ./fedml/copy-fedml-package.sh
 ADD ./devops/scripts/runner.sh ./fedml/runner.sh
 
+# Create the environment:
+COPY ./devops/scripts/environment.yml .
+RUN conda env create -f environment.yml
+
+# Make RUN commands use the new environment:
+RUN echo "conda activate fedml_env" >> ~/.bashrc
+SHELL ["/bin/bash", "--login", "-c"]
+
 RUN chmod a+x ./fedml/setup-conda-env.sh
 RUN bash ./fedml/setup-conda-env.sh ${IS_BUILDING_GPU_IMAGE}
 RUN pip install --upgrade pip
@@ -27,4 +35,4 @@ ENV MODE=normal FEDML_VERSION=${VERSION} ACCOUNT_ID=0 \
     FEDML_PACKAGE_NAME=package FEDML_PACKAGE_URL=s3_url \
     FEDML_RUNNER_CMD={}
 
-CMD fedml login ${ACCOUNT_ID} -v ${FEDML_VERSION} -s -r cloud_server -rc ${FEDML_RUNNER_CMD}; ./runner.sh
+ENTRYPOINT ["./runner.sh", "${ACCOUNT_ID}", "${FEDML_VERSION}", "${FEDML_RUNNER_CMD}"]
