@@ -5,24 +5,25 @@ import logging
 import pickle
 import numpy as np
 
-import matplotlib.pyplot as plt
-import seaborn as sns
-
 from torch_geometric.data import DataLoader
-from ..utils import DefaultCollator, WalkForestCollator
+from .utils import DefaultCollator, WalkForestCollator
+
+from fedml.core import partition_class_samples_with_dirichlet_distribution
 
 
-from FedML.fedml_core.non_iid_partition.noniid_partition import (
-    partition_class_samples_with_dirichlet_distribution,
-)
-
-
-def get_data_community(path, data, pred_task, algo):
+def get_data_community(path, data, pred_task, algo="Louvain"):
     assert pred_task in ["relation", "link"]
     assert data in ["wn18rr", "FB15k-237", "YAGO3-10"]
 
+    if pred_task == "link":
+        # for link prediction with communities grouped by the relation type
+        logging.info("-------------------1")
+        subdir = "subgraphs_byRelType"
+        num_of_classes = 2
+
     if pred_task == "relation" and algo == "Louvain":
         # for relation type prediction
+        logging.info("-------------------2")
         subdir = "subgraphs_byLouvain"
         if data == "wn18rr":
             num_of_classes = 11
@@ -30,11 +31,6 @@ def get_data_community(path, data, pred_task, algo):
             num_of_classes = 237
         if data == "YAGO3-10":
             num_of_classes = 37
-
-    if pred_task == "link":
-        # for link prediction with communities grouped by the relation type
-        subdir = "subgraphs_byRelType"
-        num_of_classes = 2
 
     graphs_train = pickle.load(
         open(os.path.join(path, data, subdir, "train.pkl"), "rb")
@@ -84,23 +80,13 @@ def create_non_uniform_split(args, idxs, client_number, is_train=True):
         )
     logging.info("create_non_uniform_split******************************************")
 
-    # plot the (#client, #sample) distribution
-    if is_train:
-        logging.info(sample_num_distribution)
-        plt.hist(sample_num_distribution)
-        plt.title("Sample Number Distribution")
-        plt.xlabel("number of samples")
-        plt.ylabel("number of clients")
-        fig_name = "x_hist.png"
-        fig_dir = os.path.join("./visualization", fig_name)
-        plt.savefig(fig_dir)
     return idx_batch_per_client
 
 
 def partition_data_by_sample_size(
     args, path, client_number, uniform=True, compact=True
 ):
-    graphs_train, graphs_val, graphs_test = create_random_split(
+    graphs_train, graphs_val, graphs_test, num_of_classes = create_random_split(
         path, args.dataset, args.pred_task, args.part_algo
     )
 
@@ -209,10 +195,6 @@ def visualize_label_distribution_similarity_score(labels_of_all_clients):
             label_distribution_similarity_score_matrix[client_j][client_i] = distance
         # break
     logging.info(label_distribution_similarity_score_matrix)
-    plt.title("Label Distribution Similarity Score")
-    ax = sns.heatmap(label_distribution_similarity_score_matrix, annot=True, fmt=".3f")
-    # # ax.invert_yaxis()
-    # plt.show()
 
 
 # Single process sequential

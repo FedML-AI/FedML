@@ -15,14 +15,14 @@ from transformers import (
     BartForConditionalGeneration,
     BartTokenizer,
 )
-from model_args import *
-from data_manager.base_data_manager import BaseDataManager
-from data_manager.text_classification_data_manager import TextClassificationDataManager
-from data_manager.seq_tagging_data_manager import SequenceTaggingDataManager
-from data_preprocessing.text_classification_preprocessor import TLMPreprocessor as TCPreprocessor
-from data_preprocessing.seq_tagging_preprocessor import TLMPreprocessor as STPreprocessor
-from data_preprocessing.span_extraction_preprocessor import TLMPreprocessor as SEPreprocessor
-from data_preprocessing.seq2seq_preprocessor import TLMPreprocessor as SSPreprocessor
+from data.model_args import *
+from data.data_manager.base_data_manager import BaseDataManager
+from data.data_manager.text_classification_data_manager import TextClassificationDataManager
+from data.data_manager.seq_tagging_data_manager import SequenceTaggingDataManager
+from data.data_preprocessing.text_classification_preprocessor import TLMPreprocessor as TCPreprocessor
+from data.data_preprocessing.seq_tagging_preprocessor import TLMPreprocessor as STPreprocessor
+from data.data_preprocessing.span_extraction_preprocessor import TLMPreprocessor as SEPreprocessor
+from data.data_preprocessing.seq2seq_preprocessor import TLMPreprocessor as SSPreprocessor
 # from fedml.data.FederatedEMNIST.data_loader import load_partition_data_federated_emnist
 # from fedml.data.ImageNet.data_loader import load_partition_data_ImageNet
 # from fedml.data.Landmarks.data_loader import load_partition_data_landmarks
@@ -99,7 +99,7 @@ def load_synthetic_data(args):
     "learning_rate": args.learning_rate,
     "gradient_accumulation_steps": args.gradient_accumulation_steps,
     "do_lower_case": args.do_lower_case,
-    "manual_seed": args.manual_seed,
+    "manual_seed": args.random_seed,
     # for ignoring the cache features.
     "reprocess_input_data": args.reprocess_input_data,
     "overwrite_output_dir": True,

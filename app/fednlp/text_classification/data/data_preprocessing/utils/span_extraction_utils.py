@@ -23,7 +23,7 @@ from transformers import AdamW, SquadExample, XLMTokenizer, get_linear_schedule_
 
 from transformers.tokenization_utils_base import BatchEncoding, TruncationStrategy, PreTrainedTokenizerBase
 
-from transformers.tokenization_bert import whitespace_tokenize
+from transformers.models.bert.tokenization_bert import whitespace_tokenize
 
 logger = logging.getLogger(__name__)
 
