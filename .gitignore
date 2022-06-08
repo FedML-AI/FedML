@@ -84,3 +84,17 @@ test/fedml_user_code/simulation_mpi/data/mnist/__MACOSX/MNIST/._.DS_Store
 app/fedgraphnn/social_networks_graph_clf/data/TUDataset/*
 app/fedgraphnn/social_networks_graph_clf/data/TUDataset/collab.pickle
 app/fedgraphnn/social_networks_graph_clf/x_hist.png
+
+app/fedgraphnn/subgraph_relation_pred/data/FB15k-237/*.dict
+app/fedgraphnn/subgraph_relation_pred/data/FB15k-237/*.txt
+app/fedgraphnn/subgraph_relation_pred/data/wn18rr/*.dict
+app/fedgraphnn/subgraph_relation_pred/data/wn18rr/*.txt
+app/fedgraphnn/subgraph_relation_pred/data/YAGO3-10/*.dict
+app/fedgraphnn/subgraph_relation_pred/data/YAGO3-10/*.txt
+
+app/fedgraphnn/subgraph_link_pred/data/FB15k-237/*.dict
+app/fedgraphnn/subgraph_link_pred/data/FB15k-237/*.txt
+app/fedgraphnn/subgraph_link_pred/data/wn18rr/*.dict
+app/fedgraphnn/subgraph_link_pred/data/wn18rr/*.txt
+app/fedgraphnn/subgraph_link_pred/data/YAGO3-10/*.dict
+app/fedgraphnn/subgraph_link_pred/data/YAGO3-10/*.txt
