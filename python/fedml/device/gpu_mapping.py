@@ -6,7 +6,7 @@ import yaml
 
 
 def mapping_processes_to_gpu_device_from_yaml_file(
-    process_id, worker_number, gpu_util_file, gpu_util_key
+        process_id, worker_number, gpu_util_file, gpu_util_key
 ):
     if gpu_util_file == None:
         device = torch.device("cpu")
@@ -44,11 +44,29 @@ def mapping_processes_to_gpu_device_from_yaml_file(
             assert i == worker_number
         if torch.cuda.is_available():
             torch.cuda.set_device(gpu_util_map[process_id][1])
-        device = torch.device(
-            "cuda:" + str(gpu_util_map[process_id][1])
-            if torch.cuda.is_available()
-            else "cpu"
-        )
+        # device = torch.device(
+        #     "cuda:" + str(gpu_util_map[process_id][1])
+        #     if torch.cuda.is_available()
+        #     else "cpu"
+        # )
+        # https://pytorch.org/docs/master/notes/mps.html
+        device = torch.device("mps")
         logging.info("process_id = {}, GPU device = {}".format(process_id, device))
         # return gpu_util_map[process_id][1]
+        return device
+
+
+def mapping_processes_to_gpu_device(using_gpu, device_type):
+    if not using_gpu:
+        device = torch.device("cpu")
+        # return gpu_util_map[process_id][1]
+        return device
+    else:
+        if torch.cuda.is_available() and device_type == "gpu":
+            device = torch.device("cuda:0")
+        elif device_type == "mps":
+            # https://pytorch.org/docs/master/notes/mps.html
+            device = torch.device("mps")
+        else:
+            device = torch.device("cpu")
         return device
