@@ -177,7 +177,7 @@ pipeline {
        echo "branch name: " + env.BRANCH_NAME
        script {
             if (env.BRANCH_NAME == env.BRANCH_DEV || env.BRANCH_NAME == env.BRANCH_TEST) {
-                def mail_list = ['alexliang.kh@gmail.com','changyanghe.com@gmail.com']
+                def mail_list = ['alexliang.kh@gmail.com','chaoyanghe.com@gmail.com']
                 mail_list.each { x ->
                     echo "mail item: ${x}"
                     mail (to: "${x}",
@@ -195,7 +195,7 @@ pipeline {
        echo "branch name: " + env.BRANCH_NAME
        script {
             if (env.BRANCH_NAME == env.BRANCH_DEV || env.BRANCH_NAME == env.BRANCH_TEST) {
-                def mail_list = ['alexliang.kh@gmail.com','changyanghe.com@gmail.com']
+                def mail_list = ['alexliang.kh@gmail.com','chaoyanghe.com@gmail.com']
                 mail_list.each { x ->
                     echo "mail item: ${x}"
                     mail (to: "${x}",
