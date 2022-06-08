@@ -38,13 +38,13 @@ class FedLinkPredTrainer(ClientTrainer):
         if args.client_optimizer == "sgd":
             optimizer = torch.optim.SGD(
                 filter(lambda p: p.requires_grad, model.parameters()),
-                lr=args.lr,
+                lr=args.learning_rate,
                 weight_decay=args.wd,
             )
         else:
             optimizer = torch.optim.Adam(
                 filter(lambda p: p.requires_grad, model.parameters()),
-                lr=args.lr,
+                lr=args.learning_rate,
                 weight_decay=args.wd,
             )
 
