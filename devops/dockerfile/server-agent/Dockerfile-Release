@@ -1,19 +1,10 @@
 ARG VERSION=release
 ARG IS_BUILDING_GPU_IMAGE=0
-ARG BASE_IMAGE=continuumio/miniconda3:4.7.12
+ARG BASE_IMAGE=public.ecr.aws/x6k8q1x9/fedml-device-image:base
 FROM ${BASE_IMAGE}
 
-ADD ./devops/scripts/requirements.txt ./fedml/requirements.txt
-ADD ./devops/scripts/setup-conda-env.sh ./fedml/setup-conda-env.sh
 ADD ./devops/scripts/copy-fedml-package.sh ./fedml/copy-fedml-package.sh
 ADD ./devops/scripts/runner.sh ./fedml/runner.sh
-
-RUN chmod a+x ./fedml/setup-conda-env.sh
-RUN bash ./fedml/setup-conda-env.sh ${IS_BUILDING_GPU_IMAGE}
-RUN pip install --upgrade pip
-RUN pip3 uninstall fedml
-RUN pip3 install fedml
-RUN pip3 install -r ./fedml/requirements.txt
 
 COPY ./python/fedml ./fedml/fedml-pip
 RUN chmod a+x ./fedml/copy-fedml-package.sh
