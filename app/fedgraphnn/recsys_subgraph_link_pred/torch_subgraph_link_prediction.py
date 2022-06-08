@@ -32,7 +32,7 @@ def load_data(args):
         val_data_local_dict,
         test_data_local_dict,
         feature_dim,
-    ) = load_partition_data(args, args.data_dir, args.client_num_in_total)
+    ) = load_partition_data(args, args.data_cache_dir, args.client_num_in_total)
 
     dataset = [
         train_data_num,

@@ -5,6 +5,7 @@ from data.data_loader import load_partition_data, get_data
 from model.gcn_link import GCNLinkPred
 from trainer.federated_lp_trainer import FedLinkPredTrainer
 
+from fedml.simulation import SimulatorMPI
 
 
 def load_data(args, dataset_name):
@@ -74,7 +75,7 @@ def load_data(args, dataset_name):
     return dataset, num_cats, feat_dim
 
 
-def create_model(args, model_name, feat_dim, num_cats):
+def create_model(model_name, feat_dim, num_cats):
     logging.info(
         "create_model. model_name = %s, output_dim = %s" % (model_name, num_cats)
     )
@@ -99,7 +100,7 @@ if __name__ == "__main__":
     dataset, num_cats, feat_dim = load_data(args, args.dataset)
 
     # load model
-    model, trainer = create_model(args, args.model_name, feat_dim, num_cats)
+    model, trainer = create_model(args.model, feat_dim, num_cats)
 
     # start training
     simulator = SimulatorMPI(args, device, dataset, model, trainer)
