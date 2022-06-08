@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: $FEDML_AGGREGATOR_NAME
+  namespace: fedml-aggregator-$FEDML_AGGREGATOR_VERSION
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fedml-aggregator
+  template:
+    metadata:
+      labels:
+        app: fedml-aggregator
+    spec:
+      imagePullSecrets:
+        - name: secret-$FEDML_REGISTRY_SECRET_SUFFIX
+      containers:
+      - name: fedml-aggregator
+        image: $FEDML_AGGREGATOR_IMAGE_PATH
+        imagePullPolicy: Always
+        env:
+        - name: FEDML_PACKAGE_NAME
+          value: $FEDML_PACKAGE_NAME
+        - name: FEDML_PACKAGE_URL
+          value: $FEDML_PACKAGE_URL
+        - name: FEDML_RUNNER_CMD
+          value: $FEDML_RUNNER_CMD
+        ports:
+        - name: server-port
+          containerPort: 9000
+        volumeMounts:
+          - name: localtime
+            mountPath: "/etc/localtime"
+      volumes:
+        - name: localtime
+          hostPath:
+            type: File
+            path: /etc/localtime
