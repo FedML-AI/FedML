@@ -9,9 +9,9 @@ from collections import defaultdict
 from torch.utils.data import TensorDataset
 from tqdm import tqdm
 
-from data_preprocessing.base.base_example import SpanExtractionInputExample
-from data_preprocessing.base.base_preprocessor import BasePreprocessor
-from data_preprocessing.utils.span_extraction_utils import squad_convert_examples_to_features
+from data.data_preprocessing.base.base_example import SpanExtractionInputExample
+from data.data_preprocessing.base.base_preprocessor import BasePreprocessor
+from data.data_preprocessing.utils.span_extraction_utils import squad_convert_examples_to_features
 
 customized_cleaner_dict = {}
 

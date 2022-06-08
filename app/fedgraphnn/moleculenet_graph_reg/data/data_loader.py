@@ -1,14 +1,10 @@
-import copy
 import logging
-import os
 import pickle
 import random
-from math import log2
 
 import torch.utils.data as data
 
 from fedml.core import partition_class_samples_with_dirichlet_distribution
-
 from .datasets import MoleculesDataset
 from .utils import *
 
@@ -45,6 +41,7 @@ def create_random_split(path):
     train_adj_matrices = [
         adj_matrices[all_idxs[i]] for i in range(train_range[0], train_range[1])
     ]
+
     train_feature_matrices = [
         feature_matrices[all_idxs[i]] for i in range(train_range[0], train_range[1])
     ]
@@ -238,6 +235,7 @@ def partition_data_by_sample_size(
 
     return global_data_dict, partition_dicts
 
+
 # For centralized training
 def get_dataloader(path, compact=True, normalize_features=False, normalize_adj=False):
     (
@@ -297,6 +295,7 @@ def get_dataloader(path, compact=True, normalize_features=False, normalize_adj=F
     )
 
     return train_dataloader, val_dataloader, test_dataloader
+
 
 # Single process sequential
 def load_partition_data(

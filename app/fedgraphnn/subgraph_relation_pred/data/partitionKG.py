@@ -186,13 +186,13 @@ if __name__ == "__main__":
         graphs_train, graphs_val, graphs_test = get_data_community(
             args.path, args.data, args.algo
         )
-        outpath = os.path.join(path, data, "subgraphs_byLouvain")
+        outpath = os.path.join(args.path, args.data, "subgraphs_byLouvain")
 
     if args.pred_task == "link":
         graphs_train, graphs_val, graphs_test = get_data_community_byRelType(
             args.path, args.data
         )
-        outpath = os.path.join(path, data, "subgraphs_byRelType")
+        outpath = os.path.join(args.path, args.data, "subgraphs_byRelType")
 
     Path(outpath).mkdir(parents=True, exist_ok=True)
     pickle.dump(graphs_train, open(os.path.join(outpath, "train.pkl"), "wb"))

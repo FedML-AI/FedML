@@ -1,3 +1,8 @@
+import logging
+import traceback
+
+from mpi4py import MPI
+
 from .mpi.base_framework.algorithm_api import FedML_Base_distributed
 from .mpi.decentralized_framework.algorithm_api import (
     FedML_Decentralized_Demo_distributed,
@@ -6,7 +11,6 @@ from .mpi.fedavg.FedAvgAPI import FedML_FedAvg_distributed
 from .mpi.fedavg_robust.FedAvgRobustAPI import FedML_FedAvgRobust_distributed
 from .mpi.fedopt.FedOptAPI import FedML_FedOpt_distributed
 from .mpi.fedprox.FedProxAPI import FedML_FedProx_distributed
-
 from .sp.fedavg import FedAvgAPI
 from ..constants import (
     FedML_FEDERATED_OPTIMIZER_BASE_FRAMEWORK,
@@ -64,7 +68,7 @@ class SimulatorMPI:
                 dataset,
                 model,
                 model_trainer=model_trainer,
-                preprocessed_sampling_lists=None
+                preprocessed_sampling_lists=None,
             )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDPROX:
             self.simulator = FedML_FedProx_distributed(
@@ -76,7 +80,7 @@ class SimulatorMPI:
                 dataset,
                 model,
                 model_trainer=model_trainer,
-                preprocessed_sampling_lists=None
+                preprocessed_sampling_lists=None,
             )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_CLASSICAL_VFL:
             pass
@@ -110,7 +114,11 @@ class SimulatorMPI:
             raise Exception("Exception")
 
     def run(self):
-        self.simulator.train()
+        try:
+            self.simulator.train()
+        except Exception as e:
+            logging.info("traceback.format_exc():\n%s" % traceback.format_exc())
+            MPI.COMM_WORLD.Abort()
 
 
 class SimulatorNCCL:
