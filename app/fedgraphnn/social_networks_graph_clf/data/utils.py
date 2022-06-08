@@ -1,18 +1,29 @@
+import logging
+import pickle
+from pathlib import Path
+
 import numpy as np
 import scipy.sparse as sp
 import torch
-from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
-
-from torch_geometric.utils import to_networkx, degree
 import torch.nn.functional as F
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from torch_geometric.utils import to_networkx, degree
 
 
 def convert_to_nodeDegreeFeatures(graphs):
+    collab_pickle_file = Path("collab.pickle")
+    if collab_pickle_file.exists():
+        with open("collab.pickle", "rb") as handle:
+            new_graphs = pickle.load(handle)
+            return new_graphs
+
     # print(graph.x)
     graph_infos = []
     maxdegree = 0
+    logging.info("len(graphs) = {}".format(len(graphs)))
     for i, graph in enumerate(graphs):
+        # logging.info("convert_to_nodeDegreeFeatures {}".format(i))
         g = to_networkx(graph, to_undirected=True)
         gdegree = max(dict(g.degree).values())
         if gdegree > maxdegree:
@@ -30,6 +41,9 @@ def convert_to_nodeDegreeFeatures(graphs):
         new_graph = tuple[0].clone()
         new_graph.__setitem__("x", deg)
         new_graphs.append(new_graph)
+
+    with open("collab.pickle", "wb") as handle:
+        pickle.dump(new_graphs, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     return new_graphs
 
