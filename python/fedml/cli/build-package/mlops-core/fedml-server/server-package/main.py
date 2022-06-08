@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import argparse
 import os
+import shutil
+import stat
 import time
 
 import urllib
@@ -13,9 +15,9 @@ import zipfile
 is_local_test = False
 is_mac = False
 if is_mac:
-    fedml_test_dir = "/Users/alexliang/fedml-test"
+    fedml_test_dir = os.path.join("Users", "alexliang", "fedml-test")
 else:
-    fedml_test_dir = "/tmp"
+    fedml_test_dir = os.path.join("/", "tmp")
 
 
 def load_yaml_config(yaml_path):
@@ -48,39 +50,35 @@ def unzip_file(zip_file, unzip_file_path):
 
 def retrieve_and_unzip_package(package_name, package_url, saved_package_path):
     package_file_no_extension = str(package_name).split(".")[0]
-    local_package_path = fedml_test_dir + "/fedml_packages"
+    local_package_path = os.path.join(fedml_test_dir, "fedml_packages")
     try:
         os.makedirs(local_package_path)
     except Exception as e:
         print("unzip package...")
-    local_package_path = fedml_test_dir + "/fedml_packages/" + str(uuid.uuid4())
+    local_package_path = os.path.join(fedml_test_dir, "fedml_packages", str(uuid.uuid4()))
     try:
         os.makedirs(local_package_path)
     except Exception as e:
         print("unzip the package...")
-    local_package_file = local_package_path + "/" + package_name
+    local_package_file = os.path.join(local_package_path, package_name)
     urllib.request.urlretrieve(package_url, local_package_file)
-    unzip_package_path = local_package_path + "/"
+    unzip_package_path = local_package_path
     unzip_file(local_package_file, unzip_package_path)
-    unzip_package_path += package_file_no_extension
-    copy_cmd = "cp -rf " + unzip_package_path + "/* " + saved_package_path
-    print("moving command: " + copy_cmd)
-    os.system(copy_cmd)
+    unzip_package_path = os.path.join(unzip_package_path, package_file_no_extension)
+    try:
+        shutil.copytree(unzip_package_path, saved_package_path, ignore=True)
+    except Exception as e:
+        pass
     return unzip_package_path
 
 
-def build_dynamic_args(base_dir):
+def build_dynamic_args(run_config, base_dir):
     package_cfg_file = os.path.join(base_dir, "conf", "fedml.yaml")
     print("package_conf_file " + package_cfg_file)
     package_config = load_yaml_config(package_cfg_file)
     fedml_conf_file = package_config["entry_config"]["conf_file"]
-    src_params_cfg_file = os.path.join(
-        base_dir, "conf", "params_config", os.path.basename(fedml_conf_file)
-    )
     print("fedml_conf_file:" + fedml_conf_file)
-    print("params_cfg_file: " + src_params_cfg_file)
     fedml_conf_path = os.path.join(base_dir, "fedml", fedml_conf_file)
-    os.system("cp -f " + src_params_cfg_file + " " + fedml_conf_path)
     fedml_conf_object = load_yaml_config(fedml_conf_path)
     package_dynamic_args = package_config["dynamic_args"]
     fedml_conf_object["comm_args"]["mqtt_config_path"] = package_dynamic_args[
@@ -116,15 +114,19 @@ def build_dynamic_args(base_dir):
     bootstrap_script_path = os.path.join(
         base_dir, "fedml", "config", os.path.basename(bootstrap_script_file)
     )
-    os.system("mkdir -p " + package_dynamic_args["data_cache_dir"])
+    try:
+        os.makedirs(package_dynamic_args["data_cache_dir"])
+    except Exception as e:
+        pass
     fedml_dynamic_args = fedml_conf_object.get("dynamic_args", None)
     if fedml_dynamic_args is not None:
         for entry_key, entry_value in package_dynamic_args.items():
             fedml_dynamic_args[entry_key] = entry_value
 
     generate_yaml_doc(fedml_conf_object, fedml_conf_path)
-    bootstrap_cmds = "chmod a+x " + bootstrap_script_path + ";" + bootstrap_script_path
-    # os.system(bootstrap_cmds)
+    bootstrap_stat = os.stat(bootstrap_script_path)
+    os.chmod(bootstrap_script_path, bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+    os.system(bootstrap_script_path)
 
 
 def build_fedml_entry_cmd(base_dir):
@@ -134,25 +136,25 @@ def build_fedml_entry_cmd(base_dir):
     fedml_conf_file = package_config["entry_config"]["conf_file"]
     package_dynamic_args = package_config["dynamic_args"]
     entry_cmd = (
-        " --cf " + fedml_conf_file + " --rank " + str(package_dynamic_args["rank"])
+            " --cf " + fedml_conf_file + " --rank " + str(package_dynamic_args["rank"])
     )
     if is_local_test:
         entry_cmd = (
-            "cd "
-            + base_dir
-            + os.path.dirname(source_file)
-            + "; python3 "
-            + os.path.basename(source_file)
-            + entry_cmd
+                "cd "
+                + base_dir
+                + os.path.dirname(source_file)
+                + "; python3 "
+                + os.path.basename(source_file)
+                + entry_cmd
         )
     else:
         entry_cmd = (
-            "cd "
-            + base_dir
-            + os.path.dirname(source_file)
-            + "; python "
-            + os.path.basename(source_file)
-            + entry_cmd
+                "cd "
+                + base_dir
+                + os.path.dirname(source_file)
+                + "; python "
+                + os.path.basename(source_file)
+                + entry_cmd
         )
     print("source_file " + source_file)
     build_dynamic_args(base_dir)
@@ -162,17 +164,17 @@ def build_fedml_entry_cmd(base_dir):
 
 def run_fedml_instance_from_base_package():
     if is_local_test:
-        fedml_dir = fedml_test_dir + "/fedml/"
+        fedml_dir = os.path.join(fedml_test_dir, "fedml")
     else:
-        fedml_dir = "/fedml/"
+        fedml_dir = os.path.join("/", "fedml")
     os.system(build_fedml_entry_cmd(fedml_dir))
 
 
 def run_fedml_instance_from_local_package():
     if is_local_test:
-        fedml_package_local_dir = fedml_test_dir + "/fedml/fedml-package/"
+        fedml_package_local_dir = os.path.join(fedml_test_dir, "fedml", "fedml-package")
     else:
-        fedml_package_local_dir = "/fedml/fedml-package/"
+        fedml_package_local_dir = os.path.join("/", "fedml", "fedml-package")
     os.system(build_fedml_entry_cmd(fedml_package_local_dir))
 
 
@@ -225,25 +227,51 @@ if __name__ == "__main__":
         + args.package_url
     )
     if is_local_test:
-        fedml_package_local_dir = fedml_test_dir + "/fedml/fedml-package/"
-        fedml_conf_dir = fedml_test_dir + "/fedml/conf"
-        fedml_conf_file = fedml_conf_dir + "/fedml.yaml"
-        fedml_package_conf_dir = fedml_test_dir + "/fedml/fedml-package/conf/"
-        os.system("mkdir -p " + fedml_package_local_dir)
-        os.system("mkdir -p " + fedml_conf_dir)
-        os.system("mkdir -p " + fedml_package_conf_dir)
-        os.system("cp -f ./conf/fedml.yaml " + fedml_conf_dir)
+        fedml_package_local_dir = os.path.join(fedml_test_dir, "fedml", "fedml-package")
+        fedml_conf_dir = os.path.join(fedml_test_dir, "fedml", "conf")
+        fedml_conf_file = os.path.join(fedml_conf_dir, "fedml.yaml")
+        fedml_package_conf_dir = os.path.join(fedml_test_dir, "fedml", "fedml-package", "conf")
+        try:
+            os.makedirs(fedml_package_local_dir)
+        except Exception as e:
+            pass
+        try:
+            os.makedirs(fedml_conf_dir)
+        except Exception as e:
+            pass
+        try:
+            os.makedirs(fedml_package_conf_dir)
+        except Exception as e:
+            pass
+        try:
+            shutil.copyfile(os.path.join(os.getcwd(), "conf", "fedml.yaml"),
+                            os.path.join(fedml_conf_dir, "fedml.yaml"))
+        except Exception as e:
+            pass
     else:
-        fedml_package_local_dir = "/fedml/fedml-package/"
-        fedml_conf_dir = "/fedml/conf"
-        fedml_conf_file = fedml_conf_dir + "/fedml.yaml"
-        fedml_package_conf_dir = "/fedml/fedml-package/conf/"
-        os.system("mkdir -p " + fedml_package_local_dir)
-        os.system("mkdir -p " + fedml_conf_dir)
-        os.system("mkdir -p " + fedml_package_conf_dir)
+        fedml_package_local_dir = os.path.join("/", "fedml", "fedml-package")
+        fedml_conf_dir = os.path.join("/", "fedml", "conf")
+        fedml_conf_file = os.path.join(fedml_conf_dir, "fedml.yaml")
+        fedml_package_conf_dir = os.path.join("/", "fedml", "fedml-package", "conf")
+        try:
+            os.makedirs(fedml_package_local_dir)
+        except Exception as e:
+            pass
+        try:
+            os.makedirs(fedml_conf_dir)
+        except Exception as e:
+            pass
+        try:
+            os.makedirs(fedml_package_conf_dir)
+        except Exception as e:
+            pass
     retrieve_and_unzip_package(
         args.package_name, args.package_url, fedml_package_local_dir
     )
-    os.system("cp -f " + fedml_conf_file + " " + fedml_package_conf_dir)
+
+    try:
+        shutil.copyfile(fedml_conf_file, os.path.join(fedml_package_conf_dir, "fedml.yaml"))
+    except Exception as e:
+        pass
 
     run_fedml_instance_from_local_package()

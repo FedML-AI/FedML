@@ -1,0 +1,60 @@
+common_args:
+  training_type: "simulation"
+  random_seed: 0
+
+data_args:
+  dataset: "CS"
+  data_cache_dir: "./data/ego-networks"
+  part_file: "./data/partition"
+  partition_method: "hetero"
+  partition_alpha: 0.5
+  ego_number: 1000
+  hop_number: 5
+
+model_args:
+  model: "gcn"
+  hidden_size: 32
+  node_embedding_dim: 32
+  graph_embedding_dim: 64
+  readout_hidden_dim: 64
+  n_layers: 5
+  alpha: 0.2
+  num_heads: 2
+  dropout: 0.3
+  normalize_features: False
+  normalize_adjacency: False
+  sparse_adjacency: False
+
+train_args:
+  federated_optimizer: "FedAvg"
+  client_id_list: "[]"
+  client_num_in_total: 4
+  client_num_per_round: 4
+  comm_round: 100
+  epochs: 5
+  batch_size: 64
+  client_optimizer: sgd
+  learning_rate: 0.03
+  weight_decay: 0.001
+  metric: "prc-auc"
+
+validation_args:
+  frequency_of_the_test: 5
+
+device_args:
+  worker_num: 2
+  using_gpu: false
+  gpu_mapping_file: config/gpu_mapping.yaml
+  gpu_mapping_key: mapping_config1_5
+
+comm_args:
+  backend: "MPI"
+  is_mobile: 0
+
+
+tracking_args:
+  log_file_dir: ./log
+  enable_wandb: false
+  wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
+  wandb_project: fedml
+  wandb_name: fed_node_classification
