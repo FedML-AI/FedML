@@ -4,11 +4,11 @@ echo "nameserver 8.8.8.8" > /etc/resolv.conf
 
 conda info
 
-echo "conda create -n fedml python=3.7.4"
-conda create -y -n fedml-pip python=3.7.4
-
-echo "conda activate fedml"
-conda activate fedml-pip
+#echo "conda create -n fedml python=3.7.4"
+#conda create -y -n fedml-pip python=3.7.4
+#
+#echo "conda activate fedml"
+#conda activate fedml-pip
 
 # Install MPI
 conda install -y -c anaconda mpi4py
