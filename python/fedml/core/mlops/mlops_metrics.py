@@ -18,7 +18,7 @@ class MLOpsMetrics(Singleton):
         self.args = None
         self.run_id = None
         self.edge_id = None
-        self.sys_performances = SysStats()
+        self.sys_performances = None
 
     def set_messenger(self, msg_messenger, args=None):
         self.messenger = msg_messenger
@@ -99,6 +99,8 @@ class MLOpsMetrics(Singleton):
     def report_system_metric(self, metric_json=None):
         topic_name = "fl_client/mlops/system_performance"
         if metric_json is None:
+            if self.sys_performances is None:
+                self.sys_performances = SysStats()
             self.sys_performances.produce_info()
             metric_json = {
                 "run_id": self.run_id,
