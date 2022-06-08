@@ -1,12 +1,12 @@
 import io
 import os
 import platform
-import sys
 
 from setuptools import setup, find_packages
 
 try:
     from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
+
 
     class bdist_wheel(_bdist_wheel):
         def finalize_options(self):
@@ -16,7 +16,6 @@ try:
 
 except ImportError:
     bdist_wheel = None
-
 
 requirements = [
     "numpy>=1.21",
@@ -43,11 +42,11 @@ if platform.machine() == "x86_64":
 
 setup(
     name="fedml",
-    version="0.7.38",
+    version="0.7.77",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
-    "federated/distributed machine learning at anywhere at any scale.",
+                "federated/distributed machine learning at anywhere at any scale.",
     long_description=io.open(os.path.join("README.md"), "r", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/FedML-AI/FedML",

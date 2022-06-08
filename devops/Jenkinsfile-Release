@@ -10,16 +10,20 @@ pipeline {
         AWS_IAM_CREDENTIAL_ID_PRODUCTION = 'aws-iam-id-release'
         AWS_ECR_CREDENTIAL_ID_PRODUCTION = 'aws-ecr-id-release'
         FEDML_PIP_CREDENTIAL_ID_PRODUCTION = 'fedml-pip-upload-id'
+        PRODUCTION_KUBECONFIG_CREDENTIAL_ID = 'fedml-release-kubeconfig'
 
         REGISTRY_PRODUCTION = 'public.ecr.aws'
         HTTPS_REGISTRY_PRODUCTION = 'https://public.ecr.aws'
-        AWS_REGION_NAME_PRODUCTION = 'us-west-1'
+        AWS_REGION_NAME_PRODUCTION = 'us-east-1'
+        DEPLOY_NAMESPACE_PRODUCTION = 'fedml-devops-aggregator-release'
         VERSION_PRODUCTION = 'release'
         BRANCH_PRODUCTION = 'main'
 
         DOCKER_NAMESPACE = 'x6k8q1x9/'
-        APP_NAME = 'fedml-device-image'
-        DEPLOY_NAME = 'fedml-device-image'
+        APP_NAME_DEVICE_IMAGE = 'fedml-device-image'
+        APP_NAME_SERVER_AGENT = 'fedml-server-agent'
+        DEPLOY_NAME_DEVICE_IMAGE = 'fedml-device-image'
+        DEPLOY_NAME_SERVER_AGENT = 'fedml-server-agent'
         GIT_URL = 'https://github.com/FedML-AI/FedML.git'
         SONAR_HOST = ''
         SONAR_CREDENTIAL_ID = 'sonar-token'
@@ -63,7 +67,9 @@ pipeline {
       }
       steps {
         container('base') {
-          sh 'docker build -f ./devops/Dockerfile-Release -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME:$VERSION_PRODUCTION-SNAPSHOT-$BUILD_NUMBER .'
+          sh 'docker build -f ./devops/dockerfile/device-image/Dockerfile-Release -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_PRODUCTION .'
+
+          sh 'docker build -f ./devops/dockerfile/server-agent/Dockerfile-Release -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_PRODUCTION .'
         }
       }
     }
@@ -80,12 +86,12 @@ pipeline {
                 sh 'unzip awscliv2.zip'
                 sh './aws/install'
                 sh 'chmod a+x ./devops/scripts/set-aws-credentials.sh;./devops/scripts/set-aws-credentials.sh $AWS_IAM_ACCESS_ID $AWS_IAM_ACCESS_KEY $AWS_REGION'
-                sh 'docker login $REGISTRY_PRODUCTION -u $AWS_ECR_USERNAME -p $(/usr/local/bin/aws ecr get-login-password --region $AWS_REGION)'
+                sh 'docker login --username $AWS_ECR_USERNAME --password $(/usr/local/bin/aws ecr-public get-login-password --region $AWS_REGION) $REGISTRY_PRODUCTION'
              }
           }
 
-          sh 'docker tag  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME:$VERSION_PRODUCTION-SNAPSHOT-$BUILD_NUMBER $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME:$VERSION_PRODUCTION'
-          sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME:$VERSION_PRODUCTION'
+          sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_PRODUCTION'
+          sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_PRODUCTION'
         }
       }
     }
@@ -96,7 +102,14 @@ pipeline {
       }
       steps {
          container('base') {
-            sh 'echo "deploying..."'
+            withCredentials([
+                kubeconfigFile(
+                credentialsId: env.PRODUCTION_KUBECONFIG_CREDENTIAL_ID,
+                variable: 'KUBECONFIG')
+                ]) {
+                sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DEPLOY_NAME'
+                sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION  --replicas=1 deployment/$DEPLOY_NAME'
+            }
          }
       }
     }
@@ -112,7 +125,7 @@ pipeline {
        echo "branch name: " + env.BRANCH_NAME
        script {
             if (env.BRANCH_NAME == env.BRANCH_PRODUCTION) {
-                def mail_list = ['alexliang.kh@gmail.com','changyanghe.com@gmail.com']
+                def mail_list = ['alexliang.kh@gmail.com','chaoyanghe.com@gmail.com']
                 mail_list.each { x ->
                     echo "mail item: ${x}"
                     mail (to: "${x}",
@@ -130,7 +143,7 @@ pipeline {
        echo "branch name: " + env.BRANCH_NAME
        script {
             if (env.BRANCH_NAME == env.BRANCH_PRODUCTION) {
-                def mail_list = ['alexliang.kh@gmail.com','changyanghe.com@gmail.com']
+                def mail_list = ['alexliang.kh@gmail.com','chaoyanghe.com@gmail.com']
                 mail_list.each { x ->
                     echo "mail item: ${x}"
                     mail (to: "${x}",
