@@ -56,21 +56,21 @@ class FedLinkPredTrainer(ClientTrainer):
 
             for idx_batch, batch in enumerate(train_data):
                 neg_edge_index = negative_sampling(
-                    edge_index=batch.train_pos_edge_index,
+                    edge_index=batch.edge_index,
                     num_nodes=batch.num_nodes,
-                    num_neg_samples=batch.train_pos_edge_index.size(1),
+                    num_neg_samples=batch.edge_index.size(1),
                 )
 
                 batch.to(device)
                 optimizer.zero_grad()
 
-                z = model.encode(batch.x, batch.train_pos_edge_index)
+                z = model.encode(batch.x, batch.edge_index)
                 self.train_z = z.item()
                 link_logits = model.decode(
-                    z, batch.train_pos_edge_index, neg_edge_index
+                    z, batch.edge_index, neg_edge_index
                 )
                 link_labels = self.get_link_labels(
-                    batch.train_pos_edge_index, neg_edge_index, device
+                    batch.edge_index, neg_edge_index, device
                 )
                 loss = F.binary_cross_entropy_with_logits(link_logits, link_labels)
                 loss.backward()
