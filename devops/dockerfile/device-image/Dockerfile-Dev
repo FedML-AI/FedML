@@ -10,7 +10,8 @@ ADD ./devops/scripts/runner.sh ./fedml/runner.sh
 
 # Create the environment:
 COPY ./devops/scripts/environment.yml .
-RUN bash source /opt/conda/etc/profile.d/conda.sh;echo "nameserver 8.8.8.8" > /etc/resolv.conf;\
+RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf;\
+    conda config --set ssl_verify false;\
     conda env create -f environment.yml
 
 # Make RUN commands use the new environment:
