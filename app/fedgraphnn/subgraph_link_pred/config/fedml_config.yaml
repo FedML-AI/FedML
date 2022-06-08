@@ -4,10 +4,10 @@ common_args:
 
 data_args:
   dataset: "YAGO3-10"
-  data_cache_dir: "./../../../data/subgraph_level/"
+  data_cache_dir: "./data"
   partition_method: "hetero"
   part_algo: "Louvain"
-  pred_task: "relation"
+  pred_task: "link"
   partition_alpha: 0.5
   ego_number: 10
   hop_number: 2
