@@ -1,9 +1,8 @@
 import copy
-import logging
-import os
 import random
 
-import matplotlib as plt
+import matplotlib.pyplot as plt
+import seaborn as sns
 import torch.utils.data as data
 from torch_geometric.data import DataLoader
 from torch_geometric.datasets import TUDataset
@@ -68,7 +67,7 @@ def create_non_uniform_split(args, idxs, client_number, is_train=True):
         plt.xlabel("number of samples")
         plt.ylabel("number of clients")
         fig_name = "x_hist.png"
-        fig_dir = os.path.join("./visualization", fig_name)
+        fig_dir = fig_name
         plt.savefig(fig_dir)
     return idx_batch_per_client
 
