@@ -5,6 +5,20 @@ from model.bert_model import BertForSequenceClassification
 from trainer.classification_trainer import MyModelTrainer as MyCLSTrainer
 from data.data_loader import load
 from fedml.simulation import SimulatorMPI as Simulator
+import logging
+from transformers import (
+    BertConfig,
+    BertTokenizer,
+    BertForTokenClassification,
+    BertForQuestionAnswering,
+    DistilBertConfig,
+    DistilBertTokenizer,
+    DistilBertForTokenClassification,
+    DistilBertForQuestionAnswering,
+    BartConfig,
+    BartForConditionalGeneration,
+    BartTokenizer,
+)
 
 def create_model(args, output_dim = 1):
     model_name = args.model
@@ -13,21 +27,21 @@ def create_model(args, output_dim = 1):
     )
     MODEL_CLASSES = {
     "classification": {
-    "bert": (BertConfig, BertForSequenceClassification, BertTokenizer),
-    "distilbert": (DistilBertConfig, DistilBertForSequenceClassification, DistilBertTokenizer),
+    "bert": (BertConfig, BertForSequenceClassification),
+    "distilbert": (DistilBertConfig, DistilBertForSequenceClassification),
     # "roberta": (RobertaConfig, RobertaForSequenceClassification, RobertaTokenizer),
     # "albert": (AlbertConfig, AlbertForSequenceClassification, AlbertTokenizer),
     },
     "seq_tagging": {
-    "bert": (BertConfig, BertForTokenClassification, BertTokenizer),
-    "distilbert": (DistilBertConfig, DistilBertForTokenClassification, DistilBertTokenizer),
+    "bert": (BertConfig, BertForTokenClassification),
+    "distilbert": (DistilBertConfig, DistilBertForTokenClassification),
     },
     "span_extraction": {
-    "bert": (BertConfig, BertForQuestionAnswering, BertTokenizer),
-    "distilbert": (DistilBertConfig, DistilBertForQuestionAnswering, DistilBertTokenizer),
+    "bert": (BertConfig, BertForQuestionAnswering),
+    "distilbert": (DistilBertConfig, DistilBertForQuestionAnswering),
     },
     "seq2seq": {
-    "bart": (BartConfig, BartForConditionalGeneration, BartTokenizer),
+    "bart": (BartConfig, BartForConditionalGeneration),
     }
     }
     try:

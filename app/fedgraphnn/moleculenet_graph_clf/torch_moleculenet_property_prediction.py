@@ -15,7 +15,7 @@ def load_data(args, dataset_name):
     if (
         (args.dataset != "sider")
         and (args.dataset != "ClinTox")
-        and (args.dataset != "BBPB")
+        and (args.dataset != "BBBP")
         and (args.dataset != "BACE")
         and (args.dataset != "PCBA")
         and (args.dataset != "Tox21")

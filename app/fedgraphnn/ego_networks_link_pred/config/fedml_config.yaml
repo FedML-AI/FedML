@@ -3,9 +3,10 @@ common_args:
   random_seed: 0
 
 data_args:
-  dataset: "Cora"
-  data_cache_dir: "./../../../data/ego-networks/"
+  dataset: "cora"
+  data_cache_dir: "./data/ego-networks/"
   partition_method: "hetero"
+  part_file: "./data/ego-networks/"
   partition_alpha: 0.5
   ego_number: 10
   hop_number: 2
@@ -27,7 +28,7 @@ model_args:
 train_args:
   federated_optimizer: "FedAvg"
   client_id_list: "[]"
-  client_num_in_total: 1000
+  client_num_in_total: 4
   client_num_per_round: 4
   comm_round: 100
   epochs: 5
@@ -41,10 +42,10 @@ validation_args:
   frequency_of_the_test: 5
 
 device_args:
-  worker_num: 4
-  using_gpu: false
+  worker_num: 2
+  using_gpu: true
   gpu_mapping_file: config/gpu_mapping.yaml
-  gpu_mapping_key: mapping_default
+  gpu_mapping_key: mapping_config1_5
 
 comm_args:
   backend: "MPI"
