@@ -1,6 +1,8 @@
+import logging
+
 import torch
 
-import logging
+from fedml.device.gpu_mapping import mapping_processes_to_gpu_device
 
 
 def get_device(args):
@@ -27,7 +29,7 @@ def get_device(args):
         return device
     elif args.training_type == "cross_silo":
         from .gpu_mapping import (
-                mapping_processes_to_gpu_device_from_yaml_file,
+            mapping_processes_to_gpu_device_from_yaml_file,
         )
         if args.scenario == "hierarchical":
             device = mapping_processes_to_gpu_device_from_yaml_file(
@@ -37,11 +39,8 @@ def get_device(args):
                 args.gpu_mapping_key if args.using_gpu else None,
             )
         else:
-            device = mapping_processes_to_gpu_device_from_yaml_file(
-                args.process_id,
-                args.worker_num + 1,
-                args.gpu_mapping_file if args.using_gpu else None,
-                args.gpu_mapping_key if args.using_gpu else None,
+            device = mapping_processes_to_gpu_device(
+                args.using_gpu, args.device_type
             )
         logging.info("device = {}".format(device))
         return device
