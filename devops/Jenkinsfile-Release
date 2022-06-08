@@ -15,7 +15,7 @@ pipeline {
         REGISTRY_PRODUCTION = 'public.ecr.aws'
         HTTPS_REGISTRY_PRODUCTION = 'https://public.ecr.aws'
         AWS_REGION_NAME_PRODUCTION = 'us-east-1'
-        DEPLOY_NAMESPACE_PRODUCTION = 'fedml-devops-base-release'
+        DEPLOY_NAMESPACE_PRODUCTION = 'fedml-devops-aggregator-release'
         VERSION_PRODUCTION = 'release'
         BRANCH_PRODUCTION = 'main'
 
