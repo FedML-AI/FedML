@@ -11,15 +11,18 @@ FedML supports Linux, MacOS, Windows, and Android.
 ```
 pip install fedml
 ```
+(Note: please use python 3.7 if you met any compatability issues. We will support 3.8, 3.9, 3.10 systematically in the next iteration.)
 
 ## Install FedML with Anaconda
 
 ```
-conda create --name fedml
+conda create --name fedml python=3.7
 conda activate fedml
 conda install --name fedml pip
 pip install fedml
 ```
+(Note: please use python 3.7 if you met any compatability issues. We will support 3.8, 3.9, 3.10 systematically in the next iteration.)
+
 After installation, please use "pip list | grep fedml" to check whether `fedml` is installed.
 
 
@@ -174,6 +177,10 @@ docker container kill $(docker ps -q)
 ```
 coming soon
 ```
+
+## Guidance for Windows Users
+
+Please follow instructions at [Windows Installation](./install/windows.md)
 
 ## Test if the installation succeeded
 If the installation is correct, you will not see any issue when running `import fedml`.
