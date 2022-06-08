@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: fedml-data-pv-$FEDML_DATA_PV_ID
+  namespace: fedml-aggregator-$FEDML_AGGREGATOR_VERSION
+spec:
+  capacity:
+    storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: $FEDML_STORAGE_CLASS
+  csi:
+    driver: $FEDML_FILESYS_DRIVER
+    volumeHandle: $FEDML_FILESYS_VOLUME_ID
