@@ -15,9 +15,10 @@ from fedml.cli.edge_deployment.client_login import logout as client_logout
 from fedml.cli.edge_deployment.client_login import LOCAL_HOME_RUNNER_DIR_NAME as CLIENT_RUNNER_HOME_DIR
 from fedml.cli.edge_deployment.client_login import LOCAL_RUNNER_INFO_DIR_NAME as CLIENT_RUNNER_INFO_DIR
 from fedml.cli.server_deployment.server_login import logout as server_logout
-from fedml.cli.server_deployment.server_login import LOCAL_HOME_RUNNER_DIR_NAME as SERVER_RUNNER_HOME_DIR
-from fedml.cli.server_deployment.server_login import LOCAL_RUNNER_INFO_DIR_NAME as SERVER_RUNNER_INFO_DIR
+from fedml.cli.server_deployment.server_login import SERVER_RUNNER_HOME_DIR
+from fedml.cli.server_deployment.server_login import SERVER_RUNNER_INFO_DIR
 from fedml.cli.edge_deployment.client_login import get_training_infos
+from fedml.cli.server_deployment.server_login import login_mode_list
 
 
 @click.group()
@@ -127,24 +128,56 @@ def display_server_logs():
     default="127.0.0.1",
     help="local server address.",
 )
-def mlops_login(userid, version, client, server, local_server):
+@click.option(
+    "--role",
+    "-r",
+    type=str,
+    default="local_server",
+    help="run as the role (options: local_server, cloud_agent, cloud_server.",
+)
+@click.option(
+    "--runner_cmd",
+    "-rc",
+    type=str,
+    default="{}",
+    help="runner commands (options: request json for star run, stop run).",
+)
+@click.option(
+    "--server_agent_id",
+    "-said",
+    type=str,
+    default="0",
+    help="server agent id.",
+)
+def mlops_login(userid, version, client, server, local_server, role, runner_cmd, server_agent_id):
     account_id = userid[0]
     platform_url = "open.fedml.ai"
     if version != "release":
         platform_url = "open-{}.fedml.ai".format(version)
 
+    # Check user id.
     if userid == "":
         click.echo(
             "Please provide your account id in the MLOps platform ({}).".format(platform_url)
         )
         return
 
+    # Set client as default entity.
     is_client = client
     is_server = server
     if client is None and server is None:
         is_client = True
 
-    click.echo("login...{}, {}".format(is_client, is_server))
+    # Check login mode.
+    try:
+        login_mode_list.index(role)
+    except ValueError as e:
+        click.echo(
+            "Please specify login mode as follows ({}).".format(str(login_mode_list))
+        )
+        return
+
+    click.echo("login as client: {}, as server: {}".format(is_client, is_server))
     if is_client:
         pip_source_dir = os.path.dirname(__file__)
         login_cmd = os.path.join(pip_source_dir, "edge_deployment", "client_login.py")
@@ -166,7 +199,8 @@ def mlops_login(userid, version, client, server, local_server):
         cleanup_all_fedml_processes("server_login.py", exclude_login=True)
         login_pid = subprocess.Popen(
             [get_python_program(), login_cmd, "-t", "login", "-u", str(account_id),
-             "-v", version, "-ls", local_server]).pid
+             "-v", version, "-ls", local_server, "-r", role,
+             "-rc", runner_cmd, "-said", server_agent_id]).pid
         save_login_process(SERVER_RUNNER_HOME_DIR, SERVER_RUNNER_INFO_DIR, login_pid)
 
 
