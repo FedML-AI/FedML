@@ -1,5 +1,7 @@
 **TEXT CLASSIFICATION**
 
+Read data/README.md for more details of datasets available
+
 To run text classification using MPI simulator on follow the following steps:
 
 1. cd ../
