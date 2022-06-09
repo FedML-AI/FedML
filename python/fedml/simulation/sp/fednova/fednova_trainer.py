@@ -265,10 +265,11 @@ class FedNovaTrainer(object):
                 "training_recall": train_recall,
                 "training_loss": train_loss,
             }
-            wandb.log({"Train/Acc": train_acc, "round": round_idx})
-            wandb.log({"Train/Pre": train_precision, "round": round_idx})
-            wandb.log({"Train/Rec": train_recall, "round": round_idx})
-            wandb.log({"Train/Loss": train_loss, "round": round_idx})
+            if self.args.enable_wandb:
+                wandb.log({"Train/Acc": train_acc, "round": round_idx})
+                wandb.log({"Train/Pre": train_precision, "round": round_idx})
+                wandb.log({"Train/Rec": train_recall, "round": round_idx})
+                wandb.log({"Train/Loss": train_loss, "round": round_idx})
             logging.info(stats)
 
             stats = {
@@ -277,19 +278,22 @@ class FedNovaTrainer(object):
                 "test_recall": test_recall,
                 "test_loss": test_loss,
             }
-            wandb.log({"Test/Acc": test_acc, "round": round_idx})
-            wandb.log({"Test/Pre": test_precision, "round": round_idx})
-            wandb.log({"Test/Rec": test_recall, "round": round_idx})
-            wandb.log({"Test/Loss": test_loss, "round": round_idx})
+            if self.args.enable_wandb:
+                wandb.log({"Test/Acc": test_acc, "round": round_idx})
+                wandb.log({"Test/Pre": test_precision, "round": round_idx})
+                wandb.log({"Test/Rec": test_recall, "round": round_idx})
+                wandb.log({"Test/Loss": test_loss, "round": round_idx})
             logging.info(stats)
 
         else:
             stats = {"training_acc": train_acc, "training_loss": train_loss}
-            wandb.log({"Train/Acc": train_acc, "round": round_idx})
-            wandb.log({"Train/Loss": train_loss, "round": round_idx})
+            if self.args.enable_wandb:
+                wandb.log({"Train/Acc": train_acc, "round": round_idx})
+                wandb.log({"Train/Loss": train_loss, "round": round_idx})
             logging.info(stats)
 
             stats = {"test_acc": test_acc, "test_loss": test_loss}
-            wandb.log({"Test/Acc": test_acc, "round": round_idx})
-            wandb.log({"Test/Loss": test_loss, "round": round_idx})
+            if self.args.enable_wandb:
+                wandb.log({"Test/Acc": test_acc, "round": round_idx})
+                wandb.log({"Test/Loss": test_loss, "round": round_idx})
             logging.info(stats)
