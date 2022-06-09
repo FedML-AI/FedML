@@ -50,9 +50,7 @@ def init(args=None):
 
     if args.enable_wandb:
         wandb.init(
-            project=args.wandb_project,
-            name=args.run_name,
-            config=args,
+            project=args.wandb_project, name=args.run_name, config=args,
         )
 
     if (
@@ -61,6 +59,7 @@ def init(args=None):
         and args.backend == "MPI"
     ):
         from mpi4py import MPI
+
         comm = MPI.COMM_WORLD
         process_id = comm.Get_rank()
         worker_num = comm.Get_size()
@@ -68,15 +67,9 @@ def init(args=None):
         args.process_id = process_id
         args.worker_num = worker_num
     elif (
-<<<<<<< Updated upstream
-            args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
-            and hasattr(args, "backend")
-            and args.backend == "sp"
-=======
         args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
         and hasattr(args, "backend")
-        and args.backend == "single_process"
->>>>>>> Stashed changes
+        and args.backend == "sp"
     ):
         pass
     elif args.training_type == "cross_silo":
@@ -88,7 +81,7 @@ def init(args=None):
 
         elif args.scenario == "hierarchical":
             args.worker_num = args.client_num_per_round
-            if not hasattr(args, 'enable_cuda_rpc'):
+            if not hasattr(args, "enable_cuda_rpc"):
                 args.enable_cuda_rpc = False
             # Set intra-silo arguments
             if args.rank == 0:
@@ -103,11 +96,11 @@ def init(args=None):
 
                 # Rank in silo (process group)
                 args.proc_rank_in_silo = 0
-                
+
                 # Prcoess group master endpoint
-                if not hasattr(args, 'pg_master_port'):
+                if not hasattr(args, "pg_master_port"):
                     args.pg_master_port = 29200
-                if not hasattr(args, 'pg_master_address'):
+                if not hasattr(args, "pg_master_address"):
                     args.pg_master_address = "127.0.0.1"
             else:
                 # Modify arguments to match info set in env by torchrun
@@ -123,17 +116,15 @@ def init(args=None):
                 args.process_id = args.rank_in_node
 
                 # Rank in silo (process group)
-                args.proc_rank_in_silo = int(os.environ.get("RANK", 0)) 
+                args.proc_rank_in_silo = int(os.environ.get("RANK", 0))
 
                 # Prcoess group master endpoint
-                args.pg_master_address = os.environ.get("MASTER_ADDR", "127.0.0.1") 
+                args.pg_master_address = os.environ.get("MASTER_ADDR", "127.0.0.1")
                 args.pg_master_port = os.environ.get("MASTER_PORT", 29300)
 
                 # Launcher Rendezvous
                 if not hasattr(args, "launcher_rdzv_port"):
                     args.launcher_rdzv_port = 29400
-                
-
 
     elif args.training_type == "cross_device":
         args.rank = 0  # only server runs on Python package
@@ -242,7 +233,7 @@ def run_hierarchical_cross_silo_client():
     """FedML Octopus"""
     global _global_training_type
     _global_training_type = FEDML_TRAINING_PLATFORM_CROSS_SILO
-    
+
     args = fedml.init()
 
     # init device
@@ -286,9 +277,7 @@ def run_distributed():
     pass
 
 
-from .arguments import (
-    load_arguments,
-)
+from .arguments import load_arguments
 
 from .core.alg_frame.client_trainer import ClientTrainer
 from .core.alg_frame.server_aggregator import ServerAggregator
