@@ -122,7 +122,7 @@ pipeline {
                 sh 'unzip awscliv2.zip'
                 sh './aws/install'
                 sh 'chmod a+x ./devops/scripts/set-aws-credentials.sh;./devops/scripts/set-aws-credentials.sh $AWS_IAM_ACCESS_ID $AWS_IAM_ACCESS_KEY $AWS_REGION'
-                sh 'docker login $REGISTRY_DEV -u $AWS_ECR_USERNAME -p $(/usr/local/bin/aws ecr-public get-login-password --region $AWS_REGION)'
+                sh 'docker login --username $AWS_ECR_USERNAME --password $(/usr/local/bin/aws ecr-public get-login-password --region $AWS_REGION) $REGISTRY_DEV'
              }
           }
 
@@ -143,8 +143,8 @@ pipeline {
                 sh 'curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"'
                 sh 'unzip awscliv2.zip'
                 sh './aws/install'
-                sh 'chmod a+x ./devops/set-aws-credentials.sh;./devops/set-aws-credentials.sh $AWS_IAM_ACCESS_ID $AWS_IAM_ACCESS_KEY $AWS_REGION'
-                sh 'docker login $REGISTRY_TEST -u $AWS_ECR_USERNAME -p $(/usr/local/bin/aws ecr-public get-login-password --region $AWS_REGION)'
+                sh 'chmod a+x ./devops/scripts/set-aws-credentials.sh;./devops/scripts/set-aws-credentials.sh $AWS_IAM_ACCESS_ID $AWS_IAM_ACCESS_KEY $AWS_REGION'
+                sh 'docker login --username $AWS_ECR_USERNAME --password $(/usr/local/bin/aws ecr-public get-login-password --region $AWS_REGION) $REGISTRY_TEST'
              }
           }
           sh 'docker push  $REGISTRY_TEST/$DOCKER_NAMESPACE_TEST$APP_NAME_DEVICE_IMAGE:$VERSION_TEST'
