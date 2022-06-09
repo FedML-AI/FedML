@@ -1,7 +1,8 @@
-import numpy as np
-import torch
 import copy
 import logging
+
+import numpy as np
+import torch
 
 
 def modular_inv(a, p):
@@ -85,7 +86,7 @@ def model_masking(weights_finite, dimensions, local_mask, prime_number):
         tmp = weights_finite[k]
         cur_shape = tmp.shape
         d = dimensions[i]
-        cur_mask = local_mask[pos: pos + d, :]
+        cur_mask = local_mask[pos : pos + d, :]
         cur_mask = np.reshape(cur_mask, cur_shape)
         weights_finite[k] += cur_mask
         weights_finite[k] = np.mod(weights_finite[k], prime_number)
@@ -94,7 +95,12 @@ def model_masking(weights_finite, dimensions, local_mask, prime_number):
 
 
 def mask_encoding(
-        total_dimension, num_clients, targeted_number_active_clients, privacy_guarantee, prime_number, local_mask
+    total_dimension,
+    num_clients,
+    targeted_number_active_clients,
+    privacy_guarantee,
+    prime_number,
+    local_mask,
 ):
     d = total_dimension
     N = num_clients
@@ -110,7 +116,9 @@ def mask_encoding(
 
     LCC_in = np.concatenate([local_mask, n_i], axis=0)
     LCC_in = np.reshape(LCC_in, (U, d // (U - T)))
-    encoded_mask_set = LCC_encoding_with_points(LCC_in, alpha_s, beta_s, p).astype("int64")
+    encoded_mask_set = LCC_encoding_with_points(LCC_in, alpha_s, beta_s, p).astype(
+        "int64"
+    )
 
     return encoded_mask_set
 
@@ -124,10 +132,10 @@ def compute_aggregate_encoded_mask(encoded_mask_dict, p, active_clients):
 
 
 def aggregate_models_in_finite(weights_finite, prime_number):
-    '''
+    """
     weights_finite : array of state_dict()
     prime_number   : size of the finite field
-    '''
+    """
     w_sum = copy.deepcopy(weights_finite[0])
 
     for key in w_sum.keys():
@@ -138,11 +146,13 @@ def aggregate_models_in_finite(weights_finite, prime_number):
 
     return w_sum
 
+
 def my_q_inv(X_q, q_bit, p):
     flag = X_q - (p - 1) / 2
     is_negative = (abs(np.sign(flag)) + np.sign(flag)) / 2
     X_q = X_q - p * is_negative
     return X_q.astype(float) / (2 ** q_bit)
+
 
 def transform_finite_to_tensor(model_params, p, q_bits):
     for k in model_params.keys():
@@ -158,9 +168,14 @@ def transform_finite_to_tensor(model_params, p, q_bits):
         0 - Wed, 13 Oct 2021 07:50:59 utils.py[line:33] DEBUG tmp_real = 256812209.4375
         """
         # logging.debug("tmp_real = {}".format(tmp_real))
-        tmp_real = torch.Tensor([tmp_real]) if isinstance(tmp_real, np.floating) else torch.Tensor(tmp_real)
+        tmp_real = (
+            torch.Tensor([tmp_real])
+            if isinstance(tmp_real, np.floating)
+            else torch.Tensor(tmp_real)
+        )
         model_params[k] = tmp_real
     return model_params
+
 
 def model_dimension(weights):
     logging.info("Get model dimension")
