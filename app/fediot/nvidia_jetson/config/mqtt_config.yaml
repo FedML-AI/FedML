@@ -1,0 +1,4 @@
+BROKER_HOST: 'mqtt.fedml.ai'
+BROKER_PORT: 1883
+MQTT_USER: "admin"
+MQTT_PWD: "password"
