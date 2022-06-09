@@ -9,18 +9,17 @@ F = MNN.expr
 nn = MNN.nn
 
 from .utils import read_mnn_as_tensor_dict
-from fedml.core.security.mpc import LCC_decoding_with_points, transform_finite_to_tensor, model_dimension
+from fedml.core.mpc.secure_aggregation import (
+    LCC_decoding_with_points,
+    transform_finite_to_tensor,
+    model_dimension,
+)
 import logging
 
 
 class FedMLAggregator(object):
     def __init__(
-        self,
-        test_dataloader,
-        worker_num,
-        device,
-        args,
-        model_trainer,
+        self, test_dataloader, worker_num, device, args, model_trainer,
     ):
         self.trainer = model_trainer
 
@@ -102,7 +101,7 @@ class FedMLAggregator(object):
         logging.debug("d = {}, N = {}, U = {}, T = {}, p = {}".format(d, N, U, T, p))
 
         alpha_s = np.array(range(N)) + 1
-        beta_s = np.array(range(U)) + (N+1)
+        beta_s = np.array(range(U)) + (N + 1)
         logging.info("Server starts the reconstruction of aggregate_mask")
         aggregate_encoded_mask_buffer = np.zeros((U, d // (U - T)), dtype="int64")
         logging.info(
@@ -111,10 +110,16 @@ class FedMLAggregator(object):
             )
         )
         for i, client_idx in enumerate(active_clients):
-            aggregate_encoded_mask_buffer[i, :] = self.aggregate_encoded_mask_dict[client_idx]
+            aggregate_encoded_mask_buffer[i, :] = self.aggregate_encoded_mask_dict[
+                client_idx
+            ]
         eval_points = alpha_s[active_clients]
-        aggregate_mask = LCC_decoding_with_points(aggregate_encoded_mask_buffer, eval_points, beta_s, p)
-        logging.info("Server finish the reconstruction of aggregate_mask via LCC decoding")
+        aggregate_mask = LCC_decoding_with_points(
+            aggregate_encoded_mask_buffer, eval_points, beta_s, p
+        )
+        logging.info(
+            "Server finish the reconstruction of aggregate_mask via LCC decoding"
+        )
         aggregate_mask = np.reshape(aggregate_mask, (U * (d // (U - T)), 1))
         aggregate_mask = aggregate_mask[0:d]
         return aggregate_mask
@@ -154,7 +159,7 @@ class FedMLAggregator(object):
 
             # Cancel out the aggregate-mask to recover the aggregate-model
             averaged_params[k] -= cur_mask
-            averaged_params[k] = np.mod(averaged_params[k],p)
+            averaged_params[k] = np.mod(averaged_params[k], p)
             pos += d
 
         # Convert the model from finite to real
