@@ -6,6 +6,9 @@ import wandb
 from torch import nn
 
 from .TA_client import TA_Client
+from .my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
+from .my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
+from .my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
 
 
 class TurboAggregateTrainer(object):
@@ -32,22 +35,34 @@ class TurboAggregateTrainer(object):
         self.model_global = model
         self.model_global.train()
 
+        logging.info("model = {}".format(model))
+        if args.dataset == "stackoverflow_lr":
+            model_trainer = MyModelTrainerTAG(model)
+        elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
+            model_trainer = MyModelTrainerNWP(model)
+        else:
+            # default model trainer is for classification problem
+            model_trainer = MyModelTrainerCLS(model)
+        self.model_trainer = model_trainer
+
         self.client_list = []
         self.setup_clients(
             data_local_num_dict, train_data_local_dict, test_data_local_dict
         )
 
     def setup_clients(
-        self, data_local_num_dict, train_data_local_dict, test_data_local_dict
+            self, data_local_num_dict, train_data_local_dict, test_data_local_dict
     ):
         logging.info("############setup_clients (START)#############")
-        for client_idx in range(self.args.client_number):
+        for client_idx in range(self.args.client_num_in_total):
             c = TA_Client(
+                client_idx,
                 train_data_local_dict[client_idx],
                 test_data_local_dict[client_idx],
                 data_local_num_dict[client_idx],
                 self.args,
                 self.device,
+                self.model_trainer
             )
             self.client_list.append(c)
         logging.info("############setup_clients (END)#############")
@@ -55,16 +70,17 @@ class TurboAggregateTrainer(object):
     def train(self):
         for round_idx in range(self.args.comm_round):
             logging.info("Communication round : {}".format(round_idx))
-
+            w_global = self.model_trainer.get_model_params()
             self.model_global.train()
             w_locals, loss_locals = [], []
             for idx, client in enumerate(self.client_list):
-                w, loss = client.train(
-                    net=copy.deepcopy(self.model_global).to(self.device)
+                w = client.train(
+                    w_global
+                    # copy.deepcopy(self.model_global).to(self.device)
                 )
                 # self.logging.info("local weights = " + str(w))
                 w_locals.append((client.get_sample_number(), copy.deepcopy(w)))
-                loss_locals.append(copy.deepcopy(loss))
+                # loss_locals.append(copy.deepcopy(loss))
 
             #########################################
             # Turbo-Aggregate Protocol Starts HERE. #
@@ -85,14 +101,14 @@ class TurboAggregateTrainer(object):
             self.model_global.load_state_dict(w_glob)
 
             # print loss
-            loss_avg = sum(loss_locals) / len(loss_locals)
-            logging.info("Round {:3d}, Average loss {:.3f}".format(round_idx, loss_avg))
+            # loss_avg = sum(loss_locals) / len(loss_locals)
+            # logging.info("Round {:3d}, Average loss {:.3f}".format(round_idx, loss_avg))
 
             self.local_test(self.model_global, round_idx)
 
     def aggregate(self, w_locals):
         logging.info("################aggregate: %d" % len(w_locals))
-        (num0, averaged_params) = w_locals[0]
+        (sample_num, averaged_params) = w_locals[0]
         for k in averaged_params.keys():
             for i in range(0, len(w_locals)):
                 local_sample_number, local_model_params = w_locals[i]
@@ -124,22 +140,23 @@ class TurboAggregateTrainer(object):
         tot_corrects = []
         losses = []
         for c in self.client_list:
-            tot_correct, num_sample, loss = c.local_test(model_global, False)
+            metrics = c.local_test(False)
 
-            tot_corrects.append(copy.deepcopy(tot_correct))
-            num_samples.append(copy.deepcopy(num_sample))
-            losses.append(copy.deepcopy(loss))
+            tot_corrects.append(copy.deepcopy(metrics["test_correct"]))
+            num_samples.append(copy.deepcopy(metrics["test_total"]))
+            losses.append(copy.deepcopy(metrics["test_loss"]))
 
         train_acc = sum(tot_corrects) / sum(num_samples)
         train_loss = sum(losses) / sum(num_samples)
 
-        wandb.log({"Train/AccTop1": train_acc, "round": round_idx})
-        wandb.log({"Train/Loss": train_loss, "round": round_idx})
+        if self.args.enable_wandb:
+            wandb.log({"Train/AccTop1": train_acc, "round": round_idx})
+            wandb.log({"Train/Loss": train_loss, "round": round_idx})
 
         stats = {
             "training_acc": train_acc,
             "training_loss": train_loss,
-            "num_samples": num_samples,
+            "num_samples": sum(num_samples),
         }
         logging.info(stats)
 
@@ -148,22 +165,22 @@ class TurboAggregateTrainer(object):
         tot_corrects = []
         losses = []
         for c in self.client_list:
-            tot_correct, num_sample, loss = c.local_test(model_global, True)
+            metrics = c.local_test(True)
 
-            tot_corrects.append(copy.deepcopy(tot_correct))
-            num_samples.append(copy.deepcopy(num_sample))
-            losses.append(copy.deepcopy(loss))
+            tot_corrects.append(copy.deepcopy(metrics["test_correct"]))
+            num_samples.append(copy.deepcopy(metrics["test_total"]))
+            losses.append(copy.deepcopy(metrics["test_loss"]))
 
         test_acc = sum(tot_corrects) / sum(num_samples)
         test_loss = sum(losses) / sum(num_samples)
-
-        wandb.log({"Test/AccTop1": test_acc, "round": round_idx})
-        wandb.log({"Test/Loss": test_loss, "round": round_idx})
+        if self.args.enable_wandb:
+            wandb.log({"Test/AccTop1": test_acc, "round": round_idx})
+            wandb.log({"Test/Loss": test_loss, "round": round_idx})
 
         stats = {
             "test_acc": test_acc,
             "test_loss": test_loss,
-            "num_samples": num_samples,
+            "num_samples": sum(num_samples),
         }
         logging.info(stats)
 
@@ -181,8 +198,9 @@ class TurboAggregateTrainer(object):
 
         logging.info("Global Training Accuracy: {:.2f}".format(acc_train))
         logging.info("Global Testing Accuracy: {:.2f}".format(acc_test))
-        wandb.log({"Global Training Accuracy": acc_train})
-        wandb.log({"Global Testing Accuracy": acc_test})
+        if self.args.enable_wandb:
+            wandb.log({"Global Training Accuracy": acc_train})
+            wandb.log({"Global Testing Accuracy": acc_test})
 
     def test_using_global_dataset(self, model_global, global_test_data, device):
         model_global.eval()
