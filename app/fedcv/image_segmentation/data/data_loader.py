@@ -3,7 +3,8 @@ import os
 import numpy as np
 import torch
 from .cityscapes.data_loader import load_partition_data_cityscapes
-from .landmarks.data_loader import load_partition_data_landmarks
+from .coco.segmentation.data_loader import load_partition_data_coco_segmentation
+from .pascal_voc_augmented.data_loader import load_partition_data_pascal_voc
 import logging
 
 
@@ -21,7 +22,7 @@ def combine_batches(batches):
 
 
 def load_synthetic_data(args):
-    dataset_name = args.dataset
+    dataset_name = str(args.dataset).lower()
     # check if the centralized training is enabled
     centralized = True if (args.client_num_in_total == 1 and args.training_type != "cross_silo") else False
 
@@ -33,7 +34,7 @@ def load_synthetic_data(args):
     else:
         full_batch = False
 
-    if dataset_name.lower() == "cityscapes":
+    if dataset_name == "cityscapes":
         # load cityscapes dataset
         (
             train_data_num,
@@ -52,8 +53,8 @@ def load_synthetic_data(args):
             client_number=args.client_num_in_total,
             batch_size=args.batch_size,
         )
-    elif dataset_name.lower() == "landmark":
-        # load landmark dataset
+    elif dataset_name in ["coco_segmentation", "coco"]:
+        # load coco dataset
         (
             train_data_num,
             test_data_num,
@@ -63,18 +64,35 @@ def load_synthetic_data(args):
             train_data_local_dict,
             test_data_local_dict,
             class_num,
-        ) = load_partition_data_landmarks(
-            dataset=args.dataset,
-            data_dir=args.data_dir,
-            fed_train_map_file=args.fed_train_map_file,
-            fed_test_map_file=args.fed_test_map_file,
-            partition_method=args.partition_method,
-            partition_alpha=args.partition_alpha,
+        ) = load_partition_data_coco_segmentation(
+            dataset=dataset_name,
+            data_dir=args.data_cache_dir,
+            partition_method=None,
+            partition_alpha=None,
+            client_number=args.client_num_in_total,
+            batch_size=args.batch_size,
+        )
+    elif dataset_name in ["pascal_voc", "pascal_voc_augmented"]:
+        # load pascal voc dataset
+        (
+            train_data_num,
+            test_data_num,
+            train_data_global,
+            test_data_global,
+            data_local_num_dict,
+            train_data_local_dict,
+            test_data_local_dict,
+            class_num,
+        ) = load_partition_data_pascal_voc(
+            dataset=dataset_name,
+            data_dir=args.data_cache_dir,
+            partition_method=None,
+            partition_alpha=None,
             client_number=args.client_num_in_total,
             batch_size=args.batch_size,
         )
     else:
-        return None
+        raise ValueError("dataset %s is not supported" % dataset_name)
 
     if centralized:
         train_data_local_num_dict = {

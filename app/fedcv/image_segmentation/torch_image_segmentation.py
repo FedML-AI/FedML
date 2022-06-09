@@ -9,14 +9,29 @@ from trainer.segmentation_trainer import SegmentationTrainer
 
 def create_model(args, model_name, output_dim):
     logging.info("create_model. model_name = %s, output_dim = %s" % (model_name, output_dim))
-    if model_name.lower() == "unet":
-        model = UNet()
-    elif model_name.lower() == "mobilenetv2":
-        model = MobileNetV2()
-    elif model_name.lower() == "deeplabv3_plus":
-        model = DeepLabV3_plus()
-    elif model_name.lower() in ["vit", "transunet"]:
-        model = VisionTransformer()
+    model_name = str(model_name).lower()
+    if model_name == "unet":
+        model = UNet(in_channel=3, n_classes=output_dim)
+    elif model_name == "deeplabv3_plus":
+        model = DeepLabV3_plus(
+            backbone="mobilenet",
+            nInputChannels=3,
+            n_classes=output_dim,
+            output_stride=16,
+            pretrained=False,
+            _print=True,
+        )
+    elif model_name in ["vit", "transunet"]:
+        from .model.transunet.transunet import CONFIGS
+
+        vit_name = "R50-ViT-B_16"
+        img_size, vit_patches_size = 224, 16
+        config_vit = CONFIGS[vit_name]
+        config_vit.n_classes = 9
+        config_vit.n_skip = 3
+        if vit_name.find("R50") != -1:
+            config_vit.patches.grid = (int(img_size / vit_patches_size), int(img_size / vit_patches_size))
+        model = VisionTransformer(config_vit, img_size=img_size, num_classes=config_vit.n_classes)
     else:
         raise Exception("such model does not exist !")
 
