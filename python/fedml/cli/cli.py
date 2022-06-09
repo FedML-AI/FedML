@@ -168,15 +168,6 @@ def mlops_login(userid, version, client, server, local_server, role, runner_cmd,
     if client is None and server is None:
         is_client = True
 
-    # Check login mode.
-    try:
-        login_mode_list.index(role)
-    except ValueError as e:
-        click.echo(
-            "Please specify login mode as follows ({}).".format(str(login_mode_list))
-        )
-        return
-
     click.echo("login as client: {}, as server: {}".format(is_client, is_server))
     if is_client:
         pip_source_dir = os.path.dirname(__file__)
@@ -191,6 +182,15 @@ def mlops_login(userid, version, client, server, local_server, role, runner_cmd,
         save_login_process(CLIENT_RUNNER_HOME_DIR, CLIENT_RUNNER_INFO_DIR, login_pid)
 
     if is_server:
+        # Check login mode.
+        try:
+            login_mode_list.index(role)
+        except ValueError as e:
+            click.echo(
+                "Please specify login mode as follows ({}).".format(str(login_mode_list))
+            )
+            return
+
         pip_source_dir = os.path.dirname(__file__)
         login_cmd = os.path.join(pip_source_dir, "server_deployment", "server_login.py")
         click.echo(login_cmd)
