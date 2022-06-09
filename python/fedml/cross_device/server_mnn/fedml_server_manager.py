@@ -31,6 +31,15 @@ class FedMLServerManager(ServerManager):
         self.is_preprocessed = is_preprocessed
         self.preprocessed_client_lists = preprocessed_client_lists
 
+        self.active_clients_first_round = []
+        self.active_clients_second_round = []
+
+        ### new added parameters in main file ###
+        self.privacy_guarantee = args.client_num_per_round / 2
+        self.targeted_number_active_clients = self.privacy_guarantee + 1
+        self.prime_number = args.prime_number
+        self.precision_parameter = args.precision_parameter
+
         self.client_stubs = {}
         self.global_model_file_path = self.args.global_model_file_path
         self.model_file_cache_folder = self.args.model_file_cache_folder
@@ -122,6 +131,8 @@ class FedMLServerManager(ServerManager):
                         "epochs": self.args.epochs,
                         "learning_rate": self.args.learning_rate,
                         "federated_optimizer": self.args.federated_optimizer,
+                        "prime_number": self.prime_number,
+                        "precision_parameter": self.precision_parameter,
                     },
                     "environment_args": {"bootstrap": "config/bootstrap.sh"},
                     "validation_args": {"frequency_of_the_test": 1},
@@ -202,6 +213,13 @@ class FedMLServerManager(ServerManager):
         self.register_message_receive_handler(
             MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER,
             self.handle_message_receive_model_from_client,
+        )
+        # additional message for lightsecagg
+        self.register_message_receive_handler(
+            MyMessage.MSG_TYPE_C2S_SEND_ENCODED_MASK_TO_SERVER, self.handle_message_receive_encoded_mask_from_client
+        )
+        self.register_message_receive_handler(
+            MyMessage.MSG_TYPE_C2S_SEND_MASK_TO_SERVER, self.handle_message_receive_aggregate_encoded_mask_from_client
         )
 
     def handle_message_client_status_update(self, msg_params):

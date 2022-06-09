@@ -9,6 +9,7 @@ F = MNN.expr
 nn = MNN.nn
 
 from .utils import read_mnn_as_tensor_dict
+from .mpc_function import LCC_decoding_with_points, transform_finite_to_tensor, model_dimension
 import logging
 
 
@@ -30,11 +31,20 @@ class FedMLAggregator(object):
         self.device = device
         self.model_dict = dict()
         self.sample_num_dict = dict()
+        self.aggregate_encoded_mask_dict = dict()
+        self.flag_client_aggregate_encoded_mask_uploaded_dict = dict()
         self.flag_client_model_uploaded_dict = dict()
+        self.total_dimension = None
+        self.dimensions = []
         for idx in range(self.worker_num):
             self.flag_client_model_uploaded_dict[idx] = False
+            self.flag_client_aggregate_encoded_mask_uploaded_dict[idx] = False
 
         self.mlops_metrics = None
+        self.targeted_number_active_clients = args.targeted_number_active_clients
+        self.privacy_guarantee = args.privacy_guarantee
+        self.prime_number = args.prime_number
+        self.precision_parameter = args.precision_parameter
 
     def set_mlops_metrics_logger(self, mlops_metrics):
         self.mlops_metrics = mlops_metrics
@@ -55,6 +65,14 @@ class FedMLAggregator(object):
         self.sample_num_dict[index] = sample_num
         self.flag_client_model_uploaded_dict[index] = True
 
+    def add_local_aggregate_encoded_mask(self, index, aggregate_encoded_mask):
+        logging.info("add_aggregate_encoded_mask index = %d" % index)
+        self.aggregate_encoded_mask_dict[index] = aggregate_encoded_mask
+        self.flag_client_aggregate_encoded_mask_uploaded_dict[index] = True
+
+    def get_model_dimension(self, weights):
+        self.dimensions, self.total_dimension = model_dimension(weights)
+
     def check_whether_all_receive(self):
         logging.info("worker_num = {}".format(self.worker_num))
         for idx in range(self.worker_num):
@@ -64,8 +82,48 @@ class FedMLAggregator(object):
             self.flag_client_model_uploaded_dict[idx] = False
         return True
 
-    def aggregate(self):
+    def check_whether_all_aggregate_encoded_mask_receive(self):
+        for idx in range(self.worker_num):
+            if not self.flag_client_aggregate_encoded_mask_uploaded_dict[idx]:
+                return False
+        for idx in range(self.worker_num):
+            self.flag_client_aggregate_encoded_mask_uploaded_dict[idx] = False
+        return True
+
+    def aggregate_mask_reconstruction(self, active_clients):
+        """
+        Recover the aggregate-mask via decoding
+        """
+        d = self.total_dimension
+        N = self.worker_num
+        U = self.targeted_number_active_clients
+        T = self.privacy_guarantee
+        p = self.prime_number
+        logging.debug("d = {}, N = {}, U = {}, T = {}, p = {}".format(d, N, U, T, p))
+
+        alpha_s = np.array(range(N)) + 1
+        beta_s = np.array(range(U)) + (N+1)
+        logging.info("Server starts the reconstruction of aggregate_mask")
+        aggregate_encoded_mask_buffer = np.zeros((U, d // (U - T)), dtype="int64")
+        logging.info(
+            "active_clients = {}, aggregate_encoded_mask_dict = {}".format(
+                active_clients, self.aggregate_encoded_mask_dict
+            )
+        )
+        for i, client_idx in enumerate(active_clients):
+            aggregate_encoded_mask_buffer[i, :] = self.aggregate_encoded_mask_dict[client_idx]
+        eval_points = alpha_s[active_clients]
+        aggregate_mask = LCC_decoding_with_points(aggregate_encoded_mask_buffer, eval_points, beta_s, p)
+        logging.info("Server finish the reconstruction of aggregate_mask via LCC decoding")
+        aggregate_mask = np.reshape(aggregate_mask, (U * (d // (U - T)), 1))
+        aggregate_mask = aggregate_mask[0:d]
+        return aggregate_mask
+
+    def aggregate(self, active_clients_first_round, active_clients_second_round):
         start_time = time.time()
+        aggregate_mask = self.aggregate_mask_reconstruction(active_clients_second_round)
+        p = self.prime_number
+        q_bits = self.precision_parameter
         model_list = []
         training_num = 0
 
@@ -78,6 +136,7 @@ class FedMLAggregator(object):
         logging.info("training_num = {}".format(training_num))
         logging.info("len of self.model_dict[idx] = " + str(len(self.model_dict)))
 
+        pos = 0
         # logging.info("################aggregate: %d" % len(model_list))
         (num0, averaged_params) = model_list[0]
         for k in averaged_params.keys():
@@ -88,6 +147,19 @@ class FedMLAggregator(object):
                     averaged_params[k] = local_model_params[k] * w
                 else:
                     averaged_params[k] += local_model_params[k] * w
+            cur_shape = np.shape(averaged_params[k])
+            d = int(np.prod(cur_shape))
+            cur_mask = np.array(aggregate_mask[pos : pos + d, :])
+            cur_mask = np.reshape(cur_mask, cur_shape)
+
+            # Cancel out the aggregate-mask to recover the aggregate-model
+            averaged_params[k] -= cur_mask
+            averaged_params[k] = np.mod(averaged_params[k],p)
+            pos += d
+
+        # Convert the model from finite to real
+        logging.info("Server converts the aggregate_model from finite to tensor")
+        averaged_params = transform_finite_to_tensor(averaged_params, p, q_bits)
 
         end_time = time.time()
         logging.info("aggregate time cost: %d" % (end_time - start_time))
