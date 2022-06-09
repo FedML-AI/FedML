@@ -5,7 +5,8 @@ import numpy as np
 
 
 def partition_class_samples_with_dirichlet_distribution(
-        N, alpha, client_num, idx_batch, idx_k):
+    N, alpha, client_num, idx_batch, idx_k
+):
     """
     params
     ------------------------------------
@@ -19,7 +20,7 @@ def partition_class_samples_with_dirichlet_distribution(
     return
     ------------------------------------
     idx_batch : 2d list shape(client_num, ?) list of index for each client
-    min_size : minimum size of all the clients' sample 
+    min_size : minimum size of all the clients' sample
     ------------------------------------
     """
     # first shuffle the index
@@ -29,10 +30,9 @@ def partition_class_samples_with_dirichlet_distribution(
     proportions = np.random.dirichlet(np.repeat(alpha, client_num))
 
     # get the index in idx_k according to the dirichlet distribution
-    proportions = np.array([
-        p * (len(idx_j) < N / client_num)
-        for p, idx_j in zip(proportions, idx_batch)
-    ])
+    proportions = np.array(
+        [p * (len(idx_j) < N / client_num) for p, idx_j in zip(proportions, idx_batch)]
+    )
     proportions = proportions / proportions.sum()
     proportions = (np.cumsum(proportions) * len(idx_k)).astype(int)[:-1]
 
@@ -73,20 +73,15 @@ def main():
         help="partition pickle file path",
     )
 
-    parser.add_argument("--task_type",
-                        type=str,
-                        metavar="TT",
-                        help="task type")
+    parser.add_argument("--task_type", type=str, metavar="TT", help="task type")
 
-    parser.add_argument("--kmeans_num",
-                        type=int,
-                        metavar="KN",
-                        help="number of k-means cluster")
+    parser.add_argument(
+        "--kmeans_num", type=int, metavar="KN", help="number of k-means cluster"
+    )
 
-    parser.add_argument("--beta",
-                        type=float,
-                        metavar="B",
-                        help="beta value for quantity skew")
+    parser.add_argument(
+        "--beta", type=float, metavar="B", help="beta value for quantity skew"
+    )
 
     args = parser.parse_args()
     print("start reading data")
@@ -114,46 +109,60 @@ def main():
     print("start dirichlet distribution")
     while min_size_test < 1 or min_size_train < 1:
         partition_result_train = [[] for _ in range(client_num)]
-        partition_result_test = [[] for _ in range(client_num)] 
+        partition_result_test = [[] for _ in range(client_num)]
         train_n = len(train_index_list)
         test_n = len(test_index_list)
         partition_result_train = partition_class_samples_with_dirichlet_distribution(
-            train_n, beta, client_num, partition_result_train,
-            train_index_list)
+            train_n, beta, client_num, partition_result_train, train_index_list
+        )
         partition_result_test = partition_class_samples_with_dirichlet_distribution(
-            test_n, beta, client_num, partition_result_test,
-            test_index_list) 
-    print("minsize of the train data",
-          min([len(i) for i in partition_result_train]))
-    print("minsize of the test data",
-          min([len(i) for i in partition_result_test]))
+            test_n, beta, client_num, partition_result_test, test_index_list
+        )
+    print("minsize of the train data", min([len(i) for i in partition_result_train]))
+    print("minsize of the test data", min([len(i) for i in partition_result_test]))
     data.close()
 
     print("store data in h5 data")
     partition = h5py.File(args.partition_file, "a")
 
-    if ("/niid_quantity_clients_%d_beta=%.1f" % (args.client_number, args.beta)
-            in partition):
-        del partition["/niid_quantity_clients_%d_beta=%.1f" %
-                      (args.client_number, args.beta)]
-    if ("/niid_quantity_clients=%d_beta=%.1f" % (args.client_number, args.beta)
-            in partition):
-        del partition["/niid_quantity=clients_%d_beta=%.1f" %
-                      (args.client_number, args.beta)]
+    if (
+        "/niid_quantity_clients_%d_beta=%.1f" % (args.client_number, args.beta)
+        in partition
+    ):
+        del partition[
+            "/niid_quantity_clients_%d_beta=%.1f" % (args.client_number, args.beta)
+        ]
+    if (
+        "/niid_quantity_clients=%d_beta=%.1f" % (args.client_number, args.beta)
+        in partition
+    ):
+        del partition[
+            "/niid_quantity=clients_%d_beta=%.1f" % (args.client_number, args.beta)
+        ]
 
-    partition["/niid_quantity_clients=%d_beta=%.1f" %
-              (args.client_number, args.beta) + "/n_clients"] = client_num
-    partition["/niid_quantity_clients=%d_beta=%.1f" %
-              (args.client_number, args.beta) + "/beta"] = beta
+    partition[
+        "/niid_quantity_clients=%d_beta=%.1f" % (args.client_number, args.beta)
+        + "/n_clients"
+    ] = client_num
+    partition[
+        "/niid_quantity_clients=%d_beta=%.1f" % (args.client_number, args.beta)
+        + "/beta"
+    ] = beta
     for partition_id in range(client_num):
         train = partition_result_train[partition_id]
         test = partition_result_test[partition_id]
-        train_path = ("/niid_quantity_clients=%d_beta=%.1f" %
-                      (args.client_number, args.beta) + "/partition_data/" +
-                      str(partition_id) + "/train/")
-        test_path = ("/niid_quantity_clients=%d_beta=%.1f" %
-                     (args.client_number, args.beta) + "/partition_data/" +
-                     str(partition_id) + "/test/")
+        train_path = (
+            "/niid_quantity_clients=%d_beta=%.1f" % (args.client_number, args.beta)
+            + "/partition_data/"
+            + str(partition_id)
+            + "/train/"
+        )
+        test_path = (
+            "/niid_quantity_clients=%d_beta=%.1f" % (args.client_number, args.beta)
+            + "/partition_data/"
+            + str(partition_id)
+            + "/test/"
+        )
         partition[train_path] = train
         partition[test_path] = test
     partition.close()

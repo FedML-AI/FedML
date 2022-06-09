@@ -11,20 +11,21 @@ from collections import Counter
 from numpy.lib.shape_base import split
 
 
-def dynamic_batch_fill(label_index_tracker, label_index_matrix,
-                       remaining_length, current_label_id):
+def dynamic_batch_fill(
+    label_index_tracker, label_index_matrix, remaining_length, current_label_id
+):
     """
     params
     ------------------------------------------------------------------------
-    label_index_tracker : 1d numpy array track how many data each label has used 
+    label_index_tracker : 1d numpy array track how many data each label has used
     label_index_matrix : 2d array list of indexs of each label
     remaining_length : int remaining empty space in current partition client list
     current_label_id : int current round label id
     ------------------------------------------------------------------------
 
-    return 
+    return
     ---------------------------------------------------------
-    label_index_offset: dict  dictionary key is label id 
+    label_index_offset: dict  dictionary key is label id
     and value is the offset associated with this key
     ----------------------------------------------------------
     """
@@ -39,8 +40,9 @@ def dynamic_batch_fill(label_index_tracker, label_index_matrix,
             continue
         label_remaining_count = len(label_list) - label_index_tracker[label_id]
         if label_remaining_count > 0:
-            total_label_remain_length = (total_label_remain_length +
-                                         label_remaining_count)
+            total_label_remain_length = (
+                total_label_remain_length + label_remaining_count
+            )
         else:
             label_remaining_count = 0
         label_remain_length_dict[label_id] = label_remaining_count
@@ -49,16 +51,20 @@ def dynamic_batch_fill(label_index_tracker, label_index_matrix,
     if total_label_remain_length > 0:
         label_sorted_by_length = {
             k: v
-            for k, v in sorted(label_remain_length_dict.items(),
-                               key=lambda item: item[1])
+            for k, v in sorted(
+                label_remain_length_dict.items(), key=lambda item: item[1]
+            )
         }
     else:
         label_index_offset = label_remain_length_dict
         return label_index_offset
     # for each label calculate the offset move forward by distribution of remaining labels
     for label_id in label_sorted_by_length.keys():
-        fill_count = math.ceil(label_remain_length_dict[label_id] /
-                               total_label_remain_length * remaining_length)
+        fill_count = math.ceil(
+            label_remain_length_dict[label_id]
+            / total_label_remain_length
+            * remaining_length
+        )
         fill_count = min(fill_count, label_remain_length_dict[label_id])
         offset_forward = fill_count
         # if left room not enough for all offset set it to 0
@@ -75,8 +81,11 @@ def dynamic_batch_fill(label_index_tracker, label_index_matrix,
     if length_pointer > 0:
         for label_id in label_sorted_by_length.keys():
             # make sure no infinite loop happens
-            fill_count = math.ceil(label_sorted_by_length[label_id] /
-                                   total_label_remain_length * length_pointer)
+            fill_count = math.ceil(
+                label_sorted_by_length[label_id]
+                / total_label_remain_length
+                * length_pointer
+            )
             fill_count = min(fill_count, label_remain_length_dict[label_id])
             offset_forward = fill_count
             if length_pointer - offset_forward <= 0 and length_pointer > 0:
@@ -91,19 +100,18 @@ def dynamic_batch_fill(label_index_tracker, label_index_matrix,
     return label_index_offset
 
 
-def label_skew_process(label_vocab, label_assignment, client_num, alpha,
-                       data_length):
+def label_skew_process(label_vocab, label_assignment, client_num, alpha, data_length):
     """
     params
     -------------------------------------------------------------------
-    label_vocab : dict label vocabulary of the dataset 
+    label_vocab : dict label vocabulary of the dataset
     label_assignment : 1d list a list of label, the index of list is the index associated to label
     client_num : int number of clients
     alpha : float similarity of each client, the larger the alpha the similar data for each client
     -------------------------------------------------------------------
-    return 
+    return
     ------------------------------------------------------------------
-    partition_result : 2d array list of partition index of each client 
+    partition_result : 2d array list of partition index of each client
     ------------------------------------------------------------------
     """
     label_index_matrix = [[] for _ in label_vocab]
@@ -117,7 +125,7 @@ def label_skew_process(label_vocab, label_assignment, client_num, alpha,
         label_proportion.append(len(label_location) / data_length)
         np.random.shuffle(label_location)
         label_index_matrix[index].extend(label_location[:])
-    print("proportion",label_proportion)
+    print("proportion", label_proportion)
     # calculate size for each partition client
     label_index_tracker = np.zeros(len(label_vocab), dtype=int)
     total_index = data_length
@@ -132,7 +140,7 @@ def label_skew_process(label_vocab, label_assignment, client_num, alpha,
     for client_id in range(len(partition_result)):
         each_client_partition_result = partition_result[client_id]
         proportions = np.random.dirichlet(client_dir_dis)
-        print(client_id,proportions)
+        print(client_id, proportions)
         print(type(proportions[0]))
         while True in np.isnan(proportions):
             proportions = np.random.dirichlet(client_dir_dis)
@@ -158,25 +166,33 @@ def label_skew_process(label_vocab, label_assignment, client_num, alpha,
             # if the the label is assigned to a offset length that is more than what its remaining length
             if end > label_data_length:
                 each_client_partition_result.extend(
-                    label_index_matrix[label_id][start:])
+                    label_index_matrix[label_id][start:]
+                )
                 label_index_tracker[label_id] = label_data_length
                 label_index_offset = dynamic_batch_fill(
-                    label_index_tracker, label_index_matrix,
-                    end - label_data_length, label_id)
+                    label_index_tracker,
+                    label_index_matrix,
+                    end - label_data_length,
+                    label_id,
+                )
                 for fill_label_id in label_index_offset.keys():
                     start = label_index_tracker[fill_label_id]
-                    end = (label_index_tracker[fill_label_id] +
-                           label_index_offset[fill_label_id])
+                    end = (
+                        label_index_tracker[fill_label_id]
+                        + label_index_offset[fill_label_id]
+                    )
                     each_client_partition_result.extend(
-                        label_index_matrix[fill_label_id][start:end])
+                        label_index_matrix[fill_label_id][start:end]
+                    )
                     label_index_tracker[fill_label_id] = (
-                        label_index_tracker[fill_label_id] +
-                        label_index_offset[fill_label_id])
+                        label_index_tracker[fill_label_id]
+                        + label_index_offset[fill_label_id]
+                    )
             else:
                 each_client_partition_result.extend(
-                    label_index_matrix[label_id][start:end])
-                label_index_tracker[
-                    label_id] = label_index_tracker[label_id] + offset
+                    label_index_matrix[label_id][start:end]
+                )
+                label_index_tracker[label_id] = label_index_tracker[label_id] + offset
 
         # if last client still has empty rooms, fill empty rooms with the rest of the unused data
         if client_id == len(partition_result) - 1:
@@ -184,13 +200,16 @@ def label_skew_process(label_vocab, label_assignment, client_num, alpha,
             print("Last client fill the rest of the unfilled lables.")
             for not_fillall_label_id in range(len(label_vocab)):
                 if label_index_tracker[not_fillall_label_id] < len(
-                        label_index_matrix[not_fillall_label_id]):
+                    label_index_matrix[not_fillall_label_id]
+                ):
                     print("fill more id", not_fillall_label_id)
                     start = label_index_tracker[not_fillall_label_id]
                     each_client_partition_result.extend(
-                        label_index_matrix[not_fillall_label_id][start:])
+                        label_index_matrix[not_fillall_label_id][start:]
+                    )
                     label_index_tracker[not_fillall_label_id] = len(
-                        label_index_matrix[not_fillall_label_id])
+                        label_index_matrix[not_fillall_label_id]
+                    )
         partition_result[client_id] = each_client_partition_result
 
     return partition_result
@@ -228,27 +247,20 @@ def main():
         "--task_type",
         type=str,
         metavar="TT",
-        help=
-        "task type: [text_classification,reading_comprehension,sequence_tagging,sequence_to_sequence]"
+        help="task type: [text_classification,reading_comprehension,sequence_tagging,sequence_to_sequence]",
     )
 
-    parser.add_argument("--skew_type",
-                        type=str,
-                        metavar="TT",
-                        help="skeq type: [label, feature]")
+    parser.add_argument(
+        "--skew_type", type=str, metavar="TT", help="skeq type: [label, feature]"
+    )
 
     parser.add_argument("--seed", type=int, metavar="RS", help="random seed")
 
-    parser.add_argument("--kmeans_num",
-                        type=int,
-                        metavar="KN",
-                        help="number of k-means cluster")
+    parser.add_argument(
+        "--kmeans_num", type=int, metavar="KN", help="number of k-means cluster"
+    )
 
-    parser.add_argument("--alpha",
-                        type=float,
-                        metavar="A",
-                        help="alpha value for LDA")
-
+    parser.add_argument("--alpha", type=float, metavar="A", help="alpha value for LDA")
 
     args = parser.parse_args()
     np.random.seed(args.seed)
@@ -294,17 +306,15 @@ def main():
             label_vocab_train = attributes["label_vocab"].keys()
             label_vocab_test = attributes["label_vocab"].keys()
             print(attributes["label_vocab"])
-            label_assignment = np.array([
-                data["Y"][str(i)][()].decode("utf-8") for i in total_index_list
-            ])
-            label_assignment_test = np.array([
-                data["Y"][str(idx)][()].decode("utf-8")
-                for idx in test_index_list
-            ])
-            label_assignment_train = np.array([
-                data["Y"][str(idx)][()].decode("utf-8")
-                for idx in train_index_list
-            ])
+            label_assignment = np.array(
+                [data["Y"][str(i)][()].decode("utf-8") for i in total_index_list]
+            )
+            label_assignment_test = np.array(
+                [data["Y"][str(idx)][()].decode("utf-8") for idx in test_index_list]
+            )
+            label_assignment_train = np.array(
+                [data["Y"][str(idx)][()].decode("utf-8") for idx in train_index_list]
+            )
             train_length = len(label_assignment_train)
             test_length = len(label_assignment_test)
         elif args.task_type == "sequence_tagging":
@@ -314,15 +324,23 @@ def main():
             train_label_vocab_dict = dict()
             test_label_vocab_dict = dict()
             blacklist = [
-                "CARDINAL", "DATE", "MONEY", "QUANTITY", "ORDINAL", "TIME",
-                "LANGUAGE", "WORK_OF_ART", "LAW", "PERCENT"
+                "CARDINAL",
+                "DATE",
+                "MONEY",
+                "QUANTITY",
+                "ORDINAL",
+                "TIME",
+                "LANGUAGE",
+                "WORK_OF_ART",
+                "LAW",
+                "PERCENT",
             ]
             label = ""
             for index in total_index_list:
-                tags = filter(lambda x: x != "O", [
-                    token.decode("utf-8")
-                    for token in data["Y"][str(index)][()]
-                ])
+                tags = filter(
+                    lambda x: x != "O",
+                    [token.decode("utf-8") for token in data["Y"][str(index)][()]],
+                )
                 label_tags = set([t.split("-")[1] for t in tags])
                 label_tags -= set(blacklist)
                 label = "-".join(sorted(label_tags))
@@ -333,13 +351,12 @@ def main():
 
             train_length = len(train_index_list)
             test_length = len(test_index_list)
-            
 
             for index, value in enumerate(train_index_list):
-                tags = filter(lambda x: x != "O", [
-                    token.decode("utf-8")
-                    for token in data["Y"][str(value)][()]
-                ])
+                tags = filter(
+                    lambda x: x != "O",
+                    [token.decode("utf-8") for token in data["Y"][str(value)][()]],
+                )
                 label_tags = set([t.split("-")[1] for t in tags])
                 label_tags -= set(blacklist)
                 label = "-".join(sorted(label_tags))
@@ -353,10 +370,10 @@ def main():
             label_assignment_train = np.array(label_assignment_train)
 
             for index, value in enumerate(test_index_list):
-                tags = filter(lambda x: x != "O", [
-                    token.decode("utf-8")
-                    for token in data["Y"][str(value)][()]
-                ])
+                tags = filter(
+                    lambda x: x != "O",
+                    [token.decode("utf-8") for token in data["Y"][str(value)][()]],
+                )
                 label_tags = set([t.split("-")[1] for t in tags])
                 label_tags -= set(blacklist)
                 label = "-".join(sorted(label_tags))
@@ -371,23 +388,25 @@ def main():
 
             label_vocab_train = train_label_vocab_dict.keys()
             label_vocab_test = test_label_vocab_dict.keys()
-            
+
             print("label vocab", len(set(label_assignment)))
             exit()
 
         elif args.task_type == "reading_comprehension":
-            label_vocab = sorted(list(set(attributes['label_index_list'])))
+            label_vocab = sorted(list(set(attributes["label_index_list"])))
             label_vocab_train = label_vocab
             label_vocab_test = label_vocab
-            label_assignment = attributes['label_index_list']
+            label_assignment = attributes["label_index_list"]
             label_assignment_test = np.array(
-            [label_assignment[int(idx)] for idx in test_index_list])
+                [label_assignment[int(idx)] for idx in test_index_list]
+            )
             label_assignment_train = np.array(
-            [label_assignment[int(idx)] for idx in train_index_list])
+                [label_assignment[int(idx)] for idx in train_index_list]
+            )
             train_length = len(label_assignment_train)
             test_length = len(label_assignment_test)
-            #print("label assignment train set", Counter(label_assignment_train))
-            #print("label assignment test set", Counter(label_assignment_test))
+            # print("label assignment train set", Counter(label_assignment_train))
+            # print("label assignment test set", Counter(label_assignment_test))
 
             label_assignment_train = np.array(label_assignment_train)
             label_assignment_test = np.array(label_assignment_test)
@@ -401,21 +420,23 @@ def main():
         label_vocab_train = [i for i in range(args.kmeans_num)]
         label_vocab_test = [i for i in range(args.kmeans_num)]
         label_assignment = np.array(
-            partition["kmeans_clusters=%d" % args.kmeans_num +
-                      "/client_assignment"][()])
+            partition["kmeans_clusters=%d" % args.kmeans_num + "/client_assignment"][()]
+        )
         label_assignment_test = np.array(
-            [label_assignment[int(idx)] for idx in test_index_list])
+            [label_assignment[int(idx)] for idx in test_index_list]
+        )
         label_assignment_train = np.array(
-            [label_assignment[int(idx)] for idx in train_index_list])
+            [label_assignment[int(idx)] for idx in train_index_list]
+        )
         train_length = len(label_assignment_train)
         test_length = len(label_assignment_test)
         partition.close()
     elif args.skew_type == "natural":
         partition = h5py.File(args.partition_file, "r")
-        label_vocab = sorted(list(set(attributes['label_index_list'])))
+        label_vocab = sorted(list(set(attributes["label_index_list"])))
         label_index_train_dict = dict()
         label_index_test_dict = dict()
-        label_assignment = attributes['label_index_list']
+        label_assignment = attributes["label_index_list"]
         for index, label in enumerate(label_assignment):
             if index < len(train_index_list):
                 if label in label_index_train_dict:
@@ -437,68 +458,109 @@ def main():
     if args.skew_type != "natural":
         print("start train data processing")
 
-        partition_result_train = label_skew_process(label_vocab_train,
-                                                    label_assignment_train,
-                                                    client_num, alpha,
-                                                    train_length)
+        partition_result_train = label_skew_process(
+            label_vocab_train, label_assignment_train, client_num, alpha, train_length
+        )
         print("start test data processing")
-        partition_result_test = label_skew_process(label_vocab_test,
-                                                label_assignment_test,
-                                                client_num, alpha, test_length)
+        partition_result_test = label_skew_process(
+            label_vocab_test, label_assignment_test, client_num, alpha, test_length
+        )
         # for test add train_length to each index
         for client_id in range(len(partition_result_test)):
             for index in range(len(partition_result_test[client_id])):
                 partition_result_test[client_id][index] += len(train_index_list)
-
 
         print("store data in h5 data")
         partition = h5py.File(args.partition_file, "a")
 
         flag_str = "label" if args.skew_type == "label" else "cluster"
         # delete the old partition files in h5 so that we can write to  the h5 file
-        if ("/niid_" + flag_str + "_clients=%.1f_alpha=%g" %
-            (args.client_number, args.alpha) in partition):
-            del partition["/niid_" + flag_str + "_clients=%d_alpha=%g" %
-                        (args.client_number, args.alpha)]
-        if ("/niid_" + flag_str + "_clients=%d_alpha=%g" %
-            (args.client_number, args.alpha) in partition):
-            del partition["/niid_" + flag_str + "_clients=%d_alpha=%g" %
-                        (args.client_number, args.alpha)]
+        if (
+            "/niid_"
+            + flag_str
+            + "_clients=%.1f_alpha=%g" % (args.client_number, args.alpha)
+            in partition
+        ):
+            del partition[
+                "/niid_"
+                + flag_str
+                + "_clients=%d_alpha=%g" % (args.client_number, args.alpha)
+            ]
+        if (
+            "/niid_"
+            + flag_str
+            + "_clients=%d_alpha=%g" % (args.client_number, args.alpha)
+            in partition
+        ):
+            del partition[
+                "/niid_"
+                + flag_str
+                + "_clients=%d_alpha=%g" % (args.client_number, args.alpha)
+            ]
 
-        partition["/niid_" + flag_str + "_clients=%d_alpha=%g" %
-                (args.client_number, args.alpha) + "/n_clients"] = client_num
-        partition["/niid_" + flag_str + "_clients=%d_alpha=%g" %
-                (args.client_number, args.alpha) + "/alpha"] = alpha
+        partition[
+            "/niid_"
+            + flag_str
+            + "_clients=%d_alpha=%g" % (args.client_number, args.alpha)
+            + "/n_clients"
+        ] = client_num
+        partition[
+            "/niid_"
+            + flag_str
+            + "_clients=%d_alpha=%g" % (args.client_number, args.alpha)
+            + "/alpha"
+        ] = alpha
         for partition_id in range(client_num):
             train = partition_result_train[partition_id]
             test = partition_result_test[partition_id]
-            train_path = ("/niid_" + flag_str + "_clients=%d_alpha=%g" %
-                        (args.client_number, args.alpha) + "/partition_data/" +
-                        str(partition_id) + "/train/")
-            test_path = ("/niid_" + flag_str + "_clients=%d_alpha=%g" %
-                        (args.client_number, args.alpha) + "/partition_data/" +
-                        str(partition_id) + "/test/")
+            train_path = (
+                "/niid_"
+                + flag_str
+                + "_clients=%d_alpha=%g" % (args.client_number, args.alpha)
+                + "/partition_data/"
+                + str(partition_id)
+                + "/train/"
+            )
+            test_path = (
+                "/niid_"
+                + flag_str
+                + "_clients=%d_alpha=%g" % (args.client_number, args.alpha)
+                + "/partition_data/"
+                + str(partition_id)
+                + "/test/"
+            )
             partition[train_path] = train
             partition[test_path] = test
         partition.close()
     else:
         print("store data in h5 data")
         partition = h5py.File(args.partition_file, "a")
-        partition["/natural" + "_clients=%d" %
-                (args.client_number) + "/n_clients"] = client_num
-        partition["/natural"  + "_clients=%d" %
-                (args.client_number) + "/natural_factors"] = len(label_vocab)
+        partition[
+            "/natural" + "_clients=%d" % (args.client_number) + "/n_clients"
+        ] = client_num
+        partition[
+            "/natural" + "_clients=%d" % (args.client_number) + "/natural_factors"
+        ] = len(label_vocab)
         for partition_id in range(client_num):
             train = partition_result_train[partition_id]
             test = partition_result_test[partition_id]
-            train_path = ("/natural" + "_clients=%d" %
-                (args.client_number)  + "/partition_data/" +
-                        str(partition_id) + "/train/")
-            test_path = ( "/natural" + "_clients=%d" %
-                (args.client_number) + "/partition_data/" +
-                        str(partition_id) + "/test/")
+            train_path = (
+                "/natural"
+                + "_clients=%d" % (args.client_number)
+                + "/partition_data/"
+                + str(partition_id)
+                + "/train/"
+            )
+            test_path = (
+                "/natural"
+                + "_clients=%d" % (args.client_number)
+                + "/partition_data/"
+                + str(partition_id)
+                + "/test/"
+            )
             partition[train_path] = train
             partition[test_path] = test
         partition.close()
+
 
 main()
