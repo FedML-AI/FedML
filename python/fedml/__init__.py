@@ -2,11 +2,11 @@ import logging
 import os
 import random
 
+import fedml
 import numpy as np
 import torch
 import wandb
 
-import fedml
 from .constants import (
     FEDML_TRAINING_PLATFORM_SIMULATION,
     FEDML_SIMULATION_TYPE_SP,
@@ -15,12 +15,12 @@ from .constants import (
     FEDML_TRAINING_PLATFORM_CROSS_SILO,
     FEDML_TRAINING_PLATFORM_CROSS_DEVICE,
 )
-from .core.mlops import MLOpsRuntimeLog
-from .cross_device import ServerMNN
+
 from .cross_silo import Client as ClientCrossSilo
 from .cross_silo import Server as ServerCrossSilo
 from .cross_silo.hierarchical import Client as HierarchicalClientCrossSilo
 from .cross_silo.hierarchical import Server as HierarchicalServerCrossSilo
+from .core.mlops import MLOpsRuntimeLog
 from .simulation.simulator import SimulatorMPI, SimulatorSingleProcess, SimulatorNCCL
 
 _global_training_type = None
@@ -56,9 +56,9 @@ def init(args=None):
         )
 
     if (
-            args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
-            and hasattr(args, "backend")
-            and args.backend == "MPI"
+        args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
+        and hasattr(args, "backend")
+        and args.backend == "MPI"
     ):
         from mpi4py import MPI
         comm = MPI.COMM_WORLD
@@ -68,9 +68,15 @@ def init(args=None):
         args.process_id = process_id
         args.worker_num = worker_num
     elif (
+<<<<<<< Updated upstream
             args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
             and hasattr(args, "backend")
             and args.backend == "sp"
+=======
+        args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
+        and hasattr(args, "backend")
+        and args.backend == "single_process"
+>>>>>>> Stashed changes
     ):
         pass
     elif args.training_type == "cross_silo":
@@ -97,7 +103,7 @@ def init(args=None):
 
                 # Rank in silo (process group)
                 args.proc_rank_in_silo = 0
-
+                
                 # Prcoess group master endpoint
                 if not hasattr(args, 'pg_master_port'):
                     args.pg_master_port = 29200
@@ -117,15 +123,17 @@ def init(args=None):
                 args.process_id = args.rank_in_node
 
                 # Rank in silo (process group)
-                args.proc_rank_in_silo = int(os.environ.get("RANK", 0))
+                args.proc_rank_in_silo = int(os.environ.get("RANK", 0)) 
 
                 # Prcoess group master endpoint
-                args.pg_master_address = os.environ.get("MASTER_ADDR", "127.0.0.1")
+                args.pg_master_address = os.environ.get("MASTER_ADDR", "127.0.0.1") 
                 args.pg_master_port = os.environ.get("MASTER_PORT", 29300)
 
                 # Launcher Rendezvous
                 if not hasattr(args, "launcher_rdzv_port"):
                     args.launcher_rdzv_port = 29400
+                
+
 
     elif args.training_type == "cross_device":
         args.rank = 0  # only server runs on Python package
@@ -234,7 +242,7 @@ def run_hierarchical_cross_silo_client():
     """FedML Octopus"""
     global _global_training_type
     _global_training_type = FEDML_TRAINING_PLATFORM_CROSS_SILO
-
+    
     args = fedml.init()
 
     # init device
@@ -291,6 +299,7 @@ from fedml import model
 from fedml import simulation
 from fedml import cross_silo
 from fedml import cross_device
+
 
 __all__ = [
     "device",
