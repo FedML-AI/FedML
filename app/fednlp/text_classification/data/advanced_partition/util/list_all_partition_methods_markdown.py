@@ -1,9 +1,19 @@
-import h5py 
+import h5py
 import json
-import os 
+import os
 from pytablewriter import MarkdownTableWriter
 
-all_partition_files = ['20news_partition.h5', 'agnews_partition.h5', 'cornell_movie_dialogue_partition.h5', 'onto_partition.h5', 'ploner_partition.h5', 'squad_1.1_partition.h5', 'sst_2_partition.h5', 'wikiner_partition.h5',  'w_nut_partition.h5']
+all_partition_files = [
+    "20news_partition.h5",
+    "agnews_partition.h5",
+    "cornell_movie_dialogue_partition.h5",
+    "onto_partition.h5",
+    "ploner_partition.h5",
+    "squad_1.1_partition.h5",
+    "sst_2_partition.h5",
+    "wikiner_partition.h5",
+    "w_nut_partition.h5",
+]
 
 
 def main():
@@ -18,10 +28,14 @@ def main():
         partition.close()
     writer = MarkdownTableWriter(
         table_name="partition_methods_table",
-        headers=["dataset_name","partition_methods existed in provided partition files"],
+        headers=[
+            "dataset_name",
+            "partition_methods existed in provided partition files",
+        ],
         value_matrix=partition_methods,
     )
     writer.write_table()
+
 
 if __name__ == "__main__":
     main()
