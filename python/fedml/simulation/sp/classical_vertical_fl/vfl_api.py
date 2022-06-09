@@ -6,10 +6,7 @@ import numpy as np
 import torch
 import wandb
 
-from .client import Client
-from .my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
-from .my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
-from .my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
+
 import logging
 
 
@@ -47,7 +44,6 @@ class FedAvgAPI(object):
             # default model trainer is for classification problem
             model_trainer = MyModelTrainerCLS(model)
         self.model_trainer = model_trainer
-        self.model = model
         logging.info("self.model_trainer = {}".format(self.model_trainer))
 
         self._setup_clients(
@@ -58,11 +54,11 @@ class FedAvgAPI(object):
         )
 
     def _setup_clients(
-            self,
-            train_data_local_num_dict,
-            train_data_local_dict,
-            test_data_local_dict,
-            model_trainer,
+        self,
+        train_data_local_num_dict,
+        train_data_local_dict,
+        test_data_local_dict,
+        model_trainer,
     ):
         logging.info("############setup_clients (START)#############")
         for client_idx in range(self.args.client_num_per_round):
