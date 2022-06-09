@@ -1,3 +1,9 @@
+## Prepare Dataset
+At the server and client side, run the following script under data directory:
+```
+bash download.sh
+```
+
 ## Training Script
 
 At the client side, the client ID (a.k.a rank) starts from 1.
