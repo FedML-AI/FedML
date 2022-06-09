@@ -9,7 +9,7 @@ F = MNN.expr
 nn = MNN.nn
 
 from .utils import read_mnn_as_tensor_dict
-from .mpc_function import LCC_decoding_with_points, transform_finite_to_tensor, model_dimension
+from fedml.core.security.mpc import LCC_decoding_with_points, transform_finite_to_tensor, model_dimension
 import logging
 
 
