@@ -17,7 +17,7 @@ pipeline {
         AWS_REGION_NAME_PRODUCTION = 'us-east-1'
         DEPLOY_NAMESPACE_PRODUCTION = 'fedml-devops-aggregator-release'
         VERSION_PRODUCTION = 'release'
-        BRANCH_PRODUCTION = 'main'
+        BRANCH_PRODUCTION = 'master'
 
         DOCKER_NAMESPACE = 'x6k8q1x9/'
         APP_NAME_DEVICE_IMAGE = 'fedml-device-image'
