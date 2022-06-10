@@ -3,12 +3,13 @@ from torch import nn
 
 from fedml.core import ClientTrainer
 import logging
-from .text_classification_utils import *
+from .seq_tagging_utils import *
 import copy
 import logging
 import math
 import os
-from ...model_args import ClassificationArgs
+from ...data.data_manager.base_data_manager import BaseDataManager
+from ...model_args import SeqTaggingArgs
 import numpy as np
 import sklearn
 import wandb
@@ -26,7 +27,7 @@ class MyModelTrainer(ClientTrainer):
         self.model.load_state_dict(model_parameters)
 
     def train(self, train_data, device, args, test_data=None):
-        model_args = ClassificationArgs()
+        model_args = SeqTaggingArgs()
         model_args.model_name = args.model
         model_args.model_type = args.model_type
         # model_args.load(model_args.model_name)
@@ -70,17 +71,17 @@ class MyModelTrainer(ClientTrainer):
                 len(train_data) // args.gradient_accumulation_steps * args.epochs
             )
             optimizer, scheduler = build_optimizer(
-                self.model, iteration_in_total, model_args
+                model, iteration_in_total, model_args
             )
         else:
             optimizer = torch.optim.Adam(
-                filter(lambda p: p.requires_grad, self.model.parameters()),
+                filter(lambda p: p.requires_grad, model.parameters()),
                 lr=args.learning_rate,
                 weight_decay=args.weight_decay,
                 amsgrad=True,
             )
         if args.federated_optimizer == "FedProx":
-            global_model = copy.deepcopy(self.model)
+            global_model = copy.deepcopy(model)
         epoch_loss = []
         for epoch in range(args.epochs):
             batch_loss = []
@@ -93,13 +94,11 @@ class MyModelTrainer(ClientTrainer):
                 log_probs = model(x)
                 if args.model_class == "transformer":
                     log_probs = log_probs[0]
-                loss = criterion(log_probs, labels)
+                loss = criterion(log_probs.view(-1, args.num_labels), labels.view(-1))
                 if args.federated_optimizer == "FedProx":
                     fed_prox_reg = 0.0
                     mu = args.fedprox_mu
-                    for (p, g_p) in zip(
-                        self.model.parameters(), global_model.parameters()
-                    ):
+                    for (p, g_p) in zip(model.parameters(), global_model.parameters()):
                         fed_prox_reg += (mu / 2) * torch.norm((p - g_p.data)) ** 2
                     loss += fed_prox_reg
 
@@ -108,8 +107,7 @@ class MyModelTrainer(ClientTrainer):
                 loss.backward()
                 tr_loss += loss.item()
                 logging.info(
-                    "Update Epoch: {} for Client Index: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
-                        self.id,
+                    "Update Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
                         epoch,
                         (batch_idx + 1) * args.batch_size,
                         len(train_data) * args.batch_size,
@@ -120,12 +118,12 @@ class MyModelTrainer(ClientTrainer):
                 if (batch_idx + 1) % args.gradient_accumulation_steps == 0:
                     if args.clip_grad_norm == 1:
                         torch.nn.utils.clip_grad_norm_(
-                            self.model.parameters(), args.max_grad_norm
+                            model.parameters(), args.max_grad_norm
                         )
                     optimizer.step()
                     if args.model_class == "transformer":
                         scheduler.step()  # Update learning rate schedule
-                    self.model.zero_grad()
+                    model.zero_grad()
                     batch_loss.append(tr_loss)
                     tr_loss = 0
                     # if args.evaluate_during_training and (args.evaluate_during_training_steps > 0 and global_step % args.evaluate_during_training_steps == 0):
@@ -144,11 +142,11 @@ class MyModelTrainer(ClientTrainer):
                     self.id, epoch, sum(epoch_loss) / len(epoch_loss)
                 )
             )
-            if args.evaluate_during_training and test_data is not None:
-                metrics = self.test(test_data, device, args)
+            if args.evaluate_during_training:
+                results, _, _ = self.test(test_data, device, args)
                 logging.info(
-                    "Client Index = {}\tEpoch: {}\tAccuracy: {:.6f}".format(
-                        self.id, epoch, metrics[0] / len(test_data)
+                    "Client Index = {}\tEpoch: {}\tF1 Score: {:.6f}".format(
+                        self.id, epoch, results["f1_score"]
                     )
                 )
 
@@ -158,10 +156,12 @@ class MyModelTrainer(ClientTrainer):
         model.to(device)
         model.eval()
 
-        metrics = {"test_correct": 0, "test_loss": 0, "test_total": 0}
-
+        # metrics = {"test_correct": 0, "test_loss": 0, "test_total": 0}
+        total_loss = 0
+        results = {}
         criterion = nn.CrossEntropyLoss().to(device)
-
+        preds = None
+        labels = None
         with torch.no_grad():
             for batch_idx, batch in enumerate(test_data):
                 if args.model_class == "transformer":
@@ -174,20 +174,28 @@ class MyModelTrainer(ClientTrainer):
                 pred = model(x)
                 if args.model_class == "transformer":
                     pred = pred[0]
-                loss = criterion(pred, target)
+                loss = criterion(pred.view(-1, args.num_labels), target.view(-1))
+                if preds is None:
+                    preds = pred.detach().cpu().numpy()
+                    labels = target.detach.cpu().numpy()
+                else:
+                    np.append(preds, pred.detach().cpu().numpy(), axis=0)
+                    np.append(labels, target.detach().cpu().numpy(), axis=0)
+                total_loss += loss.item() * batch.size(0)
 
-                _, predicted = torch.max(pred, -1)
-                correct = predicted.eq(target).sum()
-
-                metrics["test_correct"] += correct.item()
-                metrics["test_loss"] += loss.item() * target.size(0)
-                metrics["test_total"] += target.size(0)
-        return metrics
+            preds = np.argmax(preds, axis=2)
+            test_loss = total_loss / len(test_data)
+            results = {
+                "eval_loss": test_loss,
+                "precision": precision_score(labels, preds),
+                "recall": recall_score(labels, preds),
+                "f1_score": f1_score(labels, preds),
+            }
+        return results
 
     def test_on_the_server(
         self, train_data_local_dict, test_data_local_dict, device, args=None
     ) -> bool:
-        return False
         logging.info("----------test_on_the_server--------")
         accuracy_list, metric_list = [], []
         for client_idx in test_data_local_dict.keys():

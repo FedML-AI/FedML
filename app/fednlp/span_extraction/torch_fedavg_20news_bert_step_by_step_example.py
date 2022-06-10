@@ -48,9 +48,18 @@ if __name__ == "__main__":
 
     # load data
     dataset, output_dim = load(args)
-
-    # load model and trainer
+    (
+        train_data_num,
+        test_data_num,
+        train_data_global,
+        test_data_global,
+        train_data_local_num_dict,
+        train_data_local_dict,
+        test_data_local_dict,
+        class_num,
+    ) = dataset
     args.num_labels = output_dim
+    # load model and trainer
     model, trainer = create_model(args, output_dim)
 
     # start training
