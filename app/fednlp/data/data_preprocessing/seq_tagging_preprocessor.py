@@ -7,9 +7,9 @@ import pandas as pd
 import torch
 from torch.utils.data import TensorDataset
 
-from data.data_preprocessing.base.base_example import SeqTaggingInputExample
-from data.data_preprocessing.base.base_preprocessor import BasePreprocessor
-from data.data_preprocessing.utils.seq_tagging_utils import convert_examples_to_features
+from ..data_preprocessing.base.base_example import SeqTaggingInputExample
+from ..data_preprocessing.base.base_preprocessor import BasePreprocessor
+from ..data_preprocessing.utils.seq_tagging_utils import convert_examples_to_features
 
 customized_cleaner_dict = {}
 

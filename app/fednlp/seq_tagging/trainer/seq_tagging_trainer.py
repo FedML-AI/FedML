@@ -8,6 +8,7 @@ import copy
 import logging
 import math
 import os
+from ...data.data_manager.base_data_manager import BaseDataManager
 from ...model_args import SeqTaggingArgs
 import numpy as np
 import sklearn
@@ -106,7 +107,8 @@ class MyModelTrainer(ClientTrainer):
                 loss.backward()
                 tr_loss += loss.item()
                 logging.info(
-                    "Update Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
+                    "Update Epoch: {} for Client index = {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
+                        self.id,
                         epoch,
                         (batch_idx + 1) * args.batch_size,
                         len(train_data) * args.batch_size,
@@ -141,7 +143,7 @@ class MyModelTrainer(ClientTrainer):
                     self.id, epoch, sum(epoch_loss) / len(epoch_loss)
                 )
             )
-            if args.evaluate_during_training:
+            if args.evaluate_during_training and test_data is not None:
                 results, _, _ = self.test(test_data, device, args)
                 logging.info(
                     "Client Index = {}\tEpoch: {}\tF1 Score: {:.6f}".format(
@@ -150,52 +152,122 @@ class MyModelTrainer(ClientTrainer):
                 )
 
     def test(self, test_data, device, args):
-        model = self.model
-
-        model.to(device)
-        model.eval()
-
-        # metrics = {"test_correct": 0, "test_loss": 0, "test_total": 0}
+        attributes = BaseDataManager.load_attributes(args.data_file_path)
+        args.num_labels = len(attributes["label_vocab"])
+        args.label_list = list(attributes["label_vocab"].keys())
+        args.pad_token_label_id = CrossEntropyLoss().ignore_index
         results = {}
-        criterion = nn.CrossEntropyLoss().to(device)
+        eval_loss = 0.0
+        nb_eval_steps = 0
 
-        with torch.no_grad():
-            for batch_idx, batch in enumerate(test_data):
-                if args.model_class == "transformer":
-                    x = batch[1].to(device)
-                    target = batch[4].to(device)
-                else:
-                    x, target = batch[0].to(device), batch[1].to(device)
-                # x = x.to(device)
-                # target = target.to(device)
-                pred = model(x)
-                if args.model_class == "transformer":
-                    pred = pred[0]
-                loss = criterion(pred.view(-1, args.num_labels), target.view(-1))
+        n_batches = len(test_data)
 
-                _, predicted = torch.max(pred, -1)
-                correct = predicted.eq(target).sum()
+        test_sample_len = len(test_data.dataset)
+        pad_token_label_id = args.pad_token_label_id
+        eval_output_dir = args.output_dir
 
-                metrics["test_correct"] += correct.item()
-                metrics["test_loss"] += loss.item() * batch.size(0)
-                metrics["test_total"] += target.size(0)
-        return metrics
+        preds = None
+        out_label_ids = None
+
+        self.model.to(device)
+        self.model.eval()
+        logging.info("len(test_dl) = %d, n_batches = %d" % (test_data, n_batches))
+        for i, batch in enumerate(test_data):
+            batch = tuple(t for t in batch)
+            with torch.no_grad():
+                sample_index_list = batch[0].to(device).cpu().numpy()
+
+                x = batch[1].to(device)
+                labels = batch[4].to(device)
+
+                output = self.model(x)
+                logits = output[0]
+
+                loss_fct = CrossEntropyLoss()
+                loss = loss_fct(logits.view(-1, args.num_labels), labels.view(-1))
+                eval_loss += loss.item()
+                # logging.info("test. batch index = %d, loss = %s" % (i, str(eval_loss)))
+
+            nb_eval_steps += 1
+            start_index = args.eval_batch_size * i
+
+            end_index = (
+                start_index + args.eval_batch_size
+                if i != (n_batches - 1)
+                else test_sample_len
+            )
+            logging.info(
+                "batch index = %d, start_index = %d, end_index = %d"
+                % (i, start_index, end_index)
+            )
+
+            if preds is None:
+                preds = logits.detach().cpu().numpy()
+                out_label_ids = batch[4].detach().cpu().numpy()
+                out_input_ids = batch[1].detach().cpu().numpy()
+                out_attention_mask = batch[2].detach().cpu().numpy()
+            else:
+                preds = np.append(preds, logits.detach().cpu().numpy(), axis=0)
+                out_label_ids = np.append(
+                    out_label_ids, batch[4].detach().cpu().numpy(), axis=0
+                )
+                out_input_ids = np.append(
+                    out_input_ids, batch[1].detach().cpu().numpy(), axis=0
+                )
+                out_attention_mask = np.append(
+                    out_attention_mask,
+                    batch[2].detach().cpu().numpy(),
+                    axis=0,
+                )
+
+        eval_loss = eval_loss / nb_eval_steps
+
+        token_logits = preds
+        preds = np.argmax(preds, axis=2)
+
+        label_map = {i: label for i, label in enumerate(args.labels_list)}
+
+        out_label_list = [[] for _ in range(out_label_ids.shape[0])]
+        preds_list = [[] for _ in range(out_label_ids.shape[0])]
+
+        for i in range(out_label_ids.shape[0]):
+            for j in range(out_label_ids.shape[1]):
+                if out_label_ids[i, j] != pad_token_label_id:
+                    out_label_list[i].append(label_map[out_label_ids[i][j]])
+                    preds_list[i].append(label_map[preds[i][j]])
+        logging.info(preds_list[:2])
+        logging.info(out_label_list[:2])
+        result = {
+            "eval_loss": eval_loss,
+            "precision": precision_score(out_label_list, preds_list),
+            "recall": recall_score(out_label_list, preds_list),
+            "f1_score": f1_score(out_label_list, preds_list),
+        }
+        logging.info(result)
+
+        os.makedirs(eval_output_dir, exist_ok=True)
+        output_eval_file = os.path.join(eval_output_dir, "eval_results.txt")
+        with open(output_eval_file, "w") as writer:
+            for key in sorted(result.keys()):
+                writer.write("{} = {}\n".format(key, str(result[key])))
+
+        # self.results.update(result)
+
+        return result
 
     def test_on_the_server(
         self, train_data_local_dict, test_data_local_dict, device, args=None
     ) -> bool:
         logging.info("----------test_on_the_server--------")
-        accuracy_list, metric_list = [], []
+        f1_list, metric_list = [], []
         for client_idx in test_data_local_dict.keys():
             test_data = test_data_local_dict[client_idx]
             metrics = self.test(test_data, device, args)
             metric_list.append(metrics)
-            accuracy_list.append(metrics["test_correct"] / metrics["test_total"])
+            f1_list.append(metrics["f1_score"])
             logging.info(
-                "Client {}, Test accuracy = {}".format(
-                    client_idx, metrics["test_correct"] / metrics["test_total"]
-                )
+                "Client {}, Test f1 = {}".format(client_idx, metrics["f1_score"])
             )
-        avg_accuracy = np.mean(np.array(accuracy_list))
-        logging.info("Test Accuracy = {}".format(avg_accuracy))
-        return False
+        avg_f1 = np.mean(np.array(f1_list))
+        logging.info("Avg Test f1 = {}".format(avg_f1))
+        return True
