@@ -132,7 +132,7 @@ def display_server_logs():
     "--role",
     "-r",
     type=str,
-    default="local_server",
+    default="local",
     help="run as the role (options: local_server, cloud_agent, cloud_server.",
 )
 @click.option(
