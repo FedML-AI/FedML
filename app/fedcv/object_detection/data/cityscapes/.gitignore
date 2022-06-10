@@ -1,8 +1,0 @@
-README
-*.zip
-*.txt
-*.pickle
-
-leftImg8bit/
-gtCoarse/
-gtFine/
