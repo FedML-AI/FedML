@@ -14,15 +14,8 @@ from .mpi.fedprox.FedProxAPI import FedML_FedProx_distributed
 from .sp.fedavg import FedAvgAPI
 from .sp.fednova.fednova_trainer import FedNovaTrainer
 from .sp.fedopt.fedopt_api import FedOptAPI
-
-<<<<<<< Updated upstream
-=======
-from .single_process.fedavg import FedAvgAPI
-from .single_process.fedopt import FedOptAPI
-from .single_process.fednova import FedNovaTrainer
-from .single_process.hierarchical_fl.trainer import HierachicalTrainer
-from .single_process.turboaggregate.TA_trainer import TurboAggregateTrainer
->>>>>>> Stashed changes
+from .sp.hierarchical_fl.trainer import HierachicalTrainer
+from .sp.turboaggregate.TA_trainer import TurboAggregateTrainer
 from ..constants import (
     FedML_FEDERATED_OPTIMIZER_BASE_FRAMEWORK,
     FedML_FEDERATED_OPTIMIZER_FEDAVG,
@@ -44,17 +37,14 @@ class SimulatorSingleProcess:
     def __init__(self, args, device, dataset, model):
         if args.federated_optimizer == "FedAvg":
             self.fl_trainer = FedAvgAPI(args, device, dataset, model)
-        elif args.federated_optimizer == 'FedOpt':
+        elif args.federated_optimizer == "FedOpt":
             self.fl_trainer = FedOptAPI(args, device, dataset, model)
-        elif args.federated_optimizer == 'FedNova':
+        elif args.federated_optimizer == "FedNova":
             self.fl_trainer = FedNovaTrainer(dataset, model, device, args)
-<<<<<<< Updated upstream
-=======
-        elif args.federated_optimizer == 'HierachicalFL':
+        elif args.federated_optimizer == "HierachicalFL":
             self.fl_trainer = HierachicalTrainer(args, device, dataset, model)
-        elif args.federated_optimizer == 'Turboaggregate':
+        elif args.federated_optimizer == "Turboaggregate":
             self.fl_trainer = TurboAggregateTrainer(dataset, model, device, args)
->>>>>>> Stashed changes
         else:
             raise Exception("Exception")
 
