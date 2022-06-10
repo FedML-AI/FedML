@@ -10,12 +10,12 @@ from transformers import (
 )
 from ...model_args import *
 from ...data.data_manager.base_data_manager import BaseDataManager
-from ...data.data_manager.text_classification_data_manager import (
-    TextClassificationDataManager,
+from ...data.data_manager.span_extraction_data_manager import (
+    SpanExtractionDataManager,
 )
 
-from ...data.data_preprocessing.text_classification_preprocessor import (
-    TLMPreprocessor as TCPreprocessor,
+from ...data.data_preprocessing.span_extraction_preprocessor import (
+    TLMPreprocessor as SEPreprocessor,
 )
 
 # from fedml.data.FederatedEMNIST.data_loader import load_partition_data_federated_emnist
@@ -73,14 +73,13 @@ def load_synthetic_data(args):
         full_batch = False
     logging.info("load_data. dataset_name = %s" % dataset_name)
     attributes = BaseDataManager.load_attributes(args.data_file_path)
-    num_labels = len(attributes["label_vocab"])
-    print(list(attributes["label_vocab"].keys()))
-    class_num = num_labels
-    model_args = ClassificationArgs()
+    # num_labels = len(attributes["label_vocab"])
+    # class_num = num_labels
+    model_args = SpanExtractionArgs()
     model_args.model_name = args.model
     model_args.model_type = args.model_type
     # model_args.load(model_args.model_name)
-    model_args.num_labels = num_labels
+    # model_args.num_labels = num_labels
     model_args.update_from_dict(
         {
             "fl_algorithm": args.federated_optimizer,
@@ -117,11 +116,9 @@ def load_synthetic_data(args):
     tokenizer = tokenizer_class.from_pretrained(
         args.model, do_lower_case=args.do_lower_case
     )
-    preprocessor = TCPreprocessor(
-        args=model_args, label_vocab=attributes["label_vocab"], tokenizer=tokenizer
-    )
-    dm = TextClassificationDataManager(
-        args, model_args, preprocessor, 0, args.client_num_per_round
+    preprocessor = SEPreprocessor(args=model_args, tokenizer=tokenizer)
+    dm = SpanExtractionDataManager(
+        args, model_args, preprocessor, args.client_num_per_round
     )
 
     (
@@ -133,7 +130,7 @@ def load_synthetic_data(args):
         train_data_local_dict,
         test_data_local_dict,
         num_clients,
-    ) = dm.load_federated_data()
+    ) = dm.load_federated_data(test_cut_off=3000)
 
     if centralized:
         train_data_local_num_dict = {
@@ -201,7 +198,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dataset",
         type=str,
-        default="20news",
+        default="squad_1.1",
         metavar="N",
         help="dataset used for training",
     )
@@ -209,14 +206,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--data_file_path",
         type=str,
-        default="/home/ubuntu/fednlp_data/data_files/20news_data.h5",
+        default="/home/ubuntu/fednlp_data/data_files/squad_1.1_data.h5",
         help="data h5 file path",
     )
 
     parser.add_argument(
         "--partition_file_path",
         type=str,
-        default="/home/ubuntu/fednlp_data/partition_files/20news_partition.h5",
+        default="/home/ubuntu/fednlp_data/partition_files/squad_1.1_partition.h5",
         help="partition h5 file path",
     )
 
@@ -453,5 +450,6 @@ if __name__ == "__main__":
         "--freeze_layers", type=str, default="", metavar="N", help="freeze which layers"
     )
     args = parser.parse_args("")
-    args.formulation = "classification"
+    args.formulation = "span_extraction"
     dataset, class_num = load(args)
+    # print(dataset)
