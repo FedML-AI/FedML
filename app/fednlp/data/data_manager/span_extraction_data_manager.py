@@ -1,4 +1,4 @@
-from data.data_manager.base_data_manager import BaseDataManager
+from ..data_manager.base_data_manager import BaseDataManager
 from tqdm import tqdm
 import logging
 
