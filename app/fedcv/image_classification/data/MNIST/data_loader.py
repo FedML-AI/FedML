@@ -72,6 +72,7 @@ def read_data(train_data_dir, test_data_dir):
     return clients, groups, train_data, test_data
 
 
+
 def batch_data(args, data, batch_size):
 
     """
@@ -91,14 +92,13 @@ def batch_data(args, data, batch_size):
     # loop through mini-batches
     batch_data = list()
     for i in range(0, len(data_x), batch_size):
-        batched_x = data_x[i : i + batch_size]
-        batched_y = data_y[i : i + batch_size]
-        if args.model == "lr":
+        batched_x = data_x[i: i + batch_size]
+        batched_y = data_y[i: i + batch_size]
+        if args.model == 'lr':
             batched_x = torch.from_numpy(np.asarray(batched_x)).float()  # LR_MINST
         else:
-            batched_x = (
-                torch.from_numpy(np.asarray(batched_x)).float().reshape(-1, 28, 28)
-            )  # CNN_MINST
+            batched_x = torch.from_numpy(np.asarray(batched_x)).float().reshape(-1, 28, 28) #CNN_MINST
+
 
         batched_y = torch.from_numpy(np.asarray(batched_y)).long()
         batch_data.append((batched_x, batched_y))
@@ -106,7 +106,7 @@ def batch_data(args, data, batch_size):
 
 
 def load_partition_data_mnist_by_device_id(
-    batch_size, device_id, train_path="MNIST_mobile", test_path="MNIST_mobile"
+        batch_size, device_id, train_path="MNIST_mobile", test_path="MNIST_mobile"
 ):
     train_path += "/" + device_id + "/" + "train"
     test_path += "/" + device_id + "/" + "test"
@@ -114,7 +114,10 @@ def load_partition_data_mnist_by_device_id(
 
 
 def load_partition_data_mnist(
-    args, batch_size, train_path="./MNIST/train", test_path="./MNIST/test",
+        args,
+        batch_size,
+        train_path="./MNIST/train",
+        test_path="./MNIST/test",
 ):
     users, groups, train_data, test_data = read_data(train_path, test_path)
 
@@ -137,8 +140,8 @@ def load_partition_data_mnist(
         train_data_local_num_dict[client_idx] = user_train_data_num
 
         # transform to batches
-        train_batch = batch_data(args, train_data[u], batch_size)
-        test_batch = batch_data(args, test_data[u], batch_size)
+        train_batch = batch_data(args.model, train_data[u], batch_size)
+        test_batch = batch_data(args.model, test_data[u], batch_size)
 
         # index using client index
         train_data_local_dict[client_idx] = train_batch
