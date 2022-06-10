@@ -2,14 +2,14 @@ import os
 
 import numpy as np
 import torch
-from fedml.data.ImageNet.data_loader import load_partition_data_ImageNet
-from fedml.data.Landmarks.data_loader import load_partition_data_landmarks
-from fedml.data.cifar10.data_loader import load_partition_data_cifar10
-from fedml.data.cifar100.data_loader import load_partition_data_cifar100
-from fedml.data.FederatedEMNIST.data_loader import load_partition_data_federated_emnist
-from fedml.data.MNIST.data_loader import load_partition_data_mnist, download_mnist
-from fedml.data.cinic10.data_loader import load_partition_data_cinic10
-from fedml.data.fed_cifar100.data_loader import load_partition_data_federated_cifar100
+from .ImageNet.data_loader import load_partition_data_ImageNet
+from .Landmarks.data_loader import load_partition_data_landmarks
+from .cifar10.data_loader import load_partition_data_cifar10
+from .cifar100.data_loader import load_partition_data_cifar100
+from .FederatedEMNIST.data_loader import load_partition_data_federated_emnist
+from .MNIST.data_loader import load_partition_data_mnist, download_mnist
+from .cinic10.data_loader import load_partition_data_cinic10
+from .fed_cifar100.data_loader import load_partition_data_federated_cifar100
 import logging
 
 
