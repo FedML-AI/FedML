@@ -4,18 +4,18 @@ import fedml
 from data.data_loader import load
 from fedml.simulation import SimulatorMPI
 from model import YOLO
-from trainer.segmentation_trainer import SegmentationTrainer
+from trainer.detection_trainer import DetectionTrainer
 
 
 def create_model(args, model_name, output_dim):
     logging.info("create_model. model_name = %s, output_dim = %s" % (model_name, output_dim))
     model_name = str(model_name).lower()
     if model_name == "yolo":
-        model = YOLO()
+        model = YOLO(cfg=args, ch=3, nc=output_dim)
     else:
         raise Exception("such model does not exist !")
 
-    trainer = SegmentationTrainer(model=model)
+    trainer = DetectionTrainer(model=model)
     logging.info("done")
 
     return model, trainer
