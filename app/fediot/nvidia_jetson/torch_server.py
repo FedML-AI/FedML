@@ -2,6 +2,7 @@ import fedml
 from fedml.cross_silo import Server
 from data.data_loader import load_data
 from model.autoencoder import AutoEncoder
+from trainer.fed_detect_trainer import MyModelTrainer
 
 
 if __name__ == "__main__":
@@ -16,6 +17,9 @@ if __name__ == "__main__":
 
     # load model
     model = AutoEncoder(output_dim)
+
+    # create trainer
+    trainer = MyModelTrainer(model)
 
     # start training
     server = Server(args, device, dataset, model)
