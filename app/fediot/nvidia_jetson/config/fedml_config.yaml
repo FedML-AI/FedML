@@ -8,8 +8,8 @@ environment_args:
   bootstrap: config/bootstrap.sh
 
 data_args:
-  dataset: "mnist"
-  data_cache_dir: "../../../../data/mnist"
+  dataset: "N-BaIoT"
+  data_cache_dir: "./data/N-BaIoT"
   partition_method: "hetero"
   partition_alpha: 0.5
 
@@ -20,9 +20,9 @@ model_args:
 
 train_args:
   federated_optimizer: "FedAvg"
-  client_id_list:
-  client_num_in_total: 1000
-  client_num_per_round: 2
+  client_id_list: "[1]"
+  client_num_in_total: 1
+  client_num_per_round: 1
   comm_round: 50
   epochs: 1
   batch_size: 10
