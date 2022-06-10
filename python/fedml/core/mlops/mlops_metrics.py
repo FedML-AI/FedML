@@ -18,8 +18,8 @@ class MLOpsMetrics(Singleton):
         self.args = None
         self.run_id = None
         self.edge_id = None
-        # self.sys_performances = None
-        self.sys_performances = SysStats()
+        self.sys_performances = None
+        # self.sys_performances = SysStats()
 
     def set_messenger(self, msg_messenger, args=None):
         self.messenger = msg_messenger
