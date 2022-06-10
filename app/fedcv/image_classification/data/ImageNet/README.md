@@ -1,0 +1,1 @@
+Please manually download ilsvrc2012 of ImageNet 
