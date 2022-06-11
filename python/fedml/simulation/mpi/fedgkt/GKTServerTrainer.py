@@ -7,7 +7,7 @@ import wandb
 from torch import nn, optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-import utils
+from .utils import RunningAverage, save_dict_to_json, accuracy, bnwd_optim_params, KL_Loss
 
 
 class GKTServerTrainer(object):
@@ -36,7 +36,7 @@ class GKTServerTrainer(object):
         self.model_params = self.master_params = self.model_global.parameters()
 
         optim_params = (
-            utils.bnwd_optim_params(
+            bnwd_optim_params(
                 self.model_global, self.model_params, self.master_params
             )
             if args.no_bn_wd
@@ -59,7 +59,7 @@ class GKTServerTrainer(object):
         self.scheduler = ReduceLROnPlateau(self.optimizer, "max")
 
         self.criterion_CE = nn.CrossEntropyLoss()
-        self.criterion_KL = utils.KL_Loss(self.args.temperature)
+        self.criterion_KL = KL_Loss(self.args.temperature)
         self.best_acc = 0.0
 
         # key: client_index; value: extracted_feature_dict
@@ -279,7 +279,7 @@ class GKTServerTrainer(object):
                     self.best_acc = test_acc
                     # Save best metrics in a json file in the model directory
                     test_metrics["epoch"] = round_idx + 1
-                    utils.save_dict_to_json(
+                    save_dict_to_json(
                         test_metrics,
                         os.path.join("./checkpoint/", "test_best_metrics.json"),
                     )
@@ -297,9 +297,9 @@ class GKTServerTrainer(object):
 
         self.model_global.train()
 
-        loss_avg = utils.RunningAverage()
-        accTop1_avg = utils.RunningAverage()
-        accTop5_avg = utils.RunningAverage()
+        loss_avg = RunningAverage()
+        accTop1_avg = RunningAverage()
+        accTop5_avg = RunningAverage()
 
         for client_index in self.client_extracted_feauture_dict.keys():
             extracted_feature_dict = self.client_extracted_feauture_dict[client_index]
@@ -341,7 +341,7 @@ class GKTServerTrainer(object):
                 self.optimizer.step()
 
                 # Update average loss and accuracy
-                metrics = utils.accuracy(output_batch, batch_labels, topk=(1, 5))
+                metrics = accuracy(output_batch, batch_labels, topk=(1, 5))
                 accTop1_avg.update(metrics[0].item())
                 accTop5_avg.update(metrics[1].item())
                 loss_avg.update(loss.item())
@@ -368,9 +368,9 @@ class GKTServerTrainer(object):
 
         # set model to evaluation mode
         self.model_global.eval()
-        loss_avg = utils.RunningAverage()
-        accTop1_avg = utils.RunningAverage()
-        accTop5_avg = utils.RunningAverage()
+        loss_avg = RunningAverage()
+        accTop1_avg = RunningAverage()
+        accTop5_avg = RunningAverage()
         with torch.no_grad():
             for client_index in self.client_extracted_feauture_dict_test.keys():
                 extracted_feature_dict = self.client_extracted_feauture_dict_test[
@@ -392,7 +392,7 @@ class GKTServerTrainer(object):
                     loss = self.criterion_CE(output_batch, batch_labels)
 
                     # Update average loss and accuracy
-                    metrics = utils.accuracy(output_batch, batch_labels, topk=(1, 5))
+                    metrics = accuracy(output_batch, batch_labels, topk=(1, 5))
                     # only one element tensors can be converted to Python scalars
                     accTop1_avg.update(metrics[0].item())
                     accTop5_avg.update(metrics[1].item())
