@@ -15,6 +15,7 @@ class Group(FedAvgAPI):
         args,
         device,
         model,
+        model_trainer
     ):
         self.idx = idx
         self.args = args
@@ -30,6 +31,7 @@ class Group(FedAvgAPI):
                 args,
                 device,
                 model,
+                model_trainer
             )
 
     def get_sample_number(self, sampled_client_indexes):
@@ -63,7 +65,7 @@ class Group(FedAvgAPI):
             # aggregate local weights
             for global_epoch in sorted(w_locals_dict.keys()):
                 w_locals = w_locals_dict[global_epoch]
-                w_group_list.append((global_epoch, self.aggregate(w_locals)))
+                w_group_list.append((global_epoch, self._aggregate(w_locals)))
 
             # update the group weight
             w_group = w_group_list[-1][1]
