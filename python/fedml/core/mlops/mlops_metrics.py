@@ -19,6 +19,7 @@ class MLOpsMetrics(Singleton):
         self.run_id = None
         self.edge_id = None
         self.sys_performances = None
+        # self.sys_performances = SysStats()
 
     def set_messenger(self, msg_messenger, args=None):
         self.messenger = msg_messenger
@@ -99,50 +100,50 @@ class MLOpsMetrics(Singleton):
     def report_system_metric(self, metric_json=None):
         topic_name = "fl_client/mlops/system_performance"
         if metric_json is None:
-            if self.sys_performances is None:
-                self.sys_performances = SysStats()
-            self.sys_performances.produce_info()
-            metric_json = {
-                "run_id": self.run_id,
-                "edge_id": self.edge_id,
-                "cpu_utilization": round(
-                    self.sys_performances.get_cpu_utilization(), 4
-                ),
-                "SystemMemoryUtilization": round(
-                    self.sys_performances.get_system_memory_utilization(), 4
-                ),
-                "process_memory_in_use": round(
-                    self.sys_performances.get_process_memory_in_use(), 4
-                ),
-                "process_memory_in_use_size": round(
-                    self.sys_performances.get_process_memory_in_use_size(), 4
-                ),
-                "process_memory_available": round(
-                    self.sys_performances.get_process_memory_available(), 4
-                ),
-                "process_cpu_threads_in_use": round(
-                    self.sys_performances.get_process_cpu_threads_in_use(), 4
-                ),
-                "disk_utilization": round(
-                    self.sys_performances.get_disk_utilization(), 4
-                ),
-                "network_traffic": round(
-                    self.sys_performances.get_network_traffic(), 4
-                ),
-                "gpu_utilization": round(
-                    self.sys_performances.get_gpu_utilization(), 4
-                ),
-                "gpu_temp": round(self.sys_performances.get_gpu_temp(), 4),
-                "gpu_time_spent_accessing_memory": round(
-                    self.sys_performances.get_gpu_time_spent_accessing_memory(), 4
-                ),
-                "gpu_memory_allocated": round(
-                    self.sys_performances.get_gpu_memory_allocated(), 4
-                ),
-                "gpu_power_usage": round(
-                    self.sys_performances.get_gpu_power_usage(), 4
-                ),
-            }
+            if self.sys_performances is not None:
+                # self.sys_performances = SysStats()
+                self.sys_performances.produce_info()
+                metric_json = {
+                    "run_id": self.run_id,
+                    "edge_id": self.edge_id,
+                    "cpu_utilization": round(
+                        self.sys_performances.get_cpu_utilization(), 4
+                    ),
+                    "SystemMemoryUtilization": round(
+                        self.sys_performances.get_system_memory_utilization(), 4
+                    ),
+                    "process_memory_in_use": round(
+                        self.sys_performances.get_process_memory_in_use(), 4
+                    ),
+                    "process_memory_in_use_size": round(
+                        self.sys_performances.get_process_memory_in_use_size(), 4
+                    ),
+                    "process_memory_available": round(
+                        self.sys_performances.get_process_memory_available(), 4
+                    ),
+                    "process_cpu_threads_in_use": round(
+                        self.sys_performances.get_process_cpu_threads_in_use(), 4
+                    ),
+                    "disk_utilization": round(
+                        self.sys_performances.get_disk_utilization(), 4
+                    ),
+                    "network_traffic": round(
+                        self.sys_performances.get_network_traffic(), 4
+                    ),
+                    "gpu_utilization": round(
+                        self.sys_performances.get_gpu_utilization(), 4
+                    ),
+                    "gpu_temp": round(self.sys_performances.get_gpu_temp(), 4),
+                    "gpu_time_spent_accessing_memory": round(
+                        self.sys_performances.get_gpu_time_spent_accessing_memory(), 4
+                    ),
+                    "gpu_memory_allocated": round(
+                        self.sys_performances.get_gpu_memory_allocated(), 4
+                    ),
+                    "gpu_power_usage": round(
+                        self.sys_performances.get_gpu_power_usage(), 4
+                    ),
+                }
         logging.info("report_metric. message_json = %s" % metric_json)
         message_json = json.dumps(metric_json)
         self.messenger.send_message_json(topic_name, message_json)

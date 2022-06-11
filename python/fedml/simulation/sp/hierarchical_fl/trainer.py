@@ -7,9 +7,13 @@ from .group import Group
 from ..fedavg.fedavg_api import FedAvgAPI
 
 
-class Trainer(FedAvgAPI):
-    def setup_clients(
-        self, train_data_local_num_dict, train_data_local_dict, test_data_local_dict
+class HierachicalTrainer(FedAvgAPI):
+    def _setup_clients(
+            self,
+            train_data_local_num_dict,
+            train_data_local_dict,
+            test_data_local_dict,
+            model_trainer,
     ):
         logging.info("############setup_clients (START)#############")
         if self.args.group_method == "random":
@@ -35,6 +39,7 @@ class Trainer(FedAvgAPI):
                 self.args,
                 self.device,
                 self.model,
+                self.model_trainer
             )
 
         # maintain a dummy client to be used in FedAvgTrainer::local_test_on_all_clients()
@@ -47,14 +52,15 @@ class Trainer(FedAvgAPI):
                 self.args,
                 self.device,
                 self.model,
+                self.model_trainer
             )
         ]
         logging.info("############setup_clients (END)#############")
 
-    def client_sampling(
-        self, global_round_idx, client_num_in_total, client_num_per_round
+    def _client_sampling(
+            self, global_round_idx, client_num_in_total, client_num_per_round
     ):
-        sampled_client_indexes = super().client_sampling(
+        sampled_client_indexes = super()._client_sampling(
             global_round_idx, client_num_in_total, client_num_per_round
         )
         group_to_client_indexes = {}
@@ -70,13 +76,13 @@ class Trainer(FedAvgAPI):
 
     def train(self):
         w_global = self.model.state_dict()
-        for global_round_idx in range(self.args.global_comm_round):
+        for global_round_idx in range(self.args.comm_round):
             logging.info(
                 "################Global Communication Round : {}".format(
                     global_round_idx
                 )
             )
-            group_to_client_indexes = self.client_sampling(
+            group_to_client_indexes = self._client_sampling(
                 global_round_idx,
                 self.args.client_num_in_total,
                 self.args.client_num_per_round,
@@ -100,16 +106,16 @@ class Trainer(FedAvgAPI):
             # aggregate group weights into the global weight
             for global_epoch in sorted(w_groups_dict.keys()):
                 w_groups = w_groups_dict[global_epoch]
-                w_global = self.aggregate(w_groups)
+                w_global = self._aggregate(w_groups)
 
                 # evaluate performance
                 if (
-                    global_epoch % self.args.frequency_of_the_test == 0
-                    or global_epoch
-                    == self.args.global_comm_round
-                    * self.args.group_comm_round
-                    * self.args.epochs
-                    - 1
+                        global_epoch % self.args.frequency_of_the_test == 0
+                        or global_epoch
+                        == self.args.comm_round
+                        * self.args.group_comm_round
+                        * self.args.epochs
+                        - 1
                 ):
                     self.model.load_state_dict(w_global)
-                    self.local_test_on_all_clients(self.model, global_epoch)
+                    self._local_test_on_all_clients(global_epoch)
