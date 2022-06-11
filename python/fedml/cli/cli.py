@@ -10,14 +10,14 @@ import shutil
 import fedml
 import psutil
 import yaml
-from fedml.cli.edge_deployment.yaml_utils import load_yaml_config
+from fedml.cli.edge_deployment.client_runner import FedMLClientRunner
+from fedml.cli.comm_utils.yaml_utils import load_yaml_config
 from fedml.cli.edge_deployment.client_login import logout as client_logout
-from fedml.cli.edge_deployment.client_login import LOCAL_HOME_RUNNER_DIR_NAME as CLIENT_RUNNER_HOME_DIR
-from fedml.cli.edge_deployment.client_login import LOCAL_RUNNER_INFO_DIR_NAME as CLIENT_RUNNER_INFO_DIR
+from fedml.cli.edge_deployment.client_login import CLIENT_RUNNER_HOME_DIR
+from fedml.cli.edge_deployment.client_login import CLIENT_RUNNER_INFO_DIR
 from fedml.cli.server_deployment.server_login import logout as server_logout
 from fedml.cli.server_deployment.server_login import SERVER_RUNNER_HOME_DIR
 from fedml.cli.server_deployment.server_login import SERVER_RUNNER_INFO_DIR
-from fedml.cli.edge_deployment.client_login import get_training_infos
 from fedml.cli.server_deployment.server_login import login_mode_list
 
 
@@ -33,7 +33,7 @@ def mlops_version():
 
 @cli.command("status", help="Display fedml client training status.")
 def mlops_status():
-    training_infos = get_training_infos()
+    training_infos = FedMLClientRunner.get_training_infos()
     click.echo("Client training status: " + str(training_infos["training_status"]).upper())
 
 
@@ -75,7 +75,7 @@ def get_running_info(cs_home_dir, cs_info_dir):
 def display_client_logs():
     run_id, edge_id = get_running_info(CLIENT_RUNNER_HOME_DIR, CLIENT_RUNNER_INFO_DIR)
     home_dir = expanduser("~")
-    log_file = "{}/{}/fedml/logs/fedavg-cross-silo-run-{}-edge-{}.log".format(home_dir,
+    log_file = "{}/{}/fedml/logs/fedml-run-{}-edge-{}.log".format(home_dir,
                                                                               CLIENT_RUNNER_HOME_DIR,
                                                                               str(run_id),
                                                                               str(edge_id))
@@ -89,7 +89,7 @@ def display_client_logs():
 def display_server_logs():
     run_id, edge_id = get_running_info(SERVER_RUNNER_HOME_DIR, SERVER_RUNNER_INFO_DIR)
     home_dir = expanduser("~")
-    log_file = "{}/{}/fedml/logs/fedavg-cross-silo-run-{}-edge-{}.log".format(home_dir,
+    log_file = "{}/{}/fedml/logs/fedml-run-{}-edge-{}.log".format(home_dir,
                                                                               SERVER_RUNNER_HOME_DIR,
                                                                               str(run_id),
                                                                               str(edge_id))

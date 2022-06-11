@@ -3,6 +3,7 @@ import logging
 import multiprocessing
 import os
 import shutil
+import sys
 import threading
 import time
 
@@ -24,6 +25,14 @@ class MLOpsRuntimeLog:
                 if not hasattr(MLOpsRuntimeLog, "_instance"):
                     MLOpsRuntimeLog._instance = object.__new__(cls)
         return MLOpsRuntimeLog._instance
+
+    @staticmethod
+    def handle_exception(exc_type, exc_value, exc_traceback):
+        if issubclass(exc_type, KeyboardInterrupt):
+            sys.__excepthook__(exc_type, exc_value, exc_traceback)
+            return
+
+        logging.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
 
     def __init__(self, args):
         self.args = args
@@ -53,7 +62,7 @@ class MLOpsRuntimeLog:
         self.load_log_config()
         self.origin_log_file_path = (
             self.log_file_dir
-            + "/fedavg-cross-silo-run-"
+            + "/fedml-run-"
             + str(self.run_id)
             + "-edge-"
             + str(self.edge_id)
@@ -61,12 +70,15 @@ class MLOpsRuntimeLog:
         )
         self.log_file_path = (
             self.log_file_dir
-            + "/fedavg-cross-silo-run-"
+            + "/fedml-run-"
             + str(self.run_id)
             + "-edge-"
             + str(self.edge_id)
             + "-upload.log"
         )
+        print("log file path {}".format(self.log_file_path))
+
+        sys.excepthook = MLOpsRuntimeLog.handle_exception
         if hasattr(self, "should_upload_log_file") and self.should_upload_log_file:
             multiprocessing.Process(target=self.log_thread).start()
 
@@ -112,7 +124,7 @@ class MLOpsRuntimeLog:
         os.system("mkdir -p " + args.log_file_dir)
         log_file_path = (
             args.log_file_dir
-            + "/fedavg-cross-silo-run-"
+            + "/fedml-run-"
             + str(args.run_id)
             + "-edge-"
             + str(edge_id)
