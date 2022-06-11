@@ -8,9 +8,9 @@ import pandas as pd
 import torch
 from torch.utils.data import TensorDataset
 
-from data.data_preprocessing.base.base_example import Seq2SeqInputExample
-from data.data_preprocessing.base.base_preprocessor import BasePreprocessor
-from data.data_preprocessing.utils.seq2seq_utils import (
+from ..data_preprocessing.base.base_example import Seq2SeqInputExample
+from ..data_preprocessing.base.base_preprocessor import BasePreprocessor
+from ..data_preprocessing.utils.seq2seq_utils import (
     Seq2SeqDataset,
     SimpleSummarizationDataset,
 )
