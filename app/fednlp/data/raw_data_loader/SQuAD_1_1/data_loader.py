@@ -52,6 +52,7 @@ class RawDataLoader(SpanExtractionRawDataLoader):
                             self.context_X[idx] = paragraph["context"]
                             self.question_X[idx] = qas["question"]
                             start = answer["answer_start"]
+                            self.Y_answer[idx] = answer["text"]
                             end = start + len(answer["text"].rstrip())
                             self.Y[idx] = (start, end)
                             self.question_ids[idx] = qas["id"]
@@ -68,4 +69,5 @@ class RawDataLoader(SpanExtractionRawDataLoader):
             f["question_X/" + str(key)] = self.question_X[key]
             f["Y/" + str(key)] = self.Y[key]
             f["question_ids/" + str(key)] = self.question_ids[key]
+            f["Y_answer/" + str(key)] = self.Y_answer[key]
         f.close()

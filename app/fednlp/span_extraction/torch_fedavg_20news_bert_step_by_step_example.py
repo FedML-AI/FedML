@@ -1,17 +1,17 @@
 import fedml
 from ..model_args import *
 
-from .trainer.seq_tagging_trainer import MyModelTrainer as MySTTrainer
+# from .trainer.seq_tagging_trainer import MyModelTrainer as MySTTrainer
 from .data.data_loader import load
 from fedml.simulation import SimulatorMPI as Simulator
 import logging
 from transformers import (
     BertConfig,
     BertTokenizer,
-    BertForTokenClassification,
+    BertForQuestionAnswering,
     DistilBertConfig,
     DistilBertTokenizer,
-    DistilBertForTokenClassification,
+    DistilBertForQuestionAnswering,
 )
 
 
@@ -22,8 +22,8 @@ def create_model(args, output_dim=1):
     )
     MODEL_CLASSES = {
         "seq_tagging": {
-            "bert": (BertConfig, BertForTokenClassification),
-            "distilbert": (DistilBertConfig, DistilBertForTokenClassification),
+            "bert": (BertConfig, BertForQuestionAnswering),
+            "distilbert": (DistilBertConfig, DistilBertForQuestionAnswering),
         },
     }
     try:
@@ -32,7 +32,7 @@ def create_model(args, output_dim=1):
         raise Exception("such model or formulation does not exist currently!")
     model_args = {}
 
-    model_args["num_labels"] = output_dim
+    # model_args["num_labels"] = output_dim
     config = config_class.from_pretrained(args.model, **model_args)
     model = model_class.from_pretrained(args.model, config=config)
     trainer = MySTTrainer(model)
