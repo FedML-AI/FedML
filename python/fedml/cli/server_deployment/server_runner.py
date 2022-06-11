@@ -392,6 +392,7 @@ class FedMLServerRunner:
             server_runner = FedMLServerRunner(self.args, run_id=run_id,
                                               request_json=request_json,
                                               agent_config=self.agent_config)
+            server_runner.run_as_local_server_and_agent = self.run_as_local_server_and_agent
             server_process = multiprocessing.Process(target=server_runner.run)
             server_process.start()
             FedMLServerRunner.save_run_process(server_process.pid)
@@ -399,6 +400,7 @@ class FedMLServerRunner:
             server_runner = FedMLServerRunner(self.args, run_id=run_id,
                                               request_json=request_json,
                                               agent_config=self.agent_config)
+            server_runner.run_as_cloud_server_agent = self.run_as_cloud_server_agent
             server_process = multiprocessing.Process(target=server_runner.start_cloud_server_process)
             server_process.start()
             FedMLServerRunner.save_run_process(server_process.pid)
@@ -561,6 +563,7 @@ class FedMLServerRunner:
             server_runner = FedMLServerRunner(self.args, run_id=run_id,
                                               request_json=stop_request_json,
                                               agent_config=self.agent_config)
+            server_runner.run_as_local_server_and_agent = self.run_as_local_server_and_agent
             multiprocessing.Process(target=server_runner.stop_run).start()
         elif self.run_as_cloud_server_agent:
             self.stop_cloud_server()
@@ -592,6 +595,7 @@ class FedMLServerRunner:
                 server_runner = FedMLServerRunner(self.args, run_id=run_id,
                                                   request_json=stop_request_json,
                                                   agent_config=self.agent_config)
+                server_runner.run_as_local_server_and_agent = self.run_as_local_server_and_agent
                 multiprocessing.Process(target=server_runner.cleanup_client_with_finished_status).start()
             elif self.run_as_cloud_server_agent:
                 self.stop_cloud_server()
