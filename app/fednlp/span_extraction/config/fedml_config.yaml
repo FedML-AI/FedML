@@ -6,7 +6,7 @@ data_args:
   dataset: "squad_1.1"
   data_file_path: /home/ubuntu/fednlp_data/data_files/squad_1.1_data.h5
   partition_file_path: /home/ubuntu/fednlp_data/partition_files/squad_1.1_partition.h5
-  partition_method: "uniform"
+  partition_method: "niid_cluster_clients=30_alpha=0.1"
   reprocess_input_data: false
 
 model_args:
