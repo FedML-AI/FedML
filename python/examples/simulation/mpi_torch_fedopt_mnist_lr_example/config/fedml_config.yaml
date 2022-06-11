@@ -12,7 +12,7 @@ model_args:
   model: "lr"
 
 train_args:
-  federated_optimizer: "FedAvg"
+  federated_optimizer: "FedOpt"
   client_id_list: "[]"
   client_num_in_total: 1000
   client_num_per_round: 4
@@ -22,6 +22,12 @@ train_args:
   client_optimizer: sgd
   learning_rate: 0.03
   weight_decay: 0.001
+  server_optimizer: sgd
+  lr: 0.001
+  server_lr: 0.001
+  wd: 0.001
+  ci: 0
+  server_momentum: 0.9
 
 validation_args:
   frequency_of_the_test: 5

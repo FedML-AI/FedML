@@ -11,11 +11,19 @@ from .mpi.fedavg.FedAvgAPI import FedML_FedAvg_distributed
 from .mpi.fedavg_robust.FedAvgRobustAPI import FedML_FedAvgRobust_distributed
 from .mpi.fedopt.FedOptAPI import FedML_FedOpt_distributed
 from .mpi.fedprox.FedProxAPI import FedML_FedProx_distributed
+from .mpi.fedseg.FedSegAPI import FedML_FedSeg_distributed
+from .mpi.fedgkt.FedGKTAPI import FedML_FedGKT_distributed
+from .mpi.fedgan.FedGanAPI import FedML_FedGan_distributed
+from .mpi.fednas.FedNASAPI import FedML_FedNAS_distributed
+from .mpi.split_nn.SplitNNAPI import SplitNN_distributed
+from .mpi.classical_vertical_fl.vfl_api import FedML_VFL_distributed
+
 from .sp.fedavg import FedAvgAPI
 from .sp.fednova.fednova_trainer import FedNovaTrainer
 from .sp.fedopt.fedopt_api import FedOptAPI
 from .sp.hierarchical_fl.trainer import HierachicalTrainer
 from .sp.turboaggregate.TA_trainer import TurboAggregateTrainer
+
 from ..constants import (
     FedML_FEDERATED_OPTIMIZER_BASE_FRAMEWORK,
     FedML_FEDERATED_OPTIMIZER_FEDAVG,
@@ -41,7 +49,7 @@ class SimulatorSingleProcess:
             self.fl_trainer = FedOptAPI(args, device, dataset, model)
         elif args.federated_optimizer == "FedNova":
             self.fl_trainer = FedNovaTrainer(dataset, model, device, args)
-        elif args.federated_optimizer == "HierachicalFL":
+        elif args.federated_optimizer == 'HierachicalFL':
             self.fl_trainer = HierachicalTrainer(args, device, dataset, model)
         elif args.federated_optimizer == "Turboaggregate":
             self.fl_trainer = TurboAggregateTrainer(dataset, model, device, args)
@@ -74,7 +82,7 @@ class SimulatorMPI:
             self.simulator = FedML_FedOpt_distributed(
                 args,
                 args.process_id,
-                args.worker_number,
+                args.worker_num,
                 args.comm,
                 device,
                 dataset,
@@ -86,7 +94,7 @@ class SimulatorMPI:
             self.simulator = FedML_FedProx_distributed(
                 args,
                 args.process_id,
-                args.worker_number,
+                args.worker_num,
                 args.comm,
                 device,
                 dataset,
@@ -97,7 +105,14 @@ class SimulatorMPI:
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_CLASSICAL_VFL:
             pass
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_SPLIT_NN:
-            pass
+            self.simulator = SplitNN_distributed(args.process_id,
+                                                 args.worker_num,
+                                                 device,
+                                                 args.comm,
+                                                 client_model=model,
+                                                 server_model=model,
+                                                 dataset=dataset,
+                                                 args=args)
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_DECENTRALIZED_FL:
             self.simulator = FedML_Decentralized_Demo_distributed(
                 args, args.process_id, args.worker_num, args.comm
@@ -115,9 +130,27 @@ class SimulatorMPI:
                 dataset,
             )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDGKT:
-            pass
+            self.simulator = FedML_FedGKT_distributed(
+                args.process_id,
+                args.worker_num,
+                device,
+                args.comm,
+                model,
+                dataset,
+                args,
+            )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDNAS:
-            pass
+            self.simulator = FedML_FedNAS_distributed(
+                args,
+                args.process_id,
+                args.worker_num,
+                args.comm,
+                device,
+                dataset,
+                model,
+                model_trainer=model_trainer,
+                preprocessed_sampling_lists=None,
+            )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDSEG:
             pass
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_TURBO_AGGREGATE:
