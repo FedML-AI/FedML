@@ -22,34 +22,20 @@ class MyModelTrainer(ClientTrainer):
         model.train()
 
         # train and update
-        criterion = nn.CrossEntropyLoss().to(device)
-        if args.client_optimizer == "sgd":
-            optimizer = torch.optim.SGD(
-                filter(lambda p: p.requires_grad, self.model.parameters()),
-                lr=args.learning_rate,
-            )
-        else:
-            optimizer = torch.optim.Adam(
-                filter(lambda p: p.requires_grad, self.model.parameters()),
-                lr=args.learning_rate,
-                weight_decay=args.weight_decay,
-                amsgrad=True,
-            )
+        criterion = nn.MSELoss().to(device)
+        optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
 
         epoch_loss = []
         for epoch in range(args.epochs):
             batch_loss = []
-            for batch_idx, (x, labels) in enumerate(train_data):
-                x, labels = x.to(device), labels.to(device)
-                model.zero_grad()
-                log_probs = model(x)
-                loss = criterion(log_probs, labels)
+            for batch_idx, x in enumerate(train_data):
+                x = x.to(device).float()
+                optimizer.zero_grad()
+                decode = model(x)
+                loss = criterion(decode, x)
                 loss.backward()
-
-                # Uncommet this following line to avoid nan loss
-                # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
-
                 optimizer.step()
+
                 logging.info(
                     "Update Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
                         epoch,
@@ -67,65 +53,7 @@ class MyModelTrainer(ClientTrainer):
                 )
             )
 
-    def test(self, test_data, device, args):
-        pass
-
-    def test_on_the_server(
-        self, train_data_local_dict, test_data_local_dict, device, args=None
-    ) -> bool:
-        model = self.model
-
-        model.to(device)
-        model.eval()
-
-        true_negative = 0
-        false_positive = 0
-        true_positive = 0
-        false_negative = 0
-
-        threshold = self.get_threshold_global(args)
-        threshold_func = nn.MSELoss(reduction="none")
-
-        for client_index in train_data_local_dict.keys():
-            train_data = train_data_local_dict[client_index]
-            for idx, inp in enumerate(train_data):
-                inp = inp.to(device)
-                diff = threshold_func(model(inp), inp)
-                mse = diff.mean(dim=1)
-                false_positive += sum(mse > threshold)
-                true_negative += sum(mse <= threshold)
-
-        for client_index in test_data_local_dict.keys():
-            test_data = test_data_local_dict[client_index]
-            for idx, inp in enumerate(test_data):
-                inp = inp.to(device)
-                diff = threshold_func(model(inp), inp)
-                mse = diff.mean(dim=1)
-                true_positive += sum(mse > threshold)
-                false_negative += sum(mse <= threshold)
-
-        accuracy = (true_positive + true_negative) / (
-            true_positive + true_negative + false_positive + false_negative
-        )
-        precision = true_positive / (true_positive + false_positive)
-        false_positive_rate = false_positive / (false_positive + true_negative)
-        tpr = true_positive / (true_positive + false_negative)
-        tnr = true_negative / (true_negative + false_positive)
-
-        print("The True negative number is ", true_negative)
-        print("The False positive number is ", false_positive)
-        print("The True positive number is ", true_positive)
-        print("The False negative number is ", false_negative)
-
-        print("The accuracy is ", accuracy)
-        print("The precision is ", precision)
-        print("The false positive rate is ", false_positive_rate)
-        print("tpr is ", tpr)
-        print("tnr is ", tnr)
-
-        return True
-
-    def get_threshold_global(self, args):
+    def get_threshold_global(self, args, device):
         device_list = [
             "Danmini_Doorbell",
             "Ecobee_Thermostat",
@@ -140,9 +68,9 @@ class MyModelTrainer(ClientTrainer):
         th_local_dict = dict()
         min_dataset = np.loadtxt(os.path.join(args.data_cache_dir, "min_dataset.txt"))
         max_dataset = np.loadtxt(os.path.join(args.data_cache_dir, "max_dataset.txt"))
-        for i, device in enumerate(device_list):
+        for i, device_name in enumerate(device_list):
             benign_data = pd.read_csv(
-                os.path.join(args.data_cache_dir, device, "benign_traffic.csv")
+                os.path.join(args.data_cache_dir, device_name, "benign_traffic.csv")
             )
             benign_data = np.array(benign_data)
 
@@ -162,12 +90,70 @@ class MyModelTrainer(ClientTrainer):
         threshold_func = nn.MSELoss(reduction="none")
         for client_index in th_local_dict.keys():
             train_data = th_local_dict[client_index]
-            for idx, inp in enumerate(train_data):
-                inp = inp.to(device)
-                diff = threshold_func(model(inp), inp)
+            for batch_idx, x in enumerate(train_data):
+                x = x.to(device).float()
+                diff = threshold_func(model(x), x)
                 mse.append(diff)
 
         mse_global = torch.cat(mse).mean(dim=1)
         threshold_global = torch.mean(mse_global) + 1 * torch.std(mse_global)
 
         return threshold_global
+
+    def test(self, test_data, device, args):
+        pass
+
+    def test_on_the_server(
+        self, train_data_local_dict, test_data_local_dict, device, args=None
+    ) -> bool:
+        model = self.model
+
+        model.to(device)
+        model.eval()
+
+        true_negative = 0
+        false_positive = 0
+        true_positive = 0
+        false_negative = 0
+
+        threshold = self.get_threshold_global(args, device)
+        threshold_func = nn.MSELoss(reduction="none")
+
+        for client_index in train_data_local_dict.keys():
+            train_data = train_data_local_dict[client_index]
+            for batch_idx, x in enumerate(train_data):
+                x = x.to(device).float()
+                diff = threshold_func(model(x), x)
+                mse = diff.mean(dim=1)
+                false_positive += sum(mse > threshold)
+                true_negative += sum(mse <= threshold)
+
+        for client_index in test_data_local_dict.keys():
+            test_data = test_data_local_dict[client_index]
+            for batch_idx, x in enumerate(test_data):
+                x = x.to(device).float()
+                diff = threshold_func(model(x), x)
+                mse = diff.mean(dim=1)
+                true_positive += sum(mse > threshold)
+                false_negative += sum(mse <= threshold)
+
+        accuracy = (true_positive + true_negative) / (
+            true_positive + true_negative + false_positive + false_negative
+        )
+        precision = true_positive / (true_positive + false_positive)
+        false_positive_rate = false_positive / (false_positive + true_negative)
+        tpr = true_positive / (true_positive + false_negative)
+        tnr = true_negative / (true_negative + false_positive)
+
+        logging.info("The True negative number is {}".format(true_negative))
+        logging.info("The False positive number is {}".format(false_positive))
+        logging.info("The True positive number is {}".format(true_positive))
+        logging.info("The False negative number is {}".format(false_negative))
+
+        logging.info("The accuracy is {}".format(accuracy))
+        logging.info("The precision is {}".format(precision))
+        logging.info("The false positive rate is {}".format(false_positive_rate))
+        logging.info("tpr is {}".format(tpr))
+        logging.info("tnr is {}".format(tnr))
+
+        return True
