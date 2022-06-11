@@ -295,7 +295,7 @@ class FedMLClientRunner:
         FedMLClientRunner.save_learning_process(process.pid)
 
     def reset_devices_status(self, edge_id):
-       self.mlops_metrics.broadcast_client_training_status(edge_id, MqttManager.MSG_MLOPS_CLIENT_STATUS_FINISHED)
+        self.mlops_metrics.broadcast_client_training_status(edge_id, MqttManager.MSG_MLOPS_CLIENT_STATUS_FINISHED)
 
     def stop_run(self):
         self.setup_client_mqtt_mgr()
@@ -317,7 +317,7 @@ class FedMLClientRunner:
                 self.agent_config["mqtt_config"]["MQTT_PWD"],
                 self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
                 "ClientAgent_Comm_Client" + str(uuid.uuid4()),
-                )
+            )
             time.sleep(3)
 
         if self.mlops_metrics is None:
@@ -354,14 +354,14 @@ class FedMLClientRunner:
         self.process = multiprocessing.Process(target=client_runner.run)
         self.process.start()
         FedMLClientRunner.save_run_process(self.process.pid)
-        #self.run()
+        # self.run()
 
     def callback_stop_train(self, topic, payload):
         click.echo("callback_stop_train: topic = %s, payload = %s" % (topic, payload))
 
         # Notify MLOps with the stopping message
         self.mlops_metrics.report_client_training_status(self.edge_id,
-                                                        MqttManager.MSG_MLOPS_CLIENT_STATUS_STOPPING)
+                                                         MqttManager.MSG_MLOPS_CLIENT_STATUS_STOPPING)
 
         request_json = json.loads(payload)
         run_id = request_json["runId"]
@@ -570,6 +570,7 @@ class FedMLClientRunner:
                 pos1 = uuid.find("\\n") + 2
                 uuid = uuid[pos1:-15]
                 return str(uuid)
+
             device_id = str(GetUUID())
             click.echo(device_id)
         elif "posix" in os.name:
@@ -632,4 +633,3 @@ class FedMLClientRunner:
     def mqtt_loop(self):
         # Start MQTT message loop
         self.mqtt_mgr.loop_forever()
-
