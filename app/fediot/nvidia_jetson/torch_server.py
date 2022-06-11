@@ -22,5 +22,5 @@ if __name__ == "__main__":
     trainer = MyModelTrainer(model)
 
     # start training
-    server = Server(args, device, dataset, model)
+    server = Server(args, device, dataset, model, trainer)
     server.run()

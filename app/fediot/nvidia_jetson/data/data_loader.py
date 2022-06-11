@@ -61,9 +61,7 @@ def load_data(args):
         test_data_local_dict[i] = torch.utils.data.DataLoader(
             attack_data, batch_size=args.batch_size, shuffle=False, num_workers=0
         )
-        train_data_local_num_dict[i] = (
-            round(len(train_data_local_dict[i]) * 2 / 3) * args.batch_size
-        )
+        train_data_local_num_dict[i] = len(train_data_local_dict[i])
         train_data_num += train_data_local_num_dict[i]
 
     class_num = 115
