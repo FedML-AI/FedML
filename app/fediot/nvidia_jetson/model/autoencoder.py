@@ -2,7 +2,7 @@ import torch.nn as nn
 
 
 class AutoEncoder(nn.Module):
-    def __init__(self, output_dim):
+    def __init__(self, output_dim=115):
         super(AutoEncoder, self).__init__()
         self.enc = nn.Sequential(
             nn.Linear(output_dim, round(output_dim * 0.75)),
