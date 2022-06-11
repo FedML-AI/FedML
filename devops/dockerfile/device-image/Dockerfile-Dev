@@ -11,6 +11,7 @@ RUN chmod a+x ./fedml/copy-fedml-package.sh
 RUN bash ./fedml/copy-fedml-package.sh
 
 RUN chmod a+x ./fedml/runner.sh
+RUN echo "Updating..."
 
 WORKDIR ./fedml
 
