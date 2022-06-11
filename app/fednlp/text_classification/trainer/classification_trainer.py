@@ -3,12 +3,12 @@ from torch import nn
 
 from fedml.core import ClientTrainer
 import logging
-from trainer.text_classification_utils import *
+from .text_classification_utils import *
 import copy
 import logging
 import math
 import os
-from trainer.model_args import ClassificationArgs
+from ...model_args import ClassificationArgs
 import numpy as np
 import sklearn
 import wandb
@@ -16,6 +16,7 @@ from transformers import (
     AdamW,
     get_linear_schedule_with_warmup,
 )
+
 
 class MyModelTrainer(ClientTrainer):
     def get_model_params(self):
@@ -28,32 +29,35 @@ class MyModelTrainer(ClientTrainer):
         model_args = ClassificationArgs()
         model_args.model_name = args.model
         model_args.model_type = args.model_type
-        #model_args.load(model_args.model_name)
-        #model_args.num_labels = output_dim
-        model_args.update_from_dict({"fl_algorithm": args.federated_optimizer,
-        "freeze_layers": args.freeze_layers,
-        "epochs": args.epochs,
-        "learning_rate": args.learning_rate,
-        "gradient_accumulation_steps": args.gradient_accumulation_steps,
-        "do_lower_case": args.do_lower_case,
-        "manual_seed": args.random_seed,
-        # for ignoring the cache features.
-        "reprocess_input_data": args.reprocess_input_data,
-        "overwrite_output_dir": True,
-        "max_seq_length": args.max_seq_length,
-        "train_batch_size": args.batch_size,
-        "eval_batch_size": args.eval_batch_size,
-        "evaluate_during_training": False,  # Disabled for FedAvg.
-        "evaluate_during_training_steps": args.evaluate_during_training_steps,
-        "fp16": args.fp16,
-        "data_file_path": args.data_file_path,
-        "partition_file_path": args.partition_file_path,
-        "partition_method": args.partition_method,
-        "dataset": args.dataset,
-        "output_dir": args.output_dir,
-        "is_debug_mode": args.is_debug_mode,
-        "fedprox_mu": args.fedprox_mu
-        })
+        # model_args.load(model_args.model_name)
+        # model_args.num_labels = output_dim
+        model_args.update_from_dict(
+            {
+                "fl_algorithm": args.federated_optimizer,
+                "freeze_layers": args.freeze_layers,
+                "epochs": args.epochs,
+                "learning_rate": args.learning_rate,
+                "gradient_accumulation_steps": args.gradient_accumulation_steps,
+                "do_lower_case": args.do_lower_case,
+                "manual_seed": args.random_seed,
+                # for ignoring the cache features.
+                "reprocess_input_data": args.reprocess_input_data,
+                "overwrite_output_dir": True,
+                "max_seq_length": args.max_seq_length,
+                "train_batch_size": args.batch_size,
+                "eval_batch_size": args.eval_batch_size,
+                "evaluate_during_training": False,  # Disabled for FedAvg.
+                "evaluate_during_training_steps": args.evaluate_during_training_steps,
+                "fp16": args.fp16,
+                "data_file_path": args.data_file_path,
+                "partition_file_path": args.partition_file_path,
+                "partition_method": args.partition_method,
+                "dataset": args.dataset,
+                "output_dir": args.output_dir,
+                "is_debug_mode": args.is_debug_mode,
+                "fedprox_mu": args.fedprox_mu,
+            }
+        )
         model = self.model
 
         model.to(device)
@@ -62,8 +66,12 @@ class MyModelTrainer(ClientTrainer):
         # train and update
         criterion = nn.CrossEntropyLoss().to(device)
         if args.model_class == "transformer":
-            iteration_in_total = len(train_data) // args.gradient_accumulation_steps * args.epochs
-            optimizer, scheduler = build_optimizer(self.model, iteration_in_total, model_args)
+            iteration_in_total = (
+                len(train_data) // args.gradient_accumulation_steps * args.epochs
+            )
+            optimizer, scheduler = build_optimizer(
+                self.model, iteration_in_total, model_args
+            )
         else:
             optimizer = torch.optim.Adam(
                 filter(lambda p: p.requires_grad, self.model.parameters()),
@@ -77,30 +85,31 @@ class MyModelTrainer(ClientTrainer):
         for epoch in range(args.epochs):
             batch_loss = []
             for batch_idx, batch in enumerate(train_data):
-                if(args.model_class == "transformer"):
+                if args.model_class == "transformer":
                     x = batch[1].to(device)
                     labels = batch[4].to(device)
                 else:
                     x, labels = batch[0].to(device), batch[1].to(device)
-                model.zero_grad()
                 log_probs = model(x)
-                if(args.model_class == "transformer"):
+                if args.model_class == "transformer":
                     log_probs = log_probs[0]
                 loss = criterion(log_probs, labels)
                 if args.federated_optimizer == "FedProx":
                     fed_prox_reg = 0.0
                     mu = args.fedprox_mu
-                    for (p, g_p) in zip(self.model.parameters(),
-                                        global_model.parameters()):
-                        fed_prox_reg += ((mu / 2) * torch.norm((p - g_p.data)) ** 2)
+                    for (p, g_p) in zip(
+                        self.model.parameters(), global_model.parameters()
+                    ):
+                        fed_prox_reg += (mu / 2) * torch.norm((p - g_p.data)) ** 2
                     loss += fed_prox_reg
 
                 if args.gradient_accumulation_steps > 1:
                     loss = loss / args.gradient_accumulation_steps
                 loss.backward()
-                tr_loss+=loss.item()
+                tr_loss += loss.item()
                 logging.info(
-                    "Update Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
+                    "Update Epoch: {} for Client Index: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
+                        self.id,
                         epoch,
                         (batch_idx + 1) * args.batch_size,
                         len(train_data) * args.batch_size,
@@ -109,24 +118,25 @@ class MyModelTrainer(ClientTrainer):
                     )
                 )
                 if (batch_idx + 1) % args.gradient_accumulation_steps == 0:
-                    if(args.clip_grad_norm == 1):
-                        torch.nn.utils.clip_grad_norm_(self.model.parameters(), args.max_grad_norm)
+                    if args.clip_grad_norm == 1:
+                        torch.nn.utils.clip_grad_norm_(
+                            self.model.parameters(), args.max_grad_norm
+                        )
                     optimizer.step()
-                    if(args.model_class == "transformer"):
+                    if args.model_class == "transformer":
                         scheduler.step()  # Update learning rate schedule
                     self.model.zero_grad()
                     batch_loss.append(tr_loss)
                     tr_loss = 0
-                    #if args.evaluate_during_training and (args.evaluate_during_training_steps > 0 and global_step % args.evaluate_during_training_steps == 0):
+                    # if args.evaluate_during_training and (args.evaluate_during_training_steps > 0 and global_step % args.evaluate_during_training_steps == 0):
                     #    metrics = self.
 
-                    #global_step += 1
+                    # global_step += 1
 
                 # Uncommet this following line to avoid nan loss
                 # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
 
-                #optimizer.step()
-
+                # optimizer.step()
 
             epoch_loss.append(sum(batch_loss) / len(batch_loss))
             logging.info(
@@ -134,7 +144,7 @@ class MyModelTrainer(ClientTrainer):
                     self.id, epoch, sum(epoch_loss) / len(epoch_loss)
                 )
             )
-            if args.evaluate_during_training:
+            if args.evaluate_during_training and test_data is not None:
                 metrics = self.test(test_data, device, args)
                 logging.info(
                     "Client Index = {}\tEpoch: {}\tAccuracy: {:.6f}".format(
@@ -154,15 +164,15 @@ class MyModelTrainer(ClientTrainer):
 
         with torch.no_grad():
             for batch_idx, batch in enumerate(test_data):
-                if(args.model_class == "transformer"):
+                if args.model_class == "transformer":
                     x = batch[1].to(device)
                     target = batch[4].to(device)
                 else:
-                    x, target= batch[0].to(device), batch[1].to(device)
-                #x = x.to(device)
-                #target = target.to(device)
+                    x, target = batch[0].to(device), batch[1].to(device)
+                # x = x.to(device)
+                # target = target.to(device)
                 pred = model(x)
-                if(args.model_class == "transformer"):
+                if args.model_class == "transformer":
                     pred = pred[0]
                 loss = criterion(pred, target)
 
@@ -174,15 +184,22 @@ class MyModelTrainer(ClientTrainer):
                 metrics["test_total"] += target.size(0)
         return metrics
 
-    def test_on_the_server(self, train_data_local_dict, test_data_local_dict, device, args=None) -> bool:
+    def test_on_the_server(
+        self, train_data_local_dict, test_data_local_dict, device, args=None
+    ) -> bool:
+        return False
         logging.info("----------test_on_the_server--------")
         accuracy_list, metric_list = [], []
         for client_idx in test_data_local_dict.keys():
             test_data = test_data_local_dict[client_idx]
             metrics = self.test(test_data, device, args)
             metric_list.append(metrics)
-            accuracy_list.append(metrics['test_correct']/metrics["test_total"])
-            logging.info("Client {}, Test accuracy = {}".format(client_idx, metrics['test_correct']/metrics["test_total"]))
+            accuracy_list.append(metrics["test_correct"] / metrics["test_total"])
+            logging.info(
+                "Client {}, Test accuracy = {}".format(
+                    client_idx, metrics["test_correct"] / metrics["test_total"]
+                )
+            )
         avg_accuracy = np.mean(np.array(accuracy_list))
         logging.info("Test Accuracy = {}".format(avg_accuracy))
         return False
