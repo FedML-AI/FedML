@@ -24,36 +24,44 @@ def load_data(args):
     train_data_local_num_dict = dict()
     train_data_num = 0
     test_data_num = 0
-    min_dataset = np.loadtxt("min_dataset.txt")
-    max_dataset = np.loadtxt("max_dataset.txt")
+    min_dataset = np.loadtxt(os.path.join(args.data_cache_dir, "min_dataset.txt"))
+    max_dataset = np.loadtxt(os.path.join(args.data_cache_dir, "max_dataset.txt"))
     for i, device in enumerate(device_list):
         benign_data = pd.read_csv(
-            os.path.join(args.data_dir, device, "benign_traffic.csv")
+            os.path.join(args.data_cache_dir, device, "benign_traffic.csv")
         )
         benign_data = benign_data[:5000]
         benign_data = np.array(benign_data)
         benign_data[np.isnan(benign_data)] = 0
         benign_data = (benign_data - min_dataset) / (max_dataset - min_dataset)
-        # g_attack_data_list = [os.path.join(args.data_dir, device, 'gafgyt_attacks', f)
-        #                       for f in os.listdir(os.path.join(args.data_dir, device, 'gafgyt_attacks'))]
-        # if device == 'Ennio_Doorbell' or device == 'Samsung_SNH_1011_N_Webcam':
-        #     attack_data_list = g_attack_data_list
-        # else:
-        #     m_attack_data_list = [os.path.join(args.data_dir, device, 'mirai_attacks', f)
-        #                           for f in os.listdir(os.path.join(args.data_dir, device, 'mirai_attacks'))]
-        #     attack_data_list = g_attack_data_list + m_attack_data_list
 
-        # attack_data = pd.concat([pd.read_csv(f)[:500] for f in attack_data_list])
-        # attack_data = (attack_data - attack_data.mean()) / (attack_data.std())
-        # attack_data = np.array(attack_data)
-        # attack_data[np.isnan(attack_data)] = 0
+        g_attack_data_list = [
+            os.path.join(args.data_cache_dir, device, "gafgyt_attacks", f)
+            for f in os.listdir(os.path.join(args.data_cache_dir, device, "gafgyt_attacks"))
+        ]
+        if device == "Ennio_Doorbell" or device == "Samsung_SNH_1011_N_Webcam":
+            attack_data_list = g_attack_data_list
+        else:
+            m_attack_data_list = [
+                os.path.join(args.data_cache_dir, device, "mirai_attacks", f)
+                for f in os.listdir(
+                    os.path.join(args.data_cache_dir, device, "mirai_attacks")
+                )
+            ]
+            attack_data_list = g_attack_data_list + m_attack_data_list
+
+        attack_data = pd.concat([pd.read_csv(f)[:500] for f in attack_data_list])
+        attack_data = (attack_data - attack_data.mean()) / (attack_data.std())
+        attack_data = np.array(attack_data)
+        attack_data[np.isnan(attack_data)] = 0
+
         train_data_local_dict[i] = torch.utils.data.DataLoader(
             benign_data, batch_size=args.batch_size, shuffle=False, num_workers=0
         )
-        test_data_local_dict[i] = None
-        train_data_local_num_dict[i] = (
-            round(len(train_data_local_dict[i]) * 2 / 3) * args.batch_size
+        test_data_local_dict[i] = torch.utils.data.DataLoader(
+            attack_data, batch_size=args.batch_size, shuffle=False, num_workers=0
         )
+        train_data_local_num_dict[i] = len(train_data_local_dict[i])
         train_data_num += train_data_local_num_dict[i]
 
     class_num = 115
