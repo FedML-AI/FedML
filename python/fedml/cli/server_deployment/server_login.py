@@ -31,6 +31,7 @@ def __login_as_local_server_and_agent(args, userid, version):
 
     # Create server runner for communication with the FedML client.
     runner = FedMLServerRunner(args)
+    runner.run_as_local_server_and_agent = True
 
     # Fetch configs from the MLOps config server.
     service_config = dict()
@@ -94,7 +95,6 @@ def __login_as_local_server_and_agent(args, userid, version):
     click.echo("Your server unique device id is " + str(unique_device_id))
 
     # Start mqtt looper
-    runner.run_as_local_server_and_agent = True
     runner.mqtt_loop()
 
 
@@ -115,6 +115,7 @@ def __login_as_cloud_server_agent(args, userid, version):
 
     # Create server runner for communication with the FedML client.
     runner = FedMLServerRunner(args)
+    runner.run_as_cloud_server_agent = True
 
     # Fetch configs from the MLOps config server.
     service_config = dict()
@@ -181,7 +182,6 @@ def __login_as_cloud_server_agent(args, userid, version):
     click.echo("Your server unique device id is " + str(unique_device_id))
 
     # Start mqtt looper
-    runner.run_as_cloud_server_agent = True
     runner.mqtt_loop()
 
 
@@ -202,6 +202,7 @@ def __login_as_cloud_server(args, userid, version):
 
     # Create server runner for communication with the FedML client.
     runner = FedMLServerRunner(args)
+    runner.run_as_cloud_server = True
 
     # Fetch configs from the MLOps config server.
     service_config = dict()
@@ -262,7 +263,6 @@ def __login_as_cloud_server(args, userid, version):
     click.echo("Your server unique device id is " + str(unique_device_id))
 
     # Start the FedML server
-    runner.run_as_cloud_server = True
     runner.callback_start_train(payload=args.runner_cmd)
 
 
