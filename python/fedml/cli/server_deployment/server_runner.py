@@ -86,7 +86,7 @@ class FedMLServerRunner:
                                                   "${FEDSYS.LOG_SERVER_URL}": ""}
 
         self.mlops_metrics = None
-        click.echo("Current directory of client agent: " + self.cur_dir)
+        click.echo("Current directory of server agent: " + self.cur_dir)
 
     @staticmethod
     def generate_yaml_doc(run_config_object, yaml_file):
