@@ -74,6 +74,7 @@ def load_synthetic_data(args):
     logging.info("load_data. dataset_name = %s" % dataset_name)
     attributes = BaseDataManager.load_attributes(args.data_file_path)
     num_labels = len(attributes["label_vocab"])
+    print(list(attributes["label_vocab"].keys()))
     class_num = num_labels
     model_args = ClassificationArgs()
     model_args.model_name = args.model
@@ -208,14 +209,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--data_file_path",
         type=str,
-        default="/home/dbc/fednlp_data/data_files/20news_data.h5",
+        default="/home/ubuntu/fednlp_data/data_files/20news_data.h5",
         help="data h5 file path",
     )
 
     parser.add_argument(
         "--partition_file_path",
         type=str,
-        default="/home/dbc/fednlp_data/partition_files/20news_partition.h5",
+        default="/home/ubuntu/fednlp_data/partition_files/20news_partition.h5",
         help="partition h5 file path",
     )
 
@@ -287,7 +288,7 @@ if __name__ == "__main__":
         "--fp16", default=False, action="store_true", help="if enable fp16 for training"
     )
     parser.add_argument(
-        "--manual_seed", type=int, default=42, metavar="N", help="random seed"
+        "--random_seed", type=int, default=42, metavar="N", help="random seed"
     )
 
     # IO related
@@ -451,5 +452,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "--freeze_layers", type=str, default="", metavar="N", help="freeze which layers"
     )
-    args = parser.parse_args()
+    args = parser.parse_args("")
+    args.formulation = "classification"
     dataset, class_num = load(args)

@@ -90,7 +90,6 @@ class MyModelTrainer(ClientTrainer):
                     labels = batch[4].to(device)
                 else:
                     x, labels = batch[0].to(device), batch[1].to(device)
-                model.zero_grad()
                 log_probs = model(x)
                 if args.model_class == "transformer":
                     log_probs = log_probs[0]
@@ -109,7 +108,8 @@ class MyModelTrainer(ClientTrainer):
                 loss.backward()
                 tr_loss += loss.item()
                 logging.info(
-                    "Update Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
+                    "Update Epoch: {} for Client Index: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
+                        self.id,
                         epoch,
                         (batch_idx + 1) * args.batch_size,
                         len(train_data) * args.batch_size,
@@ -144,7 +144,7 @@ class MyModelTrainer(ClientTrainer):
                     self.id, epoch, sum(epoch_loss) / len(epoch_loss)
                 )
             )
-            if args.evaluate_during_training:
+            if args.evaluate_during_training and test_data is not None:
                 metrics = self.test(test_data, device, args)
                 logging.info(
                     "Client Index = {}\tEpoch: {}\tAccuracy: {:.6f}".format(
@@ -187,6 +187,7 @@ class MyModelTrainer(ClientTrainer):
     def test_on_the_server(
         self, train_data_local_dict, test_data_local_dict, device, args=None
     ) -> bool:
+        return False
         logging.info("----------test_on_the_server--------")
         accuracy_list, metric_list = [], []
         for client_idx in test_data_local_dict.keys():

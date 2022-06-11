@@ -21,5 +21,5 @@ benign_data = pd.concat(
         for device in device_list
     ]
 )
-np.savetxt("min_dataset.txt", np.array(benign_data).min(axis=0))
-np.savetxt("max_dataset.txt", np.array(benign_data).max(axis=0))
+np.savetxt("./N-BaIoT/min_dataset.txt", np.array(benign_data).min(axis=0))
+np.savetxt("./N-BaIoT/max_dataset.txt", np.array(benign_data).max(axis=0))

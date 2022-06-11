@@ -1,7 +1,7 @@
 import fedml
 from ..model_args import *
 
-# from .trainer.classification_trainer import MyModelTrainer as MyCLSTrainer
+from .trainer.seq_tagging_trainer import MyModelTrainer as MySTTrainer
 from .data.data_loader import load
 from fedml.simulation import SimulatorMPI as Simulator
 import logging
@@ -35,7 +35,7 @@ def create_model(args, output_dim=1):
     model_args["num_labels"] = output_dim
     config = config_class.from_pretrained(args.model, **model_args)
     model = model_class.from_pretrained(args.model, config=config)
-    trainer = MyCLSTrainer(model)
+    trainer = MySTTrainer(model)
     return model, trainer
 
 
@@ -50,6 +50,7 @@ if __name__ == "__main__":
     dataset, output_dim = load(args)
 
     # load model and trainer
+    args.num_labels = output_dim
     model, trainer = create_model(args, output_dim)
 
     # start training
