@@ -1,0 +1,1 @@
+wget --no-check-certificate --no-proxy https://fedmol.s3-us-west-1.amazonaws.com/datasets/qm9/qm9.zip && unzip qm9.zip && rm qm9.zip
