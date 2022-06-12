@@ -2,15 +2,19 @@ import json
 import logging
 import multiprocessing
 import os
+import shutil
+import sys
 import threading
 import time
 
 import requests
 import yaml
+from fedml.core.mlops.mlops_configs import MLOpsConfigs
 
 
 class MLOpsRuntimeLog:
     FED_LOG_LINE_NUMS_PER_UPLOADING = 100
+    FED_LOG_UPLOAD_FREQUENCY = 3
 
     _log_sdk_instance = None
     _instance_lock = threading.Lock()
@@ -21,6 +25,14 @@ class MLOpsRuntimeLog:
                 if not hasattr(MLOpsRuntimeLog, "_instance"):
                     MLOpsRuntimeLog._instance = object.__new__(cls)
         return MLOpsRuntimeLog._instance
+
+    @staticmethod
+    def handle_exception(exc_type, exc_value, exc_traceback):
+        if issubclass(exc_type, KeyboardInterrupt):
+            sys.__excepthook__(exc_type, exc_value, exc_traceback)
+            return
+
+        logging.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
 
     def __init__(self, args):
         self.args = args
@@ -50,7 +62,7 @@ class MLOpsRuntimeLog:
         self.load_log_config()
         self.origin_log_file_path = (
             self.log_file_dir
-            + "/fedavg-cross-silo-run-"
+            + "/fedml-run-"
             + str(self.run_id)
             + "-edge-"
             + str(self.edge_id)
@@ -58,12 +70,15 @@ class MLOpsRuntimeLog:
         )
         self.log_file_path = (
             self.log_file_dir
-            + "/fedavg-cross-silo-run-"
+            + "/fedml-run-"
             + str(self.run_id)
             + "-edge-"
             + str(self.edge_id)
             + "-upload.log"
         )
+        print("log file path {}".format(self.log_file_path))
+
+        sys.excepthook = MLOpsRuntimeLog.handle_exception
         if hasattr(self, "should_upload_log_file") and self.should_upload_log_file:
             multiprocessing.Process(target=self.log_thread).start()
 
@@ -107,10 +122,9 @@ class MLOpsRuntimeLog:
             )
 
         os.system("mkdir -p " + args.log_file_dir)
-        client_ids = json.loads(args.client_id_list)
         log_file_path = (
             args.log_file_dir
-            + "/fedavg-cross-silo-run-"
+            + "/fedml-run-"
             + str(args.run_id)
             + "-edge-"
             + str(edge_id)
@@ -139,7 +153,8 @@ class MLOpsRuntimeLog:
         log_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
 
         # send log data to the log server
-        if str(self.log_server_url).startswith("https://"):
+        _, cert_path = MLOpsConfigs.get_instance(self.args).get_request_params()
+        if cert_path is not None:
             cur_source_dir = os.path.dirname(__file__)
             cert_path = os.path.join(cur_source_dir, "ssl", "open.fedml.ai_bundle.crt")
             requests.session().verify = cert_path
@@ -156,7 +171,7 @@ class MLOpsRuntimeLog:
 
     def log_thread(self):
         while True:
-            time.sleep(10)
+            time.sleep(MLOpsRuntimeLog.FED_LOG_UPLOAD_FREQUENCY)
             self.log_upload(self.run_id, self.edge_id)
 
     def log_relocation(self):
@@ -167,7 +182,7 @@ class MLOpsRuntimeLog:
 
     def log_open(self):
         try:
-            os.system("cp -f " + self.origin_log_file_path + " " + self.log_file_path)
+            shutil.copyfile(self.origin_log_file_path, self.log_file_path)
             if self.log_file is None:
                 self.log_file = open(self.log_file_path, "r")
                 self.log_relocation()

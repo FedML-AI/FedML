@@ -2,11 +2,11 @@ import logging
 import os
 import random
 
+import fedml
 import numpy as np
 import torch
 import wandb
 
-import fedml
 from .constants import (
     FEDML_TRAINING_PLATFORM_SIMULATION,
     FEDML_SIMULATION_TYPE_SP,
@@ -15,20 +15,18 @@ from .constants import (
     FEDML_TRAINING_PLATFORM_CROSS_SILO,
     FEDML_TRAINING_PLATFORM_CROSS_DEVICE,
 )
-from .core.mlops import MLOpsRuntimeLog
-from .cross_device import ServerMNN
+
 from .cross_silo import Client as ClientCrossSilo
 from .cross_silo import Server as ServerCrossSilo
 from .cross_silo.hierarchical import Client as HierarchicalClientCrossSilo
 from .cross_silo.hierarchical import Server as HierarchicalServerCrossSilo
+from .core.mlops import MLOpsRuntimeLog
 from .simulation.simulator import SimulatorMPI, SimulatorSingleProcess, SimulatorNCCL
 
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.7.39"
-
-os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
+__version__ = "0.7.77"
 
 
 def init(args=None):
@@ -52,17 +50,16 @@ def init(args=None):
 
     if args.enable_wandb:
         wandb.init(
-            project=args.wandb_project,
-            name=args.run_name,
-            config=args,
+            project=args.wandb_project, name=args.run_name, config=args,
         )
 
     if (
-            args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
-            and hasattr(args, "backend")
-            and args.backend == "MPI"
+        args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
+        and hasattr(args, "backend")
+        and args.backend == "MPI"
     ):
         from mpi4py import MPI
+
         comm = MPI.COMM_WORLD
         process_id = comm.Get_rank()
         worker_num = comm.Get_size()
@@ -70,9 +67,9 @@ def init(args=None):
         args.process_id = process_id
         args.worker_num = worker_num
     elif (
-            args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
-            and hasattr(args, "backend")
-            and args.backend == "single_process"
+        args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
+        and hasattr(args, "backend")
+        and args.backend == "sp"
     ):
         pass
     elif args.training_type == "cross_silo":
@@ -84,7 +81,7 @@ def init(args=None):
 
         elif args.scenario == "hierarchical":
             args.worker_num = args.client_num_per_round
-            if not hasattr(args, 'enable_cuda_rpc'):
+            if not hasattr(args, "enable_cuda_rpc"):
                 args.enable_cuda_rpc = False
             # Set intra-silo arguments
             if args.rank == 0:
@@ -101,9 +98,9 @@ def init(args=None):
                 args.proc_rank_in_silo = 0
 
                 # Prcoess group master endpoint
-                if not hasattr(args, 'pg_master_port'):
+                if not hasattr(args, "pg_master_port"):
                     args.pg_master_port = 29200
-                if not hasattr(args, 'pg_master_address'):
+                if not hasattr(args, "pg_master_address"):
                     args.pg_master_address = "127.0.0.1"
             else:
                 # Modify arguments to match info set in env by torchrun
@@ -254,6 +251,8 @@ def run_hierarchical_cross_silo_client():
 
 
 def run_mnn_server():
+    from .cross_device import ServerMNN
+
     """FedML BeeHive"""
     global _global_training_type
     _global_training_type = FEDML_TRAINING_PLATFORM_CROSS_DEVICE
@@ -278,9 +277,7 @@ def run_distributed():
     pass
 
 
-from .arguments import (
-    load_arguments,
-)
+from .arguments import load_arguments
 
 from .core.alg_frame.client_trainer import ClientTrainer
 from .core.alg_frame.server_aggregator import ServerAggregator
@@ -291,6 +288,7 @@ from fedml import model
 from fedml import simulation
 from fedml import cross_silo
 from fedml import cross_device
+
 
 __all__ = [
     "device",

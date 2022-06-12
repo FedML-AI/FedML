@@ -2,6 +2,7 @@ FROM arm64v8/ubuntu:20.04
 
 
 ARG DEBIAN_FRONTEND=noninteractive
+RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf
 RUN apt-get clean
 RUN apt-get --allow-downgrades update
 RUN apt-get -f install -y --no-install-recommends \

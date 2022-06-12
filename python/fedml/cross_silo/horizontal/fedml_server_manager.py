@@ -99,9 +99,7 @@ class FedMLServerManager(ServerManager):
 
         # notify MLOps with RUNNING status
         if hasattr(self.args, "backend") and self.args.using_mlops:
-            self.mlops_metrics.report_server_training_status(
-                self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING
-            )
+            self.mlops_metrics.report_server_training_status(self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING)
 
         all_client_is_online = True
         for client_id in self.client_real_ids:
@@ -139,20 +137,20 @@ class FedMLServerManager(ServerManager):
                     "server.wait", event_value=str(self.round_idx)
                 )
                 self.mlops_event.log_event_started(
-                    "aggregate", event_value=str(self.round_idx)
+                    "server.agg_and_eval", event_value=str(self.round_idx)
                 )
 
             global_model_params = self.aggregator.aggregate()
-
-            if hasattr(self.args, "backend") and self.args.using_mlops:
-                self.mlops_event.log_event_ended(
-                    "aggregate", event_value=str(self.round_idx)
-                )
 
             try:
                 self.aggregator.test_on_server_for_all_clients(self.round_idx)
             except Exception as e:
                 logging.info("aggregator.test exception: " + str(e))
+
+            if hasattr(self.args, "backend") and self.args.using_mlops:
+                self.mlops_event.log_event_ended(
+                    "server.agg_and_eval", event_value=str(self.round_idx)
+                )
 
             # send round info to the MQTT backend
             if hasattr(self.args, "backend") and self.args.using_mlops:

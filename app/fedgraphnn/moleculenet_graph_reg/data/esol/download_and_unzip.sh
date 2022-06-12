@@ -1,0 +1,1 @@
+wget --no-check-certificate --no-proxy https://fedmol.s3-us-west-1.amazonaws.com/datasets/esol/esol.zip && unzip esol.zip && rm esol.zip
