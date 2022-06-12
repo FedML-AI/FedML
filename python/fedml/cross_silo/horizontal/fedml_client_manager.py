@@ -22,8 +22,9 @@ class FedMLClientManager(ClientManager):
         self.round_idx = 0
 
         self.client_real_ids = json.loads(args.client_id_list)
-        # self.get_sender_id() is equal to the client rank (starting from 1)
-        self.client_real_id = self.client_real_ids[self.get_sender_id() - 1]
+        logging.info("self.client_real_ids = {}".format(self.client_real_ids))
+        # for the client, len(self.client_real_ids)==1: we only specify its client id in the list, not including others.
+        self.client_real_id = self.client_real_ids[0]
 
         self.has_sent_online_msg = False
         self.sys_stats_process = None
@@ -163,9 +164,13 @@ class FedMLClientManager(ClientManager):
         logging.info("#######training########### round_id = %d" % self.round_idx)
         if hasattr(self.args, "backend") and self.args.using_mlops:
             self.mlops_event.log_event_started("train", event_value=str(self.round_idx))
+
+        time.sleep(10)
         weights, local_sample_num = self.trainer.train(self.round_idx)
+
         if hasattr(self.args, "backend") and self.args.using_mlops:
             self.mlops_event.log_event_ended("train", event_value=str(self.round_idx))
+
         self.send_model_to_server(0, weights, local_sample_num)
 
     def run(self):
