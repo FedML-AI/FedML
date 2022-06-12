@@ -421,15 +421,15 @@ class FedMLServerRunner:
         click.echo("docker image {}".format(self.server_docker_image))
         # click.echo("file_sys_driver {}".format(self.agent_config["docker_config"]["file_sys_driver"]))
 
-        registry_secret_cmd = "kubectl create namespace fedml-aggregator-" + self.version + \
-                              ";kubectl -n fedml-aggregator-" + self.version + \
+        registry_secret_cmd = "kubectl create namespace fedml-devops-aggregator-" + self.version + \
+                              ";kubectl -n fedml-devops-aggregator-" + self.version + \
                               " delete secret secret-" + self.cloud_server_name + \
-                              " ;kubectl create secret secret-" + self.cloud_server_name + \
+                              " ;kubectl create secret docker-registry secret-" + self.cloud_server_name + \
                               " --docker-server=" + self.agent_config["docker_config"]["registry_server"] + \
                               " --docker-username=" + self.agent_config["docker_config"]["user_name"] + \
                               " --docker-password=$(aws ecr-public get-login-password --region " + \
                               self.agent_config["docker_config"]["public_cloud_region"] + ")" + \
-                              " --docker-email=fedml@fedml.ai -n fedml-aggregator-" + self.version
+                              " --docker-email=fedml@fedml.ai -n fedml-devops-aggregator-" + self.version
         click.echo("Create secret cmd: " + registry_secret_cmd)
         os.system(registry_secret_cmd)
 
@@ -447,6 +447,8 @@ class FedMLServerRunner:
                              ";export FEDML_DATA_PV_ID=" + self.cloud_server_name + \
                              ";export FEDML_DATA_PVC_ID=" + self.cloud_server_name + \
                              ";export FEDML_REGISTRY_SECRET_SUFFIX=" + self.cloud_server_name + \
+                             ";export FEDML_ACCOUNT_ID=0" + \
+                             ";export FEDML_VERSION=" + self.version + \
                              ";export FEDML_PACKAGE_NAME=" + packages_config.get("server", "") + \
                              ";export FEDML_PACKAGE_URL=" + packages_config.get("serverUrl", "") + \
                              ";export FEDML_RUNNER_CMD=" + runner_cmd_encoded + \
@@ -470,9 +472,9 @@ class FedMLServerRunner:
                                 ";export FEDML_DATA_PV_ID=" + self.cloud_server_name + \
                                 ";export FEDML_DATA_PVC_ID=" + self.cloud_server_name + \
                                 ";export FEDML_REGISTRY_SECRET_SUFFIX=" + self.cloud_server_name + \
-                                ";kubectl -n fedml-aggregator-" + self.version + " delete deployment " + self.cloud_server_name + \
-                                ";kubectl -n fedml-aggregator-" + self.version + " delete svc " + self.cloud_server_name + \
-                                ";kubectl -n fedml-aggregator-" + self.version + \
+                                ";kubectl -n fedml-devops-aggregator-" + self.version + " delete deployment " + self.cloud_server_name + \
+                                ";kubectl -n fedml-devops-aggregator-" + self.version + " delete svc " + self.cloud_server_name + \
+                                ";kubectl -n fedml-devops-aggregator-" + self.version + \
                                 " delete secret secret-" + self.cloud_server_name
         click.echo("FedMLServerRunner.stop_run with k8s: " + delete_deployment_cmd)
         os.system(delete_deployment_cmd)
