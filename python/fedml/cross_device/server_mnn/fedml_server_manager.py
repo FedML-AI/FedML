@@ -61,24 +61,24 @@ class FedMLServerManager(ServerManager):
         start_train_json = {
             "edges": [
                 {
-                    "device_id": "647e593ab312c934",
+                    "device_id": "62dcd04fa9bc672e",
                     "os_type": "Android",
                     "id": self.args.client_id_list,
                 }
             ],
             "starttime": 1651635148113,
             "url": "http://fedml-server-agent-svc.fedml-aggregator-dev.svc.cluster.local:5001/api/start_run",
-            "edgeids": [145],
+            "edgeids": [127],
             "token": "eyJhbGciOiJIUzI1NiJ9.eyJpZCI6MTA1LCJhY2NvdW50IjoiYWxleC5saWFuZzIiLCJsb2dpblRpbWUiOiIxNjUxNjM0Njc0NDcwIiwiZXhwIjowfQ.miX2--XbaJab-sNPHzZcsMWcVOXPLQHFNXuK0oMAYiY",
             "urls": [],
-            "userids": ["105"],
+            "userids": ["208"],
             "name": "hundred_daily",
             "runId": 189,
             "id": 169,
             "projectid": "169",
             "run_config": {
                 "configName": "test-new-open",
-                "userId": 105,
+                "userId": 208,
                 "model_config": {},
                 "packages_config": {
                     "server": "server-package.zip",
@@ -101,7 +101,7 @@ class FedMLServerManager(ServerManager):
                         "global_model_file_path": "./model_file_cache/global_model.pt",
                     },
                     "device_args": {
-                        "worker_num": 2,
+                        "worker_num": 1,
                         "using_gpu": False,
                         "gpu_mapping_key": "mapping_default",
                         "gpu_mapping_file": "config/gpu_mapping.yaml",
