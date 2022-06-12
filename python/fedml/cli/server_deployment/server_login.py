@@ -2,8 +2,8 @@ import argparse
 import os
 import platform
 import time
-from os.path import expanduser
 import click
+from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from fedml.cli.server_deployment.server_runner import FedMLServerRunner
 from fedml.cli.server_deployment.server_runner import LOCAL_HOME_RUNNER_DIR_NAME as SERVER_RUNNER_HOME_DIR
 from fedml.cli.server_deployment.server_runner import LOCAL_RUNNER_INFO_DIR_NAME as SERVER_RUNNER_INFO_DIR
@@ -16,8 +16,7 @@ login_mode_list = ["local", "cloud_agent", "cloud_server"]
 
 def __login_as_local_server_and_agent(args, userid, version):
     setattr(args, "account_id", userid)
-    home_dir = expanduser("~")
-    setattr(args, "current_running_dir", os.path.join(home_dir, SERVER_RUNNER_HOME_DIR))
+    setattr(args, "current_running_dir", FedMLServerRunner.get_fedml_home_dir())
 
     sys_name = platform.system()
     if sys_name == "Darwin":
@@ -32,6 +31,7 @@ def __login_as_local_server_and_agent(args, userid, version):
 
     # Create server runner for communication with the FedML client.
     runner = FedMLServerRunner(args)
+    runner.run_as_local_server_and_agent = True
 
     # Fetch configs from the MLOps config server.
     service_config = dict()
@@ -95,14 +95,12 @@ def __login_as_local_server_and_agent(args, userid, version):
     click.echo("Your server unique device id is " + str(unique_device_id))
 
     # Start mqtt looper
-    runner.run_as_local_server_and_agent = True
     runner.mqtt_loop()
 
 
 def __login_as_cloud_server_agent(args, userid, version):
     setattr(args, "account_id", userid)
-    home_dir = expanduser("~")
-    setattr(args, "current_running_dir", os.path.join(home_dir, SERVER_RUNNER_HOME_DIR))
+    setattr(args, "current_running_dir", FedMLServerRunner.get_fedml_home_dir())
 
     sys_name = platform.system()
     if sys_name == "Darwin":
@@ -117,6 +115,7 @@ def __login_as_cloud_server_agent(args, userid, version):
 
     # Create server runner for communication with the FedML client.
     runner = FedMLServerRunner(args)
+    runner.run_as_cloud_server_agent = True
 
     # Fetch configs from the MLOps config server.
     service_config = dict()
@@ -183,14 +182,12 @@ def __login_as_cloud_server_agent(args, userid, version):
     click.echo("Your server unique device id is " + str(unique_device_id))
 
     # Start mqtt looper
-    runner.run_as_cloud_server_agent = True
     runner.mqtt_loop()
 
 
 def __login_as_cloud_server(args, userid, version):
     setattr(args, "account_id", userid)
-    home_dir = expanduser("~")
-    setattr(args, "current_running_dir", os.path.join(home_dir, SERVER_RUNNER_HOME_DIR))
+    setattr(args, "current_running_dir", FedMLServerRunner.get_fedml_home_dir())
 
     sys_name = platform.system()
     if sys_name == "Darwin":
@@ -205,6 +202,7 @@ def __login_as_cloud_server(args, userid, version):
 
     # Create server runner for communication with the FedML client.
     runner = FedMLServerRunner(args)
+    runner.run_as_cloud_server = True
 
     # Fetch configs from the MLOps config server.
     service_config = dict()
@@ -265,14 +263,23 @@ def __login_as_cloud_server(args, userid, version):
     click.echo("Your server unique device id is " + str(unique_device_id))
 
     # Start the FedML server
-    runner.run_as_cloud_server = True
     runner.callback_start_train(payload=args.runner_cmd)
+
+
+def init_logs():
+    # Init runtime logs
+    args.log_file_dir = FedMLServerRunner.get_log_file_dir()
+    args.run_id = 0
+    args.rank = 0
+    MLOpsRuntimeLog.get_instance(args).init_logs()
 
 
 def login(args):
     if args.role == login_mode_list[LOGIN_MODE_LOCAL_INDEX]:
+        init_logs()
         __login_as_local_server_and_agent(args, args.user, args.version)
     elif args.role == login_mode_list[LOGIN_MODE_CLOUD_AGENT_INDEX]:
+        init_logs()
         __login_as_cloud_server_agent(args, args.user, args.version)
     elif args.role == login_mode_list[LOGIN_MODE_CLOUD_SERVER_INDEX]:
         __login_as_cloud_server(args, args.user, args.version)

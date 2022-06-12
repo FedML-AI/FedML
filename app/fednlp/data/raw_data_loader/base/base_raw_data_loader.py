@@ -50,6 +50,7 @@ class SpanExtractionRawDataLoader(BaseRawDataLoader):
         self.question_X = dict()
         self.Y = dict()
         self.attributes["task_type"] = "span_extraction"
+        self.Y_answer = dict()
 
     def generate_h5_file(self, file_path):
         f = h5py.File(file_path, "w")
@@ -58,6 +59,7 @@ class SpanExtractionRawDataLoader(BaseRawDataLoader):
             f["context_X/" + str(key)] = self.context_X[key]
             f["question_X/" + str(key)] = self.question_X[key]
             f["Y/" + str(key)] = self.Y[key]
+            f["Y_answer/" + str(key)] = self.Y_answer[key]
         f.close()
 
 
