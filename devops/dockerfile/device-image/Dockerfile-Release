@@ -5,12 +5,14 @@ FROM ${BASE_IMAGE}
 
 ADD ./devops/scripts/copy-fedml-package.sh ./fedml/copy-fedml-package.sh
 ADD ./devops/scripts/runner.sh ./fedml/runner.sh
+ADD ./devops/scripts/entry-point.sh ./fedml/entry-point.sh
 
 COPY ./python/fedml ./fedml/fedml-pip
 RUN chmod a+x ./fedml/copy-fedml-package.sh
 RUN bash ./fedml/copy-fedml-package.sh
 
 RUN chmod a+x ./fedml/runner.sh
+RUN chmod a+x ./fedml/entry-point.sh
 
 WORKDIR ./fedml
 

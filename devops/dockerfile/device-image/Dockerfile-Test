@@ -11,6 +11,7 @@ RUN chmod a+x ./fedml/copy-fedml-package.sh
 RUN bash ./fedml/copy-fedml-package.sh
 
 RUN chmod a+x ./fedml/runner.sh
+RUN chmod a+x ./fedml/entry-point.sh
 
 WORKDIR ./fedml
 

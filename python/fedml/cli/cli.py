@@ -162,6 +162,7 @@ def mlops_login(userid, version, client, server, local_server, role, runner_cmd,
         )
         return
 
+    click.echo("client {}, server {}".format(client, server))
     # Set client as default entity.
     is_client = client
     is_server = server
@@ -169,7 +170,7 @@ def mlops_login(userid, version, client, server, local_server, role, runner_cmd,
         is_client = True
 
     click.echo("login as client: {}, as server: {}".format(is_client, is_server))
-    if is_client:
+    if is_client is True:
         pip_source_dir = os.path.dirname(__file__)
         login_cmd = os.path.join(pip_source_dir, "edge_deployment", "client_login.py")
         click.echo(login_cmd)
@@ -181,7 +182,7 @@ def mlops_login(userid, version, client, server, local_server, role, runner_cmd,
              "-v", version, "-ls", local_server]).pid
         save_login_process(CLIENT_RUNNER_HOME_DIR, CLIENT_RUNNER_INFO_DIR, login_pid)
 
-    if is_server:
+    if is_server is True:
         # Check login mode.
         try:
             login_mode_list.index(role)

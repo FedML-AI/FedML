@@ -8,8 +8,6 @@ ADD ./devops/scripts/setup-aws-cli.sh ./fedml/setup-aws-cli.sh
 ADD ./devops/scripts/set-aws-credentials.sh ./fedml/set-aws-credentials.sh
 ADD ./devops/scripts/docker /usr/bin/
 ADD ./devops/scripts/kubectl /usr/bin/
-#ADD ./devops/scripts/config/config /root/.aws/config
-#ADD ./devops/scripts/config/credentials /root/.aws/credentials
 
 ADD ./devops/scripts/requirements.txt ./fedml/requirements.txt
 ADD ./devops/scripts/setup-conda-env.sh ./fedml/setup-conda-env.sh
@@ -19,7 +17,6 @@ RUN chmod a+x /usr/bin/kubectl
 RUN chmod a+x ./fedml/setup-aws-cli.sh
 RUN chmod a+x ./fedml/set-aws-credentials.sh
 RUN ./fedml/setup-aws-cli.sh
-#RUN ./fedml/set-aws-credentials.sh ${AWS_IAM_ACCESS_ID} ${AWS_IAM_ACCESS_KEY} ${AWS_REGION}
 
 RUN apt-get -y install gettext-base
 
