@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 
 from .system_stats import SysStats
 
@@ -18,7 +19,7 @@ class MLOpsMetrics(Singleton):
         self.args = None
         self.run_id = None
         self.edge_id = None
-        self.sys_performances = SysStats()
+        self.sys_performances = None
 
     def set_messenger(self, msg_messenger, args=None):
         self.messenger = msg_messenger
@@ -29,6 +30,20 @@ class MLOpsMetrics(Singleton):
             self.edge_id = client_id_list[0]
 
     def report_client_training_status(self, edge_id, status):
+        """
+            this is used for notifying the client status to MLOps (both web UI, FedML CLI and backend can consume it)
+        """
+        topic_name = "fl_client/mlops/status"
+        msg = {"edge_id": edge_id, "status": status}
+        message_json = json.dumps(msg)
+        logging.info("report_client_training_status. message_json = %s" % message_json)
+        self.messenger.send_message_json(topic_name, message_json)
+        self.report_client_id_status(0, edge_id, status)
+
+    def broadcast_client_training_status(self, edge_id, status):
+        """
+            this is used for broadcasting the client status to MLOps (both web UI and backend can consume it)
+        """
         topic_name = "fl_client/mlops/status"
         msg = {"edge_id": edge_id, "status": status}
         message_json = json.dumps(msg)
@@ -36,6 +51,9 @@ class MLOpsMetrics(Singleton):
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_client_id_status(self, run_id, edge_id, status):
+        """
+            this is used for communication between client agent (FedML cli module) and client
+        """
         topic_name = "fl_client/mlops/" + str(edge_id) + "/status"
         msg = {"run_id": run_id, "edge_id": edge_id, "status": status}
         message_json = json.dumps(msg)
@@ -43,6 +61,14 @@ class MLOpsMetrics(Singleton):
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_server_training_status(self, run_id, status):
+        topic_name = "fl_server/mlops/status"
+        msg = {"run_id": run_id, "status": status}
+        logging.info("report_server_training_status. msg = %s" % msg)
+        message_json = json.dumps(msg)
+        self.messenger.send_message_json(topic_name, message_json)
+        self.report_server_id_status(run_id, status)
+
+    def broadcast_server_training_status(self, run_id, status):
         topic_name = "fl_server/mlops/status"
         msg = {"run_id": run_id, "status": status}
         logging.info("report_server_training_status. msg = %s" % msg)
@@ -93,6 +119,11 @@ class MLOpsMetrics(Singleton):
     def report_system_metric(self, metric_json=None):
         topic_name = "fl_client/mlops/system_performance"
         if metric_json is None:
+            if self.sys_performances is None:
+                self.sys_performances = SysStats()
+            if self.sys_performances is None:
+                return
+
             self.sys_performances.produce_info()
             metric_json = {
                 "run_id": self.run_id,
@@ -137,6 +168,13 @@ class MLOpsMetrics(Singleton):
             }
         logging.info("report_metric. message_json = %s" % metric_json)
         message_json = json.dumps(metric_json)
+        self.messenger.send_message_json(topic_name, message_json)
+
+    def report_logs_updated(self, run_id):
+        topic_name = "mlops/runtime_logs/" + str(run_id)
+        msg = {"time": time.time()}
+        message_json = json.dumps(msg)
+        logging.info("report_logs_updated. message_json = %s" % message_json)
         self.messenger.send_message_json(topic_name, message_json)
 
 

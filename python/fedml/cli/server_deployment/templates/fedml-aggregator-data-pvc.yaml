@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: fedml-data-pvc-$FEDML_DATA_PVC_ID
+  namespace: fedml-aggregator-$FEDML_AGGREGATOR_VERSION
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: $FEDML_STORAGE_CLASS
+  resources:
+    requests:
+      storage: 1Gi
