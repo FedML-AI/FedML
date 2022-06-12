@@ -5,6 +5,8 @@ FROM ${BASE_IMAGE}
 
 ADD ./devops/scripts/copy-fedml-package.sh ./fedml/copy-fedml-package.sh
 ADD ./devops/scripts/runner.sh ./fedml/runner.sh
+ADD ./devops/scripts/config/config /root/.aws/config
+ADD ./devops/scripts/config/credentials /root/.aws/credentials
 
 COPY ./python/fedml ./fedml/fedml-pip
 RUN chmod a+x ./fedml/copy-fedml-package.sh

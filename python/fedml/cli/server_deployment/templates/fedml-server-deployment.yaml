@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: $FEDML_AGGREGATOR_NAME
-  namespace: fedml-aggregator-$FEDML_AGGREGATOR_VERSION
+  namespace: fedml-devops-aggregator-$FEDML_AGGREGATOR_VERSION
 spec:
   replicas: 1
   selector:
@@ -20,6 +20,10 @@ spec:
         image: $FEDML_AGGREGATOR_IMAGE_PATH
         imagePullPolicy: Always
         env:
+        - name: ACCOUNT_ID
+          value: "$FEDML_ACCOUNT_ID"
+        - name: FEDML_VERSION
+          value: $FEDML_VERSION
         - name: FEDML_PACKAGE_NAME
           value: $FEDML_PACKAGE_NAME
         - name: FEDML_PACKAGE_URL
