@@ -75,6 +75,7 @@ def load_synthetic_data(args):
     attributes = BaseDataManager.load_attributes(args.data_file_path)
     # num_labels = len(attributes["label_vocab"])
     # class_num = num_labels
+    class_num = -1
     model_args = SpanExtractionArgs()
     model_args.model_name = args.model
     model_args.model_type = args.model_type
@@ -206,7 +207,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--data_file_path",
         type=str,
-        default="/home/ubuntu/fednlp_data/data_files/squad_1.1_data.h5",
+        default="/home/ubuntu/fednlp_data/data_files/squad_new_data.h5",
         help="data h5 file path",
     )
 
