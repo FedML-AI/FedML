@@ -148,7 +148,7 @@ class MyModelTrainer(ClientTrainer):
                 metrics = self.test(test_data, device, args)
                 logging.info(
                     "Client Index = {}\tEpoch: {}\tAccuracy: {:.6f}".format(
-                        self.id, epoch, metrics[0] / len(test_data)
+                        self.id, epoch, metrics["test_correct"] / metrics["test_total"]
                     )
                 )
 
