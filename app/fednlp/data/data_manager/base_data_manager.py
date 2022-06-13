@@ -191,7 +191,7 @@ class BaseDataManager(ABC):
             num_clients,
         )
 
-    def _load_federated_data_server(self, test_only=True, test_cut_off=None):
+    def _load_federated_data_server(self, test_only=False, test_cut_off=None):
         # state, res = self._load_data_loader_from_cache(-1)
         state = False
         train_data_local_dict = None
