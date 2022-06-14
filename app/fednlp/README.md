@@ -45,6 +45,8 @@ To run span extraction on SQuAD1.1 dataset using MPI simulator follow the follow
 
 **SEQ2SEQ**
 
+Read data/README.md for more details of datasets available
+
 Adjust the hyperparameters in fednlp/seq2seq/config/fedml_config.yaml
 
 To run seq2seq using MPI simulator follow the following steps:
