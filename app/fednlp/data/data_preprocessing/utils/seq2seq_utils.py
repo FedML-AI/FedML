@@ -1,9 +1,9 @@
 import logging
 import os
 import pickle
-from multiprocessing import Pool
 from typing import Tuple
 
+from multiprocessing.dummy import Pool
 import pandas as pd
 import torch
 from tokenizers.implementations import ByteLevelBPETokenizer
