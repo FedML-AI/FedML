@@ -18,6 +18,14 @@ from transformers import (
     get_linear_schedule_with_warmup,
 )
 
+from seqeval.metrics import (
+    f1_score,
+    precision_score,
+    recall_score,
+    classification_report,
+)
+from tqdm import tqdm
+
 
 class MyModelTrainer(ClientTrainer):
     def get_model_params(self):
@@ -57,6 +65,7 @@ class MyModelTrainer(ClientTrainer):
                 "output_dir": args.output_dir,
                 "is_debug_mode": args.is_debug_mode,
                 "fedprox_mu": args.fedprox_mu,
+                "optimizer": args.client_optimizer,
             }
         )
         model = self.model
@@ -66,34 +75,20 @@ class MyModelTrainer(ClientTrainer):
         tr_loss = 0
         # train and update
         criterion = nn.CrossEntropyLoss().to(device)
-        if args.model_class == "transformer":
-            iteration_in_total = (
-                len(train_data) // args.gradient_accumulation_steps * args.epochs
-            )
-            optimizer, scheduler = build_optimizer(
-                model, iteration_in_total, model_args
-            )
-        else:
-            optimizer = torch.optim.Adam(
-                filter(lambda p: p.requires_grad, model.parameters()),
-                lr=args.learning_rate,
-                weight_decay=args.weight_decay,
-                amsgrad=True,
-            )
+        iteration_in_total = (
+            len(train_data) // args.gradient_accumulation_steps * args.epochs
+        )
+        optimizer, scheduler = build_optimizer(model, iteration_in_total, model_args)
         if args.federated_optimizer == "FedProx":
             global_model = copy.deepcopy(model)
         epoch_loss = []
         for epoch in range(args.epochs):
             batch_loss = []
             for batch_idx, batch in enumerate(train_data):
-                if args.model_class == "transformer":
-                    x = batch[1].to(device)
-                    labels = batch[4].to(device)
-                else:
-                    x, labels = batch[0].to(device), batch[1].to(device)
+                x = batch[1].to(device)
+                labels = batch[4].to(device)
                 log_probs = model(x)
-                if args.model_class == "transformer":
-                    log_probs = log_probs[0]
+                log_probs = log_probs[0]
                 loss = criterion(log_probs.view(-1, args.num_labels), labels.view(-1))
                 if args.federated_optimizer == "FedProx":
                     fed_prox_reg = 0.0
@@ -106,24 +101,13 @@ class MyModelTrainer(ClientTrainer):
                     loss = loss / args.gradient_accumulation_steps
                 loss.backward()
                 tr_loss += loss.item()
-                logging.info(
-                    "Update Epoch: {} for Client index = {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
-                        self.id,
-                        epoch,
-                        (batch_idx + 1) * args.batch_size,
-                        len(train_data) * args.batch_size,
-                        100.0 * (batch_idx + 1) / len(train_data),
-                        loss.item(),
-                    )
-                )
                 if (batch_idx + 1) % args.gradient_accumulation_steps == 0:
                     if args.clip_grad_norm == 1:
                         torch.nn.utils.clip_grad_norm_(
                             model.parameters(), args.max_grad_norm
                         )
                     optimizer.step()
-                    if args.model_class == "transformer":
-                        scheduler.step()  # Update learning rate schedule
+                    scheduler.step()  # Update learning rate schedule
                     model.zero_grad()
                     batch_loss.append(tr_loss)
                     tr_loss = 0
@@ -154,7 +138,7 @@ class MyModelTrainer(ClientTrainer):
     def test(self, test_data, device, args):
         attributes = BaseDataManager.load_attributes(args.data_file_path)
         args.num_labels = len(attributes["label_vocab"])
-        args.label_list = list(attributes["label_vocab"].keys())
+        args.labels_list = list(attributes["label_vocab"].keys())
         args.pad_token_label_id = CrossEntropyLoss().ignore_index
         results = {}
         eval_loss = 0.0
@@ -171,7 +155,7 @@ class MyModelTrainer(ClientTrainer):
 
         self.model.to(device)
         self.model.eval()
-        logging.info("len(test_dl) = %d, n_batches = %d" % (test_data, n_batches))
+        # logging.info("len(test_dl) = %d, n_batches = %d" % (test_data, n_batches))
         for i, batch in enumerate(test_data):
             batch = tuple(t for t in batch)
             with torch.no_grad():
@@ -235,15 +219,15 @@ class MyModelTrainer(ClientTrainer):
                 if out_label_ids[i, j] != pad_token_label_id:
                     out_label_list[i].append(label_map[out_label_ids[i][j]])
                     preds_list[i].append(label_map[preds[i][j]])
-        logging.info(preds_list[:2])
-        logging.info(out_label_list[:2])
+        # logging.info(preds_list[:2])
+        # logging.info(out_label_list[:2])
         result = {
             "eval_loss": eval_loss,
             "precision": precision_score(out_label_list, preds_list),
             "recall": recall_score(out_label_list, preds_list),
             "f1_score": f1_score(out_label_list, preds_list),
         }
-        logging.info(result)
+        # logging.info(result)
 
         os.makedirs(eval_output_dir, exist_ok=True)
         output_eval_file = os.path.join(eval_output_dir, "eval_results.txt")

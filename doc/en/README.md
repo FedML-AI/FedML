@@ -4,7 +4,6 @@ Conda:
 ```
 conda install sphinx
 conda install -c conda-forge myst-parser
-pip3 install furo
 ```
 
 # Build
