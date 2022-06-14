@@ -9,7 +9,7 @@ import psutil
 import requests
 import yaml
 from fedml.cli.edge_deployment.mqtt_manager import MqttManager
-from fedml.mlops.mlops_configs import MLOpsConfigs
+from fedml.core.mlops.mlops_configs import MLOpsConfigs
 
 
 def load_yaml_config(yaml_path):
