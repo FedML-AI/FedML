@@ -2,6 +2,8 @@
 
 We provide 4 different NLP applications namely Text Classification, Sequence Tagging, Span Extraction and Sequence2Sequence. We provide examples for each application and also provide steps on how to run each application below. We have provided download scripts for 12 different datasets across these 4 applications.
 
+For each of these make sure the datapaths and the gpu config paths are given correctly in the fedml_config.yaml file
+
 **TEXT CLASSIFICATION**
 
 Read data/README.md for more details of datasets available
@@ -22,7 +24,7 @@ Read data/README.md for more details of datasets available
 
 Adjust the hyperparameters in fednlp/seq_tagging/config/fedml_config.yaml
 
-To run sequence tagging using MPI simulator follow the following steps:
+To run sequence tagging on Onto dataset using MPI simulator follow the following steps:
 
 1. cd ../
 2. bash fednlp/data/download_data.sh
@@ -34,13 +36,12 @@ To run sequence tagging using MPI simulator follow the following steps:
 
 Adjust the hyperparameters in fednlp/span_extraction/config/fedml_config.yaml and make sure data file paths are correct
 
-To run span extraction on SQuAD1.1 dataset using MPI simulator follow the following steps:
+To run span extraction on MRQA dataset using MPI simulator follow the following steps:
 
 1. cd ../
-2. bash fednlp/data/download_scripts/span_extraction/SQuAD_1.1/download.sh
-3. python fednlp/data/raw_data_loader/test/test_rawdataloader.py --dataset squad_1.1 --data_dir ./ --h5_file_path ./squad1.1_data.h5
-4. bash fednlp/data/download_partition.sh
-5. bash fednlp/span_extraction/run_step_by_step_example.sh
+2. bash fednlp/data/download_data.sh
+3. bash fednlp/data/download_partition.sh
+4. bash fednlp/span_extraction/run_step_by_step_example.sh
 
 
 **SEQ2SEQ**
