@@ -18,6 +18,7 @@ from transformers import (
     AdamW,
     get_linear_schedule_with_warmup,
 )
+from tqdm import tqdm
 
 
 class MyModelTrainer(ClientTrainer):
@@ -133,10 +134,10 @@ class MyModelTrainer(ClientTrainer):
 
         if self.args.fl_algorithm == "FedProx":
             global_model = copy.deepcopy(self.model)
-
+        epoch_loss = []
         for epoch in range(0, args.epochs):
-
-            for batch_idx, batch in enumerate(train_data):
+            batch_loss = []
+            for batch_idx, batch in tqdm(enumerate(train_data)):
                 self.model.train()
                 batch = tuple(t.to(device) for t in batch)
                 # dataset = TensorDataset(all_guid, all_input_ids, all_attention_masks, all_token_type_ids, all_cls_index,
@@ -146,17 +147,13 @@ class MyModelTrainer(ClientTrainer):
 
                 if args.fp16:
                     with amp.autocast():
-                        print("reached here")
                         outputs = self.model(**inputs)
                         # model outputs are always tuple in pytorch-transformers (see doc)
                         loss = outputs[0]
-                        print("reached here")
                 else:
-                    print("reached here")
                     outputs = self.model(**inputs)
                     # model outputs are always tuple in pytorch-transformers (see doc)
                     loss = outputs[0]
-                    print("reached here")
 
                 if args.n_gpu > 1:
                     loss = (
@@ -173,22 +170,14 @@ class MyModelTrainer(ClientTrainer):
                     loss += fed_prox_reg
 
                 current_loss = loss.item()
-                print("reached here")
 
                 if args.gradient_accumulation_steps > 1:
                     loss = loss / args.gradient_accumulation_steps
-                print("reached here")
                 if args.fp16:
                     scaler.scale(loss).backward()
                 else:
                     loss.backward()
-                print("reached here")
                 tr_loss += loss.item()
-
-                logging.info(
-                    "epoch = %d, batch_idx = %d/%d, loss = %s"
-                    % (epoch, batch_idx, len(train_data), current_loss)
-                )
 
                 if (batch_idx + 1) % args.gradient_accumulation_steps == 0:
                     if args.fp16:
@@ -205,17 +194,24 @@ class MyModelTrainer(ClientTrainer):
                     scheduler.step()  # Update learning rate schedule
                     self.model.zero_grad()
                     global_step += 1
-
-                if (
-                    self.args.evaluate_during_training
-                    and (
-                        self.args.evaluate_during_training_steps > 0
-                        and global_step % self.args.evaluate_during_training_steps == 0
-                    )
-                    and test_data is not None
-                ):
-                    results, _, _ = self.test(test_data, device, args)
-                    logging.info(results)
+                    batch_loss.append(tr_loss)
+                    tr_loss = 0
+            epoch_loss.append(sum(batch_loss) / len(batch_loss))
+            logging.info(
+                "Client Index = {}\tEpoch: {}\tLoss: {:.6f}".format(
+                    self.id, epoch, sum(epoch_loss) / len(epoch_loss)
+                )
+            )
+            if (
+                self.args.evaluate_during_training
+                and (
+                    self.args.evaluate_during_training_steps > 0
+                    and global_step % self.args.evaluate_during_training_steps == 0
+                )
+                and test_data is not None
+            ):
+                results, _, _ = self.test(test_data, device, args)
+                logging.info(results)
 
     def test(self, test_data, device, args):
         output_dir = self.args.output_dir
@@ -453,7 +449,7 @@ class MyModelTrainer(ClientTrainer):
             "incorrect": incorrect,
             **standard_metrics,
         }
-        wandb.log(result)
+        # wandb.log(result)
 
         texts = {
             "correct_text": correct_text,
