@@ -97,17 +97,14 @@ def __login(args, userid, version):
     # Log arguments and binding results.
     click.echo("login: unique_device_id = %s" % str(unique_device_id))
     click.echo("login: edge_id = %s" % str(edge_id))
+    runner.unique_device_id = unique_device_id
     FedMLClientRunner.save_runner_infos(args.device_id + "." + args.os_name, edge_id, run_id=0)
 
     # Setup MQTT connection for communication with the FedML server.
-    runner.setup_mqtt_connection(service_config)
-
-    # Echo results
-    click.echo("Congratulations, you have logged into the FedML MLOps platform successfully!")
-    click.echo("Your device id is " + str(unique_device_id) + ". You may review the device in the MLOps edge device list.")
+    runner.setup_agent_mqtt_connection(service_config)
 
     # Start mqtt looper
-    runner.mqtt_loop()
+    runner.start_agent_mqtt_loop()
 
 
 def login(args):
