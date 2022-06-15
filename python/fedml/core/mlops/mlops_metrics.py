@@ -54,7 +54,7 @@ class MLOpsMetrics(Singleton):
         """
             this is used for communication between client agent (FedML cli module) and client
         """
-        topic_name = "fl_client/mlops/" + str(edge_id) + "/status"
+        topic_name = "fl_client/flclient_agent_" + str(edge_id) + "/status"
         msg = {"run_id": run_id, "edge_id": edge_id, "status": status}
         message_json = json.dumps(msg)
         logging.info("report_client_id_status. message_json = %s" % message_json)
@@ -76,7 +76,8 @@ class MLOpsMetrics(Singleton):
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_server_id_status(self, run_id, status):
-        topic_name = "fl_server/mlops/id/status"
+        server_agent_id = 0
+        topic_name = "fl_server/flserver_agent_" + str(server_agent_id) + "/status"
         msg = {"run_id": run_id, "status": status}
         message_json = json.dumps(msg)
         logging.info("report_server_id_status. message_json = %s" % message_json)

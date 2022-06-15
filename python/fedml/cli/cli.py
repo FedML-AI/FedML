@@ -18,7 +18,7 @@ from fedml.cli.edge_deployment.client_login import CLIENT_RUNNER_INFO_DIR
 from fedml.cli.server_deployment.server_login import logout as server_logout
 from fedml.cli.server_deployment.server_login import SERVER_RUNNER_HOME_DIR
 from fedml.cli.server_deployment.server_login import SERVER_RUNNER_INFO_DIR
-from fedml.cli.server_deployment.server_login import login_mode_list
+from fedml.cli.server_deployment.server_login import login_role_list
 
 
 @click.group()
@@ -76,9 +76,9 @@ def display_client_logs():
     run_id, edge_id = get_running_info(CLIENT_RUNNER_HOME_DIR, CLIENT_RUNNER_INFO_DIR)
     home_dir = expanduser("~")
     log_file = "{}/{}/fedml/logs/fedml-run-{}-edge-{}.log".format(home_dir,
-                                                                              CLIENT_RUNNER_HOME_DIR,
-                                                                              str(run_id),
-                                                                              str(edge_id))
+                                                                  CLIENT_RUNNER_HOME_DIR,
+                                                                  str(run_id),
+                                                                  str(edge_id))
     if os.path.exists(log_file):
         with open(log_file) as file_handle:
             log_lines = file_handle.readlines()
@@ -90,9 +90,9 @@ def display_server_logs():
     run_id, edge_id = get_running_info(SERVER_RUNNER_HOME_DIR, SERVER_RUNNER_INFO_DIR)
     home_dir = expanduser("~")
     log_file = "{}/{}/fedml/logs/fedml-run-{}-edge-{}.log".format(home_dir,
-                                                                              SERVER_RUNNER_HOME_DIR,
-                                                                              str(run_id),
-                                                                              str(edge_id))
+                                                                  SERVER_RUNNER_HOME_DIR,
+                                                                  str(run_id),
+                                                                  str(edge_id))
     if os.path.exists(log_file):
         with open(log_file) as file_handle:
             log_lines = file_handle.readlines()
@@ -185,10 +185,10 @@ def mlops_login(userid, version, client, server, local_server, role, runner_cmd,
     if is_server is True:
         # Check login mode.
         try:
-            login_mode_list.index(role)
+            login_role_list.index(role)
         except ValueError as e:
             click.echo(
-                "Please specify login mode as follows ({}).".format(str(login_mode_list))
+                "Please specify login mode as follows ({}).".format(str(login_role_list))
             )
             return
 
