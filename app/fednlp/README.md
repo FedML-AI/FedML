@@ -10,8 +10,11 @@ The figure below is the overall structure of FedNLP.
 ## Installation
 
 conda create -n fednlp python=3.7
+
 conda activate fednlp
+
 pip install fedml
+
 pip install -r requirements.txt
 
 ## Code Structure of FedNLP
