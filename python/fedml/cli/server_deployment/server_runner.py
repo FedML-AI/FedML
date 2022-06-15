@@ -946,7 +946,7 @@ class FedMLServerRunner:
 
         # Setup MQTT connected listener
         self.mqtt_mgr.add_connected_listener(self.on_agent_mqtt_connected)
-        self.mqtt_mgr.add_disconnected_listener(self.on_client_mqtt_disconnected)
+        self.mqtt_mgr.add_disconnected_listener(self.on_agent_mqtt_diconnected)
         self.mqtt_mgr.connect()
 
     def start_agent_mqtt_loop(self):
