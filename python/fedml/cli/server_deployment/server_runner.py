@@ -574,6 +574,9 @@ class FedMLServerRunner:
         return server_started
 
     def on_client_mqtt_disconnected(self, mqtt_client_object):
+        if self.client_mqtt_lock is None:
+            self.client_mqtt_lock = threading.Lock()
+
         self.client_mqtt_lock.acquire()
         self.client_mqtt_is_connected = False
         self.client_mqtt_lock.release()
@@ -586,6 +589,9 @@ class FedMLServerRunner:
             self.mlops_metrics.set_messenger(self.client_mqtt_mgr)
 
         logging.info("on_client_mqtt_connected: {}.".format(self.client_mqtt_is_connected))
+
+        if self.client_mqtt_lock is None:
+            self.client_mqtt_lock = threading.Lock()
 
         self.client_mqtt_lock.acquire()
         self.client_mqtt_is_connected = True
