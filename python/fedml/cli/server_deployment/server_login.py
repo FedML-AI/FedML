@@ -11,7 +11,7 @@ from fedml.cli.server_deployment.server_runner import LOCAL_RUNNER_INFO_DIR_NAME
 LOGIN_MODE_LOCAL_INDEX = 0
 LOGIN_MODE_CLOUD_AGENT_INDEX = 1
 LOGIN_MODE_CLOUD_SERVER_INDEX = 2
-login_mode_list = ["local", "cloud_agent", "cloud_server"]
+login_role_list = ["local", "cloud_agent", "cloud_server"]
 
 
 def __login_as_local_server_and_agent(args, userid, version):
@@ -85,17 +85,14 @@ def __login_as_local_server_and_agent(args, userid, version):
     # Log arguments and binding results.
     click.echo("login: unique_device_id = %s" % str(unique_device_id))
     click.echo("login: server_id = %s" % str(edge_id))
+    runner.unique_device_id = unique_device_id
     FedMLServerRunner.save_runner_infos(args.device_id + "." + args.os_name, edge_id)
 
     # Setup MQTT connection for communication with the FedML server.
-    runner.setup_mqtt_connection(service_config)
-
-    # Echo results
-    click.echo("Congratulations, you have logged into the FedML MLOps platform successfully!")
-    click.echo("Your server unique device id is " + str(unique_device_id))
+    runner.setup_agent_mqtt_connection(service_config)
 
     # Start mqtt looper
-    runner.mqtt_loop()
+    runner.start_agent_mqtt_loop()
 
 
 def __login_as_cloud_server_agent(args, userid, version):
@@ -172,17 +169,14 @@ def __login_as_cloud_server_agent(args, userid, version):
     # Log arguments and binding results.
     click.echo("login: unique_device_id = %s" % str(unique_device_id))
     click.echo("login: server_id = %s" % str(edge_id))
+    runner.unique_device_id = unique_device_id
     FedMLServerRunner.save_runner_infos(args.device_id + "." + args.os_name, edge_id)
 
     # Setup MQTT connection for communication with the FedML server.
-    runner.setup_mqtt_connection(service_config)
-
-    # Echo results
-    click.echo("Congratulations, you have logged into the FedML MLOps platform successfully!")
-    click.echo("Your server unique device id is " + str(unique_device_id))
+    runner.setup_agent_mqtt_connection(service_config)
 
     # Start mqtt looper
-    runner.mqtt_loop()
+    runner.start_agent_mqtt_loop()
 
 
 def __login_as_cloud_server(args, userid, version):
@@ -275,13 +269,13 @@ def init_logs():
 
 
 def login(args):
-    if args.role == login_mode_list[LOGIN_MODE_LOCAL_INDEX]:
+    if args.role == login_role_list[LOGIN_MODE_LOCAL_INDEX]:
         init_logs()
         __login_as_local_server_and_agent(args, args.user, args.version)
-    elif args.role == login_mode_list[LOGIN_MODE_CLOUD_AGENT_INDEX]:
+    elif args.role == login_role_list[LOGIN_MODE_CLOUD_AGENT_INDEX]:
         init_logs()
         __login_as_cloud_server_agent(args, args.user, args.version)
-    elif args.role == login_mode_list[LOGIN_MODE_CLOUD_SERVER_INDEX]:
+    elif args.role == login_role_list[LOGIN_MODE_CLOUD_SERVER_INDEX]:
         __login_as_cloud_server(args, args.user, args.version)
 
 
