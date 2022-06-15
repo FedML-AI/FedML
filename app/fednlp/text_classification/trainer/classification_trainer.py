@@ -56,6 +56,7 @@ class MyModelTrainer(ClientTrainer):
                 "output_dir": args.output_dir,
                 "is_debug_mode": args.is_debug_mode,
                 "fedprox_mu": args.fedprox_mu,
+                "optimizer": args.client_optimzer,
             }
         )
         model = self.model
@@ -65,41 +66,25 @@ class MyModelTrainer(ClientTrainer):
         tr_loss = 0
         # train and update
         criterion = nn.CrossEntropyLoss().to(device)
-        if args.model_class == "transformer":
-            iteration_in_total = (
-                len(train_data) // args.gradient_accumulation_steps * args.epochs
-            )
-            optimizer, scheduler = build_optimizer(
-                self.model, iteration_in_total, model_args
-            )
-        else:
-            optimizer = torch.optim.Adam(
-                filter(lambda p: p.requires_grad, self.model.parameters()),
-                lr=args.learning_rate,
-                weight_decay=args.weight_decay,
-                amsgrad=True,
-            )
+        iteration_in_total = (
+            len(train_data) // args.gradient_accumulation_steps * args.epochs
+        )
+        optimizer, scheduler = build_optimizer(model, iteration_in_total, model_args)
         if args.federated_optimizer == "FedProx":
-            global_model = copy.deepcopy(self.model)
+            global_model = copy.deepcopy(model)
         epoch_loss = []
         for epoch in range(args.epochs):
             batch_loss = []
             for batch_idx, batch in enumerate(train_data):
-                if args.model_class == "transformer":
-                    x = batch[1].to(device)
-                    labels = batch[4].to(device)
-                else:
-                    x, labels = batch[0].to(device), batch[1].to(device)
+                x = batch[1].to(device)
+                labels = batch[4].to(device)
                 log_probs = model(x)
-                if args.model_class == "transformer":
-                    log_probs = log_probs[0]
+                log_probs = log_probs[0]
                 loss = criterion(log_probs, labels)
                 if args.federated_optimizer == "FedProx":
                     fed_prox_reg = 0.0
                     mu = args.fedprox_mu
-                    for (p, g_p) in zip(
-                        self.model.parameters(), global_model.parameters()
-                    ):
+                    for (p, g_p) in zip(model.parameters(), global_model.parameters()):
                         fed_prox_reg += (mu / 2) * torch.norm((p - g_p.data)) ** 2
                     loss += fed_prox_reg
 
@@ -107,25 +92,24 @@ class MyModelTrainer(ClientTrainer):
                     loss = loss / args.gradient_accumulation_steps
                 loss.backward()
                 tr_loss += loss.item()
-                logging.info(
-                    "Update Epoch: {} for Client Index: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
-                        self.id,
-                        epoch,
-                        (batch_idx + 1) * args.batch_size,
-                        len(train_data) * args.batch_size,
-                        100.0 * (batch_idx + 1) / len(train_data),
-                        loss.item(),
-                    )
-                )
+                # logging.info(
+                #    "Update Epoch: {} for Client Index: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
+                #        self.id,
+                #        epoch,
+                #        (batch_idx + 1) * args.batch_size,
+                #        len(train_data) * args.batch_size,
+                #        100.0 * (batch_idx + 1) / len(train_data),
+                #        loss.item(),
+                #    )
+                # )
                 if (batch_idx + 1) % args.gradient_accumulation_steps == 0:
-                    if args.clip_grad_norm == 1:
+                    if args.clip_grad_norm:
                         torch.nn.utils.clip_grad_norm_(
-                            self.model.parameters(), args.max_grad_norm
+                            model.parameters(), args.max_grad_norm
                         )
                     optimizer.step()
-                    if args.model_class == "transformer":
-                        scheduler.step()  # Update learning rate schedule
-                    self.model.zero_grad()
+                    scheduler.step()  # Update learning rate schedule
+                    model.zero_grad()
                     batch_loss.append(tr_loss)
                     tr_loss = 0
                     # if args.evaluate_during_training and (args.evaluate_during_training_steps > 0 and global_step % args.evaluate_during_training_steps == 0):
@@ -187,7 +171,6 @@ class MyModelTrainer(ClientTrainer):
     def test_on_the_server(
         self, train_data_local_dict, test_data_local_dict, device, args=None
     ) -> bool:
-        return False
         logging.info("----------test_on_the_server--------")
         accuracy_list, metric_list = [], []
         for client_idx in test_data_local_dict.keys():
@@ -202,4 +185,4 @@ class MyModelTrainer(ClientTrainer):
             )
         avg_accuracy = np.mean(np.array(accuracy_list))
         logging.info("Test Accuracy = {}".format(avg_accuracy))
-        return False
+        return True
