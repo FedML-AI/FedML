@@ -8,15 +8,14 @@ The figure below is the overall structure of FedNLP.
 ![avatar](./FedNLP.png)
 
 ## Installation
+After `git clone`-ing this repository, please run the following command to install our dependencies.
 
-conda create -n fednlp python=3.7
-
-conda activate fednlp
-
+```bash
+cd FedML/app/fednlp
+conda create -n fednlp python=3.8
 pip install fedml
-
 pip install -r requirements.txt
-
+```
 ## Code Structure of FedNLP
 
 - `data`: provide data downloading scripts and raw data loader to process original data and generate h5py files. Besides, `data/advanced_partition` offers some practical partition functions to split data for each client.
