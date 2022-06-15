@@ -317,6 +317,8 @@ class FedMLClientRunner:
 
         self.reset_devices_status(self.edge_id)
 
+        time.sleep(2)
+
         try:
             FedMLClientRunner.cleanup_learning_process()
         except Exception as e:
@@ -332,6 +334,8 @@ class FedMLClientRunner:
         self.wait_client_mqtt_connected()
 
         self.reset_devices_status(self.edge_id)
+
+        time.sleep(2)
 
         try:
             FedMLClientRunner.cleanup_learning_process()
