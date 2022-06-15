@@ -343,6 +343,9 @@ class FedMLClientRunner:
         click.echo("Cleanup run successfully when finished.")
 
     def on_client_mqtt_disconnected(self, mqtt_client_object):
+        if self.client_mqtt_lock is None:
+            self.client_mqtt_lock = threading.Lock()
+
         self.client_mqtt_lock.acquire()
         self.client_mqtt_is_connected = False
         self.client_mqtt_lock.release()
@@ -351,6 +354,9 @@ class FedMLClientRunner:
         if self.mlops_metrics is None:
             self.mlops_metrics = MLOpsMetrics()
             self.mlops_metrics.set_messenger(self.client_mqtt_mgr)
+
+        if self.client_mqtt_lock is None:
+            self.client_mqtt_lock = threading.Lock()
 
         self.client_mqtt_lock.acquire()
         self.client_mqtt_is_connected = True
