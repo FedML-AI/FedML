@@ -523,6 +523,11 @@ class FedMLServerRunner:
         click.echo("FedMLServerRunner.run with k8s: " + run_deployment_cmd)
         os.system(run_deployment_cmd)
 
+    def stop_cloud_server_process(self):
+        self.stop_cloud_server()
+
+        self.stop_run()
+
     def stop_cloud_server(self):
         self.cloud_server_name = FedMLServerRunner.FEDML_CLOUD_SERVER_PREFIX + str(self.run_id)
         self.server_docker_image = self.agent_config["docker_config"]["registry_server"] + \
@@ -678,7 +683,11 @@ class FedMLServerRunner:
             server_runner.run_as_local_server_and_agent = self.run_as_local_server_and_agent
             multiprocessing.Process(target=server_runner.stop_run).start()
         elif self.run_as_cloud_server_agent:
-            self.stop_cloud_server()
+            server_runner = FedMLServerRunner(self.args, run_id=run_id,
+                                              request_json=stop_request_json,
+                                              agent_config=self.agent_config)
+            server_runner.run_as_cloud_server_agent = self.run_as_cloud_server_agent
+            multiprocessing.Process(target=server_runner.stop_cloud_server_process).start()
         elif self.run_as_cloud_server:
             pass
 
