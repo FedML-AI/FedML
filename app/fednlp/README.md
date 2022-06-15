@@ -1,4 +1,33 @@
-**FedNLP INTRO**
+# FedNLP: A Research Platform for Federated Learning in Natural Language Processing
+
+<!-- This is FedNLP, an application ecosystem for federated natural language processing based on FedML framework (https://github.com/FedML-AI/FedML). -->
+
+FedNLP is a research-oriented benchmarking framework for advancing *federated learning* (FL) in *natural language processing* (NLP). It uses the FedML API in its backend for for various Federated algorithms like FedAvg and FedOpt and platforms (Distributed Computing, IoT/Mobile, Standalone).
+
+The figure below is the overall structure of FedNLP.
+![avatar](./FedNLP.png)
+
+## Installation
+After `git clone`-ing this repository, please run the following command to install our dependencies.
+
+```bash
+cd FedML/app/fednlp
+conda create -n fednlp python=3.8
+pip install fedml
+pip install -r requirements.txt
+```
+## Code Structure of FedNLP
+
+- `data`: provide data downloading scripts and raw data loader to process original data and generate h5py files. Besides, `data/advanced_partition` offers some practical partition functions to split data for each client.
+
+- `data/data_preprocessing`: preprocessors, examples and utility functions for each task formulation.
+
+- `data/data_manager`: data manager is responsible for loading dataset and partition data from h5py files and driving preprocessor to transform data to features.
+
+- `{application_name}/`: Each folder contains the required trainers, data_loaders and configs for running the examples.
+
+
+## How to run the examples
 
 We provide 4 different NLP applications namely Text Classification, Sequence Tagging, Span Extraction and Sequence2Sequence. We provide examples for each application and also provide steps on how to run each application below. We have provided download scripts for 12 different datasets across these 4 applications.
 
