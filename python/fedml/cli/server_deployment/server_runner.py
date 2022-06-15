@@ -365,6 +365,8 @@ class FedMLServerRunner:
         self.mlops_metrics.report_server_training_status(self.run_id,
                                                          ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED)
 
+        time.sleep(2)
+
         FedMLServerRunner.cleanup_learning_process()
 
         try:
@@ -386,6 +388,7 @@ class FedMLServerRunner:
         self.mlops_metrics.broadcast_server_training_status(self.run_id,
                                                             ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED)
 
+        time.sleep(2)
         FedMLServerRunner.cleanup_learning_process()
 
         try:
@@ -403,6 +406,8 @@ class FedMLServerRunner:
     def cleanup_run_when_starting(self):
         self.mlops_metrics.report_server_training_status(self.run_id,
                                                          ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED)
+
+        time.sleep(2)
 
         FedMLServerRunner.cleanup_learning_process()
 
