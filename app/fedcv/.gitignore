@@ -1,0 +1,4 @@
+*.zip
+__MACOSX/
+__pycache__/
+*.tmp
