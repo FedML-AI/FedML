@@ -14,18 +14,27 @@ def FedML_init():
 
 
 def FedML_FedGKT_distributed(
-    process_id,
-    worker_number,
-    device,
-    comm,
-    model,
-    train_data_local_num_dict,
-    train_data_local_dict,
-    test_data_local_dict,
-    args,
+        process_id,
+        worker_number,
+        device,
+        comm,
+        model,
+        dataset,
+        args,
 ):
+    [
+        train_data_num,
+        test_data_num,
+        train_data_global,
+        test_data_global,
+        train_data_local_num_dict,
+        train_data_local_dict,
+        test_data_local_dict,
+        class_num,
+    ] = dataset
+    client_model, server_model = model
     if process_id == 0:
-        init_server(args, device, comm, process_id, worker_number, model)
+        init_server(args, device, comm, process_id, worker_number, server_model)
     else:
         init_client(
             args,
@@ -33,7 +42,7 @@ def FedML_FedGKT_distributed(
             comm,
             process_id,
             worker_number,
-            model,
+            client_model,
             train_data_local_dict,
             test_data_local_dict,
             train_data_local_num_dict,
@@ -41,7 +50,6 @@ def FedML_FedGKT_distributed(
 
 
 def init_server(args, device, comm, rank, size, model):
-
     # aggregator
     client_num = size - 1
     server_trainer = GKTServerTrainer(client_num, device, model, args)
@@ -52,15 +60,15 @@ def init_server(args, device, comm, rank, size, model):
 
 
 def init_client(
-    args,
-    device,
-    comm,
-    process_id,
-    size,
-    model,
-    train_data_local_dict,
-    test_data_local_dict,
-    train_data_local_num_dict,
+        args,
+        device,
+        comm,
+        process_id,
+        size,
+        model,
+        train_data_local_dict,
+        test_data_local_dict,
+        train_data_local_num_dict,
 ):
     client_ID = process_id - 1
 

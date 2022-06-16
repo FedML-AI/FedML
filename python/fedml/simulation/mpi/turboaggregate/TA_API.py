@@ -1,7 +1,9 @@
 from mpi4py import MPI
 
-from .TA_Aggregator import FedAVGAggregator
-from .TA_Trainer import FedAVGTrainer
+from .TA_Aggregator import TA_Aggregator
+from .TA_Trainer import TA_Trainer
+from .TA_decentralized_worker_manager import TA_DecentralizedWorkerManager
+from .FedAvgServerManager import FedAVGServerManager
 
 
 def FedML_init():
@@ -12,19 +14,25 @@ def FedML_init():
 
 
 def FedML_FedAvg_distributed(
-    process_id,
-    worker_number,
-    device,
-    comm,
-    model,
-    train_data_num,
-    train_data_global,
-    test_data_global,
-    train_data_local_num_dict,
-    train_data_local_dict,
-    test_data_local_dict,
-    args,
+        process_id,
+        worker_number,
+        device,
+        comm,
+        model,
+        dataset,
+        args,
 ):
+    [
+        train_data_num,
+        test_data_num,
+        train_data_global,
+        test_data_global,
+        train_data_local_num_dict,
+        train_data_local_dict,
+        test_data_local_dict,
+        class_num,
+    ] = dataset
+
     if process_id == 0:
         init_server(
             args,
@@ -55,22 +63,22 @@ def FedML_FedAvg_distributed(
 
 
 def init_server(
-    args,
-    device,
-    comm,
-    rank,
-    size,
-    model,
-    train_data_num,
-    train_data_global,
-    test_data_global,
-    train_data_local_dict,
-    test_data_local_dict,
-    train_data_local_num_dict,
+        args,
+        device,
+        comm,
+        rank,
+        size,
+        model,
+        train_data_num,
+        train_data_global,
+        test_data_global,
+        train_data_local_dict,
+        test_data_local_dict,
+        train_data_local_num_dict,
 ):
     # aggregator
     worker_num = size - 1
-    aggregator = FedAVGAggregator(
+    aggregator = TA_Aggregator(
         train_data_global,
         test_data_global,
         train_data_num,
@@ -90,19 +98,19 @@ def init_server(
 
 
 def init_client(
-    args,
-    device,
-    comm,
-    process_id,
-    size,
-    model,
-    train_data_num,
-    train_data_local_num_dict,
-    train_data_local_dict,
+        args,
+        device,
+        comm,
+        process_id,
+        size,
+        model,
+        train_data_num,
+        train_data_local_num_dict,
+        train_data_local_dict,
 ):
     # trainer
     client_index = process_id - 1
-    trainer = FedAVGTrainer(
+    trainer = TA_Trainer(
         client_index,
         train_data_local_dict,
         train_data_local_num_dict,
@@ -112,5 +120,5 @@ def init_client(
         args,
     )
 
-    client_manager = FedAVGClientManager(args, trainer, comm, process_id, size)
+    client_manager = TA_DecentralizedWorkerManager(args, trainer, comm, process_id, size)
     client_manager.run()
