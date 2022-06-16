@@ -1,105 +1,39 @@
 # FedML MLOps User Guide
 
-![image](../_static/image/mlops_workflow.png)
-Figure 1: the workflow that describes how our MLOps works
+## **Write Once, Run Anywhere: Seamlessly Migrate Your Local Simulation to the Real-world Edge-cloud Deployment**
 
-Such a workflow is handled by web UI without the need to handle complex deployment. 
-Please follow the following instruction step by step.
+- How Does FedML MLOps Platform Work?
+- Local Development (Simulation) and Building MLOps Packages
+- Create Application and Upload Local Packages
+- Install FedML Agent: fedml login $account_id
+- Invite Collaborators, Create a Group and a Project
+- Start Run (Training) via Automated Deployment and Scaling
+- Experimental Tracking via Simplified Project Management
+- The Docker-based End-to-end "Start run" Workflow
 
-```angular2html
-1. Register an Account and Login
-2. Invite Collaborators and group management
-3. Project Management 
-```
 
-### **Seamlessly migrate your local project to the real-world deployment and collaboration**
-After you finish the local developing/debugging of the FedML Octopus (cross-silo) project (e.g., successfully run the example [https://doc.fedml.ai/cross-silo/examples/mqtt_s3_fedavg_mnist_lr_example.html](https://doc.fedml.ai/cross-silo/examples/mqtt_s3_fedavg_mnist_lr_example.html)), 
-you can now deploy it into the real-world edge-cloud system. Here, we use the cross-silo project example at
+### How Does FedML MLOps Platform Work?
+![image](../_static/image/mlops_workflow.png) \
+Figure 1: the workflow describing how MLOps works
+
+MLOps works as the figure shown above. Such a workflow is handled by web UI without the need to handle complex deployment. 
+Now please register an account and follow the following instruction step by step.
+
+- Instructions for registration: \
+Please open [https://open.fedml.ai](https://open.fedml.ai) and find "Sign Up".
+
+
+### Local Development (Simulation) and Building MLOps Packages
+
+After you finish the local developing/debugging of the FedML project using FedML library (e.g., successfully run the example [https://doc.fedml.ai/cross-silo/examples/mqtt_s3_fedavg_mnist_lr_example.html](https://doc.fedml.ai/cross-silo/examples/mqtt_s3_fedavg_mnist_lr_example.html)), 
+you can now deploy it into the real-world edge-cloud system. 
+
+Next, we use the cross-silo project example at
 [https://github.com/FedML-AI/FedML/tree/master/python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line](https://github.com/FedML-AI/FedML/tree/master/python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line)
 to guide you through how to deploy it and collaborate with others data silos.
 
-## 1. Register an Account and Login
-
-- 1.1 Register an Account at MLOps
-
-[https://open.fedml.ai/#/login?isRegister=true](https://open.fedml.ai/#/login?isRegister=true)
-
-- 1.2 Launch our pip daemon process for FL Client Agent and login it to the platform
-```
-fedml login $userid
-```
-Please change $userid to your own ID (see the screenshot shown below).
-
-![image](../_static/image/get_account_id.png)
-Figure 2: login your edge devices to our platform
-
-You will see the log as below if the script works. 
-
-```shell
-(fedml-pip) ALEXQZLIANG-MB2:swap alexliang$ fedml login 105
-Argument for account Id: 105
-Argument for version: release
-Namespace(type='login', user='105', version='release')
-Current directory of client agent: /Users/alexliang/fedml-client
-Namespace(account_id=105, cloud_region='', config_version='release', current_running_dir='/Users/alexliang/fedml-client', device_id='0x9801a7a55e85', log_file_dir='/Users/alexliang/fedml-client/fedml-logs', os_name='MacOS', type='login', user=105, version='dev')
-login: unique_device_id = @0x9801a7a55e85.MacOS
-login: edge_id = 140
-Congratulations, you have logged into the FedML MLOps platform successfully!
-Your device id is @0x9801a7a55e85.MacOS. You may review the device in the MLOps edge device list.
-```
-
-## 2. Invite Collaborators and group management
-- 2.1 Invite Collaborators <br>
-
-(1) Copy your invitation link
-
-(2) Send the invitation link to your collaborators via any communication tools e.g., Slack,  Facebook Messenger, Email.
-
-(3) Your collaborators can open the URL, and accept the invitation
-  
-Now you and your collaborators should be able to see each other on `My Collaborators` page.
-
-![image](../_static/image/mlops_invite.png)
-Figure 3: invite your collaborators
-
-- 2.2 Group Management
-  
-After inviting your collaborators, you can `Create New Group`, input the group name, and select your collaborators into the group.
-
-We support a topology visualization to assist you and your collaborators in checking all collaborative edge devices in that group.
-
-Note that after creation, our platform will add newly bound devices from all members to the group. If you would like to change the members in this group, Please create a new group for it.
-
-![image](../_static/image/mlops_topo.png)
-Figure 4: showing the topology of the group
-
-## 3. Project Management 
-Now let's create a project and get training started!
-
-- Create a new project for a specific group or utilize the existing project you created before
-- Open a project and create a new run under the project, by clicking `Start`, the run will get started.
-
-![image](../_static/image/mlops_start_run.png)
-Figure 5: create and start a new run
-
-
-##### 3.1 Edit Configuration (optional)
-
-As your can see from Figure 5, you may not have configured your hyper-parameters. By click "create configurations", you can customize your Configuration.
-Or before starting the run, you can edit your configurations at `Configurations` -> `New Configurations`.
-
-Note that we are working on a couple of default configurations. Later you can either pick the default ones or create your own.
-
-![image](../_static/image/configuration_page.png)
-Figure 6: edit your configuration
-
-#### 3.2 Update the source code of Client and Server
-We also provide the flexibility for you to customize your training algorithm, model, data loader, etc. You can upload the source code in `Server Package` and `Client Package`.
-After successfully updating the Server package, `Model` and `Hyper-parameters` will be auto-filled by parsing the Server package.
-
-The step-by-step instruction to build your customized packages is as follows.
-
-##### 3.2.1. Build Server and Client Package for the FedML MLOps Platform
+### 1. Create Application and Upload Local Packages
+![image](../_static/image/mlops_create_application.png) \
 You can use the following FedML CLI to build the package.
 ```shell
 fedml build -t client -sf $SOURCE -ep $ENTRY -cf $CONFIG -df $DEST
@@ -175,90 +109,158 @@ You have finished all building process.
 Now you may use ./mlops/server-package.zip to start your federated learning run.
 ```
 
-The output package locates at
+The output package locates at `mlops` folder.
+
+### 2. Install FedML Agent: fedml login $account_id
+
+After [installing the FedML library](https://doc.fedml.ai/starter/installation.html) at your edge devices, you can bind it to MLOps platform with a simple CLI:
+```
+fedml login $account_id
+```
+Please change $account_id to your own (see the screenshot shown below).
+
+![image](../_static/image/MLOps_edge_devices.png)
+Figure 2: login your edge devices to our platform
+
+In the edge device, you will see the log as below if the script works correctly. You can also press the "refresh" button in Figure 2 to check the status of your device.
+
 ```shell
-mlops/dist-packages/client-package.zip
-mlops/dist-packages/server-package.zip
+(fedml3.7) chaoyanghe@Chaoyangs-MBP cross_silo % fedml login 302
+client None, server None
+login as client: True, as server: None
+/Users/chaoyanghe/sourcecode/FedML_product/FedML/python/fedml/cli/edge_deployment/client_login.py
+(fedml3.7) chaoyanghe@Chaoyangs-MBP cross_silo % Namespace(local_server='127.0.0.1', type='login', user='302', version='release')
+Namespace(account_id=302, cloud_region='', config_version='release', current_running_dir='/Users/chaoyanghe/fedml-client', device_id='0xb6ff42da6a7e', local_server='127.0.0.1', log_file_dir='/Users/chaoyanghe/fedml-client/fedml/logs', os_name='MacOS', type='login', user=302, version='release')
+Current directory of client agent: /Users/chaoyanghe/fedml-client
+client ids:[266]
+log file path /Users/chaoyanghe/fedml-client/fedml/logs/fedml-run-0-edge-266-upload.log
+login: unique_device_id = @0xb6ff42da6a7e.MacOS
+login: edge_id = 266
+subscribe: flserver_agent/266/start_train
+subscribe: flserver_agent/266/stop_train
+subscribe: fl_client/flclient_agent_266/status
+Congratulations, you have logged into the FedML MLOps platform successfully!
+Your device id is @0xb6ff42da6a7e.MacOS. You may review the device in the MLOps edge device list.
 ```
 
-##### 3.2.2. Explanation of the Configurations
 
-The configuration file includes four sections: `model_config`, `hyperparameters_config`, `entry_config`, `entry_arguments`.
+## 3. Invite Collaborators, Create a Group and a Project
+- 3.1 Invite Collaborators <br>
 
-- `model_config`: set your model name such as resnet56, LR, etc. Each value will be replaced with a real-time parameter edited from the MLOps platform (see the figure below).
+(1) Copy your invitation link
 
-![MLOps Configuration](../../_static/image/mlops_pkg_config.png)
+(2) Send the invitation link to your collaborators via any communication tools e.g., Slack,  Facebook Messenger, Email.
 
-- `hyperparameters_config`: section, set your hyper-parameters such as learning rate, epochs, etc. 
-  These values will also be replaced with real-time parameters edited from the MLOps platform.
-  In addition, our MLOps has some "internal variables" received from the UI (see the UI below). Currently, we support the following internal variables:
-   
-   - ${FEDSYS.CLIENT_NUM}: an integer representing the number of user-selected devices in the MLOps UI.
-   - ${FEDSYS_CLIENT_ID_LIST}: client list in one entire Federated Learning flow
-   - ${FEDSYS_RUN_ID}: a run id represented one entire Federated Learning flow
-   - ${FEDSYS_PRIVATE_LOCAL_DATA}: private local data path in the Federated Learning client
-   - ${FEDSYS_SYNTHETIC_DATA_URL}: synthetic data URL from the server, if this value is not null, the client will download data from this URL to use as
-   federated training dataset
-   - ${FEDSYS_IS_USING_LOCAL_DATA}: whether use private local data as the federated training dataset 
-
-![MLOps Configuration](../../_static/image/mlops_pkg_start_run.png)
-
-
-- `entry_config`: set your entry file of the source code in FedML Open Source Library, e.g., `fedml/fedml_experiments/distributed/fedavg_cross_silo/main_fedavg_cross_silo.py`
-
-
-- `entry_arguments`: the value of each argument is represented with a key from model_config, hyperparameters_config, or internal variables. All the argument variable values
-   will be replaced with their actual value. e.g., `model: ${model_config.modelName}` means that the value
-   corresponding to the argument name 'model' will be replaced with the value corresponding to the key 'modelName' from the 'model_config' section.
-
-
-#### 3.3 Data Management (synthetic data or private data)
-Users can either use the synthetic data or your local private data. 
-- Set the private data path
-Please change the data path if you prefer to use your local private data.
-
-By default, the private data path is `fedml_data` under `fedml_edge_deployment` folder. 
-If you would like to set it to another path, please modify it on the configuration page. 
-The path value should be relative to the `fedml_edge_deployment` folder.
-
-- Upload synthetic data. 
-Synthetic data can be used for geo-distributed training, meaning that we do not enable privacy-related functionality in such a setting.
-Our platform will split the data according to the client number and distribute the data partitions to each client.
+(3) Your collaborators can open the URL, and accept the invitation
   
+Now you and your collaborators should be able to see each other on `My Collaborators` page.
 
-## 4. Experiment Tracking
+![image](../_static/image/MLOps_invite_collaborators.png)
+Figure 3: invite your collaborators
+
+- 3.2 Group Management
+  
+After inviting your collaborators, you can `Create New Group`, input the group name, and select your collaborators into the group.
+
+We support a topology visualization to assist you and your collaborators in checking all collaborative edge devices in that group.
+
+Note that after creation, our platform will add newly bound devices from all members to the group. If you would like to change the members in this group, Please create a new group for it.
+
+![image](../_static/image/MLOps_group_management.png)
+Figure 4: showing the topology of the group
+
+## 4. Start Run (Training) via Automated Deployment and Scaling
+Now let's create a project and get training started!
+
+- Create a new project for a specific group or utilize the existing project you created before
+- Open a project and create a new run under the project, by clicking `Start`, the run will get started.
+
+![image](../_static/image/mlops_start_run.png)
+Figure 5: create and start a new run
+
+
+[//]: # ()
+[//]: # (#### 3.3 Data Management &#40;synthetic data or private data&#41;)
+
+[//]: # (Users can either use the synthetic data or your local private data. )
+
+[//]: # (- Set the private data path)
+
+[//]: # (Please change the data path if you prefer to use your local private data.)
+
+[//]: # ()
+[//]: # (By default, the private data path is `fedml_data` under `fedml_edge_deployment` folder. )
+
+[//]: # (If you would like to set it to another path, please modify it on the configuration page. )
+
+[//]: # (The path value should be relative to the `fedml_edge_deployment` folder.)
+
+[//]: # ()
+[//]: # (- Upload synthetic data. )
+
+[//]: # (Synthetic data can be used for geo-distributed training, meaning that we do not enable privacy-related functionality in such a setting.)
+
+[//]: # (Our platform will split the data according to the client number and distribute the data partitions to each client.)
+
+
+## 4. Experimental Tracking via Simplified Project Management
 Now you are ready to start the training, enjoy! We provide the following experimental tracking abilities as follows.
 
-- monitoring device status and training progress
+- monitoring device status (including logging in each device) and training progress
+![image](../_static/image/MLOps_experimental_tracking_status.png)
+
 - visualizing training results
+![image](../_static/image/MLOps_experimental_tracking_curve.png)
+
 - visualizing system performance
+![image](../_static/image/MLOps_experimental_tracking_system.png)
+
+- model downloading/serving
+
 - distributed logging
-- model downloading
+![image](../_static/image/MLOps_experimental_tracking_logging.png)
+
+
+
 
 More advanced features will be supported soon. We appreciate your valuable feedback.
 
-## 5. The docker-based end-to-end "start run" workflow 
+[//]: # ()
+[//]: # (## 5. The Docker-based End-to-end "start run" Workflow )
 
-To illustrate how the MLOps system works, we describe the workflow from the "start run" perspective. 
+[//]: # ()
+[//]: # (To illustrate how the MLOps system works, we describe the workflow from the "start run" perspective. )
 
-![MLOps Configuration](../../_static/image/backend_mlops.jpeg)
+[//]: # ()
+[//]: # (![MLOps Configuration]&#40;../_static/image/backend_mlops.jpeg&#41;)
 
-The step-by-step workflow corresponding to the number in the figure is as follows.
+[//]: # ()
+[//]: # (The step-by-step workflow corresponding to the number in the figure is as follows.)
 
-1. After you complete your configuration and build the packages, you can upload the server and/or client packages by create your configuration on the Configurations page. 
-   Once you create `run` in your project and start the run using the configuration you saved, the workflow shown in the figure is triggered;
+[//]: # ()
+[//]: # (1. After you complete your application and build the packages, you can upload the server and/or client packages by create your configuration on the Configurations page. )
 
-2. The MLOps Web UI will send the configuration to the MLOps backend server by HTTP RESTFul API;
-   
-3. The MLOps backend service then posts the `start_run` message and related configurations to the `FL_Server_Agent` by HTTP RESTFul API;
-   
-4. The server agent will launch a pre-compiled docker image for the `FL_Server` with the server package obtained from your configuration uploading;
-   
-5. Once `FL_Server` is launched, `FL_Server_Agent` will send MQTT message to `FL_Client_Agent`; 
-   
-6. `FL_Client_Agent` then launches a pre-compiled docker image for the `FL_Client` with the client package obtained from your configuration uploading;
- 
-7. After that, `FL_Client` will send the handshaking messages to `FL_Server` and start the client-server orchestration for training.
+[//]: # (   Once you create `run` in your project and start the run using the configuration you saved, the workflow shown in the figure is triggered;)
 
-Wait for a while, you may review the run overview, device status, training result, system performance, models, and distributed logging.
+[//]: # ()
+[//]: # (2. The MLOps Web UI will send the configuration in your application to the MLOps backend server by HTTP RESTFul API;)
 
+[//]: # (   )
+[//]: # (3. The MLOps backend service then posts the `start_run` message and related configurations to the `FL_Server_Agent` by HTTP RESTFul API;)
+
+[//]: # (   )
+[//]: # (4. The server agent will launch a pre-compiled docker image for the `FL_Server` with the server package obtained from your configuration uploading;)
+
+[//]: # (   )
+[//]: # (5. Once `FL_Server` is launched, `FL_Server_Agent` will send MQTT message to `FL_Client_Agent`; )
+
+[//]: # (   )
+[//]: # (6. `FL_Client_Agent` then launches a pre-compiled docker image for the `FL_Client` with the client package obtained from your configuration uploading;)
+
+[//]: # ( )
+[//]: # (7. After that, `FL_Client` will send the handshaking messages to `FL_Server` and start the client-server orchestration for training.)
+
+[//]: # ()
+[//]: # (Wait for a while, you may review the run overview, device status, training result, system performance, models, and distributed logging.)
+
+[//]: # ()
