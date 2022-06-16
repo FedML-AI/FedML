@@ -234,6 +234,7 @@ class FedAvgRobustAggregator(object):
                 self.model_dict[idx],
             )
 
+
             if self.robust_aggregator.defense_type in ("norm_diff_clipping", "weak_dp"):
                 clipped_local_state_dict = self.robust_aggregator.norm_diff_clipping(
                     local_model_params, self.model.state_dict()
@@ -330,16 +331,18 @@ class FedAvgRobustAggregator(object):
             # test on training dataset
             train_acc = sum(train_tot_corrects) / sum(train_num_samples)
             train_loss = sum(train_losses) / sum(train_num_samples)
-            wandb.log({"Train/Acc": train_acc, "round": round_idx})
-            wandb.log({"Train/Loss": train_loss, "round": round_idx})
+            if self.args.enable_wandb:
+                wandb.log({"Train/Acc": train_acc, "round": round_idx})
+                wandb.log({"Train/Loss": train_loss, "round": round_idx})
             stats = {"training_acc": train_acc, "training_loss": train_loss}
             logging.info(stats)
 
             # test on test dataset
             test_acc = sum(test_tot_corrects) / sum(test_num_samples)
             test_loss = sum(test_losses) / sum(test_num_samples)
-            wandb.log({"Test/Acc": test_acc, "round": round_idx})
-            wandb.log({"Test/Loss": test_loss, "round": round_idx})
+            if self.args.enable_wandb:
+                wandb.log({"Test/Acc": test_acc, "round": round_idx})
+                wandb.log({"Test/Loss": test_loss, "round": round_idx})
             stats = {"test_acc": test_acc, "test_loss": test_loss}
             logging.info(stats)
 
