@@ -213,7 +213,6 @@ class Network(nn.Module):
         num_classes,
         layers,
         criterion,
-        device,
         steps=4,
         multiplier=4,
         stem_multiplier=3,
@@ -228,7 +227,6 @@ class Network(nn.Module):
         self._multiplier = multiplier
         self._stem_multiplier = stem_multiplier
 
-        self.device = device
 
         C_curr = stem_multiplier * C  # 3*16
         self.stem = nn.Sequential(
