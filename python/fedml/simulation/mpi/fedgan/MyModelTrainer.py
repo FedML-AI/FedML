@@ -45,6 +45,8 @@ class MyModelTrainer(ClientTrainer):
             for batch_idx, (x, _) in enumerate(train_data):
                 # logging.info(batch_idx)
                 # logging.info(x.shape)
+                if len(x) < 2:
+                    continue
                 x = x.to(device)
                 real_labels = torch.ones(x.size(0), 1).to(device)
                 fake_labels = torch.zeros(x.size(0), 1).to(device)
@@ -83,8 +85,8 @@ class MyModelTrainer(ClientTrainer):
             result = y_hat.cpu().data.numpy()
             img = np.zeros([280, 280])
             for j in range(10):
-                img[j * 28 : (j + 1) * 28] = np.concatenate(
-                    [x for x in result[j * 10 : (j + 1) * 10]], axis=-1
+                img[j * 28: (j + 1) * 28] = np.concatenate(
+                    [x for x in result[j * 10: (j + 1) * 10]], axis=-1
                 )
 
             # imsave("samples/{}_{}.jpg".format(self.id, epoch), img, cmap="gray")
@@ -94,6 +96,6 @@ class MyModelTrainer(ClientTrainer):
         pass
 
     def test_on_the_server(
-        self, train_data_local_dict, test_data_local_dict, device, args=None
+            self, train_data_local_dict, test_data_local_dict, device, args=None
     ) -> bool:
         return False

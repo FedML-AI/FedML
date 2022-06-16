@@ -90,13 +90,13 @@ class GKTServerTrainer(object):
             self.flag_client_model_uploaded_dict[idx] = False
 
     def add_local_trained_result(
-        self,
-        index,
-        extracted_feature_dict,
-        logits_dict,
-        labels_dict,
-        extracted_feature_dict_test,
-        labels_dict_test,
+            self,
+            index,
+            extracted_feature_dict,
+            logits_dict,
+            labels_dict,
+            extracted_feature_dict_test,
+            labels_dict_test,
     ):
         logging.info("add_model. index = %d" % index)
         self.client_extracted_feauture_dict[index] = extracted_feature_dict
@@ -220,22 +220,23 @@ class GKTServerTrainer(object):
             )
             train_metrics = self.train_large_model_on_the_server()
 
+
             if epoch == epochs - 1:
-                wandb.log(
-                    {"Train/Loss": train_metrics["train_loss"], "epoch": round_idx + 1}
-                )
-                wandb.log(
-                    {
-                        "Train/AccTop1": train_metrics["train_accTop1"],
-                        "epoch": round_idx + 1,
-                    }
-                )
-                wandb.log(
-                    {
-                        "Train/AccTop5": train_metrics["train_accTop5"],
-                        "epoch": round_idx + 1,
-                    }
-                )
+                # wandb.log(
+                #     {"Train/Loss": train_metrics["train_loss"], "epoch": round_idx + 1}
+                # )
+                # wandb.log(
+                #     {
+                #         "Train/AccTop1": train_metrics["train_accTop1"],
+                #         "epoch": round_idx + 1,
+                #     }
+                # )
+                # wandb.log(
+                #     {
+                #         "Train/AccTop5": train_metrics["train_accTop5"],
+                #         "epoch": round_idx + 1,
+                #     }
+                # )
 
                 # Evaluate for one epoch on validation set
                 test_metrics = self.eval_large_model_on_the_server()
@@ -243,21 +244,21 @@ class GKTServerTrainer(object):
                 # Find the best accTop1 model.
                 test_acc = test_metrics["test_accTop1"]
 
-                wandb.log(
-                    {"Test/Loss": test_metrics["test_loss"], "epoch": round_idx + 1}
-                )
-                wandb.log(
-                    {
-                        "Test/AccTop1": test_metrics["test_accTop1"],
-                        "epoch": round_idx + 1,
-                    }
-                )
-                wandb.log(
-                    {
-                        "Test/AccTop5": test_metrics["test_accTop5"],
-                        "epoch": round_idx + 1,
-                    }
-                )
+                # wandb.log(
+                #     {"Test/Loss": test_metrics["test_loss"], "epoch": round_idx + 1}
+                # )
+                # wandb.log(
+                #     {
+                #         "Test/AccTop1": test_metrics["test_accTop1"],
+                #         "epoch": round_idx + 1,
+                #     }
+                # )
+                # wandb.log(
+                #     {
+                #         "Test/AccTop5": test_metrics["test_accTop5"],
+                #         "epoch": round_idx + 1,
+                #     }
+                # )
 
                 last_path = os.path.join("./checkpoint/last.pth")
                 # Save latest model weights, optimizer and accuracy
@@ -290,6 +291,7 @@ class GKTServerTrainer(object):
                     )
 
     def train_large_model_on_the_server(self):
+
         # clear the server side logits
         for key in self.server_logits_dict.keys():
             self.server_logits_dict[key].clear()
@@ -384,8 +386,8 @@ class GKTServerTrainer(object):
                     ).to(self.device)
                     batch_labels = (
                         torch.from_numpy(labels_dict[batch_index])
-                        .long()
-                        .to(self.device)
+                            .long()
+                            .to(self.device)
                     )
 
                     output_batch = self.model_global(batch_feature_map_x)
@@ -397,6 +399,8 @@ class GKTServerTrainer(object):
                     accTop1_avg.update(metrics[0].item())
                     accTop5_avg.update(metrics[1].item())
                     loss_avg.update(loss.item())
+
+
 
         # compute mean of all metrics in summary
         test_metrics = {
