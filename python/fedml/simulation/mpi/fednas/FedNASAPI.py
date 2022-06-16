@@ -14,19 +14,26 @@ def FedML_init():
 
 
 def FedML_FedNAS_distributed(
-    process_id,
-    worker_number,
-    device,
-    comm,
-    model,
-    train_data_num,
-    train_data_global,
-    test_data_global,
-    local_data_num,
-    train_data_local,
-    test_data_local,
-    args,
+        args,
+        process_id,
+        worker_number,
+        comm,
+        device,
+        dataset,
+        model,
+        model_trainer,
+        preprocessed_sampling_lists,
 ):
+    [
+        train_data_num,
+        test_data_num,
+        train_data_global,
+        test_data_global,
+        train_data_local_num_dict,
+        train_data_local_dict,
+        test_data_local_dict,
+        class_num,
+    ] = dataset
     if process_id == 0:
         init_server(
             args,
@@ -48,22 +55,22 @@ def FedML_FedNAS_distributed(
             worker_number,
             model,
             train_data_num,
-            local_data_num,
-            train_data_local,
-            test_data_local,
+            test_data_num,
+            train_data_local_dict,
+            test_data_local_dict,
         )
 
 
 def init_server(
-    args,
-    device,
-    comm,
-    process_id,
-    worker_number,
-    model,
-    train_data_num,
-    train_data_global,
-    test_data_global,
+        args,
+        device,
+        comm,
+        process_id,
+        worker_number,
+        model,
+        train_data_num,
+        train_data_global,
+        test_data_global,
 ):
     # aggregator
     client_num = worker_number - 1
@@ -85,16 +92,16 @@ def init_server(
 
 
 def init_client(
-    args,
-    device,
-    comm,
-    process_id,
-    worker_number,
-    model,
-    train_data_num,
-    local_data_num,
-    train_data_local,
-    test_data_local,
+        args,
+        device,
+        comm,
+        process_id,
+        worker_number,
+        model,
+        train_data_num,
+        local_data_num,
+        train_data_local,
+        test_data_local,
 ):
     # trainer
     client_ID = process_id - 1

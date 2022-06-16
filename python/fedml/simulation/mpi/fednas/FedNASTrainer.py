@@ -9,26 +9,28 @@ from ....model.cv.darts.architect import Architect
 
 class FedNASTrainer(object):
     def __init__(
-        self,
-        client_index,
-        train_local,
-        test_local,
-        local_sample_number,
-        all_train_data_num,
-        model,
-        device,
-        args,
+            self,
+            client_index,
+            train_data_local_dict,
+            test_data_local_dict,
+            train_data_local_num,
+            train_data_num,
+            model,
+            device,
+            args,
     ):
+
         self.client_index = client_index
-        self.train_local = train_local
-        self.test_local = test_local
-        self.local_sample_number = local_sample_number
-        self.all_train_data_num = all_train_data_num
+        self.all_train_data_num = train_data_num
+
         self.device = device
         self.args = args
         self.criterion = nn.CrossEntropyLoss().to(self.device)
         self.model = model
         self.model.to(self.device)
+        self.train_local = train_data_local_dict[client_index]
+        self.local_sample_number = train_data_local_num
+        self.test_local = test_data_local_dict[client_index]
 
     def update_model(self, weights):
         logging.info("update_model. client_index = %d" % self.client_index)
@@ -104,12 +106,13 @@ class FedNASTrainer(object):
         )
 
     def local_search(
-        self, train_queue, valid_queue, model, architect, criterion, optimizer
+            self, train_queue, valid_queue, model, architect, criterion, optimizer
     ):
         objs = utils.AvgrageMeter()
         top1 = utils.AvgrageMeter()
         top5 = utils.AvgrageMeter()
         loss = None
+
         for step, (input, target) in enumerate(train_queue):
 
             # logging.info("epoch %d, step %d START" % (epoch, step))

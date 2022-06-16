@@ -60,7 +60,7 @@ def create_model(args, device, output_dim=1):
             "output_dir": args.output_dir,
             "is_debug_mode": args.is_debug_mode,
             "fedprox_mu": args.fedprox_mu,
-            "optimizer": args.client_optimizer
+            "optimizer": args.client_optimizer,
         }
     )
 
