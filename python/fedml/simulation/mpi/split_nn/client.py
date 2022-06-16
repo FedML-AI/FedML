@@ -18,11 +18,10 @@ class SplitNN_client:
         self.optimizer = optim.SGD(
             self.model.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4
         )
-
-        self.trainloader = args["trainloader"]
         self.device = args["device"]
 
     def forward_pass(self):
+        import pdb
         inputs, labels = next(self.dataloader)
         inputs, labels = inputs.to(self.device), labels.to(self.device)
         self.optimizer.zero_grad()
