@@ -29,7 +29,7 @@ python/dist
 python/FedML.egg-info
 
 doc/deploy
-doc/en/_build
+doc/en/_build/doctrees
 
 
 *.h5
