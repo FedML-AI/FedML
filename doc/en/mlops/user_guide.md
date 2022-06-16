@@ -1,6 +1,6 @@
 # FedML MLOps User Guide
 
-## **Write Once, Run Anywhere: Seamlessly Migrate Your Local Simulation to the Real-world Edge-cloud Deployment**
+**Write Once, Run Anywhere: Seamlessly Migrate Your Local Simulation to the Real-world Edge-cloud Deployment**
 
 - How Does FedML MLOps Platform Work?
 - Local Development (Simulation) and Building MLOps Packages
