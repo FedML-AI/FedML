@@ -21,6 +21,7 @@ from transformers import (
 )
 from tqdm import tqdm
 
+
 class MyModelTrainer(ClientTrainer):
     def __init__(
         self, args, device, model, train_dl=None, test_dl=None, tokenizer=None
@@ -179,10 +180,10 @@ class MyModelTrainer(ClientTrainer):
                     loss.backward()
                 tr_loss += loss.item()
 
-                #logging.info(
+                # logging.info(
                 #    "epoch = %d, batch_idx = %d/%d, loss = %s"
                 #    % (epoch, batch_idx, len(train_data), current_loss)
-                #)
+                # )
 
                 if (batch_idx + 1) % args.gradient_accumulation_steps == 0:
                     if args.fp16:
@@ -202,7 +203,7 @@ class MyModelTrainer(ClientTrainer):
                     batch_loss.append(tr_loss)
                     tr_loss = 0
 
-            #epoch_loss.append(sum(batch_loss) / len(batch_loss))
+            # epoch_loss.append(sum(batch_loss) / len(batch_loss))
             logging.info(
                 "Client Index = {}\tEpoch: {}\tLoss: {:.6f}".format(
                     self.id, epoch, sum(batch_loss) / len(batch_loss)
@@ -287,10 +288,10 @@ class MyModelTrainer(ClientTrainer):
                 if i != (n_batches - 1)
                 else test_sample_len
             )
-         #   logging.info(
-          #      "batch index = %d, start_index = %d, end_index = %d"
-           #     % (i, start_index, end_index)
-           # )
+        #   logging.info(
+        #      "batch index = %d, start_index = %d, end_index = %d"
+        #     % (i, start_index, end_index)
+        # )
 
         eval_loss = eval_loss / nb_eval_steps
         rouge_score = rouge_score / nb_eval_steps
@@ -317,7 +318,7 @@ class MyModelTrainer(ClientTrainer):
         # result = self.compute_metrics(references, model_preds)
         # self.results.update(result)
 
-        #logging.info(self.results)
+        # logging.info(self.results)
 
         return result, model_preds, None
 
