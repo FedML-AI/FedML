@@ -17,17 +17,21 @@ from .mpi.fedgan.FedGanAPI import FedML_FedGan_distributed
 from .mpi.fednas.FedNASAPI import FedML_FedNAS_distributed
 from .mpi.split_nn.SplitNNAPI import SplitNN_distributed
 from .mpi.classical_vertical_fl.vfl_api import FedML_VFL_distributed
+from .mpi.turboaggregate import TA_API
 
 from .sp.fedavg import FedAvgAPI
 from .sp.fednova.fednova_trainer import FedNovaTrainer
 from .sp.fedopt.fedopt_api import FedOptAPI
 from .sp.hierarchical_fl.trainer import HierachicalTrainer
 from .sp.turboaggregate.TA_trainer import TurboAggregateTrainer
+from .sp.decentralized.decentralized_fl_api import FedML_decentralized_fl
+from .sp.classical_vertical_fl.vfl_api import VflFedAvgAPI
 
 from ..constants import (
     FedML_FEDERATED_OPTIMIZER_BASE_FRAMEWORK,
     FedML_FEDERATED_OPTIMIZER_FEDAVG,
     FedML_FEDERATED_OPTIMIZER_FEDOPT,
+    FedML_FEDERATED_OPTIMIZER_FEDNOVA,
     FedML_FEDERATED_OPTIMIZER_FEDPROX,
     FedML_FEDERATED_OPTIMIZER_CLASSICAL_VFL,
     FedML_FEDERATED_OPTIMIZER_SPLIT_NN,
@@ -37,22 +41,30 @@ from ..constants import (
     FedML_FEDERATED_OPTIMIZER_FEDGKT,
     FedML_FEDERATED_OPTIMIZER_FEDNAS,
     FedML_FEDERATED_OPTIMIZER_FEDSEG,
+    FedML_FEDERATED_OPTIMIZER_HIERACHICAL_FL,
     FedML_FEDERATED_OPTIMIZER_TURBO_AGGREGATE,
 )
 
 
 class SimulatorSingleProcess:
     def __init__(self, args, device, dataset, model):
-        if args.federated_optimizer == "FedAvg":
+        if args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDAVG:
             self.fl_trainer = FedAvgAPI(args, device, dataset, model)
-        elif args.federated_optimizer == "FedOpt":
+        elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDOPT:
             self.fl_trainer = FedOptAPI(args, device, dataset, model)
-        elif args.federated_optimizer == "FedNova":
+        elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDNOVA:
             self.fl_trainer = FedNovaTrainer(dataset, model, device, args)
-        elif args.federated_optimizer == 'HierachicalFL':
+        elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_HIERACHICAL_FL:
             self.fl_trainer = HierachicalTrainer(args, device, dataset, model)
-        elif args.federated_optimizer == "Turboaggregate":
+        elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_TURBO_AGGREGATE:
             self.fl_trainer = TurboAggregateTrainer(dataset, model, device, args)
+        elif args.fl_trainer == FedML_FEDERATED_OPTIMIZER_CLASSICAL_VFL:
+            self.fl_trainer = VflFedAvgAPI(dataset, model, device, args)
+        elif args.fl_trainer == FedML_FEDERATED_OPTIMIZER_FEDGAN:
+            self.fl_trainer = FedML_FedGan_distributed(args, device, dataset, model)
+
+        # elif args.fl_trainer == FedML_FEDERATED_OPTIMIZER_DECENTRALIZED_FL:
+        #     self.fl_trainer = FedML_decentralized_fl()
         else:
             raise Exception("Exception")
 
@@ -118,7 +130,13 @@ class SimulatorMPI:
                 args, args.process_id, args.worker_num, args.comm
             )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDGAN:
-            pass
+            self.simulator = FedML_FedGan_distributed(args.process_id,
+                                                      args.worker_num,
+                                                      device,
+                                                      args.comm,
+                                                      model,
+                                                      args,
+                                                      dataset, )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDAVG_ROBUST:
             self.simulator = FedML_FedAvgRobust_distributed(
                 args,
@@ -154,7 +172,21 @@ class SimulatorMPI:
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDSEG:
             pass
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_TURBO_AGGREGATE:
-            pass
+            self.simulator = TA_API.FedML_FedAvg_distributed(args.process_id,
+                                                             args.worker_num,
+                                                             device,
+                                                             args.comm,
+                                                             model,
+                                                             dataset,
+                                                             args, )
+        elif args.fl_trainer == FedML_FEDERATED_OPTIMIZER_FEDAVG_ROBUST:
+            self.fl_trainer = FedML_FedAvgRobust_distributed(args,
+                                                             args.process_id,
+                                                             args.worker_num,
+                                                             device,
+                                                             args.comm,
+                                                             model,
+                                                             dataset)
         else:
             raise Exception("Exception")
 

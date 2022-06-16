@@ -19,7 +19,9 @@ class FedNASServerManager(ServerManager):
     def run(self):
         global_model = self.aggregator.get_model()
         global_model_params = global_model.state_dict()
-        global_arch_params = global_model.arch_parameters()
+        global_arch_params = None
+        if self.args.stage == "search":
+            global_arch_params = global_model.arch_parameters()
         for process_id in range(1, self.size):
             self.__send_initial_config_to_client(
                 process_id, global_model_params, global_arch_params
@@ -33,7 +35,7 @@ class FedNASServerManager(ServerManager):
         )
 
     def __send_initial_config_to_client(
-        self, process_id, global_model_params, global_arch_params
+            self, process_id, global_model_params, global_arch_params
     ):
         message = Message(
             MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), process_id
@@ -87,7 +89,7 @@ class FedNASServerManager(ServerManager):
                 )
 
     def __send_model_to_client_message(
-        self, process_id, global_model_params, global_arch_params
+            self, process_id, global_model_params, global_arch_params
     ):
         message = Message(MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT, 0, process_id)
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
