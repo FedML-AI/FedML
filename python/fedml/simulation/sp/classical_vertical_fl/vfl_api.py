@@ -6,11 +6,14 @@ import numpy as np
 import torch
 import wandb
 
-
+from .my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
+from .my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
+from .my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
+from .client import Client
 import logging
 
 
-class FedAvgAPI(object):
+class VflFedAvgAPI(object):
     def __init__(self, args, device, dataset, model):
         self.device = device
         self.args = args
@@ -54,11 +57,11 @@ class FedAvgAPI(object):
         )
 
     def _setup_clients(
-        self,
-        train_data_local_num_dict,
-        train_data_local_dict,
-        test_data_local_dict,
-        model_trainer,
+            self,
+            train_data_local_num_dict,
+            train_data_local_dict,
+            test_data_local_dict,
+            model_trainer,
     ):
         logging.info("############setup_clients (START)#############")
         for client_idx in range(self.args.client_num_per_round):

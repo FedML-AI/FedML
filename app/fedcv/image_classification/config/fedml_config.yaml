@@ -22,9 +22,8 @@ train_args:
   epochs: 5
   batch_size: 64
   client_optimizer: sgd
-  learning_rate: 0.03
+  lr: 0.03
   weight_decay: 0.001
-  metric: "prc-auc"
 
 validation_args:
   frequency_of_the_test: 5
