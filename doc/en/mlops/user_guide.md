@@ -1,9 +1,9 @@
 # FedML MLOps User Guide
 
-**Write Once, Run Anywhere: Seamlessly Migrate Your Local Simulation to the Real-world Edge-cloud Deployment**
+**Write Once, Run Anywhere: Seamlessly Migrate Your Local Development to the Real-world Edge-cloud Deployment**
 
 - How Does FedML MLOps Platform Work?
-- Local Development (Simulation) and Building MLOps Packages
+- Local Development and Building MLOps Packages
 - Create Application and Upload Local Packages
 - Install FedML Agent: fedml login $account_id
 - Invite Collaborators, Create a Group and a Project
@@ -12,7 +12,7 @@
 
 
 ### How Does FedML MLOps Platform Work?
-![image](../_static/image/mlops_workflow.png) \
+![image](../_static/image/mlops_workflow_new.png) \
 Figure 1: the workflow describing how MLOps works
 
 MLOps works as the figure shown above. Such a workflow is handled by web UI without the need to handle complex deployment. 
@@ -22,7 +22,7 @@ Now please register an account and follow the following instruction step by step
 Please open [https://open.fedml.ai](https://open.fedml.ai) and find "Sign Up".
 
 
-### Local Development (Simulation) and Building MLOps Packages
+### Local Development and Building MLOps Packages
 
 After you finish the local developing/debugging of the FedML project using FedML library (e.g., successfully run the example [https://doc.fedml.ai/cross-silo/examples/mqtt_s3_fedavg_mnist_lr_example.html](https://doc.fedml.ai/cross-silo/examples/mqtt_s3_fedavg_mnist_lr_example.html)), 
 you can now deploy it into the real-world edge-cloud system. 
