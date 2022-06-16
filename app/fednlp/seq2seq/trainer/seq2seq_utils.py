@@ -144,9 +144,9 @@ def build_optimizer(model, iteration_in_total, args):
     args.warmup_steps = warmup_steps if args.warmup_steps == 0 else args.warmup_steps
     logging.info("warmup steps = %d" % args.warmup_steps)
     # freeze exps only apply for distilbert
-    if args.model_type == "distilbert":
-        freeze_model_parameters(model)
-    if args.fl_algorithm == "FedOPT" or args.fl_algorithm == "":
+    # if args.model_type == "distilbert":
+    #    freeze_model_parameters(model)
+    if args.optimizer == "AdamW":
         optimizer = AdamW(
             model.parameters(), lr=args.learning_rate, eps=args.adam_epsilon
         )

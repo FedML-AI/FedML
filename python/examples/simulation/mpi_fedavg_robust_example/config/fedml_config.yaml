@@ -4,7 +4,7 @@ common_args:
 
 data_args:
   dataset: "cifar10"
-  data_cache_dir: "../../../data/mnist"
+  data_cache_dir: "../../../data/edge_case_attack"
   partition_method: "hetero"
   partition_alpha: 0.5
 
@@ -12,15 +12,15 @@ model_args:
   model: "resnet56"
 
 train_args:
-  federated_optimizer: "fedavg_robust"
+  federated_optimizer: "FedAvg_robust"
   client_id_list: "[]"
-  client_num_in_total: 10
-  client_num_per_round: 4
-  comm_round: 50
+  client_num_in_total: 5
+  client_num_per_round: 3
+  comm_round: 3
   epochs: 1
-  batch_size: 10
-  train_batch_size: 10
-  test_batch_size: 10
+  batch_size: 100
+  train_batch_size: 100
+  test_batch_size: 100
   client_optimizer: sgd
   learning_rate: 0.03
   weight_decay: 0.001
@@ -49,7 +49,7 @@ tracking_args:
 
 robust_related_args:
   attack_case: edge-case
-  defense_type: weak-dp
+  defense_type: weak_dp
   norm_bound: 5.0
   stddev: 0.025
   poison_type: southwest
