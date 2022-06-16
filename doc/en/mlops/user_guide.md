@@ -9,7 +9,6 @@
 - Invite Collaborators, Create a Group and a Project
 - Start Run (Training) via Automated Deployment and Scaling
 - Experimental Tracking via Simplified Project Management
-- The Docker-based End-to-end "Start run" Workflow
 
 
 ### How Does FedML MLOps Platform Work?
@@ -203,7 +202,7 @@ Figure 5: create and start a new run
 [//]: # (Our platform will split the data according to the client number and distribute the data partitions to each client.)
 
 
-## 4. Experimental Tracking via Simplified Project Management
+## 5. Experimental Tracking via Simplified Project Management
 Now you are ready to start the training, enjoy! We provide the following experimental tracking abilities as follows.
 
 - monitoring device status (including logging in each device) and training progress
