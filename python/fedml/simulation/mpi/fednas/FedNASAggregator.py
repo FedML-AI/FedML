@@ -8,14 +8,14 @@ from torch import nn
 
 class FedNASAggregator(object):
     def __init__(
-        self,
-        train_global,
-        test_global,
-        all_train_data_num,
-        client_num,
-        model,
-        device,
-        args,
+            self,
+            train_global,
+            test_global,
+            all_train_data_num,
+            client_num,
+            model,
+            device,
+            args,
     ):
         self.train_global = train_global
         self.test_global = test_global
@@ -39,20 +39,21 @@ class FedNASAggregator(object):
 
         self.best_accuracy = 0
         self.best_accuracy_different_cnn_counts = dict()
-        self.wandb_table = wandb.Table(columns=["Epoch", "Searched Architecture"])
+        if self.args.enable_wandb:
+            self.wandb_table = wandb.Table(columns=["Epoch", "Searched Architecture"])
 
     def get_model(self):
         return self.model
 
     def add_local_trained_result(
-        self, index, model_params, arch_params, sample_num, train_acc, train_loss
+            self, index, model_params, arch_params, sample_num, train_acc, train_loss
     ):
         logging.info("add_model. index = %d" % index)
         self.model_dict[index] = model_params
         self.arch_dict[index] = arch_params
         self.sample_num_dict[index] = sample_num
         self.train_acc_dict[index] = train_acc
-        self.train_loss_dict[index] = train_loss
+        self.train_loss_dict[index] = train_loss.cpu()
         self.flag_client_model_uploaded_dict[index] = True
 
     def check_whether_all_receive(self):
@@ -131,14 +132,19 @@ class FedNASAggregator(object):
                 round_idx, self.train_acc_avg
             )
         )
-        wandb.log({"Train Accuracy": self.train_acc_avg, "Round": round_idx})
+        if self.args.enable_wandb:
+            wandb.log({"Train Accuracy": self.train_acc_avg, "Round": round_idx})
         # train loss
         train_loss_list = self.train_loss_dict.values()
+        print(sum(train_loss_list))
+        print(sum(train_loss_list).cpu())
+        print(len(train_loss_list))
         train_loss_avg = sum(train_loss_list) / len(train_loss_list)
         logging.info(
             "Round {:3d}, Average Train Loss {:.3f}".format(round_idx, train_loss_avg)
         )
-        wandb.log({"Train Loss": train_loss_avg, "Round": round_idx})
+        if self.args.enable_wandb:
+            wandb.log({"Train Loss": train_loss_avg, "Round": round_idx})
 
         # test acc
         logging.info(
@@ -146,31 +152,34 @@ class FedNASAggregator(object):
                 round_idx, self.test_acc_avg
             )
         )
-        wandb.log({"Validation Accuracy": self.test_acc_avg, "Round": round_idx})
+        if self.args.enable_wandb:
+            wandb.log({"Validation Accuracy": self.test_acc_avg, "Round": round_idx})
         # test loss
         logging.info(
             "Round {:3d}, Average Validation Loss {:.3f}".format(
                 round_idx, self.test_loss_avg
             )
         )
-        wandb.log({"Validation Loss": self.test_loss_avg, "Round": round_idx})
+        if self.args.enable_wandb:
+            wandb.log({"Validation Loss": self.test_loss_avg, "Round": round_idx})
 
         logging.info(
             "search_train_valid_acc_gap %f" % (self.train_acc_avg - self.test_loss_avg)
         )
-        wandb.log(
-            {
-                "search_train_valid_acc_gap": self.train_acc_avg - self.test_loss_avg,
-                "Round": round_idx,
-            }
-        )
+        if self.args.enable_wandb:
+            wandb.log(
+                {
+                    "search_train_valid_acc_gap": self.train_acc_avg - self.test_loss_avg,
+                    "Round": round_idx,
+                }
+            )
 
     def infer(self, round_idx):
         self.model.eval()
         self.model.to(self.device)
         if (
-            round_idx % self.args.frequency_of_the_test == 0
-            or round_idx == self.args.comm_round - 1
+                round_idx % self.args.frequency_of_the_test == 0
+                or round_idx == self.args.comm_round - 1
         ):
             start_time = time.time()
             test_correct = 0.0
@@ -211,36 +220,40 @@ class FedNASAggregator(object):
         # save the structure
         genotype, normal_cnn_count, reduce_cnn_count = self.model.genotype()
         cnn_count = normal_cnn_count + reduce_cnn_count
-        wandb.log({"cnn_count": cnn_count, "Round": round_idx})
+        if self.args.enable_wandb:
+            wandb.log({"cnn_count": cnn_count, "Round": round_idx})
 
         logging.info("(n:%d,r:%d)" % (normal_cnn_count, reduce_cnn_count))
         logging.info("genotype = %s", genotype)
-        wandb.log({"genotype": str(genotype), "round_idx": round_idx})
-
-        self.wandb_table.add_data(str(round_idx), str(genotype))
-        wandb.log({"Searched Architecture": self.wandb_table})
+        if self.args.enable_wandb:
+            wandb.log({"genotype": str(genotype), "round_idx": round_idx})
+            self.wandb_table.add_data(str(round_idx), str(genotype))
+            wandb.log({"Searched Architecture": self.wandb_table})
 
         # save the cnn architecture according to the CNN count
         cnn_count = normal_cnn_count * 10 + reduce_cnn_count
-        wandb.log(
-            {
-                "searching_cnn_count(%s)" % cnn_count: self.test_acc_avg,
-                "epoch": round_idx,
-            }
-        )
+        if self.args.enable_wandb:
+            wandb.log(
+                {
+                    "searching_cnn_count(%s)" % cnn_count: self.test_acc_avg,
+                    "epoch": round_idx,
+                }
+            )
         if cnn_count not in self.best_accuracy_different_cnn_counts.keys():
             self.best_accuracy_different_cnn_counts[cnn_count] = self.test_acc_avg
             summary_key_cnn_structure = "best_acc_for_cnn_structure(n:%d,r:%d)" % (
                 normal_cnn_count,
                 reduce_cnn_count,
             )
-            wandb.run.summary[summary_key_cnn_structure] = self.test_acc_avg
+            if self.args.enable_wandb:
+                wandb.run.summary[summary_key_cnn_structure] = self.test_acc_avg
 
             summary_key_best_cnn_structure = (
-                "epoch_of_best_acc_for_cnn_structure(n:%d,r:%d)"
-                % (normal_cnn_count, reduce_cnn_count)
+                    "epoch_of_best_acc_for_cnn_structure(n:%d,r:%d)"
+                    % (normal_cnn_count, reduce_cnn_count)
             )
-            wandb.run.summary[summary_key_best_cnn_structure] = round_idx
+            if self.args.enable_wandb:
+                wandb.run.summary[summary_key_best_cnn_structure] = round_idx
         else:
             if self.test_acc_avg > self.best_accuracy_different_cnn_counts[cnn_count]:
                 self.best_accuracy_different_cnn_counts[cnn_count] = self.test_acc_avg
@@ -248,15 +261,18 @@ class FedNASAggregator(object):
                     normal_cnn_count,
                     reduce_cnn_count,
                 )
-                wandb.run.summary[summary_key_cnn_structure] = self.test_acc_avg
+                if self.args.enable_wandb:
+                    wandb.run.summary[summary_key_cnn_structure] = self.test_acc_avg
 
                 summary_key_best_cnn_structure = (
-                    "epoch_of_best_acc_for_cnn_structure(n:%d,r:%d)"
-                    % (normal_cnn_count, reduce_cnn_count)
+                        "epoch_of_best_acc_for_cnn_structure(n:%d,r:%d)"
+                        % (normal_cnn_count, reduce_cnn_count)
                 )
-                wandb.run.summary[summary_key_best_cnn_structure] = round_idx
+                if self.args.enable_wandb:
+                    wandb.run.summary[summary_key_best_cnn_structure] = round_idx
 
         if self.test_acc_avg > self.best_accuracy:
             self.best_accuracy = self.test_acc_avg
-            wandb.run.summary["best_valid_accuracy"] = self.best_accuracy
-            wandb.run.summary["epoch_of_best_accuracy"] = round_idx
+            if self.args.enable_wandb:
+                wandb.run.summary["best_valid_accuracy"] = self.best_accuracy
+                wandb.run.summary["epoch_of_best_accuracy"] = round_idx
