@@ -33,7 +33,8 @@ to guide you through how to deploy it and collaborate with others data silos.
 
 ### 1. Create Application and Upload Local Packages
 ![image](../_static/image/mlops_create_application.png) \
-You can use the following FedML CLI to build the package.
+
+You can use the following FedML CLI to build the package, and then upload the packages as shown in the figure above.
 ```shell
 fedml build -t client -sf $SOURCE -ep $ENTRY -cf $CONFIG -df $DEST
 
