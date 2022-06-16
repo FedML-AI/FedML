@@ -58,6 +58,7 @@ def create_model(args, device, output_dim=1):
             "output_dir": args.output_dir,
             "is_debug_mode": args.is_debug_mode,
             "fedprox_mu": args.fedprox_mu,
+            "optimizer": args.client_optimizer,
         }
     )
 
@@ -69,6 +70,7 @@ def create_model(args, device, output_dim=1):
     model_config = {}
     config = config_class.from_pretrained(args.model, **model_config)
     model = model_class.from_pretrained(args.model, config=config)
+    print("reached_here")
     trainer = MySSTrainer(model_args, device, model, tokenizer=tokenizer)
     return model, trainer
 
