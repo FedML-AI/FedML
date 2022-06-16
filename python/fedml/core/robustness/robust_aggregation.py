@@ -18,7 +18,8 @@ def load_model_weight_diff(local_state_dict, weight_diff, global_state_dict):
     """
     recons_local_state_dict = {}
     index_bias = 0
-    for item_index, (k, v) in enumerate(local_state_dict.state_dict().items()):
+
+    for item_index, (k, v) in enumerate(local_state_dict.items()):
         if is_weight_param(k):
             recons_local_state_dict[k] = (
                 weight_diff[index_bias : index_bias + v.numel()].view(v.size())
