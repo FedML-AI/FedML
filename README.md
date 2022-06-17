@@ -210,7 +210,7 @@ Simulation with Message Passing Interface (MPI):
 Simulation with NCCL-based MPI (the fastest training):
 - In case your cross-GPU bandwidth is high (e.g., InfiniBand, NVLink, EFA, etc.), we suggest using this NCCL-based MPI FL simulator to accelerate your development. 
 
-## **FedML Octopu Exampless**
+## **FedML Octopu Examples**
 Horizontal Federated Learning:
 
 - [mqtt_s3_fedavg_mnist_lr_example](./doc/en/cross-silo/examples/mqtt_s3_fedavg_mnist_lr_example.md): an example to illustrate how to run horizontal federated learning in data silos (hospitals, banks, etc.)
