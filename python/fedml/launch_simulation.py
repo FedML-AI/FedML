@@ -29,13 +29,14 @@ def run_simulation(backend=FEDML_SIMULATION_TYPE_SP):
 
     # start training
     if backend == FEDML_SIMULATION_TYPE_SP:
-        from .simulation.simulator import SimulatorNCCL
-
-        simulator = SimulatorNCCL(args, device, dataset, model)
-    elif backend == FEDML_SIMULATION_TYPE_NCCL:
         from .simulation.simulator import SimulatorSingleProcess
 
         simulator = SimulatorSingleProcess(args, device, dataset, model)
+    elif backend == FEDML_SIMULATION_TYPE_NCCL:
+        from .simulation.simulator import SimulatorNCCL
+
+        simulator = SimulatorNCCL(args, device, dataset, model)
+
     elif backend == FEDML_SIMULATION_TYPE_MPI:
         from .simulation.simulator import SimulatorMPI
 
