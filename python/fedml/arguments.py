@@ -44,6 +44,9 @@ def add_args():
 
     # default arguments
     parser.add_argument("--rank", type=int, default=0)
+    
+    # default arguments
+    parser.add_argument("--batch_size", type=int, default=64)
 
     args = parser.parse_args()
     return args
