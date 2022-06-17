@@ -2,6 +2,7 @@ common_args:
   training_type: "cross_device"
   using_mlops: false
   random_seed: 0
+  config_version: release
 
 environment_args:
   bootstrap: config/bootstrap.sh
@@ -48,6 +49,6 @@ comm_args:
 
 tracking_args:
   log_file_dir: ./log
-  enable_wandb: true
+  enable_wandb: false
   wandb_project: fedml
   run_name: fedml_torch_fedavg_mnist_lr

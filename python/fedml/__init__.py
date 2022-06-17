@@ -6,6 +6,7 @@ import numpy as np
 import torch
 import wandb
 
+import fedml
 from .constants import (
     FEDML_TRAINING_PLATFORM_SIMULATION,
     FEDML_SIMULATION_TYPE_SP,
@@ -16,19 +17,21 @@ from .constants import (
 )
 from .core.mlops import MLOpsRuntimeLog
 
+
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.7.77"
+__version__ = "0.7.87"
 
 
 def init(args=None):
     """Initialize FedML Engine."""
-    global _global_training_type
-    global _global_comm_backend
 
     if args is None:
-        args = load_arguments(_global_training_type, _global_comm_backend)
+        args = load_arguments(fedml._global_training_type, fedml._global_comm_backend)
+
+    fedml._global_training_type = args.training_type
+    fedml._global_comm_backend = args.backend
 
     MLOpsRuntimeLog.get_instance(args).init_logs()
 
@@ -90,11 +93,11 @@ def init_simulation_mpi(args):
 
 
 def init_simulation_sp(args):
-    pass
+    return args
 
 
-def init_simulation_nccl():
-    pass
+def init_simulation_nccl(args):
+    return
 
 
 def init_cross_silo_horizontal(args):
@@ -163,6 +166,13 @@ def init_cross_device(args):
 def run_distributed():
     pass
 
+
+from fedml import device
+from fedml import data
+from fedml import model
+from fedml import simulation
+from fedml import cross_silo
+from fedml import cross_device
 
 from .arguments import load_arguments
 
