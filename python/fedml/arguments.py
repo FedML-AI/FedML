@@ -78,6 +78,9 @@ class Arguments:
                     path_current_file, "config/simulation_sp/fedml_config.yaml"
                 )
                 cmd_args.yaml_config_file = config_file
+                print(
+                    "training_type == FEDML_TRAINING_PLATFORM_SIMULATION and comm_backend == FEDML_SIMULATION_TYPE_SP"
+                )
             elif (
                 training_type == FEDML_TRAINING_PLATFORM_SIMULATION
                 and comm_backend == FEDML_SIMULATION_TYPE_MPI
@@ -86,12 +89,19 @@ class Arguments:
                     path_current_file, "config/simulaton_mpi/fedml_config.yaml"
                 )
                 cmd_args.yaml_config_file = config_file
+                print(
+                    "training_type == FEDML_TRAINING_PLATFORM_SIMULATION and comm_backend == FEDML_SIMULATION_TYPE_MPI"
+                )
             elif training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO:
-                pass
+                print("training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO")
             elif training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE:
-                pass
+                print("training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE")
             else:
-                pass
+                raise Exception(
+                    "no such a platform. training_type = {}, backend = {}".format(
+                        training_type, comm_backend
+                    )
+                )
 
         self.yaml_paths = [cmd_args.yaml_config_file]
         # Load all arguments from yaml config
@@ -152,7 +162,9 @@ def load_arguments(training_type=None, comm_backend=None):
         generate args.client_id_list for CLI mode where args.client_id_list is set to None
         In MLOps mode, args.client_id_list will be set to real-time client id list selected by UI (not starting from 1)
     """
-    if not hasattr(args, "using_mlops") or (hasattr(args, "using_mlops") and not args.using_mlops):
+    if not hasattr(args, "using_mlops") or (
+        hasattr(args, "using_mlops") and not args.using_mlops
+    ):
         # print("args.client_id_list = {}".format(print(args.client_id_list)))
         if args.client_id_list is None or args.client_id_list == "None":
             if (
@@ -164,15 +176,25 @@ def load_arguments(training_type=None, comm_backend=None):
                     for client_idx in range(args.client_num_per_round):
                         client_id_list.append(client_idx + 1)
                     args.client_id_list = str(client_id_list)
-                    print("------------------server client_id_list = {}-------------------".format(args.client_id_list))
+                    print(
+                        "------------------server client_id_list = {}-------------------".format(
+                            args.client_id_list
+                        )
+                    )
                 else:
                     # for the client, we only specify its client id in the list, not including others.
                     client_id_list = []
                     client_id_list.append(args.rank)
                     args.client_id_list = str(client_id_list)
-                    print("------------------client client_id_list = {}-------------------".format(args.client_id_list))
+                    print(
+                        "------------------client client_id_list = {}-------------------".format(
+                            args.client_id_list
+                        )
+                    )
             else:
-                print("training_type != FEDML_TRAINING_PLATFORM_CROSS_DEVICE and training_type != FEDML_TRAINING_PLATFORM_CROSS_SILO")
+                print(
+                    "training_type != FEDML_TRAINING_PLATFORM_CROSS_DEVICE and training_type != FEDML_TRAINING_PLATFORM_CROSS_SILO"
+                )
         else:
             print("args.client_id_list is not None")
     else:
