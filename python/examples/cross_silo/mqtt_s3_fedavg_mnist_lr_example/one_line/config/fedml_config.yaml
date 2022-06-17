@@ -3,7 +3,7 @@ common_args:
   scenario: "horizontal"
   using_mlops: false
   random_seed: 0
-  config_version: local
+  config_version: release
 
 environment_args:
   bootstrap: config/bootstrap.sh
