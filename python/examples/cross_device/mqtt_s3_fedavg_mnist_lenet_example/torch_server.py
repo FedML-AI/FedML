@@ -1,9 +1,8 @@
 import MNN
+
 import fedml
 from fedml.cross_device import ServerMNN
-from fedml.model import create_mnn_resnet20_model
-
-from my_dataset import Cifar10Dataset
+from my_dataset import MnistDataset
 
 if __name__ == "__main__":
     # init FedML framework
@@ -13,8 +12,8 @@ if __name__ == "__main__":
     device = fedml.device.get_device(args)
 
     # load data
-    train_dataset = Cifar10Dataset(True)
-    test_dataset = Cifar10Dataset(False)
+    train_dataset = MnistDataset(True)
+    test_dataset = MnistDataset(False)
     train_dataloader = MNN.data.DataLoader(train_dataset, batch_size=64, shuffle=True)
     test_dataloader = MNN.data.DataLoader(
         test_dataset, batch_size=args.batch_size, shuffle=False
@@ -22,7 +21,7 @@ if __name__ == "__main__":
     class_num = 10
 
     # load model
-    create_mnn_resnet20_model(args.global_model_file_path)
+    model = fedml.model.create(args, output_dim=class_num)
 
     # start training
     server = ServerMNN(
