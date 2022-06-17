@@ -19,6 +19,7 @@ from fedml.model.nlp.rnn import RNN_OriginalFedAvg, RNN_StackOverFlow
 
 
 def create(args, output_dim):
+    global model
     model_name = args.model
     logging.info(
         "create_model. model_name = %s, output_dim = %s" % (model_name, output_dim)
