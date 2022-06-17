@@ -7,8 +7,7 @@ def run_mnn_server():
     from .cross_device import ServerMNN
 
     """FedML BeeHive"""
-    global _global_training_type
-    _global_training_type = FEDML_TRAINING_PLATFORM_CROSS_DEVICE
+    fedml._global_training_type = FEDML_TRAINING_PLATFORM_CROSS_DEVICE
 
     args = fedml.init()
 
