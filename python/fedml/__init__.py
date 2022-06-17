@@ -19,7 +19,7 @@ from .core.mlops import MLOpsRuntimeLog
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.7.0"
+__version__ = "0.7.2"
 
 
 def init(args=None):
