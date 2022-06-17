@@ -2,11 +2,11 @@ import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import Dataset
+import torch.utils.data as data
 import torchvision.transforms as transforms
 
 
-class CheXpert(Dataset):
+class CheXpert(data.Dataset):
     # download_url = "http://download.cs.stanford.edu/deep/CheXpert-v1.0-small.zip"
     label_header = [
         "No Finding",
@@ -26,7 +26,7 @@ class CheXpert(Dataset):
     ]
 
     def __init__(
-        self, data_dir=None, label_dir=None, dataidxs=None, train=True, transform=None, download=False, policy="zeros"
+        self, data_dir, label_dir=None, dataidxs=None, train=True, transform=None, download=False, policy="zeros"
     ):
         """
         Args:
