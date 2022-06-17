@@ -21,7 +21,7 @@ from .core.mlops import MLOpsRuntimeLog
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.7.90"
+__version__ = "0.7.91"
 
 
 def init(args=None):
@@ -170,9 +170,6 @@ def run_distributed():
 from fedml import device
 from fedml import data
 from fedml import model
-from fedml import simulation
-from fedml import cross_silo
-from fedml import cross_device
 
 from .arguments import load_arguments
 
@@ -193,9 +190,6 @@ __all__ = [
     "device",
     "data",
     "model",
-    "simulation",
-    "cross_silo",
-    "cross_device",
     "ClientTrainer",
     "ServerAggregator",
     "run_simulation",
