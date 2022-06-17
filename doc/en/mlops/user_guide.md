@@ -1,6 +1,6 @@
 # FedML MLOps User Guide
 Video Tutorial:
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/Xgm0XEaMlVQ/0.jpg)](https://www.youtube.com/watch?v=Xgm0XEaMlVQ)
+[https://www.youtube.com/watch?v=Xgm0XEaMlVQ](https://www.youtube.com/watch?v=Xgm0XEaMlVQ)
 
 **Write Once, Run Anywhere: Seamlessly Migrate Your Local Development to the Real-world Edge-cloud Deployment**
 
