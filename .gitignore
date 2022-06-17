@@ -4,6 +4,9 @@
 .vscode/*
 *.pkl
 
+test/fedml_user_code/data
+test/fedml_user_code/data/*
+
 *.pyc
 ./*/*.pyc
 ./*/*/*.pyc

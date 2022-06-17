@@ -90,11 +90,11 @@ def init_simulation_mpi(args):
 
 
 def init_simulation_sp(args):
-    pass
+    return args
 
 
-def init_simulation_nccl():
-    pass
+def init_simulation_nccl(args):
+    return
 
 
 def init_cross_silo_horizontal(args):
@@ -163,6 +163,13 @@ def init_cross_device(args):
 def run_distributed():
     pass
 
+
+from fedml import device
+from fedml import data
+from fedml import model
+from fedml import simulation
+from fedml import cross_silo
+from fedml import cross_device
 
 from .arguments import load_arguments
 
