@@ -52,10 +52,7 @@ pipeline {
       steps {
         container('base') {
           withCredentials([usernamePassword(passwordVariable : 'FEDML_PIP_PASSWORD' ,usernameVariable : 'FEDML_PIP_USER' ,credentialsId : "$FEDML_PIP_CREDENTIAL_ID_PRODUCTION" ,)]) {
-            sh 'pip install twine'
-            sh 'python setup.py sdist bdist_wheel'
-            sh 'twine check dist/*'
-            sh 'twine upload dist/* -u $FEDML_PIP_USER -p $FEDML_PIP_PASSWORD --no-interactive'
+            sh 'echo "building..."'
           }
         }
       }
