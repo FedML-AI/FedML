@@ -1,4 +1,6 @@
 # FedML MLOps User Guide
+Video Tutorial:
+[https://www.youtube.com/watch?v=Xgm0XEaMlVQ](https://www.youtube.com/watch?v=Xgm0XEaMlVQ)
 
 **Write Once, Run Anywhere: Seamlessly Migrate Your Local Development to the Real-world Edge-cloud Deployment**
 
@@ -33,7 +35,8 @@ to guide you through how to deploy it and collaborate with others data silos.
 
 ### 1. Create Application and Upload Local Packages
 ![image](../_static/image/mlops_create_application.png) \
-You can use the following FedML CLI to build the package.
+
+You can use the following FedML CLI to build the package, and then upload the packages as shown in the figure above.
 ```shell
 fedml build -t client -sf $SOURCE -ep $ENTRY -cf $CONFIG -df $DEST
 

@@ -195,7 +195,8 @@ jobs:
         run: bash build_tools/github/upload_anaconda.sh
 
 
-# three errors: 1) from mpi4py import MPI
+# three errors:
+        # 1) from mpi4py import MPI
         #  ImportError: DLL load failed while importing MPI: The specified module could not be found.
 
         # 2) ERROR: No matching distribution found for MNN==1.1.6

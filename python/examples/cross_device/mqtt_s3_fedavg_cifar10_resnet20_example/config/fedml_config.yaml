@@ -7,15 +7,16 @@ environment_args:
   bootstrap: config/bootstrap.sh
 
 data_args:
-  dataset: "mnist"
-  data_cache_dir: "../../../data/mnist"
+  dataset: "cifar"
+  data_cache_dir: "../../../data/cifar"
   partition_method: "hetero"
   partition_alpha: 0.5
   train_size: 10000
   test_size: 5000
 
 model_args:
-  model: "lr"
+  model: "resnet20"
+  deeplearning_backend: "mnn"
   model_file_cache_folder: "./model_file_cache" # will be filled by the server automatically
   global_model_file_path: "./model_file_cache/global_model.mnn"
 
@@ -49,4 +50,4 @@ tracking_args:
   log_file_dir: ./log
   enable_wandb: true
   wandb_project: fedml
-  run_name: fedml_torch_fedavg_mnist_lr
+  run_name: fedml_torch_fedavg_cifar_lr
