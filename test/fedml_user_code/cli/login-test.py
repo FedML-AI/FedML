@@ -6,8 +6,8 @@ import traceback
 
 import psutil
 import requests
-from fedml.cli.edge_deployment.mqtt_manager import MqttManager
-from fedml.mlops.mlops_configs import MLOpsConfigs
+from fedml.cli.comm_utils.mqtt_manager import MqttManager
+from fedml.core.mlops.mlops_configs import MLOpsConfigs
 
 
 def test_is_ok(test_run_id, test_edge_id, test_function, ok_message):
