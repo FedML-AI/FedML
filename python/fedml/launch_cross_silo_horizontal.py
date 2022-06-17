@@ -7,8 +7,7 @@ def run_cross_silo_server():
     from .cross_silo import Server
 
     """FedML Octopus"""
-    global _global_training_type
-    _global_training_type = FEDML_TRAINING_PLATFORM_CROSS_SILO
+    fedml._global_training_type = FEDML_TRAINING_PLATFORM_CROSS_SILO
 
     args = fedml.init()
 
