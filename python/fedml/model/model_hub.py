@@ -11,8 +11,7 @@ from fedml.model.cv.mnist_gan import Generator, Discriminator
 from fedml.model.cv.mobilenet import mobilenet
 from fedml.model.cv.mobilenet_v3 import MobileNetV3
 from fedml.model.cv.resnet import resnet56
-from fedml.model.cv.resnet56_gkt import resnet_client
-from fedml.model.cv.resnet56_gkt import resnet_server
+from fedml.model.cv.resnet56 import resnet_client, resnet_server
 from fedml.model.cv.resnet_gn import resnet18
 from fedml.model.linear.lr import LogisticRegression
 from fedml.model.nlp.rnn import RNN_OriginalFedAvg, RNN_StackOverFlow
@@ -50,7 +49,7 @@ def create(args, output_dim):
         model = RNN_StackOverFlow()
     elif model_name == "resnet56":
         model = resnet56(class_num=output_dim)
-    elif model_name == "resnet56_gkt":
+    elif model_name == "resnet56":
         client_model = resnet_client.resnet8_56(c=output_dim)
         server_model = resnet_server.resnet56_server(c=output_dim)
         model = (client_model, server_model)
