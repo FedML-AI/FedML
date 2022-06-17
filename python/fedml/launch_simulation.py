@@ -10,10 +10,8 @@ from .constants import (
 def run_simulation(backend=FEDML_SIMULATION_TYPE_SP):
 
     """FedML Parrot"""
-    global _global_training_type
-    _global_training_type = FEDML_TRAINING_PLATFORM_SIMULATION
-    global _global_comm_backend
-    _global_comm_backend = backend
+    fedml._global_training_type = FEDML_TRAINING_PLATFORM_SIMULATION
+    fedml._global_comm_backend = backend
 
     # init FedML framework
     args = fedml.init()
