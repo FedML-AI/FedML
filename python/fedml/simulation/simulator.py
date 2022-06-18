@@ -11,6 +11,9 @@ from .mpi.fedavg.FedAvgAPI import FedML_FedAvg_distributed
 from .mpi.fedavg_robust.FedAvgRobustAPI import FedML_FedAvgRobust_distributed
 from .mpi.fedopt.FedOptAPI import FedML_FedOpt_distributed
 from .mpi.fedprox.FedProxAPI import FedML_FedProx_distributed
+
+from .nccl.fedavg.FedAvgAPI import FedML_FedAvg_NCCL
+
 from .mpi.fedseg.FedSegAPI import FedML_FedSeg_distributed
 from .mpi.fedgkt.FedGKTAPI import FedML_FedGKT_distributed
 from .mpi.fedgan.FedGanAPI import FedML_FedGan_distributed
@@ -18,6 +21,7 @@ from .mpi.fednas.FedNASAPI import FedML_FedNAS_distributed
 from .mpi.split_nn.SplitNNAPI import SplitNN_distributed
 from .mpi.classical_vertical_fl.vfl_api import FedML_VFL_distributed
 from .mpi.turboaggregate import TA_API
+
 
 from .sp.fedavg import FedAvgAPI
 from .sp.fednova.fednova_trainer import FedNovaTrainer
@@ -201,7 +205,16 @@ class SimulatorMPI:
 class SimulatorNCCL:
     def __init__(self, args, device, dataset, model, model_trainer=None):
         if args.federated_optimizer == "FedAvg":
-            self.simulator = None
+            self.simulator = FedML_FedAvg_NCCL(
+                args,
+                args.process_id,
+                args.worker_num,
+                args.comm,
+                device,
+                dataset,
+                model,
+                model_trainer=model_trainer,
+            )
         else:
             raise Exception("Exception")
 
