@@ -9,7 +9,7 @@ import psutil
 import requests
 import yaml
 from fedml.cli.edge_deployment.mqtt_manager import MqttManager
-from fedml.mlops.mlops_configs import MLOpsConfigs
+from fedml.core.mlops.mlops_configs import MLOpsConfigs
 
 
 def load_yaml_config(yaml_path):
@@ -25,7 +25,7 @@ def test_is_ok(test_run_id, test_edge_id, test_function, ok_message):
     test_ok = False
     wait_count = 0
     log_file_path = os.path.join(args.log_dir,
-                                 "fedavg-cross-silo-run-{}-edge-{}.log".format(str(test_run_id), str(test_edge_id)))
+                                 "fedml-run-{}-edge-{}.log".format(str(test_run_id), str(test_edge_id)))
     log_file = open(log_file_path, "r")
     while True:
         if wait_count >= 30:

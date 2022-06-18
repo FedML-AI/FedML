@@ -4,6 +4,7 @@ from .client import SplitNN_client
 from .client_manager import SplitNNClientManager
 from .server import SplitNN_server
 from .server_manager import SplitNNServerManager
+from torch.utils.data import DataLoader
 
 
 def SplitNN_init():
@@ -14,20 +15,32 @@ def SplitNN_init():
 
 
 def SplitNN_distributed(
-    process_id,
-    worker_number,
-    device,
-    comm,
-    client_model,
-    server_model,
-    train_data_num,
-    train_data_global,
-    test_data_global,
-    local_data_num,
-    train_data_local,
-    test_data_local,
-    args,
+        process_id,
+        worker_number,
+        device,
+        comm,
+        client_model,
+        server_model,
+        dataset,
+        args,
 ):
+    [
+        train_data_num,
+        local_data_num,
+        train_data_global,
+        test_data_global,
+        train_data_local_num_dict,
+        train_data_local,
+        test_data_local,
+        class_num,
+    ] = dataset
+
+    # import pdb
+    # pdb.set_trace()
+    #
+    # train_dloader = DataLoader(train_data_local, batch_size=args.batch_size)
+    # test_dloader = DataLoader(test_data_local, batch_size=args.batch_size)
+
     server_rank = 0
     if process_id == server_rank:
         init_server(comm, server_model, process_id, worker_number, device, args)
@@ -61,16 +74,16 @@ def init_server(comm, server_model, process_id, worker_number, device, args):
 
 
 def init_client(
-    comm,
-    client_model,
-    worker_number,
-    train_data_local,
-    test_data_local,
-    process_id,
-    server_rank,
-    epochs,
-    device,
-    args,
+        comm,
+        client_model,
+        worker_number,
+        train_data_local,
+        test_data_local,
+        process_id,
+        server_rank,
+        epochs,
+        device,
+        args,
 ):
     arg_dict = {
         "comm": comm,
