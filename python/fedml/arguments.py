@@ -44,6 +44,8 @@ def add_args():
 
     # default arguments
     parser.add_argument("--rank", type=int, default=0)
+    # default arguments
+    parser.add_argument("--local_rank", type=int, default=0)
 
     args = parser.parse_args()
     return args
