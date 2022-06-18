@@ -1,4 +1,6 @@
-# FedML Octopus Example with MNIST + Logistic Regression
+# FedML Octopus - Heterogeneous Hierarchical Federated Learning
+
+<img src="./../../_static/image/cross-silo-hi.png" alt="parrot" style="width:100%;"/>
 
 This example illustrates how to do real-world hierarchical cross-silo federated learning with FedML Octopus. Hierarchical architecture allows a silo/client to take adavantage of multiple GPUs on different nodes to further accelerate training process. We use PyTorch's Distributed Data Parallel (DDP) to achieve this goal. 
 
@@ -408,7 +410,9 @@ if __name__ == "__main__":
     client.run()
 ```
 
+## Source code architecture
 
+![img.png](cross_silo_hi_arch.png)
 ## A Better User-experience with FedML MLOps (open.fedml.ai)
 To reduce the difficulty and complexity of these CLI commands. We recommend you to use our MLOps (open.fedml.ai).
 FedML MLOps provides:

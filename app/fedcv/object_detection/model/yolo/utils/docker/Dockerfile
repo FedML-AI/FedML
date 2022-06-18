@@ -35,7 +35,7 @@ ENV OMP_NUM_THREADS=8
 # Usage Examples -------------------------------------------------------------------------------------------------------
 
 # Build and Push
-# t=ultralytics/yolov5:latest && sudo docker build -f utils/docker/Dockerfile -t $t . && sudo docker push $t
+# t=ultralytics/yolov5:latest && sudo docker build -f utils/docker/Dockerfile_64bit_armv8 -t $t . && sudo docker push $t
 
 # Pull and Run
 # t=ultralytics/yolov5:latest && sudo docker pull $t && sudo docker run -it --ipc=host --gpus all $t
