@@ -18,12 +18,12 @@ mkdir $WORKSPACE/data/ego-networks/PubMed
 mkdir $WORKSPACE/data/ego-networks/CS
 mkdir $WORKSPACE/data/ego-networks/Physics
 
-python sampleEgonetworks.py --path ./data/ego-networks/ --data cora --ego_number 1000 --hop_number 2
-python sampleEgonetworks.py --path ./data/ego-networks/ --data citeseer --ego_number 1000 --hop_number 2
-python sampleEgonetworks.py --path ./data/ego-networks/ --data DBLP --ego_number 1000 --hop_number 2
-python sampleEgonetworks.py --path ./data/ego-networks/ --data PubMed --ego_number 1000 --hop_number 2
-python sampleEgonetworks.py --path ./data/ego-networks/ --data CS --ego_number 1000 --hop_number 2
-python sampleEgonetworks.py --path ./data/ego-networks/ --data Physics --ego_number 1000 --hop_number 2
+python sampleEgonetworks.py --path ego-networks/ --data cora --ego_number 1000 --hop_number 2
+python sampleEgonetworks.py --path ego-networks/ --data citeseer --ego_number 1000 --hop_number 2
+python sampleEgonetworks.py --path ego-networks/ --data DBLP --ego_number 1000 --hop_number 2
+python sampleEgonetworks.py --path ego-networks/ --data PubMed --ego_number 1000 --hop_number 2
+python sampleEgonetworks.py --path ego-networks/ --data CS --ego_number 1000 --hop_number 2
+python sampleEgonetworks.py --path ego-networks/ --data Physics --ego_number 1000 --hop_number 2
 ```
 
 #### Arguments for Data Preparation code

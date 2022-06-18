@@ -5,6 +5,8 @@ from .FedGANTrainer import FedGANTrainer
 from .FedGanClientManager import FedGANClientManager
 from .FedGanServerManager import FedGANServerManager
 
+from .MyModelTrainer import MyModelTrainer
+
 
 def FedML_init():
     comm = MPI.COMM_WORLD
@@ -15,21 +17,32 @@ def FedML_init():
 
 
 def FedML_FedGan_distributed(
-    process_id,
-    worker_number,
-    device,
-    comm,
-    model,
-    train_data_num,
-    train_data_global,
-    test_data_global,
-    train_data_local_num_dict,
-    train_data_local_dict,
-    test_data_local_dict,
-    args,
-    model_trainer=None,
-    preprocessed_sampling_lists=None,
+        process_id,
+        worker_number,
+        device,
+        comm,
+        model,
+        args,
+        dataset,
+        model_trainer=None,
+        preprocessed_sampling_lists=None,
 ):
+    [
+        train_data_num,
+        test_data_num,
+        train_data_global,
+        test_data_global,
+        train_data_local_num_dict,
+        train_data_local_dict,
+        test_data_local_dict,
+        class_num,
+    ] = dataset
+
+    netg, netd = model
+
+    if model_trainer is None:
+        model_trainer = MyModelTrainer(netd, netg)
+
     if process_id == 0:
         init_server(
             args,
@@ -64,20 +77,20 @@ def FedML_FedGan_distributed(
 
 
 def init_server(
-    args,
-    device,
-    comm,
-    rank,
-    size,
-    model,
-    train_data_num,
-    train_data_global,
-    test_data_global,
-    train_data_local_dict,
-    test_data_local_dict,
-    train_data_local_num_dict,
-    model_trainer,
-    preprocessed_sampling_lists=None,
+        args,
+        device,
+        comm,
+        rank,
+        size,
+        model,
+        train_data_num,
+        train_data_global,
+        test_data_global,
+        train_data_local_dict,
+        test_data_local_dict,
+        train_data_local_num_dict,
+        model_trainer,
+        preprocessed_sampling_lists=None,
 ):
     if model_trainer is None:
         pass
@@ -123,21 +136,20 @@ def init_server(
 
 
 def init_client(
-    args,
-    device,
-    comm,
-    process_id,
-    size,
-    model,
-    train_data_num,
-    train_data_local_num_dict,
-    train_data_local_dict,
-    test_data_local_dict,
-    model_trainer=None,
+        args,
+        device,
+        comm,
+        process_id,
+        size,
+        model,
+        train_data_num,
+        train_data_local_num_dict,
+        train_data_local_dict,
+        test_data_local_dict,
+        model_trainer=None,
 ):
     client_index = process_id - 1
-    if model_trainer is None:
-        pass
+
     model_trainer.set_id(client_index)
     backend = args.backend
     trainer = FedGANTrainer(

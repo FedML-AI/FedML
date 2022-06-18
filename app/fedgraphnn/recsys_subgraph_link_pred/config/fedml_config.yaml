@@ -4,7 +4,7 @@ common_args:
 
 data_args:
   dataset: "ciao"
-  data_cache_dir: "./data/recommender_system"
+  data_cache_dir: "./data"
   partition_method: "hetero"
   partition_alpha: 0.5
   ego_number: 10
@@ -27,7 +27,7 @@ model_args:
 train_args:
   federated_optimizer: "FedAvg"
   client_id_list: "[]"
-  client_num_in_total: 1000
+  client_num_in_total: 4
   client_num_per_round: 4
   comm_round: 100
   epochs: 5

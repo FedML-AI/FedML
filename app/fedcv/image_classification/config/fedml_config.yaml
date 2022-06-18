@@ -3,14 +3,15 @@ common_args:
   random_seed: 0
 
 data_args:
-  dataset: "imagenet"
+  dataset: "MNIST"
   data_cache_dir: "./data/"
   partition_method: "hetero"
   partition_alpha: 0.5
 
 model_args:
   model: "densenet"
-  class_num: 1000
+  image_size: [112, 112]
+  class_num: 10
 
 train_args:
   federated_optimizer: "FedAvg"
@@ -21,9 +22,8 @@ train_args:
   epochs: 5
   batch_size: 64
   client_optimizer: sgd
-  learning_rate: 0.03
+  lr: 0.03
   weight_decay: 0.001
-  metric: "prc-auc"
 
 validation_args:
   frequency_of_the_test: 5

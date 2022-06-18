@@ -4,6 +4,9 @@
 .vscode/*
 *.pkl
 
+test/fedml_user_code/data
+test/fedml_user_code/data/*
+
 *.pyc
 ./*/*.pyc
 ./*/*/*.pyc
@@ -29,7 +32,7 @@ python/dist
 python/FedML.egg-info
 
 doc/deploy
-doc/en/_build
+doc/en/_build/doctrees
 
 
 *.h5
@@ -98,3 +101,6 @@ app/fedgraphnn/subgraph_link_pred/data/wn18rr/*.dict
 app/fedgraphnn/subgraph_link_pred/data/wn18rr/*.txt
 app/fedgraphnn/subgraph_link_pred/data/YAGO3-10/*.dict
 app/fedgraphnn/subgraph_link_pred/data/YAGO3-10/*.txt
+
+app/fedgraphnn/ego_networks_link_pred/data/ego-networks
+app/fedgraphnn/ego_networks_node_clf/data/ego-networks
