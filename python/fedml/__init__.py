@@ -73,11 +73,22 @@ def init(args=None):
             and args.backend == "sp"
     ):
         pass
+    elif (
+            args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
+            and hasattr(args, "backend")
+            and args.backend == FEDML_SIMULATION_TYPE_NCCL
+    ):
+        from .simulation.nccl.base_framework.common import FedML_NCCL_Similulation_init
+        CommState, global_rank, world_size = FedML_NCCL_Similulation_init(args)
+        args.comm = CommState
+        args.process_id = global_rank
+        args.worker_num = world_size
+
     elif args.training_type == "cross_silo":
         if not hasattr(args, "scenario"):
             args.scenario = "horizontal"
         if args.scenario == "horizontal":
-
+    
             args.process_id = args.rank
 
         elif args.scenario == "hierarchical":
