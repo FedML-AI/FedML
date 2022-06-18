@@ -112,3 +112,17 @@ class CIFAR10_truncated(data.Dataset):
 
     def __len__(self):
         return len(self.data)
+
+
+
+
+
+
+
+
+
+
+
+
+
+

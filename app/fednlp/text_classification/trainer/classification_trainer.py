@@ -56,7 +56,7 @@ class MyModelTrainer(ClientTrainer):
                 "output_dir": args.output_dir,
                 "is_debug_mode": args.is_debug_mode,
                 "fedprox_mu": args.fedprox_mu,
-                "optimizer": args.client_optimzer,
+                "optimizer": args.client_optimizer,
             }
         )
         model = self.model
