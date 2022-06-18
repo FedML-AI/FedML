@@ -182,6 +182,14 @@ coming soon
 
 Please follow instructions at [Windows Installation](./install/windows.md)
 
+## Guidance for Raspberry Pi Users 
+
+Please follow instructions at [Raspberry Pi Installation](./install/rpi.md)
+
+## Guidance for NVIDIA Jetson Devices
+
+Please follow instructions at [NVIDIA Jetson Device Installation](./install/jetson.md)
+
 ## Test if the installation succeeded
 If the installation is correct, you will not see any issue when running `import fedml`.
 ```shell
