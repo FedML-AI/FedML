@@ -20,7 +20,7 @@
   <meta name="google-site-verification" content="okUst94cAlWSsUsGZTB4xSS4UKTtRV8Nu5XZ9pdd3Aw" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>FedML Octopus Example with MNIST + Logistic Regression &mdash; FedML  documentation</title>
+  <title>FedML Octopus - Heterogeneous Hierarchical Federated Learning &mdash; FedML  documentation</title>
   
 
   
@@ -288,7 +288,7 @@
       </li>
 
         
-      <li>FedML Octopus Example with MNIST + Logistic Regression</li>
+      <li>FedML Octopus - Heterogeneous Hierarchical Federated Learning</li>
     
     
       <li class="pytorch-breadcrumbs-aside">
@@ -320,8 +320,9 @@
             <div role="main" class="main-content" itemscope="itemscope" itemtype="http://schema.org/Article">
              <article itemprop="articleBody" id="pytorch-article" class="pytorch-article">
               
-  <section id="fedml-octopus-example-with-mnist-logistic-regression">
-<h1>FedML Octopus Example with MNIST + Logistic Regression<a class="headerlink" href="#fedml-octopus-example-with-mnist-logistic-regression" title="Permalink to this headline">¶</a></h1>
+  <section id="fedml-octopus-heterogeneous-hierarchical-federated-learning">
+<h1>FedML Octopus - Heterogeneous Hierarchical Federated Learning<a class="headerlink" href="#fedml-octopus-heterogeneous-hierarchical-federated-learning" title="Permalink to this headline">¶</a></h1>
+<img src="./../../_static/image/cross-silo-hi.png" alt="parrot" style="width:100%;"/>
 <p>This example illustrates how to do real-world hierarchical cross-silo federated learning with FedML Octopus. Hierarchical architecture allows a silo/client to take adavantage of multiple GPUs on different nodes to further accelerate training process. We use PyTorch’s Distributed Data Parallel (DDP) to achieve this goal.</p>
 <p>The example provided here demonstrates a scenario where there are two silos/clients, and each of them has access to multiple GPUs. Silo-1 trains the model on 2 nodes, with each node having 1 GPU, while Silo-2 trains its model using 1 GPU on a single node. The source code locates at <code class="docutils literal notranslate"><span class="pre">python/examples/cross_silo/mqtt_s3_fedavg_hierarchical_mnist_lr_example</span></code>.</p>
 <blockquote>
@@ -689,6 +690,10 @@ Note:</p>
 </pre></div>
 </div>
 </section>
+<section id="source-code-architecture">
+<h2>Source code architecture<a class="headerlink" href="#source-code-architecture" title="Permalink to this headline">¶</a></h2>
+<p><img alt="img.png" src="../../_images/cross_silo_hi_arch.png" /></p>
+</section>
 <section id="a-better-user-experience-with-fedml-mlops-open-fedml-ai">
 <h2>A Better User-experience with FedML MLOps (open.fedml.ai)<a class="headerlink" href="#a-better-user-experience-with-fedml-mlops-open-fedml-ai" title="Permalink to this headline">¶</a></h2>
 <p>To reduce the difficulty and complexity of these CLI commands. We recommend you to use our MLOps (open.fedml.ai).
@@ -741,13 +746,14 @@ FedML MLOps provides:</p>
           <div class="pytorch-right-menu" id="pytorch-right-menu">
             <div class="pytorch-side-scroll" id="pytorch-side-scroll-right">
               <ul>
-<li><a class="reference internal" href="#">FedML Octopus Example with MNIST + Logistic Regression</a><ul>
+<li><a class="reference internal" href="#">FedML Octopus - Heterogeneous Hierarchical Federated Learning</a><ul>
 <li><a class="reference internal" href="#one-line-api">One line API</a><ul>
 <li><a class="reference internal" href="#training-results">Training Results</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#five-lines-of-apis">Five lines of APIs</a></li>
 <li><a class="reference internal" href="#custom-data-and-model">Custom data and model</a></li>
+<li><a class="reference internal" href="#source-code-architecture">Source code architecture</a></li>
 <li><a class="reference internal" href="#a-better-user-experience-with-fedml-mlops-open-fedml-ai">A Better User-experience with FedML MLOps (open.fedml.ai)</a></li>
 </ul>
 </li>

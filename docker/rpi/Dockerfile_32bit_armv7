@@ -1,0 +1,37 @@
+FROM balenalib/armv7hf-debian-node
+# https://eide.ai/rpi4/pytorch/2020/06/30/pytorch-raspberry.html
+# https://raspberrypi.stackexchange.com/questions/101215/why-raspberry-pi-4b-claims-that-its-processor-is-armv7l-when-in-official-specif
+
+WORKDIR /home/fedml
+RUN apt-get update
+RUN apt-get install -y gcc python3-dev v4l-utils python3-opencv python3-pip python3-setuptools libffi-dev libssl-dev wget
+
+RUN apt-get install -y python3-numpy python3-wheel python3-setuptools python3-future python3-yaml python3-six python3-requests python3-pip python3-pillow
+
+
+ENV INSTALL_DIR=/tmp
+ENV PYTORCH_VERSION=1.11.0
+# ***************************************************************************
+# PyTorch (install from source)
+# ***************************************************************************
+
+RUN cat /etc/os-release
+#
+#RUN sudo pip install numpy ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses h5py
+#
+#RUN cd ${INSTALL_DIR} && \
+#git clone https://github.com/pytorch/pytorch.git && \
+#cd pytorch && git checkout v${PYTORCH_VERSION} && \
+#git submodule sync && \
+#git submodule update --init --recursive --jobs 0 && \
+#sudo USE_SYSTEM_NCCL=1 TORCH_CUDA_ARC_LIST="6.0 6.1 7.0 7.5 8.0" CMAKE_CUDA_COMPILER="/usr/local/cuda" python setup.py install
+##RUN rm -rf ${INSTALL_DIR}/pytorch
+##RUN pip install torch==1.11.0
+#
+#RUN python3 -c "import torch; torch.__version__"
+#
+RUN sudo ln -s /usr/include/locale.h /usr/include/xlocale.h
+RUN pip3 install h5py==3.1.0
+#RUN apt-get install python-h5py
+RUN pip3 install fedml==0.7.93
+#
