@@ -8,7 +8,7 @@ data_args:
   partition_method: "hetero"
   part_algo: "Louvain"
   pred_task: "relation"
-  partition_alpha: 0.5
+  partition_alpha: 100
   ego_number: 10
   hop_number: 2
 

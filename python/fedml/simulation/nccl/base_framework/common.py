@@ -149,7 +149,10 @@ def FedML_NCCL_Similulation_init(args):
     # CommState.device_id = process_id - 1 if process_id > 0 else -1
     CommState.device_id = global_rank - 1
     CommState.role = Role.SERVER if global_rank == 0 else Role.DEVICE
-    return CommState, global_rank, world_size
+    args.comm = CommState
+    args.process_id = global_rank
+    args.worker_num = world_size
+    return args
 
 
 # def FedML_NCCL_init(args):

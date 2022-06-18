@@ -63,11 +63,11 @@ def load_data(args):
     return dataset, num_cats, feat_dim
 
 
-def create_model(args, model_name, feat_dim, num_cats, output_dim= None):
+def create_model(args, feat_dim, num_cats, output_dim= None):
     logging.info(
-        "create_model. model_name = %s, output_dim = %s" % (model_name, num_cats)
+        "create_model. model_name = %s, output_dim = %s" % (args.model, num_cats)
     )
-    if model_name == "gcn":
+    if args.model == "gcn":
         model = GCNNodeCLF(
             nfeat=feat_dim,
             nhid=args.hidden_size,
@@ -75,9 +75,9 @@ def create_model(args, model_name, feat_dim, num_cats, output_dim= None):
             nlayer=args.n_layers,
             dropout=args.dropout,
         )
-    elif model_name == "sgc":
+    elif args.model == "sgc":
         model = SGCNodeCLF(in_dim=feat_dim, num_classes=num_cats, K=args.n_layers)
-    elif model_name == "sage":
+    elif args.model == "sage":
         model = SAGENodeCLF(
             nfeat=feat_dim,
             nhid=args.hidden_size,
@@ -85,7 +85,7 @@ def create_model(args, model_name, feat_dim, num_cats, output_dim= None):
             nlayer=args.n_layers,
             dropout=args.dropout,
         )
-    elif model_name == "gat":
+    elif args.model == "gat":
         model = GATNodeCLF(
             in_channels = feat_dim,
             out_channels = num_cats, 
@@ -114,7 +114,7 @@ if __name__ == "__main__":
     dataset, num_cats, feat_dim = load_data(args)
 
     # load model
-    model, trainer = create_model(args, args.model_name, feat_dim, num_cats)
+    model, trainer = create_model(args, feat_dim, num_cats)
 
     # start training
     simulator = SimulatorMPI(args, device, dataset, model, trainer)

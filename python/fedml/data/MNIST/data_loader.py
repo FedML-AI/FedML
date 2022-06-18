@@ -72,7 +72,8 @@ def read_data(train_data_dir, test_data_dir):
     return clients, groups, train_data, test_data
 
 
-def batch_data(data, batch_size):
+def batch_data(args, data, batch_size):
+
     """
     data is a dict := {'x': [numpy array], 'y': [numpy array]} (on one client)
     returns x, y, which are both numpy array of length: batch_size
@@ -92,7 +93,13 @@ def batch_data(data, batch_size):
     for i in range(0, len(data_x), batch_size):
         batched_x = data_x[i : i + batch_size]
         batched_y = data_y[i : i + batch_size]
-        batched_x = torch.from_numpy(np.asarray(batched_x)).float()
+        if args.model == "lr":
+            batched_x = torch.from_numpy(np.asarray(batched_x)).float()  # LR_MINST
+        else:
+            batched_x = (
+                torch.from_numpy(np.asarray(batched_x)).float().reshape(-1, 28, 28)
+            )  # CNN_MINST
+
         batched_y = torch.from_numpy(np.asarray(batched_y)).long()
         batch_data.append((batched_x, batched_y))
     return batch_data
@@ -107,9 +114,7 @@ def load_partition_data_mnist_by_device_id(
 
 
 def load_partition_data_mnist(
-    batch_size,
-    train_path="./MNIST/train",
-    test_path="./MNIST/test",
+    args, batch_size, train_path="./MNIST/train", test_path="./MNIST/test",
 ):
     users, groups, train_data, test_data = read_data(train_path, test_path)
 
@@ -132,8 +137,8 @@ def load_partition_data_mnist(
         train_data_local_num_dict[client_idx] = user_train_data_num
 
         # transform to batches
-        train_batch = batch_data(train_data[u], batch_size)
-        test_batch = batch_data(test_data[u], batch_size)
+        train_batch = batch_data(args, train_data[u], batch_size)
+        test_batch = batch_data(args, test_data[u], batch_size)
 
         # index using client index
         train_data_local_dict[client_idx] = train_batch

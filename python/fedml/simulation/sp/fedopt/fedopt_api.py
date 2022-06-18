@@ -8,10 +8,22 @@ import wandb
 
 from .client import Client
 from .optrepo import OptRepo
+from .my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
+from .my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
+from .my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
+
+
+def custom_model_trainer(args, model):
+    if args.dataset == "stackoverflow_lr":
+        return MyModelTrainerTAG(model)
+    elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
+        return MyModelTrainerNWP(model)
+    else: # default model trainer is for classification problem
+        return MyModelTrainerCLS(model)
 
 
 class FedOptAPI(object):
-    def __init__(self, dataset, device, args, model_trainer):
+    def __init__(self,  args, device, dataset, model):
         self.device = device
         self.args = args
         [
@@ -38,7 +50,7 @@ class FedOptAPI(object):
         self.train_data_local_dict = train_data_local_dict
         self.test_data_local_dict = test_data_local_dict
 
-        self.model_trainer = model_trainer
+        self.model_trainer = custom_model_trainer(args, model)
         self._instanciate_opt()
         self._setup_clients(
             train_data_local_num_dict, train_data_local_dict, test_data_local_dict
@@ -248,13 +260,15 @@ class FedOptAPI(object):
         test_loss = sum(test_metrics["losses"]) / sum(test_metrics["num_samples"])
 
         stats = {"training_acc": train_acc, "training_loss": train_loss}
-        wandb.log({"Train/Acc": train_acc, "round": round_idx})
-        wandb.log({"Train/Loss": train_loss, "round": round_idx})
+        if self.args.enable_wandb:
+            wandb.log({"Train/Acc": train_acc, "round": round_idx})
+            wandb.log({"Train/Loss": train_loss, "round": round_idx})
         logging.info(stats)
 
         stats = {"test_acc": test_acc, "test_loss": test_loss}
-        wandb.log({"Test/Acc": test_acc, "round": round_idx})
-        wandb.log({"Test/Loss": test_loss, "round": round_idx})
+        if self.args.enable_wandb:
+            wandb.log({"Test/Acc": test_acc, "round": round_idx})
+            wandb.log({"Test/Loss": test_loss, "round": round_idx})
         logging.info(stats)
 
     def _local_test_on_validation_set(self, round_idx):
@@ -274,8 +288,9 @@ class FedOptAPI(object):
             test_acc = test_metrics["test_correct"] / test_metrics["test_total"]
             test_loss = test_metrics["test_loss"] / test_metrics["test_total"]
             stats = {"test_acc": test_acc, "test_loss": test_loss}
-            wandb.log({"Test/Acc": test_acc, "round": round_idx})
-            wandb.log({"Test/Loss": test_loss, "round": round_idx})
+            if self.args.enable_wandb:
+                wandb.log({"Test/Acc": test_acc, "round": round_idx})
+                wandb.log({"Test/Loss": test_loss, "round": round_idx})
         elif self.args.dataset == "stackoverflow_lr":
             test_acc = test_metrics["test_correct"] / test_metrics["test_total"]
             test_pre = test_metrics["test_precision"] / test_metrics["test_total"]
@@ -287,10 +302,11 @@ class FedOptAPI(object):
                 "test_rec": test_rec,
                 "test_loss": test_loss,
             }
-            wandb.log({"Test/Acc": test_acc, "round": round_idx})
-            wandb.log({"Test/Pre": test_pre, "round": round_idx})
-            wandb.log({"Test/Rec": test_rec, "round": round_idx})
-            wandb.log({"Test/Loss": test_loss, "round": round_idx})
+            if self.args.enable_wandb:
+                wandb.log({"Test/Acc": test_acc, "round": round_idx})
+                wandb.log({"Test/Pre": test_pre, "round": round_idx})
+                wandb.log({"Test/Rec": test_rec, "round": round_idx})
+                wandb.log({"Test/Loss": test_loss, "round": round_idx})
         else:
             raise Exception(
                 "Unknown format to log metrics for dataset {}!" % self.args.dataset
