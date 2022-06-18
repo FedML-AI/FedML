@@ -24,8 +24,12 @@ class ClassificationTrainer(ClientTrainer):
             optimizer = torch.optim.SGD(model.parameters(), lr=args.lr)
         else:
             optimizer = torch.optim.Adam(
-                filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, weight_decay=args.wd, amsgrad=True
+                filter(lambda p: p.requires_grad, model.parameters()),
+                lr=args.lr,
+                weight_decay=args.weight_decay,
+                amsgrad=True,
             )
+
         epoch_loss = []
         for epoch in range(args.epochs):
             batch_loss = []

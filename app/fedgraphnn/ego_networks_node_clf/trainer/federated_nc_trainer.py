@@ -27,11 +27,11 @@ class FedNodeClfTrainer(ClientTrainer):
 
         if args.client_optimizer == "sgd":
             optimizer = torch.optim.SGD(
-                model.parameters(), lr=args.lr, weight_decay=args.wd
+                model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay
             )
         else:
             optimizer = torch.optim.Adam(
-                model.parameters(), lr=args.lr, weight_decay=args.wd
+                model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay
             )
 
         max_test_score, max_val_score = 0, 0
@@ -102,11 +102,13 @@ class FedNodeClfTrainer(ClientTrainer):
             model_list.append(model)
             micro_list.append(score)
             logging.info("Client {}, Test Micro F1 = {}".format(client_idx, score))
-            wandb.log({"Client {} Test/Micro F1".format(client_idx): score})
+            if args.enable_wandb:
+                wandb.log({"Client {} Test/Micro F1".format(client_idx): score})
 
         avg_micro = np.mean(np.array(micro_list))
         logging.info("Test Micro F1 = {}".format(avg_micro))
-        wandb.log({"Test/ Micro F1": avg_micro})
+        if args.enable_wandb:
+            wandb.log({"Test/ Micro F1": avg_micro})
 
         return True
 

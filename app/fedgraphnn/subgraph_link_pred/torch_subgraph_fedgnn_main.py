@@ -1,22 +1,21 @@
 import fedml
 from data.data_loader import *
-from model.gcn_link import GCNLinkPred
-
-from trainer.fed_subgraph_lp_trainer import FedSubgraphLPTrainer
 from fedml.simulation import SimulatorMPI
+from model.gcn_link import GCNLinkPred
+from trainer.fed_subgraph_lp_trainer import FedSubgraphLPTrainer
 
 
 def load_data(args):
     if args.dataset not in ["YAGO3-10", "wn18rr", "FB15k-237"]:
         raise Exception("no such dataset!")
 
-    args.part_algo = "Louvain"
-    args.pred_task = "relation"
-    compact = args.model == "graphsage"
+    # args.part_algo = "Louvain"
+    # args.pred_task = "link"
+    compact = args.model
 
     args.metric = "AP"
 
-    g1, _, _ = get_data_community(args.data_cache_dir, args.dataset, args.pred_task)
+    g1, _, _, _ = get_data_community(args.data_cache_dir, args.dataset, args.pred_task)
     print(g1[0])
     unif = True if args.partition_method == "homo" else False
 
@@ -37,7 +36,7 @@ def load_data(args):
         test_data_local_dict,
     ) = load_partition_data(
         args,
-        args.data_dir,
+        args.data_cache_dir,
         args.client_num_in_total,
         uniform=unif,
         compact=compact,

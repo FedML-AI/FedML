@@ -1,14 +1,6 @@
 #!/bin/bash
 
-echo "conda set ssl_verify"
-
-conda config --set ssl_verify false
-
-conda info
-
-conda_base_dir=`conda info |grep  'base environment' |awk -F':' '{print $2}' |awk -F'(' '{print $1}' |awk -F' ' '{print $1}'`
-conda_env_init="${conda_base_dir}/etc/profile.d/conda.sh"
-source ${conda_env_init}
+echo "nameserver 8.8.8.8" > /etc/resolv.conf
 
 echo "conda create -n fedml python=3.7.4"
 conda create -y -n fedml-pip python=3.7.4

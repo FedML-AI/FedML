@@ -3,7 +3,7 @@ import logging
 import torch
 from torch import nn, optim
 
-import utils
+from .utils import bnwd_optim_params, KL_Loss
 
 
 class GKTClientTrainer(object):
@@ -34,7 +34,7 @@ class GKTClientTrainer(object):
         self.model_params = self.master_params = self.client_model.parameters()
 
         optim_params = (
-            utils.bnwd_optim_params(
+            bnwd_optim_params(
                 self.client_model, self.model_params, self.master_params
             )
             if args.no_bn_wd
@@ -55,7 +55,7 @@ class GKTClientTrainer(object):
             )
 
         self.criterion_CE = nn.CrossEntropyLoss()
-        self.criterion_KL = utils.KL_Loss(self.args.temperature)
+        self.criterion_KL = KL_Loss(self.args.temperature)
 
         self.server_logits_dict = dict()
 

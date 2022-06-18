@@ -10,14 +10,15 @@ import shutil
 import fedml
 import psutil
 import yaml
-from fedml.cli.edge_deployment.yaml_utils import load_yaml_config
+from fedml.cli.edge_deployment.client_runner import FedMLClientRunner
+from fedml.cli.comm_utils.yaml_utils import load_yaml_config
 from fedml.cli.edge_deployment.client_login import logout as client_logout
-from fedml.cli.edge_deployment.client_login import LOCAL_HOME_RUNNER_DIR_NAME as CLIENT_RUNNER_HOME_DIR
-from fedml.cli.edge_deployment.client_login import LOCAL_RUNNER_INFO_DIR_NAME as CLIENT_RUNNER_INFO_DIR
+from fedml.cli.edge_deployment.client_login import CLIENT_RUNNER_HOME_DIR
+from fedml.cli.edge_deployment.client_login import CLIENT_RUNNER_INFO_DIR
 from fedml.cli.server_deployment.server_login import logout as server_logout
-from fedml.cli.server_deployment.server_login import LOCAL_HOME_RUNNER_DIR_NAME as SERVER_RUNNER_HOME_DIR
-from fedml.cli.server_deployment.server_login import LOCAL_RUNNER_INFO_DIR_NAME as SERVER_RUNNER_INFO_DIR
-from fedml.cli.edge_deployment.client_login import get_training_infos
+from fedml.cli.server_deployment.server_login import SERVER_RUNNER_HOME_DIR
+from fedml.cli.server_deployment.server_login import SERVER_RUNNER_INFO_DIR
+from fedml.cli.server_deployment.server_login import login_role_list
 
 
 @click.group()
@@ -32,7 +33,7 @@ def mlops_version():
 
 @cli.command("status", help="Display fedml client training status.")
 def mlops_status():
-    training_infos = get_training_infos()
+    training_infos = FedMLClientRunner.get_training_infos()
     click.echo("Client training status: " + str(training_infos["training_status"]).upper())
 
 
@@ -74,10 +75,10 @@ def get_running_info(cs_home_dir, cs_info_dir):
 def display_client_logs():
     run_id, edge_id = get_running_info(CLIENT_RUNNER_HOME_DIR, CLIENT_RUNNER_INFO_DIR)
     home_dir = expanduser("~")
-    log_file = "{}/{}/fedml/logs/fedavg-cross-silo-run-{}-edge-{}.log".format(home_dir,
-                                                                              CLIENT_RUNNER_HOME_DIR,
-                                                                              str(run_id),
-                                                                              str(edge_id))
+    log_file = "{}/{}/fedml/logs/fedml-run-{}-edge-{}.log".format(home_dir,
+                                                                  CLIENT_RUNNER_HOME_DIR,
+                                                                  str(run_id),
+                                                                  str(edge_id))
     if os.path.exists(log_file):
         with open(log_file) as file_handle:
             log_lines = file_handle.readlines()
@@ -88,10 +89,10 @@ def display_client_logs():
 def display_server_logs():
     run_id, edge_id = get_running_info(SERVER_RUNNER_HOME_DIR, SERVER_RUNNER_INFO_DIR)
     home_dir = expanduser("~")
-    log_file = "{}/{}/fedml/logs/fedavg-cross-silo-run-{}-edge-{}.log".format(home_dir,
-                                                                              SERVER_RUNNER_HOME_DIR,
-                                                                              str(run_id),
-                                                                              str(edge_id))
+    log_file = "{}/{}/fedml/logs/fedml-run-{}-edge-{}.log".format(home_dir,
+                                                                  SERVER_RUNNER_HOME_DIR,
+                                                                  str(run_id),
+                                                                  str(edge_id))
     if os.path.exists(log_file):
         with open(log_file) as file_handle:
             log_lines = file_handle.readlines()
@@ -127,25 +128,49 @@ def display_server_logs():
     default="127.0.0.1",
     help="local server address.",
 )
-def mlops_login(userid, version, client, server, local_server):
+@click.option(
+    "--role",
+    "-r",
+    type=str,
+    default="local",
+    help="run as the role (options: local_server, cloud_agent, cloud_server.",
+)
+@click.option(
+    "--runner_cmd",
+    "-rc",
+    type=str,
+    default="{}",
+    help="runner commands (options: request json for star run, stop run).",
+)
+@click.option(
+    "--server_agent_id",
+    "-said",
+    type=str,
+    default="0",
+    help="server agent id.",
+)
+def mlops_login(userid, version, client, server, local_server, role, runner_cmd, server_agent_id):
     account_id = userid[0]
     platform_url = "open.fedml.ai"
     if version != "release":
         platform_url = "open-{}.fedml.ai".format(version)
 
+    # Check user id.
     if userid == "":
         click.echo(
             "Please provide your account id in the MLOps platform ({}).".format(platform_url)
         )
         return
 
+    click.echo("client {}, server {}".format(client, server))
+    # Set client as default entity.
     is_client = client
     is_server = server
     if client is None and server is None:
         is_client = True
 
-    click.echo("login...{}, {}".format(is_client, is_server))
-    if is_client:
+    click.echo("login as client: {}, as server: {}".format(is_client, is_server))
+    if is_client is True:
         pip_source_dir = os.path.dirname(__file__)
         login_cmd = os.path.join(pip_source_dir, "edge_deployment", "client_login.py")
         click.echo(login_cmd)
@@ -157,7 +182,16 @@ def mlops_login(userid, version, client, server, local_server):
              "-v", version, "-ls", local_server]).pid
         save_login_process(CLIENT_RUNNER_HOME_DIR, CLIENT_RUNNER_INFO_DIR, login_pid)
 
-    if is_server:
+    if is_server is True:
+        # Check login mode.
+        try:
+            login_role_list.index(role)
+        except ValueError as e:
+            click.echo(
+                "Please specify login mode as follows ({}).".format(str(login_role_list))
+            )
+            return
+
         pip_source_dir = os.path.dirname(__file__)
         login_cmd = os.path.join(pip_source_dir, "server_deployment", "server_login.py")
         click.echo(login_cmd)
@@ -166,7 +200,8 @@ def mlops_login(userid, version, client, server, local_server):
         cleanup_all_fedml_processes("server_login.py", exclude_login=True)
         login_pid = subprocess.Popen(
             [get_python_program(), login_cmd, "-t", "login", "-u", str(account_id),
-             "-v", version, "-ls", local_server]).pid
+             "-v", version, "-ls", local_server, "-r", role,
+             "-rc", runner_cmd, "-said", server_agent_id]).pid
         save_login_process(SERVER_RUNNER_HOME_DIR, SERVER_RUNNER_INFO_DIR, login_pid)
 
 
