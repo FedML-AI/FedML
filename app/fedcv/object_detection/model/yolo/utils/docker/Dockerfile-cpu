@@ -33,7 +33,7 @@ RUN git clone https://github.com/ultralytics/yolov5 /usr/src/yolov5
 # Usage Examples -------------------------------------------------------------------------------------------------------
 
 # Build and Push
-# t=ultralytics/yolov5:latest-cpu && sudo docker build -f utils/docker/Dockerfile-cpu -t $t . && sudo docker push $t
+# t=ultralytics/yolov5:latest-cpu && sudo docker build -f utils/docker/Dockerfile_64bit_armv8-cpu -t $t . && sudo docker push $t
 
 # Pull and Run
 # t=ultralytics/yolov5:latest-cpu && sudo docker pull $t && sudo docker run -it --ipc=host -v "$(pwd)"/datasets:/usr/src/datasets $t
