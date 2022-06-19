@@ -21,14 +21,14 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest, windows-latest, macos-latest ]
-        arch: [X86, X64, ARM, or ARM64]
+        arch: [X86, X64, ARM, ARM64]
         python-version: ['3.6', '3.7', '3.8', '3.9', '3.10']
 #        exclude:
 #          - os: macos-latest
 #            python-version: '3.8'
 #          - os: windows-latest
 #            python-version: '3.6'
-    runs-on: fedml_github_action_runner
+    runs-on: [self-hosted]
     steps:
       - uses: actions/setup-python@v4
         with:
@@ -43,7 +43,7 @@ jobs:
       matrix:
         os: [ ubuntu-latest, windows-latest, macos-latest ]
     # The type of runner that the job will run on
-    runs-on: fedml_github_action_runner
+    runs-on: [self-hosted]
     defaults:
       run:
         shell: bash
