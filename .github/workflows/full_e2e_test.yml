@@ -34,9 +34,4 @@ jobs:
 
       # Runs a single command using the runners shell
       - name: Run test cases for fedml-build, mlops-build and mlops-login
-        run: cd tests/full_e2e_test; conda info; source ./test_mlops_cli.sh
-        
-      # Runs a single command using the runners shell
-      #- name: Run logout to exit mlops cli
-      #  run: cd build_tools/github/; conda info; source ./test_mlops_cli.sh logout
-      #  continue-on-error: true
+        run: cd build_tools/smoke_test/; conda info; source ./test_mlops_cli.sh
