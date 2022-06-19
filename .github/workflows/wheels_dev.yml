@@ -74,7 +74,7 @@ jobs:
           path: wheelhouse/*.whl
 
   build_wheels_macos_m1:
-    name: Build wheels on MacOS (M1 chip, arm64)
+    name: Build wheels on MacOS (M1 Max chip, arm64)
     runs-on: [self-hosted, macOS, ARM64]
     defaults:
       run:
