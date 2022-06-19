@@ -110,7 +110,7 @@ jobs:
       - name: Store artifacts
         uses: actions/upload-artifact@v2
         with:
-          path: .python/dist/*.tar.gz
+          path: python/dist/*.tar.gz
 
 #  upload_pypi:
 #    needs: [build_wheels, build_sdist]
