@@ -37,7 +37,7 @@ jobs:
 
       - name: Build wheels
         working-directory: ./python
-        run: bash build_tools/github/build_wheels.sh
+        run: python -m cibuildwheel --output-dir wheelhouse
 #        run: cd {project}/python && python -m cibuildwheel --output-dir wheelhouse
         # to supply options, put them in 'env', like (test)
         # env:
