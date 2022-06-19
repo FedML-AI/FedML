@@ -59,7 +59,7 @@ jobs:
           CIBW_ARCHS: all
           CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.manylinux_image }}
           CIBW_MANYLINUX_I686_IMAGE: ${{ matrix.manylinux_image }}
-          CIBW_TEST_SKIP: "*-macosx_arm64" 
+          CIBW_TEST_SKIP: "*-macosx_arm64"
 #          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: bash build_tools/github/repair_windows_wheels.sh {wheel} {dest_dir} ${{ matrix.bitness }}
 #          CIBW_BEFORE_TEST_WINDOWS: bash build_tools/github/build_minimal_windows_image.sh ${{ matrix.python }} ${{ matrix.bitness }}
           CIBW_TEST_COMMAND: bash {project}/build_tools/github/test_wheels.sh
@@ -82,7 +82,7 @@ jobs:
         working-directory: python
 
     strategy:
-      # Ensure that a wheel builder finishes even if another fails
+      # Ensure that a wheel builder finishes even if another fails (1)
       fail-fast: false
       matrix:
         include:
