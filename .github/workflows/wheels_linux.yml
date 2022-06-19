@@ -6,11 +6,11 @@ on:
     - cron: "12 12 */1 * *"
   push:
     branches:
-      - dev/v0.7.0
+      - master
       - "[0-9]+.[0-9]+.X"
   pull_request:
     branches:
-      - dev/v0.7.0
+      - master
       - "[0-9]+.[0-9]+.X"
   workflow_dispatch:
 
