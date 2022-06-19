@@ -23,8 +23,25 @@ jobs:
       # Ensure that a wheel builder finishes even if another fails
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04]
-        cibw_python: [ "cp37-*", "cp38-*", "cp39-*" ]
+        include:
+          # Linux 64 bit manylinux2014
+          - os: ubuntu-latest
+            python: 38
+            bitness: 64
+            platform_id: manylinux_x86_64
+            manylinux_image: manylinux2014
+          - os: ubuntu-latest
+            python: 39
+            bitness: 64
+            platform_id: manylinux_x86_64
+            manylinux_image: manylinux2014
+
+          # NumPy on Python 3.10 only supports 64bit and is only available with manylinux2014
+          - os: ubuntu-latest
+            python: 310
+            bitness: 64
+            platform_id: manylinux_x86_64
+            manylinux_image: manylinux2014
 
     steps:
       - uses: actions/checkout@v2
@@ -41,8 +58,9 @@ jobs:
       - name: Build wheels
         working-directory: ./python
         env:
-          CIBW_SKIP: "cp35-* cp36-*"
-          CIBW_REPAIR_WHEEL_COMMAND_LINUX: "auditwheel repair --lib-sdir . -w {dest_dir} {wheel}"
+          CIBW_BUILD: cp${{ matrix.python }}-${{ matrix.platform_id }}
+          CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.manylinux_image }}
+          CIBW_MANYLINUX_I686_IMAGE: ${{ matrix.manylinux_image }}
         run: python -m cibuildwheel --output-dir wheelhouse
 #        run: cd {project}/python && python -m cibuildwheel --output-dir wheelhouse
         # to supply options, put them in 'env', like (test)
