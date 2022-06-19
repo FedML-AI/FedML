@@ -50,4 +50,4 @@ jobs:
       - name: test simulation-sp
         run: |
           cd tests/smoke_test/simulation_sp
-          python main.py
+          python main.py --cf fedml_config.yaml
