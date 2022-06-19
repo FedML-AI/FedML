@@ -13,4 +13,7 @@ FROM nvcr.io/nvidia/l4t-ml:r32.6.1-py3
 #RUN pip3 install --upgrade setuptools
 RUN ln -s /usr/include/locale.h /usr/include/xlocale.h
 RUN pip3 install h5py==2.10.0
-RUN pip3 install fedml
+
+RUN ln -nsf /usr/bin/python3 /usr/bin/python
+RUN ln -nsf /usr/bin/pip3 /usr/bin/pip
+RUN pip3 install fedml==0.7.95
