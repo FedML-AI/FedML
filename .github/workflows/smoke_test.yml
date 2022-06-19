@@ -28,7 +28,7 @@ jobs:
 #            python-version: '3.8'
 #          - os: windows-latest
 #            python-version: '3.6'
-    runs-on: [self-hosted]
+    runs-on: fedml_github_action_runner
     steps:
       - uses: actions/setup-python@v4
         with:
@@ -43,7 +43,7 @@ jobs:
       matrix:
         os: [ ubuntu-latest, windows-latest, macos-latest ]
     # The type of runner that the job will run on
-    runs-on: [self-hosted]
+    runs-on: fedml_github_action_runner
     defaults:
       run:
         shell: bash
