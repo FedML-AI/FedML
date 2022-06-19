@@ -17,6 +17,10 @@ on:
 jobs:
   # This workflow contains a single job called "mlops-cli-test"
   pip-install-fedml:
+    defaults:
+      run:
+        shell: bash
+        working-directory: python
     strategy:
       fail-fast: false
       matrix:
