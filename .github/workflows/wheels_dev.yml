@@ -73,8 +73,6 @@ jobs:
         with:
           path: wheelhouse/*.whl
 
-
-jobs:
   build_wheels_macos_m1:
     name: Build wheels on MacOS M1
     runs-on: [self-hosted, macOS, ARM64]
