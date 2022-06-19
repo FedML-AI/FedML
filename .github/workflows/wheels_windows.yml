@@ -81,22 +81,40 @@ jobs:
         with:
           path: ./python/wheelhouse/*.whl
 
+# Build the source distribution under Linux
   build_sdist:
-    name: Build source distribution
-    runs-on: [self-hosted, X64, Windows]
+    name: Source distribution
+    runs-on: [self-hosted, Linux]
+    defaults:
+      run:
+        shell: bash
+        working-directory: python
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout FedML
+        uses: actions/checkout@v1
+#
+#      - name: Setup Python
+#        uses: actions/setup-python@v2
+#        with:
+#          python-version: '3.9'  # update once build dependencies are available
 
-      - name: Build sdist
-        run: pipx run build --sdist
+      - name: Build source distribution
+        run: bash build_tools/github/build_source.sh
 
-      - uses: actions/upload-artifact@v2
+      - name: Test source distribution
+        run: bash build_tools/github/test_source.sh
+        env:
+          OMP_NUM_THREADS: 2
+          OPENBLAS_NUM_THREADS: 2
+
+      - name: Store artifacts
+        uses: actions/upload-artifact@v2
         with:
           path: dist/*.tar.gz
 
   upload_pypi:
     needs: [build_wheels, build_sdist]
-    runs-on: [self-hosted, X64, Windows]
+    runs-on: [self-hosted, Linux]
     # upload to PyPI on every tag starting with 'v'
 #    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     # alternatively, to publish when a GitHub Release is created, use the following rule:
