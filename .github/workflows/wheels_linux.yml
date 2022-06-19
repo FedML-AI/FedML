@@ -37,6 +37,8 @@ jobs:
 
       - name: Build wheels
         working-directory: ./python
+        env:
+          CIBW_SKIP: "cp35-* cp36-*"
         run: python -m cibuildwheel --output-dir wheelhouse
 #        run: cd {project}/python && python -m cibuildwheel --output-dir wheelhouse
         # to supply options, put them in 'env', like (test)
