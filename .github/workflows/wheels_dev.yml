@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build_wheels:
+  build_wheels_macos_intel:
     name: Build wheels on MacOS (Intel, x86)
     runs-on: [self-hosted, macOS, X64, intel]
     defaults:
@@ -73,126 +73,61 @@ jobs:
         with:
           path: wheelhouse/*.whl
 
-#
-#jobs:
-#  build_wheels:
-#    name: Build wheels on ${{ matrix.os }}
-#    runs-on: self-hosted
-#    defaults:
-#      run:
-#        shell: bash
-#        working-directory: python
-#
-#    strategy:
-#      # Ensure that a wheel builder finishes even if another fails
-#      fail-fast: false
-#      matrix:
-#        include:
-#          # from mpi4py import MPI
-#          #  ImportError: DLL load failed while importing MPI: The specified module could not be found.
-#          - os: windows-2019-py38-amd64
-#            python: 38
-#            bitness: 64
-#            platform_id: win_amd64
-#          # from mpi4py import MPI
-#          #  ImportError: DLL load failed while importing MPI: The specified module could not be found.
-#          - os: windows-latest-py39-amd64
-#            python: 39
-#            bitness: 64
-#            platform_id: win_amd64
-#          # ERROR: No matching distribution found for MNN==1.1.6
-#          - os: windows-latest-py310-amd64
-#            python: 310
-#            bitness: 64
-#            platform_id: win_amd64
-#          # #RROR: No matching distribution found for torch==1.11.0
-#          - os: windows-latest-py38-win32
-#            python: 38
-#            bitness: 32
-#            platform_id: win32
-#          # ERROR: No matching distribution found for torch==1.11.0
-#          - os: windows-latest-py39-win32
-#            python: 39
-#            bitness: 32
-#            platform_id: win32
-#
-#          # auditwheel.main_repair:This does not look like a platform wheel
-#          - os: ubuntu-latest-py38-x86
-#            python: 38
-#            bitness: 64
-#            platform_id: manylinux_x86_64
-#            manylinux_image: manylinux2014
-#          # auditwheel.main_repair:This does not look like a platform wheel
-#          - os: ubuntu-latest-py39-x86
-#            python: 39
-#            bitness: 64
-#            platform_id: manylinux_x86_64
-#            manylinux_image: manylinux2014
-#          # auditwheel.main_repair:This does not look like a platform wheel
-#          - os: ubuntu-latest-py310-x86
-#            python: 310
-#            bitness: 64
-#            platform_id: manylinux_x86_64
-#            manylinux_image: manylinux2014
-#
-#          # _configtest.c:2:10: fatal error: 'mpi.h' file not found
-#          - os: macos-latest-py38-x86
-#            bitness: 64
-#            python: 38
-#            platform_id: macosx_x86_64
-#          # _configtest.c:2:10: fatal error: 'mpi.h' file not found
-#          - os: macos-latest-py39-x86
-#            bitness: 64
-#            python: 39
-#            platform_id: macosx_x86_64
-#          # _configtest.c:2:10: fatal error: 'mpi.h' file not found
-#          - os: macos-latest-py310-x86
-#            bitness: 64
-#            python: 310
-#            platform_id: macosx_x86_64
-#
-#          # MacOS arm64
-#          - os: macos-latest-py38-arm64
-#            bitness: 64
-#            python: 38
-#            platform_id: macosx_arm64
-#          - os: macos-latest-py39-arm64
-#            bitness: 64
-#            python: 39
-#            platform_id: macosx_arm64
-#          - os: macos-latest-py310-arm64
-#            bitness: 64
-#            python: 310
-#            platform_id: macosx_arm64
-#
-#    steps:
-#      - uses: actions/checkout@v2
-#
-#      # Used to host cibuildwheel
-#      - uses: actions/setup-python@v2
-#
-#      - name: Install cibuildwheel
-#        run: python -m pip install cibuildwheel==2.5.0
-#
-#      - name: Build wheels
-#        env:
-#          CIBW_BUILD: cp${{ matrix.python }}-${{ matrix.platform_id }}
-#          CIBW_ARCHS: all
-#          CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.manylinux_image }}
-#          CIBW_MANYLINUX_I686_IMAGE: ${{ matrix.manylinux_image }}
-#          CIBW_TEST_SKIP: "*-macosx_arm64"
-##          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: bash build_tools/github/repair_windows_wheels.sh {wheel} {dest_dir} ${{ matrix.bitness }}
-##          CIBW_BEFORE_TEST_WINDOWS: bash build_tools/github/build_minimal_windows_image.sh ${{ matrix.python }} ${{ matrix.bitness }}
-#          CIBW_TEST_COMMAND: bash {project}/build_tools/github/test_wheels.sh
-#          CIBW_BUILD_VERBOSITY: 1
-#        run: bash build_tools/github/build_wheels.sh
-#        # to supply options, put them in 'env', like:
-#        # env:
-#        #   CIBW_SOME_OPTION: value
-#      - name: Store artifacts
-#        uses: actions/upload-artifact@v2
-#        with:
-#          path: wheelhouse/*.whl
+  build_wheels_macos_m1:
+    name: Build wheels on MacOS (M1 chip, arm64)
+    runs-on: self-hosted
+    defaults:
+      run:
+        shell: bash
+        working-directory: python
+
+    strategy:
+      # Ensure that a wheel builder finishes even if another fails
+      fail-fast: false
+      matrix:
+        include:
+          # MacOS arm64
+          - os: macos-latest-py38-arm64
+            bitness: 64
+            python: 38
+            platform_id: macosx_arm64
+          - os: macos-latest-py39-arm64
+            bitness: 64
+            python: 39
+            platform_id: macosx_arm64
+          - os: macos-latest-py310-arm64
+            bitness: 64
+            python: 310
+            platform_id: macosx_arm64
+
+    steps:
+      - uses: actions/checkout@v2
+
+      # Used to host cibuildwheel
+      - uses: actions/setup-python@v2
+
+      - name: Install cibuildwheel
+        run: python -m pip install cibuildwheel==2.5.0
+
+      - name: Build wheels
+        env:
+          CIBW_BUILD: cp${{ matrix.python }}-${{ matrix.platform_id }}
+          CIBW_ARCHS: all
+          CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.manylinux_image }}
+          CIBW_MANYLINUX_I686_IMAGE: ${{ matrix.manylinux_image }}
+          CIBW_TEST_SKIP: "*-macosx_arm64"
+#          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: bash build_tools/github/repair_windows_wheels.sh {wheel} {dest_dir} ${{ matrix.bitness }}
+#          CIBW_BEFORE_TEST_WINDOWS: bash build_tools/github/build_minimal_windows_image.sh ${{ matrix.python }} ${{ matrix.bitness }}
+          CIBW_TEST_COMMAND: bash {project}/build_tools/github/test_wheels.sh
+          CIBW_BUILD_VERBOSITY: 1
+        run: bash build_tools/github/build_wheels.sh
+        # to supply options, put them in 'env', like:
+        # env:
+        #   CIBW_SOME_OPTION: value
+      - name: Store artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          path: wheelhouse/*.whl
 #
 ## Build the source distribution under Linux
 #  build_sdist:
