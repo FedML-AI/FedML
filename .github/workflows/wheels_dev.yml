@@ -187,7 +187,7 @@ jobs:
           CIBW_TEST_COMMAND_WINDOWS: bash {project}/build_tools/github/test_windows_wheels.sh ${{ matrix.python }} ${{ matrix.bitness }}
           CIBW_BUILD_VERBOSITY: 1
         run: bash build_tools/github/build_wheels.sh
-        # to supply options, put them in 'env', like:
+        # to supply options, put them in 'env', like
         # env:
         #   CIBW_SOME_OPTION: value
       - name: Store artifacts
