@@ -29,7 +29,7 @@ jobs:
         python-version: ['3.6', '3.7', '3.8', '3.9']
 #        exclude:
 #          - os: macos-latest
-#            python-version: '3.8' 
+#            python-version: '3.8'
 #          - os: windows-latest
 #            python-version: '3.6'
     runs-on: [self-hosted]
@@ -47,3 +47,7 @@ jobs:
           cd tests/smoke_test/cli
           bash login.sh
           bash build.sh
+      - name: test simulation-sp
+        run: |
+          cd tests/smoke_test/simulation_sp
+          python main.py
