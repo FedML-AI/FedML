@@ -1,11 +1,11 @@
 name: Pylint
 
-on: [push]
-
+on:
   push:
-    branches: [ master, dev/v0.7.0 ]
+    branches: [ master]
+
   pull_request:
-    branches: [ master, dev/v0.7.0 ]
+    branches: [ master]
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
