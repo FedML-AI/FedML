@@ -17,7 +17,7 @@ on:
 jobs:
   build_wheels:
     name: Build wheels on Linux (Ubuntu)
-    runs-on: [self-hosted, Linux, Linux1, Linux2, Linux3, Linux4]
+    runs-on: [self-hosted, Linux]
 
     strategy:
       # Ensure that a wheel builder finishes even if another fails
