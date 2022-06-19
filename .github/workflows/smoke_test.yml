@@ -6,9 +6,9 @@ name: MLOps CLI Test
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ master, dev/v0.7.0 ]
+    branches: [ master, test/v0.7.0, dev/v0.7.0 ]
   pull_request:
-    branches: [ master, dev/v0.7.0 ]
+    branches: [ master, test/v0.7.0, dev/v0.7.0 ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -16,7 +16,18 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "mlops-cli-test"
+  pip-install-fedml:
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+    runs-on: fedml_github_action_runner
+    steps:
+      - name: pip install fedml
+        run: |
+          pip install fedml
+
   mlops-cli-test:
+    needs: [pip-install-fedml]
     strategy:
       matrix:
         os: [ ubuntu-latest, windows-latest, macos-latest ]
@@ -33,9 +44,12 @@ jobs:
       - uses: actions/checkout@v3
 
       # Runs a single command using the runners shell
-      - name: Run test cases for fedml-build, mlops-build and mlops-login
-        run: cd tests/full_e2e_test; conda info; source ./test_mlops_cli.sh
-        
+      - name: test "fedml login" and "fedml build"
+        run: |
+          cd tests/smoke_test/cli
+          bash login.sh
+          bash build.sh
+
       # Runs a single command using the runners shell
       #- name: Run logout to exit mlops cli
       #  run: cd build_tools/github/; conda info; source ./test_mlops_cli.sh logout
