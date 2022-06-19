@@ -36,22 +36,6 @@ jobs:
       - name: pip install fedml
         run: |
           pip install fedml
-
-  mlops-cli-test:
-    needs: [pip-install-fedml]
-    strategy:
-      matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
-    # The type of runner that the job will run on
-    runs-on: fedml_github_action_runner
-    defaults:
-      run:
-        shell: bash
-        working-directory: python
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
-    steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
 
       # Runs a single command using the runners shell
@@ -60,8 +44,3 @@ jobs:
           cd tests/smoke_test/cli
           bash login.sh
           bash build.sh
-
-      # Runs a single command using the runners shell
-      #- name: Run logout to exit mlops cli
-      #  run: cd build_tools/github/; conda info; source ./test_mlops_cli.sh logout
-      #  continue-on-error: true
