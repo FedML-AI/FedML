@@ -17,8 +17,11 @@ on:
 jobs:
   # This workflow contains a single job called "mlops-cli-test"
   mlops-cli-test:
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
     # The type of runner that the job will run on
-    runs-on: fedml_github_action_runner_linux
+    runs-on: fedml_github_action_runner
     defaults:
       run:
         shell: bash
