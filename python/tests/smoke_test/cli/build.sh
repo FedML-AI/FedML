@@ -14,28 +14,18 @@
 #  -df, --dest_folder TEXT    the destination package folder path
 #  --help                     Show this message and exit.
 
-
-
 # build client package
-SOURCE=./../cross_silo/client/
-ENTRY=torch_client.py
-CONFIG=./../cross_silo/config
-DEST=./
+cd ../../../../examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line
 
-fedml build -t client \
--sf $SOURCE \
--ep $ENTRY \
--cf $CONFIG \
--df $DEST
+SOURCE=client
+ENTRY=torch_client.py
+CONFIG=config
+DEST=./mlops
+fedml build -t client -sf $SOURCE -ep $ENTRY -cf $CONFIG -df $DEST
 
 # build server package
-SOURCE=./../cross_silo/server/
+SOURCE=server
 ENTRY=torch_server.py
-CONFIG=./../cross_silo/config
-DEST=./
-
-fedml build -t server \
--sf $SOURCE \
--ep $ENTRY \
--cf $CONFIG \
--df $DEST
+CONFIG=config
+DEST=./mlops
+fedml build -t server -sf $SOURCE -ep $ENTRY -cf $CONFIG -df $DEST
