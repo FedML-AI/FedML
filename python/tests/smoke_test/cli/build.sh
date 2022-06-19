@@ -17,6 +17,10 @@
 # build client package
 cd ${pwd}/python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line
 
+pwd
+
+ls
+
 SOURCE=client
 ENTRY=torch_client.py
 CONFIG=config
