@@ -38,9 +38,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - uses: actions/checkout@v3
-      - name: pip install fedml
+      - name: pip install -e ./
         run: |
-          pip install fedml
+          pip install -e ./
       # Runs a single command using the runners shell
       - name: test "fedml login" and "fedml build"
         run: |
