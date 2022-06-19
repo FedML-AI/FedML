@@ -25,19 +25,68 @@ jobs:
       matrix:
         include:
           # auditwheel.main_repair:This does not look like a platform wheel
-          - os: ubuntu-latest-py38-x86
+          - os: ubuntu-20.04
+            python: 37
+            bitness: 64
+            platform_id: manylinux_x86_64
+            manylinux_image: manylinux2014
+          - os: ubuntu-20.04
             python: 38
             bitness: 64
             platform_id: manylinux_x86_64
             manylinux_image: manylinux2014
           # auditwheel.main_repair:This does not look like a platform wheel
-          - os: ubuntu-latest-py39-x86
+          - os: ubuntu-20.04
             python: 39
             bitness: 64
             platform_id: manylinux_x86_64
             manylinux_image: manylinux2014
           # auditwheel.main_repair:This does not look like a platform wheel
-          - os: ubuntu-latest-py310-x86
+          - os: ubuntu-20.04
+            python: 310
+            bitness: 64
+            platform_id: manylinux_x86_64
+            manylinux_image: manylinux2014
+
+          - os: ubuntu-18.04
+            python: 37
+            bitness: 64
+            platform_id: manylinux_x86_64
+            manylinux_image: manylinux2014
+          - os: ubuntu-18.04
+            python: 38
+            bitness: 64
+            platform_id: manylinux_x86_64
+            manylinux_image: manylinux2014
+          - os: ubuntu-18.04
+            python: 39
+            bitness: 64
+            platform_id: manylinux_x86_64
+            manylinux_image: manylinux2014
+          - os: ubuntu-18.04
+            python: 310
+            bitness: 64
+            platform_id: manylinux_x86_64
+            manylinux_image: manylinux2014
+
+
+          - os: ubuntu-latest
+            python: 37
+            bitness: 64
+            platform_id: manylinux_x86_64
+            manylinux_image: manylinux2014
+
+          - os: ubuntu-latest
+            python: 38
+            bitness: 64
+            platform_id: manylinux_x86_64
+            manylinux_image: manylinux2014
+          - os: ubuntu-latest
+            python: 39
+            bitness: 64
+            platform_id: manylinux_x86_64
+            manylinux_image: manylinux2014
+          - os: ubuntu-latest
             python: 310
             bitness: 64
             platform_id: manylinux_x86_64
