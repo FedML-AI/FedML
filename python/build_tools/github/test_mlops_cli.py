@@ -8,7 +8,7 @@ from os.path import expanduser
 import psutil
 import requests
 import yaml
-from fedml.cli.edge_deployment.mqtt_manager import MqttManager
+from fedml.cli.comm_utils.mqtt_manager import MqttManager
 from fedml.core.mlops.mlops_configs import MLOpsConfigs
 
 
