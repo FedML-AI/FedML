@@ -73,8 +73,10 @@ jobs:
         with:
           path: wheelhouse/*.whl
 
+
+jobs:
   build_wheels_macos_m1:
-    name: Build wheels on MacOS (M1 Max arm64)
+    name: Build wheels on MacOS M1
     runs-on: [self-hosted, macOS, ARM64]
     defaults:
       run:
@@ -82,7 +84,7 @@ jobs:
         working-directory: python
 
     strategy:
-      # Ensure that a wheel builder finishes even if another fails (test2)
+      # Ensure that a wheel builder finishes even if another fails
       fail-fast: false
       matrix:
         include:
