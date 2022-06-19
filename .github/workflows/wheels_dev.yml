@@ -6,18 +6,18 @@ on:
     - cron: "12 12 */1 * *"
   push:
     branches:
-      - main
+      - dev/v0.7.0
       - "[0-9]+.[0-9]+.X"
   pull_request:
     branches:
-      - main
+      - dev/v0.7.0
       - "[0-9]+.[0-9]+.X"
   workflow_dispatch:
 
 jobs:
   build_wheels:
     name: Build wheels on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    runs-on: Chaoyangs-MBP
     defaults:
       run:
         shell: bash
@@ -137,7 +137,7 @@ jobs:
 # Build the source distribution under Linux
   build_sdist:
     name: Source distribution
-    runs-on: ubuntu-latest
+    runs-on: Chaoyangs-MBP
     defaults:
       run:
         shell: bash
@@ -169,7 +169,7 @@ jobs:
   upload_anaconda:
     name: Upload to Anaconda
     needs: [build_wheels, build_sdist]
-    runs-on: ubuntu-latest
+    runs-on: Chaoyangs-MBP
     defaults:
       run:
         shell: bash
