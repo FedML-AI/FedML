@@ -130,7 +130,7 @@ jobs:
           path: wheelhouse/*.whl
 
   build_wheels_windows11:
-    name: Build wheels on MacOS (Intel, x86)
+    name: Build wheels on Windows (x86)
     runs-on: [self-hosted, X64, Windows]
     defaults:
       run:
