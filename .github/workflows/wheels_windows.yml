@@ -1,4 +1,4 @@
-name: (dev) Build Cross-platform Wheels
+name: Wheels for Windows
 # https://github.com/pypa/cibuildwheel
 on:
   schedule:
