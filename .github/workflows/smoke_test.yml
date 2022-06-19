@@ -22,12 +22,17 @@ jobs:
       matrix:
         os: [ ubuntu-latest, windows-latest, macos-latest ]
         arch: [X86, X64, ARM, or ARM64]
-
+        python-version: ['3.6', '3.7', '3.8', '3.9', '3.10']
+#        exclude:
+#          - os: macos-latest
+#            python-version: '3.8'
+#          - os: windows-latest
+#            python-version: '3.6'
     runs-on: fedml_github_action_runner
     steps:
       - uses: actions/setup-python@v4
         with:
-          python-version: '3.x' # Version range or exact version of a Python version to use, using SemVer's version range syntax
+          python-version: ${{ matrix.python-version }}
       - name: pip install fedml
         run: |
           pip install fedml
