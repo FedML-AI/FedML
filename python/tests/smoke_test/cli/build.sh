@@ -1,3 +1,4 @@
+#!/bin/bash
 # https://doc.fedml.ai/mlops/api.html
 
 #fedml build -t client -sf $SOURCE -ep $ENTRY -cf $CONFIG -df $DEST
@@ -15,11 +16,8 @@
 #  --help                     Show this message and exit.
 
 # build client package
-cd ${pwd}/python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line
-
-pwd
-
-ls
+cd ../../../examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line
+echo "$PWD"
 
 SOURCE=client
 ENTRY=torch_client.py
