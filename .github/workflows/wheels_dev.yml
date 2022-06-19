@@ -177,7 +177,7 @@ jobs:
 
       - name: Build wheels
         env:
-          CIBW_BUILD: cp${{ matrix.python }}-${{ matrix.platform_id }}
+#          CIBW_BUILD: cp${{ matrix.python }}-${{ matrix.platform_id }}
 #          CIBW_ARCHS: all
 #          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: bash {project}/python/build_tools/github/repair_windows_wheels.sh {wheel} {dest_dir} ${{ matrix.bitness }}
 #          CIBW_BEFORE_TEST_WINDOWS: bash {project}/python/build_tools/github/build_minimal_windows_image.sh ${{ matrix.python }} ${{ matrix.bitness }}
