@@ -82,7 +82,7 @@ jobs:
         working-directory: python
 
     strategy:
-      # Ensure that a wheel builder finishes even if another fails (test1)
+      # Ensure that a wheel builder finishes even if another fails (test2)
       fail-fast: false
       matrix:
         include:
