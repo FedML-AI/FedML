@@ -48,7 +48,7 @@ def test_is_ok(test_run_id, test_edge_id, test_function, ok_message):
 
 def load_edge_infos():
     home_dir = expanduser("~")
-    local_pkg_data_dir = os.path.join(home_dir, "fedml-client", "fedml", "data")
+    local_pkg_data_dir = os.path.join(home_dir, "fedml-client", "fedml", "../data")
     edge_info_file = os.path.join(local_pkg_data_dir, "edge_infos.yaml")
     edge_info_file_handle = load_yaml_config(edge_info_file)
     return edge_info_file_handle["unique_device_id"], edge_info_file_handle["edge_id"]
