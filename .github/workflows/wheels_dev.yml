@@ -75,7 +75,7 @@ jobs:
 
   build_wheels_macos_m1:
     name: Build wheels on MacOS (M1 chip, arm64)
-    runs-on: self-hosted
+    runs-on: [self-hosted, macOS, ARM64]
     defaults:
       run:
         shell: bash
