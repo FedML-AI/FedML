@@ -48,6 +48,7 @@ jobs:
         run: python -m pip install cibuildwheel
 
       - name: Build wheels
+        uses: pypa/cibuildwheel@v2.7.0
         working-directory: ./python
 #        env:
 #          CIBW_BUILD: cp${{ matrix.python }}-${{ matrix.platform_id }}
