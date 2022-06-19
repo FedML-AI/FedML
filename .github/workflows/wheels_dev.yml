@@ -54,24 +54,24 @@ jobs:
         run: python -m pip install cibuildwheel==2.5.0
 
       - name: Build wheels
-        env:
-          CIBW_BUILD: cp${{ matrix.python }}-${{ matrix.platform_id }}
-          CIBW_ARCHS: all
-          CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.manylinux_image }}
-          CIBW_MANYLINUX_I686_IMAGE: ${{ matrix.manylinux_image }}
-          CIBW_TEST_SKIP: "*-macosx_arm64"
-#          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: bash build_tools/github/repair_windows_wheels.sh {wheel} {dest_dir} ${{ matrix.bitness }}
-#          CIBW_BEFORE_TEST_WINDOWS: bash build_tools/github/build_minimal_windows_image.sh ${{ matrix.python }} ${{ matrix.bitness }}
-          CIBW_TEST_COMMAND: bash {project}/build_tools/github/test_wheels.sh
-          CIBW_BUILD_VERBOSITY: 1
+        working-directory: ./python
+#        env:
+#          CIBW_BUILD: cp${{ matrix.python }}-${{ matrix.platform_id }}
+#          CIBW_ARCHS: all
+#          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: bash {project}/python/build_tools/github/repair_windows_wheels.sh {wheel} {dest_dir} ${{ matrix.bitness }}
+#          CIBW_BEFORE_TEST_WINDOWS: bash {project}/python/build_tools/github/build_minimal_windows_image.sh ${{ matrix.python }} ${{ matrix.bitness }}
+#          CIBW_TEST_COMMAND: bash {project}/python/build_tools/github/test_wheels.sh
+#          CIBW_TEST_COMMAND_WINDOWS: bash {project}/python/build_tools/github/test_windows_wheels.sh ${{ matrix.python }} ${{ matrix.bitness }}
+#          CIBW_BUILD_VERBOSITY: 1
         run: bash build_tools/github/build_wheels.sh
-        # to supply options, put them in 'env', like:
+#        run: cd {project}/python && python -m cibuildwheel --output-dir wheelhouse
+        # to supply options, put them in 'env', like (test)
         # env:
         #   CIBW_SOME_OPTION: value
       - name: Store artifacts
         uses: actions/upload-artifact@v2
         with:
-          path: wheelhouse/*.whl
+          path: ./python/wheelhouse/*.whl
 
   build_wheels_macos_ARM:
     name: Build-wheels-on-MacOS-m1
@@ -110,24 +110,24 @@ jobs:
         run: python -m pip install cibuildwheel==2.5.0
 
       - name: Build wheels
-        env:
-          CIBW_BUILD: cp${{ matrix.python }}-${{ matrix.platform_id }}
-          CIBW_ARCHS: all
-          CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.manylinux_image }}
-          CIBW_MANYLINUX_I686_IMAGE: ${{ matrix.manylinux_image }}
-          CIBW_TEST_SKIP: "*-macosx_arm64"
-#          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: bash build_tools/github/repair_windows_wheels.sh {wheel} {dest_dir} ${{ matrix.bitness }}
-#          CIBW_BEFORE_TEST_WINDOWS: bash build_tools/github/build_minimal_windows_image.sh ${{ matrix.python }} ${{ matrix.bitness }}
-          CIBW_TEST_COMMAND: bash {project}/build_tools/github/test_wheels.sh
-          CIBW_BUILD_VERBOSITY: 1
+        working-directory: ./python
+#        env:
+#          CIBW_BUILD: cp${{ matrix.python }}-${{ matrix.platform_id }}
+#          CIBW_ARCHS: all
+#          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: bash {project}/python/build_tools/github/repair_windows_wheels.sh {wheel} {dest_dir} ${{ matrix.bitness }}
+#          CIBW_BEFORE_TEST_WINDOWS: bash {project}/python/build_tools/github/build_minimal_windows_image.sh ${{ matrix.python }} ${{ matrix.bitness }}
+#          CIBW_TEST_COMMAND: bash {project}/python/build_tools/github/test_wheels.sh
+#          CIBW_TEST_COMMAND_WINDOWS: bash {project}/python/build_tools/github/test_windows_wheels.sh ${{ matrix.python }} ${{ matrix.bitness }}
+#          CIBW_BUILD_VERBOSITY: 1
         run: bash build_tools/github/build_wheels.sh
-        # to supply options, put them in 'env', like:
+#        run: cd {project}/python && python -m cibuildwheel --output-dir wheelhouse
+        # to supply options, put them in 'env', like (test)
         # env:
         #   CIBW_SOME_OPTION: value
       - name: Store artifacts
         uses: actions/upload-artifact@v2
         with:
-          path: wheelhouse/*.whl
+          path: ./python/wheelhouse/*.whl
 
   build_wheels_windows11:
     name: Build wheels on Windows (x86)
@@ -195,66 +195,37 @@ jobs:
         with:
           path: ./python/wheelhouse/*.whl
 
-#
-## Build the source distribution under Linux
-#  build_sdist:
-#    name: Source distribution
-#    runs-on: self-hosted
-#    defaults:
-#      run:
-#        shell: bash
-#        working-directory: python
-#    steps:
-#      - name: Checkout FedML
-#        uses: actions/checkout@v1
-#
-#      - name: Setup Python
-#        uses: actions/setup-python@v2
-#        with:
-#          python-version: '3.9'  # update once build dependencies are available
-#
-#      - name: Build source distribution
-#        run: bash build_tools/github/build_source.sh
-#
-#      - name: Test source distribution
-#        run: bash build_tools/github/test_source.sh
-#        env:
-#          OMP_NUM_THREADS: 2
-#          OPENBLAS_NUM_THREADS: 2
-#
-#      - name: Store artifacts
-#        uses: actions/upload-artifact@v2
-#        with:
-#          path: dist/*.tar.gz
-#
-#  # Upload the wheels and the source distribution
-#  upload_anaconda:
-#    name: Upload to Anaconda
-#    needs: [build_wheels, build_sdist]
-#    runs-on: self-hosted
-#    defaults:
-#      run:
-#        shell: bash
-#        working-directory: python
-#    steps:
-#      - name: Checkout FedML
-#        uses: actions/checkout@v1
-#
-#      - name: Download artifacts
-#        uses: actions/download-artifact@v2
-#        with:
-#          path: dist
-#
-#      - name: Setup Python
-#        uses: actions/setup-python@v2
-#
-#      - name: Upload artifacts
-#        env:
-#          # Secret variables need to be mapped to environment variables explicitly
-#          SCIKIT_LEARN_NIGHTLY_UPLOAD_TOKEN: ${{ secrets.FEDML_NIGHTLY_UPLOAD_TOKEN }}
-#          SCIKIT_LEARN_STAGING_UPLOAD_TOKEN: ${{ secrets.FEDML_STAGING_UPLOAD_TOKEN }}
-#        # Force a replacement if the remote file already exists
-#        run: bash build_tools/github/upload_anaconda.sh
+  build_sdist:
+    name: Build source distribution
+    runs-on: [self-hosted, X64, Windows]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build sdist
+        run: pipx run build --sdist
+
+      - uses: actions/upload-artifact@v2
+        with:
+          path: dist/*.tar.gz
+
+  upload_pypi:
+    needs: [build_wheels, build_sdist]
+    runs-on: [self-hosted, X64, Windows]
+    # upload to PyPI on every tag starting with 'v'
+#    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    # alternatively, to publish when a GitHub Release is created, use the following rule:
+    # if: github.event_name == 'release' && github.event.action == 'published'
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          name: artifact
+          path: dist
+
+      - uses: pypa/gh-action-pypi-publish@v1.4.2
+        with:
+          user: chaoyanghe
+          password: ${{ secrets.pypi_password }}
+          # To test: repository_url: https://test.pypi.org/legacy/
 
 
 # three errors:
