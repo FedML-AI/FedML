@@ -31,17 +31,16 @@ jobs:
 #          - os: macos-latest
 #            python-version: '3.8'
 #          - os: windows-latest
-#            python-version: '3.6' 
+#            python-version: '3.6'
     runs-on: [self-hosted]
     steps:
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+      - uses: actions/checkout@v3
       - name: pip install fedml
         run: |
           pip install fedml
-      - uses: actions/checkout@v3
-
       # Runs a single command using the runners shell
       - name: test "fedml login" and "fedml build"
         run: |
