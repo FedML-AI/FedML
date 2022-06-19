@@ -193,8 +193,7 @@ jobs:
       - name: Store artifacts
         uses: actions/upload-artifact@v2
         with:
-          path: wheelhouse/*.whl
-
+          path: ./python/wheelhouse/*.whl
 
 #
 ## Build the source distribution under Linux
