@@ -20,7 +20,7 @@ jobs:
     runs-on: [self-hosted, Linux]
 
     strategy:
-      # Ensure that a wheel builder finishes even if another fails
+      # Ensure that a wheel builder finishes even if another fails 
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
