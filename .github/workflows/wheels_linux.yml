@@ -24,6 +24,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-20.04]
+        cibw_python: [ "cp36-*", "cp37-*", "cp38-*", "cp39-*" ]
 
     steps:
       - uses: actions/checkout@v2
