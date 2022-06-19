@@ -1,1 +1,0 @@
-This folder maintains the user-level code test scripts for CI/CD.
