@@ -18,10 +18,16 @@ jobs:
   # This workflow contains a single job called "mlops-cli-test"
   pip-install-fedml:
     strategy:
+      fail-fast: false
       matrix:
         os: [ ubuntu-latest, windows-latest, macos-latest ]
+        arch: [X86, X64, ARM, or ARM64]
+
     runs-on: fedml_github_action_runner
     steps:
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.x' # Version range or exact version of a Python version to use, using SemVer's version range syntax
       - name: pip install fedml
         run: |
           pip install fedml
