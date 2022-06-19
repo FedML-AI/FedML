@@ -116,7 +116,7 @@ jobs:
     needs: [build_wheels, build_sdist]
     runs-on: [self-hosted, Linux]
     # upload to PyPI on every tag starting with 'v'
-    if: github.event_name == 'push' && contains(github.event.comment, "release v")
+#    if: github.event_name == 'push' && contains(github.event.comment, 'release v')
     # alternatively, to publish when a GitHub Release is created, use the following rule:
     # if: github.event_name == 'release' && github.event.action == 'published'
     steps:
@@ -131,7 +131,6 @@ jobs:
           user: chaoyanghe
           password: ${{ secrets.pypi_password }}
           # To test: repository_url: https://test.pypi.org/legacy/
-
 
 # three errors:
         # 1) from mpi4py import MPI
