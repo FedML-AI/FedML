@@ -15,7 +15,7 @@
 #  --help                     Show this message and exit.
 
 # build client package
-cd ../../../../examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line
+cd ${pwd}/python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line
 
 SOURCE=client
 ENTRY=torch_client.py
