@@ -54,21 +54,19 @@ jobs:
 
       # https://github.com/mpi4py/setup-mpi
       - name: Setup MPI (Linux)
-        uses: build_tools/setup_mpi
-        with:
-          mpi: ${{ 'mpich' }}
+        run: |
+          sudo apt install -y -q openmpi-bin libopenmpi-dev
         if:   ${{ matrix.os == 'ubuntu-latest' }}
 
       - name: Setup MPI (MacOS)
-        uses: build_tools/setup_mpi
-        with:
-          mpi: ${{ 'openmpi' }}
+        run: |
+          sudo apt install -y -q openmpi-bin libopenmpi-dev
         if:   ${{ matrix.os == 'macos-latest' }}
 
       - name: Setup MPI (Windows)
-        uses: build_tools/setup_mpi
-        with:
-          mpi: ${{ 'msmpi' }}
+        run: |
+          sdir=$(dirname "${BASH_SOURCE[0]}")
+          pwsh "${sdir}\\build_tools\\setup_mpi\\setup-msmpi.ps1"
         if:   ${{ matrix.os == 'windows-latest' }}
 
       - name: Show MPI info (Ubuntu)
