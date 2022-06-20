@@ -51,11 +51,11 @@ jobs:
       - name: test client 1 of cross-device-horizontal
         run: |
           cd tests/smoke_test/cross_silo
-          bash run_client_1.sh
+          bash run_client.sh 1
         if:   ${{ matrix.client-index == '1' }}
 
       - name: test client 2 of cross-device-horizontal
         run: |
           cd tests/smoke_test/cross_silo
-          bash run_client_2.sh
+          bash run_client.sh 2
         if: ${{ matrix.client-index == '2' }}
