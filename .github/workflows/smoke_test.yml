@@ -32,7 +32,7 @@ jobs:
 #            python-version: '3.8'
 #          - os: windows-latest
 #            python-version: '3.6'
-    runs-on: [self-hosted, fedml_github_action_runner_linux]
+    runs-on: [self-hosted]
     steps:
       - uses: actions/setup-python@v4
         with:
