@@ -53,7 +53,40 @@ jobs:
           python main.py --cf fedml_config.yaml
 
       # https://github.com/mpi4py/setup-mpi
-      - uses: mpi4py/setup-mpi@v1
+      - name: Setup MPI (Linux)
+        uses: ./build_tools/setup_mpi
+        with:
+          mpi: ${{ 'mpich' }}
+        if:   ${{ matrix.os == 'ubuntu-latest' }}
+
+      - name: Setup MPI (MacOS)
+        uses: ./build_tools/setup_mpi
+        with:
+          mpi: ${{ 'openmpi' }}
+        if:   ${{ matrix.os == 'macos-latest' }}
+
+      - name: Setup MPI (MacOS)
+        uses: ./build_tools/setup_mpi
+        with:
+          mpi: ${{ 'msmpi' }}
+        if:   ${{ matrix.os == 'windows-latest' }}
+
+      - name: Show MPI info (Ubuntu)
+        run:  mpichversion
+        if:   ${{ matrix.os == 'ubuntu-latest' }}
+
+      - name: Show MPI info (MacOS)
+        run:  ompi_info
+        if:   ${{ matrix.os == 'macos-latest' }}
+
+      - name: Show MPI info (Windows)
+        run: |
+          Write-Host MSMPI_BIN=$Env:MSMPI_BIN
+          Write-Host MSMPI_INC=$Env:MSMPI_INC
+          Write-Host MSMPI_LIB32=$Env:MSMPI_LIB32
+          Write-Host MSMPI_LIB64=$Env:MSMPI_LIB64
+        if:   ${{ matrix.os == 'windows-latest' }}
+
       - name: test simulation-mpi
         run: |
           cd tests/smoke_test/simulation_mpi
