@@ -54,19 +54,19 @@ jobs:
 
       # https://github.com/mpi4py/setup-mpi
       - name: Setup MPI (Linux)
-        uses: ./build_tools/setup_mpi
+        uses: build_tools/setup_mpi
         with:
           mpi: ${{ 'mpich' }}
         if:   ${{ matrix.os == 'ubuntu-latest' }}
 
       - name: Setup MPI (MacOS)
-        uses: ./build_tools/setup_mpi
+        uses: build_tools/setup_mpi
         with:
           mpi: ${{ 'openmpi' }}
         if:   ${{ matrix.os == 'macos-latest' }}
 
       - name: Setup MPI (Windows)
-        uses: ./build_tools/setup_mpi
+        uses: build_tools/setup_mpi
         with:
           mpi: ${{ 'msmpi' }}
         if:   ${{ matrix.os == 'windows-latest' }}
