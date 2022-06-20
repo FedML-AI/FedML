@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: SMOKE TEST
+name: SMOKE TEST (MPI)
 
 # Controls when the workflow will run
 on:
@@ -15,42 +15,6 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  pip-install-fedml-and-test-sp:
-    defaults:
-      run:
-        shell: bash
-        working-directory: python
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
-        arch: [X64, ARM64]
-        python-version: ['3.7', '3.8', '3.9']
-#        exclude:
-#          - os: macos-latest
-#            python-version: '3.8'
-#          - os: windows-latest
-#            python-version: '3.6'
-    runs-on: [self-hosted]
-    steps:
-      - uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-      - uses: actions/checkout@v3
-      - name: pip install -e ./
-        run: |
-          pip install -e ./
-
-      - name: test "fedml login" and "fedml build"
-        run: |
-          cd tests/smoke_test/cli
-          bash login.sh
-          bash build.sh
-      - name: test simulation-sp
-        run: |
-          cd tests/smoke_test/simulation_sp
-          python main.py --cf fedml_config.yaml
-
   test-simulation-mpi:
     defaults:
       run:
@@ -117,48 +81,3 @@ jobs:
         run: |
           cd tests/smoke_test/simulation_mpi
           bash run_one_line_example.sh
-
-  cross-device-horizontal-test:
-    defaults:
-      run:
-        shell: bash
-        working-directory: python
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
-        arch: [X64, ARM64]
-        python-version: ['3.7', '3.8', '3.9']
-        client-index: ['0', '1', '2']
-#        exclude:
-#          - os: macos-latest
-#            python-version: '3.8'
-#          - os: windows-latest
-#            python-version: '3.6'
-    runs-on: [self-hosted]
-    steps:
-      - uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-      - uses: actions/checkout@v3
-      - name: pip install -e ./
-        run: |
-          pip install -e ./
-
-      - name: test server of cross-device-horizontal
-        run: |
-          cd tests/smoke_test/cross_silo
-          bash run_server.sh
-        if:   ${{ matrix.client-index == '0' }}
-
-      - name: test client 1 of cross-device-horizontal
-        run: |
-          cd tests/smoke_test/cross_silo
-          bash run_client_1.sh
-        if:   ${{ matrix.client-index == '1' }}
-
-      - name: test client 1 of cross-device-horizontal
-        run: |
-          cd tests/smoke_test/cross_silo
-          bash run_client_2.sh
-        if: ${{ matrix.client-index == '2' }}
