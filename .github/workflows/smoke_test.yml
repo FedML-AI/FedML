@@ -68,7 +68,7 @@ jobs:
       - name: Setup MPI (Windows)
         run: |
           sdir=$(dirname "${BASH_SOURCE[0]}")
-          pwsh "${sdir}\\build_tools\\setup_mpi\\setup-msmpi.ps1"
+          powershell "${sdir}\\build_tools\\setup_mpi\\setup-msmpi.ps1"
           pip install mpi4py
         if:   ${{ matrix.os == 'windows-latest' }}
 
@@ -92,3 +92,48 @@ jobs:
         run: |
           cd tests/smoke_test/simulation_mpi
           bash run_one_line_example.sh
+
+  cross-device-horizontal-test:
+    defaults:
+      run:
+        shell: bash
+        working-directory: python
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        arch: [X86, X64, ARM, ARM64]
+        python-version: ['3.6', '3.7', '3.8', '3.9']
+        client-index: ['0', '1', '2']
+#        exclude:
+#          - os: macos-latest
+#            python-version: '3.8'
+#          - os: windows-latest
+#            python-version: '3.6'
+    runs-on: [self-hosted]
+    steps:
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/checkout@v3
+      - name: pip install -e ./
+        run: |
+          pip install -e ./
+
+      - name: test server of cross-device-horizontal
+        run: |
+          cd tests/smoke_test/cross_silo
+          bash run_server.sh
+        if:   ${{ client-index == '0' }}
+
+      - name: test client 1 of cross-device-horizontal
+        run: |
+          cd tests/smoke_test/cross_silo
+          bash run_client_1.sh
+        if:   ${{ client-index == '1' }}
+
+      - name: test client 1 of cross-device-horizontal
+        run: |
+          cd tests/smoke_test/cross_silo
+          bash run_client_2.sh
+        if: ${{ client-index == '2' }}
