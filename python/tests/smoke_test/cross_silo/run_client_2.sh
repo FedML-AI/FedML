@@ -1,2 +1,2 @@
-cd ../../../python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line
+cd ../../../examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line
 bash run_client.sh 2
