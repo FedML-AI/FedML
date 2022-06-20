@@ -15,8 +15,7 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "mlops-cli-test"
-  pip-install-fedml:
+  pip-install-fedml-and-test-sp:
     defaults:
       run:
         shell: bash
@@ -51,6 +50,32 @@ jobs:
         run: |
           cd tests/smoke_test/simulation_sp
           python main.py --cf fedml_config.yaml
+
+  test-simulation-mpi:
+    defaults:
+      run:
+        shell: bash
+        working-directory: python
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        arch: [X64, ARM64]
+        python-version: ['3.7', '3.8', '3.9']
+#        exclude:
+#          - os: macos-latest
+#            python-version: '3.8'
+#          - os: windows-latest
+#            python-version: '3.6'
+    runs-on: [self-hosted]
+    steps:
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/checkout@v3
+      - name: pip install -e ./
+        run: |
+          pip install -e ./
 
       # https://github.com/mpi4py/setup-mpi
       - name: Setup MPI (Linux)
