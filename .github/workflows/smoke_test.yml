@@ -124,16 +124,16 @@ jobs:
         run: |
           cd tests/smoke_test/cross_silo
           bash run_server.sh
-        if:   ${{ client-index == '0' }}
+        if:   ${{ matrix.client-index == '0' }}
 
       - name: test client 1 of cross-device-horizontal
         run: |
           cd tests/smoke_test/cross_silo
           bash run_client_1.sh
-        if:   ${{ client-index == '1' }}
+        if:   ${{ matrix.client-index == '1' }}
 
       - name: test client 1 of cross-device-horizontal
         run: |
           cd tests/smoke_test/cross_silo
           bash run_client_2.sh
-        if: ${{ client-index == '2' }}
+        if: ${{ matrix.client-index == '2' }}
