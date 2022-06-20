@@ -41,7 +41,8 @@ jobs:
         run: |
           pip install -e ./
 
-      - name: test server of cross-device-horizontal
+      - name: test server of cross-device
         run: |
           cd tests/smoke_test/cross_device
           bash run_cross_device_mnn_server.sh
+        timeout-minutes: 2
