@@ -44,7 +44,6 @@ jobs:
 
       - name: server - cross-silo - ho
         run: |
-          sleep 1m
           cd tests/smoke_test/cross_silo
           run_id=${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
           echo ${run_id}
@@ -54,6 +53,7 @@ jobs:
 
       - name: client 1 - cross-silo - ho
         run: |
+          sleep 1m
           cd tests/smoke_test/cross_silo
           run_id=${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
           echo run_id
@@ -63,6 +63,7 @@ jobs:
 
       - name: client 2 - cross-silo - ho
         run: |
+          sleep 1m
           cd tests/smoke_test/cross_silo
           run_id=${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
           echo run_id
