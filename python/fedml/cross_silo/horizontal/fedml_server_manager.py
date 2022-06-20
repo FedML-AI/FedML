@@ -96,7 +96,6 @@ class FedMLServerManager(ServerManager):
         if not self.is_initialized:
             pass
 
-
     def handle_message_client_status_update(self, msg_params):
         client_status = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_STATUS)
         if client_status == "ONLINE":
