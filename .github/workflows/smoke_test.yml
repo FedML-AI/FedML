@@ -52,6 +52,8 @@ jobs:
           cd tests/smoke_test/simulation_sp
           python main.py --cf fedml_config.yaml
 
+      # https://github.com/mpi4py/setup-mpi
+      - uses: mpi4py/setup-mpi@v1
       - name: test simulation-mpi
         run: |
           cd tests/smoke_test/simulation_mpi
