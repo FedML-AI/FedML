@@ -51,3 +51,8 @@ jobs:
         run: |
           cd tests/smoke_test/simulation_sp
           python main.py --cf fedml_config.yaml
+
+      - name: test simulation-mpi
+        run: |
+          cd tests/smoke_test/simulation_mpi
+          bash run_one_line_example.sh
