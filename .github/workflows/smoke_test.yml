@@ -41,7 +41,7 @@ jobs:
       - name: pip install -e ./
         run: |
           pip install -e ./
-      # Runs a single command using the runners shell
+
       - name: test "fedml login" and "fedml build"
         run: |
           cd tests/smoke_test/cli
@@ -65,7 +65,7 @@ jobs:
           mpi: ${{ 'openmpi' }}
         if:   ${{ matrix.os == 'macos-latest' }}
 
-      - name: Setup MPI (MacOS)
+      - name: Setup MPI (Windows)
         uses: ./build_tools/setup_mpi
         with:
           mpi: ${{ 'msmpi' }}
