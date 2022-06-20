@@ -41,6 +41,8 @@ class FedMLServerManager(ServerManager):
         self.start_running_time = 0.0
         self.aggregated_model_url = None
 
+        self.is_initialized = False
+
     def run(self):
         super().run()
 
@@ -91,6 +93,9 @@ class FedMLServerManager(ServerManager):
 
     def handle_messag_connection_ready(self, msg_params):
         logging.info("Connection is ready!")
+        if not self.is_initialized:
+            pass
+
 
     def handle_message_client_status_update(self, msg_params):
         client_status = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_STATUS)
@@ -115,6 +120,7 @@ class FedMLServerManager(ServerManager):
         if all_client_is_online:
             # send initialization message to all clients to start training
             self.send_init_msg()
+            self.is_initialized = True
 
     def handle_message_receive_model_from_client(self, msg_params):
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
@@ -211,6 +217,13 @@ class FedMLServerManager(ServerManager):
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")
+        self.send_message(message)
+
+    def send_message_check_client_status(self, receive_id, datasilo_index):
+        message = Message(
+            MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id
+        )
+        message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
         self.send_message(message)
 
     def send_message_sync_model_to_client(
