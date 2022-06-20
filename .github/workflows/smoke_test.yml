@@ -56,17 +56,20 @@ jobs:
       - name: Setup MPI (Linux)
         run: |
           sudo apt install -y -q openmpi-bin libopenmpi-dev
+          pip install mpi4py
         if:   ${{ matrix.os == 'ubuntu-latest' }}
 
       - name: Setup MPI (MacOS)
         run: |
           sudo apt install -y -q openmpi-bin libopenmpi-dev
+          pip install mpi4py
         if:   ${{ matrix.os == 'macos-latest' }}
 
       - name: Setup MPI (Windows)
         run: |
           sdir=$(dirname "${BASH_SOURCE[0]}")
           pwsh "${sdir}\\build_tools\\setup_mpi\\setup-msmpi.ps1"
+          pip install mpi4py
         if:   ${{ matrix.os == 'windows-latest' }}
 
       - name: Show MPI info (Ubuntu)
