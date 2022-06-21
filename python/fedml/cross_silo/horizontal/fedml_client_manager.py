@@ -40,8 +40,13 @@ class FedMLClientManager(ClientManager):
         )
 
         self.register_message_receive_handler(
+            MyMessage.MSG_TYPE_S2C_CHECK_CLIENT_STATUS, self.handle_message_check_status
+        )
+
+        self.register_message_receive_handler(
             MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.handle_message_init
         )
+
         self.register_message_receive_handler(
             MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT,
             self.handle_message_receive_model_from_server,
@@ -61,6 +66,9 @@ class FedMLClientManager(ClientManager):
                 target=self.report_sys_performances
             )
             self.sys_stats_process.start()
+
+    def handle_message_check_status(self, msg_params):
+        self.send_client_status(0)
 
     def handle_message_init(self, msg_params):
         global_model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
@@ -174,5 +182,4 @@ class FedMLClientManager(ClientManager):
         self.send_model_to_server(0, weights, local_sample_num)
 
     def run(self):
-        self.register_message_receive_handlers()
         super().run()

@@ -6,9 +6,9 @@ name: MLOps CLI Test
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ master ]
+    branches: [ master]
   pull_request:
-    branches: [ master ]
+    branches: [ master]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -17,8 +17,11 @@ on:
 jobs:
   # This workflow contains a single job called "mlops-cli-test"
   mlops-cli-test:
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
     # The type of runner that the job will run on
-    runs-on: ubuntu-latest
+    runs-on: fedml_github_action_runner
     defaults:
       run:
         shell: bash
@@ -31,7 +34,7 @@ jobs:
 
       # Runs a single command using the runners shell
       - name: Run test cases for fedml-build, mlops-build and mlops-login
-        run: cd build_tools/github/; conda info; source ./test_mlops_cli.sh
+        run: cd tests/full_e2e_test; conda info; source ./test_mlops_cli.sh
         
       # Runs a single command using the runners shell
       #- name: Run logout to exit mlops cli
