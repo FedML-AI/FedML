@@ -90,7 +90,12 @@ This documentation is organized in the following sections:
 
    distributed/user_guide.md
 
+.. toctree::
+   :maxdepth: 2
+   :name: FedML Benchmarks
+   :caption: Benchmarks for FedNLP, FedCV, FedGraphNN and FedIoT
 
+   benchmark/fedgraphnn.md
 
 .. toctree::
    :maxdepth: 2
