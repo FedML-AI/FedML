@@ -6,9 +6,9 @@ name: SMOKE TEST (MPI)
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ master]
+    branches: [ master ]
   pull_request:
-    branches: [ master]
+    branches: [ master ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -42,24 +42,25 @@ jobs:
           pip install -e ./
 
       # https://github.com/mpi4py/setup-mpi
-      - name: Setup MPI (Linux)
-        run: |
-          sudo apt install -y -q openmpi-bin libopenmpi-dev
-          pip install mpi4py
-        if:   ${{ matrix.os == 'ubuntu-latest' }}
-
-      - name: Setup MPI (MacOS)
-        run: |
-          sudo apt install -y -q openmpi-bin libopenmpi-dev
-          pip install mpi4py
-        if:   ${{ matrix.os == 'macos-latest' }}
-
-      - name: Setup MPI (Windows)
-        run: |
-          sdir=$(dirname "${BASH_SOURCE[0]}")
-          powershell "${sdir}\\build_tools\\setup_mpi\\setup-msmpi.ps1"
-          pip install mpi4py
-        if:   ${{ matrix.os == 'windows-latest' }}
+      - uses: mpi4py/setup-mpi@v1
+#      - name: Setup MPI (Linux)
+#        run: |
+#          sudo apt install -y -q openmpi-bin libopenmpi-dev
+#          pip install mpi4py
+#        if:   ${{ matrix.os == 'ubuntu-latest' }}
+#
+#      - name: Setup MPI (MacOS)
+#        run: |
+#          sudo apt install -y -q openmpi-bin libopenmpi-dev
+#          pip install mpi4py
+#        if:   ${{ matrix.os == 'macos-latest' }}
+#
+#      - name: Setup MPI (Windows)
+#        run: |
+#          sdir=$(dirname "${BASH_SOURCE[0]}")
+#          powershell "${sdir}\\build_tools\\setup_mpi\\setup-msmpi.ps1"
+#          pip install mpi4py
+#        if:   ${{ matrix.os == 'windows-latest' }}
 
       - name: Show MPI info (Ubuntu)
         run:  mpichversion
