@@ -61,7 +61,6 @@ def init(args=None):
         and hasattr(args, "backend")
         and args.backend == "sp"
     ):
-
         args = init_simulation_sp(args)
     elif (
             args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
@@ -77,7 +76,6 @@ def init(args=None):
         if args.scenario == "horizontal":
 
             args = init_cross_silo_horizontal(args)
-
 
         elif args.scenario == "hierarchical":
             args = init_cross_silo_hierarchical(args)
@@ -111,10 +109,20 @@ def init_simulation_nccl(args):
 
 def init_cross_silo_horizontal(args):
     args.process_id = args.rank
-    return args
 
+    if hasattr(args, "backend") and args.backend == "MPI":
+        from mpi4py import MPI
 
-def init_cross_silo_hierarchical(args):
+        comm = MPI.COMM_WORLD
+        process_id = comm.Get_rank()
+        worker_num = comm.Get_size()
+        args.comm = comm
+        args.process_id = process_id
+        args.worker_num = worker_num
+        logging.info("comm = {}".format(comm))
+
+    else:
+        args.comm = None
     return args
 
 
