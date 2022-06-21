@@ -1,0 +1,48 @@
+# This is a basic workflow to help you get started with Actions
+
+name: SMOKE TEST (CROSS-DEVICE-MNN)
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  cross-device-mnn-server:
+    defaults:
+      run:
+        shell: bash
+        working-directory: python
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        arch: [X64, ARM64]
+        python-version: ['3.7', '3.8', '3.9']
+#        exclude:
+#          - os: macos-latest
+#            python-version: '3.8'
+#          - os: windows-latest
+#            python-version: '3.6'
+    runs-on: [self-hosted]
+    steps:
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/checkout@v3
+      - name: pip install -e ./
+        run: |
+          pip install -e ./
+
+      - name: test server of cross-device
+        run: |
+          cd tests/smoke_test/cross_device
+          bash run_cross_device_mnn_server.sh
+        timeout-minutes: 1

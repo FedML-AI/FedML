@@ -1,0 +1,39 @@
+common_args:
+  training_type: "simulation"
+  using_mlops: false
+  random_seed: 0
+
+data_args:
+  dataset: "mnist"
+  data_cache_dir: "../data/mnist"
+  partition_method: "hetero"
+  partition_alpha: 0.5
+
+model_args:
+  model: "lr"
+
+train_args:
+  federated_optimizer: "FedAvg"
+  client_id_list: "[]"
+  client_num_in_total: 1000
+  client_num_per_round: 10
+  comm_round: 2
+  epochs: 2
+  batch_size: 10
+  client_optimizer: sgd
+  learning_rate: 0.03
+  weight_decay: 0.001
+
+validation_args:
+  frequency_of_the_test: 5
+
+device_args:
+  using_gpu: false
+  gpu_id: 0
+
+comm_args:
+  backend: "sp"
+
+tracking_args:
+  log_file_dir: ./log
+  enable_wandb: false

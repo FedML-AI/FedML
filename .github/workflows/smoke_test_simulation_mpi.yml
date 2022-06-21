@@ -1,0 +1,84 @@
+# This is a basic workflow to help you get started with Actions
+
+name: SMOKE TEST (MPI)
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches: [ master, test/v0.7.0 ]
+  pull_request:
+    branches: [ master, test/v0.7.0 ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  test-simulation-mpi:
+    defaults:
+      run:
+        shell: bash
+        working-directory: python
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        arch: [X64, ARM64]
+        python-version: ['3.7', '3.8', '3.9']
+#        exclude:
+#          - os: macos-latest
+#            python-version: '3.8'
+#          - os: windows-latest
+#            python-version: '3.6'
+    runs-on: [self-hosted]
+    steps:
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/checkout@v3
+      - name: pip install -e ./
+        run: |
+          pip install -e ./
+
+      # https://github.com/mpi4py/setup-mpi
+      - uses: mpi4py/setup-mpi@v1
+#      - name: Setup MPI (Linux)
+#        run: |
+#          sudo apt install -y -q openmpi-bin libopenmpi-dev
+#          pip install mpi4py
+#        if:   ${{ matrix.os == 'ubuntu-latest' }}
+#
+#      - name: Setup MPI (MacOS)
+#        run: |
+#          sudo apt install -y -q openmpi-bin libopenmpi-dev
+#          pip install mpi4py
+#        if:   ${{ matrix.os == 'macos-latest' }}
+#
+#      - name: Setup MPI (Windows)
+#        run: |
+#          sdir=$(dirname "${BASH_SOURCE[0]}")
+#          powershell "${sdir}\\build_tools\\setup_mpi\\setup-msmpi.ps1"
+#          pip install mpi4py
+#        if:   ${{ matrix.os == 'windows-latest' }}
+
+      - name: Show MPI info (Ubuntu)
+        run:  mpichversion
+        if:   ${{ matrix.os == 'ubuntu-latest' }}
+
+      - name: Show MPI info (MacOS)
+        run:  ompi_info
+        if:   ${{ matrix.os == 'macos-latest' }}
+
+      - name: Show MPI info (Windows)
+        run: |
+          Write-Host MSMPI_BIN=$Env:MSMPI_BIN
+          Write-Host MSMPI_INC=$Env:MSMPI_INC
+          Write-Host MSMPI_LIB32=$Env:MSMPI_LIB32
+          Write-Host MSMPI_LIB64=$Env:MSMPI_LIB64
+        if:   ${{ matrix.os == 'windows-latest' }}
+
+      - name: test simulation-mpi
+        run: |
+          cd tests/smoke_test/simulation_mpi
+          bash run_one_line_example.sh
