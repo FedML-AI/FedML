@@ -28,6 +28,7 @@ class MPIReceiveThread(threading.Thread):
                 self.q.put(msg)
             except Exception:
                 traceback.print_exc()
+                raise Exception("MPI failed!")
 
     def stop(self):
         self._stop_event.set()
