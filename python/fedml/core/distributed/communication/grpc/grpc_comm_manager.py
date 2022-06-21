@@ -97,6 +97,7 @@ class GRPCCommManager(BaseCommunicationManager):
     def handle_receive_message(self):
         thread = threading.Thread(target=self.message_handling_subroutine)
         thread.start()
+        self._notify_connection_ready()
 
     def message_handling_subroutine(self):
         while self.is_running:
@@ -120,6 +121,13 @@ class GRPCCommManager(BaseCommunicationManager):
         msg_type = message.get_type()
         for observer in self._observers:
             observer.receive_message(msg_type, message)
+
+    def _notify_connection_ready(self):
+        msg_params = Message()
+        MSG_TYPE_CONNECTION_IS_READY = 0
+        msg_type = MSG_TYPE_CONNECTION_IS_READY
+        for observer in self._observers:
+            observer.receive_message(msg_type, msg_params)
 
     def _build_ip_table(self, path):
         ip_config = dict()

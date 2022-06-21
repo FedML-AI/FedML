@@ -8,7 +8,7 @@ class Server:
                 args,
                 0,
                 args.worker_num,
-                None,
+                args.comm,
                 device,
                 dataset,
                 model,
