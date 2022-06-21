@@ -1,4 +1,4 @@
-# FedML Installation on Raspberry Pi
+# FedML Installation on NVIDIA Jetson Devices
 
 ## Run FedML with Docker (Recommended)
 - Pull FedML RPI docker image
