@@ -4,8 +4,8 @@
 .vscode/*
 *.pkl
 
-test/fedml_user_code/data
-test/fedml_user_code/data/*
+python/tests/smoke_test/data
+python/tests/smoke_test/data/*
 
 *.pyc
 ./*/*.pyc
@@ -69,20 +69,20 @@ mimiconda.sh
 data/fednlp/*
 
 *.npz
-test/fedml_user_code/simulation_sp/data/mnist/MNIST/stats.sh
-test/fedml_user_code/simulation_sp/data/mnist/MNIST/stats.py
-test/fedml_user_code/simulation_sp/data/mnist/MNIST/README.md
-test/fedml_user_code/simulation_sp/data/mnist/MNIST/download_and_unzip.sh
-test/fedml_user_code/simulation_sp/data/mnist/__MACOSX/MNIST/._train
-test/fedml_user_code/simulation_sp/data/mnist/__MACOSX/MNIST/._test
-test/fedml_user_code/simulation_sp/data/mnist/__MACOSX/MNIST/._.DS_Store
-test/fedml_user_code/simulation_mpi/data/mnist/MNIST/stats.sh
-test/fedml_user_code/simulation_mpi/data/mnist/MNIST/stats.py
-test/fedml_user_code/simulation_mpi/data/mnist/MNIST/README.md
-test/fedml_user_code/simulation_mpi/data/mnist/MNIST/download_and_unzip.sh
-test/fedml_user_code/simulation_mpi/data/mnist/__MACOSX/MNIST/._train
-test/fedml_user_code/simulation_mpi/data/mnist/__MACOSX/MNIST/._test
-test/fedml_user_code/simulation_mpi/data/mnist/__MACOSX/MNIST/._.DS_Store
+python/tests/smoke_test/simulation_sp/data/mnist/MNIST/stats.sh
+python/tests/smoke_test/simulation_sp/data/mnist/MNIST/stats.py
+python/tests/smoke_test/simulation_sp/data/mnist/MNIST/README.md
+python/tests/smoke_test/simulation_sp/data/mnist/MNIST/download_and_unzip.sh
+python/tests/smoke_test/simulation_sp/data/mnist/__MACOSX/MNIST/._train
+python/tests/smoke_test/simulation_sp/data/mnist/__MACOSX/MNIST/._test
+python/tests/smoke_test/simulation_sp/data/mnist/__MACOSX/MNIST/._.DS_Store
+python/tests/smoke_test/simulation_mpi/data/mnist/MNIST/stats.sh
+python/tests/smoke_test/simulation_mpi/data/mnist/MNIST/stats.py
+python/tests/smoke_test/simulation_mpi/data/mnist/MNIST/README.md
+python/tests/smoke_test/simulation_mpi/data/mnist/MNIST/download_and_unzip.sh
+python/tests/smoke_test/simulation_mpi/data/mnist/__MACOSX/MNIST/._train
+python/tests/smoke_test/simulation_mpi/data/mnist/__MACOSX/MNIST/._test
+python/tests/smoke_test/simulation_mpi/data/mnist/__MACOSX/MNIST/._.DS_Store
 
 app/fedgraphnn/social_networks_graph_clf/data/TUDataset/*
 app/fedgraphnn/social_networks_graph_clf/data/TUDataset/collab.pickle
