@@ -29,6 +29,7 @@ class MPISendThread(threading.Thread):
                     time.sleep(0.003)
             except Exception:
                 traceback.print_exc()
+                raise Exception("MPI failed!")
 
     def stop(self):
         self._stop_event.set()
