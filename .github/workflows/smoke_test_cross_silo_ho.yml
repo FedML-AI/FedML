@@ -49,7 +49,6 @@ jobs:
           echo ${run_id}
           bash run_server.sh $run_id
         if:   ${{ matrix.client-index == '0' }}
-        timeout-minutes: 3
 
       - name: client 1 - cross-silo - ho
         run: |
@@ -59,7 +58,6 @@ jobs:
           echo run_id
           bash run_client.sh 1 $run_id
         if:   ${{ matrix.client-index == '1' }}
-        timeout-minutes: 3
 
       - name: client 2 - cross-silo - ho
         run: |
@@ -69,4 +67,3 @@ jobs:
           echo run_id
           bash run_client.sh 2 $run_id
         if: ${{ matrix.client-index == '2' }}
-        timeout-minutes: 3
