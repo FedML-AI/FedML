@@ -1,4 +1,4 @@
-name: Wheels for Windows
+name: Build_Wheels_and_Release
 # https://github.com/pypa/cibuildwheel
 # Controls when the workflow will run
 on:
