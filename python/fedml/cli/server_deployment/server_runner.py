@@ -24,7 +24,7 @@ import psutil
 import requests
 import yaml
 
-from fedml.cli.comm_utils.mqtt_manager import MqttManager
+from fedml.core.distributed.communication.mqtt.mqtt_manager import MqttManager
 from fedml.cli.comm_utils.yaml_utils import load_yaml_config
 from fedml.cli.edge_deployment.client_constants import ClientConstants
 from fedml.cli.server_deployment.server_constants import ServerConstants
@@ -93,6 +93,8 @@ class FedMLServerRunner:
                                                   "${FEDSYS.LOG_SERVER_URL}": ""}
 
         self.mlops_metrics = None
+        self.client_agent_active_list = dict()
+        self.server_active_list = dict()
         click.echo("Current directory of server agent: " + self.cur_dir)
 
     @staticmethod
@@ -729,6 +731,57 @@ class FedMLServerRunner:
     def cleanup_client_with_finished_status(self):
         self.cleanup_run_when_finished()
 
+    def report_client_status(self):
+        self.send_agent_active_msg()
+
+    def callback_report_current_status(self, topic, payload):
+        request_json = json.loads(payload)
+        if self.run_as_local_server_and_agent:
+            # server_runner = FedMLServerRunner(self.args, run_id=0,
+            #                                   request_json=request_json,
+            #                                   agent_config=self.agent_config)
+            # server_runner.run_as_local_server_and_agent = self.run_as_local_server_and_agent
+            # multiprocessing.Process(target=server_runner.report_client_status).start()
+            self.send_agent_active_msg()
+        elif self.run_as_cloud_server_agent:
+            # server_runner = FedMLServerRunner(self.args, run_id=0,
+            #                                   request_json=request_json,
+            #                                   agent_config=self.agent_config)
+            # server_runner.run_as_cloud_server_agent = self.run_as_cloud_server_agent
+            # multiprocessing.Process(target=server_runner.report_client_status).start()
+            self.send_agent_active_msg()
+        elif self.run_as_cloud_server:
+            pass
+
+    def callback_client_agent_last_will_msg(self, topic, payload):
+        msg = json.loads(payload)
+        edge_id = msg.get("ID", None)
+        status = msg.get("status", ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE)
+        if edge_id is not None:
+            self.client_agent_active_list[edge_id] = status
+
+    def callback_client_agent_active_msg(self, topic, payload):
+        msg = json.loads(payload)
+        edge_id = msg.get("ID", None)
+        status = msg.get("status", ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
+        if edge_id is not None:
+            self.client_agent_active_list[edge_id] = status
+
+    def callback_server_last_will_msg(self, topic, payload):
+        msg = json.loads(payload)
+        server_id = msg.get("ID", None)
+        status = msg.get("status", ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE)
+        if server_id is not None and status == ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE:
+            if self.server_active_list.get(server_id, None) is not None:
+                self.server_active_list.pop(server_id)
+
+    def callback_server_active_msg(self, topic, payload):
+        msg = json.loads(payload)
+        server_id = msg.get("ID", None)
+        status = msg.get("status", ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE)
+        if server_id is not None:
+            self.server_active_list[server_id] = status
+
     @staticmethod
     def get_fedml_home_dir():
         home_dir = expanduser("~")
@@ -907,6 +960,11 @@ class FedMLServerRunner:
     def fetch_configs(self):
         return MLOpsConfigs.get_instance(self.args).fetch_all_configs()
 
+    def send_agent_active_msg(self):
+        active_topic = "/flserver_agent/active"
+        active_msg = {"ID": self.edge_id, "status": ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE}
+        self.mqtt_mgr.send_message_json(active_topic, json.dumps(active_msg))
+
     def on_agent_mqtt_connected(self, mqtt_client_object):
         # The MQTT message topic format is as follows: <sender>/<receiver>/<action>
 
@@ -928,22 +986,52 @@ class FedMLServerRunner:
         topic_server_status = "fl_server/flserver_agent_" + str(server_agent_id) + "/status"
         self.mqtt_mgr.add_message_listener(topic_server_status, self.callback_runner_id_status)
 
+        # Setup MQTT message listener to report current device status.
+        topic_report_status = "/mlops/report_device_status"
+        self.mqtt_mgr.add_message_listener(topic_report_status, self.callback_report_current_status)
+
+        # Setup MQTT message listener to the last will message form the client agent.
+        topic_client_agent_last_will_msg = "/flclient_agent/last_will_msg"
+        self.mqtt_mgr.add_message_listener(topic_client_agent_last_will_msg, self.callback_client_agent_last_will_msg)
+
+        # Setup MQTT message listener to the active status message form the client agent.
+        topic_client_agent_active_msg = "/flclient_agent/active"
+        self.mqtt_mgr.add_message_listener(topic_client_agent_active_msg, self.callback_client_agent_active_msg)
+
+        # Setup MQTT message listener to the last will message form the server.
+        topic_server_last_will_msg = "/flserver/last_will_msg"
+        self.mqtt_mgr.add_message_listener(topic_server_last_will_msg, self.callback_server_last_will_msg)
+
+        # Setup MQTT message listener to the active status message form the server.
+        topic_server_active_msg = "/flserver/active"
+        self.mqtt_mgr.add_message_listener(topic_server_active_msg, self.callback_server_active_msg)
+
         # Subscribe topics for starting train, stopping train and fetching client status.
-        topic_start_train = "mlops/flserver_agent_" + str(server_agent_id) + "/start_train"
-        topic_stop_train = "mlops/flserver_agent_" + str(server_agent_id) + "/stop_train"
-        topic_server_status = "fl_server/flserver_agent_" + str(server_agent_id) + "/status"
         mqtt_client_object.subscribe(topic_start_train)
         mqtt_client_object.subscribe(topic_stop_train)
         mqtt_client_object.subscribe(topic_server_status)
+        mqtt_client_object.subscribe(topic_client_agent_last_will_msg)
+        mqtt_client_object.subscribe(topic_client_agent_active_msg)
+        mqtt_client_object.subscribe(topic_server_last_will_msg)
+        mqtt_client_object.subscribe(topic_server_active_msg)
+
         logging.info("subscribe: " + topic_start_train)
         logging.info("subscribe: " + topic_stop_train)
         logging.info("subscribe: " + topic_server_status)
+        logging.info("subscribe: " + topic_report_status)
+        logging.info("subscribe: " + topic_client_agent_last_will_msg)
+        logging.info("subscribe: " + topic_client_agent_active_msg)
+        logging.info("subscribe: " + topic_server_last_will_msg)
+        logging.info("subscribe: " + topic_server_active_msg)
+
+        # Broadcast the first active message.
+        self.send_agent_active_msg()
 
         # Echo results
         click.echo("Congratulations, you have logged into the FedML MLOps platform successfully!")
         click.echo("Your server unique device id is " + str(self.unique_device_id))
 
-    def on_agent_mqtt_diconnected(self, mqtt_client_object):
+    def on_agent_mqtt_disconnected(self, mqtt_client_object):
         pass
 
     def setup_agent_mqtt_connection(self, service_config):
@@ -955,11 +1043,13 @@ class FedMLServerRunner:
             service_config["mqtt_config"]["MQTT_PWD"],
             service_config["mqtt_config"]["MQTT_KEEPALIVE"],
             self.edge_id,
+            "/flserver_agent/last_will_msg",
+            json.dumps({"ID": self.edge_id, "status": ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE})
         )
 
         # Setup MQTT connected listener
         self.mqtt_mgr.add_connected_listener(self.on_agent_mqtt_connected)
-        self.mqtt_mgr.add_disconnected_listener(self.on_agent_mqtt_diconnected)
+        self.mqtt_mgr.add_disconnected_listener(self.on_agent_mqtt_disconnected)
         self.mqtt_mgr.connect()
 
     def start_agent_mqtt_loop(self):

@@ -78,7 +78,7 @@ class MpiCommunicationManager(BaseCommunicationManager):
         self.is_running = True
 
         # the first message after connection, aligned the protocol with MQTT + S3
-        self._notify_connection_ready()
+        # self._notify_connection_ready()
 
         while self.is_running:
             if self.q_receiver.qsize() > 0:
@@ -104,6 +104,8 @@ class MpiCommunicationManager(BaseCommunicationManager):
 
     def _notify_connection_ready(self):
         msg_params = Message()
+        msg_params.sender_id = self.rank
+        msg_params.receiver_id = self.rank
         MSG_TYPE_CONNECTION_IS_READY = 0
         msg_type = MSG_TYPE_CONNECTION_IS_READY
         for observer in self._observers:
