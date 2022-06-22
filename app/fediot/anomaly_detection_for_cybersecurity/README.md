@@ -1,5 +1,5 @@
 ## Prerequisite
-install command line tool `unar`: 
+Install command line tool `unar`: 
 
 for MacOS
 ```
