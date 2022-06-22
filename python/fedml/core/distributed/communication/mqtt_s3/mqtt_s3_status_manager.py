@@ -1,6 +1,8 @@
 # -*-coding:utf-8-*-
 import json
 import logging
+import threading
+import time
 import traceback
 import uuid
 from typing import List
@@ -8,6 +10,7 @@ from typing import List
 import paho.mqtt.client as mqtt
 import yaml
 
+from ..mqtt.mqtt_manager import MqttManager
 from .remote_storage import S3Storage
 from ..base_com_manager import BaseCommunicationManager
 from ..message import Message
@@ -16,46 +19,46 @@ from ..observer import Observer
 
 class MqttS3StatusManager(BaseCommunicationManager):
     def __init__(self, config_path, s3_config_path, topic="fedml"):
+        self.mqtt_pwd = None
+        self.mqtt_user = None
+        self.broker_port = None
+        self.broker_host = None
+        self.keepalive_time = 180
+        self.mqtt_mgr_is_connected = False
+        self.mqtt_mgr_lock = threading.Lock()
+
         self._topic = "fedml_" + str(topic) + "_"
         self.s3_storage = S3Storage(s3_config_path)
 
-        self._unacked_sub = list()
         self._observers: List[Observer] = []
         self._client_id = mqtt.base62(uuid.uuid4().int, padding=22)
 
         self.set_config_from_file(config_path)
         self.set_config_from_objects(config_path)
 
-        # Construct a Client
-        self.mqtt_connection_id = mqtt.base62(uuid.uuid4().int, padding=22)
-        self._client = mqtt.Client(
-            client_id=str(self.mqtt_connection_id), clean_session=True
-        )
-        self._client.enable_logger()
+        self.mqtt_mgr = MqttManager(self.broker_host, self.broker_port, self.mqtt_user, self.mqtt_pwd,
+                                    self.keepalive_time,
+                                    self._client_id)
+        self.mqtt_mgr.add_connected_listener(self.on_connected)
+        self.mqtt_mgr.add_disconnected_listener(self.on_disconnected)
+        self.mqtt_mgr.connect()
+        self.mqtt_mgr.loop_start()
 
-        self._client.on_connect = self._on_connect
-        self._client.on_disconnect = self._on_disconnect
-        self._client.on_message = self._on_message
-        self._client.on_subscribe = self._on_subscribe
-        # self._client.on_log = self.on_log
-
-        self._client.username_pw_set(self.mqtt_user, self.mqtt_pwd)
-        _will_msg = {"ID": f"{self.mqtt_connection_id}", "stat": "Online"}
-        self._client.will_set(
-            "W/topic", payload=json.dumps(_will_msg), qos=0, retain=True
-        )
-
-        self._client.connect(self.broker_host, self.broker_port, 180)
-
-    def on_log(self, mqttc, obj, level, string):
-        logging.info("mqtt_s3.on_log: " + string)
+    def wait_connected(self):
+        while True:
+            self.mqtt_mgr_lock.acquire()
+            if self.mqtt_mgr_is_connected is True:
+                self.mqtt_mgr_lock.release()
+                break
+            self.mqtt_mgr_lock.release()
+            time.sleep(1)
 
     def run_loop_forever(self):
-        self._client.loop_forever()
+        self.mqtt_mgr.loop_forever()
 
     def __del__(self):
-        self._client.loop_stop()
-        self._client.disconnect()
+        self.mqtt_mgr.loop_stop()
+        self.mqtt_mgr.disconnect()
 
     @property
     def client_id(self):
@@ -65,29 +68,19 @@ class MqttS3StatusManager(BaseCommunicationManager):
     def topic(self):
         return self._topic
 
-    def _on_connect_impl(self, client, userdata, flags, rc):
-        logging("mqtt_s3_status. connected")
+    def on_connected(self, mqtt_client_object):
+        self.mqtt_mgr_lock.acquire()
+        self.mqtt_mgr_is_connected = True
+        self.mqtt_mgr_lock.release()
+        logging.info("mqtt_s3_status. on_connected")
 
-    def _on_connect(self, client, userdata, flags, rc):
-        try:
-            self._on_connect_impl(client, userdata, flags, rc)
-        except:
-            traceback.print_exc()
-            quit(0)
-
-    @staticmethod
-    def _on_disconnect(client, userdata, rc):
+    def on_disconnected(self, mqtt_client_object):
+        self.mqtt_mgr_lock.acquire()
+        self.mqtt_mgr_is_connected = False
+        self.mqtt_mgr_lock.release()
         logging.info(
-            "mqtt_s3.on_disconnect: disconnection returned result %s, user data %s"
-            % (str(rc), str(userdata))
+            "mqtt_s3_status.on_disconnected"
         )
-
-    def _on_subscribe(self, client, userdata, mid, granted_qos):
-        logging.info("mqtt_s3.onSubscribe: mid = %s" % str(mid))
-        self._unacked_sub.remove(mid)
-
-    def subscribe(self, topic):
-        self._client.subscribe(topic)
 
     def add_observer(self, observer: Observer):
         self._observers.append(observer)
@@ -99,12 +92,11 @@ class MqttS3StatusManager(BaseCommunicationManager):
         msg_params = Message()
         msg_params.init_from_json_object(msg_obj)
         msg_type = msg_params.get_type()
-        logging.info("mqtt_s3.notify: msg type = %d" % msg_type)
+        logging.info("mqtt_s3_status.notify: msg type = %d" % msg_type)
         for observer in self._observers:
             observer.receive_message(msg_type, msg_params)
 
     def _on_message_impl(self, client, userdata, msg):
-        logging.info("--------------------------")
         json_payload = str(msg.payload, encoding="utf-8")
         payload_obj = json.loads(json_payload)
         self._notify(payload_obj)
@@ -112,25 +104,26 @@ class MqttS3StatusManager(BaseCommunicationManager):
     def _on_message(self, client, userdata, msg):
         try:
             self._on_message_impl(client, userdata, msg)
-        except:
-            traceback.print_exc()
-            quit(0)
+        except Exception as e:
+            logging.error("mqtt_s3_status exception: {}".format(traceback.format_exc()))
 
     def send_message(self, msg: Message):
+        self.wait_connected()
         topic = self._topic + str(msg.get_sender_id())
         payload = msg.get_params()
-        self._client.publish(topic, payload=json.dumps(payload))
+        self.mqtt_mgr.send_message(topic, json.dumps(payload))
 
     def send_message_json(self, topic_name, json_message):
-        self._client.publish(topic_name, payload=json_message)
+        self.wait_connected()
+        self.mqtt_mgr.send_message_json(topic_name, json_message)
 
     def handle_receive_message(self):
         self.run_loop_forever()
 
     def stop_receive_message(self):
         logging.info("mqtt_s3.stop_receive_message: stopping...")
-        self._client.loop_stop()
-        self._client.disconnect()
+        self.mqtt_mgr.loop_stop()
+        self.mqtt_mgr.disconnect()
 
     def set_config_from_file(self, config_file_path):
         try:
