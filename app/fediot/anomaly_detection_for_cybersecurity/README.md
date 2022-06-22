@@ -36,7 +36,7 @@ Note: please run the server first.
 ## Centralized Simulation Training Script
 
 We also support centralized simulation for FedIoT, which means one PC could simulate both server and clients as you need.
-Also training related parameters are inside config_simulation/fedml_config.yaml, please modify it per your need.
+All training related parameters are inside config_simulation/fedml_config.yaml, please modify it per your need.
 The worker_num under the device_args represents number of processes in MPI, as the number of parallel clients.
 
 For this application, the number of clients is up to 9 since there are 9 types of IoT devices in N-BaIoT dataset.
