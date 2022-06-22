@@ -14,6 +14,11 @@ pipeline {
         DEV_KUBECONFIG_CREDENTIAL_ID = 'fedml-dev-kubeconfig'
         TEST_KUBECONFIG_CREDENTIAL_ID = 'fedml-test-kubeconfig'
 
+        AWS_IAM_CREDENTIAL_ID_PRODUCTION = 'aws-iam-id-release'
+        AWS_ECR_CREDENTIAL_ID_PRODUCTION = 'aws-ecr-id-release'
+        FEDML_PIP_CREDENTIAL_ID_PRODUCTION = 'fedml-pip-upload-id'
+        PRODUCTION_KUBECONFIG_CREDENTIAL_ID = 'fedml-release-kubeconfig'
+
         REGISTRY_DEV = 'public.ecr.aws'
         REGISTRY_TEST = 'public.ecr.aws'
         HTTPS_REGISTRY_DEV = 'https://public.ecr.aws'
@@ -26,6 +31,14 @@ pipeline {
         VERSION_TEST = 'test'
         BRANCH_DEV = 'dev/v0.7.0'
         BRANCH_TEST = 'test/v0.7.0'
+
+        REGISTRY_PRODUCTION = 'public.ecr.aws'
+        HTTPS_REGISTRY_PRODUCTION = 'https://public.ecr.aws'
+        AWS_REGION_NAME_PRODUCTION = 'us-east-1'
+        DEPLOY_NAMESPACE_PRODUCTION = 'fedml-devops-aggregator-release'
+        VERSION_PRODUCTION = 'release'
+        BRANCH_PRODUCTION = 'master'
+
         DOCKER_NAMESPACE = 'x6k8q1x9/'
         DOCKER_NAMESPACE_TEST = 's8w2q1c1/'
         APP_NAME_DEVICE_IMAGE = 'fedml-device-image'
@@ -62,6 +75,26 @@ pipeline {
       }
     }
 
+    stage('checkout for production') {
+      when {
+        branch env.BRANCH_PRODUCTION
+      }
+      agent none
+      steps {
+        git(branch: env.BRANCH_PRODUCTION, url: env.GIT_URL, credentialsId: env.GITHUB_CREDENTIAL_ID, changelog: true, poll: false)
+      }
+    }
+
+    stage('checkout for production') {
+      when {
+        branch env.BRANCH_PRODUCTION
+      }
+      agent none
+      steps {
+        git(branch: env.BRANCH_PRODUCTION, url: env.GIT_URL, credentialsId: env.GITHUB_CREDENTIAL_ID, changelog: true, poll: false)
+      }
+    }
+
     stage('mlops build for dev') {
       when {
         branch env.BRANCH_DEV
@@ -80,6 +113,19 @@ pipeline {
       steps {
         container('base') {
           sh 'echo "building..."'
+        }
+      }
+    }
+
+    stage('mlops build for production') {
+      when {
+        branch env.BRANCH_PRODUCTION
+      }
+      steps {
+        container('base') {
+          withCredentials([usernamePassword(passwordVariable : 'FEDML_PIP_PASSWORD' ,usernameVariable : 'FEDML_PIP_USER' ,credentialsId : "$FEDML_PIP_CREDENTIAL_ID_PRODUCTION" ,)]) {
+            sh 'echo "building..."'
+          }
         }
       }
     }
@@ -112,6 +158,22 @@ pipeline {
           sh 'docker build -f ./devops/dockerfile/device-image/Dockerfile-Test -t $REGISTRY_TEST/$DOCKER_NAMESPACE_TEST$APP_NAME_DEVICE_IMAGE:$VERSION_TEST .'
 
           sh 'docker build -f ./devops/dockerfile/server-agent/Dockerfile-Test -t $REGISTRY_TEST/$DOCKER_NAMESPACE_TEST$APP_NAME_SERVER_AGENT:$VERSION_TEST .'
+        }
+      }
+    }
+
+    stage('docker build for production') {
+      when {
+        branch env.BRANCH_PRODUCTION
+      }
+      steps {
+        container('base') {
+          sh 'docker rmi public.ecr.aws/x6k8q1x9/fedml-device-image:base'
+          sh 'docker pull public.ecr.aws/x6k8q1x9/fedml-device-image:base'
+
+          sh 'docker build -f ./devops/dockerfile/device-image/Dockerfile-Release -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_PRODUCTION .'
+
+          sh 'docker build -f ./devops/dockerfile/server-agent/Dockerfile-Release -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_PRODUCTION .'
         }
       }
     }
@@ -159,6 +221,28 @@ pipeline {
       }
     }
 
+    stage('push latest for production') {
+      when {
+        branch env.BRANCH_PRODUCTION
+      }
+      steps {
+        container('base') {
+          withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_ID' ,usernameVariable : 'AWS_ECR_USERNAME' ,credentialsId : "$AWS_ECR_CREDENTIAL_ID_PRODUCTION" ,)]) {
+             withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_KEY' ,usernameVariable : 'AWS_REGION' ,credentialsId : "$AWS_IAM_CREDENTIAL_ID_PRODUCTION" ,)]) {
+                sh 'curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"'
+                sh 'unzip awscliv2.zip'
+                sh './aws/install'
+                sh 'chmod a+x ./devops/scripts/set-aws-credentials.sh;./devops/scripts/set-aws-credentials.sh $AWS_IAM_ACCESS_ID $AWS_IAM_ACCESS_KEY $AWS_REGION'
+                sh 'docker login --username $AWS_ECR_USERNAME --password $(/usr/local/bin/aws ecr-public get-login-password --region $AWS_REGION) $REGISTRY_PRODUCTION'
+             }
+          }
+
+          sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_PRODUCTION'
+          sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_PRODUCTION'
+        }
+      }
+    }
+
     stage('deploy for dev') {
       when {
         branch env.BRANCH_DEV
@@ -195,6 +279,23 @@ pipeline {
       }
     }
 
+    stage('deploy for production') {
+      when {
+        branch env.BRANCH_PRODUCTION
+      }
+      steps {
+         container('base') {
+            withCredentials([
+                kubeconfigFile(
+                credentialsId: env.PRODUCTION_KUBECONFIG_CREDENTIAL_ID,
+                variable: 'KUBECONFIG')
+                ]) {
+                sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DEPLOY_NAME_SERVER_AGENT'
+                sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION  --replicas=1 deployment/$DEPLOY_NAME_SERVER_AGENT'
+            }
+         }
+      }
+    }
   }
 
   post {
