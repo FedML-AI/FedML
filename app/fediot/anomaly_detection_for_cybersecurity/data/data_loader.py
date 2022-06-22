@@ -28,16 +28,12 @@ def download_data(args, device_name):
         url = os.path.join(url_root, device_name, file_name)
         file_saved = os.path.join(args.data_cache_dir, device_name, file_name)
         _urlretrieve(url, file_saved)
-        if file_name.endswith(".rar"):
-            outdir = os.path.splitext(file_saved)[0]
-            os.makedirs(outdir)
-            patoolib.extract_archive(file_saved, outdir=outdir)
 
-    # os.system(
-    #     "find {} -name '*.rar' -execdir unar {{}} \; -exec rm {{}} \;".format(
-    #         device_data_cache_dir
-    #     )
-    # )
+    os.system(
+        "find {} -name '*.rar' -execdir unar {{}} \; -exec rm {{}} \;".format(
+            args.data_cache_dir
+        )
+    )
 
 
 def load_data(args):
