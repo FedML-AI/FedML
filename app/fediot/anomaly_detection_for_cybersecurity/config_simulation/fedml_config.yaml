@@ -1,12 +1,9 @@
 common_args:
-  training_type: "cross_silo"
-  scenario: "horizontal"
-  using_mlops: false
+  training_type: "simulation"
   random_seed: 0
 
-
-environment_args:
-  bootstrap: config/bootstrap.sh
+#environment_args:
+#  bootstrap: config/bootstrap.sh
 
 data_args:
   dataset: "N-BaIoT"
@@ -21,7 +18,7 @@ model_args:
 
 train_args:
   federated_optimizer: "FedAvg"
-  client_id_list:
+  client_id_list: "[]"
   client_num_in_total: 9
   client_num_per_round: 9
   comm_round: 10
@@ -35,15 +32,14 @@ validation_args:
   frequency_of_the_test: 5
 
 device_args:
-  worker_num: 2
+  worker_num: 9
   using_gpu: false
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_default
 
 comm_args:
-  backend: "MQTT_S3"
-  mqtt_config_path: config/mqtt_config.yaml
-  s3_config_path: config/s3_config.yaml
+  backend: "MPI"
+  is_mobile: 0
 
 
 tracking_args:

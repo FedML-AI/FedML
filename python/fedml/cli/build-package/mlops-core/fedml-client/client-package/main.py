@@ -4,6 +4,7 @@ import os
 import shutil
 import stat
 import time
+import traceback
 
 import urllib
 import urllib.request
@@ -124,9 +125,12 @@ def build_dynamic_args(run_config, base_dir):
             fedml_dynamic_args[entry_key] = entry_value
 
     generate_yaml_doc(fedml_conf_object, fedml_conf_path)
-    bootstrap_stat = os.stat(bootstrap_script_path)
-    os.chmod(bootstrap_script_path, bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-    os.system(bootstrap_script_path)
+    try:
+        bootstrap_stat = os.stat(bootstrap_script_path)
+        os.chmod(bootstrap_script_path, bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        os.system(bootstrap_script_path)
+    except Exception as e:
+        print("Exception at {}".format(traceback.format_exc()))
 
 
 def build_fedml_entry_cmd(base_dir):
