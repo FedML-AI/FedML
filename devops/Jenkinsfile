@@ -85,16 +85,6 @@ pipeline {
           }
         }
 
-        stage('checkout for production') {
-          when {
-            branch env.BRANCH_PRODUCTION
-          }
-          agent none
-          steps {
-            git(branch: env.BRANCH_PRODUCTION, url: env.GIT_URL, credentialsId: env.GITHUB_CREDENTIAL_ID, changelog: true, poll: false)
-          }
-        }
-
         stage('mlops build for dev') {
           when {
             branch env.BRANCH_DEV
