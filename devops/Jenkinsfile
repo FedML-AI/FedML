@@ -126,7 +126,6 @@ pipeline {
           }
           steps {
             container('base') {
-                sh 'docker rmi public.ecr.aws/x6k8q1x9/fedml-device-image:base'
                 sh 'docker pull public.ecr.aws/x6k8q1x9/fedml-device-image:base'
 
                 sh 'docker build -f ./devops/dockerfile/device-image/Dockerfile-Dev -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_DEV .'
@@ -142,7 +141,6 @@ pipeline {
           }
           steps {
             container('base') {
-              sh 'docker rmi public.ecr.aws/x6k8q1x9/fedml-device-image:base'
               sh 'docker pull public.ecr.aws/x6k8q1x9/fedml-device-image:base'
 
               sh 'docker build -f ./devops/dockerfile/device-image/Dockerfile-Test -t $REGISTRY_TEST/$DOCKER_NAMESPACE_TEST$APP_NAME_DEVICE_IMAGE:$VERSION_TEST .'
@@ -158,7 +156,6 @@ pipeline {
           }
           steps {
             container('base') {
-              sh 'docker rmi public.ecr.aws/x6k8q1x9/fedml-device-image:base'
               sh 'docker pull public.ecr.aws/x6k8q1x9/fedml-device-image:base'
 
               sh 'docker build -f ./devops/dockerfile/device-image/Dockerfile-Release -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_PRODUCTION .'
