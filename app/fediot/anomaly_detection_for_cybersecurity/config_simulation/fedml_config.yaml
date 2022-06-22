@@ -1,12 +1,9 @@
 common_args:
-  training_type: "cross_silo"
-  scenario: "horizontal"
-  using_mlops: false
+  training_type: "simulation"
   random_seed: 0
 
-
-environment_args:
-  bootstrap: config/bootstrap.sh
+#environment_args:
+#  bootstrap: config/bootstrap.sh
 
 data_args:
   dataset: "N-BaIoT"
@@ -41,9 +38,8 @@ device_args:
   gpu_mapping_key: mapping_default
 
 comm_args:
-  backend: "MQTT_S3"
-  mqtt_config_path: config/mqtt_config.yaml
-  s3_config_path: config/s3_config.yaml
+  backend: "MPI"
+  is_mobile: 0
 
 
 tracking_args:
