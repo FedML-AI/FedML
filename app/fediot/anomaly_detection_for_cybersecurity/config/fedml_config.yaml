@@ -1,7 +1,10 @@
+#common_args:
+#  training_type: "cross_silo"
+#  scenario: "horizontal"
+#  using_mlops: false
+#  random_seed: 0
 common_args:
-  training_type: "cross_silo"
-  scenario: "horizontal"
-  using_mlops: false
+  training_type: "simulation"
   random_seed: 0
 
 environment_args:
@@ -21,9 +24,9 @@ model_args:
 train_args:
   federated_optimizer: "FedAvg"
   client_id_list:
-  client_num_in_total: 2
-  client_num_per_round: 2
-  comm_round: 1
+  client_num_in_total: 9
+  client_num_per_round: 9
+  comm_round: 10
   epochs: 1
   batch_size: 10
   client_optimizer: sgd
@@ -39,10 +42,13 @@ device_args:
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_default
 
+#comm_args:
+#  backend: "MQTT_S3"
+#  mqtt_config_path: config/mqtt_config.yaml
+#  s3_config_path: config/s3_config.yaml
 comm_args:
-  backend: "MQTT_S3"
-  mqtt_config_path: config/mqtt_config.yaml
-  s3_config_path: config/s3_config.yaml
+  backend: "sp"
+
 
 tracking_args:
   log_file_dir: ./log
