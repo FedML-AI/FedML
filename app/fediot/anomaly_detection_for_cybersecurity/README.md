@@ -1,7 +1,12 @@
 ## Prepare Dataset
-install dependent libraries: 
+install command line tool `unar`: 
+for MacOS
 ```
-pip install -r requirements.txt
+brew install unar
+```
+for linux
+```
+sudo apt-get install unar
 ```
 
 ## Training Script
