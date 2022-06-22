@@ -1,10 +1,11 @@
 ## Prepare Dataset
 install command line tool `unar`: 
+
 for MacOS
 ```
 brew install unar
 ```
-for linux
+for Linux
 ```
 sudo apt-get install unar
 ```
