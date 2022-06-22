@@ -1,0 +1,916 @@
+
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-PQBQ3CV');
+  </script>
+  <!-- End Google Tag Manager -->
+
+  <meta charset="utf-8">
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="google-site-verification" content="okUst94cAlWSsUsGZTB4xSS4UKTtRV8Nu5XZ9pdd3Aw" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Get Started &mdash; FedML  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!-- <link rel="stylesheet" href="../_static/pygments.css" type="text/css" /> -->
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Installing FedML" href="installation.html" />
+    <link rel="prev" title="Welcome to FedML" href="../index.html" />
+  <!-- Google Analytics -->
+  
+  <!-- End Google Analytics -->
+  
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+  <!-- Preload the theme fonts -->
+
+<link rel="preload" href="../_static/fonts/FreightSans/freight-sans-book.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../_static/fonts/FreightSans/freight-sans-medium.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../_static/fonts/IBMPlexMono/IBMPlexMono-Medium.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../_static/fonts/FreightSans/freight-sans-bold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../_static/fonts/FreightSans/freight-sans-medium-italic.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../_static/fonts/IBMPlexMono/IBMPlexMono-SemiBold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../_static/fonts/UCity/UCity-Light.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../_static/fonts/UCity/UCity-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../_static/fonts/UCity/UCity-Semibold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../_static/fonts/Inconsolata/Inconsolata.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+
+<!-- Preload the katex fonts -->
+
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Math-Italic.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Main-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Main-Bold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Size1-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Size4-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Size2-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Size3-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Caligraphic-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+  <script defer src="https://use.fontawesome.com/releases/v6.1.1/js/all.js" integrity="sha384-xBXmu0dk1bEoiwd71wOonQLyH+VpgR1XcDH3rtxrLww5ajNTuMvBdL5SOiFZnNdp" crossorigin="anonymous"></script>
+</head>
+
+<div class="container-fluid header-holder tutorials-header" id="header-holder">
+  <div class="container">
+    <div class="header-container">
+      <a class="header-logo" href="https://doc.fedml.ai/">
+      <!--  <img class="call-to-action-img" src="../_static/images/logo-lightning-icon.png"/> -->
+      </a>
+
+      <div class="main-menu">
+        <ul>
+          <li>
+            <a href="https://doc.fedml.ai/starter/get_started.html">Get Started</a>
+          </li>
+
+          <li>
+            <a href="https://github.com/FedML-AI">Github</a>
+          </li>
+
+          <li>
+            <a href="https://open.fedml.ai">Platform</a>
+          </li>
+
+          <li>
+            <a href="https://join.slack.com/t/fedml/shared_invite/zt-havwx1ee-a1xfOUrATNfc9DFqU~r34w">Join the Community</a>
+          </li>
+
+
+
+          <li>
+            <div id="resourcesDropdownButton" data-toggle="resources-dropdown" class="resources-dropdown">
+              <a class="resource-option with-down-orange-arrow">
+                Resource
+              </a>
+              <div class="resources-dropdown-menu">
+                <a class="doc-dropdown-option nav-dropdown-item" href="https://doc.fedml.ai/resource/papers.html">
+                  <span class="dropdown-title">Publications</span>
+                </a>
+                <a class="doc-dropdown-option nav-dropdown-item" href="https://doc.fedml.ai/resource/video.html">
+                  <span class="dropdown-title">Videos</span>
+                </a>
+                <a class="doc-dropdown-option nav-dropdown-item" href="https://github.com/FedML-AI/FedML/discussions">
+                  <span class="dropdown-title">Discussion</span>
+                </a>
+            </div>
+          </li>
+
+          <!--<li>
+            <div id="resourcesDropdownButton" data-toggle="resources-dropdown" class="resources-dropdown">
+              <a class="resource-option with-down-arrow">
+                Resources
+              </a>
+              <div class="resources-dropdown-menu">
+                <a class="nav-dropdown-item" href="https://pytorch.org/#community-module">
+                  <span class="dropdown-title">Community</span>
+                  <p>Join the PyTorch developer community to contribute, learn, and get your questions answered.</p>
+                </a>
+                <a class="nav-dropdown-item" href="https://pytorch.org/resources">
+                  <span class="dropdown-title">Developer Resources</span>
+                  <p>Find resources and get questions answered</p>
+                </a>
+                <a class="nav-dropdown-item" href="https://discuss.pytorch.org/" target="_blank">
+                  <span class="dropdown-title">Forums</span>
+                  <p>A place to discuss PyTorch code, issues, install, research</p>
+                </a>
+                <a class="nav-dropdown-item" href="">
+                  <span class="dropdown-title">Models (Beta)</span>
+                  <p>Discover, publish, and reuse pre-trained models</p>
+                </a>
+              </div>
+            </div>
+          </li>-->
+
+          <li>
+            <a href="https://fedml.ai/">FedML.AI</a>
+          </li>
+
+        </ul>
+      </div>
+
+      <a class="main-menu-open-button" href="#" data-behavior="open-mobile-menu"></a>
+    </div>
+  </div>
+</div>
+
+<body class="pytorch-body">
+
+   
+
+    
+
+    <div class="table-of-contents-link-wrapper">
+      <span>Table of Contents</span>
+      <a href="#" class="toggle-table-of-contents" data-behavior="toggle-table-of-contents"></a>
+    </div>
+
+    <nav data-toggle="wy-nav-shift" class="pytorch-left-menu" id="pytorch-left-menu">
+      <div class="pytorch-side-scroll">
+        <div class="pytorch-menu pytorch-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          <div class="pytorch-left-menu-search">
+            
+
+            
+              
+              
+            
+
+            
+
+
+  
+
+
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search Docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+            
+          </div>
+
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Overview</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installing FedML</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mission.html">Mission</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Technology Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecosystem.html">Application Ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="oss_code_architecture.html">Open Source Code Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mlops_video.html">FedML MLOps Video Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">FedML FAQ</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">FedML MLOps - Landing FedML into Reality</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="mlops_video.html">FedML MLOps Video Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../mlops/user_guide.html">FedML MLOps User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../mlops/api.html">FedML MLOps CLI and API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">FedML Parrot - Simulating the Real World</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/user_guide.html">FedML Parrot User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/examples.html">FedML Parrot Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/api.html">FedML Parrot API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">FedML Octopus - Simple Connector for Data Silos</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../cross-silo/user_guide.html">FedML Octopus User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cross-silo/examples.html">FedML Octopus Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cross-silo/api.html">FedML Octopus API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">FedML BeeHive - Collaborative Learning on Smartphones/IoTs</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../cross-device/user_guide.html">FedML Beehive User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cross-device/examples.html">FedML Beehive Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cross-device/api.html">FedML BeeHive API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">FedML Cheetah - Speedy Training of Large Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../distributed/user_guide.html">FedML Cheetah User Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Benchmarks for FedNLP, FedCV, FedGraphNN and FedIoT</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../benchmark/fedgraphnn.html">FedGraphNN Benchmark</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resource</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../resource/papers.html">Research Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../resource/video.html">Video</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../resource/community.html">Join the Community</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <div class="pytorch-container">
+      <div class="pytorch-page-level-bar" id="pytorch-page-level-bar">
+        <div class="pytorch-breadcrumbs-wrapper">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="pytorch-breadcrumbs">
+    
+      <li>
+        <a href="../index.html">
+          
+            Docs
+          
+        </a> &gt;
+      </li>
+
+        
+      <li>Get Started</li>
+    
+    
+      <li class="pytorch-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/starter/get_started.md.txt" rel="nofollow"><img src="../_static/images/view-page-source-icon.svg"></a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+</div>
+        </div>
+
+        <div class="pytorch-shortcuts-wrapper" id="pytorch-shortcuts-wrapper">
+          Shortcuts
+        </div>
+      </div>
+
+      <section data-toggle="wy-nav-shift" id="pytorch-content-wrap" class="pytorch-content-wrap">
+        <div class="pytorch-content-left">
+
+        
+          
+          <div class="rst-content">
+          
+            <div role="main" class="main-content" itemscope="itemscope" itemtype="http://schema.org/Article">
+             <article itemprop="articleBody" id="pytorch-article" class="pytorch-article">
+              
+  <section id="get-started">
+<h1>Get Started<a class="headerlink" href="#get-started" title="Permalink to this headline">¶</a></h1>
+<p>Thank you for coming! This tutorial is a quick tour of FedML Open Source Library (<a class="reference external" href="https://github.com/FedML-AI/FedML">https://github.com/FedML-AI/FedML</a>) and MLOps Platform (<a class="reference external" href="https://open.fedml.ai">https://open.fedml.ai</a>) with examples in different scenario.</p>
+<section id="fedml-feature-overview">
+<h2><strong>FedML Feature Overview</strong><a class="headerlink" href="#fedml-feature-overview" title="Permalink to this headline">¶</a></h2>
+<p><img alt="image" src="../_static/image/4animals.png" /></p>
+<p>FedML logo reflects the mission of FedML Inc. FedML aims to build simple and versatile APIs for machine learning running anywhere at any scale.
+In other words, FedML supports both federated learning for data silos and distributed training for acceleration with MLOps and Open Source support, covering cutting-edge academia research and industrial grade use cases.</p>
+<ul class="simple">
+<li><p><strong>FedML Cheetah</strong> - Accelerate Model Training with User-friendly Distributed Training</p></li>
+<li><p><strong>FedML Parrot</strong> - Simulating federated learning in the real world (1) simulate FL using a single process (2) MPI-based FL Simulator (3) NCCL-based FL Simulator (fastest)</p></li>
+<li><p><strong>FedML Octopus</strong> - Cross-silo Federated Learning for cross-organization/account training, including Python-based edge SDK.</p></li>
+<li><p><strong>FedML Beehive</strong> - Cross-device Federated Learning for Smartphones and IoTs, including edge SDK for Android/iOS and embedded Linux.</p></li>
+<li><p><strong>FedML MLOps</strong>: FedML’s machine learning operation pipeline for AI running anywhere at any scale.</p></li>
+<li><p><strong>Model Serving</strong>: we focus on providing a better user experience for edge AI.</p></li>
+</ul>
+</section>
+<section id="quick-start-for-open-source-library">
+<h2><strong>Quick Start for Open Source Library</strong><a class="headerlink" href="#quick-start-for-open-source-library" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="https://github.com/FedML-AI/FedML">https://github.com/FedML-AI/FedML</a></p>
+<section id="installation">
+<h3>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h3>
+<p>To get started, let’s install FedML first.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">fedml</span>
+</pre></div>
+</div>
+<p>For more installation methods, please refer to <a class="reference internal" href="installation.html"><span class="doc std std-doc">installing FedML</span></a>.</p>
+</section>
+<section id="a-quick-overview-of-the-code-architecture">
+<h3>A Quick Overview of the Code Architecture<a class="headerlink" href="#a-quick-overview-of-the-code-architecture" title="Permalink to this headline">¶</a></h3>
+<p>In general, FedML source code architecture follows the paper which won <a class="reference external" href="https://chaoyanghe.com/wp-content/uploads/2021/02/NeurIPS-SpicyFL-2020-Baidu-best-paper-award-He-v2.pdf">Best Paper Award at NeurIPS 2020 (FL workshop)</a>. Its original idea is presented at the live <a class="reference external" href="https://www.youtube.com/watch?v=93SETZGZMyI">video</a> and
+<a class="reference external" href="https://arxiv.org/abs/2007.13518">white paper</a> by FedML co-founder Dr. <a class="reference external" href="https://chaoyanghe.com">Chaoyang He</a>.</p>
+<p><img alt="FedML Code Architecture" src="../_images/fedml.png" /></p>
+<p>After March 2022, FedML has been upgraded as an AI company which aims to provide machine learning capability anywhere at any scale. Now the python version of FedML <a class="reference external" href="https://github.com/FedML-AI/FedML-refactor/tree/master/python">https://github.com/FedML-AI/FedML-refactor/tree/master/python</a> is reorganized as follows:</p>
+<p><strong>core</strong>: The FedML low-level API package. This package implements distributed computing by communication backend like MPI, NCCL, MQTT, gRPC, PyTorch RPC, and also supports topology management.
+Other low-level APIs related to security and privacy are also supported. All algorithms and Scenarios are built based on the “core” package.</p>
+<p><strong>data</strong>: FedML will provide some default datasets for users to get started. Customization templates are also provided.</p>
+<p><strong>model</strong>: FedML model zoo.</p>
+<p><strong>device</strong>: FedML computing resource management.</p>
+<p><strong>simulation</strong>: FedML parrot can support (1) simulating FL using a single process (2) MPI-based FL Simulator (3) NCCL-based FL Simulator (fastest)</p>
+<p><strong>cross_silo</strong>: Cross-silo Federated Learning for cross-organization/account training</p>
+<p><strong>cross_device</strong>: Cross-device Federated Learning for Smartphones and IoTs</p>
+<p><strong>distributed</strong>: Distributed Training: Accelerate Model Training with Lightweight Cheetah</p>
+<p><strong>serve</strong>: Model serving, tailored for edge inference</p>
+<p><strong>mlops</strong>: APIs related to machine learning operation platform (open.fedml.ai)</p>
+<p><strong>centralized</strong>: Some centralized trainer code examples for benchmarking purposes.</p>
+<p><strong>utils</strong>: Common utilities shared by other modules.</p>
+</section>
+<section id="simplified-apis">
+<h3>Simplified APIs<a class="headerlink" href="#simplified-apis" title="Permalink to this headline">¶</a></h3>
+<img src="../_static/image/apioverview.jpg" alt="drawing" style="width:60%;"/> 
+<br />
+<p>Our philosophy of API design is to reduce the number of APIs to as few as possible while simultaneously keeping the flexibility.
+The figure above shows the high-level overview of the API design. Essentially, each module has a package entry point (e.g., fedml.cross-silo) to manage related APIs, and FedML users can wrapper these APIs to meet their specific demands.
+Some high-level integrated APIs are also provided. For example, <code class="docutils literal notranslate"><span class="pre">fedml.run_simulation()</span></code> is just one-line API to have a quick start.</p>
+<p>Now let’s get started with some simple examples. For Simplicity, FedML Parrot (simulator) supports one line API as the following example:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># main.py</span>
+
+<span class="kn">import</span> <span class="nn">fedml</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">fedml</span><span class="o">.</span><span class="n">run_simulation</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">main</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<p>You will get the following output:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">FedML</span><span class="o">-</span><span class="n">Server</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="nd">@device</span><span class="o">-</span><span class="nb">id</span><span class="o">-</span><span class="mi">0</span><span class="p">]</span> <span class="p">[</span><span class="n">Sun</span><span class="p">,</span> <span class="mi">01</span> <span class="n">May</span> <span class="mi">2022</span> <span class="mi">14</span><span class="p">:</span><span class="mi">59</span><span class="p">:</span><span class="mi">28</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="p">[</span><span class="fm">__init__</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">30</span><span class="p">:</span><span class="n">init</span><span class="p">]</span> <span class="n">args</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;yaml_config_file&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;run_id&#39;</span><span class="p">:</span> <span class="s1">&#39;0&#39;</span><span class="p">,</span> <span class="s1">&#39;rank&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;yaml_paths&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;/Users/chaoyanghe/opt/anaconda3/envs/mnn37/lib/python3.7/site-packages/fedml-0.7.8-py3.7.egg/fedml/config/simulation_sp/fedml_config.yaml&#39;</span><span class="p">],</span> <span class="s1">&#39;training_type&#39;</span><span class="p">:</span> <span class="s1">&#39;simulation&#39;</span><span class="p">,</span> <span class="s1">&#39;using_mlops&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s1">&#39;random_seed&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;dataset&#39;</span><span class="p">:</span> <span class="s1">&#39;mnist&#39;</span><span class="p">,</span> <span class="s1">&#39;data_cache_dir&#39;</span><span class="p">:</span> <span class="s1">&#39;./data/mnist&#39;</span><span class="p">,</span> <span class="s1">&#39;partition_method&#39;</span><span class="p">:</span> <span class="s1">&#39;hetero&#39;</span><span class="p">,</span> <span class="s1">&#39;partition_alpha&#39;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span> <span class="s1">&#39;model&#39;</span><span class="p">:</span> <span class="s1">&#39;lr&#39;</span><span class="p">,</span> <span class="s1">&#39;federated_optimizer&#39;</span><span class="p">:</span> <span class="s1">&#39;FedAvg&#39;</span><span class="p">,</span> <span class="s1">&#39;client_id_list&#39;</span><span class="p">:</span> <span class="s1">&#39;[]&#39;</span><span class="p">,</span> <span class="s1">&#39;client_num_in_total&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span> <span class="s1">&#39;client_num_per_round&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s1">&#39;comm_round&#39;</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span> <span class="s1">&#39;epochs&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;batch_size&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s1">&#39;client_optimizer&#39;</span><span class="p">:</span> <span class="s1">&#39;sgd&#39;</span><span class="p">,</span> <span class="s1">&#39;learning_rate&#39;</span><span class="p">:</span> <span class="mf">0.03</span><span class="p">,</span> <span class="s1">&#39;weight_decay&#39;</span><span class="p">:</span> <span class="mf">0.001</span><span class="p">,</span> <span class="s1">&#39;frequency_of_the_test&#39;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;using_gpu&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s1">&#39;gpu_id&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;backend&#39;</span><span class="p">:</span> <span class="s1">&#39;single_process&#39;</span><span class="p">,</span> <span class="s1">&#39;log_file_dir&#39;</span><span class="p">:</span> <span class="s1">&#39;./log&#39;</span><span class="p">,</span> <span class="s1">&#39;enable_wandb&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
+<span class="p">[</span><span class="n">FedML</span><span class="o">-</span><span class="n">Server</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="nd">@device</span><span class="o">-</span><span class="nb">id</span><span class="o">-</span><span class="mi">0</span><span class="p">]</span> <span class="p">[</span><span class="n">Sun</span><span class="p">,</span> <span class="mi">01</span> <span class="n">May</span> <span class="mi">2022</span> <span class="mi">14</span><span class="p">:</span><span class="mi">59</span><span class="p">:</span><span class="mi">28</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="p">[</span><span class="n">device</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">14</span><span class="p">:</span><span class="n">get_device</span><span class="p">]</span> <span class="n">device</span> <span class="o">=</span> <span class="n">cpu</span>
+<span class="p">[</span><span class="n">FedML</span><span class="o">-</span><span class="n">Server</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="nd">@device</span><span class="o">-</span><span class="nb">id</span><span class="o">-</span><span class="mi">0</span><span class="p">]</span> <span class="p">[</span><span class="n">Sun</span><span class="p">,</span> <span class="mi">01</span> <span class="n">May</span> <span class="mi">2022</span> <span class="mi">14</span><span class="p">:</span><span class="mi">59</span><span class="p">:</span><span class="mi">28</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="p">[</span><span class="n">data_loader</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">22</span><span class="p">:</span><span class="n">download_mnist</span><span class="p">]</span> <span class="o">./</span><span class="n">data</span><span class="o">/</span><span class="n">mnist</span><span class="o">/</span><span class="n">MNIST</span><span class="o">.</span><span class="n">zip</span>
+<span class="p">[</span><span class="n">FedML</span><span class="o">-</span><span class="n">Server</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="nd">@device</span><span class="o">-</span><span class="nb">id</span><span class="o">-</span><span class="mi">0</span><span class="p">]</span> <span class="p">[</span><span class="n">Sun</span><span class="p">,</span> <span class="mi">01</span> <span class="n">May</span> <span class="mi">2022</span> <span class="mi">14</span><span class="p">:</span><span class="mi">59</span><span class="p">:</span><span class="mi">31</span><span class="p">]</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="p">[</span><span class="n">data_loader</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">57</span><span class="p">:</span><span class="n">load_synthetic_data</span><span class="p">]</span> <span class="n">load_data</span><span class="o">.</span> <span class="n">dataset_name</span> <span class="o">=</span> <span class="n">mnist</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+<p>You can also customize the hyper-parameters with <code class="docutils literal notranslate"><span class="pre">fedml_config.yaml</span></code>. Check <a class="reference external" href="https://doc.fedml.ai/simulation/examples/sp_fedavg_mnist_lr_example.html">this tutorial for one-line example</a> for details.</p>
+<p>For flexibility, one-line API can also be expanded into five lines of APIs. To illustrate this, now let’s switch to FedML Octopus (cross-silo federated learning) as example (Source code: <a class="reference external" href="https://github.com/FedML-AI/FedML/tree/master/python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example">https://github.com/FedML-AI/FedML/tree/master/python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example</a>).</p>
+<p>In this example, the FL Client APIs are as follows:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">fedml</span>
+<span class="kn">from</span> <span class="nn">fedml.cross_silo</span> <span class="kn">import</span> <span class="n">Client</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">fedml</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
+
+    <span class="c1"># init device</span>
+    <span class="n">device</span> <span class="o">=</span> <span class="n">fedml</span><span class="o">.</span><span class="n">device</span><span class="o">.</span><span class="n">get_device</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="c1"># load data</span>
+    <span class="n">dataset</span><span class="p">,</span> <span class="n">output_dim</span> <span class="o">=</span> <span class="n">fedml</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="c1"># load model</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">fedml</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">output_dim</span><span class="p">)</span>
+
+    <span class="c1"># start training</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">device</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>With these APIs, you only need to tune the hyper-parameters with the configuration file <code class="docutils literal notranslate"><span class="pre">fedml_config.yaml</span></code>. An example is as follows:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">common_args</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">training_type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;cross_silo&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="nt">random_seed</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span><span class="w"></span>
+
+<span class="nt">data_args</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">dataset</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;mnist&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="nt">data_cache_dir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;./../../../data&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="nt">partition_method</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;hetero&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="nt">partition_alpha</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.5</span><span class="w"></span>
+
+<span class="nt">model_args</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;lr&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="nt">model_file_cache_folder</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;./model_file_cache&quot;</span><span class="w"> </span><span class="c1"># will be filled by the server automatically</span><span class="w"></span>
+<span class="w">  </span><span class="nt">global_model_file_path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;./model_file_cache/global_model.pt&quot;</span><span class="w"></span>
+
+<span class="nt">train_args</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">federated_optimizer</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;FedAvg&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="nt">client_id_list</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;[1,</span><span class="nv"> </span><span class="s">2]&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="nt">client_num_in_total</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span><span class="w"></span>
+<span class="w">  </span><span class="nt">client_num_per_round</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span><span class="w"></span>
+<span class="w">  </span><span class="nt">comm_round</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span><span class="w"></span>
+<span class="w">  </span><span class="nt">epochs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span><span class="w"></span>
+<span class="w">  </span><span class="nt">batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span><span class="w"></span>
+<span class="w">  </span><span class="nt">client_optimizer</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sgd</span><span class="w"></span>
+<span class="w">  </span><span class="nt">learning_rate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.03</span><span class="w"></span>
+<span class="w">  </span><span class="nt">weight_decay</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.001</span><span class="w"></span>
+
+<span class="nt">validation_args</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">frequency_of_the_test</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span><span class="w"></span>
+
+<span class="nt">device_args</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">worker_num</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span><span class="w"></span>
+<span class="w">  </span><span class="nt">using_gpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w"></span>
+<span class="w">  </span><span class="nt">gpu_mapping_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">config/gpu_mapping.yaml</span><span class="w"></span>
+<span class="w">  </span><span class="nt">gpu_mapping_key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mapping_default</span><span class="w"></span>
+
+<span class="nt">comm_args</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">backend</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;MQTT_S3&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="nt">mqtt_config_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">config/mqtt_config.yaml</span><span class="w"></span>
+<span class="w">  </span><span class="nt">s3_config_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">config/s3_config.yaml</span><span class="w"></span>
+
+<span class="nt">tracking_args</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">log_file_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./log</span><span class="w"></span>
+<span class="w">  </span><span class="nt">enable_wandb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w"></span>
+</pre></div>
+</div>
+<p>Now let’s run some examples as follows to get a sense of how FedML simplifies federated learning in diverse real-world settings.</p>
+<section id="fedml-parrot-examples">
+<h4><strong>FedML Parrot Examples</strong><a class="headerlink" href="#fedml-parrot-examples" title="Permalink to this headline">¶</a></h4>
+<p>Simulation with a Single Process (Standalone):</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../simulation/examples/sp_fedavg_mnist_lr_example.html"><span class="doc std std-doc">sp_fedavg_mnist_lr_example</span></a>:
+Simulating FL using a single process in your personal laptop or server. This is helpful when researchers hope to try a quick algorithmic idea in small synthetic datasets (MNIST, shakespeare, etc.) and small models (ResNet-18, Logistic Regression, etc.).</p></li>
+</ul>
+<p>Simulation with Message Passing Interface (MPI):</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../simulation/examples/mpi_torch_fedavg_mnist_lr_example.html"><span class="doc std std-doc">mpi_torch_fedavg_mnist_lr_example</span></a>:
+MPI-based Federated Learning for cross-GPU/CPU servers.</p></li>
+</ul>
+<p>Simulation with NCCL-based MPI (the fastest training):</p>
+<ul class="simple">
+<li><p>In case your cross-GPU bandwidth is high (e.g., InfiniBand, NVLink, EFA, etc.), we suggest using this NCCL-based MPI FL simulator to accelerate your development.</p></li>
+</ul>
+</section>
+<section id="fedml-octopu-examples">
+<h4><strong>FedML Octopu Examples</strong><a class="headerlink" href="#fedml-octopu-examples" title="Permalink to this headline">¶</a></h4>
+<p>Horizontal Federated Learning:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../cross-silo/examples/mqtt_s3_fedavg_mnist_lr_example.html"><span class="doc std std-doc">mqtt_s3_fedavg_mnist_lr_example</span></a>: an example to illustrate how to run horizontal federated learning in data silos (hospitals, banks, etc.)</p></li>
+</ul>
+<p>Hierarchical Federated Learning:</p>
+<ul class="simple">
+<li><p><span class="xref myst">hierarchical_fedavg_mnist_lr_example</span>: an example to illustrate how to run hierarchical federated learning in data silos (hospitals, banks, etc.).
+Here <code class="docutils literal notranslate"><span class="pre">hierarchical</span></code> means that inside each FL Client (data silo), there are multiple GPUs that can run local distributed training with PyTorch DDP, and then the FL server aggregates globally from the results received from all FL Clients.</p></li>
+</ul>
+</section>
+<section id="fedml-beehive-examples">
+<h4><strong>FedML Beehive Examples</strong><a class="headerlink" href="#fedml-beehive-examples" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li><p><a class="reference internal" href="../cross-device/examples/mqtt_s3_fedavg_mnist_lr_example.html"><span class="doc std std-doc">Federated Learning on Android Smartphones</span></a></p></li>
+</ul>
+</section>
+</section>
+</section>
+<section id="mlops-user-guide">
+<h2><strong>MLOps User Guide</strong><a class="headerlink" href="#mlops-user-guide" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="https://open.fedml.ai">https://open.fedml.ai</a></p>
+<p>Currently, the project developed based on FedML Octopus (cross-silo) and Beehive (cross-device) can be smoothly deployed into the real-world system using FedML MLOps.</p>
+<p>FedML MLOps Platform simplifies the workflow of federated learning anywhere at any scale.
+It enables zero-code, lightweight, cross-platform, and provably secure federated learning.
+It enables machine learning from decentralized data at various users/silos/edge nodes, without the need to centralize any data to the cloud, hence providing maximum privacy and efficiency.</p>
+<p><img alt="image" src="../_static/image/mlops_workflow.png" /></p>
+<p>The above figure shows the workflow. Such a workflow is handled by web UI without the need to handle complex deployment. Check the following live demo for details:</p>
+<p><img alt="image" src="../_images/mlops_invite.png" /></p>
+<p>3 Minutes Introduction: <a class="reference external" href="https://www.youtube.com/watch?v=E1k05jd1Tyw">https://www.youtube.com/watch?v=E1k05jd1Tyw</a></p>
+<p>A detailed guidance for the MLOps can be found at <a class="reference internal" href="../mlops/user_guide.html"><span class="doc std std-doc">FedML MLOps User Guide</span></a>.</p>
+</section>
+<section id="more-resource">
+<h2><strong>More Resource</strong><a class="headerlink" href="#more-resource" title="Permalink to this headline">¶</a></h2>
+<section id="reference">
+<h3>Reference<a class="headerlink" href="#reference" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@article</span><span class="p">{</span><span class="n">chaoyanghe2020fedml</span><span class="p">,</span>
+  <span class="n">Author</span> <span class="o">=</span> <span class="p">{</span><span class="n">He</span><span class="p">,</span> <span class="n">Chaoyang</span> <span class="ow">and</span> <span class="n">Li</span><span class="p">,</span> <span class="n">Songze</span> <span class="ow">and</span> <span class="n">So</span><span class="p">,</span> <span class="n">Jinhyun</span> <span class="ow">and</span> <span class="n">Zhang</span><span class="p">,</span> <span class="n">Mi</span> <span class="ow">and</span> <span class="n">Wang</span><span class="p">,</span> <span class="n">Hongyi</span> <span class="ow">and</span> <span class="n">Wang</span><span class="p">,</span> <span class="n">Xiaoyang</span> <span class="ow">and</span> <span class="n">Vepakomma</span><span class="p">,</span> <span class="n">Praneeth</span> <span class="ow">and</span> <span class="n">Singh</span><span class="p">,</span> <span class="n">Abhishek</span> <span class="ow">and</span> <span class="n">Qiu</span><span class="p">,</span> <span class="n">Hang</span> <span class="ow">and</span> <span class="n">Shen</span><span class="p">,</span> <span class="n">Li</span> <span class="ow">and</span> <span class="n">Zhao</span><span class="p">,</span> <span class="n">Peilin</span> <span class="ow">and</span> <span class="n">Kang</span><span class="p">,</span> <span class="n">Yan</span> <span class="ow">and</span> <span class="n">Liu</span><span class="p">,</span> <span class="n">Yang</span> <span class="ow">and</span> <span class="n">Raskar</span><span class="p">,</span> <span class="n">Ramesh</span> <span class="ow">and</span> <span class="n">Yang</span><span class="p">,</span> <span class="n">Qiang</span> <span class="ow">and</span> <span class="n">Annavaram</span><span class="p">,</span> <span class="n">Murali</span> <span class="ow">and</span> <span class="n">Avestimehr</span><span class="p">,</span> <span class="n">Salman</span><span class="p">},</span>
+  <span class="n">Journal</span> <span class="o">=</span> <span class="p">{</span><span class="n">Advances</span> <span class="ow">in</span> <span class="n">Neural</span> <span class="n">Information</span> <span class="n">Processing</span> <span class="n">Systems</span><span class="p">,</span> <span class="n">Best</span> <span class="n">Paper</span> <span class="n">Award</span> <span class="n">at</span> <span class="n">Federate</span> <span class="n">Learning</span> <span class="n">Workshop</span><span class="p">},</span>
+  <span class="n">Title</span> <span class="o">=</span> <span class="p">{</span><span class="n">FedML</span><span class="p">:</span> <span class="n">A</span> <span class="n">Research</span> <span class="n">Library</span> <span class="ow">and</span> <span class="n">Benchmark</span> <span class="k">for</span> <span class="n">Federated</span> <span class="n">Machine</span> <span class="n">Learning</span><span class="p">},</span>
+  <span class="n">Year</span> <span class="o">=</span> <span class="p">{</span><span class="mi">2020</span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="ecosystem">
+<h3>Ecosystem<a class="headerlink" href="#ecosystem" title="Permalink to this headline">¶</a></h3>
+<img src="../_static/image/started_ecosystem.png" alt="drawing" style="width:100%;"/> 
+<p>FedML Ecosystem facilitates federated learning research and productization in diverse application domains. With the foundational support from FedML Core Framework, it supports FedNLP (Natural Language Processing), FedCV (Computer Vision), FedGraphNN (Graph Neural Networks), and FedIoT (Internet of Things).
+Please read this guidance for details: <a class="reference external" href="https://doc.fedml.ai/starter/ecosystem.html">https://doc.fedml.ai/starter/ecosystem.html</a></p>
+</section>
+<section id="publication">
+<h3>Publication<a class="headerlink" href="#publication" title="Permalink to this headline">¶</a></h3>
+<p>FedML’s core technology is backed by years of cutting-edge research represented in <b>50+ publications</b> in ML/FL Algorithms, Security/Privacy, Systems, and Applications.</p>
+<ol class="arabic simple">
+<li><p>Vision Paper for High Scientific Impacts</p></li>
+<li><p>System for Large-scale Distributed/Federated Training</p></li>
+<li><p>Training Algorithms for FL</p></li>
+<li><p>Security/privacy for FL</p></li>
+<li><p>AI Applications
+A Full-stack of Scientific Publications in ML Algorithms, Security/Privacy, Systems, Applications, and Visionary Impacts</p></li>
+</ol>
+<p>Please check <a class="reference internal" href="../resource/papers.html"><span class="doc std std-doc">this publication list</span></a> for details.</p>
+</section>
+<section id="video-invited-talks">
+<h3>Video (Invited Talks)<a class="headerlink" href="#video-invited-talks" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference external" href="https://www.youtube.com/watch?v=U3BiuWjhdaU">Trustworthy and Scalable Federated Learning</a>. Federated Learning One World Seminar (FLOW). By Salman Avestimehr</p></li>
+<li><p><a class="reference external" href="https://www.youtube.com/watch?v=AY7pCYTC8pQ">Distributed ML for Federated Learning feat</a>. Chaoyang He. Stanford MLSys Seminar. By Chaoyang He</p></li>
+<li><p><a class="reference external" href="https://www.youtube.com/watch?v=93SETZGZMyI">Contributed Talk for FedML Library</a>. Best Paper Award at NeurIPS 2020 Federated Learning Workshop. By Chaoyang He</p></li>
+</ul>
+</section>
+<section id="join-the-community">
+<h3>Join the Community<a class="headerlink" href="#join-the-community" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>Join our Slack:</p></li>
+</ul>
+<img src="./../_static/image/slack_logo.png" alt="drawing" style="width:200px;"/> 
+<br />
+<p><a class="reference external" href="https://join.slack.com/t/fedml/shared_invite/zt-havwx1ee-a1xfOUrATNfc9DFqU~r34w">https://join.slack.com/t/fedml/shared_invite/zt-havwx1ee-a1xfOUrATNfc9DFqU~r34w</a></p>
+<ul class="simple">
+<li><p>Join our WeChat Group:</p></li>
+</ul>
+<p>Our WeChat group exceeds 200 members, please add the following account and ask him to invite you to join.</p>
+<img src="./../_static/image/chaoyang-wechat.png" alt="drawing" style="width:200px;"/>
+</section>
+<section id="faq">
+<h3>FAQ<a class="headerlink" href="#faq" title="Permalink to this headline">¶</a></h3>
+<p>We organize the frequently asked questions at <a class="reference external" href="https://github.com/FedML-AI/FedML/discussions">https://github.com/FedML-AI/FedML/discussions</a>.
+Please feel free to ask questions there. We are happy to discuss on supporting your special demands.</p>
+</section>
+<section id="recruiting">
+<h3>Recruiting<a class="headerlink" href="#recruiting" title="Permalink to this headline">¶</a></h3>
+<p>FedML is hiring researchers, engineers, product managers, and related interns.
+If you are interested, please apply at <a class="reference external" href="https://fedml.ai/careers">https://fedml.ai/careers</a>.</p>
+</section>
+</section>
+</section>
+
+
+             </article>
+             
+            </div>
+            <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="installation.html" class="btn btn-neutral float-right" title="Installing FedML" accesskey="n" rel="next">Next <img src="../_static/images/chevron-right-orange.svg" class="next-page"></a>
+      
+      
+        <a href="../index.html" class="btn btn-neutral" title="Welcome to FedML" accesskey="p" rel="prev"><img src="../_static/images/chevron-right-orange.svg" class="previous-page"> Previous</a>
+      
+    </div>
+  
+
+  
+
+    <hr>
+
+  
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2022, FedML, Inc..
+
+    </p>
+  </div>
+    
+      <div>
+        Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+      </div>
+     
+
+</footer>
+
+          </div>
+        </div>
+
+        <div class="pytorch-content-right" id="pytorch-content-right">
+          <div class="pytorch-right-menu" id="pytorch-right-menu">
+            <div class="pytorch-side-scroll" id="pytorch-side-scroll-right">
+              <ul>
+<li><a class="reference internal" href="#">Get Started</a><ul>
+<li><a class="reference internal" href="#fedml-feature-overview"><strong>FedML Feature Overview</strong></a></li>
+<li><a class="reference internal" href="#quick-start-for-open-source-library"><strong>Quick Start for Open Source Library</strong></a><ul>
+<li><a class="reference internal" href="#installation">Installation</a></li>
+<li><a class="reference internal" href="#a-quick-overview-of-the-code-architecture">A Quick Overview of the Code Architecture</a></li>
+<li><a class="reference internal" href="#simplified-apis">Simplified APIs</a><ul>
+<li><a class="reference internal" href="#fedml-parrot-examples"><strong>FedML Parrot Examples</strong></a></li>
+<li><a class="reference internal" href="#fedml-octopu-examples"><strong>FedML Octopu Examples</strong></a></li>
+<li><a class="reference internal" href="#fedml-beehive-examples"><strong>FedML Beehive Examples</strong></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#mlops-user-guide"><strong>MLOps User Guide</strong></a></li>
+<li><a class="reference internal" href="#more-resource"><strong>More Resource</strong></a><ul>
+<li><a class="reference internal" href="#reference">Reference</a></li>
+<li><a class="reference internal" href="#ecosystem">Ecosystem</a></li>
+<li><a class="reference internal" href="#publication">Publication</a></li>
+<li><a class="reference internal" href="#video-invited-talks">Video (Invited Talks)</a></li>
+<li><a class="reference internal" href="#join-the-community">Join the Community</a></li>
+<li><a class="reference internal" href="#faq">FAQ</a></li>
+<li><a class="reference internal" href="#recruiting">Recruiting</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+  
+
+
+  
+
+     
+       <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+         <script src="../_static/jquery.js"></script>
+         <script src="../_static/underscore.js"></script>
+         <script src="../_static/doctools.js"></script>
+     
+
+  
+
+  <script type="text/javascript" src="../_static/js/vendor/popper.min.js"></script>
+  <script type="text/javascript" src="../_static/js/vendor/bootstrap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/1.5.0/list.min.js"></script>
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+  <!-- Begin Footer -->
+
+  <div class="container-fluid docs-tutorials-resources" id="docs-tutorials-resources">
+    <div class="container">
+      <div class="row">
+        <!--
+        <div class="col-md-4 text-center">
+          <h2>Docs</h2>
+          <p>Access comprehensive developer documentation for PyTorch</p>
+          <a class="with-right-arrow" href="https://pytorch.org/docs/stable/index.html">View Docs</a>
+        </div>
+
+        <div class="col-md-4 text-center">
+          <h2>Tutorials</h2>
+          <p>Get in-depth tutorials for beginners and advanced developers</p>
+          <a class="with-right-arrow" href="https://pytorch.org/tutorials">View Tutorials</a>
+        </div>
+
+        <div class="col-md-4 text-center">
+          <h2>Resources</h2>
+          <p>Find development resources and get your questions answered</p>
+          <a class="with-right-arrow" href="https://pytorch.org/resources">View Resources</a>
+        </div>
+        -->
+      </div>
+    </div>
+  </div>
+
+  <!--
+  <footer class="site-footer">
+    <div class="container footer-container">
+      <div class="footer-logo-wrapper">
+        <a href="https://pytorch.org/" class="footer-logo"></a>
+      </div>
+
+      <div class="footer-links-wrapper">
+        <div class="footer-links-col">
+          <ul>
+            <li class="list-title"><a href="https://pytorch.org/">PyTorch</a></li>
+            <li><a href="https://pytorch.org/get-started">Get Started</a></li>
+            <li><a href="https://pytorch.org/features">Features</a></li>
+            <li><a href="">Ecosystem</a></li>
+            <li><a href="https://pytorch.org/blog/">Blog</a></li>
+            <li><a href="https://github.com/pytorch/pytorch/blob/master/CONTRIBUTING.md">Contributing</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-links-col">
+          <ul>
+            <li class="list-title"><a href="https://pytorch.org/resources">Resources</a></li>
+            <li><a href="https://pytorch.org/tutorials">Tutorials</a></li>
+            <li><a href="https://pytorch.org/docs/stable/index.html">Docs</a></li>
+            <li><a href="https://discuss.pytorch.org" target="_blank">Discuss</a></li>
+            <li><a href="https://github.com/pytorch/pytorch/issues" target="_blank">Github Issues</a></li>
+            <li><a href="" target="_blank">Brand Guidelines</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-links-col follow-us-col">
+          <ul>
+            <li class="list-title">Stay Connected</li>
+            <li>
+              <div id="mc_embed_signup">
+                <form
+                  action="https://twitter.us14.list-manage.com/subscribe/post?u=75419c71fe0a935e53dfa4a3f&id=91d0dccd39"
+                  method="post"
+                  id="mc-embedded-subscribe-form"
+                  name="mc-embedded-subscribe-form"
+                  class="email-subscribe-form validate"
+                  target="_blank"
+                  novalidate>
+                  <div id="mc_embed_signup_scroll" class="email-subscribe-form-fields-wrapper">
+                    <div class="mc-field-group">
+                      <label for="mce-EMAIL" style="display:none;">Email Address</label>
+                      <input type="email" value="" name="EMAIL" class="required email" id="mce-EMAIL" placeholder="Email Address">
+                    </div>
+
+                    <div id="mce-responses" class="clear">
+                      <div class="response" id="mce-error-response" style="display:none"></div>
+                      <div class="response" id="mce-success-response" style="display:none"></div>
+                    </div>
+
+                    <div style="position: absolute; left: -5000px;" aria-hidden="true"><input type="text" name="b_75419c71fe0a935e53dfa4a3f_91d0dccd39" tabindex="-1" value=""></div>
+
+                    <div class="clear">
+                      <input type="submit" value="" name="subscribe" id="mc-embedded-subscribe" class="button email-subscribe-button">
+                    </div>
+                  </div>
+                </form>
+              </div>
+
+            </li>
+          </ul>
+
+          <div class="footer-social-icons">
+            <a href="" target="_blank" class="facebook"></a>
+            <a href="https://twitter.com/pytorch" target="_blank" class="twitter"></a>
+            <a href="" target="_blank" class="youtube"></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+  -->
+
+  <!-- End Footer -->
+
+  <!-- Begin Mobile Menu -->
+
+  <div class="mobile-main-menu">
+    <div class="container-fluid">
+      <div class="container">
+        <div class="mobile-main-menu-header-container">
+          <a class="header-logo" href="https://doc.fedml.ai/"></a>
+          <a class="main-menu-close-button" href="#" data-behavior="close-mobile-menu"></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="mobile-main-menu-links-container">
+      <div class="main-menu">
+        <ul>
+          <li>
+            <a href="https://pytorch.org/get-started">Get Started</a>
+          </li>
+
+          <li>
+            <a href="https://pytorch.org/blog/">FedMl.AI</a>
+          </li>
+
+          <li class="resources-mobile-menu-title">
+            Ecosystem
+          </li>
+
+          <ul class="resources-mobile-menu-items">
+            <li>
+              <a href="https://pytorch-lightning.readthedocs.io/en/stable/">FedML</a>
+            </li>
+
+            <li>
+              <a href="https://torchmetrics.readthedocs.io/en/stable/">TorchMetrics</a>
+            </li>
+
+            <li>
+              <a href="https://lightning-flash.readthedocs.io/en/stable/">Lightning Flash</a>
+            </li>
+
+            <li>
+              <a href="https://lightning-transformers.readthedocs.io/en/stable/">Lightning Transformers</a>
+            </li>
+
+            <li>
+              <a href="https://lightning-bolts.readthedocs.io/en/stable/">Lightning Bolts</a>
+            </li>
+          </ul>
+
+          <!--<li class="resources-mobile-menu-title">
+            Resources
+          </li>
+
+          <ul class="resources-mobile-menu-items">
+            <li>
+              <a href="https://pytorch.org/resources">Developer Resources</a>
+            </li>
+
+            <li>
+              <a href="https://pytorch.org/features">About</a>
+            </li>
+
+            <li>
+              <a href="">Models (Beta)</a>
+            </li>
+
+            <li>
+              <a href="https://pytorch.org/#community-module">Community</a>
+            </li>
+
+            <li>
+              <a href="https://discuss.pytorch.org/">Forums</a>
+            </li>
+          </ul>-->
+
+          <li>
+            <a href="https://github.com/pytorch/pytorch">FedMl.AI</a>
+          </li>
+
+          <li>
+            <a href="https://www.grid.ai/">Grid.ai</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- End Mobile Menu -->
+
+  <script type="text/javascript" src="../_static/js/vendor/anchor.min.js"></script>
+
+  <script type="text/javascript">
+    $(document).ready(function() {
+      mobileMenu.bind();
+      mobileTOC.bind();
+      pytorchAnchors.bind();
+      sideMenus.bind();
+      scrollToAnchor.bind();
+      highlightNavigation.bind();
+      mainMenuDropdown.bind();
+      filterTags.bind();
+
+      // Add class to links that have code blocks, since we cannot create links in code blocks
+      $("article.pytorch-article a span.pre").each(function(e) {
+        $(this).closest("a").addClass("has-code");
+      });
+    })                                                                                         
+  </script>
+
+  <!-- Google Tag Manager (noscript) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PQBQ3CV"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager (noscript) -->
+ </body>
+</html>

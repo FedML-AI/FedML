@@ -8,7 +8,7 @@ class Client:
                 args,
                 args.rank,  # Note: client rank stars from 1
                 args.worker_num,
-                None,
+                args.comm,
                 device,
                 dataset,
                 model,

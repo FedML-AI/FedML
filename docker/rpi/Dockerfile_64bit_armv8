@@ -1,0 +1,25 @@
+FROM balenalib/raspberrypi4-64-python:3.7.13
+# https://eide.ai/rpi4/pytorch/2020/06/30/pytorch-raspberry.html
+
+WORKDIR /usr/src/fedml
+RUN sudo apt-get update
+RUN apt-get install -y gcc python3-dev v4l-utils python3-opencv python3-pip python3-setuptools libffi-dev libssl-dev wget
+
+RUN sudo apt-get install -y python3-numpy python3-wheel python3-setuptools python3-future python3-yaml python3-six python3-requests python3-pip python3-pillow
+RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+RUN python get-pip.py --force-reinstall
+RUN pip3 install -U setuptools
+
+RUN ln -nsf /usr/bin/python3 /usr/bin/python
+RUN ln -nsf /usr/bin/pip3 /usr/bin/pip
+
+# https://stackoverflow.com/questions/54665842/when-importing-tensorflow-i-get-the-following-error-no-module-named-numpy-cor
+RUN pip install numpy --upgrade
+
+# https://stackoverflow.com/questions/25340698/importerror-cannot-import-name-imaging
+RUN pip install -U Pillow
+
+# https://discuss.pytorch.org/t/failed-to-load-image-python-extension-could-not-find-module/140278/13
+RUN pip install --upgrade torchvision==0.10.0
+
+RUN pip3 install fedml==0.7.95

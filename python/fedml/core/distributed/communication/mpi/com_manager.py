@@ -76,12 +76,16 @@ class MpiCommunicationManager(BaseCommunicationManager):
 
     def handle_receive_message(self):
         self.is_running = True
+
+        # the first message after connection, aligned the protocol with MQTT + S3
+        self._notify_connection_ready()
+
         while self.is_running:
             if self.q_receiver.qsize() > 0:
                 msg_params = self.q_receiver.get()
                 self.notify(msg_params)
 
-            time.sleep(0.3)
+            time.sleep(0.003)
         logging.info("!!!!!!handle_receive_message stopped!!!")
 
     def stop_receive_message(self):
@@ -95,6 +99,13 @@ class MpiCommunicationManager(BaseCommunicationManager):
 
     def notify(self, msg_params):
         msg_type = msg_params.get_type()
+        for observer in self._observers:
+            observer.receive_message(msg_type, msg_params)
+
+    def _notify_connection_ready(self):
+        msg_params = Message()
+        MSG_TYPE_CONNECTION_IS_READY = 0
+        msg_type = MSG_TYPE_CONNECTION_IS_READY
         for observer in self._observers:
             observer.receive_message(msg_type, msg_params)
 
