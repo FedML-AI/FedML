@@ -1,4 +1,4 @@
-## Prepare Dataset
+## Prerequisite
 install command line tool `unar`: 
 
 for MacOS
