@@ -18,7 +18,7 @@ except ImportError:
     bdist_wheel = None
 
 requirements = [
-    "numpy>=1.21",
+    "numpy",
     "PyYAML",
     "h5py",
     "tqdm",
@@ -34,7 +34,6 @@ requirements = [
     "grpcio",
     "torch",
     "torchvision",
-    "mpi4py",
 ]
 
 if platform.machine() == "x86_64":
@@ -42,7 +41,7 @@ if platform.machine() == "x86_64":
 
 setup(
     name="fedml",
-    version="0.7.77",
+    version="0.7.97",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "

@@ -9,7 +9,7 @@ data_args:
   partition_alpha: 0.5
 
 model_args:
-  model: "resnet56_gkt"
+  model: "resnet56"
 
 train_args:
   federated_optimizer: "FedGKT"

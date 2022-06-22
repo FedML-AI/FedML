@@ -1,0 +1,56 @@
+common_args:
+  training_type: "simulation"
+  random_seed: 0
+
+data_args:
+  dataset: "cifar10"
+  data_cache_dir: "../../../data/mnist"
+  partition_method: "hetero"
+  partition_alpha: 0.5
+
+model_args:
+  model: "resnet56"
+
+train_args:
+  federated_optimizer: "fedavg_robust"
+  client_id_list: "[]"
+  client_num_in_total: 10
+  client_num_per_round: 4
+  comm_round: 50
+  epochs: 1
+  batch_size: 10
+  train_batch_size: 10
+  test_batch_size: 10
+  client_optimizer: sgd
+  learning_rate: 0.03
+  weight_decay: 0.001
+
+validation_args:
+  frequency_of_the_test: 5
+
+device_args:
+  worker_num: 4
+  using_gpu: false
+  gpu_mapping_file: config/gpu_mapping.yaml
+  gpu_mapping_key: mapping_default
+
+comm_args:
+  backend: "MPI"
+  is_mobile: 0
+
+
+tracking_args:
+  log_file_dir: ./log
+  enable_wandb: false
+  wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
+  wandb_project: fedml
+  wandb_name: fedml_torch_fedavg_mnist_lr
+
+
+robust_related_args:
+  attack_case: edge-case
+  defense_type: weak-dp
+  norm_bound: 5.0
+  stddev: 0.025
+  poison_type: southwest
+  attack_freq: 10

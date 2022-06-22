@@ -1,10 +1,7 @@
 import logging
 from abc import abstractmethod
 
-from mpi4py import MPI
-
 from ..communication.grpc.grpc_comm_manager import GRPCCommManager
-from ..communication.mpi.com_manager import MpiCommunicationManager
 from ..communication.mqtt.mqtt_comm_manager import MqttCommManager
 from ..communication.mqtt_s3.mqtt_s3_multi_clients_comm_manager import (
     MqttS3MultiClientsCommManager,
@@ -24,6 +21,8 @@ class ServerManager(Observer):
 
         self.backend = backend
         if backend == "MPI":
+            from ..communication.mpi.com_manager import MpiCommunicationManager
+
             self.com_manager = MpiCommunicationManager(
                 comm, rank, size, node_type="server"
             )
@@ -89,8 +88,20 @@ class ServerManager(Observer):
                     args.mqtt_config_path, args.s3_config_path, topic=args.run_id
                 )
         else:
-            self.com_manager = MpiCommunicationManager(
-                comm, rank, size, node_type="server"
+            mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
+            args.mqtt_config_path = mqtt_config
+            args.s3_config_path = s3_config
+            self.com_manager = MqttS3MultiClientsCommManager(
+                args.mqtt_config_path,
+                args.s3_config_path,
+                topic=str(args.run_id),
+                client_rank=rank,
+                client_num=size,
+                args=args,
+            )
+
+            self.com_manager_status = MqttS3StatusManager(
+                args.mqtt_config_path, args.s3_config_path, topic=args.run_id
             )
         self.com_manager.add_observer(self)
         self.message_handler_dict = dict()
@@ -132,6 +143,8 @@ class ServerManager(Observer):
     def finish(self):
         logging.info("__finish server")
         if self.backend == "MPI":
+            from mpi4py import MPI
+
             MPI.COMM_WORLD.Abort()
         elif self.backend == "MQTT":
             self.com_manager.stop_receive_message()

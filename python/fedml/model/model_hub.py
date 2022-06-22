@@ -1,24 +1,24 @@
 import logging
 
+import torch.nn as nn
+
 from fedml.model.cv.cnn import CNN_DropOut
+from fedml.model.cv.darts import genotypes
+from fedml.model.cv.darts.model import NetworkCIFAR
+from fedml.model.cv.darts.model_search import Network
 from fedml.model.cv.efficientnet import EfficientNet
+from fedml.model.cv.mnist_gan import Generator, Discriminator
 from fedml.model.cv.mobilenet import mobilenet
 from fedml.model.cv.mobilenet_v3 import MobileNetV3
 from fedml.model.cv.resnet import resnet56
+from fedml.model.cv.resnet56 import resnet_client, resnet_server
 from fedml.model.cv.resnet_gn import resnet18
-from fedml.model.cv.resnet56_gkt import resnet_client
-from fedml.model.cv.resnet56_gkt import resnet_server
-from fedml.model.cv.mnist_gan import Generator, Discriminator
-from fedml.model.cv.darts.model import NetworkCIFAR
-from fedml.model.cv.darts.model_search import Network
-from fedml.model.cv.darts import genotypes
-import torch.nn as nn
-
 from fedml.model.linear.lr import LogisticRegression
 from fedml.model.nlp.rnn import RNN_OriginalFedAvg, RNN_StackOverFlow
 
 
 def create(args, output_dim):
+    global model
     model_name = args.model
     logging.info(
         "create_model. model_name = %s, output_dim = %s" % (model_name, output_dim)
@@ -49,7 +49,7 @@ def create(args, output_dim):
         model = RNN_StackOverFlow()
     elif model_name == "resnet56":
         model = resnet56(class_num=output_dim)
-    elif model_name == 'resnet56_gkt':
+    elif model_name == "resnet56":
         client_model = resnet_client.resnet8_56(c=output_dim)
         server_model = resnet_server.resnet56_server(c=output_dim)
         model = (client_model, server_model)
@@ -60,17 +60,35 @@ def create(args, output_dim):
         model = MobileNetV3(model_mode="LARGE")
     elif model_name == "efficientnet":
         model = EfficientNet()
-    elif model_name == 'darts' and args.dataset == 'cifar10':
-        if args.stage == 'search':
+    elif model_name == "darts" and args.dataset == "cifar10":
+        if args.stage == "search":
             criterion = nn.CrossEntropyLoss()
             model = Network(args.init_channels, output_dim, args.layers, criterion)
-        elif args.stage == 'train':
+        elif args.stage == "train":
             genotype = genotypes.FedNAS_V1
-            model = NetworkCIFAR(args.init_channels, output_dim, args.layers, args.auxiliary, genotype)
-    elif model_name == 'GAN' and args.dataset == 'mnist':
+            model = NetworkCIFAR(
+                args.init_channels, output_dim, args.layers, args.auxiliary, genotype
+            )
+    elif model_name == "GAN" and args.dataset == "mnist":
         gen = Generator()
         disc = Discriminator()
         model = (gen, disc)
+    elif (
+        model_name == "lenet"
+        and hasattr(args, "deeplearning_backend")
+        and args.deeplearning_backend == "mnn"
+    ):
+        from .mobile.mnn_lenet import create_mnn_lenet5_model
+
+        model = create_mnn_lenet5_model(args.global_model_file_path)
+    elif (
+        model_name == "resnet20"
+        and hasattr(args, "deeplearning_backend")
+        and args.deeplearning_backend == "mnn"
+    ):
+        from .mobile.mnn_resnet import create_mnn_resnet20_model
+
+        model = create_mnn_resnet20_model(args.global_model_file_path)
     else:
         model = LogisticRegression(28 * 28, output_dim)
     return model
