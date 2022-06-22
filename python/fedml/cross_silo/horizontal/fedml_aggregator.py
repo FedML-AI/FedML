@@ -120,13 +120,16 @@ class FedMLAggregator(object):
         )
         assert client_num_in_total >= client_num_per_round
 
-        np.random.seed(
-            round_idx
-        )  # make sure for each comparison, we are selecting the same clients each round
-        data_silo_index_list = np.random.choice(
-            range(client_num_in_total), client_num_per_round, replace=False
-        )
-        return data_silo_index_list
+        if client_num_in_total == client_num_per_round:
+            return [i for i in range(client_num_per_round)]
+        else:
+            np.random.seed(
+                round_idx
+            )  # make sure for each comparison, we are selecting the same clients each round
+            data_silo_index_list = np.random.choice(
+                range(client_num_in_total), client_num_per_round, replace=False
+            )
+            return data_silo_index_list
 
     def client_selection(
         self, round_idx, client_id_list_in_total, client_num_per_round
