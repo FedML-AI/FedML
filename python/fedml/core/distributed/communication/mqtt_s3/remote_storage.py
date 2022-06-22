@@ -1,3 +1,4 @@
+# -*-coding:utf-8-*-
 import os
 import tempfile
 
@@ -10,7 +11,10 @@ import logging
 
 class S3Storage:
     def __init__(self, s3_config_path):
-
+        self.bucket_name = None
+        self.cn_region_name = None
+        self.cn_s3_sak = None
+        self.cn_s3_aki = None
         self.set_config_from_file(s3_config_path)
         self.set_config_from_objects(s3_config_path)
         self.s3 = boto3.client(
@@ -37,8 +41,6 @@ class S3Storage:
         return payload
 
     def write_model(self, message_key, model):
-        # obj = self.s3_resource.Object(self.bucket_name, message_key)
-        # obj.put(Body=model)
         with tempfile.TemporaryFile() as fp:
             joblib.dump(model, fp)
             fp.seek(0)
@@ -54,7 +56,6 @@ class S3Storage:
                 Params={"Bucket": self.bucket_name, "Key": message_key},
             )
             return model_url
-        # self.upload_file(model, message_key)
 
     def read_model(self, message_key):
         with tempfile.TemporaryFile() as fp:
@@ -66,9 +67,6 @@ class S3Storage:
                 model = joblib.load(fp)
             except Exception as e:
                 print("Exception " + str(e))
-        # local_path = "./" + str(uuid.uuid4()) + ".ckpt"
-        # self.download_file(message_key, local_path)
-        # return local_path
         return model
 
     def upload_file(self, src_local_path, dest_s3_path):
@@ -79,7 +77,6 @@ class S3Storage:
         :return:
         """
         try:
-
             with open(src_local_path, "rb") as f:
                 self.s3.upload_fileobj(
                     f, self.bucket_name, dest_s3_path, ExtraArgs={"ACL": "public-read"}
@@ -144,7 +141,3 @@ class S3Storage:
         self.cn_s3_sak = s3_config["CN_S3_SAK"]
         self.cn_region_name = s3_config["CN_REGION_NAME"]
         self.bucket_name = s3_config["BUCKET_NAME"]
-
-
-# if __name__ == "__main__":
-#     upload_file("./s3_test_file", "run_id_000001/client_id_s3_test_file")
