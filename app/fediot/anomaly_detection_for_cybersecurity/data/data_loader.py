@@ -1,7 +1,6 @@
 import logging
 import os
 import urllib.request
-import patoolib
 
 import numpy as np
 import pandas as pd
