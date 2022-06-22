@@ -16,7 +16,7 @@ At the client side, the client ID (a.k.a rank) starts from 1.
 Please also modify config/fedml_config.yaml, changing the `client_num_in_total`, `client_num_per_round`, `worker_num` 
 as the number of clients you plan to run.
 
-For this application, the number of clients is up to 9 since there are 9 types of devices in N-BaIoT dataset.
+For this application, the number of clients is up to 9 since there are 9 types of IoT devices in N-BaIoT dataset.
 
 At the server side, run the following script:
 ```
