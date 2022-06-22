@@ -1,1 +1,1 @@
-rarfile==4.0
+patool==1.12
