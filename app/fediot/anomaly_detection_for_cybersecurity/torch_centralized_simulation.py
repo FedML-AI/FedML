@@ -22,5 +22,5 @@ if __name__ == "__main__":
     trainer = MyModelTrainer(model)
 
     # start training
-    client = SimulatorMPI(args, device, dataset, model, trainer)
-    client.run()
+    simulator = SimulatorMPI(args, device, dataset, model, trainer)
+    simulator.run()
