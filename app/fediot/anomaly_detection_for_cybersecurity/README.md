@@ -1,5 +1,8 @@
 ## Prepare Dataset
-Prerequisite: install `unar` command line tool (https://theunarchiver.com/command-line).
+install dependent libraries: 
+```
+pip install -r requirements.txt
+```
 
 At the server and client side, run the following script under data directory:
 ```
@@ -9,7 +12,7 @@ bash download.sh
 ## Training Script
 
 At the client side, the client ID (a.k.a rank) starts from 1.
-Please also modify config/fedml_config.yaml, changing the `client_id_list`, `client_num_per_round`, `worker_num` 
+Please also modify config/fedml_config.yaml, changing the `client_num_in_total`, `client_num_per_round`, `worker_num` 
 as the number of clients you plan to run.
 
 For this application, the number of clients is up to 9 since there are 9 types of devices in N-BaIoT dataset.

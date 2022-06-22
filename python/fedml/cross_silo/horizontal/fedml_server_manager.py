@@ -41,6 +41,10 @@ class FedMLServerManager(ServerManager):
         self.start_running_time = 0.0
         self.aggregated_model_url = None
 
+        self.is_initialized = False
+        self.client_id_list_in_this_round = None
+        self.data_silo_index_list = None
+
     def run(self):
         super().run()
 
@@ -50,21 +54,12 @@ class FedMLServerManager(ServerManager):
 
         global_model_params = self.aggregator.get_global_model_params()
 
-        client_id_list_in_this_round = self.aggregator.client_selection(
-            self.round_idx, self.client_real_ids, self.args.client_num_per_round
-        )
-        data_silo_index_list = self.aggregator.data_silo_selection(
-            self.round_idx,
-            self.args.client_num_in_total,
-            len(client_id_list_in_this_round),
-        )
-
         client_idx_in_this_round = 0
-        for client_id in client_id_list_in_this_round:
+        for client_id in self.client_id_list_in_this_round:
             self.send_message_init_config(
                 client_id,
                 global_model_params,
-                data_silo_index_list[client_idx_in_this_round],
+                self.data_silo_index_list[client_idx_in_this_round],
             )
             client_idx_in_this_round += 1
 
@@ -91,6 +86,24 @@ class FedMLServerManager(ServerManager):
 
     def handle_messag_connection_ready(self, msg_params):
         logging.info("Connection is ready!")
+        logging.info("self.client_real_ids = {}".format(self.client_real_ids))
+        self.client_id_list_in_this_round = self.aggregator.client_selection(
+            self.round_idx, self.client_real_ids, self.args.client_num_per_round
+        )
+        self.data_silo_index_list = self.aggregator.data_silo_selection(
+            self.round_idx,
+            self.args.client_num_in_total,
+            len(self.client_id_list_in_this_round),
+        )
+        if not self.is_initialized:
+            # check client status in case that some clients start earlier than the server
+            client_idx_in_this_round = 0
+            for client_id in self.client_id_list_in_this_round:
+                self.send_message_check_client_status(
+                    client_id,
+                    self.data_silo_index_list[client_idx_in_this_round],
+                )
+                client_idx_in_this_round += 1
 
     def handle_message_client_status_update(self, msg_params):
         client_status = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_STATUS)
@@ -102,7 +115,7 @@ class FedMLServerManager(ServerManager):
             self.mlops_metrics.report_server_training_status(self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING)
 
         all_client_is_online = True
-        for client_id in self.client_real_ids:
+        for client_id in self.client_id_list_in_this_round:
             if not self.client_online_mapping.get(str(client_id), False):
                 all_client_is_online = False
                 break
@@ -115,6 +128,7 @@ class FedMLServerManager(ServerManager):
         if all_client_is_online:
             # send initialization message to all clients to start training
             self.send_init_msg()
+            self.is_initialized = True
 
     def handle_message_receive_model_from_client(self, msg_params):
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
@@ -162,21 +176,21 @@ class FedMLServerManager(ServerManager):
                 }
                 self.mlops_metrics.report_server_training_round_info(round_info)
 
-            client_id_list_in_this_round = self.aggregator.client_selection(
+            self.client_id_list_in_this_round = self.aggregator.client_selection(
                 self.round_idx, self.client_real_ids, self.args.client_num_per_round
             )
-            data_silo_index_list = self.aggregator.data_silo_selection(
+            self.data_silo_index_list = self.aggregator.data_silo_selection(
                 self.round_idx,
                 self.args.client_num_in_total,
-                len(client_id_list_in_this_round),
+                len(self.client_id_list_in_this_round),
             )
 
             client_idx_in_this_round = 0
-            for receiver_id in client_id_list_in_this_round:
+            for receiver_id in self.client_id_list_in_this_round:
                 self.send_message_sync_model_to_client(
                     receiver_id,
                     global_model_params,
-                    data_silo_index_list[client_idx_in_this_round],
+                    self.data_silo_index_list[client_idx_in_this_round],
                 )
                 client_idx_in_this_round += 1
 
@@ -213,6 +227,13 @@ class FedMLServerManager(ServerManager):
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")
         self.send_message(message)
 
+    def send_message_check_client_status(self, receive_id, datasilo_index):
+        message = Message(
+            MyMessage.MSG_TYPE_S2C_CHECK_CLIENT_STATUS, self.get_sender_id(), receive_id
+        )
+        message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
+        self.send_message(message)
+
     def send_message_sync_model_to_client(
         self, receive_id, global_model_params, client_index
     ):
@@ -227,7 +248,7 @@ class FedMLServerManager(ServerManager):
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")
         self.send_message(message)
 
-        if self.aggregated_model_url is None:
+        if self.aggregated_model_url is None and self.args.backend == "MQTT_S3":
             self.aggregated_model_url = message.get(
                 MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL
             )

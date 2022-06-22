@@ -1,0 +1,825 @@
+
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-PQBQ3CV');
+  </script>
+  <!-- End Google Tag Manager -->
+
+  <meta charset="utf-8">
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="google-site-verification" content="okUst94cAlWSsUsGZTB4xSS4UKTtRV8Nu5XZ9pdd3Aw" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>FedML MLOps User Guide &mdash; FedML  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!-- <link rel="stylesheet" href="../_static/pygments.css" type="text/css" /> -->
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="FedML MLOps CLI and API Reference" href="api.html" />
+    <link rel="prev" title="FedML FAQ" href="../starter/faq.html" />
+  <!-- Google Analytics -->
+  
+  <!-- End Google Analytics -->
+  
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+  <!-- Preload the theme fonts -->
+
+<link rel="preload" href="../_static/fonts/FreightSans/freight-sans-book.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../_static/fonts/FreightSans/freight-sans-medium.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../_static/fonts/IBMPlexMono/IBMPlexMono-Medium.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../_static/fonts/FreightSans/freight-sans-bold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../_static/fonts/FreightSans/freight-sans-medium-italic.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../_static/fonts/IBMPlexMono/IBMPlexMono-SemiBold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../_static/fonts/UCity/UCity-Light.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../_static/fonts/UCity/UCity-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../_static/fonts/UCity/UCity-Semibold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../_static/fonts/Inconsolata/Inconsolata.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+
+<!-- Preload the katex fonts -->
+
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Math-Italic.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Main-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Main-Bold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Size1-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Size4-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Size2-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Size3-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Caligraphic-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+  <script defer src="https://use.fontawesome.com/releases/v6.1.1/js/all.js" integrity="sha384-xBXmu0dk1bEoiwd71wOonQLyH+VpgR1XcDH3rtxrLww5ajNTuMvBdL5SOiFZnNdp" crossorigin="anonymous"></script>
+</head>
+
+<div class="container-fluid header-holder tutorials-header" id="header-holder">
+  <div class="container">
+    <div class="header-container">
+      <a class="header-logo" href="https://doc.fedml.ai/">
+      <!--  <img class="call-to-action-img" src="../_static/images/logo-lightning-icon.png"/> -->
+      </a>
+
+      <div class="main-menu">
+        <ul>
+          <li>
+            <a href="https://doc.fedml.ai/starter/get_started.html">Get Started</a>
+          </li>
+
+          <li>
+            <a href="https://github.com/FedML-AI">Github</a>
+          </li>
+
+          <li>
+            <a href="https://open.fedml.ai">Platform</a>
+          </li>
+
+          <li>
+            <a href="https://join.slack.com/t/fedml/shared_invite/zt-havwx1ee-a1xfOUrATNfc9DFqU~r34w">Join the Community</a>
+          </li>
+
+
+
+          <li>
+            <div id="resourcesDropdownButton" data-toggle="resources-dropdown" class="resources-dropdown">
+              <a class="resource-option with-down-orange-arrow">
+                Resource
+              </a>
+              <div class="resources-dropdown-menu">
+                <a class="doc-dropdown-option nav-dropdown-item" href="https://doc.fedml.ai/resource/papers.html">
+                  <span class="dropdown-title">Publications</span>
+                </a>
+                <a class="doc-dropdown-option nav-dropdown-item" href="https://doc.fedml.ai/resource/video.html">
+                  <span class="dropdown-title">Videos</span>
+                </a>
+                <a class="doc-dropdown-option nav-dropdown-item" href="https://github.com/FedML-AI/FedML/discussions">
+                  <span class="dropdown-title">Discussion</span>
+                </a>
+            </div>
+          </li>
+
+          <!--<li>
+            <div id="resourcesDropdownButton" data-toggle="resources-dropdown" class="resources-dropdown">
+              <a class="resource-option with-down-arrow">
+                Resources
+              </a>
+              <div class="resources-dropdown-menu">
+                <a class="nav-dropdown-item" href="https://pytorch.org/#community-module">
+                  <span class="dropdown-title">Community</span>
+                  <p>Join the PyTorch developer community to contribute, learn, and get your questions answered.</p>
+                </a>
+                <a class="nav-dropdown-item" href="https://pytorch.org/resources">
+                  <span class="dropdown-title">Developer Resources</span>
+                  <p>Find resources and get questions answered</p>
+                </a>
+                <a class="nav-dropdown-item" href="https://discuss.pytorch.org/" target="_blank">
+                  <span class="dropdown-title">Forums</span>
+                  <p>A place to discuss PyTorch code, issues, install, research</p>
+                </a>
+                <a class="nav-dropdown-item" href="">
+                  <span class="dropdown-title">Models (Beta)</span>
+                  <p>Discover, publish, and reuse pre-trained models</p>
+                </a>
+              </div>
+            </div>
+          </li>-->
+
+          <li>
+            <a href="https://fedml.ai/">FedML.AI</a>
+          </li>
+
+        </ul>
+      </div>
+
+      <a class="main-menu-open-button" href="#" data-behavior="open-mobile-menu"></a>
+    </div>
+  </div>
+</div>
+
+<body class="pytorch-body">
+
+   
+
+    
+
+    <div class="table-of-contents-link-wrapper">
+      <span>Table of Contents</span>
+      <a href="#" class="toggle-table-of-contents" data-behavior="toggle-table-of-contents"></a>
+    </div>
+
+    <nav data-toggle="wy-nav-shift" class="pytorch-left-menu" id="pytorch-left-menu">
+      <div class="pytorch-side-scroll">
+        <div class="pytorch-menu pytorch-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          <div class="pytorch-left-menu-search">
+            
+
+            
+              
+              
+            
+
+            
+
+
+  
+
+
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search Docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+            
+          </div>
+
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../starter/get_started.html">Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../starter/installation.html">Installing FedML</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../starter/mission.html">Mission</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../starter/overview.html">Technology Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../starter/ecosystem.html">Application Ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../starter/oss_code_architecture.html">Open Source Code Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../starter/mlops_video.html">FedML MLOps Video Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../starter/faq.html">FedML FAQ</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">FedML MLOps - Landing FedML into Reality</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../starter/mlops_video.html">FedML MLOps Video Tutorial</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">FedML MLOps User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">FedML MLOps CLI and API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">FedML Parrot - Simulating the Real World</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/user_guide.html">FedML Parrot User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/examples.html">FedML Parrot Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/api.html">FedML Parrot API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">FedML Octopus - Simple Connector for Data Silos</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../cross-silo/user_guide.html">FedML Octopus User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cross-silo/examples.html">FedML Octopus Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cross-silo/api.html">FedML Octopus API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">FedML BeeHive - Collaborative Learning on Smartphones/IoTs</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../cross-device/user_guide.html">FedML Beehive User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cross-device/examples.html">FedML Beehive Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cross-device/api.html">FedML BeeHive API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">FedML Cheetah - Speedy Training of Large Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../distributed/user_guide.html">FedML Cheetah User Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Benchmarks for FedNLP, FedCV, FedGraphNN and FedIoT</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../benchmark/fedgraphnn.html">FedGraphNN Benchmark</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resource</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../resource/papers.html">Research Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../resource/video.html">Video</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../resource/community.html">Join the Community</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <div class="pytorch-container">
+      <div class="pytorch-page-level-bar" id="pytorch-page-level-bar">
+        <div class="pytorch-breadcrumbs-wrapper">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="pytorch-breadcrumbs">
+    
+      <li>
+        <a href="../index.html">
+          
+            Docs
+          
+        </a> &gt;
+      </li>
+
+        
+      <li>FedML MLOps User Guide</li>
+    
+    
+      <li class="pytorch-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/mlops/user_guide.md.txt" rel="nofollow"><img src="../_static/images/view-page-source-icon.svg"></a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+</div>
+        </div>
+
+        <div class="pytorch-shortcuts-wrapper" id="pytorch-shortcuts-wrapper">
+          Shortcuts
+        </div>
+      </div>
+
+      <section data-toggle="wy-nav-shift" id="pytorch-content-wrap" class="pytorch-content-wrap">
+        <div class="pytorch-content-left">
+
+        
+          
+          <div class="rst-content">
+          
+            <div role="main" class="main-content" itemscope="itemscope" itemtype="http://schema.org/Article">
+             <article itemprop="articleBody" id="pytorch-article" class="pytorch-article">
+              
+  <section id="fedml-mlops-user-guide">
+<h1>FedML MLOps User Guide<a class="headerlink" href="#fedml-mlops-user-guide" title="Permalink to this headline">¶</a></h1>
+<p>Video Tutorial:
+<a class="reference external" href="https://www.youtube.com/watch?v=Xgm0XEaMlVQ">https://www.youtube.com/watch?v=Xgm0XEaMlVQ</a></p>
+<p><strong>Write Once, Run Anywhere: Seamlessly Migrate Your Local Development to the Real-world Edge-cloud Deployment</strong></p>
+<ul class="simple">
+<li><p>How Does FedML MLOps Platform Work?</p></li>
+<li><p>Local Development and Building MLOps Packages</p></li>
+<li><p>Create Application and Upload Local Packages</p></li>
+<li><p>Install FedML Agent: fedml login $account_id</p></li>
+<li><p>Invite Collaborators, Create a Group and a Project</p></li>
+<li><p>Start Run (Training) via Automated Deployment and Scaling</p></li>
+<li><p>Experimental Tracking via Simplified Project Management</p></li>
+</ul>
+<section id="how-does-fedml-mlops-platform-work">
+<h2>How Does FedML MLOps Platform Work?<a class="headerlink" href="#how-does-fedml-mlops-platform-work" title="Permalink to this headline">¶</a></h2>
+<p><img alt="image" src="../_images/mlops_workflow_new.png" /> <br />
+Figure 1: the workflow describing how MLOps works</p>
+<p>MLOps works as the figure shown above. Such a workflow is handled by web UI without the need to handle complex deployment.
+Now please register an account and follow the following instruction step by step.</p>
+<ul class="simple">
+<li><p>Instructions for registration: <br />
+Please open <a class="reference external" href="https://open.fedml.ai">https://open.fedml.ai</a> and find “Sign Up”.</p></li>
+</ul>
+</section>
+<section id="local-development-and-building-mlops-packages">
+<h2>Local Development and Building MLOps Packages<a class="headerlink" href="#local-development-and-building-mlops-packages" title="Permalink to this headline">¶</a></h2>
+<p>After you finish the local developing/debugging of the FedML project using FedML library (e.g., successfully run the example <a class="reference external" href="https://doc.fedml.ai/cross-silo/examples/mqtt_s3_fedavg_mnist_lr_example.html">https://doc.fedml.ai/cross-silo/examples/mqtt_s3_fedavg_mnist_lr_example.html</a>),
+you can now deploy it into the real-world edge-cloud system.</p>
+<p>Next, we use the cross-silo project example at
+<a class="reference external" href="https://github.com/FedML-AI/FedML/tree/master/python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line">https://github.com/FedML-AI/FedML/tree/master/python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line</a>
+to guide you through how to deploy it and collaborate with others data silos.</p>
+</section>
+<section id="create-application-and-upload-local-packages">
+<h2>1. Create Application and Upload Local Packages<a class="headerlink" href="#create-application-and-upload-local-packages" title="Permalink to this headline">¶</a></h2>
+<p><img alt="image" src="../_images/mlops_create_application.png" /> \</p>
+<p>You can use the following FedML CLI to build the package, and then upload the packages as shown in the figure above.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>fedml build -t client -sf <span class="nv">$SOURCE</span> -ep <span class="nv">$ENTRY</span> -cf <span class="nv">$CONFIG</span> -df <span class="nv">$DEST</span>
+
+Usage: fedml build <span class="o">[</span>OPTIONS<span class="o">]</span>
+
+  Commands <span class="k">for</span> open.fedml.ai MLOps platform
+
+Options:
+  -t, --type TEXT            client or server? <span class="o">(</span>value: client<span class="p">;</span> server<span class="o">)</span>
+  -sf, --source_folder TEXT  the <span class="nb">source</span> code folder path
+  -ep, --entry_point TEXT    the entry point of the <span class="nb">source</span> code
+  -cf, --config_folder TEXT  the config folder path
+  -df, --dest_folder TEXT    the destination package folder path
+  --help                     Show this message and exit.
+</pre></div>
+</div>
+<p>The following script uses <code class="docutils literal notranslate"><span class="pre">examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line</span></code> as an example to illustrate the arguments for building MLOps packages. Please replace related values with your own.</p>
+<ul class="simple">
+<li><p>Build the deployable package for the client</p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line
+
+<span class="nv">SOURCE</span><span class="o">=</span>client
+<span class="nv">ENTRY</span><span class="o">=</span>torch_client.py
+<span class="nv">CONFIG</span><span class="o">=</span>config
+<span class="nv">DEST</span><span class="o">=</span>./mlops
+fedml build -t client -sf <span class="nv">$SOURCE</span> -ep <span class="nv">$ENTRY</span> -cf <span class="nv">$CONFIG</span> -df <span class="nv">$DEST</span>
+</pre></div>
+</div>
+<p>Note: for ENTRY, please only specify the file name (torch_client.py) under the SOURCE folder, please do not pass the absolute path.</p>
+<p>If the script works correctly, the console log should be as follows.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>mnn37<span class="o">)</span> chaoyanghe@Chaoyangs-MBP python % fedml build -t client -sf <span class="nv">$SOURCE</span> -ep <span class="nv">$ENTRY</span> -cf <span class="nv">$CONFIG</span> -df <span class="nv">$DEST</span>
+Argument <span class="k">for</span> type: client
+Argument <span class="k">for</span> <span class="nb">source</span> folder: examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line/client
+Argument <span class="k">for</span> entry point: torch_client.py
+Argument <span class="k">for</span> config folder: examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line/config
+Argument <span class="k">for</span> destination package folder: ./mlops
+Now, you are building the fedml packages which will be used <span class="k">in</span> the MLOps platform.
+The packages will be used <span class="k">for</span> client training and server aggregation.
+When the building process is completed, you will find the packages <span class="k">in</span> the directory as follows: ./mlops/dist-packages.
+Then you may upload the packages on the configuration page <span class="k">in</span> the MLOps platform to start the federated learning flow.
+Building...
+You have finished all building process. 
+Now you may use ./mlops/client-package.zip to start your federated learning run.
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Build the deployable package for the server</p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">SOURCE</span><span class="o">=</span>server
+<span class="nv">ENTRY</span><span class="o">=</span>torch_server.py
+<span class="nv">CONFIG</span><span class="o">=</span>config
+<span class="nv">DEST</span><span class="o">=</span>./mlops
+fedml build -t server -sf <span class="nv">$SOURCE</span> -ep <span class="nv">$ENTRY</span> -cf <span class="nv">$CONFIG</span> -df <span class="nv">$DEST</span>
+</pre></div>
+</div>
+<p>Note: for ENTRY, please only specify the file name (torch_server.py) under the SOURCE folder, please do not pass the absolute path.</p>
+<p>If the script works correctly, the console log should be as follows.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>mnn37<span class="o">)</span> chaoyanghe@Chaoyangs-MBP python % fedml build -t server -sf <span class="nv">$SOURCE</span> -ep <span class="nv">$ENTRY</span> -cf <span class="nv">$CONFIG</span> -df <span class="nv">$DEST</span>
+Argument <span class="k">for</span> type: server
+Argument <span class="k">for</span> <span class="nb">source</span> folder: examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line/server
+Argument <span class="k">for</span> entry point: torch_server.py
+Argument <span class="k">for</span> config folder: examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line/config
+Argument <span class="k">for</span> destination package folder: ./mlops
+Now, you are building the fedml packages which will be used <span class="k">in</span> the MLOps platform.
+The packages will be used <span class="k">for</span> client training and server aggregation.
+When the building process is completed, you will find the packages <span class="k">in</span> the directory as follows: ./mlops/dist-packages.
+Then you may upload the packages on the configuration page <span class="k">in</span> the MLOps platform to start the federated learning flow.
+Building...
+You have finished all building process. 
+Now you may use ./mlops/server-package.zip to start your federated learning run.
+</pre></div>
+</div>
+<p>The output package locates at <code class="docutils literal notranslate"><span class="pre">mlops</span></code> folder.</p>
+</section>
+<section id="install-fedml-agent-fedml-login-account-id">
+<h2>2. Install FedML Agent: fedml login $account_id<a class="headerlink" href="#install-fedml-agent-fedml-login-account-id" title="Permalink to this headline">¶</a></h2>
+<p>After <a class="reference external" href="https://doc.fedml.ai/starter/installation.html">installing the FedML library</a> at your edge devices, you can bind it to MLOps platform with a simple CLI:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>fedml login $account_id
+</pre></div>
+</div>
+<p>Please change $account_id to your own (see the screenshot shown below).</p>
+<p><img alt="image" src="../_images/MLOps_edge_devices.png" />
+Figure 2: login your edge devices to our platform</p>
+<p>In the edge device, you will see the log as below if the script works correctly. You can also press the “refresh” button in Figure 2 to check the status of your device.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>fedml3.7<span class="o">)</span> chaoyanghe@Chaoyangs-MBP cross_silo % fedml login <span class="m">302</span>
+client None, server None
+login as client: True, as server: None
+/Users/chaoyanghe/sourcecode/FedML_product/FedML/python/fedml/cli/edge_deployment/client_login.py
+<span class="o">(</span>fedml3.7<span class="o">)</span> chaoyanghe@Chaoyangs-MBP cross_silo % Namespace<span class="o">(</span><span class="nv">local_server</span><span class="o">=</span><span class="s1">&#39;127.0.0.1&#39;</span>, <span class="nv">type</span><span class="o">=</span><span class="s1">&#39;login&#39;</span>, <span class="nv">user</span><span class="o">=</span><span class="s1">&#39;302&#39;</span>, <span class="nv">version</span><span class="o">=</span><span class="s1">&#39;release&#39;</span><span class="o">)</span>
+Namespace<span class="o">(</span><span class="nv">account_id</span><span class="o">=</span><span class="m">302</span>, <span class="nv">cloud_region</span><span class="o">=</span><span class="s1">&#39;&#39;</span>, <span class="nv">config_version</span><span class="o">=</span><span class="s1">&#39;release&#39;</span>, <span class="nv">current_running_dir</span><span class="o">=</span><span class="s1">&#39;/Users/chaoyanghe/fedml-client&#39;</span>, <span class="nv">device_id</span><span class="o">=</span><span class="s1">&#39;0xb6ff42da6a7e&#39;</span>, <span class="nv">local_server</span><span class="o">=</span><span class="s1">&#39;127.0.0.1&#39;</span>, <span class="nv">log_file_dir</span><span class="o">=</span><span class="s1">&#39;/Users/chaoyanghe/fedml-client/fedml/logs&#39;</span>, <span class="nv">os_name</span><span class="o">=</span><span class="s1">&#39;MacOS&#39;</span>, <span class="nv">type</span><span class="o">=</span><span class="s1">&#39;login&#39;</span>, <span class="nv">user</span><span class="o">=</span><span class="m">302</span>, <span class="nv">version</span><span class="o">=</span><span class="s1">&#39;release&#39;</span><span class="o">)</span>
+Current directory of client agent: /Users/chaoyanghe/fedml-client
+client ids:<span class="o">[</span><span class="m">266</span><span class="o">]</span>
+log file path /Users/chaoyanghe/fedml-client/fedml/logs/fedml-run-0-edge-266-upload.log
+login: <span class="nv">unique_device_id</span> <span class="o">=</span> @0xb6ff42da6a7e.MacOS
+login: <span class="nv">edge_id</span> <span class="o">=</span> <span class="m">266</span>
+subscribe: flserver_agent/266/start_train
+subscribe: flserver_agent/266/stop_train
+subscribe: fl_client/flclient_agent_266/status
+Congratulations, you have logged into the FedML MLOps platform successfully!
+Your device id is @0xb6ff42da6a7e.MacOS. You may review the device <span class="k">in</span> the MLOps edge device list.
+</pre></div>
+</div>
+</section>
+<section id="invite-collaborators-create-a-group-and-a-project">
+<h2>3. Invite Collaborators, Create a Group and a Project<a class="headerlink" href="#invite-collaborators-create-a-group-and-a-project" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>3.1 Invite Collaborators <br></p></li>
+</ul>
+<p>(1) Copy your invitation link</p>
+<p>(2) Send the invitation link to your collaborators via any communication tools e.g., Slack,  Facebook Messenger, Email.</p>
+<p>(3) Your collaborators can open the URL, and accept the invitation</p>
+<p>Now you and your collaborators should be able to see each other on <code class="docutils literal notranslate"><span class="pre">My</span> <span class="pre">Collaborators</span></code> page.</p>
+<p><img alt="image" src="../_images/MLOps_invite_collaborators.png" />
+Figure 3: invite your collaborators</p>
+<ul class="simple">
+<li><p>3.2 Group Management</p></li>
+</ul>
+<p>After inviting your collaborators, you can <code class="docutils literal notranslate"><span class="pre">Create</span> <span class="pre">New</span> <span class="pre">Group</span></code>, input the group name, and select your collaborators into the group.</p>
+<p>We support a topology visualization to assist you and your collaborators in checking all collaborative edge devices in that group.</p>
+<p>Note that after creation, our platform will add newly bound devices from all members to the group. If you would like to change the members in this group, Please create a new group for it.</p>
+<p><img alt="image" src="../_images/MLOps_group_management.png" />
+Figure 4: showing the topology of the group</p>
+</section>
+<section id="start-run-training-via-automated-deployment-and-scaling">
+<h2>4. Start Run (Training) via Automated Deployment and Scaling<a class="headerlink" href="#start-run-training-via-automated-deployment-and-scaling" title="Permalink to this headline">¶</a></h2>
+<p>Now let’s create a project and get training started!</p>
+<ul class="simple">
+<li><p>Create a new project for a specific group or utilize the existing project you created before</p></li>
+<li><p>Open a project and create a new run under the project, by clicking <code class="docutils literal notranslate"><span class="pre">Start</span></code>, the run will get started.</p></li>
+</ul>
+<p><img alt="image" src="../_images/mlops_start_run.png" />
+Figure 5: create and start a new run</p>
+</section>
+<section id="experimental-tracking-via-simplified-project-management">
+<h2>5. Experimental Tracking via Simplified Project Management<a class="headerlink" href="#experimental-tracking-via-simplified-project-management" title="Permalink to this headline">¶</a></h2>
+<p>Now you are ready to start the training, enjoy! We provide the following experimental tracking abilities as follows.</p>
+<ul class="simple">
+<li><p>monitoring device status (including logging in each device) and training progress
+<img alt="image" src="../_images/MLOps_experimental_tracking_status.png" /></p></li>
+<li><p>visualizing training results
+<img alt="image" src="../_images/MLOps_experimental_tracking_curve.png" /></p></li>
+<li><p>visualizing system performance
+<img alt="image" src="../_images/MLOps_experimental_tracking_system.png" /></p></li>
+<li><p>model downloading/serving</p></li>
+<li><p>distributed logging
+<img alt="image" src="../_images/MLOps_experimental_tracking_logging.png" /></p></li>
+</ul>
+<p>More advanced features will be supported soon. We appreciate your valuable feedback.</p>
+</section>
+</section>
+
+
+             </article>
+             
+            </div>
+            <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="api.html" class="btn btn-neutral float-right" title="FedML MLOps CLI and API Reference" accesskey="n" rel="next">Next <img src="../_static/images/chevron-right-orange.svg" class="next-page"></a>
+      
+      
+        <a href="../starter/faq.html" class="btn btn-neutral" title="FedML FAQ" accesskey="p" rel="prev"><img src="../_static/images/chevron-right-orange.svg" class="previous-page"> Previous</a>
+      
+    </div>
+  
+
+  
+
+    <hr>
+
+  
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2022, FedML, Inc..
+
+    </p>
+  </div>
+    
+      <div>
+        Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+      </div>
+     
+
+</footer>
+
+          </div>
+        </div>
+
+        <div class="pytorch-content-right" id="pytorch-content-right">
+          <div class="pytorch-right-menu" id="pytorch-right-menu">
+            <div class="pytorch-side-scroll" id="pytorch-side-scroll-right">
+              <ul>
+<li><a class="reference internal" href="#">FedML MLOps User Guide</a><ul>
+<li><a class="reference internal" href="#how-does-fedml-mlops-platform-work">How Does FedML MLOps Platform Work?</a></li>
+<li><a class="reference internal" href="#local-development-and-building-mlops-packages">Local Development and Building MLOps Packages</a></li>
+<li><a class="reference internal" href="#create-application-and-upload-local-packages">1. Create Application and Upload Local Packages</a></li>
+<li><a class="reference internal" href="#install-fedml-agent-fedml-login-account-id">2. Install FedML Agent: fedml login $account_id</a></li>
+<li><a class="reference internal" href="#invite-collaborators-create-a-group-and-a-project">3. Invite Collaborators, Create a Group and a Project</a></li>
+<li><a class="reference internal" href="#start-run-training-via-automated-deployment-and-scaling">4. Start Run (Training) via Automated Deployment and Scaling</a></li>
+<li><a class="reference internal" href="#experimental-tracking-via-simplified-project-management">5. Experimental Tracking via Simplified Project Management</a></li>
+</ul>
+</li>
+</ul>
+
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+  
+
+
+  
+
+     
+       <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+         <script src="../_static/jquery.js"></script>
+         <script src="../_static/underscore.js"></script>
+         <script src="../_static/doctools.js"></script>
+     
+
+  
+
+  <script type="text/javascript" src="../_static/js/vendor/popper.min.js"></script>
+  <script type="text/javascript" src="../_static/js/vendor/bootstrap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/1.5.0/list.min.js"></script>
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+  <!-- Begin Footer -->
+
+  <div class="container-fluid docs-tutorials-resources" id="docs-tutorials-resources">
+    <div class="container">
+      <div class="row">
+        <!--
+        <div class="col-md-4 text-center">
+          <h2>Docs</h2>
+          <p>Access comprehensive developer documentation for PyTorch</p>
+          <a class="with-right-arrow" href="https://pytorch.org/docs/stable/index.html">View Docs</a>
+        </div>
+
+        <div class="col-md-4 text-center">
+          <h2>Tutorials</h2>
+          <p>Get in-depth tutorials for beginners and advanced developers</p>
+          <a class="with-right-arrow" href="https://pytorch.org/tutorials">View Tutorials</a>
+        </div>
+
+        <div class="col-md-4 text-center">
+          <h2>Resources</h2>
+          <p>Find development resources and get your questions answered</p>
+          <a class="with-right-arrow" href="https://pytorch.org/resources">View Resources</a>
+        </div>
+        -->
+      </div>
+    </div>
+  </div>
+
+  <!--
+  <footer class="site-footer">
+    <div class="container footer-container">
+      <div class="footer-logo-wrapper">
+        <a href="https://pytorch.org/" class="footer-logo"></a>
+      </div>
+
+      <div class="footer-links-wrapper">
+        <div class="footer-links-col">
+          <ul>
+            <li class="list-title"><a href="https://pytorch.org/">PyTorch</a></li>
+            <li><a href="https://pytorch.org/get-started">Get Started</a></li>
+            <li><a href="https://pytorch.org/features">Features</a></li>
+            <li><a href="">Ecosystem</a></li>
+            <li><a href="https://pytorch.org/blog/">Blog</a></li>
+            <li><a href="https://github.com/pytorch/pytorch/blob/master/CONTRIBUTING.md">Contributing</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-links-col">
+          <ul>
+            <li class="list-title"><a href="https://pytorch.org/resources">Resources</a></li>
+            <li><a href="https://pytorch.org/tutorials">Tutorials</a></li>
+            <li><a href="https://pytorch.org/docs/stable/index.html">Docs</a></li>
+            <li><a href="https://discuss.pytorch.org" target="_blank">Discuss</a></li>
+            <li><a href="https://github.com/pytorch/pytorch/issues" target="_blank">Github Issues</a></li>
+            <li><a href="" target="_blank">Brand Guidelines</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-links-col follow-us-col">
+          <ul>
+            <li class="list-title">Stay Connected</li>
+            <li>
+              <div id="mc_embed_signup">
+                <form
+                  action="https://twitter.us14.list-manage.com/subscribe/post?u=75419c71fe0a935e53dfa4a3f&id=91d0dccd39"
+                  method="post"
+                  id="mc-embedded-subscribe-form"
+                  name="mc-embedded-subscribe-form"
+                  class="email-subscribe-form validate"
+                  target="_blank"
+                  novalidate>
+                  <div id="mc_embed_signup_scroll" class="email-subscribe-form-fields-wrapper">
+                    <div class="mc-field-group">
+                      <label for="mce-EMAIL" style="display:none;">Email Address</label>
+                      <input type="email" value="" name="EMAIL" class="required email" id="mce-EMAIL" placeholder="Email Address">
+                    </div>
+
+                    <div id="mce-responses" class="clear">
+                      <div class="response" id="mce-error-response" style="display:none"></div>
+                      <div class="response" id="mce-success-response" style="display:none"></div>
+                    </div>
+
+                    <div style="position: absolute; left: -5000px;" aria-hidden="true"><input type="text" name="b_75419c71fe0a935e53dfa4a3f_91d0dccd39" tabindex="-1" value=""></div>
+
+                    <div class="clear">
+                      <input type="submit" value="" name="subscribe" id="mc-embedded-subscribe" class="button email-subscribe-button">
+                    </div>
+                  </div>
+                </form>
+              </div>
+
+            </li>
+          </ul>
+
+          <div class="footer-social-icons">
+            <a href="" target="_blank" class="facebook"></a>
+            <a href="https://twitter.com/pytorch" target="_blank" class="twitter"></a>
+            <a href="" target="_blank" class="youtube"></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+  -->
+
+  <!-- End Footer -->
+
+  <!-- Begin Mobile Menu -->
+
+  <div class="mobile-main-menu">
+    <div class="container-fluid">
+      <div class="container">
+        <div class="mobile-main-menu-header-container">
+          <a class="header-logo" href="https://doc.fedml.ai/"></a>
+          <a class="main-menu-close-button" href="#" data-behavior="close-mobile-menu"></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="mobile-main-menu-links-container">
+      <div class="main-menu">
+        <ul>
+          <li>
+            <a href="https://pytorch.org/get-started">Get Started</a>
+          </li>
+
+          <li>
+            <a href="https://pytorch.org/blog/">FedMl.AI</a>
+          </li>
+
+          <li class="resources-mobile-menu-title">
+            Ecosystem
+          </li>
+
+          <ul class="resources-mobile-menu-items">
+            <li>
+              <a href="https://pytorch-lightning.readthedocs.io/en/stable/">FedML</a>
+            </li>
+
+            <li>
+              <a href="https://torchmetrics.readthedocs.io/en/stable/">TorchMetrics</a>
+            </li>
+
+            <li>
+              <a href="https://lightning-flash.readthedocs.io/en/stable/">Lightning Flash</a>
+            </li>
+
+            <li>
+              <a href="https://lightning-transformers.readthedocs.io/en/stable/">Lightning Transformers</a>
+            </li>
+
+            <li>
+              <a href="https://lightning-bolts.readthedocs.io/en/stable/">Lightning Bolts</a>
+            </li>
+          </ul>
+
+          <!--<li class="resources-mobile-menu-title">
+            Resources
+          </li>
+
+          <ul class="resources-mobile-menu-items">
+            <li>
+              <a href="https://pytorch.org/resources">Developer Resources</a>
+            </li>
+
+            <li>
+              <a href="https://pytorch.org/features">About</a>
+            </li>
+
+            <li>
+              <a href="">Models (Beta)</a>
+            </li>
+
+            <li>
+              <a href="https://pytorch.org/#community-module">Community</a>
+            </li>
+
+            <li>
+              <a href="https://discuss.pytorch.org/">Forums</a>
+            </li>
+          </ul>-->
+
+          <li>
+            <a href="https://github.com/pytorch/pytorch">FedMl.AI</a>
+          </li>
+
+          <li>
+            <a href="https://www.grid.ai/">Grid.ai</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- End Mobile Menu -->
+
+  <script type="text/javascript" src="../_static/js/vendor/anchor.min.js"></script>
+
+  <script type="text/javascript">
+    $(document).ready(function() {
+      mobileMenu.bind();
+      mobileTOC.bind();
+      pytorchAnchors.bind();
+      sideMenus.bind();
+      scrollToAnchor.bind();
+      highlightNavigation.bind();
+      mainMenuDropdown.bind();
+      filterTags.bind();
+
+      // Add class to links that have code blocks, since we cannot create links in code blocks
+      $("article.pytorch-article a span.pre").each(function(e) {
+        $(this).closest("a").addClass("has-code");
+      });
+    })                                                                                         
+  </script>
+
+  <!-- Google Tag Manager (noscript) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PQBQ3CV"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager (noscript) -->
+ </body>
+</html>

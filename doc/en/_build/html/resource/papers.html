@@ -1,0 +1,728 @@
+
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-PQBQ3CV');
+  </script>
+  <!-- End Google Tag Manager -->
+
+  <meta charset="utf-8">
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="google-site-verification" content="okUst94cAlWSsUsGZTB4xSS4UKTtRV8Nu5XZ9pdd3Aw" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Research Publications &mdash; FedML  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!-- <link rel="stylesheet" href="../_static/pygments.css" type="text/css" /> -->
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Video" href="video.html" />
+    <link rel="prev" title="FedGraphNN Benchmark" href="../benchmark/fedgraphnn.html" />
+  <!-- Google Analytics -->
+  
+  <!-- End Google Analytics -->
+  
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+  <!-- Preload the theme fonts -->
+
+<link rel="preload" href="../_static/fonts/FreightSans/freight-sans-book.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../_static/fonts/FreightSans/freight-sans-medium.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../_static/fonts/IBMPlexMono/IBMPlexMono-Medium.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../_static/fonts/FreightSans/freight-sans-bold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../_static/fonts/FreightSans/freight-sans-medium-italic.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../_static/fonts/IBMPlexMono/IBMPlexMono-SemiBold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../_static/fonts/UCity/UCity-Light.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../_static/fonts/UCity/UCity-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../_static/fonts/UCity/UCity-Semibold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../_static/fonts/Inconsolata/Inconsolata.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+
+<!-- Preload the katex fonts -->
+
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Math-Italic.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Main-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Main-Bold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Size1-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Size4-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Size2-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Size3-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Caligraphic-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+  <script defer src="https://use.fontawesome.com/releases/v6.1.1/js/all.js" integrity="sha384-xBXmu0dk1bEoiwd71wOonQLyH+VpgR1XcDH3rtxrLww5ajNTuMvBdL5SOiFZnNdp" crossorigin="anonymous"></script>
+</head>
+
+<div class="container-fluid header-holder tutorials-header" id="header-holder">
+  <div class="container">
+    <div class="header-container">
+      <a class="header-logo" href="https://doc.fedml.ai/">
+      <!--  <img class="call-to-action-img" src="../_static/images/logo-lightning-icon.png"/> -->
+      </a>
+
+      <div class="main-menu">
+        <ul>
+          <li>
+            <a href="https://doc.fedml.ai/starter/get_started.html">Get Started</a>
+          </li>
+
+          <li>
+            <a href="https://github.com/FedML-AI">Github</a>
+          </li>
+
+          <li>
+            <a href="https://open.fedml.ai">Platform</a>
+          </li>
+
+          <li>
+            <a href="https://join.slack.com/t/fedml/shared_invite/zt-havwx1ee-a1xfOUrATNfc9DFqU~r34w">Join the Community</a>
+          </li>
+
+
+
+          <li>
+            <div id="resourcesDropdownButton" data-toggle="resources-dropdown" class="resources-dropdown">
+              <a class="resource-option with-down-orange-arrow">
+                Resource
+              </a>
+              <div class="resources-dropdown-menu">
+                <a class="doc-dropdown-option nav-dropdown-item" href="https://doc.fedml.ai/resource/papers.html">
+                  <span class="dropdown-title">Publications</span>
+                </a>
+                <a class="doc-dropdown-option nav-dropdown-item" href="https://doc.fedml.ai/resource/video.html">
+                  <span class="dropdown-title">Videos</span>
+                </a>
+                <a class="doc-dropdown-option nav-dropdown-item" href="https://github.com/FedML-AI/FedML/discussions">
+                  <span class="dropdown-title">Discussion</span>
+                </a>
+            </div>
+          </li>
+
+          <!--<li>
+            <div id="resourcesDropdownButton" data-toggle="resources-dropdown" class="resources-dropdown">
+              <a class="resource-option with-down-arrow">
+                Resources
+              </a>
+              <div class="resources-dropdown-menu">
+                <a class="nav-dropdown-item" href="https://pytorch.org/#community-module">
+                  <span class="dropdown-title">Community</span>
+                  <p>Join the PyTorch developer community to contribute, learn, and get your questions answered.</p>
+                </a>
+                <a class="nav-dropdown-item" href="https://pytorch.org/resources">
+                  <span class="dropdown-title">Developer Resources</span>
+                  <p>Find resources and get questions answered</p>
+                </a>
+                <a class="nav-dropdown-item" href="https://discuss.pytorch.org/" target="_blank">
+                  <span class="dropdown-title">Forums</span>
+                  <p>A place to discuss PyTorch code, issues, install, research</p>
+                </a>
+                <a class="nav-dropdown-item" href="">
+                  <span class="dropdown-title">Models (Beta)</span>
+                  <p>Discover, publish, and reuse pre-trained models</p>
+                </a>
+              </div>
+            </div>
+          </li>-->
+
+          <li>
+            <a href="https://fedml.ai/">FedML.AI</a>
+          </li>
+
+        </ul>
+      </div>
+
+      <a class="main-menu-open-button" href="#" data-behavior="open-mobile-menu"></a>
+    </div>
+  </div>
+</div>
+
+<body class="pytorch-body">
+
+   
+
+    
+
+    <div class="table-of-contents-link-wrapper">
+      <span>Table of Contents</span>
+      <a href="#" class="toggle-table-of-contents" data-behavior="toggle-table-of-contents"></a>
+    </div>
+
+    <nav data-toggle="wy-nav-shift" class="pytorch-left-menu" id="pytorch-left-menu">
+      <div class="pytorch-side-scroll">
+        <div class="pytorch-menu pytorch-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          <div class="pytorch-left-menu-search">
+            
+
+            
+              
+              
+            
+
+            
+
+
+  
+
+
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search Docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+            
+          </div>
+
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../starter/get_started.html">Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../starter/installation.html">Installing FedML</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../starter/mission.html">Mission</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../starter/overview.html">Technology Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../starter/ecosystem.html">Application Ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../starter/oss_code_architecture.html">Open Source Code Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../starter/mlops_video.html">FedML MLOps Video Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../starter/faq.html">FedML FAQ</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">FedML MLOps - Landing FedML into Reality</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../starter/mlops_video.html">FedML MLOps Video Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../mlops/user_guide.html">FedML MLOps User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../mlops/api.html">FedML MLOps CLI and API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">FedML Parrot - Simulating the Real World</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/user_guide.html">FedML Parrot User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/examples.html">FedML Parrot Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/api.html">FedML Parrot API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">FedML Octopus - Simple Connector for Data Silos</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../cross-silo/user_guide.html">FedML Octopus User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cross-silo/examples.html">FedML Octopus Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cross-silo/api.html">FedML Octopus API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">FedML BeeHive - Collaborative Learning on Smartphones/IoTs</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../cross-device/user_guide.html">FedML Beehive User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cross-device/examples.html">FedML Beehive Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cross-device/api.html">FedML BeeHive API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">FedML Cheetah - Speedy Training of Large Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../distributed/user_guide.html">FedML Cheetah User Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Benchmarks for FedNLP, FedCV, FedGraphNN and FedIoT</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../benchmark/fedgraphnn.html">FedGraphNN Benchmark</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resource</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Research Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="video.html">Video</a></li>
+<li class="toctree-l1"><a class="reference internal" href="community.html">Join the Community</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <div class="pytorch-container">
+      <div class="pytorch-page-level-bar" id="pytorch-page-level-bar">
+        <div class="pytorch-breadcrumbs-wrapper">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="pytorch-breadcrumbs">
+    
+      <li>
+        <a href="../index.html">
+          
+            Docs
+          
+        </a> &gt;
+      </li>
+
+        
+      <li>Research Publications</li>
+    
+    
+      <li class="pytorch-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/resource/papers.md.txt" rel="nofollow"><img src="../_static/images/view-page-source-icon.svg"></a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+</div>
+        </div>
+
+        <div class="pytorch-shortcuts-wrapper" id="pytorch-shortcuts-wrapper">
+          Shortcuts
+        </div>
+      </div>
+
+      <section data-toggle="wy-nav-shift" id="pytorch-content-wrap" class="pytorch-content-wrap">
+        <div class="pytorch-content-left">
+
+        
+          
+          <div class="rst-content">
+          
+            <div role="main" class="main-content" itemscope="itemscope" itemtype="http://schema.org/Article">
+             <article itemprop="articleBody" id="pytorch-article" class="pytorch-article">
+              
+  <section id="research-publications">
+<h1>Research Publications<a class="headerlink" href="#research-publications" title="Permalink to this headline">¶</a></h1>
+<p>FedML’s core technology is backed by years of cutting-edge research represented in 50+ publications in ML/FL Algorithms, Security/Privacy, Systems, and Applications.</p>
+<section id="outline">
+<h2>Outline<a class="headerlink" href="#outline" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li><p>Vision Paper for High Scientific Impacts</p></li>
+<li><p>System for Large-scale Distributed/Federated Training</p></li>
+<li><p>Training Algorithms for FL</p></li>
+<li><p>Security/privacy for FL</p></li>
+<li><p>AI Applications
+A Full-stack of Scientific Publications in ML Algorithms, Security/Privacy, Systems, Applications, and Visionary Impacts</p></li>
+</ol>
+</section>
+<section id="vision-paper-for-high-scientific-impacts">
+<h2>Vision Paper for High Scientific Impacts<a class="headerlink" href="#vision-paper-for-high-scientific-impacts" title="Permalink to this headline">¶</a></h2>
+<p><span style="color:red">Being visionary to find the correct problems is always the key to impactful research. </span></p>
+<p>[1] <a class="reference external" href="https://arxiv.org/abs/1912.04977">Open Problems and Advances in Federated Learning</a>. FnTML 2021.</p>
+<p>[2] <a class="reference external" href="https://arxiv.org/abs/2107.06917">Field Guide for Federated Learning</a> (Arxiv 2021)</p>
+<p>[3] <a class="reference external" href="https://arxiv.org/abs/2111.07494">Federated learning for Internet of Things: : Applications, Challenges, and Opportunities</a> (Arxiv 2021)</p>
+</section>
+<section id="system-for-large-scale-distributed-federated-training">
+<h2>System for Large-scale Distributed/Federated Training<a class="headerlink" href="#system-for-large-scale-distributed-federated-training" title="Permalink to this headline">¶</a></h2>
+<p><span style="color:red">Towards communication/computation/memory-efficient, resilient and robust distributed training and inferences via ML+system co-design and real-world implementation.</span></p>
+<p>[1] <a class="reference external" href="https://ieeexplore.ieee.org/abstract/document/8051074">A fundamental tradeoff between computation and communication in distributed computing</a> (IEEE Transactions on Information Theory)</p>
+<p>[2] <a class="reference external" href="https://arxiv.org/abs/2007.13518">FedML: A Research Library and Benchmark for Federated Machine Learning</a> (NeurIPS 2020 FL Workshop, Best Paper Award)</p>
+<p>[3] <a class="reference external" href="http://proceedings.mlr.press/v139/he21a/he21a.pdf">PipeTransformer: Automated Elastic Pipelining for Distributed Training of Transformers</a> (ICML 2021)</p>
+<p>[4] <a class="reference external" href="https://proceedings.neurips.cc/paper/2018/file/2c6a0bae0f071cbbf0bb3d5b11d90a82-Paper.pdf">Pipe-SGD: A decentralized pipelined SGD framework for distributed deep net training</a> (NeurIPS 2018)</p>
+<p>[5] <a class="reference external" href="https://scholar.google.com/citations?view_op=view_citation&amp;hl=en&amp;user=Qhe5ua0AAAAJ&amp;cstart=100&amp;pagesize=100&amp;sortby=pubdate&amp;citation_for_view=Qhe5ua0AAAAJ:NJ774b8OgUMC">Gradiveq: Vector quantization for bandwidth-efficient gradient aggregation in distributed cnn training</a> (NeurIPS 2018)</p>
+<p>[6] <a class="reference external" href="https://proceedings.neurips.cc/paper/2021/hash/ae3f4c649fb55c2ee3ef4d1abdb79ce5-Abstract.html">MEST: Accurate and Fast Memory-Economic Sparse Training Framework on the Edge</a> (NeurIPS 2021)</p>
+<p>[7] <a class="reference external" href="https://arxiv.org/abs/2109.09868">ApproxIFER: A Model-Agnostic Approach to Resilient and Robust Prediction Serving Systems</a> (NeurIPS 2021)</p>
+<p>[8] <a class="reference external" href="https://arxiv.org/abs/1806.00939">Lagrange Coded Computing: Optimal Design for Resiliency, Security and Privacy</a> (AISTATS 2019)</p>
+<p>[9] <a class="reference external" href="https://scholar.google.com/citations?view_op=view_citation&amp;hl=en&amp;user=2z2camUAAAAJ&amp;sortby=pubdate&amp;citation_for_view=2z2camUAAAAJ:_Qo2XoVZTnwC">OmniLytics: A Blockchain-based Secure Data Market for Decentralized Machine Learning</a> (ICML 2021 FL Workshop)</p>
+<p>[10] <a class="reference external" href="https://arxiv.org/abs/2110.01229">AsymML: An Asymmetric Decomposition Framework for Privacy-Preserving DNN Training and Inference</a> (Arxiv 2022)</p>
+<p>[11] <a class="reference external" href="https://scholar.google.com/citations?view_op=view_citation&amp;hl=en&amp;user=Qhe5ua0AAAAJ&amp;cstart=20&amp;pagesize=80&amp;sortby=pubdate&amp;citation_for_view=Qhe5ua0AAAAJ:eq2jaN3J8jMC">Communication-aware scheduling of serial tasks for dispersed computing</a> (IEEE/ACM Transactions on Networking)</p>
+</section>
+<section id="training-algorithms-for-fl">
+<h2>Training Algorithms for FL<a class="headerlink" href="#training-algorithms-for-fl" title="Permalink to this headline">¶</a></h2>
+<p><span style="color:red">Algorithmic innovation to land distributed training and inference on the edge into the real-world system, solving challenges in efficiency, scalability, label deficiency, personalization, fairness, low-latency, straggler mitigation, etc. </span></p>
+<p>[1] <a class="reference external" href="https://arxiv.org/abs/2007.14513">Group Knowledge Transfer: Federated Learning of Large CNNs at the Edge</a> (NeurIPS’20)</p>
+<p>[2] <a class="reference external" href="https://arxiv.org/abs/2004.08546">FedNAS (neural architecture search for FL personalization)</a> at CVPR’20 NAS Workshop</p>
+<p>[3] <a class="reference external" href="https://arxiv.org/abs/2106.02743">SpreadGNN: Serverless Multi-task Federated Learning for Graph Neural Networks</a> (AAAI’21)</p>
+<p>[4] <a class="reference external" href="https://arxiv.org/abs/2110.02470">SSFL: Tackling Label Deficiency in Federated Learning via Personalized Self-Supervision</a> (FL-AAAI’22, Best Paper Award)</p>
+<p>[5] <a class="reference external" href="https://arxiv.org/abs/2110.00857">FairFed: Enabling Group Fairness in Federated Learning</a> (NeurIPS 2021 FL workshop)</p>
+<p>[6] <a class="reference external" href="https://pubmed.ncbi.nlm.nih.gov/35254992/">Accelerated Distributed Approximate Newton Method</a> (TNNLS Journal, 2022)</p>
+<p>[7] <a class="reference external" href="https://arxiv.org/abs/2201.03789">Partial Model Averaging in Federated Learning: Performance Guarantees and Benefits</a> (FL-AAAI’2022)</p>
+<p>[8] <a class="reference external" href="https://arxiv.org/abs/2112.13939">SPIDER: Searching Personalized Neural Architecture for Federated Learning</a> (Arxiv’ 2022)</p>
+<p>[9] <a class="reference external" href="https://arxiv.org/abs/2110.10302">Layer-wise Adaptive Model Aggregation for Scalable Federated Learning</a> (Arxiv’2022)</p>
+<p>[10] <a class="reference external" href="https://openreview.net/forum?id=39Q__qgCpAH">Achieving Small-Batch Accuracy with Large-Batch Scalability via Adaptive Learning Rate Adjustment</a> (Arxiv’ 2022)</p>
+<p>[11] <a class="reference external" href="https://ieeexplore.ieee.org/abstract/document/9252954">Coded Computing for Low-Latency Federated Learning Over Wireless Edge Networks</a> (IEEE Journal on Selected Areas in Communications)</p>
+<p>[12] <a class="reference external" href="https://scholar.google.com/citations?view_op=view_citation&amp;hl=en&amp;user=VhnTrugAAAAJ&amp;citation_for_view=VhnTrugAAAAJ:u-x6o8ySG0sC">Coded computation over heterogeneous clusters</a> (IEEE Transactions on Information Theory)</p>
+<p>[13] <a class="reference external" href="https://scholar.google.com/citations?view_op=view_citation&amp;hl=en&amp;user=Qhe5ua0AAAAJ&amp;cstart=20&amp;pagesize=80&amp;sortby=pubdate&amp;citation_for_view=Qhe5ua0AAAAJ:DUooU5lO8OsC">Hierarchical coded gradient aggregation for learning at the edge</a> (ISIT 2020)</p>
+<p>[14] <a class="reference external" href="https://arxiv.org/abs/2007.03273">Coded computing for federated learning at the edge</a></p>
+<p>[15] <a class="reference external" href="https://scholar.google.com/citations?view_op=view_citation&amp;hl=en&amp;user=Qhe5ua0AAAAJ&amp;cstart=20&amp;pagesize=80&amp;sortby=pubdate&amp;citation_for_view=Qhe5ua0AAAAJ:JoZmwDi-zQgC">Straggler mitigation in distributed matrix multiplication: Fundamental limits and optimal coding</a> (IEEE Transactions on Information Theory)</p>
+</section>
+<section id="security-privacy-for-fl">
+<h2>Security/privacy for FL<a class="headerlink" href="#security-privacy-for-fl" title="Permalink to this headline">¶</a></h2>
+<p><span style="color:red">Privacy-preserving, Attack, and Defense</span></p>
+<p>[1] <a class="reference external" href="https://arxiv.org/abs/2109.14236">LightSecAgg: a Lightweight and Versatile Design for Secure Aggregation in Federated Learning</a> (MLSys’22)</p>
+<p>[2] <a class="reference external" href="https://arxiv.org/abs/2002.04156">Turbo-Aggregate: Breaking the Quadratic Aggregation Barrier in Secure Federated Learning</a> (JSAIT’21)</p>
+<p>[3] <a class="reference external" href="https://arxiv.org/abs/2106.03328">Securing Secure Aggregation: Mitigating Multi-Round Privacy Leakage in Federated Learning</a> (end-to-end privacy protection in FL)</p>
+<p>[4] <a class="reference external" href="https://arxiv.org/abs/2011.01963">A scalable approach for privacy-preserving collaborative machine learning</a> (NeurIPS 2020)</p>
+<p>[5] <a class="reference external" href="https://arxiv.org/abs/2110.02177">Secure aggregation for buffered asynchronous federated learning</a> (Arxiv’2021)</p>
+<p>[6] <a class="reference external" href="https://arxiv.org/abs/2109.07706">Basil: A Fast and Byzantine-Resilient Approach for Decentralized Training</a></p>
+<p>[7] <a class="reference external" href="https://arxiv.org/abs/1902.01981">CodedReduce: A Fast and Robust Framework for Gradient Aggregation in Distributed Learning</a> (IEEE/ACM Transactions on Networking)</p>
+<p>[8] <a class="reference external" href="https://arxiv.org/abs/2107.12958">Verifiable Coded Computing: Towards Fast, Secure and Private Distributed Machine Learning</a> (IPDPS 2022)</p>
+<p>[9] <a class="reference external" href="https://ieeexplore.ieee.org/abstract/document/9330572">CodedPrivateML: A fast and privacy-preserving framework for distributed machine learning</a> (IEEE Journal on Selected Areas in Information Theory)</p>
+<p>[10] <a class="reference external" href="https://scholar.google.com/citations?view_op=view_citation&amp;hl=en&amp;user=Qhe5ua0AAAAJ&amp;cstart=20&amp;pagesize=80&amp;sortby=pubdate&amp;citation_for_view=Qhe5ua0AAAAJ:HtEfBTGE9r8C">Byzantine-resilient secure federated learning</a> (IEEE Journal on Selected Areas in Information Theory)</p>
+<p>[11] <a class="reference external" href="https://www.researchgate.net/profile/Saurav-Prakash-2/publication/344678610_Mitigating_Byzantine_Attacks_in_Federated_Learning/links/609c37b292851cca5984d6b3/Mitigating-Byzantine-Attacks-in-Federated-Learning.pdf">Mitigating byzantine attacks in federated learning</a></p>
+<p>[12] <a class="reference external" href="https://arxiv.org/abs/2009.14388">Secure aggregation with heterogeneous quantization in federated learning</a></p>
+<p>[13] <a class="reference external" href="https://scholar.google.com/citations?view_op=view_citation&amp;hl=en&amp;user=Qhe5ua0AAAAJ&amp;cstart=20&amp;pagesize=80&amp;sortby=pubdate&amp;citation_for_view=Qhe5ua0AAAAJ:_axFR9aDTf0C">Entangled polynomial codes for secure, private, and batch distributed matrix multiplication: Breaking the” cubic” barrier</a> (ISIT 2020)</p>
+<p>[14] <a class="reference external" href="https://scholar.google.com/citations?view_op=view_citation&amp;hl=en&amp;user=Qhe5ua0AAAAJ&amp;cstart=20&amp;pagesize=80&amp;sortby=pubdate&amp;citation_for_view=Qhe5ua0AAAAJ:Ug5p-4gJ2f0C">Coded merkle tree: Solving data availability attacks in blockchains</a> (International Conference on Financial Cryptography and Data Security)</p>
+<p>[15] <a class="reference external" href="https://arxiv.org/abs/2009.14388">HeteroSAg: Secure Aggregation with Heterogeneous Quantization in Federated Learning</a></p>
+<p>[16] <a class="reference external" href="https://ieeexplore.ieee.org/abstract/document/9141331">Polyshard: Coded sharding achieves linearly scaling efficiency and security simultaneously</a> (IEEE Transactions on Information Forensics and Security)</p>
+</section>
+<section id="ai-applications">
+<h2>AI Applications<a class="headerlink" href="#ai-applications" title="Permalink to this headline">¶</a></h2>
+<p><span style="color:red"> Besides fundamental research in FL, we also target important applications in Natural Language Processing, Computer Vision, Data Mining, and the Internet of Things (IoTs).</span></p>
+<p>[1] <a class="reference external" href="https://arxiv.org/pdf/2104.08815.pdf">FedNLP: Benchmarking Federated Learning Methods for Natural Language Processing Tasks</a> NAACL 2022</p>
+<p>[2] <a class="reference external" href="https://arxiv.org/pdf/2104.07145.pdf">FedGraphNN: A Federated Learning Benchmark System for Graph Neural Networks</a> (ICLR 2021 workshop; KDD 2021 workshop)</p>
+<p>[3] <a class="reference external" href="https://arxiv.org/pdf/2111.11066.pdf">FedCV: A Federated Learning Framework for Diverse Computer Vision Tasks</a> (FL-AAAI’2022)</p>
+<p>[4] <a class="reference external" href="https://arxiv.org/pdf/2106.07976.pdf">Federated Learning for Internet of Things</a> (ACM Sensys’21)</p>
+<p>[5] <a class="reference external" href="https://arxiv.org/abs/2003.12238">MiLeNAS: Efficient Neural Architecture Search via Mixed-Level Reformulation</a> (CVPR 2020)</p>
+<p>[6] <a class="reference external" href="https://arxiv.org/abs/2112.11174">AutoCTS: Automated Correlated Time Series Forecasting</a> (VLDB 2022)</p>
+<p>[7] <a class="reference external" href="https://scholar.google.com/citations?view_op=view_citation&amp;hl=en&amp;user=Qhe5ua0AAAAJ&amp;cstart=20&amp;pagesize=80&amp;sortby=pubdate&amp;citation_for_view=Qhe5ua0AAAAJ:uJ-U7cs_P_0C">Coded computing for distributed graph analytics</a> (IEEE Transactions on Information Theory)</p>
+<p>[8] <a class="reference external" href="https://scholar.google.com/citations?view_op=view_citation&amp;hl=en&amp;user=Qhe5ua0AAAAJ&amp;cstart=20&amp;pagesize=80&amp;sortby=pubdate&amp;citation_for_view=Qhe5ua0AAAAJ:_FM0Bhl9EiAC">TACC: Topology-aware coded computing for distributed graph processing</a> (IEEE Transactions on Signal and Information Processing over Networks)</p>
+<p>[9] <a class="reference external" href="https://scholar.google.com/citations?view_op=view_citation&amp;hl=en&amp;user=Qhe5ua0AAAAJ&amp;cstart=20&amp;pagesize=80&amp;sortby=pubdate&amp;citation_for_view=Qhe5ua0AAAAJ:5qfkUJPXOUwC">Privacy-Aware Distributed Graph-Based Semi-Supervised Learning</a> (2019 IEEE 29th International Workshop on Machine Learning for Signal Processing (MLSP)</p>
+<p>[10] <a class="reference external" href="https://arxiv.org/abs/2105.03939">Lightweight Image Super-Resolution with Hierarchical and Differentiable Neural Architecture Search</a> (IJCV Journal Under Review)</p>
+<p>[11] <a class="reference external" href="https://ieeexplore.ieee.org/abstract/document/8852142">Collecting Indicators of Compromise from Unstructured Text of Cybersecurity Articles using Neural-Based Sequence Labelling</a> (IJCNN 2019)</p>
+</section>
+</section>
+
+
+             </article>
+             
+            </div>
+            <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="video.html" class="btn btn-neutral float-right" title="Video" accesskey="n" rel="next">Next <img src="../_static/images/chevron-right-orange.svg" class="next-page"></a>
+      
+      
+        <a href="../benchmark/fedgraphnn.html" class="btn btn-neutral" title="FedGraphNN Benchmark" accesskey="p" rel="prev"><img src="../_static/images/chevron-right-orange.svg" class="previous-page"> Previous</a>
+      
+    </div>
+  
+
+  
+
+    <hr>
+
+  
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2022, FedML, Inc..
+
+    </p>
+  </div>
+    
+      <div>
+        Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+      </div>
+     
+
+</footer>
+
+          </div>
+        </div>
+
+        <div class="pytorch-content-right" id="pytorch-content-right">
+          <div class="pytorch-right-menu" id="pytorch-right-menu">
+            <div class="pytorch-side-scroll" id="pytorch-side-scroll-right">
+              <ul>
+<li><a class="reference internal" href="#">Research Publications</a><ul>
+<li><a class="reference internal" href="#outline">Outline</a></li>
+<li><a class="reference internal" href="#vision-paper-for-high-scientific-impacts">Vision Paper for High Scientific Impacts</a></li>
+<li><a class="reference internal" href="#system-for-large-scale-distributed-federated-training">System for Large-scale Distributed/Federated Training</a></li>
+<li><a class="reference internal" href="#training-algorithms-for-fl">Training Algorithms for FL</a></li>
+<li><a class="reference internal" href="#security-privacy-for-fl">Security/privacy for FL</a></li>
+<li><a class="reference internal" href="#ai-applications">AI Applications</a></li>
+</ul>
+</li>
+</ul>
+
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+  
+
+
+  
+
+     
+       <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+         <script src="../_static/jquery.js"></script>
+         <script src="../_static/underscore.js"></script>
+         <script src="../_static/doctools.js"></script>
+     
+
+  
+
+  <script type="text/javascript" src="../_static/js/vendor/popper.min.js"></script>
+  <script type="text/javascript" src="../_static/js/vendor/bootstrap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/1.5.0/list.min.js"></script>
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+  <!-- Begin Footer -->
+
+  <div class="container-fluid docs-tutorials-resources" id="docs-tutorials-resources">
+    <div class="container">
+      <div class="row">
+        <!--
+        <div class="col-md-4 text-center">
+          <h2>Docs</h2>
+          <p>Access comprehensive developer documentation for PyTorch</p>
+          <a class="with-right-arrow" href="https://pytorch.org/docs/stable/index.html">View Docs</a>
+        </div>
+
+        <div class="col-md-4 text-center">
+          <h2>Tutorials</h2>
+          <p>Get in-depth tutorials for beginners and advanced developers</p>
+          <a class="with-right-arrow" href="https://pytorch.org/tutorials">View Tutorials</a>
+        </div>
+
+        <div class="col-md-4 text-center">
+          <h2>Resources</h2>
+          <p>Find development resources and get your questions answered</p>
+          <a class="with-right-arrow" href="https://pytorch.org/resources">View Resources</a>
+        </div>
+        -->
+      </div>
+    </div>
+  </div>
+
+  <!--
+  <footer class="site-footer">
+    <div class="container footer-container">
+      <div class="footer-logo-wrapper">
+        <a href="https://pytorch.org/" class="footer-logo"></a>
+      </div>
+
+      <div class="footer-links-wrapper">
+        <div class="footer-links-col">
+          <ul>
+            <li class="list-title"><a href="https://pytorch.org/">PyTorch</a></li>
+            <li><a href="https://pytorch.org/get-started">Get Started</a></li>
+            <li><a href="https://pytorch.org/features">Features</a></li>
+            <li><a href="">Ecosystem</a></li>
+            <li><a href="https://pytorch.org/blog/">Blog</a></li>
+            <li><a href="https://github.com/pytorch/pytorch/blob/master/CONTRIBUTING.md">Contributing</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-links-col">
+          <ul>
+            <li class="list-title"><a href="https://pytorch.org/resources">Resources</a></li>
+            <li><a href="https://pytorch.org/tutorials">Tutorials</a></li>
+            <li><a href="https://pytorch.org/docs/stable/index.html">Docs</a></li>
+            <li><a href="https://discuss.pytorch.org" target="_blank">Discuss</a></li>
+            <li><a href="https://github.com/pytorch/pytorch/issues" target="_blank">Github Issues</a></li>
+            <li><a href="" target="_blank">Brand Guidelines</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-links-col follow-us-col">
+          <ul>
+            <li class="list-title">Stay Connected</li>
+            <li>
+              <div id="mc_embed_signup">
+                <form
+                  action="https://twitter.us14.list-manage.com/subscribe/post?u=75419c71fe0a935e53dfa4a3f&id=91d0dccd39"
+                  method="post"
+                  id="mc-embedded-subscribe-form"
+                  name="mc-embedded-subscribe-form"
+                  class="email-subscribe-form validate"
+                  target="_blank"
+                  novalidate>
+                  <div id="mc_embed_signup_scroll" class="email-subscribe-form-fields-wrapper">
+                    <div class="mc-field-group">
+                      <label for="mce-EMAIL" style="display:none;">Email Address</label>
+                      <input type="email" value="" name="EMAIL" class="required email" id="mce-EMAIL" placeholder="Email Address">
+                    </div>
+
+                    <div id="mce-responses" class="clear">
+                      <div class="response" id="mce-error-response" style="display:none"></div>
+                      <div class="response" id="mce-success-response" style="display:none"></div>
+                    </div>
+
+                    <div style="position: absolute; left: -5000px;" aria-hidden="true"><input type="text" name="b_75419c71fe0a935e53dfa4a3f_91d0dccd39" tabindex="-1" value=""></div>
+
+                    <div class="clear">
+                      <input type="submit" value="" name="subscribe" id="mc-embedded-subscribe" class="button email-subscribe-button">
+                    </div>
+                  </div>
+                </form>
+              </div>
+
+            </li>
+          </ul>
+
+          <div class="footer-social-icons">
+            <a href="" target="_blank" class="facebook"></a>
+            <a href="https://twitter.com/pytorch" target="_blank" class="twitter"></a>
+            <a href="" target="_blank" class="youtube"></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+  -->
+
+  <!-- End Footer -->
+
+  <!-- Begin Mobile Menu -->
+
+  <div class="mobile-main-menu">
+    <div class="container-fluid">
+      <div class="container">
+        <div class="mobile-main-menu-header-container">
+          <a class="header-logo" href="https://doc.fedml.ai/"></a>
+          <a class="main-menu-close-button" href="#" data-behavior="close-mobile-menu"></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="mobile-main-menu-links-container">
+      <div class="main-menu">
+        <ul>
+          <li>
+            <a href="https://pytorch.org/get-started">Get Started</a>
+          </li>
+
+          <li>
+            <a href="https://pytorch.org/blog/">FedMl.AI</a>
+          </li>
+
+          <li class="resources-mobile-menu-title">
+            Ecosystem
+          </li>
+
+          <ul class="resources-mobile-menu-items">
+            <li>
+              <a href="https://pytorch-lightning.readthedocs.io/en/stable/">FedML</a>
+            </li>
+
+            <li>
+              <a href="https://torchmetrics.readthedocs.io/en/stable/">TorchMetrics</a>
+            </li>
+
+            <li>
+              <a href="https://lightning-flash.readthedocs.io/en/stable/">Lightning Flash</a>
+            </li>
+
+            <li>
+              <a href="https://lightning-transformers.readthedocs.io/en/stable/">Lightning Transformers</a>
+            </li>
+
+            <li>
+              <a href="https://lightning-bolts.readthedocs.io/en/stable/">Lightning Bolts</a>
+            </li>
+          </ul>
+
+          <!--<li class="resources-mobile-menu-title">
+            Resources
+          </li>
+
+          <ul class="resources-mobile-menu-items">
+            <li>
+              <a href="https://pytorch.org/resources">Developer Resources</a>
+            </li>
+
+            <li>
+              <a href="https://pytorch.org/features">About</a>
+            </li>
+
+            <li>
+              <a href="">Models (Beta)</a>
+            </li>
+
+            <li>
+              <a href="https://pytorch.org/#community-module">Community</a>
+            </li>
+
+            <li>
+              <a href="https://discuss.pytorch.org/">Forums</a>
+            </li>
+          </ul>-->
+
+          <li>
+            <a href="https://github.com/pytorch/pytorch">FedMl.AI</a>
+          </li>
+
+          <li>
+            <a href="https://www.grid.ai/">Grid.ai</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- End Mobile Menu -->
+
+  <script type="text/javascript" src="../_static/js/vendor/anchor.min.js"></script>
+
+  <script type="text/javascript">
+    $(document).ready(function() {
+      mobileMenu.bind();
+      mobileTOC.bind();
+      pytorchAnchors.bind();
+      sideMenus.bind();
+      scrollToAnchor.bind();
+      highlightNavigation.bind();
+      mainMenuDropdown.bind();
+      filterTags.bind();
+
+      // Add class to links that have code blocks, since we cannot create links in code blocks
+      $("article.pytorch-article a span.pre").each(function(e) {
+        $(this).closest("a").addClass("has-code");
+      });
+    })                                                                                         
+  </script>
+
+  <!-- Google Tag Manager (noscript) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PQBQ3CV"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager (noscript) -->
+ </body>
+</html>
