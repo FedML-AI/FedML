@@ -104,3 +104,4 @@ app/fedgraphnn/subgraph_link_pred/data/YAGO3-10/*.txt
 
 app/fedgraphnn/ego_networks_link_pred/data/ego-networks
 app/fedgraphnn/ego_networks_node_clf/data/ego-networks
+/devops/scripts/aws/

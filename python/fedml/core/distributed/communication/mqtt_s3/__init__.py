@@ -1,3 +1,3 @@
-__all__ = ["MqttS3CommManager"]
+__all__ = ["MqttS3MultiClientsCommManager"]
 
-from .mqtt_s3_comm_manager import MqttS3CommManager
+from .mqtt_s3_multi_clients_comm_manager import MqttS3MultiClientsCommManager

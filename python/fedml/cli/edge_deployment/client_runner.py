@@ -21,7 +21,7 @@ import psutil
 import requests
 import yaml
 
-from fedml.cli.comm_utils.mqtt_manager import MqttManager
+from fedml.core.distributed.communication.mqtt.mqtt_manager import MqttManager
 from fedml.cli.comm_utils.yaml_utils import load_yaml_config
 from fedml.cli.edge_deployment.client_constants import ClientConstants
 
@@ -36,13 +36,14 @@ LOCAL_PACKAGE_HOME_DIR_NAME = "fedml_packages"
 
 
 class FedMLClientRunner:
-    def __init__(self, args, edge_id=0, request_json=None, agent_config=None):
+    def __init__(self, args, edge_id=0, request_json=None, agent_config=None, run_id=0):
         self.current_training_status = None
         self.mqtt_mgr = None
         self.client_mqtt_mgr = None
         self.client_mqtt_is_connected = False
         self.client_mqtt_lock = None
         self.edge_id = edge_id
+        self.run_id = run_id
         self.unique_device_id = None
         self.process = None
         self.args = args
@@ -75,6 +76,7 @@ class FedMLClientRunner:
                                                   "${FEDSYS.LOG_SERVER_URL}": ""}
 
         self.mlops_metrics = None
+        self.client_active_list = dict()
         click.echo("Current directory of client agent: " + self.cur_dir)
 
     @staticmethod
@@ -304,6 +306,8 @@ class FedMLClientRunner:
         self.release_client_mqtt_mgr()
 
     def reset_devices_status(self, edge_id):
+        self.mlops_metrics.run_id = self.run_id
+        self.mlops_metrics.edge_id = edge_id
         self.mlops_metrics.broadcast_client_training_status(edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
 
     def stop_run(self):
@@ -358,6 +362,7 @@ class FedMLClientRunner:
         if self.mlops_metrics is None:
             self.mlops_metrics = MLOpsMetrics()
             self.mlops_metrics.set_messenger(self.client_mqtt_mgr)
+            self.mlops_metrics.run_id = self.run_id
 
         if self.client_mqtt_lock is None:
             self.client_mqtt_lock = threading.Lock()
@@ -437,7 +442,8 @@ class FedMLClientRunner:
         self.request_json = request_json
         client_runner = FedMLClientRunner(self.args, edge_id=self.edge_id,
                                           request_json=request_json,
-                                          agent_config=self.agent_config)
+                                          agent_config=self.agent_config,
+                                          run_id=run_id)
         self.process = multiprocessing.Process(target=client_runner.run)
         self.process.start()
         FedMLClientRunner.save_run_process(self.process.pid)
@@ -455,7 +461,8 @@ class FedMLClientRunner:
         self.request_json = request_json
         client_runner = FedMLClientRunner(self.args, edge_id=self.edge_id,
                                           request_json=request_json,
-                                          agent_config=self.agent_config)
+                                          agent_config=self.agent_config,
+                                          run_id=run_id)
         try:
             multiprocessing.Process(target=client_runner.stop_run).start()
         except Exception as e:
@@ -634,8 +641,36 @@ class FedMLClientRunner:
             self.request_json = request_json
             client_runner = FedMLClientRunner(self.args, edge_id=self.edge_id,
                                               request_json=request_json,
-                                              agent_config=self.agent_config)
+                                              agent_config=self.agent_config,
+                                              run_id=run_id)
             multiprocessing.Process(target=client_runner.cleanup_client_with_finished_status).start()
+
+    def report_client_status(self):
+        self.send_agent_active_msg()
+
+    def callback_report_current_status(self, topic, payload):
+        request_json = json.loads(payload)
+        # client_runner = FedMLClientRunner(self.args, edge_id=self.edge_id,
+        #                                   request_json=request_json,
+        #                                   agent_config=self.agent_config,
+        #                                   run_id=0)
+        # multiprocessing.Process(target=client_runner.report_client_status).start()
+        self.send_agent_active_msg()
+
+    def callback_client_last_will_msg(self, topic, payload):
+        msg = json.loads(payload)
+        edge_id = msg.get("ID", None)
+        status = msg.get("status", ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE)
+        if edge_id is not None and status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE:
+            if self.client_active_list.get(edge_id, None) is not None:
+                self.client_active_list.pop(edge_id)
+
+    def callback_client_active_msg(self, topic, payload):
+        msg = json.loads(payload)
+        edge_id = msg.get("ID", None)
+        status = msg.get("status", ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
+        if edge_id is not None:
+            self.client_active_list[edge_id] = status
 
     def save_training_status(self, edge_id, training_status):
         self.current_training_status = training_status
@@ -682,6 +717,11 @@ class FedMLClientRunner:
     def fetch_configs(self):
         return MLOpsConfigs.get_instance(self.args).fetch_all_configs()
 
+    def send_agent_active_msg(self):
+        active_topic = "/flclient_agent/active"
+        active_msg = {"ID": self.edge_id, "status": ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE}
+        self.mqtt_mgr.send_message_json(active_topic, json.dumps(active_msg))
+
     def on_agent_mqtt_connected(self, mqtt_client_object):
         # The MQTT message topic format is as follows: <sender>/<receiver>/<action>
 
@@ -703,16 +743,35 @@ class FedMLClientRunner:
         topic_client_status = "fl_client/flclient_agent_" + str(self.edge_id) + "/status"
         self.mqtt_mgr.add_message_listener(topic_client_status, self.callback_runner_id_status)
 
+        # Setup MQTT message listener to report current device status.
+        topic_report_status = "/mlops/report_device_status"
+        self.mqtt_mgr.add_message_listener(topic_report_status, self.callback_report_current_status)
+
+        # Setup MQTT message listener to the last will message form the client.
+        topic_last_will_msg = "/flclient/last_will_msg"
+        self.mqtt_mgr.add_message_listener(topic_last_will_msg, self.callback_client_last_will_msg)
+
+        # Setup MQTT message listener to the active status message form the client.
+        topic_active_msg = "/flclient/active"
+        self.mqtt_mgr.add_message_listener(topic_active_msg, self.callback_client_active_msg)
+
         # Subscribe topics for starting train, stopping train and fetching client status.
-        topic_start_train = "flserver_agent/" + str(self.edge_id) + "/start_train"
-        topic_stop_train = "flserver_agent/" + str(self.edge_id) + "/stop_train"
-        topic_client_status = "fl_client/flclient_agent_" + str(self.edge_id) + "/status"
         mqtt_client_object.subscribe(topic_start_train)
         mqtt_client_object.subscribe(topic_stop_train)
         mqtt_client_object.subscribe(topic_client_status)
+        mqtt_client_object.subscribe(topic_report_status)
+        mqtt_client_object.subscribe(topic_last_will_msg)
+        mqtt_client_object.subscribe(topic_active_msg)
+
         click.echo("subscribe: " + topic_start_train)
         click.echo("subscribe: " + topic_stop_train)
         click.echo("subscribe: " + topic_client_status)
+        click.echo("subscribe: " + topic_report_status)
+        click.echo("subscribe: " + topic_last_will_msg)
+        click.echo("subscribe: " + topic_active_msg)
+
+        # Broadcast the first active message.
+        self.send_agent_active_msg()
 
         # Echo results
         click.echo("Congratulations, you have logged into the FedML MLOps platform successfully!")
@@ -731,6 +790,8 @@ class FedMLClientRunner:
             service_config["mqtt_config"]["MQTT_PWD"],
             service_config["mqtt_config"]["MQTT_KEEPALIVE"],
             self.edge_id,
+            "/flclient_agent/last_will_msg",
+            json.dumps({"ID": self.edge_id, "status": ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE})
         )
         self.agent_config = service_config
 
