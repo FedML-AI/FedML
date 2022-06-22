@@ -4,6 +4,9 @@ import numpy as np
 import torch
 
 from .chexpert.data_loader import load_partition_data_chexpert
+from .mimic_cxr.data_loader import load_partition_data_mimiccxr
+from .nih_chest_xray.data_loader import load_partition_data_nihchestxray
+
 import logging
 
 
@@ -46,6 +49,44 @@ def load_synthetic_data(args):
             test_data_local_dict,
             class_num,
         ) = load_partition_data_chexpert(
+            data_dir=args.data_cache_dir,
+            partition_method="random",
+            partition_alpha=None,
+            client_number=args.client_num_in_total,
+            batch_size=args.batch_size,
+        )
+    elif dataset_name == "mimiccxr":
+        # load mimic cxr dataset
+        logging.info("load_data. dataset_name = %s" % dataset_name)
+        (
+            train_data_num,
+            test_data_num,
+            train_data_global,
+            test_data_global,
+            train_data_local_num_dict,
+            train_data_local_dict,
+            test_data_local_dict,
+            class_num,
+        ) = load_partition_data_mimiccxr(
+            data_dir=args.data_cache_dir,
+            partition_method="random",
+            partition_alpha=None,
+            client_number=args.client_num_in_total,
+            batch_size=args.batch_size,
+        )
+    elif dataset_name == "nihchestxray":
+        # load nih chest xray dataset
+        logging.info("load_data. dataset_name = %s" % dataset_name)
+        (
+            train_data_num,
+            test_data_num,
+            train_data_global,
+            test_data_global,
+            train_data_local_num_dict,
+            train_data_local_dict,
+            test_data_local_dict,
+            class_num,
+        ) = load_partition_data_nihchestxray(
             data_dir=args.data_cache_dir,
             partition_method="random",
             partition_alpha=None,

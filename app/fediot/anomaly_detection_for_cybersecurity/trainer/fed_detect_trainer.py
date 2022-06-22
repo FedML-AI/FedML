@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import os
 
-from fedml.core.alg_frame.client_trainer import ClientTrainer
+from fedml.core import ClientTrainer
 import logging
 
 

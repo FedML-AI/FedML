@@ -1,0 +1,859 @@
+
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-PQBQ3CV');
+  </script>
+  <!-- End Google Tag Manager -->
+
+  <meta charset="utf-8">
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="google-site-verification" content="okUst94cAlWSsUsGZTB4xSS4UKTtRV8Nu5XZ9pdd3Aw" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Simulation with a Single Process (Standalone) &mdash; FedML  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!-- <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" /> -->
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <!-- Google Analytics -->
+  
+  <!-- End Google Analytics -->
+  
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+  <!-- Preload the theme fonts -->
+
+<link rel="preload" href="../../_static/fonts/FreightSans/freight-sans-book.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../../_static/fonts/FreightSans/freight-sans-medium.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../../_static/fonts/IBMPlexMono/IBMPlexMono-Medium.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../../_static/fonts/FreightSans/freight-sans-bold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../../_static/fonts/FreightSans/freight-sans-medium-italic.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../../_static/fonts/IBMPlexMono/IBMPlexMono-SemiBold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../../_static/fonts/UCity/UCity-Light.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../../_static/fonts/UCity/UCity-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../../_static/fonts/UCity/UCity-Semibold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../../_static/fonts/Inconsolata/Inconsolata.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+
+<!-- Preload the katex fonts -->
+
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Math-Italic.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Main-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Main-Bold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Size1-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Size4-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Size2-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Size3-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Caligraphic-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+  <script defer src="https://use.fontawesome.com/releases/v6.1.1/js/all.js" integrity="sha384-xBXmu0dk1bEoiwd71wOonQLyH+VpgR1XcDH3rtxrLww5ajNTuMvBdL5SOiFZnNdp" crossorigin="anonymous"></script>
+</head>
+
+<div class="container-fluid header-holder tutorials-header" id="header-holder">
+  <div class="container">
+    <div class="header-container">
+      <a class="header-logo" href="https://doc.fedml.ai/">
+      <!--  <img class="call-to-action-img" src="../../_static/images/logo-lightning-icon.png"/> -->
+      </a>
+
+      <div class="main-menu">
+        <ul>
+          <li>
+            <a href="https://doc.fedml.ai/starter/get_started.html">Get Started</a>
+          </li>
+
+          <li>
+            <a href="https://github.com/FedML-AI">Github</a>
+          </li>
+
+          <li>
+            <a href="https://open.fedml.ai">Platform</a>
+          </li>
+
+          <li>
+            <a href="https://join.slack.com/t/fedml/shared_invite/zt-havwx1ee-a1xfOUrATNfc9DFqU~r34w">Join the Community</a>
+          </li>
+
+
+
+          <li>
+            <div id="resourcesDropdownButton" data-toggle="resources-dropdown" class="resources-dropdown">
+              <a class="resource-option with-down-orange-arrow">
+                Resource
+              </a>
+              <div class="resources-dropdown-menu">
+                <a class="doc-dropdown-option nav-dropdown-item" href="https://doc.fedml.ai/resource/papers.html">
+                  <span class="dropdown-title">Publications</span>
+                </a>
+                <a class="doc-dropdown-option nav-dropdown-item" href="https://doc.fedml.ai/resource/video.html">
+                  <span class="dropdown-title">Videos</span>
+                </a>
+                <a class="doc-dropdown-option nav-dropdown-item" href="https://github.com/FedML-AI/FedML/discussions">
+                  <span class="dropdown-title">Discussion</span>
+                </a>
+            </div>
+          </li>
+
+          <!--<li>
+            <div id="resourcesDropdownButton" data-toggle="resources-dropdown" class="resources-dropdown">
+              <a class="resource-option with-down-arrow">
+                Resources
+              </a>
+              <div class="resources-dropdown-menu">
+                <a class="nav-dropdown-item" href="https://pytorch.org/#community-module">
+                  <span class="dropdown-title">Community</span>
+                  <p>Join the PyTorch developer community to contribute, learn, and get your questions answered.</p>
+                </a>
+                <a class="nav-dropdown-item" href="https://pytorch.org/resources">
+                  <span class="dropdown-title">Developer Resources</span>
+                  <p>Find resources and get questions answered</p>
+                </a>
+                <a class="nav-dropdown-item" href="https://discuss.pytorch.org/" target="_blank">
+                  <span class="dropdown-title">Forums</span>
+                  <p>A place to discuss PyTorch code, issues, install, research</p>
+                </a>
+                <a class="nav-dropdown-item" href="">
+                  <span class="dropdown-title">Models (Beta)</span>
+                  <p>Discover, publish, and reuse pre-trained models</p>
+                </a>
+              </div>
+            </div>
+          </li>-->
+
+          <li>
+            <a href="https://fedml.ai/">FedML.AI</a>
+          </li>
+
+        </ul>
+      </div>
+
+      <a class="main-menu-open-button" href="#" data-behavior="open-mobile-menu"></a>
+    </div>
+  </div>
+</div>
+
+<body class="pytorch-body">
+
+   
+
+    
+
+    <div class="table-of-contents-link-wrapper">
+      <span>Table of Contents</span>
+      <a href="#" class="toggle-table-of-contents" data-behavior="toggle-table-of-contents"></a>
+    </div>
+
+    <nav data-toggle="wy-nav-shift" class="pytorch-left-menu" id="pytorch-left-menu">
+      <div class="pytorch-side-scroll">
+        <div class="pytorch-menu pytorch-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          <div class="pytorch-left-menu-search">
+            
+
+            
+              
+              
+            
+
+            
+
+
+  
+
+
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search Docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+            
+          </div>
+
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../starter/get_started.html">Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../starter/installation.html">Installing FedML</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../starter/mission.html">Mission</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../starter/overview.html">Technology Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../starter/ecosystem.html">Application Ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../starter/oss_code_architecture.html">Open Source Code Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../starter/mlops_video.html">FedML MLOps Video Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../starter/faq.html">FedML FAQ</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">FedML MLOps - Landing FedML into Reality</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../starter/mlops_video.html">FedML MLOps Video Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mlops/user_guide.html">FedML MLOps User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mlops/api.html">FedML MLOps CLI and API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">FedML Parrot - Simulating the Real World</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../user_guide.html">FedML Parrot User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">FedML Parrot Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api.html">FedML Parrot API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">FedML Octopus - Simple Connector for Data Silos</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../cross-silo/user_guide.html">FedML Octopus User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cross-silo/examples.html">FedML Octopus Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cross-silo/api.html">FedML Octopus API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">FedML BeeHive - Collaborative Learning on Smartphones/IoTs</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../cross-device/user_guide.html">FedML Beehive User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cross-device/examples.html">FedML Beehive Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cross-device/api.html">FedML BeeHive API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">FedML Cheetah - Speedy Training of Large Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../distributed/user_guide.html">FedML Cheetah User Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Benchmarks for FedNLP, FedCV, FedGraphNN and FedIoT</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../benchmark/fedgraphnn.html">FedGraphNN Benchmark</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resource</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../resource/papers.html">Research Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../resource/video.html">Video</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../resource/community.html">Join the Community</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <div class="pytorch-container">
+      <div class="pytorch-page-level-bar" id="pytorch-page-level-bar">
+        <div class="pytorch-breadcrumbs-wrapper">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="pytorch-breadcrumbs">
+    
+      <li>
+        <a href="../../index.html">
+          
+            Docs
+          
+        </a> &gt;
+      </li>
+
+        
+      <li>Simulation with a Single Process (Standalone)</li>
+    
+    
+      <li class="pytorch-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/simulation/examples/sp_fedavg_mnist_lr_example.md.txt" rel="nofollow"><img src="../../_static/images/view-page-source-icon.svg"></a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+</div>
+        </div>
+
+        <div class="pytorch-shortcuts-wrapper" id="pytorch-shortcuts-wrapper">
+          Shortcuts
+        </div>
+      </div>
+
+      <section data-toggle="wy-nav-shift" id="pytorch-content-wrap" class="pytorch-content-wrap">
+        <div class="pytorch-content-left">
+
+        
+          
+          <div class="rst-content">
+          
+            <div role="main" class="main-content" itemscope="itemscope" itemtype="http://schema.org/Article">
+             <article itemprop="articleBody" id="pytorch-article" class="pytorch-article">
+              
+  <section id="simulation-with-a-single-process-standalone">
+<h1>Simulation with a Single Process (Standalone)<a class="headerlink" href="#simulation-with-a-single-process-standalone" title="Permalink to this headline">¶</a></h1>
+<p>Simulating FL using a single process in your personal laptop or server. This is helpful when researchers hope to try a quick algorithmic idea in small synthetic datasets (MNIST, Shakespeare, etc.) and small models (ResNet-18, Logistic Regression, etc.).</p>
+<p>In this example, we will present how to apply the standalone simulation of FedML in the MINIST image classification <strong>using a single process</strong>. The complete code is available at <a class="reference external" href="https://github.com/FedML-AI/FedML/tree/master/python/examples/simulation/sp_fedavg_mnist_lr_example">https://github.com/FedML-AI/FedML/tree/master/python/examples/simulation/sp_fedavg_mnist_lr_example</a>.</p>
+<section id="one-line-api">
+<h2>One line API<a class="headerlink" href="#one-line-api" title="Permalink to this headline">¶</a></h2>
+<p>In this section, we present how to implement a stand-alone simulated version of the FedAvg algorithm running on  MNIST dataset using FedML with a single line of code.</p>
+<section id="step-1-preparation">
+<h3><strong>Step 1. preparation</strong><a class="headerlink" href="#step-1-preparation" title="Permalink to this headline">¶</a></h3>
+<p>First we should  create a new python environment with conda</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>conda create -n fedml python
+conda activate fedml
+</pre></div>
+</div>
+<p>Then we should make sure that we have completed the installation of fedml and the preparation of the dataset.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>python -m pip install --upgrade pip
+python -m pip install fedml
+</pre></div>
+</div>
+<p>The dataset is provided in this case, if you need to use other datasets you can refer to the detailed steps in <strong>Get Start</strong>.</p>
+</section>
+<section id="step-2-setup-parameters">
+<h3>Step 2. setup Parameters<a class="headerlink" href="#step-2-setup-parameters" title="Permalink to this headline">¶</a></h3>
+<p>Once we have installed the dependent packages, we can set the parameters by editing the <code class="docutils literal notranslate"><span class="pre">fedml_config.yaml</span></code> as shown below, which defines the parameters <code class="docutils literal notranslate"><span class="pre">common_args</span></code>, <code class="docutils literal notranslate"><span class="pre">data_args</span></code>, <code class="docutils literal notranslate"><span class="pre">model_args</span></code>, <code class="docutils literal notranslate"><span class="pre">train_args</span></code>, <code class="docutils literal notranslate"><span class="pre">validation_args</span></code>, <code class="docutils literal notranslate"><span class="pre">device_args</span></code>, <code class="docutils literal notranslate"><span class="pre">tracking_args</span></code>  and <code class="docutils literal notranslate"><span class="pre">tracking_args</span></code>.</p>
+<div class="highlight-YAML notranslate"><div class="highlight"><pre><span></span><span class="nt">common_args</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">training_type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;simulation&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="nt">random_seed</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span><span class="w"></span>
+
+<span class="nt">data_args</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">dataset</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;mnist&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="nt">data_cache_dir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;../../../data/mnist&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="nt">partition_method</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;hetero&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="nt">partition_alpha</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.5</span><span class="w"></span>
+
+<span class="nt">model_args</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;lr&quot;</span><span class="w"></span>
+
+<span class="nt">train_args</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">federated_optimizer</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;FedAvg&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="nt">client_id_list</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;[]&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="nt">client_num_in_total</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span><span class="w"></span>
+<span class="w">  </span><span class="nt">client_num_per_round</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span><span class="w"></span>
+<span class="w">  </span><span class="nt">comm_round</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">200</span><span class="w"></span>
+<span class="w">  </span><span class="nt">epochs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span><span class="w"></span>
+<span class="w">  </span><span class="nt">batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span><span class="w"></span>
+<span class="w">  </span><span class="nt">client_optimizer</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sgd</span><span class="w"></span>
+<span class="w">  </span><span class="nt">learning_rate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.03</span><span class="w"></span>
+<span class="w">  </span><span class="nt">weight_decay</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.001</span><span class="w"></span>
+
+<span class="nt">validation_args</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">frequency_of_the_test</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span><span class="w"></span>
+
+<span class="nt">device_args</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">using_gpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w"></span>
+<span class="w">  </span><span class="nt">gpu_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span><span class="w"></span>
+
+<span class="nt">comm_args</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">backend</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;sp&quot;</span><span class="w"></span>
+
+<span class="nt">tracking_args</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">log_file_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./log</span><span class="w"></span>
+<span class="w">  </span><span class="nt">enable_wandb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w"></span>
+<span class="w">  </span><span class="nt">wandb_key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ee0b5f53d949c84cee7decbe7a629e63fb2f8408</span><span class="w"></span>
+<span class="w">  </span><span class="nt">wandb_entity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fedml-ai</span><span class="w"></span>
+<span class="w">  </span><span class="nt">wandb_project</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">simulation</span><span class="w"></span>
+<span class="w">  </span><span class="nt">run_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fedml_torch_fedavg_mnist_lr</span><span class="w"></span>
+</pre></div>
+</div>
+<p>In the current example,<code class="docutils literal notranslate"><span class="pre">common_args.training_type</span></code> is <strong>“simulation”</strong>, which means that the training here is a stand-alone simulation version,<code class="docutils literal notranslate"><span class="pre">data_args.dataset</span></code> is <strong>“mnist”</strong> corresponding to the current dataset used, <code class="docutils literal notranslate"><span class="pre">model_args.model</span></code> is <strong>“lr”</strong>, which means that the current model used is <strong>LogisticRegression (lr)</strong> . Please refer to XXX for other parameters and more detailed setup instructions.</p>
+</section>
+<section id="step-3-training">
+<h3>Step 3. training<a class="headerlink" href="#step-3-training" title="Permalink to this headline">¶</a></h3>
+<p>Now that we have configured all the dependent environments, we can quickly implement the training of a federation learning model on the MNIST dataset for a single machine simulation with the following line of code:</p>
+<div class="highlight-Nginx notranslate"><div class="highlight"><pre><span></span><span class="k">python</span><span class="w"> </span><span class="s">torch_fedavg_mnist_lr_one_line_example.py</span><span class="w"> </span><span class="s">--cf</span><span class="w"> </span><span class="s">fedml_config.yaml</span><span class="w"></span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">--cf</span> <span class="pre">fedml_config.yaml</span></code> specifies the corresponding parameter settings file.</p>
+<p>We can see the following output when the program is just running:</p>
+<div class="highlight-Prolog notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="mi">2022</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">21</span> <span class="mi">15</span><span class="s s-Atom">:</span><span class="mi">42</span><span class="s s-Atom">:</span><span class="mi">34</span><span class="p">,</span><span class="mi">124</span><span class="p">]</span> <span class="p">[</span><span class="nv">INFO</span><span class="p">]</span> <span class="p">[</span><span class="s s-Atom">device</span><span class="p">.</span><span class="nn">py</span><span class="p">:</span><span class="mi">14</span><span class="s s-Atom">:get_device</span><span class="p">]</span> <span class="s s-Atom">device</span> <span class="o">=</span> <span class="s s-Atom">cpu</span>
+<span class="p">[</span><span class="mi">2022</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">21</span> <span class="mi">15</span><span class="s s-Atom">:</span><span class="mi">42</span><span class="s s-Atom">:</span><span class="mi">34</span><span class="p">,</span><span class="mi">124</span><span class="p">]</span> <span class="p">[</span><span class="nv">INFO</span><span class="p">]</span> <span class="p">[</span><span class="s s-Atom">data_loader</span><span class="p">.</span><span class="nn">py</span><span class="p">:</span><span class="mi">19</span><span class="s s-Atom">:download_mnist</span><span class="p">]</span> <span class="p">.</span><span class="o">/</span><span class="nv">MNIST</span><span class="p">.</span><span class="s s-Atom">zip</span>
+<span class="mi">100</span><span class="c1">% [......................................................................] 128363870 / 128363870[2022-04-21 15:44:10,003] [INFO] [data_loader.py:63:load_for_simulation] load_data. dataset_name = mnist</span>
+<span class="p">[</span><span class="mi">2022</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">21</span> <span class="mi">15</span><span class="s s-Atom">:</span><span class="mi">45</span><span class="s s-Atom">:</span><span class="mi">25</span><span class="p">,</span><span class="mi">817</span><span class="p">]</span> <span class="p">[</span><span class="nv">INFO</span><span class="p">]</span> <span class="p">[</span><span class="s s-Atom">model_hub</span><span class="p">.</span><span class="nn">py</span><span class="p">:</span><span class="mi">14</span><span class="s s-Atom">:create</span><span class="p">]</span> <span class="s s-Atom">create_model</span><span class="p">.</span> <span class="s s-Atom">model_name</span> <span class="o">=</span> <span class="s s-Atom">lr</span><span class="p">,</span> <span class="s s-Atom">output_dim</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="p">[</span><span class="mi">2022</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">21</span> <span class="mi">15</span><span class="s s-Atom">:</span><span class="mi">45</span><span class="s s-Atom">:</span><span class="mi">25</span><span class="p">,</span><span class="mi">818</span><span class="p">]</span> <span class="p">[</span><span class="nv">INFO</span><span class="p">]</span> <span class="p">[</span><span class="s s-Atom">model_hub</span><span class="p">.</span><span class="nn">py</span><span class="p">:</span><span class="mi">17</span><span class="s s-Atom">:create</span><span class="p">]</span> <span class="nv">LogisticRegression</span> <span class="o">+</span> <span class="nv">MNIST</span>
+<span class="p">[</span><span class="mi">2022</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">21</span> <span class="mi">15</span><span class="s s-Atom">:</span><span class="mi">45</span><span class="s s-Atom">:</span><span class="mi">25</span><span class="p">,</span><span class="mi">860</span><span class="p">]</span> <span class="p">[</span><span class="nv">INFO</span><span class="p">]</span> <span class="p">[</span><span class="s s-Atom">fedavg_api</span><span class="p">.</span><span class="nn">py</span><span class="p">:</span><span class="mi">41</span><span class="s s-Atom">:</span><span class="k">__</span><span class="s s-Atom">init__</span><span class="p">]</span> <span class="s s-Atom">model</span> <span class="o">=</span> <span class="nv">LogisticRegression</span><span class="p">(</span>
+  <span class="p">(</span><span class="s s-Atom">linear</span><span class="p">)</span><span class="s s-Atom">:</span> <span class="nv">Linear</span><span class="p">(</span><span class="s s-Atom">in_features</span><span class="o">=</span><span class="mi">784</span><span class="p">,</span> <span class="s s-Atom">out_features</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="s s-Atom">bias</span><span class="o">=</span><span class="nv">True</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="p">[</span><span class="mi">2022</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">21</span> <span class="mi">15</span><span class="s s-Atom">:</span><span class="mi">45</span><span class="s s-Atom">:</span><span class="mi">25</span><span class="p">,</span><span class="mi">861</span><span class="p">]</span> <span class="p">[</span><span class="nv">INFO</span><span class="p">]</span> <span class="p">[</span><span class="s s-Atom">fedavg_api</span><span class="p">.</span><span class="nn">py</span><span class="p">:</span><span class="mi">50</span><span class="s s-Atom">:</span><span class="k">__</span><span class="s s-Atom">init__</span><span class="p">]</span> <span class="s s-Atom">self</span><span class="p">.</span><span class="s s-Atom">model_trainer</span> <span class="o">=</span> <span class="o">&lt;</span><span class="s s-Atom">fedml</span><span class="p">.</span><span class="s s-Atom">simulation</span><span class="p">.</span><span class="s s-Atom">fedavg</span><span class="p">.</span><span class="s s-Atom">my_model_trainer_classification</span><span class="p">.</span><span class="nv">MyModelTrainer</span> <span class="s s-Atom">object</span> <span class="s s-Atom">at</span> <span class="mh">0x000001CF758D8F88</span><span class="o">&gt;</span>
+<span class="p">[</span><span class="mi">2022</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">21</span> <span class="mi">15</span><span class="s s-Atom">:</span><span class="mi">45</span><span class="s s-Atom">:</span><span class="mi">25</span><span class="p">,</span><span class="mi">867</span><span class="p">]</span> <span class="p">[</span><span class="nv">INFO</span><span class="p">]</span> <span class="p">[</span><span class="s s-Atom">fedavg_api</span><span class="p">.</span><span class="nn">py</span><span class="p">:</span><span class="mi">81</span><span class="s s-Atom">:train</span><span class="p">]</span> <span class="s s-Atom">self</span><span class="p">.</span><span class="s s-Atom">model_trainer</span> <span class="o">=</span> <span class="o">&lt;</span><span class="s s-Atom">fedml</span><span class="p">.</span><span class="s s-Atom">simulation</span><span class="p">.</span><span class="s s-Atom">fedavg</span><span class="p">.</span><span class="s s-Atom">my_model_trainer_classification</span><span class="p">.</span><span class="nv">MyModelTrainer</span> <span class="s s-Atom">object</span> <span class="s s-Atom">at</span> <span class="mh">0x000001CF758D8F88</span><span class="o">&gt;</span>
+<span class="p">[</span><span class="mi">2022</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">21</span> <span class="mi">15</span><span class="s s-Atom">:</span><span class="mi">45</span><span class="s s-Atom">:</span><span class="mi">26</span><span class="p">,</span><span class="mi">046</span><span class="p">]</span> <span class="p">[</span><span class="nv">INFO</span><span class="p">]</span> <span class="p">[</span><span class="s s-Atom">my_model_trainer_classification</span><span class="p">.</span><span class="nn">py</span><span class="p">:</span><span class="mi">52</span><span class="s s-Atom">:train</span><span class="p">]</span> <span class="nv">Update</span> <span class="nv">Epoch</span><span class="s s-Atom">:</span> <span class="mi">0</span> <span class="p">[</span><span class="mi">10</span><span class="o">/</span><span class="mi">20</span> <span class="p">(</span><span class="mi">50</span><span class="c1">%)]   Loss: 2.369121</span>
+<span class="p">[</span><span class="mi">2022</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">21</span> <span class="mi">15</span><span class="s s-Atom">:</span><span class="mi">45</span><span class="s s-Atom">:</span><span class="mi">26</span><span class="p">,</span><span class="mi">051</span><span class="p">]</span> <span class="p">[</span><span class="nv">INFO</span><span class="p">]</span> <span class="p">[</span><span class="s s-Atom">my_model_trainer_classification</span><span class="p">.</span><span class="nn">py</span><span class="p">:</span><span class="mi">52</span><span class="s s-Atom">:train</span><span class="p">]</span> <span class="nv">Update</span> <span class="nv">Epoch</span><span class="s s-Atom">:</span> <span class="mi">0</span> <span class="p">[</span><span class="mi">20</span><span class="o">/</span><span class="mi">20</span> <span class="p">(</span><span class="mi">100</span><span class="c1">%)]  Loss: 2.222175</span>
+<span class="p">[</span><span class="mi">2022</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">21</span> <span class="mi">15</span><span class="s s-Atom">:</span><span class="mi">45</span><span class="s s-Atom">:</span><span class="mi">26</span><span class="p">,</span><span class="mi">053</span><span class="p">]</span> <span class="p">[</span><span class="nv">INFO</span><span class="p">]</span> <span class="p">[</span><span class="s s-Atom">my_model_trainer_classification</span><span class="p">.</span><span class="nn">py</span><span class="p">:</span><span class="mi">57</span><span class="s s-Atom">:train</span><span class="p">]</span> <span class="nv">Client</span> <span class="nv">Index</span> <span class="o">=</span> <span class="mi">0</span>    <span class="nv">Epoch</span><span class="s s-Atom">:</span> <span class="mi">0</span>   <span class="nv">Loss</span><span class="s s-Atom">:</span> <span class="mf">2.295648</span>
+<span class="p">[</span><span class="mi">2022</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">21</span> <span class="mi">15</span><span class="s s-Atom">:</span><span class="mi">45</span><span class="s s-Atom">:</span><span class="mi">26</span><span class="p">,</span><span class="mi">057</span><span class="p">]</span> <span class="p">[</span><span class="nv">INFO</span><span class="p">]</span> <span class="p">[</span><span class="s s-Atom">my_model_trainer_classification</span><span class="p">.</span><span class="nn">py</span><span class="p">:</span><span class="mi">52</span><span class="s s-Atom">:train</span><span class="p">]</span> <span class="nv">Update</span> <span class="nv">Epoch</span><span class="s s-Atom">:</span> <span class="mi">0</span> <span class="p">[</span><span class="mi">10</span><span class="o">/</span><span class="mi">80</span> <span class="p">(</span><span class="mi">12</span><span class="c1">%)]   Loss: 2.237719</span>
+<span class="p">[</span><span class="mi">2022</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">21</span> <span class="mi">15</span><span class="s s-Atom">:</span><span class="mi">45</span><span class="s s-Atom">:</span><span class="mi">26</span><span class="p">,</span><span class="mi">059</span><span class="p">]</span> <span class="p">[</span><span class="nv">INFO</span><span class="p">]</span> <span class="p">[</span><span class="s s-Atom">my_model_trainer_classification</span><span class="p">.</span><span class="nn">py</span><span class="p">:</span><span class="mi">52</span><span class="s s-Atom">:train</span><span class="p">]</span> <span class="nv">Update</span> <span class="nv">Epoch</span><span class="s s-Atom">:</span> <span class="mi">0</span> <span class="p">[</span><span class="mi">20</span><span class="o">/</span><span class="mi">80</span> <span class="p">(</span><span class="mi">25</span><span class="c1">%)]   Loss: 2.212439</span>
+<span class="p">[</span><span class="mi">2022</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">21</span> <span class="mi">15</span><span class="s s-Atom">:</span><span class="mi">45</span><span class="s s-Atom">:</span><span class="mi">26</span><span class="p">,</span><span class="mi">060</span><span class="p">]</span> <span class="p">[</span><span class="nv">INFO</span><span class="p">]</span> <span class="p">[</span><span class="s s-Atom">my_model_trainer_classification</span><span class="p">.</span><span class="nn">py</span><span class="p">:</span><span class="mi">52</span><span class="s s-Atom">:train</span><span class="p">]</span> <span class="nv">Update</span> <span class="nv">Epoch</span><span class="s s-Atom">:</span> <span class="mi">0</span> <span class="p">[</span><span class="mi">30</span><span class="o">/</span><span class="mi">80</span> <span class="p">(</span><span class="mi">38</span><span class="c1">%)]   Loss: 2.156245</span>
+<span class="p">[</span><span class="mi">2022</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">21</span> <span class="mi">15</span><span class="s s-Atom">:</span><span class="mi">45</span><span class="s s-Atom">:</span><span class="mi">26</span><span class="p">,</span><span class="mi">062</span><span class="p">]</span> <span class="p">[</span><span class="nv">INFO</span><span class="p">]</span> <span class="p">[</span><span class="s s-Atom">my_model_trainer_classification</span><span class="p">.</span><span class="nn">py</span><span class="p">:</span><span class="mi">52</span><span class="s s-Atom">:train</span><span class="p">]</span> <span class="nv">Update</span> <span class="nv">Epoch</span><span class="s s-Atom">:</span> <span class="mi">0</span> <span class="p">[</span><span class="mi">40</span><span class="o">/</span><span class="mi">80</span> <span class="p">(</span><span class="mi">50</span><span class="c1">%)]   Loss: 2.132013</span>
+<span class="p">[</span><span class="mi">2022</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">21</span> <span class="mi">15</span><span class="s s-Atom">:</span><span class="mi">45</span><span class="s s-Atom">:</span><span class="mi">26</span><span class="p">,</span><span class="mi">064</span><span class="p">]</span> <span class="p">[</span><span class="nv">INFO</span><span class="p">]</span> <span class="p">[</span><span class="s s-Atom">my_model_trainer_classification</span><span class="p">.</span><span class="nn">py</span><span class="p">:</span><span class="mi">52</span><span class="s s-Atom">:train</span><span class="p">]</span> <span class="nv">Update</span> <span class="nv">Epoch</span><span class="s s-Atom">:</span> <span class="mi">0</span> <span class="p">[</span><span class="mi">50</span><span class="o">/</span><span class="mi">80</span> <span class="p">(</span><span class="mi">62</span><span class="c1">%)]   Loss: 1.966263</span>
+<span class="p">[</span><span class="mi">2022</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">21</span> <span class="mi">15</span><span class="s s-Atom">:</span><span class="mi">45</span><span class="s s-Atom">:</span><span class="mi">26</span><span class="p">,</span><span class="mi">067</span><span class="p">]</span> <span class="p">[</span><span class="nv">INFO</span><span class="p">]</span> <span class="p">[</span><span class="s s-Atom">my_model_trainer_classification</span><span class="p">.</span><span class="nn">py</span><span class="p">:</span><span class="mi">52</span><span class="s s-Atom">:train</span><span class="p">]</span> <span class="nv">Update</span> <span class="nv">Epoch</span><span class="s s-Atom">:</span> <span class="mi">0</span> <span class="p">[</span><span class="mi">60</span><span class="o">/</span><span class="mi">80</span> <span class="p">(</span><span class="mi">75</span><span class="c1">%)]   Loss: 2.014680</span>
+<span class="p">[</span><span class="mi">2022</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">21</span> <span class="mi">15</span><span class="s s-Atom">:</span><span class="mi">45</span><span class="s s-Atom">:</span><span class="mi">26</span><span class="p">,</span><span class="mi">068</span><span class="p">]</span> <span class="p">[</span><span class="nv">INFO</span><span class="p">]</span> <span class="p">[</span><span class="s s-Atom">my_model_trainer_classification</span><span class="p">.</span><span class="nn">py</span><span class="p">:</span><span class="mi">52</span><span class="s s-Atom">:train</span><span class="p">]</span> <span class="nv">Update</span> <span class="nv">Epoch</span><span class="s s-Atom">:</span> <span class="mi">0</span> <span class="p">[</span><span class="mi">70</span><span class="o">/</span><span class="mi">80</span> <span class="p">(</span><span class="mi">88</span><span class="c1">%)]   Loss: 1.959164</span>
+<span class="p">[</span><span class="mi">2022</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">21</span> <span class="mi">15</span><span class="s s-Atom">:</span><span class="mi">45</span><span class="s s-Atom">:</span><span class="mi">26</span><span class="p">,</span><span class="mi">070</span><span class="p">]</span> <span class="p">[</span><span class="nv">INFO</span><span class="p">]</span> <span class="p">[</span><span class="s s-Atom">my_model_trainer_classification</span><span class="p">.</span><span class="nn">py</span><span class="p">:</span><span class="mi">52</span><span class="s s-Atom">:train</span><span class="p">]</span> <span class="nv">Update</span> <span class="nv">Epoch</span><span class="s s-Atom">:</span> <span class="mi">0</span> <span class="p">[</span><span class="mi">80</span><span class="o">/</span><span class="mi">80</span> <span class="p">(</span><span class="mi">100</span><span class="c1">%)]  Loss: 2.071570</span>
+<span class="p">[</span><span class="mi">2022</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">21</span> <span class="mi">15</span><span class="s s-Atom">:</span><span class="mi">45</span><span class="s s-Atom">:</span><span class="mi">26</span><span class="p">,</span><span class="mi">070</span><span class="p">]</span> <span class="p">[</span><span class="nv">INFO</span><span class="p">]</span> <span class="p">[</span><span class="s s-Atom">my_model_trainer_classification</span><span class="p">.</span><span class="nn">py</span><span class="p">:</span><span class="mi">57</span><span class="s s-Atom">:train</span><span class="p">]</span> <span class="nv">Client</span> <span class="nv">Index</span> <span class="o">=</span> <span class="mi">0</span>    <span class="nv">Epoch</span><span class="s s-Atom">:</span> <span class="mi">0</span>   <span class="nv">Loss</span><span class="s s-Atom">:</span> <span class="mf">2.093762</span>
+</pre></div>
+</div>
+<p>At the end of the program run, we can see the following output,which indicate that we have successfully finished the entire process:</p>
+<div class="highlight-Apache notranslate"><div class="highlight"><pre><span></span><span class="nb">INFO</span>:root:################Communication<span class="w"> </span>round<span class="w"> </span>:<span class="w"> </span><span class="m">197</span><span class="w"></span>
+<span class="nb">INFO</span>:root:client_indexes<span class="w"> </span>=<span class="w"> </span>[954<span class="w"> </span><span class="m">887</span><span class="w"> </span><span class="m">866</span><span class="w">  </span><span class="m">96</span><span class="w"> </span><span class="m">130</span><span class="w"> </span><span class="m">891</span><span class="w"> </span><span class="m">444</span><span class="w"> </span><span class="m">925</span><span class="w"> </span><span class="m">516</span><span class="w"> </span><span class="m">308</span>]<span class="w"></span>
+<span class="nb">INFO</span>:root:client_indexes<span class="w"> </span>=<span class="w"> </span>[954<span class="w"> </span><span class="m">887</span><span class="w"> </span><span class="m">866</span><span class="w">  </span><span class="m">96</span><span class="w"> </span><span class="m">130</span><span class="w"> </span><span class="m">891</span><span class="w"> </span><span class="m">444</span><span class="w"> </span><span class="m">925</span><span class="w"> </span><span class="m">516</span><span class="w"> </span><span class="m">308</span>]<span class="w"></span>
+<span class="nb">INFO</span>:root:################Communication<span class="w"> </span>round<span class="w"> </span>:<span class="w"> </span><span class="m">198</span><span class="w"></span>
+<span class="nb">INFO</span>:root:client_indexes<span class="w"> </span>=<span class="w"> </span>[276<span class="w"> </span><span class="m">317</span><span class="w"> </span><span class="m">986</span><span class="w"> </span><span class="m">132</span><span class="w">  </span><span class="m">19</span><span class="w"> </span><span class="m">794</span><span class="w"> </span><span class="m">485</span><span class="w"> </span><span class="m">973</span><span class="w">  </span><span class="m">28</span><span class="w"> </span><span class="m">750</span>]<span class="w"></span>
+<span class="nb">INFO</span>:root:client_indexes<span class="w"> </span>=<span class="w"> </span>[276<span class="w"> </span><span class="m">317</span><span class="w"> </span><span class="m">986</span><span class="w"> </span><span class="m">132</span><span class="w">  </span><span class="m">19</span><span class="w"> </span><span class="m">794</span><span class="w"> </span><span class="m">485</span><span class="w"> </span><span class="m">973</span><span class="w">  </span><span class="m">28</span><span class="w"> </span><span class="m">750</span>]<span class="w"></span>
+<span class="nb">INFO</span>:root:################Communication<span class="w"> </span>round<span class="w"> </span>:<span class="w"> </span><span class="m">199</span><span class="w"></span>
+<span class="nb">INFO</span>:root:client_indexes<span class="w"> </span>=<span class="w"> </span>[221<span class="w"> </span><span class="m">905</span><span class="w"> </span><span class="m">942</span><span class="w"> </span><span class="m">888</span><span class="w"> </span><span class="m">711</span><span class="w"> </span><span class="m">479</span><span class="w"> </span><span class="m">506</span><span class="w"> </span><span class="m">685</span><span class="w"> </span><span class="m">436</span><span class="w"> </span><span class="m">661</span>]<span class="w"></span>
+<span class="nb">INFO</span>:root:client_indexes<span class="w"> </span>=<span class="w"> </span>[221<span class="w"> </span><span class="m">905</span><span class="w"> </span><span class="m">942</span><span class="w"> </span><span class="m">888</span><span class="w"> </span><span class="m">711</span><span class="w"> </span><span class="m">479</span><span class="w"> </span><span class="m">506</span><span class="w"> </span><span class="m">685</span><span class="w"> </span><span class="m">436</span><span class="w"> </span><span class="m">661</span>]<span class="w"></span>
+<span class="nb">INFO</span>:root:################local_test_on_all_clients<span class="w"> </span>:<span class="w"> </span><span class="m">199</span><span class="w"></span>
+<span class="nb">INFO</span>:root:{&#39;training_acc&#39;:<span class="w"> </span><span class="m">0</span>.8190029839128179,<span class="w"> </span>&#39;training_loss&#39;:<span class="w"> </span><span class="m">1</span>.7344120322737784}<span class="w"></span>
+<span class="nb">INFO</span>:root:{&#39;test_acc&#39;:<span class="w"> </span><span class="m">0</span>.8188848188848189,<span class="w"> </span>&#39;test_loss&#39;:<span class="w"> </span><span class="m">1</span>.73456031979222}<span class="w"></span>
+</pre></div>
+</div>
+<p>The code for <code class="docutils literal notranslate"><span class="pre">torch_fedavg_mnist_lr_one_line_example.py</span></code> is shown below:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">fedml</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">fedml</span><span class="o">.</span><span class="n">run_simulation</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>As you can see, the <code class="docutils literal notranslate"><span class="pre">main()</span></code> function is a single line of code that implements the training of a standalone simulation of federal learning.</p>
+</section>
+<section id="step-4-view-the-results">
+<h3>step 4. view the results<a class="headerlink" href="#step-4-view-the-results" title="Permalink to this headline">¶</a></h3>
+<p>You can view the output log files in the <code class="docutils literal notranslate"><span class="pre">/log</span></code> directory under the current directory</p>
+</section>
+</section>
+<section id="step-by-step-api">
+<h2>Step by step API<a class="headerlink" href="#step-by-step-api" title="Permalink to this headline">¶</a></h2>
+<p>In this section, we will present how to use FedML to implement a stand-alone simulated version of the FedAvg algorithm on the MNIST dataset by calling specific functions <strong>step by step</strong> in the code.</p>
+<p>First we should also complete the step1 and step2 operations in the <strong>one line example</strong>, and then quickly implement the federation learning model training on the MNIST dataset with the following line of code for a single machine simulation.</p>
+<div class="highlight-Nginx notranslate"><div class="highlight"><pre><span></span><span class="k">python</span><span class="w"> </span><span class="s">torch_fedavg_mnist_lr_step_by_step_example.py</span><span class="w"> </span><span class="s">--cf</span><span class="w"> </span><span class="s">fedml_config.yaml</span><span class="w"></span>
+</pre></div>
+</div>
+<p>The following steps are implemented in</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">torch_fedavg_mnist_lr_step_by_step_example</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><strong>Init FedML framework :</strong> initialize FedML framework, get the parameter settings of each part(<code class="docutils literal notranslate"><span class="pre">args</span></code>)</p></li>
+<li><p><strong>Init device:</strong> set the <code class="docutils literal notranslate"><span class="pre">device</span></code> to run according to the parameters related to device settings.</p></li>
+<li><p><strong>Load data:</strong> load the dataset information(<code class="docutils literal notranslate"><span class="pre">dataset</span></code>) and the dimension of the task output (<code class="docutils literal notranslate"><span class="pre">output_dim</span></code>)according to the parameters related to data. For example, the current dataset is a 10 classification task, so the dimension of the task output is 10.</p></li>
+<li><p><strong>Load model:</strong> load the initialized <code class="docutils literal notranslate"><span class="pre">model</span></code> according to the parameters related to the model.</p></li>
+<li><p><strong>Start training:</strong> initialize the standalone simulator object <code class="docutils literal notranslate"><span class="pre">Simulator(args,</span> <span class="pre">device,</span> <span class="pre">dataset,</span> <span class="pre">model)</span></code>  with <code class="docutils literal notranslate"><span class="pre">args</span></code>, <code class="docutils literal notranslate"><span class="pre">device</span></code>, <code class="docutils literal notranslate"><span class="pre">dataset</span></code>, <code class="docutils literal notranslate"><span class="pre">model</span></code> values, and then call run() on the object to start training.</p></li>
+</ul>
+</section>
+<section id="custom-data-and-model">
+<h2>Custom data and model<a class="headerlink" href="#custom-data-and-model" title="Permalink to this headline">¶</a></h2>
+<p>In this section we will present how to <strong>customize the dataset and model</strong> using FedML based on the <code class="docutils literal notranslate"><span class="pre">Step</span> <span class="pre">by</span> <span class="pre">step</span> <span class="pre">example</span></code> and implement a stand-alone simulated version of the FedAvg algorithm.</p>
+<p>First we still need to complete the first two cases step1 and step2,  and then we can quickly implement the federation learning model training on the MNIST dataset with the following line of code for stand-alone simulation:</p>
+<div class="highlight-Nginx notranslate"><div class="highlight"><pre><span></span><span class="k">python</span><span class="w"> </span><span class="s">torch_fedavg_mnist_lr_custum_data_and_model_example.py</span><span class="w"> </span><span class="s">--cf</span><span class="w"> </span><span class="s">fedml_config.yaml</span><span class="w"></span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">torch_fedavg_mnist_lr_custum_data_and_model_example.py</span></code> defines the</p>
+<p><code class="docutils literal notranslate"><span class="pre">load_data(args)</span></code> function for loading the dataset and related information, and the</p>
+<p><code class="docutils literal notranslate"><span class="pre">LogisticRegression(torch.nn.</span> <span class="pre">Module)</span></code> class defines the LogisticRegression model. The specific code is as follows:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">load_data</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+    <span class="n">download_mnist</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">data_cache_dir</span><span class="p">)</span>
+    <span class="n">fedml</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;load_data. dataset_name = </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">args</span><span class="o">.</span><span class="n">dataset</span><span class="p">)</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Please read through the data loader at to see how to customize the dataset for FedML framework.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="p">(</span>
+        <span class="n">client_num</span><span class="p">,</span>
+        <span class="n">train_data_num</span><span class="p">,</span>
+        <span class="n">test_data_num</span><span class="p">,</span>
+        <span class="n">train_data_global</span><span class="p">,</span>
+        <span class="n">test_data_global</span><span class="p">,</span>
+        <span class="n">train_data_local_num_dict</span><span class="p">,</span>
+        <span class="n">train_data_local_dict</span><span class="p">,</span>
+        <span class="n">test_data_local_dict</span><span class="p">,</span>
+        <span class="n">class_num</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">=</span> <span class="n">load_partition_data_mnist</span><span class="p">(</span>
+        <span class="n">args</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
+        <span class="n">train_path</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">data_cache_dir</span> <span class="o">+</span> <span class="s2">&quot;MNIST/train&quot;</span><span class="p">,</span>
+        <span class="n">test_path</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">data_cache_dir</span> <span class="o">+</span> <span class="s2">&quot;MNIST/test&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    For shallow NN or linear models, </span>
+<span class="sd">    we uniformly sample a fraction of clients each round (as the original FedAvg paper)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">args</span><span class="o">.</span><span class="n">client_num_in_total</span> <span class="o">=</span> <span class="n">client_num</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">train_data_num</span><span class="p">,</span>
+        <span class="n">test_data_num</span><span class="p">,</span>
+        <span class="n">train_data_global</span><span class="p">,</span>
+        <span class="n">test_data_global</span><span class="p">,</span>
+        <span class="n">train_data_local_num_dict</span><span class="p">,</span>
+        <span class="n">train_data_local_dict</span><span class="p">,</span>
+        <span class="n">test_data_local_dict</span><span class="p">,</span>
+        <span class="n">class_num</span><span class="p">,</span>
+    <span class="p">]</span>
+    <span class="k">return</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">class_num</span>
+
+<span class="k">class</span> <span class="nc">LogisticRegression</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_dim</span><span class="p">,</span> <span class="n">output_dim</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">LogisticRegression</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">linear</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">input_dim</span><span class="p">,</span> <span class="n">output_dim</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">linear</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">outputs</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">torch_fedavg_mnist_lr_custum_data_and_model_example.py</span></code> is similar to <code class="docutils literal notranslate"><span class="pre">torch_fedavg_mnist_lr_step_by_step_example.py</span></code>, the code includes the same parts,  though <code class="docutils literal notranslate"><span class="pre">torch_fedavg_mnist_lr_custum_data_and_model_example.py</span></code> loads the dataset and the model definition part using custom function and class. The code for the training process is shown below:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="c1"># init FedML framework</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">fedml</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
+
+    <span class="c1"># init device</span>
+    <span class="n">device</span> <span class="o">=</span> <span class="n">fedml</span><span class="o">.</span><span class="n">device</span><span class="o">.</span><span class="n">get_device</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="c1"># load data</span>
+    <span class="n">dataset</span><span class="p">,</span> <span class="n">output_dim</span> <span class="o">=</span> <span class="n">load_data</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="c1"># load model (the size of MNIST image is 28 x 28)</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">LogisticRegression</span><span class="p">(</span><span class="mi">28</span> <span class="o">*</span> <span class="mi">28</span><span class="p">,</span> <span class="n">output_dim</span><span class="p">)</span>
+
+    <span class="c1"># start training</span>
+    <span class="n">simulator</span> <span class="o">=</span> <span class="n">Simulator</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">device</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+    <span class="n">simulator</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+             </article>
+             
+            </div>
+            <footer>
+  
+
+  
+
+    <hr>
+
+  
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2022, FedML, Inc..
+
+    </p>
+  </div>
+    
+      <div>
+        Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+      </div>
+     
+
+</footer>
+
+          </div>
+        </div>
+
+        <div class="pytorch-content-right" id="pytorch-content-right">
+          <div class="pytorch-right-menu" id="pytorch-right-menu">
+            <div class="pytorch-side-scroll" id="pytorch-side-scroll-right">
+              <ul>
+<li><a class="reference internal" href="#">Simulation with a Single Process (Standalone)</a><ul>
+<li><a class="reference internal" href="#one-line-api">One line API</a><ul>
+<li><a class="reference internal" href="#step-1-preparation"><strong>Step 1. preparation</strong></a></li>
+<li><a class="reference internal" href="#step-2-setup-parameters">Step 2. setup Parameters</a></li>
+<li><a class="reference internal" href="#step-3-training">Step 3. training</a></li>
+<li><a class="reference internal" href="#step-4-view-the-results">step 4. view the results</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#step-by-step-api">Step by step API</a></li>
+<li><a class="reference internal" href="#custom-data-and-model">Custom data and model</a></li>
+</ul>
+</li>
+</ul>
+
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+  
+
+
+  
+
+     
+       <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+         <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+         <script src="../../_static/jquery.js"></script>
+         <script src="../../_static/underscore.js"></script>
+         <script src="../../_static/doctools.js"></script>
+     
+
+  
+
+  <script type="text/javascript" src="../../_static/js/vendor/popper.min.js"></script>
+  <script type="text/javascript" src="../../_static/js/vendor/bootstrap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/1.5.0/list.min.js"></script>
+  <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+  <!-- Begin Footer -->
+
+  <div class="container-fluid docs-tutorials-resources" id="docs-tutorials-resources">
+    <div class="container">
+      <div class="row">
+        <!--
+        <div class="col-md-4 text-center">
+          <h2>Docs</h2>
+          <p>Access comprehensive developer documentation for PyTorch</p>
+          <a class="with-right-arrow" href="https://pytorch.org/docs/stable/index.html">View Docs</a>
+        </div>
+
+        <div class="col-md-4 text-center">
+          <h2>Tutorials</h2>
+          <p>Get in-depth tutorials for beginners and advanced developers</p>
+          <a class="with-right-arrow" href="https://pytorch.org/tutorials">View Tutorials</a>
+        </div>
+
+        <div class="col-md-4 text-center">
+          <h2>Resources</h2>
+          <p>Find development resources and get your questions answered</p>
+          <a class="with-right-arrow" href="https://pytorch.org/resources">View Resources</a>
+        </div>
+        -->
+      </div>
+    </div>
+  </div>
+
+  <!--
+  <footer class="site-footer">
+    <div class="container footer-container">
+      <div class="footer-logo-wrapper">
+        <a href="https://pytorch.org/" class="footer-logo"></a>
+      </div>
+
+      <div class="footer-links-wrapper">
+        <div class="footer-links-col">
+          <ul>
+            <li class="list-title"><a href="https://pytorch.org/">PyTorch</a></li>
+            <li><a href="https://pytorch.org/get-started">Get Started</a></li>
+            <li><a href="https://pytorch.org/features">Features</a></li>
+            <li><a href="">Ecosystem</a></li>
+            <li><a href="https://pytorch.org/blog/">Blog</a></li>
+            <li><a href="https://github.com/pytorch/pytorch/blob/master/CONTRIBUTING.md">Contributing</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-links-col">
+          <ul>
+            <li class="list-title"><a href="https://pytorch.org/resources">Resources</a></li>
+            <li><a href="https://pytorch.org/tutorials">Tutorials</a></li>
+            <li><a href="https://pytorch.org/docs/stable/index.html">Docs</a></li>
+            <li><a href="https://discuss.pytorch.org" target="_blank">Discuss</a></li>
+            <li><a href="https://github.com/pytorch/pytorch/issues" target="_blank">Github Issues</a></li>
+            <li><a href="" target="_blank">Brand Guidelines</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-links-col follow-us-col">
+          <ul>
+            <li class="list-title">Stay Connected</li>
+            <li>
+              <div id="mc_embed_signup">
+                <form
+                  action="https://twitter.us14.list-manage.com/subscribe/post?u=75419c71fe0a935e53dfa4a3f&id=91d0dccd39"
+                  method="post"
+                  id="mc-embedded-subscribe-form"
+                  name="mc-embedded-subscribe-form"
+                  class="email-subscribe-form validate"
+                  target="_blank"
+                  novalidate>
+                  <div id="mc_embed_signup_scroll" class="email-subscribe-form-fields-wrapper">
+                    <div class="mc-field-group">
+                      <label for="mce-EMAIL" style="display:none;">Email Address</label>
+                      <input type="email" value="" name="EMAIL" class="required email" id="mce-EMAIL" placeholder="Email Address">
+                    </div>
+
+                    <div id="mce-responses" class="clear">
+                      <div class="response" id="mce-error-response" style="display:none"></div>
+                      <div class="response" id="mce-success-response" style="display:none"></div>
+                    </div>
+
+                    <div style="position: absolute; left: -5000px;" aria-hidden="true"><input type="text" name="b_75419c71fe0a935e53dfa4a3f_91d0dccd39" tabindex="-1" value=""></div>
+
+                    <div class="clear">
+                      <input type="submit" value="" name="subscribe" id="mc-embedded-subscribe" class="button email-subscribe-button">
+                    </div>
+                  </div>
+                </form>
+              </div>
+
+            </li>
+          </ul>
+
+          <div class="footer-social-icons">
+            <a href="" target="_blank" class="facebook"></a>
+            <a href="https://twitter.com/pytorch" target="_blank" class="twitter"></a>
+            <a href="" target="_blank" class="youtube"></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+  -->
+
+  <!-- End Footer -->
+
+  <!-- Begin Mobile Menu -->
+
+  <div class="mobile-main-menu">
+    <div class="container-fluid">
+      <div class="container">
+        <div class="mobile-main-menu-header-container">
+          <a class="header-logo" href="https://doc.fedml.ai/"></a>
+          <a class="main-menu-close-button" href="#" data-behavior="close-mobile-menu"></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="mobile-main-menu-links-container">
+      <div class="main-menu">
+        <ul>
+          <li>
+            <a href="https://pytorch.org/get-started">Get Started</a>
+          </li>
+
+          <li>
+            <a href="https://pytorch.org/blog/">FedMl.AI</a>
+          </li>
+
+          <li class="resources-mobile-menu-title">
+            Ecosystem
+          </li>
+
+          <ul class="resources-mobile-menu-items">
+            <li>
+              <a href="https://pytorch-lightning.readthedocs.io/en/stable/">FedML</a>
+            </li>
+
+            <li>
+              <a href="https://torchmetrics.readthedocs.io/en/stable/">TorchMetrics</a>
+            </li>
+
+            <li>
+              <a href="https://lightning-flash.readthedocs.io/en/stable/">Lightning Flash</a>
+            </li>
+
+            <li>
+              <a href="https://lightning-transformers.readthedocs.io/en/stable/">Lightning Transformers</a>
+            </li>
+
+            <li>
+              <a href="https://lightning-bolts.readthedocs.io/en/stable/">Lightning Bolts</a>
+            </li>
+          </ul>
+
+          <!--<li class="resources-mobile-menu-title">
+            Resources
+          </li>
+
+          <ul class="resources-mobile-menu-items">
+            <li>
+              <a href="https://pytorch.org/resources">Developer Resources</a>
+            </li>
+
+            <li>
+              <a href="https://pytorch.org/features">About</a>
+            </li>
+
+            <li>
+              <a href="">Models (Beta)</a>
+            </li>
+
+            <li>
+              <a href="https://pytorch.org/#community-module">Community</a>
+            </li>
+
+            <li>
+              <a href="https://discuss.pytorch.org/">Forums</a>
+            </li>
+          </ul>-->
+
+          <li>
+            <a href="https://github.com/pytorch/pytorch">FedMl.AI</a>
+          </li>
+
+          <li>
+            <a href="https://www.grid.ai/">Grid.ai</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- End Mobile Menu -->
+
+  <script type="text/javascript" src="../../_static/js/vendor/anchor.min.js"></script>
+
+  <script type="text/javascript">
+    $(document).ready(function() {
+      mobileMenu.bind();
+      mobileTOC.bind();
+      pytorchAnchors.bind();
+      sideMenus.bind();
+      scrollToAnchor.bind();
+      highlightNavigation.bind();
+      mainMenuDropdown.bind();
+      filterTags.bind();
+
+      // Add class to links that have code blocks, since we cannot create links in code blocks
+      $("article.pytorch-article a span.pre").each(function(e) {
+        $(this).closest("a").addClass("has-code");
+      });
+    })                                                                                         
+  </script>
+
+  <!-- Google Tag Manager (noscript) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PQBQ3CV"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager (noscript) -->
+ </body>
+</html>

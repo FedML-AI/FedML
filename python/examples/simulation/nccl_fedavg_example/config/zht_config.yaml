@@ -1,0 +1,48 @@
+common_args:
+  training_type: "simulation"
+  random_seed: 0
+
+data_args:
+  dataset: "cifar10"
+  data_cache_dir: "~/datasets/cifar10"
+  partition_method: "hetero"
+  partition_alpha: 0.5
+
+model_args:
+  model: "resnet18"
+
+train_args:
+  federated_optimizer: "FedAvg"
+  client_id_list: "[]"
+  client_num_in_total: 10
+  client_num_per_round: 5
+  comm_round: 200
+  epochs: 1
+  batch_size: 200
+  train_batch_size: 200
+  test_batch_size: 200
+  client_optimizer: sgd
+  learning_rate: 0.1
+  weight_decay: 0.0001
+
+validation_args:
+  frequency_of_the_test: 5
+
+device_args:
+  worker_num: 3
+  using_gpu: true
+  gpu_mapping_file: config/zht_gpu_mapping.yaml
+  gpu_mapping_key: mapping_scigpu13_2
+
+
+comm_args:
+  backend: "NCCL"
+  is_mobile: 0
+
+
+tracking_args:
+  log_file_dir: ./log
+  enable_wandb: false
+  wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
+  wandb_project: fedml
+  wandb_name: fedml_torch_fedavg_mnist_lr

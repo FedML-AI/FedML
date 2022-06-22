@@ -3,7 +3,7 @@ common_args:
   scenario: "horizontal"
   using_mlops: false
   random_seed: 0
-  config_version: local
+  config_version: release
 
 environment_args:
   bootstrap: config/bootstrap.sh
@@ -25,7 +25,7 @@ train_args:
   client_id_list:
   client_num_in_total: 2
   client_num_per_round: 2
-  comm_round: 50
+  comm_round: 2
   epochs: 1
   batch_size: 10
   client_optimizer: sgd
@@ -44,6 +44,7 @@ comm_args:
   backend: "MQTT_S3"
   mqtt_config_path:
   s3_config_path:
+  grpc_ipconfig_path: ./config/grpc_ipconfig.csv
 
 tracking_args:
   log_file_dir: ./log
