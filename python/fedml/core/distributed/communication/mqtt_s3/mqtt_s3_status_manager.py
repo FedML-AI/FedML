@@ -1,6 +1,8 @@
 # -*-coding:utf-8-*-
 import json
 import logging
+import threading
+import time
 import traceback
 import uuid
 from typing import List
@@ -22,6 +24,9 @@ class MqttS3StatusManager(BaseCommunicationManager):
         self.broker_port = None
         self.broker_host = None
         self.keepalive_time = 180
+        self.mqtt_mgr_is_connected = False
+        self.mqtt_mgr_lock = threading.Lock()
+
         self._topic = "fedml_" + str(topic) + "_"
         self.s3_storage = S3Storage(s3_config_path)
 
@@ -37,6 +42,16 @@ class MqttS3StatusManager(BaseCommunicationManager):
         self.mqtt_mgr.add_connected_listener(self.on_connected)
         self.mqtt_mgr.add_disconnected_listener(self.on_disconnected)
         self.mqtt_mgr.connect()
+        self.mqtt_mgr.loop_start()
+
+    def wait_connected(self):
+        while True:
+            self.mqtt_mgr_lock.acquire()
+            if self.mqtt_mgr_is_connected is True:
+                self.mqtt_mgr_lock.release()
+                break
+            self.mqtt_mgr_lock.release()
+            time.sleep(1)
 
     def run_loop_forever(self):
         self.mqtt_mgr.loop_forever()
@@ -54,9 +69,15 @@ class MqttS3StatusManager(BaseCommunicationManager):
         return self._topic
 
     def on_connected(self, mqtt_client_object):
+        self.mqtt_mgr_lock.acquire()
+        self.mqtt_mgr_is_connected = True
+        self.mqtt_mgr_lock.release()
         logging.info("mqtt_s3_status. on_connected")
 
     def on_disconnected(self, mqtt_client_object):
+        self.mqtt_mgr_lock.acquire()
+        self.mqtt_mgr_is_connected = False
+        self.mqtt_mgr_lock.release()
         logging.info(
             "mqtt_s3_status.on_disconnected"
         )
@@ -87,11 +108,13 @@ class MqttS3StatusManager(BaseCommunicationManager):
             logging.error("mqtt_s3_status exception: {}".format(traceback.format_exc()))
 
     def send_message(self, msg: Message):
+        self.wait_connected()
         topic = self._topic + str(msg.get_sender_id())
         payload = msg.get_params()
         self.mqtt_mgr.send_message(topic, json.dumps(payload))
 
     def send_message_json(self, topic_name, json_message):
+        self.wait_connected()
         self.mqtt_mgr.send_message_json(topic_name, json_message)
 
     def handle_receive_message(self):

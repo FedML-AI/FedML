@@ -33,19 +33,25 @@ class MLOpsMetrics(Singleton):
         """
             this is used for notifying the client status to MLOps (both web UI, FedML CLI and backend can consume it)
         """
+        run_id = 0
+        if self.run_id is not None:
+            run_id = self.run_id
         topic_name = "fl_client/mlops/status"
-        msg = {"edge_id": edge_id, "status": status}
+        msg = {"edge_id": edge_id, "run_id": run_id, "status": status}
         message_json = json.dumps(msg)
         logging.info("report_client_training_status. message_json = %s" % message_json)
         self.messenger.send_message_json(topic_name, message_json)
-        self.report_client_id_status(0, edge_id, status)
+        self.report_client_id_status(run_id, edge_id, status)
 
     def broadcast_client_training_status(self, edge_id, status):
         """
             this is used for broadcasting the client status to MLOps (both web UI and backend can consume it)
         """
+        run_id = 0
+        if self.run_id is not None:
+            run_id = self.run_id
         topic_name = "fl_client/mlops/status"
-        msg = {"edge_id": edge_id, "status": status}
+        msg = {"edge_id": edge_id, "run_id": run_id, "status": status}
         message_json = json.dumps(msg)
         logging.info("report_client_training_status. message_json = %s" % message_json)
         self.messenger.send_message_json(topic_name, message_json)
@@ -96,7 +102,7 @@ class MLOpsMetrics(Singleton):
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_server_training_round_info(self, round_info):
-        topic_name = "fl_client/mlops/training_roundx"
+        topic_name = "fl_server/mlops/training_roundx"
         logging.info(
             "report_server_training_round_info. message_json = %s" % round_info
         )
