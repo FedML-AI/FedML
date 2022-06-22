@@ -1,7 +1,7 @@
 import logging
 import os
 import urllib.request
-import rarfile
+import patoolib
 
 import numpy as np
 import pandas as pd
@@ -17,7 +17,7 @@ def _urlretrieve(url: str, filename: str, chunk_size: int = 1024) -> None:
                 fh.write(chunk)
 
 
-def download_data(device_name, device_data_cache_dir):
+def download_data(args, device_name):
     url_root = "https://archive.ics.uci.edu/ml/machine-learning-databases/00442"
     if device_name == "Ennio_Doorbell" or device_name == "Samsung_SNH_1011_N_Webcam":
         file_list = ["benign_traffic.csv", "gafgyt_attacks.rar"]
@@ -26,13 +26,12 @@ def download_data(device_name, device_data_cache_dir):
 
     for file_name in file_list:
         url = os.path.join(url_root, device_name, file_name)
-        file_path = os.path.join(device_data_cache_dir, file_name)
-        _urlretrieve(url, file_path)
+        file_saved = os.path.join(args.data_cache_dir, device_name, file_name)
+        _urlretrieve(url, file_saved)
         if file_name.endswith(".rar"):
-            with rarfile.RarFile(file_path, "r") as f:
-                saved_path = os.path.splitext(file_path)[0]
-                os.makedirs(saved_path)
-                f.extractall(saved_path)
+            outdir = os.path.splitext(file_saved)[0]
+            os.makedirs(outdir)
+            patoolib.extract_archive(file_saved, outdir=outdir)
 
     # os.system(
     #     "find {} -name '*.rar' -execdir unar {{}} \; -exec rm {{}} \;".format(
@@ -71,7 +70,7 @@ def load_data(args):
             if not os.path.exists(device_data_cache_dir):
                 os.makedirs(device_data_cache_dir)
                 logging.info("Downloading dataset for all devices on server")
-                download_data(device_name, device_data_cache_dir)
+                download_data(args, device_name)
 
             benign_data = pd.read_csv(
                 os.path.join(args.data_cache_dir, device_name, "benign_traffic.csv")
@@ -87,7 +86,10 @@ def load_data(args):
                     os.path.join(args.data_cache_dir, device_name, "gafgyt_attacks")
                 )
             ]
-            if device_name == "Ennio_Doorbell" or device_name == "Samsung_SNH_1011_N_Webcam":
+            if (
+                device_name == "Ennio_Doorbell"
+                or device_name == "Samsung_SNH_1011_N_Webcam"
+            ):
                 attack_data_list = g_attack_data_list
             else:
                 m_attack_data_list = [
@@ -113,11 +115,13 @@ def load_data(args):
             train_data_num += train_data_local_num_dict[i]
 
     else:
-        device_name = device_list[args.rank-1]
+        device_name = device_list[args.rank - 1]
         device_data_cache_dir = os.path.join(args.data_cache_dir, device_name)
         if not os.path.exists(device_data_cache_dir):
             os.makedirs(device_data_cache_dir)
-            logging.info("Downloading dataset for device {} on client".format(args.rank))
+            logging.info(
+                "Downloading dataset for device {} on client".format(args.rank)
+            )
             download_data(device_name, device_data_cache_dir)
 
         benign_data = pd.read_csv(
@@ -128,12 +132,14 @@ def load_data(args):
         benign_data[np.isnan(benign_data)] = 0
         benign_data = (benign_data - min_dataset) / (max_dataset - min_dataset)
 
-        train_data_local_dict[args.rank-1] = torch.utils.data.DataLoader(
+        train_data_local_dict[args.rank - 1] = torch.utils.data.DataLoader(
             benign_data, batch_size=args.batch_size, shuffle=False, num_workers=0
         )
 
-        train_data_local_num_dict[args.rank-1] = len(train_data_local_dict[args.rank-1])
-        train_data_num += train_data_local_num_dict[args.rank-1]
+        train_data_local_num_dict[args.rank - 1] = len(
+            train_data_local_dict[args.rank - 1]
+        )
+        train_data_num += train_data_local_num_dict[args.rank - 1]
 
     class_num = 115
     dataset = [
