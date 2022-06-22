@@ -51,7 +51,7 @@ pipeline {
         FEDML_MAIL_SUCCESS_SUBJECT = 'FedMLDevOPS Succeeded Pipeline'
         FEDML_MAIL_FAILURE_SUBJECT = 'FedMLDevOPS Failed Pipeline'
         FEDML_MAIL_BODY1 = "Build Display Name: "
-        FEDML_MAIL_BODY2 = ", Please check build details by the following URL: http://kube.fedml.ai/workspaces/fedml-devops-base/devops"
+        FEDML_MAIL_BODY2 = ", Please check build details by the following URL: http://kube.fedml.ai/workspaces/fedml-devops-open/devops"
     }
 
     stages {
