@@ -44,7 +44,7 @@ Run the following script to begin the training:
 ```
 sh run_simulation.sh 9
 ```
-9 in the above script represents the number of parallel clients, which should be identical to the worker_num in config_simulation/fedml_config.yaml.
+9 in the above script represents the number of parallel clients, which should be identical to the worker_num inside config_simulation/fedml_config.yaml.
 
 ## A Better User-experience with FedML MLOps (open.fedml.ai)
 To reduce the difficulty and complexity of these CLI commands. We recommend you to use our MLOps (open.fedml.ai).
