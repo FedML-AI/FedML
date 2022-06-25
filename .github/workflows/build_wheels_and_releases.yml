@@ -3,10 +3,13 @@ name: Build_Wheels_and_Release
 # Controls when the workflow will run
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
+  schedule:
+    # Nightly build at 12:12 A.M.
+    - cron: "12 12 */1 * *"
   push:
-    branches: [ master, dev/v0.7.0 ]
+    branches: [ master ]
   pull_request:
-    branches: [ master, dev/v0.7.0 ]
+    branches: [ master ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -53,49 +56,22 @@ jobs:
 
         run: |
           python -m pip install -U wheel setuptools
-          python setup.py bdist_wheel --dist-dir wheelhouse
+          python setup.py sdist bdist_wheel
 #        run: cd {project}/python && python -m cibuildwheel --output-dir wheelhouse
         # to supply options, put them in 'env', like (test)
         # env:
         #   CIBW_SOME_OPTION: value
-      - name: Store artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          path: ./python/wheelhouse/*.whl
-
-# Build the source distribution under Linux
-  build_sdist:
-    name: Source distribution
-    runs-on: [self-hosted]
-    defaults:
-      run:
-        shell: bash
-        working-directory: python
-    steps:
-      - name: Checkout FedML
-        uses: actions/checkout@v1
-
-      - name: Setup Python
-        uses: actions/setup-python@v2
-#        with:
-#          python-version: '3.9'  # update once build dependencies are available
-
-      - name: Build source distribution
-        run: bash build_tools/github/build_source.sh
-
-      - name: Test source distribution
-        run: bash build_tools/github/test_source.sh
-        env:
-          OMP_NUM_THREADS: 2
-          OPENBLAS_NUM_THREADS: 2
-
-      - name: Store artifacts
+      - name: Upload source zip file
         uses: actions/upload-artifact@v2
         with:
           path: python/dist/*.tar.gz
+      - name: Upload Wheels
+        uses: actions/upload-artifact@v2
+        with:
+          path: ./python/dist/*.whl
 
   upload_pypi:
-    needs: [build_wheels, build_sdist]
+    needs: [build_wheels]
     runs-on: [self-hosted]
     # upload to PyPI on every tag starting with 'v'
 #    if: github.event_name == 'push' && contains(github.event.comment, 'release v')
@@ -113,16 +89,3 @@ jobs:
           user: chaoyanghe
           password: ${{ secrets.pypi_password }}
           # To test: repository_url: https://test.pypi.org/legacy/
-
-# three errors:
-        # 1) from mpi4py import MPI
-        #  ImportError: DLL load failed while importing MPI: The specified module could not be found.
-
-        # 2) ERROR: No matching distribution found for MNN==1.1.6
-
-        # 3) ERROR: Could not find a version that satisfies the requirement torch==1.11.0 (from fedml) (from versions: none)
-        #  ERROR: No matching distribution found for torch==1.11.0
-
-        # 4) INFO:auditwheel.main_repair:This does not look like a platform wheel
-
-        # 5)  _configtest.c:2:10: fatal error: 'mpi.h' file not found

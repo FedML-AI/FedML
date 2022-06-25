@@ -5,6 +5,9 @@ name: SMOKE TEST (MPI)
 # Controls when the workflow will run
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
+  schedule:
+    # Nightly build at 12:12 A.M.
+    - cron: "12 12 */1 * *"
   push:
     branches: [ test/v0.7.0 ]
   pull_request:
