@@ -7,9 +7,9 @@ on:
     # Nightly build at 12:12 A.M.
     - cron: "12 12 */1 * *"
   push:
-    branches: [ master ]
+    branches: [ master, dev/v0.7.0 ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, dev/v0.7.0 ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -45,7 +45,7 @@ jobs:
       - name: Build wheels
         working-directory: ./python
 #        env:
-#          CIBW_BUILD: cp${{ matrix.python }}-${{ matrix.platform_id }} 
+#          CIBW_BUILD: cp${{ matrix.python }}-${{ matrix.platform_id }}
 #          CIBW_ARCHS: all
 #          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: bash {project}/python/build_tools/github/repair_windows_wheels.sh {wheel} {dest_dir} ${{ matrix.bitness }}
 #          CIBW_BEFORE_TEST_WINDOWS: bash {project}/python/build_tools/github/build_minimal_windows_image.sh ${{ matrix.python }} ${{ matrix.bitness }}
