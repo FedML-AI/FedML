@@ -66,7 +66,7 @@ jobs:
 # Build the source distribution under Linux
   build_sdist:
     name: Source distribution
-    runs-on: [self-hosted, Linux]
+    runs-on: [self-hosted]
     defaults:
       run:
         shell: bash
@@ -74,9 +74,9 @@ jobs:
     steps:
       - name: Checkout FedML
         uses: actions/checkout@v1
-#
-#      - name: Setup Python
-#        uses: actions/setup-python@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
 #        with:
 #          python-version: '3.9'  # update once build dependencies are available
 
@@ -96,7 +96,7 @@ jobs:
 
   upload_pypi:
     needs: [build_wheels, build_sdist]
-    runs-on: [self-hosted, Linux]
+    runs-on: [self-hosted]
     # upload to PyPI on every tag starting with 'v'
 #    if: github.event_name == 'push' && contains(github.event.comment, 'release v')
     # alternatively, to publish when a GitHub Release is created, use the following rule:
