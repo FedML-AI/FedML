@@ -50,7 +50,10 @@ jobs:
 #          CIBW_TEST_COMMAND_WINDOWS: bash {project}/python/build_tools/github/test_windows_wheels.sh ${{ matrix.python }} ${{ matrix.bitness }}
 ##          CIBW_BUILD_VERBOSITY: 1
 #        run: python -m cibuildwheel --output-dir wheelhouse
-        run: python setup.py bdist_wheel
+
+        run: |
+        python -m pip install -U wheel setuptools
+        python setup.py bdist_wheel
 #        run: cd {project}/python && python -m cibuildwheel --output-dir wheelhouse
         # to supply options, put them in 'env', like (test)
         # env:
