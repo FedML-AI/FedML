@@ -17,40 +17,18 @@ on:
 jobs:
   build_wheels:
     name: Build wheels on Windows (x86)
-    runs-on: [self-hosted, X64, Windows]
-
+    runs-on: [self-hosted]
+    defaults:
+      run:
+        shell: bash
+        working-directory: python
     strategy:
-      # Ensure that a wheel builder finishes even if another fails
       fail-fast: false
       matrix:
-        include:
-          # from mpi4py import MPI
-          #  ImportError: DLL load failed while importing MPI: The specified module could not be found.
-          - os: windows-2019-py38-amd64
-            python: 38
-            bitness: 64
-            platform_id: win_amd64
-          # from mpi4py import MPI
-          #  ImportError: DLL load failed while importing MPI: The specified module could not be found.
-          - os: windows-latest-py39-amd64
-            python: 39
-            bitness: 64
-            platform_id: win_amd64
-          # ERROR: No matching distribution found for MNN==1.1.6
-          - os: windows-latest-py310-amd64
-            python: 310
-            bitness: 64
-            platform_id: win_amd64
-          # #RROR: No matching distribution found for torch==1.11.0
-          - os: windows-latest-py38-win32
-            python: 38
-            bitness: 32
-            platform_id: win32
-          # ERROR: No matching distribution found for torch==1.11.0
-          - os: windows-latest-py39-win32
-            python: 39
-            bitness: 32
-            platform_id: win32
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        arch: [X64, ARM64]
+        python-version: ['3.7', '3.8', '3.9']
+        client-index: ['0', '1', '2']
 
     steps:
       - uses: actions/checkout@v2
