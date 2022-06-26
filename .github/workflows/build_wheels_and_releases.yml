@@ -73,7 +73,9 @@ jobs:
 
 
       - name: Install cibuildwheel
-        run:
+        run: |
+          pip install --upgrade setuptools
+          py -m pipx install eth-brownie
           export PATH="${PATH}:$(python3 -c 'import site; print(site.USER_BASE)')/bin"
 #          python3 -m pipx ensurepath --force
 
