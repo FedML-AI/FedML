@@ -21,98 +21,98 @@ jobs:
       run:
         shell: bash
         working-directory: python
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        os: [ ubuntu-20.04, windows-2019, macOS-10.15 ]
-#        arch: [X86, X64, ARM, ARM64]
-#        python-version: ['3.6', '3.7', '3.8', '3.9']
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-20.04, windows-2019, macOS-10.15 ]
+        arch: [X86, X64, ARM, ARM64]
+        python-version: ['3.6', '3.7', '3.8', '3.9']
 #        exclude:
 #          - os: macos-latest
 #            python-version: '3.8'
 #          - os: windows-latest
 #            python-version: '3.6'
-    strategy:
-      # Ensure that a wheel builder finishes even if another fails
-      fail-fast: false
-      matrix:
-        include:
-          # from mpi4py import MPI
-          #  ImportError: DLL load failed while importing MPI: The specified module could not be found.
-          - os: windows-2019-py38-amd64
-            python: 38
-            bitness: 64
-            platform_id: win_amd64
-          # from mpi4py import MPI
-          #  ImportError: DLL load failed while importing MPI: The specified module could not be found.
-          - os: windows-latest-py39-amd64
-            python: 39
-            bitness: 64
-            platform_id: win_amd64
-          # ERROR: No matching distribution found for MNN==1.1.6
-          - os: windows-latest-py310-amd64
-            python: 310
-            bitness: 64
-            platform_id: win_amd64
-          # #RROR: No matching distribution found for torch==1.11.0
-          - os: windows-latest-py38-win32
-            python: 38
-            bitness: 32
-            platform_id: win32
-          # ERROR: No matching distribution found for torch==1.11.0
-          - os: windows-latest-py39-win32
-            python: 39
-            bitness: 32
-            platform_id: win32
-
-          # auditwheel.main_repair:This does not look like a platform wheel
-          - os: ubuntu-latest-py38-x86
-            python: 38
-            bitness: 64
-            platform_id: manylinux_x86_64
-            manylinux_image: manylinux2014
-          # auditwheel.main_repair:This does not look like a platform wheel
-          - os: ubuntu-latest-py39-x86
-            python: 39
-            bitness: 64
-            platform_id: manylinux_x86_64
-            manylinux_image: manylinux2014
-          # auditwheel.main_repair:This does not look like a platform wheel
-          - os: ubuntu-latest-py310-x86
-            python: 310
-            bitness: 64
-            platform_id: manylinux_x86_64
-            manylinux_image: manylinux2014
-
-          # _configtest.c:2:10: fatal error: 'mpi.h' file not found
-          - os: macos-latest-py38-x86
-            bitness: 64
-            python: 38
-            platform_id: macosx_x86_64
-          # _configtest.c:2:10: fatal error: 'mpi.h' file not found
-          - os: macos-latest-py39-x86
-            bitness: 64
-            python: 39
-            platform_id: macosx_x86_64
-          # _configtest.c:2:10: fatal error: 'mpi.h' file not found
-          - os: macos-latest-py310-x86
-            bitness: 64
-            python: 310
-            platform_id: macosx_x86_64
-
-          # MacOS arm64
-          - os: macos-latest-py38-arm64
-            bitness: 64
-            python: 38
-            platform_id: macosx_arm64
-          - os: macos-latest-py39-arm64
-            bitness: 64
-            python: 39
-            platform_id: macosx_arm64
-          - os: macos-latest-py310-arm64
-            bitness: 64
-            python: 310
-            platform_id: macosx_arm64
+#    strategy:
+#      # Ensure that a wheel builder finishes even if another fails
+#      fail-fast: false
+#      matrix:
+#        include:
+#          # from mpi4py import MPI
+#          #  ImportError: DLL load failed while importing MPI: The specified module could not be found.
+#          - os: windows-2019-py38-amd64
+#            python: 38
+#            bitness: 64
+#            platform_id: win_amd64
+#          # from mpi4py import MPI
+#          #  ImportError: DLL load failed while importing MPI: The specified module could not be found.
+#          - os: windows-latest-py39-amd64
+#            python: 39
+#            bitness: 64
+#            platform_id: win_amd64
+#          # ERROR: No matching distribution found for MNN==1.1.6
+#          - os: windows-latest-py310-amd64
+#            python: 310
+#            bitness: 64
+#            platform_id: win_amd64
+#          # #RROR: No matching distribution found for torch==1.11.0
+#          - os: windows-latest-py38-win32
+#            python: 38
+#            bitness: 32
+#            platform_id: win32
+#          # ERROR: No matching distribution found for torch==1.11.0
+#          - os: windows-latest-py39-win32
+#            python: 39
+#            bitness: 32
+#            platform_id: win32
+#
+#          # auditwheel.main_repair:This does not look like a platform wheel
+#          - os: ubuntu-latest-py38-x86
+#            python: 38
+#            bitness: 64
+#            platform_id: manylinux_x86_64
+#            manylinux_image: manylinux2014
+#          # auditwheel.main_repair:This does not look like a platform wheel
+#          - os: ubuntu-latest-py39-x86
+#            python: 39
+#            bitness: 64
+#            platform_id: manylinux_x86_64
+#            manylinux_image: manylinux2014
+#          # auditwheel.main_repair:This does not look like a platform wheel
+#          - os: ubuntu-latest-py310-x86
+#            python: 310
+#            bitness: 64
+#            platform_id: manylinux_x86_64
+#            manylinux_image: manylinux2014
+#
+#          # _configtest.c:2:10: fatal error: 'mpi.h' file not found
+#          - os: macos-latest-py38-x86
+#            bitness: 64
+#            python: 38
+#            platform_id: macosx_x86_64
+#          # _configtest.c:2:10: fatal error: 'mpi.h' file not found
+#          - os: macos-latest-py39-x86
+#            bitness: 64
+#            python: 39
+#            platform_id: macosx_x86_64
+#          # _configtest.c:2:10: fatal error: 'mpi.h' file not found
+#          - os: macos-latest-py310-x86
+#            bitness: 64
+#            python: 310
+#            platform_id: macosx_x86_64
+#
+#          # MacOS arm64
+#          - os: macos-latest-py38-arm64
+#            bitness: 64
+#            python: 38
+#            platform_id: macosx_arm64
+#          - os: macos-latest-py39-arm64
+#            bitness: 64
+#            python: 39
+#            platform_id: macosx_arm64
+#          - os: macos-latest-py310-arm64
+#            bitness: 64
+#            python: 310
+#            platform_id: macosx_arm64
 
     steps:
       - uses: actions/checkout@v3
@@ -133,10 +133,10 @@ jobs:
 #          CIBW_TEST_COMMAND: bash {project}/python/build_tools/github/test_wheels.sh
 #          CIBW_TEST_COMMAND_WINDOWS: bash {project}/python/build_tools/github/test_windows_wheels.sh ${{ matrix.python }} ${{ matrix.bitness }}
 #          CIBW_BUILD_VERBOSITY: 1
-        run: |
-          python -m pip install -U wheel setuptools
-          python setup.py sdist bdist_wheel
-#        run: python -m cibuildwheel --output-dir dist
+#        run: |
+#          python -m pip install -U wheel setuptools
+#          python setup.py sdist bdist_wheel
+        run: python -m cibuildwheel --output-dir dist
 #        run: cd {project}/python && python -m cibuildwheel --output-dir wheelhouse
         # to supply options, put them in 'env', like (test)
         # env:
