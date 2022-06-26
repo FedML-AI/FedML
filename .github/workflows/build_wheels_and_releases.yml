@@ -76,7 +76,7 @@ jobs:
         run: |
           python -m pip install cibuildwheel==2.7.0
           export PATH="${PATH}:$(python3 -c 'import site; print(site.USER_BASE)')/bin"
-          python3 -m pipx ensurepath --force
+#          python3 -m pipx ensurepath --force
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.7.0
