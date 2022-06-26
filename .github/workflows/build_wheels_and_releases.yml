@@ -71,32 +71,36 @@ jobs:
           refreshenv
         if: ${{ env.IS_32_BIT == 'true' }}
 
-      - name: Build wheels
-        uses: pypa/cibuildwheel@v2.7.0
-        env:
-          CIBW_BUILD: ${{ matrix.python }}-${{ matrix.buildplat[1] }}
+
+      - name: Install cibuildwheel
+        run: python -m pip install cibuildwheel==2.7.0
+#
+#      - name: Build wheels
+#        uses: pypa/cibuildwheel@v2.7.0
+#        env:
+#          CIBW_BUILD: ${{ matrix.python }}-${{ matrix.buildplat[1] }}
 
       - uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.python }}-${{ startsWith(matrix.buildplat[1], 'macosx') && 'macosx' || matrix.buildplat[1] }}
           path: ./wheelhouse/*.whl
 
-      - name: Upload wheels
-        if: success()
-        shell: bash
-        env:
-          NUMPY_STAGING_UPLOAD_TOKEN: ${{ secrets.NUMPY_STAGING_UPLOAD_TOKEN }}
-          NUMPY_NIGHTLY_UPLOAD_TOKEN: ${{ secrets.NUMPY_NIGHTLY_UPLOAD_TOKEN }}
-        run: |
-          source tools/wheels/upload_wheels.sh
-          set_upload_vars
-          # trigger an upload to
-          # https://anaconda.org/scipy-wheels-nightly/numpy
-          # for cron jobs or "Run workflow" (restricted to main branch).
-          # Tags will upload to
-          # https://anaconda.org/multibuild-wheels-staging/numpy
-          # The tokens were originally generated at anaconda.org
-          upload_wheels
+#      - name: Upload wheels
+#        if: success()
+#        shell: bash
+#        env:
+#          NUMPY_STAGING_UPLOAD_TOKEN: ${{ secrets.NUMPY_STAGING_UPLOAD_TOKEN }}
+#          NUMPY_NIGHTLY_UPLOAD_TOKEN: ${{ secrets.NUMPY_NIGHTLY_UPLOAD_TOKEN }}
+#        run: |
+#          source tools/wheels/upload_wheels.sh
+#          set_upload_vars
+#          # trigger an upload to
+#          # https://anaconda.org/scipy-wheels-nightly/numpy
+#          # for cron jobs or "Run workflow" (restricted to main branch).
+#          # Tags will upload to
+#          # https://anaconda.org/multibuild-wheels-staging/numpy
+#          # The tokens were originally generated at anaconda.org
+#          upload_wheels
 #    strategy:
 #      fail-fast: false
 #      matrix:
