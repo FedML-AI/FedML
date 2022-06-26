@@ -45,6 +45,7 @@ cifar-10-batches-py
 *.zip
 *.json
 *.tar.bz2
+*.stats
 
 data/cifar10/*-python
 data/cifar100/*-python
