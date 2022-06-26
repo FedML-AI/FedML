@@ -25,8 +25,8 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-20.04, windows-2019, macOS-10.15 ]
-        arch: [X86, X64, ARM, ARM64]
-        python-version: ['3.6', '3.7', '3.8', '3.9']
+#        arch: [X86, X64, ARM, ARM64]
+#        python-version: ['3.6', '3.7', '3.8', '3.9']
 #        exclude:
 #          - os: macos-latest
 #            python-version: '3.8'
