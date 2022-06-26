@@ -75,6 +75,8 @@ jobs:
       - name: Install cibuildwheel
         run: |
           pip install --upgrade setuptools
+          python3 -m pip install --user pipx
+          python3 -m pipx ensurepath
           export PATH="${PATH}:$(python3 -c 'import site; print(site.USER_BASE)')/bin"
 #          python3 -m pipx ensurepath --force
 
