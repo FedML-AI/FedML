@@ -29,6 +29,7 @@ from fedml.core.mlops import MLOpsMetrics
 
 import click
 from fedml.core.mlops.mlops_configs import MLOpsConfigs
+from fedml.core.mlops.mlops_status import MLOpsStatus
 
 LOCAL_HOME_RUNNER_DIR_NAME = 'fedml-client'
 LOCAL_RUNNER_INFO_DIR_NAME = 'runner_infos'
@@ -700,7 +701,7 @@ class FedMLClientRunner:
 
     def bind_account_and_device_id(self, url, account_id, device_id, os_name):
         json_params = {"accountid": account_id, "deviceid": device_id, "type": os_name,
-                       "gpu": "None", "processor": "", "network": ""}
+                       "gpu": "None", "processor": "", "network": "", "role": "client"}
         _, cert_path = MLOpsConfigs.get_instance(self.args).get_request_params()
         if cert_path is not None:
             requests.session().verify = cert_path
@@ -719,7 +720,14 @@ class FedMLClientRunner:
 
     def send_agent_active_msg(self):
         active_topic = "/flclient_agent/active"
-        active_msg = {"ID": self.edge_id, "status": ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE}
+        status = MLOpsStatus.get_instance().get_client_agent_status(self.edge_id)
+        if status is None:
+            return
+        if status != ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE and \
+                status != ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE:
+            return
+        active_msg = {"ID": self.edge_id, "status": status}
+        MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, status)
         self.mqtt_mgr.send_message_json(active_topic, json.dumps(active_msg))
 
     def on_agent_mqtt_connected(self, mqtt_client_object):

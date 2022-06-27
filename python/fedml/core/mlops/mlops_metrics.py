@@ -3,6 +3,7 @@ import logging
 import time
 
 from .system_stats import SysStats
+from .mlops_status import MLOpsStatus
 
 
 class Singleton(object):
@@ -26,8 +27,14 @@ class MLOpsMetrics(Singleton):
         if args is not None:
             self.args = args
             self.run_id = args.run_id
-            client_id_list = json.loads(args.client_id_list)
-            self.edge_id = client_id_list[0]
+            if args.rank == 0:
+                if hasattr(args, "server_id"):
+                    self.edge_id = args.server_id
+                else:
+                    self.edge_id = 0
+            else:
+                client_id_list = json.loads(args.client_id_list)
+                self.edge_id = client_id_list[0]
 
     def report_client_training_status(self, edge_id, status):
         """
@@ -40,6 +47,7 @@ class MLOpsMetrics(Singleton):
         msg = {"edge_id": edge_id, "run_id": run_id, "status": status}
         message_json = json.dumps(msg)
         logging.info("report_client_training_status. message_json = %s" % message_json)
+        MLOpsStatus.get_instance().set_client_status(edge_id, status)
         self.messenger.send_message_json(topic_name, message_json)
         self.report_client_id_status(run_id, edge_id, status)
 
@@ -64,29 +72,32 @@ class MLOpsMetrics(Singleton):
         msg = {"run_id": run_id, "edge_id": edge_id, "status": status}
         message_json = json.dumps(msg)
         logging.info("report_client_id_status. message_json = %s" % message_json)
+        MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, status)
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_server_training_status(self, run_id, status):
         topic_name = "fl_server/mlops/status"
-        msg = {"run_id": run_id, "status": status}
+        msg = {"run_id": run_id, "edge_id": self.edge_id, "status": status}
         logging.info("report_server_training_status. msg = %s" % msg)
         message_json = json.dumps(msg)
+        MLOpsStatus.get_instance().set_server_status(self.edge_id, status)
         self.messenger.send_message_json(topic_name, message_json)
         self.report_server_id_status(run_id, status)
 
     def broadcast_server_training_status(self, run_id, status):
         topic_name = "fl_server/mlops/status"
-        msg = {"run_id": run_id, "status": status}
+        msg = {"run_id": run_id, "edge_id": self.edge_id, "status": status}
         logging.info("report_server_training_status. msg = %s" % msg)
         message_json = json.dumps(msg)
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_server_id_status(self, run_id, status):
-        server_agent_id = 0
+        server_agent_id = self.edge_id
         topic_name = "fl_server/flserver_agent_" + str(server_agent_id) + "/status"
-        msg = {"run_id": run_id, "status": status}
+        msg = {"run_id": run_id, "edge_id": self.edge_id, "status": status}
         message_json = json.dumps(msg)
         logging.info("report_server_id_status. message_json = %s" % message_json)
+        MLOpsStatus.get_instance().set_server_agent_status(server_agent_id, status)
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_client_training_metric(self, metric_json):
