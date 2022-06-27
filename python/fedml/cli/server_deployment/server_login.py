@@ -58,7 +58,7 @@ def __login_as_edge_server_and_agent(args, userid, version):
 
     # Build unique device id
     if args.device_id is not None and len(str(args.device_id)) > 0:
-        unique_device_id = "@" + "server" + "." + args.device_id + "." + args.os_name
+        unique_device_id = "@" + "edge.server" + "." + args.device_id + "." + args.os_name
 
     # Bind account id to the MLOps platform.
     register_try_count = 0
@@ -140,7 +140,7 @@ def __login_as_cloud_agent(args, userid, version):
 
     # Build unique device id
     if args.device_id is not None and len(str(args.device_id)) > 0:
-        unique_device_id = "@" + "public.agent" + "." + args.device_id + "." + args.os_name
+        unique_device_id = "@" + "public.cloud" + "." + args.device_id + "." + args.os_name
 
     # Bind account id to the MLOps platform.
     register_try_count = 0
