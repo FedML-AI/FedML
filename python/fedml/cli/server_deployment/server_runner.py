@@ -388,6 +388,9 @@ class FedMLServerRunner:
         click.echo("Stop run successfully.")
 
     def cleanup_run_when_finished(self):
+
+        self.stop_cloud_server()
+
         self.setup_client_mqtt_mgr()
 
         self.wait_client_mqtt_connected()
