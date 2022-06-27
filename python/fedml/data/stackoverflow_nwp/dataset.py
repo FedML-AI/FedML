@@ -18,7 +18,7 @@ class StackOverflowDataset(data.Dataset):
             preprocess (callable, optional) : Optional preprocessing
         """
 
-        self._EXAMPLE = "examples.md"
+        self._EXAMPLE = "examples"
         self._TOKENS = "tokens"
 
         self.h5_path = h5_path
