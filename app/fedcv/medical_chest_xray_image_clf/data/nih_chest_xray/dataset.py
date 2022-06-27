@@ -11,18 +11,18 @@ class NIHChestXray(data.Dataset):
     label_header = [
         "Atelectasis",
         "Cardiomegaly",
+        "Consolidation",
+        "Edema",
         "Effusion",
+        "Emphysema",
+        "Fibrosis",
+        "Hernia",
         "Infiltration",
         "Mass",
         "Nodule",
+        "Pleural_Thickening",
         "Pneumonia",
         "Pneumothorax",
-        "Consolidation",
-        "Edema",
-        "Emphysema",
-        "Fibrosis",
-        "Pleural_Thickening",
-        "Hernia",
     ]
 
     def __init__(self, data_dir, label_dir=None, dataidxs=None, train=True, transform=None, download=False):
@@ -54,6 +54,7 @@ class NIHChestXray(data.Dataset):
                 _img = row[0]
                 _label = row[1]
                 _label = _label.split("|")
+                _label = [x for x in _label if x != "No Finding"]
                 _label_onehot = np.zeros(len(self.label_header), dtype=float)
                 for i in range(0, len(_label)):
                     _label_onehot[self.label_header.index(_label[i])] = 1
@@ -81,3 +82,25 @@ class NIHChestXray(data.Dataset):
 
     def __len__(self):
         return len(self.images)
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--data_dir", type=str, default="data/cache")
+    parser.add_argument("--label_dir", type=str, default="data/cache")
+    args = parser.parse_args()
+
+    args.data_dir = os.path.join("G:\\dataset\\NIH Chest X-ray\\ChestXray-NIHCC\\images")
+    args.label_dir = os.path.join("G:\\dataset\\NIH Chest X-ray\\ChestXray-NIHCC")
+
+    dataset = NIHChestXray(
+        data_dir=args.data_dir,
+        label_dir=args.label_dir,
+    )
+    print(dataset[0])
+    print(dataset[1])
+    print(dataset[2])
+    print(dataset[3])
+    print(dataset[4])

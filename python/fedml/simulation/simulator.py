@@ -115,8 +115,7 @@ class SimulatorMPI:
                 args.worker_num,
                 device,
                 args.comm,
-                client_model=model,
-                server_model=model,
+                model,
                 dataset=dataset,
                 args=args,
             )
