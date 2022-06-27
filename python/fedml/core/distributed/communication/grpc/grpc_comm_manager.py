@@ -124,6 +124,8 @@ class GRPCCommManager(BaseCommunicationManager):
 
     def _notify_connection_ready(self):
         msg_params = Message()
+        msg_params.sender_id = self.rank
+        msg_params.receiver_id = self.rank
         MSG_TYPE_CONNECTION_IS_READY = 0
         msg_type = MSG_TYPE_CONNECTION_IS_READY
         for observer in self._observers:

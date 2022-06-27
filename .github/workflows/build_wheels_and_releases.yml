@@ -3,6 +3,9 @@ name: Build_Wheels_and_Release
 # Controls when the workflow will run
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
+  schedule:
+    # Nightly build at 12:12 A.M.
+    - cron: "12 12 */1 * *"
   push:
     branches: [ master, dev/v0.7.0 ]
   pull_request:
@@ -13,34 +16,200 @@ on:
 
 jobs:
   build_wheels:
+    runs-on: [self-hosted]
     defaults:
       run:
         shell: bash
         working-directory: python
     strategy:
+      # Ensure that a wheel builder finishes even if another fails
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
-        arch: [X86, X64, ARM, ARM64]
-        python-version: ['3.6', '3.7', '3.8', '3.9']
+        # Github Actions doesn't support pairing matrix values together, let's improvise
+        # https://github.com/github/feedback/discussions/7835#discussioncomment-1769026
+        buildplat:
+        - [ubuntu-20.04, manylinux_x86_64]
+        - [macos-10.15, macosx_*]
+        - [windows-2019, win_amd64]
+        - [windows-2019, win32]
+        # TODO: uncomment PyPy 3.9 builds once PyPy
+        # re-releases a new minor version
+        # NOTE: This needs a bump of cibuildwheel version, also, once that happens.
+        python: ["cp38", "cp39", "cp310", "pp38"] #, "pp39"]
+        exclude:
+        # Don't build PyPy 32-bit windows
+        - buildplat: [windows-2019, win32]
+          python: "pp38"
+        - buildplat: [windows-2019, win32]
+          python: "pp39"
+    env:
+      IS_32_BIT: ${{ matrix.buildplat[1] == 'win32' }}
+      IS_PUSH: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
+      IS_SCHEDULE_DISPATCH: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    steps:
+      - name: Checkout numpy
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+          # versioneer.py requires the latest tag to be reachable. Here we
+          # fetch the complete history to get access to the tags.
+          # A shallow clone can work when the following issue is resolved:
+          # https://github.com/actions/checkout/issues/338
+          fetch-depth: 0
+
+      # Used to push the built wheels
+      - uses: actions/setup-python@v3
+        with:
+          python-version: '3.x'
+
+      - name: Configure mingw for 32-bit builds
+        run: |
+          # Force 32-bit mingw
+          choco uninstall mingw
+          choco install -y mingw --forcex86 --force --version=7.3.0
+          echo "C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw32\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          refreshenv
+        if: ${{ env.IS_32_BIT == 'true' }}
+
+
+      - name: Install cibuildwheel
+        run: |
+          pip install --upgrade setuptools
+          python3 -m pip install pipx
+          python3 -m pipx ensurepath
+          export PATH="${PATH}:$(python3 -c 'import site; print(site.USER_BASE)')/bin"
+#          python3 -m pipx ensurepath --force
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.7.0
+        env:
+          CIBW_BUILD: ${{ matrix.python }}-${{ matrix.buildplat[1] }}
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.python }}-${{ startsWith(matrix.buildplat[1], 'macosx') && 'macosx' || matrix.buildplat[1] }}
+          path: ./wheelhouse/*.whl
+
+#      - name: Upload wheels
+#        if: success()
+#        shell: bash
+#        env:
+#          NUMPY_STAGING_UPLOAD_TOKEN: ${{ secrets.NUMPY_STAGING_UPLOAD_TOKEN }}
+#          NUMPY_NIGHTLY_UPLOAD_TOKEN: ${{ secrets.NUMPY_NIGHTLY_UPLOAD_TOKEN }}
+#        run: |
+#          source tools/wheels/upload_wheels.sh
+#          set_upload_vars
+#          # trigger an upload to
+#          # https://anaconda.org/scipy-wheels-nightly/numpy
+#          # for cron jobs or "Run workflow" (restricted to main branch).
+#          # Tags will upload to
+#          # https://anaconda.org/multibuild-wheels-staging/numpy
+#          # The tokens were originally generated at anaconda.org
+#          upload_wheels
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        os: [ ubuntu-20.04, windows-2019, macOS-10.15 ]
+#        arch: [X86, X64, ARM, ARM64]
+#        python-version: ['3.6', '3.7', '3.8', '3.9']
 #        exclude:
 #          - os: macos-latest
 #            python-version: '3.8'
 #          - os: windows-latest
 #            python-version: '3.6'
-    runs-on: [self-hosted]
-
-    steps:
-      - uses: actions/checkout@v2
-
-      # Used to host cibuildwheel
-      - uses: actions/setup-python@v2
+#    strategy:
+#      # Ensure that a wheel builder finishes even if another fails
+#      fail-fast: false
+#      matrix:
+#        include:
+#          # from mpi4py import MPI
+#          #  ImportError: DLL load failed while importing MPI: The specified module could not be found.
+#          - os: windows-2019-py38-amd64
+#            python: 38
+#            bitness: 64
+#            platform_id: win_amd64
+#          # from mpi4py import MPI
+#          #  ImportError: DLL load failed while importing MPI: The specified module could not be found.
+#          - os: windows-latest-py39-amd64
+#            python: 39
+#            bitness: 64
+#            platform_id: win_amd64
+#          # ERROR: No matching distribution found for MNN==1.1.6
+#          - os: windows-latest-py310-amd64
+#            python: 310
+#            bitness: 64
+#            platform_id: win_amd64
+#          # #RROR: No matching distribution found for torch==1.11.0
+#          - os: windows-latest-py38-win32
+#            python: 38
+#            bitness: 32
+#            platform_id: win32
+#          # ERROR: No matching distribution found for torch==1.11.0
+#          - os: windows-latest-py39-win32
+#            python: 39
+#            bitness: 32
+#            platform_id: win32
 #
-#      - name: Install cibuildwheel
-#        run: python -m pip install cibuildwheel
+#          # auditwheel.main_repair:This does not look like a platform wheel
+#          - os: ubuntu-latest-py38-x86
+#            python: 38
+#            bitness: 64
+#            platform_id: manylinux_x86_64
+#            manylinux_image: manylinux2014
+#          # auditwheel.main_repair:This does not look like a platform wheel
+#          - os: ubuntu-latest-py39-x86
+#            python: 39
+#            bitness: 64
+#            platform_id: manylinux_x86_64
+#            manylinux_image: manylinux2014
+#          # auditwheel.main_repair:This does not look like a platform wheel
+#          - os: ubuntu-latest-py310-x86
+#            python: 310
+#            bitness: 64
+#            platform_id: manylinux_x86_64
+#            manylinux_image: manylinux2014
+#
+#          # _configtest.c:2:10: fatal error: 'mpi.h' file not found
+#          - os: macos-latest-py38-x86
+#            bitness: 64
+#            python: 38
+#            platform_id: macosx_x86_64
+#          # _configtest.c:2:10: fatal error: 'mpi.h' file not found
+#          - os: macos-latest-py39-x86
+#            bitness: 64
+#            python: 39
+#            platform_id: macosx_x86_64
+#          # _configtest.c:2:10: fatal error: 'mpi.h' file not found
+#          - os: macos-latest-py310-x86
+#            bitness: 64
+#            python: 310
+#            platform_id: macosx_x86_64
+#
+#          # MacOS arm64
+#          - os: macos-latest-py38-arm64
+#            bitness: 64
+#            python: 38
+#            platform_id: macosx_arm64
+#          - os: macos-latest-py39-arm64
+#            bitness: 64
+#            python: 39
+#            platform_id: macosx_arm64
+#          - os: macos-latest-py310-arm64
+#            bitness: 64
+#            python: 310
+#            platform_id: macosx_arm64
 
-      - name: Build wheels
-        working-directory: ./python
+#    steps:
+#      - uses: actions/checkout@v3
+#
+#      # Used to host cibuildwheel
+#      - uses: actions/setup-python@v3
+#
+##      - name: Install cibuildwheel
+##        run: python -m pip install cibuildwheel==2.7.0
+#
+#      - name: Build wheels
+#        working-directory: ./python
 #        env:
 #          CIBW_BUILD: cp${{ matrix.python }}-${{ matrix.platform_id }}
 #          CIBW_ARCHS: all
@@ -48,52 +217,28 @@ jobs:
 #          CIBW_BEFORE_TEST_WINDOWS: bash {project}/python/build_tools/github/build_minimal_windows_image.sh ${{ matrix.python }} ${{ matrix.bitness }}
 #          CIBW_TEST_COMMAND: bash {project}/python/build_tools/github/test_wheels.sh
 #          CIBW_TEST_COMMAND_WINDOWS: bash {project}/python/build_tools/github/test_windows_wheels.sh ${{ matrix.python }} ${{ matrix.bitness }}
-##          CIBW_BUILD_VERBOSITY: 1
-#        run: python -m cibuildwheel --output-dir wheelhouse
-        run: python setup.py bdist_wheel
-#        run: cd {project}/python && python -m cibuildwheel --output-dir wheelhouse
-        # to supply options, put them in 'env', like (test)
-        # env:
-        #   CIBW_SOME_OPTION: value
-      - name: Store artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          path: ./python/wheelhouse/*.whl
-
-# Build the source distribution under Linux
-  build_sdist:
-    name: Source distribution
-    runs-on: [self-hosted, Linux]
-    defaults:
-      run:
-        shell: bash
-        working-directory: python
-    steps:
-      - name: Checkout FedML
-        uses: actions/checkout@v1
+#          CIBW_BUILD_VERBOSITY: 1
+#        run: |
+#          python -m pip install -U wheel setuptools
+#          python setup.py sdist bdist_wheel
+#        run: python -m cibuildwheel --output-dir dist
+##        run: cd {project}/python && python -m cibuildwheel --output-dir wheelhouse
+#        # to supply options, put them in 'env', like (test)
+#        # env:
+#        #   CIBW_SOME_OPTION: value
 #
-#      - name: Setup Python
-#        uses: actions/setup-python@v2
+#      - name: Upload source zip file
+#        uses: actions/upload-artifact@v2
 #        with:
-#          python-version: '3.9'  # update once build dependencies are available
-
-      - name: Build source distribution
-        run: bash build_tools/github/build_source.sh
-
-      - name: Test source distribution
-        run: bash build_tools/github/test_source.sh
-        env:
-          OMP_NUM_THREADS: 2
-          OPENBLAS_NUM_THREADS: 2
-
-      - name: Store artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          path: python/dist/*.tar.gz
+#          path: python/dist/*.tar.gz
+#      - name: Upload Wheels
+#        uses: actions/upload-artifact@v2
+#        with:
+#          path: ./python/dist/*.whl
 
   upload_pypi:
-    needs: [build_wheels, build_sdist]
-    runs-on: [self-hosted, Linux]
+    needs: [build_wheels]
+    runs-on: [self-hosted]
     # upload to PyPI on every tag starting with 'v'
 #    if: github.event_name == 'push' && contains(github.event.comment, 'release v')
     # alternatively, to publish when a GitHub Release is created, use the following rule:
@@ -110,16 +255,3 @@ jobs:
           user: chaoyanghe
           password: ${{ secrets.pypi_password }}
           # To test: repository_url: https://test.pypi.org/legacy/
-
-# three errors:
-        # 1) from mpi4py import MPI
-        #  ImportError: DLL load failed while importing MPI: The specified module could not be found.
-
-        # 2) ERROR: No matching distribution found for MNN==1.1.6
-
-        # 3) ERROR: Could not find a version that satisfies the requirement torch==1.11.0 (from fedml) (from versions: none)
-        #  ERROR: No matching distribution found for torch==1.11.0
-
-        # 4) INFO:auditwheel.main_repair:This does not look like a platform wheel
-
-        # 5)  _configtest.c:2:10: fatal error: 'mpi.h' file not found
