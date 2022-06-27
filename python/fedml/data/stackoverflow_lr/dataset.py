@@ -18,7 +18,7 @@ class StackOverflowDataset(data.Dataset):
             preprocess (dict of callable, optional) : Optional preprocessing, with key "input", "target"
         """
 
-        self._EXAMPLE = "examples.md"
+        self._EXAMPLE = "examples"
         self._TOKENS = "tokens"
         self._TITLE = "title"
         self._TAGS = "tags"
