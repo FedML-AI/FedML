@@ -68,7 +68,7 @@ def __login(args, userid, version):
 
     # Build unique device id
     if args.device_id is not None and len(str(args.device_id)) > 0:
-        unique_device_id = "@" + args.device_id + "." + args.os_name
+        unique_device_id = args.device_id + "@" + args.os_name + ".Edge.Device"
 
     # Bind account id to the MLOps platform.
     register_try_count = 0
