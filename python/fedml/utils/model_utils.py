@@ -156,6 +156,13 @@ def get_all_bn_params(model, use_cuda=True):
             all_bn_params.update(bn_params)
     return all_bn_params
 
+def check_bn_status(bn_module):
+    logging.info(f"weight: {bn_module.weight[:10].mean()}")
+    logging.info(f"bias: {bn_module.bias[:10].mean()}")
+    logging.info(f"running_mean: {bn_module.running_mean[:10].mean()}")
+    logging.info(f"running_var: {bn_module.running_var[:10].mean()}")
+    logging.info(f"num_batches_tracked: {bn_module.num_batches_tracked}")
+    logging.info(f"training: {bn_module.training}")
 
 
 """ Average named params """
@@ -180,6 +187,7 @@ def average_named_params(named_params_list, average_weights_dict_list, inplace=T
             averaged_params = deepcopy(named_params_list[0])
 
     for k in averaged_params.keys():
+        w_sum = 0.0
         for i in range(0, len(named_params_list)):
             if type(named_params_list[0]) is tuple or type(named_params_list[0]) is list:
                 local_sample_number, local_named_params = named_params_list[i]
@@ -188,12 +196,33 @@ def average_named_params(named_params_list, average_weights_dict_list, inplace=T
             # logging.debug("aggregating ---- local_sample_number/sum: {}/{}, ".format(
             #     local_sample_number, sum))
             w = average_weights_dict_list[i]
+            w_sum += w
             # w = torch.full_like(local_named_params[k], w).detach()
-            if i == 0:
-                averaged_params[k] = (local_named_params[k] * w).type(averaged_params[k].dtype)
+            if "num_batches_tracked" in k:
+                """Make it float first, then int."""
+                # logging.info(f"local_named_params[{k}]: {local_named_params[k]} \
+                #     w: {w}")
+                if i == 0:
+                    averaged_params[k] = local_named_params[k] * w
+                else:
+                    averaged_params[k] += (local_named_params[k] * w).to(averaged_params[k].device)
+                    # logging.info(f"averaged_params[k]: {averaged_params[k].dtype} \
+                    #     local_named_params[k]: {local_named_params[k].dtype}\
+                    #     a:{a.dtype}")
+                    # averaged_params[k] += local_named_params[k] * w
             else:
-                averaged_params[k] += (local_named_params[k].to(averaged_params[k].device) * w).type(
-                    averaged_params[k].dtype)
+                if i == 0:
+                    averaged_params[k] = (local_named_params[k] * w).type(averaged_params[k].dtype)
+                else:
+                    averaged_params[k] += (local_named_params[k].to(averaged_params[k].device) * w).type(
+                        averaged_params[k].dtype)
+
+        if "num_batches_tracked" in k:
+            """Make it float first, then int."""
+            # logging.info(f"averaged_params[{k}]: {averaged_params[k]} \
+            #     w_sum: {w_sum}")
+            averaged_params[k] = averaged_params[k].type(local_named_params[k].dtype)
+
     return averaged_params
 
 

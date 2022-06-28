@@ -13,3 +13,14 @@ mapping_scigpu13_2_2:
 mapping_scigpu:
     scigpu11: [2, 1, 1, 1]
     scigpu12: [2, 1, 1, 1]
+
+
+
+
+mapping_sci10_sci11_4:
+    scigpu10: [0, 2, 1, 0]
+    scigpu11: [0, 0, 1, 2]
+
+
+
+
