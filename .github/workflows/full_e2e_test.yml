@@ -6,9 +6,9 @@ name: Full End-to-end Test
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ master ]
+    branches: [ master, dev/v0.7.0 ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, dev/v0.7.0 ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -20,8 +20,10 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-latest, windows-latest, macos-latest ]
+        arch: [X64, ARM64]
+        python-version: ['3.8']
     # The type of runner that the job will run on
-    runs-on: fedml_github_action_runner
+    runs-on: [self-hosted]
     defaults:
       run:
         shell: bash
@@ -32,6 +34,11 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
 
-      # Runs a single command using the runners shell
-      - name: Run test cases for fedml-build, mlops-build and mlops-login
-        run: cd build_tools/smoke_test/; conda info; source ./test_mlops_cli.sh
+#      - name: test example A
+#        run: |
+#          cd xxx
+#          bash
+      - name: test example B
+        run: |
+          echo "this is for test example B"
+          echo "second line of the script"
