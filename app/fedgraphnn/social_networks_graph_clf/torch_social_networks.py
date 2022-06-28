@@ -24,7 +24,7 @@ def load_data(args, dataset_name):
     compact = args.model == "graphsage"
 
     logging.info("load_data. dataset_name = %s" % dataset_name)
-    graphs, feat_dim, num_cats = get_data(args.data_cache_dir, args.dataset)
+    _, feat_dim, num_cats = get_data(args.data_cache_dir, args.dataset)
     unif = True if args.partition_method == "homo" else False
 
     (
