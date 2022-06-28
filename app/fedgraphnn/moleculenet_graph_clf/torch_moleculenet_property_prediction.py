@@ -19,6 +19,7 @@ def load_data(args, dataset_name):
         and (args.dataset != "bace")
         and (args.dataset != "pcba")
         and (args.dataset != "tox21")
+        and (args.dataset != "toxcast")
         and (args.dataset != "muv")
         and (args.dataset != "hiv")
     ):
