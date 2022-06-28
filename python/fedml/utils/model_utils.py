@@ -220,6 +220,15 @@ def get_average_weight(sample_num_list):
 
 
 
+"""auxiliary."""
+def check_device(data_src, device=None):
+    if device is not None:
+        if data_src.device is not device:
+            return data_src.to(device)
+        else:
+            return data_src
+    else:
+        return data_src
 
 
 
