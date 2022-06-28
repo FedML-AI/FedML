@@ -36,7 +36,11 @@ class MLOpsMetrics(Singleton):
             else:
                 client_id_list = json.loads(args.client_id_list)
                 self.edge_id = client_id_list[0]
-            self.server_agent_id = self.edge_id
+
+            if hasattr(args, "server_agent_id"):
+                self.server_agent_id = args.server_agent_id
+            else:
+                self.server_agent_id = self.edge_id
 
     def report_client_training_status(self, edge_id, status):
         """
