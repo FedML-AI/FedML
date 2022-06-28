@@ -23,7 +23,7 @@ class MyModelTrainer(ClientTrainer):
         if args.client_optimizer == "sgd":
             self.optimizer = torch.optim.SGD(
                 filter(lambda p: p.requires_grad, self.model.parameters()),
-                lr=args.learning_rate,
+                lr=args.learning_rate, momentum=args.momentum
             )
         else:
             self.optimizer = torch.optim.Adam(
@@ -36,37 +36,38 @@ class MyModelTrainer(ClientTrainer):
     def get_model_params(self):
         # return 
         weights = self.model.cpu().state_dict()
-        if self.args.compression is None or self.args.compression == 'no':
-            compressed_weights = weights
-            model_indexes = None
+        return weights
+        # if self.args.compression is None or self.args.compression == 'no':
+        #     compressed_weights = weights
+        #     model_indexes = None
 
-        elif self.args.compression in ['topk', 'randomk', 'gtopk', 'randomkec', 'eftopk', 'gtopkef']:
-            compressed_weights = {}
-            model_indexes = {}
-            for key in list(weights.keys()):
-                logging.debug("weights[key].shape: {}, weights[key].numel(): {}".format(
-                    weights[key].shape, weights[key].numel()
-                ))
-                _, model_indexes[key], compressed_weights[key] = \
-                    self.compressor.compress(
-                        self.compressor.flatten(weights[key]), name=key,
-                        sigma_scale=3, ratio=self.args.compress_ratio
-                    )
-        elif self.args.compression in ['quantize', 'qsgd', 'sign']:
-            compressed_weights = {}
-            model_indexes = None
-            for key in list(weights.keys()):
-                logging.debug("weights[key].shape: {}, weights[key].numel(): {}".format(
-                    weights[key].shape, weights[key].numel()
-                ))
-                compressed_weights[key] = self.compressor.compress(
-                    weights[key], name=key,
-                    quantize_level=self.args.quantize_level, is_biased=self.args.is_biased
-                )
-        else:
-            raise NotImplementedError
+        # elif self.args.compression in ['topk', 'randomk', 'gtopk', 'randomkec', 'eftopk', 'gtopkef']:
+        #     compressed_weights = {}
+        #     model_indexes = {}
+        #     for key in list(weights.keys()):
+        #         logging.debug("weights[key].shape: {}, weights[key].numel(): {}".format(
+        #             weights[key].shape, weights[key].numel()
+        #         ))
+        #         _, model_indexes[key], compressed_weights[key] = \
+        #             self.compressor.compress(
+        #                 self.compressor.flatten(weights[key]), name=key,
+        #                 sigma_scale=3, ratio=self.args.compress_ratio
+        #             )
+        # elif self.args.compression in ['quantize', 'qsgd', 'sign']:
+        #     compressed_weights = {}
+        #     model_indexes = None
+        #     for key in list(weights.keys()):
+        #         logging.debug("weights[key].shape: {}, weights[key].numel(): {}".format(
+        #             weights[key].shape, weights[key].numel()
+        #         ))
+        #         compressed_weights[key] = self.compressor.compress(
+        #             weights[key], name=key,
+        #             quantize_level=self.args.quantize_level, is_biased=self.args.is_biased
+        #         )
+        # else:
+        #     raise NotImplementedError
 
-        return compressed_weights, model_indexes
+        # return compressed_weights, model_indexes
 
 
     def set_model_params(self, model_parameters):
@@ -135,7 +136,7 @@ class MyModelTrainer(ClientTrainer):
                 module.bias.data = all_bn_params[module_name+".bias"] 
                 module.running_mean = all_bn_params[module_name+".running_mean"] 
                 module.running_var = all_bn_params[module_name+".running_var"] 
-                # module.num_batches_tracked = all_bn_params[module_name+".num_batches_tracked"] 
+                module.num_batches_tracked = all_bn_params[module_name+".num_batches_tracked"] 
 
 
     def update_model_with_grad(self):
@@ -172,6 +173,7 @@ class MyModelTrainer(ClientTrainer):
 
         output = model(x)
         loss = self.criterion(output, labels)
+        loss.backward()
         return loss.item()
 
 

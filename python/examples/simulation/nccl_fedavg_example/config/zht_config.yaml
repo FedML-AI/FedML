@@ -32,7 +32,7 @@ device_args:
   worker_num: 3
   using_gpu: true
   gpu_mapping_file: config/zht_gpu_mapping.yaml
-  gpu_mapping_key: mapping_scigpu13_2
+  gpu_mapping_key: mapping_scigpu12_2
 
 
 comm_args:
