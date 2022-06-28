@@ -62,9 +62,9 @@ class FedMLServerRunner:
         self.client_mqtt_lock = None
         self.unique_device_id = None
         self.edge_id = 0
-        self.server_id = 0
+        self.server_agent_id = 0
         if request_json is not None:
-            self.server_id = request_json.get("serverId", 0)
+            self.server_agent_id = request_json.get("serverId", 0)
         self.process = None
         self.args = args
         self.request_json = copy.deepcopy(request_json)
@@ -251,7 +251,8 @@ class FedMLServerRunner:
         fedml_conf_object["train_args"]["client_id_list"] = package_dynamic_args["client_id_list"]
         fedml_conf_object["train_args"]["client_num_in_total"] = int(package_dynamic_args["client_num_in_total"])
         fedml_conf_object["train_args"]["client_num_per_round"] = int(package_dynamic_args["client_num_in_total"])
-        fedml_conf_object["train_args"]["server_id"] = self.request_json.get("serverId", self.edge_id)
+        fedml_conf_object["train_args"]["server_agent_id"] = self.request_json.get("serverId", self.edge_id)
+        fedml_conf_object["train_args"]["server_device_id"] = self.edge_id
         fedml_conf_object["device_args"]["worker_num"] = int(package_dynamic_args["client_num_in_total"])
         fedml_conf_object["data_args"]["data_cache_dir"] = package_dynamic_args["data_cache_dir"]
         fedml_conf_object["tracking_args"]["log_file_dir"] = package_dynamic_args["log_file_dir"]
@@ -479,7 +480,7 @@ class FedMLServerRunner:
             server_process.start()
             FedMLServerRunner.save_run_process(server_process.pid)
         elif self.run_as_cloud_server:
-            self.server_id = self.request_json.get("server_id", self.edge_id)
+            self.server_agent_id = self.request_json.get("serverId", self.edge_id)
             self.run()
 
     def start_cloud_server_process(self):
@@ -611,7 +612,7 @@ class FedMLServerRunner:
             self.mlops_metrics.set_messenger(self.client_mqtt_mgr)
             self.mlops_metrics.run_id = self.run_id
             self.mlops_metrics.edge_id = self.edge_id
-            self.mlops_metrics.server_id = self.server_id
+            self.mlops_metrics.server_agent_id = self.server_agent_id
 
         logging.info("on_client_mqtt_connected: {}.".format(self.client_mqtt_is_connected))
 
