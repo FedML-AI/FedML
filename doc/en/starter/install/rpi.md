@@ -38,3 +38,10 @@ sudo sh get-docker.sh
 ```
 sudo usermod -aG docker [your-user]
 ```
+
+## Install with pip
+
+```
+pip install fedml
+source ~/.profile  ## run this command if '/home/user/.local/bin' is not on PATH' after installation
+```
