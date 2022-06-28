@@ -166,13 +166,22 @@ class FedSGDAPI(object):
                 # train_batch_data = self.get_global_train_batch_data(client_idx)
                 compressed_grads, grad_indexes = client.train(copy.deepcopy(w_global), train_batch_data)
                 bn_local = client.get_model_bn()
-                # self.logging.info("local weights = " + str(w))
+                # logging.info(f"Client {client_idx} weight: {bn_local['layer3.0.bn2.weight'][:10].mean()}")
+                # logging.info(f"Client {client_idx} bias: {bn_local['layer3.0.bn2.bias'][:10].mean()}")
+                # logging.info(f"Client {client_idx} running_mean: {bn_local['layer3.0.bn2.running_mean'][:10].mean()}")
+                # logging.info(f"Client {client_idx} running_var: {bn_local['layer3.0.bn2.running_var'][:10].mean()}")
+                # logging.info(f"Client {client_idx} num_batches_tracked: {bn_local['layer3.0.bn2.num_batches_tracked']}")                # self.logging.info("local weights = " + str(w))
                 g_locals.append([client.get_sample_number(), compressed_grads, grad_indexes])
-                bn_locals.append(bn_local)
+                bn_locals.append(copy.deepcopy(bn_local))
 
             # obtain global gradients
             averaged_g, averaged_bn_params = self._aggregate(g_locals, bn_locals)
-
+            # logging.info(f"Server weight: {averaged_bn_params['layer3.0.bn2.weight'][:10].mean()}")
+            # logging.info(f"Server bias: {averaged_bn_params['layer3.0.bn2.bias'][:10].mean()}")
+            # logging.info(f"Server running_mean: {averaged_bn_params['layer3.0.bn2.running_mean'][:10].mean()}")
+            # logging.info(f"Server running_var: {averaged_bn_params['layer3.0.bn2.running_var'][:10].mean()}")
+            # logging.info(f"Server num_batches_tracked: {averaged_bn_params['layer3.0.bn2.num_batches_tracked']}")
+            # logging.info(f"training: {bn_module.training}")
             # update global weights
             # w_global = self._aggregate(w_locals)
             # self.model_trainer.set_model_params(w_global)
@@ -181,7 +190,7 @@ class FedSGDAPI(object):
             self.model_trainer.set_grad_params(averaged_g)
             self.model_trainer.update_model_with_grad()
 
-            # self.model_trainer.set_model_bn(averaged_bn_params)
+            self.model_trainer.set_model_bn(averaged_bn_params)
             w_global = self.model_trainer.get_model_params()
 
             # test results
