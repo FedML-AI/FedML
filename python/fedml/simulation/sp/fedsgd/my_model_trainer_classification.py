@@ -6,7 +6,8 @@ from ....utils.compression import compressors
 from ....utils.model_utils import (
     get_named_data,
     get_all_bn_params,
-    check_device
+    check_device,
+    check_bn_status
 )
 
 import logging
@@ -132,12 +133,12 @@ class MyModelTrainer(ClientTrainer):
         for module_name, module in self.model.named_modules():
             if type(module) is nn.BatchNorm2d:
                 # logging.info(f"module_name:{module_name}, params.norm: {module.weight.data.norm()}")
-                module.weight.data = all_bn_params[module_name+".weight"] 
-                module.bias.data = all_bn_params[module_name+".bias"] 
+                # module.weight.data = all_bn_params[module_name+".weight"] 
+                # module.bias.data = all_bn_params[module_name+".bias"] 
                 module.running_mean = all_bn_params[module_name+".running_mean"] 
                 module.running_var = all_bn_params[module_name+".running_var"] 
                 module.num_batches_tracked = all_bn_params[module_name+".num_batches_tracked"] 
-
+                pass
 
     def update_model_with_grad(self):
         self.model.to(self.device)
@@ -150,7 +151,7 @@ class MyModelTrainer(ClientTrainer):
             inference and BP without optimization
         """
         model = self.model
-
+        # check_bn_status(model.layer3[0].bn1)
         if move_to_gpu:
             model.to(device)
 
@@ -172,6 +173,7 @@ class MyModelTrainer(ClientTrainer):
             #     {dict(model.named_parameters())['conv1.weight'].grad}")
 
         output = model(x)
+        # check_bn_status(model.layer3[0].bn2)
         loss = self.criterion(output, labels)
         loss.backward()
         return loss.item()
