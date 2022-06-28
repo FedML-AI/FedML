@@ -154,10 +154,12 @@
 
 .expand-menu, .hide-menu {
   color: $dark_grey;
-  padding-left: 10px;
-  cursor: none;
+  position: absolute;
+  align-self: center;
+  margin-left: 296px;
+  /* padding-left: 10px; */
+  cursor: pointer;
   float: right;
-  pointer-events: none;
 }
 
 .menu-item-decorator {
@@ -173,7 +175,7 @@
 }
 
 .pytorch-left-menu p.caption {
-  display: block;
+  display: flex;
   margin-bottom: 0px;
   text-transform: none;
   white-space: normal;
