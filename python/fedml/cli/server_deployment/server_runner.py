@@ -479,7 +479,7 @@ class FedMLServerRunner:
             server_process.start()
             FedMLServerRunner.save_run_process(server_process.pid)
         elif self.run_as_cloud_server:
-            self.server_id = request_json.get("serverId", 0)
+            self.server_id = self.request_json.get("server_id", self.edge_id)
             self.run()
 
     def start_cloud_server_process(self):
@@ -716,6 +716,7 @@ class FedMLServerRunner:
         run_id = request_json["run_id"]
         status = request_json["status"]
         self.run_id = run_id
+        self.edge_id = request_json["edge_id"]
 
         if status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED:
             click.echo("Received training finished message.")
