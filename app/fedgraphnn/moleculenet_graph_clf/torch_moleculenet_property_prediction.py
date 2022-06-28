@@ -14,13 +14,13 @@ from trainer.sage_readout_trainer import SageMoleculeNetTrainer
 def load_data(args, dataset_name):
     if (
         (args.dataset != "sider")
-        and (args.dataset != "ClinTox")
-        and (args.dataset != "BBBP")
-        and (args.dataset != "BACE")
-        and (args.dataset != "PCBA")
-        and (args.dataset != "Tox21")
-        and (args.dataset != "MUV")
-        and (args.dataset != "HIV")
+        and (args.dataset != "clintox")
+        and (args.dataset != "bbbp")
+        and (args.dataset != "bace")
+        and (args.dataset != "pcba")
+        and (args.dataset != "tox21")
+        and (args.dataset != "muv")
+        and (args.dataset != "hiv")
     ):
         raise Exception("no such dataset!")
 
