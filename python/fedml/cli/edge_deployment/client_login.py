@@ -124,7 +124,7 @@ if __name__ == "__main__":
     parser.add_argument("--local_server", "-ls", type=str, default="127.0.0.1")
     args = parser.parse_args()
     click.echo(args)
-    args.user = int(args.user)
+    args.user = args.user
     if args.type == 'login':
         login(args)
     else:
