@@ -20,6 +20,7 @@ class MLOpsMetrics(Singleton):
         self.args = None
         self.run_id = None
         self.edge_id = None
+        self.cloud_agent_id = None
         self.sys_performances = None
 
     def set_messenger(self, msg_messenger, args=None):
@@ -35,6 +36,7 @@ class MLOpsMetrics(Singleton):
             else:
                 client_id_list = json.loads(args.client_id_list)
                 self.edge_id = client_id_list[0]
+            self.cloud_agent_id = self.edge_id
 
     def report_client_training_status(self, edge_id, status):
         """
@@ -92,7 +94,7 @@ class MLOpsMetrics(Singleton):
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_server_id_status(self, run_id, status):
-        server_agent_id = self.edge_id
+        server_agent_id = self.cloud_agent_id
         topic_name = "fl_server/flserver_agent_" + str(server_agent_id) + "/status"
         msg = {"run_id": run_id, "edge_id": self.edge_id, "status": status}
         message_json = json.dumps(msg)
