@@ -54,7 +54,7 @@ class FedSGDAPI(object):
             model_trainer = MyModelTrainerNWP(model)
         else:
             # default model trainer is for classification problem
-            model_trainer = MyModelTrainerCLS(model)
+            model_trainer = MyModelTrainerCLS(model, device, args)
         self.model_trainer = model_trainer
         self.model = model
         logging.info("self.model_trainer = {}".format(self.model_trainer))
@@ -71,7 +71,7 @@ class FedSGDAPI(object):
         else:
             self.compressor = compressors[args.compression]()
             model_params = self.model_trainer.get_model_params()
-            for k in model_params.keys():
+            for k, v in model_params.items():
                 self.compressor.update_shapes_dict(model_params[k], k)
 
 
@@ -112,9 +112,25 @@ class FedSGDAPI(object):
             # self.train_local_iter = iter(train_local)
             # train_batch_data = self.train_local_iter.next()
             self.train_local_iter_dict[client_idx] = iter(self.train_data_local_dict[client_idx])
+            train_batch_data = self.train_local_iter_dict[client_idx].next()
 
         return train_batch_data
 
+
+    def get_global_train_batch_data(self, client_idx):
+        try:
+            train_batch_data = self.train_global_iter.next()
+            # logging.debug("len(train_batch_data[0]): {}".format(len(train_batch_data[0])))
+            if len(train_batch_data[0]) < self.args.batch_size:
+                logging.debug("WARNING: len(train_batch_data[0]): {} < self.args.batch_size: {}".format(
+                    len(train_batch_data[0]), self.args.batch_size))
+                # logging.debug("train_batch_data[0]: {}".format(train_batch_data[0]))
+                # logging.debug("train_batch_data[0].shape: {}".format(train_batch_data[0].shape))
+        except:
+            self.train_global_iter = iter(self.train_global)
+            train_batch_data = self.train_global_iter.next()
+
+        return train_batch_data
 
     def train(self):
         logging.info("self.model_trainer = {}".format(self.model_trainer))
@@ -146,7 +162,9 @@ class FedSGDAPI(object):
                 )
 
                 # train on new dataset
-                compressed_grads, grad_indexes = client.train(copy.deepcopy(w_global))
+                train_batch_data = self.get_train_batch_data(client_idx)
+                # train_batch_data = self.get_global_train_batch_data(client_idx)
+                compressed_grads, grad_indexes = client.train(copy.deepcopy(w_global), train_batch_data)
                 bn_local = client.get_model_bn()
                 # self.logging.info("local weights = " + str(w))
                 g_locals.append([client.get_sample_number(), compressed_grads, grad_indexes])
@@ -163,19 +181,19 @@ class FedSGDAPI(object):
             self.model_trainer.set_grad_params(averaged_g)
             self.model_trainer.update_model_with_grad()
 
-            self.model_trainer.set_model_bn(averaged_bn_params)
+            # self.model_trainer.set_model_bn(averaged_bn_params)
             w_global = self.model_trainer.get_model_params()
 
             # test results
             # at last round
             if round_idx == self.args.comm_round - 1:
-                self._local_test_on_all_clients(round_idx)
+                self.test_on_server_for_all_clients(round_idx)
             # per {frequency_of_the_test} round
             elif round_idx % self.args.frequency_of_the_test == 0:
                 if self.args.dataset.startswith("stackoverflow"):
-                    self._local_test_on_validation_set(round_idx)
+                    self.test_on_server_for_all_clients(round_idx)
                 else:
-                    self._local_test_on_all_clients(round_idx)
+                    self.test_on_server_for_all_clients(round_idx)
 
     def _client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
         if client_num_in_total == client_num_per_round:
@@ -251,115 +269,67 @@ class FedSGDAPI(object):
         return averaged_g, averaged_bn_params
 
 
-    def _local_test_on_all_clients(self, round_idx):
 
-        logging.info("################local_test_on_all_clients : {}".format(round_idx))
 
-        train_metrics = {"num_samples": [], "num_correct": [], "losses": []}
-
-        test_metrics = {"num_samples": [], "num_correct": [], "losses": []}
-
-        client = self.client_list[0]
-
-        for client_idx in range(self.args.client_num_in_total):
-            """
-            Note: for datasets like "fed_CIFAR100" and "fed_shakespheare",
-            the training client number is larger than the testing client number
-            """
-            if self.test_data_local_dict[client_idx] is None:
-                continue
-            client.update_local_dataset(
-                0,
-                self.train_data_local_dict[client_idx],
-                self.test_data_local_dict[client_idx],
-                self.train_data_local_num_dict[client_idx],
+    def test_on_server_for_all_clients(self, round_idx):
+        if (
+            round_idx % self.args.frequency_of_the_test == 0
+            or round_idx == self.args.comm_round - 1
+        ):
+            logging.info(
+                "################test_on_server_for_all_clients : {}".format(round_idx)
             )
-            # train data
-            train_local_metrics = client.local_test(False)
-            train_metrics["num_samples"].append(
-                copy.deepcopy(train_local_metrics["test_total"])
-            )
-            train_metrics["num_correct"].append(
-                copy.deepcopy(train_local_metrics["test_correct"])
-            )
-            train_metrics["losses"].append(
-                copy.deepcopy(train_local_metrics["test_loss"])
-            )
+            train_num_samples = []
+            train_tot_corrects = []
+            train_losses = []
+            # for client_idx in range(self.args.client_num_in_total):
+            #     # train data
+            #     metrics = self.model_trainer.test(
+            #         self.train_data_local_dict[client_idx], self.device, self.args
+            #     )
+            #     train_tot_correct, train_num_sample, train_loss = (
+            #         metrics["test_correct"],
+            #         metrics["test_total"],
+            #         metrics["test_loss"],
+            #     )
+            #     train_tot_corrects.append(copy.deepcopy(train_tot_correct))
+            #     train_num_samples.append(copy.deepcopy(train_num_sample))
+            #     train_losses.append(copy.deepcopy(train_loss))
+
+            # test on training dataset
+            # train_acc = sum(train_tot_corrects) / sum(train_num_samples)
+            # train_loss = sum(train_losses) / sum(train_num_samples)
+            # if self.args.enable_wandb:
+            #     wandb.log({"Train/Acc": train_acc, "round": round_idx})
+            #     wandb.log({"Train/Loss": train_loss, "round": round_idx})
+            # stats = {"training_acc": train_acc, "training_loss": train_loss}
+            # logging.info(stats)
 
             # test data
-            test_local_metrics = client.local_test(True)
-            test_metrics["num_samples"].append(
-                copy.deepcopy(test_local_metrics["test_total"])
+            test_num_samples = []
+            test_tot_corrects = []
+            test_losses = []
+
+            if round_idx == self.args.comm_round - 1:
+                metrics = self.model_trainer.test(self.test_global, self.device, self.args)
+            else:
+                # metrics = self.model_trainer.test(self.val_global, self.device, self.args)
+                metrics = self.model_trainer.test(self.test_global, self.device, self.args)
+
+            test_tot_correct, test_num_sample, test_loss = (
+                metrics["test_correct"],
+                metrics["test_total"],
+                metrics["test_loss"],
             )
-            test_metrics["num_correct"].append(
-                copy.deepcopy(test_local_metrics["test_correct"])
-            )
-            test_metrics["losses"].append(
-                copy.deepcopy(test_local_metrics["test_loss"])
-            )
+            test_tot_corrects.append(copy.deepcopy(test_tot_correct))
+            test_num_samples.append(copy.deepcopy(test_num_sample))
+            test_losses.append(copy.deepcopy(test_loss))
 
-        # test on training dataset
-        train_acc = sum(train_metrics["num_correct"]) / sum(
-            train_metrics["num_samples"]
-        )
-        train_loss = sum(train_metrics["losses"]) / sum(train_metrics["num_samples"])
-
-        # test on test dataset
-        test_acc = sum(test_metrics["num_correct"]) / sum(test_metrics["num_samples"])
-        test_loss = sum(test_metrics["losses"]) / sum(test_metrics["num_samples"])
-
-        stats = {"training_acc": train_acc, "training_loss": train_loss}
-        if self.args.enable_wandb:
-            wandb.log({"Train/Acc": train_acc, "round": round_idx})
-            wandb.log({"Train/Loss": train_loss, "round": round_idx})
-        logging.info(stats)
-
-        stats = {"test_acc": test_acc, "test_loss": test_loss}
-        if self.args.enable_wandb:
-            wandb.log({"Test/Acc": test_acc, "round": round_idx})
-            wandb.log({"Test/Loss": test_loss, "round": round_idx})
-        logging.info(stats)
-
-    def _local_test_on_validation_set(self, round_idx):
-
-        logging.info(
-            "################local_test_on_validation_set : {}".format(round_idx)
-        )
-
-        if self.val_global is None:
-            self._generate_validation_set()
-
-        client = self.client_list[0]
-        client.update_local_dataset(0, None, self.val_global, None)
-        # test data
-        test_metrics = client.local_test(True)
-
-        if self.args.dataset == "stackoverflow_nwp":
-            test_acc = test_metrics["test_correct"] / test_metrics["test_total"]
-            test_loss = test_metrics["test_loss"] / test_metrics["test_total"]
+            # test on test dataset
+            test_acc = sum(test_tot_corrects) / sum(test_num_samples)
+            test_loss = sum(test_losses) / sum(test_num_samples)
+            if self.args.enable_wandb:
+                wandb.log({"Test/Acc": test_acc, "round": round_idx})
+                wandb.log({"Test/Loss": test_loss, "round": round_idx})
             stats = {"test_acc": test_acc, "test_loss": test_loss}
-            if self.args.enable_wandb:
-                wandb.log({"Test/Acc": test_acc, "round": round_idx})
-                wandb.log({"Test/Loss": test_loss, "round": round_idx})
-        elif self.args.dataset == "stackoverflow_lr":
-            test_acc = test_metrics["test_correct"] / test_metrics["test_total"]
-            test_pre = test_metrics["test_precision"] / test_metrics["test_total"]
-            test_rec = test_metrics["test_recall"] / test_metrics["test_total"]
-            test_loss = test_metrics["test_loss"] / test_metrics["test_total"]
-            stats = {
-                "test_acc": test_acc,
-                "test_pre": test_pre,
-                "test_rec": test_rec,
-                "test_loss": test_loss,
-            }
-            if self.args.enable_wandb:
-                wandb.log({"Test/Acc": test_acc, "round": round_idx})
-                wandb.log({"Test/Pre": test_pre, "round": round_idx})
-                wandb.log({"Test/Rec": test_rec, "round": round_idx})
-                wandb.log({"Test/Loss": test_loss, "round": round_idx})
-        else:
-            raise Exception(
-                "Unknown format to log metrics for dataset {}!" % self.args.dataset
-            )
-
-        logging.info(stats)
+            logging.info(stats)
