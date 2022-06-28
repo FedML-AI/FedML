@@ -20,10 +20,10 @@ train_args:
   epochs: 1
   batch_size: 128
   client_optimizer: sgd
-  learning_rate: 0.1
+  learning_rate: 0.01
   weight_decay: 0.0001
   momentum: 0.9
-  compression: "no"
+  compression: "eftopk"
   compress_ratio: 0.01
 
 
@@ -34,7 +34,7 @@ validation_args:
 
 device_args:
   using_gpu: true
-  gpu_id: 1
+  gpu_id: 2
 
 comm_args:
   backend: "sp"

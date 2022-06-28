@@ -1,3 +1,5 @@
+import logging
+
 class Client:
     def __init__(
         self,
@@ -29,11 +31,12 @@ class Client:
     def get_sample_number(self):
         return self.local_sample_number
 
-    def train(self, w_global):
+    def train(self, w_global, train_batch_data):
         self.model_trainer.set_model_params(w_global)
-        self.model_trainer.infer_one_step(self.local_training_data, self.device, self.args,
+        loss = self.model_trainer.infer_one_step(train_batch_data, self.device, self.args,
                     move_to_gpu=True, model_train=True, clear_grad_bef_opt=True)
         compressed_grads, grad_indexes = self.model_trainer.get_model_grads()
+        logging.info(f"client_idx: {self.client_idx} loss = {loss}")
         return compressed_grads, grad_indexes
 
     def get_model_bn(self):
