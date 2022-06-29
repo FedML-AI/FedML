@@ -2,7 +2,7 @@ import fedml
 from data.data_loader import *
 from model.rgcn import RGCNEncoder, DistMultDecoder
 from trainer.fed_subgraph_rel_trainer import FedSubgraphRelTrainer
-
+from torch_geometric.nn import GAE
 from fedml.simulation import SimulatorMPI
 
 def load_data(args):
@@ -50,12 +50,13 @@ def load_data(args):
         data_local_num_dict,
         train_data_local_dict,
         test_data_local_dict,
+        None
     ]
 
     return dataset
 
 
-def create_model(args, model_name):
+def create_model(model_name):
     logging.info("create_model. model_name = %s" % (model_name))
     if model_name == "rgcn":
         model = GAE(
@@ -78,10 +79,10 @@ if __name__ == "__main__":
     device = fedml.device.get_device(args)
 
     # load data
-    dataset, output_dim = load_data(args)
+    dataset = load_data(args)
 
     # load model
-    model, trainer = create_model(args, output_dim)
+    model, trainer = create_model(args.model)
 
     # start training
     simulator = SimulatorMPI(args, device, dataset, model, trainer)
