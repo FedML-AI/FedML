@@ -108,6 +108,10 @@ class ClientManager(Observer):
         self.message_handler_dict = dict()
 
     def run(self):
+        # print(self.message_handler_dict.keys())
+        # print(self.message_handler_dict.values())
+        # import pdb
+        # pdb.set_trace()
         self.register_message_receive_handlers()
         self.com_manager.handle_receive_message()
 
@@ -117,6 +121,7 @@ class ClientManager(Observer):
     def receive_message(self, msg_type, msg_params) -> None:
         # logging.info("receive_message. rank_id = %d, msg_type = %s. msg_params = %s" % (
         #     self.rank, str(msg_type), str(msg_params.get_content())))
+        logging.info('self.message_handler_dict', self.message_handler_dict.keys(), self.message_handler_dict.values())
         handler_callback_func = self.message_handler_dict[msg_type]
         handler_callback_func(msg_params)
 
