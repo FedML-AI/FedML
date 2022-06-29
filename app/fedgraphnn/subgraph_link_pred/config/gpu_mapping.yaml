@@ -13,7 +13,7 @@ mapping_default:
 
 # this is used for 4 clients and 1 server training within a single machine which has 4 GPUs
 mapping_config1_5:
-    host1: [2, 1, 1, 1]
+    host1: [2, 1]
 
 # this is used for 10 clients and 1 server training within a single machine which has 4 GPUs
 mapping_config2_11:

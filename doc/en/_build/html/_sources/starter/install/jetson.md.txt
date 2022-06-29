@@ -13,4 +13,5 @@ docker run -t -i --runtime nvidia fedml/fedml:nvidia-jetson-l4t-ml-r32.6.1-py3 /
 root@8bc0de2ce0e0:/usr/src/app# fedml login 299
 
 ```
-
+## Issues and Solutions
+1. issues 1:
