@@ -54,6 +54,7 @@ comm_args:
 
 
 tracking_args:
+  enable_tracking: false
   log_file_dir: ./log
   enable_wandb: false
   wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
