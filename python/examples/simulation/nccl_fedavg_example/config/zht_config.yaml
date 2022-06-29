@@ -6,7 +6,7 @@ data_args:
   dataset: "cifar10"
   data_cache_dir: "~/datasets/cifar10"
   partition_method: "hetero"
-  partition_alpha: 0.5
+  partition_alpha: 0.1
 
 model_args:
   model: "resnet18"
@@ -29,10 +29,10 @@ validation_args:
   frequency_of_the_test: 5
 
 device_args:
-  worker_num: 3
+  worker_num: 6
   using_gpu: true
   gpu_mapping_file: config/zht_gpu_mapping.yaml
-  gpu_mapping_key: mapping_scigpu13_2
+  gpu_mapping_key: mapping_sci10_sci11_4
 
 
 comm_args:

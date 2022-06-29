@@ -1,8 +1,6 @@
 import copy
 import random
 
-import matplotlib.pyplot as plt
-import seaborn as sns
 import torch.utils.data as data
 from torch_geometric.data import DataLoader
 from torch_geometric.datasets import TUDataset
@@ -59,16 +57,6 @@ def create_non_uniform_split(args, idxs, client_number, is_train=True):
         )
     logging.info("create_non_uniform_split******************************************")
 
-    # plot the (#client, #sample) distribution
-    if is_train:
-        logging.info(sample_num_distribution)
-        plt.hist(sample_num_distribution)
-        plt.title("Sample Number Distribution")
-        plt.xlabel("number of samples")
-        plt.ylabel("number of clients")
-        fig_name = "x_hist.png"
-        fig_dir = fig_name
-        plt.savefig(fig_dir)
     return idx_batch_per_client
 
 
@@ -134,58 +122,11 @@ def partition_data_by_sample_size(
 
         partition_dicts[client] = partition_dict
 
-    # plot the label distribution similarity score
-    visualize_label_distribution_similarity_score(labels_of_all_clients)
 
     global_data_dict = {"train": graphs_train, "val": graphs_val, "test": graphs_test}
 
     return global_data_dict, partition_dicts
 
-
-def visualize_label_distribution_similarity_score(labels_of_all_clients):
-    label_distribution_clients = []
-    label_num = labels_of_all_clients[0][0]
-    for client_idx in range(len(labels_of_all_clients)):
-        labels_client_i = labels_of_all_clients[client_idx]
-        sample_number = len(labels_client_i)
-        active_property_count = [0.0] * label_num
-        for sample_index in range(sample_number):
-            label = labels_client_i[sample_index]
-            for property_index in range(len(label)):
-                # logging.info(label[property_index])
-                if label[property_index] == 1:
-                    active_property_count[property_index] += 1
-        active_property_count = [
-            float(active_property_count[i]) for i in range(len(active_property_count))
-        ]
-        label_distribution_clients.append(copy.deepcopy(active_property_count))
-    logging.info(label_distribution_clients)
-
-    client_num = len(label_distribution_clients)
-    label_distribution_similarity_score_matrix = np.random.random(
-        (client_num, client_num)
-    )
-
-    for client_i in range(client_num):
-        label_distribution_client_i = label_distribution_clients[client_i]
-        for client_j in range(client_i, client_num):
-            label_distribution_client_j = label_distribution_clients[client_j]
-            logging.info(label_distribution_client_i)
-            logging.info(label_distribution_client_j)
-            a = np.array(label_distribution_client_i, dtype=np.float32)
-            b = np.array(label_distribution_client_j, dtype=np.float32)
-
-            from scipy import spatial
-
-            distance = 1 - spatial.distance.cosine(a, b)
-            label_distribution_similarity_score_matrix[client_i][client_j] = distance
-            label_distribution_similarity_score_matrix[client_j][client_i] = distance
-        # break
-    logging.info(label_distribution_similarity_score_matrix)
-    plt.title("Label Distribution Similarity Score")
-    ax = sns.heatmap(label_distribution_similarity_score_matrix, annot=True, fmt=".3f")
-    # # ax.invert_yaxis()
-    # plt.show()
 
 
 # For centralized training

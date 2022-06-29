@@ -19,7 +19,7 @@ class LanguageModelDataManager(BaseDataManager):
         self.attributes = self.load_attributes(args.data_file_path)
         self.preprocessor = preprocessor
 
-    def read_instance_from_h5(self, data_file, index_list, desc=""):
+    def read_instance_from_h5(self, data_file, index_list, split = "", desc=""):
         X = list()
         for idx in tqdm(index_list, desc="Loading data from h5 file." + desc):
             X.append(data_file["X"][str(idx)][()].decode("utf-8"))
