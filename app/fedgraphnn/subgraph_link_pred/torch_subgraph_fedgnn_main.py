@@ -52,12 +52,13 @@ def load_data(args):
         data_local_num_dict,
         train_data_local_dict,
         test_data_local_dict,
+        None,
     ]
 
     return dataset
 
 
-def create_model(args, model_name):
+def create_model(model_name):
     logging.info("create_model. model_name = %s" % (model_name))
     if model_name == "gcn":
         model = GCNLinkPred(64, 64)
@@ -76,10 +77,10 @@ if __name__ == "__main__":
     device = fedml.device.get_device(args)
 
     # load data
-    dataset, output_dim = load_data(args)
+    dataset= load_data(args)
 
     # load model
-    model, trainer = create_model(args, args.model_name)
+    model, trainer = create_model(args.model)
 
     # start training
     simulator = SimulatorMPI(args, device, dataset, model, trainer)

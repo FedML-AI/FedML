@@ -3,7 +3,7 @@ common_args:
   random_seed: 0
 
 data_args:
-  dataset: "YAGO3-10"
+  dataset: "FB15k-237"
   data_cache_dir: "./data"
   partition_method: "hetero"
   part_algo: "Louvain"
@@ -13,7 +13,7 @@ data_args:
   hop_number: 2
 
 model_args:
-  model: "rgcn"
+  model: "gcn"
   hidden_size: 32
   node_embedding_dim: 32
   graph_embedding_dim: 64
@@ -29,8 +29,8 @@ model_args:
 train_args:
   federated_optimizer: "FedAvg"
   client_id_list: "[]"
-  client_num_in_total: 1000
-  client_num_per_round: 4
+  client_num_in_total: 2
+  client_num_per_round: 2
   comm_round: 50
   epochs: 1
   batch_size: 10
@@ -42,10 +42,19 @@ validation_args:
   frequency_of_the_test: 5
 
 device_args:
-  worker_num: 4
-  using_gpu: false
+  worker_num: 2
+  using_gpu: true
   gpu_mapping_file: config/gpu_mapping.yaml
-  gpu_mapping_key: mapping_default
+  gpu_mapping_key: mapping_config1_5
+
+attack_args:
+  add_attack: N
+  attack_type: None
+
+defense_args:
+  add_defense: N
+  defense_type: norm_diff_clipping
+  norm_bound: 5.0
 
 comm_args:
   backend: "MPI"
@@ -57,4 +66,5 @@ tracking_args:
   enable_wandb: false
   wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
   wandb_project: fedml
-  wandb_name: fedml_torch_moleculenet
+  wandb_name: fedml_subgraph_link_prediction
+  run_name: fed_subgraph_link_pred
