@@ -15,28 +15,14 @@ def get_data_community(path, data, pred_task, algo="Louvain"):
     assert pred_task in ["relation", "link"]
     assert data in ["wn18rr", "FB15k-237", "YAGO3-10"]
 
-    if pred_task == "link":
-        # for link prediction with communities grouped by the relation type
-        logging.info("-------------------1")
-        subdir = "subgraphs_byRelType"
-        num_of_classes = 2
-
-    if pred_task == "relation" and algo == "Louvain":
-        # for relation type prediction
-        logging.info("-------------------2")
-        subdir = "subgraphs_byLouvain"
-        if data == "wn18rr":
-            num_of_classes = 11
-        if data == "FB15k-237":
-            num_of_classes = 237
-        if data == "YAGO3-10":
-            num_of_classes = 37
+    logging.info("-------------------")
+    num_of_classes = 2
 
     graphs_train = pickle.load(
-        open(os.path.join(path, data, subdir, "train.pkl"), "rb")
+        open(os.path.join(path, data, "train.pkl"), "rb")
     )
-    graphs_val = pickle.load(open(os.path.join(path, data, subdir, "valid.pkl"), "rb"))
-    graphs_test = pickle.load(open(os.path.join(path, data, subdir, "test.pkl"), "rb"))
+    graphs_val = pickle.load(open(os.path.join(path, data, "valid.pkl"), "rb"))
+    graphs_test = pickle.load(open(os.path.join(path, data, "test.pkl"), "rb"))
 
     # number of graphs == number of relation type
     return graphs_train, graphs_val, graphs_test, num_of_classes

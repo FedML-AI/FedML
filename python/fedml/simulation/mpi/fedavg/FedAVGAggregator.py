@@ -6,6 +6,7 @@ import numpy as np
 import torch
 import wandb
 
+from fedml.core.security.defense.NormDiffClipping import NormDiffClipping
 from .utils import transform_list_to_tensor
 import logging
 
@@ -44,6 +45,16 @@ class FedAVGAggregator(object):
         for idx in range(self.worker_num):
             self.flag_client_model_uploaded_dict[idx] = False
 
+        # added for attack & defense: --Shanshan 06/27/2022
+        self.defenseAtServer = False
+        self.refs = None
+        self.defense = None
+
+        if args.defense_type in ["norm_diff_clipping"]:
+            self.defense = NormDiffClipping(args.norm_bound)
+            self.defenseAtServer = True
+        ############################################
+
     def get_global_model_params(self):
         return self.trainer.get_model_params()
 
@@ -73,7 +84,16 @@ class FedAVGAggregator(object):
         for idx in range(self.worker_num):
             if self.args.is_mobile == 1:
                 self.model_dict[idx] = transform_list_to_tensor(self.model_dict[idx])
-            model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
+
+            # added for attack & defense: --Shanshan 06/27/2022
+            if self.defenseAtServer:
+                clipped_local_state_dict = self.defense.defense(self.model_dict[idx], self.get_global_model_params(),
+                                                                self.refs)
+                model_list.append((self.sample_num_dict[idx], clipped_local_state_dict))
+            else:
+                model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
+            ############################################
+
             training_num += self.sample_num_dict[idx]
 
         logging.info("len of self.model_dict[idx] = " + str(len(self.model_dict)))
