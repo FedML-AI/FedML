@@ -6,6 +6,7 @@ import shutil
 import sys
 import threading
 import time
+from logging import handlers
 
 import requests
 import yaml
@@ -14,7 +15,7 @@ from fedml.core.mlops.mlops_configs import MLOpsConfigs
 
 class MLOpsRuntimeLog:
     FED_LOG_LINE_NUMS_PER_UPLOADING = 100
-    FED_LOG_UPLOAD_FREQUENCY = 3
+    FED_LOG_UPLOAD_FREQUENCY = 1
 
     _log_sdk_instance = None
     _instance_lock = threading.Lock()
@@ -35,6 +36,7 @@ class MLOpsRuntimeLog:
         logging.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
 
     def __init__(self, args):
+        self.logger = None
         self.args = args
         if hasattr(args, "using_mlops"):
             self.should_write_log_file = args.using_mlops
@@ -63,23 +65,17 @@ class MLOpsRuntimeLog:
         self.log_config_file = args.log_file_dir + "/log-config.yaml"
         self.log_config = {}
         self.load_log_config()
-        self.origin_log_file_path = (
-            self.log_file_dir
-            + "/fedml-run-"
-            + str(self.run_id)
-            + "-edge-"
-            + str(self.edge_id)
-            + ".log"
-        )
-        self.log_file_path = (
-            self.log_file_dir
-            + "/fedml-run-"
-            + str(self.run_id)
-            + "-edge-"
-            + str(self.edge_id)
-            + "-upload.log"
-        )
-        print("log file path {}".format(self.log_file_path))
+        self.origin_log_file_path = os.path.join(self.log_file_dir, "fedml-run-"
+                                                 + str(self.run_id)
+                                                 + "-edge-"
+                                                 + str(self.edge_id)
+                                                 + ".log")
+        self.log_file_path = os.path.join(args.log_file_dir, "fedml-run-"
+                                          + str(self.run_id)
+                                          + "-edge-"
+                                          + str(self.edge_id)
+                                          + "-upload.log")
+        # print("log file path {}".format(self.log_file_path))
 
         sys.excepthook = MLOpsRuntimeLog.handle_exception
         if hasattr(self, "should_upload_log_file") and self.should_upload_log_file:
@@ -94,24 +90,25 @@ class MLOpsRuntimeLog:
 
     def init_logs(self):
         log_file_path, program_prefix = MLOpsRuntimeLog.build_log_file_path(self.args)
+        logging.raiseExceptions = True
+        self.logger = logging.getLogger(log_file_path)
+        format_str = logging.Formatter(fmt="[" + program_prefix + "] [%(asctime)s] [%(levelname)s] "
+                                                                  "[%(filename)s:%(lineno)d:%(funcName)s] %("
+                                                                  "message)s",
+                                       datefmt="%a, %d %b %Y %H:%M:%S")
+        self.logger.setLevel(logging.INFO)
+        stdout_handle = logging.StreamHandler()
+        self.logger.addHandler(stdout_handle)
         if hasattr(self, "should_write_log_file") and self.should_write_log_file:
-            logging.raiseExceptions = True
-            logging.basicConfig(
-                filename=log_file_path,
-                filemode="w",
-                level=logging.INFO,
-                format="[" + program_prefix + "] [%(asctime)s] [%(levelname)s] "
-                       "[%(filename)s:%(lineno)d:%(funcName)s] %(message)s",
-                datefmt="%a, %d %b %Y %H:%M:%S",
-            )
-        else:
-            logging.raiseExceptions = True
-            logging.basicConfig(
-                level=logging.INFO,
-                format="[" + program_prefix + "] [%(asctime)s] [%(levelname)s] "
-                "[%(filename)s:%(lineno)d:%(funcName)s] %(message)s",
-                datefmt="%a, %d %b %Y %H:%M:%S",
-            )
+            stdout_handle.setFormatter(format_str)
+            when = 'D'
+            backup_count = 100
+            file_handle = handlers.TimedRotatingFileHandler(filename=log_file_path, when=when,
+                                                            backupCount=backup_count, encoding='utf-8')
+            file_handle.setFormatter(format_str)
+            self.logger.addHandler(file_handle)
+        logging.root = self.logger
+
 
     @staticmethod
     def build_log_file_path(args):
@@ -127,14 +124,11 @@ class MLOpsRuntimeLog:
             )
 
         os.system("mkdir -p " + args.log_file_dir)
-        log_file_path = (
-            args.log_file_dir
-            + "/fedml-run-"
-            + str(args.run_id)
-            + "-edge-"
-            + str(edge_id)
-            + ".log"
-        )
+        log_file_path = os.path.join(args.log_file_dir, "fedml-run-"
+                                     + str(args.run_id)
+                                     + "-edge-"
+                                     + str(edge_id)
+                                     + ".log")
 
         return log_file_path, program_prefix
 
@@ -160,8 +154,6 @@ class MLOpsRuntimeLog:
         # send log data to the log server
         _, cert_path = MLOpsConfigs.get_instance(self.args).get_request_params()
         if cert_path is not None:
-            cur_source_dir = os.path.dirname(__file__)
-            cert_path = os.path.join(cur_source_dir, "ssl", "open.fedml.ai_bundle.crt")
             requests.session().verify = cert_path
             response = requests.post(self.log_server_url, headers=log_headers, json=log_upload_request, verify=True)
         else:

@@ -1,6 +1,10 @@
 common_args:
   training_type: "simulation"
   random_seed: 0
+  config_version: "local"
+  mlops_api_key: c9356b9c4ce44363bb66366b210201
+  mlops_project_name: simulation_2
+  mlops_run_name: fedml_torch_fedavg_mnist_lr_1
 
 data_args:
   dataset: "mnist"

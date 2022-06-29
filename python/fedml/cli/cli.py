@@ -162,18 +162,18 @@ def mlops_login(userid, version, client, server, local_server, role, runner_cmd,
         )
         return
 
-    click.echo("client {}, server {}".format(client, server))
+    #click.echo("client {}, server {}".format(client, server))
     # Set client as default entity.
     is_client = client
     is_server = server
     if client is None and server is None:
         is_client = True
 
-    click.echo("login as client: {}, as server: {}".format(is_client, is_server))
+    #click.echo("login as client: {}, as server: {}".format(is_client, is_server))
     if is_client is True:
         pip_source_dir = os.path.dirname(__file__)
         login_cmd = os.path.join(pip_source_dir, "edge_deployment", "client_login.py")
-        click.echo(login_cmd)
+        #click.echo(login_cmd)
         client_logout()
         cleanup_login_process(CLIENT_RUNNER_HOME_DIR, CLIENT_RUNNER_INFO_DIR)
         cleanup_all_fedml_processes("client_login.py", exclude_login=True)
@@ -194,7 +194,7 @@ def mlops_login(userid, version, client, server, local_server, role, runner_cmd,
 
         pip_source_dir = os.path.dirname(__file__)
         login_cmd = os.path.join(pip_source_dir, "server_deployment", "server_login.py")
-        click.echo(login_cmd)
+        #click.echo(login_cmd)
         server_logout()
         cleanup_login_process(SERVER_RUNNER_HOME_DIR, SERVER_RUNNER_INFO_DIR)
         cleanup_all_fedml_processes("server_login.py", exclude_login=True)
