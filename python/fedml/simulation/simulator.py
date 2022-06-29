@@ -68,7 +68,6 @@ class SimulatorMPI:
         from .mpi.fedopt.FedOptAPI import FedML_FedOpt_distributed
         from .mpi.fedprox.FedProxAPI import FedML_FedProx_distributed
         from .mpi.split_nn.SplitNNAPI import SplitNN_distributed
-        from .mpi.turboaggregate import TA_API
         from .mpi.fedgan.FedGanAPI import FedML_FedGan_distributed
 
         if args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDAVG:
