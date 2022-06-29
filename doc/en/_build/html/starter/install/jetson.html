@@ -344,11 +344,35 @@
 </pre></div>
 </div>
 </section>
-<section id="issues-and-solutions">
-<h2>Issues and Solutions<a class="headerlink" href="#issues-and-solutions" title="Permalink to this headline">¶</a></h2>
+<section id="install-with-pip">
+<h2>Install with pip<a class="headerlink" href="#install-with-pip" title="Permalink to this headline">¶</a></h2>
+<p>This method is only recommended to those who don’t want to use docker.
+fedml needs to be installed without dependencies because Pytorch is not available in pip on Jetson.</p>
 <ol class="arabic simple">
-<li><p>issues 1:</p></li>
+<li><p>install Pytorch using <a class="reference external" href="https://forums.developer.nvidia.com/t/pytorch-for-jetson-version-1-11-now-available/72048">python wheels</a></p></li>
+<li><p>install rest of the <a class="reference external" href="https://github.com/FedML-AI/FedML/blob/d9bc5fdfe5b4b6d9b59139d3f017702d644ce040/python/setup.py#L20">dependencies</a> with pip3 except torch and torchvision:</p></li>
+<li><p>install fedml without dependencies since they are installed manually.</p></li>
 </ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip3</span> <span class="n">install</span> <span class="n">fedml</span> <span class="o">--</span><span class="n">no</span><span class="o">-</span><span class="n">dependencies</span>
+</pre></div>
+</div>
+<section id="issues-and-solutions">
+<h3>Issues and solutions:<a class="headerlink" href="#issues-and-solutions" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic simple">
+<li><p>pip3 install h5py related error:</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">subversion</span>
+<span class="n">ln</span> <span class="o">-</span><span class="n">s</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">include</span><span class="o">/</span><span class="n">locale</span><span class="o">.</span><span class="n">h</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">include</span><span class="o">/</span><span class="n">xlocale</span><span class="o">.</span><span class="n">h</span>
+<span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">libhdf5</span><span class="o">-</span><span class="n">serial</span><span class="o">-</span><span class="n">dev</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>pip3 install sklearn related error:</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">build</span><span class="o">-</span><span class="n">essential</span> <span class="n">libatlas</span><span class="o">-</span><span class="n">base</span><span class="o">-</span><span class="n">dev</span> <span class="n">gfortran</span>
+</pre></div>
+</div>
+</section>
 </section>
 </section>
 
@@ -388,7 +412,10 @@
               <ul>
 <li><a class="reference internal" href="#">FedML Installation on NVIDIA Jetson Devices</a><ul>
 <li><a class="reference internal" href="#run-fedml-with-docker-recommended">Run FedML with Docker (Recommended)</a></li>
-<li><a class="reference internal" href="#issues-and-solutions">Issues and Solutions</a></li>
+<li><a class="reference internal" href="#install-with-pip">Install with pip</a><ul>
+<li><a class="reference internal" href="#issues-and-solutions">Issues and solutions:</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
