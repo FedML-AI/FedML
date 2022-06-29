@@ -7,6 +7,7 @@ from fedml.data.ImageNet.data_loader import load_partition_data_ImageNet
 from fedml.data.Landmarks.data_loader import load_partition_data_landmarks
 from fedml.data.MNIST.data_loader import load_partition_data_mnist
 from fedml.data.cifar10.data_loader import load_partition_data_cifar10
+from fedml.data.cifar10.efficient_loader import efficient_load_partition_data_cifar10
 from fedml.data.cifar100.data_loader import load_partition_data_cifar100
 from fedml.data.cinic10.data_loader import load_partition_data_cinic10
 from fedml.data.fed_cifar100.data_loader import load_partition_data_federated_cifar100
@@ -249,7 +250,8 @@ def load_synthetic_data(args):
 
     else:
         if dataset_name == "cifar10":
-            data_loader = load_partition_data_cifar10
+            # data_loader = load_partition_data_cifar10
+            data_loader = efficient_load_partition_data_cifar10
         elif dataset_name == "cifar100":
             data_loader = load_partition_data_cifar100
         elif dataset_name == "cinic10":
