@@ -33,7 +33,11 @@ def init(args=None):
     fedml._global_training_type = args.training_type
     fedml._global_comm_backend = args.backend
 
-    if args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION:
+    if (
+        hasattr(args, "enable_tracking")
+        and args.enable_tracking is True
+        and args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
+    ):
         mlops.init(args)
     else:
         MLOpsRuntimeLog.get_instance(args).init_logs()
@@ -66,11 +70,12 @@ def init(args=None):
     ):
         args = init_simulation_sp(args)
     elif (
-            args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
-            and hasattr(args, "backend")
-            and args.backend == FEDML_SIMULATION_TYPE_NCCL
+        args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
+        and hasattr(args, "backend")
+        and args.backend == FEDML_SIMULATION_TYPE_NCCL
     ):
         from .simulation.nccl.base_framework.common import FedML_NCCL_Similulation_init
+
         args = FedML_NCCL_Similulation_init(args)
 
     elif args.training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO:
