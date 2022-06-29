@@ -23,6 +23,7 @@ if __name__ == "__main__":
     # init FedML framework
     args = fedml.init()
 
+    logging.info(f"")
     # init device
     device = fedml.device.get_device(args)
 

@@ -37,9 +37,9 @@ class FedSubgraphRelTrainer(ClientTrainer):
             pass
 
         if args.client_optimizer == "sgd":
-            optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, weight_decay = args.wd)
+            optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=args.learning_rate, weight_decay = args.weight_decay)
         else:
-            optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr,  weight_decay = args.wd)
+            optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=args.learning_rate,  weight_decay = args.weight_decay)
 
         max_test_score = 0
         best_model_params = {}

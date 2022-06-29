@@ -68,7 +68,7 @@ def __login(args, userid, version):
 
     # Build unique device id
     if args.device_id is not None and len(str(args.device_id)) > 0:
-        unique_device_id = "@" + args.device_id + "." + args.os_name
+        unique_device_id = args.device_id + "@" + args.os_name + ".Edge.Device"
 
     # Bind account id to the MLOps platform.
     register_try_count = 0
@@ -124,7 +124,7 @@ if __name__ == "__main__":
     parser.add_argument("--local_server", "-ls", type=str, default="127.0.0.1")
     args = parser.parse_args()
     click.echo(args)
-    args.user = int(args.user)
+    args.user = args.user
     if args.type == 'login':
         login(args)
     else:
