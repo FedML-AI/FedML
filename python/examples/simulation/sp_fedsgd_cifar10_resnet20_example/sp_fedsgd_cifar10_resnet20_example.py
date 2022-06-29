@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../")))
 
 import fedml
 import torch
-from fedml.simulation import SimulatorNCCL
+from fedml.simulation import SimulatorSingleProcess as Simulator
 # from fedml import run_simulation
 
 from fedml.model.cv.resnet_gn import resnet18
@@ -23,7 +23,6 @@ if __name__ == "__main__":
     # init FedML framework
     args = fedml.init()
 
-    logging.info(f"")
     # init device
     device = fedml.device.get_device(args)
 
@@ -36,10 +35,7 @@ if __name__ == "__main__":
         model = resnet18()
     else:
         model = fedml.model.create(args, output_dim)
+
     # start training
-    simulator = SimulatorNCCL(args, device, dataset, model)
-    # simulator = run_simulation(args, device, dataset, model)
+    simulator = Simulator(args, device, dataset, model)
     simulator.run()
-
-
-
