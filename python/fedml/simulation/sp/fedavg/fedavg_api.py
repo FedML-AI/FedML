@@ -5,6 +5,7 @@ import random
 import numpy as np
 import torch
 import wandb
+from fedml import mlops
 
 from .client import Client
 from .my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
@@ -246,12 +247,18 @@ class FedAvgAPI(object):
         if self.args.enable_wandb:
             wandb.log({"Train/Acc": train_acc, "round": round_idx})
             wandb.log({"Train/Loss": train_loss, "round": round_idx})
+
+        mlops.log({"Train/Acc": train_acc, "round": round_idx})
+        mlops.log({"Train/Loss": train_loss, "round": round_idx})
         logging.info(stats)
 
         stats = {"test_acc": test_acc, "test_loss": test_loss}
         if self.args.enable_wandb:
             wandb.log({"Test/Acc": test_acc, "round": round_idx})
             wandb.log({"Test/Loss": test_loss, "round": round_idx})
+
+        mlops.log({"Test/Acc": test_acc, "round": round_idx})
+        mlops.log({"Test/Loss": test_loss, "round": round_idx})
         logging.info(stats)
 
     def _local_test_on_validation_set(self, round_idx):
@@ -275,6 +282,9 @@ class FedAvgAPI(object):
             if self.args.enable_wandb:
                 wandb.log({"Test/Acc": test_acc, "round": round_idx})
                 wandb.log({"Test/Loss": test_loss, "round": round_idx})
+
+            mlops.log({"Test/Acc": test_acc, "round": round_idx})
+            mlops.log({"Test/Loss": test_loss, "round": round_idx})
         elif self.args.dataset == "stackoverflow_lr":
             test_acc = test_metrics["test_correct"] / test_metrics["test_total"]
             test_pre = test_metrics["test_precision"] / test_metrics["test_total"]
@@ -291,6 +301,11 @@ class FedAvgAPI(object):
                 wandb.log({"Test/Pre": test_pre, "round": round_idx})
                 wandb.log({"Test/Rec": test_rec, "round": round_idx})
                 wandb.log({"Test/Loss": test_loss, "round": round_idx})
+
+            mlops.log({"Test/Acc": test_acc, "round": round_idx})
+            mlops.log({"Test/Pre": test_pre, "round": round_idx})
+            mlops.log({"Test/Rec": test_rec, "round": round_idx})
+            mlops.log({"Test/Loss": test_loss, "round": round_idx})
         else:
             raise Exception(
                 "Unknown format to log metrics for dataset {}!" % self.args.dataset
