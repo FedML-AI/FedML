@@ -33,7 +33,10 @@ def init(args=None):
     fedml._global_training_type = args.training_type
     fedml._global_comm_backend = args.backend
 
-    MLOpsRuntimeLog.get_instance(args).init_logs()
+    if args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION:
+        mlops.init(args)
+    else:
+        MLOpsRuntimeLog.get_instance(args).init_logs()
 
     logging.info("args = {}".format(vars(args)))
 
@@ -187,6 +190,7 @@ def run_distributed():
 from fedml import device
 from fedml import data
 from fedml import model
+from fedml import mlops
 
 from .arguments import load_arguments
 
@@ -207,6 +211,7 @@ __all__ = [
     "device",
     "data",
     "model",
+    "mlops",
     "ClientTrainer",
     "ServerAggregator",
     "run_simulation",
