@@ -1,10 +1,14 @@
 common_args:
   training_type: "simulation"
   random_seed: 0
+  config_version: "local"
+  mlops_api_key: c9356b9c4ce44363bb66366b210201
+  mlops_project_name: simulation_2
+  mlops_run_name: fedml_subgraph_link_pred
 
 data_args:
-  dataset: "YAGO3-10"
-  data_cache_dir: "./data/"
+  dataset: "wn18rr"
+  data_cache_dir: "./data"
   partition_method: "hetero"
   part_algo: "Louvain"
   pred_task: "relation"
@@ -29,11 +33,11 @@ model_args:
 train_args:
   federated_optimizer: "FedAvg"
   client_id_list: "[]"
-  client_num_in_total: 1000
-  client_num_per_round: 4
+  client_num_in_total: 2
+  client_num_per_round: 2
   comm_round: 100
   epochs: 5
-  batch_size: 64
+  batch_size: 1
   client_optimizer: sgd
   learning_rate: 0.03
   weight_decay: 0.001
@@ -53,10 +57,20 @@ comm_args:
   is_mobile: 0
 
 
+attack_args:
+  add_attack: N
+  attack_type: None
+
+defense_args:
+  add_defense: N
+  defense_type: norm_diff_clipping
+  norm_bound: 5.0
+
 tracking_args:
   enable_tracking: false
   log_file_dir: ./log
   enable_wandb: false
   wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
   wandb_project: fedml
-  wandb_name: fedml_torch_moleculenet
+  wandb_name: fedml_subgraph_relation_prediction
+  run_name: fed_subgraph_rel_pred
