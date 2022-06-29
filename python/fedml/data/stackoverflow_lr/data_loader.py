@@ -21,7 +21,6 @@ DEFAULT_CACHE_FILE = "stackoverflow_lr.pkl"
 
 
 def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
-
     if client_idx is None:
 
         train_dl = data.DataLoader(
@@ -93,9 +92,8 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
 
 
 def load_partition_data_distributed_federated_stackoverflow_lr(
-    process_id, dataset, data_dir, batch_size=DEFAULT_BATCH_SIZE
+        process_id, dataset, data_dir, batch_size=DEFAULT_BATCH_SIZE
 ):
-
     # get global dataset
     if process_id == 0:
         train_data_global, test_data_global = get_dataloader(
@@ -131,7 +129,7 @@ def load_partition_data_distributed_federated_stackoverflow_lr(
 
 
 def load_partition_data_federated_stackoverflow_lr(
-    dataset, data_dir, batch_size=DEFAULT_BATCH_SIZE
+        dataset, data_dir, batch_size=DEFAULT_BATCH_SIZE
 ):
     logging.info("load_partition_data_federated_stackoverflow_lr START")
     global cache_data
@@ -140,6 +138,7 @@ def load_partition_data_federated_stackoverflow_lr(
     if os.path.exists(cache_path):
         # load cache
         with open(cache_path, "rb") as cache_file:
+            global cache_data
             cache_data = pickle.load(cache_file)
             train_data_num = cache_data["train_data_num"]
             test_data_num = cache_data["test_data_num"]

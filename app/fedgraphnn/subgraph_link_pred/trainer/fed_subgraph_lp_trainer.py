@@ -24,10 +24,6 @@ class FedSubgraphLPTrainer(ClientTrainer):
     def train(self, train_data, device, args):
         model = self.model
 
-        self.metric_fn = (
-            average_precision_score if args.metric == "AP" else roc_auc_score
-        )
-
         model.to(device)
         model.train()
 
@@ -41,14 +37,14 @@ class FedSubgraphLPTrainer(ClientTrainer):
         if args.client_optimizer == "sgd":
             optimizer = torch.optim.SGD(
                 filter(lambda p: p.requires_grad, model.parameters()),
-                lr=args.lr,
-                weight_decay=args.wd,
+                lr=args.learning_rate,
+                weight_decay=args.weight_decay,
             )
         else:
             optimizer = torch.optim.Adam(
                 filter(lambda p: p.requires_grad, model.parameters()),
-                lr=args.lr,
-                weight_decay=args.wd,
+                lr=args.learning_rate,
+                weight_decay=args.weight_decay,
             )
 
         max_test_score = 0
@@ -61,17 +57,23 @@ class FedSubgraphLPTrainer(ClientTrainer):
 
                 neg_edge_index = negative_sampling(
                     edge_index=batch.edge_index,
+                    num_nodes=batch.num_nodes,
                     num_neg_samples=batch.edge_index.size(1),
                 )
 
                 batch.to(device)
                 optimizer.zero_grad()
-
+                print(batch)
                 z = model.encode(batch.x, batch.edge_index)
-                self.train_z = z.item()
-                link_logits = model.decode(z, batch.edge_index, neg_edge_index)
+                self.train_z = z
+
+                edge_idx, neg_idx  = batch.edge_index.to(device) , neg_edge_index.to(device)
+
+                link_logits = model.decode(
+                    z, edge_idx, neg_idx
+                )
                 link_labels = self.get_link_labels(
-                    batch.edge_index, neg_edge_index, device
+                    edge_idx, neg_idx, device
                 )
                 loss = F.binary_cross_entropy_with_logits(link_logits, link_labels)
                 loss.backward()
@@ -107,15 +109,20 @@ class FedSubgraphLPTrainer(ClientTrainer):
 
         cum_score = 0.0
         ngraphs = 0
+        threshold = torch.tensor([0.7], device = device)
         for batch in test_data:
             batch.to(device)
             with torch.no_grad():
-                pos_edge_index = batch["test_pos_edge_index"]
-                neg_edge_index = batch["test_neg_edge_index"]
-                link_logits = model.decode(self.train_z, pos_edge_index, neg_edge_index)
-                link_probs = link_logits.sigmoid()
-                link_labels = self.get_link_labels(pos_edge_index, neg_edge_index)
-            cum_score += self.metric_fn(link_labels.cpu(), link_probs.cpu())
+                neg_edge_index = negative_sampling(
+                    edge_index=batch.edge_index,
+                    num_nodes=batch.num_nodes,
+                    num_neg_samples=batch.edge_index.size(1),
+                )
+                z = model.encode(batch.x, batch.edge_index)
+                out = model.decode(z, batch.edge_index, neg_edge_index).view(-1).sigmoid()
+                pred = (out > threshold).float() * 1
+            
+            cum_score += average_precision_score(np.ones(batch.edge_index.numel()), pred.cpu())
             ngraphs += batch.num_graphs
 
         return cum_score / ngraphs, model
@@ -136,11 +143,13 @@ class FedSubgraphLPTrainer(ClientTrainer):
             logging.info(
                 "Client {}, Test {} = {}".format(client_idx, args.metric, score)
             )
-            wandb.log({"Client {} Test/{}}".format(client_idx, args.metric): score})
+            if args.enable_wandb:
+                wandb.log({"Client {} Test/{}}".format(client_idx, args.metric): score})
 
         avg_score = np.mean(np.array(score_list))
         logging.info("Test {} = {}".format(args.metric, avg_score))
-        wandb.log({"Test/{}".format(args.metric): avg_score})
+        if args.enable_wandb:
+            wandb.log({"Test/{}".format(args.metric): avg_score})
 
         return True
 

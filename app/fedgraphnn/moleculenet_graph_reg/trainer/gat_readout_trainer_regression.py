@@ -30,7 +30,7 @@ class GatMoleculeNetTrainer(ClientTrainer):
         except:
             pass
 
-        criterion = torch.nn.MSELoss() if args.dataset != "qm9" else torch.nn.MAELoss()
+        criterion = torch.nn.MSELoss() if args.dataset != "qm9" else torch.nn.L1Loss()
         if args.client_optimizer == "sgd":
             optimizer = torch.optim.SGD(model.parameters(), lr=args.learning_rate)
         else:
