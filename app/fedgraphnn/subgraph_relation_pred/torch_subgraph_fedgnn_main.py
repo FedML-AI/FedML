@@ -17,7 +17,7 @@ def load_data(args):
 
     unif = True if args.partition_method == "homo" else False
 
-    if args.model == "gcn":
+    if args.model == "rgcn":
         args.normalize_features = True
         args.normalize_adjacency = True
 
