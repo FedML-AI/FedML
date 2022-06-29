@@ -25,6 +25,18 @@ def get_device(args):
             args.gpu_mapping_key,
         )
         return device
+    elif args.training_type == "simulation" and args.backend == "NCCL":
+        from .gpu_mapping_mpi import (
+            mapping_processes_to_gpu_device_from_yaml_file_mpi,
+        )
+
+        device = mapping_processes_to_gpu_device_from_yaml_file_mpi(
+            args.process_id,
+            args.worker_num,
+            args.gpu_mapping_file if args.using_gpu else None,
+            args.gpu_mapping_key,
+        )
+        return device
     elif args.training_type == "cross_silo":
 
         if args.scenario == "hierarchical":
