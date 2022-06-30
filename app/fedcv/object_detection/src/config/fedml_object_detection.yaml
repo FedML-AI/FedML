@@ -18,8 +18,8 @@ model_args:
   model: "yolo"
   class_num: 80
   yolo_cfg: "yolov5s-noupsample.yaml" # yolo
-  yolo_hyp: "./../data/hyp.scratch.yaml" # yolo
-  weights: "best.pt" # yolo
+  yolo_hyp: "./config/hyps/hyp.scratch.yaml" # yolo
+  weights: "none" # "best.pt" # yolo
   single_cls: false # yolo
   conf_thres: 0.001 # yolo
   iou_thres: 0.6 # for yolo NMS
