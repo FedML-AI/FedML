@@ -4,7 +4,11 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import wandb
-from sklearn.metrics import mean_absolute_error, mean_squared_error, mean_absolute_percentage_error
+from sklearn.metrics import (
+    mean_absolute_error,
+    mean_squared_error,
+    mean_absolute_percentage_error,
+)
 
 from fedml.core.alg_frame.client_trainer import ClientTrainer
 
@@ -28,14 +32,14 @@ class FedSubgraphLPTrainer(ClientTrainer):
         if args.client_optimizer == "sgd":
             optimizer = torch.optim.SGD(
                 filter(lambda p: p.requires_grad, model.parameters()),
-                lr=args.lr,
-                weight_decay=args.wd,
+                lr=args.learning_rate,
+                weight_decay=args.weight_decay,
             )
         else:
             optimizer = torch.optim.Adam(
                 filter(lambda p: p.requires_grad, model.parameters()),
-                lr=args.lr,
-                weight_decay=args.wd,
+                lr=args.learning_rate,
+                weight_decay=args.weight_decay,
             )
 
         max_test_score = 0
@@ -54,7 +58,7 @@ class FedSubgraphLPTrainer(ClientTrainer):
                 optimizer.step()
 
             if train_data is not None:
-                test_score, _ , _, _, _= self.test(
+                test_score, _, _, _, _ = self.test(
                     train_data, device, val=True, metric=self.metric_fn
                 )
                 print(
@@ -72,7 +76,6 @@ class FedSubgraphLPTrainer(ClientTrainer):
         return max_test_score, best_model_params
 
     def test(self, test_data, device, val=True, metric=mean_absolute_error):
-        logging.info("----------test--------")
         model = self.model
         model.eval()
         model.to(device)
@@ -94,7 +97,11 @@ class FedSubgraphLPTrainer(ClientTrainer):
                     link_labels = batch.label_test
                 score = metric(link_labels.cpu(), link_logits.cpu())
                 mae.append(mean_absolute_error(link_labels.cpu(), link_logits.cpu()))
-                rmse.append(mean_squared_error(link_labels.cpu(), link_logits.cpu(), squared = False))
+                rmse.append(
+                    mean_squared_error(
+                        link_labels.cpu(), link_logits.cpu(), squared=False
+                    )
+                )
                 mse.append(mean_squared_error(link_labels.cpu(), link_logits.cpu()))
         return score, model, mae, rmse, mse
 
@@ -117,10 +124,17 @@ class FedSubgraphLPTrainer(ClientTrainer):
             mse_list.append(mse)
 
             logging.info(
-                "Client {}, Test {} = {}, mae = {}, rmse = {}, mse = {}".format(client_idx, args.metric, score, mae, rmse, mse)
+                "Client {}, Test {} = {}, mae = {}, rmse = {}, mse = {}".format(
+                    client_idx, args.metric, score, mae, rmse, mse
+                )
             )
-            wandb.log({"Client {} Test/{}".format(client_idx, args.metric): score,
-            "MAE, RMSE, MSE": [mae, rmse, mse]})
+            if args.enable_wandb:
+                wandb.log(
+                    {
+                        "Client {} Test/{}".format(client_idx, args.metric): score,
+                        "MAE, RMSE, MSE": [mae, rmse, mse],
+                    }
+                )
 
         avg_score = np.mean(np.array(score_list))
         mae_score = np.mean(np.array(mae_list))
@@ -128,10 +142,17 @@ class FedSubgraphLPTrainer(ClientTrainer):
         mse_score = np.mean(np.array(mse_list))
 
         logging.info(
-                "Test {} = {}, mae = {}, rmse = {}, mse = {}".format(args.metric, avg_score, mae_score, rmse_score, mse_score)
+            "Test {} = {}, mae = {}, rmse = {}, mse = {}".format(
+                args.metric, avg_score, mae_score, rmse_score, mse_score
             )
-        wandb.log({"Client {} Test/{}".format(client_idx, args.metric): avg_score,
-            "MAE, RMSE, MSE = ": [mae_score, rmse_score, mse_score]})
+        )
+        if args.enable_wandb:
+            wandb.log(
+                {
+                    "Client {} Test/{}".format(client_idx, args.metric): avg_score,
+                    "MAE, RMSE, MSE = ": [mae_score, rmse_score, mse_score],
+                }
+            )
 
         return True
 
