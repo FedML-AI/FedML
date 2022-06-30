@@ -37,9 +37,12 @@ jobs:
       - name: pip install -e ./
         run: |
           echo "install pip"
-          sudo apt-get install python3-pip < eof
+          sudo apt-get install python3-pip << eof
+
           y
+
           eof
+          
           echo "pip install -e ./"
           pip install -e ./
           
