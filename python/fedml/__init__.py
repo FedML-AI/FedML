@@ -126,7 +126,7 @@ def init_cross_silo_horizontal(args):
         worker_num = comm.Get_size()
         args.comm = comm
         args.process_id = process_id
-        args.worker_num = worker_num
+        args.worker_num = worker_num - 1
         logging.info("comm = {}".format(comm))
 
     else:
