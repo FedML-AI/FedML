@@ -100,6 +100,8 @@ class FedAvgAPI(object):
             )
             logging.info("client_indexes = " + str(client_indexes))
 
+            mlops.event("agg", event_started=True, event_value=str(round_idx))
+
             for idx, client in enumerate(self.client_list):
                 # update dataset
                 client_idx = client_indexes[idx]
@@ -118,9 +120,7 @@ class FedAvgAPI(object):
                 w_locals.append((client.get_sample_number(), copy.deepcopy(w)))
 
             # update global weights
-            mlops.event("agg", event_started=True, event_value=str(round_idx))
             w_global = self._aggregate(w_locals)
-            mlops.event("agg", event_started=False, event_value=str(round_idx))
             self.model_trainer.set_model_params(w_global)
 
             # test results
@@ -133,6 +133,8 @@ class FedAvgAPI(object):
                     self._local_test_on_validation_set(round_idx)
                 else:
                     self._local_test_on_all_clients(round_idx)
+
+            mlops.event("agg", event_started=False, event_value=str(round_idx))
 
             mlops.log_round_info(self.args.comm_round, round_idx)
 
