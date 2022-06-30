@@ -15,15 +15,12 @@ class FedAVGClientManager(ClientManager):
         rank=0,
         size=0,
         backend="MPI",
-        attacker=None,
-        defenser=None,
     ):
         super().__init__(args, comm, rank, size, backend)
         self.trainer = trainer
         self.num_rounds = args.comm_round
         self.round_idx = 0
-        self.attacker = attacker
-        self.defenser = defenser
+
 
     def run(self):
         super().run()

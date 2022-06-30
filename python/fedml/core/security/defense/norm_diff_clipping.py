@@ -1,6 +1,7 @@
 import torch
-from fedml.core.security import utils
-from fedml.core.security.defense.FedDefense import FedDefense
+
+from .defense_base import BaseDefenseMethod
+from ...security import utils
 
 """
 added by Shanshan, 06/28/2022
@@ -8,11 +9,11 @@ Can You Really Backdoor Federated Learning? https://arxiv.org/pdf/1911.07963.pdf
 """
 
 
-class NormDiffClipping(FedDefense):
+class NormDiffClipping(BaseDefenseMethod):
     def __init__(self, norm_bound):
         self.norm_bound = norm_bound  # for norm diff clipping and weak DP defenses
 
-    def defense(self, local_w, global_w, refs=None):
+    def defend(self, local_w, global_w, refs=None):
         vec_local_weight = utils.vectorize_weight(local_w)
         vec_global_weight = utils.vectorize_weight(global_w)
         clipped_weight_diff = self._get_clipped_norm_diff(
