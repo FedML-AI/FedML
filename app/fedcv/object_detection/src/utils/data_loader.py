@@ -133,7 +133,7 @@ def load_partition_data_coco(args, hyp, model):
         augment=True,
         workers=args.worker_num,
     )
-    train_data_num = train_dataset_global.data_len
+    train_data_num = train_dataset_global.data_size
 
     test_dataloader_global = create_dataloader(
         test_path,
@@ -147,7 +147,7 @@ def load_partition_data_coco(args, hyp, model):
         workers=args.worker_num,
     )[0]
 
-    test_data_num = test_dataloader_global.dataset.data_len
+    test_data_num = test_dataloader_global.dataset.data_size
 
     for i in range(client_number):
         if (i + 1) != args.process_id:

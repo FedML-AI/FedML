@@ -18,8 +18,7 @@ from torch.optim import Adam, lr_scheduler
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../")))
 from fedml.core.alg_frame.client_trainer import ClientTrainer
 
-from utils.loss import compute_loss
-from utils.plots import plot_images, plot_labels, plot_results, plot_evolution
+from utils.loss import ComputeLoss
 from utils.general import (
     coco80_to_coco91_class,
     check_dataset,
@@ -38,9 +37,9 @@ from utils.metrics import ap_per_class
 
 
 class DetectionTrainer(ClientTrainer):
-    def __init__(self, model, args=None, hyp=None):
+    def __init__(self, model, args=None):
         super(DetectionTrainer, self).__init__(model, args)
-        self.hyp = hyp
+        self.hyp = args.hyp
         self.args = args
         self.round_idx = 0
         self.round_loss = []
@@ -92,29 +91,14 @@ class DetectionTrainer(ClientTrainer):
         lf = lambda x: ((1 + math.cos(x * math.pi / total_epochs)) / 2) * (1 - hyp["lrf"]) + hyp["lrf"]  # cosine
         scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)
 
-        # save_dir, epochs, batch_size, total_batch_size, weights, rank = (
-        #     Path(args.save_dir),
-        #     args.epochs,
-        #     args.batch_size,
-        #     args.total_batch_size,
-        #     args.weights,
-        #     args.global_rank,
-        # )
-
-        # # Directories
-        # wdir = save_dir / "weights"
-        # wdir.mkdir(parents=True, exist_ok=True)  # make dir
-        # last = wdir / "last.pt"
-        # best = wdir / "best.pt"
-        # results_file = save_dir / "results.txt"
-
         model.to(device)
         model.train()
 
         scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda epoch: 1.0 - epoch / args.epochs)
+        compute_loss = ComputeLoss(model)
 
         epoch_loss = []
-        mloss = torch.zeros(4, device=device)  # mean losses
+        mloss = torch.zeros(3, device=device)  # mean losses
         logging.info("Epoch gpu_mem box obj cls total targets img_size time")
         for epoch in range(args.epochs):
             model.train()
@@ -128,7 +112,7 @@ class DetectionTrainer(ClientTrainer):
 
                 optimizer.zero_grad()
                 pred = model(imgs)  # forward
-                loss, loss_items = compute_loss(pred, targets.to(device), model)  # loss scaled by batch_size
+                loss, loss_items = compute_loss(pred, targets.to(device))  # loss scaled by batch_size
 
                 # Backward
                 loss.backward()
@@ -137,7 +121,7 @@ class DetectionTrainer(ClientTrainer):
 
                 mloss = (mloss * batch_idx + loss_items) / (batch_idx + 1)  # update mean losses
                 mem = "%.3gG" % (torch.cuda.memory_reserved() / 1e9 if torch.cuda.is_available() else 0)  # (GB)
-                s = ("%10s" * 2 + "%10.4g" * 6) % (
+                s = ("%10s" * 2 + "%10.4g" * 5) % (
                     "%g/%g" % (epoch, epochs - 1),
                     mem,
                     *mloss,
@@ -148,14 +132,14 @@ class DetectionTrainer(ClientTrainer):
 
                 if batch_idx % 100 == 0:
                     logging.info(
-                        f"Trainer {self.id} batch {batch_idx} box: {mloss[0]} obj: {mloss[1]} cls: {mloss[2]} total: {mloss[3]} time: {(time.time() - t)/60}"
+                        f"Trainer {self.id} batch {batch_idx} box: {mloss[0]} obj: {mloss[1]} cls: {mloss[2]} total: {mloss.sum()} time: {(time.time() - t)/60}"
                     )
 
             scheduler.step()
 
             epoch_loss.append(copy.deepcopy(mloss.cpu().numpy()))
             logging.info(
-                f"***Trainer {self.id} epoch {epoch} box: {mloss[0]} obj: {mloss[1]} cls: {mloss[2]} total: {mloss[3]} time: {(time.time() - t)/60}"
+                f"***Trainer {self.id} epoch {epoch} box: {mloss[0]} obj: {mloss[1]} cls: {mloss[2]} total: {mloss.sum()} time: {(time.time() - t)/60}"
             )
 
         # plot for client
@@ -167,7 +151,7 @@ class DetectionTrainer(ClientTrainer):
         plt.plot(epoch_loss[:, 0], label="box")
         plt.plot(epoch_loss[:, 1], label="obj")
         plt.plot(epoch_loss[:, 2], label="cls")
-        plt.plot(epoch_loss[:, 3], label="total")
+        # plt.plot(epoch_loss[:, 3], label="total")
         plt.legend()
 
         plt.savefig(f"{args.save_dir}/trainer_{self.id}_epoch_loss_round_{self.round_idx}.png")
@@ -185,7 +169,7 @@ class DetectionTrainer(ClientTrainer):
             plt.plot(self.round_loss[:, 0], label="box")
             plt.plot(self.round_loss[:, 1], label="obj")
             plt.plot(self.round_loss[:, 2], label="cls")
-            plt.plot(self.round_loss[:, 3], label="total")
+            # plt.plot(self.round_loss[:, 3], label="total")
             plt.legend()
             plt.savefig(f"{args.save_dir}/trainer_{self.id}_round_loss.png")
             plt.close()
@@ -208,7 +192,9 @@ class DetectionTrainer(ClientTrainer):
         s = ("%20s" + "%12s" * 6) % ("Class", "Images", "Targets", "P", "R", "mAP@.5", "mAP@.5:.95")
         p, r, f1, mp, mr, map50, map, t0, t1 = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
         loss = torch.zeros(3, device=device)
+        compute_loss = ComputeLoss(model)
         jdict, stats, ap, ap_class, wandb_images = [], [], [], [], []
+
         for batch_i, (img, targets, paths, shapes) in enumerate(test_data):
             img = img.to(device, non_blocking=True)
             # img = img.half() if half else img.float()  # uint8 to fp16/32
@@ -223,7 +209,7 @@ class DetectionTrainer(ClientTrainer):
                 inf_out, train_out = model(img)  # inference and training outputs
 
                 # Loss
-                loss += compute_loss([x.float() for x in train_out], targets, model)[1][:3]  # box, obj, cls
+                loss += compute_loss([x.float() for x in train_out], targets)[1][:3]  # box, obj, cls
 
                 # Run NMS
                 output = non_max_suppression(inf_out, conf_thres=args.conf_thres, iou_thres=args.iou_thres)
