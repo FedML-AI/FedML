@@ -1,5 +1,5 @@
 import fedml
-from fedml import SimulatorMPI
+from fedml.simulation import SimulatorMPI
 from fedml.data.data_loader import load_poisoned_dataset_from_edge_case_examples
 
 from fedml.data.edge_case_examples.data_loader import download_edgecase_data

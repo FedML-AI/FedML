@@ -9,7 +9,7 @@ import yaml
 
 from ..constants import CommunicationConstants
 from ..mqtt.mqtt_manager import MqttManager
-from .remote_storage import S3MNNStorage
+from ..s3.remote_storage_mnn import S3MNNStorage
 from ..base_com_manager import BaseCommunicationManager
 from ..message import Message
 from ..observer import Observer
@@ -41,6 +41,16 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
         )
         if args is not None:
             self.client_real_ids = json.loads(args.client_id_list)
+        if args.rank == 0:
+            if hasattr(args, "server_device_id"):
+                self.edge_id = args.server_device_id
+            else:
+                self.edge_id = 0
+        else:
+            if len(self.client_real_ids) == 1:
+                self.edge_id = self.client_real_ids[0]
+            else:
+                self.edge_id = 0
 
         self._observers: List[Observer] = []
         if client_id is None:
