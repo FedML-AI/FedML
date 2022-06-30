@@ -27,13 +27,6 @@ class ClientManager(Observer):
             self.com_manager = MpiCommunicationManager(
                 comm, rank, size, node_type="client"
             )
-        elif backend == "MQTT":
-            HOST = "0.0.0.0"
-            # HOST = "broker.emqx.io"
-            PORT = 1883
-            self.com_manager = MqttCommManager(
-                HOST, PORT, client_id=rank, client_num=size - 1
-            )
         elif backend == "MQTT_S3":
             mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
             args.mqtt_config_path = mqtt_config
