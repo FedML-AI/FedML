@@ -1,8 +1,8 @@
 # FedIoT: Federated Learning for Internet of Things
 This is the offical implementation of the paper: \
-Federated Learning for Internet of Things: A Federated Learning Framework for On-device Anomaly Data Detection \
+**Federated Learning for Internet of Things: A Federated Learning Framework for On-device Anomaly Data Detection** \
 Tuo Zhang*, Chaoyang He*, Tianhao Ma, Lei Gao, Mark Ma, Salman Avestimehr \
-(* means co-1st authors) \ 
+(* means co-1st authors) \
 accepted to ACM Embedded Networked Sensor Systems SenSys 2021 (AIChallengeIoT) \
 [[Proceeding](https://dl.acm.org/doi/pdf/10.1145/3485730.3493444)] [[Arxiv](https://arxiv.org/abs/2106.07976)] \
 TLDR: IoT x Federated Learning, from FedML.ai
@@ -10,7 +10,9 @@ TLDR: IoT x Federated Learning, from FedML.ai
 
 Due to the heterogeneity, diversity, and personalization of IoT networks, Federated Learning (FL) has a promising future in the IoT cybersecurity field. As a result, we present the FedIoT, an open research platform and benchmark to facilitate FL research in the IoT field. In particular, we propose an autoencoder based trainer to IoT traffic data for anomaly detection. In addition, with the application of federated learning approach for aggregating, we propose an efficient and practical model for the anomaly detection in various types of devices, while preserving the data privacy for each device. What is more, our platform supports three diverse computing paradigms: 1) on-device training for IoT edge devices, 2) distributed computing, and 3) single-machine simulation to meet algorithmic and system-level research requirements under different system deployment scenarios. We hope FedIoT could provide an efficient and reproducible means for developing the implementation of FL in the IoT field. 
 
-Check our slides here: https://docs.google.com/presentation/d/1aW0GlOhKOl35jMl1KBDjKafJcYjWB-T9fiUsbdBySd4/edit?usp=sharing
+Check our slides [here](https://docs.google.com/presentation/d/1aW0GlOhKOl35jMl1KBDjKafJcYjWB-T9fiUsbdBySd4/edit?usp=sharing).
+Learn more about Federated Learning for Internet of Things, please check our survey **Federated Learning for Internet of Things: Applications, Challenges, and Opportunities** at [IEEE Xplore](https://ieeexplore.ieee.org/abstract/document/9773116) and [Arxiv](https://arxiv.org/abs/2111.07494).
+
 
 ## Prerequisite
 Install command line tool `unar` on both server and client side: 
@@ -84,7 +86,7 @@ You can describe us in your paper like this: "We develop our experiments based o
 
 @article{Zhang2021FederatedLF,
   title={Federated Learning for Internet of Things},
-  author={Tuo Zhang and Chaoyang He and Tian-Shya Ma and Mark Ma and Salman Avestimehr},
+  author={Tuo Zhang and Chaoyang He and Tianhao Ma and Lei Gao and Mark Ma and Salman Avestimehr},
   journal={Proceedings of the 19th ACM Conference on Embedded Networked Sensor Systems},
   year={2021}
 }
