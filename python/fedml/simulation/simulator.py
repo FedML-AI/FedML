@@ -170,16 +170,6 @@ class SimulatorMPI:
             )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDSEG:
             pass
-        elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_TURBO_AGGREGATE:
-            self.simulator = TA_API.FedML_FedAvg_distributed(
-                args.process_id,
-                args.worker_num,
-                device,
-                args.comm,
-                model,
-                dataset,
-                args,
-            )
         elif args.fl_trainer == FedML_FEDERATED_OPTIMIZER_FEDAVG_ROBUST:
             self.fl_trainer = FedML_FedAvgRobust_distributed(
                 args,
