@@ -45,15 +45,11 @@ jobs:
 
           echo "pip install -e ./"
           pip install -e ./
-          
+
       - name: test sp_fedavg_mnist_lr_example
         run: |
           echo "this is for test sp_fedavg_mnist_lr_example"
           ls .
-#          echo "install fedml"
-#          cd python
-#          pip install -e ./
-#          echo "finish install fedml"
           cd examples/simulation/sp_fedavg_mnist_lr_example
 
           echo "train"
