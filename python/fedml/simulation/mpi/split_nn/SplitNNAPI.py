@@ -4,6 +4,7 @@ from .client import SplitNN_client
 from .client_manager import SplitNNClientManager
 from .server import SplitNN_server
 from .server_manager import SplitNNServerManager
+from torch import nn
 from torch.utils.data import DataLoader
 
 
@@ -19,8 +20,7 @@ def SplitNN_distributed(
         worker_number,
         device,
         comm,
-        client_model,
-        server_model,
+        model,
         dataset,
         args,
 ):
@@ -35,11 +35,13 @@ def SplitNN_distributed(
         class_num,
     ] = dataset
 
-    # import pdb
-    # pdb.set_trace()
-    #
-    # train_dloader = DataLoader(train_data_local, batch_size=args.batch_size)
-    # test_dloader = DataLoader(test_data_local, batch_size=args.batch_size)
+    fc_features = model.fc.in_features
+    model.fc = nn.Sequential(nn.Flatten(),
+                             nn.Linear(fc_features, class_num))
+    split_layer = 1
+    # Split The model
+    client_model = nn.Sequential(*nn.ModuleList(model.children())[:split_layer])
+    server_model = nn.Sequential(*nn.ModuleList(model.children())[split_layer:])
 
     server_rank = 0
     if process_id == server_rank:
@@ -85,7 +87,9 @@ def init_client(
         device,
         args,
 ):
+    client_ID = process_id - 1
     arg_dict = {
+        'client_index': client_ID,
         "comm": comm,
         "trainloader": train_data_local,
         "testloader": test_data_local,
