@@ -8,10 +8,10 @@ common_args:
 
 data_args:
   dataset: "coco"
-  data_cache_dir: "./../data/"
+  data_cache_dir: "./data/"
   partition_method: "homo"
   partition_alpha: 0.5
-  data_conf: "./../data/coco128.yaml" # yolo
+  data_conf: "./data/coco128.yaml" # yolo
   img_size: [64, 64] # [640, 640]
 
 model_args:
