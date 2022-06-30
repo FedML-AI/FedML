@@ -15,10 +15,10 @@ class NormDiffClipping(FedDefense):
     def defense(self, local_w, global_w, refs=None):
         vec_local_weight = utils.vectorize_weight(local_w)
         vec_global_weight = utils.vectorize_weight(global_w)
-        clipped_weight_diff = self._get_clipped_norm_diff(vec_local_weight, vec_global_weight)
-        clipped_w = self._get_clipped_weights(
-            local_w, global_w, clipped_weight_diff
+        clipped_weight_diff = self._get_clipped_norm_diff(
+            vec_local_weight, vec_global_weight
         )
+        clipped_w = self._get_clipped_weights(local_w, global_w, clipped_weight_diff)
         return clipped_w
 
     def _get_clipped_norm_diff(self, vec_local_w, vec_global_w):
@@ -34,7 +34,10 @@ class NormDiffClipping(FedDefense):
         index_bias = 0
         for item_index, (k, v) in enumerate(local_w.items()):
             if utils.is_weight_param(k):
-                recons_local_w[k] = weight_diff[index_bias: index_bias + v.numel()].view(v.size()) + global_w[k]
+                recons_local_w[k] = (
+                    weight_diff[index_bias : index_bias + v.numel()].view(v.size())
+                    + global_w[k]
+                )
                 index_bias += v.numel()
             else:
                 recons_local_w[k] = v

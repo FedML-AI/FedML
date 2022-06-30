@@ -46,10 +46,10 @@ tracking_args:
   using_mlops: false
 
 attack_args:
-  add_attack: N
+  enable_attack: N
   attack_type: None
 
 defense_args:
-  add_defense: Y
+  enable_defense: Y
   defense_type: norm_diff_clipping
   norm_bound: 5.0
