@@ -173,7 +173,6 @@ class FedMLClientManager(ClientManager):
         if hasattr(self.args, "backend") and self.args.using_mlops:
             self.mlops_event.log_event_started("train", event_value=str(self.round_idx))
 
-        time.sleep(10)
         weights, local_sample_num = self.trainer.train(self.round_idx)
 
         if hasattr(self.args, "backend") and self.args.using_mlops:
