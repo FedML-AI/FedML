@@ -1,3 +1,5 @@
+from fedml.core.security.attack.FedMLAttacker import FedMLAttacker
+from fedml.core.security.defense.FedMLDefenser import FedMLDefenser
 from .FedAVGAggregator import FedAVGAggregator
 from .FedAVGTrainer import FedAVGTrainer
 from .FedAvgClientManager import FedAVGClientManager
@@ -7,17 +9,16 @@ from .my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
 from .my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
 
 
-
 def FedML_FedAvg_distributed(
-        args,
-        process_id,
-        worker_number,
-        comm,
-        device,
-        dataset,
-        model,
-        model_trainer=None,
-        preprocessed_sampling_lists=None,
+    args,
+    process_id,
+    worker_number,
+    comm,
+    device,
+    dataset,
+    model,
+    model_trainer=None,
+    preprocessed_sampling_lists=None,
 ):
     [
         train_data_num,
@@ -29,6 +30,10 @@ def FedML_FedAvg_distributed(
         test_data_local_dict,
         class_num,
     ] = dataset
+
+    attacker = init_attacker(args)
+    defenser = init_defenser(args)
+
     if process_id == 0:
         init_server(
             args,
@@ -45,6 +50,8 @@ def FedML_FedAvg_distributed(
             train_data_local_num_dict,
             model_trainer,
             preprocessed_sampling_lists,
+            attacker,
+            defenser,
         )
     else:
         init_client(
@@ -59,24 +66,28 @@ def FedML_FedAvg_distributed(
             train_data_local_dict,
             test_data_local_dict,
             model_trainer,
+            attacker,
+            defenser,
         )
 
 
 def init_server(
-        args,
-        device,
-        comm,
-        rank,
-        size,
-        model,
-        train_data_num,
-        train_data_global,
-        test_data_global,
-        train_data_local_dict,
-        test_data_local_dict,
-        train_data_local_num_dict,
-        model_trainer,
-        preprocessed_sampling_lists=None,
+    args,
+    device,
+    comm,
+    rank,
+    size,
+    model,
+    train_data_num,
+    train_data_global,
+    test_data_global,
+    train_data_local_dict,
+    test_data_local_dict,
+    train_data_local_num_dict,
+    model_trainer,
+    preprocessed_sampling_lists=None,
+    attacker=None,
+    defenser=None,
 ):
     if model_trainer is None:
         if args.dataset == "stackoverflow_lr":
@@ -100,6 +111,8 @@ def init_server(
         device,
         args,
         model_trainer,
+        attacker,
+        defenser,
     )
 
     # start the distributed training
@@ -124,17 +137,19 @@ def init_server(
 
 
 def init_client(
-        args,
-        device,
-        comm,
-        process_id,
-        size,
-        model,
-        train_data_num,
-        train_data_local_num_dict,
-        train_data_local_dict,
-        test_data_local_dict,
-        model_trainer=None,
+    args,
+    device,
+    comm,
+    process_id,
+    size,
+    model,
+    train_data_num,
+    train_data_local_num_dict,
+    train_data_local_dict,
+    test_data_local_dict,
+    model_trainer=None,
+    attacker=None,
+    defenser=None,
 ):
     client_index = process_id - 1
     if model_trainer is None:
@@ -156,5 +171,15 @@ def init_client(
         args,
         model_trainer,
     )
-    client_manager = FedAVGClientManager(args, trainer, comm, process_id, size, backend)
+    client_manager = FedAVGClientManager(
+        args, trainer, comm, process_id, size, backend, attacker, defenser
+    )
     client_manager.run()
+
+
+def init_attacker(args):
+    return FedMLAttacker(args)
+
+
+def init_defenser(args):
+    return FedMLDefenser(args)

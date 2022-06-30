@@ -6,7 +6,6 @@ import numpy as np
 import torch
 import wandb
 
-from fedml.core.security.defense.NormDiffClipping import NormDiffClipping
 from .utils import transform_list_to_tensor
 import logging
 
@@ -24,6 +23,8 @@ class FedAVGAggregator(object):
         device,
         args,
         model_trainer,
+        attacker,
+        defenser,
     ):
         self.trainer = model_trainer
 
@@ -45,14 +46,10 @@ class FedAVGAggregator(object):
         for idx in range(self.worker_num):
             self.flag_client_model_uploaded_dict[idx] = False
 
-        # added for attack & defense: --Shanshan 06/27/2022
-        self.defenseAtServer = False
+        # added for attack & defense
+        self.attacker = attacker
+        self.defenser = defenser
         self.refs = None
-        self.defense = None
-
-        if hasattr(args, "defense_type") and args.defense_type in ["norm_diff_clipping"]:
-            self.defense = NormDiffClipping(args.norm_bound)
-            self.defenseAtServer = True
         ############################################
 
     def get_global_model_params(self):
@@ -85,13 +82,18 @@ class FedAVGAggregator(object):
             if self.args.is_mobile == 1:
                 self.model_dict[idx] = transform_list_to_tensor(self.model_dict[idx])
 
-            # added for attack & defense: --Shanshan 06/27/2022
-            if self.defenseAtServer:
-                clipped_local_state_dict = self.defense.defense(self.model_dict[idx], self.get_global_model_params(),
-                                                                self.refs)
-                model_list.append((self.sample_num_dict[idx], clipped_local_state_dict))
-            else:
-                model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
+            # added for attack & defense; enable multiple defenses
+            if self.defenser.is_defense_enabled():
+                for defense_type in self.defenser.defenses.keys():
+                    if self.defenser.is_server_defense(defense_type):
+                        self.model_dict[idx] = self.defenser.defenses[
+                            defense_type
+                        ].defense(
+                            self.model_dict[idx],
+                            self.get_global_model_params(),
+                            self.refs,
+                        )
+            model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
             ############################################
 
             training_num += self.sample_num_dict[idx]
