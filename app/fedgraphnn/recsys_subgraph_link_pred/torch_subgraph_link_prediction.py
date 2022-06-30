@@ -45,7 +45,7 @@ def load_data(args):
         feature_dim,
     ]
 
-    return dataset 
+    return dataset
 
 
 def create_model(args, model_name, feature_dim):
@@ -60,9 +60,8 @@ def create_model(args, model_name, feature_dim):
         model = SAGELinkPred(feature_dim, args.hidden_size, args.node_embedding_dim)
     else:
         raise Exception("such model does not exist !")
-    trainer = FedSubgraphLPTrainer(model)
-    logging.info("Model and Trainer  - done")
-    return model, 
+    return model
+
 
 if __name__ == "__main__":
     # init FedML framework
@@ -72,10 +71,12 @@ if __name__ == "__main__":
     device = fedml.device.get_device(args)
 
     # load data
-    dataset, output_dim = load_data(args)
+    dataset = load_data(args)
 
     # load model
-    model, trainer = create_model(args, args.model_name)
+    model = create_model(args, args.model, dataset[7])
+
+    trainer = FedSubgraphLPTrainer(model)
 
     # start training
     simulator = SimulatorMPI(args, device, dataset, model, trainer)
