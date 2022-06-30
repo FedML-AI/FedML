@@ -1,4 +1,5 @@
 import copy
+import logging
 import random
 import time
 
@@ -7,7 +8,7 @@ import torch
 import wandb
 
 from .utils import transform_list_to_tensor
-import logging
+from ....core.security.defense.fedml_defender import FedMLDefender
 
 
 class FedAVGAggregator(object):
@@ -23,8 +24,6 @@ class FedAVGAggregator(object):
         device,
         args,
         model_trainer,
-        attacker,
-        defenser,
     ):
         self.trainer = model_trainer
 
@@ -45,12 +44,6 @@ class FedAVGAggregator(object):
         self.flag_client_model_uploaded_dict = dict()
         for idx in range(self.worker_num):
             self.flag_client_model_uploaded_dict[idx] = False
-
-        # added for attack & defense
-        self.attacker = attacker
-        self.defenser = defenser
-        self.refs = None
-        ############################################
 
     def get_global_model_params(self):
         return self.trainer.get_model_params()
@@ -83,21 +76,13 @@ class FedAVGAggregator(object):
                 self.model_dict[idx] = transform_list_to_tensor(self.model_dict[idx])
 
             # added for attack & defense; enable multiple defenses
-            if self.defenser.is_defense_enabled():
-                for defense_type in self.defenser.get_defense_types():
-                    if self.defenser.is_client_defense(defense_type):
-                        self.model_dict[idx] = self.defenser.defenses[
-                            defense_type
-                        ].defense(
-                            self.model_dict[idx],
-                            self.get_global_model_params(),
-                            self.refs,
-                        )
+            if FedMLDefender.get_instance().is_defense_enabled():
+                self.model_dict[idx] = FedMLDefender.get_instance().defend(
+                    self.model_dict[idx], self.get_global_model_params()
+                )
+
             model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
-            ############################################
-
             training_num += self.sample_num_dict[idx]
-
         logging.info("len of self.model_dict[idx] = " + str(len(self.model_dict)))
 
         # logging.info("################aggregate: %d" % len(model_list))
