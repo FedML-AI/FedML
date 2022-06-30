@@ -172,11 +172,6 @@ $FEDML_DOCKER_IMAGE
 docker container kill $(docker ps -q)
 ```
 
-- For IoT devices such as NVIDIA and Raspberry Pi 4, they are based on arm64v8 architecture. Please follow commands below.
-
-```
-coming soon
-```
 
 ## Guidance for Windows Users
 

@@ -17,7 +17,7 @@ DEFAULT_TRAIN_FILE = "fed_cifar100_train.h5"
 DEFAULT_TEST_FILE = "fed_cifar100_test.h5"
 
 # group name defined by tff in h5 file
-_EXAMPLE = "examples.md"
+_EXAMPLE = "examples"
 _IMGAE = "image"
 _LABEL = "label"
 
