@@ -1,9 +1,11 @@
 # FedIoT: Federated Learning for Internet of Things
- 
-<!-- This is FedIoT, an application ecosystem for federated IoT based on FedML framework (https://github.com/FedML-AI/FedML). -->
-
-This repository is the official implementation of Federated Learning for Internet of Things: A Federated Learning Framework for On-device Anomaly Data Detection.
-Read our paper here: https://arxiv.org/abs/2106.07976
+This is the offical implementation of the paper: \
+Federated Learning for Internet of Things: A Federated Learning Framework for On-device Anomaly Data Detection \
+Tuo Zhang*, Chaoyang He*, Tianhao Ma, Lei Gao, Mark Ma, Salman Avestimehr \
+(* means co-1st authors) \ 
+accepted to ACM Embedded Networked Sensor Systems SenSys 2021 (AIChallengeIoT) \
+[[Proceeding](https://dl.acm.org/doi/pdf/10.1145/3485730.3493444)] [[Arxiv](https://arxiv.org/abs/2106.07976)] \
+TLDR: IoT x Federated Learning, from FedML.ai
 ## Introduction
 
 Due to the heterogeneity, diversity, and personalization of IoT networks, Federated Learning (FL) has a promising future in the IoT cybersecurity field. As a result, we present the FedIoT, an open research platform and benchmark to facilitate FL research in the IoT field. In particular, we propose an autoencoder based trainer to IoT traffic data for anomaly detection. In addition, with the application of federated learning approach for aggregating, we propose an efficient and practical model for the anomaly detection in various types of devices, while preserving the data privacy for each device. What is more, our platform supports three diverse computing paradigms: 1) on-device training for IoT edge devices, 2) distributed computing, and 3) single-machine simulation to meet algorithmic and system-level research requirements under different system deployment scenarios. We hope FedIoT could provide an efficient and reproducible means for developing the implementation of FL in the IoT field. 
@@ -21,6 +23,12 @@ for Linux
 ```
 sudo apt-get install unar
 ```
+Install fedml library on serve side:
+```
+pip install fedml
+```
+Install fedml library on [raspberry](https://doc.fedml.ai/starter/install/rpi.html) and [jetson](https://doc.fedml.ai/starter/install/jetson.html) platforms.
+
 
 ## Real-deployment Training Script
 
@@ -75,23 +83,12 @@ Please cite our FedIoT and FedML paper if it helps your research.
 You can describe us in your paper like this: "We develop our experiments based on FedIoT [1] and FedML [2]".
 
 @article{Zhang2021FederatedLF,
-  title={Federated Learning for Internet of Things: A Federated Learning Framework for On-device Anomaly Data Detection},
-  author={Tuo Zhang and Chaoyang He and Tian-Shya Ma and Mark Ma and S. Avestimehr},
-  journal={ArXiv},
-  year={2021},
-  volume={abs/2106.07976}
+  title={Federated Learning for Internet of Things},
+  author={Tuo Zhang and Chaoyang He and Tian-Shya Ma and Mark Ma and Salman Avestimehr},
+  journal={Proceedings of the 19th ACM Conference on Embedded Networked Sensor Systems},
+  year={2021}
 }
 
 ## Contact
 
-The corresponding author is:
-
-Tuo Zhang
-tuozhang@usc.edu
-
-Chaoyang He
-chaoyang.he@usc.edu
-http://chaoyanghe.com
-
-Lei Gao
-leig@usc.edu
+Please find contact information at the [homepage](https://github.com/FedML-AI/FedML#join-the-community).
