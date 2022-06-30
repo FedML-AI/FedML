@@ -198,7 +198,8 @@ def load_arguments(training_type=None, comm_backend=None):
                     "training_type != FEDML_TRAINING_PLATFORM_CROSS_DEVICE and training_type != FEDML_TRAINING_PLATFORM_CROSS_SILO"
                 )
         else:
-            print("args.client_id_list is not None")
+            pass
+            #print("args.client_id_list is not None")
     else:
         print("using_mlops = true")
     return args
