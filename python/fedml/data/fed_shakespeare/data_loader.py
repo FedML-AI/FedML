@@ -16,7 +16,7 @@ DEFAULT_TRAIN_FILE = "shakespeare_train.h5"
 DEFAULT_TEST_FILE = "shakespeare_test.h5"
 
 # group name defined by tff in h5 file
-_EXAMPLE = "examples.md"
+_EXAMPLE = "examples"
 _SNIPPETS = "snippets"
 
 
