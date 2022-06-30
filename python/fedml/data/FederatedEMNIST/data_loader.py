@@ -15,7 +15,7 @@ DEFAULT_TRAIN_FILE = "fed_emnist_train.h5"
 DEFAULT_TEST_FILE = "fed_emnist_test.h5"
 
 # group name defined by tff in h5 file
-_EXAMPLE = "examples.md"
+_EXAMPLE = "examples"
 _IMGAE = "pixels"
 _LABEL = "label"
 

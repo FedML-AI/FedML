@@ -3,10 +3,13 @@ import torch.optim as optim
 
 class SplitNN_client:
     def __init__(self, args):
+        self.client_idx = args['client_index']
         self.comm = args["comm"]
         self.model = args["model"]
-        self.trainloader = args["trainloader"]
-        self.testloader = args["testloader"]
+        client_index = self.client_idx
+
+        self.trainloader = args["trainloader"][client_index]
+        self.testloader = args["testloader"][client_index]
         self.rank = args["rank"]
         self.MAX_RANK = args["max_rank"]
         self.node_left = self.MAX_RANK if self.rank == 1 else self.rank - 1
@@ -21,12 +24,16 @@ class SplitNN_client:
         self.device = args["device"]
 
     def forward_pass(self):
-        import pdb
         inputs, labels = next(self.dataloader)
         inputs, labels = inputs.to(self.device), labels.to(self.device)
         self.optimizer.zero_grad()
 
-        self.acts = self.model(inputs)
+        try:
+            self.acts = self.model(inputs)
+        except:
+            print(inputs.size())
+            import pdb
+            pdb.set_trace()
         return self.acts, labels
 
     def backward_pass(self, grads):

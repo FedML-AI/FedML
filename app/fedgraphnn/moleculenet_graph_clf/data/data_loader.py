@@ -20,7 +20,6 @@ def get_data(path):
 
     return adj_matrices, feature_matrices, labels
 
-
 def create_random_split(path):
     adj_matrices, feature_matrices, labels = get_data(path)
 
@@ -74,7 +73,6 @@ def create_random_split(path):
         test_labels,
     )
 
-
 def create_non_uniform_split(args, idxs, client_number, is_train=True):
     logging.info("create_non_uniform_split------------------------------------------")
     N = len(idxs)
@@ -100,7 +98,6 @@ def create_non_uniform_split(args, idxs, client_number, is_train=True):
     logging.info("create_non_uniform_split******************************************")
 
     return idx_batch_per_client
-
 
 def partition_data_by_sample_size(
     args, path, client_number, uniform=True, compact=True
@@ -478,7 +475,7 @@ def load_partition_data_distributed(process_id, path, client_number, uniform=Tru
 
 def load_moleculenet(args, dataset_name):
     num_cats, feat_dim = 0, 0
-    if dataset_name not in ["sider", "clintox", "bbbp", "pcba", "tox21", "toxcast", "muv","hiv" ]:
+    if dataset_name not in ["sider", "bace", "clintox", "bbbp", "pcba", "tox21", "toxcast", "muv","hiv" ]:
         raise Exception("no such dataset!")
 
     compact = args.model == "graphsage"
@@ -514,15 +511,13 @@ def load_moleculenet(args, dataset_name):
 
     dataset = [
         train_data_num,
-        val_data_num,
         test_data_num,
         train_data_global,
-        val_data_global,
         test_data_global,
         data_local_num_dict,
         train_data_local_dict,
-        val_data_local_dict,
         test_data_local_dict,
+        labels[0].shape[0],
     ]
 
     return dataset, feature_matrices[0].shape[1], labels[0].shape[0]
