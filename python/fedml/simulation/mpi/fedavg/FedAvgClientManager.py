@@ -7,11 +7,20 @@ from ....core.distributed.communication.message import Message
 
 
 class FedAVGClientManager(ClientManager):
-    def __init__(self, args, trainer, comm=None, rank=0, size=0, backend="MPI"):
+    def __init__(
+        self,
+        args,
+        trainer,
+        comm=None,
+        rank=0,
+        size=0,
+        backend="MPI",
+    ):
         super().__init__(args, comm, rank, size, backend)
         self.trainer = trainer
         self.num_rounds = args.comm_round
         self.round_idx = 0
+
 
     def run(self):
         super().run()

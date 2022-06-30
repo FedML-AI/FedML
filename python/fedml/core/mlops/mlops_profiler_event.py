@@ -25,7 +25,10 @@ class MLOpsProfilerEvent:
         self.args = args
         self.run_id = args.run_id
         if args.rank == 0:
-            self.edge_id = 0
+            if hasattr(args, "server_device_id"):
+                self.edge_id = args.server_device_id
+            else:
+                self.edge_id = 0
         else:
             self.edge_id = json.loads(args.client_id_list)[0]
         self.com_manager = MqttS3StatusManager(
