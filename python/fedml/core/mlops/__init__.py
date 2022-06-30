@@ -8,7 +8,10 @@ import uuid
 
 import click
 import requests
+from fedml.cli.edge_deployment.client_constants import ClientConstants
 from fedml.cli.edge_deployment.client_runner import FedMLClientRunner
+from fedml import constants, FEDML_TRAINING_PLATFORM_SIMULATION
+from fedml.cli.server_deployment.server_constants import ServerConstants
 
 from ..distributed.communication.mqtt.mqtt_manager import MqttManager
 
@@ -19,10 +22,6 @@ from .mlops_profiler_event import MLOpsProfilerEvent
 from .mlops_runtime_log import MLOpsRuntimeLog
 from .system_stats import SysStats
 
-FEDML_TRAINING_PLATFORM_CROSS_SILO_TYPE = 1
-FEDML_TRAINING_PLATFORM_SIMULATION_TYPE = 2
-FEDML_TRAINING_PLATFORM_DISTRIBUTED_TYPE = 3
-FEDML_TRAINING_PLATFORM_CROSS_DEVICE_TYPE = 4
 
 FEDML_MLOPS_API_RESPONSE_SUCCESS_CODE = "SUCCESS"
 
@@ -40,6 +39,10 @@ class MLOpsStore:
     mlops_run_id = None
     mlops_edge_id = None
     mlops_log_metrics = dict()
+    mlops_log_round_info = dict()
+    mlops_log_client_training_status = ClientConstants.MSG_MLOPS_CLIENT_STATUS_TRAINING
+    mlops_log_server_training_status = ServerConstants.MSG_MLOPS_SERVER_STATUS_RUNNING
+    mlops_log_round_start_time = 0.0
     mlops_log_metrics_lock = None
     mlops_log_mqtt_mgr = None
     mlops_log_mqtt_lock = None
@@ -52,6 +55,9 @@ class MLOpsStore:
 
 
 def init(args):
+    MLOpsStore.mlops_args = args
+    if not mlops_tracking_enabled(args):
+        return
     project_name = None
     api_key = None
     run_name = None
@@ -87,6 +93,9 @@ def init(args):
 
 
 def event(event_name, event_started=True, event_value=None, event_edge_id=None):
+    if not mlops_tracking_enabled(MLOpsStore.mlops_args):
+        return
+
     mlops_event = MLOpsProfilerEvent(MLOpsStore.mlops_args)
     mlops_event.edge_id = MLOpsStore.mlops_edge_id
     if event_started:
@@ -96,6 +105,9 @@ def event(event_name, event_started=True, event_value=None, event_edge_id=None):
 
 
 def log(metrics: dict, commit=True):
+    if not mlops_tracking_enabled(MLOpsStore.mlops_args):
+        return
+
     if MLOpsStore.mlops_log_metrics_lock is None:
         MLOpsStore.mlops_log_metrics_lock = threading.Lock()
 
@@ -119,12 +131,56 @@ def log(metrics: dict, commit=True):
         release_log_mqtt_mgr()
 
 
+def log_training_status(status):
+    if not mlops_tracking_enabled(MLOpsStore.mlops_args):
+        return
+
+    logging.info("log training status {}".format(status))
+
+    setup_log_mqtt_mgr()
+    wait_log_mqtt_connected()
+    MLOpsStore.mlops_metrics.report_client_training_status(MLOpsStore.mlops_edge_id, status)
+    release_log_mqtt_mgr()
+
+
+def log_aggregation_status(status):
+    if not mlops_tracking_enabled(MLOpsStore.mlops_args):
+        return
+
+    logging.info("log aggregation status {}".format(status))
+
+    setup_log_mqtt_mgr()
+    wait_log_mqtt_connected()
+    MLOpsStore.mlops_metrics.report_server_training_status(MLOpsStore.mlops_run_id, status)
+    release_log_mqtt_mgr()
+
+
+def log_round_info(total_rounds, round_index):
+    if not mlops_tracking_enabled(MLOpsStore.mlops_args):
+        return
+
+    if round_index == 0:
+        MLOpsStore.mlops_log_round_start_time = time.time()
+
+    setup_log_mqtt_mgr()
+    wait_log_mqtt_connected()
+    round_info = {
+        "run_id": MLOpsStore.mlops_run_id,
+        "round_index": round_index,
+        "total_rounds": total_rounds,
+        "running_time": round(time.time() - MLOpsStore.mlops_log_round_start_time, 4),
+    }
+    logging.info("log round info {}".format(round_info))
+    MLOpsStore.mlops_metrics.report_server_training_round_info(round_info)
+    release_log_mqtt_mgr()
+
+
 def create_project(project_name, api_key):
     url_prefix, cert_path = get_request_params(MLOpsStore.mlops_args)
     url = "{}/fedmlOpsServer/projects/createSim".format(url_prefix)
     json_params = {"name": project_name,
                    "userids": api_key,
-                   "platform_type": str(FEDML_TRAINING_PLATFORM_SIMULATION_TYPE)}
+                   "platform_type": str(constants.FEDML_TRAINING_PLATFORM_SIMULATION_TYPE)}
     if cert_path is not None:
         requests.session().verify = cert_path
         response = requests.post(
@@ -370,3 +426,14 @@ def bind_local_device(args, userid, version="release"):
     MLOpsStore.mlops_args = args
 
     return True
+
+
+def mlops_tracking_enabled(args):
+    if (
+            hasattr(args, "enable_tracking")
+            and args.enable_tracking is True
+            and args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
+    ):
+        return True
+    else:
+        return False
