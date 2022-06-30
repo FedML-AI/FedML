@@ -715,8 +715,6 @@ class FedMLServerRunner:
         request_json = json.loads(payload)
         run_id = request_json["run_id"]
         status = request_json["status"]
-        self.run_id = run_id
-        self.edge_id = request_json["edge_id"]
 
         if status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED:
             logging.info("Received training finished message.")
