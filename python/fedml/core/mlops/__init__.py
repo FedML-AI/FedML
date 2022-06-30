@@ -64,15 +64,22 @@ def init(args):
     if project_name is None or api_key is None:
         raise Exception("Please check mlops_project_name and mlops_api_key params.")
 
+    # Bind local device as simulation device on the MLOps platform.
     setattr(args, "using_mlops", True)
-    bind_local_device(args, api_key, args.config_version)
+    bind_result = bind_local_device(args, api_key, args.config_version)
+    if not bind_result:
+        return
 
-    result, project_id = create_project(project_name, api_key)
-    if result:
-        result, run_id = create_run(project_id, api_key, run_name)
-        if result:
+    # Init project and run
+    result_project, project_id = create_project(project_name, api_key)
+    if result_project:
+        result_run, run_id = create_run(project_id, api_key, run_name)
+        if result_run:
             MLOpsStore.mlops_project_id = project_id
             MLOpsStore.mlops_run_id = run_id
+    if result_project is False or result_run is False:
+        click.echo("Failed to init project and run.")
+        return
 
     # Init runtime logs
     init_logs(MLOpsStore.mlops_args, MLOpsStore.mlops_edge_id)
@@ -138,8 +145,11 @@ def create_project(project_name, api_key):
 def create_run(project_id, api_key, run_name=None):
     url_prefix, cert_path = get_request_params(MLOpsStore.mlops_args)
     url = "{}/fedmlOpsServer/runs/createSim".format(url_prefix)
+    edge_ids = list()
+    edge_ids.append(MLOpsStore.mlops_edge_id)
     json_params = {"userids": api_key,
-                   "projectid": str(project_id)}
+                   "projectid": str(project_id),
+                   "edgeids": edge_ids}
     if run_name is not None:
         json_params["name"] = run_name
     if cert_path is not None:
@@ -324,7 +334,7 @@ def bind_local_device(args, userid, version="release"):
     if config_try_count >= 5:
         click.echo("Oops, you failed to login the FedML MLOps platform.")
         click.echo("Please check whether your network is normal!")
-        return
+        return False
 
     # Build unique device id
     if args.device_id is not None and len(str(args.device_id)) > 0:
@@ -351,10 +361,12 @@ def bind_local_device(args, userid, version="release"):
     if edge_id <= 0:
         click.echo("Oops, you failed to login the FedML MLOps platform.")
         click.echo("Please check whether your network is normal!")
-        return
+        return False
     MLOpsStore.mlops_edge_id = edge_id
 
     # Log arguments and binding results.
     runner.unique_device_id = unique_device_id
 
     MLOpsStore.mlops_args = args
+
+    return True
