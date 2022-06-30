@@ -985,9 +985,7 @@ class FedMLServerRunner:
     def send_agent_active_msg(self):
         active_topic = "/flserver_agent/active"
         status = MLOpsStatus.get_instance().get_server_agent_status(self.edge_id)
-        if status is None:
-            return
-        if status != ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE and \
+        if status is not None and status != ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE and \
                 status != ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE:
             return
         active_msg = {"ID": self.edge_id, "status": status}
