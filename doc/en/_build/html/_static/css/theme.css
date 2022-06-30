@@ -13943,11 +13943,13 @@ article.pytorch-article .tutorials-callout-container .btn.callout-button a {
 }
 
 .expand-menu, .hide-menu {
-  color: #6c6c6d;
-  padding-left: 10px;
-  cursor: none;
-  float: right;
-  pointer-events: none;
+    position: absolute;
+    align-self: center;
+    margin-left: 294px;
+    color: #6c6c6d;
+    /* padding-left: 10px; */
+    cursor: pointer;
+    float: right;
 }
 
 .menu-item-decorator {
@@ -13963,7 +13965,7 @@ article.pytorch-article .tutorials-callout-container .btn.callout-button a {
 }
 
 .pytorch-left-menu p.caption {
-  display: block;
+  display: flex;
   margin-bottom: 0px;
   text-transform: none;
   white-space: normal;
