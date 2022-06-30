@@ -9,7 +9,7 @@ import yaml
 
 from ..constants import CommunicationConstants
 from ..mqtt.mqtt_manager import MqttManager
-from .remote_storage import S3MNNStorage
+from ..s3.remote_storage_mnn import S3MNNStorage
 from ..base_com_manager import BaseCommunicationManager
 from ..message import Message
 from ..observer import Observer
