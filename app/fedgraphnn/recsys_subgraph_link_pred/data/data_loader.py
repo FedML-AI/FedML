@@ -218,7 +218,7 @@ def create_category_split(
     assert pred_task in ["link_prediction"]
     logging.info("reading data")
 
-    graphs_split = get_data_category(args, path, data, load_processed=True)
+    graphs_split = get_data_category(args, path, data, load_processed=False)
 
     return graphs_split
 
