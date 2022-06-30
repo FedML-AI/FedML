@@ -82,6 +82,9 @@ class FedAvgAPI(object):
     def train(self):
         logging.info("self.model_trainer = {}".format(self.model_trainer))
         w_global = self.model_trainer.get_model_params()
+        mlops.log_training_status(mlops.ClientStatus.MSG_MLOPS_CLIENT_STATUS_TRAINING)
+        mlops.log_aggregation_status(mlops.ServerStatus.MSG_MLOPS_SERVER_STATUS_RUNNING)
+        mlops.log_round_info(self.args.comm_round, 0)
         for round_idx in range(self.args.comm_round):
 
             logging.info("################Communication round : {}".format(round_idx))
@@ -108,12 +111,16 @@ class FedAvgAPI(object):
                 )
 
                 # train on new dataset
+                mlops.event("train", event_started=True, event_value=str(round_idx))
                 w = client.train(copy.deepcopy(w_global))
+                mlops.event("train", event_started=False, event_value=str(round_idx))
                 # self.logging.info("local weights = " + str(w))
                 w_locals.append((client.get_sample_number(), copy.deepcopy(w)))
 
             # update global weights
+            mlops.event("agg", event_started=True, event_value=str(round_idx))
             w_global = self._aggregate(w_locals)
+            mlops.event("agg", event_started=False, event_value=str(round_idx))
             self.model_trainer.set_model_params(w_global)
 
             # test results
@@ -126,6 +133,12 @@ class FedAvgAPI(object):
                     self._local_test_on_validation_set(round_idx)
                 else:
                     self._local_test_on_all_clients(round_idx)
+
+            mlops.log_round_info(self.args.comm_round, round_idx)
+
+        mlops.log_training_status(mlops.ClientStatus.MSG_MLOPS_CLIENT_STATUS_FINISHED)
+        mlops.log_aggregation_status(mlops.ServerStatus.MSG_MLOPS_SERVER_STATUS_FINISHED)
+
 
     def _client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
         if client_num_in_total == client_num_per_round:
