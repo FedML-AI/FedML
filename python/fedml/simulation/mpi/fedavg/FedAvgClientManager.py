@@ -4,36 +4,26 @@ from .message_define import MyMessage
 from .utils import transform_list_to_tensor
 from ....core.distributed.client.client_manager import ClientManager
 from ....core.distributed.communication.message import Message
-from ....core.security.defense.FedDefense import FedDefense
 
 
 class FedAVGClientManager(ClientManager):
-    def __init__(self, args, trainer, comm=None, rank=0, size=0, backend="MPI"):
+    def __init__(
+        self,
+        args,
+        trainer,
+        comm=None,
+        rank=0,
+        size=0,
+        backend="MPI",
+        attacker=None,
+        defenser=None,
+    ):
         super().__init__(args, comm, rank, size, backend)
         self.trainer = trainer
         self.num_rounds = args.comm_round
         self.round_idx = 0
-
-        # added for attack & defense: --Shanshan 06/27/2022
-        self.attack_at_client = False
-        self.defense_at_client = False
-        self.attack = None
-        self.defense = None
-
-        if hasattr(args, "add_attack") and args.add_attack == "Y":
-            if args.attack_type in ["xxx"]:
-                self.attack_at_client = True
-                if args.attack_type == "xxx":
-                    # self.attack = FedAttack()
-                    pass
-
-        if hasattr(args, "add_attack") and args.add_defense == "Y":
-            if args.defense_type in ["xxx"]:
-                self.defense_at_client = True
-                if args.defense_type == "xxx":
-                    # self.attack = FedDefense()
-                    pass
-    ##########################################
+        self.attacker = attacker
+        self.defenser = defenser
 
     def run(self):
         super().run()
@@ -70,13 +60,6 @@ class FedAVGClientManager(ClientManager):
 
         if self.args.is_mobile == 1:
             model_params = transform_list_to_tensor(model_params)
-
-        # todo: added for attack & defense
-        if self.attack_at_client:
-            self.attack.attack()  # xxxx
-        if self.defense_at_client:
-            self.defense.defense()
-        #########################################
 
         self.trainer.update_model(model_params)
         self.trainer.update_dataset(int(client_index))
