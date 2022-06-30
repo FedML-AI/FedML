@@ -988,6 +988,7 @@ class FedMLServerRunner:
         if status is not None and status != ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE and \
                 status != ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE:
             return
+        status = ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE
         active_msg = {"ID": self.edge_id, "status": status}
         MLOpsStatus.get_instance().set_server_agent_status(self.edge_id, status)
         self.mqtt_mgr.send_message_json(active_topic, json.dumps(active_msg))
@@ -1002,6 +1003,7 @@ class FedMLServerRunner:
             self.mlops_metrics.run_id = self.run_id
             self.mlops_metrics.edge_id = self.edge_id
             self.mlops_metrics.report_server_training_status(self.edge_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE)
+            MLOpsStatus.get_instance().set_server_agent_status(self.edge_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE)
 
         # Setup MQTT message listener for starting training
         server_agent_id = self.edge_id
@@ -1063,7 +1065,7 @@ class FedMLServerRunner:
         logging.info("Your server unique device id is " + str(self.unique_device_id))
 
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
-        pass
+        MLOpsStatus.get_instance().set_server_agent_status(self.edge_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE)
 
     def setup_agent_mqtt_connection(self, service_config):
         # Setup MQTT connection
