@@ -1,6 +1,6 @@
 # FedML MLOps User Guide
 
-![image](../_static/image/mlops_workflow.png)
+![image](../_static/image/MLOps_workflow.png)
 Figure 1: the workflow that describes how our MLOps works
 
 The above figure shows the workflow. Such a workflow is handled by web UI without the need to handle complex deployment. 
