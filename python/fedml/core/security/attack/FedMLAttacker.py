@@ -1,6 +1,6 @@
 class FedMLAttacker:
     def __init__(self, args):
-        if args.enable_attack == "Y":
+        if hasattr(args, "enable_attack") and args.enable_attack == "Y":
             self.is_enabled = True
             self.attacks = {}
             for attack in args.attack_type.split(","):
@@ -21,6 +21,3 @@ class FedMLAttacker:
 
     def attack(self, attack_type, local_w, global_w, refs=None):
         return self.attacks[attack_type].attack(local_w, global_w, refs)
-
-    def get_attacks_list(self):
-        return self.attacks
