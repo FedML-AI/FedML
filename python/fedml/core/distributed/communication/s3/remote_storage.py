@@ -1,12 +1,10 @@
-# -*-coding:utf-8-*-
+import logging
 import os
 import tempfile
 
 import boto3
 import joblib
 import yaml
-
-import logging
 
 
 class S3Storage:
