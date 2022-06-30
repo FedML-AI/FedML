@@ -37,7 +37,7 @@ jobs:
       - name: pip install -e ./
         run: |
           echo "install pip"
-          sudo apt-get install python3-pip
+          yum -y install python3-pip
           echo "pip install -e ./"
           pip install -e ./
           
