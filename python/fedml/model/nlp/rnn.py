@@ -44,6 +44,35 @@ class RNN_OriginalFedAvg(nn.Module):
         return output
 
 
+class RNN_FedShakespeare(nn.Module):
+    def __init__(self, embedding_dim=8, vocab_size=90, hidden_size=256):
+        super(RNN_FedShakespeare, self).__init__()
+        self.embeddings = nn.Embedding(
+            num_embeddings=vocab_size, embedding_dim=embedding_dim, padding_idx=0
+        )
+        self.lstm = nn.LSTM(
+            input_size=embedding_dim,
+            hidden_size=hidden_size,
+            num_layers=2,
+            batch_first=True,
+        )
+        self.fc = nn.Linear(hidden_size, vocab_size)
+
+    def forward(self, input_seq):
+        embeds = self.embeddings(input_seq)
+        # Note that the order of mini-batch is random so there is no hidden relationship among batches.
+        # So we do not input the previous batch's hidden state,
+        # leaving the first hidden state zero `self.lstm(embeds, None)`.
+        lstm_out, _ = self.lstm(embeds)
+        # use the final hidden state as the next character prediction
+        final_hidden_state = lstm_out[:, -1]
+        # output = self.fc(final_hidden_state)
+        # For fed_shakespeare
+        output = self.fc(lstm_out[:, :])
+        output = torch.transpose(output, 1, 2)
+        return output
+
+
 class RNN_StackOverFlow(nn.Module):
     """Creates a RNN model using LSTM layers for StackOverFlow (next word prediction task).
     This replicates the model structure in the paper:
@@ -57,12 +86,12 @@ class RNN_StackOverFlow(nn.Module):
     """
 
     def __init__(
-        self,
-        vocab_size=10000,
-        num_oov_buckets=1,
-        embedding_size=96,
-        latent_size=670,
-        num_layers=1,
+            self,
+            vocab_size=10000,
+            num_oov_buckets=1,
+            embedding_size=96,
+            latent_size=670,
+            num_layers=1,
     ):
         super(RNN_StackOverFlow, self).__init__()
         extended_vocab_size = vocab_size + 3 + num_oov_buckets  # For pad/bos/eos/oov.

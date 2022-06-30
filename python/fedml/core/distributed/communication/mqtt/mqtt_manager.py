@@ -47,7 +47,7 @@ class MqttManager(object):
                 self.last_will_msg = json.dumps({"ID": f"{self._client_id}", "status": "OFFLINE"})
             self._client.will_set(self.last_will_topic,
                                   payload=self.last_will_msg,
-                                  qos=0, retain=True)
+                                  qos=2, retain=True)
         self._client.connect(self._host, self._port, self.keepalive_time)
 
     def disconnect(self):
