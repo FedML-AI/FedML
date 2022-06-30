@@ -114,7 +114,6 @@ class ClientManager(Observer):
     def receive_message(self, msg_type, msg_params) -> None:
         # logging.info("receive_message. rank_id = %d, msg_type = %s. msg_params = %s" % (
         #     self.rank, str(msg_type), str(msg_params.get_content())))
-        logging.info('self.message_handler_dict', self.message_handler_dict.keys(), self.message_handler_dict.values())
         handler_callback_func = self.message_handler_dict[msg_type]
         handler_callback_func(msg_params)
 

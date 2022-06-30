@@ -20,14 +20,14 @@ class FedAVGClientManager(ClientManager):
         self.attack = None
         self.defense = None
 
-        if args.add_attack == "Y":
+        if hasattr(args, "add_attack") and args.add_attack == "Y":
             if args.attack_type in ["xxx"]:
                 self.attack_at_client = True
                 if args.attack_type == "xxx":
                     # self.attack = FedAttack()
                     pass
 
-        if args.add_defense == "Y":
+        if hasattr(args, "add_attack") and args.add_defense == "Y":
             if args.defense_type in ["xxx"]:
                 self.defense_at_client = True
                 if args.defense_type == "xxx":
