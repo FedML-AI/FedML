@@ -11,7 +11,7 @@ import paho.mqtt.client as mqtt
 import yaml
 
 from ..mqtt.mqtt_manager import MqttManager
-from .remote_storage import S3Storage
+from ..s3.remote_storage import S3Storage
 from ..base_com_manager import BaseCommunicationManager
 from ..message import Message
 from ..observer import Observer

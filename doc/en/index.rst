@@ -28,7 +28,7 @@ This documentation is organized in the following sections:
 
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 3
    :name: start
    :caption: Overview
 
@@ -43,7 +43,7 @@ This documentation is organized in the following sections:
    starter/faq.md
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :name: FedML MLOps
    :caption: FedML MLOps - Landing FedML into Reality
 
@@ -54,7 +54,7 @@ This documentation is organized in the following sections:
    mlops/api.md
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :name: FedML Parrot - Simulating the Real World
    :caption: FedML Parrot - Simulating the Real World
 
@@ -64,7 +64,7 @@ This documentation is organized in the following sections:
    simulation/api.md
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :name: FedML Octopus
    :caption: FedML Octopus - Simple Connector for Data Silos
 
@@ -74,7 +74,7 @@ This documentation is organized in the following sections:
    cross-silo/api.md
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :name: FedML BeeHive
    :caption: FedML BeeHive - Collaborative Learning on Smartphones/IoTs
 
@@ -84,21 +84,21 @@ This documentation is organized in the following sections:
    cross-device/api.md
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :name: FedML Cheetah
    :caption: FedML Cheetah - Speedy Training of Large Models
 
    distributed/user_guide.md
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :name: FedML Benchmarks
    :caption: Benchmarks for FedNLP, FedCV, FedGraphNN and FedIoT
 
    benchmark/fedgraphnn.md
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :name: Resource
    :caption: Resource
 
