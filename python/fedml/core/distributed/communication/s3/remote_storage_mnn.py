@@ -1,5 +1,4 @@
-# -*-coding:utf-8-*-
-from fedml.core.distributed.communication.mqtt_s3.remote_storage import S3Storage
+from .remote_storage import S3Storage
 
 
 class S3MNNStorage:
@@ -50,4 +49,3 @@ class S3MNNStorage:
 
     def set_config_from_objects(self, s3_config):
         self.s3_storage.set_config_from_objects(s3_config)
-
