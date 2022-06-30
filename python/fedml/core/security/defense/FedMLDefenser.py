@@ -17,6 +17,9 @@ class FedMLDefenser:
     def is_defense_enabled(self):
         return self.is_enabled
 
+    def get_defense_types(self):
+        return self.defenses.keys()
+
     def is_server_defense(self, defense_type):
         return self.is_enabled and defense_type in ["norm_diff_clipping"]
 

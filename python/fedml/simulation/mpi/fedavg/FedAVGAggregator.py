@@ -84,7 +84,7 @@ class FedAVGAggregator(object):
 
             # added for attack & defense; enable multiple defenses
             if self.defenser.is_defense_enabled():
-                for defense_type in self.defenser.defenses.keys():
+                for defense_type in self.defenser.get_defense_types():
                     if self.defenser.is_server_defense(defense_type):
                         self.model_dict[idx] = self.defenser.defenses[
                             defense_type
