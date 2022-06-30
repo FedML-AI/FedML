@@ -12,7 +12,7 @@ from fedml.cli.edge_deployment.client_runner import LOCAL_HOME_RUNNER_DIR_NAME a
 from fedml.cli.edge_deployment.client_runner import LOCAL_RUNNER_INFO_DIR_NAME as CLIENT_RUNNER_INFO_DIR
 
 
-def init_logs(edge_id):
+def init_logs(args, edge_id):
     # Init runtime logs
     args.log_file_dir = FedMLClientRunner.get_log_file_dir()
     args.run_id = 0
@@ -20,7 +20,7 @@ def init_logs(edge_id):
     client_ids = list()
     client_ids.append(edge_id)
     args.client_id_list = json.dumps(client_ids)
-    click.echo("client ids:{}".format(args.client_id_list))
+    setattr(args, "using_mlops", True)
     MLOpsRuntimeLog.get_instance(args).init_logs()
     logging.info("client ids:{}".format(args.client_id_list))
 
@@ -34,11 +34,10 @@ def __login(args, userid, version):
         sys_name = "MacOS"
     setattr(args, "os_name", sys_name)
     setattr(args, "version", version)
-    setattr(args, "log_file_dir", os.path.join(args.current_running_dir, "fedml", "logs"))
+    setattr(args, "log_file_dir", FedMLClientRunner.get_log_file_dir())
     setattr(args, "device_id", FedMLClientRunner.get_device_id())
     setattr(args, "config_version", version)
     setattr(args, "cloud_region", "")
-    click.echo(args)
 
     # Create client runner for communication with the FedML server.
     runner = FedMLClientRunner(args)
@@ -68,7 +67,7 @@ def __login(args, userid, version):
 
     # Build unique device id
     if args.device_id is not None and len(str(args.device_id)) > 0:
-        unique_device_id = "@" + args.device_id + "." + args.os_name
+        unique_device_id = args.device_id + "@" + args.os_name + ".Edge.Device"
 
     # Bind account id to the MLOps platform.
     register_try_count = 0
@@ -92,11 +91,12 @@ def __login(args, userid, version):
         return
 
     # Init runtime logs
-    init_logs(edge_id)
+    init_logs(args, edge_id)
+    logging.info("args {}".format(args))
 
     # Log arguments and binding results.
-    click.echo("login: unique_device_id = %s" % str(unique_device_id))
-    click.echo("login: edge_id = %s" % str(edge_id))
+    logging.info("login: unique_device_id = %s" % str(unique_device_id))
+    logging.info("login: edge_id = %s" % str(edge_id))
     runner.unique_device_id = unique_device_id
     FedMLClientRunner.save_runner_infos(args.device_id + "." + args.os_name, edge_id, run_id=0)
 
@@ -123,8 +123,7 @@ if __name__ == "__main__":
     parser.add_argument("--version", "-v", type=str, default="release")
     parser.add_argument("--local_server", "-ls", type=str, default="127.0.0.1")
     args = parser.parse_args()
-    click.echo(args)
-    args.user = int(args.user)
+    args.user = args.user
     if args.type == 'login':
         login(args)
     else:
