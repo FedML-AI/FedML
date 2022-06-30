@@ -50,7 +50,7 @@ class FedAVGAggregator(object):
         self.refs = None
         self.defense = None
 
-        if args.defense_type in ["norm_diff_clipping"]:
+        if hasattr(args, "defense_type") and args.defense_type in ["norm_diff_clipping"]:
             self.defense = NormDiffClipping(args.norm_bound)
             self.defenseAtServer = True
         ############################################
