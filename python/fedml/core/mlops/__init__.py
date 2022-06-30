@@ -97,6 +97,7 @@ def event(event_name, event_started=True, event_value=None, event_edge_id=None):
         return
 
     mlops_event = MLOpsProfilerEvent(MLOpsStore.mlops_args)
+    mlops_event.run_id = MLOpsStore.mlops_run_id
     mlops_event.edge_id = MLOpsStore.mlops_edge_id
     if event_started:
         mlops_event.log_event_started(event_name, event_value, event_edge_id)
