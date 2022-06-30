@@ -3,7 +3,7 @@ from fedml.core.security.defense.norm_diff_clipping import NormDiffClipping
 
 class FedMLDefenser:
     def __init__(self, args):
-        if args.enable_defense == "Y":
+        if hasattr(args, "enable_defense") and args.enable_defense == "Y":
             self.is_enabled = True
             self.defenses = {}
             for defense in args.defense_type.split(","):
@@ -25,6 +25,3 @@ class FedMLDefenser:
 
     def defense(self, defense_type, local_w, global_w, refs=None):
         return self.defenses[defense_type].defense(local_w, global_w, refs)
-
-    def get_defenses_list(self):
-        return self.defenses
