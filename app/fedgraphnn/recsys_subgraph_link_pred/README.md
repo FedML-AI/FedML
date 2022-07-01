@@ -1,6 +1,5 @@
 # Subgraph-Level Link Prediction for Recommender Systems
 
-
 ## Motivation 
 
 As graphs are getting bigger and bigger nowadays, it is common to see their subgraphs
