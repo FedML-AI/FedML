@@ -20,7 +20,7 @@
   <meta name="google-site-verification" content="okUst94cAlWSsUsGZTB4xSS4UKTtRV8Nu5XZ9pdd3Aw" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Datasets and Models &mdash; FedML  documentation</title>
+  <title>Ego Networks - Link Prediction &mdash; FedML  documentation</title>
   
 
   
@@ -223,9 +223,9 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">FedML Parrot - Simulating the Real World</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../user_guide.html">FedML Parrot User Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../examples.html">FedML Parrot Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../api.html">FedML Parrot API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../simulation/user_guide.html">FedML Parrot User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../simulation/examples.html">FedML Parrot Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../simulation/api.html">FedML Parrot API Reference</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">FedML Octopus - Simple Connector for Data Silos</span></p>
 <ul>
@@ -245,7 +245,7 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Benchmarks for FedNLP, FedCV, FedGraphNN and FedIoT</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../benchmark/fedgraphnn.html">Federated Graph Neural Networks (FedGraphNN)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../fedgraphnn.html">Federated Graph Neural Networks (FedGraphNN)</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Resource</span></p>
 <ul>
@@ -292,13 +292,13 @@
       </li>
 
         
-      <li>Datasets and Models</li>
+      <li>Ego Networks - Link Prediction</li>
     
     
       <li class="pytorch-breadcrumbs-aside">
         
             
-            <a href="../../_sources/simulation/user_guide/datasets-and-models.md.txt" rel="nofollow"><img src="../../_static/images/view-page-source-icon.svg"></a>
+            <a href="../../_sources/benchmark/fedgraphnn/egonet_linkpred.md.txt" rel="nofollow"><img src="../../_static/images/view-page-source-icon.svg"></a>
           
         
       </li>
@@ -324,95 +324,46 @@
             <div role="main" class="main-content" itemscope="itemscope" itemtype="http://schema.org/Article">
              <article itemprop="articleBody" id="pytorch-article" class="pytorch-article">
               
-  <section id="datasets-and-models">
-<h1>Datasets and Models<a class="headerlink" href="#datasets-and-models" title="Permalink to this headline">¶</a></h1>
-<p>FedML supports comprehensive research-oriented (synthetic and public) FL datasets and models, including four representative synthetic FL datasets used by top-tier publications:</p>
-<ul class="simple">
-<li><p><strong><a class="reference external" href="https://github.com/FedML-AI/FedML/tree/master/data/FederatedEMNIST">EMNIST</a></strong>:
-EMNIST dataset extends MNIST dataset with upper and lower case English characters.</p></li>
-<li><p><strong><a class="reference external" href="https://github.com/FedML-AI/FedML/tree/master/data/fed_cifar100">CIFAR-100</a></strong>:
-CIFAR-100 dataset consists of 100 image classes with each containing 600 images.</p></li>
-<li><p><strong><a class="reference external" href="https://github.com/FedML-AI/FedML/tree/master/data/fed_shakespeare">Shakespeare</a></strong>:
-Shakespeare dataset is built from the collective works of William Shakespeare.</p></li>
-<li><p><strong><a class="reference external" href="https://github.com/FedML-AI/FedML/tree/master/data/stackoverflow">Stack Overflow</a></strong>:
-Stack Overflow dataset originally hosted by Kaggle consists of questions and answers from the website Stack Overflow. This dataset is used to perform two tasks: tag prediction via logistic regression and next word prediction.</p></li>
-</ul>
-<section id="datasets-with-downloading-service-and-api-provided">
-<h2>Datasets with downloading service and API provided<a class="headerlink" href="#datasets-with-downloading-service-and-api-provided" title="Permalink to this headline">¶</a></h2>
-<section id="cv">
-<h3>CV<a class="headerlink" href="#cv" title="Permalink to this headline">¶</a></h3>
-<ul class="simple">
-<li><p>MNIST</p></li>
-<li><p>cifar10</p></li>
-<li><p>cifar100</p></li>
-<li><p>fed_cifar100</p></li>
-<li><p>fed_emnist</p></li>
-<li><p>cinic10</p></li>
-<li><p>ImageNet</p></li>
-<li><p>Landmarks</p></li>
-</ul>
+  <section id="ego-networks-link-prediction">
+<h1>Ego Networks - Link Prediction<a class="headerlink" href="#ego-networks-link-prediction" title="Permalink to this headline">¶</a></h1>
+<section id="motivation">
+<h2>Motivation<a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>Link prediction, related to the likelihood of having a link between two nodes of the network that are not connected, is a key problem in social network analysis. It is important in the node-level FL setting, where friend
+suggestion and social relation profiling can be attempted in users’ ego-networks, for example In federated settings, it is possible to represent each user in a graph as a ego network as each user’s personal data can be sensitive and only
+visible to his/her k-hop neighbors. Thus, it is natural to consider node-level FL in social networks with clients holding the user ego-networks. To simulate this scenario, we use the open social networks
+and publication networks and partition them into sets of ego-networks. For the rest of the tutorial, we refer to our [source code</p>
 </section>
-<section id="nlp">
-<h3>NLP<a class="headerlink" href="#nlp" title="Permalink to this headline">¶</a></h3>
-<ul class="simple">
-<li><p>shakespeare</p></li>
-<li><p>fed_shakespeare</p></li>
-<li><p>stackoverflow</p></li>
-</ul>
+<section id="data-preparation">
+<h2>Data Preparation<a class="headerlink" href="#data-preparation" title="Permalink to this headline">¶</a></h2>
+<p>For each dataset, ego-networks needs to be sampled first.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">data</span><span class="o">/</span><span class="n">ego</span><span class="o">-</span><span class="n">networks</span>
+
+<span class="n">mkdir</span> <span class="n">cora</span>
+<span class="n">mkdir</span> <span class="n">citeseer</span>
+<span class="n">mkdir</span> <span class="n">DBLP</span>
+<span class="n">mkdir</span> <span class="n">PubMed</span>
+<span class="n">mkdir</span> <span class="n">CS</span>
+<span class="n">mkdir</span> <span class="n">Physics</span>
+
+<span class="n">cd</span> <span class="o">..</span>
+<span class="n">python</span> <span class="n">sampleEgonetworks</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">path</span> <span class="n">ego</span><span class="o">-</span><span class="n">networks</span><span class="o">/</span> <span class="o">--</span><span class="n">data</span> <span class="n">cora</span> <span class="o">--</span><span class="n">ego_number</span> <span class="mi">1000</span> <span class="o">--</span><span class="n">hop_number</span> <span class="mi">2</span>
+<span class="n">python</span> <span class="n">sampleEgonetworks</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">path</span> <span class="n">ego</span><span class="o">-</span><span class="n">networks</span><span class="o">/</span> <span class="o">--</span><span class="n">data</span> <span class="n">citeseer</span> <span class="o">--</span><span class="n">ego_number</span> <span class="mi">1000</span> <span class="o">--</span><span class="n">hop_number</span> <span class="mi">2</span>
+<span class="n">python</span> <span class="n">sampleEgonetworks</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">path</span> <span class="n">ego</span><span class="o">-</span><span class="n">networks</span><span class="o">/</span> <span class="o">--</span><span class="n">data</span> <span class="n">DBLP</span> <span class="o">--</span><span class="n">ego_number</span> <span class="mi">1000</span> <span class="o">--</span><span class="n">hop_number</span> <span class="mi">2</span>
+<span class="n">python</span> <span class="n">sampleEgonetworks</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">path</span> <span class="n">ego</span><span class="o">-</span><span class="n">networks</span><span class="o">/</span> <span class="o">--</span><span class="n">data</span> <span class="n">PubMed</span> <span class="o">--</span><span class="n">ego_number</span> <span class="mi">1000</span> <span class="o">--</span><span class="n">hop_number</span> <span class="mi">2</span>
+<span class="n">python</span> <span class="n">sampleEgonetworks</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">path</span> <span class="n">ego</span><span class="o">-</span><span class="n">networks</span><span class="o">/</span> <span class="o">--</span><span class="n">data</span> <span class="n">CS</span> <span class="o">--</span><span class="n">ego_number</span> <span class="mi">1000</span> <span class="o">--</span><span class="n">hop_number</span> <span class="mi">2</span>
+<span class="n">python</span> <span class="n">sampleEgonetworks</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">path</span> <span class="n">ego</span><span class="o">-</span><span class="n">networks</span><span class="o">/</span> <span class="o">--</span><span class="n">data</span> <span class="n">Physics</span> <span class="o">--</span><span class="n">ego_number</span> <span class="mi">1000</span> <span class="o">--</span><span class="n">hop_number</span> <span class="mi">2</span>
+</pre></div>
+</div>
+<p>Arguments for data preparation can be found in our source coede.</p>
 </section>
-<section id="finance">
-<h3>Finance<a class="headerlink" href="#finance" title="Permalink to this headline">¶</a></h3>
-<ul class="simple">
-<li><p>lending_club_loan</p></li>
-<li><p>NUS_WIDE</p></li>
-</ul>
-</section>
-<section id="other">
-<h3>Other<a class="headerlink" href="#other" title="Permalink to this headline">¶</a></h3>
-<ul class="simple">
-<li><p>UCI</p></li>
-<li><p>Synthetic</p></li>
-<li><p>edge_case_examples (tailored for paper <em>“Attack of the Tails: Yes, You Really Can Backdoor Federated Learning”</em>)</p></li>
-</ul>
-<p>For a comprehensive dataset list, please check the following APIs:</p>
-<p><code class="docutils literal notranslate"><span class="pre">fedml.data.load(args)</span></code> (<a class="reference external" href="https://github.com/FedML-AI/FedML-refactor/tree/master/python/fedml/data">https://github.com/FedML-AI/FedML-refactor/tree/master/python/fedml/data</a>) and
-<code class="docutils literal notranslate"><span class="pre">fedml.model.create(args)</span></code> (<a class="reference external" href="https://github.com/FedML-AI/FedML-refactor/tree/master/python/fedml/model">https://github.com/FedML-AI/FedML-refactor/tree/master/python/fedml/data</a>)</p>
-<p>Their usage in different algorithms are as follows:</p>
-</section>
-<section id="horizontal-federated-learning">
-<h3>Horizontal Federated Learning:<a class="headerlink" href="#horizontal-federated-learning" title="Permalink to this headline">¶</a></h3>
-<ul class="simple">
-<li><p>Computer Vision: Federated EMNIST + CNN (2 conv layers)</p></li>
-<li><p>Computer Vision: CIFAR100 + ResNet18 (Group Normalization)</p></li>
-<li><p>Natural Language Processing: shakespeare + RNN (bi-LSTM)</p></li>
-<li><p>Natural Language Processing: stackoverflow (NWP) + RNN (bi-LSTM)</p></li>
-<li><p>Computer Vision: CIFAR10, CIFAR100, CINIC10 + ResNet</p></li>
-<li><p>Computer Vision: CIFAR10, CIFAR100, CINIC10 + MobileNet</p></li>
-<li><p>Computer Vision (linear model): MNIST + Logistic Regression</p></li>
-<li><p>Computer Vision (linear model): Synthetic + Logistic Regression</p></li>
-</ul>
-</section>
-<section id="vertical-federated-learning">
-<h3>Vertical Federated Learning:<a class="headerlink" href="#vertical-federated-learning" title="Permalink to this headline">¶</a></h3>
-<ul class="simple">
-<li><p>lending_club_loan + VFL</p></li>
-<li><p>NUS_WIDE + VFL</p></li>
-</ul>
-</section>
-<section id="fednas">
-<h3>FedNAS<a class="headerlink" href="#fednas" title="Permalink to this headline">¶</a></h3>
-<ul class="simple">
-<li><p>cross-silo CV: CIFAR10, CIFAR100, CINIC10 + ResNet</p></li>
-<li><p>cross-silo CV: CIFAR10, CIFAR100, CINIC10 + MobileNet</p></li>
-</ul>
-</section>
-<section id="split-learning">
-<h3>Split Learning:<a class="headerlink" href="#split-learning" title="Permalink to this headline">¶</a></h3>
-<ul class="simple">
-<li><p>cross-silo CV: CIFAR10, CIFAR100, CINIC10 + ResNet</p></li>
-<li><p>cross-silo CV: CIFAR10, CIFAR100, CINIC10 + MobileNet</p></li>
-</ul>
-</section>
+<section id="training">
+<h2>Training<a class="headerlink" href="#training" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>WORKSPACE=./FedML/app/fedgraphnn/app/ego_networks_link_pred
+cd $WORKSPACE
+
+sh run_fed_link_pred.sh 4
+</pre></div>
+</div>
 </section>
 </section>
 
@@ -450,18 +401,10 @@ Stack Overflow dataset originally hosted by Kaggle consists of questions and ans
           <div class="pytorch-right-menu" id="pytorch-right-menu">
             <div class="pytorch-side-scroll" id="pytorch-side-scroll-right">
               <ul>
-<li><a class="reference internal" href="#">Datasets and Models</a><ul>
-<li><a class="reference internal" href="#datasets-with-downloading-service-and-api-provided">Datasets with downloading service and API provided</a><ul>
-<li><a class="reference internal" href="#cv">CV</a></li>
-<li><a class="reference internal" href="#nlp">NLP</a></li>
-<li><a class="reference internal" href="#finance">Finance</a></li>
-<li><a class="reference internal" href="#other">Other</a></li>
-<li><a class="reference internal" href="#horizontal-federated-learning">Horizontal Federated Learning:</a></li>
-<li><a class="reference internal" href="#vertical-federated-learning">Vertical Federated Learning:</a></li>
-<li><a class="reference internal" href="#fednas">FedNAS</a></li>
-<li><a class="reference internal" href="#split-learning">Split Learning:</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#">Ego Networks - Link Prediction</a><ul>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#data-preparation">Data Preparation</a></li>
+<li><a class="reference internal" href="#training">Training</a></li>
 </ul>
 </li>
 </ul>
