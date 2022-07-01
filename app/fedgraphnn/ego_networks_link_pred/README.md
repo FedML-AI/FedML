@@ -1,8 +1,9 @@
-# Node-Level Tasks (Ego Networks)
+# Ego Networks - Link Prediction
 
+## Motivation
 
+Link prediction, related to the likelihood of having a link between two nodes of the network that are not connected, is a key problem in social network analysis. Many methods have been proposed to solve the problem.
 ## Data Preparation
-
 
 For each dataset, ego-networks needs to be sampled first.  
 ```
@@ -25,7 +26,7 @@ python sampleEgonetworks.py --path ego-networks/ --data Physics --ego_number 100
 ```
 
 #### Arguments for Data Preparation code
-This is an ordered list of arguments used in distributed/federated experiments. Note, there are additional parameters for this setting.
+This is an ordered list of arguments. Note, there are additional parameters for this setting.
 ```
 --path -> the path for loading dataset
 
@@ -40,10 +41,18 @@ This is an ordered list of arguments used in distributed/federated experiments. 
 
 #### Datasets to Preprocess
 
-citation networks (# nodes): e.g. DBLP (17716), Cora (2708), CiteSeer (3327), PubMed (19717)
+citation networks (# nodes): DBLP (17716), Cora (2708), CiteSeer (3327), PubMed (19717)
 
-collaboration networks (# nodes): e.g. CS (18333), Physics (34493)
+collaboration networks (# nodes): CS (18333), Physics (34493)
  
-social networks (# ego-networks): e.g. COLLAB, IMDB, DEEZER_EGO_NETS (9629), TWITCH_EGOS (127094)
+social networks (# ego-networks): COLLAB, IMDB
 
 
+## Training
+
+```
+WORKSPACE=./FedML/app/fedgraphnn/app/ego_networks_link_pred
+cd $WORKSPACE
+
+sh run_fed_link_pred.sh 4
+```
