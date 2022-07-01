@@ -5,7 +5,9 @@
 Node classification on graphs has attracted significant attention as the importance of large-scale
 graphs analysis increases in various domains such as bioinformatics and commercial graphs.
 For example, in retail services, acquiring the qualitative node representations for items or customers
-is critical for improving the quality of recommendation systems. In federated settings, it is possible to represent each user in a graph as a ego network (or with a node in the worst case).
+is critical for improving the quality of recommendation systems. In federated settings, it is possible to represent each user in a graph as a ego network as each user’s personal data can be sensitive and only
+visible to his/her k-hop neighbors. Thus, it is natural to consider node-level FL in social networks with clients holding the user ego-networks. To simulate this scenario, we use the open social networks
+and publication networks and partition them into sets of ego-networks.
 
 ## Data Preparation
 
