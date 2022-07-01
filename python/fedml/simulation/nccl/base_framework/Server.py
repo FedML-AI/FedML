@@ -71,8 +71,8 @@ class BaseServer:
         self.device_number = worker_number - 1
         self.groups = {}
         for device in range(self.device_number):
-            rank = device + 1
-            self.groups[rank] = new_group(ranks=[0, rank])
+            global_rank = device + 1
+            self.groups[global_rank] = new_group(ranks=[0, global_rank])
         # self.backend = backend
         logging.info("self.trainer = {}".format(self.trainer))
 
@@ -192,8 +192,8 @@ class BaseServer:
         logging.info(f'server_params.get("broadcastTest") {server_params.get("broadcastTest")}')
 
         for round in range(self.args.comm_round):
-            logging.info(f"self.trainer.model.conv1.weight[0,0,:,:]: \
-                {self.trainer.model.conv1.weight[0,0,:,:]}")
+            # logging.info(f"self.trainer.model.conv1.weight[0,0,:,:]: \
+            #     {self.trainer.model.conv1.weight[0,0,:,:]}")
             broadcast_model_state(self.trainer.model.state_dict(), src=0)
             server_params = ServerToClientParams()
             client_indexes, client_schedule = self.client_schedule(
@@ -204,12 +204,13 @@ class BaseServer:
             # server_params.add_broadcast_param(name="model_params", param=model_params)
             server_params.broadcast()
             localAggregatorToServerParams = self.simulate_all_tasks(server_params, client_indexes)
-            logging.info(f"localAggregatorToServerParams.get('fc.bias')[:5]: {localAggregatorToServerParams.get('fc.bias')[:5]}, ")
-            localAggregatorToServerParams.communicate(self.rank, self.group, client_schedule)
+            logging.info(f"Client Runtime: {localAggregatorToServerParams.get('runtime')}")
+            # logging.info(f"localAggregatorToServerParams.get('fc.bias')[:5]: {localAggregatorToServerParams.get('fc.bias')[:5]}, ")
+            localAggregatorToServerParams.communicate(self.rank, self.groups, client_schedule)
             # for device_rank in range(self.device_number):
             # localAggregatorToServerParams.add_gather_params(client_index, "runtime", client_runtime)
             logging.info(f"Client Runtime: {localAggregatorToServerParams.get('runtime')}")
-            logging.info(f"localAggregatorToServerParams.get('fc.bias')[:5]: {localAggregatorToServerParams.get('fc.bias')[:5]}, ")
+            # logging.info(f"localAggregatorToServerParams.get('fc.bias')[:5]: {localAggregatorToServerParams.get('fc.bias')[:5]}, ")
             # global_model_params = localAggregatorToServerParams.get("model_params")
             # self.trainer.set_model_params(global_model_params)
             # set_model_params_with_list(self.trainer.model, global_model_params)
@@ -222,8 +223,8 @@ class BaseServer:
             for name, param in global_model_state.items():
                 param.data = localAggregatorToServerParams.get(name)
             self.trainer.set_model_params(global_model_state)
-            logging.info(f"self.trainer.model.conv1.weight[0,0,:,:]: \
-                {self.trainer.model.conv1.weight[0,0,:,:]}")
+            # logging.info(f"self.trainer.model.conv1.weight[0,0,:,:]: \
+            #     {self.trainer.model.conv1.weight[0,0,:,:]}")
             self.test_on_server_for_all_clients(round)
 
 
