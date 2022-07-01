@@ -15,7 +15,7 @@ class SpanExtractionDataManager(BaseDataManager):
         self.attributes = self.load_attributes(args.data_file_path)
         self.preprocessor = preprocessor
 
-    def read_instance_from_h5(self, data_file, index_list, split = "", desc=""):
+    def read_instance_from_h5(self, data_file, index_list, desc=""):
         context_X = list()
         question_X = list()
         y = list()
