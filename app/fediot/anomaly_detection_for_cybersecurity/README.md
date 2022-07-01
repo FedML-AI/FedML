@@ -6,13 +6,16 @@ Tuo Zhang*, Chaoyang He*, Tianhao Ma, Lei Gao, Mark Ma, Salman Avestimehr \
 accepted to ACM Embedded Networked Sensor Systems SenSys 2021 (AIChallengeIoT) \
 [[Proceeding](https://dl.acm.org/doi/pdf/10.1145/3485730.3493444)] [[Arxiv](https://arxiv.org/abs/2106.07976)] \
 TLDR: IoT x Federated Learning, from FedML.ai
-## Introduction
 
+## Introduction
 Due to the heterogeneity, diversity, and personalization of IoT networks, Federated Learning (FL) has a promising future in the IoT cybersecurity field. As a result, we present the FedIoT, an open research platform and benchmark to facilitate FL research in the IoT field. In particular, we propose an autoencoder based trainer to IoT traffic data for anomaly detection. In addition, with the application of federated learning approach for aggregating, we propose an efficient and practical model for the anomaly detection in various types of devices, while preserving the data privacy for each device. What is more, our platform supports three diverse computing paradigms: 1) on-device training for IoT edge devices, 2) distributed computing, and 3) single-machine simulation to meet algorithmic and system-level research requirements under different system deployment scenarios. We hope FedIoT could provide an efficient and reproducible means for developing the implementation of FL in the IoT field. 
 
 Check our slides [here](https://docs.google.com/presentation/d/1aW0GlOhKOl35jMl1KBDjKafJcYjWB-T9fiUsbdBySd4/edit?usp=sharing).
 Learn more about Federated Learning for Internet of Things, please check our survey **Federated Learning for Internet of Things: Applications, Challenges, and Opportunities** at [IEEE Xplore](https://ieeexplore.ieee.org/abstract/document/9773116) and [Arxiv](https://arxiv.org/abs/2111.07494).
 
+<div align="center">
+ <img src="771656633637_.pic.jpg" width="600px">
+</div>
 
 ## Prerequisite
 Install command line tool `unar` on both server and client side: 
