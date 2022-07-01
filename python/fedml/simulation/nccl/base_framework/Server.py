@@ -1,6 +1,7 @@
 import copy
 import logging
 import random
+import time
 
 import numpy as np
 import torch
@@ -21,7 +22,7 @@ from .common import fedml_nccl_reduce
 from .common import fedml_nccl_barrier
 from .common import broadcast_model_state
 from .common import set_model_params_with_list
-from .common import (get_server_rank, get_rank)
+from .common import (get_server_rank, get_rank, new_group)
 
 from .common import ReduceOp
 
@@ -68,6 +69,10 @@ class BaseServer:
         self.rank = rank
         self.worker_number = worker_number
         self.device_number = worker_number - 1
+        self.groups = {}
+        for device in range(self.device_number):
+            rank = device + 1
+            self.groups[rank] = new_group(ranks=[0, rank])
         # self.backend = backend
         logging.info("self.trainer = {}".format(self.trainer))
 
@@ -89,8 +94,8 @@ class BaseServer:
         return client_indexes
 
 
-    def simulate_all_tasks(self, server_params):
-        localAggregatorToServerParams = LocalAggregatorToServerParams()
+    def simulate_all_tasks(self, server_params, client_indexes):
+        localAggregatorToServerParams = LocalAggregatorToServerParams(None)
         # model_update = [torch.zeros_like(v) for v in get_weights(self.trainer.get_model_params())]
         # localAggregatorToServerParams.add_reduce_param(name="model_params",
         #         param=model_update, op=ReduceOp.SUM)
@@ -99,22 +104,51 @@ class BaseServer:
             # logging.info(f"name: {name}, param.shape: {param.shape}")
             localAggregatorToServerParams.add_reduce_param(name=name, param=torch.zeros_like(param), op=ReduceOp.SUM)
             # logging.info(f"localAggregatorToServerParams.get({name}): {localAggregatorToServerParams.get(name)}")
+
+        for client_index in client_indexes:
+            localAggregatorToServerParams.add_gather_params(client_index, "runtime", torch.tensor(0.0))
         return localAggregatorToServerParams
 
 
-    def workload_estimate(self, client_indexes):
-        pass
+    def workload_estimate(self, client_indexes, mode="simulate"):
+        if mode == "simulate":
+            client_samples = [self.train_data_local_num_dict[client_index] for client_index in client_indexes]
+            workload = client_samples
+        elif mode == "real":
+            raise NotImplementedError
+        else:
+            raise NotImplementedError
+        return workload
+
+    def memory_estimate(self, client_indexes, mode="simulate"):
+        if mode == "simulate":
+            memory = np.ones(self.device_number)
+        elif mode == "real":
+            raise NotImplementedError
+        else:
+            raise NotImplementedError
+        return memory
+
+    def resource_estimate(self, mode="simulate"):
+        if mode == "simulate":
+            resource = np.ones(self.device_number)
+        elif mode == "real":
+            raise NotImplementedError
+        else:
+            raise NotImplementedError
+        return resource
 
 
-    def client_schedule(self, round_idx, client_num_in_total, client_num_per_round, server_params):
+    def client_schedule(self, round_idx, client_num_in_total, client_num_per_round, server_params,
+                        mode="simulate"):
         # scheduler(workloads, constraints, memory)
         client_indexes = self.client_sampling(round_idx, client_num_in_total, client_num_per_round)
+        # workload = self.workload_estimate(client_indexes, mode)
+        # resource = self.resource_estimate(mode)
+        # memory = self.memory_estimate(mode)
 
-        # mode = 1
-        # workloads = np.array([1, 2, 3, 5, 7, 14])
-        # constraints = np.array([1, 5])
-        # memory = np.array([15, 100])
-        # my_scheduler = scheduler(workloads, constraints, memory)
+        # mode = 0
+        # my_scheduler = scheduler(workload, resource, memory)
         # schedules = my_scheduler.DP_schedule(mode)
         # for i in range(len(schedules)):
         #     print("Resource %2d: %s\n" % (i, str(schedules[i])))
@@ -169,9 +203,13 @@ class BaseServer:
             # model_params = get_weights(self.trainer.get_model_params())
             # server_params.add_broadcast_param(name="model_params", param=model_params)
             server_params.broadcast()
-            localAggregatorToServerParams = self.simulate_all_tasks(server_params)
+            localAggregatorToServerParams = self.simulate_all_tasks(server_params, client_indexes)
             logging.info(f"localAggregatorToServerParams.get('fc.bias')[:5]: {localAggregatorToServerParams.get('fc.bias')[:5]}, ")
-            localAggregatorToServerParams.communicate()
+            localAggregatorToServerParams.communicate(self.rank, self.group, client_schedule)
+            # for device_rank in range(self.device_number):
+            # localAggregatorToServerParams.add_gather_params(client_index, "runtime", client_runtime)
+            logging.info(f"Client Runtime: {localAggregatorToServerParams.get('runtime')}")
+            logging.info(f"localAggregatorToServerParams.get('fc.bias')[:5]: {localAggregatorToServerParams.get('fc.bias')[:5]}, ")
             # global_model_params = localAggregatorToServerParams.get("model_params")
             # self.trainer.set_model_params(global_model_params)
             # set_model_params_with_list(self.trainer.model, global_model_params)

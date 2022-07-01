@@ -179,6 +179,23 @@ def get_world_size():
     return dist.get_world_size()
 
 
+def get_worker_number():
+    return CommState.device_size
+
+
+def new_group(ranks):
+    dist.new_group(ranks=ranks)
+    # dist.new_group(ranks=None, timeout=datetime.timedelta(seconds=1800), backend=None, pg_options=None)
+
+
+def fedml_nccl_send_to_server(tensor, src=0, group=None):
+    is_cuda = tensor.is_cuda
+    # if not is_cuda:
+    #     logging.info("Warning: Tensor is not on GPU!!!")
+    # dist.gather(tensor, gather_list=gather_list, dst=dst, group=group)
+    dist.broadcast(tensor=tensor, src=src, group=group)
+
+
 
 
 def fedml_nccl_broadcast(tensor, src):
