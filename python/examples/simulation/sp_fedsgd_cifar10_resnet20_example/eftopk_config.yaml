@@ -4,7 +4,7 @@ common_args:
 
 data_args:
   dataset: "cifar10"
-  data_cache_dir: "~/datasets/cifar10"
+  data_cache_dir: "../../../data/cifar10"
   partition_method: "hetero"
   partition_alpha: 0.5
 
@@ -16,7 +16,7 @@ train_args:
   client_id_list: "[]"
   client_num_in_total: 10
   client_num_per_round: 5
-  comm_round: 20000
+  comm_round: 200
   epochs: 1
   batch_size: 128
   client_optimizer: sgd

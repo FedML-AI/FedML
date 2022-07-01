@@ -1,0 +1,10 @@
+__pycache__
+wandb
+runs
+*.cache
+*.zip
+*.jpg
+*.png
+mlops
+data/coco128/images/
+data/coco128/labels/
