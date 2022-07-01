@@ -2,7 +2,6 @@ import json
 import logging
 import multiprocessing
 import platform
-import time
 
 from .message_define import MyMessage
 from .utils import transform_list_to_tensor
@@ -62,10 +61,7 @@ class FedMLClientManager(ClientManager):
             self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_INITIALIZING)
 
             # Open new process for report system performances to MQTT server
-            self.sys_stats_process = multiprocessing.Process(
-                target=self.report_sys_performances
-            )
-            self.sys_stats_process.start()
+            MLOpsMetrics.report_sys_perf()
 
     def handle_message_check_status(self, msg_params):
         self.send_client_status(0)
@@ -109,10 +105,15 @@ class FedMLClientManager(ClientManager):
                     MyMessage.MSG_MLOPS_CLIENT_STATUS_FINISHED,
                 )
 
-            self.finish()
+            self.cleanup()
             return
         self.round_idx += 1
         self.__train()
+
+    def cleanup(self):
+        mlops_metrics = MLOpsMetrics()
+        mlops_metrics.set_sys_reporting_status(False)
+        self.finish()
 
     def send_model_to_server(self, receive_id, weights, local_sample_num):
         if hasattr(self.args, "backend") and self.args.using_mlops:
@@ -160,13 +161,6 @@ class FedMLClientManager(ClientManager):
             self.mlops_metrics.report_client_training_status(
                 self.client_real_id, status
             )
-
-    def report_sys_performances(self):
-        if hasattr(self.args, "backend") and self.args.using_mlops:
-            while self.round_idx != self.num_rounds - 1:
-                # Notify MLOps with system information.
-                self.mlops_metrics.report_system_metric()
-                time.sleep(30)
 
     def __train(self):
         logging.info("#######training########### round_id = %d" % self.round_idx)

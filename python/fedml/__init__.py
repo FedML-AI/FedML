@@ -1,4 +1,5 @@
 import logging
+import multiprocessing
 import os
 import random
 
@@ -17,6 +18,13 @@ from .constants import (
 )
 from .core.mlops import MLOpsRuntimeLog
 
+"""
+# Windows/Linux/MacOS compatability issues on multi-processing
+# https://github.com/pytorch/pytorch/issues/3492
+"""
+if multiprocessing.get_start_method() != "spawn":
+    # force all platforms (Windows/Linux/MacOS) to use the same way (spawn) for multiprocessing
+    multiprocessing.set_start_method("spawn", force=True)
 
 _global_training_type = None
 _global_comm_backend = None

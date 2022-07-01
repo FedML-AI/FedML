@@ -92,10 +92,7 @@ class ClientMasterManager:
             self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_INITIALIZING)
 
             # Open new process for report system performances to MQTT server
-            self.sys_stats_process = multiprocessing.Process(
-                target=self.report_sys_performances
-            )
-            self.sys_stats_process.start()
+            MLOpsMetrics.report_sys_perf()
 
     def handle_message_init(self, msg_params):
         global_model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
@@ -174,8 +171,8 @@ class ClientMasterManager:
 
         self.communication_manager.finish()
 
-        # self.exit_program()
-
+        mlops_metrics = MLOpsMetrics()
+        mlops_metrics.set_sys_reporting_status(False)
     # def exit_program(self):
     #     try:
     #         sys.exit(100)
@@ -261,9 +258,3 @@ class ClientMasterManager:
 
             # Notify MLOps with training status.
             self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_INITIALIZING)
-
-            # Open new process for report system performances to MQTT server
-            self.sys_stats_process = multiprocessing.Process(
-                target=self.report_sys_performances
-            )
-            self.sys_stats_process.start()
