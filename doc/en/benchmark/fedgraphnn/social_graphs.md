@@ -1,4 +1,4 @@
-# Social Network Graph Classification
+# Social Network Classification with Federated TUDataset
 
 ## Motivation 
 
