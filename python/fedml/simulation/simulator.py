@@ -42,7 +42,7 @@ class SimulatorSingleProcess:
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_TURBO_AGGREGATE:
             self.fl_trainer = TurboAggregateTrainer(dataset, model, device, args)
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_CLASSICAL_VFL:
-            self.fl_trainer = VflFedAvgAPI(dataset, model, device, args)
+            self.fl_trainer = VflFedAvgAPI(args, device, dataset, model)
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDSGD:
             self.fl_trainer = FedSGDAPI(args, device, dataset, model)
 
