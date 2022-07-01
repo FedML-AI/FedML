@@ -4,6 +4,8 @@ import platform
 
 from setuptools import setup, find_packages
 
+import fedml
+
 try:
     from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
 
@@ -41,7 +43,7 @@ if platform.machine() == "x86_64":
 
 setup(
     name="fedml",
-    version="0.7.100",
+    version=fedml.__version__,
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "

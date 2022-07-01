@@ -11,7 +11,7 @@ FedML supports Linux, MacOS, Windows, and Android.
 ```
 pip install fedml
 ```
-(Note: please use python 3.7 if you met any compatability issues. We will support 3.8, 3.9, 3.10 systematically in the next iteration.)
+(Note: please use python 3.6, 3.7, 3.8, 3.9. We will support 3.10 systematically in the next iteration.)
 
 ## Install FedML with Anaconda
 
