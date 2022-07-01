@@ -1,27 +1,17 @@
-# Scripts to start the FL training
+# Social Network Graph Classification
 
-1. download the dataset
-```
-cd data/esol
-sh download_and_unzip.sh
-```
+## Motivation 
 
-2. install PyG
-Linux/MacOS (x86):
-```
-pip install matplotli
-```
+There has been an skyrocketing interest in
+supervised ML with graph data, especially
+using graph neural networks in recent years. TUDataset is the most popular dataset used for
+for graph classification and
+regression. Our aim is to provide a federated platform to simulate federated graph classification and regression tasks. Thus, we introduce federated TUDataset benchmark for FedML users. All you need to do is to install FedML and PyG!
 
-MacOS M1 chip:
-```
-pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric
-```
-and install other packages
-```
-pip install -r requirements.txt
-```
+## Training
 
-3. start the training
+Here, we provide scripts and  config files under `config/` to explore different model and dataset combinations!
+
 ```
-sh run_moleculenet_reg.sh 4
+sh run_social_networks.sh 4
 ```
