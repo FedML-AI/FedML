@@ -195,7 +195,6 @@ class MLOpsMetrics(Singleton):
             }
         logging.info("report_metric. message_json = %s" % metric_json)
         message_json = json.dumps(metric_json)
-        metric_json = {}
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_logs_updated(self, run_id):
