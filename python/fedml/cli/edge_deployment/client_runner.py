@@ -78,7 +78,7 @@ class FedMLClientRunner:
 
         self.mlops_metrics = None
         self.client_active_list = dict()
-        #logging.info("Current directory of client agent: " + self.cur_dir)
+        # logging.info("Current directory of client agent: " + self.cur_dir)
 
     @staticmethod
     def generate_yaml_doc(run_config_object, yaml_file):
@@ -390,7 +390,7 @@ class FedMLClientRunner:
             self.agent_config["mqtt_config"]["MQTT_PWD"],
             self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
             "ClientAgent_Comm_Client" + str(uuid.uuid4()),
-            )
+        )
 
         self.client_mqtt_mgr.add_connected_listener(self.on_client_mqtt_connected)
         self.client_mqtt_mgr.add_disconnected_listener(self.on_client_mqtt_disconnected)
@@ -721,11 +721,10 @@ class FedMLClientRunner:
     def send_agent_active_msg(self):
         active_topic = "/flclient_agent/active"
         status = MLOpsStatus.get_instance().get_client_agent_status(self.edge_id)
-        if status is None:
-            return
-        if status != ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE and \
+        if status is not None and status != ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE and \
                 status != ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE:
             return
+        status = ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE
         active_msg = {"ID": self.edge_id, "status": status}
         MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, status)
         self.mqtt_mgr.send_message_json(active_topic, json.dumps(active_msg))
@@ -738,6 +737,8 @@ class FedMLClientRunner:
             self.mlops_metrics = MLOpsMetrics()
             self.mlops_metrics.set_messenger(self.mqtt_mgr)
             self.mlops_metrics.report_client_training_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
+            MLOpsStatus.get_instance().set_client_agent_status(self.edge_id,
+                                                               ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
 
         # Setup MQTT message listener for starting training
         topic_start_train = "flserver_agent/" + str(self.edge_id) + "/start_train"
@@ -784,9 +785,11 @@ class FedMLClientRunner:
         # Echo results
         logging.info("Congratulations, you have logged into the FedML MLOps platform successfully!")
         logging.info("Your device id is " + str(self.unique_device_id) +
-                   ". You may review the device in the MLOps edge device list.")
+                     ". You may review the device in the MLOps edge device list.")
 
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
+        MLOpsStatus.get_instance().set_client_agent_status(self.edge_id,
+                                                           ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE)
         pass
 
     def setup_agent_mqtt_connection(self, service_config):
