@@ -213,6 +213,7 @@ class FedMLServerManager(ServerManager):
                 self.finish()
                 return
             else:
+                logging.info("waiting for another round...")
                 if hasattr(self.args, "backend") and self.args.using_mlops:
                     self.mlops_event.log_event_started(
                         "server.wait", event_value=str(self.round_idx)

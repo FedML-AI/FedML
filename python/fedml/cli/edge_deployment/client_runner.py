@@ -650,12 +650,6 @@ class FedMLClientRunner:
         self.send_agent_active_msg()
 
     def callback_report_current_status(self, topic, payload):
-        request_json = json.loads(payload)
-        # client_runner = FedMLClientRunner(self.args, edge_id=self.edge_id,
-        #                                   request_json=request_json,
-        #                                   agent_config=self.agent_config,
-        #                                   run_id=0)
-        # multiprocessing.Process(target=client_runner.report_client_status).start()
         self.send_agent_active_msg()
 
     def callback_client_last_will_msg(self, topic, payload):
