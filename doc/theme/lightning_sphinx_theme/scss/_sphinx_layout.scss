@@ -155,7 +155,6 @@
 .expand-menu, .hide-menu {
   color: $dark_grey;
   position: absolute;
-  align-self: center;
   margin-left: 294px;
   /* padding-left: 10px; */
   cursor: pointer;
@@ -177,6 +176,7 @@
 .pytorch-left-menu p.caption {
   display: flex;
   margin-bottom: 0px;
+  margin-right: 16px;
   text-transform: none;
   white-space: normal;
   border-radius: 6px;
