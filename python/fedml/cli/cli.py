@@ -327,13 +327,13 @@ def mlops_logout(client, server):
     if client is None and server is None:
         is_client = True
 
-    if is_client:
+    if is_client is True:
         client_logout()
         cleanup_login_process(CLIENT_RUNNER_HOME_DIR, CLIENT_RUNNER_INFO_DIR)
         cleanup_all_fedml_processes("client_login.py")
-    if is_server:
+    if is_server is True:
         server_logout()
-        cleanup_login_process(CLIENT_RUNNER_HOME_DIR, CLIENT_RUNNER_INFO_DIR)
+        cleanup_login_process(SERVER_RUNNER_HOME_DIR, SERVER_RUNNER_INFO_DIR)
         cleanup_all_fedml_processes("server_login.py")
 
 
