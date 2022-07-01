@@ -117,8 +117,9 @@ class FedMLClientManager(ClientManager):
         self.cleanup()
 
     def cleanup(self):
-        mlops_metrics = MLOpsMetrics()
-        mlops_metrics.set_sys_reporting_status(False)
+        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+            mlops_metrics = MLOpsMetrics()
+            mlops_metrics.set_sys_reporting_status(False)
         self.finish()
 
     def send_model_to_server(self, receive_id, weights, local_sample_num):
@@ -163,9 +164,10 @@ class FedMLClientManager(ClientManager):
         self.send_message(message)
 
     def report_training_status(self, status):
-        self.mlops_metrics.report_client_training_status(
-            self.client_real_id, status
-        )
+        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+            self.mlops_metrics.report_client_training_status(
+                self.client_real_id, status
+            )
 
     def __train(self):
         logging.info("#######training########### round_id = %d" % self.round_idx)
