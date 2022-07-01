@@ -71,7 +71,7 @@ jobs:
 
 #      - name: test sp_fednova_mnist_lr_example
 #        run: |
-#          echo "this is for test sp_fedopt_mnist_lr_example"
+#          echo "this is for test sp_fednova_mnist_lr_example"
 #          ls .
 #          cd examples/simulation/sp_fednova_mnist_lr_example
 #
@@ -81,12 +81,12 @@ jobs:
 
       - name: test sp_turboaggregate_mnist_lr_example
         run: |
-          echo "this is for test sp_fedopt_mnist_lr_example"
+          echo "this is for test sp_turboaggregate_mnist_lr_example"
           ls .
-          cd examples/simulation/sp_fednova_mnist_lr_example
+          cd examples/simulation/sp_turboaggregate_mnist_lr_example
 
           echo "train"
-          python torch_fednova_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
+          python torch_turboaggregate_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
           echo "finish"
 
       - name: test example B
