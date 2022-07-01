@@ -100,8 +100,7 @@ class FedMLServerManager(ServerManager):
             client_idx_in_this_round = 0
             for client_id in self.client_id_list_in_this_round:
                 self.send_message_check_client_status(
-                    client_id,
-                    self.data_silo_index_list[client_idx_in_this_round],
+                    client_id, self.data_silo_index_list[client_idx_in_this_round],
                 )
                 client_idx_in_this_round += 1
 
@@ -112,7 +111,9 @@ class FedMLServerManager(ServerManager):
 
         # notify MLOps with RUNNING status
         if hasattr(self.args, "backend") and self.args.using_mlops:
-            self.mlops_metrics.report_server_training_status(self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING)
+            self.mlops_metrics.report_server_training_status(
+                self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING
+            )
 
         all_client_is_online = True
         for client_id in self.client_id_list_in_this_round:
@@ -210,14 +211,27 @@ class FedMLServerManager(ServerManager):
                     self.mlops_metrics.report_server_id_status(
                         self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_FINISHED
                     )
-                self.finish()
-                return
+                logging.info(
+                    "=============training is finished. Cleanup...============"
+                )
+                self.cleanup()
             else:
                 logging.info("waiting for another round...")
                 if hasattr(self.args, "backend") and self.args.using_mlops:
                     self.mlops_event.log_event_started(
                         "server.wait", event_value=str(self.round_idx)
                     )
+
+    def cleanup(self):
+
+        client_idx_in_this_round = 0
+        for client_id in self.client_id_list_in_this_round:
+            self.send_message_finish(
+                client_id, self.data_silo_index_list[client_idx_in_this_round],
+            )
+            client_idx_in_this_round += 1
+        time.sleep(3)
+        self.finish()
 
     def send_message_init_config(self, receive_id, global_model_params, datasilo_index):
         message = Message(
@@ -234,6 +248,18 @@ class FedMLServerManager(ServerManager):
         )
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
         self.send_message(message)
+
+    def send_message_finish(self, receive_id, datasilo_index):
+        message = Message(
+            MyMessage.MSG_TYPE_S2C_FINISH, self.get_sender_id(), receive_id
+        )
+        message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
+        self.send_message(message)
+        logging.info(
+            " ====================send cleanup message to {}====================".format(
+                str(datasilo_index)
+            )
+        )
 
     def send_message_sync_model_to_client(
         self, receive_id, global_model_params, client_index
