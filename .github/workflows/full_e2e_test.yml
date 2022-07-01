@@ -89,15 +89,21 @@ jobs:
 #          python torch_turboaggregate_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
 #          echo "finish"
 
-      - name: test sp_hierarchicalfl_mnist_lr_example
-        run: |
-          echo "this is for test sp_hierarchicalfl_mnist_lr_example"
-          ls .
-          cd examples/simulation/sp_hierarchicalfl_mnist_lr_example
+#      - name: test sp_hierarchicalfl_mnist_lr_example
+#        run: |
+#          echo "this is for test sp_hierarchicalfl_mnist_lr_example"
+#          ls .
+#          cd examples/simulation/sp_hierarchicalfl_mnist_lr_example
+#
+#          python torch_hierarchicalfl_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
 
-          echo "train"
-          python torch_hierarchicalfl_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
-          echo "finish"
+      - name: test sp_vertical_mnist_lr_example
+        run: |
+          echo "this is for test sp_vertical_mnist_lr_example"
+          ls .
+          cd examples/simulation/sp_vertical_mnist_lr_example
+
+          python torch_vertical_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
 
       - name: test example B
         run: |
