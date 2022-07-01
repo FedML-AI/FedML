@@ -6,6 +6,12 @@ import boto3
 import joblib
 import yaml
 
+# for multi-processing, we need to create a global variable for AWS S3 client:
+# https://www.pythonforthelab.com/blog/differences-between-multiprocessing-windows-and-linux/
+# https://stackoverflow.com/questions/72313845/multiprocessing-picklingerror-cant-pickle-class-botocore-client-s3-attr
+aws_s3_client = None
+aws_s3_resource = None
+
 
 class S3Storage:
     def __init__(self, s3_config_path):
@@ -15,14 +21,16 @@ class S3Storage:
         self.cn_s3_aki = None
         self.set_config_from_file(s3_config_path)
         self.set_config_from_objects(s3_config_path)
-        self.s3 = boto3.client(
+        global aws_s3_client
+        aws_s3_client = boto3.client(
             "s3",
             region_name=self.cn_region_name,
             aws_access_key_id=self.cn_s3_aki,
             aws_secret_access_key=self.cn_s3_sak,
         )
 
-        self.s3_resource = boto3.resource(
+        global aws_s3_resource
+        aws_s3_resource = boto3.resource(
             "s3",
             region_name=self.cn_region_name,
             aws_access_key_id=self.cn_s3_aki,
@@ -30,11 +38,13 @@ class S3Storage:
         )
 
     def write_json(self, message_key, payload):
-        obj = self.s3_resource.Object(self.bucket_name, message_key)
+        global aws_s3_resource
+        obj = aws_s3_resource.Object(self.bucket_name, message_key)
         obj.put(Body=payload)
 
     def read_json(self, message_key):
-        obj = self.s3_resource.Object(self.bucket_name, message_key)
+        global aws_s3_resource
+        obj = aws_s3_resource.Object(self.bucket_name, message_key)
         payload = obj.get()["Body"].read()
         return payload
 
@@ -42,13 +52,14 @@ class S3Storage:
         with tempfile.TemporaryFile() as fp:
             joblib.dump(model, fp)
             fp.seek(0)
-            self.s3.put_object(
+            global aws_s3_client
+            aws_s3_client.put_object(
                 Body=fp.read(),
                 Bucket=self.bucket_name,
                 Key=message_key,
                 ACL="public-read",
             )
-            model_url = self.s3.generate_presigned_url(
+            model_url = aws_s3_client.generate_presigned_url(
                 "get_object",
                 ExpiresIn=60 * 60 * 24 * 5,
                 Params={"Bucket": self.bucket_name, "Key": message_key},
@@ -57,7 +68,8 @@ class S3Storage:
 
     def read_model(self, message_key):
         with tempfile.TemporaryFile() as fp:
-            self.s3.download_fileobj(
+            global aws_s3_client
+            aws_s3_client.download_fileobj(
                 Fileobj=fp, Bucket=self.bucket_name, Key=message_key
             )
             fp.seek(0)
@@ -76,7 +88,8 @@ class S3Storage:
         """
         try:
             with open(src_local_path, "rb") as f:
-                self.s3.upload_fileobj(
+                global aws_s3_client
+                aws_s3_client.upload_fileobj(
                     f, self.bucket_name, dest_s3_path, ExtraArgs={"ACL": "public-read"}
                 )
         except Exception as e:
@@ -102,7 +115,8 @@ class S3Storage:
                 f"Start downloading files. | path_s3: {path_s3} | path_local: {path_local}"
             )
             try:
-                self.s3.download_file(self.bucket_name, path_s3, path_local)
+                global aws_s3_client
+                aws_s3_client.download_file(self.bucket_name, path_s3, path_local)
                 file_size = os.path.getsize(path_local)
                 logging.info(
                     f"Downloading completed. | size: {round(file_size / 1048576, 2)} MB"
@@ -120,7 +134,8 @@ class S3Storage:
         :param path_s3: s3 key
         :return:
         """
-        self.s3.delete_object(Bucket=self.bucket_name, Key=path_s3)
+        global aws_s3_client
+        aws_s3_client.delete_object(Bucket=self.bucket_name, Key=path_s3)
         logging.info(f"Delete s3 file Successful. | path_s3 = {path_s3}")
 
     def set_config_from_file(self, config_file_path):
