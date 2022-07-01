@@ -143,8 +143,8 @@ def FedML_NCCL_Similulation_init(args):
 
     global_rank, world_size = init_ddp(args)
     CommState.server_rank = 0
-    CommState.server_size = -1
-    CommState.device_size = -1
+    CommState.server_size = 1
+    CommState.device_size = world_size - 1
     CommState.process_id = global_rank
     # CommState.device_id = process_id - 1 if process_id > 0 else -1
     CommState.device_id = global_rank - 1
@@ -184,7 +184,7 @@ def get_worker_number():
 
 
 def new_group(ranks):
-    dist.new_group(ranks=ranks)
+    return dist.new_group(ranks=ranks)
     # dist.new_group(ranks=None, timeout=datetime.timedelta(seconds=1800), backend=None, pg_options=None)
 
 

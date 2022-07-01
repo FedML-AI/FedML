@@ -68,7 +68,16 @@ class BaseLocalAggregator(object):
         self.device_rank = self.rank - 1
         self.worker_number = worker_number
         self.device_number = worker_number - 1
-        self.group = new_group(ranks=[0, self.rank])
+        # for device in range(self.device_number):
+        #     rank = device + 1
+        #     if rank == self.rank:
+        #         self.group = new_group(ranks=[0, self.rank])
+        #     else:
+        #         group = new_group(ranks=[0, rank])
+        self.groups = {}
+        for device in range(self.device_number):
+            global_rank = device + 1
+            self.groups[global_rank] = new_group(ranks=[0, global_rank])
 
         # self.backend = backend
         logging.info("self.trainer = {}".format(self.trainer))
@@ -87,11 +96,11 @@ class BaseLocalAggregator(object):
         self.trainer.train(self.train_data_local_dict[client_index], self.device, args=self.args)
         client_params = ClientToLocalAggregatorParams(client_index=client_index)
         client_model_params = self.trainer.get_model_params()
-        logging.info(f"client_model_params.get('fc.bias')[:5]: {client_model_params.get('fc.bias')[:5]}, ")
+        # logging.info(f"client_model_params.get('fc.bias')[:5]: {client_model_params.get('fc.bias')[:5]}, ")
         for name, param in client_model_params.items():
             client_params.add_reduce_param(name=name, param=param*average_weight, op=ReduceOp.SUM)
         # client_params.add_reduce_param(name="model_params", param=get_weights(client_model_params), op=ReduceOp.SUM)
-        logging.info(f"client_params.get('fc.bias')[:5]: {client_params.get('fc.bias')[:5]}, ")
+        # logging.info(f"client_params.get('fc.bias')[:5]: {client_params.get('fc.bias')[:5]}, ")
         return client_params
 
 
@@ -133,7 +142,7 @@ class BaseLocalAggregator(object):
             client_runtime = torch.tensor(end_time - start_time)
             localAggregatorToServerParams.add_gather_params(client_index, "runtime", client_runtime)
 
-        logging.info(f"localAggregatorToServerParams.get('fc.bias')[:5]: {localAggregatorToServerParams.get('fc.bias')[:5]}, ")
+        # logging.info(f"localAggregatorToServerParams.get('fc.bias')[:5]: {localAggregatorToServerParams.get('fc.bias')[:5]}, ")
         return localAggregatorToServerParams
 
 
@@ -190,7 +199,8 @@ class BaseLocalAggregator(object):
             # server_params.add_broadcast_param(name="model_params", param=model_params)
             server_params.broadcast()
             localAggregatorToServerParams = self.simulate_all_tasks(server_params)
-            localAggregatorToServerParams.communicate(self.rank, self.group)
+            logging.info(f"Client Runtime: {localAggregatorToServerParams.get('runtime')}")
+            localAggregatorToServerParams.communicate(self.rank, self.groups)
 
 
 
