@@ -2,7 +2,8 @@ from ....core.alg_frame.params import Params
 from .common import fedml_nccl_broadcast
 from .common import fedml_nccl_reduce
 from .common import fedml_nccl_barrier
-from .common import (get_server_rank, get_rank)
+from .common import fedml_nccl_send_to_server
+from .common import (get_server_rank, get_rank, get_world_size, get_worker_number)
 
 from .common import ReduceOp
 
@@ -58,14 +59,22 @@ class ServerToClientParams(Params):
                 fedml_nccl_broadcast(tensor=param, src=get_server_rank())
 
 
-
 class LocalAggregatorToServerParams(Params):
-    def __init__(self, **kwargs):
+    # def __init__(self, client_indexes, rank, group, **kwargs):
+    def __init__(self, client_indexes, **kwargs):
+        """
+            client_indexes and group are used to indicate client_indexes that are 
+            simulated by currernt LocalAggregator,
+            This will be used for gathering data.
+        """
         super().__init__(**kwargs)
         self._reduce_params = dict([
             (ReduceOp.SUM, []),
         ])
         self._gather_params = []
+        self.client_indexes = client_indexes
+        # self.rank = rank
+        # self.group = group
 
 
     def add_reduce_param(self, name, param, op=ReduceOp.SUM):
@@ -81,12 +90,21 @@ class LocalAggregatorToServerParams(Params):
 
 
     def add_gather_params(self, client_index, name, param):
-        new_name = f"client{client_index}_name"
-        self.__dict__.update({new_name: param})
-        self._gather_params.append(new_name)
+        """
+            Server needs to add all gather param of all clients,
+            Then the collective communication can work.
+        """
+        # new_name = f"client{client_index}_name"
+        # self.__dict__.update({new_name: param})
+        # self._gather_params.append(new_name)
+        # self.__dict__.update({name: {}})
+        if name not in self.__dict__:
+            self.__dict__.update({name: {}})
+            self._gather_params.append(name)
+        self.__dict__[name][client_index] = param
 
 
-    def communicate(self):
+    def communicate(self, rank, group, client_schedule=None):
         for param_name in self._reduce_params[ReduceOp.SUM]:
             param = getattr(self, param_name)
             if isinstance(param, list):
@@ -95,9 +113,21 @@ class LocalAggregatorToServerParams(Params):
             else:
                 fedml_nccl_reduce(tensor=param, dst=get_server_rank())
 
+        if rank == 0:
+            for param_name in self._gather_params:
+                for device in range(get_worker_number()):
+                    for client_index in client_schedule[device]:
+                        device_rank = device + 1
+                        fedml_nccl_send_to_server(
+                            tensor=self.__dict__[param_name][client_index], src=device_rank, group=group[rank])
+        else:
+            for param_name in self._gather_params:
+                # gathered_list = [
+                #     torch.empty_like(data) for _ in range(get_world_size())
+                # ]
+                for client_index, param in self.__dict__[param_name].items():
+                    fedml_nccl_send_to_server(param, src=rank, group=group)
 
-        for param_name in self._gather_params:
-            pass
 
 
 
