@@ -41,23 +41,17 @@ conda install pyg -c pyg
 ## How to Add Your Own Model?
 Our framework supports [PyTorch](https://github.com/FedML-AI/FedML/app/fedgraphnn/moleculenet_graph_clf/model/gcn_readout.py) and [PyTorch Geometric](https://github.com/FedML-AI/FedML/app/fedgraphnn/social_networks_graph_clf/model/gin.py) based models. To add your own specific model, 
 
-1. Create a Pytorch/PyG model and place it under `model` folder
+1. Create a Pytorch/PyG model and place it under `model` folder.
 2. Prepare a [trainer module](https://github.com/FedML-AI/app/fedgraphnn/recsys_subgraph_link_pred/trainer/fed_subgraph_lp_trainer.py) by inheriting the base class `ClientTrainer`.
-3. Prepare an experiment file similar to `torch_*.py` and shell script similar to `run_*.sh` .
+3. Prepare an experiment file similar to `torch_*.py` and shell script similar to `run_*.sh`.
 4. Adjust the `fedml_config.yaml` file with the model-specific parameters.
 
-## How to Add More Datasets ? 
+## How to Add More Datasets, Domain-Specific Splits & Non-I.I.D.ness Generation Mechanisms?
 If it is a dataset natively supported by PyG, please see [data loader example Python file](https://github.com/FedML-AI/FedML/app/fedgraphnn/social_networks_graph_clf/data/data_loader.py)
 
-Otherwise, do the following:
-1. Create new folder under `data_preprocessing` folder and re-define `data_preprocessing/data_loader.py` based on your new dataset.
-2. Rewrite `data_loader.py` file under `data_preprocessing` folder
+Otherwise, create new folder for your dataset under `data/` folder and provide utilities to before feeding the data to federated pre-processing utilities  listed in `data/data_loader.py` based on your new dataset.
 
-## How to Add Domain-Specific Splits & Non-I.I.D.ness Generation Mechanism?
-
-Splits and Non-I.I.D.'ness methods are located under `data_preprocessing` library. By default, we provide I.I.D. and non-I.I.D. sampling(`create_non_uniform_split.py` , Dirichlet distribution sampling) based on sample size of the dataset.
-
-To create custom splitting method based on the sample size, you can create a new function or modify `create_non_uniform_split.py` function.
+Splits and Non-I.I.D.'ness methods specific to each task are also located under `data/data_loader.py`. By default, we provide I.I.D. and non-I.I.D. sampling(`create_non_uniform_split.py` , Dirichlet distribution sampling) based on sample size of the dataset. To create custom splitting method based on the sample size, you can create a new function or modify `create_non_uniform_split.py` function.
 
 ## Code Structure of FedGraphNN
 <!-- Note: Each application have their specific configurations. Here, we list the common structure. For more details,. -->
