@@ -23,7 +23,7 @@ class SequenceTaggingDataManager(BaseDataManager):
         # self.load_next_round_data()
         # self.train_loader, self.test_loader = self.get_data_loader()
 
-    def read_instance_from_h5(self, data_file, index_list, split = "", desc=""):
+    def read_instance_from_h5(self, data_file, index_list, desc=""):
         X = list()
         y = list()
         for idx in tqdm(index_list, desc="Loading data from h5 file." + desc):
