@@ -1,0 +1,17 @@
+model_type: onnx
+
+grid20_path: ../generate_npy/20_640x640.npy
+grid40_path: ../generate_npy/40_640x640.npy
+grid80_path: ../generate_npy/80_640x640.npy
+
+model_yaml_path: ./models/yolov5s-noupsample.yaml
+onnx_path: ./yolov5s-noupsample.onnx
+
+input_w: 640
+input_h: 640
+# number of classes
+nc: 80
+
+conf_thres: 0.3
+iou_thres: 0.5
+e2e_coco: True
