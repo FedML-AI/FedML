@@ -26,28 +26,28 @@ conda install pyg -c pyg
 
 1. Graph-Level
       1. **MoleculeNet Property Prediction**
-         1.  [Graph Classification](https://github.com/FedML-AI/FedML/app/fedgraphnn/moleculenet_graph_clf/README.md) 
-         2.  [Graph Regression](https://github.com/FedML-AI/FedML/app/fedgraphnn/moleculenet_graph_reg/README.md) 
+         1.  [Graph Classification](./moleculenet_graph_clf/README.md) 
+         2.  [Graph Regression](./moleculenet_graph_reg/README.md) 
       2.  **Social Networks**
-          1.  [Graph Classification](https://github.com/FedML-AI/FedML/app/fedgraphnn/social_networks_graph_clf/README.md)
+          1.  [Graph Classification](./social_networks_graph_clf/README.md)
 2. Subgraph-Level
       1. **Recommendation Systems**
-         1. [Link Prediction](https://github.com/FedML-AI/FedML/app/fedgraphnn/recsys_subgraph_link_pred/README.md)
+         1. [Link Prediction](./recsys_subgraph_link_pred/README.md)
 3. Node-Level
       1. **Ego Networks (Citation & Coauthor Networks)**
-         1. [Link Prediction](https://github.com/FedML-AI/FedML/app/fedgraphnn/ego_networks_link_pred/README.md)
-         2. [Node Classification](https://github.com/FedML-AI/FedML/app/fedgraphnn/ego_networks_node_clf/README.md)
+         1. [Link Prediction](./ego_networks_link_pred/README.md)
+         2. [Node Classification](./ego_networks_node_clf/README.md)
 
 ## How to Add Your Own Model?
-Our framework supports [PyTorch](https://github.com/FedML-AI/FedML/app/fedgraphnn/moleculenet_graph_clf/model/gcn_readout.py) and [PyTorch Geometric](https://github.com/FedML-AI/FedML/app/fedgraphnn/social_networks_graph_clf/model/gin.py) based models. To add your own specific model, 
+Our framework supports [PyTorch](./moleculenet_graph_clf/model/gcn_readout.py) and [PyTorch Geometric](./social_networks_graph_clf/model/gin.py) based models. To add your own specific model, 
 
 1. Create a Pytorch/PyG model and place it under `model` folder.
-2. Prepare a [trainer module](https://github.com/FedML-AI/app/fedgraphnn/recsys_subgraph_link_pred/trainer/fed_subgraph_lp_trainer.py) by inheriting the base class `ClientTrainer`.
+2. Prepare a [trainer module](./recsys_subgraph_link_pred/trainer/fed_subgraph_lp_trainer.py) by inheriting the base class `ClientTrainer`.
 3. Prepare an experiment file similar to `torch_*.py` and shell script similar to `run_*.sh`.
 4. Adjust the `fedml_config.yaml` file with the model-specific parameters.
 
 ## How to Add More Datasets, Domain-Specific Splits & Non-I.I.D.ness Generation Mechanisms?
-If it is a dataset natively supported by PyG, please see [data loader example Python file](https://github.com/FedML-AI/FedML/app/fedgraphnn/social_networks_graph_clf/data/data_loader.py)
+If it is a dataset natively supported by PyG, please see [data loader example Python file](./social_networks_graph_clf/data/data_loader.py)
 
 Otherwise, create new folder for your dataset under `data/` folder and provide utilities to before feeding the data to federated pre-processing utilities  listed in `data/data_loader.py` based on your new dataset.
 
