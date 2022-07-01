@@ -2,6 +2,8 @@
 
 ## Federated Graph Neural Networks (FedGraphNN)
 
+For FedGraphNN, we require the latest version of PyG.
+
 ### Graph-Level Federated Graph Neural Networks 
 
 - [Federated Molecular Property Prediction with Moleculenet Datasets](./fedgraphnn/moleculenet.md): an example to illustrate how to run horizontal federated learning in data silos (hospitals, banks, etc.)ß
