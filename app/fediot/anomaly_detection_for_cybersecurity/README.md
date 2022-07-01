@@ -82,13 +82,29 @@ FedML MLOps provides:
 
 ## Citation
 Please cite our FedIoT and FedML paper if it helps your research.
-You can describe us in your paper like this: "We develop our experiments based on FedIoT [1] and FedML [2]".
+You can describe us in your paper like this: "We develop our experiments based on FedIoT [1,2] and FedML [3]".
 ```
 @article{Zhang2021FederatedLF,
   title={Federated Learning for Internet of Things},
   author={Tuo Zhang and Chaoyang He and Tianhao Ma and Lei Gao and Mark Ma and Salman Avestimehr},
   journal={Proceedings of the 19th ACM Conference on Embedded Networked Sensor Systems},
   year={2021}
+}
+
+@article{Zhang2022FederatedLF,
+  title={Federated Learning for the Internet of Things: Applications, Challenges, and Opportunities},
+  author={Tuo Zhang and Lei Gao and Chaoyang He and Mi Zhang and Bhaskar Krishnamachari and Salman Avestimehr},
+  journal={IEEE Internet of Things Magazine},
+  year={2022},
+  volume={5},
+  pages={24-29}
+}
+
+@article{chaoyanghe2020fedml,
+Author = {He, Chaoyang and Li, Songze and So, Jinhyun and Zhang, Mi and Wang, Hongyi and Wang, Xiaoyang and Vepakomma, Praneeth and Singh, Abhishek and Qiu, Hang and Shen, Li and Zhao, Peilin and Kang, Yan and Liu, Yang and Raskar, Ramesh and Yang, Qiang and Annavaram, Murali and Avestimehr, Salman},
+Journal = {arXiv preprint arXiv:2007.13518},
+Title = {FedML: A Research Library and Benchmark for Federated Machine Learning},
+Year = {2020}
 }
 ```
 
