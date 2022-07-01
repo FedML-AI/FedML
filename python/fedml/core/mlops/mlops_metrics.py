@@ -1,9 +1,10 @@
 import json
 import logging
+import multiprocessing
 import time
 
-from .system_stats import SysStats
 from .mlops_status import MLOpsStatus
+from .system_stats import SysStats
 
 
 class Singleton(object):
@@ -22,6 +23,7 @@ class MLOpsMetrics(Singleton):
         self.edge_id = None
         self.server_agent_id = None
         self.sys_performances = None
+        self.is_sys_perf_reporting = False
 
     def set_messenger(self, msg_messenger, args=None):
         self.messenger = msg_messenger
@@ -201,6 +203,30 @@ class MLOpsMetrics(Singleton):
         message_json = json.dumps(msg)
         logging.info("report_logs_updated. message_json = %s" % message_json)
         self.messenger.send_message_json(topic_name, message_json)
+
+    def set_sys_reporting_status(self, enable):
+        self.is_sys_perf_reporting = enable
+
+    def is_system_perf_reporting(self):
+        return self.is_sys_perf_reporting
+
+    @staticmethod
+    def report_sys_perf():
+        sys_stats_process = multiprocessing.Process(
+            target=MLOpsMetrics._report_sys_performances
+        )
+        sys_stats_process.start()
+
+    @staticmethod
+    def _report_sys_performances():
+        # mlops_metrics is a single instance
+        mlops_metrics = MLOpsMetrics()
+        mlops_metrics.set_sys_reporting_status(True)
+
+        # Notify MLOps with system information.
+        while mlops_metrics.is_system_perf_reporting():
+            mlops_metrics.report_system_metric()
+            time.sleep(30)
 
 
 if __name__ == "__main__":
