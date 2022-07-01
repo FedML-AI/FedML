@@ -59,6 +59,16 @@ jobs:
           python torch_fedavg_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
           echo "finish"
 
+      - name: test sp_fedopt_mnist_lr_example
+        run: |
+          echo "this is for test sp_fedopt_mnist_lr_example"
+          ls .
+          cd examples/simulation/sp_fedopt_mnist_lr_example
+
+          echo "train"
+          python torch_fedopt_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
+          echo "finish"
+
       - name: test example B
         run: |
           echo "this is for test example B"
