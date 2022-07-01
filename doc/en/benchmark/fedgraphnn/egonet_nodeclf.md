@@ -9,7 +9,7 @@ is critical for improving the quality of recommendation systems. In federated se
 visible to his/her k-hop neighbors. Thus, it is natural to consider node-level FL in social networks with clients holding the user ego-networks. To simulate this scenario, we use the open social networks
 and publication networks and partition them into sets of ego-networks.
 
-## Requirements \& Data Preparation
+## Data Preparation
 
 For each dataset, ego-networks needs to be sampled first.  To sample, directories have to be created first and then `sampleEgonetworks.py` has to be used to generate ego-networks.
 
