@@ -18,18 +18,10 @@ from .constants import (
 )
 from .core.mlops import MLOpsRuntimeLog
 
-"""
-# Windows/Linux/MacOS compatability issues on multi-processing
-# https://github.com/pytorch/pytorch/issues/3492
-"""
-if multiprocessing.get_start_method() != "spawn":
-    # force all platforms (Windows/Linux/MacOS) to use the same way (spawn) for multiprocessing
-    multiprocessing.set_start_method("spawn", force=True)
-
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.7.102"
+__version__ = "0.7.103"
 
 
 def init(args=None):
@@ -51,6 +43,14 @@ def init(args=None):
         MLOpsRuntimeLog.get_instance(args).init_logs()
 
     logging.info("args = {}".format(vars(args)))
+
+    """
+    # Windows/Linux/MacOS compatability issues on multi-processing
+    # https://github.com/pytorch/pytorch/issues/3492
+    """
+    if multiprocessing.get_start_method() != "spawn":
+        # force all platforms (Windows/Linux/MacOS) to use the same way (spawn) for multiprocessing
+        multiprocessing.set_start_method("spawn", force=True)
 
     seed = args.random_seed
     random.seed(seed)

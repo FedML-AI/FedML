@@ -1,6 +1,5 @@
 import json
 import logging
-import multiprocessing
 import platform
 
 from .message_define import MyMessage
@@ -49,6 +48,10 @@ class FedMLClientManager(ClientManager):
         self.register_message_receive_handler(
             MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT,
             self.handle_message_receive_model_from_server,
+        )
+
+        self.register_message_receive_handler(
+            MyMessage.MSG_TYPE_S2C_FINISH, self.handle_message_finish,
         )
 
     def handle_message_connection_ready(self, msg_params):
@@ -104,11 +107,13 @@ class FedMLClientManager(ClientManager):
                     self.client_real_id,
                     MyMessage.MSG_MLOPS_CLIENT_STATUS_FINISHED,
                 )
-
-            self.cleanup()
             return
         self.round_idx += 1
         self.__train()
+
+    def handle_message_finish(self, msg_params):
+        logging.info(" ====================cleanup ====================")
+        self.cleanup()
 
     def cleanup(self):
         mlops_metrics = MLOpsMetrics()
