@@ -93,7 +93,7 @@ class MLOpsMetrics(Singleton):
     def broadcast_server_training_status(self, run_id, status):
         topic_name = "fl_server/mlops/status"
         msg = {"run_id": run_id, "edge_id": self.edge_id, "status": status}
-        logging.info("report_server_training_status. msg = %s" % msg)
+        logging.info("broadcast_server_training_status. msg = %s" % msg)
         message_json = json.dumps(msg)
         self.messenger.send_message_json(topic_name, message_json)
 

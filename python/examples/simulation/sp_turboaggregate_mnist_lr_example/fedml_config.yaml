@@ -41,3 +41,4 @@ tracking_args:
   wandb_entity: fedml-ai
   wandb_project: simulation
   run_name: fedml_torch_hierachicalfl_mnist_lr
+  using_mlops: false
