@@ -1,22 +1,23 @@
-# Node-Level Tasks (Ego Networks)
+# Ego Networks - Node Classification
 
+## Motivation
+
+Node classification on graphs has attracted significant attention as the importance of large-scale
+graphs analysis increases in various domains such as bioinformatics and commercial graphs.
+For example, in retail services, acquiring the qualitative node representations for items or customers
+is critical for improving the quality of recommendation systems. In federated settings, it is possible to represent each user in a graph as a ego network (or with a node in the worst case).
 
 ## Data Preparation
 
-
 For each dataset, ego-networks needs to be sampled first.  
 ```
-WORKSPACE=/home/$USER/FedGraphNN
-# WORKSPACE=/Users/chaoyanghe/sourcecode/FedGraphNN
-cd $WORKSPACE/data_preprocessing/ego_networks
 
-mkdir $WORKSPACE/data/ego-networks/
-mkdir $WORKSPACE/data/ego-networks/cora
-mkdir $WORKSPACE/data/ego-networks/citeseer
-mkdir $WORKSPACE/data/ego-networks/DBLP
-mkdir $WORKSPACE/data/ego-networks/PubMed
-mkdir $WORKSPACE/data/ego-networks/CS
-mkdir $WORKSPACE/data/ego-networks/Physics
+mkdir cora
+mkdir citeseer
+mkdir DBLP
+mkdir PubMed
+mkdir CS
+mkdir Physics
 
 python sampleEgonetworks.py --path ego-networks/ --data cora --ego_number 1000 --hop_number 2
 python sampleEgonetworks.py --path ego-networks/ --data citeseer --ego_number 1000 --hop_number 2
@@ -42,10 +43,17 @@ This is an ordered list of arguments used in distributed/federated experiments. 
 
 #### Datasets to Preprocess
 
-citation networks (# nodes): e.g. DBLP (17716), Cora (2708), CiteSeer (3327), PubMed (19717)
+citation networks (# nodes): DBLP (17716), Cora (2708), CiteSeer (3327), PubMed (19717)
 
-collaboration networks (# nodes): e.g. CS (18333), Physics (34493)
+collaboration networks (# nodes):  CS (18333), Physics (34493)
  
- social networks (# ego-networks): e.g. COLLAB, IMDB, DEEZER_EGO_NETS (9629), TWITCH_EGOS (127094)
+ social networks (# ego-networks):  COLLAB, IMDB
 
+## Training
 
+```
+WORKSPACE=./FedML/app/fedgraphnn/app/ego_networks_node_clf
+cd $WORKSPACE
+
+sh run_fed_node_clf.sh 4
+```
