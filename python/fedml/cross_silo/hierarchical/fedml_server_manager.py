@@ -36,7 +36,7 @@ class FedMLServerManager(ServerManager):
 
         if hasattr(self.args, "backend") and self.args.using_mlops:
             self.mlops_metrics = MLOpsMetrics()
-            self.mlops_metrics.set_messenger(self.com_manager_status)
+            self.mlops_metrics.set_messenger(self.com_manager_status, args)
             self.mlops_event = MLOpsProfilerEvent(self.args)
             self.aggregator_dist_adapter.aggregator.set_mlops_logger(self.mlops_metrics)
 
