@@ -122,7 +122,7 @@ class BaseDataManager(ABC):
                     ][()][:cut_off]
                 )
             train_data = self.read_instance_from_h5(data_file, train_index_list)
-            test_data = self.read_instance_from_h5(data_file, test_index_list, split = "test")
+            test_data = self.read_instance_from_h5(data_file, test_index_list)
             data_file.close()
             partition_file.close()
             train_examples, train_features, train_dataset = self.preprocessor.transform(
@@ -246,7 +246,7 @@ class BaseDataManager(ABC):
                 + str(test_cut_off)
             )
 
-            test_data = self.read_instance_from_h5(data_file, test_index_list, split = "test")
+            test_data = self.read_instance_from_h5(data_file, test_index_list)
 
             data_file.close()
             partition_file.close()
@@ -339,7 +339,6 @@ class BaseDataManager(ABC):
                 test_data = self.read_instance_from_h5(
                     data_file,
                     test_index_list,
-                    split = "test",
                     desc=" test data of client_id=%d [_load_federated_data_local] "
                     % client_idx,
                 )
