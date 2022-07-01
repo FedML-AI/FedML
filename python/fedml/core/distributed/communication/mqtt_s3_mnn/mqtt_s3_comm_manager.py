@@ -47,6 +47,11 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
             else:
                 self.edge_id = 0
         else:
+            if hasattr(args, "server_device_id"):
+                self.server_id = args.server_device_id
+            else:
+                self.server_id = 0
+
             if len(self.client_real_ids) == 1:
                 self.edge_id = self.client_real_ids[0]
             else:
@@ -124,7 +129,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
                 )
         else:
             # client
-            real_topic = self._topic + str(0) + "_" + str(self.client_real_ids[0])
+            real_topic = self._topic + str(self.server_id) + "_" + str(self.client_real_ids[0])
             result, mid = mqtt_client_object.subscribe(real_topic, 0)
 
             logging.info(
