@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/light_blue"
+    tools:context="ai.demo.MnnTrainFragment">
+
+    <!-- TODO: Update blank fragment layout -->
+
+    <TextView
+        android:id="@+id/train_state"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="70dp"
+        android:layout_marginStart="10dp"
+        android:textSize="18sp"
+        android:textColor="@color/black"
+        android:text="train state here"
+        android:layout_marginLeft="10dp" />
+
+    <TextView
+        android:id="@+id/local_train_info"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="0dp"
+        android:layout_marginStart="10dp"
+        android:textSize="18sp"
+        android:textColor="@color/black"
+        android:text="Local Train Info:"
+        android:layout_marginLeft="10dp" />
+
+    <TableLayout
+        android:id="@+id/table"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="130dp"
+        android:padding="6.5dip">
+        <TableRow
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:background="@color/black"
+            android:orientation="horizontal"
+            android:paddingLeft="0.5dip"
+            android:paddingTop="1dip"
+            android:paddingRight="0.5dip">
+
+            <TextView
+                android:id="@+id/textView11"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0.5dip"
+                android:layout_marginBottom="0.5dip"
+                android:background="@color/white"
+                android:text="TrainTime"
+                android:textColor="@color/colorPrimary"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/textView12"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0.5dip"
+                android:layout_marginBottom="0.5dip"
+                android:background="@color/white"
+                android:text="DownloadTime"
+                android:textColor="@color/colorPrimary"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/textView13"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0.5dip"
+                android:layout_marginBottom="0.5dip"
+                android:background="@color/white"
+                android:text="TrainTimeLastRound"
+                android:textColor="@color/colorPrimary"
+                android:textSize="16sp" />
+
+        </TableRow>
+
+        <TableRow
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:background="@color/black"
+            android:orientation="horizontal"
+            android:paddingLeft="0.5dip"
+            android:paddingTop="1dip"
+            android:paddingRight="0.5dip">
+
+            <TextView
+                android:id="@+id/textView16"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0.5dip"
+                android:layout_marginBottom="0.5dip"
+                android:background="@color/white"
+                android:textColor="@color/colorPrimary"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/textView17"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0.5dip"
+                android:layout_marginBottom="0.5dip"
+                android:background="@color/white"
+                android:textColor="@color/colorPrimary"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/textView18"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="0.5dip"
+                android:layout_marginBottom="0.5dip"
+                android:background="@color/white"
+                android:textColor="@color/colorPrimary"
+                android:textSize="16sp" />
+
+        </TableRow>
+
+    </TableLayout>
+
+
+</FrameLayout>
