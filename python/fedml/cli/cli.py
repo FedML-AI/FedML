@@ -129,13 +129,13 @@ def display_server_logs():
     "-rc",
     type=str,
     default="{}",
-    help="runner commands (options: request json for star run, stop run).",
+    help="runner commands (options: request json for start run, stop run).",
 )
 @click.option(
-    "--server_agent_id", "-said", type=str, default="0", help="server agent id.",
+    "--device_id", "-id", type=str, default="0", help="device id.",
 )
 def mlops_login(
-    userid, version, client, server, local_server, role, runner_cmd, server_agent_id
+    userid, version, client, server, local_server, role, runner_cmd, device_id
 ):
     account_id = userid[0]
     platform_url = "open.fedml.ai"
@@ -216,8 +216,8 @@ def mlops_login(
                 role,
                 "-rc",
                 runner_cmd,
-                "-said",
-                server_agent_id,
+                "-id",
+                device_id,
             ]
         ).pid
         save_login_process(SERVER_RUNNER_HOME_DIR, SERVER_RUNNER_INFO_DIR, login_pid)
