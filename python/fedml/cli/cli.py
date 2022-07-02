@@ -132,10 +132,10 @@ def display_server_logs():
     help="runner commands (options: request json for star run, stop run).",
 )
 @click.option(
-    "--server_agent_id", "-said", type=str, default="0", help="server agent id.",
+    "--device_id", "-id", type=str, default="0", help="device id.",
 )
 def mlops_login(
-    userid, version, client, server, local_server, role, runner_cmd, server_agent_id
+    userid, version, client, server, local_server, role, runner_cmd, device_id
 ):
     account_id = userid[0]
     platform_url = "open.fedml.ai"
@@ -216,8 +216,8 @@ def mlops_login(
                 role,
                 "-rc",
                 runner_cmd,
-                "-said",
-                server_agent_id,
+                "-id",
+                device_id,
             ]
         ).pid
         save_login_process(SERVER_RUNNER_HOME_DIR, SERVER_RUNNER_INFO_DIR, login_pid)
@@ -327,13 +327,13 @@ def mlops_logout(client, server):
     if client is None and server is None:
         is_client = True
 
-    if is_client:
+    if is_client is True:
         client_logout()
         cleanup_login_process(CLIENT_RUNNER_HOME_DIR, CLIENT_RUNNER_INFO_DIR)
         cleanup_all_fedml_processes("client_login.py")
-    if is_server:
+    if is_server is True:
         server_logout()
-        cleanup_login_process(CLIENT_RUNNER_HOME_DIR, CLIENT_RUNNER_INFO_DIR)
+        cleanup_login_process(SERVER_RUNNER_HOME_DIR, SERVER_RUNNER_INFO_DIR)
         cleanup_all_fedml_processes("server_login.py")
 
 
