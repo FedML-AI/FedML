@@ -8,7 +8,7 @@ from fedml.core.security.test.utils import (
 def test_norm_diff_clipping():
     defense = NormDiffClipping(5.0)
     local_w, global_w = create_fake_global_w_local_w_MNIST()
-    print(defense.defense(local_w, global_w))
+    print(defense.defend(local_w, global_w))
 
 
 def test__get_clipped_norm_diff():
