@@ -25,8 +25,8 @@ class MLOpsProfilerEvent:
         self.args = args
         self.run_id = args.run_id
         if args.rank == 0:
-            if hasattr(args, "server_device_id"):
-                self.edge_id = args.server_device_id
+            if hasattr(args, "server_id"):
+                self.edge_id = args.server_id
             else:
                 self.edge_id = 0
         else:
