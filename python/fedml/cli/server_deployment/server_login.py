@@ -106,7 +106,7 @@ def __login_as_cloud_agent(args, userid, version):
     setattr(args, "os_name", sys_name)
     setattr(args, "version", version)
     setattr(args, "log_file_dir", FedMLServerRunner.get_log_file_dir())
-    if hasattr(args, "device_id") and args.device_id is None and args.device_id != "0":
+    if hasattr(args, "device_id") and args.device_id is not None and args.device_id != "0":
         setattr(args, "current_device_id", args.device_id)
     else:
         setattr(args, "current_device_id", FedMLServerRunner.get_device_id())
