@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<aria>
+    <!--注意，修改该配置文件中的属性会覆盖代码中所设置的属性-->
+
+    <!--Aria框架配置-->
+    <app>
+        <!--是否使用AriaCrashHandler来捕获异常，异常日志保存在：/mnt/sdcard/Android/data/{package_name}/files/log/-->
+        <useAriaCrashHandler value="false"/>
+        <!--设置Aria的日志级别，{@link ALog#LOG_LEVEL_VERBOSE}-->
+        <logLevel value="2"/>
+        <!-- 是否检查网络 true: 检查网络，false: 不检查网络-->
+        <netCheck value="true"/>
+        <!--除非无法使用注解，否则不建议使用广播来接受任务状态，true：使用广播接收任务状态，false：不适用广播接收状态 -->
+        <!-- http://aria.laoyuyu.me/aria_doc/api/use_broadcast.html -->
+        <useBroadcast value="false"/>
+        <!--断网的时候是否重试，true：断网也重试；false：断网不重试，直接走失败的回调-->
+        <notNetRetry value="true"/>
+    </app>
+
+
+    <!--普通下载任务-->
+    <download>
+
+        <!--设置http下载获取文件大小是否使用Head请求。true：使用head请求，false：使用默认的get请求-->
+        <!--只适用于3.8.11以上的版本-->
+        <useHeadRequest value="false"/>
+
+        <!--设置任务最大下载速度，0表示不限速，单位为：kb-->
+        <maxSpeed value="0"/>
+
+        <!--
+          多线程下载是否使用块下载模式，{@code true}使用，{@code false}不使用
+          注意：
+            1、使用分块模式，在读写性能底下的手机上，合并文件需要的时间会更加长；
+            2、优点是使用多线程的块下载，初始化时，文件初始化时将不会预占用对应长度的空间；
+            3、只对新的多线程下载任务有效
+            4、只对多线程的任务有效
+        -->
+        <useBlock value="false"/>
+
+        <!--设置下载线程数，下载线程数不能小于1
+          注意：
+          1、线程下载数改变后，新的下载任务才会生效；
+          2、如果任务大小小于1m，该设置不会生效；
+          3、从3.4.1开始，如果线程数为1，文件初始化时将不再预占用对应长度的空间，下载多少byte，则占多大的空间；
+             对于采用多线程的任务或旧任务，依然采用原来的文件空间占用方式；
+        -->
+        <threadNum value="1"/>
+
+        <!--设置下载队列最大任务数， 默认为2-->
+        <maxTaskNum value="2"/>
+
+        <!--设置下载失败，重试次数，默认为10-->
+        <reTryNum value="5"/>
+
+        <!--设置重试间隔，单位为毫秒，默认2000毫秒-->
+        <reTryInterval value="5000"/>
+
+        <!--设置url连接超时时间，单位为毫秒，默认5000毫秒-->
+        <connectTimeOut value="5000"/>
+
+        <!--设置IO流读取时间，单位为毫秒，默认20000毫秒，该时间不能少于10000毫秒-->
+        <iOTimeOut value="10000"/>
+
+        <!--设置写文件buff大小，该数值大小不能小于2048，数值变小，下载速度会变慢-->
+        <buffSize value="8192"/>
+
+        <!--设置https ca 证书信息；path 为assets目录下的CA证书完整路径，name 为CA证书名-->
+        <ca name="" path=""/>
+
+        <!--是否需要转换速度单位，转换完成后为：1b/s、1kb/s、1mb/s、1gb/s、1tb/s，如果不需要将返回byte长度-->
+        <convertSpeed value="true"/>
+
+        <!--执行队列类型，见com.arialyy.aria.core.QueueMod，默认类型为wait-->
+        <queueMod value="wait"/>
+
+        <!--进度更新更新间隔，默认1000毫秒-->
+        <updateInterval value="1000"/>
+
+    </download>
+
+    <!--普通上传任务-->
+    <upload>
+        <!--设置任务最大上传速度，0表示不限速，单位为：kb-->
+        <maxSpeed value="0"/>
+
+        <!--设置IO流读取时间，单位为毫秒，默认20000毫秒，该时间不能少于10000毫秒-->
+        <iOTimeOut value="10000"/>
+
+        <!--设置写文件buff大小，该数值大小不能小于2048，数值变小，速度会变慢-->
+        <buffSize value="8192"/>
+
+        <!--是否需要转换速度单位，转换完成后为：1b/s、1kb/s、1mb/s、1gb/s、1tb/s，如果不需要将返回byte长度-->
+        <convertSpeed value="true"/>
+
+        <!--设置上传队列最大任务数， 默认为2-->
+        <maxTaskNum value="2"/>
+
+        <!--设置上传失败，重试次数，默认为10-->
+        <reTryNum value="3"/>
+
+        <!--设置重试间隔，单位为毫秒-->
+        <reTryInterval value="2000"/>
+
+        <!--设置url连接超时时间，单位为毫秒，默认5000毫秒-->
+        <connectTimeOut value="5000"/>
+
+        <!--执行队列类型，见com.arialyy.aria.core.QueueMod，默认类型为wait-->
+        <queueMod value="wait"/>
+
+        <!--进度更新更新间隔，默认1000毫秒-->
+        <updateInterval value="1000"/>
+
+    </upload>
+
+    <!-- 下载类组合任务 -->
+    <dGroup>
+
+        <!--组合任务下载队列最大任务数， 默认为2-->
+        <maxTaskNum value="3"/>
+
+        <!--设置下载失败，重试次数，默认为10-->
+        <reTryNum value="5"/>
+
+        <!--设置重试间隔，单位为毫秒，默认2000毫秒-->
+        <reTryInterval value="5000"/>
+
+        <!--执行队列类型，见com.arialyy.aria.core.QueueMod，默认类型为wait-->
+        <queueMod value="wait"/>
+
+        <!--进度更新更新间隔，默认1000毫秒-->
+        <updateInterval value="1000"/>
+        <!--子任务失败时组任务回调stop，默认true false将回调fail-->
+        <subFailAsStop value="true"/>
+
+        <!-- =============================以下为子任务的配置====================================-->
+
+        <!--能同时下载的子任务最大任务数，默认3-->
+        <subMaxTaskNum value="5"/>
+
+        <!--子任务下载失败时的重试次数，默认为5-->
+        <subReTryNum value="5"/>
+
+        <!--子任务下载失败时的重试间隔，单位为毫秒，默认2000毫秒-->
+        <subReTryInterval value="5000"/>
+
+        <!--子任务url连接超时时间，单位为毫秒，默认5000毫秒-->
+        <connectTimeOut value="5000"/>
+
+        <!--子任务IO流读取时间，单位为毫秒，默认20000毫秒，该时间不能少于10000毫秒-->
+        <iOTimeOut value="10000"/>
+
+        <!--子任务写文件buff大小，该数值大小不能小于2048，数值变小，下载速度会变慢-->
+        <buffSize value="8192"/>
+
+        <!--子任务 https ca 证书信息；path 为assets目录下的CA证书完整路径，name 为CA证书名-->
+        <ca name="" path=""/>
+
+        <!--子任务是否需要转换速度单位，转换完成后为：1b/s、1kb/s、1mb/s、1gb/s、1tb/s，如果不需要将返回byte长度-->
+        <convertSpeed value="true"/>
+
+        <!--子任务的最大下载速度，0表示不限速，单位为：kb; -->
+        <maxSpeed value="0"/>
+
+    </dGroup>
+</aria>

@@ -1,0 +1,28 @@
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <external-path
+        name="my_images"
+        path="cw/" />
+    <external-path
+        name="my_download"
+        path="download/" />
+    <external-files-path
+        name="external_files_path"
+        path="Download" />
+    <external-path
+        name="external_files"
+        path="." />
+    <external-path
+        name="test"
+        path="aTest" />
+    <root-path
+        name="name"
+        path="" />
+    <external-path
+        name="sg_download"
+        path="SGDOWNLOAD" />
+    <external-path name="tt_external_root" path="." />
+    <external-path name="tt_external_download" path="Download" />
+    <external-files-path name="tt_external_files_download" path="Download" />
+    <files-path name="tt_internal_file_download" path="Download" />
+    <cache-path name="tt_internal_cache_download" path="Download" />
+</paths>

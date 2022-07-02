@@ -1,0 +1,1 @@
+We will release iOS SDK soon. Please use Android SDK first.
