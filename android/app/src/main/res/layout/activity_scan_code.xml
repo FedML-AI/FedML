@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    >
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Fedml"
+        android:textSize="16sp"
+        android:gravity="center_horizontal"
+        android:textColor="@color/black"
+        android:textStyle="bold"
+        android:layout_marginTop="28dp"
+        />
+
+    <TextView
+        android:id="@+id/textView5"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Bind Account"
+        android:textColor="@color/color_0E1328"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:paddingLeft="30dp"
+        />
+
+    <LinearLayout
+        android:id="@+id/line_scan_code"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:background="@color/color_31708F"
+        android:layout_marginHorizontal="30dp"
+        android:layout_marginTop="85dp"
+        >
+
+        <ImageView
+            android:id="@+id/imageView3"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@mipmap/ic_scan_code" />
+
+        <TextView
+            android:id="@+id/textView7"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/white"
+            android:textSize="14sp"
+            android:layout_marginLeft="12dp"
+            android:text="Scan Code" />
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/imageView5"
+        android:layout_width="14dp"
+        android:layout_height="31dp"
+        android:src="@mipmap/ic_or"
+        android:layout_marginTop="12dp"
+        android:layout_gravity="center_horizontal"
+        />
+
+    <EditText
+        android:id="@+id/edt_account_id"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:ems="10"
+        android:inputType="textPersonName"
+        android:layout_marginHorizontal="30dp"
+        android:layout_marginTop="12dp"
+        android:gravity="center"
+        android:background="@drawable/border_edit"
+        android:hint="Input account ID"
+        android:textColorHint="@color/color_31708F"
+        android:textSize="14sp"
+        />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginHorizontal="30dp"
+        android:layout_marginTop="67dp"
+        >
+
+        <ImageView
+            android:id="@+id/img_privacy"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@mipmap/ic_privacy_normal" />
+
+        <TextView
+            android:id="@+id/textView8"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/color_686C7D"
+            android:textSize="14sp"
+            android:layout_marginLeft="12dp"
+            android:text="I have read and agree to the user agreement
+and privacy terms. " />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btn_ok"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Ok"
+        android:textAllCaps="false"
+        android:textSize="14sp"
+        android:layout_marginTop="24dp"
+        android:layout_marginHorizontal="30dp"
+        android:textColor="@color/white"
+        android:background="@color/color_54A158"
+        />
+
+
+
+
+</LinearLayout>

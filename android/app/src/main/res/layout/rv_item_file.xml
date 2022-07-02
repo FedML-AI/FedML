@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:id="@+id/constraint_layout"
+    android:focusable="true"
+    >
+
+
+    <ImageView
+        android:id="@+id/img_icon"
+        android:layout_width="54dp"
+        android:layout_height="44dp"
+        android:src="@mipmap/ic_guide"
+        android:scaleType="center"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+
+        />
+
+    <TextView
+        android:id="@+id/tv_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="文件名称"
+        android:layout_marginLeft="10dp"
+        app:layout_constraintTop_toTopOf="@+id/img_icon"
+        app:layout_constraintLeft_toRightOf="@+id/img_icon"
+        android:textSize="14sp"
+        />
+
+    <TextView
+        android:id="@+id/tv_size"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0KB"
+        android:layout_marginLeft="10dp"
+        app:layout_constraintTop_toBottomOf="@+id/tv_name"
+        app:layout_constraintLeft_toRightOf="@+id/img_icon"
+        android:textSize="10sp"
+        android:layout_marginTop="12dp"
+        />
+
+    <TextView
+        android:id="@+id/tv_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="2021年12月31日 17:42"
+        android:layout_marginLeft="10dp"
+        app:layout_constraintTop_toBottomOf="@+id/tv_name"
+        app:layout_constraintLeft_toRightOf="@+id/tv_size"
+        android:textSize="10sp"
+        android:layout_marginTop="12dp"
+        />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1px"
+        app:layout_constraintTop_toBottomOf="@+id/tv_time"
+        app:layout_constraintLeft_toLeftOf="parent"
+        android:background="@color/color_3C4043"
+        android:layout_marginVertical="6dp"
+        />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
