@@ -16,8 +16,8 @@ RUN chmod a+x ./fedml/entry-point.sh
 
 WORKDIR ./fedml
 
-ENV MODE=normal FEDML_VERSION=${VERSION} ACCOUNT_ID=0 \
+ENV MODE=normal FEDML_VERSION=${VERSION} ACCOUNT_ID=0 SERVER_DEVICE_ID=0 \
     FEDML_PACKAGE_NAME=package FEDML_PACKAGE_URL=s3_url \
-    FEDML_RUNNER_CMD={}
+    FEDML_RUNNER_CMD=3dsad
 
-CMD fedml login ${ACCOUNT_ID} -v ${FEDML_VERSION} -s -r cloud_server -rc ${FEDML_RUNNER_CMD}; ./runner.sh
+CMD fedml login ${ACCOUNT_ID} -v ${FEDML_VERSION} -s -r cloud_server -rc ${FEDML_RUNNER_CMD} -id ${SERVER_DEVICE_ID}; ./runner.sh

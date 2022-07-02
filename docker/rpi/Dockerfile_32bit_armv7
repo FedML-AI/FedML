@@ -31,7 +31,7 @@ RUN cat /etc/os-release
 #RUN python3 -c "import torch; torch.__version__"
 #
 RUN sudo ln -s /usr/include/locale.h /usr/include/xlocale.h
-RUN pip3 install h5py==3.1.0
+#RUN pip3 install h5py==3.1.0
 #RUN apt-get install python-h5py
-RUN pip3 install fedml==0.7.93
+RUN pip3 install fedml==0.7.99
 #
