@@ -1,112 +1,37 @@
-# Train Flow
+# Android and Mobile NN Code Architecture
 
-## 1. onStartTrain
+- Android project root path: https://github.com/FedML-AI/FedML/tree/master/android
 
-**Received**
-topic: flserver_agent/1/start_train
+The architecture is divided into three vertical layers and multiple horizontal modules:
 
-```json
-{
-  "groupid": "38",
-  "clientLearningRate": 0.001,
-  "partitionMethod": "homo",
-  "starttime": 1646068794775,
-  "trainBatchSize": 64,
-  "edgeids": [
-    17,
-    20,
-    18,
-    21,
-    19
-  ],
-  "token": "eyJhbGciOiJIUzI1NiJ9.eyJpZCI6NjAsImFjY291bnQiOiJhbGV4LmxpYW5nIiwibG9naW5UaW1lIjoiMTY0NjA2NTY5MDAwNSIsImV4cCI6MH0.0OTXuMTfxqf2duhkBG1CQDj1UVgconnoSH0PASAEzM4",
-  "modelName": "resnet56",
-  "urls": [
-    "https://fedmls3.s3.amazonaws.com/025c28be-b464-457a-ab17-851ae60767a9"
-  ],
-  "clientOptimizer": "adam",
-  "userids": [
-    "60"
-  ],
-  "clientNumPerRound": 3,
-  "name": "1646068810",
-  "commRound": 3,
-  "localEpoch": 1,
-  "runId": 168,
-  "id": 169,
-  "projectid": "56",
-  "dataset": "cifar10",
-  "communicationBackend": "MQTT_S3",
-  "timestamp": "1646068794778"
-}
-```
+### 1. Android APK Layer
+- app
 
-**Send**
-Topic: fedml_168_1
+https://github.com/FedML-AI/FedML/tree/master/android/app
 
-```json
-{
-  "client_status": "ONLINE",
-  "msg_type": 5,
-  "receiver": 0,
-  "sender": 1
-}
-```
 
-## 2. init Config
+- fedmlsdk_demo
 
-**Received**
-Topic: fedml_168_0_1
+https://github.com/FedML-AI/FedML/tree/master/android/fedmlsdk_demo
 
-```json
-{
-  "msg_type": 1,
-  "sender": 0,
-  "receiver": 1,
-  "model_params": "fedml_111_0_39d756ca2-1ce1-44bc-b232-59f0ae054f0e",
-  "client_idx": "0"
-}
-```
+### 2. Android SDK layer (Java API + JNI + So library)
 
-**Send**
-Topic: fedml_168_1
+https://github.com/FedML-AI/FedMLAndroidSDK
 
-```json
- {
-  "client_idx": "0",
-  "model_params": "fedml_111_0_39d756ca2-1ce1-44bc-b232-59f0ae054f0e",
-  "num_samples": 5,
-  "msg_type": 3,
-  "receiver": 0,
-  "sender": 1
-}
-```
 
-## 2. Sync Config
+### 3. MobileNN: FedML Mobile Training Engine Layer (C++, MNN, PyTorch, etc.)
 
-**Received**
-Topic: fedml_168_1
+https://github.com/FedML-AI/MobileNN
 
-```json
-{
-  "msg_type": 2,
-  "sender": 0,
-  "receiver": 1,
-  "model_params": "fedml_111_0_39d756ca2-1ce1-44bc-b232-59f0ae054f0e",
-  "client_idx": "0"
-}
-```
+https://github.com/FedML-AI/MNN
 
-**Send**
-Topic: fedml_168_1
+https://github.com/FedML-AI/pytorch
 
-```json
-{
-  "client_idx": "0",
-  "model_params": "fedml_111_0_39d756ca2-1ce1-44bc-b232-59f0ae054f0e",
-  "num_samples": 5,
-  "msg_type": 3,
-  "receiver": 0,
-  "sender": 1
-}
-```
+At this stage, the app layer is open sourced, the Android SDK is released to the open source community, and the Mobile NN C++ layer is close source.
+
+## Tutorial
+https://doc.fedml.ai/cross-device/examples/mqtt_s3_fedavg_mnist_lr_example.html
+
+## About Authors
+
+FedML team has more than 5 years experience in industrial grade Android development. See CTO and Senior Android Engineer's project experience in Android at https://chaoyanghe.com/industrial-experience/
