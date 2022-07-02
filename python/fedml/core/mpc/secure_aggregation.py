@@ -146,6 +146,11 @@ def aggregate_models_in_finite(weights_finite, prime_number):
 
     return w_sum
 
+def my_q(X, q_bit, p):
+    X_int = np.round(X * (2 ** q_bit))
+    is_negative = (abs(np.sign(X_int)) - np.sign(X_int)) / 2
+    out = X_int + p * is_negative
+    return out.astype("int64")
 
 def my_q_inv(X_q, q_bit, p):
     flag = X_q - (p - 1) / 2
@@ -176,6 +181,12 @@ def transform_finite_to_tensor(model_params, p, q_bits):
         model_params[k] = tmp_real
     return model_params
 
+def transform_tensor_to_finite(model_params, p, q_bits):
+    for k in model_params.keys():
+        tmp = np.array(model_params[k])
+        tmp_finite = my_q(tmp, q_bits, p)
+        model_params[k] = tmp_finite
+    return model_params
 
 def model_dimension(weights):
     logging.info("Get model dimension")
