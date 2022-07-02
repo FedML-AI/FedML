@@ -11,7 +11,9 @@ The figure below is the overall structure of FedNLP.
 After `git clone`-ing this repository, please run the following command to install our dependencies.
 
 ```bash
-cd FedML/app/fednlp
+sudo apt install libopenmpi-dev
+pip install mpi4py
+cd FedML/python/app/fednlp
 conda create -n fednlp python=3.8
 pip install fedml
 pip install -r requirements.txt
@@ -31,13 +33,13 @@ pip install -r requirements.txt
 
 We provide 4 different NLP applications namely Text Classification, Sequence Tagging, Span Extraction and Sequence2Sequence. We provide examples for each application and also provide steps on how to run each application below. We have provided download scripts for 12 different datasets across these 4 applications.
 
-For each of these make sure the datapaths and the gpu config paths are given correctly in the fedml_config.yaml file
+For each of these make sure the datapaths and the gpu config paths are given correctly in the `fedml_config.yaml` file and also make sure the number of clients per round and number of workers match
 
 **TEXT CLASSIFICATION**
 
 Read `data/README.md` for more details of datasets available
 
-Adjust the hyperparameters in fednlp/text_classification/config/fedml_config.yaml
+Adjust the hyperparameters in `fednlp/text_classification/config/fedml_config.yaml`
 
 To run text classification using MPI simulator follow the following steps:
 
@@ -45,14 +47,14 @@ To run text classification using MPI simulator follow the following steps:
 1. cd ../
 2. bash fednlp/data/download_data.sh
 3. bash fednlp/data/download_partition.sh
-4. bash fednlp/text_classification/run_step_by_step_example.sh
+4. bash fednlp/text_classification/run_step_by_step_example.sh 5
 ```
 
 **SEQ TAGGING**
 
 Read `data/README.md` for more details of datasets available
 
-Adjust the hyperparameters in fednlp/seq_tagging/config/fedml_config.yaml
+Adjust the hyperparameters in `fednlp/seq_tagging/config/fedml_config.yaml`
 
 To run sequence tagging on Onto dataset using MPI simulator follow the following steps:
 
@@ -60,7 +62,7 @@ To run sequence tagging on Onto dataset using MPI simulator follow the following
 1. cd ../
 2. bash fednlp/data/download_data.sh
 3. bash fednlp/data/download_partition.sh
-4. bash fednlp/seq_tagging/run_step_by_step_example.sh
+4. bash fednlp/seq_tagging/run_step_by_step_example.sh 5
 ```
 
 **SPAN EXTRACTION**
@@ -73,7 +75,7 @@ To run span extraction on MRQA dataset using MPI simulator follow the following 
 1. cd ../
 2. bash fednlp/data/download_data.sh
 3. bash fednlp/data/download_partition.sh
-4. bash fednlp/span_extraction/run_step_by_step_example.sh
+4. bash fednlp/span_extraction/run_step_by_step_example.sh 4
 ```
 
 
@@ -89,7 +91,7 @@ To run seq2seq using MPI simulator follow the following steps:
 1. cd ../
 2. bash fednlp/data/download_data.sh
 3. bash fednlp/data/download_partition.sh
-4. bash fednlp/seq_tagging/run_step_by_step_example.sh
+4. bash fednlp/seq_tagging/run_step_by_step_example.sh 1
 ```
 
 We have provided examples of trainers in each example. For running custom trainers feel free to follow the folder `{application_name}/trainer/` and write your own custom trainer. To include this trainer please follow the create_model function in the python executable in the folder `{application_name}/` and replace the current trainer with your own trainer. Every trainer should inherit the Client Trainer class and should contain a train and a test function.
