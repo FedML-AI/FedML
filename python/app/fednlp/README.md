@@ -33,13 +33,13 @@ pip install -r requirements.txt
 
 We provide 4 different NLP applications namely Text Classification, Sequence Tagging, Span Extraction and Sequence2Sequence. We provide examples for each application and also provide steps on how to run each application below. We have provided download scripts for 12 different datasets across these 4 applications.
 
-For each of these make sure the datapaths and the gpu config paths are given correctly in the fedml_config.yaml file and also make sure the number of clients per round and number of workers match
+For each of these make sure the datapaths and the gpu config paths are given correctly in the `fedml_config.yaml` file and also make sure the number of clients per round and number of workers match
 
 **TEXT CLASSIFICATION**
 
 Read `data/README.md` for more details of datasets available
 
-Adjust the hyperparameters in fednlp/text_classification/config/fedml_config.yaml
+Adjust the hyperparameters in `fednlp/text_classification/config/fedml_config.yaml`
 
 To run text classification using MPI simulator follow the following steps:
 
@@ -54,7 +54,7 @@ To run text classification using MPI simulator follow the following steps:
 
 Read `data/README.md` for more details of datasets available
 
-Adjust the hyperparameters in fednlp/seq_tagging/config/fedml_config.yaml
+Adjust the hyperparameters in `fednlp/seq_tagging/config/fedml_config.yaml`
 
 To run sequence tagging on Onto dataset using MPI simulator follow the following steps:
 
