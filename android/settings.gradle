@@ -1,4 +1,4 @@
 include ':app'
 rootProject.name = "fedml-android"
-include ':edge'
-include ':demo'
+include ':fedmlsdk'
+include ':fedmlsdk_demo'
