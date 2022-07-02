@@ -757,18 +757,8 @@ class FedMLServerRunner:
     def callback_report_current_status(self, topic, payload):
         request_json = json.loads(payload)
         if self.run_as_edge_server_and_agent:
-            # server_runner = FedMLServerRunner(self.args, run_id=0,
-            #                                   request_json=request_json,
-            #                                   agent_config=self.agent_config)
-            # server_runner.run_as_edge_server_and_agent = self.run_as_edge_server_and_agent
-            # multiprocessing.Process(target=server_runner.report_client_status).start()
             self.send_agent_active_msg()
         elif self.run_as_cloud_agent:
-            # server_runner = FedMLServerRunner(self.args, run_id=0,
-            #                                   request_json=request_json,
-            #                                   agent_config=self.agent_config)
-            # server_runner.run_as_cloud_agent = self.run_as_cloud_agent
-            # multiprocessing.Process(target=server_runner.report_client_status).start()
             self.send_agent_active_msg()
         elif self.run_as_cloud_server:
             pass
