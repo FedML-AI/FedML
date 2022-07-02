@@ -45,16 +45,22 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                 "MqttS3CommManager args client_id_list: " + str(args.client_id_list)
             )
             self.client_real_ids = json.loads(args.client_id_list)
+
+        self.group_server_id_list = None
+        if hasattr(args, "group_server_id_list") and args.group_server_id_list is not None:
+            self.group_server_id_list = args.group_server_id_list
+
         if args.rank == 0:
-            if hasattr(args, "server_device_id"):
-                self.edge_id = args.server_device_id
+            if hasattr(args, "server_id"):
+                self.edge_id = args.server_id
             else:
                 self.edge_id = 0
         else:
-            if hasattr(args, "server_device_id"):
-                self.server_id = args.server_device_id
+            if hasattr(args, "server_id"):
+                self.server_id = args.server_id
             else:
                 self.server_id = 0
+
             if len(self.client_real_ids) == 1:
                 self.edge_id = self.client_real_ids[0]
             else:
