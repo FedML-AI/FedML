@@ -129,7 +129,7 @@ def display_server_logs():
     "-rc",
     type=str,
     default="{}",
-    help="runner commands (options: request json for star run, stop run).",
+    help="runner commands (options: request json for start run, stop run).",
 )
 @click.option(
     "--device_id", "-id", type=str, default="0", help="device id.",
