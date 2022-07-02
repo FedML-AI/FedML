@@ -13,14 +13,6 @@ from concurrent import futures
 
 
 from common import (
-    identity,
-    identity_script,
-    heavy,
-    heavy_script,
-    identity_cuda,
-    identity_script_cuda,
-    heavy_cuda,
-    heavy_script_cuda,
     stamp_time,
     compute_delay,
     NUM_RPC,
