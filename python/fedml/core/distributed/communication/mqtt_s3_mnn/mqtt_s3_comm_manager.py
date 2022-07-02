@@ -49,18 +49,23 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
         if args.rank == 0:
             if hasattr(args, "server_id"):
                 self.edge_id = args.server_id
+                self.server_id = args.server_id
             else:
                 self.edge_id = 0
+                self.server_id = 0
         else:
             if hasattr(args, "server_id"):
                 self.server_id = args.server_id
             else:
                 self.server_id = 0
 
-            if len(self.client_real_ids) == 1:
-                self.edge_id = self.client_real_ids[0]
+            if hasattr(args, "client_id"):
+                self.edge_id = args.client_id
             else:
-                self.edge_id = 0
+                if len(self.client_real_ids) == 1:
+                    self.edge_id = self.client_real_ids[0]
+                else:
+                    self.edge_id = 0
 
         self._observers: List[Observer] = []
         if client_id is None:
