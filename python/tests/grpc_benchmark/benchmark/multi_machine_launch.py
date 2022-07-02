@@ -1,4 +1,3 @@
-import torch.multiprocessing as mp
 import pt_rpc_client
 import pt_rpc_server
 import grpc_client
