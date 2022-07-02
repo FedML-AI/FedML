@@ -1,1 +1,0 @@
-iOS is under development. Please use Android first.
