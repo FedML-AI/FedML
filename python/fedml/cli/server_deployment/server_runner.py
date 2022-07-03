@@ -526,7 +526,7 @@ class FedMLServerRunner:
                              ";export FEDML_DATA_PVC_ID=" + self.cloud_server_name + \
                              ";export FEDML_REGISTRY_SECRET_SUFFIX=" + self.cloud_server_name + \
                              ";export FEDML_ACCOUNT_ID=0" + \
-                             ";export SERVER_DEVICE_ID=" + self.request_json.get("serverInstanceId", "0") + \
+                             ";export SERVER_DEVICE_ID=" + self.request_json.get("cloudServerDeviceId", "0") + \
                              ";export FEDML_VERSION=" + self.version + \
                              ";export FEDML_PACKAGE_NAME=" + packages_config.get("server", "") + \
                              ";export FEDML_PACKAGE_URL=" + packages_config.get("serverUrl", "") + \
