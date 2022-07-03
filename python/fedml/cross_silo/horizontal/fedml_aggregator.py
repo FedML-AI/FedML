@@ -231,11 +231,12 @@ class FedMLAggregator(object):
                 "run_id": self.args.run_id,
                 "round_idx": round_idx,
                 "timestamp": time.time(),
-                "accuracy": round(train_acc, 4),
-                "loss": round(train_loss, 4),
+                "train/accuracy": round(train_acc, 4),
+                "train/loss": round(train_loss, 4),
             }
             if self.mlops_metrics is not None:
                 self.mlops_metrics.report_server_training_metric(train_metric)
+
 
             # test data
             test_num_samples = []
@@ -264,3 +265,13 @@ class FedMLAggregator(object):
                 wandb.log({"Test/Loss": test_loss, "round": round_idx})
             stats = {"test_acc": test_acc, "test_loss": test_loss}
             logging.info(stats)
+
+            test_metric = {
+                "run_id": self.args.run_id,
+                "round_idx": round_idx,
+                "timestamp": time.time(),
+                "test/accuracy": round(test_acc, 4),
+                "test/loss": round(test_loss, 4),
+            }
+            if self.mlops_metrics is not None:
+                self.mlops_metrics.report_server_training_metric(test_metric)

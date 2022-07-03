@@ -175,7 +175,8 @@ class FedMLServerManager(ServerManager):
                     "total_rounds": self.round_num,
                     "running_time": round(time.time() - self.start_running_time, 4),
                 }
-                self.mlops_metrics.report_server_training_round_info(round_info)
+                if self.mlops_metrics is not None:
+                    self.mlops_metrics.report_server_training_round_info(round_info)
 
             self.client_id_list_in_this_round = self.aggregator.client_selection(
                 self.round_idx, self.client_real_ids, self.args.client_num_per_round
