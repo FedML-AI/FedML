@@ -227,17 +227,6 @@ class FedMLAggregator(object):
             stats = {"training_acc": train_acc, "training_loss": train_loss}
             logging.info(stats)
 
-            train_metric = {
-                "run_id": self.args.run_id,
-                "round_idx": round_idx,
-                "timestamp": time.time(),
-                "train/accuracy": round(train_acc, 4),
-                "train/loss": round(train_loss, 4),
-            }
-            if self.mlops_metrics is not None:
-                self.mlops_metrics.report_server_training_metric(train_metric)
-
-
             # test data
             test_num_samples = []
             test_tot_corrects = []
@@ -266,12 +255,14 @@ class FedMLAggregator(object):
             stats = {"test_acc": test_acc, "test_loss": test_loss}
             logging.info(stats)
 
-            test_metric = {
-                "run_id": self.args.run_id,
-                "round_idx": round_idx,
-                "timestamp": time.time(),
-                "test/accuracy": round(test_acc, 4),
-                "test/loss": round(test_loss, 4),
-            }
             if self.mlops_metrics is not None:
-                self.mlops_metrics.report_server_training_metric(test_metric)
+                metric_for_mlops = {
+                    "run_id": self.args.run_id,
+                    "round_idx": round_idx,
+                    "timestamp": time.time(),
+                    "train_accuracy": round(train_acc, 4),
+                    "train_loss": round(train_loss, 4),
+                    "test_accuracy": round(test_acc, 4),
+                    "test_loss": round(test_loss, 4),
+                }
+                self.mlops_metrics.report_server_training_metric(metric_for_mlops)
