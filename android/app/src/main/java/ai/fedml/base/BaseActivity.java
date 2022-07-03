@@ -6,11 +6,6 @@ import android.os.Bundle;
 import ai.fedml.utils.StatusBarUtil;
 import androidx.annotation.Nullable;
 
-/**
- * @创建者 xkai
- * @创建时间 2021/12/29 16:06
- * @描述
- */
 public class BaseActivity extends Activity {
 
     @Override
