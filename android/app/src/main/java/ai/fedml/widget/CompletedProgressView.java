@@ -119,8 +119,9 @@ public class CompletedProgressView extends View {
         oval1.top = (mYCenter - mRingRadius);
         oval1.right = mRingRadius * 2 + (mXCenter - mRingRadius);
         oval1.bottom = mRingRadius * 2 + (mYCenter - mRingRadius);
-        canvas.drawArc(oval1, 0, 360, false, mRingPaintBg); //
-The ellipse object where the arc is located, the starting angle of the arc, the angle of the arc, whether to display the radius connection
+        canvas.drawArc(oval1, 0, 360, false, mRingPaintBg);
+
+        //The ellipse object where the arc is located, the starting angle of the arc, the angle of the arc, whether to display the radius connection
 
         //Outer arc
         if (mProgress > 0 ) {
