@@ -14,6 +14,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
+
 import ai.fedml.R;
 import ai.fedml.base.BaseActivity;
 import ai.fedml.edge.FedEdgeManager;
@@ -22,6 +24,7 @@ import ai.fedml.edge.request.RequestManager;
 import ai.fedml.edge.service.component.RemoteStorage;
 import ai.fedml.edge.utils.LogHelper;
 import ai.fedml.utils.ToastUtils;
+import ai.fedml.widget.CircleImageView;
 import ai.fedml.widget.CompletedProgressView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -44,6 +47,7 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
     private TextView mNameTextView;
     private TextView mEmailTextView;
     private TextView mGroupTextView;
+    private CircleImageView mAvatarImageView;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -77,6 +81,7 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
         mNameTextView = findViewById(R.id.tv_name);
         mEmailTextView = findViewById(R.id.tv_email);
         mGroupTextView = findViewById(R.id.tv_group);
+        mAvatarImageView = findViewById(R.id.iv_avatar);
     }
 
     private void loadDate() {
@@ -182,6 +187,11 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
                     mNameTextView.setText(String.format("%s %s", userInfo.getLastname(), userInfo.getFirstName()));
                     mEmailTextView.setText(userInfo.getEmail());
                     mGroupTextView.setText(userInfo.getCompany());
+                    Glide.with(HomeActivity.this)
+                            .load(userInfo.getAvatar())
+                            .centerCrop()
+                            .placeholder(R.mipmap.ic_shijiali)
+                            .into(mAvatarImageView);
                 });
             }
         });
