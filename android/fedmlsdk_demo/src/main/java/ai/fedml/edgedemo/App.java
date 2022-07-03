@@ -16,7 +16,11 @@ public class App extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+
+        // Init FedML Android SDK
         FedEdgeManager.getFedEdgeApi().init(this);
+
+        // set data path (to prepare data, please check this script `android/data/prepare.sh`)
         FedEdgeManager.getFedEdgeApi().setPrivatePath(Environment.getExternalStorageDirectory().getPath()
                 + "/ai.fedml/user_0");
     }
