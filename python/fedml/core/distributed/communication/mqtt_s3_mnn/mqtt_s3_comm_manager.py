@@ -33,7 +33,8 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
         self.broker_host = None
         self.keepalive_time = 180
         self.args = args
-        self._topic = "fedml_" + str(topic) + "_"
+
+        self._topic = "fedml_" + str(topic) + "_"  # topic is set as run_id
         self.s3_storage = S3MNNStorage(s3_config_path)
         self.client_real_ids = []
         logging.info(
@@ -49,18 +50,23 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
         if args.rank == 0:
             if hasattr(args, "server_id"):
                 self.edge_id = args.server_id
+                self.server_id = args.server_id
             else:
                 self.edge_id = 0
+                self.server_id = 0
         else:
             if hasattr(args, "server_id"):
                 self.server_id = args.server_id
             else:
                 self.server_id = 0
 
-            if len(self.client_real_ids) == 1:
-                self.edge_id = self.client_real_ids[0]
+            if hasattr(args, "client_id"):
+                self.edge_id = args.client_id
             else:
-                self.edge_id = 0
+                if len(self.client_real_ids) == 1:
+                    self.edge_id = self.client_real_ids[0]
+                else:
+                    self.edge_id = 0
 
         self._observers: List[Observer] = []
         if client_id is None:
@@ -73,7 +79,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
         self.set_config_from_file(config_path)
         self.set_config_from_objects(config_path)
 
-        self.client_active_list = list()
+        self.client_active_list = dict()
         self.top_active_msg = CommunicationConstants.CLIENT_TOP_ACTIVE_MSG
         self.topic_last_will_msg = CommunicationConstants.CLIENT_TOP_LAST_WILL_MSG
         if args.rank == 0:
@@ -132,6 +138,8 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
                     "mqtt_s3.on_connect: server subscribes real_topic = %s, mid = %s, result = %s"
                     % (real_topic, mid, str(result))
                 )
+
+            self._notify_connection_ready()
         else:
             # client
             real_topic = self._topic + str(self.server_id) + "_" + str(self.client_real_ids[0])
@@ -141,6 +149,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
                 "mqtt_s3.on_connect: client subscribes real_topic = %s, mid = %s, result = %s"
                 % (real_topic, mid, str(result))
             )
+            self._notify_connection_ready()
 
     def on_disconnected(self, mqtt_client_object):
         logging.info(
@@ -208,7 +217,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
             receiver_id = msg.get_receiver_id()
 
             # topic = "fedml" + "_" + "run_id" + "_0" + "_" + "client_id"
-            topic = self._topic + str(0) + "_" + str(receiver_id)
+            topic = self._topic + str(self.server_id) + "_" + str(receiver_id)
             logging.info("mqtt_s3.send_message: msg topic = %s" % str(topic))
 
             payload = msg.get_params()
@@ -227,6 +236,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
                 # pure MQTT
                 logging.info("mqtt_s3.send_message: MQTT msg sent")
                 self.mqtt_mgr.send_message(topic, json.dumps(payload))
+
         else:
             raise Exception("This is only used for the server")
 
@@ -265,3 +275,39 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
             self.mqtt_user = mqtt_config["MQTT_USER"]
         if "MQTT_PWD" in mqtt_config:
             self.mqtt_pwd = mqtt_config["MQTT_PWD"]
+
+    def _notify_connection_ready(self):
+        msg_params = Message()
+        msg_type = CommunicationConstants.MSG_TYPE_CONNECTION_IS_READY
+        for observer in self._observers:
+            observer.receive_message(msg_type, msg_params)
+
+    def callback_client_last_will_msg(self, topic, payload):
+        msg = json.loads(payload)
+        edge_id = msg.get("ID", None)
+        status = msg.get("status", CommunicationConstants.MSG_CLIENT_STATUS_OFFLINE)
+        if edge_id is not None and status == CommunicationConstants.MSG_CLIENT_STATUS_OFFLINE:
+            if self.client_active_list.get(edge_id, None) is not None:
+                self.client_active_list.pop(edge_id)
+
+    def callback_client_active_msg(self, topic, payload):
+        msg = json.loads(payload)
+        edge_id = msg.get("ID", None)
+        status = msg.get("status", CommunicationConstants.MSG_CLIENT_STATUS_IDLE)
+        if edge_id is not None:
+            self.client_active_list[edge_id] = status
+
+    def subscribe_client_status_message(self):
+        # Setup MQTT message listener to the last will message form the client.
+        self.mqtt_mgr.add_message_listener(CommunicationConstants.CLIENT_TOP_LAST_WILL_MSG,
+                                           self.callback_client_last_will_msg)
+
+        # Setup MQTT message listener to the active status message from the client.
+        self.mqtt_mgr.add_message_listener(CommunicationConstants.CLIENT_TOP_ACTIVE_MSG,
+                                           self.callback_client_active_msg)
+
+    def get_client_status(self, client_id):
+        return self.client_active_list.get(client_id, CommunicationConstants.MSG_CLIENT_STATUS_OFFLINE)
+
+    def get_client_list_status(self):
+        return self.client_active_list

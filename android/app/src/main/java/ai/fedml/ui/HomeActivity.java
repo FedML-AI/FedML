@@ -12,16 +12,20 @@ import android.provider.Settings;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
+
+import ai.fedml.GlideApp;
 import ai.fedml.R;
 import ai.fedml.base.BaseActivity;
 import ai.fedml.edge.FedEdgeManager;
 import ai.fedml.edge.OnTrainProgressListener;
 import ai.fedml.edge.request.RequestManager;
-import ai.fedml.edge.service.component.RemoteStorage;
 import ai.fedml.edge.utils.LogHelper;
 import ai.fedml.utils.ToastUtils;
+import ai.fedml.widget.CircleImageView;
 import ai.fedml.widget.CompletedProgressView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -31,8 +35,6 @@ import androidx.core.content.ContextCompat;
 /**
  * HomeActivity
  *
- * @author xkai
- * @date 2021/12/30 14:45
  */
 public class HomeActivity extends BaseActivity implements View.OnClickListener {
 
@@ -46,6 +48,7 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
     private TextView mNameTextView;
     private TextView mEmailTextView;
     private TextView mGroupTextView;
+    private ImageView mAvatarImageView;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -79,6 +82,7 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
         mNameTextView = findViewById(R.id.tv_name);
         mEmailTextView = findViewById(R.id.tv_email);
         mGroupTextView = findViewById(R.id.tv_group);
+        mAvatarImageView = findViewById(R.id.iv_avatar);
     }
 
     private void loadDate() {
@@ -139,14 +143,14 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
 
     private void requestPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // 先判断有没有权限
+            // First determine whether you have permission
             if (!Environment.isExternalStorageManager()) {
                 Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
                 intent.setData(Uri.parse("package:" + this.getPackageName()));
                 startActivityForResult(intent, REQUEST_CODE);
             }
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            // 先判断有没有权限
+            // First determine whether you have permission
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
                     ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CODE);
@@ -172,7 +176,7 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
         if (requestCode == REQUEST_CODE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             if (Environment.isExternalStorageManager()) {
             } else {
-                ToastUtils.show("存储权限获取失败");
+                ToastUtils.show("Failed to obtain storage permission");
             }
         }
     }
@@ -184,6 +188,11 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
                     mNameTextView.setText(String.format("%s %s", userInfo.getLastname(), userInfo.getFirstName()));
                     mEmailTextView.setText(userInfo.getEmail());
                     mGroupTextView.setText(userInfo.getCompany());
+                    GlideApp.with(HomeActivity.this)
+                            .load(userInfo.getAvatar())
+                            .circleCrop()
+                            .placeholder(R.mipmap.ic_shijiali)
+                            .into(mAvatarImageView);
                 });
             }
         });
@@ -195,7 +204,7 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
         LogHelper.d("unbound bindingId:%s", bindingId);
         RequestManager.unboundAccount(bindingId, isSuccess -> runOnUiThread(() -> {
             if (isSuccess) {
-                // 跳转至扫描页
+                // Jump to scanning page
                 Intent intent = new Intent();
                 intent.setClass(HomeActivity.this, ScanCodeActivity.class);
                 startActivity(intent);

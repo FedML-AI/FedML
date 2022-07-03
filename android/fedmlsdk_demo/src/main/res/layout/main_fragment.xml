@@ -116,7 +116,8 @@
                         app:layout_constraintLeft_toLeftOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/tv_name" />
 
-                    <ai.fedml.edgedemo.widget.CircleImageView
+                    <ImageView
+                        android:id="@+id/iv_avatar"
                         android:layout_width="51dp"
                         android:layout_height="51dp"
                         android:layout_centerInParent="true"
