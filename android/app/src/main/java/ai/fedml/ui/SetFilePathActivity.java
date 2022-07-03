@@ -26,9 +26,6 @@ import ai.fedml.utils.FormatUtils;
 
 /**
  * SetFilePath
- *
- * @author xkai
- * @date 2021/12/31 16:17
  */
 public class SetFilePathActivity extends BaseActivity implements View.OnClickListener, RvFilePathAdapter.OnItemClickListener {
 
@@ -36,7 +33,7 @@ public class SetFilePathActivity extends BaseActivity implements View.OnClickLis
     private RecyclerView rv_file_path;
     private RvFilePathAdapter rvFilePathAdapter;
 
-    private File[] files;// 获得目录中的所有内容
+    private File[] files;// get everything in the directory
     private File currentPath;
 
     @Override
@@ -66,10 +63,10 @@ public class SetFilePathActivity extends BaseActivity implements View.OnClickLis
         rv_file_path.setAdapter(rvFilePathAdapter);
         rvFilePathAdapter.setOnItemClickListener(this);
 
-        // 获得sd卡的目录
+        // Get the directory of the sd card
         if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
-            File sd = Environment.getExternalStorageDirectory();// 获得sd卡的目录
-            // 获得目录中的内容
+            File sd = Environment.getExternalStorageDirectory();// Get the directory of the sd card
+            // get the contents of the directory
             showDir(sd);
         }
     }
@@ -83,7 +80,7 @@ public class SetFilePathActivity extends BaseActivity implements View.OnClickLis
                 AppManager.getAppManager().finishActivity();
                 break;
             case R.id.btn_back:
-                // 加载上一级目录 ParentFile：上一级目录
+                // Load parent directory ParentFile: parent directory
                 File path = currentPath.getParentFile();
                 if (path == null || path.toString().equals("/storage/emulated")) {
                     AppManager.getAppManager().finishActivity();
@@ -96,13 +93,13 @@ public class SetFilePathActivity extends BaseActivity implements View.OnClickLis
 
 
     /**
-     * 加载所有文件夹和文件，并更新在界面
+     * Load all folders and files and update the interface
      */
     @SuppressLint("NotifyDataSetChanged")
     private void showDir(File dir) {
-        // 保存当前位置
+        // save current location
         currentPath = dir;
-        // 获得目录中的内容（listFiles:获得所有内容），并且过滤FileFilter()以"."开头的文件和文件夹
+        // Get the contents of the directory (listFiles: get all the contents), and filter the files and folders starting with "." by FileFilter() function
         files = dir.listFiles(new FileFilter());
         if (files == null) {
             return;
@@ -125,11 +122,11 @@ public class SetFilePathActivity extends BaseActivity implements View.OnClickLis
     @Override
     public void onItemClick(View view, int position) {
         if (files[position].isFile()) {
-            // 打开文件
+            // open the file
             FileOpenUtils.openFile(this, files[position]);
         } else {
-            // 打开文件目录中的内容
-            // 加载新的数据
+            // Open the contents of the file directory
+            // load new data
             showDir(files[position]);
         }
     }
