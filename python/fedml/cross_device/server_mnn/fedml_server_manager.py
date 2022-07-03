@@ -1,4 +1,5 @@
 import json
+import logging
 import time
 
 from .message_define import MyMessage
@@ -6,9 +7,6 @@ from .utils import write_tensor_dict_to_mnn
 from ...core.distributed.communication.message import Message
 from ...core.distributed.server.server_manager import ServerManager
 from ...core.mlops import MLOpsMetrics, MLOpsProfilerEvent
-import logging
-
-from ...core.mlops.mlops_configs import MLOpsConfigs
 
 
 class FedMLServerManager(ServerManager):
@@ -228,6 +226,9 @@ class FedMLServerManager(ServerManager):
 
         if all_client_is_online:
             # send initialization message to all clients to start training
+            logging.info("=================================================")
+            logging.info("=== All Clients are ONLINE! & send_init_model ===")
+            logging.info("=================================================")
             self.send_init_msg()
 
     def handle_message_receive_model_from_client(self, msg_params):
@@ -248,6 +249,13 @@ class FedMLServerManager(ServerManager):
         b_all_received = self.aggregator.check_whether_all_receive()
         logging.info("b_all_received = %s " % str(b_all_received))
         if b_all_received:
+            logging.info("=================================================")
+            logging.info(
+                "=========== ROUND {} IS FINISHED!!! =============".format(
+                    self.round_idx
+                )
+            )
+            logging.info("=================================================")
             if hasattr(self.args, "backend") and self.args.using_mlops:
                 self.mlops_event.log_event_ended(
                     "server.wait", event_value=str(self.round_idx)
@@ -311,6 +319,9 @@ class FedMLServerManager(ServerManager):
                     self.mlops_metrics.report_server_id_status(
                         self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_FINISHED
                     )
+                logging.info("=================================================")
+                logging.info("=========== TRAINING IS FINISHED!!! =============")
+                logging.info("=================================================")
                 self.finish()
                 return
             else:
