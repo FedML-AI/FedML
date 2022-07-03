@@ -145,6 +145,7 @@ public class GuideActivity extends BaseActivity {
         LogHelper.d("online_user length=%d", online_user.length);
         LogHelper.d("online_user=%d", online_user[0]);
         LogHelper.d("online_user=%d", online_user[1]);
+
         // 4. do training
         String result = trainer.train();
         LogHelper.d("online_user=%s", result);
