@@ -232,7 +232,10 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
                 # pure MQTT
                 logging.info("mqtt_s3.send_message: MQTT msg sent")
                 self.mqtt_mgr.send_message(topic, json.dumps(payload))
+
+            self._notify_connection_ready()
         else:
+            self._notify_connection_ready()
             raise Exception("This is only used for the server")
 
     def send_message_json(self, topic_name, json_message):
@@ -271,6 +274,11 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
         if "MQTT_PWD" in mqtt_config:
             self.mqtt_pwd = mqtt_config["MQTT_PWD"]
 
+    def _notify_connection_ready(self):
+        msg_params = Message()
+        msg_type = CommunicationConstants.MSG_TYPE_CONNECTION_IS_READY
+        for observer in self._observers:
+            observer.receive_message(msg_type, msg_params)
 
     def callback_client_last_will_msg(self, topic, payload):
         msg = json.loads(payload)
