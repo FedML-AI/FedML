@@ -228,7 +228,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         receiver_id = msg.get_receiver_id()
         if self.client_id == 0:
             # topic = "fedml" + "_" + "run_id" + "_0" + "_" + "client_id"
-            topic = self._topic + str(self.edge_id) + "_" + str(receiver_id)
+            topic = self._topic + str(self.server_id) + "_" + str(receiver_id)
             logging.info("mqtt_s3.send_message: msg topic = %s" % str(topic))
 
             payload = msg.get_params()
