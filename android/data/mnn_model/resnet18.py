@@ -1,0 +1,85 @@
+import MNN
+nn = MNN.nn
+F = MNN.expr
+
+
+class ResBlock(nn.Module):
+    def __init__(self, in_planes, planes, stride=1):
+        super(ResBlock, self).__init__()
+        self.conv1 = nn.conv(in_planes, planes, kernel_size=[3,3], stride=[stride,stride], padding=[1,1], bias=False, padding_mode=MNN.expr.Padding_Mode.SAME)
+        self.bn1 = nn.batch_norm(planes)
+        self.conv2 = nn.conv(planes, planes, kernel_size=[3,3], stride=[1,1], padding=[1,1], bias=False, padding_mode=MNN.expr.Padding_Mode.SAME)
+        self.bn2 = nn.batch_norm(planes)
+
+    def forward(self, x):
+        out = F.relu(self.bn1(self.conv1(x)))
+        out = self.bn2(self.conv2(out))
+        out += x
+        out = F.relu(out)
+        return out
+
+
+class ResBlock_conv(nn.Module):
+    def __init__(self, in_planes, planes, stride=1):
+        super(ResBlock_conv, self).__init__()
+        self.conv1 = nn.conv(in_planes, planes, kernel_size=[3,3], stride=[stride,stride], padding=[1,1], bias=False, padding_mode=MNN.expr.Padding_Mode.SAME)
+        self.bn1 = nn.batch_norm(planes)
+        self.conv2 = nn.conv(planes, planes, kernel_size=[3,3], stride=[1,1], padding=[1,1], bias=False, padding_mode=MNN.expr.Padding_Mode.SAME)
+        self.bn2 = nn.batch_norm(planes)
+
+        self.conv_shortcut = nn.conv(in_planes, planes, kernel_size=[1,1], stride=[stride,stride], bias=False, padding_mode=MNN.expr.Padding_Mode.SAME)
+        self.bn_shortcut = nn.batch_norm(planes)
+
+    def forward(self, x):
+        out = F.relu(self.bn1(self.conv1(x)))
+        out = self.bn2(self.conv2(out))
+        out += self.bn_shortcut(self.conv_shortcut(x))
+        return out
+
+
+class Resnet20(nn.Module):
+    def __init__(self, num_classes=10):
+        super(Resnet20, self).__init__()
+
+        self.conv1 = nn.conv(3, 64, kernel_size=[3,3], stride=[1,1], padding=[1,1], bias=False, padding_mode=MNN.expr.Padding_Mode.SAME)
+        self.bn1 = nn.batch_norm(64)
+        
+        self.layer1 = ResBlock(64, 64, 1)
+        self.layer2 = ResBlock(64, 64, 1)
+      
+        self.layer3 = ResBlock_conv(64, 128, 2)
+        self.layer4 = ResBlock(128, 128, 1)
+        
+        self.layer5 = ResBlock_conv(128, 256, 2)
+        self.layer6 = ResBlock(256, 256, 1)
+        
+        self.layer7 = ResBlock_conv(256, 512, 2)
+        self.layer8 = ResBlock(512, 512, 1)
+        
+        self.fc = nn.linear(512, num_classes)
+
+    def forward(self, x):
+        x = F.relu(self.bn1(self.conv1(x)))
+
+        x = self.layer1.forward(x)
+        x = self.layer2.forward(x)
+        x = self.layer3.forward(x)
+        x = self.layer4.forward(x)
+        x = self.layer5.forward(x)
+        x = self.layer6.forward(x)
+        x = self.layer7.forward(x)
+        x = self.layer8.forward(x)
+        print(x.shape)
+        x = F.avg_pool(x, kernel=[4,4], stride=[4,4])
+        x = F.convert(x, F.NCHW)
+        x = F.reshape(x, [0, -1])
+        x = self.fc(x)
+        out = F.softmax(x, 1)
+        return out
+
+net = Resnet20()
+net.train(True)
+input_var = MNN.expr.placeholder([1, 3, 32, 32], MNN.expr.NCHW)
+predicts = net.forward(input_var)
+# print(predicts)
+F.save([predicts], "resnet18.mnn")

@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<aria>
+    <!--Note that modifying the properties in this configuration file will override the properties set in the code-->
+
+    <!--Aria framework configuration-->
+    <app>
+        <!--Whether to use AriaCrashHandler to catch exceptions, exception logs are saved in：/mnt/sdcard/Android/data/{package_name}/files/log/-->
+        <useAriaCrashHandler value="false"/>
+        <!--Set Aria's log level, {@link ALog#LOG_LEVEL_VERBOSE}-->
+        <logLevel value="2"/>
+        <!--Whether to check the network, true: check the network，false: don't check the network-->
+        <netCheck value="true"/>
+        <!--Unless annotations cannot be used, it is not recommended to use broadcast to accept task status, true: use broadcast to receive task status, false: do not use broadcast to receive task status -->
+        <!-- http://aria.laoyuyu.me/aria_doc/api/use_broadcast.html -->
+        <useBroadcast value="false"/>
+        <!--Whether to retry when the network is disconnected, true: retry when the network is disconnected; false: do not retry when the network is disconnected, and go directly to the callback of failure-->
+        <notNetRetry value="true"/>
+    </app>
+
+
+    <!--Common download tasks-->
+    <download>
+
+        <!--Set whether to use the Head request to get the file size for http download. true: use head request, false: use default get request-->
+        <!--Only applicable to versions after 3.8.11-->
+        <useHeadRequest value="false"/>
+
+        <!--Set the maximum download speed of the task, 0 means unlimited speed, unit：kb-->
+        <maxSpeed value="0"/>
+
+        <!--
+          Whether to use block download mode for multi-threaded download, {@code true} use，{@code false} not use
+          Note：
+            1、Using block mode, on mobile phones with low read and write performance, it will take longer to merge files；
+            2、The advantage of multi-threaded block download is that during initialization, the space of the corresponding length will not be pre-occupied when the file is initialized.；
+            3、Only valid for new multi-threaded download tasks
+            4、Only valid for multi-threaded tasks
+        -->
+        <useBlock value="false"/>
+
+        <!--Set the number of download threads, the number of download threads cannot be less than 1
+          Note：
+          1、After the number of thread downloads is changed, the new download task will take effect;
+          2、If the task size is less than 1m, this setting will not take effect;
+          3、Starting from 3.4.1, if the number of threads is 1, the space of the corresponding length will no longer be pre-occupied when the file is initialized, and how much space is occupied is decided by the number of bytes downloaded;
+             For multi-threaded tasks or old tasks, the original file space occupation method is still used;
+        -->
+        <threadNum value="1"/>
+
+        <!--Set the maximum number of tasks in the download queue, the default is 2-->
+        <maxTaskNum value="2"/>
+
+        <!--Set the number of retries when download fails, the default is 10-->
+        <reTryNum value="5"/>
+
+        <!--Set the retry interval in milliseconds, the default is 2000 milliseconds-->
+        <reTryInterval value="5000"/>
+
+        <!--Set the url connection timeout in milliseconds, the default is 5000 milliseconds-->
+        <connectTimeOut value="5000"/>
+
+        <!--Set the IO stream reading time in milliseconds, the default is 20000 milliseconds, and the time cannot be less than 10000 milliseconds-->
+        <iOTimeOut value="10000"/>
+
+        <!--Set the buff size of write file. The value cannot be smaller than 2048. The smaller the value, the slower the download speed.-->
+        <buffSize value="8192"/>
+
+        <!--Set the https ca certificate information; path is the full path of the CA certificate in the assets directory, and name is the CA certificate name-->
+        <ca name="" path=""/>
+
+        <!--Whether it is necessary to convert the speed unit, after the conversion is completed: 1b/s, 1kb/s, 1mb/s, 1gb/s, 1tb/s, if not, the byte length will be returned-->
+        <convertSpeed value="true"/>
+
+        <!--Execution queue type, see com.arialyy.aria.core.QueueMod, the default type is wait-->
+        <queueMod value="wait"/>
+
+        <!--Progress update interval, default 1000 milliseconds-->
+        <updateInterval value="1000"/>
+
+    </download>
+
+    <!--Common upload tasks-->
+    <upload>
+        <!--Set the maximum upload speed of the task, 0 means unlimited speed, the unit is：kb-->
+        <maxSpeed value="0"/>
+
+        <!--Set the IO stream reading time in milliseconds, the default is 20000 milliseconds, and the time cannot be less than 10000 milliseconds-->
+        <iOTimeOut value="10000"/>
+
+        <!--Set the buff size of write file. The value cannot be smaller than 2048. The smaller the value, the slower the download speed-->
+        <buffSize value="8192"/>
+
+        <!--Whether it is necessary to convert the speed unit, after the conversion is completed: 1b/s, 1kb/s, 1mb/s, 1gb/s, 1tb/s, if not, the byte length will be returned-->
+        <convertSpeed value="true"/>
+
+        <!--Set the maximum number of tasks in the upload queue, the default is 2-->
+        <maxTaskNum value="2"/>
+
+        <!--Set the number of retries when download fails, the default is 10-->
+        <reTryNum value="3"/>
+
+        <!--Set the retry interval in milliseconds-->
+        <reTryInterval value="2000"/>
+
+        <!--Set the url connection timeout in milliseconds, the default is 5000 milliseconds-->
+        <connectTimeOut value="5000"/>
+
+        <!--Execution queue type, see com.arialyy.aria.core.QueueMod, the default type is wait-->
+        <queueMod value="wait"/>
+
+        <!--Progress update interval, default 1000 milliseconds-->
+        <updateInterval value="1000"/>
+
+    </upload>
+
+    <!-- Download Class Composition Task -->
+    <dGroup>
+
+        <!--The maximum number of tasks in the composition task download queue, the default is 2-->
+        <maxTaskNum value="3"/>
+
+        <!--Set the number of retries when download fails, the default is 10-->
+        <reTryNum value="5"/>
+
+        <!--Set the retry interval in milliseconds, default is 2000 milliseconds-->
+        <reTryInterval value="5000"/>
+
+        <!--Execution queue type, see com.arialyy.aria.core.QueueMod, the default type is wait-->
+        <queueMod value="wait"/>
+
+        <!--Progress update interval, default 1000 milliseconds-->
+        <updateInterval value="1000"/>
+        <!--When the subtask fails, the group task will call back stop, the default is true, false will call back fail-->
+        <subFailAsStop value="true"/>
+
+        <!-- =============================The following is the configuration of the subtask====================================-->
+
+        <!--The maximum number of subtasks that can be downloaded at the same time, the default is 3-->
+        <subMaxTaskNum value="5"/>
+
+        <!--The number of retries when the subtask download fails, the default is 5-->
+        <subReTryNum value="5"/>
+
+        <!--The default retry interval is 2000 milliseconds when the subtask download fails-->
+        <subReTryInterval value="5000"/>
+
+        <!--Subtask url connection timeout, in milliseconds, default 5000 milliseconds-->
+        <connectTimeOut value="5000"/>
+
+        <!--
+Subtask IO stream read time, in milliseconds, the default is 20000 milliseconds, the time cannot be less than 10000 milliseconds-->
+        <iOTimeOut value="10000"/>
+
+        <!--Set the buff size of write file. The value cannot be smaller than 2048. The smaller the value, the slower the download-->
+        <buffSize value="8192"/>
+
+        <!--Subtask https ca certificate information; path is the full path of the CA certificate in the assets directory, and name is the name of the CA certificate-->
+        <ca name="" path=""/>
+
+        <!--Whether it is necessary to convert the speed unit, after the conversion is completed: 1b/s, 1kb/s, 1mb/s, 1gb/s, 1tb/s, if not, the byte length will be returned-->
+        <convertSpeed value="true"/>
+
+        <!--The maximum download speed of the subtask, 0 means unlimited speed, the unit is：kb; -->
+        <maxSpeed value="0"/>
+
+    </dGroup>
+</aria>
