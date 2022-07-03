@@ -1,4 +1,4 @@
-# Android and Mobile NN Code Architecture
+# FedML Android SDK
 
 - Android project root path: https://github.com/FedML-AI/FedML/tree/master/android
 
@@ -29,7 +29,9 @@ https://github.com/FedML-AI/pytorch
 
 At this stage, the app layer is open sourced, the Android SDK is released to the open source community, and the Mobile NN C++ layer is close source.
 
-## Tutorial for Integrating Android SDK for Your Own Host App (android/fedmlsdk_demo)
+## Get Started 
+
+`android/fedmlsdk_demo` is a short tutorial for integrating Android SDK for your host App.
 
 1. add repositories by maven
 
@@ -87,7 +89,7 @@ public class App extends Application {
         // initial Edge SDK
         FedEdgeManager.getFedEdgeApi().init(this);
         
-        // set data path
+        // set data path (to prepare data, please check this script `android/data/prepare.sh`)
         FedEdgeManager.getFedEdgeApi().setPrivatePath(Environment.getExternalStorageDirectory().getPath()
                 + "/ai.fedml/device_1/user_0");
     }
@@ -121,13 +123,23 @@ import ai.fedml.edge.request.RequestManager;
 
 Please follow this tutorial (https://doc.fedml.ai/mlops/user_guide.html) to start training using FedML BeeHive Platform.
 
-![account](./doc/android_running.jpeg)
+<img src="./doc/android_running.jpeg" alt="drawing" style="width:300px;"/>
+
+[//]: # (![account]&#40;./doc/android_running.jpeg&#41;)
+
+5. Experimental Tracking
 
 
-## Want More Advanced APIs or Features?
-FedML team has rich experience in Android Platform and Federated Learning Algorithmic Research. 
-If you want advanced feature supports, please send emails to avestimehr@fedml.ai and ch@fedml.ai
+
 
 ## About Authors
 
-FedML team has more than 5 years experience in industrial grade Android development. See CTO and Senior Android Engineer's project experience in Android at https://chaoyanghe.com/industrial-experience/
+FedML team starts working on Android Platform from year 2009, the beginning of Android Pixel One smartphone (yeah, we are fans of Google Android). 
+We are good at industrial grade Android development. See CTO and Senior Android Engineer's project experience in Android at https://chaoyanghe.com/industrial-experience/.
+
+
+## Want More Advanced APIs or Features?
+We'd love to listen to your feedback!
+
+FedML team has rich experience in Android Platform and Federated Learning Algorithmic Research. 
+If you want advanced feature supports, please send emails to avestimehr@fedml.ai and ch@fedml.ai
