@@ -213,7 +213,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
             receiver_id = msg.get_receiver_id()
 
             # topic = "fedml" + "_" + "run_id" + "_0" + "_" + "client_id"
-            topic = self._topic + str(0) + "_" + str(receiver_id)
+            topic = self._topic + str(self.server_id) + "_" + str(receiver_id)
             logging.info("mqtt_s3.send_message: msg topic = %s" % str(topic))
 
             payload = msg.get_params()
