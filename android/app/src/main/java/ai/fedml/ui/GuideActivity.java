@@ -27,10 +27,8 @@ import ai.fedml.edge.utils.LogHelper;
 import ai.fedml.edge.utils.StorageUtils;
 
 /**
- * 引导页
+ * Guideline pages
  *
- * @author xkai
- * @date 2021/12/30
  */
 public class GuideActivity extends BaseActivity {
     private static final String TAG = "GuideActivity";
@@ -77,16 +75,16 @@ public class GuideActivity extends BaseActivity {
     }
 
     /**
-     * 获取权限
+     * Get permission
      */
     private void getPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             int REQUEST_CODE_CONTACT = 101;
             String[] permissions = {Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE};
-            //验证是否许可权限
+            //Verify permission
             for (String str : permissions) {
                 if (this.checkSelfPermission(str) != PackageManager.PERMISSION_GRANTED) {
-                    //申请权限
+                    //Request permission
                     this.requestPermissions(permissions, REQUEST_CODE_CONTACT);
                 }
             }
