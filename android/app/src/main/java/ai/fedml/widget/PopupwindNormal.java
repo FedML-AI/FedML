@@ -11,11 +11,7 @@ import android.widget.TextView;
 
 import ai.fedml.R;
 
-/**
- * @创建者 xkai
- * @创建时间 2022/2/15 15:17
- * @描述
- */
+
 public class PopupwindNormal extends PopupWindow {
 
     private View mView;
@@ -28,10 +24,10 @@ public class PopupwindNormal extends PopupWindow {
 
     /**
      *
-     * @param context 上下文
-     * @param onClickListener 点击事件
-     * @param title 标题
-     * @param content 内容
+     * @param context
+     * @param onClickListener
+     * @param title
+     * @param content
      */
     public PopupwindNormal(Context context, View.OnClickListener onClickListener, String title, String content) {
         super(context);
@@ -58,19 +54,19 @@ public class PopupwindNormal extends PopupWindow {
 
 
 
-        // 设置PopupWindow的View
+        // Set the View of PopupWindow
         this.setContentView(mView);
-        // 设置PopupWindow弹出窗体的宽
+        // Set the width of the PopupWindow pop-up form
         this.setWidth(ViewGroup.LayoutParams.MATCH_PARENT);
-        // 设置PopupWindow弹出窗体的高
+        // Set the height of the PopupWindow pop-up form
         this.setHeight(ViewGroup.LayoutParams.MATCH_PARENT);
-        // 设置PopupWindow弹出窗体可点击
+        // Set the PopupWindow pop-up form to be clickable
         this.setFocusable(true);
-        // 设置PopupWindow弹出窗体动画效果
+        // Set PopupWindow pop-up form animation effect
         this.setAnimationStyle(R.style.AnimFadePopup);
-        // 实例化一个ColorDrawable颜色为黑色25%的透明度
+        // Instantiate a ColorDrawable with a color of black with 25% opacity
         ColorDrawable dw = new ColorDrawable(0x40000000);
-        // 设置PopupWindow弹出窗体的背景
+        // Set the background of the PopupWindow popup form
         this.setBackgroundDrawable(dw);
 
     }
