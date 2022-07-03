@@ -33,7 +33,7 @@
         android:name=".App"
         tools:targetApi="q"
         tools:ignore="HardcodedDebugMode">
-        <activity android:name=".ui.GuideActivity"
+        <activity android:name=".ui.HomeActivity"
             android:exported="true"
             android:screenOrientation="portrait">
             <intent-filter>
@@ -44,8 +44,8 @@
         </activity>
         <activity android:name=".ui.ScanCodeActivity"
             android:screenOrientation="portrait" />
-        <activity android:name=".ui.HomeActivity"
-            android:screenOrientation="portrait" />
+<!--        <activity android:name=".ui.HomeActivity"-->
+<!--            android:screenOrientation="portrait" />-->
         <activity android:name=".ui.SetFilePathActivity"
             android:screenOrientation="portrait" />
 
