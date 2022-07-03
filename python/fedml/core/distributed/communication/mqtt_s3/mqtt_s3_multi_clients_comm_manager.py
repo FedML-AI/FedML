@@ -342,7 +342,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         self.mqtt_mgr.add_message_listener(CommunicationConstants.CLIENT_TOP_LAST_WILL_MSG,
                                            self.callback_client_last_will_msg)
 
-        # Setup MQTT message listener to the active status message form the client.
+        # Setup MQTT message listener to the active status message from the client.
         self.mqtt_mgr.add_message_listener(CommunicationConstants.CLIENT_TOP_ACTIVE_MSG,
                                            self.callback_client_active_msg)
 
