@@ -8,7 +8,7 @@
     <string name="retry_tip">Please retry</string>
     <string name="set_private_path">Set Private Path</string>
     <string name="device_name">Device Name</string>
-    <string name="under_training">Under training</string>
+    <string name="under_training">Waiting for training</string>
     <string name="account_information">Account Information</string>
     <string name="hyper_parameters">Hyper-parameters</string>
     <string name="number_of_rounds">number of rounds</string>

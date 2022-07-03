@@ -15,7 +15,7 @@
         tools:ignore="HardcodedDebugMode">
         <meta-data
             android:name="fedml_account"
-            android:value="275" />
+            android:value="230" />
         <activity
             android:name=".MainActivity"
             android:exported="true">

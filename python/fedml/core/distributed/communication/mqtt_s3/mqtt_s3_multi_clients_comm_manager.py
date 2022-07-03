@@ -53,18 +53,23 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         if args.rank == 0:
             if hasattr(args, "server_id"):
                 self.edge_id = args.server_id
+                self.server_id = args.server_id
             else:
                 self.edge_id = 0
+                self.server_id = 0
         else:
             if hasattr(args, "server_id"):
                 self.server_id = args.server_id
             else:
                 self.server_id = 0
 
-            if len(self.client_real_ids) == 1:
-                self.edge_id = self.client_real_ids[0]
+            if hasattr(args, "client_id"):
+                self.edge_id = args.client_id
             else:
-                self.edge_id = 0
+                if len(self.client_real_ids) == 1:
+                    self.edge_id = self.client_real_ids[0]
+                else:
+                    self.edge_id = 0
 
         self._observers: List[Observer] = []
 
@@ -223,7 +228,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         receiver_id = msg.get_receiver_id()
         if self.client_id == 0:
             # topic = "fedml" + "_" + "run_id" + "_0" + "_" + "client_id"
-            topic = self._topic + str(self.edge_id) + "_" + str(receiver_id)
+            topic = self._topic + str(self.server_id) + "_" + str(receiver_id)
             logging.info("mqtt_s3.send_message: msg topic = %s" % str(topic))
 
             payload = msg.get_params()
@@ -337,7 +342,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         self.mqtt_mgr.add_message_listener(CommunicationConstants.CLIENT_TOP_LAST_WILL_MSG,
                                            self.callback_client_last_will_msg)
 
-        # Setup MQTT message listener to the active status message form the client.
+        # Setup MQTT message listener to the active status message from the client.
         self.mqtt_mgr.add_message_listener(CommunicationConstants.CLIENT_TOP_ACTIVE_MSG,
                                            self.callback_client_active_msg)
 
