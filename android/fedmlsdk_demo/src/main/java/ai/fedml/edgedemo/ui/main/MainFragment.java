@@ -4,6 +4,7 @@ import ai.fedml.edge.FedEdgeManager;
 import ai.fedml.edge.OnTrainProgressListener;
 import ai.fedml.edge.request.RequestManager;
 import ai.fedml.edgedemo.App;
+import ai.fedml.edgedemo.widget.CircleImageView;
 import ai.fedml.edgedemo.widget.CompletedProgressView;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -18,6 +19,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
+
 import ai.fedml.edgedemo.R;
 
 public class MainFragment extends Fragment {
@@ -30,6 +33,7 @@ public class MainFragment extends Fragment {
     private TextView mNameTextView;
     private TextView mEmailTextView;
     private TextView mGroupTextView;
+    private CircleImageView mAvatarImageView;
 
     public static MainFragment newInstance() {
         return new MainFragment();
@@ -54,6 +58,7 @@ public class MainFragment extends Fragment {
         mNameTextView = view.findViewById(R.id.tv_name);
         mEmailTextView = view.findViewById(R.id.tv_email);
         mGroupTextView = view.findViewById(R.id.tv_group);
+        mAvatarImageView = view.findViewById(R.id.iv_avatar);
     }
 
     private void loadDate() {
@@ -101,6 +106,11 @@ public class MainFragment extends Fragment {
                     mNameTextView.setText(String.format("%s %s", userInfo.getLastname(), userInfo.getFirstName()));
                     mEmailTextView.setText(userInfo.getEmail());
                     mGroupTextView.setText(userInfo.getCompany());
+                    Glide.with(MainFragment.this)
+                            .load(userInfo.getAvatar())
+                            .centerCrop()
+                            .placeholder(R.mipmap.ic_shijiali)
+                            .into(mAvatarImageView);
                 });
             }
         });
