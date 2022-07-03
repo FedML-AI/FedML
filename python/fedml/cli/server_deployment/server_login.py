@@ -229,7 +229,9 @@ def __login_as_cloud_server(args, userid, version):
         return
 
     # Build unique device id
-    if args.current_device_id is not None and len(str(args.current_device_id)) > 0:
+    if hasattr(args, "device_id") and args.device_id is not None and args.device_id != "0":
+        unique_device_id = args.current_device_id
+    else:
         unique_device_id = args.current_device_id + "@" + args.os_name + ".Public.Server"
 
     # Bind account id to the MLOps platform.
