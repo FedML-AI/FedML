@@ -5,4 +5,4 @@
     android:interpolator="@android:anim/accelerate_decelerate_interpolator"
     android:toAlpha="0.0" />
 
-    <!--渐入渐出效果 -出场动画  -->
+    <!--Fade in and out effect - exit animation  -->

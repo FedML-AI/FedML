@@ -8,11 +8,7 @@ import android.widget.Toast;
 
 import java.math.BigDecimal;
 
-/**
- * @创建者 xkai
- * @创建时间 2022/1/5 15:45
- * @描述
- */
+
 public class AppUtils {
 
 
@@ -20,12 +16,12 @@ public class AppUtils {
 
 
     /**
-     * 获取本地版本号
+     * Get local version number
      */
     public static int getVersionCode(Context mContext) {
         int versionCode = 0;
         try {
-            //获取软件版本号，对应AndroidManifest.xml下android:versionCode
+            //Get the software version number, corresponding to android:versionCode under AndroidManifest.xml
             versionCode = mContext.getPackageManager().
                     getPackageInfo(mContext.getPackageName(), 0).versionCode;
         } catch (PackageManager.NameNotFoundException e) {
