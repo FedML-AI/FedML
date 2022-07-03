@@ -33,7 +33,8 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
         self.broker_host = None
         self.keepalive_time = 180
         self.args = args
-        self._topic = "fedml_" + str(topic) + "_"
+
+        self._topic = "fedml_" + str(topic) + "_"  # topic is set as run_id
         self.s3_storage = S3MNNStorage(s3_config_path)
         self.client_real_ids = []
         logging.info(
@@ -137,6 +138,8 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
                     "mqtt_s3.on_connect: server subscribes real_topic = %s, mid = %s, result = %s"
                     % (real_topic, mid, str(result))
                 )
+
+            self._notify_connection_ready()
         else:
             # client
             real_topic = self._topic + str(self.server_id) + "_" + str(self.client_real_ids[0])
@@ -146,6 +149,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
                 "mqtt_s3.on_connect: client subscribes real_topic = %s, mid = %s, result = %s"
                 % (real_topic, mid, str(result))
             )
+            self._notify_connection_ready()
 
     def on_disconnected(self, mqtt_client_object):
         logging.info(
@@ -213,7 +217,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
             receiver_id = msg.get_receiver_id()
 
             # topic = "fedml" + "_" + "run_id" + "_0" + "_" + "client_id"
-            topic = self._topic + str(0) + "_" + str(receiver_id)
+            topic = self._topic + str(self.server_id) + "_" + str(receiver_id)
             logging.info("mqtt_s3.send_message: msg topic = %s" % str(topic))
 
             payload = msg.get_params()
@@ -233,9 +237,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
                 logging.info("mqtt_s3.send_message: MQTT msg sent")
                 self.mqtt_mgr.send_message(topic, json.dumps(payload))
 
-            self._notify_connection_ready()
         else:
-            self._notify_connection_ready()
             raise Exception("This is only used for the server")
 
     def send_message_json(self, topic_name, json_message):
