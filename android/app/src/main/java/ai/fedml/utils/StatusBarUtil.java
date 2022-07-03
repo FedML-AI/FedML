@@ -9,17 +9,15 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 
 /**
- * @创建者 xkai
- * @创建时间 2020/7/7 16:25
- * @描述 适配全屏的状态栏位
+ * Adapt to full screen status bar
  */
 public class StatusBarUtil {
 
 
     /**
-     * 设置状态栏全透明
+     * Make the status bar fully transparent
      *
-     * @param activity 需要设置的activity
+     * @param activity needs to be set up
      */
     public static void setTransparent(Activity activity) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
@@ -30,11 +28,11 @@ public class StatusBarUtil {
     }
 
     /**
-     * 使状态栏透明
+     * make the status bar transparent
      */
     @TargetApi(Build.VERSION_CODES.KITKAT)
     private static void transparentStatusBar(Activity activity) {
-        // 设置Android 6.0 + 实现状态栏字色和图标浅黑色
+        // Set Android 6.0 + to achieve status bar text color and icon light black
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             activity.getWindow().getDecorView().setSystemUiVisibility(
                     View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
@@ -42,18 +40,18 @@ public class StatusBarUtil {
        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
             activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-            //需要设置这个flag contentView才能延伸到状态栏,底部也会延伸过去
+            //You need to set this flag contentView to extend to the status bar, and the bottom will also extend past
 //            activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
-            //状态栏覆盖在contentView上面，设置透明使contentView的背景透出来
+            //The status bar is overlaid on the contentView, and the transparency is set to make the background of the contentView show through
             activity.getWindow().setStatusBarColor(Color.TRANSPARENT);
         } else {
-            //让contentView延伸到状态栏并且设置状态栏颜色透明
+            //Let the contentView extend to the status bar and set the status bar color to be transparent
             activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
         }
     }
 
     /**
-     * 设置根布局参数
+     * Set root layout parameters
      */
     private static void setRootView(Activity activity) {
         ViewGroup parent = (ViewGroup) activity.findViewById(android.R.id.content);
