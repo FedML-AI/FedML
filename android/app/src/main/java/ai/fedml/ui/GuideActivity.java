@@ -15,6 +15,7 @@ import java.util.Arrays;
 
 import ai.fedml.edge.nativemnn.NativeFedMLTrainer;
 import ai.fedml.edge.nativemnn.TrainingCallback;
+import ai.fedml.edge.service.component.SysStats;
 import androidx.annotation.Nullable;
 
 import java.io.File;
@@ -40,9 +41,8 @@ public class GuideActivity extends BaseActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_guide);
-        getPermission();
         initView();
-//        loadData();
+        loadData();
     }
 
     private void initView() {
@@ -53,7 +53,7 @@ public class GuideActivity extends BaseActivity {
                     ",Dataset:" + StorageUtils.getDatasetPath());
             Log.d(TAG, "TRAIN_MODEL_FILE_PATH is " + new File(TRAIN_MODEL_FILE_PATH).exists());
             Log.d(TAG, "TRAIN_DATA_FILE_PATH is " + new File(TRAIN_DATA_FILE_PATH).isDirectory());
-            testTrain();
+//            testTrain();
         });
     }
 
