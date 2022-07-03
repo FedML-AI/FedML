@@ -260,9 +260,9 @@ class FedMLAggregator(object):
                     "run_id": self.args.run_id,
                     "round_idx": round_idx,
                     "timestamp": time.time(),
-                    "train_accuracy": round(train_acc, 4),
-                    "train_loss": round(train_loss, 4),
-                    "test_accuracy": round(test_acc, 4),
-                    "test_loss": round(test_loss, 4),
+                    "accuracy": round(test_acc, 4),
+                    "loss": round(test_loss, 4),
+                    # "test_accuracy": round(test_acc, 4),
+                    # "test_loss": round(test_loss, 4),
                 }
                 self.mlops_metrics.report_server_training_metric(metric_for_mlops)
