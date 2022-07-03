@@ -1,5 +1,12 @@
 # FedML Android SDK
 
+<table>
+<tr>
+<td valign="center">
+<img src="./doc/edge_devices_overview.png" alt="drawing" style="width:400px;"/>
+</td>
+</tr>
+</table>
 - Android project root path: https://github.com/FedML-AI/FedML/tree/master/android
 
 The architecture is divided into three vertical layers and multiple horizontal modules:
@@ -123,8 +130,16 @@ import ai.fedml.edge.request.RequestManager;
 
 Please follow this tutorial (https://doc.fedml.ai/mlops/user_guide.html) to start training using FedML BeeHive Platform.
 
+<table>
+<tr>
+<td valign="center">
 <img src="./doc/android_running.jpeg" alt="drawing" style="width:300px;"/>
-
+</td>
+<td valign="center">
+<img src="./doc/edge_devices_overview.png" alt="drawing" style="width:400px;"/>
+</td>
+</tr>
+</table>
 
 
 ## About Authors
