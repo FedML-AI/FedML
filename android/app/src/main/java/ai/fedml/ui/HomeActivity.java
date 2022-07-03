@@ -12,16 +12,17 @@ import android.provider.Settings;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 
+import ai.fedml.GlideApp;
 import ai.fedml.R;
 import ai.fedml.base.BaseActivity;
 import ai.fedml.edge.FedEdgeManager;
 import ai.fedml.edge.OnTrainProgressListener;
 import ai.fedml.edge.request.RequestManager;
-import ai.fedml.edge.service.component.RemoteStorage;
 import ai.fedml.edge.utils.LogHelper;
 import ai.fedml.utils.ToastUtils;
 import ai.fedml.widget.CircleImageView;
@@ -47,7 +48,7 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
     private TextView mNameTextView;
     private TextView mEmailTextView;
     private TextView mGroupTextView;
-    private CircleImageView mAvatarImageView;
+    private ImageView mAvatarImageView;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -187,9 +188,9 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
                     mNameTextView.setText(String.format("%s %s", userInfo.getLastname(), userInfo.getFirstName()));
                     mEmailTextView.setText(userInfo.getEmail());
                     mGroupTextView.setText(userInfo.getCompany());
-                    Glide.with(HomeActivity.this)
+                    GlideApp.with(HomeActivity.this)
                             .load(userInfo.getAvatar())
-                            .centerCrop()
+                            .circleCrop()
                             .placeholder(R.mipmap.ic_shijiali)
                             .into(mAvatarImageView);
                 });

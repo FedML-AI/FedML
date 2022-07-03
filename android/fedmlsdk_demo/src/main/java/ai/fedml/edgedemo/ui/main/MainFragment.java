@@ -4,7 +4,7 @@ import ai.fedml.edge.FedEdgeManager;
 import ai.fedml.edge.OnTrainProgressListener;
 import ai.fedml.edge.request.RequestManager;
 import ai.fedml.edgedemo.App;
-import ai.fedml.edgedemo.widget.CircleImageView;
+import ai.fedml.edgedemo.GlideApp;
 import ai.fedml.edgedemo.widget.CompletedProgressView;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -17,9 +17,8 @@ import androidx.fragment.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
-
-import com.bumptech.glide.Glide;
 
 import ai.fedml.edgedemo.R;
 
@@ -33,7 +32,7 @@ public class MainFragment extends Fragment {
     private TextView mNameTextView;
     private TextView mEmailTextView;
     private TextView mGroupTextView;
-    private CircleImageView mAvatarImageView;
+    private ImageView mAvatarImageView;
 
     public static MainFragment newInstance() {
         return new MainFragment();
@@ -106,9 +105,10 @@ public class MainFragment extends Fragment {
                     mNameTextView.setText(String.format("%s %s", userInfo.getLastname(), userInfo.getFirstName()));
                     mEmailTextView.setText(userInfo.getEmail());
                     mGroupTextView.setText(userInfo.getCompany());
-                    Glide.with(MainFragment.this)
+                    GlideApp.with(MainFragment.this)
                             .load(userInfo.getAvatar())
-                            .centerCrop()
+                            .circleCrop()
+                            .error(R.mipmap.ic_shijiali)
                             .placeholder(R.mipmap.ic_shijiali)
                             .into(mAvatarImageView);
                 });
