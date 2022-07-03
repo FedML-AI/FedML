@@ -1,3 +1,4 @@
+import argparse
 import json
 import logging
 import multiprocessing
@@ -48,8 +49,8 @@ class MLOpsRuntimeLog:
         self.log_file = None
         self.run_id = args.run_id
         if args.rank == 0:
-            if hasattr(args, "server_agent_id"):
-                self.edge_id = args.server_agent_id
+            if hasattr(args, "server_id"):
+                self.edge_id = args.server_id
             else:
                 self.edge_id = 0
         else:
@@ -114,8 +115,8 @@ class MLOpsRuntimeLog:
     def build_log_file_path(args):
         if args.rank == 0:
             edge_id = 0
-            if hasattr(args, "server_agent_id"):
-                edge_id = args.server_agent_id
+            if hasattr(args, "server_id"):
+                edge_id = args.server_id
             program_prefix = "FedML-Server({}) @device-id-{}".format(args.rank, edge_id)
         else:
             edge_id = json.loads(args.client_id_list)[0]
@@ -139,6 +140,7 @@ class MLOpsRuntimeLog:
             return
 
         self.log_line_index += len(log_lines)
+        #print("current log line len {}".format(self.log_line_index))
         log_upload_request = {
             "run_id": run_id,
             "edge_id": edge_id,
@@ -196,11 +198,11 @@ class MLOpsRuntimeLog:
         line_count = 0
         log_lines = []
         while True:
-            line_count += 1
-            log_line = self.log_file.readline()
-            if not log_line:
+            log_line = self.log_file.readlines()
+            if len(log_line) <= 0:
                 break
-            log_lines.append(log_line)
+            line_count += len(log_line)
+            log_lines.extend(log_line)
         self.log_file.close()
         self.log_file = None
         return log_lines
@@ -231,3 +233,24 @@ class MLOpsRuntimeLog:
         except Exception as e:
             # print("load_log_config exception")
             pass
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("--log_file_dir", "-log", help="log file dir")
+    parser.add_argument("--run_id", "-ri", type=str,
+                        help='run id')
+    parser.add_argument("--rank", "-r", type=str, default="1")
+    parser.add_argument("--client_id_list", "-cil", type=str, default="[]")
+    parser.add_argument("--log_server_url", "-lsu", type=str, default="http://")
+
+    args = parser.parse_args()
+    setattr(args, "using_mlops", True)
+    setattr(args, "config_version", "local")
+    MLOpsRuntimeLog.get_instance(args).init_logs()
+
+    count = 0
+    while True:
+        logging.info("Test Log {}".format(count))
+        count += 1
+        time.sleep(2)
