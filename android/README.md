@@ -125,11 +125,6 @@ Please follow this tutorial (https://doc.fedml.ai/mlops/user_guide.html) to star
 
 <img src="./doc/android_running.jpeg" alt="drawing" style="width:300px;"/>
 
-[//]: # (![account]&#40;./doc/android_running.jpeg&#41;)
-
-5. Experimental Tracking
-
-
 
 
 ## About Authors
