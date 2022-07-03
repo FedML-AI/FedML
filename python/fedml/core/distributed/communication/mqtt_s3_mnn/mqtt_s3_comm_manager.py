@@ -78,7 +78,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
         self.set_config_from_file(config_path)
         self.set_config_from_objects(config_path)
 
-        self.client_active_list = list()
+        self.client_active_list = dict()
         self.top_active_msg = CommunicationConstants.CLIENT_TOP_ACTIVE_MSG
         self.topic_last_will_msg = CommunicationConstants.CLIENT_TOP_LAST_WILL_MSG
         if args.rank == 0:
@@ -270,3 +270,34 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
             self.mqtt_user = mqtt_config["MQTT_USER"]
         if "MQTT_PWD" in mqtt_config:
             self.mqtt_pwd = mqtt_config["MQTT_PWD"]
+
+
+    def callback_client_last_will_msg(self, topic, payload):
+        msg = json.loads(payload)
+        edge_id = msg.get("ID", None)
+        status = msg.get("status", CommunicationConstants.MSG_CLIENT_STATUS_OFFLINE)
+        if edge_id is not None and status == CommunicationConstants.MSG_CLIENT_STATUS_OFFLINE:
+            if self.client_active_list.get(edge_id, None) is not None:
+                self.client_active_list.pop(edge_id)
+
+    def callback_client_active_msg(self, topic, payload):
+        msg = json.loads(payload)
+        edge_id = msg.get("ID", None)
+        status = msg.get("status", CommunicationConstants.MSG_CLIENT_STATUS_IDLE)
+        if edge_id is not None:
+            self.client_active_list[edge_id] = status
+
+    def subscribe_client_status_message(self):
+        # Setup MQTT message listener to the last will message form the client.
+        self.mqtt_mgr.add_message_listener(CommunicationConstants.CLIENT_TOP_LAST_WILL_MSG,
+                                           self.callback_client_last_will_msg)
+
+        # Setup MQTT message listener to the active status message from the client.
+        self.mqtt_mgr.add_message_listener(CommunicationConstants.CLIENT_TOP_ACTIVE_MSG,
+                                           self.callback_client_active_msg)
+
+    def get_client_status(self, client_id):
+        return self.client_active_list.get(client_id, CommunicationConstants.MSG_CLIENT_STATUS_OFFLINE)
+
+    def get_client_list_status(self):
+        return self.client_active_list
