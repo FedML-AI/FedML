@@ -230,6 +230,8 @@ class FedMLClientRunner:
         fedml_conf_object["train_args"]["client_id_list"] = package_dynamic_args["client_id_list"]
         fedml_conf_object["train_args"]["client_num_in_total"] = int(package_dynamic_args["client_num_in_total"])
         fedml_conf_object["train_args"]["client_num_per_round"] = int(package_dynamic_args["client_num_in_total"])
+        fedml_conf_object["train_args"]["client_id"] = self.edge_id
+        fedml_conf_object["train_args"]["server_id"] = self.request_json.get("server_id", "0")
         fedml_conf_object["device_args"]["worker_num"] = int(package_dynamic_args["client_num_in_total"])
         fedml_conf_object["data_args"]["data_cache_dir"] = package_dynamic_args["data_cache_dir"]
         fedml_conf_object["tracking_args"]["log_file_dir"] = package_dynamic_args["log_file_dir"]
@@ -650,12 +652,6 @@ class FedMLClientRunner:
         self.send_agent_active_msg()
 
     def callback_report_current_status(self, topic, payload):
-        request_json = json.loads(payload)
-        # client_runner = FedMLClientRunner(self.args, edge_id=self.edge_id,
-        #                                   request_json=request_json,
-        #                                   agent_config=self.agent_config,
-        #                                   run_id=0)
-        # multiprocessing.Process(target=client_runner.report_client_status).start()
         self.send_agent_active_msg()
 
     def callback_client_last_will_msg(self, topic, payload):
