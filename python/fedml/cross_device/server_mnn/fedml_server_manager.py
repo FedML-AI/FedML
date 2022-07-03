@@ -52,6 +52,10 @@ class FedMLServerManager(ServerManager):
         self.aggregated_model_url = None
         self.event_sdk = MLOpsProfilerEvent(self.args)
 
+        self.is_initialized = False
+        self.client_id_list_in_this_round = None
+        self.data_silo_index_list = None
+
     def run(self):
         super().run()
 
@@ -163,26 +167,26 @@ class FedMLServerManager(ServerManager):
         S2C - send the model to clients
             send MNN file
         """
-        client_id_list_in_this_round = self.aggregator.client_selection(
+        self.client_id_list_in_this_round = self.aggregator.client_selection(
             self.round_idx, self.client_real_ids, self.args.client_num_per_round
         )
-        data_silo_index_list = self.aggregator.data_silo_selection(
+        self.data_silo_index_list = self.aggregator.data_silo_selection(
             self.round_idx,
             self.args.client_num_in_total,
-            len(client_id_list_in_this_round),
+            len(self.client_id_list_in_this_round),
         )
         logging.info(
             "client_id_list_in_this_round = {}, data_silo_index_list = {}".format(
-                client_id_list_in_this_round, data_silo_index_list
+                self.client_id_list_in_this_round, self.data_silo_index_list
             )
         )
 
         client_idx_in_this_round = 0
-        for receiver_id in client_id_list_in_this_round:
+        for receiver_id in self.client_id_list_in_this_round:
             self.send_message_init_config(
                 receiver_id,
                 self.global_model_file_path,
-                data_silo_index_list[client_idx_in_this_round],
+                self.data_silo_index_list[client_idx_in_this_round],
             )
             client_idx_in_this_round += 1
 
@@ -200,6 +204,10 @@ class FedMLServerManager(ServerManager):
         self.register_message_receive_handler(
             MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER,
             self.handle_message_receive_model_from_client,
+        )
+
+        self.register_message_receive_handler(
+            MyMessage.MSG_TYPE_CONNECTION_IS_READY, self.handle_messag_connection_ready
         )
 
     def handle_message_client_status_update(self, msg_params):
@@ -230,6 +238,31 @@ class FedMLServerManager(ServerManager):
             logging.info("=== All Clients are ONLINE! & send_init_model ===")
             logging.info("=================================================")
             self.send_init_msg()
+            self.is_initialized = True
+
+    def handle_messag_connection_ready(self, msg_params):
+        self.client_id_list_in_this_round = self.aggregator.client_selection(
+            self.round_idx, self.client_real_ids, self.args.client_num_per_round
+        )
+        self.data_silo_index_list = self.aggregator.data_silo_selection(
+            self.round_idx,
+            self.args.client_num_in_total,
+            len(self.client_id_list_in_this_round),
+        )
+        logging.info(
+            "client_id_list_in_this_round = {}, data_silo_index_list = {}".format(
+                self.client_id_list_in_this_round, self.data_silo_index_list
+            )
+        )
+
+        if not self.is_initialized:
+            # check client status in case that some clients start earlier than the server
+            client_idx_in_this_round = 0
+            for client_id in self.client_id_list_in_this_round:
+                self.send_message_check_client_status(
+                    client_id, self.data_silo_index_list[client_idx_in_this_round],
+                )
+                client_idx_in_this_round += 1
 
     def handle_message_receive_model_from_client(self, msg_params):
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
@@ -337,6 +370,13 @@ class FedMLServerManager(ServerManager):
         logging.info("global_model_params = {}".format(global_model_params))
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(client_index))
+        self.send_message(message)
+
+    def send_message_check_client_status(self, receive_id, datasilo_index):
+        message = Message(
+            MyMessage.MSG_TYPE_S2C_CHECK_CLIENT_STATUS, self.get_sender_id(), receive_id
+        )
+        message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
         self.send_message(message)
 
     def send_message_sync_model_to_client(
