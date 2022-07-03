@@ -12,17 +12,15 @@ import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 
 /**
- * @创建者 xkai
- * @创建时间 2021/12/30 18:57
- * @描述 自定义的圆形图片
+ * custom circular image
  */
 public class CircleImageView extends androidx.appcompat.widget.AppCompatImageView {
 
-    private Paint mPaint = new Paint(); //画笔
+    private Paint mPaint = new Paint(); //brush
 
-    private int mRadius; //圆形图片的半径
+    private int mRadius; //The radius of the circular image
 
-    private float mScale; //图片的缩放比例
+    private float mScale; //The zoom ratio of the image
 
     public CircleImageView(Context context) {
         super(context);
@@ -39,7 +37,7 @@ public class CircleImageView extends androidx.appcompat.widget.AppCompatImageVie
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        //因为是圆形图片，所以应该让宽高保持一致
+        //Because it is a circular image, the width and height should be consistent
         int size = Math.min(getMeasuredWidth(), getMeasuredHeight());
         mRadius = size / 2;
 
@@ -51,10 +49,10 @@ public class CircleImageView extends androidx.appcompat.widget.AppCompatImageVie
 
         Bitmap bitmap = drawableToBitmap(getDrawable());
 
-        //初始化BitmapShader，传入bitmap对象
+        //Initialize BitmapShader, pass in the bitmap object
         BitmapShader bitmapShader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
 
-        //计算缩放比例
+        //Calculate scaling
         mScale = (mRadius * 2.0f) / Math.min(bitmap.getHeight(), bitmap.getWidth());
 
         Matrix matrix = new Matrix();
@@ -64,11 +62,11 @@ public class CircleImageView extends androidx.appcompat.widget.AppCompatImageVie
 
         mPaint.setShader(bitmapShader);
 
-        //画圆形，指定好中心点坐标、半径、画笔
+        //Draw a circle, specify the center point coordinates, radius, brush
         canvas.drawCircle(mRadius, mRadius, mRadius, mPaint);
     }
 
-    //写一个drawble转BitMap的方法
+    //Write a drawble to BitMap method
     private Bitmap drawableToBitmap(Drawable drawable) {
         if (drawable instanceof BitmapDrawable) {
             BitmapDrawable bd = (BitmapDrawable) drawable;

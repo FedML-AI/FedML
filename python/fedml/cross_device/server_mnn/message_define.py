@@ -3,9 +3,12 @@ class MyMessage(object):
     message type definition
     """
 
+    MSG_TYPE_CONNECTION_IS_READY = 0
+
     # server to client
     MSG_TYPE_S2C_INIT_CONFIG = 1
     MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT = 2
+    MSG_TYPE_S2C_CHECK_CLIENT_STATUS = 6
 
     # client to server
     MSG_TYPE_C2S_SEND_MODEL_TO_SERVER = 3

@@ -12,15 +12,15 @@ public class ToastUtils {
     private static final Handler sMainHandler = new Handler(Looper.getMainLooper());
 
     /**
-     * 显示Toast
+     * display Toast
      *
-     * @param text 文本
+     * @param text
      */
     public static void show(CharSequence text) {
         Runnable toastRunnable = () -> {
             Context context = ContextHolder.getAppContext();
             if (text == null || text.equals("")) return;
-            // 如果显示的文字超过了10个就显示长吐司，否则显示短吐司
+            // If the displayed text exceeds 10, display the long toast, otherwise display the short toast
             int duration = Toast.LENGTH_SHORT;
             if (text.length() > 20) {
                 duration = Toast.LENGTH_LONG;
@@ -36,16 +36,16 @@ public class ToastUtils {
     }
 
     /**
-     * 显示Toast
+     * Display Toast
      *
-     * @param id 如果传入的是正确的string id就显示对应字符串,如果不是则显示一个整数的string
+     * @param id If the correct string id is passed in, the corresponding string will be displayed, if not, an integer string will be displayed
      */
     public static void show(int id) {
         try {
-            // 如果这是一个资源id
+            // if this is a resource id
             show(ContextHolder.getAppContext().getResources().getText(id));
         } catch (Resources.NotFoundException ignored) {
-            // 如果这是一个int类型
+            // if this is an int type
             show(String.valueOf(id));
         }
     }

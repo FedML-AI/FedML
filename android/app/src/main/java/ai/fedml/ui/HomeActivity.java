@@ -31,8 +31,6 @@ import androidx.core.content.ContextCompat;
 /**
  * HomeActivity
  *
- * @author xkai
- * @date 2021/12/30 14:45
  */
 public class HomeActivity extends BaseActivity implements View.OnClickListener {
 
@@ -139,14 +137,14 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
 
     private void requestPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // 先判断有没有权限
+            // First determine whether you have permission
             if (!Environment.isExternalStorageManager()) {
                 Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
                 intent.setData(Uri.parse("package:" + this.getPackageName()));
                 startActivityForResult(intent, REQUEST_CODE);
             }
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            // 先判断有没有权限
+            // First determine whether you have permission
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
                     ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CODE);
@@ -172,7 +170,7 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
         if (requestCode == REQUEST_CODE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             if (Environment.isExternalStorageManager()) {
             } else {
-                ToastUtils.show("存储权限获取失败");
+                ToastUtils.show("Failed to obtain storage permission");
             }
         }
     }
@@ -195,7 +193,7 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
         LogHelper.d("unbound bindingId:%s", bindingId);
         RequestManager.unboundAccount(bindingId, isSuccess -> runOnUiThread(() -> {
             if (isSuccess) {
-                // 跳转至扫描页
+                // Jump to scanning page
                 Intent intent = new Intent();
                 intent.setClass(HomeActivity.this, ScanCodeActivity.class);
                 startActivity(intent);

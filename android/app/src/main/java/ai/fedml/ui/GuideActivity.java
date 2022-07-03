@@ -15,6 +15,7 @@ import java.util.Arrays;
 
 import ai.fedml.edge.nativemnn.NativeFedMLTrainer;
 import ai.fedml.edge.nativemnn.TrainingCallback;
+import ai.fedml.edge.service.component.SysStats;
 import androidx.annotation.Nullable;
 
 import java.io.File;
@@ -27,10 +28,8 @@ import ai.fedml.edge.utils.LogHelper;
 import ai.fedml.edge.utils.StorageUtils;
 
 /**
- * 引导页
+ * Guideline pages
  *
- * @author xkai
- * @date 2021/12/30
  */
 public class GuideActivity extends BaseActivity {
     private static final String TAG = "GuideActivity";
@@ -42,9 +41,8 @@ public class GuideActivity extends BaseActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_guide);
-        getPermission();
         initView();
-//        loadData();
+        loadData();
     }
 
     private void initView() {
@@ -55,7 +53,7 @@ public class GuideActivity extends BaseActivity {
                     ",Dataset:" + StorageUtils.getDatasetPath());
             Log.d(TAG, "TRAIN_MODEL_FILE_PATH is " + new File(TRAIN_MODEL_FILE_PATH).exists());
             Log.d(TAG, "TRAIN_DATA_FILE_PATH is " + new File(TRAIN_DATA_FILE_PATH).isDirectory());
-            testTrain();
+//            testTrain();
         });
     }
 
@@ -77,16 +75,16 @@ public class GuideActivity extends BaseActivity {
     }
 
     /**
-     * 获取权限
+     * Get permission
      */
     private void getPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             int REQUEST_CODE_CONTACT = 101;
             String[] permissions = {Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE};
-            //验证是否许可权限
+            //Verify permission
             for (String str : permissions) {
                 if (this.checkSelfPermission(str) != PackageManager.PERMISSION_GRANTED) {
-                    //申请权限
+                    //Request permission
                     this.requestPermissions(permissions, REQUEST_CODE_CONTACT);
                 }
             }
@@ -145,6 +143,7 @@ public class GuideActivity extends BaseActivity {
         LogHelper.d("online_user length=%d", online_user.length);
         LogHelper.d("online_user=%d", online_user[0]);
         LogHelper.d("online_user=%d", online_user[1]);
+
         // 4. do training
         String result = trainer.train();
         LogHelper.d("online_user=%s", result);
