@@ -17,9 +17,9 @@ public class BaseActivity extends Activity {
     }
 
     protected void setStatusBar() {
-        //这里做了两件事情，这样就可以实现开头说的第二种情况的沉浸式状态栏了
-        // 1.使状态栏透明并使contentView填充到状态栏
-        // 2.预留出状态栏的位置，防止界面上的控件离顶部靠的太近。
+        //Two things are done here, so that the immersive status bar of the second case mentioned at the beginning can be realized.
+        // 1.Make the status bar transparent and fill the contentView to the status bar
+        // 2.Reserve the position of the status bar to prevent the controls on the interface from being too close to the top.
         StatusBarUtil.setTransparent(this);
     }
 

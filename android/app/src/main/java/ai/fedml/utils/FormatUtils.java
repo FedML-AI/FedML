@@ -13,9 +13,9 @@ public class FormatUtils {
     }
 
     /**
-     * long类型转换为String类型
+     * Convert long type to String type
      *
-     * @param milSecond currentTime要转换的long类型的时间
+     * @param milSecond currentTime time of type long to convert
      * @return LongDateFormat
      */
     public static String longToString(long milSecond) {
@@ -24,10 +24,10 @@ public class FormatUtils {
     }
 
     /**
-     * byte 转换成 kb、mb、gb、tb
+     * byte convert to kb、mb、gb、tb
      *
-     * @param average 字节大小
-     * @return 文件大小
+     * @param average size in bytes
+     * @return File size
      */
     public static String unitConversion(long average) {
         double temp = average;

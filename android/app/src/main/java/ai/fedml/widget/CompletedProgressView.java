@@ -11,53 +11,51 @@ import android.view.View;
 import ai.fedml.R;
 
 /**
- * @创建者 xkai
- * @创建时间 2021/12/30 17:58
- * @描述 自定义的圆形进度条
+ * Custom circular progress bar
  */
 public class CompletedProgressView extends View {
 
-    // 画实心圆的画笔
+    // Paintbrush for drawing a filled circle
     private Paint mCirclePaint;
-    // 画圆环的画笔
+    // brush for drawing circles
     private Paint mRingPaint;
-    // 画圆环的画笔背景色
+    // The background color of the brush for drawing the ring
     private Paint mRingPaintBg;
-    // 画字体的画笔
+    // brush for drawing fonts
     private Paint mTextPaint;
-    // 圆形颜色
+    // circle color
     private int mCircleColor;
-    // 圆环颜色
+    // ring color
     private int mRingColor;
-    // 圆环背景颜色
+    // Ring background color
     private int mRingBgColor;
-    // 半径
+    // radius
     private float mRadius;
-    // 圆环半径
+    // Ring radius
     private float mRingRadius;
-    // 圆环宽度
+    // Ring width
     private float mStrokeWidth;
-    // 圆心x坐标
+    // The x-coordinate of the center of the circle
     private int mXCenter;
-    // 圆心y坐标
+    // The y coordinate of the center of the circle
     private int mYCenter;
-    // 字的长度
+    // word length
     private float mTxtWidth;
-    // 字的高度
+    // word height
     private float mTxtHeight;
-    // 总进度
+    // total progress
     private int mTotalProgress = 100;
-    // 当前进度
+    // current progress
     private int mProgress;
 
     public CompletedProgressView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        // 获取自定义的属性
+        // Get custom properties
         initAttrs(context, attrs);
         initVariable();
     }
 
-    //属性
+    //properties
     private void initAttrs(Context context, AttributeSet attrs) {
         TypedArray typeArray = context.getTheme().obtainStyledAttributes(attrs,
                 R.styleable.TasksCompletedView, 0, 0);
@@ -71,15 +69,15 @@ public class CompletedProgressView extends View {
         mRingRadius = mRadius + mStrokeWidth / 2;
     }
 
-    //初始化画笔
+    //Initialize brush
     private void initVariable() {
-        //内圆
+        //inner circle
         mCirclePaint = new Paint();
         mCirclePaint.setAntiAlias(true);
         mCirclePaint.setColor(mCircleColor);
         mCirclePaint.setStyle(Paint.Style.FILL);
 
-        //外圆弧背景
+        //Outer arc background
         mRingPaintBg = new Paint();
         mRingPaintBg.setAntiAlias(true);
         mRingPaintBg.setColor(mRingBgColor);
@@ -87,15 +85,15 @@ public class CompletedProgressView extends View {
         mRingPaintBg.setStrokeWidth(mStrokeWidth);
 
 
-        //外圆弧
+        //Outer arc
         mRingPaint = new Paint();
         mRingPaint.setAntiAlias(true);
         mRingPaint.setColor(mRingColor);
         mRingPaint.setStyle(Paint.Style.STROKE);
         mRingPaint.setStrokeWidth(mStrokeWidth);
-        //mRingPaint.setStrokeCap(Paint.Cap.ROUND);//设置线冒样式，有圆 有方
+        //mRingPaint.setStrokeCap(Paint.Cap.ROUND);//Set the line style, there are circles and squares
 
-        //中间字
+        //middle word
         mTextPaint = new Paint();
         mTextPaint.setAntiAlias(true);
         mTextPaint.setStyle(Paint.Style.FILL);
@@ -106,24 +104,25 @@ public class CompletedProgressView extends View {
         mTxtHeight = (int) Math.ceil(fm.descent - fm.ascent);
     }
 
-    //画图
+    //draw
     @Override
     protected void onDraw(Canvas canvas) {
         mXCenter = getWidth() / 2;
         mYCenter = getHeight() / 2;
 
-        //内圆
+        //inner circle
         canvas.drawCircle(mXCenter, mYCenter, mRadius, mCirclePaint);
 
-        //外圆弧背景
+        //Outer arc background
         RectF oval1 = new RectF();
         oval1.left = (mXCenter - mRingRadius);
         oval1.top = (mYCenter - mRingRadius);
         oval1.right = mRingRadius * 2 + (mXCenter - mRingRadius);
         oval1.bottom = mRingRadius * 2 + (mYCenter - mRingRadius);
-        canvas.drawArc(oval1, 0, 360, false, mRingPaintBg); //圆弧所在的椭圆对象、圆弧的起始角度、圆弧的角度、是否显示半径连线
+        canvas.drawArc(oval1, 0, 360, false, mRingPaintBg); //
+The ellipse object where the arc is located, the starting angle of the arc, the angle of the arc, whether to display the radius connection
 
-        //外圆弧
+        //Outer arc
         if (mProgress > 0 ) {
             RectF oval = new RectF();
             oval.left = (mXCenter - mRingRadius);
@@ -132,17 +131,17 @@ public class CompletedProgressView extends View {
             oval.bottom = mRingRadius * 2 + (mYCenter - mRingRadius);
             canvas.drawArc(oval, -90, ((float)mProgress / mTotalProgress) * 360, false, mRingPaint); //
 
-            //字体
+            //fonts
             String txt = mProgress + "%";
             mTxtWidth = mTextPaint.measureText(txt, 0, txt.length());
             canvas.drawText(txt, mXCenter - mTxtWidth / 2, mYCenter + mTxtHeight / 4, mTextPaint);
         }
     }
 
-    //设置进度
+    //set the progress
     public void setProgress(int progress) {
         mProgress = progress;
-        postInvalidate();//重绘
+        postInvalidate();//redraw
     }
 
 
