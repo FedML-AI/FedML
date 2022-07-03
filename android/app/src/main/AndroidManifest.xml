@@ -49,7 +49,7 @@
         <activity android:name=".ui.SetFilePathActivity"
             android:screenOrientation="portrait" />
 
-        <!--FileProvider共享文件、缓存-->
+        <!--FileProvider shared files, cache-->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"

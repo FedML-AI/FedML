@@ -14,7 +14,7 @@ public class AppManager {
     }
 
     /**
-     * 单实例, UI无需考虑多线程同步问题
+     * Single instance, UI does not need to consider multi-threaded synchronization issues
      */
     public static AppManager getAppManager() {
         if (instance == null) {
@@ -24,7 +24,7 @@ public class AppManager {
     }
 
     /**
-     * 添加Activity到栈
+     * Add Activity to the stack
      *
      * @param activity
      */
@@ -37,7 +37,7 @@ public class AppManager {
     }
 
     /**
-     * 获取当前Activity（栈顶Activity）
+     * Get the current Activity (the Activity at the top of the stack)
      */
     public Activity currentActivity() {
         if (activityStack == null || activityStack.isEmpty()) {
@@ -48,7 +48,7 @@ public class AppManager {
     }
 
     /**
-     * 获取当前Activity（栈顶Activity）没有找到则返回null
+     * Get the current Activity (the Activity at the top of the stack) return null when not found
      */
     public Activity findActivity(Class<?> cls) {
         Activity activity = null;
@@ -62,7 +62,7 @@ public class AppManager {
     }
 
     /**
-     * 结束当前Activity（栈顶Activity）
+     * End the current Activity (the Activity at the top of the stack)
      */
     public void finishActivity() {
         if (activityStack.size() <= 0) {
@@ -73,7 +73,7 @@ public class AppManager {
     }
 
     /**
-     * 结束指定的Activity(重载)
+     * End the specified Activity (overload)
      */
     public void finishActivity(Activity activity) {
         if (activity != null) {
@@ -84,7 +84,7 @@ public class AppManager {
     }
 
     /**
-     * 移除指定的Activity  其他地方自己调用finish方法
+     * Remove the specified Activity and call the finish method elsewhere
      */
     public void removeActivity(Activity activity) {
         if (activity != null) {
@@ -94,7 +94,7 @@ public class AppManager {
     }
 
     /**
-     * 结束指定的Activity(重载)
+     * End the specified Activity (overload)
      */
     public void finishActivity(Class<?> cls) {
         for (Activity activity : activityStack) {
@@ -105,7 +105,7 @@ public class AppManager {
     }
 
     /**
-     * 结束所有Activity
+     * End all the Activities
      */
     public void finishAllActivity() {
         for (int i = 0, size = activityStack.size(); i < size; i++) {
@@ -117,7 +117,7 @@ public class AppManager {
     }
 
     /**
-     * 应用程序退出，一般调用此方法即可！
+     * The application exits, call this method!
      */
     public void AppExit(Context context) {
         try {

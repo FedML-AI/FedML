@@ -10,7 +10,7 @@ import java.io.File;
 
 public class FileOpenUtils {
     private static final String[][] MIME_MapTable={
-            //{后缀名， MIME类型}
+            //{suffix name, MIME type}
             {".3gp",    "video/3gpp"},
             {".apk",    "application/vnd.android.package-archive"},
             {".asf",    "video/x-ms-asf"},
@@ -80,23 +80,23 @@ public class FileOpenUtils {
     };
 
     /**
-     * 根据文件后缀名获得对应的MIME类型。
+     * Obtain the corresponding MIME type according to the file suffix.
      * @param file
      */
     public static String getMIMEType(File file) {
 
         String type="*/*";
         String fName = file.getName();
-        //获取后缀名前的分隔符"."在fName中的位置。
+        //Get the position of the separator "." before the suffix name in fName.
         int dotIndex = fName.lastIndexOf(".");
         if(dotIndex < 0){
             return type;
         }
-        /* 获取文件的后缀名 */
+        /* Get file extension */
         String end=fName.substring(dotIndex,fName.length()).toLowerCase();
         if(end=="")return type;
-        //在MIME和文件类型的匹配表中找到对应的MIME类型。
-        for(int i=0;i<MIME_MapTable.length;i++){ //MIME_MapTable??在这里你一定有疑问，这个MIME_MapTable是什么？
+        //Find the corresponding MIME type in the MIME and file type match table.
+        for(int i=0;i<MIME_MapTable.length;i++){
             if(end.equals(MIME_MapTable[i][0]))
                 type = MIME_MapTable[i][1];
         }
@@ -108,16 +108,16 @@ public class FileOpenUtils {
 
         String type="";
         String fName = file.getName();
-        //获取后缀名前的分隔符"."在fName中的位置。
+        //Get the position of the separator "." before the suffix name in fName.
         int dotIndex = fName.lastIndexOf(".");
         if(dotIndex < 0){
             return type;
         }
-        /* 获取文件的后缀名 */
+        /* Get file extension */
         String end=fName.substring(dotIndex,fName.length()).toLowerCase();
 //        if(end=="")return type;
-//        //在MIME和文件类型的匹配表中找到对应的MIME类型。
-//        for(int i=0;i<MIME_MapTable.length;i++){ //MIME_MapTable??在这里你一定有疑问，这个MIME_MapTable是什么？
+//        //Find the corresponding MIME type in the MIME and file type match table.
+//        for(int i=0;i<MIME_MapTable.length;i++){
 //            if(end.equals(MIME_MapTable[i][0]))
 //                type = MIME_MapTable[i][0];
 //        }
@@ -125,7 +125,7 @@ public class FileOpenUtils {
     }
 
     /**
-     * 打开文件
+     * open the file
      * @param file
      */
     public static void openFile(Context context ,File file) {
@@ -138,13 +138,13 @@ public class FileOpenUtils {
         }
 
 //        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        //设置intent的Action属性
+        //Set the Action property of the intent
         intent.setAction(Intent.ACTION_VIEW);
-        //获取文件file的MIME类型
+        //Get the MIME type of the file file
         String type = getMIMEType(file);
-        //设置intent的data和Type属性。
+        //Set the data and Type properties of the intent.
         intent.setDataAndType(/*uri*/Uri.fromFile(file), type);
-        //跳转
+        //Jump
         context.startActivity(intent);
 
     }

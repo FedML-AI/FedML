@@ -16,14 +16,11 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 /**
- * 文件列表适配器
- *
- * @author xkai
- * @date 2021/12/31 16:25
+ * file list adapter
  */
 public class RvFilePathAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-    //类型，用此来判断recyclerview该用哪个布局显示
+    //Type, use this to determine which layout the recyclerview should use to display
     public final int TYPE_EMPTY = 0;
     public final int TYPE_NORMAL = 1;
 
@@ -48,7 +45,7 @@ public class RvFilePathAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view;
-        //若为空布局类型，则直接返回空的
+        //If it is an empty layout type, it will directly return null
         if (viewType == TYPE_EMPTY) {
             view = LayoutInflater.from(mContext).inflate(R.layout.rv_item_empty, parent, false);
             return new EmptyViewHolder(view);
@@ -60,7 +57,7 @@ public class RvFilePathAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        //先判断holder是否为自定义holder
+        //First determine whether the holder is a custom holder
         if (holder instanceof BodyViewHolder) {
             holder.itemView.setOnClickListener((View v) -> {
                 int pos = holder.getLayoutPosition();
@@ -111,7 +108,7 @@ public class RvFilePathAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
     }
 
     /**
-     * 空布局
+     * empty layout
      */
     public static class EmptyViewHolder extends RecyclerView.ViewHolder {
         public EmptyViewHolder(@NonNull View itemView) {
