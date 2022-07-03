@@ -1,165 +1,166 @@
 <?xml version="1.0" encoding="utf-8"?>
 <aria>
-    <!--注意，修改该配置文件中的属性会覆盖代码中所设置的属性-->
+    <!--Note that modifying the properties in this configuration file will override the properties set in the code-->
 
-    <!--Aria框架配置-->
+    <!--Aria framework configuration-->
     <app>
-        <!--是否使用AriaCrashHandler来捕获异常，异常日志保存在：/mnt/sdcard/Android/data/{package_name}/files/log/-->
+        <!--Whether to use AriaCrashHandler to catch exceptions, exception logs are saved in：/mnt/sdcard/Android/data/{package_name}/files/log/-->
         <useAriaCrashHandler value="false"/>
-        <!--设置Aria的日志级别，{@link ALog#LOG_LEVEL_VERBOSE}-->
+        <!--Set Aria's log level, {@link ALog#LOG_LEVEL_VERBOSE}-->
         <logLevel value="2"/>
-        <!-- 是否检查网络 true: 检查网络，false: 不检查网络-->
+        <!--Whether to check the network, true: check the network，false: don't check the network-->
         <netCheck value="true"/>
-        <!--除非无法使用注解，否则不建议使用广播来接受任务状态，true：使用广播接收任务状态，false：不适用广播接收状态 -->
+        <!--Unless annotations cannot be used, it is not recommended to use broadcast to accept task status, true: use broadcast to receive task status, false: do not use broadcast to receive task status -->
         <!-- http://aria.laoyuyu.me/aria_doc/api/use_broadcast.html -->
         <useBroadcast value="false"/>
-        <!--断网的时候是否重试，true：断网也重试；false：断网不重试，直接走失败的回调-->
+        <!--Whether to retry when the network is disconnected, true: retry when the network is disconnected; false: do not retry when the network is disconnected, and go directly to the callback of failure-->
         <notNetRetry value="true"/>
     </app>
 
 
-    <!--普通下载任务-->
+    <!--Common download tasks-->
     <download>
 
-        <!--设置http下载获取文件大小是否使用Head请求。true：使用head请求，false：使用默认的get请求-->
-        <!--只适用于3.8.11以上的版本-->
+        <!--Set whether to use the Head request to get the file size for http download. true: use head request, false: use default get request-->
+        <!--Only applicable to versions after 3.8.11-->
         <useHeadRequest value="false"/>
 
-        <!--设置任务最大下载速度，0表示不限速，单位为：kb-->
+        <!--Set the maximum download speed of the task, 0 means unlimited speed, unit：kb-->
         <maxSpeed value="0"/>
 
         <!--
-          多线程下载是否使用块下载模式，{@code true}使用，{@code false}不使用
-          注意：
-            1、使用分块模式，在读写性能底下的手机上，合并文件需要的时间会更加长；
-            2、优点是使用多线程的块下载，初始化时，文件初始化时将不会预占用对应长度的空间；
-            3、只对新的多线程下载任务有效
-            4、只对多线程的任务有效
+          Whether to use block download mode for multi-threaded download, {@code true} use，{@code false} not use
+          Note：
+            1、Using block mode, on mobile phones with low read and write performance, it will take longer to merge files；
+            2、The advantage of multi-threaded block download is that during initialization, the space of the corresponding length will not be pre-occupied when the file is initialized.；
+            3、Only valid for new multi-threaded download tasks
+            4、Only valid for multi-threaded tasks
         -->
         <useBlock value="false"/>
 
-        <!--设置下载线程数，下载线程数不能小于1
-          注意：
-          1、线程下载数改变后，新的下载任务才会生效；
-          2、如果任务大小小于1m，该设置不会生效；
-          3、从3.4.1开始，如果线程数为1，文件初始化时将不再预占用对应长度的空间，下载多少byte，则占多大的空间；
-             对于采用多线程的任务或旧任务，依然采用原来的文件空间占用方式；
+        <!--Set the number of download threads, the number of download threads cannot be less than 1
+          Note：
+          1、After the number of thread downloads is changed, the new download task will take effect;
+          2、If the task size is less than 1m, this setting will not take effect;
+          3、Starting from 3.4.1, if the number of threads is 1, the space of the corresponding length will no longer be pre-occupied when the file is initialized, and how much space is occupied is decided by the number of bytes downloaded;
+             For multi-threaded tasks or old tasks, the original file space occupation method is still used;
         -->
         <threadNum value="1"/>
 
-        <!--设置下载队列最大任务数， 默认为2-->
+        <!--Set the maximum number of tasks in the download queue, the default is 2-->
         <maxTaskNum value="2"/>
 
-        <!--设置下载失败，重试次数，默认为10-->
+        <!--Set the number of retries when download fails, the default is 10-->
         <reTryNum value="5"/>
 
-        <!--设置重试间隔，单位为毫秒，默认2000毫秒-->
+        <!--Set the retry interval in milliseconds, the default is 2000 milliseconds-->
         <reTryInterval value="5000"/>
 
-        <!--设置url连接超时时间，单位为毫秒，默认5000毫秒-->
+        <!--Set the url connection timeout in milliseconds, the default is 5000 milliseconds-->
         <connectTimeOut value="5000"/>
 
-        <!--设置IO流读取时间，单位为毫秒，默认20000毫秒，该时间不能少于10000毫秒-->
+        <!--Set the IO stream reading time in milliseconds, the default is 20000 milliseconds, and the time cannot be less than 10000 milliseconds-->
         <iOTimeOut value="10000"/>
 
-        <!--设置写文件buff大小，该数值大小不能小于2048，数值变小，下载速度会变慢-->
+        <!--Set the buff size of write file. The value cannot be smaller than 2048. The smaller the value, the slower the download speed.-->
         <buffSize value="8192"/>
 
-        <!--设置https ca 证书信息；path 为assets目录下的CA证书完整路径，name 为CA证书名-->
+        <!--Set the https ca certificate information; path is the full path of the CA certificate in the assets directory, and name is the CA certificate name-->
         <ca name="" path=""/>
 
-        <!--是否需要转换速度单位，转换完成后为：1b/s、1kb/s、1mb/s、1gb/s、1tb/s，如果不需要将返回byte长度-->
+        <!--Whether it is necessary to convert the speed unit, after the conversion is completed: 1b/s, 1kb/s, 1mb/s, 1gb/s, 1tb/s, if not, the byte length will be returned-->
         <convertSpeed value="true"/>
 
-        <!--执行队列类型，见com.arialyy.aria.core.QueueMod，默认类型为wait-->
+        <!--Execution queue type, see com.arialyy.aria.core.QueueMod, the default type is wait-->
         <queueMod value="wait"/>
 
-        <!--进度更新更新间隔，默认1000毫秒-->
+        <!--Progress update interval, default 1000 milliseconds-->
         <updateInterval value="1000"/>
 
     </download>
 
-    <!--普通上传任务-->
+    <!--Common upload tasks-->
     <upload>
-        <!--设置任务最大上传速度，0表示不限速，单位为：kb-->
+        <!--Set the maximum upload speed of the task, 0 means unlimited speed, the unit is：kb-->
         <maxSpeed value="0"/>
 
-        <!--设置IO流读取时间，单位为毫秒，默认20000毫秒，该时间不能少于10000毫秒-->
+        <!--Set the IO stream reading time in milliseconds, the default is 20000 milliseconds, and the time cannot be less than 10000 milliseconds-->
         <iOTimeOut value="10000"/>
 
-        <!--设置写文件buff大小，该数值大小不能小于2048，数值变小，速度会变慢-->
+        <!--Set the buff size of write file. The value cannot be smaller than 2048. The smaller the value, the slower the download speed-->
         <buffSize value="8192"/>
 
-        <!--是否需要转换速度单位，转换完成后为：1b/s、1kb/s、1mb/s、1gb/s、1tb/s，如果不需要将返回byte长度-->
+        <!--Whether it is necessary to convert the speed unit, after the conversion is completed: 1b/s, 1kb/s, 1mb/s, 1gb/s, 1tb/s, if not, the byte length will be returned-->
         <convertSpeed value="true"/>
 
-        <!--设置上传队列最大任务数， 默认为2-->
+        <!--Set the maximum number of tasks in the upload queue, the default is 2-->
         <maxTaskNum value="2"/>
 
-        <!--设置上传失败，重试次数，默认为10-->
+        <!--Set the number of retries when download fails, the default is 10-->
         <reTryNum value="3"/>
 
-        <!--设置重试间隔，单位为毫秒-->
+        <!--Set the retry interval in milliseconds-->
         <reTryInterval value="2000"/>
 
-        <!--设置url连接超时时间，单位为毫秒，默认5000毫秒-->
+        <!--Set the url connection timeout in milliseconds, the default is 5000 milliseconds-->
         <connectTimeOut value="5000"/>
 
-        <!--执行队列类型，见com.arialyy.aria.core.QueueMod，默认类型为wait-->
+        <!--Execution queue type, see com.arialyy.aria.core.QueueMod, the default type is wait-->
         <queueMod value="wait"/>
 
-        <!--进度更新更新间隔，默认1000毫秒-->
+        <!--Progress update interval, default 1000 milliseconds-->
         <updateInterval value="1000"/>
 
     </upload>
 
-    <!-- 下载类组合任务 -->
+    <!-- Download Class Composition Task -->
     <dGroup>
 
-        <!--组合任务下载队列最大任务数， 默认为2-->
+        <!--The maximum number of tasks in the composition task download queue, the default is 2-->
         <maxTaskNum value="3"/>
 
-        <!--设置下载失败，重试次数，默认为10-->
+        <!--Set the number of retries when download fails, the default is 10-->
         <reTryNum value="5"/>
 
-        <!--设置重试间隔，单位为毫秒，默认2000毫秒-->
+        <!--Set the retry interval in milliseconds, default is 2000 milliseconds-->
         <reTryInterval value="5000"/>
 
-        <!--执行队列类型，见com.arialyy.aria.core.QueueMod，默认类型为wait-->
+        <!--Execution queue type, see com.arialyy.aria.core.QueueMod, the default type is wait-->
         <queueMod value="wait"/>
 
-        <!--进度更新更新间隔，默认1000毫秒-->
+        <!--Progress update interval, default 1000 milliseconds-->
         <updateInterval value="1000"/>
-        <!--子任务失败时组任务回调stop，默认true false将回调fail-->
+        <!--When the subtask fails, the group task will call back stop, the default is true, false will call back fail-->
         <subFailAsStop value="true"/>
 
-        <!-- =============================以下为子任务的配置====================================-->
+        <!-- =============================The following is the configuration of the subtask====================================-->
 
-        <!--能同时下载的子任务最大任务数，默认3-->
+        <!--The maximum number of subtasks that can be downloaded at the same time, the default is 3-->
         <subMaxTaskNum value="5"/>
 
-        <!--子任务下载失败时的重试次数，默认为5-->
+        <!--The number of retries when the subtask download fails, the default is 5-->
         <subReTryNum value="5"/>
 
-        <!--子任务下载失败时的重试间隔，单位为毫秒，默认2000毫秒-->
+        <!--The default retry interval is 2000 milliseconds when the subtask download fails-->
         <subReTryInterval value="5000"/>
 
-        <!--子任务url连接超时时间，单位为毫秒，默认5000毫秒-->
+        <!--Subtask url connection timeout, in milliseconds, default 5000 milliseconds-->
         <connectTimeOut value="5000"/>
 
-        <!--子任务IO流读取时间，单位为毫秒，默认20000毫秒，该时间不能少于10000毫秒-->
+        <!--
+Subtask IO stream read time, in milliseconds, the default is 20000 milliseconds, the time cannot be less than 10000 milliseconds-->
         <iOTimeOut value="10000"/>
 
-        <!--子任务写文件buff大小，该数值大小不能小于2048，数值变小，下载速度会变慢-->
+        <!--Set the buff size of write file. The value cannot be smaller than 2048. The smaller the value, the slower the download-->
         <buffSize value="8192"/>
 
-        <!--子任务 https ca 证书信息；path 为assets目录下的CA证书完整路径，name 为CA证书名-->
+        <!--Subtask https ca certificate information; path is the full path of the CA certificate in the assets directory, and name is the name of the CA certificate-->
         <ca name="" path=""/>
 
-        <!--子任务是否需要转换速度单位，转换完成后为：1b/s、1kb/s、1mb/s、1gb/s、1tb/s，如果不需要将返回byte长度-->
+        <!--Whether it is necessary to convert the speed unit, after the conversion is completed: 1b/s, 1kb/s, 1mb/s, 1gb/s, 1tb/s, if not, the byte length will be returned-->
         <convertSpeed value="true"/>
 
-        <!--子任务的最大下载速度，0表示不限速，单位为：kb; -->
+        <!--The maximum download speed of the subtask, 0 means unlimited speed, the unit is：kb; -->
         <maxSpeed value="0"/>
 
     </dGroup>

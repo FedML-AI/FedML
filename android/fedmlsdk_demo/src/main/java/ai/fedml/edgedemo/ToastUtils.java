@@ -12,13 +12,13 @@ public class ToastUtils {
     /**
      * Show Toast
      *
-     * @param context context
-     * @param text    文本
+     * @param context
+     * @param text
      */
     public static void show(final Context context, CharSequence text) {
         Runnable toastRunnable = () -> {
             if (text == null || text.equals("")) return;
-            // 如果显示的文字超过了10个就显示长吐司，否则显示短吐司
+            // If the displayed text exceeds 10, display the long toast, otherwise display the short toast
             int duration = Toast.LENGTH_SHORT;
             if (text.length() > 20) {
                 duration = Toast.LENGTH_LONG;
