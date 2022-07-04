@@ -1,4 +1,5 @@
 import argparse
+import logging
 import os
 import platform
 import time
@@ -23,11 +24,10 @@ def __login_as_edge_server_and_agent(args, userid, version):
         sys_name = "MacOS"
     setattr(args, "os_name", sys_name)
     setattr(args, "version", version)
-    setattr(args, "log_file_dir", os.path.join(args.current_running_dir, "fedml", "logs"))
-    setattr(args, "device_id", FedMLServerRunner.get_device_id())
+    setattr(args, "log_file_dir", FedMLServerRunner.get_log_file_dir())
+    setattr(args, "current_device_id", FedMLServerRunner.get_device_id())
     setattr(args, "config_version", version)
     setattr(args, "cloud_region", "")
-    click.echo(args)
 
     # Create server runner for communication with the FedML client.
     runner = FedMLServerRunner(args)
@@ -57,8 +57,8 @@ def __login_as_edge_server_and_agent(args, userid, version):
         return
 
     # Build unique device id
-    if args.device_id is not None and len(str(args.device_id)) > 0:
-        unique_device_id = args.device_id + "@" + args.os_name + ".Edge.Server"
+    if args.current_device_id is not None and len(str(args.current_device_id)) > 0:
+        unique_device_id = args.current_device_id + "@" + args.os_name + ".Edge.Server"
 
     # Bind account id to the MLOps platform.
     register_try_count = 0
@@ -77,17 +77,17 @@ def __login_as_edge_server_and_agent(args, userid, version):
             continue
 
     if edge_id <= 0:
-        click.echo("Oops, you failed to login the FedML MLOps platform.")
-        click.echo("Please check whether your network is normal!")
+        logging.info("Oops, you failed to login the FedML MLOps platform.")
+        logging.info("Please check whether your network is normal!")
         return
     runner.edge_id = edge_id
     init_logs(edge_id)
 
     # Log arguments and binding results.
-    click.echo("login: unique_device_id = %s" % str(unique_device_id))
-    click.echo("login: server_id = %s" % str(edge_id))
+    logging.info("login: unique_device_id = %s" % str(unique_device_id))
+    logging.info("login: server_id = %s" % str(edge_id))
     runner.unique_device_id = unique_device_id
-    FedMLServerRunner.save_runner_infos(args.device_id + "." + args.os_name, edge_id)
+    FedMLServerRunner.save_runner_infos(args.current_device_id + "." + args.os_name, edge_id)
 
     # Setup MQTT connection for communication with the FedML server.
     runner.setup_agent_mqtt_connection(service_config)
@@ -105,11 +105,13 @@ def __login_as_cloud_agent(args, userid, version):
         sys_name = "MacOS"
     setattr(args, "os_name", sys_name)
     setattr(args, "version", version)
-    setattr(args, "log_file_dir", os.path.join(args.current_running_dir, "fedml", "logs"))
-    setattr(args, "device_id", FedMLServerRunner.get_device_id())
+    setattr(args, "log_file_dir", FedMLServerRunner.get_log_file_dir())
+    if hasattr(args, "device_id") and args.device_id is not None and args.device_id != "0":
+        setattr(args, "current_device_id", args.device_id)
+    else:
+        setattr(args, "current_device_id", FedMLServerRunner.get_device_id())
     setattr(args, "config_version", version)
     setattr(args, "cloud_region", "")
-    click.echo(args)
 
     # Create server runner for communication with the FedML client.
     runner = FedMLServerRunner(args)
@@ -139,8 +141,8 @@ def __login_as_cloud_agent(args, userid, version):
         return
 
     # Build unique device id
-    if args.device_id is not None and len(str(args.device_id)) > 0:
-        unique_device_id = args.device_id + "@" + args.os_name + ".Public.Cloud"
+    if args.current_device_id is not None and len(str(args.current_device_id)) > 0:
+        unique_device_id = args.current_device_id + "@" + args.os_name + ".Public.Cloud"
 
     # Bind account id to the MLOps platform.
     register_try_count = 0
@@ -167,12 +169,13 @@ def __login_as_cloud_agent(args, userid, version):
         return
     runner.edge_id = edge_id
     init_logs(edge_id)
+    logging.info("args {}".format(args))
 
     # Log arguments and binding results.
-    click.echo("login: unique_device_id = %s" % str(unique_device_id))
-    click.echo("login: server_id = %s" % str(edge_id))
+    logging.info("login: unique_device_id = %s" % str(unique_device_id))
+    logging.info("login: server_id = %s" % str(edge_id))
     runner.unique_device_id = unique_device_id
-    FedMLServerRunner.save_runner_infos(args.device_id + "." + args.os_name, edge_id)
+    FedMLServerRunner.save_runner_infos(args.current_device_id + "." + args.os_name, edge_id)
 
     # Setup MQTT connection for communication with the FedML server.
     runner.setup_agent_mqtt_connection(service_config)
@@ -190,11 +193,13 @@ def __login_as_cloud_server(args, userid, version):
         sys_name = "MacOS"
     setattr(args, "os_name", sys_name)
     setattr(args, "version", version)
-    setattr(args, "log_file_dir", os.path.join(args.current_running_dir, "fedml", "logs"))
-    setattr(args, "device_id", FedMLServerRunner.get_device_id())
+    setattr(args, "log_file_dir", FedMLServerRunner.get_log_file_dir())
+    if hasattr(args, "device_id") and args.device_id is not None and args.device_id != "0":
+        setattr(args, "current_device_id", args.device_id)
+    else:
+        setattr(args, "current_device_id", FedMLServerRunner.get_device_id())
     setattr(args, "config_version", version)
     setattr(args, "cloud_region", "")
-    click.echo(args)
 
     # Create server runner for communication with the FedML client.
     runner = FedMLServerRunner(args)
@@ -224,8 +229,10 @@ def __login_as_cloud_server(args, userid, version):
         return
 
     # Build unique device id
-    if args.device_id is not None and len(str(args.device_id)) > 0:
-        unique_device_id = args.device_id + "@" + args.os_name + ".Public.Server"
+    if hasattr(args, "device_id") and args.device_id is not None and args.device_id != "0":
+        unique_device_id = args.current_device_id
+    else:
+        unique_device_id = args.current_device_id + "@" + args.os_name + ".Public.Server"
 
     # Bind account id to the MLOps platform.
     register_try_count = 0
@@ -251,13 +258,13 @@ def __login_as_cloud_server(args, userid, version):
     init_logs(edge_id)
 
     # Log arguments and binding results.
-    click.echo("login: unique_device_id = %s" % str(unique_device_id))
-    click.echo("login: server_id = %s" % str(edge_id))
-    FedMLServerRunner.save_runner_infos(args.device_id + "." + args.os_name, edge_id)
+    logging.info("login: unique_device_id = %s" % str(unique_device_id))
+    logging.info("login: server_id = %s" % str(edge_id))
+    FedMLServerRunner.save_runner_infos(args.current_device_id + "." + args.os_name, edge_id)
 
     # Echo results
-    click.echo("Congratulations, you have logged into the FedML MLOps platform successfully!")
-    click.echo("Your server unique device id is " + str(unique_device_id))
+    logging.info("Congratulations, you have logged into the FedML MLOps platform successfully!")
+    logging.info("Your server unique device id is " + str(unique_device_id))
 
     # Start the FedML server
     runner.callback_start_train(payload=args.runner_cmd)
@@ -269,6 +276,8 @@ def init_logs(edge_id):
     args.run_id = 0
     args.rank = 0
     args.edge_id = edge_id
+    setattr(args, "using_mlops", True)
+    setattr(args, "server_agent_id", edge_id)
     MLOpsRuntimeLog.get_instance(args).init_logs()
 
 
@@ -294,10 +303,9 @@ if __name__ == "__main__":
     parser.add_argument("--local_server", "-ls", type=str, default="127.0.0.1")
     parser.add_argument("--role", "-r", type=str, default="local")
     parser.add_argument("--runner_cmd", "-rc", type=str, default="{}")
-    parser.add_argument("--server_agent_id", "-said", type=str, default="0")
+    parser.add_argument("--device_id", "-id", type=str, default="0")
 
     args = parser.parse_args()
-    click.echo(args)
     args.user = args.user
     if args.type == 'login':
         login(args)

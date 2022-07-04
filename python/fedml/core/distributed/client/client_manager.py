@@ -27,13 +27,6 @@ class ClientManager(Observer):
             self.com_manager = MpiCommunicationManager(
                 comm, rank, size, node_type="client"
             )
-        elif backend == "MQTT":
-            HOST = "0.0.0.0"
-            # HOST = "broker.emqx.io"
-            PORT = 1883
-            self.com_manager = MqttCommManager(
-                HOST, PORT, client_id=rank, client_num=size - 1
-            )
         elif backend == "MQTT_S3":
             mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
             args.mqtt_config_path = mqtt_config
@@ -108,6 +101,10 @@ class ClientManager(Observer):
         self.message_handler_dict = dict()
 
     def run(self):
+        # print(self.message_handler_dict.keys())
+        # print(self.message_handler_dict.values())
+        # import pdb
+        # pdb.set_trace()
         self.register_message_receive_handlers()
         self.com_manager.handle_receive_message()
 

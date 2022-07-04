@@ -1,9 +1,10 @@
 import json
 import logging
+import multiprocessing
 import time
 
-from .system_stats import SysStats
 from .mlops_status import MLOpsStatus
+from .system_stats import SysStats
 
 
 class Singleton(object):
@@ -22,6 +23,7 @@ class MLOpsMetrics(Singleton):
         self.edge_id = None
         self.server_agent_id = None
         self.sys_performances = None
+        self.is_sys_perf_reporting = False
 
     def set_messenger(self, msg_messenger, args=None):
         self.messenger = msg_messenger
@@ -29,8 +31,8 @@ class MLOpsMetrics(Singleton):
             self.args = args
             self.run_id = args.run_id
             if args.rank == 0:
-                if hasattr(args, "server_device_id"):
-                    self.edge_id = args.server_device_id
+                if hasattr(args, "server_id"):
+                    self.edge_id = args.server_id
                 else:
                     self.edge_id = 0
             else:
@@ -42,7 +44,16 @@ class MLOpsMetrics(Singleton):
             else:
                 self.server_agent_id = self.edge_id
 
+    def comm_sanity_check(self):
+        if self.messenger is None:
+            logging.info("self.messenger is Null")
+            return False
+        else:
+            return True
+
     def report_client_training_status(self, edge_id, status):
+        if not self.comm_sanity_check():
+            return
         """
             this is used for notifying the client status to MLOps (both web UI, FedML CLI and backend can consume it)
         """
@@ -58,6 +69,8 @@ class MLOpsMetrics(Singleton):
         self.report_client_id_status(run_id, edge_id, status)
 
     def broadcast_client_training_status(self, edge_id, status):
+        if not self.comm_sanity_check():
+            return
         """
             this is used for broadcasting the client status to MLOps (both web UI and backend can consume it)
         """
@@ -71,6 +84,8 @@ class MLOpsMetrics(Singleton):
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_client_id_status(self, run_id, edge_id, status):
+        if not self.comm_sanity_check():
+            return
         """
             this is used for communication between client agent (FedML cli module) and client
         """
@@ -81,9 +96,13 @@ class MLOpsMetrics(Singleton):
         MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, status)
         self.messenger.send_message_json(topic_name, message_json)
 
-    def report_server_training_status(self, run_id, status):
+    def report_server_training_status(self, run_id, status, role=None):
+        if not self.comm_sanity_check():
+            return
         topic_name = "fl_server/mlops/status"
-        msg = {"run_id": run_id, "edge_id": self.edge_id, "status": status}
+        if role is None:
+            role = "normal"
+        msg = {"run_id": run_id, "edge_id": self.edge_id, "status": status, "role": role}
         logging.info("report_server_training_status. msg = %s" % msg)
         message_json = json.dumps(msg)
         MLOpsStatus.get_instance().set_server_status(self.edge_id, status)
@@ -91,13 +110,17 @@ class MLOpsMetrics(Singleton):
         self.report_server_id_status(run_id, status)
 
     def broadcast_server_training_status(self, run_id, status):
+        if self.messenger is None:
+            return
         topic_name = "fl_server/mlops/status"
         msg = {"run_id": run_id, "edge_id": self.edge_id, "status": status}
-        logging.info("report_server_training_status. msg = %s" % msg)
+        logging.info("broadcast_server_training_status. msg = %s" % msg)
         message_json = json.dumps(msg)
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_server_id_status(self, run_id, status):
+        if not self.comm_sanity_check():
+            return
         server_agent_id = self.server_agent_id
         topic_name = "fl_server/flserver_agent_" + str(server_agent_id) + "/status"
         msg = {"run_id": run_id, "edge_id": self.edge_id, "status": status}
@@ -108,18 +131,24 @@ class MLOpsMetrics(Singleton):
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_client_training_metric(self, metric_json):
+        if not self.comm_sanity_check():
+            return
         topic_name = "fl_client/mlops/training_metrics"
         logging.info("report_client_training_metric. message_json = %s" % metric_json)
         message_json = json.dumps(metric_json)
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_server_training_metric(self, metric_json):
+        if not self.comm_sanity_check():
+            return
         topic_name = "fl_server/mlops/training_progress_and_eval"
         logging.info("report_server_training_metric. message_json = %s" % metric_json)
         message_json = json.dumps(metric_json)
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_server_training_round_info(self, round_info):
+        if not self.comm_sanity_check():
+            return
         topic_name = "fl_server/mlops/training_roundx"
         logging.info(
             "report_server_training_round_info. message_json = %s" % round_info
@@ -128,12 +157,16 @@ class MLOpsMetrics(Singleton):
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_client_model_info(self, model_info_json):
+        if not self.comm_sanity_check():
+            return
         topic_name = "fl_server/mlops/client_model"
         logging.info("report_client_model_info. message_json = %s" % model_info_json)
         message_json = json.dumps(model_info_json)
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_aggregated_model_info(self, model_info_json):
+        if not self.comm_sanity_check():
+            return
         topic_name = "fl_server/mlops/global_aggregated_model"
         logging.info(
             "report_aggregated_model_info. message_json = %s" % model_info_json
@@ -142,6 +175,8 @@ class MLOpsMetrics(Singleton):
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_system_metric(self, metric_json=None):
+        if not self.comm_sanity_check():
+            return
         topic_name = "fl_client/mlops/system_performance"
         if metric_json is None:
             if self.sys_performances is None:
@@ -196,11 +231,40 @@ class MLOpsMetrics(Singleton):
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_logs_updated(self, run_id):
+        if not self.comm_sanity_check():
+            return
         topic_name = "mlops/runtime_logs/" + str(run_id)
         msg = {"time": time.time()}
         message_json = json.dumps(msg)
         logging.info("report_logs_updated. message_json = %s" % message_json)
         self.messenger.send_message_json(topic_name, message_json)
+
+    def set_sys_reporting_status(self, enable):
+        self.is_sys_perf_reporting = enable
+
+    def is_system_perf_reporting(self):
+        return self.is_sys_perf_reporting
+
+    @staticmethod
+    def report_sys_perf():
+        pass
+        # sys_stats_process = multiprocessing.Process(
+        #     target=MLOpsMetrics._report_sys_performances
+        # )
+        # sys_stats_process.start()
+
+    @staticmethod
+    def _report_sys_performances():
+        # mlops_metrics is a single instance
+        mlops_metrics = MLOpsMetrics()
+        if not mlops_metrics.comm_sanity_check():
+            return
+        mlops_metrics.set_sys_reporting_status(True)
+
+        # Notify MLOps with system information.
+        while mlops_metrics.is_system_perf_reporting():
+            mlops_metrics.report_system_metric()
+            time.sleep(30)
 
 
 if __name__ == "__main__":
