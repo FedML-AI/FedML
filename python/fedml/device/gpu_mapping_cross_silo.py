@@ -40,7 +40,7 @@ def mapping_processes_to_gpu_device_from_yaml_file_cross_silo(
                 )
             )
             logging.info("i = {}, worker_number = {}".format(i, worker_number))
-            assert i == worker_number
+            assert i == worker_number, f"Invalid GPU Number. Expected {worker_number}, Received {i}."
         if torch.cuda.is_available():
             torch.cuda.set_device(gpu_util_map[process_id][1])
         device = torch.device(
@@ -52,14 +52,14 @@ def mapping_processes_to_gpu_device_from_yaml_file_cross_silo(
         return device
 
 
-def mapping_single_process_to_gpu_device_cross_silo(using_gpu, device_type):
+def mapping_single_process_to_gpu_device_cross_silo(using_gpu, device_type, gpu_id=0):
     if not using_gpu:
         device = torch.device("cpu")
         # return gpu_util_map[process_id][1]
         return device
     else:
         if torch.cuda.is_available() and device_type == "gpu":
-            device = torch.device("cuda:0")
+            device = torch.device(f"cuda:{gpu_id}")
         elif device_type == "mps":
             # https://pytorch.org/docs/master/notes/mps.html
             device = torch.device("mps")

@@ -1,19 +1,18 @@
-# TODO: GPU support
-
-from .client_master_manager import ClientMasterManager
-from .client_slave_manager import ClientSlaveManager
-from .aggregator_dist_adapter import AggregatorDistAdapter
-from .trainer_dist_adapter import TrainerDistAdapter
+from .fedml_client_master_manager import ClientMasterManager
+from .fedml_client_slave_manager import ClientSlaveManager
+# from .aggregator_dist_adapter import AggregatorDistAdapter
+from .fedml_trainer_dist_adapter import TrainerDistAdapter
 from .fedml_server_manager import FedMLServerManager
 
-# from .trainer.my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
-# from .trainer.my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
-# from .trainer.my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
+from .fedml_aggregator import FedMLAggregator
+from .utils import get_model_trainer
 import logging
 
-# silo_rank -> client_rank
-# worker_silo_num -> client_num
 
+
+
+
+# TODO: remove commented code
 
 def FedML_Hierarchical(
     args,
@@ -44,8 +43,6 @@ def FedML_Hierarchical(
     # if args.n_proc_in_silo == 0:
     #     assert silo_server_device == process_device, "GPU index mismatch between gpu_mapping and silo_gpu_mapping files"
 
-    # if not 'enable_cuda_rpc' in args:
-    #     args.enable_cuda_rpc = False
 
     if client_rank == 0:
         init_server(
@@ -80,6 +77,9 @@ def FedML_Hierarchical(
         )
 
 
+
+
+
 def get_trainer_dist_adapter(
     args,
     device,
@@ -104,32 +104,32 @@ def get_trainer_dist_adapter(
     )
 
 
-def get_dist_aggregator(
-    args,
-    device,
-    size,
-    model,
-    train_data_num,
-    train_data_global,
-    test_data_global,
-    train_data_local_dict,
-    test_data_local_dict,
-    train_data_local_num_dict,
-    model_trainer,
-):
-    return AggregatorDistAdapter(
-        args,
-        device,
-        size,
-        model,
-        train_data_num,
-        train_data_global,
-        test_data_global,
-        train_data_local_dict,
-        test_data_local_dict,
-        train_data_local_num_dict,
-        model_trainer,
-    )
+# def get_dist_aggregator(
+#     args,
+#     device,
+#     client_num,
+#     model,
+#     train_data_num,
+#     train_data_global,
+#     test_data_global,
+#     train_data_local_dict,
+#     test_data_local_dict,
+#     train_data_local_num_dict,
+#     model_trainer,
+# ):
+#     return AggregatorDistAdapter(
+#         args,
+#         device,
+#         client_num,
+#         model,
+#         train_data_num,
+#         train_data_global,
+#         test_data_global,
+#         train_data_local_dict,
+#         test_data_local_dict,
+#         train_data_local_num_dict,
+#         model_trainer,
+#     )
 
 
 def get_server_manager(
@@ -137,7 +137,7 @@ def get_server_manager(
     dist_aggregator,
     comm,
     rank,
-    size,
+    client_num,
     backend,
     is_preprocessed=False,
     preprocessed_client_lists=None,
@@ -147,7 +147,7 @@ def get_server_manager(
         dist_aggregator,
         comm,
         rank,
-        size,
+        client_num,
         backend,
         is_preprocessed=is_preprocessed,
         preprocessed_client_lists=preprocessed_client_lists,
@@ -155,10 +155,10 @@ def get_server_manager(
 
 
 def get_clinet_manager_master(
-    args, trainer_dist_adapter, comm, client_rank, size, backend
+    args, trainer_dist_adapter, comm, client_rank, client_num, backend
 ):
     return ClientMasterManager(
-        args, trainer_dist_adapter, comm, client_rank, size, backend
+        args, trainer_dist_adapter, comm, client_rank, client_num, backend
     )
 
 
@@ -171,7 +171,7 @@ def init_server(
     device,
     comm,
     rank,
-    size,
+    client_num,
     model,
     train_data_num,
     train_data_global,
@@ -184,33 +184,72 @@ def init_server(
 ):
 
     # start the distributed training
-    backend = args.backend
+    # backend = args.backend
 
-    dist_aggregator = get_dist_aggregator(
-        args,
-        device,
-        size,
-        model,
-        train_data_num,
+    # dist_aggregator = get_dist_aggregator(
+    #     args,
+    #     device,
+    #     client_num,
+    #     model,
+    #     train_data_num,
+    #     train_data_global,
+    #     test_data_global,
+    #     train_data_local_dict,
+    #     test_data_local_dict,
+    #     train_data_local_num_dict,
+    #     model_trainer,
+    # )
+
+    # if preprocessed_sampling_lists is None:
+    #     server_manager = get_server_manager(
+    #         args, dist_aggregator, comm, rank, client_num, backend
+    #     )
+    # else:
+    #     server_manager = get_server_manager(
+    #         args,
+    #         dist_aggregator,
+    #         comm,
+    #         rank,
+    #         client_num,
+    #         backend,
+    #         is_preprocessed=True,
+    #         preprocessed_client_lists=preprocessed_sampling_lists,
+    #     )
+    # server_manager.run()
+
+    if model_trainer is None:
+        model_trainer = get_model_trainer(model, args)
+
+    model_trainer.set_id(0)
+
+    # aggregator
+    aggregator = FedMLAggregator(
         train_data_global,
         test_data_global,
+        train_data_num,
         train_data_local_dict,
         test_data_local_dict,
         train_data_local_num_dict,
+        client_num, # Check is client_num same as client_num?
+        device,
+        args,
         model_trainer,
     )
 
+    # start the distributed training
+    backend = args.backend
     if preprocessed_sampling_lists is None:
-        server_manager = get_server_manager(
-            args, dist_aggregator, comm, rank, size, backend
+        server_manager = FedMLServerManager(
+            args, aggregator, comm, rank, client_num, # Check is client_num same as client_num?
+            backend
         )
     else:
-        server_manager = get_server_manager(
+        server_manager = FedMLServerManager(
             args,
-            dist_aggregator,
+            aggregator,
             comm,
             rank,
-            size,
+            client_num, # Check is client_num same as client_num?
             backend,
             is_preprocessed=True,
             preprocessed_client_lists=preprocessed_sampling_lists,
@@ -223,7 +262,7 @@ def init_client(
     device,
     comm,
     client_rank,
-    size,
+    client_num,
     model,
     train_data_num,
     train_data_local_num_dict,
@@ -232,6 +271,7 @@ def init_client(
     model_trainer=None,
 ):
     backend = args.backend
+
     trainer_dist_adapter = get_trainer_dist_adapter(
         args,
         device,
@@ -246,7 +286,7 @@ def init_client(
     if args.proc_rank_in_silo == 0:
         logging.info("Initiating Client Manager")
         client_manager = get_clinet_manager_master(
-            args, trainer_dist_adapter, comm, client_rank, size, backend
+            args, trainer_dist_adapter, comm, client_rank, client_num, backend
         )
     else:
         logging.info("Initiating DDP worker")

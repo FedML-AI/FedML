@@ -2,9 +2,13 @@ from .fedml_aggregator import FedMLAggregator
 from .fedml_trainer import FedMLTrainer
 from .fedml_client_manager import FedMLClientManager
 from .fedml_server_manager import FedMLServerManager
-from .trainer.my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
+from .trainer.my_model_trainer_classification import (
+    MyModelTrainer as MyModelTrainerCLS,
+)
 from .trainer.my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
-from .trainer.my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
+from .trainer.my_model_trainer_tag_prediction import (
+    MyModelTrainer as MyModelTrainerTAG,
+)
 
 
 def FedML_Horizontal(
@@ -78,12 +82,7 @@ def init_server(
     preprocessed_sampling_lists=None,
 ):
     if model_trainer is None:
-        if args.dataset == "stackoverflow_lr":
-            model_trainer = MyModelTrainerTAG(model)
-        elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
-            model_trainer = MyModelTrainerNWP(model)
-        else:  # default model trainer is for classification problem
-            model_trainer = MyModelTrainerCLS(model)
+        model_trainer = get_model_trainer(args, model)
     model_trainer.set_id(0)
 
     # aggregator
@@ -134,12 +133,7 @@ def init_client(
     model_trainer=None,
 ):
     if model_trainer is None:
-        if args.dataset == "stackoverflow_lr":
-            model_trainer = MyModelTrainerTAG(model)
-        elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
-            model_trainer = MyModelTrainerNWP(model)
-        else:  # default model trainer is for classification problem
-            model_trainer = MyModelTrainerCLS(model)
+        model_trainer = get_model_trainer(args, model)
     model_trainer.set_id(client_rank)
     backend = args.backend
     trainer = FedMLTrainer(
@@ -156,3 +150,13 @@ def init_client(
         args, trainer, comm, client_rank, client_num, backend
     )
     client_manager.run()
+
+
+def get_model_trainer(args, model):
+    if args.dataset == "stackoverflow_lr":
+        model_trainer = MyModelTrainerTAG(model, args)
+    elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
+        model_trainer = MyModelTrainerNWP(model, args)
+    else:  # default model trainer is for classification problem
+        model_trainer = MyModelTrainerCLS(model, args)
+    return model_trainer

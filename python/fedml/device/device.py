@@ -7,7 +7,9 @@ def get_device(args):
     if args.training_type == "simulation" and args.backend == "sp":
         if args.using_gpu:
             device = torch.device(
-                "cuda:" + str(args.gpu_id) if torch.cuda.is_available() else "cpu"
+                "cuda:" + str(args.gpu_id)
+                if torch.cuda.is_available()
+                else "cpu"
             )
         else:
             device = torch.device("cpu")
@@ -46,10 +48,26 @@ def get_device(args):
             device_type = (
                 "gpu" if not hasattr(args, "device_type") else args.device_type
             )
+
+            gpu_id = 0 if not hasattr(args, "gpu_id") else args.gpu_id
+
             device = mapping_single_process_to_gpu_device_cross_silo(
-                args.using_gpu, device_type
+                args.using_gpu, device_type, gpu_id
             )
+
+
         logging.info("device = {}".format(device))
+
+        # Flag indicating the process will communicate with other clients
+        is_master_process = (args.scenario == "horizontal") or (
+            args.scenario == "hierarchical" and args.proc_rank_in_silo == 0
+        )
+
+        if args.enable_cuda_rpc and is_master_process:
+            assert (
+                device.index == args.cuda_rpc_gpu_mapping[args.rank]
+            ), f"GPU assignemnt inconsistent with cuda_rpc_gpu_mapping. Assigned to GPU {device.index} while expecting {args.cuda_rpc_gpu_mapping[args.rank]}"
+
         return device
     elif args.training_type == "cross_device":
         if args.using_gpu:

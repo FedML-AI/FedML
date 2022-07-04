@@ -13,6 +13,10 @@ lock = threading.Lock()
 from ...communication.base_com_manager import BaseCommunicationManager
 from ...communication.message import Message
 from ...communication.observer import Observer
+from ..constants import CommunicationConstants
+import time
+
+# Check Service or serve?
 from ...communication.grpc.grpc_server import GRPCCOMMServicer
 
 import logging
@@ -22,7 +26,13 @@ import csv
 
 class GRPCCommManager(BaseCommunicationManager):
     def __init__(
-        self, host, port, ip_config_path, topic="fedml", client_id=0, client_num=0
+        self,
+        host,
+        port,
+        ip_config_path,
+        topic="fedml",
+        client_id=0,
+        client_num=0,
     ):
         # host is the ip address of server
         self.host = host
@@ -31,6 +41,7 @@ class GRPCCommManager(BaseCommunicationManager):
         self.client_id = client_id
         self.client_num = client_num
         self._observers: List[Observer] = []
+        self.rank = client_id
 
         if client_id == 0:
             self.node_type = "server"
@@ -44,7 +55,8 @@ class GRPCCommManager(BaseCommunicationManager):
             ("grpc.enable_http_proxy", 0),
         ]
         self.grpc_server = grpc.server(
-            futures.ThreadPoolExecutor(max_workers=client_num), options=self.opts
+            futures.ThreadPoolExecutor(max_workers=client_num),
+            options=self.opts,
         )
         self.grpc_servicer = GRPCCOMMServicer(host, port, client_num, client_id)
         grpc_comm_manager_pb2_grpc.add_gRPCCommManagerServicer_to_server(
@@ -69,7 +81,7 @@ class GRPCCommManager(BaseCommunicationManager):
         logging.info("pickle.dumps(msg) END")
 
         receiver_id = msg.get_receiver_id()
-        PORT_BASE = 8888
+        PORT_BASE = CommunicationConstants.GRPC_BASE_PORT
         # lookup ip of receiver from self.ip_config table
         receiver_ip = self.ip_config[str(receiver_id)]
         channel_url = "{}:{}".format(receiver_ip, str(PORT_BASE + receiver_id))
@@ -95,9 +107,14 @@ class GRPCCommManager(BaseCommunicationManager):
         self._observers.remove(observer)
 
     def handle_receive_message(self):
-        thread = threading.Thread(target=self.message_handling_subroutine)
-        thread.start()
         self._notify_connection_ready()
+        self.message_handling_subroutine()
+
+        # Cannont run message_handling_subroutine in new thread
+        # Related https://stackoverflow.com/a/70705165
+        
+        # thread = threading.Thread(target=self.message_handling_subroutine)
+        # thread.start()
 
     def message_handling_subroutine(self):
         while self.is_running:
@@ -111,6 +128,7 @@ class GRPCCommManager(BaseCommunicationManager):
                 for observer in self._observers:
                     observer.receive_message(msg_type, msg)
                 lock.release()
+            time.sleep(1)
         return
 
     def stop_receive_message(self):
@@ -126,8 +144,7 @@ class GRPCCommManager(BaseCommunicationManager):
         msg_params = Message()
         msg_params.sender_id = self.rank
         msg_params.receiver_id = self.rank
-        MSG_TYPE_CONNECTION_IS_READY = 0
-        msg_type = MSG_TYPE_CONNECTION_IS_READY
+        msg_type = CommunicationConstants.MSG_TYPE_CONNECTION_IS_READY
         for observer in self._observers:
             observer.receive_message(msg_type, msg_params)
 
