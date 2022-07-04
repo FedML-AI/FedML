@@ -45,6 +45,7 @@ cifar-10-batches-py
 *.zip
 *.json
 *.tar.bz2
+*.stats
 
 data/cifar10/*-python
 data/cifar100/*-python
@@ -117,14 +118,14 @@ app/fedgraphnn/moleculenet_graph_reg/data/qm9/*.pkl
 app/fedgraphnn/moleculenet_graph_reg/data/qm9/*.npy
 
 
-app/fedgraphnn/social_networks_graph_clf/data/TUDataset/*
-app/fedgraphnn/social_networks_graph_clf/data/TUDataset/collab.pickle
-app/fedgraphnn/social_networks_graph_clf/x_hist.png
+python/app/fedgraphnn/social_networks_graph_clf/data/TUDataset/*
+python/app/fedgraphnn/social_networks_graph_clf/data/TUDataset/collab.pickle
+python/app/fedgraphnn/social_networks_graph_clf/x_hist.png
 
 
-app/fedgraphnn/social_networks_graph_clf/data/TUDataset/*
-app/fedgraphnn/social_networks_graph_clf/data/TUDataset/collab.pickle
-app/fedgraphnn/social_networks_graph_clf/x_hist.png
+python/app/fedgraphnn/social_networks_graph_clf/data/TUDataset/*
+python/app/fedgraphnn/social_networks_graph_clf/data/TUDataset/collab.pickle
+python/app/fedgraphnn/social_networks_graph_clf/x_hist.png
 
 app/fedgraphnn/subgraph_relation_pred/data/FB15k-237/*.dict
 app/fedgraphnn/subgraph_relation_pred/data/FB15k-237/*.txt
@@ -140,6 +141,6 @@ app/fedgraphnn/subgraph_link_pred/data/wn18rr/*.txt
 app/fedgraphnn/subgraph_link_pred/data/YAGO3-10/*.dict
 app/fedgraphnn/subgraph_link_pred/data/YAGO3-10/*.txt
 
-app/fedgraphnn/ego_networks_link_pred/data/ego-networks
-app/fedgraphnn/ego_networks_node_clf/data/ego-networks
+python/app/fedgraphnn/ego_networks_link_pred/data/ego-networks
+python/app/fedgraphnn/ego_networks_node_clf/data/ego-networks
 /devops/scripts/aws/

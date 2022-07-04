@@ -1,8 +1,6 @@
 import json
 import logging
-import multiprocessing
 import platform
-import time
 
 from .message_define import MyMessage
 from .utils import transform_list_to_tensor
@@ -29,7 +27,7 @@ class FedMLClientManager(ClientManager):
         self.has_sent_online_msg = False
         self.sys_stats_process = None
 
-        if hasattr(self.args, "backend") and self.args.using_mlops:
+        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
             self.mlops_metrics = MLOpsMetrics()
             self.mlops_metrics.set_messenger(self.com_manager_status, args)
             self.mlops_event = MLOpsProfilerEvent(self.args)
@@ -52,20 +50,22 @@ class FedMLClientManager(ClientManager):
             self.handle_message_receive_model_from_server,
         )
 
+        self.register_message_receive_handler(
+            MyMessage.MSG_TYPE_S2C_FINISH, self.handle_message_finish,
+        )
+
     def handle_message_connection_ready(self, msg_params):
         logging.info("Connection is ready!")
         if not self.has_sent_online_msg:
             self.has_sent_online_msg = True
             self.send_client_status(0)
 
-            # Notify MLOps with training status.
-            self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_INITIALIZING)
+            if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+                # Notify MLOps with training status.
+                self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_INITIALIZING)
 
-            # Open new process for report system performances to MQTT server
-            self.sys_stats_process = multiprocessing.Process(
-                target=self.report_sys_performances
-            )
-            self.sys_stats_process.start()
+                # Open new process for report system performances to MQTT server
+                MLOpsMetrics.report_sys_perf()
 
     def handle_message_check_status(self, msg_params):
         self.send_client_status(0)
@@ -102,20 +102,28 @@ class FedMLClientManager(ClientManager):
         if self.round_idx == self.num_rounds - 1:
 
             # Notify MLOps with the finished message
-            if hasattr(self.args, "backend") and self.args.using_mlops:
+            if hasattr(self.args, "using_mlops") and self.args.using_mlops:
                 self.mlops_metrics.report_client_id_status(
                     self.args.run_id,
                     self.client_real_id,
                     MyMessage.MSG_MLOPS_CLIENT_STATUS_FINISHED,
                 )
-
-            self.finish()
             return
         self.round_idx += 1
         self.__train()
 
+    def handle_message_finish(self, msg_params):
+        logging.info(" ====================cleanup ====================")
+        self.cleanup()
+
+    def cleanup(self):
+        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+            mlops_metrics = MLOpsMetrics()
+            mlops_metrics.set_sys_reporting_status(False)
+        self.finish()
+
     def send_model_to_server(self, receive_id, weights, local_sample_num):
-        if hasattr(self.args, "backend") and self.args.using_mlops:
+        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
             self.mlops_event.log_event_started(
                 "comm_c2s", event_value=str(self.round_idx)
             )
@@ -130,7 +138,7 @@ class FedMLClientManager(ClientManager):
         self.send_message(message)
 
         # Report client model to MLOps
-        if hasattr(self.args, "backend") and self.args.using_mlops:
+        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
             model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
             model_info = {
                 "run_id": self.args.run_id,
@@ -156,27 +164,19 @@ class FedMLClientManager(ClientManager):
         self.send_message(message)
 
     def report_training_status(self, status):
-        if hasattr(self.args, "backend") and self.args.using_mlops:
+        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
             self.mlops_metrics.report_client_training_status(
                 self.client_real_id, status
             )
 
-    def report_sys_performances(self):
-        if hasattr(self.args, "backend") and self.args.using_mlops:
-            while self.round_idx != self.num_rounds - 1:
-                # Notify MLOps with system information.
-                self.mlops_metrics.report_system_metric()
-                time.sleep(30)
-
     def __train(self):
         logging.info("#######training########### round_id = %d" % self.round_idx)
-        if hasattr(self.args, "backend") and self.args.using_mlops:
+        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
             self.mlops_event.log_event_started("train", event_value=str(self.round_idx))
 
-        time.sleep(10)
         weights, local_sample_num = self.trainer.train(self.round_idx)
 
-        if hasattr(self.args, "backend") and self.args.using_mlops:
+        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
             self.mlops_event.log_event_ended("train", event_value=str(self.round_idx))
 
         self.send_model_to_server(0, weights, local_sample_num)

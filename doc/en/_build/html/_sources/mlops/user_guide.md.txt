@@ -34,7 +34,7 @@ Next, we use the cross-silo project example at
 to guide you through how to deploy it and collaborate with others data silos.
 
 ### 1. Create Application and Upload Local Packages
-![image](../_static/image/mlops_create_application.png) \
+![image](../_static/image/mlops_create_application.png) 
 
 You can use the following FedML CLI to build the package, and then upload the packages as shown in the figure above.
 ```shell

@@ -10,7 +10,7 @@ import yaml
 
 from ..constants import CommunicationConstants
 from ..mqtt.mqtt_manager import MqttManager
-from .remote_storage import S3Storage
+from ..s3.remote_storage import S3Storage
 from ..base_com_manager import BaseCommunicationManager
 from ..message import Message
 from ..observer import Observer
@@ -45,13 +45,31 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                 "MqttS3CommManager args client_id_list: " + str(args.client_id_list)
             )
             self.client_real_ids = json.loads(args.client_id_list)
+
+        self.group_server_id_list = None
+        if hasattr(args, "group_server_id_list") and args.group_server_id_list is not None:
+            self.group_server_id_list = args.group_server_id_list
+
         if args.rank == 0:
-            self.edge_id = 0
-        else:
-            if len(self.client_real_ids) == 1:
-                self.edge_id = self.client_real_ids[0]
+            if hasattr(args, "server_id"):
+                self.edge_id = args.server_id
+                self.server_id = args.server_id
             else:
                 self.edge_id = 0
+                self.server_id = 0
+        else:
+            if hasattr(args, "server_id"):
+                self.server_id = args.server_id
+            else:
+                self.server_id = 0
+
+            if hasattr(args, "client_id"):
+                self.edge_id = args.client_id
+            else:
+                if len(self.client_real_ids) == 1:
+                    self.edge_id = self.client_real_ids[0]
+                else:
+                    self.edge_id = 0
 
         self._observers: List[Observer] = []
 
@@ -102,10 +120,6 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         receiving message topic (subscribe): serverID_clientID
 
         """
-        logging.info(
-            "mqtt_s3.on_connected:"
-        )
-
         self.mqtt_mgr.add_message_passthrough_listener(self._on_message)
 
         # Subscribe one topic
@@ -126,7 +140,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
             logging.info("mqtt_s3.on_connect: server subscribes")
         else:
             # client
-            real_topic = self._topic + str(0) + "_" + str(self.client_real_ids[0])
+            real_topic = self._topic + str(self.server_id) + "_" + str(self.client_real_ids[0])
             result, mid = mqtt_client_object.subscribe(real_topic, 0)
 
             self._notify_connection_ready()
@@ -137,9 +151,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
             )
 
     def on_disconnected(self, mqtt_client_object):
-        logging.info(
-            "mqtt_s3.on_disconnected"
-        )
+        pass
 
     def add_observer(self, observer: Observer):
         self._observers.append(observer)
@@ -174,7 +186,6 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                 "mqtt_s3.on_message: use s3 pack, s3 message key %s" % s3_key_str
             )
 
-            logging.info("mqtt_s3.on_message: from python client.")
             model_params = self.s3_storage.read_model(s3_key_str)
 
             logging.info(
@@ -205,12 +216,11 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         receiving message topic (subscribe): fedml_runid_serverID_clientID
 
         """
-        logging.info("mqtt_s3.send_message: starting...")
         sender_id = msg.get_sender_id()
         receiver_id = msg.get_receiver_id()
         if self.client_id == 0:
             # topic = "fedml" + "_" + "run_id" + "_0" + "_" + "client_id"
-            topic = self._topic + str(0) + "_" + str(receiver_id)
+            topic = self._topic + str(self.server_id) + "_" + str(receiver_id)
             logging.info("mqtt_s3.send_message: msg topic = %s" % str(topic))
 
             payload = msg.get_params()
@@ -252,7 +262,6 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                     "mqtt_s3.send_message: S3+MQTT msg sent, message_key = %s"
                     % message_key
                 )
-                logging.info("mqtt_s3.send_message: to python client.")
                 model_url = self.s3_storage.write_model(message_key, model_params_obj)
                 model_params_key_url = {
                     "key": message_key,
@@ -324,7 +333,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         self.mqtt_mgr.add_message_listener(CommunicationConstants.CLIENT_TOP_LAST_WILL_MSG,
                                            self.callback_client_last_will_msg)
 
-        # Setup MQTT message listener to the active status message form the client.
+        # Setup MQTT message listener to the active status message from the client.
         self.mqtt_mgr.add_message_listener(CommunicationConstants.CLIENT_TOP_ACTIVE_MSG,
                                            self.callback_client_active_msg)
 

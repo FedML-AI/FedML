@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--Arc progress bar-->
+    <declare-styleable name="TasksCompletedView">
+        <attr name="radius" format="dimension" />
+        <attr name="strokeWidth" format="dimension" />
+        <attr name="circleColor" format="color" />
+        <attr name="ringColor" format="color" />
+        <attr name="ringBgColor" format="color" />
+        <!--circle progress-->
+        <attr name="progress" format="integer" />
+    </declare-styleable>
+
+    <declare-styleable name="CouponTextView">
+        <attr name="bg_color" format="color" />
+        <attr name="android:height" format="dimension" />
+    </declare-styleable>
+
+
+</resources>
