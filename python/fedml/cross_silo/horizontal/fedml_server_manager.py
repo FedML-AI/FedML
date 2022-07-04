@@ -34,7 +34,7 @@ class FedMLServerManager(ServerManager):
 
         if hasattr(self.args, "backend") and self.args.using_mlops:
             self.mlops_metrics = MLOpsMetrics()
-            self.mlops_metrics.set_messenger(self.com_manager_status, self.args )
+            self.mlops_metrics.set_messenger(self.com_manager_status, self.args)
             self.mlops_event = MLOpsProfilerEvent(self.args)
             self.aggregator.set_mlops_logger(self.mlops_metrics)
 
@@ -64,12 +64,10 @@ class FedMLServerManager(ServerManager):
             client_idx_in_this_round += 1
 
         if hasattr(self.args, "backend") and self.args.using_mlops:
-            self.mlops_event.log_event_started(
-                "server.wait", event_value=str(self.round_idx)
-            )
+            self.mlops_event.log_event_started("server.wait", event_value=str(self.round_idx))
 
     def register_message_receive_handlers(self):
-        print("register_message_receive_handlers------")
+        logging.info("register_message_receive_handlers------")
         self.register_message_receive_handler(
             MyMessage.MSG_TYPE_CONNECTION_IS_READY, self.handle_messag_connection_ready
         )
@@ -99,10 +97,14 @@ class FedMLServerManager(ServerManager):
             # check client status in case that some clients start earlier than the server
             client_idx_in_this_round = 0
             for client_id in self.client_id_list_in_this_round:
-                self.send_message_check_client_status(
-                    client_id,
-                    self.data_silo_index_list[client_idx_in_this_round],
-                )
+                try:
+                    self.send_message_check_client_status(
+                        client_id,
+                        self.data_silo_index_list[client_idx_in_this_round],
+                    )
+                    logging.info("Connection ready for client" + str(client_id))
+                except Exception as e:
+                    logging.info("Connection not ready for client" + str(client_id))
                 client_idx_in_this_round += 1
 
     def handle_message_client_status_update(self, msg_params):
@@ -112,7 +114,9 @@ class FedMLServerManager(ServerManager):
 
         # notify MLOps with RUNNING status
         if hasattr(self.args, "backend") and self.args.using_mlops:
-            self.mlops_metrics.report_server_training_status(self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING)
+            self.mlops_metrics.report_server_training_status(
+                self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING
+            )
 
         all_client_is_online = True
         for client_id in self.client_id_list_in_this_round:
@@ -147,9 +151,7 @@ class FedMLServerManager(ServerManager):
         logging.info("b_all_received = " + str(b_all_received))
         if b_all_received:
             if hasattr(self.args, "backend") and self.args.using_mlops:
-                self.mlops_event.log_event_ended(
-                    "server.wait", event_value=str(self.round_idx)
-                )
+                self.mlops_event.log_event_ended("server.wait", event_value=str(self.round_idx))
                 self.mlops_event.log_event_started(
                     "server.agg_and_eval", event_value=str(self.round_idx)
                 )
@@ -219,9 +221,7 @@ class FedMLServerManager(ServerManager):
                     )
 
     def send_message_init_config(self, receive_id, global_model_params, datasilo_index):
-        message = Message(
-            MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id
-        )
+        message = Message(MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id)
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")
@@ -234,9 +234,7 @@ class FedMLServerManager(ServerManager):
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
         self.send_message(message)
 
-    def send_message_sync_model_to_client(
-        self, receive_id, global_model_params, client_index
-    ):
+    def send_message_sync_model_to_client(self, receive_id, global_model_params, client_index):
         logging.info("send_message_sync_model_to_client. receive_id = %d" % receive_id)
         message = Message(
             MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT,
@@ -249,6 +247,4 @@ class FedMLServerManager(ServerManager):
         self.send_message(message)
 
         if self.aggregated_model_url is None and self.args.backend == "MQTT_S3":
-            self.aggregated_model_url = message.get(
-                MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL
-            )
+            self.aggregated_model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
