@@ -1,11 +1,15 @@
 common_args:
   training_type: "simulation"
-  using_mlops: false
+  using_mlops: true
   random_seed: 0
+  config_version: "release"
+  mlops_api_key: f5b88f5dca344e6faf17809139b89c48
+  mlops_project_name: sp_fedavg_test
+  mlops_run_name: fedml_torch_fedavg_mnist_lr
 
 data_args:
   dataset: "mnist"
-  data_cache_dir: "./data/mnist"
+  data_cache_dir: "../../../data/mnist"
   partition_method: "hetero"
   partition_alpha: 0.5
 
@@ -28,12 +32,17 @@ validation_args:
   frequency_of_the_test: 5
 
 device_args:
-  using_gpu: false
+  using_gpu: true
   gpu_id: 0
 
 comm_args:
   backend: "sp"
 
 tracking_args:
+  enable_tracking: true
   log_file_dir: ./log
   enable_wandb: false
+  wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
+  wandb_entity: fedml-ai
+  wandb_project: simulation
+  run_name: fedml_torch_fedavg_mnist_lr
