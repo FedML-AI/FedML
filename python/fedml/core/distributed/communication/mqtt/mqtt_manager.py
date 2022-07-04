@@ -66,7 +66,6 @@ class MqttManager(object):
         self._client.publish(topic, payload=message, qos=2)
 
     def send_message_json(self, topic, message):
-        logging.info(message)
         self._client.publish(topic, payload=message, qos=2)
 
     def on_connect(self, client, userdata, flags, rc):
