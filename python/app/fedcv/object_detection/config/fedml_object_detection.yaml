@@ -2,9 +2,14 @@ common_args:
   training_type: "simulation"
   random_seed: 0
   scenario: "horizontal"
+  using_mlops: false
+  config_version: release
   name: "exp" # yolo
   project: "runs/train" # yolo
   exist_ok: false # yolo
+
+environment_args:
+  bootstrap: config/bootstrap.sh
 
 data_args:
   dataset: "coco"

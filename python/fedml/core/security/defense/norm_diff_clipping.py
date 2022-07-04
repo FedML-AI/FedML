@@ -1,11 +1,11 @@
 import torch
-
 from .defense_base import BaseDefenseMethod
 from ...security import utils
 
 """
-added by Shanshan, 06/28/2022
-Can You Really Backdoor Federated Learning? https://arxiv.org/pdf/1911.07963.pdf 
+defense @ client, added by Shanshan, 06/28/2022
+"Can You Really Backdoor Federated Learning?" 
+https://arxiv.org/pdf/1911.07963.pdf 
 """
 
 
