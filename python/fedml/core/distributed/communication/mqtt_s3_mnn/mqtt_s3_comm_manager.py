@@ -120,9 +120,6 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
         receiving message topic (subscribe): serverID_clientID
 
         """
-        logging.info(
-            "mqtt_s3.on_connected"
-        )
         self.mqtt_mgr.add_message_passthrough_listener(self._on_message)
 
         # Subscribe one topic
@@ -152,9 +149,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
             self._notify_connection_ready()
 
     def on_disconnected(self, mqtt_client_object):
-        logging.info(
-            "mqtt_s3.on_disconnected"
-        )
+        pass
 
     def add_observer(self, observer: Observer):
         self._observers.append(observer)
