@@ -14,8 +14,6 @@ import torch.optim as optim
 import wandb
 from torch.optim import Adam, lr_scheduler
 
-# add the FedML root directory to the python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../")))
 from fedml.core.alg_frame.client_trainer import ClientTrainer
 
 from utils.loss import ComputeLoss
@@ -314,7 +312,7 @@ class DetectionTrainer(ClientTrainer):
 
     def test_on_the_server(self, train_data_local_dict, test_data_local_dict, device, args=None):
         logging.info("Testing on the server")
-        logging.info(f"Process id: {args.process_id}")
+        logging.info(f"Rank id: {args.rank}")
         train_data = train_data_local_dict
         test_data = test_data_local_dict
 

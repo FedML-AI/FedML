@@ -38,7 +38,7 @@ class FedMLServerManager(ServerManager):
             self.mlops_event = MLOpsProfilerEvent(self.args)
             self.aggregator.set_mlops_logger(self.mlops_metrics)
 
-        self.start_running_time = 0.0
+        self.start_running_time = None
         self.aggregated_model_url = None
 
         self.is_initialized = False
@@ -46,12 +46,10 @@ class FedMLServerManager(ServerManager):
         self.data_silo_index_list = None
 
     def run(self):
+        self.start_running_time = time.time()
         super().run()
 
     def send_init_msg(self):
-        # sampling clients
-        self.start_running_time = time.time()
-
         global_model_params = self.aggregator.get_global_model_params()
 
         client_idx_in_this_round = 0
