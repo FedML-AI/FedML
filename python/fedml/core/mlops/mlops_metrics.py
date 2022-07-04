@@ -44,7 +44,16 @@ class MLOpsMetrics(Singleton):
             else:
                 self.server_agent_id = self.edge_id
 
+    def comm_sanity_check(self):
+        if self.messenger is None:
+            logging.info("self.messenger is Null")
+            return False
+        else:
+            return True
+
     def report_client_training_status(self, edge_id, status):
+        if not self.comm_sanity_check():
+            return
         """
             this is used for notifying the client status to MLOps (both web UI, FedML CLI and backend can consume it)
         """
@@ -60,6 +69,8 @@ class MLOpsMetrics(Singleton):
         self.report_client_id_status(run_id, edge_id, status)
 
     def broadcast_client_training_status(self, edge_id, status):
+        if not self.comm_sanity_check():
+            return
         """
             this is used for broadcasting the client status to MLOps (both web UI and backend can consume it)
         """
@@ -73,6 +84,8 @@ class MLOpsMetrics(Singleton):
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_client_id_status(self, run_id, edge_id, status):
+        if not self.comm_sanity_check():
+            return
         """
             this is used for communication between client agent (FedML cli module) and client
         """
@@ -84,6 +97,8 @@ class MLOpsMetrics(Singleton):
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_server_training_status(self, run_id, status):
+        if not self.comm_sanity_check():
+            return
         topic_name = "fl_server/mlops/status"
         msg = {"run_id": run_id, "edge_id": self.edge_id, "status": status}
         logging.info("report_server_training_status. msg = %s" % msg)
@@ -93,6 +108,8 @@ class MLOpsMetrics(Singleton):
         self.report_server_id_status(run_id, status)
 
     def broadcast_server_training_status(self, run_id, status):
+        if self.messenger is None:
+            return
         topic_name = "fl_server/mlops/status"
         msg = {"run_id": run_id, "edge_id": self.edge_id, "status": status}
         logging.info("broadcast_server_training_status. msg = %s" % msg)
@@ -100,6 +117,8 @@ class MLOpsMetrics(Singleton):
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_server_id_status(self, run_id, status):
+        if not self.comm_sanity_check():
+            return
         server_agent_id = self.server_agent_id
         topic_name = "fl_server/flserver_agent_" + str(server_agent_id) + "/status"
         msg = {"run_id": run_id, "edge_id": self.edge_id, "status": status}
@@ -110,18 +129,24 @@ class MLOpsMetrics(Singleton):
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_client_training_metric(self, metric_json):
+        if not self.comm_sanity_check():
+            return
         topic_name = "fl_client/mlops/training_metrics"
         logging.info("report_client_training_metric. message_json = %s" % metric_json)
         message_json = json.dumps(metric_json)
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_server_training_metric(self, metric_json):
+        if not self.comm_sanity_check():
+            return
         topic_name = "fl_server/mlops/training_progress_and_eval"
         logging.info("report_server_training_metric. message_json = %s" % metric_json)
         message_json = json.dumps(metric_json)
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_server_training_round_info(self, round_info):
+        if not self.comm_sanity_check():
+            return
         topic_name = "fl_server/mlops/training_roundx"
         logging.info(
             "report_server_training_round_info. message_json = %s" % round_info
@@ -130,12 +155,16 @@ class MLOpsMetrics(Singleton):
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_client_model_info(self, model_info_json):
+        if not self.comm_sanity_check():
+            return
         topic_name = "fl_server/mlops/client_model"
         logging.info("report_client_model_info. message_json = %s" % model_info_json)
         message_json = json.dumps(model_info_json)
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_aggregated_model_info(self, model_info_json):
+        if not self.comm_sanity_check():
+            return
         topic_name = "fl_server/mlops/global_aggregated_model"
         logging.info(
             "report_aggregated_model_info. message_json = %s" % model_info_json
@@ -144,6 +173,8 @@ class MLOpsMetrics(Singleton):
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_system_metric(self, metric_json=None):
+        if not self.comm_sanity_check():
+            return
         topic_name = "fl_client/mlops/system_performance"
         if metric_json is None:
             if self.sys_performances is None:
@@ -198,6 +229,8 @@ class MLOpsMetrics(Singleton):
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_logs_updated(self, run_id):
+        if not self.comm_sanity_check():
+            return
         topic_name = "mlops/runtime_logs/" + str(run_id)
         msg = {"time": time.time()}
         message_json = json.dumps(msg)
@@ -221,6 +254,8 @@ class MLOpsMetrics(Singleton):
     def _report_sys_performances():
         # mlops_metrics is a single instance
         mlops_metrics = MLOpsMetrics()
+        if not mlops_metrics.comm_sanity_check():
+            return
         mlops_metrics.set_sys_reporting_status(True)
 
         # Notify MLOps with system information.
