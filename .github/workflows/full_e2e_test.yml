@@ -33,15 +33,80 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+        #      - name: pip install -e ./
+        #        run: |
+        #          echo "install pip"
+        #          sudo apt-get install python3-pip << eof
+        #
+        #          y
+        #
+        #          eof
+        #
+        #          echo "pip install -e ./"
+        #          pip install -e ./
 
-      - name: pip install -e ./
-        run: |
-          pip install -e ./
-          
-#      - name: test example A
+#      - name: test sp_fedavg_mnist_lr_example
 #        run: |
-#          cd xxx
-#          bash
+#          echo "this is for test sp_fedavg_mnist_lr_example"
+#          cd examples/simulation/sp_fedavg_mnist_lr_example
+#
+#          echo "train"
+#          python torch_fedavg_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
+#          echo "finish"
+
+#      - name: test sp_fedopt_mnist_lr_example
+#        run: |
+#          echo "this is for test sp_fedopt_mnist_lr_example"
+#          cd examples/simulation/sp_fedopt_mnist_lr_example
+#
+#          echo "train"
+#          python torch_fedopt_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
+#          echo "finish"
+
+#      - name: test sp_fednova_mnist_lr_example
+#        run: |
+#          echo "this is for test sp_fednova_mnist_lr_example"
+#          cd examples/simulation/sp_fednova_mnist_lr_example
+#
+#          echo "train"
+#          python torch_fednova_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
+#          echo "finish"
+
+#      - name: test sp_turboaggregate_mnist_lr_example
+#        run: |
+#          echo "this is for test sp_turboaggregate_mnist_lr_example"
+#          cd examples/simulation/sp_turboaggregate_mnist_lr_example
+#
+#          echo "train"
+#          python torch_turboaggregate_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
+#          echo "finish"
+
+#      - name: test sp_hierarchicalfl_mnist_lr_example
+#        run: |
+#          echo "this is for test sp_hierarchicalfl_mnist_lr_example"
+#          cd examples/simulation/sp_hierarchicalfl_mnist_lr_example
+#
+#          python torch_hierarchicalfl_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
+
+      - name: test sp_vertical_mnist_lr_example
+        run: |
+          echo "this is for test sp_vertical_mnist_lr_example"
+          cd examples/simulation/sp_vertical_mnist_lr_example
+
+          python torch_vertical_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
+
+      - name: test sp_fedsgd_cifar10_resnet20_example
+        run: |
+          echo "this is for test sp_fedsgd_cifar10_resnet20_example"
+
+          cd examples/simulation/sp_fedsgd_cifar10_resnet20_example
+
+          python sp_fedsgd_cifar10_resnet20_example.py --cf eftopk_config.yaml
+
       - name: test example B
         run: |
           echo "this is for test example B"
