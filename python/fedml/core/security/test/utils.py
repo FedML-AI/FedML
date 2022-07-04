@@ -34,6 +34,7 @@ def create_fake_global_w_local_w_MNIST():
     )
     return local_w, global_w
 
+
 # This function is for attack / defense at clients;
 # for attack / defense at the server, please use create_fake_model_list*()
 def create_fake_vectors():
@@ -65,7 +66,7 @@ def create_fake_model_list(active_worker_num):  # local_w for defenses at server
         [[0, 0, 0], [0.2, 0.2, 0.2], [0.1, 0.1, 0.1]]
     )
     a_local_w["linear.bias"] = torch.FloatTensor([0, 0, 0.1])
-    model_list=[]
+    model_list = []
     for i in range(active_worker_num):
         model_list.append((i + 20, a_local_w))  # add a random sample num
     # print(model_list[0])
@@ -73,7 +74,7 @@ def create_fake_model_list(active_worker_num):  # local_w for defenses at server
     # print(model_list)
     return model_list
 
-#
-if __name__ == '__main__':
-    print(create_fake_model_list(10))
 
+#
+if __name__ == "__main__":
+    print(create_fake_model_list(10))
