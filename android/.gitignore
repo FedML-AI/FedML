@@ -19,3 +19,4 @@ cpp/build_arm_android_64
 cpp/build_x86_linux
 
 cpp/build/FedMLTrainer
+secring.gpg
