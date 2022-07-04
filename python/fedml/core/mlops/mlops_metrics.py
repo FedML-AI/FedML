@@ -96,11 +96,13 @@ class MLOpsMetrics(Singleton):
         MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, status)
         self.messenger.send_message_json(topic_name, message_json)
 
-    def report_server_training_status(self, run_id, status):
+    def report_server_training_status(self, run_id, status, role=None):
         if not self.comm_sanity_check():
             return
         topic_name = "fl_server/mlops/status"
-        msg = {"run_id": run_id, "edge_id": self.edge_id, "status": status}
+        if role is None:
+            role = "normal"
+        msg = {"run_id": run_id, "edge_id": self.edge_id, "status": status, "role": role}
         logging.info("report_server_training_status. msg = %s" % msg)
         message_json = json.dumps(msg)
         MLOpsStatus.get_instance().set_server_status(self.edge_id, status)
@@ -245,10 +247,11 @@ class MLOpsMetrics(Singleton):
 
     @staticmethod
     def report_sys_perf():
-        sys_stats_process = multiprocessing.Process(
-            target=MLOpsMetrics._report_sys_performances
-        )
-        sys_stats_process.start()
+        pass
+        # sys_stats_process = multiprocessing.Process(
+        #     target=MLOpsMetrics._report_sys_performances
+        # )
+        # sys_stats_process.start()
 
     @staticmethod
     def _report_sys_performances():
