@@ -150,7 +150,7 @@ def load_partition_data_coco(args, hyp, model):
     test_data_num = test_dataloader_global.dataset.data_size
 
     for i in range(client_number):
-        if (i + 1) != args.process_id:
+        if (i + 1) != args.rank:
             train_dataset_dict[i] = None
             train_data_num_dict[i] = None
             train_data_loader_dict[i] = None
