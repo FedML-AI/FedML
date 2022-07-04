@@ -19,4 +19,4 @@ ENV MODE=normal FEDML_VERSION=${VERSION} ACCOUNT_ID=0 SERVER_AGENT_ID=0 \
     AWS_IAM_ACCESS_KEY=0 \
     AWS_REGION=0
 
-CMD ./set-aws-credentials.sh ${AWS_IAM_ACCESS_ID} ${AWS_IAM_ACCESS_KEY} ${AWS_REGION};fedml login ${ACCOUNT_ID} -v ${FEDML_VERSION} -s -r cloud_agent -said ${SERVER_AGENT_ID};./runner.sh
+CMD ./set-aws-credentials.sh ${AWS_IAM_ACCESS_ID} ${AWS_IAM_ACCESS_KEY} ${AWS_REGION};fedml login ${ACCOUNT_ID} -v ${FEDML_VERSION} -s -r cloud_agent -id ${SERVER_AGENT_ID};./runner.sh

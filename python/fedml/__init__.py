@@ -1,4 +1,5 @@
 import logging
+import multiprocessing
 import os
 import random
 
@@ -17,11 +18,10 @@ from .constants import (
 )
 from .core.mlops import MLOpsRuntimeLog
 
-
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.7.98"
+__version__ = "0.7.115"
 
 
 def init(args=None):
@@ -35,9 +35,17 @@ def init(args=None):
     fedml._global_training_type = args.training_type
     fedml._global_comm_backend = args.backend
 
-    MLOpsRuntimeLog.get_instance(args).init_logs()
+    mlops.init(args)
 
     logging.info("args = {}".format(vars(args)))
+
+    """
+    # Windows/Linux/MacOS compatability issues on multi-processing
+    # https://github.com/pytorch/pytorch/issues/3492
+    """
+    if multiprocessing.get_start_method() != "spawn":
+        # force all platforms (Windows/Linux/MacOS) to use the same way (spawn) for multiprocessing
+        multiprocessing.set_start_method("spawn", force=True)
 
     seed = args.random_seed
     random.seed(seed)
@@ -71,9 +79,7 @@ def init(args=None):
         and hasattr(args, "backend")
         and args.backend == FEDML_SIMULATION_TYPE_NCCL
     ):
-        from .simulation.nccl.base_framework.common import (
-            FedML_NCCL_Similulation_init,
-        )
+        from .simulation.nccl.base_framework.common import FedML_NCCL_Similulation_init
 
         args = FedML_NCCL_Similulation_init(args)
 
@@ -221,6 +227,7 @@ def run_distributed():
 from fedml import device
 from fedml import data
 from fedml import model
+from fedml import mlops
 
 from .arguments import load_arguments
 
@@ -241,6 +248,7 @@ __all__ = [
     "device",
     "data",
     "model",
+    "mlops",
     "ClientTrainer",
     "ServerAggregator",
     "run_simulation",

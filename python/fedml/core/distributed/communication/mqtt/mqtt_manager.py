@@ -26,7 +26,7 @@ class MqttManager(object):
         self._client.on_disconnect = self.on_disconnect
         self._client.on_message = self.on_message
         self._client.on_subscribe = self._on_subscribe
-        self._client.enable_logger()
+        self._client.disable_logger()
         self._client.username_pw_set(user, pwd)
 
         self.last_will_topic = last_will_topic
@@ -66,7 +66,6 @@ class MqttManager(object):
         self._client.publish(topic, payload=message, qos=2)
 
     def send_message_json(self, topic, message):
-        logging.info(message)
         self._client.publish(topic, payload=message, qos=2)
 
     def on_connect(self, client, userdata, flags, rc):
@@ -81,8 +80,6 @@ class MqttManager(object):
         logging.info(f"MQTT client will be disconnected, id: {self._client_id}, topic: {topic}, payload: {payload}")
 
     def on_message(self, client, userdata, msg):
-        logging.info(f"on_message({msg.topic}, {str(msg.payload)})")
-
         for passthrough_listener in self._passthrough_listeners:
             passthrough_listener(msg)
 
@@ -91,23 +88,18 @@ class MqttManager(object):
             _listener(msg.topic, str(msg.payload, encoding="utf-8"))
 
     def on_publish(self, client, obj, mid):
-        logging.info(f"on_publish mid={mid}")
         self.callback_published_listener(client)
 
     def on_disconnect(self, client, userdata, rc):
-        logging.info(f"on_disconnect code={rc}")
         self.callback_disconnected_listener(client)
 
     def _on_subscribe(self, client, userdata, mid, granted_qos):
-        logging.info(f"onSubscribe: mid = {str(mid)}")
         self.callback_subscribed_listener(client)
 
     def add_message_listener(self, topic, listener):
-        logging.info(f"add_message_listener({topic})")
         self._listeners[topic] = listener
 
     def remove_message_listener(self, topic):
-        logging.info(f"remove_message_listener({topic})")
         try:
             del self._listeners[topic]
         except Exception as e:
@@ -133,7 +125,6 @@ class MqttManager(object):
             pass
 
     def callback_connected_listener(self, client):
-        logging.info("callback_connected_listener: {}".format(len(self._connected_listeners)))
         for listener in self._connected_listeners:
             if listener is not None and callable(listener):
                 listener(client)
