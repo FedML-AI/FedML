@@ -33,14 +33,7 @@ def init(args=None):
     fedml._global_training_type = args.training_type
     fedml._global_comm_backend = args.backend
 
-    if (
-        hasattr(args, "enable_tracking")
-        and args.enable_tracking is True
-        and args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
-    ):
-        mlops.init(args)
-    else:
-        MLOpsRuntimeLog.get_instance(args).init_logs()
+    mlops.init(args)
 
     logging.info("args = {}".format(vars(args)))
 
