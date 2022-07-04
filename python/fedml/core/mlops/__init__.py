@@ -57,6 +57,7 @@ class MLOpsStore:
 def init(args):
     MLOpsStore.mlops_args = args
     if not mlops_tracking_enabled(args):
+        MLOpsRuntimeLog.get_instance(args).init_logs()
         return
     project_name = None
     api_key = None
@@ -115,6 +116,8 @@ def log(metrics: dict, commit=True):
     MLOpsStore.mlops_log_metrics_lock.acquire()
     for k, v in metrics.items():
         k = str(k).replace("/", "_")
+        if k.startswith("round"):
+            k = "round_idx"
         MLOpsStore.mlops_log_metrics[k] = v
     MLOpsStore.mlops_log_metrics["run_id"] = str(MLOpsStore.mlops_run_id)
     MLOpsStore.mlops_log_metrics["timestamp"] = time.time()
@@ -152,7 +155,7 @@ def log_aggregation_status(status):
 
     setup_log_mqtt_mgr()
     wait_log_mqtt_connected()
-    MLOpsStore.mlops_metrics.report_server_training_status(MLOpsStore.mlops_run_id, status)
+    MLOpsStore.mlops_metrics.report_server_training_status(MLOpsStore.mlops_run_id, status, role="simulator")
     release_log_mqtt_mgr()
 
 
