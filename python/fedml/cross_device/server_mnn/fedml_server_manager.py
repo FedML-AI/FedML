@@ -48,7 +48,7 @@ class FedMLServerManager(ServerManager):
             self.mlops_event = MLOpsProfilerEvent(self.args)
             self.aggregator.set_mlops_metrics_logger(self.mlops_metrics)
 
-        self.start_running_time = 0.0
+        self.start_running_time = None
         self.aggregated_model_url = None
         self.event_sdk = MLOpsProfilerEvent(self.args)
 
@@ -57,6 +57,7 @@ class FedMLServerManager(ServerManager):
         self.data_silo_index_list = None
 
     def run(self):
+        self.start_running_time = time.time()
         super().run()
 
     def start_train(self):
@@ -310,14 +311,15 @@ class FedMLServerManager(ServerManager):
             )
 
             # send round info to the MQTT backend
-            round_info = {
-                "run_id": self.args.run_id,
-                "round_index": self.round_idx,
-                "total_rounds": self.round_num,
-                "running_time": round(time.time() - self.start_running_time, 4),
-            }
-            if hasattr(self.args, "backend") and self.args.using_mlops:
-                self.mlops_metrics.report_server_training_round_info(round_info)
+            if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+                round_info = {
+                    "run_id": self.args.run_id,
+                    "round_index": self.round_idx,
+                    "total_rounds": self.round_num,
+                    "running_time": round(time.time() - self.start_running_time, 4),
+                }
+                if self.mlops_metrics is not None:
+                    self.mlops_metrics.report_server_training_round_info(round_info)
 
             client_id_list_in_this_round = self.aggregator.client_selection(
                 self.round_idx, self.client_real_ids, self.args.client_num_per_round
