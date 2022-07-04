@@ -1,6 +1,6 @@
-import logging
 import fedml
-from fedml.cross_silo.client import Client
+import torch
+from fedml.cross_silo import Server
 from trainer.detection_trainer import DetectionTrainer
 from utils.init_yolo import init_yolo
 
@@ -19,8 +19,5 @@ if __name__ == "__main__":
     trainer = DetectionTrainer(model=model, args=args)
 
     # start training
-    try:
-        client = Client(args, device, dataset, model, trainer)
-        client.run()
-    except Exception as e:
-        raise e
+    server = Server(args, device, dataset, model, trainer)
+    server.run()
