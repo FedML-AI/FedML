@@ -3,8 +3,8 @@ common_args:
   using_mlops: true
   random_seed: 0
   config_version: "release"
-  mlops_api_key: 832499717b444c25823d829e4376a148
-  mlops_project_name: sp_fedavg
+  mlops_api_key: f5b88f5dca344e6faf17809139b89c48
+  mlops_project_name: sp_fedavg_test
   mlops_run_name: fedml_torch_fedavg_mnist_lr
 
 data_args:
