@@ -1,6 +1,6 @@
 common_args:
   training_type: "cross_silo"
-  scenario: "hierarchical"
+  scenario: "horizontal"
   using_mlops: false
   random_seed: 0
 
@@ -9,7 +9,7 @@ environment_args:
 
 data_args:
   dataset: "mnist"
-  data_cache_dir: "./../../../../data/MNIST"
+  data_cache_dir: "../../../../data/mnist"
   partition_method: "hetero"
   partition_alpha: 0.5
 
@@ -21,30 +21,35 @@ model_args:
 train_args:
   federated_optimizer: "FedAvg"
   client_id_list:
-  client_num_in_total: 2
-  client_num_per_round: 2
+  client_num_in_total: 1000
+  client_num_per_round: 1
   comm_round: 50
   epochs: 1
-  batch_size: 64
+  batch_size: 10
   client_optimizer: sgd
-  learning_rate: 0.001
+  learning_rate: 0.03
   weight_decay: 0.001
 
 validation_args:
-  frequency_of_the_test: 10
+  frequency_of_the_test: 5
 
 device_args:
-  using_gpu: true
-  gpu_mapping_file: config/gpu_mapping.yaml
-
+  worker_num: 1
+  using_gpu: false
+  gpi_id: 0
 
 comm_args:
-  backend: "MQTT_S3"
+  backend: "TRPC"
   trpc_master_config_path: config/trpc_master_config.csv
-  mqtt_config_path:
-  s3_config_path:
-
-
+  mqtt_config_path: config/mqtt_config.yaml
+  s3_config_path: config/s3_config.yaml
+  enable_cuda_rpc: True
+  cuda_rpc_gpu_mapping:
+    # Rank: GPU_index
+    0: 0
+    1: 0
+    2: 0
+  
 tracking_args:
   log_file_dir: ./log
   local_log_output_path: ./log
@@ -52,10 +57,3 @@ tracking_args:
   wandb_key: ee0b5f53d949c84cee7decbe7a619e63fb1f8408
   wandb_project: fedml
   wandb_name: fedml_torch_fedavg_mnist_lr
-
-private_config_paths:
-  server_config_path: config/server.yaml
-  client_silo_config_paths: [
-    config/silo_1.yaml,
-    config/silo_2.yaml
-  ]

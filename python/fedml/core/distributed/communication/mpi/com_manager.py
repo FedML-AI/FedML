@@ -8,7 +8,7 @@ from ..message import Message
 from .mpi_receive_thread import MPIReceiveThread
 from .mpi_send_thread import MPISendThread
 from ..observer import Observer
-
+from ..constants import CommunicationConstants
 
 class MpiCommunicationManager(BaseCommunicationManager):
     def __init__(self, comm, rank, size, node_type="client"):
@@ -106,8 +106,7 @@ class MpiCommunicationManager(BaseCommunicationManager):
         msg_params = Message()
         msg_params.sender_id = self.rank
         msg_params.receiver_id = self.rank
-        MSG_TYPE_CONNECTION_IS_READY = 0
-        msg_type = MSG_TYPE_CONNECTION_IS_READY
+        msg_type = CommunicationConstants.MSG_TYPE_CONNECTION_IS_READY
         for observer in self._observers:
             observer.receive_message(msg_type, msg_params)
 
