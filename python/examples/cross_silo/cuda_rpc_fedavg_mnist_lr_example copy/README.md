@@ -1,29 +1,32 @@
-# FedML Octopus Example with MNIST + Logistic Regression + gRPC Backend
+# FedML Octopus Example with MNIST + Logistic Regression + TRPC + CUDA RPC
 
-FedML Octopus offers support for various communication backends. One of supported backends is gRPC. To use gRPC as backend your `comm_args` section of your config should match the following format:
+FedML Octopus offers support for various communication backends. If you opt for using TRPC backend you can take advantege of CUDA RPC for direct GPU to GPU tranfer. To use gRPC as backend your `comm_args` section of your config should match the following format:
 
 ```yaml
+device_args:
+  using_gpu: false
+  ...
+
 comm_args:
-  backend: "GRPC"
-  grpc_ipconfig_path: config/grpc_ipconfig.csv
+  backend: "TRPC"
+  trpc_master_config_path: config/trpc_master_config.csv
+  enable_cuda_rpc: True
+  cuda_rpc_gpu_mapping:
+    # Rank: GPU_index
+    0: 0
+    1: 2
+    2: 4
+    ...
 ```
 
-`grpc_ipconfig_path` specifies the path of the config for gRPC communication. Config file specifies an ip address for each process through with they can communicate with each other. The config file should have the folliwng format:
-
-```csv
-receiver_id,ip
-0,127.0.0.1
-1,127.0.0.1
-2,127.0.0.1
-```
-
-Here the `receiver_id` is the rank of the process.
+For info on `trpc_master_config_path` refer to `python/examples/cross_silo/cuda_rpc_fedavg_mnist_lr_example/one_line`.
+`cuda_rpc_gpu_mapping` should map each process rank to it's corresponding device id. For example in this example process with rank 0 (server) uses GPU 1, process with rank 1 uses GPU 2 and process with rank 2 uses GPU 4.
 
 ## One Line API Example
 
 Example is provided at:
 
-`python/examples/cross_silo/grpc_fedavg_mnist_lr_example/one_line`
+`python/examples/cross_silo/cuda_rpc_fedavg_mnist_lr_example/one_line`
 ### Training Script
 
 At the client side, the client ID (a.k.a rank) starts from 1.
