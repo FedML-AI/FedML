@@ -37,7 +37,7 @@ train_args:
   client_id_list:
   client_num_in_total: 2
   client_num_per_round: 1
-  comm_round: 3
+  comm_round: 2
   epochs: 3
   batch_size: 4
   client_optimizer: adam
@@ -45,7 +45,7 @@ train_args:
   weight_decay: 0.001
 
 validation_args:
-  frequency_of_the_test: 5
+  frequency_of_the_test: 1
 
 device_args:
   worker_num: 2
