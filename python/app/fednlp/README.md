@@ -47,7 +47,7 @@ To run text classification using MPI simulator follow the following steps:
 1. cd ../
 2. bash fednlp/data/download_data.sh
 3. bash fednlp/data/download_partition.sh
-4. bash fednlp/text_classification/run_step_by_step_example.sh 5
+4. bash fednlp/text_classification/run_mpi_simulation.sh 5
 ```
 
 **SEQ TAGGING**
