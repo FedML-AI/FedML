@@ -8,4 +8,4 @@ hostname > mpi_host_file
 
 $(which mpirun) -np $PROCESS_NUM \
 -hostfile mpi_host_file \
-/home/ubuntu/fednlp_migration/bin/python3.8 -m fednlp.text_classification.torch_fedavg_20news_bert_step_by_step_example --cf fednlp/text_classification/config/fedml_config.yaml
+/home/ubuntu/fednlp_migration/bin/python3.8 -m fednlp.text_classification.torch_mpi_simulation --cf fednlp/text_classification/config/fedml_config.yaml
