@@ -51,8 +51,6 @@ class MqttCommManager(BaseCommunicationManager):
         receiving message topic (subscribe): serverID_clientID
 
         """
-        logging.info("On_connected")
-
         # subscribe one topic
         if self.client_id == 0:
             # server
@@ -71,7 +69,7 @@ class MqttCommManager(BaseCommunicationManager):
         self._notify(str(msg.payload))
 
     def on_disconnected(self, mqtt_client_object):
-        logging.info("On_disconnected")
+        pass
 
     def add_observer(self, observer: Observer):
         self._observers.append(observer)

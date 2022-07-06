@@ -1,8 +1,6 @@
 import logging
-
-from .norm_diff_clipping import NormDiffClipping
-
-from ..constants import DEFENSE_DIFF_CLIPPING
+from ...core.security.defense.norm_diff_clipping_defense import NormDiffClippingDefense
+from ...core.security.constants import DEFENSE_DIFF_CLIPPING
 
 
 class FedMLDefender:
@@ -28,7 +26,7 @@ class FedMLDefender:
             logging.info("self.defense_type = {}".format(self.defense_type))
             self.defender = None
             if self.defense_type == DEFENSE_DIFF_CLIPPING:
-                self.defender = NormDiffClipping(args.norm_bound)
+                self.defender = NormDiffClippingDefense(args.norm_bound)
             else:
                 raise Exception("args.attack_type is not defined!")
         else:
