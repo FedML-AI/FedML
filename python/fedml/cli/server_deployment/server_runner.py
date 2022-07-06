@@ -1044,15 +1044,6 @@ class FedMLServerRunner:
         mqtt_client_object.subscribe(topic_server_last_will_msg)
         mqtt_client_object.subscribe(topic_server_active_msg)
 
-        logging.info("subscribe: " + topic_start_train)
-        logging.info("subscribe: " + topic_stop_train)
-        logging.info("subscribe: " + topic_server_status)
-        logging.info("subscribe: " + topic_report_status)
-        logging.info("subscribe: " + topic_client_agent_last_will_msg)
-        logging.info("subscribe: " + topic_client_agent_active_msg)
-        logging.info("subscribe: " + topic_server_last_will_msg)
-        logging.info("subscribe: " + topic_server_active_msg)
-
         # Broadcast the first active message.
         self.send_agent_active_msg()
 
