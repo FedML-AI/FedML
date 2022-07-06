@@ -1,6 +1,6 @@
 import fedml
 import torch
-from fedml import SimulatorMPI
+from fedml.simulation import SimulatorMPI
 from fedml.data.MNIST.data_loader import download_mnist, load_partition_data_mnist
 
 
@@ -22,9 +22,10 @@ def load_data(args):
         test_data_local_dict,
         class_num,
     ) = load_partition_data_mnist(
+        args,
         args.batch_size,
-        train_path=args.data_cache_dir + "MNIST/train",
-        test_path=args.data_cache_dir + "MNIST/test",
+        train_path=args.data_cache_dir + "/MNIST/train",
+        test_path=args.data_cache_dir + "/MNIST/test",
     )
     """
     For shallow NN or linear models, 

@@ -72,15 +72,11 @@ class MqttS3StatusManager(BaseCommunicationManager):
         self.mqtt_mgr_lock.acquire()
         self.mqtt_mgr_is_connected = True
         self.mqtt_mgr_lock.release()
-        logging.info("mqtt_s3_status. on_connected")
 
     def on_disconnected(self, mqtt_client_object):
         self.mqtt_mgr_lock.acquire()
         self.mqtt_mgr_is_connected = False
         self.mqtt_mgr_lock.release()
-        logging.info(
-            "mqtt_s3_status.on_disconnected"
-        )
 
     def add_observer(self, observer: Observer):
         self._observers.append(observer)
