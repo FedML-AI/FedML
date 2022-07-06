@@ -18,9 +18,11 @@ def collect_env():
 
     print("Python version: " + sys.version)
 
-    import torch
-
-    print("PyTorch version: " + torch.__version__)
+    try:
+        import torch
+        print("PyTorch version: " + torch.__version__)
+    except:
+        print("PyTorch is not installed properly")
 
     try:
         from mpi4py import MPI
