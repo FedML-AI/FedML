@@ -1,2 +1,12 @@
-fedml build -t client -sf . -ep torch_server.py -cf config -df ./mlops
-fedml build -t server -sf . -ep torch_client.py -cf config -df ./mlops
+SOURCE=.
+ENTRY=torch_client.py
+CONFIG=config
+DEST=./mlops
+fedml build -t client -sf $SOURCE -ep $ENTRY -cf $CONFIG -df $DEST
+
+
+SOURCE=.
+ENTRY=torch_server.py
+CONFIG=config
+DEST=./mlops
+fedml build -t server -sf $SOURCE -ep $ENTRY -cf $CONFIG -df $DEST
