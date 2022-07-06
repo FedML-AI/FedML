@@ -559,5 +559,68 @@ def build_mlops_package(
     return 0
 
 
+@cli.command(
+    "env",
+    help="collect the environment information to help debugging, including OS, Hardware Architecture, "
+    "Python version, etc.",
+)
+def collect_env():
+    click.echo("\n======== FedML (https://fedml.ai) ========")
+    click.echo("FedML version: " + str(fedml.__version__))
+    import platform
+
+    click.echo("\n======== Running Environment ========")
+    click.echo("OS: " + platform.platform())
+    click.echo("Hardware: " + platform.machine())
+
+    import sys
+
+    click.echo("Python version: " + sys.version)
+
+    import torch
+
+    click.echo("PyTorch version: " + torch.__version__)
+
+    try:
+        from mpi4py import MPI
+
+        click.echo("MPI4py is installed")
+    except:
+        click.echo("MPI4py is NOT installed")
+
+    click.echo("\n======== CPU Configuration ========")
+
+    import psutil
+
+    # Getting loadover15 minutes
+    load1, load5, load15 = psutil.getloadavg()
+    cpu_usage = (load15 / os.cpu_count()) * 100
+
+    click.echo("The CPU usage is : {:.0f}%".format(cpu_usage, 4))
+    click.echo(
+        "Available CPU Memory: {:.1f} G / {}G".format(
+            psutil.virtual_memory().available / 1024 / 1024 / 1024,
+            psutil.virtual_memory().total / 1024 / 1024 / 1024,
+        )
+    )
+
+    try:
+        click.echo("\n======== GPU Configuration ========")
+        import nvidia_smi
+
+        nvidia_smi.nvmlInit()
+        handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
+        info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
+        click.echo("NVIDIA GPU Info: " + str(handle))
+        click.echo(
+            "Available GPU memory: {:.1f} G / {}G".format(
+                info.free / 1024 / 1024 / 1024, info.total / 1024 / 1024 / 1024
+            )
+        )
+        nvidia_smi.nvmlShutdown()
+    except:
+        print("No GPU devices")
+
+
 if __name__ == "__main__":
     cli()
