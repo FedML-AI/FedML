@@ -206,7 +206,6 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
         receiving message topic (subscribe): fedml_runid_serverID_clientID
 
         """
-        logging.info("mqtt_s3.send_message: starting...{}".format(msg.to_string()))
         if self.client_id == 0:
             # server
             receiver_id = msg.get_receiver_id()
