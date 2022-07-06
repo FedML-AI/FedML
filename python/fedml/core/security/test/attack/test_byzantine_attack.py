@@ -19,23 +19,8 @@ def test__attack_random_mode():
     print(attack.attack(local_w, global_w=None))
 
 
-def test__attack_test():
-    local_w = create_fake_model_list_MNIST(10)
-    print(ByzantineAttack._test_fedavg2(local_w))
-    print("------------------")
-    local_w = create_fake_model_list_MNIST(10)
-    print(ByzantineAttack._test_fedavg(local_w))
-    print("-------------")
-
-
-
-
-
 if __name__ == '__main__':
-    # test_get_malicious_client_idx()
-    # print("---------")
-    # test__attack_zero_mode()
-    # print("---------")
-    # test__attack_random_mode()
+    test_get_malicious_client_idx()
+    test__attack_zero_mode()
+    test__attack_random_mode()
 
-    test__attack_test()
