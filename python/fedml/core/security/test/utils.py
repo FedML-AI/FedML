@@ -1,6 +1,7 @@
 import collections
 import torch
 
+
 # This function is for attack / defense at clients;
 # for attack / defense at the server, please use create_fake_model_list*()
 def create_fake_global_w_local_w_MNIST():
@@ -45,7 +46,7 @@ def create_fake_vectors():
 
 # This function is for attack / defense at clients;
 # for attack / defense at the server, please use create_fake_model_list*()
-def create_fake_global_w_local_w():
+def create_fake_local_w_global_w():
     local_w = dict()
     local_w["linear.weight"] = torch.FloatTensor(
         [[0, 0, 0], [0.2, 0.2, 0.2], [0.1, 0.1, 0.1]]
@@ -73,8 +74,3 @@ def create_fake_model_list(active_worker_num):  # local_w for defenses at server
     # print("------")
     # print(model_list)
     return model_list
-
-
-#
-if __name__ == "__main__":
-    print(create_fake_model_list(10))
