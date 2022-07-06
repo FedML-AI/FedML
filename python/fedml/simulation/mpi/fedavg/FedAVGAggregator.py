@@ -2,13 +2,11 @@ import copy
 import logging
 import random
 import time
-
 import numpy as np
 import torch
 import wandb
-
 from .utils import transform_list_to_tensor
-from ....core.security.defense.fedml_defender import FedMLDefender
+from ....core.security.fedml_defender import FedMLDefender
 
 
 class FedAVGAggregator(object):
