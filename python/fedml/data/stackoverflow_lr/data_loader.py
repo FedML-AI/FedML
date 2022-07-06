@@ -1,6 +1,6 @@
 import logging
 import os
-import pickle
+import dill as pickle
 
 import torch.utils.data as data
 import tqdm
@@ -135,10 +135,9 @@ def load_partition_data_federated_stackoverflow_lr(
     global cache_data
 
     cache_path = os.path.join(data_dir, DEFAULT_CACHE_FILE)
-    if os.path.exists(cache_path):
+    if os.path.exists(cache_path) and os.path.getsize(cache_path) > 0:
         # load cache
         with open(cache_path, "rb") as cache_file:
-            global cache_data
             cache_data = pickle.load(cache_file)
             train_data_num = cache_data["train_data_num"]
             test_data_num = cache_data["test_data_num"]
