@@ -1,5 +1,7 @@
 import math
+
 import numpy as np
+
 from ..common.utils import compute_middle_point, compute_euclidean_distance
 from ...security.defense.defense_base import BaseDefenseMethod
 
@@ -59,18 +61,24 @@ class GeometricMedianDefense(BaseDefenseMethod):
     @staticmethod
     def _compute_geometric_median(alphas, batch_w):
         """
-        Implemention of Weiszfeld's algorithm.
+        Implementation of Weiszfeld's algorithm.
         Reference:  (1) https://github.com/krishnap25/RFA/blob/master/models/model.py
                     (2) https://github.com/bladesteam/blades/blob/master/src/blades/aggregators/geomed.py
         our contribution: (07/01/2022)
-        1) fix one bug in (1): (1) can not correctly compute a weighted average. The function weighted_average_oracle returns zero.
-        2) fix one bug in (2): (2) can not correctly handle multi-dimensional tensors.
+        1) fix one bug in (1): (1) can not correctly compute a weighted average. The function weighted_average_oracle
+        returns zero.
+        2) fix one bug in (2): (2) can not correctly handle multidimensional tensors.
         3) reconstruct the code.
         """
         eps = 1e-5
         ftol = 1e-10
         middle_point = compute_middle_point(alphas, batch_w)
-        val = sum([alpha * compute_euclidean_distance(middle_point, p) for alpha, p in zip(alphas, batch_w)])
+        val = sum(
+            [
+                alpha * compute_euclidean_distance(middle_point, p)
+                for alpha, p in zip(alphas, batch_w)
+            ]
+        )
         for i in range(100):
             prev_median, prev_obj_val = middle_point, val
             alphas = np.asarray(
@@ -85,22 +93,32 @@ class GeometricMedianDefense(BaseDefenseMethod):
             )
             alphas = alphas / alphas.sum()
             middle_point = compute_middle_point(alphas, batch_w)
-            val = sum([alpha * compute_euclidean_distance(middle_point, p) for alpha, p in zip(alphas, batch_w)])
+            val = sum(
+                [
+                    alpha * compute_euclidean_distance(middle_point, p)
+                    for alpha, p in zip(alphas, batch_w)
+                ]
+            )
             if abs(prev_obj_val - val) < ftol * val:
                 break
         return middle_point
 
     @staticmethod
     def compute_obj(alphas, batch_w, middle_point):
-        return sum([alpha * compute_euclidean_distance(middle_point, p) for alpha, p in zip(alphas, batch_w)])
+        return sum(
+            [
+                alpha * compute_euclidean_distance(middle_point, p)
+                for alpha, p in zip(alphas, batch_w)
+            ]
+        )
 
     @staticmethod
     def _get_client_num_current_batch(batch_size, batch_idx, local_w):
         current_batch_size = batch_size
         # not divisible
         if (
-                len(local_w) % batch_size > 0
-                and batch_idx == math.ceil(len(local_w) / batch_size) - 1
+            len(local_w) % batch_size > 0
+            and batch_idx == math.ceil(len(local_w) / batch_size) - 1
         ):
             current_batch_size = len(local_w) - (batch_idx * batch_size)
         return current_batch_size
