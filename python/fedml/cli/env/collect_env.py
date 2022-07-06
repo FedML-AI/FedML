@@ -49,7 +49,7 @@ def collect_env():
         )
     except:
         print("\n")
-        
+
     try:
         print("\n======== GPU Configuration ========")
         import nvidia_smi
