@@ -49,6 +49,7 @@ class MLOpsStore:
     mlops_log_mqtt_is_connected = False
     mlops_log_agent_config = None
     mlops_metrics = None
+    mlops_bind_result = False
 
     def __init__(self):
         pass
@@ -73,8 +74,10 @@ def init(args):
 
     # Bind local device as simulation device on the MLOps platform.
     setattr(args, "using_mlops", True)
-    bind_result = bind_local_device(args, api_key, args.config_version)
-    if not bind_result:
+    MLOpsStore.mlops_bind_result = bind_local_device(args, api_key, args.config_version)
+    if not MLOpsStore.mlops_bind_result:
+        setattr(args, "using_mlops", False)
+        MLOpsRuntimeLog.get_instance(args).init_logs()
         return
 
     # Init project and run
@@ -97,6 +100,9 @@ def event(event_name, event_started=True, event_value=None, event_edge_id=None):
     if not mlops_tracking_enabled(MLOpsStore.mlops_args):
         return
 
+    if not MLOpsStore.mlops_bind_result:
+        return
+
     mlops_event = MLOpsProfilerEvent(MLOpsStore.mlops_args)
     mlops_event.run_id = MLOpsStore.mlops_run_id
     mlops_event.edge_id = MLOpsStore.mlops_edge_id
@@ -108,6 +114,9 @@ def event(event_name, event_started=True, event_value=None, event_edge_id=None):
 
 def log(metrics: dict, commit=True):
     if not mlops_tracking_enabled(MLOpsStore.mlops_args):
+        return
+
+    if not MLOpsStore.mlops_bind_result:
         return
 
     if MLOpsStore.mlops_log_metrics_lock is None:
@@ -139,6 +148,9 @@ def log_training_status(status):
     if not mlops_tracking_enabled(MLOpsStore.mlops_args):
         return
 
+    if not MLOpsStore.mlops_bind_result:
+        return
+
     logging.info("log training status {}".format(status))
 
     setup_log_mqtt_mgr()
@@ -151,6 +163,9 @@ def log_aggregation_status(status):
     if not mlops_tracking_enabled(MLOpsStore.mlops_args):
         return
 
+    if not MLOpsStore.mlops_bind_result:
+        return
+
     logging.info("log aggregation status {}".format(status))
 
     setup_log_mqtt_mgr()
@@ -161,6 +176,9 @@ def log_aggregation_status(status):
 
 def log_round_info(total_rounds, round_index):
     if not mlops_tracking_enabled(MLOpsStore.mlops_args):
+        return
+
+    if not MLOpsStore.mlops_bind_result:
         return
 
     if round_index == 0:
@@ -392,8 +410,8 @@ def bind_local_device(args, userid, version="release"):
             continue
 
     if config_try_count >= 5:
-        click.echo("Oops, you failed to login the FedML MLOps platform.")
-        click.echo("Please check whether your network is normal!")
+        click.echo("\nNote: Internet is not connected. "
+                   "Experimental tracking results will not be synchronized to the MLOps (open.fedml.ai).\n")
         return False
 
     # Build unique device id
