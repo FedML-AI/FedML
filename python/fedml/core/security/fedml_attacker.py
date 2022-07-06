@@ -1,5 +1,5 @@
-from .attack_method_sample_a import AttackMethodA
-from ..constants import ATTACK_METHOD_A
+from ...core.security.attack.attack_method_sample_a import AttackMethodA
+from ...core.security.constants import ATTACK_METHOD_A
 
 
 class FedMLAttacker:
