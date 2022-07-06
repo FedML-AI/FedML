@@ -8,6 +8,7 @@ import torch
 import wandb
 
 import fedml
+from .cli.env.collect_env import collect_env
 from .constants import (
     FEDML_TRAINING_PLATFORM_SIMULATION,
     FEDML_SIMULATION_TYPE_SP,
@@ -26,6 +27,7 @@ __version__ = "0.7.115"
 
 def init(args=None):
     """Initialize FedML Engine."""
+    collect_env()
 
     if args is None:
         args = load_arguments(fedml._global_training_type, fedml._global_comm_backend)
