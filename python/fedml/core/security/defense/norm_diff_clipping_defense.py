@@ -1,4 +1,5 @@
 import torch
+
 from .defense_base import BaseDefenseMethod
 from ..common import utils
 
@@ -31,7 +32,7 @@ class NormDiffClippingDefense(BaseDefenseMethod):
 
     @staticmethod
     def _get_clipped_weights(local_w, global_w, weight_diff):
-        # rule: global_w + clipped(local_w - global_w)
+        #  rule: global_w + clipped(local_w - global_w)
         recons_local_w = {}
         index_bias = 0
         for item_index, (k, v) in enumerate(local_w.items()):
