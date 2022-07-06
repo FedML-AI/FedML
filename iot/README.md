@@ -18,21 +18,12 @@ Learn more about Federated Learning for Internet of Things, please check our sur
 </div>
 
 ## Prerequisite
-Install command line tool `unar` on both server and client side: 
-
-for MacOS
-```
-brew install unar
-```
-for Linux
-```
-sudo apt-get install unar
-```
-Install fedml library on serve side:
+Install FedML for local development: 
 ```
 pip install fedml
 ```
-Install fedml library on [raspberry](https://doc.fedml.ai/starter/install/rpi.html) and [jetson](https://doc.fedml.ai/starter/install/jetson.html) platforms.
+
+Guidance for installing FedML library on [raspberry](https://doc.fedml.ai/starter/install/rpi.html) and [jetson](https://doc.fedml.ai/starter/install/jetson.html) platforms.
 
 
 ## Real-deployment Training Script
@@ -82,6 +73,8 @@ FedML MLOps provides:
 - visualizing system performance (including profiling flow chart)
 - distributed logging
 - model serving
+
+See this tutorial (https://doc.fedml.ai/mlops/user_guide.html) for details.
 
 ## Citation
 Please cite our FedIoT and FedML paper if it helps your research.
