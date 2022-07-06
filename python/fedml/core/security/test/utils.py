@@ -1,4 +1,5 @@
 import collections
+import copy
 import torch
 
 
@@ -112,12 +113,9 @@ def create_fake_model_list_MNIST(active_worker_num):  # local_w for defenses at 
     model_list = []
     for i in range(active_worker_num):
         if i % 3 == 0:
-            model_list.append((i + 20, a_local_w))  # add a random sample num
+            model_list.append((20+i, copy.deepcopy(a_local_w)))  # add a random sample num
         if i % 3 == 1:
-            model_list.append((i + 25, b_local_w))  # add a random sample num
+            model_list.append((30+i, copy.deepcopy(b_local_w)))  # add a random sample num
         if i % 3 == 2:
-            model_list.append((i + 30, c_local_w))  # add a random sample num
-    # print(model_list[0])
-    # print("------")
-    # print(model_list)
+            model_list.append((25+i, copy.deepcopy(c_local_w)))  # add a random sample num
     return model_list

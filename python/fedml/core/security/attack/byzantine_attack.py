@@ -63,34 +63,3 @@ class ByzantineAttack(BaseAttackMethod):
 
     def _get_malicious_client_idx(self, client_num):
         return random.sample(range(client_num), self.byzantine_client_num)
-
-    @staticmethod
-    def _test_fedavg(model_list):
-        training_num = get_total_sample_num(model_list)
-        (num0, averaged_params) = model_list[0]
-        for k in averaged_params.keys():
-            for i in range(0, len(model_list)):
-                local_sample_number, local_model_params = model_list[i]
-                # print(f"i={i}, model_list = {model_list}")
-                w = local_sample_number / training_num
-                if i == 0:
-                    averaged_params[k] = local_model_params[k] * w
-                else:
-                    averaged_params[k] += local_model_params[k] * w
-        return averaged_params
-
-    @staticmethod
-    def _test_fedavg2(model_list):
-        training_num = get_total_sample_num(model_list)
-        (num0, averaged_params) = model_list[0]
-        res = dict()
-        for k in averaged_params.keys():
-            res[k] = torch.from_numpy(
-                np.zeros(averaged_params[k].size())
-            ).float()
-            for i in range(0, len(model_list)):
-                local_sample_number, local_model_params = model_list[i]
-                print(f"i={i}, model_list = {model_list}")
-                w = local_sample_number / training_num
-                res[k] += local_model_params[k] * w
-        return res
