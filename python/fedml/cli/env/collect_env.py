@@ -33,20 +33,23 @@ def collect_env():
 
     print("\n======== CPU Configuration ========")
 
-    import psutil
+    try:
+        import psutil
 
-    # Getting loadover15 minutes
-    load1, load5, load15 = psutil.getloadavg()
-    cpu_usage = (load15 / os.cpu_count()) * 100
+        # Getting loadover15 minutes
+        load1, load5, load15 = psutil.getloadavg()
+        cpu_usage = (load15 / os.cpu_count()) * 100
 
-    print("The CPU usage is : {:.0f}%".format(cpu_usage, 4))
-    print(
-        "Available CPU Memory: {:.1f} G / {}G".format(
-            psutil.virtual_memory().available / 1024 / 1024 / 1024,
-            psutil.virtual_memory().total / 1024 / 1024 / 1024,
+        print("The CPU usage is : {:.0f}%".format(cpu_usage, 4))
+        print(
+            "Available CPU Memory: {:.1f} G / {}G".format(
+                psutil.virtual_memory().available / 1024 / 1024 / 1024,
+                psutil.virtual_memory().total / 1024 / 1024 / 1024,
+            )
         )
-    )
-
+    except:
+        print("\n")
+        
     try:
         print("\n======== GPU Configuration ========")
         import nvidia_smi
