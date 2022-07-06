@@ -41,3 +41,4 @@ tracking_args:
   wandb_entity: fedml-ai
   wandb_project: simulation
   run_name: fedml_torch_fedavg_cifar10_cnn
+  using_mlops: false
