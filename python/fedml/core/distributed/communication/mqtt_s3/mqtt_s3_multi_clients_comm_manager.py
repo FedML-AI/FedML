@@ -120,10 +120,6 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         receiving message topic (subscribe): serverID_clientID
 
         """
-        logging.info(
-            "mqtt_s3.on_connected:"
-        )
-
         self.mqtt_mgr.add_message_passthrough_listener(self._on_message)
 
         # Subscribe one topic
@@ -155,9 +151,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
             )
 
     def on_disconnected(self, mqtt_client_object):
-        logging.info(
-            "mqtt_s3.on_disconnected"
-        )
+        pass
 
     def add_observer(self, observer: Observer):
         self._observers.append(observer)
@@ -192,7 +186,6 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                 "mqtt_s3.on_message: use s3 pack, s3 message key %s" % s3_key_str
             )
 
-            logging.info("mqtt_s3.on_message: from python client.")
             model_params = self.s3_storage.read_model(s3_key_str)
 
             logging.info(
@@ -223,7 +216,6 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         receiving message topic (subscribe): fedml_runid_serverID_clientID
 
         """
-        logging.info("mqtt_s3.send_message: starting...")
         sender_id = msg.get_sender_id()
         receiver_id = msg.get_receiver_id()
         if self.client_id == 0:
@@ -270,7 +262,6 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                     "mqtt_s3.send_message: S3+MQTT msg sent, message_key = %s"
                     % message_key
                 )
-                logging.info("mqtt_s3.send_message: to python client.")
                 model_url = self.s3_storage.write_model(message_key, model_params_obj)
                 model_params_key_url = {
                     "key": message_key,

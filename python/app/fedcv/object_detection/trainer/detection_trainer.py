@@ -179,6 +179,16 @@ class DetectionTrainer(ClientTrainer):
         model = self.model
         args = self.args
 
+        test_metrics = {
+            "test_correct": 0,
+            "test_total": 0,
+            "test_loss": 0,
+        }
+
+        if not test_data:
+            logging.info("No test data for this trainer")
+            return test_metrics
+
         model.eval()
         model.to(device)
 
@@ -269,10 +279,8 @@ class DetectionTrainer(ClientTrainer):
         # Compute statistics
         stats = [np.concatenate(x, 0) for x in zip(*stats)]  # to numpy
         if len(stats) and stats[0].any():
-            p, r, ap, f1, ap_class = ap_per_class(
-                *stats, plot=False, fname=Path(args.save_dir) / "precision-recall_curve.png"
-            )
-            p, r, ap50, ap = p[:, 0], r[:, 0], ap[:, 0], ap.mean(1)  # [P, R, AP@0.5, AP@0.5:0.95]
+            tp, fp, p, r, f1, ap, ap_class = ap_per_class(*stats, plot=False, save_dir=args.save_dir, names=names)
+            ap50, ap = ap[:, 0], ap.mean(1)  # AP@0.5, AP@0.5:0.95
             mp, mr, map50, map = p.mean(), r.mean(), ap50.mean(), ap.mean()
             nt = np.bincount(stats[3].astype(np.int64), minlength=args.nc)  # number of targets per class
         else:
@@ -311,20 +319,21 @@ class DetectionTrainer(ClientTrainer):
         return test_metrics
 
     def test_on_the_server(self, train_data_local_dict, test_data_local_dict, device, args=None):
+        return False
         logging.info("Testing on the server")
-        logging.info(f"Rank id: {args.rank}")
+        logging.info(f"rank id: {args.rank}")
         train_data = train_data_local_dict
         test_data = test_data_local_dict
 
         for k in train_data.keys():
-            logging.info(f"{k}: {train_data[k]}")
+            # logging.info(f"{k}: {train_data[k]}")
             if train_data[k] is None:
                 continue
             train_data_results = self.test(test_data=train_data[k], device=device, args=args)
             logging.info(f"{k}: {train_data_results}")
 
         for k in test_data.keys():
-            logging.info(f"{k}: {test_data[k]}")
+            # logging.info(f"{k}: {test_data[k]}")
             if test_data[k] is None:
                 continue
             test_data_results = self.test(test_data=test_data[k], device=device, args=args)
