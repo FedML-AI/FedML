@@ -1,6 +1,6 @@
 import logging
 import os
-import dill as pickle
+import pickle
 
 import torch.utils.data as data
 import tqdm
@@ -92,7 +92,7 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
 
 
 def load_partition_data_distributed_federated_stackoverflow_lr(
-        process_id, dataset, data_dir, batch_size=DEFAULT_BATCH_SIZE
+    process_id, dataset, data_dir, batch_size=DEFAULT_BATCH_SIZE
 ):
     # get global dataset
     if process_id == 0:
@@ -129,7 +129,7 @@ def load_partition_data_distributed_federated_stackoverflow_lr(
 
 
 def load_partition_data_federated_stackoverflow_lr(
-        dataset, data_dir, batch_size=DEFAULT_BATCH_SIZE
+    dataset, data_dir, batch_size=DEFAULT_BATCH_SIZE
 ):
     logging.info("load_partition_data_federated_stackoverflow_lr START")
     global cache_data
@@ -203,7 +203,7 @@ def load_partition_data_federated_stackoverflow_lr(
         cache_data["test_data_local_dict"] = test_data_local_dict
         cache_data["output_dim"] = output_dim
         with open(cache_path, "wb") as cache_file:
-            cache_data = pickle.dump(cache_data, cache_file)
+            pickle.dump(cache_data, cache_file)
 
     return (
         DEFAULT_TRAIN_CLIENTS_NUM,
