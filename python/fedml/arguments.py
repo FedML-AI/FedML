@@ -47,7 +47,7 @@ def add_args():
     # default arguments
     parser.add_argument("--local_rank", type=int, default=0)
 
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
     return args
 
 
@@ -199,7 +199,7 @@ def load_arguments(training_type=None, comm_backend=None):
                 )
         else:
             pass
-            #print("args.client_id_list is not None")
+            # print("args.client_id_list is not None")
     else:
         print("using_mlops = true")
     return args
