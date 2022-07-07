@@ -157,8 +157,9 @@ class FedMLServerManager(ServerManager):
                 self.mlops_event.log_event_started(
                     "server.agg_and_eval", event_value=str(self.round_idx)
                 )
-
+            tick = time.time()
             global_model_params = self.aggregator.aggregate()
+            MLOpsProfilerEvent.log_to_wandb({"AggregationTime": time.time() - tick, 'round': self.round_idx })
 
             try:
                 self.aggregator.test_on_server_for_all_clients(self.round_idx)
@@ -189,6 +190,9 @@ class FedMLServerManager(ServerManager):
                 self.args.client_num_in_total,
                 len(self.client_id_list_in_this_round),
             )
+
+            if self.round_idx == 0:
+                MLOpsProfilerEvent.log_to_wandb({"BenchmarkStart": time.time()})
 
             client_idx_in_this_round = 0
             for receiver_id in self.client_id_list_in_this_round:
@@ -238,11 +242,13 @@ class FedMLServerManager(ServerManager):
         self.finish()
 
     def send_message_init_config(self, receive_id, global_model_params, datasilo_index):
+        tick = time.time()
         message = Message(MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id)
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")
         self.send_message(message)
+        MLOpsProfilerEvent.log_to_wandb({"Communiaction/Send_Total": time.time() - tick})
 
     def send_message_check_client_status(self, receive_id, datasilo_index):
         message = Message(
@@ -266,6 +272,7 @@ class FedMLServerManager(ServerManager):
     def send_message_sync_model_to_client(
         self, receive_id, global_model_params, client_index
     ):
+        tick = time.time()
         logging.info("send_message_sync_model_to_client. receive_id = %d" % receive_id)
         message = Message(
             MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT,
@@ -276,6 +283,8 @@ class FedMLServerManager(ServerManager):
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(client_index))
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")
         self.send_message(message)
+
+        MLOpsProfilerEvent.log_to_wandb({"Communiaction/Send_Total": time.time() - tick})
 
         if self.aggregated_model_url is None and self.args.backend == "MQTT_S3":
             self.aggregated_model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)

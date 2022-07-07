@@ -2,7 +2,7 @@ import logging
 import multiprocessing
 import os
 import random
-
+import time
 import numpy as np
 import torch
 import wandb
@@ -17,7 +17,6 @@ from .constants import (
     FEDML_TRAINING_PLATFORM_CROSS_DEVICE,
 )
 from .core.mlops import MLOpsRuntimeLog
-
 _global_training_type = None
 _global_comm_backend = None
 
@@ -54,13 +53,6 @@ def init(args=None):
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
 
-    if args.enable_wandb:
-        wandb.init(
-            project=args.wandb_project,
-            name=args.run_name,
-            config=args,
-        )
-
     if (
         args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
         and hasattr(args, "backend")
@@ -79,7 +71,9 @@ def init(args=None):
         and hasattr(args, "backend")
         and args.backend == FEDML_SIMULATION_TYPE_NCCL
     ):
-        from .simulation.nccl.base_framework.common import FedML_NCCL_Similulation_init
+        from .simulation.nccl.base_framework.common import (
+            FedML_NCCL_Similulation_init,
+        )
 
         args = FedML_NCCL_Similulation_init(args)
 
@@ -97,8 +91,11 @@ def init(args=None):
         args = init_cross_device(args)
     else:
         raise Exception("no such setting")
-    return args
 
+    manage_profiling_args(args)
+
+    return args
+    
 
 def init_simulation_mpi(args):
     from mpi4py import MPI
@@ -120,6 +117,34 @@ def init_simulation_nccl(args):
     return
 
 
+def manage_profiling_args(args):
+    if not hasattr(args, "sys_perf_profiling"):
+        args.sys_perf_profiling = True
+    if not hasattr(args, "sys_perf_profiling"):
+        args.sys_perf_profiling = True
+
+    if args.sys_perf_profiling:
+        from  fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
+        MLOpsProfilerEvent.enable_sys_perf_profiling()
+
+    if args.enable_wandb or args.sys_perf_profiling:
+        wandb_args = {
+            "project": args.wandb_project,
+            "config": args,
+        }
+        
+        if hasattr(args, "run_name"):
+            wandb_args["name"] = args.run_name
+
+        if hasattr(args, "wandb_group_id"):
+            # wandb_args["group"] = args.wandb_group_id
+            wandb_args["group"] = "Test1"
+            wandb_args["name"] = f"Client {args.rank}"
+            wandb_args["job_type"] = str(args.rank)
+
+        wandb.init(**wandb_args)
+
+
 def manage_cuda_rpc_args(args):
 
     if (not hasattr(args, "enable_cuda_rpc")) or (not args.using_gpu):
@@ -130,8 +155,6 @@ def manage_cuda_rpc_args(args):
         logging.warn(
             "Argument enable_cuda_rpc is ignored. Cuda RPC only works with TRPC backend."
         )
-
-
 
     # When Cuda RPC is not used, tensors should be moved to cpu before transfer with TRPC
     if (not args.enable_cuda_rpc) and args.backend == "TRPC":
@@ -155,15 +178,27 @@ def manage_cuda_rpc_args(args):
 
 
 def init_cross_silo_horizontal(args):
-    args.process_id = args.rank
     args.worker_num = args.client_num_per_round
+    args.process_id = args.rank
+    manage_mpi_args(args)
+    manage_cuda_rpc_args(args)
+
+
+    print("#$%#$%#$###########^^^^^^^^^^^^&&&&&&&&&&&&&&&")
+    print(args.rank)
+
+
+    return args
+
+
+def manage_mpi_args(args):
     if hasattr(args, "backend") and args.backend == "MPI":
         from mpi4py import MPI
         comm = MPI.COMM_WORLD
         process_id = comm.Get_rank()
         world_size = comm.Get_size()
         args.comm = comm
-        args.process_id = process_id
+        args.rank = process_id
         # args.worker_num = worker_num
         assert (
             args.worker_num + 1 == world_size
@@ -172,14 +207,11 @@ def init_cross_silo_horizontal(args):
     else:
         args.comm = None
 
-    manage_cuda_rpc_args(args)
-
-    return args
-
 
 def init_cross_silo_hierarchical(args):
 
     args.worker_num = args.client_num_per_round
+    manage_mpi_args(args)
     manage_cuda_rpc_args(args)
 
     # Set intra-silo arguments
