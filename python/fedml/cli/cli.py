@@ -14,6 +14,7 @@ from fedml.cli.edge_deployment.client_login import CLIENT_RUNNER_HOME_DIR
 from fedml.cli.edge_deployment.client_login import CLIENT_RUNNER_INFO_DIR
 from fedml.cli.edge_deployment.client_login import logout as client_logout
 from fedml.cli.edge_deployment.client_runner import FedMLClientRunner
+from fedml.cli.env.collect_env import collect_env
 from fedml.cli.server_deployment.server_login import SERVER_RUNNER_HOME_DIR
 from fedml.cli.server_deployment.server_login import SERVER_RUNNER_INFO_DIR
 from fedml.cli.server_deployment.server_login import login_role_list
@@ -557,6 +558,15 @@ def build_mlops_package(
     shutil.rmtree(mlops_build_path, ignore_errors=True)
 
     return 0
+
+
+@cli.command(
+    "env",
+    help="collect the environment information to help debugging, including OS, Hardware Architecture, "
+    "Python version, etc.",
+)
+def env():
+    collect_env()
 
 
 if __name__ == "__main__":
