@@ -1,6 +1,7 @@
 import torch
+
 from .defense_base import BaseDefenseMethod
-from ...security import utils
+from ..common import utils
 
 """
 defense @ client, added by Shanshan, 06/28/2022
@@ -9,12 +10,13 @@ https://arxiv.org/pdf/1911.07963.pdf
 """
 
 
-class NormDiffClipping(BaseDefenseMethod):
+class NormDiffClippingDefense(BaseDefenseMethod):
     def __init__(self, norm_bound):
         self.norm_bound = norm_bound  # for norm diff clipping and weak DP defenses
 
     def defend(self, local_w, global_w, refs=None):
         vec_local_weight = utils.vectorize_weight(local_w)
+        print(vec_local_weight)
         vec_global_weight = utils.vectorize_weight(global_w)
         clipped_weight_diff = self._get_clipped_norm_diff(
             vec_local_weight, vec_global_weight
@@ -30,7 +32,7 @@ class NormDiffClipping(BaseDefenseMethod):
 
     @staticmethod
     def _get_clipped_weights(local_w, global_w, weight_diff):
-        # rule: global_w + clipped(local_w - global_w)
+        #  rule: global_w + clipped(local_w - global_w)
         recons_local_w = {}
         index_bias = 0
         for item_index, (k, v) in enumerate(local_w.items()):
