@@ -17,6 +17,7 @@ from ..message import Message
 from ..observer import Observer
 from .utils import WORKER_NAME, set_device_map
 import logging
+from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
 lock = threading.Lock()
 
@@ -45,7 +46,6 @@ class TRPCCommManager(BaseCommunicationManager):
         self.world_size = world_size
         self._observers: List[Observer] = []
         self.args = args
-
         if process_id == 0:
             self.node_type = "server"
         else:
@@ -127,12 +127,13 @@ class TRPCCommManager(BaseCommunicationManager):
         logging.info("sending message to {}".format(receiver_id))
 
         # Should I wait?
+        tick = time.time()
         rpc.rpc_sync(
             WORKER_NAME.format(receiver_id),
             TRPCCOMMServicer.sendMessage,
             args=(self.process_id, msg),
         )
-
+        MLOpsProfilerEvent.log_to_wandb({"Comm/send_delay": time.time() - tick})
         logging.debug("sent")
 
     def add_observer(self, observer: Observer):
@@ -147,12 +148,17 @@ class TRPCCommManager(BaseCommunicationManager):
         self._notify_connection_ready()
 
     def message_handling_subroutine(self):
+        start_listening_time = time.time()
+        MLOpsProfilerEvent.log_to_wandb({"ListenStart": start_listening_time})
         while self.is_running:
             if self.trpc_servicer.message_q.qsize() > 0:
                 lock.acquire()
+                message_handler_start_time = time.time()
                 msg = self.trpc_servicer.message_q.get()
                 self.notify(msg)
+                MLOpsProfilerEvent.log_to_wandb({"BusyTime": time.time() - message_handler_start_time})
                 lock.release()
+        MLOpsProfilerEvent.log_to_wandb({"TotalTime": time.time() - start_listening_time})
         return
 
     def stop_receive_message(self):

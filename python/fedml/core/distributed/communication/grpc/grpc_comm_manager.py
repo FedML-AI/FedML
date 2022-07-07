@@ -14,6 +14,9 @@ from ...communication.base_com_manager import BaseCommunicationManager
 from ...communication.message import Message
 from ...communication.observer import Observer
 from ..constants import CommunicationConstants
+
+from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
+
 import time
 
 # Check Service or serve?
@@ -77,7 +80,9 @@ class GRPCCommManager(BaseCommunicationManager):
         # payload = msg.to_json()
 
         logging.info("pickle.dumps(msg) START")
+        pickle_dump_start_time = time.time()
         msg_pkl = pickle.dumps(msg)
+        MLOpsProfilerEvent.log_to_wandb({"PickleDumpsTime": time.time() - pickle_dump_start_time})
         logging.info("pickle.dumps(msg) END")
 
         receiver_id = msg.get_receiver_id()
@@ -96,7 +101,9 @@ class GRPCCommManager(BaseCommunicationManager):
 
         request.message = msg_pkl
 
+        tick = time.time()
         stub.sendMessage(request)
+        MLOpsProfilerEvent.log_to_wandb({"Comm/send_delay": time.time() - tick})
         logging.debug("sent successfully")
         channel.close()
 
@@ -117,18 +124,27 @@ class GRPCCommManager(BaseCommunicationManager):
         # thread.start()
 
     def message_handling_subroutine(self):
+        start_listening_time = time.time()
+        MLOpsProfilerEvent.log_to_wandb({"ListenStart": start_listening_time})
         while self.is_running:
             if self.grpc_servicer.message_q.qsize() > 0:
                 lock.acquire()
+                busy_time_start_time = time.time()
                 msg_pkl = self.grpc_servicer.message_q.get()
                 logging.info("unpickle START")
+                unpickle_start_time = time.time()
                 msg = pickle.loads(msg_pkl)
+                MLOpsProfilerEvent.log_to_wandb({"UnpickleTime": time.time() - unpickle_start_time})
                 logging.info("unpickle END")
                 msg_type = msg.get_type()
                 for observer in self._observers:
+                    _message_handler_start_time = time.time()
                     observer.receive_message(msg_type, msg)
+                    MLOpsProfilerEvent.log_to_wandb({"MessageHandlerTime": time.time() - _message_handler_start_time})
+                MLOpsProfilerEvent.log_to_wandb({"BusyTime": time.time() - busy_time_start_time})
                 lock.release()
-            time.sleep(1)
+            time.sleep(0.0001)
+        MLOpsProfilerEvent.log_to_wandb({"TotalTime": time.time() - start_listening_time})
         return
 
     def stop_receive_message(self):

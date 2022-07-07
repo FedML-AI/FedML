@@ -1,7 +1,7 @@
 import logging
 
 import torch
-
+from fedml.constants import FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL, FEDML_TRAINING_PLATFORM_CROSS_SILO
 
 def get_device(args):
     if args.training_type == "simulation" and args.backend == "sp":
@@ -39,9 +39,9 @@ def get_device(args):
             args.gpu_mapping_key,
         )
         return device
-    elif args.training_type == "cross_silo":
+    elif args.training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO:
 
-        if args.scenario == "hierarchical":
+        if args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
             from .gpu_mapping_cross_silo import (
                 mapping_processes_to_gpu_device_from_yaml_file_cross_silo,
             )
@@ -51,6 +51,7 @@ def get_device(args):
                 args.n_proc_in_silo,
                 args.gpu_mapping_file if args.using_gpu else None,
                 args.gpu_mapping_key if args.using_gpu else None,
+                FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
             )
         else:
             from .gpu_mapping_cross_silo import (
