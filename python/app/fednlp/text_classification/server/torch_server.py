@@ -1,11 +1,11 @@
 import fedml
-from ..model_args import *
-from .model.distilbert_model import DistilBertForSequenceClassification
-from .model.bert_model import BertForSequenceClassification
-from .trainer.classification_trainer import MyModelTrainer as MyCLSTrainer
-from .data.data_loader import load
+from ...model_args import *
+from ..model.distilbert_model import DistilBertForSequenceClassification
+from ..model.bert_model import BertForSequenceClassification
+from ..trainer.classification_trainer import MyModelTrainer as MyCLSTrainer
+from ..data.data_loader import load
 import torch
-from fedml.cross_silo import Client
+from fedml.cross_silo import Server
 import logging
 from transformers import (
     BertConfig,
@@ -55,5 +55,5 @@ if __name__ == "__main__":
     model, trainer = create_model(args, output_dim)
 
     # start training
-    client = Client(args, device, dataset, model, trainer)
-    client.run()
+    server = Server(args, device, dataset, model, trainer)
+    server.run()
