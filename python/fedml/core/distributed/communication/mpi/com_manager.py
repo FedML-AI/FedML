@@ -1,15 +1,16 @@
-from functools import cache
 import logging
 import queue
 import time
 from typing import List
 
-from ..base_com_manager import BaseCommunicationManager
-from ..message import Message
-from .mpi_receive_thread import MPIReceiveThread
-from ..observer import Observer
-from ..constants import CommunicationConstants
 from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
+from .mpi_receive_thread import MPIReceiveThread
+from ..base_com_manager import BaseCommunicationManager
+from ..constants import CommunicationConstants
+from ..message import Message
+from ..observer import Observer
+
+
 class MpiCommunicationManager(BaseCommunicationManager):
     def __init__(self, comm, rank, size, node_type="client"):
         self.comm = comm
@@ -69,7 +70,7 @@ class MpiCommunicationManager(BaseCommunicationManager):
         self.client_receive_thread.start()
 
         return client_send_queue, client_receive_queue
-    
+
     # Ugly delete comments
     # def send_message(self, msg: Message):
     #     self.q_sender.put(msg)
@@ -90,7 +91,7 @@ class MpiCommunicationManager(BaseCommunicationManager):
     def handle_receive_message(self):
         self.is_running = True
         # the first message after connection, aligned the protocol with MQTT + S3
-        self._notify_connection_ready() 
+        self._notify_connection_ready()
         start_listening_time = time.time()
         MLOpsProfilerEvent.log_to_wandb({"ListenStart": start_listening_time})
         while self.is_running:
@@ -98,9 +99,13 @@ class MpiCommunicationManager(BaseCommunicationManager):
                 message_handler_start_time = time.time()
                 msg_params = self.q_receiver.get()
                 self.notify(msg_params)
-                MLOpsProfilerEvent.log_to_wandb({"BusyTime": time.time() - message_handler_start_time})
+                MLOpsProfilerEvent.log_to_wandb(
+                    {"BusyTime": time.time() - message_handler_start_time}
+                )
             time.sleep(0.0001)
-        MLOpsProfilerEvent.log_to_wandb({"TotalTime": time.time() - start_listening_time})
+        MLOpsProfilerEvent.log_to_wandb(
+            {"TotalTime": time.time() - start_listening_time}
+        )
         logging.info("!!!!!!handle_receive_message stopped!!!")
 
     def stop_receive_message(self):
@@ -127,8 +132,6 @@ class MpiCommunicationManager(BaseCommunicationManager):
                 observer.receive_message(msg_type, msg_params)
             except Exception as e:
                 logging.warn("Cannot handle connection ready")
-
-
 
     def __stop_thread(self, thread):
         if thread:
