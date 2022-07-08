@@ -1,5 +1,6 @@
+import time
 from .utils import transform_tensor_to_list
-
+from ...core.mlops import MLOpsProfilerEvent
 
 class FedMLTrainer(object):
     def __init__(
@@ -38,8 +39,9 @@ class FedMLTrainer(object):
 
     def train(self, round_idx=None):
         self.args.round_idx = round_idx
+        tick = time.time()
         self.trainer.train(self.train_local, self.device, self.args)
-
+        MLOpsProfilerEvent.log_to_wandb({"Train/Time": time.time() - tick, "round": round_idx})
         weights = self.trainer.get_model_params()
         # transform Tensor to list
         weights = transform_tensor_to_list(weights)

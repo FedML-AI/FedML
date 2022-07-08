@@ -54,11 +54,6 @@ def init(args=None):
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
 
-    if args.enable_wandb:
-        wandb.init(
-            project=args.wandb_project, name=args.run_name, config=args,
-        )
-
     if (
         args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
         and hasattr(args, "backend")
@@ -95,6 +90,9 @@ def init(args=None):
         args = init_cross_device(args)
     else:
         raise Exception("no such setting")
+
+    manage_profiling_args(args)
+
     return args
 
 
@@ -118,48 +116,105 @@ def init_simulation_nccl(args):
     return
 
 
-def init_cross_silo_horizontal(args):
-    args.process_id = args.rank
+def manage_profiling_args(args):
+    if not hasattr(args, "sys_perf_profiling"):
+        args.sys_perf_profiling = True
+    if not hasattr(args, "sys_perf_profiling"):
+        args.sys_perf_profiling = True
 
+    if args.sys_perf_profiling:
+        from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
+
+        MLOpsProfilerEvent.enable_sys_perf_profiling()
+
+    if args.enable_wandb:
+        wandb_args = {
+            "project": args.wandb_project,
+            "config": args,
+        }
+
+        if hasattr(args, "run_name"):
+            wandb_args["name"] = args.run_name
+
+        if hasattr(args, "wandb_group_id"):
+            # wandb_args["group"] = args.wandb_group_id
+            wandb_args["group"] = "Test1"
+            wandb_args["name"] = f"Client {args.rank}"
+            wandb_args["job_type"] = str(args.rank)
+
+        wandb.init(**wandb_args)
+
+
+def manage_cuda_rpc_args(args):
+
+    if (not hasattr(args, "enable_cuda_rpc")) or (not args.using_gpu):
+        args.enable_cuda_rpc = False
+
+    if args.enable_cuda_rpc and args.backend != "TRPC":
+        args.enable_cuda_rpc = False
+        logging.warn(
+            "Argument enable_cuda_rpc is ignored. Cuda RPC only works with TRPC backend."
+        )
+
+    # When Cuda RPC is not used, tensors should be moved to cpu before transfer with TRPC
+    if (not args.enable_cuda_rpc) and args.backend == "TRPC":
+        args.cpu_transfer = True
+    else:
+        args.cpu_transfer = False
+
+    # Valudate arguments related to cuda rpc
+    if args.enable_cuda_rpc:
+        if not hasattr(args, "cuda_rpc_gpu_mapping"):
+            raise "Invalid config. cuda_rpc_gpu_mapping is required when enable_cuda_rpc=True"
+        assert (
+            type(args.cuda_rpc_gpu_mapping) is dict
+        ), "Invalid cuda_rpc_gpu_mapping type. Expected dict"
+        assert (
+            len(args.cuda_rpc_gpu_mapping) == args.worker_num + 1
+        ), f"Invalid cuda_rpc_gpu_mapping. Expected list of size {args.worker_num + 1}"
+
+    logging.info(f"cpu_transfer: {args.cpu_transfer}")
+    logging.info(f"enable_cuda_rpc: {args.enable_cuda_rpc}")
+
+
+def init_cross_silo_horizontal(args):
+    args.worker_num = args.client_num_per_round
+    args.process_id = args.rank
+    manage_mpi_args(args)
+    manage_cuda_rpc_args(args)
+    return args
+
+
+def manage_mpi_args(args):
     if hasattr(args, "backend") and args.backend == "MPI":
         from mpi4py import MPI
 
         comm = MPI.COMM_WORLD
         process_id = comm.Get_rank()
-        worker_num = comm.Get_size()
+        world_size = comm.Get_size()
         args.comm = comm
-        args.process_id = process_id
-        args.worker_num = worker_num - 1
+        args.rank = process_id
+        # args.worker_num = worker_num
+        assert (
+            args.worker_num + 1 == world_size
+        ), f"Invalid number of mpi processes. Exepected {args.worker_num + 1}"
         logging.info("comm = {}".format(comm))
-
     else:
         args.comm = None
-    return args
 
 
 def init_cross_silo_hierarchical(args):
+
     args.worker_num = args.client_num_per_round
-    if not hasattr(args, "enable_cuda_rpc"):
-        args.enable_cuda_rpc = False
+    manage_mpi_args(args)
+    manage_cuda_rpc_args(args)
+
     # Set intra-silo arguments
     if args.rank == 0:
-        # Silo Topology
-        if not hasattr(args, "n_proc_per_node"):
-            args.n_proc_per_node = 1
+        args.n_node_in_silo = 1
         args.n_proc_in_silo = 1
-
-        # Rank in node
         args.rank_in_node = 0
-        args.process_id = args.rank_in_node
-
-        # Rank in silo (process group)
         args.proc_rank_in_silo = 0
-
-        # Prcoess group master endpoint
-        if not hasattr(args, "pg_master_port"):
-            args.pg_master_port = 29200
-        if not hasattr(args, "pg_master_address"):
-            args.pg_master_address = "127.0.0.1"
     else:
         # Modify arguments to match info set in env by torchrun
         # Silo Topology
@@ -183,6 +238,7 @@ def init_cross_silo_hierarchical(args):
         # Launcher Rendezvous
         if not hasattr(args, "launcher_rdzv_port"):
             args.launcher_rdzv_port = 29400
+
     return args
 
 
