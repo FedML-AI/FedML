@@ -54,8 +54,9 @@ class LightSecAggAggregator(object):
             self.flag_client_model_uploaded_dict[idx] = False
             self.flag_client_aggregate_encoded_mask_uploaded_dict[idx] = False
 
-        self.targeted_number_active_clients = args.targeted_number_active_clients
-        self.privacy_guarantee = args.privacy_guarantee
+        # self.targeted_number_active_clients = args.targeted_number_active_clients
+        self.targeted_number_active_clients = self.client_num
+        self.privacy_guarantee = int(np.floor(self.client_num/2))
         self.prime_number = args.prime_number
         self.precision_parameter = args.precision_parameter
 
@@ -174,6 +175,61 @@ class LightSecAggAggregator(object):
             client_indexes = np.random.choice(range(client_num_in_total), num_clients, replace=False)
         logging.info("client_indexes = %s" % str(client_indexes))
         return client_indexes
+
+    def data_silo_selection(self, round_idx, client_num_in_total, client_num_per_round):
+        """
+
+        Args:
+            round_idx: round index, starting from 0
+            client_num_in_total: this is equal to the users in a synthetic data,
+                                    e.g., in synthetic_1_1, this value is 30
+            client_num_per_round: the number of edge devices that can train
+
+        Returns:
+            data_silo_index_list: e.g., when client_num_in_total = 30, client_num_in_total = 3,
+                                        this value is the form of [0, 11, 20]
+
+        """
+        logging.info(
+            "client_num_in_total = %d, client_num_per_round = %d"
+            % (client_num_in_total, client_num_per_round)
+        )
+        assert client_num_in_total >= client_num_per_round
+
+        if client_num_in_total == client_num_per_round:
+            return [i for i in range(client_num_per_round)]
+        else:
+            np.random.seed(
+                round_idx
+            )  # make sure for each comparison, we are selecting the same clients each round
+            data_silo_index_list = np.random.choice(
+                range(client_num_in_total), client_num_per_round, replace=False
+            )
+            return data_silo_index_list
+
+    def client_selection(
+        self, round_idx, client_id_list_in_total, client_num_per_round
+    ):
+        """
+        Args:
+            round_idx: round index, starting from 0
+            client_id_list_in_total: this is the real edge IDs.
+                                    In MLOps, its element is real edge ID, e.g., [64, 65, 66, 67];
+                                    in simulated mode, its element is client index starting from 1, e.g., [1, 2, 3, 4]
+            client_num_per_round:
+
+        Returns:
+            client_id_list_in_this_round: sampled real edge ID list, e.g., [64, 66]
+        """
+        if client_num_per_round == len(client_id_list_in_total):
+            return client_id_list_in_total
+        np.random.seed(
+            round_idx
+        )  # make sure for each comparison, we are selecting the same clients each round
+        client_id_list_in_this_round = np.random.choice(
+            client_id_list_in_total, client_num_per_round, replace=False
+        )
+        return client_id_list_in_this_round
 
     def _generate_validation_set(self, num_samples=10000):
         if self.args.dataset.startswith("stackoverflow"):

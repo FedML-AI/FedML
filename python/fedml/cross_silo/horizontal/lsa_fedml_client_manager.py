@@ -39,8 +39,10 @@ class FedMLClientManager(ClientManager):
             self.flag_encoded_mask_dict[idx] = False
 
         # new added parameters in main file
-        self.targeted_number_active_clients = args.targeted_number_active_clients
-        self.privacy_guarantee = args.privacy_guarantee
+        # self.targeted_number_active_clients = args.targeted_number_active_clients
+        # self.privacy_guarantee = args.privacy_guarantee
+        self.targeted_number_active_clients = args.worker_num
+        self.privacy_guarantee = int(np.floor(args.worker_num/2))
         self.prime_number = args.prime_number
         self.precision_parameter = args.precision_parameter
 
