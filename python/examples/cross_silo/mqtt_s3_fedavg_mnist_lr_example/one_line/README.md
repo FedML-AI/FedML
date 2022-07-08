@@ -18,7 +18,6 @@ bash run_client.sh 2
 ```
 Note: please run the server first.
 
-
 ## A Better User-experience with FedML MLOps (open.fedml.ai)
 To reduce the difficulty and complexity of these CLI commands. We recommend you to use our MLOps (open.fedml.ai).
 FedML MLOps provides:
