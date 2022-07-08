@@ -33,6 +33,9 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.CHAOYANG_TOKEN }}
+          submodules: recursive
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
