@@ -2,7 +2,7 @@ import logging
 import multiprocessing
 import os
 import random
-import time
+
 import numpy as np
 import torch
 import wandb
@@ -18,6 +18,7 @@ from .constants import (
     FEDML_TRAINING_PLATFORM_CROSS_DEVICE,
 )
 from .core.mlops import MLOpsRuntimeLog
+
 _global_training_type = None
 _global_comm_backend = None
 
@@ -29,9 +30,7 @@ def init(args=None):
     collect_env()
 
     if args is None:
-        args = load_arguments(
-            fedml._global_training_type, fedml._global_comm_backend
-        )
+        args = load_arguments(fedml._global_training_type, fedml._global_comm_backend)
 
     fedml._global_training_type = args.training_type
     fedml._global_comm_backend = args.backend
@@ -73,9 +72,7 @@ def init(args=None):
         and hasattr(args, "backend")
         and args.backend == FEDML_SIMULATION_TYPE_NCCL
     ):
-        from .simulation.nccl.base_framework.common import (
-            FedML_NCCL_Similulation_init,
-        )
+        from .simulation.nccl.base_framework.common import FedML_NCCL_Similulation_init
 
         args = FedML_NCCL_Similulation_init(args)
 
@@ -97,7 +94,7 @@ def init(args=None):
     manage_profiling_args(args)
 
     return args
-    
+
 
 def init_simulation_mpi(args):
     from mpi4py import MPI
@@ -126,15 +123,16 @@ def manage_profiling_args(args):
         args.sys_perf_profiling = True
 
     if args.sys_perf_profiling:
-        from  fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
+        from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
+
         MLOpsProfilerEvent.enable_sys_perf_profiling()
 
-    if args.enable_wandb or args.sys_perf_profiling:
+    if args.enable_wandb:
         wandb_args = {
             "project": args.wandb_project,
             "config": args,
         }
-        
+
         if hasattr(args, "run_name"):
             wandb_args["name"] = args.run_name
 
@@ -184,18 +182,13 @@ def init_cross_silo_horizontal(args):
     args.process_id = args.rank
     manage_mpi_args(args)
     manage_cuda_rpc_args(args)
-
-
-    print("#$%#$%#$###########^^^^^^^^^^^^&&&&&&&&&&&&&&&")
-    print(args.rank)
-
-
     return args
 
 
 def manage_mpi_args(args):
     if hasattr(args, "backend") and args.backend == "MPI":
         from mpi4py import MPI
+
         comm = MPI.COMM_WORLD
         process_id = comm.Get_rank()
         world_size = comm.Get_size()

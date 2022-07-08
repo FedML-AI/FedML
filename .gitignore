@@ -4,6 +4,7 @@
 .vscode/*
 *.pkl
 
+data/*
 python/tests/smoke_test/data
 python/tests/smoke_test/data/*
 
