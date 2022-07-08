@@ -20,7 +20,7 @@ Learn more about Federated Learning for Internet of Things, please check our sur
 
 ## Device Purchase Suggestion
 Currently, raspberry Pi 4 and Jetson Nano boards are not available from neither official website nor approved distributors.
-We suggest you to look into third-party sellers such Amazon and Ebay. Here are some links that we used to buy from.
+We suggest to look into third-party sellers such Amazon and Ebay. Here are some links that we used to buy from.
 * Raspberry Pi 4: [Board-only](https://www.amazon.com/Raspberry-Model-2019-Quad-Bluetooth/dp/B07TC2BK1X/ref=sr_1_2?keywords=raspberry+pi+4&qid=1657234377&sprefix=respberr%2Caps%2C132&sr=8-2&ufe=app_do%3Aamzn1.fos.08f69ac3-fd3d-4b88-bca2-8997e41410bb), [Developer-kit](https://www.amazon.com/GeeekPi-Raspberry-DeskPi-Button-Heatsink/dp/B09S374QW5/ref=sr_1_18?keywords=raspberry+pi+4&qid=1657234608&sprefix=respberr%2Caps%2C132&sr=8-18&ufe=app_do%3Aamzn1.fos.08f69ac3-fd3d-4b88-bca2-8997e41410bb)
 * Jetson Nano: [Board-only](https://www.amazon.com/Yahboom-Jetson-Nano-4GB-SUB/dp/B09T37PPRF/ref=dp_prsubs_3?pd_rd_i=B09T37PPRF&psc=1), Developer-kit (not available)
 
@@ -40,7 +40,7 @@ Reference: https://projects.raspberrypi.org/en/projects/raspberry-pi-setting-up/
 
   * Click write
 * Insert SD card and power on your board.
-* Wait a few minutes to let the board boot and run `ssh username@raspberrypi.local` from your computer to login to your Raspberry Pi.
+* Wait a few minutes to let the board boot and run `ssh username@raspberrypi.local` from your host machine to log in to your Raspberry Pi.
 
 ## Jeston Nano Setup
 Reference: https://developer.nvidia.com/embedded/learn/get-started-jetson-nano-devkit#setup
@@ -50,7 +50,7 @@ It requires extra work to setup headless on a Jeston Nano (meaning no monitor ne
 * Insert SD card and power on your board
 * Logging in through GUI
 
-For better on-device performance, we suggest to disable GUI and log in through ssh instead:
+For better on-device performance, we suggest to disable GUI and log in through ssh from your host machine instead:
 https://www.forecr.io/blogs/bsp-development/how-to-disable-desktop-gui-on-jetson-modules
 
 ## FedIoT Environment Setup
