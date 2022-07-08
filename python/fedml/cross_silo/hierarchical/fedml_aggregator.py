@@ -6,6 +6,8 @@ import time
 import numpy as np
 import torch
 import wandb
+from collections import OrderedDict
+from .utils import convert_model_params_from_ddp
 
 # from .utils import transform_list_to_tensor
 
@@ -52,8 +54,15 @@ class FedMLAggregator(object):
     def get_global_model_params(self):
         return self.trainer.get_model_params()
 
+    # Make sure set_global_model_params is not used
     def set_global_model_params(self, model_parameters):
-        self.trainer.set_model_params(model_parameters)
+        raise "set_global_model_params is not compatible with hierarchical federated learning. Please use set_global_model_params_hi"
+
+    # Convert models params from ddp format and set them to trainer
+    def set_global_model_params_hi(self, model_params):
+        converted_model_params = convert_model_params_from_ddp(model_params)
+        self.trainer.set_model_params(converted_model_params)
+
 
     def add_local_trained_result(self, index, model_params, sample_num):
         logging.info("add_model. index = %d" % index)
@@ -91,9 +100,6 @@ class FedMLAggregator(object):
                     averaged_params[k] = local_model_params[k] * w
                 else:
                     averaged_params[k] += local_model_params[k] * w
-
-        # update the global model which is cached at the server side
-        self.set_global_model_params(averaged_params)
 
         end_time = time.time()
         logging.info("aggregate time cost: %d" % (end_time - start_time))
