@@ -19,13 +19,12 @@ class ClientSlaveManager:
         if client_index:
             self.trainer_dist_adapter.update_dataset(int(client_index))
 
-        if self.round_idx == self.num_rounds - 1:
+        if self.round_idx == self.num_rounds:
+            logging.warn("Finishing Client Slave")
             self.finish()
             return
 
         self.trainer_dist_adapter.train(self.round_idx)
-
-        self.round_idx += 1
 
     def finish(self):
         # pass

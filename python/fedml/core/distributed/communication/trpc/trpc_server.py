@@ -11,7 +11,6 @@ class TRPCCOMMServicer:
 
     def __new__(cls, master_address, master_port, client_num, client_id):
         if cls._instance is None:
-            print("Creating the object")
             cls._instance = super(TRPCCOMMServicer, cls).__new__(cls)
             cls._instance.master_address = master_address
             cls._instance.master_port = master_port
@@ -26,7 +25,6 @@ class TRPCCOMMServicer:
         return cls._instance
 
     def receiveMessage(self, clint_id, message):
-        print("Recieved")
         logging.info(
             "client_{} got something from client_{}".format(
                 self.client_id,
@@ -48,16 +46,3 @@ class TRPCCOMMServicer:
     @classmethod
     def sendMessage(cls, clint_id, message):
         cls._instance.receiveMessage(clint_id, message)
-
-    @classmethod
-    def sendMessageTest1(cls, clint_id, message):
-        return message
-        pass
-        # cls._instance.receiveMessage(clint_id, message)
-        # x = message.get("THE_TENSOR")
-        # print("received");
-
-    @classmethod
-    def sendMessageTest2(cls, clint_id, arg1, arg2):
-        return arg2
-        pass

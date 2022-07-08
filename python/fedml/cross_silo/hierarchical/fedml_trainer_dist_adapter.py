@@ -4,12 +4,9 @@ import torch.distributed as dist
 from .fedml_trainer import FedMLTrainer
 from .process_group_manager import ProcessGroupManager
 from torch.nn.parallel import DistributedDataParallel as DDP
-from .trainer.my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
-from .trainer.my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
-from .trainer.my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
 import logging
 from .fedml_trainer import FedMLTrainer
-
+from .utils import get_model_trainer
 # import torch
 # import time
 
@@ -48,10 +45,11 @@ class TrainerDistAdapter:
         train_data_local_num_dict,
         train_data_local_dict,
         test_data_local_dict,
-        model_trainer=None,
+        model_trainer,
     ):
 
         only_gpu = args.using_gpu
+
 
         self.process_group_manager = ProcessGroupManager(
             args.proc_rank_in_silo,
@@ -65,10 +63,16 @@ class TrainerDistAdapter:
         model.to(device)
         model = DDP(model, device_ids=[device] if only_gpu else None)
 
-        client_index = client_rank - 1
         if model_trainer is None:
-            model_trainer = self.get_model_trainer(model, args)
+            model_trainer = get_model_trainer(model, args)
+        else:
+            model_trainer.model = model
+
+
+        client_index = client_rank - 1
+
         model_trainer.set_id(client_index)
+        
         logging.info("Initiating Trainer")
         trainer = self.get_trainer(
             client_index,
@@ -108,20 +112,9 @@ class TrainerDistAdapter:
             model_trainer,
         )
 
-    def get_model_trainer(self, model, args):
-
-        if args.dataset == "stackoverflow_lr":
-            model_trainer = MyModelTrainerTAG(model, args, args.enable_cuda_rpc)
-        elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
-            model_trainer = MyModelTrainerNWP(model, args, args.enable_cuda_rpc)
-        else:  # default model trainer is for classification problem
-            model_trainer = MyModelTrainerCLS(model, args, args.enable_cuda_rpc)
-        return model_trainer
-
     def train(self, round_idx):
 
         # log_round_start(self.client_rank, round_idx)
-
         dist.barrier()
         weights, local_sample_num = self.trainer.train(round_idx)
         return weights, local_sample_num

@@ -10,7 +10,7 @@ environment_args:
 
 data_args:
   dataset: "mnist"
-  data_cache_dir: "../../../../data/mnist"
+  data_cache_dir: "../../../../data/MNIST"
   partition_method: "hetero"
   partition_alpha: 0.5
 
@@ -25,7 +25,7 @@ train_args:
   client_id_list:
   client_num_in_total: 2
   client_num_per_round: 2
-  comm_round: 5
+  comm_round: 50
   epochs: 1
   batch_size: 10
   client_optimizer: sgd
@@ -36,7 +36,6 @@ validation_args:
   frequency_of_the_test: 1
 
 device_args:
-  worker_num: 2
   using_gpu: false
   device_type: cpu
 
