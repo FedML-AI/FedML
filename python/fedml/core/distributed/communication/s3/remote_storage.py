@@ -1,3 +1,4 @@
+import pickle
 import logging
 import os
 import tempfile
@@ -5,7 +6,8 @@ import tempfile
 import boto3
 import joblib
 import yaml
-
+import time
+from  fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 # for multi-processing, we need to create a global variable for AWS S3 client:
 # https://www.pythonforthelab.com/blog/differences-between-multiprocessing-windows-and-linux/
 # https://stackoverflow.com/questions/72313845/multiprocessing-picklingerror-cant-pickle-class-botocore-client-s3-attr
@@ -36,48 +38,70 @@ class S3Storage:
             aws_access_key_id=self.cn_s3_aki,
             aws_secret_access_key=self.cn_s3_sak,
         )
-
-    def write_json(self, message_key, payload):
-        global aws_s3_resource
-        obj = aws_s3_resource.Object(self.bucket_name, message_key)
-        obj.put(Body=payload)
-
-    def read_json(self, message_key):
-        global aws_s3_resource
-        obj = aws_s3_resource.Object(self.bucket_name, message_key)
-        payload = obj.get()["Body"].read()
-        return payload
+        
 
     def write_model(self, message_key, model):
-        with tempfile.TemporaryFile() as fp:
-            joblib.dump(model, fp)
-            fp.seek(0)
-            global aws_s3_client
-            aws_s3_client.put_object(
-                Body=fp.read(),
-                Bucket=self.bucket_name,
-                Key=message_key,
-                ACL="public-read",
-            )
-            model_url = aws_s3_client.generate_presigned_url(
-                "get_object",
-                ExpiresIn=60 * 60 * 24 * 5,
-                Params={"Bucket": self.bucket_name, "Key": message_key},
-            )
-            return model_url
+        global aws_s3_client
+        pickle_dump_start_time = time.time()
+        model_pkl = pickle.dumps(model)
+        MLOpsProfilerEvent.log_to_wandb({"PickleDumpsTime": time.time() - pickle_dump_start_time})
+        s3_upload_start_time = time.time()
+        aws_s3_client.put_object(
+            Body=model_pkl,
+            Bucket=self.bucket_name,
+            Key=message_key,
+            ACL="public-read",
+        )
+        MLOpsProfilerEvent.log_to_wandb({"Comm/send_delay": time.time() - s3_upload_start_time})
+        model_url = aws_s3_client.generate_presigned_url(
+            "get_object",
+            ExpiresIn=60 * 60 * 24 * 5,
+            Params={"Bucket": self.bucket_name, "Key": message_key},
+        )
+        return model_url
 
     def read_model(self, message_key):
-        with tempfile.TemporaryFile() as fp:
-            global aws_s3_client
-            aws_s3_client.download_fileobj(
-                Fileobj=fp, Bucket=self.bucket_name, Key=message_key
-            )
-            fp.seek(0)
-            try:
-                model = joblib.load(fp)
-            except Exception as e:
-                print("Exception " + str(e))
+        global aws_s3_client
+        message_handler_start_time = time.time()
+        obj = aws_s3_client.get_object(Bucket=self.bucket_name, Key=message_key)
+        model_pkl = obj["Body"].read()
+        MLOpsProfilerEvent.log_to_wandb({"Comm/recieve_delay_s3": time.time() - message_handler_start_time})
+        unpickle_start_time = time.time()
+        model = pickle.loads(model_pkl)
+        MLOpsProfilerEvent.log_to_wandb({"UnpickleTime": time.time() - unpickle_start_time})
         return model
+
+
+    # def write_model(self, message_key, model):
+    #     with tempfile.TemporaryFile() as fp:
+    #         joblib.dump(model, fp)
+    #         fp.seek(0)
+    #         global aws_s3_client
+    #         aws_s3_client.put_object(
+    #             Body=fp.read(),
+    #             Bucket=self.bucket_name,
+    #             Key=message_key,
+    #             ACL="public-read",
+    #         )
+    #         model_url = aws_s3_client.generate_presigned_url(
+    #             "get_object",
+    #             ExpiresIn=60 * 60 * 24 * 5,
+    #             Params={"Bucket": self.bucket_name, "Key": message_key},
+    #         )
+    #         return model_url
+
+    # def read_model(self, message_key):
+    #     with tempfile.TemporaryFile() as fp:
+    #         global aws_s3_client
+    #         aws_s3_client.download_fileobj(
+    #             Fileobj=fp, Bucket=self.bucket_name, Key=message_key
+    #         )
+    #         fp.seek(0)
+    #         try:
+    #             model = joblib.load(fp)
+    #         except Exception as e:
+    #             print("Exception " + str(e))
+    #     return model
 
     def upload_file(self, src_local_path, dest_s3_path):
         """

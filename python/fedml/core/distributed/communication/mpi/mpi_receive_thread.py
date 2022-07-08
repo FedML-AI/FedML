@@ -22,9 +22,11 @@ class MPIReceiveThread(threading.Thread):
         )
         while True:
             try:
-                msg_str = self.comm.recv()
-                msg = Message()
-                msg.init(msg_str)
+                msg = self.comm.recv()
+                # Ugly delete comments
+                # msg_str = self.comm.recv()
+                # msg = Message()
+                # msg.init(msg_str)
                 self.q.put(msg)
             except Exception:
                 traceback.print_exc()
