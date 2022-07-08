@@ -29,8 +29,7 @@ def run_hierarchical_cross_silo_client():
     from .cross_silo.hierarchical import Client
 
     """FedML Octopus"""
-    global _global_training_type
-    _global_training_type = FEDML_TRAINING_PLATFORM_CROSS_SILO
+    fedml._global_training_type = FEDML_TRAINING_PLATFORM_CROSS_SILO
 
     args = fedml.init()
 
