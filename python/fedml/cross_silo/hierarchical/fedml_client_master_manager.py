@@ -56,13 +56,11 @@ class ClientMasterManager:
         self.round_idx = 0
         self.rank = rank
         self.client_real_ids = json.loads(args.client_id_list)
-        # self.get_sender_id() is equal to the client rank (starting from 1)
-        self.client_real_id = self.client_real_ids[
-            self.communication_manager.get_sender_id() - 1
-        ]
+        logging.info("self.client_real_ids = {}".format(self.client_real_ids))
+        # for the client, len(self.client_real_ids)==1: we only specify its client id in the list, not including others.
+        self.client_real_id = self.client_real_ids[0]
 
         self.has_sent_online_msg = False
-        self.sys_stats_process = None
 
         if hasattr(self.args, "using_mlops") and self.args.using_mlops:
             self.mlops_metrics = MLOpsMetrics()
@@ -72,6 +70,10 @@ class ClientMasterManager:
     def register_message_receive_handlers(self):
         self.communication_manager.register_message_receive_handler(
             MyMessage.MSG_TYPE_CONNECTION_IS_READY, self.handle_message_connection_ready
+        )
+
+        self.communication_manager.register_message_receive_handler(
+            MyMessage.MSG_TYPE_S2C_CHECK_CLIENT_STATUS, self.handle_message_check_status
         )
 
         self.communication_manager.register_message_receive_handler(
@@ -93,6 +95,10 @@ class ClientMasterManager:
 
             # Open new process for report system performances to MQTT server
             MLOpsMetrics.report_sys_perf()
+
+    def handle_message_check_status(self, msg_params):
+        self.send_client_status(0)
+        
 
     def handle_message_init(self, msg_params):
         global_model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
@@ -126,12 +132,12 @@ class ClientMasterManager:
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
 
+        self.round_idx += 1
         self.sync_process_group(self.round_idx, model_params, client_index)
 
         self.trainer_dist_adapter.update_model(model_params)
         self.trainer_dist_adapter.update_dataset(int(client_index))
-
-        if self.round_idx == self.num_rounds - 1:
+        if self.round_idx == self.num_rounds:
 
             # Notify MLOps with the finished message
             if hasattr(self.args, "using_mlops") and self.args.using_mlops:
@@ -144,7 +150,6 @@ class ClientMasterManager:
             self.finish()
             return
 
-        self.round_idx += 1
         logging.info("#######training########### round_id = %d" % self.round_idx)
         if hasattr(self.args, "using_mlops") and self.args.using_mlops:
             self.mlops_event.log_event_started("train")
@@ -170,9 +175,11 @@ class ClientMasterManager:
             )
 
         self.communication_manager.finish()
-
         mlops_metrics = MLOpsMetrics()
         mlops_metrics.set_sys_reporting_status(False)
+
+        # self.exit_program()
+
     # def exit_program(self):
     #     try:
     #         sys.exit(100)
@@ -187,16 +194,13 @@ class ClientMasterManager:
             self.client_real_id,
             receive_id,
         )
-
-        model_url = "None"
-
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, weights)
         message.add_params(MyMessage.MSG_ARG_KEY_NUM_SAMPLES, local_sample_num)
-        message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL, model_url)
         self.communication_manager.send_message(message)
 
         # Report client model to MLOps
         if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+            model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
             model_info = {
                 "run_id": self.args.run_id,
                 "edge_id": self.client_real_id,
@@ -248,14 +252,3 @@ class ClientMasterManager:
     def run(self):
         self.register_message_receive_handlers()
         self.communication_manager.run()
-
-        ###############################33
-
-        logging.info("Connection is ready!")
-        if not self.has_sent_online_msg:
-            self.has_sent_online_msg = True
-            self.send_client_status(0)
-
-            # Notify MLOps with training status.
-            if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-                self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_INITIALIZING)

@@ -8,3 +8,4 @@ class CommunicationConstants:
     CLIENT_TOP_ACTIVE_MSG = "/flclient/active"
     SERVER_TOP_LAST_WILL_MSG = "/flserver/last_will_msg"
     SERVER_TOP_ACTIVE_MSG = "/flserver/active"
+    GRPC_BASE_PORT = 8890
