@@ -117,7 +117,7 @@ def load_data(args):
             logging.info(
                 "Downloading dataset for device {} on client".format(args.rank)
             )
-            download_data(device_name, device_data_cache_dir)
+            download_data(args, device_name)
 
         benign_data = pd.read_csv(
             os.path.join(device_data_cache_dir, "benign_traffic.csv")
