@@ -61,7 +61,7 @@ https://www.forecr.io/blogs/bsp-development/how-to-disable-desktop-gui-on-jetson
 2. Install FedML library on your client side: [Raspberry](https://doc.fedml.ai/starter/install/rpi.html) and [Jetson](https://doc.fedml.ai/starter/install/jetson.html) FedML installation guidance
 3. Install extra packages for FedIoT on both server and client side:
     ```
-    pip install -r requirements.txt
+    bash config/bootstrap.sh
     ```
 
 ## Real-deployment Training Script
