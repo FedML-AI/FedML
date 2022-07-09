@@ -1,12 +1,6 @@
 common_args:
-  training_type: "cross_silo"
-  scenario: "horizontal"
-  using_mlops: false
+  training_type: "simulation"
   random_seed: 0
-  config_version: release
-
-environment_args:
-  bootstrap: config/bootstrap.sh
 
 data_args:
   dataset: "MNIST"
@@ -19,8 +13,6 @@ model_args:
   image_size:
   input_size: 1
   class_num: 10
-  model_file_cache_folder: "./model_file_cache" # will be filled by the server automatically
-  global_model_file_path: "./model_file_cache/global_model.pt"
 
 train_args:
   federated_optimizer: "FedAvg"
@@ -44,9 +36,8 @@ device_args:
   gpu_mapping_key: mapping_default
 
 comm_args:
-  backend: "MQTT_S3"
-  mqtt_config_path: config/mqtt_config.yaml
-  s3_config_path: config/s3_config.yaml
+  backend: "MPI"
+  is_mobile: 0
 
 tracking_args:
   log_file_dir: ./log
