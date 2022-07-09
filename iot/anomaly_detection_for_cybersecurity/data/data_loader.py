@@ -54,7 +54,9 @@ def load_data(args):
             device_data_cache_dir = os.path.join(args.data_cache_dir, device_name)
             if not os.path.exists(device_data_cache_dir):
                 os.makedirs(device_data_cache_dir)
-                logging.info("Downloading dataset for all devices on server")
+                logging.info(
+                    "Downloading dataset for device {} on server".format(i+1)
+                )
                 download_data(args, device_name)
 
             benign_data = pd.read_csv(
