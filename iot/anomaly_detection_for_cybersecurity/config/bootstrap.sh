@@ -1,4 +1,4 @@
 #!/bin/bash
 
-pip install --upgrade fedml
-pip install -r requirments.txt
+pip install pandas
+sudo apt-get install unar
