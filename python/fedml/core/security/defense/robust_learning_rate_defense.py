@@ -3,7 +3,7 @@ from fedml.core.security.common.utils import get_total_sample_num
 from fedml.core.security.defense.defense_base import BaseDefenseMethod
 
 """
-defense @ server
+defense @ server, added by Shanshan, 07/09/2022
 To defense backdoor attack.
 
 Defending against backdoors in federated learning with robust learning rate.
@@ -12,6 +12,11 @@ https://github.com/TinfoilHat0/Defending-Against-Backdoors-with-Robust-Learning-
 This ``learning rate'' in this paper indicates a weight at the server side when aggregating weights from clients. 
 Normally, the learning rate is 1.
 If backdoor attack is detected, e.g., exceed a robust threshold, the learning rate is set to -1.
+
+Steps: 
+1) compute client_update sign for each client, which can be 1 or -1
+2) sum up the client update signs and compute learning rates for each client, which can be 1 or -1.
+3) use the learning rate for each client to compute a new model.
 """
 
 
