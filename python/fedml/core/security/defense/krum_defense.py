@@ -4,7 +4,7 @@ from .defense_base import BaseDefenseMethod
 from ..common import utils
 
 """
-defense @ client, added by Xiaoyang, 07/09/2022
+defense @ server, added by Xiaoyang, 07/09/2022
 "Machine Learning with Adversaries: Byzantine Tolerant Gradient Descent"
 https://arxiv.org/pdf/1703.02757.pdf
 """
