@@ -1,6 +1,6 @@
 import torch
-from fedml.core.security.common.utils import get_total_sample_num
-from fedml.core.security.defense.defense_base import BaseDefenseMethod
+from ..common.utils import get_total_sample_num
+from .defense_base import BaseDefenseMethod
 
 """
 defense @ server, added by Shanshan, 07/09/2022

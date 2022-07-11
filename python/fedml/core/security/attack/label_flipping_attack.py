@@ -1,5 +1,3 @@
-from .attack_base import BaseAttackMethod
-from ..common.class_flipping_methods import *
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
@@ -70,11 +68,19 @@ def log_client_data_statistics(poisoned_client_ids, train_data_local_dict):
                         targets_set[target] += 1
             print("Client #{} has data distribution:".format(client_idx))
             for item in targets_set.items():
-                print('target:{} num:{}'.format(item[0], item[1]))
+                print("target:{} num:{}".format(item[0], item[1]))
 
 
 class LabelFlippingAttack:
-    def __init__(self, replacement_method, client_num, worker_num, attack_epoch, attack_client_num, batch_size):
+    def __init__(
+        self,
+        replacement_method,
+        client_num,
+        worker_num,
+        attack_epoch,
+        attack_client_num,
+        batch_size,
+    ):
         self.replacement_method = replacement_method
         self.worker_num = worker_num
         self.client_num_in_total = client_num
@@ -94,11 +100,14 @@ class LabelFlippingAttack:
             class_num,
         ] = dataset
 
-        poison_loacal_train_data = self.poison_data(train_data_local_dict, self.client_num_in_total,
-                                                    self.attack_client_num)
+        poison_loacal_train_data = self.poison_data(
+            train_data_local_dict, self.client_num_in_total, self.attack_client_num
+        )
         return poison_loacal_train_data
 
-    def poison_data(self, train_data_local_dict, client_num_in_total, attack_client_num):
+    def poison_data(
+        self, train_data_local_dict, client_num_in_total, attack_client_num
+    ):
         """
         Poison worker data
 
@@ -127,15 +136,15 @@ class LabelFlippingAttack:
                 tmp_local_dataset_X = torch.Tensor([])
                 tmp_local_dataset_Y = torch.Tensor([])
 
-                for batch_idx, (data, target) in enumerate(train_data_local_dict[client_idx]):
+                for batch_idx, (data, target) in enumerate(
+                    train_data_local_dict[client_idx]
+                ):
                     tmp_local_dataset_X = torch.cat((tmp_local_dataset_X, data))
                     tmp_local_dataset_Y = torch.cat((tmp_local_dataset_Y, target))
 
-
-
-                tmp_X, tmp_Y = apply_class_label_replacement(tmp_local_dataset_X, tmp_local_dataset_Y,
-                                                             self.replacement_method)
-
+                tmp_X, tmp_Y = apply_class_label_replacement(
+                    tmp_local_dataset_X, tmp_local_dataset_Y, self.replacement_method
+                )
 
                 dataset = TensorDataset(tmp_X, tmp_Y)
 
