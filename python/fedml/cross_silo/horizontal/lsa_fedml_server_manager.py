@@ -1,6 +1,7 @@
 import json
 import logging
 import time
+import numpy as np
 
 from time import sleep
 from .lsa_message_define import MyMessage
@@ -38,8 +39,10 @@ class FedMLServerManager(ServerManager):
         self.active_clients_second_round = []
 
         ### new added parameters in main file ###
-        self.targeted_number_active_clients = args.targeted_number_active_clients
-        self.privacy_guarantee = args.privacy_guarantee
+        # self.targeted_number_active_clients = args.targeted_number_active_clients
+        # self.privacy_guarantee = args.privacy_guarantee
+        self.targeted_number_active_clients = args.worker_num
+        self.privacy_guarantee = int(np.floor(args.worker_num/2))
         self.prime_number = args.prime_number
         self.precision_parameter = args.precision_parameter
 
@@ -60,12 +63,6 @@ class FedMLServerManager(ServerManager):
         super().run()
 
     def send_init_msg(self):
-        # sampling clients
-        client_indexes = self.aggregator.client_sampling(
-            self.round_idx, self.args.client_num_in_total, self.args.client_num_per_round
-        )
-        self.start_running_time = time.time()
-
         global_model_params = self.aggregator.get_global_model_params()
         self.aggregator.get_model_dimension(global_model_params)
 
@@ -180,7 +177,7 @@ class FedMLServerManager(ServerManager):
         logging.info("b_all_received = " + str(b_all_received))
         if b_all_received:
             # Specify the active clients for the first round and inform them
-            for receiver_id in range(1, self.size):
+            for receiver_id in range(1, self.size + 1):
                 self.send_message_to_active_client(receiver_id, self.active_clients_first_round)
 
     def handle_message_receive_aggregate_encoded_mask_from_client(self, msg_params):
