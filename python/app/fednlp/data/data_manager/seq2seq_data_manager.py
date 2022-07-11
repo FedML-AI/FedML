@@ -1,5 +1,6 @@
-from ..data_manager.base_data_manager import BaseDataManager
 from tqdm import tqdm
+
+from fedml.data.fednlp.base.data_manager.base_data_manager import BaseDataManager
 
 
 class Seq2SeqDataManager(BaseDataManager):

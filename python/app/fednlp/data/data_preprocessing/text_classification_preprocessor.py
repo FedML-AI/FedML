@@ -1,5 +1,4 @@
 import logging
-import os
 import re
 import string
 
@@ -7,8 +6,10 @@ import pandas as pd
 import torch
 from torch.utils.data import TensorDataset
 
-from ..data_preprocessing.base.base_example import TextClassificationInputExample
-from ..data_preprocessing.base.base_preprocessor import BasePreprocessor
+from fedml.data.fednlp.base.preprocess.base_example import (
+    TextClassificationInputExample,
+)
+from fedml.data.fednlp.base.preprocess.base_preprocessor import BasePreprocessor
 from ..data_preprocessing.utils.text_classification_utils import (
     convert_examples_to_features,
 )
