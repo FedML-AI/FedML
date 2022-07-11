@@ -52,6 +52,6 @@ tracking_args:
   wandb_project: fedml
   wandb_name: fedml_torch_fedavg_mnist_lr
 
-lsa_args:
-  prime_number: 2 ** 15 - 19
-  precision_parameter: 10
+#lsa_args:
+#  prime_number: 2 ** 15 - 19
+#  precision_parameter: 10

@@ -31,7 +31,7 @@ def divmod(_num, _den, _p):
 
 
 def PI(vals, p):  # upper-case PI -- product of inputs
-    accum = np.int64(1)
+    accum = 1
     for v in vals:
         tmp = np.mod(v, p)
         accum = np.mod(accum * tmp, p)
