@@ -1,6 +1,7 @@
-from ..common import utils
 import numpy as np
-from fedml.core.security.attack.attack_base import BaseAttackMethod
+
+from .attack_base import BaseAttackMethod
+from ..common import utils
 
 """
 attack @ server, 07/09/2022
