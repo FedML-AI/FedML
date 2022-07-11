@@ -16,7 +16,10 @@ class CClipDefense(BaseDefenseMethod):
 
     def defend(self, local_w, refs):
         num_client = len(local_w)
-        vec_local_w = [(local_w[i][0], utils.vectorize_weight(local_w[i][1])) for i in range(0, num_client)]
+        vec_local_w = [
+            (local_w[i][0], utils.vectorize_weight(local_w[i][1]))
+            for i in range(0, num_client)
+        ]
         print(vec_local_w)
         vec_refs = utils.vectorize_weight(refs)
         cclip_score = self._compute_cclip_score(vec_local_w, vec_refs)

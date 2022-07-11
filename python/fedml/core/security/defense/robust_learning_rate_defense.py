@@ -6,7 +6,7 @@ from .defense_base import BaseDefenseMethod
 defense @ server, added by Shanshan, 07/09/2022
 To defense backdoor attack.
 
-Defending against backdoors in federated learning with robust learning rate.
+"Defending against backdoors in federated learning with robust learning rate. "
 https://github.com/TinfoilHat0/Defending-Against-Backdoors-with-Robust-Learning-Rate
 
 This ``learning rate'' in this paper indicates a weight at the server side when aggregating weights from clients. 
