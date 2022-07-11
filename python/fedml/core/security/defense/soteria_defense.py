@@ -6,6 +6,7 @@ from .defense_base import BaseDefenseMethod
 """
 defense @ client, added by Kai, 07/10/2022
 ref: Sun, Jingwei, et al. "Provable defense against privacy leakage in federated learning from representation perspective." 
+https://arxiv.org/pdf/2012.06043
 arXiv preprint arXiv:2012.06043 (2020).
 added by Kai, 07/10/2022
 
