@@ -1,15 +1,14 @@
-from abc import ABC, abstractmethod
-import h5py
 import json
-
-from ..data_preprocessing.base.base_data_loader import BaseDataLoader
-from tqdm import tqdm
 import logging
-import h5py
-import json
-import numpy as np
-import pickle
 import os
+import pickle
+from abc import ABC, abstractmethod
+
+import h5py
+import numpy as np
+from tqdm import tqdm
+
+from ..preprocess.base_data_loader import BaseDataLoader
 
 
 class BaseDataManager(ABC):
@@ -454,12 +453,15 @@ class BaseDataManager(ABC):
                     test_features,
                     test_dataset,
                 ) = pickle.load(handle)
-            return True, (
-                train_examples,
-                train_features,
-                train_dataset,
-                test_examples,
-                test_features,
-                test_dataset,
+            return (
+                True,
+                (
+                    train_examples,
+                    train_features,
+                    train_dataset,
+                    test_examples,
+                    test_features,
+                    test_dataset,
+                ),
             )
         return False, cached_features_file
