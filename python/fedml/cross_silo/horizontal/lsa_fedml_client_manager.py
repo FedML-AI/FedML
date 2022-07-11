@@ -240,6 +240,7 @@ class FedMLClientManager(ClientManager):
 
     def send_aggregate_encoded_mask_to_server(self, receive_id, aggregate_encoded_mask):
         message = Message(MyMessage.MSG_TYPE_C2S_SEND_MASK_TO_SERVER, self.get_sender_id(), receive_id)
+        aggregate_encoded_mask = aggregate_encoded_mask.tolist()
         message.add_params(MyMessage.MSG_ARG_KEY_AGGREGATE_ENCODED_MASK, aggregate_encoded_mask)
         self.send_message(message)
 
@@ -256,9 +257,12 @@ class FedMLClientManager(ClientManager):
         return True
 
     def encoded_mask_sharing(self, encoded_mask_set):
-        for receive_id in range(1, self.size):
+        for receive_id in range(1, self.size + 1):
+            print(receive_id)
+            print('the size is ', self.size)
             encoded_mask = encoded_mask_set[receive_id - 1]
             if receive_id != self.get_sender_id():
+                encoded_mask = encoded_mask.tolist()
                 self.send_encoded_mask_to_server(receive_id, encoded_mask)
             else:
                 self.encoded_mask_dict[receive_id - 1] = encoded_mask
@@ -270,11 +274,11 @@ class FedMLClientManager(ClientManager):
 
         # encoded_mask_set = self.mask_encoding()
         d = self.total_dimension
-        N = self.size - 1
+        N = self.size
         U = self.targeted_number_active_clients
         T = self.privacy_guarantee
         p = self.prime_number
-        logging.debug("d = {}, N = {}, U = {}, T = {}, p = {}".format(d, N, U, T, p))
+        logging.info("d = {}, N = {}, U = {}, T = {}, p = {}".format(d, N, U, T, p))
 
         # For debugging
         # self.local_mask = np.random.randint(p, size=(d, 1))
@@ -283,7 +287,9 @@ class FedMLClientManager(ClientManager):
         encoded_mask_set = mask_encoding(d, N, U, T, p, self.local_mask)
 
         # Send the encoded masks to other clients (via server)
+        logging.info('begin share')
         self.encoded_mask_sharing(encoded_mask_set)
+        logging.info('finish share')
 
 
     def __train(self):
