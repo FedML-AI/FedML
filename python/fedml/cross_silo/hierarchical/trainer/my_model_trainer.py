@@ -2,17 +2,17 @@ import torch
 from torch import nn
 
 from ....core.alg_frame.client_trainer import ClientTrainer
-
+import logging
 
 class MyModelTrainer(ClientTrainer):
-    def __init__(self, model, args=None, enable_cuda_rpc=False):
+    def __init__(self, model, args):
         super().__init__(model, args)
-        self.enable_cuda_rpc = enable_cuda_rpc
+        self.cpu_transfer = self.args.cpu_transfer
 
     def get_model_params(self):
-        if self.enable_cuda_rpc:
-            return self.model.state_dict()
-        return self.model.cpu().state_dict()
+        if self.cpu_transfer:
+            return self.model.cpu().state_dict()
+        return self.model.state_dict()
 
     def set_model_params(self, model_parameters):
         self.model.load_state_dict(model_parameters)
