@@ -1,24 +1,27 @@
 """
-ref: Zhu, Ligeng, Zhijian Liu, and Song Han. "Deep leakage from gradients." Advances in neural information processing systems 32 (2019).
-added by Kai, 07/06/2022
+ref: Sun, Jingwei, et al. "Provable defense against privacy leakage in federated learning from representation perspective." 
+arXiv preprint arXiv:2012.06043 (2020).
+added by Kai, 07/10/2022
 """
 
 # test using local directory
 # import os, sys
 # __file__ = '/Users/kai/Documents/FedML/python/fedml/core/'
 # sys.path.append(__file__)
-# from security.attack.dlg_attack import DLGAttack
-# from security.test.utils import create_fake_gradient_Cifar100, create_fake_model_Cifar100
+# from security.defense.soteria_defense import SoteriaDefense
+# from security.test.utils import create_fake_gradient_Cifar100, create_fake_model_Cifar100, create_fake_data_Cifar100
 
-from fedml.core.security.attack.dlg_attack import DLGAttack
+from fedml.core.security.defense.soteria_defense import SoteriaDefense
 from fedml.core.security.test.utils import (
     create_fake_gradient_Cifar100,
     create_fake_model_Cifar100,
+    create_fake_data_Cifar100,
 )
 
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
+import logging
 
 """
 TODO FIX: load model and the corresponding parameters from FedML system
@@ -47,24 +50,32 @@ class LeNet(nn.Module):
 
     def forward(self, x):
         out = self.body(x)
-        out = out.view(out.size(0), -1)
-        out = self.fc(out)
-        return out
+        feature = out.view(out.size(0), -1)
+        out = self.fc(feature)
+        return out, feature
 
 
-def test__attack_dlg():
+def test__defense_soteria_dlg():
     # local_gradient -> which could be inferred via w = w - eta * g
     local_gradient = create_fake_gradient_Cifar100()
     local_w = create_fake_model_Cifar100()
-    attack = DLGAttack(
-        data_size=[3, 32, 32],
-        num_class=100,
-        model=LeNet(),
-        criterion=cross_entropy_for_onehot,
-        attack_epoch=100,
-    )
-    attack.attack(local_w, global_w=None, refs=local_gradient)
+    local_data = create_fake_data_Cifar100()
+    defense_methods = ["soteria", "model compression", "differential privacy"]
+    for med in defense_methods:
+        defense = SoteriaDefense(
+            num_class=100,
+            model=LeNet(),
+            criterion=cross_entropy_for_onehot,
+            defense_data=local_data,
+            attack_method="dlg",
+            defense_method=med,
+        )
+        ori_grad, def_grad = defense.defend(local_w, global_w=None, refs=local_gradient)
+        logging.info(
+            f"method = {med}, _original_gradient = {ori_grad}, _after_defend_gradient = {def_grad}"
+        )
 
 
 if __name__ == "__main__":
-    test__attack_dlg()
+    logging.basicConfig(level=logging.DEBUG)
+    test__defense_soteria_dlg()
