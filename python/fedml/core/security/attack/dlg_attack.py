@@ -1,8 +1,7 @@
-import random
-import numpy as np
 import torch
 import torch.nn.functional as F
-from fedml.core.security.attack.attack_base import BaseAttackMethod
+
+from .attack_base import BaseAttackMethod
 
 # test using local directory
 # from security.attack.attack_base import BaseAttackMethod

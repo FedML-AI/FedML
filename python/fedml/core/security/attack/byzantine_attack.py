@@ -1,8 +1,10 @@
 import random
+
 import numpy as np
 import torch
-from fedml.core.security.attack.attack_base import BaseAttackMethod
-from fedml.core.security.common.utils import is_weight_param, get_total_sample_num
+
+from .attack_base import BaseAttackMethod
+from ..common.utils import is_weight_param, get_total_sample_num
 
 """
 attack @ server, added by Shanshan, 07/04/2022
@@ -12,7 +14,9 @@ attack @ server, added by Shanshan, 07/04/2022
 class ByzantineAttack(BaseAttackMethod):
     def __init__(self, byzantine_client_num, attack_mode):
         self.byzantine_client_num = byzantine_client_num
-        self.attack_mode = attack_mode  # random: randomly generate a weight; zero: set the weight to 0
+        self.attack_mode = (
+            attack_mode  # random: randomly generate a weight; zero: set the weight to 0
+        )
 
     def attack(self, local_w, global_w, refs=None):
         if self.attack_mode == "zero":
@@ -74,7 +78,9 @@ class ByzantineAttack(BaseAttackMethod):
                 w = local_sample_number / total_sample_num
                 if i in byzantine_idxs:
                     if is_weight_param(k):
-                        local_model_params[k] = global_params[k] + (global_params[k] - local_model_params[k])
+                        local_model_params[k] = global_params[k] + (
+                            global_params[k] - local_model_params[k]
+                        )
                 if i == 0:
                     averaged_params[k] = local_model_params[k] * w
                 else:

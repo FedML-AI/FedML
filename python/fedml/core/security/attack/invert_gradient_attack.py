@@ -1,12 +1,10 @@
-import torch
-import torchvision
-import numpy as np
-from collections import defaultdict
 import logging
 
-from core.security.attack.attack_base import BaseAttackMethod
+import torch
+import torchvision
 
-from core.security.attack import inversefed
+from . import inversefed
+from .attack_base import BaseAttackMethod
 
 """
 ref: Geiping, Jonas, et al. "Inverting gradients-how easy is it to break privacy in federated learning?." 
