@@ -7,7 +7,7 @@ import numpy as np
 import torch
 import wandb
 
-from ...core.mpc.secure_aggregation import (
+from ...core.mpc.lightsecagg import (
     LCC_decoding_with_points,
     transform_finite_to_tensor,
     model_dimension,
@@ -66,13 +66,12 @@ class LightSecAggAggregator(object):
         self.mlops_metrics = mlops_metrics
 
     def get_global_model_params(self):
-        return self.trainer.get_model_params()
+        global_model_params = self.trainer.get_model_params()
+        self.dimensions, self.total_dimension = model_dimension(global_model_params)
+        return global_model_params
 
     def set_global_model_params(self, model_parameters):
         self.trainer.set_model_params(model_parameters)
-
-    def get_model_dimension(self, weights):
-        self.dimensions, self.total_dimension = model_dimension(weights)
 
     def add_local_trained_result(self, index, model_params, sample_num):
         logging.info("add_model. index = %d" % index)
@@ -166,16 +165,6 @@ class LightSecAggAggregator(object):
         logging.info("aggregate time cost: %d" % (end_time - start_time))
         return averaged_params
 
-    def client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
-        if client_num_in_total == client_num_per_round:
-            client_indexes = [client_index for client_index in range(client_num_in_total)]
-        else:
-            num_clients = min(client_num_per_round, client_num_in_total)
-            np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round
-            client_indexes = np.random.choice(range(client_num_in_total), num_clients, replace=False)
-        logging.info("client_indexes = %s" % str(client_indexes))
-        return client_indexes
-
     def data_silo_selection(self, round_idx, client_num_in_total, client_num_per_round):
         """
 
@@ -230,6 +219,22 @@ class LightSecAggAggregator(object):
             client_id_list_in_total, client_num_per_round, replace=False
         )
         return client_id_list_in_this_round
+
+    def client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
+        if client_num_in_total == client_num_per_round:
+            client_indexes = [
+                client_index for client_index in range(client_num_in_total)
+            ]
+        else:
+            num_clients = min(client_num_per_round, client_num_in_total)
+            np.random.seed(
+                round_idx
+            )  # make sure for each comparison, we are selecting the same clients each round
+            client_indexes = np.random.choice(
+                range(client_num_in_total), num_clients, replace=False
+            )
+        logging.info("client_indexes = %s" % str(client_indexes))
+        return client_indexes
 
     def _generate_validation_set(self, num_samples=10000):
         if self.args.dataset.startswith("stackoverflow"):
