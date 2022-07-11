@@ -9,4 +9,4 @@ hostname > mpi_host_file
 
 $(which mpirun) -np $PROCESS_NUM \
 -hostfile mpi_host_file \
-python torch_image_classification.py --cf config/fedml_config.yaml
+python torch_mpi_image_classification.py --cf config/fedml_config_mpi.yaml

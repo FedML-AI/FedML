@@ -3,7 +3,8 @@ import logging
 import uuid
 
 import paho.mqtt.client as mqtt
-
+import time
+from  fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
 class MqttManager(object):
     def __init__(self, host, port, user, pwd, keepalive_time,
@@ -63,7 +64,9 @@ class MqttManager(object):
         self._client.loop_forever()
 
     def send_message(self, topic, message):
+        mqtt_send_start_time = time.time()
         self._client.publish(topic, payload=message, qos=2)
+        MLOpsProfilerEvent.log_to_wandb({"Comm/send_delay_mqtt": time.time() - mqtt_send_start_time})
 
     def send_message_json(self, topic, message):
         self._client.publish(topic, payload=message, qos=2)
@@ -80,12 +83,15 @@ class MqttManager(object):
         logging.info(f"MQTT client will be disconnected, id: {self._client_id}, topic: {topic}, payload: {payload}")
 
     def on_message(self, client, userdata, msg):
+        message_handler_start_time = time.time()
+        MLOpsProfilerEvent.log_to_wandb({"MessageReceiveTime": message_handler_start_time})
         for passthrough_listener in self._passthrough_listeners:
             passthrough_listener(msg)
 
         _listener = self._listeners.get(msg.topic, None)
         if _listener is not None and callable(_listener):
             _listener(msg.topic, str(msg.payload, encoding="utf-8"))
+        MLOpsProfilerEvent.log_to_wandb({"BusyTime": time.time() - message_handler_start_time})
 
     def on_publish(self, client, obj, mid):
         self.callback_published_listener(client)
