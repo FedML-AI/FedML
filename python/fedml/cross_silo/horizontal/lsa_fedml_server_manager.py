@@ -64,7 +64,6 @@ class FedMLServerManager(ServerManager):
 
     def send_init_msg(self):
         global_model_params = self.aggregator.get_global_model_params()
-        self.aggregator.get_model_dimension(global_model_params)
 
         client_idx_in_this_round = 0
         for client_id in self.client_id_list_in_this_round:
@@ -175,6 +174,7 @@ class FedMLServerManager(ServerManager):
         self.active_clients_first_round.append(sender_id - 1)
         b_all_received = self.aggregator.check_whether_all_receive()
         logging.info("b_all_received = " + str(b_all_received))
+        # TODO: add a timeout procedure here
         if b_all_received:
             # Specify the active clients for the first round and inform them
             for receiver_id in range(1, self.size + 1):
@@ -194,6 +194,7 @@ class FedMLServerManager(ServerManager):
         b_all_received = self.aggregator.check_whether_all_aggregate_encoded_mask_receive()
         logging.info("Server: mask_all_received = " + str(b_all_received) + " in round_idx %d" % self.round_idx)
 
+        # TODO: add a timeout step
         # After receiving enough aggregate of encoded masks, server recovers the aggregate-model
         if b_all_received:
 
