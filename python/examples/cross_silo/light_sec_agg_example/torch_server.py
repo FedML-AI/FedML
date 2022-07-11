@@ -1,5 +1,6 @@
-import fedml
 import torch
+
+import fedml
 from fedml.cross_silo import Server
 from fedml.data.MNIST.data_loader import download_mnist, load_partition_data_mnist
 
