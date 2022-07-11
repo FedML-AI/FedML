@@ -14,7 +14,7 @@ class MultiKrumDefense(BaseDefenseMethod):
         assert client_num_per_round >= 2 * byzantine_client_num + 1, (
             'users_count>=2*corrupted_count + 3', client_num_per_round, byzantine_client_num)
 
-    def defend(self, local_w):
+    def defend(self, local_w, global_w, refs=None):
         num_clients = len(local_w)
         (num0, localw0) = local_w[0]
         _len_local_params= vectorize_weight(localw0).shape[0] # lens of the flatted weights

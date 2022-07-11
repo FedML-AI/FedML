@@ -16,7 +16,9 @@ For client 2, run the following script:
 ```
 bash run_client.sh 2
 ```
-Note: please run the server first.
+Note: 
+1. please run the server first.
+2. If you are running the client on MacOS, you may need to install `pdsh` (https://formulae.brew.sh/formula/pdsh).
 
 ## A Better User-experience with FedML MLOps (open.fedml.ai)
 To reduce the difficulty and complexity of these CLI commands. We recommend you to use our MLOps (open.fedml.ai).
