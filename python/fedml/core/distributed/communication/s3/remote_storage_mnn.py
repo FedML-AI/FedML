@@ -5,11 +5,11 @@ class S3MNNStorage:
     def __init__(self, s3_config_path):
         self.s3_storage = S3Storage(s3_config_path)
 
-    def write_json(self, message_key, payload):
-        self.s3_storage.write_json(message_key, payload)
+    # def write_json(self, message_key, payload):
+    #     self.s3_storage.write_json(message_key, payload)
 
-    def read_json(self, message_key):
-        return self.s3_storage.read_json(message_key)
+    # def read_json(self, message_key):
+    #     return self.s3_storage.read_json(message_key)
 
     def upload_model_file(self, message_key, model_file_path):
         """

@@ -11,7 +11,7 @@ from ..communication.mqtt_s3_mnn.mqtt_s3_comm_manager import MqttS3MNNCommManage
 from ..communication.observer import Observer
 from ..communication.trpc.trpc_comm_manager import TRPCCommManager
 from ...mlops.mlops_configs import MLOpsConfigs
-
+from ..communication.constants import CommunicationConstants
 
 class ServerManager(Observer):
     def __init__(self, args, comm=None, rank=0, size=0, backend="MPI"):
@@ -67,7 +67,7 @@ class ServerManager(Observer):
 
         elif backend == "GRPC":
             HOST = "0.0.0.0"
-            PORT = 8888 + rank
+            PORT = CommunicationConstants.GRPC_BASE_PORT + rank
             self.com_manager = GRPCCommManager(
                 HOST,
                 PORT,
@@ -81,7 +81,7 @@ class ServerManager(Observer):
                 )
         elif backend == "TRPC":
             self.com_manager = TRPCCommManager(
-                args.trpc_master_config_path, process_id=rank, world_size=size + 1
+                args.trpc_master_config_path, process_id=rank, world_size=size + 1, args=args
             )
             if hasattr(self.args, "backend") and self.args.using_mlops:
                 self.com_manager_status = MqttS3StatusManager(
