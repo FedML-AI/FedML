@@ -39,8 +39,10 @@ class FedMLClientManager(ClientManager):
             self.flag_encoded_mask_dict[idx] = False
 
         # new added parameters in main file
-        self.targeted_number_active_clients = args.targeted_number_active_clients
-        self.privacy_guarantee = args.privacy_guarantee
+        # self.targeted_number_active_clients = args.targeted_number_active_clients
+        # self.privacy_guarantee = args.privacy_guarantee
+        self.targeted_number_active_clients = args.worker_num
+        self.privacy_guarantee = int(np.floor(args.worker_num/2))
         self.prime_number = args.prime_number
         self.precision_parameter = args.precision_parameter
 
@@ -52,7 +54,7 @@ class FedMLClientManager(ClientManager):
         self.has_sent_online_msg = False
         self.sys_stats_process = None
 
-        if hasattr(self.args, "backend") and self.args.using_mlops:
+        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
             self.mlops_metrics = MLOpsMetrics()
             self.mlops_metrics.set_messenger(self.com_manager_status, args)
             self.mlops_event = MLOpsProfilerEvent(self.args)
@@ -90,14 +92,15 @@ class FedMLClientManager(ClientManager):
             self.has_sent_online_msg = True
             self.send_client_status(0)
 
-            # Notify MLOps with training status.
-            self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_INITIALIZING)
+            if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+                # Notify MLOps with training status.
+                self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_INITIALIZING)
 
-            # Open new process for report system performances to MQTT server
-            self.sys_stats_process = multiprocessing.Process(
-                target=self.report_sys_performances
-            )
-            self.sys_stats_process.start()
+                # Open new process for report system performances to MQTT server
+                self.sys_stats_process = multiprocessing.Process(
+                    target=self.report_sys_performances
+                )
+                self.sys_stats_process.start()
 
     def handle_message_check_status(self, msg_params):
         self.send_client_status(0)

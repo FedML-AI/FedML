@@ -6,8 +6,15 @@ import logging
 
 
 class MyModelTrainer(ClientTrainer):
+
+    def __init__(self, model, args):
+        super().__init__(model, args)
+        self.cpu_transfer =  False if not hasattr(self.args, "cpu_transfer") else self.args.cpu_transfer
+
     def get_model_params(self):
-        return self.model.cpu().state_dict()
+        if self.cpu_transfer:
+            return self.model.cpu().state_dict()
+        return self.model.state_dict()
 
     def set_model_params(self, model_parameters):
         self.model.load_state_dict(model_parameters)
