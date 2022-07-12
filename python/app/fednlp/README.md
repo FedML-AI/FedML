@@ -52,7 +52,7 @@ Read `data/README.md` for more details of datasets available
 
 Adjust the hyperparameters in `seq_tagging/config/fedml_config_mpi.yaml`
 
-To run sequence tagging on Onto dataset using MPI simulator follow the following steps:
+To run sequence tagging on wikiner dataset using MPI simulator follow the following steps:
 
 ```bash
 1. cd seq_tagging/
@@ -81,7 +81,7 @@ Read `data/README.md` for more details of datasets available
 
 Adjust the hyperparameters in `seq2seq/config/fedml_config.yaml` and make sure data file paths are correct
 
-To run seq2seq using MPI simulator follow the following steps:
+To run seq2seq using MPI simulator on cornell_movie_dialogue dataset follow the following steps:
 
 ```bash
 1. cd seq2seq/
