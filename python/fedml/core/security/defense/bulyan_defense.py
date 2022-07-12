@@ -32,18 +32,21 @@ class BulyanDefense(BaseDefenseMethod):
             byzantine_client_num,
         )
 
-    def defend(self, local_w):
+    def defend_at_client(self, local_weights, local_grads):
+        raise Exception("This method does not support defense at the client!")
+
+    def defend_at_server(self, client_grad_list):
         # note: local_w is a list, each item is (num_samples, gradients).
 
-        num_clients = len(local_w)
-        (num0, localw0) = local_w[0]
+        num_clients = len(client_grad_list)
+        (num0, localw0) = client_grad_list[0]
         _len_local_params = vectorize_weight(localw0).shape[
             0
         ]  # lens of the flatted gradients
 
         _params = np.zeros((num_clients, _len_local_params))
         for i in range(num_clients):
-            _params[i] = vectorize_weight(local_w[i][1]).cpu().detach().numpy()
+            _params[i] = vectorize_weight(client_grad_list[i][1]).cpu().detach().numpy()
 
         select_indexs, selected_set, agg_grads = self._bulyan(
             _params, self.client_num_per_round, self.byzantine_client_num
