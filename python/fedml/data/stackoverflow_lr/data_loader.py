@@ -21,7 +21,6 @@ DEFAULT_CACHE_FILE = "stackoverflow_lr.pkl"
 
 
 def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
-
     if client_idx is None:
 
         train_dl = data.DataLoader(
@@ -95,7 +94,6 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
 def load_partition_data_distributed_federated_stackoverflow_lr(
     process_id, dataset, data_dir, batch_size=DEFAULT_BATCH_SIZE
 ):
-
     # get global dataset
     if process_id == 0:
         train_data_global, test_data_global = get_dataloader(
@@ -134,9 +132,10 @@ def load_partition_data_federated_stackoverflow_lr(
     dataset, data_dir, batch_size=DEFAULT_BATCH_SIZE
 ):
     logging.info("load_partition_data_federated_stackoverflow_lr START")
+    global cache_data
 
     cache_path = os.path.join(data_dir, DEFAULT_CACHE_FILE)
-    if os.path.exists(cache_path):
+    if os.path.exists(cache_path) and os.path.getsize(cache_path) > 0:
         # load cache
         with open(cache_path, "rb") as cache_file:
             cache_data = pickle.load(cache_file)
@@ -194,17 +193,17 @@ def load_partition_data_federated_stackoverflow_lr(
         output_dim = len(utils.get_tag_dict(data_dir))
 
         # save cache
+        cache_data = dict()
+        cache_data["train_data_num"] = train_data_num
+        cache_data["test_data_num"] = test_data_num
+        cache_data["train_data_global"] = train_data_global
+        cache_data["test_data_global"] = test_data_global
+        cache_data["data_local_num_dict"] = data_local_num_dict
+        cache_data["train_data_local_dict"] = train_data_local_dict
+        cache_data["test_data_local_dict"] = test_data_local_dict
+        cache_data["output_dim"] = output_dim
         with open(cache_path, "wb") as cache_file:
-            cache_data = dict()
-            cache_data["train_data_num"] = train_data_num
-            cache_data["test_data_num"] = test_data_num
-            cache_data["train_data_global"] = train_data_global
-            cache_data["test_data_global"] = test_data_global
-            cache_data["data_local_num_dict"] = data_local_num_dict
-            cache_data["train_data_local_dict"] = train_data_local_dict
-            cache_data["test_data_local_dict"] = test_data_local_dict
-            cache_data["output_dim"] = output_dim
-            cache_data = pickle.dump(cache_data, cache_file)
+            pickle.dump(cache_data, cache_file)
 
     return (
         DEFAULT_TRAIN_CLIENTS_NUM,

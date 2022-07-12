@@ -5,6 +5,7 @@ import random
 import numpy as np
 import torch
 import wandb
+from fedml import mlops
 
 from .client import Client
 from .my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
@@ -81,6 +82,9 @@ class FedAvgAPI(object):
     def train(self):
         logging.info("self.model_trainer = {}".format(self.model_trainer))
         w_global = self.model_trainer.get_model_params()
+        mlops.log_training_status(mlops.ClientStatus.MSG_MLOPS_CLIENT_STATUS_TRAINING)
+        mlops.log_aggregation_status(mlops.ServerStatus.MSG_MLOPS_SERVER_STATUS_RUNNING)
+        mlops.log_round_info(self.args.comm_round, 0)
         for round_idx in range(self.args.comm_round):
 
             logging.info("################Communication round : {}".format(round_idx))
@@ -107,13 +111,19 @@ class FedAvgAPI(object):
                 )
 
                 # train on new dataset
+                mlops.event("train", event_started=True,
+                            event_value="{}_{}".format(str(round_idx), str(idx)))
                 w = client.train(copy.deepcopy(w_global))
+                mlops.event("train", event_started=False,
+                            event_value="{}_{}".format(str(round_idx), str(idx)))
                 # self.logging.info("local weights = " + str(w))
                 w_locals.append((client.get_sample_number(), copy.deepcopy(w)))
 
             # update global weights
+            mlops.event("agg", event_started=True, event_value=str(round_idx))
             w_global = self._aggregate(w_locals)
             self.model_trainer.set_model_params(w_global)
+            mlops.event("agg", event_started=False, event_value=str(round_idx))
 
             # test results
             # at last round
@@ -125,6 +135,12 @@ class FedAvgAPI(object):
                     self._local_test_on_validation_set(round_idx)
                 else:
                     self._local_test_on_all_clients(round_idx)
+
+            mlops.log_round_info(self.args.comm_round, round_idx)
+
+        mlops.log_training_status(mlops.ClientStatus.MSG_MLOPS_CLIENT_STATUS_FINISHED)
+        mlops.log_aggregation_status(mlops.ServerStatus.MSG_MLOPS_SERVER_STATUS_FINISHED)
+
 
     def _client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
         if client_num_in_total == client_num_per_round:
@@ -246,12 +262,18 @@ class FedAvgAPI(object):
         if self.args.enable_wandb:
             wandb.log({"Train/Acc": train_acc, "round": round_idx})
             wandb.log({"Train/Loss": train_loss, "round": round_idx})
+
+        mlops.log({"Train/Acc": train_acc, "round": round_idx})
+        mlops.log({"Train/Loss": train_loss, "round": round_idx})
         logging.info(stats)
 
         stats = {"test_acc": test_acc, "test_loss": test_loss}
         if self.args.enable_wandb:
             wandb.log({"Test/Acc": test_acc, "round": round_idx})
             wandb.log({"Test/Loss": test_loss, "round": round_idx})
+
+        mlops.log({"Test/Acc": test_acc, "round": round_idx})
+        mlops.log({"Test/Loss": test_loss, "round": round_idx})
         logging.info(stats)
 
     def _local_test_on_validation_set(self, round_idx):
@@ -275,6 +297,10 @@ class FedAvgAPI(object):
             if self.args.enable_wandb:
                 wandb.log({"Test/Acc": test_acc, "round": round_idx})
                 wandb.log({"Test/Loss": test_loss, "round": round_idx})
+
+            mlops.log({"Test/Acc": test_acc, "round": round_idx})
+            mlops.log({"Test/Loss": test_loss, "round": round_idx})
+
         elif self.args.dataset == "stackoverflow_lr":
             test_acc = test_metrics["test_correct"] / test_metrics["test_total"]
             test_pre = test_metrics["test_precision"] / test_metrics["test_total"]
@@ -291,6 +317,11 @@ class FedAvgAPI(object):
                 wandb.log({"Test/Pre": test_pre, "round": round_idx})
                 wandb.log({"Test/Rec": test_rec, "round": round_idx})
                 wandb.log({"Test/Loss": test_loss, "round": round_idx})
+
+            mlops.log({"Test/Acc": test_acc, "round": round_idx})
+            mlops.log({"Test/Pre": test_pre, "round": round_idx})
+            mlops.log({"Test/Rec": test_rec, "round": round_idx})
+            mlops.log({"Test/Loss": test_loss, "round": round_idx})
         else:
             raise Exception(
                 "Unknown format to log metrics for dataset {}!" % self.args.dataset
