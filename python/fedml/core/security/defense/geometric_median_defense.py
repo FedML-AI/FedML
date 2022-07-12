@@ -30,22 +30,24 @@ class GeometricMedianDefense(BaseDefenseMethod):
             self.batch_num = 1
         self.batch_size = math.ceil(self.client_num_per_round / self.batch_num)
 
-    def defend(self, local_w, global_w=None, refs=None):
-        (num0, averaged_params) = local_w[0]
+    def defend(self, client_grad_list):
+        (num0, averaged_params) = client_grad_list[0]
         for k in averaged_params.keys():
             batch_w = []
             alphas = []  # weights for each avg local_w for each batch
-            for batch_idx in range(0, math.ceil(len(local_w) / self.batch_size)):
+            for batch_idx in range(
+                0, math.ceil(len(client_grad_list) / self.batch_size)
+            ):
                 client_num = self._get_client_num_current_batch(
-                    self.batch_size, batch_idx, local_w
+                    self.batch_size, batch_idx, client_grad_list
                 )
                 sample_num = self._get_total_sample_num_for_current_batch(
-                    batch_idx * self.batch_size, client_num, local_w
+                    batch_idx * self.batch_size, client_num, client_grad_list
                 )
                 alphas.append(sample_num)
                 batch_weight = 0
                 for i in range(0, client_num):
-                    local_sample_number, local_model_params = local_w[
+                    local_sample_number, local_model_params = client_grad_list[
                         batch_idx * self.batch_size + i
                     ]
                     w = local_sample_number / sample_num
