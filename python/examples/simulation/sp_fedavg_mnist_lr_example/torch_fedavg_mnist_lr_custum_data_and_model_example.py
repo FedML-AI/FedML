@@ -23,6 +23,7 @@ def load_data(args):
         test_data_local_dict,
         class_num,
     ) = load_partition_data_mnist(
+        args,
         args.batch_size,
         train_path=args.data_cache_dir + "MNIST/train",
         test_path=args.data_cache_dir + "MNIST/test",
