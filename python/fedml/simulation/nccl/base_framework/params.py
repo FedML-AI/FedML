@@ -119,20 +119,20 @@ class LocalAggregatorToServerParams(Params):
             logging.info(f"server:   {client_schedule}, groups: {groups}")
             for param_name in self._gather_params:
                 for device in range(get_worker_number()):
-                    logging.info(f"server:  rank:{device}, has client_indexes: {client_schedule[device]}")
+                    # logging.info(f"server:  rank:{device}, has client_indexes: {client_schedule[device]}")
                     for client_index in client_schedule[device]:
                         device_rank = device + 1
                         # Here the 
                         fedml_nccl_send_to_server(
                             tensor=self.__dict__[param_name][client_index], src=device_rank, group=groups[device_rank])
         else:
-            logging.info(f"rank:{rank}, groups: {groups}")
+            # logging.info(f"rank:{rank}, groups: {groups}")
             for param_name in self._gather_params:
                 # gathered_list = [
                 #     torch.empty_like(data) for _ in range(get_world_size())
                 # ]
                 client_indexes = list(self.__dict__[param_name].keys())
-                logging.info(f"rank:{rank}, has client_indexes: {client_indexes}")
+                # logging.info(f"rank:{rank}, has client_indexes: {client_indexes}")
                 for client_index, param in self.__dict__[param_name].items():
                     fedml_nccl_send_to_server(param, src=rank, group=groups[rank])
 
