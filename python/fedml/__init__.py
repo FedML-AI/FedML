@@ -1,4 +1,5 @@
 import logging
+import multiprocessing
 import os
 import random
 
@@ -7,6 +8,7 @@ import torch
 import wandb
 
 import fedml
+from .cli.env.collect_env import collect_env
 from .constants import (
     FEDML_TRAINING_PLATFORM_SIMULATION,
     FEDML_SIMULATION_TYPE_SP,
@@ -17,15 +19,15 @@ from .constants import (
 )
 from .core.mlops import MLOpsRuntimeLog
 
-
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.7.98"
+__version__ = "0.7.123"
 
 
 def init(args=None):
     """Initialize FedML Engine."""
+    collect_env()
 
     if args is None:
         args = load_arguments(fedml._global_training_type, fedml._global_comm_backend)
@@ -33,9 +35,17 @@ def init(args=None):
     fedml._global_training_type = args.training_type
     fedml._global_comm_backend = args.backend
 
-    MLOpsRuntimeLog.get_instance(args).init_logs()
+    mlops.init(args)
 
     logging.info("args = {}".format(vars(args)))
+
+    """
+    # Windows/Linux/MacOS compatability issues on multi-processing
+    # https://github.com/pytorch/pytorch/issues/3492
+    """
+    if multiprocessing.get_start_method() != "spawn":
+        # force all platforms (Windows/Linux/MacOS) to use the same way (spawn) for multiprocessing
+        multiprocessing.set_start_method("spawn", force=True)
 
     seed = args.random_seed
     random.seed(seed)
@@ -63,11 +73,12 @@ def init(args=None):
     ):
         args = init_simulation_sp(args)
     elif (
-            args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
-            and hasattr(args, "backend")
-            and args.backend == FEDML_SIMULATION_TYPE_NCCL
+        args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
+        and hasattr(args, "backend")
+        and args.backend == FEDML_SIMULATION_TYPE_NCCL
     ):
         from .simulation.nccl.base_framework.common import FedML_NCCL_Similulation_init
+
         args = FedML_NCCL_Similulation_init(args)
 
     elif args.training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO:
@@ -118,7 +129,7 @@ def init_cross_silo_horizontal(args):
         worker_num = comm.Get_size()
         args.comm = comm
         args.process_id = process_id
-        args.worker_num = worker_num
+        args.worker_num = worker_num - 1
         logging.info("comm = {}".format(comm))
 
     else:
@@ -187,6 +198,7 @@ def run_distributed():
 from fedml import device
 from fedml import data
 from fedml import model
+from fedml import mlops
 
 from .arguments import load_arguments
 
@@ -207,6 +219,7 @@ __all__ = [
     "device",
     "data",
     "model",
+    "mlops",
     "ClientTrainer",
     "ServerAggregator",
     "run_simulation",

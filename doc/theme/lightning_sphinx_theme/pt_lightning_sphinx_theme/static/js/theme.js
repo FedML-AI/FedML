@@ -960,16 +960,16 @@ if (downloadNote.length >= 1) {
 $(document).ready(function() {
   var caption = "#pytorch-left-menu p.caption";
   var collapseAdded = $(this).not("checked");
-  var chevronRight = "<i class='fa-solid fa-chevron-right'></i>"
-  var chevronDown = "<i class='fa-solid fa-chevron-down'></i>"
+  var chevronRight = "<i class='fa-solid fa-add'></i>"
+  var chevronDown = "<i class='fa-solid fa-minus'></i>"
   $(caption).each(function () {
     var menuName = this.innerText.replace(/[^\w\s]/gi, "").trim();
     $(this).find("span").addClass("checked");
-    if (collapsedSections.includes(menuName) == true && collapseAdded && sessionStorage.getItem(menuName) !== "expand" || sessionStorage.getItem(menuName) == "collapse") {
+    if (collapseAdded && sessionStorage.getItem(menuName) !== "expand" || sessionStorage.getItem(menuName) == "collapse") {
       $(this.firstChild).after("<span class='expand-menu menu-item-decorator'>" + chevronRight + "  </span>");
       $(this.firstChild).after("<span class='hide-menu collapse menu-item-decorator'>" + chevronDown + "</span>");
       $(this).next("ul").hide();
-    } else if (collapsedSections.includes(menuName) == false && collapseAdded || sessionStorage.getItem(menuName) == "expand") {
+    } else if (collapseAdded || sessionStorage.getItem(menuName) == "expand") {
       $(this.firstChild).after("<span class='expand-menu collapse menu-item-decorator'>" + chevronRight + "</span>");
       $(this.firstChild).after("<span class='hide-menu menu-item-decorator'>" + chevronDown + "</span>");
     }

@@ -44,3 +44,12 @@ tracking_args:
   wandb_project: fedml
   wandb_name: fedml_torch_fedavg_mnist_lr
   using_mlops: false
+
+attack_args:
+  enable_attack: false
+  attack_type: None
+
+defense_args:
+  enable_defense: true
+  defense_type: norm_diff_clipping
+  norm_bound: 5.0

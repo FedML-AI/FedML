@@ -246,7 +246,7 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Benchmarks for FedNLP, FedCV, FedGraphNN and FedIoT</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="benchmark/fedgraphnn.html">FedGraphNN Benchmark</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmark/fedgraphnn.html">Federated Graph Neural Networks (FedGraphNN)</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Resource</span></p>
 <ul>
@@ -339,12 +339,61 @@
 <div class="toctree-wrapper compound" id="start">
 <p class="caption" role="heading"><span class="caption-text">Overview</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="starter/get_started.html">Get Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="starter/installation.html">Installing FedML</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starter/get_started.html">Get Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="starter/get_started.html#fedml-feature-overview"><strong>FedML Feature Overview</strong></a></li>
+<li class="toctree-l2"><a class="reference internal" href="starter/get_started.html#quick-start-for-open-source-library"><strong>Quick Start for Open Source Library</strong></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="starter/get_started.html#installation">Installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="starter/get_started.html#a-quick-overview-of-the-code-architecture">A Quick Overview of the Code Architecture</a></li>
+<li class="toctree-l3"><a class="reference internal" href="starter/get_started.html#simplified-apis">Simplified APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="starter/get_started.html#mlops-user-guide"><strong>MLOps User Guide</strong></a></li>
+<li class="toctree-l2"><a class="reference internal" href="starter/get_started.html#more-resource"><strong>More Resource</strong></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="starter/get_started.html#reference">Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="starter/get_started.html#ecosystem">Ecosystem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="starter/get_started.html#publication">Publication</a></li>
+<li class="toctree-l3"><a class="reference internal" href="starter/get_started.html#video-invited-talks">Video (Invited Talks)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="starter/get_started.html#join-the-community">Join the Community</a></li>
+<li class="toctree-l3"><a class="reference internal" href="starter/get_started.html#faq">FAQ</a></li>
+<li class="toctree-l3"><a class="reference internal" href="starter/get_started.html#recruiting">Recruiting</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="starter/installation.html">Installing FedML</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="starter/installation.html#fedml-source-code-repository">FedML Source Code Repository</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starter/installation.html#install-with-pip">Install with pip</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starter/installation.html#install-fedml-with-anaconda">Install FedML with Anaconda</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starter/installation.html#install-fedml-from-source">Install FedML from Source</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starter/installation.html#run-fedml-in-docker-recommended">Run FedML in Docker (Recommended)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starter/installation.html#guidance-for-windows-users">Guidance for Windows Users</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starter/installation.html#guidance-for-raspberry-pi-users">Guidance for Raspberry Pi Users</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starter/installation.html#guidance-for-nvidia-jetson-devices">Guidance for NVIDIA Jetson Devices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starter/installation.html#test-if-the-installation-succeeded">Test if the installation succeeded</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starter/installation.html#install-fedml-android-sdk-app">Install FedML Android SDK/APP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starter/installation.html#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="starter/mission.html">Mission</a></li>
-<li class="toctree-l1"><a class="reference internal" href="starter/overview.html">Technology Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="starter/ecosystem.html">Application Ecosystem</a></li>
-<li class="toctree-l1"><a class="reference internal" href="starter/oss_code_architecture.html">Open Source Code Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starter/overview.html">Technology Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="starter/overview.html#industrial-level-system-design-and-optimization">1. Industrial-level System Design and Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starter/overview.html#user-friendly-mlops-platform-to-simplify-collaboration-and-real-world-deployment">2. User-friendly MLOps platform to simplify collaboration and real-world deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starter/overview.html#a-full-stack-of-scientific-publications-in-ml-algorithms-security-privacy-systems-applications-and-visionary-impacts">3. A Full-stack of Scientific Publications in ML Algorithms, Security/Privacy, Systems, Applications, and Visionary Impacts</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="starter/ecosystem.html">Application Ecosystem</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="starter/ecosystem.html#fednlp-benchmarking-federated-learning-methods-for-natural-language-processing-tasks">FedNLP: Benchmarking Federated Learning Methods for Natural Language Processing Tasks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starter/ecosystem.html#fedgraphnn-a-federated-learning-benchmark-system-for-graph-neural-networks">FedGraphNN: A Federated Learning Benchmark System for Graph Neural Networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starter/ecosystem.html#fedcv-a-federated-learning-framework-for-diverse-computer-vision-tasks">FedCV: A Federated Learning Framework for Diverse Computer Vision Tasks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starter/ecosystem.html#fediot-federated-learning-for-internet-of-things">FedIoT: Federated Learning for Internet of Things</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="starter/oss_code_architecture.html">Open Source Code Architecture</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="starter/oss_code_architecture.html#code-architecture">Code Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starter/oss_code_architecture.html#reference">Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starter/oss_code_architecture.html#video">Video</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="starter/mlops_video.html">FedML MLOps Video Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="starter/faq.html">FedML FAQ</a></li>
 </ul>
@@ -365,8 +414,14 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="mlops/api.html">FedML MLOps CLI and API Reference</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="mlops/api.html#overview">Overview</a></li>
-<li class="toctree-l2"><a class="reference internal" href="mlops/api.html#login-into-the-fedml-mlops-platform-open-fedml-ai">1. Login into the FedML MLOps platform (open.fedml.ai)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="mlops/api.html#build-the-client-and-server-package-in-the-fedml-mlops-platform-open-fedml-ai">2. Build the client and server package in the FedML MLOps platform (open.fedml.ai)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mlops/api.html#login-into-the-fedml-mlops-platform-open-fedml-ai">1. Login into the FedML MLOps platform (open.fedml.ai)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="mlops/api.html#examples-for-logining-into-the-fedml-mlops-platform-open-fedml-ai">1.1. Examples for Logining into the FedML MLOps platform (open.fedml.ai)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="mlops/api.html#build-the-client-and-server-package-in-the-fedml-mlops-platform-open-fedml-ai">2. Build the client and server package in the FedML MLOps platform (open.fedml.ai)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="mlops/api.html#examples-for-building-the-client-and-server-package">2.1. Examples for building the client and server package</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="mlops/api.html#logout-from-the-mlops-platform-open-fedml-ai">3. Logout from the MLOps platform (open.fedml.ai)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mlops/api.html#display-fedml-version">4. Display fedml version</a></li>
 </ul>
@@ -435,7 +490,16 @@
 <div class="toctree-wrapper compound" id="fedml-benchmarks">
 <p class="caption" role="heading"><span class="caption-text">Benchmarks for FedNLP, FedCV, FedGraphNN and FedIoT</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="benchmark/fedgraphnn.html">FedGraphNN Benchmark</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmark/fedgraphnn.html">Federated Graph Neural Networks (FedGraphNN)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="benchmark/fedgraphnn.html#graph-level-federated-graph-neural-networks">Graph-Level Federated Graph Neural Networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="benchmark/fedgraphnn.html#subgraph-level-federated-graph-neural-networks">Subgraph-Level Federated Graph Neural Networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="benchmark/fedgraphnn.html#node-level-federated-graph-neural-networks">Node-Level Federated Graph Neural Networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="benchmark/fedgraphnn.html#federated-ogb-and-ogb-lsc-datasets">Federated OGB and OGB-LSC Datasets</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="benchmark/fedgraphnn.html#challenges-and-leaderboards">Challenges and Leaderboards</a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </div>
 <div class="toctree-wrapper compound" id="resource">
@@ -672,71 +736,32 @@ If you are interested, Please apply at <a class="reference external" href="https
       <div class="main-menu">
         <ul>
           <li>
-            <a href="https://pytorch.org/get-started">Get Started</a>
+            <a href="https://doc.fedml.ai/starter/get_started.html">Get Started</a>
           </li>
-
           <li>
-            <a href="https://pytorch.org/blog/">FedMl.AI</a>
+            <a href="https://github.com/FedML-AI">Github</a>
           </li>
-
-          <li class="resources-mobile-menu-title">
-            Ecosystem
-          </li>
-
-          <ul class="resources-mobile-menu-items">
-            <li>
-              <a href="https://pytorch-lightning.readthedocs.io/en/stable/">FedML</a>
-            </li>
-
-            <li>
-              <a href="https://torchmetrics.readthedocs.io/en/stable/">TorchMetrics</a>
-            </li>
-
-            <li>
-              <a href="https://lightning-flash.readthedocs.io/en/stable/">Lightning Flash</a>
-            </li>
-
-            <li>
-              <a href="https://lightning-transformers.readthedocs.io/en/stable/">Lightning Transformers</a>
-            </li>
-
-            <li>
-              <a href="https://lightning-bolts.readthedocs.io/en/stable/">Lightning Bolts</a>
-            </li>
-          </ul>
-
-          <!--<li class="resources-mobile-menu-title">
-            Resources
-          </li>
-
-          <ul class="resources-mobile-menu-items">
-            <li>
-              <a href="https://pytorch.org/resources">Developer Resources</a>
-            </li>
-
-            <li>
-              <a href="https://pytorch.org/features">About</a>
-            </li>
-
-            <li>
-              <a href="">Models (Beta)</a>
-            </li>
-
-            <li>
-              <a href="https://pytorch.org/#community-module">Community</a>
-            </li>
-
-            <li>
-              <a href="https://discuss.pytorch.org/">Forums</a>
-            </li>
-          </ul>-->
-
           <li>
-            <a href="https://github.com/pytorch/pytorch">FedMl.AI</a>
+            <a href="https://open.fedml.ai/login?redirect=/platform/main">Platform</a>
           </li>
-
           <li>
-            <a href="https://www.grid.ai/">Grid.ai</a>
+            <a href="https://fedml.slack.com/join/shared_invite/zt-havwx1ee-a1xfOUrATNfc9DFqU~r34w#/shared-invite/email">Join the Community</a>
+          </li>
+          <li>Resource
+            <ul>
+              <li>
+                <a href="https://doc.fedml.ai/resource/papers.html">Publications</a>
+              </li>
+              <li>
+                <a href="https://doc.fedml.ai/resource/video.html">Videos</a>
+              </li>
+              <li>
+                <a href="https://github.com/FedML-AI/FedML/discussions">Discussion</a>
+              </li>
+            </ul>
+          </li>
+          <li>
+            <a href="https://fedml.ai/">FedMl.AI</a>
           </li>
         </ul>
       </div>
