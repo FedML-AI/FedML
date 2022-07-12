@@ -322,6 +322,7 @@ def load_synthetic_data(args):
         test_data_local_dict,
         class_num,
     ]
+
     return dataset, class_num
 
 
