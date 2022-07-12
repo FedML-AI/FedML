@@ -8,13 +8,13 @@ from transformers import (
     DistilBertConfig,
     DistilBertTokenizer,
 )
-from ...model_args import *
-from ...data.data_manager.base_data_manager import BaseDataManager
-from ...data.data_manager.span_extraction_data_manager import (
+from data.model_args import *
+from fedml.data.fednlp.base.data_manager.base_data_manager import BaseDataManager
+from data.span_extraction_data_manager import (
     SpanExtractionDataManager,
 )
 
-from ...data.data_preprocessing.span_extraction_preprocessor import (
+from data.span_extraction_preprocessor import (
     TLMPreprocessor as SEPreprocessor,
 )
 

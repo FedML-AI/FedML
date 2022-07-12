@@ -3,13 +3,13 @@ from torch import nn
 
 from fedml.core import ClientTrainer
 import logging
-from .seq_tagging_utils import *
+from trainer.seq_tagging_utils import *
 import copy
 import logging
 import math
 import os
-from ...data.data_manager.base_data_manager import BaseDataManager
-from ...model_args import SeqTaggingArgs
+from fedml.data.fednlp.base.data_manager.base_data_manager import BaseDataManager
+from trainer.model_args import SeqTaggingArgs
 import numpy as np
 import sklearn
 import wandb
@@ -124,7 +124,7 @@ class MyModelTrainer(ClientTrainer):
             epoch_loss.append(sum(batch_loss) / len(batch_loss))
             logging.info(
                 "Client Index = {}\tEpoch: {}\tLoss: {:.6f}".format(
-                    self.id, epoch, sum(epoch_loss) / len(epoch_loss)
+                    self.id, epoch, epoch_loss[-1]
                 )
             )
             if args.evaluate_during_training and test_data is not None:
@@ -179,10 +179,6 @@ class MyModelTrainer(ClientTrainer):
                 start_index + args.eval_batch_size
                 if i != (n_batches - 1)
                 else test_sample_len
-            )
-            logging.info(
-                "batch index = %d, start_index = %d, end_index = %d"
-                % (i, start_index, end_index)
             )
 
             if preds is None:
