@@ -6,7 +6,7 @@ from spacy.lang.zh import Chinese
 from spacy.lang.de import German
 import spacy
 
-from data_preprocessing.base.globals import *
+from .globals import *
 
 import gensim
 import h5py

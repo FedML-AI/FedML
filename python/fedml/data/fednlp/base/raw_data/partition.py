@@ -1,7 +1,7 @@
 import math
 import random
 
-from ..base.globals import *
+from ..globals import *
 
 
 def uniform_partition(train_index_list, test_index_list=None, n_clients=N_CLIENTS):
