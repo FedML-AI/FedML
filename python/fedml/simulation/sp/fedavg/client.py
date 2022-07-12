@@ -25,6 +25,7 @@ class Client:
         self.local_training_data = local_training_data
         self.local_test_data = local_test_data
         self.local_sample_number = local_sample_number
+        self.model_trainer.set_id(client_idx)
 
     def get_sample_number(self):
         return self.local_sample_number
