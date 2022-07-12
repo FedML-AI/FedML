@@ -75,6 +75,8 @@ class BaseServer:
             self.groups[global_rank] = new_group(ranks=[0, global_rank])
         # self.backend = backend
         logging.info("self.trainer = {}".format(self.trainer))
+        self.client_runtime_history = {}
+
 
 
     def client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
@@ -184,6 +186,10 @@ class BaseServer:
         pass
 
 
+    def record_client_runtime(self, client_runtimes):
+        pass
+
+
     def train(self):
         server_params = ServerToClientParams()
         server_params.add_broadcast_param(name="broadcastTest",
@@ -204,12 +210,14 @@ class BaseServer:
             # server_params.add_broadcast_param(name="model_params", param=model_params)
             server_params.broadcast()
             localAggregatorToServerParams = self.simulate_all_tasks(server_params, client_indexes)
-            logging.info(f"Client Runtime: {localAggregatorToServerParams.get('runtime')}")
+            # logging.info(f"Client Runtime: {localAggregatorToServerParams.get('runtime')}")
             # logging.info(f"localAggregatorToServerParams.get('fc.bias')[:5]: {localAggregatorToServerParams.get('fc.bias')[:5]}, ")
             localAggregatorToServerParams.communicate(self.rank, self.groups, client_schedule)
             # for device_rank in range(self.device_number):
             # localAggregatorToServerParams.add_gather_params(client_index, "runtime", client_runtime)
-            logging.info(f"Client Runtime: {localAggregatorToServerParams.get('runtime')}")
+            client_runtimes = localAggregatorToServerParams.get('runtime')
+            logging.info(f"Client Runtime: {client_runtimes}")
+            self.record_client_runtime(client_runtimes)
             # logging.info(f"localAggregatorToServerParams.get('fc.bias')[:5]: {localAggregatorToServerParams.get('fc.bias')[:5]}, ")
             # global_model_params = localAggregatorToServerParams.get("model_params")
             # self.trainer.set_model_params(global_model_params)
