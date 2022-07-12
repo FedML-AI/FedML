@@ -34,9 +34,9 @@ class FedMLServerManager(ServerManager):
         self.client_online_mapping = {}
         self.client_real_ids = json.loads(args.client_id_list)
 
-        if hasattr(self.args, "backend") and self.args.using_mlops:
+        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
             self.mlops_metrics = MLOpsMetrics()
-            self.mlops_metrics.set_messenger(self.com_manager_status)
+            self.mlops_metrics.set_messenger(self.com_manager_status, args)
             self.mlops_event = MLOpsProfilerEvent(self.args)
             self.aggregator_dist_adapter.aggregator.set_mlops_logger(self.mlops_metrics)
 
@@ -45,7 +45,7 @@ class FedMLServerManager(ServerManager):
 
     def run(self):
         # notify MLOps with RUNNING status
-        if hasattr(self.args, "backend") and self.args.using_mlops:
+        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
             self.mlops_metrics.report_server_training_status(
                 self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING
             )
@@ -82,7 +82,7 @@ class FedMLServerManager(ServerManager):
             )
             client_idx_in_this_round += 1
 
-        if hasattr(self.args, "backend") and self.args.using_mlops:
+        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
             self.mlops_event.log_event_started("server.wait")
 
     def register_message_receive_handlers(self):
@@ -110,7 +110,7 @@ class FedMLServerManager(ServerManager):
             self.client_online_mapping[str(msg_params.get_sender_id())] = True
 
         # notify MLOps with RUNNING status
-        if hasattr(self.args, "backend") and self.args.using_mlops:
+        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
             self.mlops_metrics.report_server_training_status(
                 self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING
             )
@@ -132,7 +132,7 @@ class FedMLServerManager(ServerManager):
 
     def handle_message_receive_model_from_client(self, msg_params):
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
-        if hasattr(self.args, "backend") and self.args.using_mlops:
+        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
             self.mlops_event.log_event_ended("comm_c2s",  event_value=str(self.round_idx), event_edge_id=sender_id)
 
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
@@ -146,12 +146,12 @@ class FedMLServerManager(ServerManager):
         )
         logging.info("b_all_received = " + str(b_all_received))
         if b_all_received:
-            if hasattr(self.args, "backend") and self.args.using_mlops:
+            if hasattr(self.args, "using_mlops") and self.args.using_mlops:
                 self.mlops_event.log_event_started("aggregate")
 
             global_model_params = self.aggregator_dist_adapter.aggregator.aggregate()
 
-            if hasattr(self.args, "backend") and self.args.using_mlops:
+            if hasattr(self.args, "using_mlops") and self.args.using_mlops:
                 self.mlops_event.log_event_ended("aggregate")
             try:
                 self.aggregator_dist_adapter.aggregator.test_on_server_for_all_clients(
@@ -163,7 +163,7 @@ class FedMLServerManager(ServerManager):
                 )
 
             # send round info to the MQTT backend
-            if hasattr(self.args, "backend") and self.args.using_mlops:
+            if hasattr(self.args, "using_mlops") and self.args.using_mlops:
                 round_info = {
                     "run_id": self.args.run_id,
                     "round_index": self.round_idx,
@@ -194,7 +194,7 @@ class FedMLServerManager(ServerManager):
                 )
                 client_idx_in_this_round += 1
 
-            if hasattr(self.args, "backend") and self.args.using_mlops:
+            if hasattr(self.args, "using_mlops") and self.args.using_mlops:
                 model_info = {
                     "run_id": self.args.run_id,
                     "round_idx": self.round_idx + 1,
@@ -206,14 +206,14 @@ class FedMLServerManager(ServerManager):
             self.round_idx += 1
             if self.round_idx == self.round_num:
                 # post_complete_message_to_sweep_process(self.args)
-                if hasattr(self.args, "backend") and self.args.using_mlops:
+                if hasattr(self.args, "using_mlops") and self.args.using_mlops:
                     self.mlops_metrics.report_server_id_status(
                         self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_FINISHED
                     )
                 self.finish()
                 return
             else:
-                if hasattr(self.args, "backend") and self.args.using_mlops:
+                if hasattr(self.args, "using_mlops") and self.args.using_mlops:
                     self.mlops_event.log_event_started("wait")
 
     def send_message_init_config(self, receive_id, global_model_params, datasilo_index):

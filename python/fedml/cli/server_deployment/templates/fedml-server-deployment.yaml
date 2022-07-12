@@ -22,6 +22,8 @@ spec:
         env:
         - name: ACCOUNT_ID
           value: "$FEDML_ACCOUNT_ID"
+        - name: SERVER_DEVICE_ID
+          value: "$FEDML_SERVER_DEVICE_ID"
         - name: FEDML_VERSION
           value: $FEDML_VERSION
         - name: FEDML_PACKAGE_NAME
