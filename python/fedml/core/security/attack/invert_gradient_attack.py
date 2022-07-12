@@ -16,7 +16,7 @@ Steps:
 (1) At the very beginning, the malicious server sends initialized parameters to clients and receives the local gradients from one client.
 (2) The adversary decomposes a parameter gradient into its norm magnitiude and its direction
 (3) The adversary recovery original data of the client via minimizing cosine similarity between gradients of g(x,y) and g(x*, y), 
-	which is solve by an Adam solver.
+	which is solved by an Adam solver.
 """
 
 

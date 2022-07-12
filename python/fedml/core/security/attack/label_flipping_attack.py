@@ -157,7 +157,9 @@ class LabelFlippingAttack:
 
         return poisoned_dataset
 
-    def _client_sampling(self, round_idx, client_num_in_total, poisoned_client_num):
+    def get_poisoned_client_id_list(
+        self, round_idx, client_num_in_total, poisoned_client_num
+    ):
         if client_num_in_total == poisoned_client_num:
             client_indexes = [
                 client_index for client_index in range(client_num_in_total)
