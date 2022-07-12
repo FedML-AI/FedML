@@ -5,19 +5,20 @@ from .FedAvgServerManager import FedAVGServerManager
 from .my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
 from .my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
 from .my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
-
+from ....core.security.fedml_attacker import FedMLAttacker
+from ....core.security.fedml_defender import FedMLDefender
 
 
 def FedML_FedAvg_distributed(
-        args,
-        process_id,
-        worker_number,
-        comm,
-        device,
-        dataset,
-        model,
-        model_trainer=None,
-        preprocessed_sampling_lists=None,
+    args,
+    process_id,
+    worker_number,
+    comm,
+    device,
+    dataset,
+    model,
+    model_trainer=None,
+    preprocessed_sampling_lists=None,
 ):
     [
         train_data_num,
@@ -29,6 +30,10 @@ def FedML_FedAvg_distributed(
         test_data_local_dict,
         class_num,
     ] = dataset
+
+    FedMLAttacker.get_instance().init(args)
+    FedMLDefender.get_instance().init(args)
+
     if process_id == 0:
         init_server(
             args,
@@ -63,20 +68,20 @@ def FedML_FedAvg_distributed(
 
 
 def init_server(
-        args,
-        device,
-        comm,
-        rank,
-        size,
-        model,
-        train_data_num,
-        train_data_global,
-        test_data_global,
-        train_data_local_dict,
-        test_data_local_dict,
-        train_data_local_num_dict,
-        model_trainer,
-        preprocessed_sampling_lists=None,
+    args,
+    device,
+    comm,
+    rank,
+    size,
+    model,
+    train_data_num,
+    train_data_global,
+    test_data_global,
+    train_data_local_dict,
+    test_data_local_dict,
+    train_data_local_num_dict,
+    model_trainer,
+    preprocessed_sampling_lists=None,
 ):
     if model_trainer is None:
         if args.dataset == "stackoverflow_lr":
@@ -124,17 +129,17 @@ def init_server(
 
 
 def init_client(
-        args,
-        device,
-        comm,
-        process_id,
-        size,
-        model,
-        train_data_num,
-        train_data_local_num_dict,
-        train_data_local_dict,
-        test_data_local_dict,
-        model_trainer=None,
+    args,
+    device,
+    comm,
+    process_id,
+    size,
+    model,
+    train_data_num,
+    train_data_local_num_dict,
+    train_data_local_dict,
+    test_data_local_dict,
+    model_trainer=None,
 ):
     client_index = process_id - 1
     if model_trainer is None:

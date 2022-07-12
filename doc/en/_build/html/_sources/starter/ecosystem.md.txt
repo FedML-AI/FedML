@@ -29,7 +29,7 @@ future research aimed at developing FL methods for NLP tasks.
 ## FedGraphNN: A Federated Learning Benchmark System for Graph Neural Networks
 Arxiv: [https://arxiv.org/pdf/2111.11066.pdf](https://arxiv.org/pdf/2111.11066.pdf)
 
-Published at ICLR 2021 workshop and KDD 2021 workshop
+Published at ICLR'21-DPML and MLSys'21-GNNSys workshops
 
 Graph Neural Network (GNN) research is rapidly growing thanks to the capacity of GNNs in learning distributed representations from graph-structured data.
 However, centralizing a massive amount of real-world graph data for GNN training is prohibitive due to privacy concerns, regulation restrictions, and commercial
