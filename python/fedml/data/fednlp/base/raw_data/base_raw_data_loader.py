@@ -1,6 +1,7 @@
-from abc import ABC, abstractmethod
-import h5py
 import json
+from abc import ABC, abstractmethod
+
+import h5py
 import numpy as np
 from tqdm import tqdm
 

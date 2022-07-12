@@ -1,9 +1,6 @@
-from ..data_manager.base_data_manager import BaseDataManager
-from torch.utils.data import DataLoader
-import h5py
-import json
-import logging
 from tqdm import tqdm
+
+from fedml.data.fednlp.base.data_manager.base_data_manager import BaseDataManager
 
 
 class TextClassificationDataManager(BaseDataManager):

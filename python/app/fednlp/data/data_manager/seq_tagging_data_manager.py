@@ -1,9 +1,6 @@
-from ..data_manager.base_data_manager import BaseDataManager
-import h5py
-from torch.utils.data import DataLoader
-import logging
-import numpy as np
 from tqdm import tqdm
+
+from fedml.data.fednlp.base.data_manager.base_data_manager import BaseDataManager
 
 
 class SequenceTaggingDataManager(BaseDataManager):
