@@ -18,9 +18,13 @@ def test__attack_random_mode():
     attack = ByzantineAttack(byzantine_client_num=2, attack_mode="random")
     print(attack.attack(local_w, global_w=None))
 
+def test__attack_flip_mode():
+    local_w = create_fake_model_list(10)
+    attack = ByzantineAttack(byzantine_client_num=2, attack_mode="flip")
+    print(attack.attack(local_w, global_w=local_w[0]))
 
 if __name__ == '__main__':
     test_get_malicious_client_idx()
     test__attack_zero_mode()
     test__attack_random_mode()
-
+    test__attack_flip_mode()

@@ -99,10 +99,6 @@ def create_model(args, feat_dim, num_cats, output_dim= None):
     return model, trainer
 
 
-
-
-
-
 if __name__ == "__main__":
     # init FedML framework
     args = fedml.init()

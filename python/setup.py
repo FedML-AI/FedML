@@ -35,6 +35,8 @@ requirements = [
     "grpcio",
     "torch",
     "torchvision",
+    "spacy",
+    "gensim",
 ]
 
 if platform.machine() == "x86_64":

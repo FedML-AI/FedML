@@ -1,16 +1,8 @@
-# TODO: will finish this part ASAP
-import logging
 import os
-import re
-import string
 
-import pandas as pd
-import torch
-from torch.utils.data import TensorDataset
-
-from ..data_preprocessing.base.base_example import Seq2SeqInputExample
-from ..data_preprocessing.base.base_preprocessor import BasePreprocessor
-from ..data_preprocessing.utils.seq2seq_utils import (
+from fedml.data.fednlp.base.preprocess.base_example import Seq2SeqInputExample
+from fedml.data.fednlp.base.preprocess.base_preprocessor import BasePreprocessor
+from .utils.seq2seq_utils import (
     Seq2SeqDataset,
     SimpleSummarizationDataset,
 )
@@ -77,9 +69,5 @@ class TLMPreprocessor(BasePreprocessor):
                 )
             else:
                 return Seq2SeqDataset(
-                    encoder_tokenizer,
-                    decoder_tokenizer,
-                    self.args,
-                    examples,
-                    mode,
+                    encoder_tokenizer, decoder_tokenizer, self.args, examples, mode,
                 )
