@@ -1,16 +1,18 @@
 import fedml
 from data.model_args import *
-from model.distilbert_model import DistilBertForSequenceClassification
-from model.bert_model import BertForSequenceClassification
-from trainer.classification_trainer import MyModelTrainer as MyCLSTrainer
+
+from trainer.seq_tagging_trainer import MyModelTrainer as MySTTrainer
 from data.data_loader import load
-from fedml.simulation import SimulatorMPI as Simulator
+import torch
+from fedml.cross_silo import Server
 import logging
 from transformers import (
     BertConfig,
     BertTokenizer,
+    BertForTokenClassification,
     DistilBertConfig,
     DistilBertTokenizer,
+    DistilBertForTokenClassification,
 )
 
 
@@ -20,11 +22,9 @@ def create_model(args, output_dim=1):
         "create_model. model_name = %s, output_dim = %s" % (model_name, output_dim)
     )
     MODEL_CLASSES = {
-        "classification": {
-            "bert": (BertConfig, BertForSequenceClassification),
-            "distilbert": (DistilBertConfig, DistilBertForSequenceClassification),
-            # "roberta": (RobertaConfig, RobertaForSequenceClassification, RobertaTokenizer),
-            # "albert": (AlbertConfig, AlbertForSequenceClassification, AlbertTokenizer),
+        "seq_tagging": {
+            "bert": (BertConfig, BertForTokenClassification),
+            "distilbert": (DistilBertConfig, DistilBertForTokenClassification),
         },
     }
     try:
@@ -36,7 +36,7 @@ def create_model(args, output_dim=1):
     model_args["num_labels"] = output_dim
     config = config_class.from_pretrained(args.model, **model_args)
     model = model_class.from_pretrained(args.model, config=config)
-    trainer = MyCLSTrainer(model)
+    trainer = MySTTrainer(model)
     return model, trainer
 
 
@@ -51,8 +51,9 @@ if __name__ == "__main__":
     dataset, output_dim = load(args)
 
     # load model and trainer
+    args.num_labels = output_dim
     model, trainer = create_model(args, output_dim)
 
     # start training
-    simulator = Simulator(args, device, dataset, model, trainer)
-    simulator.run()
+    server = Server(args, device, dataset, model, trainer)
+    server.run()

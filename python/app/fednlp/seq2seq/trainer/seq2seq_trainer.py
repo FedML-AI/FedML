@@ -3,15 +3,15 @@ from torch import nn
 
 from fedml.core import ClientTrainer
 import logging
-from .seq2seq_utils import *
+from trainer.seq2seq_utils import *
 from multiprocessing.dummy import Pool
 from multiprocessing import cpu_count
 import copy
 import logging
 import math
 import os
-from ...data.data_manager.base_data_manager import BaseDataManager
-from ...model_args import Seq2SeqArgs
+from fedml.data.fednlp.base.data_manager.base_data_manager import BaseDataManager
+from trainer.model_args import Seq2SeqArgs
 import numpy as np
 import sklearn
 import wandb
@@ -244,7 +244,6 @@ class MyModelTrainer(ClientTrainer):
 
         self.model.to(device)
         self.model.eval()
-        logging.info("len(test_dl) = %d, n_batches = %d" % (len(test_data), n_batches))
         for i, batch in enumerate(test_data):
             # batch = tuple(t for t in batch)
             inputs = self._get_inputs_dict(batch, device)
