@@ -14,21 +14,21 @@ class CClipDefense(BaseDefenseMethod):
     def __init__(self, tau):
         self.tau = tau  # clipping raduis
 
-    def defend(self, local_w, refs):
-        num_client = len(local_w)
+    def defend(self, client_grad_list, refs):
+        num_client = len(client_grad_list)
         vec_local_w = [
-            (local_w[i][0], utils.vectorize_weight(local_w[i][1]))
+            (client_grad_list[i][0], utils.vectorize_weight(client_grad_list[i][1]))
             for i in range(0, num_client)
         ]
         print(vec_local_w)
         vec_refs = utils.vectorize_weight(refs)
         cclip_score = self._compute_cclip_score(vec_local_w, vec_refs)
 
-        _, averaged_params = local_w[0]
+        _, averaged_params = client_grad_list[0]
         for k in averaged_params.keys():
             averaged_params[k] = refs[k]
             for i in range(0, num_client):
-                _, local_model_params = local_w[i]
+                _, local_model_params = client_grad_list[i]
                 averaged_params[k] += (local_model_params[k] - refs[k]) * cclip_score[i]
 
         return averaged_params, cclip_score
