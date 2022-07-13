@@ -1,7 +1,3 @@
-import copy
-import logging
-
-import numpy as np
 from torch import nn
 
 from fedml.core import ClientTrainer

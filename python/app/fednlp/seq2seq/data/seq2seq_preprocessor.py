@@ -1,5 +1,3 @@
-import os
-
 from fedml.data.fednlp.base.preprocess.base_example import Seq2SeqInputExample
 from fedml.data.fednlp.base.preprocess.base_preprocessor import BasePreprocessor
 from .seq2seq_data_utils import (
@@ -63,9 +61,5 @@ class TLMPreprocessor(BasePreprocessor):
                 )
             else:
                 return Seq2SeqDataset(
-                    encoder_tokenizer,
-                    decoder_tokenizer,
-                    self.args,
-                    examples,
-                    mode,
+                    encoder_tokenizer, decoder_tokenizer, self.args, examples, mode,
                 )

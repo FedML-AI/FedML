@@ -1,30 +1,20 @@
-import torch
-from torch import nn
-
-from fedml.core import ClientTrainer
-import logging
-from .seq_tagging_utils import *
 import copy
-import logging
-import math
 import os
-from fedml.data.fednlp.base.data_manager.base_data_manager import BaseDataManager
-from fedml.model.nlp.model_args import SeqTaggingArgs
-import numpy as np
-import sklearn
-import wandb
-from transformers import (
-    AdamW,
-    get_linear_schedule_with_warmup,
-)
 
+import numpy as np
+import torch
 from seqeval.metrics import (
     f1_score,
     precision_score,
     recall_score,
-    classification_report,
 )
+from torch import nn
 from tqdm import tqdm
+
+from fedml.core import ClientTrainer
+from fedml.data.fednlp.base.data_manager.base_data_manager import BaseDataManager
+from fedml.model.nlp.model_args import SeqTaggingArgs
+from .seq_tagging_utils import *
 
 
 class MyModelTrainer(ClientTrainer):
@@ -195,9 +185,7 @@ class MyModelTrainer(ClientTrainer):
                     out_input_ids, batch[1].detach().cpu().numpy(), axis=0
                 )
                 out_attention_mask = np.append(
-                    out_attention_mask,
-                    batch[2].detach().cpu().numpy(),
-                    axis=0,
+                    out_attention_mask, batch[2].detach().cpu().numpy(), axis=0,
                 )
 
         eval_loss = eval_loss / nb_eval_steps
