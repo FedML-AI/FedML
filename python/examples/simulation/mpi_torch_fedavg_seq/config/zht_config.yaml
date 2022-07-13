@@ -6,19 +6,19 @@ data_args:
   dataset: "cifar10"
   data_cache_dir: "~/datasets/cifar10"
   partition_method: "hetero"
-  partition_alpha: 0.1
+  partition_alpha: 0.5
 
 model_args:
   model: "resnet18"
 
 train_args:
-  federated_optimizer: "FedAvg"
+  federated_optimizer: "FedAvg_seq"
   client_id_list: "[]"
-  client_num_in_total: 10
-  client_num_per_round: 5
+  client_num_in_total: 100
+  client_num_per_round: 20
   comm_round: 200
   epochs: 1
-  batch_size: 200
+  batch_size: 50
   train_batch_size: 200
   test_batch_size: 200
   client_optimizer: sgd
@@ -29,14 +29,14 @@ validation_args:
   frequency_of_the_test: 5
 
 device_args:
-  worker_num: 3
+  worker_num: 4
   using_gpu: true
   gpu_mapping_file: config/zht_gpu_mapping.yaml
   gpu_mapping_key: mapping_scigpu11_2
-
+  gpu_util_parse: "scigpu13:0,0,2,1;scigpu12:0,0,1,1"
 
 comm_args:
-  backend: "NCCL"
+  backend: "MPI"
   is_mobile: 0
 
 
