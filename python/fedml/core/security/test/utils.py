@@ -1,6 +1,7 @@
 import collections
 import copy
 import torch
+import pickle
 
 
 # This function is for attack / defense at clients;
@@ -119,3 +120,15 @@ def create_fake_model_list_MNIST(active_worker_num):  # local_w for defenses at 
         if i % 3 == 2:
             model_list.append((25+i, copy.deepcopy(c_local_w)))  # add a random sample num
     return model_list
+
+def create_fake_gradient_Cifar100(file_path='./fake_data/fake_gradient_Cifar100.pkl'):
+    gradient = pickle.load(open(file_path, "rb"))
+    return gradient
+
+def create_fake_model_Cifar100(file_path='./fake_data/fake_model_Cifar100.pt'):
+    model = torch.load(file_path)
+    return model
+
+def create_fake_data_Cifar100(file_path='./fake_data/fake_data_Cifar100.pkl'):
+    data = torch.load(file_path)
+    return data

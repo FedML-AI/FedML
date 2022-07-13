@@ -1,8 +1,8 @@
-import fedml
 import torch
-from fedml.data.MNIST.data_loader import download_mnist, load_partition_data_mnist
 
-from fedml.simulation import SimulatorSingleProcess as Simulator
+import fedml
+from fedml import FedMLRunner
+from fedml.data.MNIST.data_loader import download_mnist, load_partition_data_mnist
 
 
 def load_data(args):
@@ -45,9 +45,6 @@ def load_data(args):
     return dataset, class_num
 
 
-
-
-
 class LogisticRegression(torch.nn.Module):
     def __init__(self, input_dim, output_dim):
         super(LogisticRegression, self).__init__()
@@ -72,5 +69,5 @@ if __name__ == "__main__":
     model = LogisticRegression(28 * 28, output_dim)
 
     # start training
-    simulator = Simulator(args, device, dataset, model)
-    simulator.run()
+    fedml_runner = FedMLRunner(args, device, dataset, model)
+    fedml_runner.run()
