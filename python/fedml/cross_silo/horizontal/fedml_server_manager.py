@@ -28,7 +28,6 @@ class FedMLServerManager(ServerManager):
         self.is_preprocessed = is_preprocessed
         self.preprocessed_client_lists = preprocessed_client_lists
 
-        self.pre_transform_model_file_path = args.global_model_file_path
         self.client_online_mapping = {}
         self.client_real_ids = json.loads(args.client_id_list)
 
@@ -111,6 +110,8 @@ class FedMLServerManager(ServerManager):
         client_status = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_STATUS)
         if client_status == "ONLINE":
             self.client_online_mapping[str(msg_params.get_sender_id())] = True
+
+            logging.info("self.client_online_mapping = {}".format(self.client_online_mapping))
 
         # notify MLOps with RUNNING status
         if hasattr(self.args, "using_mlops") and self.args.using_mlops:
