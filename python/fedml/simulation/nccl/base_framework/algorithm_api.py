@@ -46,33 +46,6 @@ def FedML_Base_NCCL(args, process_id, worker_number, comm,
     else:
         return BaseLocalAggregator(args, process_id, worker_number, comm,
             device, dataset, model, model_trainer)
-    # if process_id == 0:
-    #     return init_server(args, process_id, worker_number, comm,
-    #         device, dataset, model, model_trainer)
-    # else:
-    #     return init_local_aggregator(args, process_id, worker_number, comm,
-    #         device, dataset, model, model_trainer)
-
-
-
-# def init_server(args, process_id, worker_number, comm,
-#             device, dataset, model, model_trainer):
-#     # aggregator
-#     # client_num = size - 1
-#     server = BaseServer(args, process_id, worker_number, comm,
-#             device, dataset, model, model_trainer)
-#     return server
-
-
-# def init_local_aggregator(args, process_id, worker_number, comm,
-#             device, dataset, model, model_trainer):
-#     # trainer
-#     # client_ID = process_id - 1
-#     local_aggregator = BaseLocalAggregator(args, process_id, worker_number, comm,
-#             device, dataset, model, model_trainer)
-#     return local_aggregator
-
-
 
 
 

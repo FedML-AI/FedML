@@ -37,7 +37,8 @@ validation_args:
 
 device_args:
   using_gpu: false
-  device_type: cpu
+  gpu_mapping_file: config/gpu_mapping.yaml
+  gpu_mapping_key: mapping_default
 
 comm_args:
   backend: "MQTT_S3"
