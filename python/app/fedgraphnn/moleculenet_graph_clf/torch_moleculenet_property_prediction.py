@@ -2,6 +2,7 @@ import logging
 
 import fedml
 from data.data_loader import load_partition_data, get_data
+from fedml import FedMLRunner
 from fedml.simulation import SimulatorMPI
 from model.gat_readout import GatMoleculeNet
 from model.gcn_readout import GcnMoleculeNet
@@ -137,9 +138,7 @@ if __name__ == "__main__":
     model, trainer = create_model(args, args.model, feat_dim, num_cats, output_dim=None)
 
     # start training
-    try:
-        simulator = SimulatorMPI(args, device, dataset, model, trainer)
-        simulator.run()
-    except Exception as e:
-        raise e
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
+    fedml_runner.run()
+
 
