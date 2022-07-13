@@ -3,7 +3,7 @@ from torch import nn
 
 from fedml.core import ClientTrainer
 import logging
-from trainer.seq2seq_utils import *
+from .seq2seq_utils import *
 from multiprocessing.dummy import Pool
 from multiprocessing import cpu_count
 import copy
@@ -11,7 +11,7 @@ import logging
 import math
 import os
 from fedml.data.fednlp.base.data_manager.base_data_manager import BaseDataManager
-from trainer.model_args import Seq2SeqArgs
+from fedml.model.nlp.model_args import *
 import numpy as np
 import sklearn
 import wandb

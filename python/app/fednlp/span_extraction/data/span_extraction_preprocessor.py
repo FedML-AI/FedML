@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 from fedml.data.fednlp.base.preprocess.base_example import SpanExtractionInputExample
 from fedml.data.fednlp.base.preprocess.base_preprocessor import BasePreprocessor
-from data.span_extraction_data_utils import (
+from .span_extraction_data_utils import (
     squad_convert_examples_to_features,
 )
 
