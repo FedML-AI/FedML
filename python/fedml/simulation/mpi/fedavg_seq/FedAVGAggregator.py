@@ -49,10 +49,10 @@ class FedAVGAggregator(object):
     def set_global_model_params(self, model_parameters):
         self.trainer.set_model_params(model_parameters)
 
-    def add_local_trained_result(self, index, model_params, sample_num):
+    def add_local_trained_result(self, index, model_params):
         logging.info("add_model. index = %d" % index)
         self.model_dict[index] = model_params
-        self.sample_num_dict[index] = sample_num
+        # self.sample_num_dict[index] = sample_num
         self.flag_client_model_uploaded_dict[index] = True
 
     def check_whether_all_receive(self):
@@ -135,14 +135,14 @@ class FedAVGAggregator(object):
                 self.model_dict[idx] = transform_list_to_tensor(self.model_dict[idx])
 
             # added for attack & defense; enable multiple defenses
-            if FedMLDefender.get_instance().is_defense_enabled():
-                self.model_dict[idx] = FedMLDefender.get_instance().defend(
-                    self.model_dict[idx], self.get_global_model_params()
-                )
+            # if FedMLDefender.get_instance().is_defense_enabled():
+            #     self.model_dict[idx] = FedMLDefender.get_instance().defend(
+            #         self.model_dict[idx], self.get_global_model_params()
+            #     )
 
             # model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
             model_list.append(self.model_dict[idx])
-            training_num += self.sample_num_dict[idx]
+            # training_num += self.sample_num_dict[idx]
         logging.info("len of self.model_dict[idx] = " + str(len(self.model_dict)))
 
         # logging.info("################aggregate: %d" % len(model_list))
