@@ -16,18 +16,26 @@ def get_device(args):
     elif args.training_type == "simulation" and args.backend == "MPI":
         from .gpu_mapping_mpi import (
             mapping_processes_to_gpu_device_from_yaml_file_mpi,
+            mapping_processes_to_gpu_device_from_gpu_util_parse
         )
-
-        device = mapping_processes_to_gpu_device_from_yaml_file_mpi(
-            args.process_id,
-            args.worker_num,
-            args.gpu_mapping_file if args.using_gpu else None,
-            args.gpu_mapping_key,
-        )
+        if hasattr(args, "gpu_util_parse"):
+            device = mapping_processes_to_gpu_device_from_gpu_util_parse(
+                args.process_id,
+                args.worker_num,
+                args.gpu_util_parse,
+            )
+        else:
+            device = mapping_processes_to_gpu_device_from_yaml_file_mpi(
+                args.process_id,
+                args.worker_num,
+                args.gpu_mapping_file if args.using_gpu else None,
+                args.gpu_mapping_key,
+            )
         return device
     elif args.training_type == "simulation" and args.backend == "NCCL":
         from .gpu_mapping_mpi import (
             mapping_processes_to_gpu_device_from_yaml_file_mpi,
+            mapping_processes_to_gpu_device_from_gpu_util_parse
         )
 
         device = mapping_processes_to_gpu_device_from_yaml_file_mpi(
