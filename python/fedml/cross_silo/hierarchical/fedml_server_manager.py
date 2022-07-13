@@ -2,10 +2,6 @@ import json
 import logging
 import time
 
-from fedml.constants import FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
-
-from .utils import convert_model_params_to_ddp
-
 from .message_define import MyMessage
 from ...core.distributed.communication.message import Message
 from ...core.distributed.server.server_manager import ServerManager
@@ -32,40 +28,28 @@ class FedMLServerManager(ServerManager):
         self.is_preprocessed = is_preprocessed
         self.preprocessed_client_lists = preprocessed_client_lists
 
-        self.pre_transform_model_file_path = args.global_model_file_path
         self.client_online_mapping = {}
         self.client_real_ids = json.loads(args.client_id_list)
 
         if hasattr(self.args, "using_mlops") and self.args.using_mlops:
             self.mlops_metrics = MLOpsMetrics()
-            self.mlops_metrics.set_messenger(self.com_manager_status, args)
+            self.mlops_metrics.set_messenger(self.com_manager_status, self.args)
             self.mlops_event = MLOpsProfilerEvent(self.args)
             self.aggregator.set_mlops_logger(self.mlops_metrics)
 
-        self.start_running_time = 0.0
+        self.start_running_time = None
         self.aggregated_model_url = None
 
         self.is_initialized = False
         self.client_id_list_in_this_round = None
         self.data_silo_index_list = None
 
-
     def run(self):
-        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-            self.mlops_metrics.report_server_training_status(
-                self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING
-            )
+        self.start_running_time = time.time()
         super().run()
 
     def send_init_msg(self):
-        # sampling clients
-        self.start_running_time = time.time()
-
         global_model_params = self.aggregator.get_global_model_params()
-
-
-        if self.args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
-            global_model_params = convert_model_params_to_ddp(global_model_params)
 
         client_idx_in_this_round = 0
         for client_id in self.client_id_list_in_this_round:
@@ -77,7 +61,9 @@ class FedMLServerManager(ServerManager):
             client_idx_in_this_round += 1
 
         if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-            self.mlops_event.log_event_started("server.wait")
+            self.mlops_event.log_event_started(
+                "server.wait", event_value=str(self.round_idx)
+            )
 
     def register_message_receive_handlers(self):
         logging.info("register_message_receive_handlers------")
@@ -110,16 +96,22 @@ class FedMLServerManager(ServerManager):
             # check client status in case that some clients start earlier than the server
             client_idx_in_this_round = 0
             for client_id in self.client_id_list_in_this_round:
-                self.send_message_check_client_status(
-                    client_id,
-                    self.data_silo_index_list[client_idx_in_this_round],
-                )
+                try:
+                    self.send_message_check_client_status(
+                        client_id,
+                        self.data_silo_index_list[client_idx_in_this_round],
+                    )
+                    logging.info("Connection ready for client" + str(client_id))
+                except Exception as e:
+                    logging.info("Connection not ready for client" + str(client_id))
                 client_idx_in_this_round += 1
 
     def handle_message_client_status_update(self, msg_params):
         client_status = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_STATUS)
         if client_status == "ONLINE":
             self.client_online_mapping[str(msg_params.get_sender_id())] = True
+
+            logging.info("self.client_online_mapping = {}".format(self.client_online_mapping))
 
         # notify MLOps with RUNNING status
         if hasattr(self.args, "using_mlops") and self.args.using_mlops:
@@ -146,7 +138,9 @@ class FedMLServerManager(ServerManager):
     def handle_message_receive_model_from_client(self, msg_params):
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-            self.mlops_event.log_event_ended("comm_c2s",  event_value=str(self.round_idx), event_edge_id=sender_id)
+            self.mlops_event.log_event_ended(
+                "comm_c2s", event_value=str(self.round_idx), event_edge_id=sender_id
+            )
 
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         local_sample_number = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
@@ -158,20 +152,22 @@ class FedMLServerManager(ServerManager):
         logging.info("b_all_received = " + str(b_all_received))
         if b_all_received:
             if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-                self.mlops_event.log_event_started("aggregate")
-
+                self.mlops_event.log_event_ended(
+                    "server.wait", event_value=str(self.round_idx)
+                )
+                self.mlops_event.log_event_started(
+                    "server.agg_and_eval", event_value=str(self.round_idx)
+                )
+            tick = time.time()
             global_model_params = self.aggregator.aggregate()
+            MLOpsProfilerEvent.log_to_wandb({"AggregationTime": time.time() - tick, 'round': self.round_idx })
 
-            if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-                self.mlops_event.log_event_ended("aggregate")
             try:
-                # update the global model which is cached at the server side
-                self.aggregator.set_global_model_params(global_model_params)
                 self.aggregator.test_on_server_for_all_clients(self.round_idx)
             except Exception as e:
                 logging.info("aggregator.test exception: " + str(e))
 
-            if hasattr(self.args, "backend") and self.args.using_mlops:
+            if hasattr(self.args, "using_mlops") and self.args.using_mlops:
                 self.mlops_event.log_event_ended(
                     "server.agg_and_eval", event_value=str(self.round_idx)
                 )
@@ -184,7 +180,8 @@ class FedMLServerManager(ServerManager):
                     "total_rounds": self.round_num,
                     "running_time": round(time.time() - self.start_running_time, 4),
                 }
-                self.mlops_metrics.report_server_training_round_info(round_info)
+                if self.mlops_metrics is not None:
+                    self.mlops_metrics.report_server_training_round_info(round_info)
 
             self.client_id_list_in_this_round = self.aggregator.client_selection(
                 self.round_idx, self.client_real_ids, self.args.client_num_per_round
@@ -194,6 +191,9 @@ class FedMLServerManager(ServerManager):
                 self.args.client_num_in_total,
                 len(self.client_id_list_in_this_round),
             )
+
+            if self.round_idx == 0:
+                MLOpsProfilerEvent.log_to_wandb({"BenchmarkStart": time.time()})
 
             client_idx_in_this_round = 0
             for receiver_id in self.client_id_list_in_this_round:
@@ -220,18 +220,36 @@ class FedMLServerManager(ServerManager):
                     self.mlops_metrics.report_server_id_status(
                         self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_FINISHED
                     )
-                self.finish()
-                return
+                logging.info(
+                    "=============training is finished. Cleanup...============"
+                )
+                self.cleanup()
             else:
+                logging.info("waiting for another round...")
                 if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-                    self.mlops_event.log_event_started("wait")
+                    self.mlops_event.log_event_started(
+                        "server.wait", event_value=str(self.round_idx)
+                    )
+
+    def cleanup(self):
+
+        client_idx_in_this_round = 0
+        for client_id in self.client_id_list_in_this_round:
+            self.send_message_finish(
+                client_id, self.data_silo_index_list[client_idx_in_this_round],
+            )
+            client_idx_in_this_round += 1
+        time.sleep(3)
+        self.finish()
 
     def send_message_init_config(self, receive_id, global_model_params, datasilo_index):
+        tick = time.time()
         message = Message(MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id)
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")
         self.send_message(message)
+        MLOpsProfilerEvent.log_to_wandb({"Communiaction/Send_Total": time.time() - tick})
 
     def send_message_check_client_status(self, receive_id, datasilo_index):
         message = Message(
@@ -240,7 +258,22 @@ class FedMLServerManager(ServerManager):
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
         self.send_message(message)
 
-    def send_message_sync_model_to_client(self, receive_id, global_model_params, client_index):
+    def send_message_finish(self, receive_id, datasilo_index):
+        message = Message(
+            MyMessage.MSG_TYPE_S2C_FINISH, self.get_sender_id(), receive_id
+        )
+        message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
+        self.send_message(message)
+        logging.info(
+            " ====================send cleanup message to {}====================".format(
+                str(datasilo_index)
+            )
+        )
+
+    def send_message_sync_model_to_client(
+        self, receive_id, global_model_params, client_index
+    ):
+        tick = time.time()
         logging.info("send_message_sync_model_to_client. receive_id = %d" % receive_id)
         message = Message(
             MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT,
@@ -251,6 +284,8 @@ class FedMLServerManager(ServerManager):
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(client_index))
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")
         self.send_message(message)
+
+        MLOpsProfilerEvent.log_to_wandb({"Communiaction/Send_Total": time.time() - tick})
 
         if self.aggregated_model_url is None and self.args.backend == "MQTT_S3":
             self.aggregated_model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
