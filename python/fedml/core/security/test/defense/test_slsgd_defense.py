@@ -1,5 +1,5 @@
 import random
-from fedml.core.security.defense.SLSGD import SLSGD
+from fedml.core.security.defense.slsgd_defense import SLSGDDefense
 from fedml.core.security.test.utils import (
     create_fake_model_list,
     create_fake_local_w_global_w,
@@ -7,7 +7,7 @@ from fedml.core.security.test.utils import (
 
 
 def test_defense_option2():
-    defense = SLSGD(trim_param_b=3, alpha=0.5, option_type=2)
+    defense = SLSGDDefense(trim_param_b=3, alpha=0.5, option_type=2)
     model_list = create_fake_model_list(20)
     random.shuffle(model_list)
     val = defense.defend(model_list)
@@ -15,7 +15,7 @@ def test_defense_option2():
 
 
 def test__sort_and_trim():
-    defense = SLSGD(trim_param_b=3, alpha=0.5, option_type=2)
+    defense = SLSGDDefense(trim_param_b=3, alpha=0.5, option_type=2)
     model_list = create_fake_model_list(20)
     random.shuffle(model_list)
     print(f"len(model_list) = {len(model_list)}")
@@ -31,7 +31,7 @@ def test_aggregation():
         print(f"avg_w = {avg_w}")
         print(f"global_w = {global_w}")
         print(
-            f"alpha = {alpha}, aggregation = {SLSGD(trim_param_b=3, alpha=alpha, option_type=2).aggregate(avg_w, global_w)}"
+            f"alpha = {alpha}, aggregation = {SLSGDDefense(trim_param_b=3, alpha=alpha, option_type=2).aggregate(avg_w, global_w)}"
         )
 
 
