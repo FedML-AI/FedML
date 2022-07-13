@@ -16,8 +16,9 @@ For client 2, run the following script:
 ```
 bash run_client.sh 2
 ```
-Note: please run the server first.
-
+Note: 
+1. please change the run_id in run_client/run_server scripts to your own.
+2. For Windows users, please use *.bat scripts.
 
 ## A Better User-experience with FedML MLOps (open.fedml.ai)
 To reduce the difficulty and complexity of these CLI commands. We recommend you to use our MLOps (open.fedml.ai).

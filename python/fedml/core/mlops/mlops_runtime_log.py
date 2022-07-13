@@ -140,6 +140,7 @@ class MLOpsRuntimeLog:
             return
 
         self.log_line_index += len(log_lines)
+        # print("log_line_index = {}, len(log_lines) = {}".format(self.log_line_index, len(log_lines)))
         #print("current log line len {}".format(self.log_line_index))
         log_upload_request = {
             "run_id": run_id,

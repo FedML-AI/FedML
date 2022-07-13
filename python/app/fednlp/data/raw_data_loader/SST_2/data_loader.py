@@ -3,7 +3,7 @@ import os
 from nltk.tree import Tree
 
 
-from data.raw_data_loader.base.base_raw_data_loader import (
+from fedml.data.fednlp.base.raw_data.base_raw_data_loader import (
     TextClassificationRawDataLoader,
 )
 
