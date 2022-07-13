@@ -6,7 +6,7 @@ import logging
 from fedml.model.nlp.model_args import *
 import numpy as np
 from tqdm import tqdm
-
+import torch
 
 class MyModelTrainer(ClientTrainer):
     def __init__(

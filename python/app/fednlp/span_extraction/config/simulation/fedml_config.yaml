@@ -17,12 +17,12 @@ model_args:
   formulation: "span_extraction"
 
 train_args:
-  federated_optimizer: "FedAvg"
+  federated_optimizer: "FedOpt"
   client_id_list: "[]"
   client_num_in_total: 6
   client_num_per_round: 4
   comm_round: 10
-  epochs: 3
+  epochs: 1
   batch_size: 16
   eval_batch_size: 8
   max_seq_length: 128
@@ -30,9 +30,11 @@ train_args:
   output_dir: "~/output_dir"
   client_optimizer: AdamW
   server_optimizer: sgd
-  server_lr: 0.1
-  learning_rate: 0.0001
+  server_lr: 0.01
+  learning_rate: 0.00005
   weight_decay: 0.001
+  server_momentum: 0.9
+  ci: 0
   gradient_accumulation_steps: 1
   clip_grad_norm: 0
   fedprox_mu: 1
