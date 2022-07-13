@@ -70,6 +70,8 @@ def create_model(args, device, output_dim=1):
         tokenizer_class = BertTokenizer
     elif args.model_type == "distilbert":
         tokenizer_class = DistilBertTokenizer
+    else:
+        raise Exception("no such model type")
     tokenizer = tokenizer_class.from_pretrained(
         args.model, do_lower_case=args.do_lower_case
     )

@@ -18,12 +18,9 @@
 from __future__ import absolute_import, division, print_function
 
 import linecache
-import logging
-import os
 from io import open
 from multiprocessing import Pool, cpu_count
 
-import pandas as pd
 import torch
 from torch.functional import split
 from torch.nn import CrossEntropyLoss
