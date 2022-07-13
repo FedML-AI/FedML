@@ -5,7 +5,6 @@ import numpy as np
 
 from time import sleep
 from .lsa_message_define import MyMessage
-from .utils import transform_tensor_to_list
 from ...core.distributed.communication.message import Message
 from ...core.distributed.server.server_manager import ServerManager
 from ...core.mlops import MLOpsProfilerEvent, MLOpsMetrics
@@ -31,7 +30,6 @@ class FedMLServerManager(ServerManager):
         self.is_preprocessed = is_preprocessed
         self.preprocessed_client_lists = preprocessed_client_lists
 
-        self.pre_transform_model_file_path = args.global_model_file_path
         self.client_online_mapping = {}
         self.client_real_ids = json.loads(args.client_id_list)
 

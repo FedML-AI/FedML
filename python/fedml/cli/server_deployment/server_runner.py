@@ -336,7 +336,8 @@ class FedMLServerRunner:
                 python_program = 'python3'
 
         process = subprocess.Popen([python_program, entry_file,
-                                    '--cf', conf_file, '--rank', str(dynamic_args_config["rank"])])
+                                    '--cf', conf_file, '--rank', str(dynamic_args_config["rank"]),
+                                    '--role', 'server'])
         FedMLServerRunner.save_learning_process(process.pid)
 
         # if self.check_server_is_ready():

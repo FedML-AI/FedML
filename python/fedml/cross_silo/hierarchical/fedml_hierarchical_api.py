@@ -1,18 +1,15 @@
-from .fedml_client_master_manager import ClientMasterManager
-from .fedml_client_slave_manager import ClientSlaveManager
-# from .aggregator_dist_adapter import AggregatorDistAdapter
-from .fedml_trainer_dist_adapter import TrainerDistAdapter
-from .fedml_server_manager import FedMLServerManager
-
-from .fedml_aggregator import FedMLAggregator
-from .utils import get_model_trainer
 import logging
 
+from fedml.constants import (
+    FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL,
+    FEDML_CROSS_SILO_SCENARIO_HORIZONTAL,
+)
+from .fedml_aggregator import FedMLAggregator
+from .fedml_client_master_manager import ClientMasterManager
+from .fedml_server_manager import FedMLServerManager
+from .fedml_trainer_dist_adapter import TrainerDistAdapter
+from .utils import get_model_trainer
 
-
-
-
-# TODO: remove commented code
 
 def FedML_Hierarchical(
     args,
@@ -42,7 +39,6 @@ def FedML_Hierarchical(
 
     # if args.n_proc_in_silo == 0:
     #     assert silo_server_device == process_device, "GPU index mismatch between gpu_mapping and silo_gpu_mapping files"
-
 
     if client_rank == 0:
         init_server(
@@ -77,9 +73,6 @@ def FedML_Hierarchical(
         )
 
 
-
-
-
 def get_trainer_dist_adapter(
     args,
     device,
@@ -104,34 +97,6 @@ def get_trainer_dist_adapter(
     )
 
 
-# def get_dist_aggregator(
-#     args,
-#     device,
-#     client_num,
-#     model,
-#     train_data_num,
-#     train_data_global,
-#     test_data_global,
-#     train_data_local_dict,
-#     test_data_local_dict,
-#     train_data_local_num_dict,
-#     model_trainer,
-# ):
-#     return AggregatorDistAdapter(
-#         args,
-#         device,
-#         client_num,
-#         model,
-#         train_data_num,
-#         train_data_global,
-#         test_data_global,
-#         train_data_local_dict,
-#         test_data_local_dict,
-#         train_data_local_num_dict,
-#         model_trainer,
-#     )
-
-
 def get_server_manager(
     args,
     dist_aggregator,
@@ -154,7 +119,7 @@ def get_server_manager(
     )
 
 
-def get_clinet_manager_master(
+def get_client_manager_master(
     args, trainer_dist_adapter, comm, client_rank, client_num, backend
 ):
     return ClientMasterManager(
@@ -162,7 +127,9 @@ def get_clinet_manager_master(
     )
 
 
-def get_clinet_manager_salve(args, trainer_dist_adapter):
+def get_client_manager_salve(args, trainer_dist_adapter):
+    from .fedml_client_slave_manager import ClientSlaveManager
+
     return ClientSlaveManager(args, trainer_dist_adapter)
 
 
@@ -183,40 +150,6 @@ def init_server(
     preprocessed_sampling_lists=None,
 ):
 
-    # start the distributed training
-    # backend = args.backend
-
-    # dist_aggregator = get_dist_aggregator(
-    #     args,
-    #     device,
-    #     client_num,
-    #     model,
-    #     train_data_num,
-    #     train_data_global,
-    #     test_data_global,
-    #     train_data_local_dict,
-    #     test_data_local_dict,
-    #     train_data_local_num_dict,
-    #     model_trainer,
-    # )
-
-    # if preprocessed_sampling_lists is None:
-    #     server_manager = get_server_manager(
-    #         args, dist_aggregator, comm, rank, client_num, backend
-    #     )
-    # else:
-    #     server_manager = get_server_manager(
-    #         args,
-    #         dist_aggregator,
-    #         comm,
-    #         rank,
-    #         client_num,
-    #         backend,
-    #         is_preprocessed=True,
-    #         preprocessed_client_lists=preprocessed_sampling_lists,
-    #     )
-    # server_manager.run()
-
     if model_trainer is None:
         model_trainer = get_model_trainer(model, args)
 
@@ -230,7 +163,7 @@ def init_server(
         train_data_local_dict,
         test_data_local_dict,
         train_data_local_num_dict,
-        client_num, # Check is client_num same as client_num?
+        client_num,  # Check is client_num same as client_num?
         device,
         args,
         model_trainer,
@@ -240,8 +173,12 @@ def init_server(
     backend = args.backend
     if preprocessed_sampling_lists is None:
         server_manager = FedMLServerManager(
-            args, aggregator, comm, rank, client_num, # Check is client_num same as client_num?
-            backend
+            args,
+            aggregator,
+            comm,
+            rank,
+            client_num,  # Check is client_num same as client_num?
+            backend,
         )
     else:
         server_manager = FedMLServerManager(
@@ -249,7 +186,7 @@ def init_server(
             aggregator,
             comm,
             rank,
-            client_num, # Check is client_num same as client_num?
+            client_num,  # Check is client_num same as client_num?
             backend,
             is_preprocessed=True,
             preprocessed_client_lists=preprocessed_sampling_lists,
@@ -283,13 +220,30 @@ def init_client(
         test_data_local_dict,
         model_trainer,
     )
-    if args.proc_rank_in_silo == 0:
-        logging.info("Initiating Client Manager")
-        client_manager = get_clinet_manager_master(
+    if args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
+        if args.proc_rank_in_silo == 0:
+
+            logging.info("Initiating Client Manager")
+            client_manager = get_client_manager_master(
+                args, trainer_dist_adapter, comm, client_rank, client_num, backend
+            )
+
+        else:
+            logging.info("Initiating DDP worker")
+            client_manager = get_client_manager_salve(args, trainer_dist_adapter)
+
+    elif args.scenario == FEDML_CROSS_SILO_SCENARIO_HORIZONTAL:
+
+        client_manager = get_client_manager_master(
             args, trainer_dist_adapter, comm, client_rank, client_num, backend
         )
+
     else:
-        logging.info("Initiating DDP worker")
-        client_manager = get_clinet_manager_salve(args, trainer_dist_adapter)
-    logging.info("Ruuning Client")
+        raise Exception(
+            "we do not support {}. Please check whether this is typo.".format(
+                args.scenario
+            )
+        )
+
+    logging.info("Running Client")
     client_manager.run()

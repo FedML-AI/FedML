@@ -7,7 +7,6 @@ import time
 import numpy as np
 
 from .lsa_message_define import MyMessage
-from .utils import transform_list_to_tensor
 from ...core.distributed.client.client_manager import ClientManager
 from ...core.distributed.communication.message import Message
 from ...core.mlops import MLOpsMetrics, MLOpsProfilerEvent
