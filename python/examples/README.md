@@ -1,9 +1,26 @@
-# Distributed Training: Accelerate Model Training with Lightweight Cheetah
+This is the outline of all examples. For more detailed instructions, please refer to [https://doc.fedml.ai](https://doc.fedml.ai)
+# Cross-silo Federated Learning for cross-organization/account training
+
+using communication backend MQTT_S3: `python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example`
+
+using communication backend gRPC: `python/examples/cross_silo/grpc_fedavg_mnist_lr_example`
+
+using communication backend MPI: `python/examples/cross_silo/mpi_fedavg_mnist_lr_example`
+
+using communication backend PyTorch RPC: `python/examples/cross_silo/trpc_fedavg_mnist_lr_example`
+
+using communication backend CUDA RPC: `python/examples/cross_silo/cuda_rpc_fedavg_mnist_lr_example`
+
+hierarchical cross-silo federated learning: `python/examples/cross_silo/mqtt_s3_fedavg_hierarchical_mnist_lr_example` 
+
+# Cross-device Federated Learning for Smartphones
+
+using communication backend MQTT_S3_MNN (tested): `python/examples/cross_device/mqtt_s3_fedavg_mnist_lr_example`
 
 
 # Simulation: (1) simulate FL using a single process (2) MPI-based FL Simulator (3) NCCL-based FL Simulator (fastest)
 
-### (1) Single Process
+### (1) Single Process (standalone)
 - Decentralized FL on MNIST dataset with Logistic Regression model (tested): `python/examples/simulation/sp_decentralized_mnist_lr_example`
 
 - FedAvg on Cifar10 dataset with CNN model (tested): 
@@ -26,7 +43,7 @@
 - Turboaggregate on MNIST dataset with Logistic Regression model (tested): `python/examples/simulation/sp_turboaggregate_mnist_lr_example`
 - VerticalFL  on MNIST dataset with Logistic Regression model (tested):  `python/examples/simulation/sp_vertical_mnist_lr_example`
 
-### (2) MPI-based Simulator
+### (2) MPI-based Simulator (distributed)
 
 - Base framework on MNIST dataset with Logistic Regression model (tested): `python/examples/simulation/mpi_base_framework_example`
 - Decentralized FL on MNIST dataset with Logistic Regression model (tested): `python/examples/simulation/mpi_decentralized_fl_example`
@@ -100,19 +117,10 @@
 
 - SplitNN on Cifar10 dataset with ResNet56 model (tested): `python/examples/simulation/mpi_torch_splitnn_cifar10_resnet56_example`
 
-### (3) NCCL-based Simulator
+### (3) NCCL-based Simulator 
 
 * FedAvg on Cifar10 dataset with ResNet56 model: `python/examples/simulation/nccl_fedavg_example`
 
-# Cross-silo Federated Learning for cross-organization/account training
+# Distributed Training: Accelerate Model Training with Lightweight Cheetah
 
-using communication backend MQTT_S3 (tested): `python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example`
-
-using communication backend gRPC (not tested yet): `python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example`
-
-using communication backend PyTorch RPC (not tested yet): `python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example`
-
-
-# Cross-device Federated Learning for Smartphones and IoTs
-
-using communication backend MQTT_S3_MNN (tested): `python/examples/cross_device/mqtt_s3_fedavg_mnist_lr_example`
+Coming soon
