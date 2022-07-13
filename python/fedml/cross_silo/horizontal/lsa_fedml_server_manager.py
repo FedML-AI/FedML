@@ -31,7 +31,6 @@ class FedMLServerManager(ServerManager):
         self.is_preprocessed = is_preprocessed
         self.preprocessed_client_lists = preprocessed_client_lists
 
-        self.pre_transform_model_file_path = args.global_model_file_path
         self.client_online_mapping = {}
         self.client_real_ids = json.loads(args.client_id_list)
 
