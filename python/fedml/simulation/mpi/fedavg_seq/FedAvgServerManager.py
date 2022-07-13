@@ -65,7 +65,7 @@ class FedAVGServerManager(ServerManager):
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         # local_sample_number = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
         client_runtime_info = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_RUNTIME_INFO)
-        self.record_client_runtime(sender_id - 1, client_runtime_info)
+        self.aggregator.record_client_runtime(sender_id - 1, client_runtime_info)
 
         # self.aggregator.add_local_trained_result(
         #     sender_id - 1, model_params, local_sample_number
