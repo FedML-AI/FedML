@@ -1,10 +1,5 @@
-import fedml
-from data.model_args import *
-
-from trainer.span_extraction_trainer import MyModelTrainer as MySETrainer
-from data.data_loader import load
 import logging
-from fedml.cross_silo import Server
+
 from transformers import (
     BertConfig,
     BertTokenizer,
@@ -13,6 +8,12 @@ from transformers import (
     DistilBertTokenizer,
     DistilBertForQuestionAnswering,
 )
+
+import fedml
+from data.data_loader import load
+from data.model_args import *
+from fedml import FedMLRunner
+from trainer.span_extraction_trainer import MyModelTrainer as MySETrainer
 
 
 def create_model(args, device, output_dim=1):
@@ -105,5 +106,5 @@ if __name__ == "__main__":
     model, trainer = create_model(args, output_dim)
 
     # start training
-    server = Server(args, device, dataset, model, trainer)
-    server.run()
+    fedml_runner = FedMLRunner(args, device, dataset, model)
+    fedml_runner.run()

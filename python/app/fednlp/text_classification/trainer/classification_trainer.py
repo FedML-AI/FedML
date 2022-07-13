@@ -1,21 +1,12 @@
-import torch
+import copy
+import logging
+
+import numpy as np
 from torch import nn
 
 from fedml.core import ClientTrainer
-import logging
-from trainer.text_classification_utils import *
-import copy
-import logging
-import math
-import os
-from trainer.model_args import ClassificationArgs
-import numpy as np
-import sklearn
-import wandb
-from transformers import (
-    AdamW,
-    get_linear_schedule_with_warmup,
-)
+from fedml.model.nlp.model_args import ClassificationArgs
+from .text_classification_utils import *
 
 
 class MyModelTrainer(ClientTrainer):

@@ -1,17 +1,16 @@
-import fedml
-from data.model_args import *
-from model.distilbert_model import DistilBertForSequenceClassification
-from model.bert_model import BertForSequenceClassification
-from trainer.classification_trainer import MyModelTrainer as MyCLSTrainer
-from data.data_loader import load
-from fedml.simulation import SimulatorMPI as Simulator
 import logging
+
 from transformers import (
     BertConfig,
-    BertTokenizer,
     DistilBertConfig,
-    DistilBertTokenizer,
 )
+
+import fedml
+from data.data_loader import load
+from fedml import FedMLRunner
+from model.bert_model import BertForSequenceClassification
+from model.distilbert_model import DistilBertForSequenceClassification
+from trainer.classification_trainer import MyModelTrainer as MyCLSTrainer
 
 
 def create_model(args, output_dim=1):
@@ -54,5 +53,5 @@ if __name__ == "__main__":
     model, trainer = create_model(args, output_dim)
 
     # start training
-    simulator = Simulator(args, device, dataset, model, trainer)
-    simulator.run()
+    fedml_runner = FedMLRunner(args, device, dataset, model)
+    fedml_runner.run()
