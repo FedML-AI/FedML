@@ -1,30 +1,20 @@
-import torch
-from torch import nn
-
-from fedml.core import ClientTrainer
-import logging
-from .seq_tagging_utils import *
 import copy
-import logging
-import math
 import os
-from ...data.data_manager.base_data_manager import BaseDataManager
-from ...model_args import SeqTaggingArgs
-import numpy as np
-import sklearn
-import wandb
-from transformers import (
-    AdamW,
-    get_linear_schedule_with_warmup,
-)
 
+import numpy as np
+import torch
 from seqeval.metrics import (
     f1_score,
     precision_score,
     recall_score,
-    classification_report,
 )
+from torch import nn
 from tqdm import tqdm
+
+from fedml.core import ClientTrainer
+from fedml.data.fednlp.base.data_manager.base_data_manager import BaseDataManager
+from fedml.model.nlp.model_args import SeqTaggingArgs
+from .seq_tagging_utils import *
 
 
 class MyModelTrainer(ClientTrainer):
@@ -84,7 +74,7 @@ class MyModelTrainer(ClientTrainer):
         epoch_loss = []
         for epoch in range(args.epochs):
             batch_loss = []
-            for batch_idx, batch in enumerate(train_data):
+            for batch_idx, batch in tqdm(enumerate(train_data)):
                 x = batch[1].to(device)
                 labels = batch[4].to(device)
                 log_probs = model(x)
@@ -124,7 +114,7 @@ class MyModelTrainer(ClientTrainer):
             epoch_loss.append(sum(batch_loss) / len(batch_loss))
             logging.info(
                 "Client Index = {}\tEpoch: {}\tLoss: {:.6f}".format(
-                    self.id, epoch, sum(epoch_loss) / len(epoch_loss)
+                    self.id, epoch, epoch_loss[-1]
                 )
             )
             if args.evaluate_during_training and test_data is not None:
@@ -180,10 +170,6 @@ class MyModelTrainer(ClientTrainer):
                 if i != (n_batches - 1)
                 else test_sample_len
             )
-            logging.info(
-                "batch index = %d, start_index = %d, end_index = %d"
-                % (i, start_index, end_index)
-            )
 
             if preds is None:
                 preds = logits.detach().cpu().numpy()
@@ -199,9 +185,7 @@ class MyModelTrainer(ClientTrainer):
                     out_input_ids, batch[1].detach().cpu().numpy(), axis=0
                 )
                 out_attention_mask = np.append(
-                    out_attention_mask,
-                    batch[2].detach().cpu().numpy(),
-                    axis=0,
+                    out_attention_mask, batch[2].detach().cpu().numpy(), axis=0,
                 )
 
         eval_loss = eval_loss / nb_eval_steps
