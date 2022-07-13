@@ -1,8 +1,8 @@
 import fedml
-from ..model_args import *
+from data.model_args import *
 
-from .trainer.span_extraction_trainer import MyModelTrainer as MySETrainer
-from .data.data_loader import load
+from trainer.span_extraction_trainer import MyModelTrainer as MySETrainer
+from data.data_loader import load
 from fedml.simulation import SimulatorMPI as Simulator
 import logging
 from transformers import (

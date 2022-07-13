@@ -274,11 +274,14 @@ from .launch_cross_silo_hi import run_hierarchical_cross_silo_client
 
 from .launch_cross_device import run_mnn_server
 
+from .runner import FedMLRunner
+
 __all__ = [
     "device",
     "data",
     "model",
     "mlops",
+    "FedMLRunner",
     "ClientTrainer",
     "ServerAggregator",
     "run_simulation",
