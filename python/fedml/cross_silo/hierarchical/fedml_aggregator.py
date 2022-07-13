@@ -2,6 +2,7 @@ import copy
 import logging
 import random
 import time
+from fedml.constants import FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
 
 import numpy as np
 import torch
@@ -56,12 +57,11 @@ class FedMLAggregator(object):
 
     # Make sure set_global_model_params is not used
     def set_global_model_params(self, model_parameters):
-        raise "set_global_model_params is not compatible with hierarchical federated learning. Please use set_global_model_params_hi"
-
-    # Convert models params from ddp format and set them to trainer
-    def set_global_model_params_hi(self, model_params):
-        converted_model_params = convert_model_params_from_ddp(model_params)
-        self.trainer.set_model_params(converted_model_params)
+        if self.args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
+            converted_model_params = convert_model_params_from_ddp(model_parameters)
+            self.trainer.set_model_params(converted_model_params)
+        else:
+            self.trainer.set_model_params(model_parameters)
 
 
     def add_local_trained_result(self, index, model_params, sample_num):

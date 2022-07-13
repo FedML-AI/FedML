@@ -41,33 +41,32 @@ def get_device(args):
         return device
     elif args.training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO:
 
-        if args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
-            from .gpu_mapping_cross_silo import (
-                mapping_processes_to_gpu_device_from_yaml_file_cross_silo,
-            )
+        from .gpu_mapping_cross_silo import (
+            mapping_processes_to_gpu_device_from_yaml_file_cross_silo,
+        )
 
-            device = mapping_processes_to_gpu_device_from_yaml_file_cross_silo(
-                args.proc_rank_in_silo,
-                args.n_proc_in_silo,
-                args.gpu_mapping_file if args.using_gpu else None,
-                args.gpu_mapping_key if args.using_gpu else None,
-                FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
-            )
+        if not args.using_gpu:
+            device_type = "cpu"
         else:
-            from .gpu_mapping_cross_silo import (
-                mapping_single_process_to_gpu_device_cross_silo,
-            )
-
             device_type = (
                 "gpu" if not hasattr(args, "device_type") else args.device_type
             )
 
-            gpu_id = 0 if not hasattr(args, "gpu_id") else args.gpu_id
+        if args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
+            worker_number =  args.n_proc_in_silo
+            process_id = args.proc_rank_in_silo
+        else:
+            worker_number = args.worker_num + 1
+            process_id = args.process_id
 
-            device = mapping_single_process_to_gpu_device_cross_silo(
-                args.using_gpu, device_type, gpu_id
-            )
-
+        device = mapping_processes_to_gpu_device_from_yaml_file_cross_silo(
+            process_id,
+            worker_number,
+            args.gpu_mapping_file if args.using_gpu else None,
+            args.gpu_mapping_key if args.using_gpu else None,
+            device_type,
+            args.scenario
+        )
 
         logging.info("device = {}".format(device))
 
