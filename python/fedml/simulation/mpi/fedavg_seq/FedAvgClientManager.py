@@ -89,7 +89,8 @@ class FedAVGClientManager(ClientManager):
         for name, param in model_params.items():
             if name not in local_agg_model_params:
                 local_agg_model_params[name] = param * weight
-            local_agg_model_params[name] += param * weight
+            else:
+                local_agg_model_params[name] += param * weight
 
 
     def __train(self, global_model_params, client_indexes, average_weight_dict):
@@ -98,6 +99,8 @@ class FedAVGClientManager(ClientManager):
         local_agg_model_params = {}
         client_runtime_info = {}
         for client_index in client_indexes:
+            logging.info("#######training########### Simulating client_index = %d, average weight: %f " % \
+                (client_index, average_weight_dict[client_index]))
             start_time = time.time()
             self.trainer.update_model(global_model_params)
             self.trainer.update_dataset(int(client_index))
@@ -108,6 +111,8 @@ class FedAVGClientManager(ClientManager):
             end_time = time.time()
             client_runtime = end_time - start_time
             client_runtime_info[client_index] = client_runtime
+            logging.info("#######training########### End Simulating client_index = %d, consuming time: %f" % \
+                (client_index, client_runtime))
         self.send_result_to_server(0, local_agg_model_params, client_runtime_info)
 
 

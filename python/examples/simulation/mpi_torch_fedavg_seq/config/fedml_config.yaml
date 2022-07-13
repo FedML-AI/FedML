@@ -12,7 +12,7 @@ model_args:
   model: "lr"
 
 train_args:
-  federated_optimizer: "FedAvg"
+  federated_optimizer: "FedAvg_seq"
   client_id_list: "[]"
   client_num_in_total: 1000
   client_num_per_round: 4
