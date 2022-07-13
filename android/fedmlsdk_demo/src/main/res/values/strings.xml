@@ -7,15 +7,14 @@
     <string name="account_input_tip">Please input account ID</string>
     <string name="retry_tip">Please retry</string>
     <string name="set_private_path">Set Private Path</string>
-    <string name="device_name">Device Name</string>
+    <string name="idle_status">IDLE</string>
     <string name="under_training">Waiting for training</string>
-    <string name="account_information">Account Information</string>
+    <string name="account_information">Account Information(%1$s)</string>
     <string name="hyper_parameters">Hyper-parameters</string>
     <string name="number_of_rounds">number of rounds</string>
     <string name="local_iteration_number">local iteration number</string>
     <string name="unbind_account">Unbind Account</string>
     <string name="exit">Exit</string>
-    <string name="device_id">Device ID: %1$s</string>
     <string name="acc_loss_txt">Round:%1$d Epoch:%2$d \nAcc:%3$.4f Loss:%4$.4f</string>
     <string name="fedml">FedML</string>
 </resources>

@@ -1,4 +1,5 @@
 import fedml
+from fedml import FedMLRunner
 from fedml.simulation import SimulatorMPI
 
 if __name__ == "__main__":
@@ -15,5 +16,5 @@ if __name__ == "__main__":
     model = fedml.model.create(args, output_dim)
 
     # start training
-    simulator = SimulatorMPI(args, device, dataset, model)
-    simulator.run()
+    fedml_runner = FedMLRunner(args, device, dataset, model)
+    fedml_runner.run()
