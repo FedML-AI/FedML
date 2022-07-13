@@ -2,7 +2,9 @@ from .fedml_hierarchical_api import FedML_Hierarchical
 
 
 class Server:
-    def __init__(self, args, device, dataset, model, model_trainer=None):
+    def __init__(
+        self, args, device, dataset, model, model_trainer=None, server_aggregator=None
+    ):
         # Set inra-silo argiments
         args.rank_in_node = 0
         args.n_proc_per_node = 1

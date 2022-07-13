@@ -57,6 +57,6 @@ mapping_FedML_tRPC:
     lambda-server1: [0, 0, 0, 0, 2, 2, 1, 1]
     lambda-server2: [2, 1, 1, 1, 0, 0, 0, 0]
 mapping_fednlp_sp:
-        hostname_node_1: [6]
+        hostname_node_1: [5]
 #mapping_FedML_tRPC:
 #    lambda-server1: [0, 0, 0, 0, 3, 3, 3, 2]

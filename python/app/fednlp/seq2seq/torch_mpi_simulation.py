@@ -1,17 +1,14 @@
 import fedml
 from data.model_args import *
 
-from trainer.span_extraction_trainer import MyModelTrainer as MySETrainer
+from trainer.seq2seq_trainer import MyModelTrainer as MySSTrainer
 from data.data_loader import load
+from fedml.simulation import SimulatorMPI as Simulator
 import logging
-from fedml.cross_silo import Server
 from transformers import (
-    BertConfig,
-    BertTokenizer,
-    BertForQuestionAnswering,
-    DistilBertConfig,
-    DistilBertTokenizer,
-    DistilBertForQuestionAnswering,
+    BartConfig,
+    BartForConditionalGeneration,
+    BartTokenizer,
 )
 
 
@@ -21,16 +18,17 @@ def create_model(args, device, output_dim=1):
         "create_model. model_name = %s, output_dim = %s" % (model_name, output_dim)
     )
     MODEL_CLASSES = {
-        "span_extraction": {
-            "bert": (BertConfig, BertForQuestionAnswering),
-            "distilbert": (DistilBertConfig, DistilBertForQuestionAnswering),
-        },
+        "seq2seq": {
+            "bart": (BartConfig, BartForConditionalGeneration, BartTokenizer),
+        }
     }
     try:
-        config_class, model_class = MODEL_CLASSES[args.formulation][args.model_type]
+        config_class, model_class, tokenizer_class = MODEL_CLASSES[args.formulation][
+            args.model_type
+        ]
     except KeyError:
         raise Exception("such model or formulation does not exist currently!")
-    model_args = SpanExtractionArgs()
+    model_args = Seq2SeqArgs()
     model_args.model_name = args.model
     model_args.model_type = args.model_type
     # model_args.load(model_args.model_name)
@@ -65,19 +63,15 @@ def create_model(args, device, output_dim=1):
     )
 
     # model_args.config["num_labels"] = num_labels
-    if args.model_type == "bert":
-        tokenizer_class = BertTokenizer
-    elif args.model_type == "distilbert":
-        tokenizer_class = DistilBertTokenizer
-    tokenizer = tokenizer_class.from_pretrained(
-        args.model, do_lower_case=args.do_lower_case
-    )
-
+    tokenizer = [None, None]
+    tokenizer[0] = tokenizer_class.from_pretrained(args.model)
+    tokenizer[1] = tokenizer[0]
     # model_args["num_labels"] = output_dim
     model_config = {}
     config = config_class.from_pretrained(args.model, **model_config)
     model = model_class.from_pretrained(args.model, config=config)
-    trainer = MySETrainer(model_args, device, model, tokenizer=tokenizer)
+    print("reached_here")
+    trainer = MySSTrainer(model_args, device, model, tokenizer=tokenizer)
     return model, trainer
 
 
@@ -90,20 +84,10 @@ if __name__ == "__main__":
 
     # load data
     dataset, output_dim = load(args)
-    (
-        train_data_num,
-        test_data_num,
-        train_data_global,
-        test_data_global,
-        train_data_local_num_dict,
-        train_data_local_dict,
-        test_data_local_dict,
-        class_num,
-    ) = dataset
-    args.num_labels = output_dim
+    # args.num_labels = output_dim
     # load model and trainer
     model, trainer = create_model(args, output_dim)
 
     # start training
-    server = Server(args, device, dataset, model, trainer)
-    server.run()
+    simulator = Simulator(args, device, dataset, model, trainer)
+    simulator.run()
