@@ -1,22 +1,10 @@
-import argparse
 import logging
-import os
-import random
-import socket
-import sys
-import yaml
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../../../")))
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../../")))
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../")))
 
 import fedml
-import torch
-from fedml.simulation import SimulatorNCCL
-# from fedml import run_simulation
-
 from fedml.model.cv.resnet_gn import resnet18
+from fedml.simulation import SimulatorNCCL
+
+# from fedml import run_simulation
 
 
 if __name__ == "__main__":
@@ -40,6 +28,3 @@ if __name__ == "__main__":
     simulator = SimulatorNCCL(args, device, dataset, model)
     # simulator = run_simulation(args, device, dataset, model)
     simulator.run()
-
-
-

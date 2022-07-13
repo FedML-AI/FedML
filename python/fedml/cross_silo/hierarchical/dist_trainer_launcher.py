@@ -20,30 +20,45 @@ from fedml.constants import FEDML_TRAINING_PLATFORM_CROSS_SILO
 #     'TP_SOCKET_IFNAME'=$'NETWORK_INTERFACE'
 # }
 
+
 def launch_dist_trainers():
     inputs = sys.argv[1:]
     args = load_arguments(FEDML_TRAINING_PLATFORM_CROSS_SILO)
-    os.environ['PDSH_RCMD_TYPE'] = 'ssh'
+    os.environ["PDSH_RCMD_TYPE"] = "ssh"
     node_addresses = ",".join(args.node_addresses)
-    pdsh_cmd_aruments = ['pdsh', '-w', node_addresses]
-    torchrun_path = subprocess.run(['which', 'torchrun'], capture_output=True, text=True).stdout.strip()
+    pdsh_cmd_aruments = ["pdsh", "-w", node_addresses]
+    torchrun_path = subprocess.run(
+        ["which", "torchrun"], capture_output=True, text=True
+    ).stdout.strip()
+    network_interface = (
+        "lo"
+        if not hasattr(args, "network_interface")
+        else args.network_interface
+    )
+    
+    print(f"Using network interface {network_interface} for process group and TRPC communication")
+    
+    env_variables = {
+        "NCCL_SOCKET_IFNAME": network_interface,
+        "GLOO_SOCKET_IFNAME": network_interface,
+        "OMP_NUM_THREADS": 4,
+    }
 
-    # exports = ""
-    # for key, val in self.exports.items():
-    #     exports += "export {}={}; ".format(key, val)
+    exports = ""
+    for key, val in env_variables.items():
+        exports += "export {}={}; ".format(key, val)
 
     torchrun_cmd_arguments = [
-        # exports,
+        exports,
         f"cd {os.path.abspath('.')};",
         torchrun_path,
         f"--nnodes={args.n_node_in_silo}",
         f"--nproc_per_node={args.n_proc_per_node}",
-        "--rdzv_backend=c10d",
+        # "--rdzv_backend=c10d",
         f"--rdzv_endpoint={args.master_address}:{args.launcher_rdzv_port}",
-        "--node_rank=%n",
+        "--node_rank=0",
         "--rdzv_id=hi_fl",
         "torch_client.py",
     ] + inputs
 
     subprocess.run(pdsh_cmd_aruments + torchrun_cmd_arguments)
-

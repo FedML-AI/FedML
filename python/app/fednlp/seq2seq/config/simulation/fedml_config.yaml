@@ -1,0 +1,64 @@
+common_args:
+  training_type: "simulation"
+  random_seed: 0
+
+data_args:
+  dataset: "cornell_movie_dialogue"
+  data_file_path: ../fednlp_data/data_files/cornell_movie_dialogue_data.h5
+  partition_file_path: ../fednlp_data/partition_files/cornell_movie_dialogue_partition.h5
+  partition_method: "uniform"
+  reprocess_input_data: false
+
+model_args:
+  model_type: "bart"
+  model_class: "transformer"
+  model: "facebook/bart-base"
+  do_lower_case: true
+  formulation: "seq2seq"
+
+train_args:
+  federated_optimizer: "FedAvg"
+  client_id_list: "[]"
+  client_num_in_total: 100
+  client_num_per_round: 1
+  comm_round: 5
+  epochs: 1
+  batch_size: 4
+  eval_batch_size: 4
+  max_seq_length: 256
+  fp16: false
+  output_dir: "home/ubuntu/output_dir"
+  client_optimizer: sgd
+  server_optimizer: sgd
+  server_lr: 0.1
+  learning_rate: 0.0001
+  weight_decay: 0.001
+  gradient_accumulation_steps: 1
+  clip_grad_norm: true
+  max_grad_norm: 1
+  fedprox_mu: 1
+  evaluate_during_training: false
+  evaluate_during_training_steps: 10
+  freeze_layers: ''
+  is_debug_mode: false
+
+validation_args:
+  frequency_of_the_test: 5
+
+device_args:
+  worker_num: 1
+  using_gpu: true
+  gpu_mapping_file: config/simulation/gpu_mapping.yaml
+  gpu_mapping_key: mapping_fednlp_sp
+
+comm_args:
+  backend: "MPI"
+  is_mobile: 0
+
+
+tracking_args:
+  log_file_dir: /home/ubuntu/log
+  enable_wandb: false
+  wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
+  wandb_project: fedml
+  wandb_name: fedml_torch_fedavg_mnist_lr
