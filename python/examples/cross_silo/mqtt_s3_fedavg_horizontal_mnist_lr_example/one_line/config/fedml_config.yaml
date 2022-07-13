@@ -3,14 +3,13 @@ common_args:
   scenario: "horizontal"
   using_mlops: false
   random_seed: 0
-  config_version: release
 
 environment_args:
   bootstrap: config/bootstrap.sh
 
 data_args:
   dataset: "mnist"
-  data_cache_dir: "../../../../data/MNIST"
+  data_cache_dir: "./../../../../data/MNIST"
   partition_method: "hetero"
   partition_alpha: 0.5
 
@@ -21,34 +20,36 @@ model_args:
 
 train_args:
   federated_optimizer: "FedAvg"
-  # for CLI running, this can be None; in MLOps deployment, `client_id_list` will be replaced with real-time selected devices
   client_id_list:
   client_num_in_total: 2
   client_num_per_round: 2
   comm_round: 50
   epochs: 1
-  batch_size: 10
+  batch_size: 64
   client_optimizer: sgd
-  learning_rate: 0.03
+  learning_rate: 0.001
   weight_decay: 0.001
 
 validation_args:
-  frequency_of_the_test: 1
+  frequency_of_the_test: 10
 
 device_args:
-  using_gpu: false
+  using_gpu: true
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_default
 
+
 comm_args:
   backend: "MQTT_S3"
+  trpc_master_config_path: config/trpc_master_config.csv
   mqtt_config_path:
   s3_config_path:
-  grpc_ipconfig_path: ./config/grpc_ipconfig.csv
+
 
 tracking_args:
   log_file_dir: ./log
+  local_log_output_path: ./log
   enable_wandb: false
-  wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
+  wandb_key: ee0b5f53d949c84cee7decbe7a619e63fb1f8408
   wandb_project: fedml
   wandb_name: fedml_torch_fedavg_mnist_lr
