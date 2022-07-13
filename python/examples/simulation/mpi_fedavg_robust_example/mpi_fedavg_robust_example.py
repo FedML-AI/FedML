@@ -1,5 +1,5 @@
 import fedml
-from fedml.simulation import SimulatorMPI
+from fedml import FedMLRunner
 from fedml.data.data_loader import load_poisoned_dataset_from_edge_case_examples
 
 from fedml.data.edge_case_examples.data_loader import download_edgecase_data
@@ -57,5 +57,5 @@ if __name__ == "__main__":
     model = fedml.model.create(args, output_dim)
 
     # start training
-    simulator = SimulatorMPI(args, device, dataset, model)
-    simulator.run()
+    fedml_runner = FedMLRunner(args, device, dataset, model)
+    fedml_runner.run()

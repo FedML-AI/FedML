@@ -1,10 +1,10 @@
 import fedml
-from fedml import SimulatorMPI
+from fedml import FedMLRunner
 
 if __name__ == "__main__":
     # init FedML framework
     args = fedml.init()
 
     # start training
-    simulator = SimulatorMPI(args, None, None, None)
-    simulator.run()
+    fedml_runner = FedMLRunner(args, None, None, None)
+    fedml_runner.run()

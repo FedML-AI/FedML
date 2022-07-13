@@ -22,7 +22,7 @@ from .core.mlops import MLOpsRuntimeLog
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.7.123"
+__version__ = "0.7.200"
 
 
 def init(args=None):
@@ -34,10 +34,6 @@ def init(args=None):
 
     fedml._global_training_type = args.training_type
     fedml._global_comm_backend = args.backend
-
-    mlops.init(args)
-
-    logging.info("args = {}".format(vars(args)))
 
     """
     # Windows/Linux/MacOS compatability issues on multi-processing
@@ -93,6 +89,11 @@ def init(args=None):
 
     manage_profiling_args(args)
 
+    update_client_id_list(args)
+
+    mlops.init(args)
+
+    logging.info("args = {}".format(vars(args)))
     return args
 
 
@@ -145,6 +146,7 @@ def manage_profiling_args(args):
         wandb.init(**wandb_args)
 
         from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
+
         MLOpsProfilerEvent.enable_wandb()
 
 
@@ -155,7 +157,7 @@ def manage_cuda_rpc_args(args):
 
     if args.enable_cuda_rpc and args.backend != "TRPC":
         args.enable_cuda_rpc = False
-        logging.warn(
+        print(
             "Argument enable_cuda_rpc is ignored. Cuda RPC only works with TRPC backend."
         )
 
@@ -176,8 +178,8 @@ def manage_cuda_rpc_args(args):
             len(args.cuda_rpc_gpu_mapping) == args.worker_num + 1
         ), f"Invalid cuda_rpc_gpu_mapping. Expected list of size {args.worker_num + 1}"
 
-    logging.info(f"cpu_transfer: {args.cpu_transfer}")
-    logging.info(f"enable_cuda_rpc: {args.enable_cuda_rpc}")
+    print(f"cpu_transfer: {args.cpu_transfer}")
+    print(f"enable_cuda_rpc: {args.enable_cuda_rpc}")
 
 
 def init_cross_silo_horizontal(args):
@@ -201,7 +203,6 @@ def manage_mpi_args(args):
         assert (
             args.worker_num + 1 == world_size
         ), f"Invalid number of mpi processes. Exepected {args.worker_num + 1}"
-        logging.info("comm = {}".format(comm))
     else:
         args.comm = None
 
@@ -245,6 +246,52 @@ def init_cross_silo_hierarchical(args):
     return args
 
 
+def update_client_id_list(args):
+
+    """
+        generate args.client_id_list for CLI mode where args.client_id_list is set to None
+        In MLOps mode, args.client_id_list will be set to real-time client id list selected by UI (not starting from 1)
+    """
+    print("########")
+    if not hasattr(args, "using_mlops") or (
+        hasattr(args, "using_mlops") and not args.using_mlops
+    ):
+        print("args.client_id_list = {}".format(print(args.client_id_list)))
+        if args.client_id_list is None or args.client_id_list == "None":
+            if (
+                args.training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE
+                or args.training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO
+            ):
+                if args.rank == 0:
+                    client_id_list = []
+                    for client_idx in range(args.client_num_per_round):
+                        client_id_list.append(client_idx + 1)
+                    args.client_id_list = str(client_id_list)
+                    print(
+                        "------------------server client_id_list = {}-------------------".format(
+                            args.client_id_list
+                        )
+                    )
+                else:
+                    # for the client, we only specify its client id in the list, not including others.
+                    client_id_list = []
+                    client_id_list.append(args.rank)
+                    args.client_id_list = str(client_id_list)
+                    print(
+                        "------------------client client_id_list = {}-------------------".format(
+                            args.client_id_list
+                        )
+                    )
+            else:
+                print(
+                    "training_type != FEDML_TRAINING_PLATFORM_CROSS_DEVICE and training_type != FEDML_TRAINING_PLATFORM_CROSS_SILO"
+                )
+        else:
+            print("args.client_id_list is not None")
+    else:
+        print("using_mlops = true")
+
+
 def init_cross_device(args):
     args.rank = 0  # only server runs on Python package
     return args
@@ -274,11 +321,14 @@ from .launch_cross_silo_hi import run_hierarchical_cross_silo_client
 
 from .launch_cross_device import run_mnn_server
 
+from .runner import FedMLRunner
+
 __all__ = [
     "device",
     "data",
     "model",
     "mlops",
+    "FedMLRunner",
     "ClientTrainer",
     "ServerAggregator",
     "run_simulation",
