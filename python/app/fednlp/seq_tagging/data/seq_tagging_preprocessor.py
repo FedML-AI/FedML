@@ -7,7 +7,7 @@ from torch.utils.data import TensorDataset
 
 from fedml.data.fednlp.base.preprocess.base_example import SeqTaggingInputExample
 from fedml.data.fednlp.base.preprocess.base_preprocessor import BasePreprocessor
-from data.seq_tagging_data_utils import convert_examples_to_features
+from .seq_tagging_data_utils import convert_examples_to_features
 
 customized_cleaner_dict = {}
 
