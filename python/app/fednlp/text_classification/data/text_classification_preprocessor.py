@@ -10,7 +10,7 @@ from fedml.data.fednlp.base.preprocess.base_example import (
     TextClassificationInputExample,
 )
 from fedml.data.fednlp.base.preprocess.base_preprocessor import BasePreprocessor
-from data.text_classification_data_utils import (
+from .text_classification_data_utils import (
     convert_examples_to_features,
 )
 

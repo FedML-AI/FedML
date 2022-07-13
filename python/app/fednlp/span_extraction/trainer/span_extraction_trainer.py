@@ -1,24 +1,7 @@
-import torch
-from torch import nn
+from tqdm import tqdm
 
 from fedml.core import ClientTrainer
-import logging
-from trainer.span_extraction_utils import *
-
-import copy
-import logging
-import math
-import os
-from fedml.data.fednlp.base.data_manager.base_data_manager import BaseDataManager
-from trainer.model_args import SeqTaggingArgs
-import numpy as np
-import sklearn
-import wandb
-from transformers import (
-    AdamW,
-    get_linear_schedule_with_warmup,
-)
-from tqdm import tqdm
+from .span_extraction_utils import *
 
 
 class MyModelTrainer(ClientTrainer):
