@@ -128,3 +128,7 @@ def create_fake_gradient_Cifar100(file_path='./fake_data/fake_gradient_Cifar100.
 def create_fake_model_Cifar100(file_path='./fake_data/fake_model_Cifar100.pt'):
     model = torch.load(file_path)
     return model
+
+def create_fake_data_Cifar100(file_path='./fake_data/fake_data_Cifar100.pkl'):
+    data = torch.load(file_path)
+    return data

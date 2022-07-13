@@ -1,14 +1,16 @@
 import logging
 
 import fedml
-from .data.data_loader import load
-from fedml.simulation import SimulatorMPI
+from fedml import FedMLRunner
 from model import DeepLabV3_plus, VisionTransformer, UNet
 from trainer.segmentation_trainer import SegmentationTrainer
+from .data.data_loader import load
 
 
 def create_model(args, model_name, output_dim):
-    logging.info("create_model. model_name = %s, output_dim = %s" % (model_name, output_dim))
+    logging.info(
+        "create_model. model_name = %s, output_dim = %s" % (model_name, output_dim)
+    )
     model_name = str(model_name).lower()
     if model_name == "unet":
         model = UNet(in_channel=3, n_classes=output_dim)
@@ -30,8 +32,13 @@ def create_model(args, model_name, output_dim):
         config_vit.n_classes = 9
         config_vit.n_skip = 3
         if vit_name.find("R50") != -1:
-            config_vit.patches.grid = (int(img_size / vit_patches_size), int(img_size / vit_patches_size))
-        model = VisionTransformer(config_vit, img_size=img_size, num_classes=config_vit.n_classes)
+            config_vit.patches.grid = (
+                int(img_size / vit_patches_size),
+                int(img_size / vit_patches_size),
+            )
+        model = VisionTransformer(
+            config_vit, img_size=img_size, num_classes=config_vit.n_classes
+        )
     else:
         raise Exception("such model does not exist !")
 
@@ -57,8 +64,5 @@ if __name__ == "__main__":
     model, trainer = create_model(args, args.model, output_dim=class_num)
 
     # start training
-    try:
-        simulator = SimulatorMPI(args, device, dataset, model, trainer)
-        simulator.run()
-    except Exception as e:
-        raise e
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
+    fedml_runner.run()
