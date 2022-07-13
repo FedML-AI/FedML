@@ -1,5 +1,9 @@
-This is the outline of all examples. For more detailed instructions, please refer to [https://doc.fedml.ai](https://doc.fedml.ai)
-# Cross-silo Federated Learning for cross-organization/account training
+# Examples
+
+- This is the outline of all examples. For more detailed instructions, please refer to [https://doc.fedml.ai](https://doc.fedml.ai)
+- In [FedML/python/app](./../app) folder, we also provide applications in real-world settings.
+
+## Cross-silo Federated Learning for cross-organization/account training
 
 using communication backend MQTT_S3: `python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example`
 
@@ -13,12 +17,12 @@ using communication backend CUDA RPC: `python/examples/cross_silo/cuda_rpc_fedav
 
 hierarchical cross-silo federated learning: `python/examples/cross_silo/mqtt_s3_fedavg_hierarchical_mnist_lr_example` 
 
-# Cross-device Federated Learning for Smartphones
+## Cross-device Federated Learning for Smartphones
 
 using communication backend MQTT_S3_MNN (tested): `python/examples/cross_device/mqtt_s3_fedavg_mnist_lr_example`
 
 
-# Simulation: (1) simulate FL using a single process (2) MPI-based FL Simulator (3) NCCL-based FL Simulator (fastest)
+## Simulation: (1) simulate FL using a single process (2) MPI-based FL Simulator (3) NCCL-based FL Simulator (fastest)
 
 ### (1) Single Process (standalone)
 - Decentralized FL on MNIST dataset with Logistic Regression model (tested): `python/examples/simulation/sp_decentralized_mnist_lr_example`
@@ -121,6 +125,6 @@ using communication backend MQTT_S3_MNN (tested): `python/examples/cross_device/
 
 * FedAvg on Cifar10 dataset with ResNet56 model: `python/examples/simulation/nccl_fedavg_example`
 
-# Distributed Training: Accelerate Model Training with Lightweight Cheetah
+## Distributed Training: Accelerate Model Training with Lightweight Cheetah
 
 Coming soon

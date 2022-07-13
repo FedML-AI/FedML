@@ -34,6 +34,8 @@ import multiprocessing
 import platform
 import time
 
+from fedml.constants import FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
+
 from .communication_manager import CommunicationManager
 from .message_define import MyMessage
 
@@ -240,14 +242,15 @@ class ClientMasterManager:
     def sync_process_group(
         self, round_idx, model_params=None, client_index=None, src=0
     ):
-        logging.info("sending round number to pg")
-        round_number = [round_idx, model_params, client_index]
-        dist.broadcast_object_list(
-            round_number,
-            src=src,
-            group=self.trainer_dist_adapter.process_group_manager.get_process_group(),
-        )
-        logging.info("round number %d broadcasted to process group" % round_number[0])
+        if self.args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
+            logging.info("sending round number to pg")
+            round_number = [round_idx, model_params, client_index]
+            dist.broadcast_object_list(
+                round_number,
+                src=src,
+                group=self.trainer_dist_adapter.process_group_manager.get_process_group(),
+            )
+            logging.info("round number %d broadcasted to process group" % round_number[0])
 
     def run(self):
         self.register_message_receive_handlers()
