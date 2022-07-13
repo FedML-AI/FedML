@@ -23,6 +23,10 @@ sh run_custom_data_and_model_example.sh 4
 ```
 sh run.sh 4 "scigpu13:0,1,1,1;scigpu14:0,2,1,1"
 ```
+mpirun -np 5 \
+-host "scigpu13:3,scigpu14:2" \
+/home/comp/20481896/anaconda3/envs/py36/bin/python torch_fedavg_mnist_lr_custum_data_and_model_example.py --cf config/zht_config.yaml \
+
 
 
 

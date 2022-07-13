@@ -33,7 +33,7 @@ device_args:
   using_gpu: true
   gpu_mapping_file: config/zht_gpu_mapping.yaml
   gpu_mapping_key: mapping_scigpu11_2
-  gpu_util_parse: "scigpu13:0,1,1,1;scigpu14:0,0,0,1"
+  gpu_util_parse: "scigpu13:0,1,1,1;scigpu14:0,0,1,1"
 
 comm_args:
   backend: "MPI"
