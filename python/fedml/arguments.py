@@ -47,6 +47,9 @@ def add_args():
 
     # default arguments
     parser.add_argument("--local_rank", type=int, default=0)
+    
+    # For hierarchical scenario
+    parser.add_argument("--node_rank", type=int, default=0)
 
     # default arguments
     parser.add_argument("--role", type=str, default="client")
