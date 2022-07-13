@@ -1,10 +1,8 @@
-import logging
 import fedml
-from fedml.cross_silo import Client
-from data import load_data
-from model import create_model
-from trainer import ClassificationTrainer
-
+from fedml import FedMLRunner
+from .data import load_data
+from .model import create_model
+from .trainer import ClassificationTrainer
 
 if __name__ == "__main__":
     # init FedML framework
@@ -21,5 +19,5 @@ if __name__ == "__main__":
     trainer = ClassificationTrainer(model=model, args=args)
 
     # start training
-    client = Client(args, device, dataset, model, model_trainer=trainer)
-    client.run()
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
+    fedml_runner.run()
