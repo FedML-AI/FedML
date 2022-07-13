@@ -1,5 +1,5 @@
-from torch import nn
-
+import torch
+import numpy as np
 from fedml.core import ClientTrainer
 from fedml.model.nlp.model_args import ClassificationArgs
 from .text_classification_utils import *
@@ -52,7 +52,7 @@ class MyModelTrainer(ClientTrainer):
         model.train()
         tr_loss = 0
         # train and update
-        criterion = nn.CrossEntropyLoss().to(device)
+        criterion = torch.nn.CrossEntropyLoss().to(device)
         iteration_in_total = (
             len(train_data) // args.gradient_accumulation_steps * args.epochs
         )
@@ -131,7 +131,7 @@ class MyModelTrainer(ClientTrainer):
 
         metrics = {"test_correct": 0, "test_loss": 0, "test_total": 0}
 
-        criterion = nn.CrossEntropyLoss().to(device)
+        criterion = torch.nn.CrossEntropyLoss().to(device)
 
         with torch.no_grad():
             for batch_idx, batch in enumerate(test_data):
