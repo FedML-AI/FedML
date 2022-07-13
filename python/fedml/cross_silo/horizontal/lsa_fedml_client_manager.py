@@ -3,6 +3,7 @@ import logging
 import multiprocessing
 import platform
 import time
+
 import numpy as np
 
 from .lsa_message_define import MyMessage
@@ -10,12 +11,12 @@ from .utils import transform_list_to_tensor
 from ...core.distributed.client.client_manager import ClientManager
 from ...core.distributed.communication.message import Message
 from ...core.mlops import MLOpsMetrics, MLOpsProfilerEvent
-from ...core.mpc.secure_aggregation import (
+from ...core.mpc.lightsecagg import (
     compute_aggregate_encoded_mask,
     mask_encoding,
     model_masking,
     model_dimension,
-    transform_tensor_to_finite
+    transform_tensor_to_finite,
 )
 
 
@@ -42,7 +43,7 @@ class FedMLClientManager(ClientManager):
         # self.targeted_number_active_clients = args.targeted_number_active_clients
         # self.privacy_guarantee = args.privacy_guarantee
         self.targeted_number_active_clients = args.worker_num
-        self.privacy_guarantee = int(np.floor(args.worker_num/2))
+        self.privacy_guarantee = int(np.floor(args.worker_num / 2))
         self.prime_number = args.prime_number
         self.precision_parameter = args.precision_parameter
 
@@ -73,7 +74,8 @@ class FedMLClientManager(ClientManager):
         )
 
         self.register_message_receive_handler(
-            MyMessage.MSG_TYPE_S2C_ENCODED_MASK_TO_CLIENT, self.handle_message_receive_encoded_mask_from_server
+            MyMessage.MSG_TYPE_S2C_ENCODED_MASK_TO_CLIENT,
+            self.handle_message_receive_encoded_mask_from_server,
         )
 
         self.register_message_receive_handler(
@@ -82,9 +84,9 @@ class FedMLClientManager(ClientManager):
         )
 
         self.register_message_receive_handler(
-            MyMessage.MSG_TYPE_S2C_SEND_TO_ACTIVE_CLIENT, self.handle_message_receive_active_from_server
+            MyMessage.MSG_TYPE_S2C_SEND_TO_ACTIVE_CLIENT,
+            self.handle_message_receive_active_from_server,
         )
-
 
     def handle_message_connection_ready(self, msg_params):
         logging.info("Connection is ready!")
@@ -94,7 +96,9 @@ class FedMLClientManager(ClientManager):
 
             if hasattr(self.args, "using_mlops") and self.args.using_mlops:
                 # Notify MLOps with training status.
-                self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_INITIALIZING)
+                self.report_training_status(
+                    MyMessage.MSG_MLOPS_CLIENT_STATUS_INITIALIZING
+                )
 
                 # Open new process for report system performances to MQTT server
                 self.sys_stats_process = multiprocessing.Process(
@@ -125,12 +129,14 @@ class FedMLClientManager(ClientManager):
         encoded_mask = msg_params.get(MyMessage.MSG_ARG_KEY_ENCODED_MASK)
         client_id = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_ID)
         logging.info(
-            "Client %d receive encoded_mask = %s from Client %d" % (self.get_sender_id(), encoded_mask, client_id)
+            "Client %d receive encoded_mask = %s from Client %d"
+            % (self.get_sender_id(), encoded_mask, client_id)
         )
         self.add_encoded_mask(client_id - 1, encoded_mask)
         b_all_received = self.check_whether_all_encoded_mask_receive()
         if b_all_received:
-            # Start the local training if receive all the encoded masks
+            # TODO: performance optimization:
+            #  local training can overlap the mask encoding and exchange step
             self.__train()
 
     def handle_message_receive_model_from_server(self, msg_params):
@@ -146,7 +152,7 @@ class FedMLClientManager(ClientManager):
         if self.round_idx == self.num_rounds - 1:
 
             # Notify MLOps with the finished message
-            if hasattr(self.args, "backend") and self.args.using_mlops:
+            if hasattr(self.args, "using_mlops") and self.args.using_mlops:
                 self.mlops_metrics.report_client_id_status(
                     self.args.run_id,
                     self.client_real_id,
@@ -161,7 +167,9 @@ class FedMLClientManager(ClientManager):
     def handle_message_receive_active_from_server(self, msg_params):
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         # Receive the set of active client id in first round
-        active_clients_first_round = msg_params.get(MyMessage.MSG_ARG_KEY_ACTIVE_CLIENTS)
+        active_clients_first_round = msg_params.get(
+            MyMessage.MSG_ARG_KEY_ACTIVE_CLIENTS
+        )
         logging.info(
             "Client %d receive active_clients in the first round = %s"
             % (self.get_sender_id(), active_clients_first_round)
@@ -169,7 +177,9 @@ class FedMLClientManager(ClientManager):
 
         # Compute the aggregate of encoded masks for the active clients
         p = self.prime_number
-        aggregate_encoded_mask = compute_aggregate_encoded_mask(self.encoded_mask_dict, p, active_clients_first_round)
+        aggregate_encoded_mask = compute_aggregate_encoded_mask(
+            self.encoded_mask_dict, p, active_clients_first_round
+        )
 
         # Send the aggregate of encoded mask to server
         self.send_aggregate_encoded_mask_to_server(0, aggregate_encoded_mask)
@@ -194,20 +204,20 @@ class FedMLClientManager(ClientManager):
         self.send_message(message)
 
     def report_training_status(self, status):
-        if hasattr(self.args, "backend") and self.args.using_mlops:
+        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
             self.mlops_metrics.report_client_training_status(
                 self.client_real_id, status
             )
 
     def report_sys_performances(self):
-        if hasattr(self.args, "backend") and self.args.using_mlops:
+        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
             while self.round_idx != self.num_rounds - 1:
                 # Notify MLOps with system information.
                 self.mlops_metrics.report_system_metric()
                 time.sleep(30)
 
     def send_model_to_server(self, receive_id, weights, local_sample_num):
-        if hasattr(self.args, "backend") and self.args.using_mlops:
+        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
             self.mlops_event.log_event_started(
                 "comm_c2s", event_value=str(self.round_idx)
             )
@@ -222,7 +232,7 @@ class FedMLClientManager(ClientManager):
         self.send_message(message)
 
         # Report client model to MLOps
-        if hasattr(self.args, "backend") and self.args.using_mlops:
+        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
             model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
             model_info = {
                 "run_id": self.args.run_id,
@@ -233,14 +243,20 @@ class FedMLClientManager(ClientManager):
             self.mlops_metrics.report_client_model_info(model_info)
 
     def send_encoded_mask_to_server(self, receive_id, encoded_mask):
-        message = Message(MyMessage.MSG_TYPE_C2S_SEND_ENCODED_MASK_TO_SERVER, self.get_sender_id(), 0)
+        message = Message(
+            MyMessage.MSG_TYPE_C2S_SEND_ENCODED_MASK_TO_SERVER, self.get_sender_id(), 0
+        )
         message.add_params(MyMessage.MSG_ARG_KEY_ENCODED_MASK, encoded_mask)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_ID, receive_id)
         self.send_message(message)
 
     def send_aggregate_encoded_mask_to_server(self, receive_id, aggregate_encoded_mask):
-        message = Message(MyMessage.MSG_TYPE_C2S_SEND_MASK_TO_SERVER, self.get_sender_id(), receive_id)
-        message.add_params(MyMessage.MSG_ARG_KEY_AGGREGATE_ENCODED_MASK, aggregate_encoded_mask)
+        message = Message(
+            MyMessage.MSG_TYPE_C2S_SEND_MASK_TO_SERVER, self.get_sender_id(), receive_id
+        )
+        message.add_params(
+            MyMessage.MSG_ARG_KEY_AGGREGATE_ENCODED_MASK, aggregate_encoded_mask
+        )
         self.send_message(message)
 
     def add_encoded_mask(self, index, encoded_mask):
@@ -256,9 +272,12 @@ class FedMLClientManager(ClientManager):
         return True
 
     def encoded_mask_sharing(self, encoded_mask_set):
-        for receive_id in range(1, self.size):
+        for receive_id in range(1, self.size + 1):
+            print(receive_id)
+            print("the size is ", self.size)
             encoded_mask = encoded_mask_set[receive_id - 1]
             if receive_id != self.get_sender_id():
+                encoded_mask = encoded_mask.tolist()
                 self.send_encoded_mask_to_server(receive_id, encoded_mask)
             else:
                 self.encoded_mask_dict[receive_id - 1] = encoded_mask
@@ -266,34 +285,38 @@ class FedMLClientManager(ClientManager):
 
     def __offline(self):
         # Encoding the local generated mask
-        logging.info("#######Client %d offline encoding round_id = %d######" % (self.get_sender_id(), self.round_idx))
+        logging.info(
+            "#######Client %d offline encoding round_id = %d######"
+            % (self.get_sender_id(), self.round_idx)
+        )
 
         # encoded_mask_set = self.mask_encoding()
         d = self.total_dimension
-        N = self.size - 1
+        N = self.size
         U = self.targeted_number_active_clients
         T = self.privacy_guarantee
         p = self.prime_number
-        logging.debug("d = {}, N = {}, U = {}, T = {}, p = {}".format(d, N, U, T, p))
+        logging.info("d = {}, N = {}, U = {}, T = {}, p = {}".format(d, N, U, T, p))
 
         # For debugging
         # self.local_mask = np.random.randint(p, size=(d, 1))
-        self.local_mask = np.zeros((d,1)).astype("int64")
+        self.local_mask = np.zeros((d, 1)).astype("int64")
 
         encoded_mask_set = mask_encoding(d, N, U, T, p, self.local_mask)
 
         # Send the encoded masks to other clients (via server)
+        logging.info("begin share")
         self.encoded_mask_sharing(encoded_mask_set)
-
+        logging.info("finish share")
 
     def __train(self):
         logging.info("#######training########### round_id = %d" % self.round_idx)
-        if hasattr(self.args, "backend") and self.args.using_mlops:
+        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
             self.mlops_event.log_event_started("train", event_value=str(self.round_idx))
 
         weights, local_sample_num = self.trainer.train(self.round_idx)
 
-        if hasattr(self.args, "backend") and self.args.using_mlops:
+        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
             self.mlops_event.log_event_ended("train", event_value=str(self.round_idx))
 
         # Convert the model from real to finite
@@ -302,7 +325,9 @@ class FedMLClientManager(ClientManager):
         weights_finite = transform_tensor_to_finite(weights, p, q_bits)
 
         # Mask the local model
-        masked_weights = model_masking(weights_finite, self.dimensions, self.local_mask, self.prime_number)
+        masked_weights = model_masking(
+            weights_finite, self.dimensions, self.local_mask, self.prime_number
+        )
 
         self.send_model_to_server(0, masked_weights, local_sample_num)
 

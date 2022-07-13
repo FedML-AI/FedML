@@ -9,4 +9,4 @@ hostname > mpi_host_file
 
 $(which mpirun) -np $PROCESS_NUM \
 -hostfile mpi_host_file \
-python torch_centralized_simulation.py --cf config_simulation/fedml_config.yaml
+python fedml_iot.py --cf config_simulation/fedml_config.yaml

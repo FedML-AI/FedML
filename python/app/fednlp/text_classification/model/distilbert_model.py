@@ -1,5 +1,4 @@
 import torch.nn as nn
-from torch.nn import CrossEntropyLoss, MSELoss
 from transformers.models.distilbert.modeling_distilbert import (
     DistilBertModel,
     DistilBertPreTrainedModel,

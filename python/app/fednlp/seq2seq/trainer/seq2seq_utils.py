@@ -1,20 +1,7 @@
-import numpy as np
-import pdb
-
-from sklearn.metrics import (
-    confusion_matrix,
-    matthews_corrcoef,
-)
-import copy
 import logging
 import math
-import os
 
 import numpy as np
-import sklearn
-import torch
-import wandb
-from torch.nn import CrossEntropyLoss
 from torch.optim import SGD
 from transformers import (
     AdamW,
@@ -81,8 +68,8 @@ class Rouge:
         rec_max = max(rec)
 
         if prec_max != 0 and rec_max != 0:
-            score = ((1 + self.beta**2) * prec_max * rec_max) / float(
-                rec_max + self.beta**2 * prec_max
+            score = ((1 + self.beta ** 2) * prec_max * rec_max) / float(
+                rec_max + self.beta ** 2 * prec_max
             )
         else:
             score = 0.0

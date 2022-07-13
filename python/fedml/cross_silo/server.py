@@ -3,7 +3,7 @@ from .horizontal.lsa_fedml_api import FedML_LSA_Horizontal
 
 
 class Server:
-    def __init__(self, args, device, dataset, model, model_trainer=None):
+    def __init__(self, args, device, dataset, model, model_trainer=None, server_aggregator=None):
         if args.federated_optimizer == "FedAvg":
             self.fl_trainer = FedML_Horizontal(
                 args,
