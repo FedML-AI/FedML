@@ -1,9 +1,8 @@
 import fedml
-from fedml.simulation import SimulatorMPI
 from data.data_loader import load_data
+from fedml import FedMLRunner
 from model.autoencoder import AutoEncoder
 from trainer.fed_detect_trainer import MyModelTrainer
-
 
 if __name__ == "__main__":
     # init FedML framework
@@ -22,5 +21,5 @@ if __name__ == "__main__":
     trainer = MyModelTrainer(model)
 
     # start training
-    simulator = SimulatorMPI(args, device, dataset, model, trainer)
-    simulator.run()
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
+    fedml_runner.run()
