@@ -16,4 +16,3 @@ if __name__ == "__main__":
     # start training
     fedml_runner = FedMLRunner(args, device, dataset, model)
     fedml_runner.run()
-
