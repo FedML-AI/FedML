@@ -2,7 +2,7 @@ import logging
 
 import fedml
 from fedml import FedMLRunner
-from model import densenet121, densenet161, densenet169, densenet201, MobileNetV3, EfficientNet
+from .model import densenet121, densenet161, densenet169, densenet201, MobileNetV3, EfficientNet
 from trainer.classification_trainer import ClassificationTrainer
 from .data.data_loader import load
 

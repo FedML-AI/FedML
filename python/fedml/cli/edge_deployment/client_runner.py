@@ -303,7 +303,8 @@ class FedMLClientRunner:
                 python_program = 'python3'
 
         process = subprocess.Popen([python_program, entry_file,
-                                    '--cf', conf_file, '--rank', str(dynamic_args_config["rank"])])
+                                    '--cf', conf_file, '--rank', str(dynamic_args_config["rank"]),
+                                    '--role', 'client'])
         FedMLClientRunner.save_learning_process(process.pid)
 
         self.release_client_mqtt_mgr()

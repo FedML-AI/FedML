@@ -2,6 +2,8 @@ import json
 import logging
 import time
 
+from fedml.constants import FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
+
 from .utils import convert_model_params_to_ddp
 
 from .message_define import MyMessage
@@ -61,7 +63,9 @@ class FedMLServerManager(ServerManager):
 
         global_model_params = self.aggregator.get_global_model_params()
 
-        global_model_params = convert_model_params_to_ddp(global_model_params)
+
+        if self.args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
+            global_model_params = convert_model_params_to_ddp(global_model_params)
 
         client_idx_in_this_round = 0
         for client_id in self.client_id_list_in_this_round:
@@ -162,7 +166,7 @@ class FedMLServerManager(ServerManager):
                 self.mlops_event.log_event_ended("aggregate")
             try:
                 # update the global model which is cached at the server side
-                self.aggregator.set_global_model_params_hi(global_model_params)
+                self.aggregator.set_global_model_params(global_model_params)
                 self.aggregator.test_on_server_for_all_clients(self.round_idx)
             except Exception as e:
                 logging.info("aggregator.test exception: " + str(e))

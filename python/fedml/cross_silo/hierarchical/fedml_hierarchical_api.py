@@ -1,3 +1,4 @@
+from fedml.constants import FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
 from .fedml_client_master_manager import ClientMasterManager
 from .fedml_client_slave_manager import ClientSlaveManager
 # from .aggregator_dist_adapter import AggregatorDistAdapter
@@ -283,7 +284,7 @@ def init_client(
         test_data_local_dict,
         model_trainer,
     )
-    if args.proc_rank_in_silo == 0:
+    if  not (args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL) or args.proc_rank_in_silo == 0:
         logging.info("Initiating Client Manager")
         client_manager = get_clinet_manager_master(
             args, trainer_dist_adapter, comm, client_rank, client_num, backend
