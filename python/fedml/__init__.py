@@ -181,15 +181,6 @@ def manage_cuda_rpc_args(args):
     print(f"cpu_transfer: {args.cpu_transfer}")
     print(f"enable_cuda_rpc: {args.enable_cuda_rpc}")
 
-
-def init_cross_silo_horizontal(args):
-    args.worker_num = args.client_num_per_round
-    args.process_id = args.rank
-    manage_mpi_args(args)
-    manage_cuda_rpc_args(args)
-    return args
-
-
 def manage_mpi_args(args):
     if hasattr(args, "backend") and args.backend == "MPI":
         from mpi4py import MPI
@@ -207,8 +198,17 @@ def manage_mpi_args(args):
         args.comm = None
 
 
-def init_cross_silo_hierarchical(args):
+def init_cross_silo_horizontal(args):
+    args.worker_num = args.client_num_per_round
+    args.process_id = args.rank
+    args.n_proc_in_silo = 1
+    args.proc_rank_in_silo = 0
+    manage_mpi_args(args)
+    manage_cuda_rpc_args(args)
+    return args
 
+
+def init_cross_silo_hierarchical(args):
     args.worker_num = args.client_num_per_round
     manage_mpi_args(args)
     manage_cuda_rpc_args(args)
@@ -229,7 +229,7 @@ def init_cross_silo_hierarchical(args):
         args.n_proc_in_silo = int(os.environ.get("WORLD_SIZE", 1))
 
         # Rank in node
-        args.rank_in_node = int(os.environ.get("LOCAL_RANK", 1))
+        args.rank_in_node = int(os.environ.get("LOCAL_RANK", 0))
         args.process_id = args.rank_in_node
 
         # Rank in silo (process group)
