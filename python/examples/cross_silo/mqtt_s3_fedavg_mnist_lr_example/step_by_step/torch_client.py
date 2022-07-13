@@ -14,5 +14,5 @@ if __name__ == "__main__":
     model = fedml.model.create(args, output_dim)
 
     # start training
-    client = Client(args, device, dataset, model)
-    client.run()
+    fedml_runner = FedMLRunner(args, device, dataset, model)
+    fedml_runner.run()
