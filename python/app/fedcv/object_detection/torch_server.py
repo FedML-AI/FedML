@@ -2,7 +2,6 @@ import logging
 import fedml
 import torch
 from fedml.cross_silo import Server
-from trainer.detection_trainer import DetectionTrainer
 from utils.init_yolo import init_yolo
 
 
@@ -15,12 +14,8 @@ if __name__ == "__main__":
     logging.info("Device: {}".format(device))
 
     # init yolo
-    model, dataset, args = init_yolo(args=args, device=device)
-    logging.info("init model, dataset and args done")
-
-    # trainer
-    trainer = DetectionTrainer(model=model, args=args)
-    logging.info("init trainer done")
+    model, dataset, trainer, args = init_yolo(args=args, device=device)
+    logging.info("init model, dataset, trainer and args done")
 
     # start training
     server = Server(args, device, dataset, model, trainer)
