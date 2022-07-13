@@ -1,15 +1,16 @@
-import fedml
-from fedml.model.nlp.model_args import *
-from trainer.seq2seq_trainer import MyModelTrainer as MySSTrainer
-from data.data_loader import load
-import torch
-from fedml import FedMLRunner
 import logging
+
 from transformers import (
     BartConfig,
     BartForConditionalGeneration,
     BartTokenizer,
 )
+
+import fedml
+from data.data_loader import load
+from fedml import FedMLRunner
+from fedml.model.nlp.model_args import *
+from trainer.seq2seq_trainer import MyModelTrainer as MySSTrainer
 
 
 def create_model(args, device, output_dim=1):
@@ -18,9 +19,7 @@ def create_model(args, device, output_dim=1):
         "create_model. model_name = %s, output_dim = %s" % (model_name, output_dim)
     )
     MODEL_CLASSES = {
-        "seq2seq": {
-            "bart": (BartConfig, BartForConditionalGeneration, BartTokenizer),
-        }
+        "seq2seq": {"bart": (BartConfig, BartForConditionalGeneration, BartTokenizer),}
     }
     try:
         config_class, model_class, tokenizer_class = MODEL_CLASSES[args.formulation][

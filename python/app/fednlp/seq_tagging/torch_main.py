@@ -1,18 +1,16 @@
-import fedml
-from fedml.model.nlp.model_args import *
-from trainer.seq_tagging_trainer import MyModelTrainer as MySTTrainer
-from data.data_loader import load
-import torch
-from fedml import FedMLRunner
 import logging
+
 from transformers import (
     BertConfig,
-    BertTokenizer,
     BertForTokenClassification,
     DistilBertConfig,
-    DistilBertTokenizer,
     DistilBertForTokenClassification,
 )
+
+import fedml
+from data.data_loader import load
+from fedml import FedMLRunner
+from trainer.seq_tagging_trainer import MyModelTrainer as MySTTrainer
 
 
 def create_model(args, output_dim=1):

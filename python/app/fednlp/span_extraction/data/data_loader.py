@@ -1,45 +1,16 @@
-import os
+import logging
 
 import numpy as np
 import torch
 from transformers import (
-    BertConfig,
     BertTokenizer,
-    DistilBertConfig,
     DistilBertTokenizer,
 )
-from fedml.model.nlp.model_args import *
+
 from fedml.data.fednlp.base.data_manager.base_data_manager import BaseDataManager
-from data.span_extraction_data_manager import (
-    SpanExtractionDataManager,
-)
-
-from data.span_extraction_preprocessor import (
-    TLMPreprocessor as SEPreprocessor,
-)
-
-# from fedml.data.FederatedEMNIST.data_loader import load_partition_data_federated_emnist
-# from fedml.data.ImageNet.data_loader import load_partition_data_ImageNet
-# from fedml.data.Landmarks.data_loader import load_partition_data_landmarks
-# from fedml.data.MNIST.data_loader import load_partition_data_mnist
-# from fedml.data.cifar10.data_loader import load_partition_data_cifar10
-# from fedml.data.cifar100.data_loader import load_partition_data_cifar100
-# from fedml.data.cinic10.data_loader import load_partition_data_cinic10
-# from fedml.data.fed_cifar100.data_loader import load_partition_data_federated_cifar100
-# from fedml.data.fed_shakespeare.data_loader import (
-#     load_partition_data_federated_shakespeare,
-# )
-# from fedml.data.shakespeare.data_loader import load_partition_data_shakespeare
-# from fedml.data.stackoverflow_lr.data_loader import (
-#     load_partition_data_federated_stackoverflow_lr,
-# )
-# from fedml.data.stackoverflow_nwp.data_loader import (
-#     load_partition_data_federated_stackoverflow_nwp,
-# )
-#
-# from .MNIST.data_loader import download_mnist
-# from .edge_case_examples.data_loader import load_poisoned_dataset
-import logging
+from fedml.model.nlp.model_args import *
+from .span_extraction_data_manager import SpanExtractionDataManager
+from .span_extraction_preprocessor import TLMPreprocessor as SEPreprocessor
 
 
 def load(args):
