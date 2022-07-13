@@ -2,7 +2,7 @@ import logging
 
 import fedml
 from data.data_loader import load_partition_data, get_data
-from fedml.cross_silo import Server
+from fedml import FedMLRunner
 from model.gat_readout import GatMoleculeNet
 from model.gcn_readout import GcnMoleculeNet
 from model.sage_readout import SageMoleculeNet
@@ -129,7 +129,6 @@ if __name__ == "__main__":
 
     # load data
     dataset, feat_dim, num_cats = load_data(args, args.dataset)
-   
 
     # create model.
     # Note if the model is DNN (e.g., ResNet), the training will be very slow.
@@ -137,7 +136,5 @@ if __name__ == "__main__":
     model, trainer = create_model(args, args.model, feat_dim, num_cats, output_dim=None)
 
     # start training
-    fedml_runner = Server(args, device, dataset, model, trainer)
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
     fedml_runner.run()
-
-
