@@ -5,7 +5,9 @@ import h5py
 import string
 from numpy.core.arrayprint import repr_format
 
-from fedml.data.fednlp.base.raw_data.base_raw_data_loader import SpanExtractionRawDataLoader
+from fedml.data.fednlp.base.raw_data.base_raw_data_loader import (
+    SpanExtractionRawDataLoader,
+)
 
 # test script  python test_rawdataloader.py --dataset MRQA --data_dir "../../../../reading_comprehension/" --h5_file_path ../../data_files/mrqa_data.h5
 

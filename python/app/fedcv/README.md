@@ -25,6 +25,7 @@ pip install -r requirements.txt
 
    Model:
 
+   - CNN
    - DenseNet
    - MobileNetv3
    - EfficientNet
@@ -65,18 +66,6 @@ pip install -r requirements.txt
    - COCO
    - COCO128
 
-4. [Medical Chest Image Classification](#medical-chest-image-classification)
-
-   Model:
-
-   - DenseNet
-
-   Dataset:
-
-   - CheXpert
-   - NIH Chest X-Ray
-   - MIMIC-CXR
-
 ## How to Add Your Own Model?
 
 Our framework supports `PyTorch` based models. To add your own specific model,
@@ -101,7 +90,7 @@ Splits and Non-I.I.D.'ness methods specific to each task are also located under 
 - `trainer`: please define your own trainer.py by inheriting the base class in `fedml.core.alg_frame.client_trainer.ClientTrainer `. Some tasks can share the same trainer.
 - `utils`: utility functions.
 
-You can see the README.md file in each folder for more details.
+You can see the `README.md` file in each folder for more details.
 
 ## Citation
 

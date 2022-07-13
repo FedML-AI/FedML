@@ -7,7 +7,9 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 
-from fedml.data.fednlp.base.raw_data.base_raw_data_loader import LanguageModelRawDataLoader
+from fedml.data.fednlp.base.raw_data.base_raw_data_loader import (
+    LanguageModelRawDataLoader,
+)
 from tqdm import tqdm
 import math
 from multiprocessing import Pool
