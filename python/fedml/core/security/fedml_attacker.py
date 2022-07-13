@@ -1,4 +1,4 @@
-from ...core.security.attack.attack_method_sample_a import AttackMethodA
+# from ...core.security.attack.attack_method_sample_a import AttackMethodA
 from ...core.security.constants import ATTACK_METHOD_A
 
 
@@ -23,8 +23,8 @@ class FedMLAttacker:
             self.is_enabled = True
             self.attack_type = args.attack_type.strip()
             self.attacker = None
-            if self.attack_type == ATTACK_METHOD_A:
-                self.attacker = AttackMethodA()
+            # if self.attack_type == ATTACK_METHOD_A:
+            #     self.attacker = AttackMethodA()
         else:
             self.is_enabled = False
 
