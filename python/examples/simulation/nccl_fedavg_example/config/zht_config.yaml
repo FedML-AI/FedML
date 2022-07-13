@@ -29,10 +29,10 @@ validation_args:
   frequency_of_the_test: 5
 
 device_args:
-  worker_num: 6
+  worker_num: 3
   using_gpu: true
   gpu_mapping_file: config/zht_gpu_mapping.yaml
-  gpu_mapping_key: mapping_sci10_sci11_4
+  gpu_mapping_key: mapping_scigpu11_2
 
 
 comm_args:
