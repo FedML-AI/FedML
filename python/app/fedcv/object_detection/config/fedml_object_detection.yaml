@@ -20,9 +20,9 @@ data_args:
   img_size: [64, 64] # [640, 640]
 
 model_args:
-  model: "yolo"
+  model: "yolov6" # "yolov5"
   class_num: 80
-  yolo_cfg: "yolov5s-noupsample.yaml" # yolo
+  yolo_cfg: "./model/yolov6/configs/yolov6s.py" # "./model/yolov5/models/yolov5s.yaml" # yolo
   yolo_hyp: "./config/hyps/hyp.scratch.yaml" # yolo
   weights: "none" # "best.pt" # yolo
   single_cls: false # yolo

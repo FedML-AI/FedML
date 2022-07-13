@@ -44,11 +44,15 @@ def add_args():
 
     # default arguments
     parser.add_argument("--rank", type=int, default=0)
+
     # default arguments
     parser.add_argument("--local_rank", type=int, default=0)
     
     # For hierarchical scenario
     parser.add_argument("--node_rank", type=int, default=0)
+
+    # default arguments
+    parser.add_argument("--role", type=str, default="client")
 
     args, unknown = parser.parse_known_args()
     return args
@@ -162,47 +166,4 @@ def load_arguments(training_type=None, comm_backend=None):
     cmd_args = add_args()
     # Load all arguments from YAML config file
     args = Arguments(cmd_args, training_type, comm_backend)
-
-    """
-        generate args.client_id_list for CLI mode where args.client_id_list is set to None
-        In MLOps mode, args.client_id_list will be set to real-time client id list selected by UI (not starting from 1)
-    """
-    if not hasattr(args, "using_mlops") or (
-        hasattr(args, "using_mlops") and not args.using_mlops
-    ):
-        # print("args.client_id_list = {}".format(print(args.client_id_list)))
-        if args.client_id_list is None or args.client_id_list == "None":
-            if (
-                args.training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE
-                or args.training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO
-            ):
-                if args.rank == 0:
-                    client_id_list = []
-                    for client_idx in range(args.client_num_per_round):
-                        client_id_list.append(client_idx + 1)
-                    args.client_id_list = str(client_id_list)
-                    print(
-                        "------------------server client_id_list = {}-------------------".format(
-                            args.client_id_list
-                        )
-                    )
-                else:
-                    # for the client, we only specify its client id in the list, not including others.
-                    client_id_list = []
-                    client_id_list.append(args.rank)
-                    args.client_id_list = str(client_id_list)
-                    print(
-                        "------------------client client_id_list = {}-------------------".format(
-                            args.client_id_list
-                        )
-                    )
-            else:
-                print(
-                    "training_type != FEDML_TRAINING_PLATFORM_CROSS_DEVICE and training_type != FEDML_TRAINING_PLATFORM_CROSS_SILO"
-                )
-        else:
-            pass
-            # print("args.client_id_list is not None")
-    else:
-        print("using_mlops = true")
     return args

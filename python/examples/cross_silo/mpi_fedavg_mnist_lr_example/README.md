@@ -1,11 +1,5 @@
-# FedML Octopus Example with MNIST + Logistic Regression + Torch RPC Backend
+## Training Script
 
-FedML Octopus offers support for various communication backends. One of supported backends is MPI. To use TRPC as backend your `comm_args` section of your config should match the following format.
-
-```yaml
-comm_args:
-  backend: "MPI"
-```
 Pleaes add hostname/IP of the server and clients to config/mpi_host_file according to the following format:
 
 ```
@@ -14,22 +8,12 @@ node1
 node2
 ```
 
-Please note the node running the scripts should have passwordless SSH access to other nodes.
-
-## One Line API Example
-
-Example is provided at:
-
-`python/examples/cross_silo/mpi_fedavg_mnist_lr_example/one_line`
-
-## Training Script
-
-After adding the hostnames to config/mpi_host_file, run the following script, where client_num is the number of clients you wish to train.
+Then, run the following script, where client_num is the number of clients you wish to train.
 ```
 bash run_server.sh $client_num
 ```
 
-
+Please note the node running the script should have passwordless SSH access to other nodes.
 
 ## A Better User-experience with FedML MLOps (open.fedml.ai)
 To reduce the difficulty and complexity of these CLI commands. We recommend you to use our MLOps (open.fedml.ai).
