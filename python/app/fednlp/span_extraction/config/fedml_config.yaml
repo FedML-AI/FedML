@@ -10,8 +10,8 @@ common_args:
 
 data_args:
   dataset: "mrqa"
-  data_file_path: /home/ubuntu/fednlp_data/data_files/mrqa_data.h5
-  partition_file_path: /home/ubuntu/fednlp_data/partition_files/mrqa_partition.h5
+  data_file_path: ../fednlp_data/data_files/mrqa_data.h5
+  partition_file_path: ../fednlp_data/partition_files/mrqa_partition.h5
   partition_method: "uniform_clients=6"
   reprocess_input_data: false
   global_model_file_path: "/home/ubuntu/FedML/python/app/model_cache_dir/"
@@ -28,10 +28,10 @@ train_args:
   federated_optimizer: "FedAvg"
   client_id_list:
   client_num_in_total: 6
-  client_num_per_round: 2
+  client_num_per_round: 1
   comm_round: 50
   epochs: 10
-  batch_size: 32
+  batch_size: 8
   eval_batch_size: 8
   max_seq_length: 128
   fp16: false
@@ -57,9 +57,9 @@ validation_args:
   frequency_of_the_test: 5
 
 device_args:
-  worker_num: 2
+  worker_num: 1
   using_gpu: false
-  gpu_mapping_file: /home/ubuntu/FedML/python/app/fednlp/span_extraction/config/gpu_mapping.yaml
+  gpu_mapping_file: config/simulation/gpu_mapping.yaml
   gpu_mapping_key: mapping_fednlp_sp
 
 comm_args:

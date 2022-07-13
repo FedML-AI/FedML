@@ -2,7 +2,7 @@ import os
 
 from fedml.data.fednlp.base.preprocess.base_example import Seq2SeqInputExample
 from fedml.data.fednlp.base.preprocess.base_preprocessor import BasePreprocessor
-from data.seq2seq_data_utils import (
+from .seq2seq_data_utils import (
     Seq2SeqDataset,
     SimpleSummarizationDataset,
 )

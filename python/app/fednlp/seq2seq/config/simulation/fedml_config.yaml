@@ -4,8 +4,8 @@ common_args:
 
 data_args:
   dataset: "cornell_movie_dialogue"
-  data_file_path: /home/ubuntu/fednlp_data/data_files/cornell_movie_dialogue_data.h5
-  partition_file_path: /home/ubuntu/fednlp_data/partition_files/cornell_movie_dialogue_partition.h5
+  data_file_path: ../fednlp_data/data_files/cornell_movie_dialogue_data.h5
+  partition_file_path: ../fednlp_data/partition_files/cornell_movie_dialogue_partition.h5
   partition_method: "uniform"
   reprocess_input_data: false
 
@@ -48,7 +48,7 @@ validation_args:
 device_args:
   worker_num: 1
   using_gpu: true
-  gpu_mapping_file: /home/ubuntu/FedML/python/app/fednlp/seq2seq/config/gpu_mapping.yaml
+  gpu_mapping_file: config/simulation/gpu_mapping.yaml
   gpu_mapping_key: mapping_fednlp_sp
 
 comm_args:

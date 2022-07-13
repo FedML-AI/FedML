@@ -11,7 +11,7 @@ from transformers import (
 
 import fedml
 from data.data_loader import load
-from data.model_args import *
+from fedml.model.nlp.model_args import *
 from fedml import FedMLRunner
 from trainer.span_extraction_trainer import MyModelTrainer as MySETrainer
 
@@ -106,5 +106,5 @@ if __name__ == "__main__":
     model, trainer = create_model(args, output_dim)
 
     # start training
-    fedml_runner = FedMLRunner(args, device, dataset, model)
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
     fedml_runner.run()
