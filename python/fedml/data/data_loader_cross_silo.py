@@ -1,3 +1,4 @@
+from fedml.constants import FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
 from torch.utils import data
 from .data_loader import load_synthetic_data
 
@@ -56,7 +57,6 @@ def split_data_for_dist_trainers(data_loaders, n_dist_trainer):
 
 
 def load_synthetic_data_cross_silo(args):
-    n_dist_trainer = args.n_proc_in_silo
     dataset, class_num = load_synthetic_data(args)
     [
         train_data_num,
@@ -69,6 +69,11 @@ def load_synthetic_data_cross_silo(args):
         class_num,
     ] = dataset
 
+    if args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
+        n_dist_trainer = args.n_proc_in_silo
+    else:
+        n_dist_trainer = 1
+        
     train_data_local_dict = split_data_for_dist_trainers(
         train_data_local_dict, n_dist_trainer
     )
