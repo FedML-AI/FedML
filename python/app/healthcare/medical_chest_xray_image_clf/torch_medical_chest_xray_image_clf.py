@@ -1,10 +1,10 @@
 import logging
 
 import fedml
-from .data.data_loader import load
-from fedml.simulation import SimulatorMPI
+from fedml import FedMLRunner
 from model import densenet121, densenet161, densenet169, densenet201, MobileNetV3, EfficientNet
 from trainer.classification_trainer import ClassificationTrainer
+from .data.data_loader import load
 
 
 def create_model(args, model_name, output_dim):
@@ -48,8 +48,5 @@ if __name__ == "__main__":
     model, trainer = create_model(args, args.model, output_dim=class_num)
 
     # start training
-    try:
-        simulator = SimulatorMPI(args, device, dataset, model, trainer)
-        simulator.run()
-    except Exception as e:
-        raise e
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
+    fedml_runner.run()

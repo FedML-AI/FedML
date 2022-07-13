@@ -8,13 +8,13 @@ from transformers import (
     DistilBertConfig,
     DistilBertTokenizer,
 )
-from data.model_args import *
+from fedml.model.nlp.model_args import *
 from fedml.data.fednlp.base.data_manager.base_data_manager import BaseDataManager
-from data.text_classification_data_manager import (
+from .text_classification_data_manager import (
     TextClassificationDataManager,
 )
 
-from data.text_classification_preprocessor import (
+from .text_classification_preprocessor import (
     TLMPreprocessor as TCPreprocessor,
 )
 
