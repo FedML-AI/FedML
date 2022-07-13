@@ -92,9 +92,9 @@ public class MainFragment extends Fragment {
             }
 
             @Override
-            public void onProgressChanged(int round, int progress) {
+            public void onProgressChanged(int round, float progress) {
                 App.runOnUiThread(() ->
-                        mProgressView.setProgress(progress));
+                        mProgressView.setProgress(Math.round(progress));
             }
         });
         FedEdgeManager.getFedEdgeApi().setTrainingStatusListener((status) ->
