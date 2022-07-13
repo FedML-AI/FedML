@@ -34,10 +34,13 @@ class FedMLRunner:
             from .simulation.simulator import SimulatorSingleProcess
             runner = SimulatorSingleProcess(args, device, dataset, model, client_trainer, server_aggregator)
         elif hasattr(args, "backend") and args.backend == FEDML_SIMULATION_TYPE_MPI:
+            from .simulation.simulator import SimulatorMPI
+            runner = SimulatorMPI(args, device, dataset, model, client_trainer, server_aggregator)
+        elif hasattr(args, "backend") and args.backend == FEDML_SIMULATION_TYPE_NCCL:
             from .simulation.simulator import SimulatorNCCL
             runner = SimulatorNCCL(args, device, dataset, model, client_trainer, server_aggregator)
-        elif hasattr(args, "backend") and args.backend == FEDML_SIMULATION_TYPE_NCCL:
-            pass
+        else:
+            raise Exception("not such backend {}".format(args.backend))
 
         return runner
 
