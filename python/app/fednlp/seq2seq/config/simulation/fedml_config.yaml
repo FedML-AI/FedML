@@ -23,15 +23,17 @@ train_args:
   client_num_per_round: 1
   comm_round: 5
   epochs: 1
-  batch_size: 4
+  batch_size: 8
   eval_batch_size: 4
-  max_seq_length: 256
+  max_seq_length: 128
   fp16: false
-  output_dir: "home/ubuntu/output_dir"
+  output_dir: "/home/ubuntu/output_dir"
   client_optimizer: sgd
   server_optimizer: sgd
-  server_lr: 0.1
-  learning_rate: 0.0001
+  server_lr: 0.01
+  server_momentum: 0.9
+  ci: 0
+  learning_rate: 0.00005
   weight_decay: 0.001
   gradient_accumulation_steps: 1
   clip_grad_norm: true
