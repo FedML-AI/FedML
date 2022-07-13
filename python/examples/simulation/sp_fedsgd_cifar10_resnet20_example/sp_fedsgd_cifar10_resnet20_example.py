@@ -1,23 +1,8 @@
-import argparse
 import logging
-import os
-import random
-import socket
-import sys
-import yaml
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../../../")))
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../../")))
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../")))
 
 import fedml
-import torch
-from fedml.simulation import SimulatorSingleProcess as Simulator
-# from fedml import run_simulation
-
+from fedml import FedMLRunner
 from fedml.model.cv.resnet_gn import resnet18
-
 
 if __name__ == "__main__":
     # init FedML framework
@@ -37,5 +22,5 @@ if __name__ == "__main__":
         model = fedml.model.create(args, output_dim)
 
     # start training
-    simulator = Simulator(args, device, dataset, model)
-    simulator.run()
+    fedml_runner = FedMLRunner(args, device, dataset, model)
+    fedml_runner.run()
