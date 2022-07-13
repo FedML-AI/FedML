@@ -6,7 +6,9 @@ import nltk
 import h5py
 
 
-from fedml.data.fednlp.base.raw_data.base_raw_data_loader import SpanExtractionRawDataLoader
+from fedml.data.fednlp.base.raw_data.base_raw_data_loader import (
+    SpanExtractionRawDataLoader,
+)
 
 
 class RawDataLoader(SpanExtractionRawDataLoader):

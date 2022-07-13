@@ -8,13 +8,13 @@ from transformers import (
     DistilBertConfig,
     DistilBertTokenizer,
 )
-from ...model_args import *
-from ...data.data_manager.base_data_manager import BaseDataManager
-from ...data.data_manager.seq_tagging_data_manager import (
+from data.model_args import *
+from fedml.data.fednlp.base.data_manager.base_data_manager import BaseDataManager
+from data.seq_tagging_data_manager import (
     SequenceTaggingDataManager,
 )
 
-from ...data.data_preprocessing.seq_tagging_preprocessor import (
+from data.seq_tagging_preprocessor import (
     TLMPreprocessor as STPreprocessor,
 )
 
