@@ -23,7 +23,7 @@ and alpha = 0 indicates the global model is identical to the old one.
 """
 
 
-class SLSGD(BaseDefenseMethod):
+class SLSGDDefense(BaseDefenseMethod):
     def __init__(self, trim_param_b, alpha, option_type):
         self.b = trim_param_b  # parameter of trimmed mean
         if alpha > 1 or alpha < 0:
