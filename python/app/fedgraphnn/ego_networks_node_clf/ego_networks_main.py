@@ -1,13 +1,12 @@
 import fedml
 from data.data_loader import *
-from model.gcn import GCNNodeCLF
-from model.sgc import SGCNodeCLF
+from fedml import FedMLRunner
 from model.gat import GATNodeCLF
+from model.gcn import GCNNodeCLF
 from model.sage import SAGENodeCLF
-
+from model.sgc import SGCNodeCLF
 from trainer.federated_nc_trainer import FedNodeClfTrainer
 
-from fedml.simulation import SimulatorMPI
 
 def load_data(args):
     num_cats, feat_dim = 0, 0
@@ -63,7 +62,7 @@ def load_data(args):
     return dataset, num_cats, feat_dim
 
 
-def create_model(args, feat_dim, num_cats, output_dim= None):
+def create_model(args, feat_dim, num_cats, output_dim=None):
     logging.info(
         "create_model. model_name = %s, output_dim = %s" % (args.model, num_cats)
     )
@@ -87,9 +86,7 @@ def create_model(args, feat_dim, num_cats, output_dim= None):
         )
     elif args.model == "gat":
         model = GATNodeCLF(
-            in_channels = feat_dim,
-            out_channels = num_cats, 
-            dropout=args.dropout,
+            in_channels=feat_dim, out_channels=num_cats, dropout=args.dropout,
         )
     else:
         # MORE MODELS
@@ -113,5 +110,5 @@ if __name__ == "__main__":
     model, trainer = create_model(args, feat_dim, num_cats)
 
     # start training
-    simulator = SimulatorMPI(args, device, dataset, model, trainer)
-    simulator.run()
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
+    fedml_runner.run()
