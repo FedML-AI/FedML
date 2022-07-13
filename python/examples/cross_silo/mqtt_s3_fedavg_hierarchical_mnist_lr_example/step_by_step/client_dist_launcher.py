@@ -1,3 +1,0 @@
-from fedml.cross_silo.hierarchical.dist_trainer_launcher import launch_dist_trainers
-
-launch_dist_trainers()

@@ -1,59 +1,25 @@
-# import logging
-# import multiprocessing
-# import os
-# import platform
-# import sys
-# import time
-# import uuid
-
-# import json
-
-# from ...model.mobile.model_transfer import mnn_pytorch
-
-# sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
-# sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../../FedML")))
-
-# from fedml_core.mlops_logger import MLOpsLogger
-# from .communication_manager import CommunicationManager
-# from .message_define import MyMessage
-
-# try:
-#     from fedml_core.distributed.client.client_manager import ClientManager
-#     from fedml_core.distributed.communication.message import Message
-#     from fedml_core.distributed.communication.utils import log_round_start, log_round_end
-# except ImportError:
-#     from fedml_core.distributed.client.client_manager import ClientManager
-#     from fedml_core.distributed.communication.message import Message
-#     from fedml_core.distributed.communication.utils import log_round_start, log_round_end
-
-
-from asyncio.log import logger
 import json
 import logging
-import multiprocessing
 import platform
-import time
 
-from fedml.constants import FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
-
-from .communication_manager import CommunicationManager
-from .message_define import MyMessage
-
-# from .utils import transform_list_to_tensor
-from ...core.distributed.communication.message import Message
-from ...core.mlops import MLOpsMetrics, MLOpsProfilerEvent
 import torch.distributed as dist
 
-from ...core.mlops.mlops_configs import MLOpsConfigs
+from fedml.constants import FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
+from .message_define import MyMessage
+from .utils import convert_model_params_from_ddp, convert_model_params_to_ddp
+from ...core.distributed.client.client_manager import ClientManager
+from ...core.distributed.communication.message import Message
+from ...core.mlops import MLOpsMetrics, MLOpsProfilerEvent
 
 
-class ClientMasterManager:
+class ClientMasterManager(ClientManager):
     def __init__(
         self, args, trainer_dist_adapter, comm=None, rank=0, size=0, backend="MPI"
     ):
+        super().__init__(args, comm, rank, size, backend)
         self.trainer_dist_adapter = trainer_dist_adapter
         self.args = args
-        self.communication_manager = CommunicationManager(args, comm, rank, size, backend)
+
         self.num_rounds = args.comm_round
         self.round_idx = 0
         self.rank = rank
@@ -70,20 +36,24 @@ class ClientMasterManager:
             self.mlops_event = MLOpsProfilerEvent(self.args)
 
     def register_message_receive_handlers(self):
-        self.communication_manager.register_message_receive_handler(
+        self.register_message_receive_handler(
             MyMessage.MSG_TYPE_CONNECTION_IS_READY, self.handle_message_connection_ready
         )
 
-        self.communication_manager.register_message_receive_handler(
+        self.register_message_receive_handler(
             MyMessage.MSG_TYPE_S2C_CHECK_CLIENT_STATUS, self.handle_message_check_status
         )
 
-        self.communication_manager.register_message_receive_handler(
+        self.register_message_receive_handler(
             MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.handle_message_init
         )
-        self.communication_manager.register_message_receive_handler(
+        self.register_message_receive_handler(
             MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT,
             self.handle_message_receive_model_from_server,
+        )
+
+        self.register_message_receive_handler(
+            MyMessage.MSG_TYPE_S2C_FINISH, self.handle_message_finish,
         )
 
     def handle_message_connection_ready(self, msg_params):
@@ -92,15 +62,15 @@ class ClientMasterManager:
             self.has_sent_online_msg = True
             self.send_client_status(0)
 
-            # Notify MLOps with training status.
-            self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_INITIALIZING)
+            if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+                # Notify MLOps with training status.
+                self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_INITIALIZING)
 
-            # Open new process for report system performances to MQTT server
-            MLOpsMetrics.report_sys_perf()
+                # Open new process for report system performances to MQTT server
+                MLOpsMetrics.report_sys_perf()
 
     def handle_message_check_status(self, msg_params):
         self.send_client_status(0)
-        
 
     def handle_message_init(self, msg_params):
         global_model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
@@ -111,35 +81,28 @@ class ClientMasterManager:
         # Notify MLOps with training status.
         self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_TRAINING)
 
-        self.sync_process_group(0, global_model_params, data_silo_index)
+        if self.args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
+            global_model_params = convert_model_params_to_ddp(global_model_params)
+            self.sync_process_group(0, global_model_params, data_silo_index)
 
         self.trainer_dist_adapter.update_model(global_model_params)
         self.trainer_dist_adapter.update_dataset(int(data_silo_index))
         self.round_idx = 0
 
-        # TODO: training to separate method
-        logging.info("#######training########### round_id = %d" % self.round_idx)
-        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-            self.mlops_event.log_event_started("train")
-        weights, local_sample_num = self.trainer_dist_adapter.train(self.round_idx)
-        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-            self.mlops_event.log_event_ended("train")
-        self.send_model_to_server(0, weights, local_sample_num)
-
-    def start_training(self):
-        pass
+        self.__train()
 
     def handle_message_receive_model_from_server(self, msg_params):
         logging.info("handle_message_receive_model_from_server.")
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
 
-        self.round_idx += 1
-        self.sync_process_group(self.round_idx, model_params, client_index)
+        if self.args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
+            model_params = convert_model_params_to_ddp(model_params)
+            self.sync_process_group(self.round_idx, model_params, client_index)
 
         self.trainer_dist_adapter.update_model(model_params)
         self.trainer_dist_adapter.update_dataset(int(client_index))
-        if self.round_idx == self.num_rounds:
+        if self.round_idx == self.num_rounds - 1:
 
             # Notify MLOps with the finished message
             if hasattr(self.args, "using_mlops") and self.args.using_mlops:
@@ -148,49 +111,26 @@ class ClientMasterManager:
                     self.client_real_id,
                     MyMessage.MSG_MLOPS_CLIENT_STATUS_FINISHED,
                 )
-
-            self.finish()
             return
+        self.round_idx += 1
+        self.__train()
 
-        logging.info("#######training########### round_id = %d" % self.round_idx)
+    def handle_message_finish(self, msg_params):
+        logging.info(" ====================cleanup ====================")
+        self.cleanup()
+
+    def cleanup(self):
         if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-            self.mlops_event.log_event_started("train")
-        weights, local_sample_num = self.trainer_dist_adapter.train(self.round_idx)
-        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-            self.mlops_event.log_event_ended("train")
-        self.send_model_to_server(0, weights, local_sample_num)
-
-    def finish(self):
-        logging.info(
-            "Training finished for master client rank %s in silo %s"
-            % (self.args.proc_rank_in_silo, self.args.rank_in_node)
-        )
-
-        self.trainer_dist_adapter.cleanup_pg()
-
-        # Notify MLOps with the finished message
-        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-            self.mlops_metrics.report_client_id_status(
-                self.args.run_id,
-                self.client_real_id,
-                MyMessage.MSG_MLOPS_CLIENT_STATUS_FINISHED,
-            )
-
-        self.communication_manager.finish()
-        mlops_metrics = MLOpsMetrics()
-        mlops_metrics.set_sys_reporting_status(False)
-
-        # self.exit_program()
-
-    # def exit_program(self):
-    #     try:
-    #         sys.exit(100)
-    #     except SystemExit as e:
-    #         exit(100)
+            mlops_metrics = MLOpsMetrics()
+            mlops_metrics.set_sys_reporting_status(False)
+        self.finish()
 
     def send_model_to_server(self, receive_id, weights, local_sample_num):
+        tick = time.time()
         if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-            self.mlops_event.log_event_started("comm_c2s", event_value=str(self.round_idx), )
+            self.mlops_event.log_event_started(
+                "comm_c2s", event_value=str(self.round_idx)
+            )
         message = Message(
             MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER,
             self.client_real_id,
@@ -198,8 +138,8 @@ class ClientMasterManager:
         )
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, weights)
         message.add_params(MyMessage.MSG_ARG_KEY_NUM_SAMPLES, local_sample_num)
-        self.communication_manager.send_message(message)
-
+        self.send_message(message)
+        MLOpsProfilerEvent.log_to_wandb({"Communiaction/Send_Total": time.time() - tick})
         # Report client model to MLOps
         if hasattr(self.args, "using_mlops") and self.args.using_mlops:
             model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
@@ -224,7 +164,7 @@ class ClientMasterManager:
 
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_STATUS, status)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, sys_name)
-        self.communication_manager.send_message(message)
+        self.send_message(message)
 
     def report_training_status(self, status):
         if hasattr(self.args, "using_mlops") and self.args.using_mlops:
@@ -232,26 +172,33 @@ class ClientMasterManager:
                 self.client_real_id, status
             )
 
-    def report_sys_performances(self):
-        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-            while self.round_idx != self.num_rounds - 1:
-                # Notify MLOps with system information.
-                self.mlops_metrics.report_system_metric()
-                time.sleep(30)
-
     def sync_process_group(
         self, round_idx, model_params=None, client_index=None, src=0
     ):
+        logging.info("sending round number to pg")
+        round_number = [round_idx, model_params, client_index]
+        dist.broadcast_object_list(
+            round_number,
+            src=src,
+            group=self.trainer_dist_adapter.process_group_manager.get_process_group(),
+        )
+        logging.info("round number %d broadcast to process group" % round_number[0])
+
+    def __train(self):
+        logging.info("#######training########### round_id = %d" % self.round_idx)
+        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+            self.mlops_event.log_event_started("train", event_value=str(self.round_idx))
+
+        weights, local_sample_num = self.trainer_dist_adapter.train(self.round_idx)
+
+        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+            self.mlops_event.log_event_ended("train", event_value=str(self.round_idx))
+
+        # the current model is still DDP-wrapped under cross-silo-hi setting
         if self.args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
-            logging.info("sending round number to pg")
-            round_number = [round_idx, model_params, client_index]
-            dist.broadcast_object_list(
-                round_number,
-                src=src,
-                group=self.trainer_dist_adapter.process_group_manager.get_process_group(),
-            )
-            logging.info("round number %d broadcasted to process group" % round_number[0])
+            weights = convert_model_params_from_ddp(weights)
+
+        self.send_model_to_server(0, weights, local_sample_num)
 
     def run(self):
-        self.register_message_receive_handlers()
-        self.communication_manager.run()
+        super().run()
