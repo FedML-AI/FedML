@@ -1,44 +1,17 @@
 from __future__ import absolute_import, division, print_function
 
-import collections
-import json
-import linecache
 import logging
-import math
-import mmap
-import os
-import re
-import string
-import numpy as np
 from functools import partial
-from io import open
 from multiprocessing import Pool, cpu_count
-from pprint import pprint
 
-import torch
-from tensorboardX import SummaryWriter
-from torch.utils.data import (
-    DataLoader,
-    Dataset,
-    RandomSampler,
-    SequentialSampler,
-    TensorDataset,
-)
-from tqdm import tqdm, trange
-from transformers import (
-    AdamW,
-    SquadExample,
-    XLMTokenizer,
-    get_linear_schedule_with_warmup,
-)
-
+import numpy as np
+from tqdm import tqdm
+from transformers.models.bert.tokenization_bert import whitespace_tokenize
 from transformers.tokenization_utils_base import (
     BatchEncoding,
     TruncationStrategy,
     PreTrainedTokenizerBase,
 )
-
-from transformers.models.bert.tokenization_bert import whitespace_tokenize
 
 logger = logging.getLogger(__name__)
 

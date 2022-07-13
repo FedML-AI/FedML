@@ -1,5 +1,4 @@
 import logging
-import os
 
 import torch
 from torch.utils.data import TensorDataset
@@ -7,9 +6,7 @@ from tqdm import tqdm
 
 from fedml.data.fednlp.base.preprocess.base_example import SpanExtractionInputExample
 from fedml.data.fednlp.base.preprocess.base_preprocessor import BasePreprocessor
-from .span_extraction_data_utils import (
-    squad_convert_examples_to_features,
-)
+from .span_extraction_data_utils import squad_convert_examples_to_features
 
 customized_cleaner_dict = {}
 
