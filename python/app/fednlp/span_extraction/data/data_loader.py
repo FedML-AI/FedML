@@ -10,11 +10,11 @@ from transformers import (
 )
 from fedml.model.nlp.model_args import *
 from fedml.data.fednlp.base.data_manager.base_data_manager import BaseDataManager
-from data.span_extraction_data_manager import (
+from .span_extraction_data_manager import (
     SpanExtractionDataManager,
 )
 
-from data.span_extraction_preprocessor import (
+from .span_extraction_preprocessor import (
     TLMPreprocessor as SEPreprocessor,
 )
 
