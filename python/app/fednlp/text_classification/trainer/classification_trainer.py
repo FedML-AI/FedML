@@ -3,12 +3,12 @@ from torch import nn
 
 from fedml.core import ClientTrainer
 import logging
-from .text_classification_utils import *
+from trainer.text_classification_utils import *
 import copy
 import logging
 import math
 import os
-from ...model_args import ClassificationArgs
+from trainer.model_args import ClassificationArgs
 import numpy as np
 import sklearn
 import wandb
