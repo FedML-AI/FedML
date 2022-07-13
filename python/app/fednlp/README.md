@@ -43,7 +43,7 @@ To run text classification using MPI simulator follow the following steps:
 1. cd text_classification/
 2. bash ../data/download_data.sh
 3. bash ../data/download_partition.sh
-4. bash run_mpi_simulation.sh 5
+4. bash run_simulation.sh 5
 ```
 
 **SEQ TAGGING**
@@ -58,7 +58,7 @@ To run sequence tagging on wikiner dataset using MPI simulator follow the follow
 1. cd seq_tagging/
 2. bash ../data/download_data.sh
 3. bash ../data/download_partition.sh
-4. bash run_mpi_simulation.sh 5
+4. bash run_simulation.sh 5
 ```
 
 **SPAN EXTRACTION**
@@ -71,7 +71,7 @@ To run span extraction on MRQA dataset using MPI simulator follow the following 
 1. cd span_extraction/
 2. bash ../data/download_data.sh
 3. bash ../data/download_partition.sh
-4. bash run_mpi_simulation.sh 4
+4. bash run_simulation.sh 4
 ```
 
 
@@ -87,7 +87,7 @@ To run seq2seq using MPI simulator on cornell_movie_dialogue dataset follow the 
 1. cd seq2seq/
 2. bash ../data/download_data.sh
 3. bash ../data/download_partition.sh
-4. bash run_mpi_simulation.sh 1
+4. bash run_simulation.sh 1
 ```
 
 We have provided examples of trainers in each example. For running custom trainers feel free to follow the folder `{application_name}/trainer/` and write your own custom trainer. To include this trainer please follow the create_model function in the python executable in the folder `{application_name}/` and replace the current trainer with your own trainer. Every trainer should inherit the Client Trainer class and should contain a train and a test function.
