@@ -41,9 +41,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
       # https://github.com/actions/checkout/issues/116#issuecomment-644419389
       - uses: actions/checkout@v2
-        with:
-          token: ${{ secrets.CHAOYANG_TOKEN }}
-          submodules: recursive
+#        with:
+#          token: ${{ secrets.CHAOYANG_TOKEN }}
+#          submodules: recursive
       - name: pip install -e ./
         run: |
           pip install -e ./
