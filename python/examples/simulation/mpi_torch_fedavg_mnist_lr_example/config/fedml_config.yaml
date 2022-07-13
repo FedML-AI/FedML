@@ -50,6 +50,6 @@ attack_args:
   attack_type: None
 
 defense_args:
-  enable_defense: true
+  enable_defense: false
   defense_type: norm_diff_clipping
   norm_bound: 5.0
