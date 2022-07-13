@@ -1,7 +1,5 @@
 import fedml
-
-from fedml.simulation import SimulatorSingleProcess as Simulator
-
+from fedml import FedMLRunner
 
 if __name__ == "__main__":
     # init FedML framework
@@ -17,5 +15,5 @@ if __name__ == "__main__":
     model = fedml.model.create(args, output_dim)
 
     # start training
-    simulator = Simulator(args, device, dataset, model)
-    simulator.run()
+    fedml_runner = FedMLRunner(args, device, dataset, model)
+    fedml_runner.run()

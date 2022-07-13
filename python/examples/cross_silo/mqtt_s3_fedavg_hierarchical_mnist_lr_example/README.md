@@ -18,7 +18,7 @@ The highly encapsulated server and client API calls are shown as below:
 ```shell
 #!/usr/bin/env bash
 
-python3 server/torch_server.py --cf config/fedml_config.yaml --rank 0
+python3 torch_server.py --cf config/fedml_config.yaml --rank 0
 ```
 
 `server/torch_server.py`

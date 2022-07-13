@@ -17,12 +17,12 @@ def FedML_init():
 
 
 def FedML_FedGan_distributed(
+        args,
         process_id,
         worker_number,
         device,
         comm,
         model,
-        args,
         dataset,
         model_trainer=None,
         preprocessed_sampling_lists=None,
