@@ -1,11 +1,8 @@
 import logging
-import traceback
-
-from mpi4py import MPI
 
 import fedml
 from data.data_loader import load_partition_data, get_data
-from fedml.simulation import SimulatorMPI
+from fedml import FedMLRunner
 from model.gin import GIN
 from trainer.gin_trainer import GINSocialNetworkTrainer
 
@@ -98,9 +95,5 @@ if __name__ == "__main__":
     model, trainer = create_model(args, args.model, feat_dim, num_cats, output_dim=None)
 
     # start training
-    try:
-        simulator = SimulatorMPI(args, device, dataset, model, trainer)
-        simulator.run()
-    except Exception as e:
-        logging.info('traceback.format_exc():\n%s' % traceback.format_exc())
-        MPI.COMM_WORLD.Abort()
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
+    fedml_runner.run()
