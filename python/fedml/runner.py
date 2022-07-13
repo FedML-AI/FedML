@@ -63,17 +63,15 @@ class FedMLRunner:
                 )
             else:
                 raise Exception("no such role")
-
         elif args.scenario == "hierarchical":
-
             if args.role == "client":
-                from .cross_silo.hierarchical import Client
+                from .cross_silo import Client
 
                 runner = Client(
                     args, device, dataset, model, client_trainer, server_aggregator
                 )
             elif args.role == "server":
-                from .cross_silo.hierarchical import Server
+                from .cross_silo import Server
 
                 runner = Server(
                     args, device, dataset, model, client_trainer, server_aggregator

@@ -1,5 +1,5 @@
 import fedml
-from fedml.cross_silo.hierarchical import Server
+from fedml import FedMLRunner
 
 if __name__ == "__main__":
     # init FedML framework
@@ -14,5 +14,5 @@ if __name__ == "__main__":
     model = fedml.model.create(args, output_dim)
 
     # start training
-    server = Server(args, device, dataset, model)
-    server.run()
+    fedml_runner = FedMLRunner(args, device, dataset, model)
+    fedml_runner.run()

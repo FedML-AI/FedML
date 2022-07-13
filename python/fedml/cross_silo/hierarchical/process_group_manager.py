@@ -28,11 +28,11 @@ class ProcessGroupManager:
             f"[{os.getpid()}] Initializing process group with: {env_dict}")
             
         backend = dist.Backend.NCCL if only_gpu else dist.Backend.GLOO
+
         # initialize the process group
         dist.init_process_group(
             backend=backend)
         self.messaging_pg = dist.new_group()
-        # dist.init_process_group()
 
         logging.info("Initiated")
 

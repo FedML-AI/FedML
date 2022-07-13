@@ -5,7 +5,6 @@ import numpy as np
 
 from time import sleep
 from .lsa_message_define import MyMessage
-from .utils import transform_tensor_to_list
 from ...core.distributed.communication.message import Message
 from ...core.distributed.server.server_manager import ServerManager
 from ...core.mlops import MLOpsProfilerEvent, MLOpsMetrics
