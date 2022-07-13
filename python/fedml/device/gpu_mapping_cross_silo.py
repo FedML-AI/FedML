@@ -7,16 +7,15 @@ from fedml.constants import FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
 
 
 def mapping_processes_to_gpu_device_from_yaml_file_cross_silo(
-    process_id, worker_number, gpu_util_file, gpu_util_key, scenario
+    process_id, worker_number, gpu_util_file, gpu_util_key, device_type, scenario
 ):
-    if gpu_util_file is None:
-        logging.info(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        logging.info(
-            " ################## You do not indicate gpu_util_file, will use CPU training  #################"
+    if gpu_util_file is None or device_type != "gpu":
+        device = mapping_single_process_to_gpu_device_cross_silo(
+            device_type
         )
-        device = torch.device("cpu")
-        logging.info(device)
+        logging.info(f"Training on device: {device}")
         return device
+
     else:
         unique_gpu = (
             True
@@ -71,12 +70,10 @@ def mapping_processes_to_gpu_device_from_yaml_file_cross_silo(
 
 
 def mapping_single_process_to_gpu_device_cross_silo(
-    using_gpu, device_type, gpu_id=0
+    device_type, gpu_id=0
 ):
-    if not using_gpu:
+    if device_type == "cpu":
         device = torch.device("cpu")
-        # return gpu_util_map[process_id][1]
-        return device
     else:
         if torch.cuda.is_available() and device_type == "gpu":
             device = torch.device(f"cuda:{gpu_id}")
@@ -85,4 +82,25 @@ def mapping_single_process_to_gpu_device_cross_silo(
             device = torch.device("mps")
         else:
             device = torch.device("cpu")
-        return device
+    return device
+
+
+
+
+# # Ugly Delete
+# def mapping_single_process_to_gpu_device_cross_silo(
+#     using_gpu, device_type, gpu_id=0
+# ):
+#     if not using_gpu:
+#         device = torch.device("cpu")
+#         # return gpu_util_map[process_id][1]
+#         return device
+#     else:
+#         if torch.cuda.is_available() and device_type == "gpu":
+#             device = torch.device(f"cuda:{gpu_id}")
+#         elif device_type == "mps":
+#             # https://pytorch.org/docs/master/notes/mps.html
+#             device = torch.device("mps")
+#         else:
+#             device = torch.device("cpu")
+#         return device
