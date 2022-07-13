@@ -53,5 +53,5 @@ if __name__ == "__main__":
     model, trainer = create_model(args, output_dim)
 
     # start training
-    fedml_runner = FedMLRunner(args, device, dataset, model)
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
     fedml_runner.run()

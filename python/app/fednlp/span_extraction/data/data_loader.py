@@ -8,7 +8,7 @@ from transformers import (
     DistilBertConfig,
     DistilBertTokenizer,
 )
-from data.model_args import *
+from fedml.model.nlp.model_args import *
 from fedml.data.fednlp.base.data_manager.base_data_manager import BaseDataManager
 from data.span_extraction_data_manager import (
     SpanExtractionDataManager,

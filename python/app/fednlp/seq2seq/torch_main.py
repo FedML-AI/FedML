@@ -1,10 +1,9 @@
 import fedml
-from data.model_args import *
-
+from fedml.model.nlp.model_args import *
 from trainer.seq2seq_trainer import MyModelTrainer as MySSTrainer
 from data.data_loader import load
 import torch
-from fedml.cross_silo import Client
+from fedml import FedMLRunner
 import logging
 from transformers import (
     BartConfig,
@@ -90,5 +89,5 @@ if __name__ == "__main__":
     model, trainer = create_model(args, output_dim)
 
     # start training
-    client = Client(args, device, dataset, model, trainer)
-    client.run()
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
+    fedml_runner.run()

@@ -10,8 +10,8 @@ common_args:
 
 data_args:
   dataset: "20news"
-  data_file_path: /home/ubuntu/fednlp_data/data_files/20news_data.h5
-  partition_file_path: /home/ubuntu/fednlp_data/partition_files/20news_partition.h5
+  data_file_path: ../fednlp_data/data_files/20news_data.h5
+  partition_file_path: ../fednlp_data/partition_files/20news_partition.h5
   partition_method: "uniform"
   reprocess_input_data: false
   global_model_file_path: "/home/ubuntu/FedML/python/app/model_cache_dir/"
@@ -62,7 +62,7 @@ validation_args:
 device_args:
   worker_num: 1
   using_gpu: false
-  gpu_mapping_file: /home/ubuntu/FedML/app/fednlp/text_classification/config/gpu_mapping.yaml
+  gpu_mapping_file: config/simulation/gpu_mapping.yaml
   gpu_mapping_key: mapping_fednlp_sp
 
 comm_args:

@@ -3,13 +3,13 @@ from torch import nn
 
 from fedml.core import ClientTrainer
 import logging
-from trainer.seq_tagging_utils import *
+from .seq_tagging_utils import *
 import copy
 import logging
 import math
 import os
 from fedml.data.fednlp.base.data_manager.base_data_manager import BaseDataManager
-from trainer.model_args import SeqTaggingArgs
+from fedml.model.nlp.model_args import SeqTaggingArgs
 import numpy as np
 import sklearn
 import wandb
@@ -84,7 +84,7 @@ class MyModelTrainer(ClientTrainer):
         epoch_loss = []
         for epoch in range(args.epochs):
             batch_loss = []
-            for batch_idx, batch in enumerate(train_data):
+            for batch_idx, batch in tqdm(enumerate(train_data)):
                 x = batch[1].to(device)
                 labels = batch[4].to(device)
                 log_probs = model(x)

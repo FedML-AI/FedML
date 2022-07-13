@@ -11,13 +11,13 @@ from transformers import (
     BartForConditionalGeneration,
     BartTokenizer,
 )
-from data.model_args import *
+from fedml.model.nlp.model_args import *
 from fedml.data.fednlp.base.data_manager.base_data_manager import BaseDataManager
-from data.seq2seq_data_manager import (
+from .seq2seq_data_manager import (
     Seq2SeqDataManager,
 )
 
-from data.seq2seq_preprocessor import (
+from .seq2seq_preprocessor import (
     TLMPreprocessor as SSPreprocessor,
 )
 
