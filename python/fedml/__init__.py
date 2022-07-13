@@ -35,10 +35,6 @@ def init(args=None):
     fedml._global_training_type = args.training_type
     fedml._global_comm_backend = args.backend
 
-    mlops.init(args)
-
-    logging.info("args = {}".format(vars(args)))
-
     """
     # Windows/Linux/MacOS compatability issues on multi-processing
     # https://github.com/pytorch/pytorch/issues/3492
@@ -93,9 +89,11 @@ def init(args=None):
 
     manage_profiling_args(args)
 
-    # this must execute after the rank/process_id has been assigned.
     update_client_id_list(args)
 
+    mlops.init(args)
+
+    logging.info("args = {}".format(vars(args)))
     return args
 
 
@@ -159,7 +157,7 @@ def manage_cuda_rpc_args(args):
 
     if args.enable_cuda_rpc and args.backend != "TRPC":
         args.enable_cuda_rpc = False
-        logging.warn(
+        print(
             "Argument enable_cuda_rpc is ignored. Cuda RPC only works with TRPC backend."
         )
 
@@ -180,8 +178,8 @@ def manage_cuda_rpc_args(args):
             len(args.cuda_rpc_gpu_mapping) == args.worker_num + 1
         ), f"Invalid cuda_rpc_gpu_mapping. Expected list of size {args.worker_num + 1}"
 
-    logging.info(f"cpu_transfer: {args.cpu_transfer}")
-    logging.info(f"enable_cuda_rpc: {args.enable_cuda_rpc}")
+    print(f"cpu_transfer: {args.cpu_transfer}")
+    print(f"enable_cuda_rpc: {args.enable_cuda_rpc}")
 
 
 def init_cross_silo_horizontal(args):
@@ -205,7 +203,6 @@ def manage_mpi_args(args):
         assert (
             args.worker_num + 1 == world_size
         ), f"Invalid number of mpi processes. Exepected {args.worker_num + 1}"
-        logging.info("comm = {}".format(comm))
     else:
         args.comm = None
 
