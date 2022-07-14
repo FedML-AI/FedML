@@ -5,9 +5,10 @@ import platform
 import time
 
 import click
-from ...core.mlops.mlops_runtime_log import MLOpsRuntimeLog
-from ...cli.edge_deployment.client_runner import FedMLClientRunner
-from ...cli.edge_deployment.client_constants import ClientConstants
+from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
+from fedml.cli.edge_deployment.client_runner import FedMLClientRunner
+from fedml.cli.edge_deployment.client_constants import ClientConstants
+
 
 def init_logs(args, edge_id):
     # Init runtime logs
