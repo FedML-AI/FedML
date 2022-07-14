@@ -577,8 +577,9 @@ def env():
 def launch(arguments):
     for argument in arguments:
         click.echo(argument)
+
     # TODO: pass the arguments to "fedml.cross_silo.hierarchical.client_launcher"
-    CrossSiloLauncher.launch_dist_trainers(arguments[0], ...)
+    CrossSiloLauncher.launch_dist_trainers(arguments[0], list(arguments[1:]))
 
 
 if __name__ == "__main__":
