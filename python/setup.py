@@ -26,7 +26,6 @@ requirements = [
     "wandb",
     "wget",
     "paho-mqtt",
-    "joblib",
     "boto3",
     "pynvml",
     "sklearn",
