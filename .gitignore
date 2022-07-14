@@ -149,3 +149,4 @@ devops/scripts/docker
 devops/scripts/kubectl
 android/gradlew
 android/gradlew.bat
+/iot/anomaly_detection_for_cybersecurity/data/
