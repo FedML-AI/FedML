@@ -5,7 +5,8 @@ import time
 from .message_define import MyMessage
 from ...core.distributed.client.client_manager import ClientManager
 from ...core.distributed.communication.message import Message
-from ...core.mlops import MLOpsMetrics, MLOpsProfilerEvent
+from ...core.mlops.mlops_metrics import MLOpsMetrics
+from ...core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
 
 class FedMLClientManager(ClientManager):

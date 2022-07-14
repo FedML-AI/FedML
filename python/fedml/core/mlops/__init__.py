@@ -8,11 +8,10 @@ import uuid
 
 import click
 import requests
-from fedml.cli.cli import mlops_register_simulator_process
-from fedml.cli.edge_deployment.client_constants import ClientConstants
-from fedml.cli.edge_deployment.client_login import __login_as_simulator
-from fedml.cli.edge_deployment.client_runner import FedMLClientRunner
-from fedml import constants, FEDML_TRAINING_PLATFORM_SIMULATION
+from ...cli.cli import mlops_register_simulator_process
+from ...cli.edge_deployment.client_constants import ClientConstants
+from ...cli.edge_deployment.client_runner import FedMLClientRunner
+from ...constants import FEDML_TRAINING_PLATFORM_SIMULATION, FEDML_TRAINING_PLATFORM_SIMULATION_TYPE
 from fedml.cli.server_deployment.server_constants import ServerConstants
 
 from ..distributed.communication.mqtt.mqtt_manager import MqttManager
@@ -210,7 +209,7 @@ def create_project(project_name, api_key):
     url = "{}/fedmlOpsServer/projects/createSim".format(url_prefix)
     json_params = {"name": project_name,
                    "userids": api_key,
-                   "platform_type": str(constants.FEDML_TRAINING_PLATFORM_SIMULATION_TYPE)}
+                   "platform_type": str(FEDML_TRAINING_PLATFORM_SIMULATION_TYPE)}
     if cert_path is not None:
         requests.session().verify = cert_path
         response = requests.post(
