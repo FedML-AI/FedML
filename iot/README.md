@@ -17,14 +17,52 @@ Learn more about Federated Learning for Internet of Things, please check our sur
  <img src="doc/fediot_overview.jpg" width="600px">
 </div>
 
-## Prerequisite
-Install FedML for local development: 
-```
-pip install fedml
-```
 
-Guidance for installing FedML library on [raspberry](https://doc.fedml.ai/starter/install/rpi.html) and [jetson](https://doc.fedml.ai/starter/install/jetson.html) platforms.
+## Device Purchase Suggestion
+Currently, raspberry Pi 4 and Jetson Nano boards are not available from neither official website nor approved distributors.
+We suggest to look into third-party sellers such Amazon and Ebay. Here are some links that we used to buy from.
+* Raspberry Pi 4: [Board-only](https://www.amazon.com/Raspberry-Model-2019-Quad-Bluetooth/dp/B07TC2BK1X/ref=sr_1_2?keywords=raspberry+pi+4&qid=1657234377&sprefix=respberr%2Caps%2C132&sr=8-2&ufe=app_do%3Aamzn1.fos.08f69ac3-fd3d-4b88-bca2-8997e41410bb), [Developer-kit](https://www.amazon.com/GeeekPi-Raspberry-DeskPi-Button-Heatsink/dp/B09S374QW5/ref=sr_1_18?keywords=raspberry+pi+4&qid=1657234608&sprefix=respberr%2Caps%2C132&sr=8-18&ufe=app_do%3Aamzn1.fos.08f69ac3-fd3d-4b88-bca2-8997e41410bb)
+* Jetson Nano: [Board-only](https://www.amazon.com/Yahboom-Jetson-Nano-4GB-SUB/dp/B09T37PPRF/ref=dp_prsubs_3?pd_rd_i=B09T37PPRF&psc=1), Developer-kit (not available)
 
+Before setup, make sure you have micro SD card (at least 32GB), SD card reader, and power supply ready. For Jeston Nano setup, you will need to 
+connect monitor, keyboard, mouse, and ethernet cable to your board. For Raspberry Pi setup, you don't need to connect any peripherals.
+
+## Raspberry Pi Setup 
+Reference: https://projects.raspberrypi.org/en/projects/raspberry-pi-setting-up/0
+* Download and launch the Raspberry Pi Imager
+* Install Raspberry Pi OS on your SD card via Raspberry Pi Imager
+  * Choose Raspberry Pi OS Lite (64-bit)
+  * Choose SD card you would like to install it on
+  * Click gear icon and configurate as the following
+        <div align="left">
+         <img src="doc/raspberry_setup.gif" width="300px">
+        </div>
+
+  * Click write
+* Insert SD card and power on your board.
+* Wait a few minutes to let the board boot and run `ssh username@raspberrypi.local` from your host machine to log in to your Raspberry Pi.
+
+## Jeston Nano Setup
+Reference: https://developer.nvidia.com/embedded/learn/get-started-jetson-nano-devkit#setup
+
+It requires extra work to setup headless on a Jeston Nano (meaning no monitor needed), so you will need to connect your Nano with a monitor, keyboard, mouse and ethernet cable (no bluetooth and wifi module on Nano).
+* Write image to your SD card: https://developer.nvidia.com/embedded/learn/get-started-jetson-nano-devkit#write
+* Insert SD card and power on your board
+* Logging in through GUI
+
+For better on-device performance, we suggest to disable GUI and log in through ssh from your host machine instead:
+https://www.forecr.io/blogs/bsp-development/how-to-disable-desktop-gui-on-jetson-modules
+
+## FedIoT Environment Setup
+1. Install FedML on your server side for local development: 
+    ```
+    pip install fedml
+    ```
+2. Install FedML library on your client side: [Raspberry](https://doc.fedml.ai/starter/install/rpi.html) and [Jetson](https://doc.fedml.ai/starter/install/jetson.html) FedML installation guidance
+3. Install extra packages for FedIoT on both server and client side:
+    ```
+    bash config/bootstrap.sh
+    ```
 
 ## Real-deployment Training Script
 
@@ -49,9 +87,12 @@ bash run_client.sh 2
 ```
 Note: please run the server first.
 
+The client script can also be used on the host machine along with the server script for testing purpose, 
+such that run `bash run_server.sh` in terminal 1, run `bash run_client.sh 1` in terminal 2, and etc.
+
 ## Centralized Simulation Training Script
 
-We also support centralized simulation for FedIoT, which means one PC could simulate both server and clients as you need.
+We also support centralized MPI-based simulation for FedIoT, which the backend communication between server and client is done through MPI on a single machine.
 All training related parameters are inside config_simulation/fedml_config.yaml, please modify it per your need.
 The worker_num under the device_args represents number of processes in MPI, as the number of parallel clients.
 
@@ -75,6 +116,17 @@ FedML MLOps provides:
 - model serving
 
 See this tutorial (https://doc.fedml.ai/mlops/user_guide.html) for details.
+1. Sign up an account and log in to MLOps
+2. Register your client device to MLOps after installing fedml on it:
+    ```
+    fedml login $account-id 
+    ```
+    Please replace $account-id with your own one shown on the MLOps webpage.
+After registration, you will see your device information under Edge Device.
+3. Build MLOps packages and upload them to MLOps.
+4. Invite collaborators, create a group and a project.
+5. Create a new run (training). Select devices and application, then click start.
+
 
 ## Citation
 Please cite our FedIoT and FedML paper if it helps your research.

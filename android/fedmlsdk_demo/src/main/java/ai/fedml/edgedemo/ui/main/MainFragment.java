@@ -3,6 +3,7 @@ package ai.fedml.edgedemo.ui.main;
 import ai.fedml.edge.FedEdgeManager;
 import ai.fedml.edge.OnTrainProgressListener;
 import ai.fedml.edge.request.RequestManager;
+import ai.fedml.edge.service.communicator.message.MessageDefine;
 import ai.fedml.edgedemo.App;
 import ai.fedml.edgedemo.GlideApp;
 import ai.fedml.edgedemo.widget.CompletedProgressView;
@@ -25,7 +26,7 @@ import ai.fedml.edgedemo.R;
 public class MainFragment extends Fragment {
 
     private MainViewModel mViewModel;
-    private TextView mDeviceTextView;
+    private TextView mStatusTextView;
     private TextView mAccLossTextView;
     private CompletedProgressView mProgressView;
     private TextView mHyperTextView;
@@ -33,6 +34,7 @@ public class MainFragment extends Fragment {
     private TextView mEmailTextView;
     private TextView mGroupTextView;
     private ImageView mAvatarImageView;
+    private TextView mDeviceAccountInfoTextView;
 
     public static MainFragment newInstance() {
         return new MainFragment();
@@ -50,10 +52,11 @@ public class MainFragment extends Fragment {
     }
 
     private void initView(final @NonNull View view) {
-        mDeviceTextView = view.findViewById(R.id.tv_device_name);
+        mStatusTextView = view.findViewById(R.id.tv_status);
         mAccLossTextView = view.findViewById(R.id.tv_acc_loss);
         mProgressView = view.findViewById(R.id.progress_view);
         mHyperTextView = view.findViewById(R.id.tv_hyper_parameter);
+        mDeviceAccountInfoTextView = view.findViewById(R.id.tv_account_info);
         mNameTextView = view.findViewById(R.id.tv_name);
         mEmailTextView = view.findViewById(R.id.tv_email);
         mGroupTextView = view.findViewById(R.id.tv_group);
@@ -62,7 +65,7 @@ public class MainFragment extends Fragment {
 
     private void loadDate() {
         getUserInfo();
-        mDeviceTextView.setText(getString(R.string.device_id, FedEdgeManager.getFedEdgeApi().getBoundEdgeId()));
+        mDeviceAccountInfoTextView.setText(getString(R.string.account_information, FedEdgeManager.getFedEdgeApi().getBoundEdgeId()));
         mProgressView.setProgress(0);
         FedEdgeManager.getFedEdgeApi().setEpochLossListener(new OnTrainProgressListener() {
             private int mRound = 0;
@@ -89,13 +92,18 @@ public class MainFragment extends Fragment {
             }
 
             @Override
-            public void onProgressChanged(int round, int progress) {
+            public void onProgressChanged(int round, float progress) {
                 App.runOnUiThread(() ->
-                        mProgressView.setProgress(progress));
+                        mProgressView.setProgress(Math.round(progress)));
             }
         });
         FedEdgeManager.getFedEdgeApi().setTrainingStatusListener((status) ->
-                App.runOnUiThread(() -> mHyperTextView.setText(FedEdgeManager.getFedEdgeApi().getHyperParameters())));
+                App.runOnUiThread(() -> {
+                    if (status == MessageDefine.KEY_CLIENT_STATUS_INITIALIZING) {
+                        mHyperTextView.setText(FedEdgeManager.getFedEdgeApi().getHyperParameters());
+                    }
+                    mStatusTextView.setText(MessageDefine.CLIENT_STATUS_MAP.get(status));
+                }));
     }
 
     private void getUserInfo() {

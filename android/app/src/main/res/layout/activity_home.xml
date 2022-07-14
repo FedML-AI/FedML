@@ -42,12 +42,12 @@
                 android:textSize="14sp" />
 
             <TextView
-                android:id="@+id/tv_device_name"
+                android:id="@+id/tv_status"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:gravity="center_horizontal"
-                android:text="@string/device_name"
+                android:text="@string/idle_status"
                 android:textColor="@color/color_686C7D"
                 android:textSize="12sp"
                 android:textStyle="bold" />
@@ -104,7 +104,7 @@
                     android:paddingVertical="14dp">
 
                     <TextView
-                        android:id="@+id/textView14"
+                        android:id="@+id/tv_account_info"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/account_information"
@@ -123,7 +123,7 @@
                         android:textSize="18sp"
                         android:textStyle="bold"
                         app:layout_constraintLeft_toLeftOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/textView14" />
+                        app:layout_constraintTop_toBottomOf="@+id/tv_account_info" />
 
                     <TextView
                         android:id="@+id/tv_email"
