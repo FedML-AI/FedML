@@ -52,7 +52,7 @@ class GeometricMedianDefense(BaseDefenseMethod):
             batch_grad_list.append((sample_num, batch_weight))
         return batch_grad_list
 
-    def aggregation(self, batch_grad_list):
+    def robust_aggregate(self, batch_grad_list, global_w=None):
         (num0, avg_params) = batch_grad_list[0]
         alphas = {alpha for (alpha, params) in batch_grad_list}
         alphas = {alpha / sum(alphas, 0.0) for alpha in alphas}

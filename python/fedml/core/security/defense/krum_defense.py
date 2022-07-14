@@ -11,8 +11,8 @@ https://arxiv.org/pdf/1703.02757.pdf
 
 
 class KrumDefense(BaseDefenseMethod):
-    def __init__(self, k, multi=False):
-        self.k = k  # assume there are k byzantine clients
+    def __init__(self, byzantine_client_num, multi=False):
+        self.k = byzantine_client_num  # assume there are k byzantine clients
         self.multi = multi  # krum or multi-krum
 
     def defend(self, client_grad_list, global_w=None, refs=None):
