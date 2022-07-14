@@ -226,7 +226,7 @@ class FedMLServerManager(ServerManager):
                 )
                 self.cleanup()
             else:
-                logging.info("==========start {}-th round training===========".format(self.round_idx))
+                logging.info("\n==========start {}-th round training===========\n".format(self.round_idx))
                 if hasattr(self.args, "using_mlops") and self.args.using_mlops:
                     self.mlops_event.log_event_started(
                         "server.wait", event_value=str(self.round_idx)
