@@ -147,3 +147,5 @@ python/app/fedgraphnn/ego_networks_node_clf/data/ego-networks
 /devops/scripts/aws/
 devops/scripts/docker
 devops/scripts/kubectl
+android/gradlew
+android/gradlew.bat

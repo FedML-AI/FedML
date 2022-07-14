@@ -36,7 +36,7 @@ train_args:
   client_num_in_total: 2
   client_num_per_round: 2
   comm_round: 3
-  epochs: 3
+  epochs: 1
   batch_size: 4
   client_optimizer: adam
   lr: 0.03

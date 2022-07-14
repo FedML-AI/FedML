@@ -56,7 +56,7 @@ class LightSecAggAggregator(object):
 
         # self.targeted_number_active_clients = args.targeted_number_active_clients
         self.targeted_number_active_clients = self.client_num
-        self.privacy_guarantee = int(np.floor(self.client_num/2))
+        self.privacy_guarantee = int(np.floor(self.client_num / 2))
         self.prime_number = args.prime_number
         self.precision_parameter = args.precision_parameter
 
@@ -112,24 +112,33 @@ class LightSecAggAggregator(object):
         logging.debug("d = {}, N = {}, U = {}, T = {}, p = {}".format(d, N, U, T, p))
 
         alpha_s = np.array(range(N)) + 1
-        beta_s = np.array(range(U)) + (N+1)
+        beta_s = np.array(range(U)) + (N + 1)
         logging.info("Server starts the reconstruction of aggregate_mask")
         aggregate_encoded_mask_buffer = np.zeros((U, d // (U - T)), dtype="int64")
-        logging.info(
-            "active_clients = {}, aggregate_encoded_mask_dict = {}".format(
-                active_clients, self.aggregate_encoded_mask_dict
-            )
-        )
+        # logging.info(
+        #     "active_clients = {}, aggregate_encoded_mask_dict = {}".format(
+        #         active_clients, self.aggregate_encoded_mask_dict
+        #     )
+        # )
         for i, client_idx in enumerate(active_clients):
-            aggregate_encoded_mask_buffer[i, :] = self.aggregate_encoded_mask_dict[client_idx]
+            aggregate_encoded_mask_buffer[i, :] = self.aggregate_encoded_mask_dict[
+                client_idx
+            ]
         eval_points = alpha_s[active_clients]
-        aggregate_mask = LCC_decoding_with_points(aggregate_encoded_mask_buffer, eval_points, beta_s, p)
-        logging.info("Server finish the reconstruction of aggregate_mask via LCC decoding")
+        aggregate_mask = LCC_decoding_with_points(
+            aggregate_encoded_mask_buffer, eval_points, beta_s, p
+        )
+        logging.info(
+            "Server finish the reconstruction of aggregate_mask via LCC decoding"
+        )
         aggregate_mask = np.reshape(aggregate_mask, (U * (d // (U - T)), 1))
         aggregate_mask = aggregate_mask[0:d]
+        logging.info("aggregated mask = {}".format(aggregate_mask))
         return aggregate_mask
 
-    def aggregate_model_reconstruction(self, active_clients_first_round, active_clients_second_round):
+    def aggregate_model_reconstruction(
+        self, active_clients_first_round, active_clients_second_round
+    ):
         start_time = time.time()
         aggregate_mask = self.aggregate_mask_reconstruction(active_clients_second_round)
         p = self.prime_number
@@ -151,12 +160,20 @@ class LightSecAggAggregator(object):
 
             # Cancel out the aggregate-mask to recover the aggregate-model
             averaged_params[k] -= cur_mask
-            averaged_params[k] = np.mod(averaged_params[k],p)
+            averaged_params[k] = np.mod(averaged_params[k], p)
             pos += d
 
         # Convert the model from finite to real
         logging.info("Server converts the aggregate_model from finite to tensor")
+        logging.info("aggregate model before transform = {}".format(averaged_params))
         averaged_params = transform_finite_to_tensor(averaged_params, p, q_bits)
+
+        # do the avg after transform
+        for j, k in enumerate(averaged_params):
+            w = 1 / len(active_clients_first_round)
+            averaged_params[k] = averaged_params[k] * w
+
+        logging.info("aggregate model after transform = {}".format(averaged_params))
 
         # update the global model which is cached at the server side
         self.set_global_model_params(averaged_params)
