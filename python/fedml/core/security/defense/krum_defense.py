@@ -15,7 +15,7 @@ class KrumDefense(BaseDefenseMethod):
         self.k = k  # assume there are k byzantine clients
         self.multi = multi  # krum or multi-krum
 
-    def defend(self, client_grad_list):
+    def defend(self, client_grad_list, global_w=None, refs=None):
         num_client = len(client_grad_list)
         vec_local_w = [
             (client_grad_list[i][0], utils.vectorize_weight(client_grad_list[i][1]))
@@ -29,9 +29,9 @@ class KrumDefense(BaseDefenseMethod):
         else:
             index = index[0:1]
 
-        local_w = [client_grad_list[i] for i in index]
-
-        return local_w, krum_score
+        grad_list = [client_grad_list[i] for i in index]
+        print(f"krum_scores = {krum_score}")
+        return grad_list
 
     def _compute_krum_score(self, local_w):
         krum_score = []
