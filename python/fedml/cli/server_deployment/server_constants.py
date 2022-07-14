@@ -7,7 +7,7 @@ from os.path import expanduser
 
 import psutil
 import yaml
-from fedml.cli.comm_utils.yaml_utils import load_yaml_config
+from ...cli.comm_utils.yaml_utils import load_yaml_config
 
 
 class ServerConstants(object):

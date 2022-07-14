@@ -8,8 +8,7 @@ import time
 
 import requests
 import yaml
-from fedml.cli.edge_deployment.client_constants import ClientConstants
-from fedml.core.mlops.mlops_configs import MLOpsConfigs
+from ...core.mlops.mlops_configs import MLOpsConfigs
 
 
 class MLOpsRuntimeLogProcessor:
