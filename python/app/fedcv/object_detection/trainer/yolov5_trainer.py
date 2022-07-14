@@ -16,8 +16,8 @@ from torch.optim import Adam, lr_scheduler
 
 from fedml.core.alg_frame.client_trainer import ClientTrainer
 
-from utils.loss import ComputeLoss
-from utils.general import (
+from model.yolov5.utils.loss import ComputeLoss
+from model.yolov5.utils.general import (
     coco80_to_coco91_class,
     check_dataset,
     check_file,
@@ -31,7 +31,7 @@ from utils.general import (
     set_logging,
     increment_path,
 )
-from utils.metrics import ap_per_class
+from model.yolov5.utils.metrics import ap_per_class
 
 
 class YOLOv5Trainer(ClientTrainer):
@@ -144,16 +144,16 @@ class YOLOv5Trainer(ClientTrainer):
         # plot box, obj, cls, total loss
         epoch_loss = np.array(epoch_loss)
         logging.info(f"Epoch loss: {epoch_loss}")
-        plt.figure(figsize=(10, 5))
-        plt.title("Box, Obj, Cls, Total Loss")
-        plt.plot(epoch_loss[:, 0], label="box")
-        plt.plot(epoch_loss[:, 1], label="obj")
-        plt.plot(epoch_loss[:, 2], label="cls")
+        # plt.figure(figsize=(10, 5))
+        # plt.title("Box, Obj, Cls, Total Loss")
+        # plt.plot(epoch_loss[:, 0], label="box")
+        # plt.plot(epoch_loss[:, 1], label="obj")
+        # plt.plot(epoch_loss[:, 2], label="cls")
         # plt.plot(epoch_loss[:, 3], label="total")
-        plt.legend()
+        # plt.legend()
 
-        plt.savefig(f"{args.save_dir}/trainer_{self.id}_epoch_loss_round_{self.round_idx}.png")
-        plt.close()
+        # plt.savefig(f"{args.save_dir}/trainer_{self.id}_epoch_loss_round_{self.round_idx}.png")
+        # plt.close()
         self.round_idx += 1
 
         self.round_loss.append(epoch_loss[-1, :])
@@ -162,15 +162,15 @@ class YOLOv5Trainer(ClientTrainer):
             # logging.info(f"round_loss shape: {self.round_loss.shape}")
             logging.info(f"Trainer {self.id} round {self.round_idx} finished, round loss: {self.round_loss}")
 
-            plt.figure(figsize=(10, 5))
-            plt.title("Box, Obj, Cls, Total Loss per round")
-            plt.plot(self.round_loss[:, 0], label="box")
-            plt.plot(self.round_loss[:, 1], label="obj")
-            plt.plot(self.round_loss[:, 2], label="cls")
+            # plt.figure(figsize=(10, 5))
+            # plt.title("Box, Obj, Cls, Total Loss per round")
+            # plt.plot(self.round_loss[:, 0], label="box")
+            # plt.plot(self.round_loss[:, 1], label="obj")
+            # plt.plot(self.round_loss[:, 2], label="cls")
             # plt.plot(self.round_loss[:, 3], label="total")
-            plt.legend()
-            plt.savefig(f"{args.save_dir}/trainer_{self.id}_round_loss.png")
-            plt.close()
+            # plt.legend()
+            # plt.savefig(f"{args.save_dir}/trainer_{self.id}_round_loss.png")
+            # plt.close()
 
         return
 
