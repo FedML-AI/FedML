@@ -39,7 +39,7 @@ validation_args:
 secure_aggregation_args:
   enable_sa: true
   sa_method: lightsecagg # secagg; secagg++
-  prime_number: 32749 # 2 ** 15 - 19
+  prime_number: 1997 # 2 ** 15 - 19
   precision_parameter: 10
 
 device_args:
