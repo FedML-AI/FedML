@@ -15,10 +15,6 @@ mapping_default:
 mapping_config1_5:
     host1: [2, 1, 1, 1]
 
-# this is used for 4 clients and 1 server training within a single machine which has 4 GPUs
-mapping_config1_7:
-    host1: [2, 1, 1, 1, 0 , 0 , 0]
-
 # this is used for 10 clients and 1 server training within a single machine which has 4 GPUs
 mapping_config2_11:
     host1: [3, 3, 3, 2]
@@ -56,13 +52,10 @@ mapping_FedML_gRPC:
     hostname_node_1: [1, 0, 0, 0]
     hostname_node_2: [1, 0, 0, 0]
 
-
-
 # for torch RPC GPU mapping
 mapping_FedML_tRPC:
     lambda-server1: [0, 0, 0, 0, 2, 2, 1, 1]
     lambda-server2: [2, 1, 1, 1, 0, 0, 0, 0]
-mapping_fedgraphnn_sp:
-        hostname_node_1: [6]
+
 #mapping_FedML_tRPC:
 #    lambda-server1: [0, 0, 0, 0, 3, 3, 3, 2]
