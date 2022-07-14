@@ -1,5 +1,5 @@
 common_args:
-  training_type: "simulation"
+  training_type: "cross_silo"
   scenario: "horizontal"
   using_mlops: false
   config_version: release
@@ -26,15 +26,17 @@ model_args:
   normalize_features: False
   normalize_adjacency: False
   sparse_adjacency: False
+  model_file_cache_folder: "./model_file_cache" # will be filled by the server automatically
+  global_model_file_path: "./model_file_cache/global_model.pt"
 
 environment_args:
   bootstrap: config/bootstrap.sh
 
 train_args:
   federated_optimizer: "FedAvg"
-  client_id_list: "[]"
-  client_num_in_total: 4
-  client_num_per_round: 4
+  client_id_list: 
+  client_num_in_total: 1
+  client_num_per_round: 1
   comm_round: 100
   epochs: 5
   batch_size: 64
@@ -47,10 +49,10 @@ validation_args:
   frequency_of_the_test: 5
 
 device_args:
-  worker_num: 4
+  worker_num: 1
   using_gpu: false
   gpu_mapping_file: config/gpu_mapping.yaml
-  gpu_mapping_key: mapping_default
+  gpu_mapping_key: mapping_config1_7
 
 comm_args:
   backend: "MQTT_S3"
