@@ -15,17 +15,15 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.bumptech.glide.Glide;
-
 import ai.fedml.GlideApp;
 import ai.fedml.R;
 import ai.fedml.base.BaseActivity;
 import ai.fedml.edge.FedEdgeManager;
 import ai.fedml.edge.OnTrainProgressListener;
 import ai.fedml.edge.request.RequestManager;
+import ai.fedml.edge.service.communicator.message.MessageDefine;
 import ai.fedml.edge.utils.LogHelper;
 import ai.fedml.utils.ToastUtils;
-import ai.fedml.widget.CircleImageView;
 import ai.fedml.widget.CompletedProgressView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -34,14 +32,13 @@ import androidx.core.content.ContextCompat;
 
 /**
  * HomeActivity
- *
  */
 public class HomeActivity extends BaseActivity implements View.OnClickListener {
 
     private static final String TAG = "HomeActivity";
     private Button btn_set_path;
     private static final int REQUEST_CODE = 1024;
-    private TextView mDeviceTextView;
+    private TextView mStatusTextView;
     private TextView mAccLossTextView;
     private CompletedProgressView mProgressView;
     private TextView mHyperTextView;
@@ -49,6 +46,7 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
     private TextView mEmailTextView;
     private TextView mGroupTextView;
     private ImageView mAvatarImageView;
+    private TextView mDeviceAccountInfoTextView;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -75,10 +73,11 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
         btn_set_path.setOnClickListener(this);
         btn_unbind.setOnClickListener(this);
 
-        mDeviceTextView = findViewById(R.id.tv_device_name);
+        mStatusTextView = findViewById(R.id.tv_status);
         mAccLossTextView = findViewById(R.id.tv_acc_loss);
         mProgressView = findViewById(R.id.progress_view);
         mHyperTextView = findViewById(R.id.tv_hyper_parameter);
+        mDeviceAccountInfoTextView = findViewById(R.id.tv_account_info);
         mNameTextView = findViewById(R.id.tv_name);
         mEmailTextView = findViewById(R.id.tv_email);
         mGroupTextView = findViewById(R.id.tv_group);
@@ -89,7 +88,7 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
         requestPermission();
         getUserInfo();
 //        VersionUpdate();
-        mDeviceTextView.setText(getString(R.string.device_id, FedEdgeManager.getFedEdgeApi().getBoundEdgeId()));
+        mDeviceAccountInfoTextView.setText(getString(R.string.account_information, FedEdgeManager.getFedEdgeApi().getBoundEdgeId()));
         mProgressView.setProgress(0);
         FedEdgeManager.getFedEdgeApi().setEpochLossListener(new OnTrainProgressListener() {
             private int mRound = 0;
@@ -116,13 +115,18 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
             }
 
             @Override
-            public void onProgressChanged(int round, int progress) {
+            public void onProgressChanged(int round, float progress) {
                 runOnUiThread(() ->
-                        mProgressView.setProgress(progress));
+                        mProgressView.setProgress(Math.round(progress)));
             }
         });
         FedEdgeManager.getFedEdgeApi().setTrainingStatusListener((status) ->
-                runOnUiThread(() -> mHyperTextView.setText(FedEdgeManager.getFedEdgeApi().getHyperParameters())));
+                runOnUiThread(() -> {
+                    if (status == MessageDefine.KEY_CLIENT_STATUS_INITIALIZING) {
+                        mHyperTextView.setText(FedEdgeManager.getFedEdgeApi().getHyperParameters());
+                    }
+                    mStatusTextView.setText(MessageDefine.CLIENT_STATUS_MAP.get(status));
+                }));
     }
 
 

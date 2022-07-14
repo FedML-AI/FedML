@@ -4,6 +4,7 @@
 .vscode/*
 *.pkl
 
+data/*
 python/tests/smoke_test/data
 python/tests/smoke_test/data/*
 
@@ -144,3 +145,7 @@ app/fedgraphnn/subgraph_link_pred/data/YAGO3-10/*.txt
 python/app/fedgraphnn/ego_networks_link_pred/data/ego-networks
 python/app/fedgraphnn/ego_networks_node_clf/data/ego-networks
 /devops/scripts/aws/
+devops/scripts/docker
+devops/scripts/kubectl
+android/gradlew
+android/gradlew.bat
