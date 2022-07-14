@@ -1,12 +1,21 @@
 common_args:
-  training_type: "simulation"
+  training_type: "cross_silo"
   random_seed: 0
+  scenario: "horizontal"
+  using_mlops: false
+  config_version: release
+  name: "exp"
+  project: "runs/train"
+  exist_ok: false
 
 data_args:
   dataset: "COLLAB"
   data_cache_dir: "./data/TUDataset/"
   partition_method: "hetero"
   partition_alpha: 0.5
+
+environment_args:
+  bootstrap: config/bootstrap.sh
 
 model_args:
   model: "gin"
@@ -22,10 +31,12 @@ model_args:
   normalize_features: False
   normalize_adjacency: False
   sparse_adjacency: False
+  model_file_cache_folder: "./model_file_cache" # will be filled by the server automatically
+  global_model_file_path: "./model_file_cache/global_model.pt"
 
 train_args:
   federated_optimizer: "FedAvg"
-  client_id_list: "[]"
+  client_id_list:
   client_num_in_total: 4
   client_num_per_round: 4
   comm_round: 100
@@ -40,14 +51,15 @@ validation_args:
   frequency_of_the_test: 5
 
 device_args:
-  worker_num: 4
-  using_gpu: true
+  worker_num: 1
+  using_gpu: false
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_config1_5
 
 comm_args:
-  backend: "MPI"
-  is_mobile: 0
+  backend: "MQTT_S3"
+  mqtt_config_path: config/mqtt_config.yaml
+  s3_config_path: config/s3_config.yamls
 
 
 tracking_args:
