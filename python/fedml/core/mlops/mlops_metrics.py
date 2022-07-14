@@ -6,13 +6,12 @@ import os
 import time
 import uuid
 
-from fedml.cli.edge_deployment.client_constants import ClientConstants
-from fedml.cli.server_deployment.server_constants import ServerConstants
-from fedml.core.distributed.communication.mqtt.mqtt_manager import MqttManager
+from ...cli.edge_deployment.client_constants import ClientConstants
+from ...cli.server_deployment.server_constants import ServerConstants
+from ..distributed.communication.mqtt.mqtt_manager import MqttManager
 
-from fedml.core.mlops.mlops_status import MLOpsStatus
-from fedml.core.mlops.system_stats import SysStats
-
+from .mlops_status import MLOpsStatus
+from .system_stats import SysStats
 
 
 class Singleton(object):
@@ -34,9 +33,11 @@ class MLOpsMetrics(Singleton):
         self.server_agent_id = None
         self.sys_performances = None
         self.is_sys_perf_reporting = False
-        self.sys_perf_running_file = os.path.join(ClientConstants.get_data_dir(),
-                                                  ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
-                                                  MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME)
+        self.sys_perf_running_file = os.path.join(
+            ClientConstants.get_data_dir(),
+            ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+            MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME,
+        )
 
     def set_messenger(self, msg_messenger, args=None):
         self.messenger = msg_messenger
@@ -49,9 +50,11 @@ class MLOpsMetrics(Singleton):
                 else:
                     self.edge_id = 0
 
-                self.sys_perf_running_file = os.path.join(ServerConstants.get_data_dir(),
-                                                          ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
-                                                          MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME)
+                self.sys_perf_running_file = os.path.join(
+                    ServerConstants.get_data_dir(),
+                    ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                    MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME,
+                )
             else:
                 if hasattr(args, "client_id"):
                     self.edge_id = args.client_id
@@ -60,9 +63,11 @@ class MLOpsMetrics(Singleton):
                 else:
                     self.edge_id = 0
 
-                self.sys_perf_running_file = os.path.join(ClientConstants.get_data_dir(),
-                                                          ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
-                                                          MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME)
+                self.sys_perf_running_file = os.path.join(
+                    ClientConstants.get_data_dir(),
+                    ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                    MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME,
+                )
 
             if hasattr(args, "server_agent_id"):
                 self.server_agent_id = args.server_agent_id
@@ -128,7 +133,12 @@ class MLOpsMetrics(Singleton):
         topic_name = "fl_server/mlops/status"
         if role is None:
             role = "normal"
-        msg = {"run_id": run_id, "edge_id": self.edge_id, "status": status, "role": role}
+        msg = {
+            "run_id": run_id,
+            "edge_id": self.edge_id,
+            "status": status,
+            "role": role,
+        }
         logging.info("report_server_training_status. msg = %s" % msg)
         message_json = json.dumps(msg)
         MLOpsStatus.get_instance().set_server_status(self.edge_id, status)
@@ -259,13 +269,17 @@ class MLOpsMetrics(Singleton):
 
     def set_sys_reporting_status(self, enable, is_client=True):
         if is_client:
-            self.sys_perf_running_file = os.path.join(ClientConstants.get_data_dir(),
-                                                      ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
-                                                      MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME)
+            self.sys_perf_running_file = os.path.join(
+                ClientConstants.get_data_dir(),
+                ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME,
+            )
         else:
-            self.sys_perf_running_file = os.path.join(ServerConstants.get_data_dir(),
-                                                      ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
-                                                      MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME)
+            self.sys_perf_running_file = os.path.join(
+                ServerConstants.get_data_dir(),
+                ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME,
+            )
         self.is_sys_perf_reporting = enable
         sys_perf_file_handle = open(self.sys_perf_running_file, "w")
         if sys_perf_file_handle is not None:
@@ -292,12 +306,14 @@ class MLOpsMetrics(Singleton):
         sys_metrics.sys_stats_process.start()
 
     def report_sys_performances(self):
-        mqtt_mgr = MqttManager(self.args.mqtt_config_path["BROKER_HOST"],
-                               self.args.mqtt_config_path["BROKER_PORT"],
-                               self.args.mqtt_config_path["MQTT_USER"],
-                               self.args.mqtt_config_path["MQTT_PWD"],
-                               180,
-                               "MLOpsMetrics" + str(uuid.uuid4()))
+        mqtt_mgr = MqttManager(
+            self.args.mqtt_config_path["BROKER_HOST"],
+            self.args.mqtt_config_path["BROKER_PORT"],
+            self.args.mqtt_config_path["MQTT_USER"],
+            self.args.mqtt_config_path["MQTT_PWD"],
+            180,
+            "MLOpsMetrics" + str(uuid.uuid4()),
+        )
 
         self.set_messenger(mqtt_mgr, self.args)
         mqtt_mgr.connect()
@@ -316,7 +332,9 @@ class MLOpsMetrics(Singleton):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
     parser.add_argument("--run_id", "-r", help="run id")
     parser.add_argument("--client_id", "-c", help="client id")
     parser.add_argument("--server_id", "-s", help="server id")
