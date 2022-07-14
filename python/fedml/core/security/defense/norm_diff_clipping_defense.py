@@ -3,7 +3,7 @@ from .defense_base import BaseDefenseMethod
 from ..common import utils
 
 """
-defense @ client, added by Shanshan, 06/28/2022
+defense, added by Shanshan, 06/28/2022
 "Can You Really Backdoor Federated Learning?" 
 https://arxiv.org/pdf/1911.07963.pdf 
 """

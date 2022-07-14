@@ -14,3 +14,6 @@ class BaseDefenseMethod(ABC):
             Note: the data type of the return variable should be the same as the input
         """
         pass
+
+    def robust_aggregate(self, client_grad_list: List[Tuple[int, Dict]], global_w=None) -> Dict:
+        pass
