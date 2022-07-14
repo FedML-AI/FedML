@@ -1,15 +1,15 @@
 import fedml
+from .runner import FedMLRunner
 
 from .constants import FEDML_TRAINING_PLATFORM_CROSS_SILO
 
 
 def run_hierarchical_cross_silo_server():
-    from .cross_silo.hierarchical import Server
-
     """FedML Octopus"""
     fedml._global_training_type = FEDML_TRAINING_PLATFORM_CROSS_SILO
 
     args = fedml.init()
+    args.role = "server"
 
     # init device
     device = fedml.device.get_device(args)
@@ -21,18 +21,16 @@ def run_hierarchical_cross_silo_server():
     model = fedml.model.create(args, output_dim)
 
     # start training
-    server = Server(args, device, dataset, model)
-    server.run()
+    fedml_runner = FedMLRunner(args, device, dataset, model)
+    fedml_runner.run()
 
 
 def run_hierarchical_cross_silo_client():
-    from .cross_silo.hierarchical import Client
-
     """FedML Octopus"""
-    global _global_training_type
-    _global_training_type = FEDML_TRAINING_PLATFORM_CROSS_SILO
+    fedml._global_training_type = FEDML_TRAINING_PLATFORM_CROSS_SILO
 
     args = fedml.init()
+    args.role = "client"
 
     # init device
     device = fedml.device.get_device(args)
@@ -44,5 +42,5 @@ def run_hierarchical_cross_silo_client():
     model = fedml.model.create(args, output_dim)
 
     # start training
-    client = Client(args, device, dataset, model)
-    client.run()
+    fedml_runner = FedMLRunner(args, device, dataset, model)
+    fedml_runner.run()

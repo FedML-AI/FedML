@@ -9,7 +9,7 @@ from warnings import warn
 import yaml
 import torch
 
-from utils.data_loader import load_partition_data_coco
+from data.data_loader import load_partition_data_coco
 from utils.general import (
     labels_to_class_weights,
     increment_path,
@@ -17,7 +17,13 @@ from utils.general import (
     check_img_size,
 )
 from utils.general import intersect_dicts
-from models.yolov5.yolo import Model as YOLOv5
+from model.yolov5.models.yolo import Model as YOLOv5
+from model.yolov6.yolov6.models.yolo import Model as YOLOv6
+from model.yolov6.yolov6.utils.config import Config
+from model.yolov6.yolov6.models.yolo import build_model as build_yolov6
+
+from trainer.yolov5_trainer import YOLOv5Trainer
+from trainer.yolov6_trainer import YOLOv6Trainer
 
 try:
     import wandb
@@ -82,19 +88,38 @@ def init_yolo(args, device="cpu"):
 
     # Model
     # print("weights:", weights)
-    pretrained = weights.endswith(".pt")
-    if pretrained:
-        ckpt = torch.load(weights, map_location=device)  # load checkpoint
-        if hyp.get("anchors"):
-            ckpt["model"].yaml["anchors"] = round(hyp["anchors"])  # force autoanchor
-        model = YOLOv5(args.yolo_cfg or ckpt["model"].yaml, ch=3, nc=nc).to(device)  # create
-        exclude = ["anchor"] if args.yolo_cfg or hyp.get("anchors") else []  # exclude keys
-        state_dict = ckpt["model"].float().state_dict()  # to FP32
-        state_dict = intersect_dicts(state_dict, model.state_dict(), exclude=exclude)  # intersect
-        model.load_state_dict(state_dict, strict=False)  # load
-        logging.info("Transferred %g/%g items from %s" % (len(state_dict), len(model.state_dict()), weights))  # report
-    else:
-        model = YOLOv5(args.yolo_cfg, ch=3, nc=nc).to(device)  # create
+
+    if args.model.lower() == "yolov5":
+        pretrained = weights.endswith(".pt")
+        if pretrained:
+            ckpt = torch.load(weights, map_location=device)  # load checkpoint
+            if hyp.get("anchors"):
+                ckpt["model"].yaml["anchors"] = round(hyp["anchors"])  # force autoanchor
+            model = YOLOv5(args.yolo_cfg or ckpt["model"].yaml, ch=3, nc=nc).to(device)  # create
+            exclude = ["anchor"] if args.yolo_cfg or hyp.get("anchors") else []  # exclude keys
+            state_dict = ckpt["model"].float().state_dict()  # to FP32
+            state_dict = intersect_dicts(state_dict, model.state_dict(), exclude=exclude)  # intersect
+            model.load_state_dict(state_dict, strict=False)  # load
+            logging.info(
+                "Transferred %g/%g items from %s" % (len(state_dict), len(model.state_dict()), weights)
+            )  # report
+        else:
+            model = YOLOv5(args.yolo_cfg, ch=3, nc=nc).to(device)  # create
+    elif args.model.lower() == "yolov6":
+        args.yolov6_cfg = Config.fromfile(args.yolo_cfg)
+        model = build_yolov6(args.yolov6_cfg, num_classes=nc, device=device)
+        pretrained = weights.endswith(".pt")
+        if pretrained:  # finetune if pretrained model is set
+            """Load weights from checkpoint file, only assign weights those layers' name and shape are match."""
+            ckpt = torch.load(weights, map_location=device)
+            state_dict = ckpt["model"].float().state_dict()
+            model_state_dict = model.state_dict()
+            state_dict = {
+                k: v for k, v in state_dict.items() if k in model_state_dict and v.shape == model_state_dict[k].shape
+            }
+            model.load_state_dict(state_dict, strict=False)
+            del ckpt, state_dict, model_state_dict
+    print(model)
 
     dataset = load_partition_data_coco(args, hyp, model)
     [
@@ -136,4 +161,10 @@ def init_yolo(args, device="cpu"):
     args.hyp = hyp  # add hyperparameters
     args.wandb = wandb
 
-    return model, dataset, args
+    # Trainer
+    if args.model == "yolov5":
+        trainer = YOLOv5Trainer(model=model, args=args)
+    elif args.model == "yolov6":
+        trainer = YOLOv6Trainer(model=model, args=args)
+
+    return model, dataset, trainer, args

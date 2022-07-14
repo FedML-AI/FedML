@@ -7,8 +7,6 @@ import numpy as np
 import torch
 import wandb
 
-# from .utils import transform_list_to_tensor
-
 
 class FedMLAggregator(object):
     def __init__(
@@ -62,7 +60,7 @@ class FedMLAggregator(object):
         self.flag_client_model_uploaded_dict[index] = True
 
     def check_whether_all_receive(self):
-        logging.info("client_num = {}".format(self.client_num))
+        logging.debug("client_num = {}".format(self.client_num))
         for idx in range(self.client_num):
             if not self.flag_client_model_uploaded_dict[idx]:
                 return False
@@ -74,8 +72,8 @@ class FedMLAggregator(object):
         start_time = time.time()
         model_list = []
         training_num = 0
+
         for idx in range(self.client_num):
-            # self.model_dict[idx] = transform_list_to_tensor(self.model_dict[idx])
             model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
             training_num += self.sample_num_dict[idx]
 
@@ -119,13 +117,16 @@ class FedMLAggregator(object):
         )
         assert client_num_in_total >= client_num_per_round
 
-        np.random.seed(
-            round_idx
-        )  # make sure for each comparison, we are selecting the same clients each round
-        data_silo_index_list = np.random.choice(
-            range(client_num_in_total), client_num_per_round, replace=False
-        )
-        return data_silo_index_list
+        if client_num_in_total == client_num_per_round:
+            return [i for i in range(client_num_per_round)]
+        else:
+            np.random.seed(
+                round_idx
+            )  # make sure for each comparison, we are selecting the same clients each round
+            data_silo_index_list = np.random.choice(
+                range(client_num_in_total), client_num_per_round, replace=False
+            )
+            return data_silo_index_list
 
     def client_selection(
         self, round_idx, client_id_list_in_total, client_num_per_round
@@ -223,15 +224,6 @@ class FedMLAggregator(object):
             stats = {"training_acc": train_acc, "training_loss": train_loss}
             logging.info(stats)
 
-            train_metric = {
-                "run_id": self.args.run_id,
-                "round_idx": round_idx,
-                "timestamp": time.time(),
-                "accuracy": round(train_acc, 4),
-                "loss": round(train_loss, 4),
-            }
-            self.mlops_metrics.report_server_training_metric(train_metric)
-
             # test data
             test_num_samples = []
             test_tot_corrects = []
@@ -259,3 +251,15 @@ class FedMLAggregator(object):
                 wandb.log({"Test/Loss": test_loss, "round": round_idx})
             stats = {"test_acc": test_acc, "test_loss": test_loss}
             logging.info(stats)
+
+            if self.mlops_metrics is not None:
+                metric_for_mlops = {
+                    "run_id": self.args.run_id,
+                    "round_idx": round_idx,
+                    "timestamp": time.time(),
+                    "accuracy": round(test_acc, 4),
+                    "loss": round(test_loss, 4),
+                    # "test_accuracy": round(test_acc, 4),
+                    # "test_loss": round(test_loss, 4),
+                }
+                self.mlops_metrics.report_server_training_metric(metric_for_mlops)

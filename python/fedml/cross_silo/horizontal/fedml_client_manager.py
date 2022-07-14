@@ -1,9 +1,8 @@
 import json
 import logging
 import platform
-
+import time
 from .message_define import MyMessage
-from .utils import transform_list_to_tensor
 from ...core.distributed.client.client_manager import ClientManager
 from ...core.distributed.communication.message import Message
 from ...core.mlops import MLOpsMetrics, MLOpsProfilerEvent
@@ -72,7 +71,6 @@ class FedMLClientManager(ClientManager):
     def handle_message_init(self, msg_params):
         global_model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
-        global_model_params = transform_list_to_tensor(global_model_params)
 
         logging.info("client_index = %s" % str(client_index))
 
@@ -84,16 +82,10 @@ class FedMLClientManager(ClientManager):
         self.round_idx = 0
         self.__train()
 
-    def start_training(self):
-        self.round_idx = 0
-        self.__train()
-
     def handle_message_receive_model_from_server(self, msg_params):
         logging.info("handle_message_receive_model_from_server.")
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
-
-        model_params = transform_list_to_tensor(model_params)
 
         self.trainer.update_model(model_params)
         self.trainer.update_dataset(int(client_index))
@@ -123,6 +115,7 @@ class FedMLClientManager(ClientManager):
         self.finish()
 
     def send_model_to_server(self, receive_id, weights, local_sample_num):
+        tick = time.time()
         if hasattr(self.args, "using_mlops") and self.args.using_mlops:
             self.mlops_event.log_event_started(
                 "comm_c2s", event_value=str(self.round_idx)
@@ -136,7 +129,7 @@ class FedMLClientManager(ClientManager):
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, weights)
         message.add_params(MyMessage.MSG_ARG_KEY_NUM_SAMPLES, local_sample_num)
         self.send_message(message)
-
+        MLOpsProfilerEvent.log_to_wandb({"Communiaction/Send_Total": time.time() - tick})
         # Report client model to MLOps
         if hasattr(self.args, "using_mlops") and self.args.using_mlops:
             model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
@@ -147,6 +140,7 @@ class FedMLClientManager(ClientManager):
                 "client_model_s3_address": model_url,
             }
             self.mlops_metrics.report_client_model_info(model_info)
+
 
     def send_client_status(self, receive_id, status="ONLINE"):
         logging.info("send_client_status")

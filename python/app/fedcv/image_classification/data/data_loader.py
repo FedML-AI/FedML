@@ -13,7 +13,7 @@ from .fed_cifar100.data_loader import load_partition_data_federated_cifar100
 import logging
 
 
-def load(args):
+def load_data(args):
     return load_synthetic_data(args)
 
 

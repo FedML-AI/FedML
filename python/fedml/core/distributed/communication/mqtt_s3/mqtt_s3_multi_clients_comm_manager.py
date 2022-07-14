@@ -4,7 +4,7 @@ import logging
 import traceback
 import uuid
 from typing import List
-
+from  fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 import paho.mqtt.client as mqtt
 import yaml
 
@@ -14,7 +14,7 @@ from ..s3.remote_storage import S3Storage
 from ..base_com_manager import BaseCommunicationManager
 from ..message import Message
 from ..observer import Observer
-
+import time
 
 class MqttS3MultiClientsCommManager(BaseCommunicationManager):
     def __init__(
@@ -281,7 +281,10 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         self.mqtt_mgr.send_message_json(topic_name, json_message)
 
     def handle_receive_message(self):
+        start_listening_time = time.time()
+        MLOpsProfilerEvent.log_to_wandb({"ListenStart": start_listening_time})
         self.run_loop_forever()
+        MLOpsProfilerEvent.log_to_wandb({"TotalTime": time.time() - start_listening_time})
 
     def stop_receive_message(self):
         logging.info("mqtt_s3.stop_receive_message: stopping...")
