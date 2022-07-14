@@ -335,6 +335,7 @@ class FedMLServerRunner:
         ServerConstants.save_learning_process(process.pid)
         if ret_code != 0:
             logging.error("Exception when executing server program: {}".format(err.decode(encoding="utf-8")))
+            self.mlops_metrics.report_client_training_status(self.edge_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
 
         # if self.check_server_is_ready():
         self.send_training_request_to_edges()
