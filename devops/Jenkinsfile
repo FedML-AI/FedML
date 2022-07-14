@@ -230,7 +230,7 @@ pipeline {
           }
         }
 
-        stage('deploy for dev') {
+        stage('deploy for dev - new base docker image 1') {
           when {
             branch env.BRANCH_DEV
           }

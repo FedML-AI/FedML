@@ -1,14 +1,14 @@
 import logging
 
 import fedml
-from trainer.gat_readout_trainer_regression import GatMoleculeNetTrainer
-from trainer.sage_readout_trainer_regression import SageMoleculeNetTrainer
-from trainer.gcn_trainer_readout_regression import GcnMoleculeNetTrainer
 from data.data_loader import load_partition_data, get_data
-from fedml.simulation import SimulatorMPI
+from fedml import FedMLRunner
 from model.gat_readout import GatMoleculeNet
 from model.gcn_readout import GcnMoleculeNet
 from model.sage_readout import SageMoleculeNet
+from trainer.gat_readout_trainer_regression import GatMoleculeNetTrainer
+from trainer.gcn_trainer_readout_regression import GcnMoleculeNetTrainer
+from trainer.sage_readout_trainer_regression import SageMoleculeNetTrainer
 
 
 def load_data(args, dataset_name):
@@ -122,8 +122,5 @@ if __name__ == "__main__":
     model, trainer = create_model(args, args.model, feat_dim, num_cats, output_dim=None)
 
     # start training
-    try:
-        simulator = SimulatorMPI(args, device, dataset, model, trainer)
-        simulator.run()
-    except Exception as e:
-        raise e
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
+    fedml_runner.run()

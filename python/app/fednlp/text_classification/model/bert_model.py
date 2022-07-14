@@ -1,4 +1,3 @@
-import torch
 import torch.nn as nn
 from torch.nn import CrossEntropyLoss, MSELoss
 from transformers.models.bert.modeling_bert import BertModel, BertPreTrainedModel
