@@ -238,11 +238,11 @@ class FedMLClientRunner:
                 if os.path.exists(bootstrap_script_path):
                     bootstrap_stat = os.stat(bootstrap_script_path)
                     os.chmod(bootstrap_script_path, bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-                ret_code, out, err = ClientConstants.exec_console(bootstrap_script_path)
+                ret_code, out, err = ClientConstants.exec_console_with_script(bootstrap_script_path)
                 if ret_code != 0:
-                    logging.error("Bootstrap script error: {}".format(err))
+                    logging.error("Bootstrap script error: {}".format(err.decode(encoding="utf-8")))
                 else:
-                    logging.info("Bootstrap script output: {}".format(out))
+                    logging.info("Bootstrap script output: {}".format(out.decode(encoding="utf-8")))
         except Exception as e:
             logging.error("Bootstrap script error: {}".format(traceback.format_exc()))
 
@@ -295,10 +295,17 @@ class FedMLClientRunner:
             if python_version_str.find("Python 3.") != -1:
                 python_program = 'python3'
 
-        process = subprocess.Popen([python_program, entry_file,
-                                    '--cf', conf_file, '--rank', str(dynamic_args_config["rank"]),
-                                    '--role', 'client'])
+        # process = subprocess.Popen([python_program, entry_file,
+        #                             '--cf', conf_file, '--rank', str(dynamic_args_config["rank"]),
+        #                             '--role', 'client'])
+
+        process, ret_code, out, err = ClientConstants.exec_console_with_shell_script_list([python_program, entry_file,
+                                                       '--cf', conf_file, '--rank', str(dynamic_args_config["rank"]),
+                                                       '--role', 'client'])
         ClientConstants.save_learning_process(process.pid)
+        if ret_code != 0:
+            logging.error("Exception when executing client program: {}".format(err.decode(encoding="utf-8")))
+            self.mlops_metrics.report_client_training_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
 
         self.release_client_mqtt_mgr()
 
