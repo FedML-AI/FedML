@@ -7,7 +7,7 @@ def test__compute_robust_learning_rates():
     defense = RobustLearningRateDefense(robust_threshold=1)
     model_list = create_fake_model_list_MNIST(10)
     logging.info(
-        "result = {}".format(defense.defend(model_list))
+        "result = {}".format(defense.aggregate(model_list))
     )
 
 
