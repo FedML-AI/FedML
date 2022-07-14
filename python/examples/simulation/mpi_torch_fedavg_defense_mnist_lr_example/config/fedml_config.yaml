@@ -49,10 +49,13 @@ attack_args:
   enable_attack: false
   attack_type: None
 
+
+# example:
+#  norm_diff_clipping: norm_bound: 5.0
+#  slsgd: trim_param_b: 1, alpha: 0.5, option_type: 2
 defense_args:
   enable_defense: true
   defense_type: slsgd
-  norm_bound: 5.0
   trim_param_b: 1
   alpha: 0.5
   option_type: 2
