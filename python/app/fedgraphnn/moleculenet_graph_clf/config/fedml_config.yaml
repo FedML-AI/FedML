@@ -10,7 +10,7 @@ common_args:
 
 data_args:
   dataset: "clintox"
-  data_cache_dir: "./data/"
+  data_cache_dir: ~/fedgraphnn
   partition_method: "hetero"
   partition_alpha: 0.5
 
