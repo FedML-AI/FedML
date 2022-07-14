@@ -450,14 +450,14 @@ def mlops_build(type, source_folder, entry_point, config_folder, dest_folder):
 
 
 def build_mlops_package(
-    source_folder,
-    entry_point,
-    config_folder,
-    dest_folder,
-    mlops_build_path,
-    mlops_package_parent_dir,
-    mlops_package_name,
-    rank,
+        source_folder,
+        entry_point,
+        config_folder,
+        dest_folder,
+        mlops_build_path,
+        mlops_package_parent_dir,
+        mlops_package_name,
+        rank,
 ):
     if not os.path.exists(source_folder):
         click.echo("source folder is not exist: " + source_folder)
@@ -509,27 +509,6 @@ def build_mlops_package(
     except Exception as e:
         pass
 
-    local_mlops_package = os.path.join(mlops_package_base_dir, mlops_package_file_name)
-    if os.path.exists(local_mlops_package):
-        os.remove(os.path.join(mlops_package_base_dir, mlops_package_file_name))
-    mlops_archive_name = os.path.join(mlops_package_base_dir, mlops_package_name)
-    shutil.make_archive(
-        mlops_archive_name,
-        "zip",
-        root_dir=mlops_package_base_dir,
-        base_dir=mlops_package_name,
-    )
-    if not os.path.exists(dist_package_dir):
-        try:
-            os.makedirs(dist_package_dir)
-        except Exception as e:
-            pass
-    if os.path.exists(dist_package_file) and not os.path.isdir(dist_package_file):
-        os.remove(dist_package_file)
-    mlops_archive_zip_file = mlops_archive_name + ".zip"
-    if os.path.exists(mlops_archive_zip_file):
-        shutil.move(mlops_archive_zip_file, dist_package_file)
-
     mlops_pkg_conf_file = open(mlops_pkg_conf, mode="w")
     mlops_pkg_conf_file.writelines(
         [
@@ -550,10 +529,31 @@ def build_mlops_package(
             "  is_using_local_data: ${FEDSYS.IS_USING_LOCAL_DATA}\n",
             "  synthetic_data_url: ${FEDSYS.SYNTHETIC_DATA_URL}\n",
             "  client_num_in_total: ${FEDSYS.CLIENT_NUM}\n",
-        ]
+            ]
     )
     mlops_pkg_conf_file.flush()
     mlops_pkg_conf_file.close()
+
+    local_mlops_package = os.path.join(mlops_package_base_dir, mlops_package_file_name)
+    if os.path.exists(local_mlops_package):
+        os.remove(os.path.join(mlops_package_base_dir, mlops_package_file_name))
+    mlops_archive_name = os.path.join(mlops_package_base_dir, mlops_package_name)
+    shutil.make_archive(
+        mlops_archive_name,
+        "zip",
+        root_dir=mlops_package_base_dir,
+        base_dir=mlops_package_name,
+    )
+    if not os.path.exists(dist_package_dir):
+        try:
+            os.makedirs(dist_package_dir)
+        except Exception as e:
+            pass
+    if os.path.exists(dist_package_file) and not os.path.isdir(dist_package_file):
+        os.remove(dist_package_file)
+    mlops_archive_zip_file = mlops_archive_name + ".zip"
+    if os.path.exists(mlops_archive_zip_file):
+        shutil.move(mlops_archive_zip_file, dist_package_file)
 
     shutil.rmtree(mlops_build_path, ignore_errors=True)
 
