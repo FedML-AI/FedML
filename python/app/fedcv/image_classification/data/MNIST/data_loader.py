@@ -98,7 +98,7 @@ def batch_data(args, data, batch_size):
         else:
             batched_x = torch.from_numpy(np.asarray(batched_x)).float().reshape(-1, 1, 28, 28)  # CNN_MINST
 
-            if args.image_size:
+            if "image_size" in args.__dict__ and args.image_size:
                 # yaml list to python list
                 image_size = list(map(int, args.image_size))
                 # resize images

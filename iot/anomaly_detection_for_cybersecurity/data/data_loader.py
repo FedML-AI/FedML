@@ -6,16 +6,6 @@ import numpy as np
 import pandas as pd
 import torch
 
-
-def _urlretrieve(url: str, filename: str, chunk_size: int = 1024) -> None:
-    with open(filename, "wb") as fh:
-        with urllib.request.urlopen(urllib.request.Request(url)) as response:
-            for chunk in iter(lambda: response.read(chunk_size), ""):
-                if not chunk:
-                    break
-                fh.write(chunk)
-
-
 def download_data(args, device_name):
     url_root = "https://archive.ics.uci.edu/ml/machine-learning-databases/00442"
     if device_name == "Ennio_Doorbell" or device_name == "Samsung_SNH_1011_N_Webcam":
@@ -26,7 +16,7 @@ def download_data(args, device_name):
     for file_name in file_list:
         url = os.path.join(url_root, device_name, file_name)
         file_saved = os.path.join(args.data_cache_dir, device_name, file_name)
-        _urlretrieve(url, file_saved)
+        urllib.request.urlretrieve(url, file_saved)
 
     os.system(
         "find {} -name '*.rar' -execdir unar {{}} \; -exec rm {{}} \;".format(
@@ -64,7 +54,9 @@ def load_data(args):
             device_data_cache_dir = os.path.join(args.data_cache_dir, device_name)
             if not os.path.exists(device_data_cache_dir):
                 os.makedirs(device_data_cache_dir)
-                logging.info("Downloading dataset for all devices on server")
+                logging.info(
+                    "Downloading dataset for device {} on server".format(i+1)
+                )
                 download_data(args, device_name)
 
             benign_data = pd.read_csv(
@@ -117,8 +109,9 @@ def load_data(args):
             logging.info(
                 "Downloading dataset for device {} on client".format(args.rank)
             )
-            download_data(device_name, device_data_cache_dir)
+            download_data(args, device_name)
 
+        logging.info("Creating dataset {}".format(device_name))
         benign_data = pd.read_csv(
             os.path.join(device_data_cache_dir, "benign_traffic.csv")
         )

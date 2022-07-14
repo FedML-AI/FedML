@@ -30,3 +30,6 @@ onnx-simplifier
 thop  # FLOPS computation
 pycocotools>=2.0  # COCO mAP
 
+# misc ----------------------------------------
+
+addict>=2.4.0

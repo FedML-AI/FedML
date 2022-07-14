@@ -5,6 +5,7 @@ import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.view.View;
 
@@ -15,6 +16,8 @@ import ai.fedml.R;
  */
 public class CompletedProgressView extends View {
 
+    // total progress
+    private static final int TOTAL_PROGRESS = 100;
     // Paintbrush for drawing a filled circle
     private Paint mCirclePaint;
     // brush for drawing circles
@@ -35,18 +38,12 @@ public class CompletedProgressView extends View {
     private float mRingRadius;
     // Ring width
     private float mStrokeWidth;
-    // The x-coordinate of the center of the circle
-    private int mXCenter;
-    // The y coordinate of the center of the circle
-    private int mYCenter;
-    // word length
-    private float mTxtWidth;
     // word height
     private float mTxtHeight;
-    // total progress
-    private int mTotalProgress = 100;
     // current progress
     private int mProgress;
+    private RectF mOuterRect;
+    private String mStatus;
 
     public CompletedProgressView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -104,37 +101,47 @@ public class CompletedProgressView extends View {
         mTxtHeight = (int) Math.ceil(fm.descent - fm.ascent);
     }
 
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    }
+
     //draw
     @Override
     protected void onDraw(Canvas canvas) {
-        mXCenter = getWidth() / 2;
-        mYCenter = getHeight() / 2;
+        // The x-coordinate of the center of the circle
+        int mXCenter = getWidth() / 2;
+        // The y coordinate of the center of the circle
+        int mYCenter = getHeight() / 2;
 
         //inner circle
         canvas.drawCircle(mXCenter, mYCenter, mRadius, mCirclePaint);
 
         //Outer arc background
-        RectF oval1 = new RectF();
-        oval1.left = (mXCenter - mRingRadius);
-        oval1.top = (mYCenter - mRingRadius);
-        oval1.right = mRingRadius * 2 + (mXCenter - mRingRadius);
-        oval1.bottom = mRingRadius * 2 + (mYCenter - mRingRadius);
-        canvas.drawArc(oval1, 0, 360, false, mRingPaintBg);
+        if (mOuterRect == null) {
+            mOuterRect = new RectF();
+            mOuterRect.left = (mXCenter - mRingRadius);
+            mOuterRect.top = (mYCenter - mRingRadius);
+            mOuterRect.right = mRingRadius * 2 + (mXCenter - mRingRadius);
+            mOuterRect.bottom = mRingRadius * 2 + (mYCenter - mRingRadius);
+        }
+        canvas.drawArc(mOuterRect, 0, 360, false, mRingPaintBg);
 
         //The ellipse object where the arc is located, the starting angle of the arc, the angle of the arc, whether to display the radius connection
 
         //Outer arc
-        if (mProgress > 0 ) {
-            RectF oval = new RectF();
-            oval.left = (mXCenter - mRingRadius);
-            oval.top = (mYCenter - mRingRadius);
-            oval.right = mRingRadius * 2 + (mXCenter - mRingRadius);
-            oval.bottom = mRingRadius * 2 + (mYCenter - mRingRadius);
-            canvas.drawArc(oval, -90, ((float)mProgress / mTotalProgress) * 360, false, mRingPaint); //
+        if (mProgress > 0) {
+            canvas.drawArc(mOuterRect, -90, ((float) mProgress / TOTAL_PROGRESS) * 360, false, mRingPaint); //
+        }
 
-            //fonts
-            String txt = mProgress + "%";
-            mTxtWidth = mTextPaint.measureText(txt, 0, txt.length());
+        //fonts
+        String txt = mStatus;
+        if (TextUtils.isEmpty(mStatus) && mProgress > 0) {
+            txt = mProgress + "%";
+        }
+        if (!TextUtils.isEmpty(txt)) {
+            // word length
+            float mTxtWidth = mTextPaint.measureText(txt, 0, txt.length());
             canvas.drawText(txt, mXCenter - mTxtWidth / 2, mYCenter + mTxtHeight / 4, mTextPaint);
         }
     }
@@ -142,8 +149,17 @@ public class CompletedProgressView extends View {
     //set the progress
     public void setProgress(int progress) {
         mProgress = progress;
-        postInvalidate();//redraw
+        mStatus = null;
+        postInvalidate();
     }
 
-
+    /**
+     * Set text status
+     *
+     * @param status status
+     */
+    public void setStatus(String status) {
+        mStatus = status;
+        postInvalidate();
+    }
 }

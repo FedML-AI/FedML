@@ -1,6 +1,7 @@
-import fedml
 import torch
-from fedml.cross_silo import Server
+
+import fedml
+from fedml import FedMLRunner
 from fedml.data.MNIST.data_loader import download_mnist, load_partition_data_mnist
 
 
@@ -69,5 +70,5 @@ if __name__ == "__main__":
     model = LogisticRegression(28 * 28, output_dim)
 
     # start training
-    server = Server(args, device, dataset, model)
-    server.run()
+    fedml_runner = FedMLRunner(args, device, dataset, model)
+    fedml_runner.run()
