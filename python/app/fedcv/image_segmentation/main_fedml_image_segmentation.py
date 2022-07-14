@@ -1,8 +1,9 @@
 import fedml
 from fedml import FedMLRunner
-from data import load_data
+from .data.data_loader import load_data
 from model import create_model
-from trainer import ClassificationTrainer
+from trainer import SegmentationTrainer
+
 
 if __name__ == "__main__":
     # init FedML framework
@@ -16,8 +17,9 @@ if __name__ == "__main__":
 
     # create model and trainer
     model = create_model(args, args.model, output_dim=class_num)
-    trainer = ClassificationTrainer(model=model, args=args)
+    trainer = SegmentationTrainer(model=model, args=args)
 
+    # start training
     # start training
     fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
     fedml_runner.run()
