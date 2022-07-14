@@ -8,7 +8,9 @@ import uuid
 
 import click
 import requests
+from fedml.cli.cli import mlops_register_simulator_process
 from fedml.cli.edge_deployment.client_constants import ClientConstants
+from fedml.cli.edge_deployment.client_login import __login_as_simulator
 from fedml.cli.edge_deployment.client_runner import FedMLClientRunner
 from fedml import constants, FEDML_TRAINING_PLATFORM_SIMULATION
 from fedml.cli.server_deployment.server_constants import ServerConstants
@@ -49,6 +51,7 @@ class MLOpsStore:
     mlops_log_mqtt_is_connected = False
     mlops_log_agent_config = None
     mlops_metrics = None
+    mlops_bind_result = False
 
     def __init__(self):
         pass
@@ -73,8 +76,10 @@ def init(args):
 
     # Bind local device as simulation device on the MLOps platform.
     setattr(args, "using_mlops", True)
-    bind_result = bind_local_device(args, api_key, args.config_version)
-    if not bind_result:
+    MLOpsStore.mlops_bind_result = bind_local_device(args, api_key, args.config_version)
+    if not MLOpsStore.mlops_bind_result:
+        setattr(args, "using_mlops", False)
+        MLOpsRuntimeLog.get_instance(args).init_logs()
         return
 
     # Init project and run
@@ -92,9 +97,15 @@ def init(args):
     init_logs(MLOpsStore.mlops_args, MLOpsStore.mlops_edge_id)
     logging.info("mlops.init args {}".format(MLOpsStore.mlops_args))
 
+    # Start simulator login process as daemon
+    #mlops_simulator_login(api_key)
+
 
 def event(event_name, event_started=True, event_value=None, event_edge_id=None):
     if not mlops_tracking_enabled(MLOpsStore.mlops_args):
+        return
+
+    if not MLOpsStore.mlops_bind_result:
         return
 
     mlops_event = MLOpsProfilerEvent(MLOpsStore.mlops_args)
@@ -108,6 +119,9 @@ def event(event_name, event_started=True, event_value=None, event_edge_id=None):
 
 def log(metrics: dict, commit=True):
     if not mlops_tracking_enabled(MLOpsStore.mlops_args):
+        return
+
+    if not MLOpsStore.mlops_bind_result:
         return
 
     if MLOpsStore.mlops_log_metrics_lock is None:
@@ -139,6 +153,9 @@ def log_training_status(status):
     if not mlops_tracking_enabled(MLOpsStore.mlops_args):
         return
 
+    if not MLOpsStore.mlops_bind_result:
+        return
+
     logging.info("log training status {}".format(status))
 
     setup_log_mqtt_mgr()
@@ -151,6 +168,9 @@ def log_aggregation_status(status):
     if not mlops_tracking_enabled(MLOpsStore.mlops_args):
         return
 
+    if not MLOpsStore.mlops_bind_result:
+        return
+
     logging.info("log aggregation status {}".format(status))
 
     setup_log_mqtt_mgr()
@@ -161,6 +181,9 @@ def log_aggregation_status(status):
 
 def log_round_info(total_rounds, round_index):
     if not mlops_tracking_enabled(MLOpsStore.mlops_args):
+        return
+
+    if not MLOpsStore.mlops_bind_result:
         return
 
     if round_index == 0:
@@ -177,6 +200,9 @@ def log_round_info(total_rounds, round_index):
     logging.info("log round info {}".format(round_info))
     MLOpsStore.mlops_metrics.report_server_training_round_info(round_info)
     release_log_mqtt_mgr()
+
+    if round_index == total_rounds:
+        mlops_simulator_logout()
 
 
 def create_project(project_name, api_key):
@@ -342,7 +368,7 @@ def wait_log_mqtt_connected():
 
 def init_logs(args, edge_id):
     # Init runtime logs
-    args.log_file_dir = FedMLClientRunner.get_log_file_dir()
+    args.log_file_dir = ClientConstants.get_log_file_dir()
     args.run_id = MLOpsStore.mlops_run_id
     args.rank = 1
     client_ids = list()
@@ -354,14 +380,14 @@ def init_logs(args, edge_id):
 
 def bind_local_device(args, userid, version="release"):
     setattr(args, "account_id", userid)
-    setattr(args, "current_running_dir", FedMLClientRunner.get_fedml_home_dir())
+    setattr(args, "current_running_dir", ClientConstants.get_fedml_home_dir())
 
     sys_name = platform.system()
     if sys_name == "Darwin":
         sys_name = "MacOS"
     setattr(args, "os_name", sys_name)
     setattr(args, "version", version)
-    setattr(args, "log_file_dir", FedMLClientRunner.get_log_file_dir())
+    setattr(args, "log_file_dir", ClientConstants.get_log_file_dir())
     setattr(args, "device_id", FedMLClientRunner.get_device_id())
     setattr(args, "config_version", version)
     setattr(args, "cloud_region", "")
@@ -430,6 +456,17 @@ def bind_local_device(args, userid, version="release"):
     MLOpsStore.mlops_args = args
 
     return True
+
+
+def mlops_simulator_login(userid):
+    login_simulator_cmd = "fedml login {} -c -r edge_simulator".format(userid)
+    os.system(login_simulator_cmd)
+
+    mlops_register_simulator_process(os.getpid(), ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_EDGE_SIMULATOR_INDEX])
+
+
+def mlops_simulator_logout():
+    exit(-1)
 
 
 def mlops_tracking_enabled(args):

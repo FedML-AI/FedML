@@ -41,7 +41,7 @@ class ClientManager(Observer):
             )
 
             self.com_manager_status = MqttS3StatusManager(
-                args.mqtt_config_path, args.s3_config_path, topic=str(args.run_id)
+                args.mqtt_config_path, args.s3_config_path, topic=str(args.run_id), args=args
             )
         elif backend == "MQTT_S3_MNN":
             mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
@@ -56,7 +56,7 @@ class ClientManager(Observer):
                 args=args,
             )
             self.com_manager_status = MqttS3StatusManager(
-                args.mqtt_config_path, args.s3_config_path, topic=args.run_id
+                args.mqtt_config_path, args.s3_config_path, topic=args.run_id, args=args
             )
         elif backend == "GRPC":
             HOST = "0.0.0.0"
@@ -70,7 +70,7 @@ class ClientManager(Observer):
             )
             if args.using_mlops:
                 self.com_manager_status = MqttS3StatusManager(
-                    args.mqtt_config_path, args.s3_config_path, topic=args.run_id
+                    args.mqtt_config_path, args.s3_config_path, topic=args.run_id, args=args
                 )
         elif backend == "TRPC":
             self.com_manager = TRPCCommManager(
@@ -78,7 +78,7 @@ class ClientManager(Observer):
             )
             if args.using_mlops:
                 self.com_manager_status = MqttS3StatusManager(
-                    args.mqtt_config_path, args.s3_config_path, topic=args.run_id
+                    args.mqtt_config_path, args.s3_config_path, topic=args.run_id, args=args
                 )
         else:
             mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
@@ -94,7 +94,7 @@ class ClientManager(Observer):
             )
 
             self.com_manager_status = MqttS3StatusManager(
-                args.mqtt_config_path, args.s3_config_path, topic=str(args.run_id)
+                args.mqtt_config_path, args.s3_config_path, topic=str(args.run_id), args=args
             )
 
         self.com_manager.add_observer(self)
