@@ -111,7 +111,6 @@ class FedMLClientManager(ClientManager):
     def handle_message_init(self, msg_params):
         global_model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
-        global_model_params = transform_list_to_tensor(global_model_params)
 
         logging.info("client_index = %s" % str(client_index))
 
@@ -127,10 +126,10 @@ class FedMLClientManager(ClientManager):
     def handle_message_receive_encoded_mask_from_server(self, msg_params):
         encoded_mask = msg_params.get(MyMessage.MSG_ARG_KEY_ENCODED_MASK)
         client_id = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_ID)
-        logging.info(
-            "Client %d receive encoded_mask = %s from Client %d"
-            % (self.get_sender_id(), encoded_mask, client_id)
-        )
+        # logging.info(
+        #     "Client %d receive encoded_mask = %s from Client %d"
+        #     % (self.get_sender_id(), encoded_mask, client_id)
+        # )
         self.add_encoded_mask(client_id - 1, encoded_mask)
         b_all_received = self.check_whether_all_encoded_mask_receive()
         if b_all_received:
@@ -142,8 +141,6 @@ class FedMLClientManager(ClientManager):
         logging.info("handle_message_receive_model_from_server.")
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
-
-        model_params = transform_list_to_tensor(model_params)
 
         self.trainer.update_model(model_params)
         self.trainer.update_dataset(int(client_index))
@@ -298,8 +295,9 @@ class FedMLClientManager(ClientManager):
         logging.info("d = {}, N = {}, U = {}, T = {}, p = {}".format(d, N, U, T, p))
 
         # For debugging
-        # self.local_mask = np.random.randint(p, size=(d, 1))
-        self.local_mask = np.zeros((d, 1)).astype("int64")
+        self.local_mask = np.random.randint(p, size=(d, 1))
+        logging.info("local mask = {}".format(self.local_mask))
+        # self.local_mask = np.zeros((d, 1)).astype("int64")
 
         encoded_mask_set = mask_encoding(d, N, U, T, p, self.local_mask)
 
@@ -314,6 +312,9 @@ class FedMLClientManager(ClientManager):
             self.mlops_event.log_event_started("train", event_value=str(self.round_idx))
 
         weights, local_sample_num = self.trainer.train(self.round_idx)
+        logging.info(
+            "Client %d original weights = %s" % (self.get_sender_id(), weights)
+        )
 
         if hasattr(self.args, "using_mlops") and self.args.using_mlops:
             self.mlops_event.log_event_ended("train", event_value=str(self.round_idx))
@@ -326,6 +327,10 @@ class FedMLClientManager(ClientManager):
         # Mask the local model
         masked_weights = model_masking(
             weights_finite, self.dimensions, self.local_mask, self.prime_number
+        )
+        logging.info(
+            "Client %d send encode weights = %s"
+            % (self.get_sender_id(), masked_weights)
         )
 
         self.send_model_to_server(0, masked_weights, local_sample_num)
