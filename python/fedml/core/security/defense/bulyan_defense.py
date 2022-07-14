@@ -1,5 +1,3 @@
-import math
-import torch
 import numpy as np
 from .defense_base import BaseDefenseMethod
 from ..common.utils import vectorize_weight, is_weight_param
@@ -32,12 +30,8 @@ class BulyanDefense(BaseDefenseMethod):
             byzantine_client_num,
         )
 
-    def defend_at_client(self, local_weights, local_grads):
-        raise Exception("This method does not support defense at the client!")
-
-    def defend_at_server(self, client_grad_list):
-        # note: local_w is a list, each item is (num_samples, gradients).
-
+    def defend(self, client_grad_list, global_w=None, refs=None):
+        # note: client_grad_list is a list, each item is (sample_num, gradients).
         num_clients = len(client_grad_list)
         (num0, localw0) = client_grad_list[0]
         _len_local_params = vectorize_weight(localw0).shape[
