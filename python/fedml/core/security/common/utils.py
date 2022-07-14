@@ -21,7 +21,7 @@ def compute_euclidean_distance(v1, v2):
     return (v1 - v2).norm()
 
 
-def compute_middle_point(alphas, model_dict):
+def compute_middle_point(alphas, model_list):
     """
 
     Args:
@@ -31,8 +31,8 @@ def compute_middle_point(alphas, model_dict):
     Returns:
 
     """
-    sum_batch = torch.zeros(model_dict[0].shape)
-    for a, a_batch_w in zip(alphas, model_dict):
+    sum_batch = torch.zeros(model_list[0].shape)
+    for a, a_batch_w in zip(alphas, model_list):
         sum_batch += a * a_batch_w
     return sum_batch
 
