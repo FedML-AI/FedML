@@ -9,15 +9,13 @@ import psutil
 import yaml
 
 import fedml
-from fedml.cli.comm_utils.yaml_utils import load_yaml_config
-from ..cli.edge_deployment.client_login import logout as client_logout
-from ..cli.server_deployment.server_login import logout as server_logout
+from ..cli.comm_utils.yaml_utils import load_yaml_config
 from ..cli.edge_deployment.client_constants import ClientConstants
 from ..cli.server_deployment.server_constants import ServerConstants
-from fedml.cli.edge_deployment.client_login import logout as client_logout
-from fedml.cli.env.collect_env import collect_env
-from fedml.cli.server_deployment.server_login import logout as server_logout
-from fedml.cross_silo.hierarchical.client_launcher import CrossSiloLauncher
+from ..cli.edge_deployment.client_login import logout as client_logout
+from ..cli.env.collect_env import collect_env
+from ..cli.server_deployment.server_login import logout as server_logout
+from ..cross_silo.hierarchical.client_launcher import CrossSiloLauncher
 
 @click.group()
 def cli():

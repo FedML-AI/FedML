@@ -9,7 +9,8 @@ import numpy as np
 from .lsa_message_define import MyMessage
 from ...core.distributed.client.client_manager import ClientManager
 from ...core.distributed.communication.message import Message
-from ...core.mlops import MLOpsMetrics, MLOpsProfilerEvent
+from ...core.mlops.mlops_metrics import MLOpsMetrics
+from ...core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 from ...core.mpc.lightsecagg import (
     compute_aggregate_encoded_mask,
     mask_encoding,

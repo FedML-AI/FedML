@@ -7,7 +7,8 @@ from time import sleep
 from .lsa_message_define import MyMessage
 from ...core.distributed.communication.message import Message
 from ...core.distributed.server.server_manager import ServerManager
-from ...core.mlops import MLOpsProfilerEvent, MLOpsMetrics
+from ...core.mlops.mlops_metrics import MLOpsMetrics
+from ...core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
 
 class FedMLServerManager(ServerManager):
