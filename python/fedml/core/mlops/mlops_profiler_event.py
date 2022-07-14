@@ -1,11 +1,9 @@
 import json
+import logging
 import threading
 import time
-import logging
 
-from ..distributed.communication.mqtt_s3.mqtt_s3_status_manager import (
-    MqttS3StatusManager,
-)
+import wandb
 
 
 class MLOpsProfilerEvent:
@@ -13,6 +11,8 @@ class MLOpsProfilerEvent:
     EVENT_TYPE_ENDED = 1
 
     _instance_lock = threading.Lock()
+    _sys_perf_profiling = False
+    _enable_wandb = False
 
     def __new__(cls, *args, **kwargs):
         if not hasattr(MLOpsProfilerEvent, "_instance"):
@@ -22,7 +22,12 @@ class MLOpsProfilerEvent:
         return MLOpsProfilerEvent._instance
 
     def __init__(self, args):
+        from ..distributed.communication.mqtt_s3.mqtt_s3_status_manager import (
+            MqttS3StatusManager,
+        )
+
         self.args = args
+        self.enable_wandb = args.enable_wandb
         self.run_id = args.run_id
         if args.rank == 0:
             if hasattr(args, "server_id"):
@@ -34,6 +39,19 @@ class MLOpsProfilerEvent:
         self.com_manager = MqttS3StatusManager(
             args.mqtt_config_path, args.s3_config_path, topic=args.run_id
         )
+
+    @classmethod
+    def enable_sys_perf_profiling(cls):
+        cls._sys_perf_profiling = True
+
+    @classmethod
+    def enable_wandb(cls):
+        cls._enable_wandb = True
+
+    @classmethod
+    def log_to_wandb(cls, metric):
+        if cls._enable_wandb:
+            wandb.log(metric)
 
     def log_event_started(self, event_name, event_value=None, event_edge_id=None):
         if event_value is None:

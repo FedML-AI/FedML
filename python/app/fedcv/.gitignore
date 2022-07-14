@@ -2,3 +2,4 @@
 __MACOSX/
 __pycache__/
 *.tmp
+mpi_host_file

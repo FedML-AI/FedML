@@ -1,32 +1,17 @@
-from sklearn.metrics import (
-    confusion_matrix,
-    matthews_corrcoef,
-)
-import copy
+import collections
+import json
 import logging
 import math
-import os
+import re
+import string
 
-import numpy as np
-import sklearn
-import torch
-import wandb
-from torch.nn import CrossEntropyLoss
 from torch.optim import SGD
 from transformers import (
     AdamW,
     get_linear_schedule_with_warmup,
 )
-import collections
-import json
-import logging
-import string
-import re
-import math
-
-
-from transformers.models.bert.tokenization_bert import BasicTokenizer
 from transformers import XLMTokenizer
+from transformers.models.bert.tokenization_bert import BasicTokenizer
 
 RawResult = collections.namedtuple(
     "RawResult", ["unique_id", "start_logits", "end_logits"]
