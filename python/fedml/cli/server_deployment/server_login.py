@@ -321,4 +321,4 @@ if __name__ == "__main__":
     if args.type == 'login':
         login(args)
     else:
-        logout(args)
+        logout()
