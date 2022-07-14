@@ -480,6 +480,10 @@ class FedMLServerRunner:
             ServerConstants.save_run_process(server_process.pid)
         elif self.run_as_cloud_server:
             self.server_agent_id = self.request_json.get("cloud_agent_id", self.edge_id)
+            run_id = self.request_json["runId"]
+
+            # Start log processor for current run
+            MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
             self.run()
 
     def start_cloud_server_process(self):
