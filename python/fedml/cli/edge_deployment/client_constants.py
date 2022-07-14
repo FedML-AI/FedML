@@ -1,6 +1,8 @@
+import logging
 import os
 import signal
 import subprocess
+import traceback
 from os.path import expanduser
 
 import psutil
@@ -205,7 +207,11 @@ class ClientConstants(object):
 
     @staticmethod
     def exec_console_with_script(script_path):
-        script_process = subprocess.Popen(['bash', '-c', script_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        try:
+            subprocess.check_output(['sh', '-c', script_path])
+        except subprocess.CalledProcessError as ex:
+            logging.error("exec_console_with_script {}".format(str(ex)))
+        script_process = subprocess.Popen(['sh', '-c', script_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = script_process.communicate()
         return script_process, script_process.returncode, out, err
 
