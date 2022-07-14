@@ -31,7 +31,7 @@ class SLSGDDefense(BaseDefenseMethod):
         self.alpha = alpha
         self.option_type = option_type
 
-    def defend(self, model_list):
+    def defend(self, model_list, global_model=None, refs=None):
         if self.b > math.ceil(len(model_list) / 2) - 1 or self.b < 0:
             raise ValueError(
                 "the bound of b is [0, {}])".format(math.ceil(len(model_list) / 2) - 1)
