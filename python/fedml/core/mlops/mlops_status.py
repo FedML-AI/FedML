@@ -1,7 +1,3 @@
-from fedml.cli.edge_deployment.client_constants import ClientConstants
-from fedml.cli.server_deployment.server_constants import ServerConstants
-
-
 class Singleton(object):
     def __new__(cls, *args, **kw):
         if not hasattr(cls, "_instance"):
@@ -52,4 +48,3 @@ class MLOpsStatus(Singleton):
 
     def get_server_status(self, edge_id):
         return self.server_status.get(edge_id, None)
-
