@@ -5,14 +5,26 @@ from fedml.core.security.test.utils import create_fake_model_list
 
 
 def _get_geometric_median_obj():
-    return GeometricMedianDefense(byzantine_client_num=2, client_num_per_round=20, batch_num=5)
+    return GeometricMedianDefense(
+        byzantine_client_num=2, client_num_per_round=20, batch_num=5
+    )
 
 
 def test_defense():
+    print("-----test defense-----")
     gm = _get_geometric_median_obj()
     model_list = create_fake_model_list(gm.client_num_per_round)
-    val = gm.defend(model_list)
-    print(f"val={val}")
+    batch_model_list = gm.defend(model_list)
+    print(f"batch_model_list = {batch_model_list}")
+
+
+def test_aggregation():
+    print("-----test aggregation-----")
+    gm = _get_geometric_median_obj()
+    batch_model_list = gm.defend(create_fake_model_list(gm.client_num_per_round))
+    print(f"batch_model_list = {batch_model_list}")
+    res = gm.aggregation(batch_model_list)
+    print(f"aggregation result = {res}")
 
 
 def test__compute_middle_point():
@@ -25,16 +37,19 @@ def test__compute_middle_point():
 
 
 def test__compute_geometric_median():
-    alphas = [1, 1, 1]
+    alphas = [0.3, 0.3, 0.4]
     batch_w = [
         torch.FloatTensor([[1, 0, 1], [2, 2, 2], [1, 1, 1]]),
         torch.FloatTensor([[1, 1, 1], [10, 10, 0], [1, 1, 1]]),
         torch.FloatTensor([[2, 2, 2], [2, 2, 2], [1, 2, 1]]),
     ]
-    print(f"_compute_geometric_median = {GeometricMedianDefense._compute_geometric_median(alphas, batch_w)}")
+    print(
+        f"_compute_geometric_median = {GeometricMedianDefense._compute_geometric_median(alphas, batch_w)}"
+    )
 
 
 if __name__ == "__main__":
     test_defense()
+    test_aggregation()
     test__compute_middle_point()
     test__compute_geometric_median()
