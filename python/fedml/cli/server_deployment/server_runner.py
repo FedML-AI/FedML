@@ -651,8 +651,7 @@ class FedMLServerRunner:
 
         request_json = json.loads(payload)
         run_id = request_json["runId"]
-        edge_id_list_str = request_json["edgeids"]
-        edge_id_list = json.loads(edge_id_list_str)
+        edge_id_list = request_json["edgeids"]
 
         logging.info("Stopping run...")
         logging.info("Stop run with multiprocessing.")
