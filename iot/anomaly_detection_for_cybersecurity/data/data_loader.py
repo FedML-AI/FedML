@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import torch
 
+
 def download_data(args, device_name):
     url_root = "https://archive.ics.uci.edu/ml/machine-learning-databases/00442"
     if device_name == "Ennio_Doorbell" or device_name == "Samsung_SNH_1011_N_Webcam":
@@ -15,14 +16,15 @@ def download_data(args, device_name):
 
     for file_name in file_list:
         url = os.path.join(url_root, device_name, file_name)
-        file_saved = os.path.join(args.data_cache_dir, device_name, file_name)
-        urllib.request.urlretrieve(url, file_saved)
-
-    os.system(
-        "find {} -name '*.rar' -execdir unar {{}} \; -exec rm {{}} \;".format(
-            args.data_cache_dir
-        )
-    )
+        file_saved_path = os.path.join(args.data_cache_dir, device_name, file_name)
+        urllib.request.urlretrieve(url, file_saved_path)
+        if file_name.endswith("rar"):
+            logging.info("Extracting fie {}".format(file_saved_path))
+            os.system(
+                "unar {} -o {}".format(
+                    file_saved_path, os.path.join(args.data_cache_dir, device_name)
+                )
+            )
 
 
 def load_data(args):
@@ -56,7 +58,7 @@ def load_data(args):
             if not os.path.exists(device_data_cache_dir):
                 os.makedirs(device_data_cache_dir)
                 logging.info(
-                    "Downloading dataset for device {} on server".format(i+1)
+                    "Downloading dataset for device {} on server".format(i + 1)
                 )
                 download_data(args, device_name)
 
