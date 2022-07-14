@@ -47,7 +47,7 @@ class ServerManager(Observer):
             )
 
             self.com_manager_status = MqttS3StatusManager(
-                args.mqtt_config_path, args.s3_config_path, topic=args.run_id
+                args.mqtt_config_path, args.s3_config_path, topic=args.run_id, args=args
             )
         elif backend == "MQTT_S3_MNN":
             mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
@@ -62,7 +62,7 @@ class ServerManager(Observer):
                 args=args,
             )
             self.com_manager_status = MqttS3StatusManager(
-                args.mqtt_config_path, args.s3_config_path, topic=args.run_id
+                args.mqtt_config_path, args.s3_config_path, topic=args.run_id, args=args
             )
 
         elif backend == "GRPC":
@@ -77,7 +77,7 @@ class ServerManager(Observer):
             )
             if hasattr(self.args, "backend") and self.args.using_mlops:
                 self.com_manager_status = MqttS3StatusManager(
-                    args.mqtt_config_path, args.s3_config_path, topic=args.run_id
+                    args.mqtt_config_path, args.s3_config_path, topic=args.run_id, args=args
                 )
         elif backend == "TRPC":
             self.com_manager = TRPCCommManager(
@@ -85,7 +85,7 @@ class ServerManager(Observer):
             )
             if hasattr(self.args, "backend") and self.args.using_mlops:
                 self.com_manager_status = MqttS3StatusManager(
-                    args.mqtt_config_path, args.s3_config_path, topic=args.run_id
+                    args.mqtt_config_path, args.s3_config_path, topic=args.run_id, args=args
                 )
         else:
             mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
@@ -101,7 +101,7 @@ class ServerManager(Observer):
             )
 
             self.com_manager_status = MqttS3StatusManager(
-                args.mqtt_config_path, args.s3_config_path, topic=args.run_id
+                args.mqtt_config_path, args.s3_config_path, topic=args.run_id, args=args
             )
         self.com_manager.add_observer(self)
         self.message_handler_dict = dict()

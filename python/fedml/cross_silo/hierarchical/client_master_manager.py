@@ -92,7 +92,7 @@ class ClientMasterManager:
             self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_INITIALIZING)
 
             # Open new process for report system performances to MQTT server
-            MLOpsMetrics.report_sys_perf()
+            MLOpsMetrics.report_sys_perf(self.args)
 
     def handle_message_init(self, msg_params):
         global_model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
