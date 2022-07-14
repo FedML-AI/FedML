@@ -16,21 +16,13 @@ from torch.optim import Adam, lr_scheduler
 
 from fedml.core.alg_frame.client_trainer import ClientTrainer
 
-from utils.loss import ComputeLoss
+from model.yolov6.yolov6.models.loss import ComputeLoss
 from utils.general import (
-    coco80_to_coco91_class,
-    check_dataset,
-    check_file,
-    check_img_size,
     box_iou,
-    non_max_suppression,
-    scale_coords,
-    xyxy2xywh,
     xywh2xyxy,
     clip_coords,
-    set_logging,
-    increment_path,
 )
+from model.yolov6.yolov6.utils.nms import non_max_suppression
 from utils.metrics import ap_per_class
 
 
@@ -93,10 +85,10 @@ class YOLOv6Trainer(ClientTrainer):
         model.train()
 
         scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda epoch: 1.0 - epoch / args.epochs)
-        compute_loss = ComputeLoss(model)
+        compute_loss = ComputeLoss(iou_type=self.args.yolov6_cfg.model.head.iou_type)
 
         epoch_loss = []
-        mloss = torch.zeros(3, device=device)  # mean losses
+        mloss = torch.zeros(4, device=device)  # mean losses
         logging.info("Epoch gpu_mem box obj cls total targets img_size time")
         for epoch in range(args.epochs):
             model.train()
@@ -110,16 +102,19 @@ class YOLOv6Trainer(ClientTrainer):
 
                 optimizer.zero_grad()
                 pred = model(imgs)  # forward
-                loss, loss_items = compute_loss(pred, targets.to(device))  # loss scaled by batch_size
+                # print(f"image shape: {imgs.shape}, pred shape: {pred[0].shape}")
+                # print("shape:", pred[0].shape)
+                total_loss, loss_items = compute_loss(pred, targets.to(device))  # loss scaled by batch_size
 
                 # Backward
-                loss.backward()
+                total_loss.backward()
                 optimizer.step()
-                batch_loss.append(loss.item())
+                batch_loss.append(total_loss.item())
 
                 mloss = (mloss * batch_idx + loss_items) / (batch_idx + 1)  # update mean losses
                 mem = "%.3gG" % (torch.cuda.memory_reserved() / 1e9 if torch.cuda.is_available() else 0)  # (GB)
-                s = ("%10s" * 2 + "%10.4g" * 5) % (
+                s = ("%10s" * 3 + "%10.4g" * 6) % (
+                    self.id,
                     "%g/%g" % (epoch, epochs - 1),
                     mem,
                     *mloss,
@@ -130,30 +125,29 @@ class YOLOv6Trainer(ClientTrainer):
 
                 if batch_idx % 100 == 0:
                     logging.info(
-                        f"Trainer {self.id} batch {batch_idx} box: {mloss[0]} obj: {mloss[1]} cls: {mloss[2]} total: {mloss.sum()} time: {(time.time() - t)/60}"
+                        f"Trainer {self.id} batch {batch_idx} box: {mloss[0]} obj: {mloss[1]} cls: {mloss[2]} total: {mloss[3]} time: {(time.time() - t)/60}"
                     )
 
             scheduler.step()
 
             epoch_loss.append(copy.deepcopy(mloss.cpu().numpy()))
             logging.info(
-                f"***Trainer {self.id} epoch {epoch} box: {mloss[0]} obj: {mloss[1]} cls: {mloss[2]} total: {mloss.sum()} time: {(time.time() - t)/60}"
+                f"***Trainer {self.id} epoch {epoch} box: {mloss[0]} obj: {mloss[1]} cls: {mloss[2]} total: {mloss[3]} time: {(time.time() - t)/60}"
             )
 
         # plot for client
         # plot box, obj, cls, total loss
         epoch_loss = np.array(epoch_loss)
         logging.info(f"Epoch loss: {epoch_loss}")
-        plt.figure(figsize=(10, 5))
-        plt.title("Box, Obj, Cls, Total Loss")
-        plt.plot(epoch_loss[:, 0], label="box")
-        plt.plot(epoch_loss[:, 1], label="obj")
-        plt.plot(epoch_loss[:, 2], label="cls")
+        # plt.figure(figsize=(10, 5))
+        # plt.title("Box, Obj, Cls, Total Loss")
+        # plt.plot(epoch_loss[:, 0], label="box")
+        # plt.plot(epoch_loss[:, 1], label="obj")
+        # plt.plot(epoch_loss[:, 2], label="cls")
         # plt.plot(epoch_loss[:, 3], label="total")
-        plt.legend()
-
-        plt.savefig(f"{args.save_dir}/trainer_{self.id}_epoch_loss_round_{self.round_idx}.png")
-        plt.close()
+        # plt.legend()
+        # plt.savefig(f"{args.save_dir}/trainer_{self.id}_epoch_loss_round_{self.round_idx}.png")
+        # plt.close()
         self.round_idx += 1
 
         self.round_loss.append(epoch_loss[-1, :])
@@ -162,15 +156,15 @@ class YOLOv6Trainer(ClientTrainer):
             # logging.info(f"round_loss shape: {self.round_loss.shape}")
             logging.info(f"Trainer {self.id} round {self.round_idx} finished, round loss: {self.round_loss}")
 
-            plt.figure(figsize=(10, 5))
-            plt.title("Box, Obj, Cls, Total Loss per round")
-            plt.plot(self.round_loss[:, 0], label="box")
-            plt.plot(self.round_loss[:, 1], label="obj")
-            plt.plot(self.round_loss[:, 2], label="cls")
+            # plt.figure(figsize=(10, 5))
+            # plt.title("Box, Obj, Cls, Total Loss per round")
+            # plt.plot(self.round_loss[:, 0], label="box")
+            # plt.plot(self.round_loss[:, 1], label="obj")
+            # plt.plot(self.round_loss[:, 2], label="cls")
             # plt.plot(self.round_loss[:, 3], label="total")
-            plt.legend()
-            plt.savefig(f"{args.save_dir}/trainer_{self.id}_round_loss.png")
-            plt.close()
+            # plt.legend()
+            # plt.savefig(f"{args.save_dir}/trainer_{self.id}_round_loss.png")
+            # plt.close()
 
         return
 
@@ -189,6 +183,8 @@ class YOLOv6Trainer(ClientTrainer):
             logging.info("No test data for this trainer")
             return test_metrics
 
+        # model.train()
+        # torch.set_grad_enabled(False)
         model.eval()
         model.to(device)
 
@@ -199,8 +195,8 @@ class YOLOv6Trainer(ClientTrainer):
         names = {k: v for k, v in enumerate(model.names if hasattr(model, "names") else model.module.names)}
         s = ("%20s" + "%12s" * 6) % ("Class", "Images", "Targets", "P", "R", "mAP@.5", "mAP@.5:.95")
         p, r, f1, mp, mr, map50, map, t0, t1 = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
-        loss = torch.zeros(3, device=device)
-        compute_loss = ComputeLoss(model)
+        # loss = torch.zeros(4, device=device)
+        # compute_loss = ComputeLoss(iou_type=args.yolov6_cfg.model.head.iou_type)
         jdict, stats, ap, ap_class, wandb_images = [], [], [], [], []
 
         for batch_i, (img, targets, paths, shapes) in enumerate(test_data):
@@ -214,13 +210,11 @@ class YOLOv6Trainer(ClientTrainer):
             # Disable gradients
             with torch.no_grad():
                 # Run model
-                inf_out, train_out = model(img)  # inference and training outputs
-
-                # Loss
-                loss += compute_loss([x.float() for x in train_out], targets)[1][:3]  # box, obj, cls
+                outputs = model(img)  # inference and training outputs
+                # print(f"image shape: {img.shape}, output shape: {outputs[0].shape}")
 
                 # Run NMS
-                output = non_max_suppression(inf_out, conf_thres=args.conf_thres, iou_thres=args.iou_thres)
+                output = non_max_suppression(outputs, conf_thres=args.conf_thres, iou_thres=args.iou_thres)
 
             # Statistics per image
             for si, pred in enumerate(output):
@@ -300,21 +294,20 @@ class YOLOv6Trainer(ClientTrainer):
         # Print speeds
         t = tuple(x / seen * 1e3 for x in (t0, t1, t0 + t1)) + (args.img_size, args.img_size, args.batch_size)  # tuple
 
-        # Return results
-        model.float()  # for training
         maps = np.zeros(args.nc) + map
         for i, c in enumerate(ap_class):
             maps[c] = ap[i]
+
+        # Return results
+
+        model.train()
+        model.float()  # for training
 
         # all metrics
         # metrics = (mp, mr, map50, map, *(loss.cpu() / len(test_data)).tolist()), maps, t
         # logging.info(f"Test metrics: {metrics}")
 
-        test_metrics = {
-            "test_correct": 0,
-            "test_total": len(test_data),
-            "test_loss": sum((loss.cpu() / len(test_data)).tolist()),
-        }
+        test_metrics = {"test_correct": ap_class, "test_total": len(test_data), "test_loss": map}
         logging.info(f"Test metrics: {test_metrics}")
         return test_metrics
 
