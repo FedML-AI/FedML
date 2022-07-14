@@ -3,9 +3,9 @@ import logging
 import platform
 import time
 import click
-from ...core.mlops.mlops_runtime_log import MLOpsRuntimeLog
-from ...cli.server_deployment.server_runner import FedMLServerRunner
-from ...cli.server_deployment.server_constants import ServerConstants
+from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
+from fedml.cli.server_deployment.server_runner import FedMLServerRunner
+from fedml.cli.server_deployment.server_constants import ServerConstants
 
 
 def __login_as_edge_server_and_agent(args, userid, version):
