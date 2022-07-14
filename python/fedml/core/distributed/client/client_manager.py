@@ -1,16 +1,9 @@
 import logging
 from abc import abstractmethod
 
-from ..communication.grpc.grpc_comm_manager import GRPCCommManager
+from ..communication.constants import CommunicationConstants
 from ..communication.message import Message
-from ..communication.mqtt.mqtt_comm_manager import MqttCommManager
-from ..communication.mqtt_s3.mqtt_s3_multi_clients_comm_manager import (
-    MqttS3MultiClientsCommManager,
-)
-from ..communication.mqtt_s3.mqtt_s3_status_manager import MqttS3StatusManager
-from ..communication.mqtt_s3_mnn.mqtt_s3_comm_manager import MqttS3MNNCommManager
 from ..communication.observer import Observer
-from ..communication.trpc.trpc_comm_manager import TRPCCommManager
 from ...mlops.mlops_configs import MLOpsConfigs
 
 
@@ -28,6 +21,13 @@ class ClientManager(Observer):
                 comm, rank, size, node_type="client"
             )
         elif backend == "MQTT_S3":
+            from ..communication.mqtt_s3.mqtt_s3_status_manager import (
+                MqttS3StatusManager,
+            )
+            from ..communication.mqtt_s3.mqtt_s3_multi_clients_comm_manager import (
+                MqttS3MultiClientsCommManager,
+            )
+
             mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
             args.mqtt_config_path = mqtt_config
             args.s3_config_path = s3_config
@@ -44,6 +44,13 @@ class ClientManager(Observer):
                 args.mqtt_config_path, args.s3_config_path, topic=str(args.run_id), args=args
             )
         elif backend == "MQTT_S3_MNN":
+            from ..communication.mqtt_s3.mqtt_s3_status_manager import (
+                MqttS3StatusManager,
+            )
+            from ..communication.mqtt_s3_mnn.mqtt_s3_comm_manager import (
+                MqttS3MNNCommManager,
+            )
+
             mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
             args.mqtt_config_path = mqtt_config
             args.s3_config_path = s3_config
@@ -59,8 +66,13 @@ class ClientManager(Observer):
                 args.mqtt_config_path, args.s3_config_path, topic=args.run_id, args=args
             )
         elif backend == "GRPC":
+            from ..communication.grpc.grpc_comm_manager import GRPCCommManager
+            from ..communication.mqtt_s3.mqtt_s3_status_manager import (
+                MqttS3StatusManager,
+            )
+
             HOST = "0.0.0.0"
-            PORT = 8888 + rank
+            PORT = CommunicationConstants.GRPC_BASE_PORT + rank
             self.com_manager = GRPCCommManager(
                 HOST,
                 PORT,
@@ -73,14 +85,29 @@ class ClientManager(Observer):
                     args.mqtt_config_path, args.s3_config_path, topic=args.run_id, args=args
                 )
         elif backend == "TRPC":
+            from ..communication.trpc.trpc_comm_manager import TRPCCommManager
+            from ..communication.mqtt_s3.mqtt_s3_status_manager import (
+                MqttS3StatusManager,
+            )
+
             self.com_manager = TRPCCommManager(
-                args.trpc_master_config_path, process_id=rank, world_size=size + 1
+                args.trpc_master_config_path,
+                process_id=rank,
+                world_size=size + 1,
+                args=args,
             )
             if args.using_mlops:
                 self.com_manager_status = MqttS3StatusManager(
                     args.mqtt_config_path, args.s3_config_path, topic=args.run_id, args=args
                 )
         else:
+            from ..communication.mqtt_s3.mqtt_s3_status_manager import (
+                MqttS3StatusManager,
+            )
+            from ..communication.mqtt_s3.mqtt_s3_multi_clients_comm_manager import (
+                MqttS3MultiClientsCommManager,
+            )
+
             mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
             args.mqtt_config_path = mqtt_config
             args.s3_config_path = s3_config

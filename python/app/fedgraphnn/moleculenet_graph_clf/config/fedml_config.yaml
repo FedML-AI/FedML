@@ -1,9 +1,15 @@
 common_args:
   training_type: "simulation"
+  scenario: "horizontal"
+  using_mlops: false
+  config_version: release
+  name: "exp"
+  project: "runs/train"
+  exist_ok: false
   random_seed: 0
 
 data_args:
-  dataset: "sider"
+  dataset: "clintox"
   data_cache_dir: "./data/"
   partition_method: "hetero"
   partition_alpha: 0.5
@@ -20,6 +26,9 @@ model_args:
   normalize_features: False
   normalize_adjacency: False
   sparse_adjacency: False
+
+environment_args:
+  bootstrap: config/bootstrap.sh
 
 train_args:
   federated_optimizer: "FedAvg"
@@ -44,8 +53,9 @@ device_args:
   gpu_mapping_key: mapping_default
 
 comm_args:
-  backend: "MPI"
-  is_mobile: 0
+  backend: "MQTT_S3"
+  mqtt_config_path: config/mqtt_config.yaml
+  s3_config_path: config/s3_config.yaml
 
 
 tracking_args:

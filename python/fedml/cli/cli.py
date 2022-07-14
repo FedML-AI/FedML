@@ -14,7 +14,10 @@ from ..cli.edge_deployment.client_login import logout as client_logout
 from ..cli.server_deployment.server_login import logout as server_logout
 from ..cli.edge_deployment.client_constants import ClientConstants
 from ..cli.server_deployment.server_constants import ServerConstants
-
+from fedml.cli.edge_deployment.client_login import logout as client_logout
+from fedml.cli.env.collect_env import collect_env
+from fedml.cli.server_deployment.server_login import logout as server_logout
+from fedml.cross_silo.hierarchical.client_launcher import CrossSiloLauncher
 
 @click.group()
 def cli():
@@ -453,14 +456,14 @@ def mlops_build(type, source_folder, entry_point, config_folder, dest_folder):
 
 
 def build_mlops_package(
-    source_folder,
-    entry_point,
-    config_folder,
-    dest_folder,
-    mlops_build_path,
-    mlops_package_parent_dir,
-    mlops_package_name,
-    rank,
+        source_folder,
+        entry_point,
+        config_folder,
+        dest_folder,
+        mlops_build_path,
+        mlops_package_parent_dir,
+        mlops_package_name,
+        rank,
 ):
     if not os.path.exists(source_folder):
         click.echo("source folder is not exist: " + source_folder)
@@ -570,6 +573,27 @@ def build_mlops_package(
 )
 def mlops_register_simulator_process(process_id, role):
     pass
+
+
+@cli.command(
+    "env",
+    help="collect the environment information to help debugging, including OS, Hardware Architecture, "
+    "Python version, etc.",
+)
+def env():
+    collect_env()
+
+
+@cli.command(
+    "launch", help="launch tool", context_settings={"ignore_unknown_options": True}
+)
+@click.argument("arguments", nargs=-1, type=click.Path())
+def launch(arguments):
+    for argument in arguments:
+        click.echo(argument)
+
+    # TODO: pass the arguments to "fedml.cross_silo.hierarchical.client_launcher"
+    CrossSiloLauncher.launch_dist_trainers(arguments[0], list(arguments[1:]))
 
 
 if __name__ == "__main__":

@@ -7,8 +7,6 @@ import numpy as np
 import torch
 import wandb
 
-from .utils import transform_list_to_tensor
-
 
 class FedMLAggregator(object):
     def __init__(
@@ -76,7 +74,6 @@ class FedMLAggregator(object):
         training_num = 0
 
         for idx in range(self.client_num):
-            self.model_dict[idx] = transform_list_to_tensor(self.model_dict[idx])
             model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
             training_num += self.sample_num_dict[idx]
 

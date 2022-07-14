@@ -1,6 +1,12 @@
 common_args:
-  training_type: "simulation"
+  training_type: "cross_silo"
+  scenario: "horizontal"
+  using_mlops: false
   random_seed: 0
+  config_version: release
+
+environment_args:
+  bootstrap: config/bootstrap.sh
 
 data_args:
   dataset: "MNIST"
@@ -9,16 +15,19 @@ data_args:
   partition_alpha: 0.5
 
 model_args:
-  model: "densenet"
-  image_size: [112, 112]
+  model: "cnn"
+  image_size:
+  input_size: 1
   class_num: 10
+  model_file_cache_folder: "./model_file_cache" # will be filled by the server automatically
+  global_model_file_path: "./model_file_cache/global_model.pt"
 
 train_args:
   federated_optimizer: "FedAvg"
   client_id_list: "[]"
-  client_num_in_total: 4
-  client_num_per_round: 4
-  comm_round: 100
+  client_num_in_total: 2
+  client_num_per_round: 2
+  comm_round: 10
   epochs: 5
   batch_size: 64
   client_optimizer: sgd
@@ -26,7 +35,7 @@ train_args:
   weight_decay: 0.001
 
 validation_args:
-  frequency_of_the_test: 5
+  frequency_of_the_test: 1
 
 device_args:
   worker_num: 4
@@ -35,8 +44,9 @@ device_args:
   gpu_mapping_key: mapping_default
 
 comm_args:
-  backend: "MPI"
-  is_mobile: 0
+  backend: "MQTT_S3"
+  mqtt_config_path: config/mqtt_config.yaml
+  s3_config_path: config/s3_config.yaml
 
 tracking_args:
   log_file_dir: ./log
