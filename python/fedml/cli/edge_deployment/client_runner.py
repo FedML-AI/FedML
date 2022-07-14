@@ -17,17 +17,17 @@ import zipfile
 
 import click
 import requests
-from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
+from ...core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 
-from fedml.core.distributed.communication.mqtt.mqtt_manager import MqttManager
-from fedml.cli.comm_utils.yaml_utils import load_yaml_config
-from fedml.cli.edge_deployment.client_constants import ClientConstants
+from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
+from ...cli.comm_utils.yaml_utils import load_yaml_config
+from ...cli.edge_deployment.client_constants import ClientConstants
 
-from fedml.core.mlops.mlops_metrics import MLOpsMetrics
+from ...core.mlops.mlops_metrics import MLOpsMetrics
 
-from fedml.core.mlops.mlops_configs import MLOpsConfigs
-from fedml.core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
-from fedml.core.mlops.mlops_status import MLOpsStatus
+from ...core.mlops.mlops_configs import MLOpsConfigs
+from ...core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
+from ...core.mlops.mlops_status import MLOpsStatus
 
 
 class FedMLClientRunner:

@@ -6,12 +6,12 @@ import os
 import time
 import uuid
 
-from fedml.cli.edge_deployment.client_constants import ClientConstants
-from fedml.cli.server_deployment.server_constants import ServerConstants
-from fedml.core.distributed.communication.mqtt.mqtt_manager import MqttManager
+from ...cli.edge_deployment.client_constants import ClientConstants
+from ...cli.server_deployment.server_constants import ServerConstants
+from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
 
-from fedml.core.mlops.mlops_status import MLOpsStatus
-from fedml.core.mlops.system_stats import SysStats
+from ...core.mlops.mlops_status import MLOpsStatus
+from ...core.mlops.system_stats import SysStats
 
 
 

@@ -1,5 +1,5 @@
 import time
-from ...core.mlops import MLOpsProfilerEvent
+from ...core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
 class FedMLTrainer(object):
     def __init__(
