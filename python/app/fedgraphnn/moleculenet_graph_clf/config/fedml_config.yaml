@@ -35,8 +35,8 @@ environment_args:
 train_args:
   federated_optimizer: "FedAvg"
   client_id_list: 
-  client_num_in_total: 4
-  client_num_per_round: 4
+  client_num_in_total: 2
+  client_num_per_round: 2
   comm_round: 100
   epochs: 5
   batch_size: 64
@@ -49,7 +49,7 @@ validation_args:
   frequency_of_the_test: 5
 
 device_args:
-  worker_num: 1
+  worker_num: 2
   using_gpu: false
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_fedgraphnn_sp
