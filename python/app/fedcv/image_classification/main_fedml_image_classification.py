@@ -1,8 +1,8 @@
 import fedml
 from fedml import FedMLRunner
-from .data import load_data
-from .model import create_model
-from .trainer import ClassificationTrainer
+from data import load_data
+from model import create_model
+from trainer import ClassificationTrainer
 
 if __name__ == "__main__":
     # init FedML framework
