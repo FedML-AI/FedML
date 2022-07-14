@@ -46,8 +46,9 @@ def load_data(args):
     train_data_num = 0
     test_data_num = 0
 
-    min_dataset = np.loadtxt(os.path.join(args.data_cache_dir, "min_dataset.txt"))
-    max_dataset = np.loadtxt(os.path.join(args.data_cache_dir, "max_dataset.txt"))
+    min_max_file_path = "./data"
+    min_dataset = np.loadtxt(os.path.join(min_max_file_path, "min_dataset.txt"))
+    max_dataset = np.loadtxt(os.path.join(min_max_file_path, "max_dataset.txt"))
 
     if args.rank == 0:
         for i, device_name in enumerate(device_list):
