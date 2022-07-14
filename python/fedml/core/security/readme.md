@@ -25,3 +25,5 @@ https://arxiv.org/pdf/1911.07963.pdf
 https://github.com/TinfoilHat0/Defending-Against-Backdoors-with-Robust-Learning-Rate
 8. SoteriaDefense: "Provable defense against privacy leakage in federated learning from representation perspective." 
 https://arxiv.org/pdf/2012.06043
+9. SLSGDDefense: "SLSGD: Secure and efficient distributed on-device machine learning"
+https://arxiv.org/pdf/1903.06996.pdf

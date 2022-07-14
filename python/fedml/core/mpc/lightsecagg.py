@@ -111,8 +111,8 @@ def mask_encoding(
     beta_s = np.array(range(N)) + 1
     alpha_s = np.array(range(U)) + (N + 1)
 
-    # n_i = np.random.randint(p, size=(T * d // (U - T), 1))
-    n_i = np.zeros((T * d // (U - T), 1)).astype("int64")
+    n_i = np.random.randint(p, size=(T * d // (U - T), 1))
+    # n_i = np.zeros((T * d // (U - T), 1)).astype("int64")
 
     LCC_in = np.concatenate([local_mask, n_i], axis=0)
     LCC_in = np.reshape(LCC_in, (U, d // (U - T)))
@@ -148,7 +148,7 @@ def aggregate_models_in_finite(weights_finite, prime_number):
 
 
 def my_q(X, q_bit, p):
-    X_int = np.round(X * (2 ** q_bit))
+    X_int = np.round(X * (2**q_bit))
     is_negative = (abs(np.sign(X_int)) - np.sign(X_int)) / 2
     out = X_int + p * is_negative
     return out.astype("int64")
@@ -158,7 +158,7 @@ def my_q_inv(X_q, q_bit, p):
     flag = X_q - (p - 1) / 2
     is_negative = (abs(np.sign(flag)) + np.sign(flag)) / 2
     X_q = X_q - p * is_negative
-    return X_q.astype(float) / (2 ** q_bit)
+    return X_q.astype(float) / (2**q_bit)
 
 
 def transform_finite_to_tensor(model_params, p, q_bits):

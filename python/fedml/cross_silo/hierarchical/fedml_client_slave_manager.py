@@ -20,7 +20,7 @@ class ClientSlaveManager:
             self.trainer_dist_adapter.update_dataset(int(client_index))
 
         if self.round_idx == self.num_rounds:
-            logging.warn("Finishing Client Slave")
+            logging.info("Finishing Client Slave")
             self.finish()
             return
 
@@ -30,13 +30,13 @@ class ClientSlaveManager:
         # pass
         self.trainer_dist_adapter.cleanup_pg()
         logging.info(
-            "Training finsihded for slave client rank %s in silo %s"
+            "Training finished for slave client rank %s in silo %s"
             % (self.args.proc_rank_in_silo, self.args.rank_in_node)
         )
         self.finished = True
 
     def await_sync_process_group(self, src=0):
-        logging.info("prcoess %d waiting for round number" % dist.get_rank())
+        logging.info("process %d waiting for round number" % dist.get_rank())
         objects = [None, None, None]
         dist.broadcast_object_list(
             objects,
@@ -44,7 +44,7 @@ class ClientSlaveManager:
             group=self.trainer_dist_adapter.process_group_manager.get_process_group(),
         )
         logging.info(
-            "prcoess %d received round_number %d" % (dist.get_rank(), objects[0])
+            "process {} received round_number {}".format(dist.get_rank(), objects[0])
         )
         return objects
 

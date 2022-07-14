@@ -72,9 +72,6 @@ def create_fake_model_list(active_worker_num):  # local_w for defenses at server
     model_list = []
     for i in range(active_worker_num):
         model_list.append((i + 20, a_local_w))  # add a random sample num
-    # print(model_list[0])
-    # print("------")
-    # print(model_list)
     return model_list
 
 

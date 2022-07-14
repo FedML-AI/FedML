@@ -1,10 +1,9 @@
 import torch
-
 from .defense_base import BaseDefenseMethod
 from ..common import utils
 
 """
-defense @ client, added by Shanshan, 06/28/2022
+defense, added by Shanshan, 06/28/2022
 "Can You Really Backdoor Federated Learning?" 
 https://arxiv.org/pdf/1911.07963.pdf 
 """
@@ -14,15 +13,17 @@ class NormDiffClippingDefense(BaseDefenseMethod):
     def __init__(self, norm_bound):
         self.norm_bound = norm_bound  # for norm diff clipping and weak DP defenses
 
-    def defend(self, local_w, global_w, refs=None):
-        vec_local_weight = utils.vectorize_weight(local_w)
-        print(vec_local_weight)
-        vec_global_weight = utils.vectorize_weight(global_w)
-        clipped_weight_diff = self._get_clipped_norm_diff(
-            vec_local_weight, vec_global_weight
-        )
-        clipped_w = self._get_clipped_weights(local_w, global_w, clipped_weight_diff)
-        return clipped_w
+    def defend(self, client_grad_list, global_w=None, refs=None):
+        vec_global_w = utils.vectorize_weight(global_w)
+        new_grad_list = []
+        for (sample_num, local_w) in client_grad_list:
+            vec_local_w = utils.vectorize_weight(local_w)
+            clipped_weight_diff = self._get_clipped_norm_diff(
+                vec_local_w, vec_global_w
+            )
+            clipped_w = self._get_clipped_weights(local_w, global_w, clipped_weight_diff)
+            new_grad_list.append((sample_num, clipped_w))
+        return new_grad_list
 
     def _get_clipped_norm_diff(self, vec_local_w, vec_global_w):
         vec_diff = vec_local_w - vec_global_w
