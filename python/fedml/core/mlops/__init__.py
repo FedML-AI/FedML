@@ -414,12 +414,12 @@ def bind_local_device(args, userid, version="release"):
             break
         except Exception as e:
             config_try_count += 1
-            time.sleep(3)
+            time.sleep(0.5)
             continue
 
     if config_try_count >= 5:
-        click.echo("Oops, you failed to login the FedML MLOps platform.")
-        click.echo("Please check whether your network is normal!")
+        click.echo("\nNote: Internet is not connected. "
+                   "Experimental tracking results will not be synchronized to the MLOps (open.fedml.ai).\n")
         return False
 
     # Build unique device id

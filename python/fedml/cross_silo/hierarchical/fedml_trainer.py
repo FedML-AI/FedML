@@ -1,5 +1,5 @@
-# from .utils import transform_tensor_to_list
-
+import time
+from ...core.mlops import MLOpsProfilerEvent
 
 class FedMLTrainer(object):
     def __init__(
@@ -13,6 +13,7 @@ class FedMLTrainer(object):
         args,
         model_trainer,
     ):
+        self.trainer = model_trainer
 
         self.client_index = client_index
         self.train_data_local_dict = train_data_local_dict
@@ -23,25 +24,14 @@ class FedMLTrainer(object):
         self.local_sample_number = None
         self.test_local = None
 
-        self.trainer = model_trainer
-
         self.device = device
         self.args = args
-
-    def update_model_wile_file(self, model_file):
-        model_params = self.trainer.get_model_params_from_file(model_file)
-        self.trainer.set_model_params(model_params)
 
     def update_model(self, weights):
         self.trainer.set_model_params(weights)
 
     def update_dataset(self, client_index):
         self.client_index = client_index
-        # if self.args.n_proc_in_silo == 1:
-        #     self.train_local = self.train_data_local_dict[client_index]
-        #     self.local_sample_number = self.train_data_local_num_dict[client_index]
-        #     self.test_local = self.test_data_local_dict[client_index]
-        # else:
         self.train_local = self.train_data_local_dict[client_index][
             self.args.proc_rank_in_silo
         ]
@@ -50,14 +40,12 @@ class FedMLTrainer(object):
 
     def train(self, round_idx=None):
         self.args.round_idx = round_idx
+        tick = time.time()
         self.trainer.train(self.train_local, self.device, self.args)
-
+        MLOpsProfilerEvent.log_to_wandb({"Train/Time": time.time() - tick, "round": round_idx})
         weights = self.trainer.get_model_params()
-        sample_number = self.get_sample_number()
-        return weights, sample_number
-
-    def get_sample_number(self):
-        return self.local_sample_number
+        # transform Tensor to list
+        return weights, self.local_sample_number
 
     def test(self):
         # train data

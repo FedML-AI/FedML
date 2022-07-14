@@ -1,5 +1,6 @@
 import fedml
 from data.data_loader import *
+from fedml import FedMLRunner
 from model.gcn_link import GCNLinkPred
 from model.gat_link import GATLinkPred
 from model.sage_link import SAGELinkPred
@@ -79,5 +80,6 @@ if __name__ == "__main__":
     trainer = FedSubgraphLPTrainer(model)
 
     # start training
-    simulator = SimulatorMPI(args, device, dataset, model, trainer)
-    simulator.run()
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
+    fedml_runner.run()
+
