@@ -1,14 +1,14 @@
 from fedml.core.security.defense.norm_diff_clipping_defense import NormDiffClippingDefense
 from fedml.core.security.test.utils import (
     create_fake_vectors,
-    create_fake_global_w_local_w_MNIST,
+    create_fake_model_list_MNIST,
 )
 
 
 def test_norm_diff_clipping():
     defense = NormDiffClippingDefense(5.0)
-    local_w, global_w = create_fake_global_w_local_w_MNIST()
-    print(defense.defend(local_w, global_w))
+    model_list = create_fake_model_list_MNIST(10)
+    print(f"norm diff clipping result = {defense.defend(model_list, model_list[0][1])}")
 
 
 def test__get_clipped_norm_diff():
@@ -20,4 +20,4 @@ def test__get_clipped_norm_diff():
 
 if __name__ == "__main__":
     test_norm_diff_clipping()
-    # test__get_clipped_norm_diff()
+    test__get_clipped_norm_diff()

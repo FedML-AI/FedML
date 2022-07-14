@@ -406,7 +406,7 @@ def bind_local_device(args, userid, version="release"):
             break
         except Exception as e:
             config_try_count += 1
-            time.sleep(3)
+            time.sleep(0.5)
             continue
 
     if config_try_count >= 5:

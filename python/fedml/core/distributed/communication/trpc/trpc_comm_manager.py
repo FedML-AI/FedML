@@ -10,17 +10,19 @@ import torch.distributed as dist
 import torch.distributed.rpc as rpc
 import torch.multiprocessing as mp
 from torch.distributed import rpc
-
+from ..constants import CommunicationConstants
 from .trpc_server import TRPCCOMMServicer
 from ..base_com_manager import BaseCommunicationManager
 from ..message import Message
 from ..observer import Observer
+from .utils import WORKER_NAME, set_device_map
 import logging
+from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
 lock = threading.Lock()
 
 
-WORKER = "worker{}"
+
 
 
 class TRPCCommManager(BaseCommunicationManager):
@@ -29,6 +31,7 @@ class TRPCCommManager(BaseCommunicationManager):
         trpc_master_config_path,
         process_id=0,
         world_size=0,
+        args=None
     ):
         logging.info("using TRPC backend")
         with open(trpc_master_config_path, newline="") as csv_file:
@@ -39,15 +42,16 @@ class TRPCCommManager(BaseCommunicationManager):
         self.master_address = master_address
         self.master_port = master_port
         self.process_id = process_id
+        self.rank = process_id
         self.world_size = world_size
         self._observers: List[Observer] = []
-
+        self.args = args
         if process_id == 0:
             self.node_type = "server"
         else:
             self.node_type = "client"
 
-        print(f"Worker rank {process_id} initializing RPC")
+        logging.info(f"Worker rank {process_id} initializing RPC")
 
         self.trpc_servicer = TRPCCOMMServicer(
             master_address, master_port, self.world_size, process_id
@@ -60,9 +64,9 @@ class TRPCCommManager(BaseCommunicationManager):
         self._init_torch_rpc_tp(
             master_address, master_port, process_id, self.world_size
         )
-
         self.is_running = True
-        print("server started. master address: " + str(master_address))
+        logging.info("server started. master address: " + str(master_address))
+            
 
     def _init_torch_rpc_pg(
         self,
@@ -79,7 +83,7 @@ class TRPCCommManager(BaseCommunicationManager):
             num_send_recv_threads=4, init_method=str_init_method, rpc_timeout=60.0
         )
         rpc.init_rpc(
-            WORKER.format(worker_idx),
+            WORKER_NAME.format(worker_idx),
             backend=dist.rpc.BackendType.PROCESS_GROUP,
             rank=worker_idx,
             world_size=worker_num,
@@ -105,8 +109,11 @@ class TRPCCommManager(BaseCommunicationManager):
             init_method=str_init_method,
             _transports=["uv"],
         )
+        if self.args.enable_cuda_rpc:
+             set_device_map(options, worker_idx, self.args.cuda_rpc_gpu_mapping)
+            
         rpc.init_rpc(
-            WORKER.format(worker_idx),
+            WORKER_NAME.format(worker_idx),
             backend=rpc.BackendType.TENSORPIPE,
             rank=worker_idx,
             world_size=worker_num,
@@ -120,12 +127,13 @@ class TRPCCommManager(BaseCommunicationManager):
         logging.info("sending message to {}".format(receiver_id))
 
         # Should I wait?
+        tick = time.time()
         rpc.rpc_sync(
-            WORKER.format(receiver_id),
+            WORKER_NAME.format(receiver_id),
             TRPCCOMMServicer.sendMessage,
             args=(self.process_id, msg),
         )
-
+        MLOpsProfilerEvent.log_to_wandb({"Comm/send_delay": time.time() - tick})
         logging.debug("sent")
 
     def add_observer(self, observer: Observer):
@@ -137,14 +145,20 @@ class TRPCCommManager(BaseCommunicationManager):
     def handle_receive_message(self):
         thread = threading.Thread(target=self.message_handling_subroutine)
         thread.start()
+        self._notify_connection_ready()
 
     def message_handling_subroutine(self):
+        start_listening_time = time.time()
+        MLOpsProfilerEvent.log_to_wandb({"ListenStart": start_listening_time})
         while self.is_running:
             if self.trpc_servicer.message_q.qsize() > 0:
                 lock.acquire()
+                message_handler_start_time = time.time()
                 msg = self.trpc_servicer.message_q.get()
                 self.notify(msg)
+                MLOpsProfilerEvent.log_to_wandb({"BusyTime": time.time() - message_handler_start_time})
                 lock.release()
+        MLOpsProfilerEvent.log_to_wandb({"TotalTime": time.time() - start_listening_time})
         return
 
     def stop_receive_message(self):
@@ -156,6 +170,13 @@ class TRPCCommManager(BaseCommunicationManager):
         for observer in self._observers:
             observer.receive_message(msg_type, message)
 
+    def _notify_connection_ready(self):
+        msg_params = Message()
+        msg_params.sender_id = self.rank
+        msg_params.receiver_id = self.rank
+        msg_type = CommunicationConstants.MSG_TYPE_CONNECTION_IS_READY
+        for observer in self._observers:
+            observer.receive_message(msg_type, msg_params)
 
 def run_worker(rank, world_size):
     r"""

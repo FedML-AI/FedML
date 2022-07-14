@@ -1,0 +1,13 @@
+dist_training_args:
+  n_node_in_silo: 1
+  n_proc_per_node: 1
+  node_addresses: [127.0.0.1]
+  master_address: '127.0.0.1'
+  launcher_rdzv_port: 29421
+  network_interface: lo
+
+
+device_args:
+  using_gpu: true
+  gpu_mapping_file: config/gpu_mapping.yaml
+  gpu_mapping_key: mapping_silo_2
