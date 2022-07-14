@@ -59,8 +59,6 @@ class LogisticRegression(torch.nn.Module):
 if __name__ == "__main__":
     # init FedML framework
     args = fedml.init()
-    args.prime_number = 2 ** 15 - 19
-    args.precision_parameter = 10
 
     # init device
     device = fedml.device.get_device(args)

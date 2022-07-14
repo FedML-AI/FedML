@@ -3,7 +3,6 @@ import logging
 import platform
 import time
 from .message_define import MyMessage
-from .utils import transform_list_to_tensor
 from ...core.distributed.client.client_manager import ClientManager
 from ...core.distributed.communication.message import Message
 from ...core.mlops import MLOpsMetrics, MLOpsProfilerEvent
@@ -73,7 +72,6 @@ class FedMLClientManager(ClientManager):
     def handle_message_init(self, msg_params):
         global_model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
-        global_model_params = transform_list_to_tensor(global_model_params)
 
         logging.info("client_index = %s" % str(client_index))
 
@@ -85,16 +83,10 @@ class FedMLClientManager(ClientManager):
         self.round_idx = 0
         self.__train()
 
-    def start_training(self):
-        self.round_idx = 0
-        self.__train()
-
     def handle_message_receive_model_from_server(self, msg_params):
         logging.info("handle_message_receive_model_from_server.")
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
-
-        model_params = transform_list_to_tensor(model_params)
 
         self.trainer.update_model(model_params)
         self.trainer.update_dataset(int(client_index))

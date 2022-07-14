@@ -19,6 +19,7 @@ from fedml.cli.server_deployment.server_login import SERVER_RUNNER_HOME_DIR
 from fedml.cli.server_deployment.server_login import SERVER_RUNNER_INFO_DIR
 from fedml.cli.server_deployment.server_login import login_role_list
 from fedml.cli.server_deployment.server_login import logout as server_logout
+from fedml.cross_silo.hierarchical.client_launcher import CrossSiloLauncher
 
 
 @click.group()
@@ -567,6 +568,18 @@ def build_mlops_package(
 )
 def env():
     collect_env()
+
+
+@cli.command(
+    "launch", help="launch tool", context_settings={"ignore_unknown_options": True}
+)
+@click.argument("arguments", nargs=-1, type=click.Path())
+def launch(arguments):
+    for argument in arguments:
+        click.echo(argument)
+
+    # TODO: pass the arguments to "fedml.cross_silo.hierarchical.client_launcher"
+    CrossSiloLauncher.launch_dist_trainers(arguments[0], list(arguments[1:]))
 
 
 if __name__ == "__main__":
