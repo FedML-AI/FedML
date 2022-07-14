@@ -31,6 +31,7 @@ class MyModelTrainer(MyModelTrainer):
         for epoch in range(args.epochs):
             batch_loss = []
             for batch_idx, (x, labels) in enumerate(train_data):
+                print(x)
                 x, labels = x.to(device), labels.to(device)
                 model.zero_grad()
                 log_probs = model(x)
