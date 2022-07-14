@@ -3,7 +3,7 @@ import logging
 import platform
 
 import torch.distributed as dist
-
+import time
 from fedml.constants import FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
 from .message_define import MyMessage
 from .utils import convert_model_params_from_ddp, convert_model_params_to_ddp
