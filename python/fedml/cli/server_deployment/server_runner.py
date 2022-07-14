@@ -248,7 +248,8 @@ class FedMLServerRunner:
         if env_args is not None:
             bootstrap_script_file = env_args.get("bootstrap", None)
             if bootstrap_script_file is not None:
-                bootstrap_script_path = os.path.join(base_dir, "fedml", "config",
+                bootstrap_script_dir = os.path.join(base_dir, "fedml", os.path.dirname(bootstrap_script_file))
+                bootstrap_script_path = os.path.join(bootstrap_script_dir, bootstrap_script_dir,
                                                      os.path.basename(bootstrap_script_file))
         try:
             os.makedirs(package_dynamic_args["data_cache_dir"])
@@ -263,7 +264,8 @@ class FedMLServerRunner:
                 if os.path.exists(bootstrap_script_path):
                     bootstrap_stat = os.stat(bootstrap_script_path)
                     os.chmod(bootstrap_script_path, bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-                ret_code, out, err = ServerConstants.exec_console_with_script(bootstrap_script_path)
+                bootstrap_scripts = "cd {}; ./{}".format(bootstrap_script_dir, os.path.basename(bootstrap_script_file))
+                process, ret_code, out, err = ClientConstants.exec_console_with_script(bootstrap_scripts)
                 if ret_code != 0:
                     logging.error("Bootstrap script error: {}".format(err.decode(encoding="utf-8")))
                 else:
@@ -335,7 +337,7 @@ class FedMLServerRunner:
         ServerConstants.save_learning_process(process.pid)
         if ret_code != 0:
             logging.error("Exception when executing server program: {}".format(err.decode(encoding="utf-8")))
-            self.mlops_metrics.report_client_training_status(self.edge_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
+            self.mlops_metrics.report_server_training_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
 
         # if self.check_server_is_ready():
         self.send_training_request_to_edges()
