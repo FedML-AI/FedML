@@ -224,7 +224,9 @@ class FedMLClientRunner:
         if hasattr(self.args, "local_server") and self.args.local_server is not None:
             fedml_conf_object["comm_args"]["local_server"] = self.args.local_server
         bootstrap_script_file = fedml_conf_object["environment_args"]["bootstrap"]
-        bootstrap_script_path = os.path.join(base_dir, "fedml", "config", os.path.basename(bootstrap_script_file))
+        bootstrap_script_dir = os.path.join(base_dir, "fedml", os.path.dirname(bootstrap_script_file))
+        bootstrap_script_path = os.path.join(bootstrap_script_dir, bootstrap_script_dir,
+                                             os.path.basename(bootstrap_script_file))
         try:
             os.makedirs(package_dynamic_args["data_cache_dir"])
         except Exception as e:
@@ -238,7 +240,8 @@ class FedMLClientRunner:
                 if os.path.exists(bootstrap_script_path):
                     bootstrap_stat = os.stat(bootstrap_script_path)
                     os.chmod(bootstrap_script_path, bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-                ret_code, out, err = ClientConstants.exec_console_with_script(bootstrap_script_path)
+                bootstrap_scripts = "cd {}; ./{}".format(bootstrap_script_dir, os.path.basename(bootstrap_script_file))
+                process, ret_code, out, err = ClientConstants.exec_console_with_script(bootstrap_scripts)
                 if ret_code != 0:
                     logging.error("Bootstrap script error: {}".format(err.decode(encoding="utf-8")))
                 else:
