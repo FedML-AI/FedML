@@ -1,5 +1,6 @@
-from ...core.security.attack.attack_method_sample_a import AttackMethodA
-from ...core.security.constants import ATTACK_METHOD_A
+from .attack.byzantine_attack import ByzantineAttack
+from .attack.dlg_attack import DLGAttack
+from .constants import ATTACK_METHOD_BYZANTINE_ATTACK, ATTACK_METHOD_DLG
 
 
 class FedMLAttacker:
@@ -23,8 +24,19 @@ class FedMLAttacker:
             self.is_enabled = True
             self.attack_type = args.attack_type.strip()
             self.attacker = None
-            if self.attack_type == ATTACK_METHOD_A:
-                self.attacker = AttackMethodA()
+            if self.attack_type == ATTACK_METHOD_BYZANTINE_ATTACK:
+                self.attacker = ByzantineAttack(
+                    args.byzantine_client_num, args.attack_mode
+                )
+            elif self.attack_type == ATTACK_METHOD_DLG:
+                self.attacker = DLGAttack(
+                    args.data_size,
+                    args.num_class,
+                    args.model,
+                    args.criterion,
+                    args.attack_epoch,
+                    args.attack_label,
+                )
         else:
             self.is_enabled = False
 

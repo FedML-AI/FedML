@@ -1,9 +1,8 @@
 import fedml
+from .runner import FedMLRunner
 from .constants import (
     FEDML_TRAINING_PLATFORM_SIMULATION,
-    FEDML_SIMULATION_TYPE_NCCL,
     FEDML_SIMULATION_TYPE_SP,
-    FEDML_SIMULATION_TYPE_MPI,
 )
 
 
@@ -26,19 +25,6 @@ def run_simulation(backend=FEDML_SIMULATION_TYPE_SP):
     model = fedml.model.create(args, output_dim)
 
     # start training
-    if backend == FEDML_SIMULATION_TYPE_SP:
-        from .simulation.simulator import SimulatorSingleProcess
+    fedml_runner = FedMLRunner(args, device, dataset, model)
+    fedml_runner.run()
 
-        simulator = SimulatorSingleProcess(args, device, dataset, model)
-    elif backend == FEDML_SIMULATION_TYPE_NCCL:
-        from .simulation.simulator import SimulatorNCCL
-
-        simulator = SimulatorNCCL(args, device, dataset, model)
-
-    elif backend == FEDML_SIMULATION_TYPE_MPI:
-        from .simulation.simulator import SimulatorMPI
-
-        simulator = SimulatorMPI(args, device, dataset, model)
-    else:
-        raise Exception("no such simulator {}".format(backend))
-    simulator.run()

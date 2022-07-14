@@ -1,12 +1,43 @@
+from .hierarchical.fedml_hierarchical_api import FedML_Hierarchical
 from .horizontal.fedml_horizontal_api import FedML_Horizontal
+from .horizontal.lsa_fedml_api import FedML_LSA_Horizontal
+from ..constants import FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL, FEDML_CROSS_SILO_SCENARIO_HORIZONTAL
 
 
 class Client:
-    def __init__(self, args, device, dataset, model, model_trainer=None):
+    def __init__(
+        self, args, device, dataset, model, model_trainer=None, server_aggregator=None
+    ):
         if args.federated_optimizer == "FedAvg":
-            self.fl_trainer = FedML_Horizontal(
+            if args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
+                self.fl_trainer = FedML_Hierarchical(
+                    args,
+                    args.rank,  # Note: client rank stars from 1
+                    args.worker_num,
+                    args.comm,
+                    device,
+                    dataset,
+                    model,
+                    model_trainer=model_trainer,
+                    preprocessed_sampling_lists=None,
+                )
+            elif args.scenario == FEDML_CROSS_SILO_SCENARIO_HORIZONTAL:
+                self.fl_trainer = FedML_Horizontal(
+                    args,
+                    args.rank,  # Note: client rank stars from 1
+                    args.worker_num,
+                    args.comm,
+                    device,
+                    dataset,
+                    model,
+                    model_trainer=model_trainer,
+                    preprocessed_sampling_lists=None,
+                )
+
+        elif args.federated_optimizer == "LSA":
+            self.fl_trainer = FedML_LSA_Horizontal(
                 args,
-                args.rank,  # Note: client rank stars from 1
+                args.rank,
                 args.worker_num,
                 args.comm,
                 device,
