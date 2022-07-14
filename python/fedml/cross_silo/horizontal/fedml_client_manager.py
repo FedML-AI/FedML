@@ -25,7 +25,6 @@ class FedMLClientManager(ClientManager):
         self.client_real_id = self.client_real_ids[0]
 
         self.has_sent_online_msg = False
-        self.sys_stats_process = None
 
         if hasattr(self.args, "using_mlops") and self.args.using_mlops:
             self.mlops_metrics = MLOpsMetrics()
@@ -65,7 +64,7 @@ class FedMLClientManager(ClientManager):
                 self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_INITIALIZING)
 
                 # Open new process for report system performances to MQTT server
-                MLOpsMetrics.report_sys_perf()
+                MLOpsMetrics.report_sys_perf(self.com_manager_status.args)
 
     def handle_message_check_status(self, msg_params):
         self.send_client_status(0)
@@ -118,8 +117,9 @@ class FedMLClientManager(ClientManager):
 
     def cleanup(self):
         if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-            mlops_metrics = MLOpsMetrics()
-            mlops_metrics.set_sys_reporting_status(False)
+            # mlops_metrics = MLOpsMetrics()
+            # mlops_metrics.set_sys_reporting_status(False)
+            pass
         self.finish()
 
     def send_model_to_server(self, receive_id, weights, local_sample_num):
@@ -165,6 +165,7 @@ class FedMLClientManager(ClientManager):
 
     def report_training_status(self, status):
         if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+            self.mlops_metrics.set_messenger(self.com_manager_status)
             self.mlops_metrics.report_client_training_status(
                 self.client_real_id, status
             )
