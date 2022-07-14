@@ -1,0 +1,66 @@
+common_args:
+  training_type: "simulation"
+  random_seed: 0
+
+data_args:
+  dataset: "wikiner"
+  data_file_path: ../fednlp_data/data_files/wikiner_data.h5
+  partition_file_path: ../fednlp_data/partition_files/wikiner_partition.h5
+  partition_method: "uniform"
+  reprocess_input_data: false
+
+model_args:
+  model_type: "bert"
+  model_class: "transformer"
+  model: "bert-base-uncased"
+  do_lower_case: true
+  formulation: "seq_tagging"
+
+train_args:
+  federated_optimizer: "FedAvg"
+  client_id_list: "[]"
+  client_num_in_total: 100
+  client_num_per_round: 5
+  comm_round: 30
+  epochs: 1
+  batch_size: 16
+  eval_batch_size: 8
+  max_seq_length: 128
+  fp16: false
+  output_dir: "~/output_dir"
+  client_optimizer: AdamW
+  server_optimizer: sgd
+  server_lr: 0.01
+  learning_rate: 0.00005
+  server_momentum: 0.9
+  ci: 0
+  weight_decay: 0.001
+  gradient_accumulation_steps: 1
+  clip_grad_norm: True
+  fedprox_mu: 1
+  evaluate_during_training: false
+  evaluate_during_training_steps: 10
+  freeze_layers: ''
+  is_debug_mode: false
+  max_grad_norm: 1
+
+validation_args:
+  frequency_of_the_test: 5
+
+device_args:
+  worker_num: 5
+  using_gpu: true
+  gpu_mapping_file: config/simulation/gpu_mapping.yaml
+  gpu_mapping_key: mapping_fednlp_sp
+
+comm_args:
+  backend: "MPI"
+  is_mobile: 0
+
+
+tracking_args:
+  log_file_dir: ./log
+  enable_wandb: false
+  wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
+  wandb_project: fedml
+  wandb_name: fedml_torch_fedavg_mnist_lr

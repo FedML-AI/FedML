@@ -1,13 +1,21 @@
 common_args:
-  training_type: "simulation"
+  training_type: "cross_silo"
   random_seed: 0
+  scenario: "horizontal"
+  using_mlops: false
+  config_version: release
+  name: "exp"
+  project: "runs/train"
+  exist_ok: false
 
 data_args:
   dataset: "20news"
-  data_file_path: /home/ubuntu/fednlp_data/data_files/20news_data.h5
-  partition_file_path: /home/ubuntu/fednlp_data/partition_files/20news_partition.h5
+  data_file_path: ../fednlp_data/data_files/20news_data.h5
+  partition_file_path: ../fednlp_data/partition_files/20news_partition.h5
   partition_method: "uniform"
   reprocess_input_data: false
+  global_model_file_path: "/home/ubuntu/FedML/python/app/model_cache_dir/"
+  model_file_cache_folder: "/home/ubuntu/FedML/python/app/model_cache_dir/global_model.pt"
 
 model_args:
   model_type: "bert"
@@ -16,11 +24,14 @@ model_args:
   do_lower_case: true
   formulation: "classification"
 
+environment_args:
+  bootstrap: config/bootstrap.sh
+
 train_args:
-  federated_optimizer: "FedOpt"
-  client_id_list: "[]"
+  federated_optimizer: "FedAvg"
+  client_id_list:
   client_num_in_total: 100
-  client_num_per_round: 5
+  client_num_per_round: 1
   comm_round: 50
   epochs: 10
   batch_size: 32
@@ -49,14 +60,15 @@ validation_args:
   frequency_of_the_test: 5
 
 device_args:
-  worker_num: 5
-  using_gpu: true
-  gpu_mapping_file: /home/ubuntu/FedML/app/fednlp/text_classification/config/gpu_mapping.yaml
+  worker_num: 1
+  using_gpu: false
+  gpu_mapping_file: config/simulation/gpu_mapping.yaml
   gpu_mapping_key: mapping_fednlp_sp
 
 comm_args:
-  backend: "MPI"
-  is_mobile: 0
+  backend: "MQTT_S3"
+  mqtt_config_path: config/mqtt_config.yaml
+  s3_config_path: config/s3_config.yaml
 
 
 tracking_args:
