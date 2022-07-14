@@ -27,12 +27,7 @@ from fedml.constants import (
 
 class CrossSiloLauncher:
     @staticmethod
-    def launch_dist_trainers(torch_client_filename="torch_client.py"):
-        print("launch_dist_trainers")
-
-        # all the arguments after the main command (argv[0])
-        inputs = sys.argv[1:]
-
+    def launch_dist_trainers(torch_client_filename, inputs):
         # this is only used by the client (DDP or single process), so there is no need to specify the backend.
         args = load_arguments(FEDML_TRAINING_PLATFORM_CROSS_SILO)
         if args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
@@ -56,6 +51,8 @@ class CrossSiloLauncher:
             ["which", "python"], capture_output=True, text=True
         ).stdout.strip()
         process_arguments = [python_path, torch_client_filename] + inputs
+        print("@@@@@@$$$$$$$$$$$$")
+        print(process_arguments)
         subprocess.run(process_arguments)
 
     @staticmethod
@@ -77,7 +74,9 @@ class CrossSiloLauncher:
             ] + inputs
 
         network_interface = (
-            None if not hasattr(args, "network_interface") else args.network_interface
+            None
+            if not hasattr(args, "network_interface")
+            else args.network_interface
         )
         print(
             f"Using network interface {network_interface} for process group and TRPC communication"
@@ -92,6 +91,10 @@ class CrossSiloLauncher:
                 "GLOO_SOCKET_IFNAME": network_interface,
             }
 
+        if args.n_node_in_silo == 1:
+            args.node_rank = 0
+            args.manual_launch = True
+
         if hasattr(args, "manual_launch") and args.manual_launch:
             print(f"Manual Client Launcher")
             node_rank = args.node_rank
@@ -103,6 +106,14 @@ class CrossSiloLauncher:
 
         else:
             print(f"Automatic Client Launcher")
+
+            which_pdsh = subprocess.run(
+                ["which", "pdsh"], capture_output=True, text=True
+            ).stdout.strip()
+
+            if not which_pdsh:
+                raise Exception(f"Silo {args.rank} has {args.n_node_in_silo} nodes. Automatic Client Launcher for more than 1 nodes requires PSDH.")
+
             print(f"Launching nodes using pdsh")
 
             os.environ["PDSH_RCMD_TYPE"] = "ssh"
@@ -119,5 +130,7 @@ class CrossSiloLauncher:
 
             node_rank = "%n"
             torchrun_cmd_arguments = get_torchrun_arguments(node_rank)
-            process_args = pdsh_cmd_aruments + prerun_args + torchrun_cmd_arguments
+            process_args = (
+                pdsh_cmd_aruments + prerun_args + torchrun_cmd_arguments
+            )
             subprocess.run(process_args)
