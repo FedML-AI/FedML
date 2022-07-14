@@ -8,22 +8,18 @@ import uuid
 
 import click
 import requests
-from fedml.cli.cli import mlops_register_simulator_process
-from fedml.cli.edge_deployment.client_constants import ClientConstants
-from fedml.cli.edge_deployment.client_login import __login_as_simulator
-from fedml.cli.edge_deployment.client_runner import FedMLClientRunner
+
 from fedml import constants, FEDML_TRAINING_PLATFORM_SIMULATION
-from fedml.cli.server_deployment.server_constants import ServerConstants
-
-from ..distributed.communication.mqtt.mqtt_manager import MqttManager
-
 from .mlops_configs import MLOpsConfigs
-
 from .mlops_metrics import MLOpsMetrics
 from .mlops_profiler_event import MLOpsProfilerEvent
 from .mlops_runtime_log import MLOpsRuntimeLog
 from .system_stats import SysStats
-
+from ..distributed.communication.mqtt.mqtt_manager import MqttManager
+from ...cli.cli import mlops_register_simulator_process
+from ...cli.edge_deployment.client_constants import ClientConstants
+from ...cli.edge_deployment.client_runner import FedMLClientRunner
+from ...cli.server_deployment.server_constants import ServerConstants
 
 FEDML_MLOPS_API_RESPONSE_SUCCESS_CODE = "SUCCESS"
 
@@ -98,7 +94,7 @@ def init(args):
     logging.info("mlops.init args {}".format(MLOpsStore.mlops_args))
 
     # Start simulator login process as daemon
-    #mlops_simulator_login(api_key)
+    # mlops_simulator_login(api_key)
 
 
 def event(event_name, event_started=True, event_value=None, event_edge_id=None):
@@ -143,7 +139,9 @@ def log(metrics: dict, commit=True):
         setup_log_mqtt_mgr()
         wait_log_mqtt_connected()
         MLOpsStore.mlops_log_metrics_lock.acquire()
-        MLOpsStore.mlops_metrics.report_server_training_metric(MLOpsStore.mlops_log_metrics)
+        MLOpsStore.mlops_metrics.report_server_training_metric(
+            MLOpsStore.mlops_log_metrics
+        )
         MLOpsStore.mlops_log_metrics.clear()
         MLOpsStore.mlops_log_metrics_lock.release()
         release_log_mqtt_mgr()
@@ -160,7 +158,9 @@ def log_training_status(status):
 
     setup_log_mqtt_mgr()
     wait_log_mqtt_connected()
-    MLOpsStore.mlops_metrics.report_client_training_status(MLOpsStore.mlops_edge_id, status)
+    MLOpsStore.mlops_metrics.report_client_training_status(
+        MLOpsStore.mlops_edge_id, status
+    )
     release_log_mqtt_mgr()
 
 
@@ -175,7 +175,9 @@ def log_aggregation_status(status):
 
     setup_log_mqtt_mgr()
     wait_log_mqtt_connected()
-    MLOpsStore.mlops_metrics.report_server_training_status(MLOpsStore.mlops_run_id, status, role="simulator")
+    MLOpsStore.mlops_metrics.report_server_training_status(
+        MLOpsStore.mlops_run_id, status, role="simulator"
+    )
     release_log_mqtt_mgr()
 
 
@@ -208,18 +210,18 @@ def log_round_info(total_rounds, round_index):
 def create_project(project_name, api_key):
     url_prefix, cert_path = get_request_params(MLOpsStore.mlops_args)
     url = "{}/fedmlOpsServer/projects/createSim".format(url_prefix)
-    json_params = {"name": project_name,
-                   "userids": api_key,
-                   "platform_type": str(constants.FEDML_TRAINING_PLATFORM_SIMULATION_TYPE)}
+    json_params = {
+        "name": project_name,
+        "userids": api_key,
+        "platform_type": str(constants.FEDML_TRAINING_PLATFORM_SIMULATION_TYPE),
+    }
     if cert_path is not None:
         requests.session().verify = cert_path
         response = requests.post(
             url, json=json_params, verify=True, headers={"Connection": "close"}
         )
     else:
-        response = requests.post(
-            url, json=json_params, headers={"Connection": "close"}
-        )
+        response = requests.post(url, json=json_params, headers={"Connection": "close"})
     status_code = response.json().get("code")
     if status_code == FEDML_MLOPS_API_RESPONSE_SUCCESS_CODE:
         project_id = response.json().get("data")
@@ -233,9 +235,11 @@ def create_run(project_id, api_key, run_name=None):
     url = "{}/fedmlOpsServer/runs/createSim".format(url_prefix)
     edge_ids = list()
     edge_ids.append(MLOpsStore.mlops_edge_id)
-    json_params = {"userids": api_key,
-                   "projectid": str(project_id),
-                   "edgeids": edge_ids}
+    json_params = {
+        "userids": api_key,
+        "projectid": str(project_id),
+        "edgeids": edge_ids,
+    }
     if run_name is not None:
         json_params["name"] = run_name
     if cert_path is not None:
@@ -244,9 +248,7 @@ def create_run(project_id, api_key, run_name=None):
             url, json=json_params, verify=True, headers={"Connection": "close"}
         )
     else:
-        response = requests.post(
-            url, json=json_params, headers={"Connection": "close"}
-        )
+        response = requests.post(url, json=json_params, headers={"Connection": "close"})
     status_code = response.json().get("code")
     if status_code == FEDML_MLOPS_API_RESPONSE_SUCCESS_CODE:
         run_id = response.json().get("data")
@@ -258,10 +260,7 @@ def create_run(project_id, api_key, run_name=None):
 def get_request_params(args):
     url = "https://open.fedml.ai"
     config_version = "release"
-    if (
-            hasattr(args, "config_version")
-            and args.config_version is not None
-    ):
+    if hasattr(args, "config_version") and args.config_version is not None:
         # Setup config url based on selected version.
         config_version = args.config_version
         if args.config_version == "release":
@@ -294,7 +293,7 @@ def on_log_mqtt_disconnected(mqtt_client_object):
     MLOpsStore.mlops_log_mqtt_is_connected = False
     MLOpsStore.mlops_log_mqtt_lock.release()
 
-    #logging.info("on_client_mqtt_disconnected: {}.".format(MLOpsStore.mlops_log_mqtt_is_connected))
+    # logging.info("on_client_mqtt_disconnected: {}.".format(MLOpsStore.mlops_log_mqtt_is_connected))
 
 
 def on_log_mqtt_connected(mqtt_client_object):
@@ -312,7 +311,7 @@ def on_log_mqtt_connected(mqtt_client_object):
     MLOpsStore.mlops_log_mqtt_is_connected = True
     MLOpsStore.mlops_log_mqtt_lock.release()
 
-    #logging.info("on_client_mqtt_connected: {}.".format(MLOpsStore.mlops_log_mqtt_is_connected))
+    # logging.info("on_client_mqtt_connected: {}.".format(MLOpsStore.mlops_log_mqtt_is_connected))
 
 
 def setup_log_mqtt_mgr():
@@ -321,13 +320,15 @@ def setup_log_mqtt_mgr():
 
     if MLOpsStore.mlops_log_mqtt_mgr is not None:
         MLOpsStore.mlops_log_mqtt_lock.acquire()
-        MLOpsStore.mlops_log_mqtt_mgr.remove_disconnected_listener(on_log_mqtt_disconnected)
+        MLOpsStore.mlops_log_mqtt_mgr.remove_disconnected_listener(
+            on_log_mqtt_disconnected
+        )
         MLOpsStore.mlops_log_mqtt_is_connected = False
         MLOpsStore.mlops_log_mqtt_mgr.disconnect()
         MLOpsStore.mlops_log_mqtt_mgr = None
         MLOpsStore.mlops_log_mqtt_lock.release()
 
-    #logging.info("mlops log metrics agent config: {},{}".format(MLOpsStore.mlops_log_agent_config["mqtt_config"]["BROKER_HOST"],
+    # logging.info("mlops log metrics agent config: {},{}".format(MLOpsStore.mlops_log_agent_config["mqtt_config"]["BROKER_HOST"],
     #                                                 MLOpsStore.mlops_log_agent_config["mqtt_config"]["BROKER_PORT"]))
 
     MLOpsStore.mlops_log_mqtt_mgr = MqttManager(
@@ -337,7 +338,7 @@ def setup_log_mqtt_mgr():
         MLOpsStore.mlops_log_agent_config["mqtt_config"]["MQTT_PWD"],
         MLOpsStore.mlops_log_agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
         "Simulation_Link_" + str(uuid.uuid4()),
-        )
+    )
     MLOpsStore.mlops_log_mqtt_mgr.add_connected_listener(on_log_mqtt_connected)
     MLOpsStore.mlops_log_mqtt_mgr.add_disconnected_listener(on_log_mqtt_disconnected)
     MLOpsStore.mlops_log_mqtt_mgr.connect()
@@ -418,8 +419,10 @@ def bind_local_device(args, userid, version="release"):
             continue
 
     if config_try_count >= 5:
-        click.echo("\nNote: Internet is not connected. "
-                   "Experimental tracking results will not be synchronized to the MLOps (open.fedml.ai).\n")
+        click.echo(
+            "\nNote: Internet is not connected. "
+            "Experimental tracking results will not be synchronized to the MLOps (open.fedml.ai).\n"
+        )
         return False
 
     # Build unique device id
@@ -433,8 +436,10 @@ def bind_local_device(args, userid, version="release"):
         try:
             edge_id = runner.bind_account_and_device_id(
                 service_config["ml_ops_config"]["EDGE_BINDING_URL"],
-                args.account_id, unique_device_id, args.os_name,
-                role="simulator"
+                args.account_id,
+                unique_device_id,
+                args.os_name,
+                role="simulator",
             )
             if edge_id > 0:
                 runner.edge_id = edge_id
@@ -462,7 +467,12 @@ def mlops_simulator_login(userid):
     login_simulator_cmd = "fedml login {} -c -r edge_simulator".format(userid)
     os.system(login_simulator_cmd)
 
-    mlops_register_simulator_process(os.getpid(), ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_EDGE_SIMULATOR_INDEX])
+    mlops_register_simulator_process(
+        os.getpid(),
+        ClientConstants.login_role_list[
+            ClientConstants.LOGIN_MODE_EDGE_SIMULATOR_INDEX
+        ],
+    )
 
 
 def mlops_simulator_logout():
@@ -471,9 +481,9 @@ def mlops_simulator_logout():
 
 def mlops_tracking_enabled(args):
     if (
-            hasattr(args, "enable_tracking")
-            and args.enable_tracking is True
-            and args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
+        hasattr(args, "enable_tracking")
+        and args.enable_tracking is True
+        and args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
     ):
         return True
     else:
