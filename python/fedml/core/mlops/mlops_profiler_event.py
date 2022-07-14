@@ -30,7 +30,13 @@ class MLOpsProfilerEvent:
             else:
                 self.edge_id = 0
         else:
-            self.edge_id = json.loads(args.client_id_list)[0]
+            if hasattr(args, "client_id"):
+                self.edge_id = args.client_id
+            elif hasattr(args, "client_id_list"):
+                self.edge_id = json.loads(args.client_id_list)[0]
+            else:
+                self.edge_id = 0
+
         self.com_manager = MqttS3StatusManager(
             args.mqtt_config_path, args.s3_config_path, topic=args.run_id
         )

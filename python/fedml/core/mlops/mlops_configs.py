@@ -58,7 +58,6 @@ class MLOpsConfigs(Singleton):
 
     def fetch_configs(self):
         url, cert_path = self.get_request_params()
-        logging.info(url)
         json_params = {"config_name": ["mqtt_config", "s3_config"]}
         if cert_path is not None:
             requests.session().verify = cert_path
