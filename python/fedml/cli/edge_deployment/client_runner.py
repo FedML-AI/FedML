@@ -303,7 +303,7 @@ class FedMLClientRunner:
         #                             '--role', 'client'])
 
         process, ret_code, out, err = ClientConstants.exec_console_with_shell_script_list([python_program, entry_file,
-                                                       '--cf', conf_file, '--rank', str(dynamic_args_config["rank"]),
+                                                       '--cf', conf_file, '--rank', dynamic_args_config["rank"],
                                                        '--role', 'client'])
         ClientConstants.save_learning_process(process.pid)
         if ret_code != 0:
