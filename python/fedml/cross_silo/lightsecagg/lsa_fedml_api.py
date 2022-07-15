@@ -1,5 +1,5 @@
 from .lsa_fedml_aggregator import LightSecAggAggregator
-from .fedml_trainer import FedMLTrainer
+from ..client.fedml_trainer import FedMLTrainer
 from .lsa_fedml_client_manager import FedMLClientManager
 from .lsa_fedml_server_manager import FedMLServerManager
 from .trainer.my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
