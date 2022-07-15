@@ -92,6 +92,7 @@ class FedMLServerRunner:
         self.mlops_metrics = None
         self.client_agent_active_list = dict()
         self.server_active_list = dict()
+        self.run_status = None
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
         data_config = run_config["data_config"]
@@ -341,7 +342,7 @@ class FedMLServerRunner:
         ServerConstants.save_learning_process(process.pid)
         if ret_code != 0:
             logging.error("Exception when executing server program: {}".format(err.decode(encoding="utf-8")))
-            self.mlops_metrics.report_server_training_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
+            self.stop_run_when_starting_failed()
 
     def reset_all_devices_status(self):
         edge_id_list = self.request_json["edgeids"]
@@ -367,6 +368,36 @@ class FedMLServerRunner:
 
         self.mlops_metrics.report_server_training_status(self.run_id,
                                                          ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED)
+
+        time.sleep(1)
+
+        ServerConstants.cleanup_learning_process()
+
+        try:
+            local_package_path = ServerConstants.get_package_download_dir()
+            for package_file in listdir(local_package_path):
+                if os.path.basename(package_file).startswith("run_" + str(self.run_id)):
+                    shutil.rmtree(os.path.join(local_package_path, package_file), ignore_errors=True)
+        except Exception as e:
+            pass
+
+        self.release_client_mqtt_mgr()
+
+    def stop_run_when_starting_failed(self):
+        self.setup_client_mqtt_mgr()
+
+        edge_id_list = self.request_json["edgeids"]
+        self.send_training_stop_request_to_edges(edge_id_list, json.dumps(self.request_json))
+
+        logging.info("Stop run successfully when starting failed.")
+
+        # Stop log processor for current run
+        MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
+
+        time.sleep(4)
+
+        # Notify MLOps with the stopping message
+        self.mlops_metrics.report_server_id_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
 
         time.sleep(1)
 
@@ -412,11 +443,23 @@ class FedMLServerRunner:
 
         self.release_client_mqtt_mgr()
 
-    def cleanup_run_when_starting(self):
-        self.mlops_metrics.report_server_training_status(self.run_id,
-                                                         ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED)
+    def cleanup_run_when_starting_failed(self):
+        if self.run_as_cloud_agent:
+            self.stop_cloud_server()
 
-        time.sleep(2)
+        self.setup_client_mqtt_mgr()
+
+        self.wait_client_mqtt_connected()
+
+        logging.info("Cleanup run successfully when starting failed.")
+
+        # Stop log processor for current run
+        MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
+
+        time.sleep(3)
+
+        self.mlops_metrics.broadcast_server_training_status(self.run_id,
+                                                            ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
 
         ServerConstants.cleanup_learning_process()
 
@@ -426,11 +469,9 @@ class FedMLServerRunner:
                 if os.path.basename(package_file).startswith("run_" + str(self.run_id)):
                     shutil.rmtree(os.path.join(local_package_path, package_file), ignore_errors=True)
         except Exception as e:
-            logging.info(traceback.format_exc())
+            pass
 
         self.release_client_mqtt_mgr()
-
-        logging.info("Cleanup run successfully when starting.")
 
     def send_training_request_to_edges(self):
         self.wait_client_mqtt_connected()
@@ -694,7 +735,8 @@ class FedMLServerRunner:
         status = request_json["status"]
         edge_id = request_json["edge_id"]
 
-        if status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED:
+        if status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED or \
+                status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED:
             logging.info("Received training finished message.")
 
             logging.info("Stopping training server.")
@@ -709,19 +751,24 @@ class FedMLServerRunner:
                                                   agent_config=self.agent_config)
                 server_runner.edge_id = self.edge_id
                 server_runner.run_as_edge_server_and_agent = self.run_as_edge_server_and_agent
-                multiprocessing.Process(target=server_runner.cleanup_client_with_finished_status).start()
+                server_runner.run_status = status
+                multiprocessing.Process(target=server_runner.cleanup_client_with_status).start()
             elif self.run_as_cloud_agent:
                 server_runner = FedMLServerRunner(self.args, run_id=run_id,
                                                   request_json=stop_request_json,
                                                   agent_config=self.agent_config)
                 server_runner.run_as_cloud_agent = self.run_as_cloud_agent
                 server_runner.edge_id = edge_id
-                multiprocessing.Process(target=server_runner.cleanup_client_with_finished_status).start()
+                server_runner.run_status = status
+                multiprocessing.Process(target=server_runner.cleanup_client_with_status).start()
             elif self.run_as_cloud_server:
                 pass
 
-    def cleanup_client_with_finished_status(self):
-        self.cleanup_run_when_finished()
+    def cleanup_client_with_status(self):
+        if self.run_status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED:
+            self.cleanup_run_when_finished()
+        elif self.run_status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED:
+            self.cleanup_run_when_starting_failed()
 
     def report_client_status(self):
         self.send_agent_active_msg()
