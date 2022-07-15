@@ -18,16 +18,12 @@ class FedMLServerManager(ServerManager):
         client_rank=0,
         client_num=0,
         backend="MQTT_S3",
-        is_preprocessed=False,
-        preprocessed_client_lists=None,
     ):
         super().__init__(args, comm, client_rank, client_num, backend)
         self.args = args
         self.aggregator = aggregator
         self.round_num = args.comm_round
         self.round_idx = 0
-        self.is_preprocessed = is_preprocessed
-        self.preprocessed_client_lists = preprocessed_client_lists
 
         self.client_online_mapping = {}
         self.client_real_ids = json.loads(args.client_id_list)
@@ -226,7 +222,7 @@ class FedMLServerManager(ServerManager):
                 )
                 self.cleanup()
             else:
-                logging.info("waiting for another round...")
+                logging.info("\n\n==========start {}-th round training===========\n".format(self.round_idx))
                 if hasattr(self.args, "using_mlops") and self.args.using_mlops:
                     self.mlops_event.log_event_started(
                         "server.wait", event_value=str(self.round_idx)
