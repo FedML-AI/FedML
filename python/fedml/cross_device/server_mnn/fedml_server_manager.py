@@ -220,7 +220,8 @@ class FedMLServerManager(ServerManager):
         # notify MLOps with RUNNING status
         if hasattr(self.args, "backend") and self.args.using_mlops:
             self.mlops_metrics.report_server_training_status(
-                self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING
+                self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING,
+                role="server"
             )
 
         all_client_is_online = True
