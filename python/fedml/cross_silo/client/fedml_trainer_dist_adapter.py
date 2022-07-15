@@ -36,7 +36,7 @@ class TrainerDistAdapter:
             model = DDP(model, device_ids=[device] if only_gpu else None)
 
         if model_trainer is None:
-            model_trainer = create_model_trainer(model, args)
+            model_trainer = create_model_trainer(args, model)
         else:
             model_trainer.model = model
 
