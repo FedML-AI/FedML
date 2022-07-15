@@ -1,10 +1,10 @@
 from .lsa_fedml_aggregator import LightSecAggAggregator
-from ..client.fedml_trainer import FedMLTrainer
 from .lsa_fedml_client_manager import FedMLClientManager
 from .lsa_fedml_server_manager import FedMLServerManager
-from .trainer.my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
-from .trainer.my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
-from .trainer.my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
+from ..client.fedml_trainer import FedMLTrainer
+from ..client.trainer.my_model_trainer_classification import ModelTrainerCLS
+from ..client.trainer.my_model_trainer_nwp import ModelTrainerNWP
+from ..client.trainer.my_model_trainer_tag_prediction import ModelTrainerTAGPred
 
 
 def FedML_LSA_Horizontal(
@@ -79,11 +79,11 @@ def init_server(
 ):
     if model_trainer is None:
         if args.dataset == "stackoverflow_lr":
-            model_trainer = MyModelTrainerTAG(model)
+            model_trainer = ModelTrainerTAGPred(model, args)
         elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
-            model_trainer = MyModelTrainerNWP(model)
+            model_trainer = ModelTrainerNWP(model, args)
         else:  # default model trainer is for classification problem
-            model_trainer = MyModelTrainerCLS(model)
+            model_trainer = ModelTrainerCLS(model, args)
     model_trainer.set_id(0)
 
     # aggregator
@@ -136,11 +136,11 @@ def init_client(
 ):
     if model_trainer is None:
         if args.dataset == "stackoverflow_lr":
-            model_trainer = MyModelTrainerTAG(model)
+            model_trainer = ModelTrainerTAGPred(model, args)
         elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
-            model_trainer = MyModelTrainerNWP(model)
+            model_trainer = ModelTrainerNWP(model, args)
         else:  # default model trainer is for classification problem
-            model_trainer = MyModelTrainerCLS(model)
+            model_trainer = ModelTrainerCLS(model, args)
     model_trainer.set_id(client_rank)
     backend = args.backend
     trainer = FedMLTrainer(
