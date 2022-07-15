@@ -15,6 +15,7 @@
 """Arguments."""
 
 import argparse
+import os
 from os import path
 
 import yaml
@@ -169,4 +170,14 @@ def load_arguments(training_type=None, comm_backend=None):
     cmd_args = add_args()
     # Load all arguments from YAML config file
     args = Arguments(cmd_args, training_type, comm_backend)
+
+    # os.path.expanduser() method in Python is used
+    # to expand an initial path component ~( tilde symbol)
+    # or ~user in the given path to user’s home directory.
+    if hasattr(args, "data_cache_dir"):
+        args.data_cache_dir = os.path.expanduser(args.data_cache_dir)
+    if hasattr(args, "data_file_path"):
+        args.data_file_path = os.path.expanduser(args.data_file_path)
+    if hasattr(args, "partition_file_path"):
+        args.partition_file_path = os.path.expanduser(args.partition_file_path)
     return args
