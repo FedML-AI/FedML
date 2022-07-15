@@ -1,0 +1,6 @@
+transformers==4.19.2
+pandas==1.4.2
+tensorboardX==2.5.1
+nltk==3.7
+seqeval==1.2.2
+dill==0.3.5.1
