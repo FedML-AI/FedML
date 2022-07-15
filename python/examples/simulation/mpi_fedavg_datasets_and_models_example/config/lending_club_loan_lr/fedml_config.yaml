@@ -4,7 +4,7 @@ common_args:
 
 data_args:
   dataset: "lending_club_loan"
-  data_cache_dir: "../../../data/lending_club_loan"
+  data_cache_dir: ~/fedml_data
   partition_method: "hetero"
   partition_alpha: 0.5
 
