@@ -4,7 +4,7 @@ common_args:
 p
 data_args:
   dataset: "fed_shakespeare"
-  data_cache_dir: "../../../data/fed_shakespeare"
+  data_cache_dir: ~/fedml_data
   partition_method: "hetero"
   partition_alpha: 0.5
 
