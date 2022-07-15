@@ -2,3 +2,4 @@ protobuf
 grpcio
 grpcio-tools
 loguru
+dill

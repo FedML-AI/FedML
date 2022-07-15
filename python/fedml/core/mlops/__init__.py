@@ -8,10 +8,11 @@ import uuid
 
 import click
 import requests
-from fedml.cli.edge_deployment.client_constants import ClientConstants
-from fedml.cli.edge_deployment.client_runner import FedMLClientRunner
-from fedml import constants, FEDML_TRAINING_PLATFORM_SIMULATION
-from fedml.cli.server_deployment.server_constants import ServerConstants
+from ...cli.cli import mlops_register_simulator_process
+from ...cli.edge_deployment.client_constants import ClientConstants
+from ...cli.edge_deployment.client_runner import FedMLClientRunner
+from ...constants import FEDML_TRAINING_PLATFORM_SIMULATION, FEDML_TRAINING_PLATFORM_SIMULATION_TYPE
+from ...cli.server_deployment.server_constants import ServerConstants
 
 from ..distributed.communication.mqtt.mqtt_manager import MqttManager
 
@@ -21,6 +22,9 @@ from .mlops_metrics import MLOpsMetrics
 from .mlops_profiler_event import MLOpsProfilerEvent
 from .mlops_runtime_log import MLOpsRuntimeLog
 from .system_stats import SysStats
+from .mlops_runtime_log_daemon import MLOpsRuntimeLogProcessor
+from .mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
+from .mlops_status import MLOpsStatus
 
 
 FEDML_MLOPS_API_RESPONSE_SUCCESS_CODE = "SUCCESS"
@@ -29,7 +33,10 @@ __all__ = [
     "MLOpsMetrics",
     "MLOpsProfilerEvent",
     "MLOpsRuntimeLog",
+    "MLOpsRuntimeLogProcessor",
+    "MLOpsRuntimeLogDaemon",
     "SysStats",
+    "MLOpsStatus",
 ]
 
 
@@ -94,6 +101,9 @@ def init(args):
     # Init runtime logs
     init_logs(MLOpsStore.mlops_args, MLOpsStore.mlops_edge_id)
     logging.info("mlops.init args {}".format(MLOpsStore.mlops_args))
+
+    # Start simulator login process as daemon
+    #mlops_simulator_login(api_key)
 
 
 def event(event_name, event_started=True, event_value=None, event_edge_id=None):
@@ -196,13 +206,16 @@ def log_round_info(total_rounds, round_index):
     MLOpsStore.mlops_metrics.report_server_training_round_info(round_info)
     release_log_mqtt_mgr()
 
+    if round_index == total_rounds:
+        mlops_simulator_logout()
+
 
 def create_project(project_name, api_key):
     url_prefix, cert_path = get_request_params(MLOpsStore.mlops_args)
     url = "{}/fedmlOpsServer/projects/createSim".format(url_prefix)
     json_params = {"name": project_name,
                    "userids": api_key,
-                   "platform_type": str(constants.FEDML_TRAINING_PLATFORM_SIMULATION_TYPE)}
+                   "platform_type": str(FEDML_TRAINING_PLATFORM_SIMULATION_TYPE)}
     if cert_path is not None:
         requests.session().verify = cert_path
         response = requests.post(
@@ -360,7 +373,7 @@ def wait_log_mqtt_connected():
 
 def init_logs(args, edge_id):
     # Init runtime logs
-    args.log_file_dir = FedMLClientRunner.get_log_file_dir()
+    args.log_file_dir = ClientConstants.get_log_file_dir()
     args.run_id = MLOpsStore.mlops_run_id
     args.rank = 1
     client_ids = list()
@@ -372,14 +385,14 @@ def init_logs(args, edge_id):
 
 def bind_local_device(args, userid, version="release"):
     setattr(args, "account_id", userid)
-    setattr(args, "current_running_dir", FedMLClientRunner.get_fedml_home_dir())
+    setattr(args, "current_running_dir", ClientConstants.get_fedml_home_dir())
 
     sys_name = platform.system()
     if sys_name == "Darwin":
         sys_name = "MacOS"
     setattr(args, "os_name", sys_name)
     setattr(args, "version", version)
-    setattr(args, "log_file_dir", FedMLClientRunner.get_log_file_dir())
+    setattr(args, "log_file_dir", ClientConstants.get_log_file_dir())
     setattr(args, "device_id", FedMLClientRunner.get_device_id())
     setattr(args, "config_version", version)
     setattr(args, "cloud_region", "")
@@ -448,6 +461,17 @@ def bind_local_device(args, userid, version="release"):
     MLOpsStore.mlops_args = args
 
     return True
+
+
+def mlops_simulator_login(userid):
+    login_simulator_cmd = "fedml login {} -c -r edge_simulator".format(userid)
+    os.system(login_simulator_cmd)
+
+    mlops_register_simulator_process(os.getpid(), ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_EDGE_SIMULATOR_INDEX])
+
+
+def mlops_simulator_logout():
+    exit(-1)
 
 
 def mlops_tracking_enabled(args):
