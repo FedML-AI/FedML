@@ -288,6 +288,7 @@ class FedMLServerRunner:
         packages_config = run_config["packages_config"]
         self.run_id = run_id
 
+        self.args.run_id = self.run_id
         MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
 
         # set mqtt connection for client
@@ -532,6 +533,7 @@ class FedMLServerRunner:
             run_id = self.request_json["runId"]
 
             # Start log processor for current run
+            self.args.run_id = run_id
             MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
             self.run()
 
