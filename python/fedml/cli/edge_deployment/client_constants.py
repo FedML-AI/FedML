@@ -1,3 +1,13 @@
+import logging
+import os
+import signal
+import subprocess
+import traceback
+from os.path import expanduser
+
+import psutil
+import yaml
+from ...cli.comm_utils.yaml_utils import load_yaml_config
 
 
 class ClientConstants(object):
@@ -5,7 +15,214 @@ class ClientConstants(object):
     MSG_MLOPS_CLIENT_STATUS_IDLE = "IDLE"
     MSG_MLOPS_CLIENT_STATUS_UPGRADING = "UPGRADING"
     MSG_MLOPS_CLIENT_STATUS_QUEUED = "QUEUED"
+    MSG_MLOPS_CLIENT_STATUS_STARTING = "STARTING"
     MSG_MLOPS_CLIENT_STATUS_INITIALIZING = "INITIALIZING"
     MSG_MLOPS_CLIENT_STATUS_TRAINING = "TRAINING"
+    MSG_MLOPS_CLIENT_STATUS_RUNNING = "RUNNING"
     MSG_MLOPS_CLIENT_STATUS_STOPPING = "STOPPING"
+    MSG_MLOPS_CLIENT_STATUS_KILLED = "KILLED"
+    MSG_MLOPS_CLIENT_STATUS_FAILED = "FAILED"
     MSG_MLOPS_CLIENT_STATUS_FINISHED = "FINISHED"
+
+    LOCAL_HOME_RUNNER_DIR_NAME = 'fedml-client'
+    LOCAL_RUNNER_INFO_DIR_NAME = 'runner_infos'
+    LOCAL_PACKAGE_HOME_DIR_NAME = "fedml_packages"
+
+    LOGIN_MODE_CLIEN_INDEX = 0
+    LOGIN_MODE_EDGE_SIMULATOR_INDEX = 1
+    login_role_list = ["client", "edge_simulator"]
+
+    @staticmethod
+    def get_fedml_home_dir():
+        home_dir = expanduser("~")
+        fedml_home_dir = os.path.join(home_dir, ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME)
+        return fedml_home_dir
+
+    @staticmethod
+    def get_log_file_dir():
+        log_file_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "logs")
+        return log_file_dir
+
+    @staticmethod
+    def get_data_dir():
+        data_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "data")
+        return data_dir
+
+    @staticmethod
+    def get_package_download_dir():
+        package_download_dir = os.path.join(ClientConstants.get_fedml_home_dir(),
+                                            ClientConstants.LOCAL_PACKAGE_HOME_DIR_NAME)
+        return package_download_dir
+
+    @staticmethod
+    def get_package_unzip_dir():
+        package_unzip_dir = ClientConstants.get_package_download_dir()
+        return package_unzip_dir
+
+    @staticmethod
+    def get_package_run_dir(package_name):
+        package_file_no_extension = str(package_name).split('.')[0]
+        package_run_dir = os.path.join(ClientConstants.get_package_unzip_dir(),
+                                       package_file_no_extension)
+        return package_run_dir
+
+    @staticmethod
+    def cleanup_run_process():
+        try:
+            local_pkg_data_dir = ClientConstants.get_data_dir()
+            process_id_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, "runner-sub-process.id")
+            process_info = load_yaml_config(process_id_file)
+            process_id = process_info.get('process_id', None)
+            if process_id is not None:
+                try:
+                    process = psutil.Process(process_id)
+                    for sub_process in process.children():
+                        os.kill(sub_process.pid, signal.SIGTERM)
+
+                    if process is not None:
+                        os.kill(process.pid, signal.SIGTERM)
+                except Exception as e:
+                    pass
+            yaml_object = {}
+            yaml_object['process_id'] = -1
+            ClientConstants.generate_yaml_doc(yaml_object, process_id_file)
+        except Exception as e:
+            pass
+
+    @staticmethod
+    def save_run_process(process_id):
+        try:
+            local_pkg_data_dir = ClientConstants.get_data_dir()
+            process_id_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, "runner-sub-process.id")
+            yaml_object = {}
+            yaml_object['process_id'] = process_id
+            ClientConstants.generate_yaml_doc(yaml_object, process_id_file)
+        except Exception as e:
+            pass
+
+    @staticmethod
+    def cleanup_learning_process():
+        try:
+            local_pkg_data_dir = ClientConstants.get_data_dir()
+            process_id_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, "runner-learning-process.id")
+            process_info = load_yaml_config(process_id_file)
+            process_id = process_info.get('process_id', None)
+            if process_id is not None:
+                try:
+                    process = psutil.Process(process_id)
+                    for sub_process in process.children():
+                        os.kill(sub_process.pid, signal.SIGTERM)
+
+                    if process is not None:
+                        os.kill(process.pid, signal.SIGTERM)
+                except Exception as e:
+                    pass
+            yaml_object = {}
+            yaml_object['process_id'] = -1
+            ClientConstants.generate_yaml_doc(yaml_object, process_id_file)
+        except Exception as e:
+            pass
+
+    @staticmethod
+    def save_learning_process(learning_id):
+        try:
+            local_pkg_data_dir = ClientConstants.get_data_dir()
+            process_id_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, "runner-learning-process.id")
+            yaml_object = {}
+            yaml_object['process_id'] = learning_id
+            ClientConstants.generate_yaml_doc(yaml_object, process_id_file)
+        except Exception as e:
+            pass
+
+    @staticmethod
+    def save_runner_infos(unique_device_id, edge_id, run_id=None):
+        local_pkg_data_dir = ClientConstants.get_data_dir()
+        try:
+            os.makedirs(local_pkg_data_dir)
+        except Exception as e:
+            pass
+        try:
+            os.makedirs(os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME))
+        except Exception as e:
+            pass
+
+        runner_info_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, "runner_infos.yaml")
+        running_info = dict()
+        running_info["unique_device_id"] = str(unique_device_id)
+        running_info["edge_id"] = str(edge_id)
+        running_info["run_id"] = run_id
+        ClientConstants.generate_yaml_doc(running_info, runner_info_file)
+
+    @staticmethod
+    def save_training_infos(edge_id, training_status):
+        local_pkg_data_dir = ClientConstants.get_data_dir()
+        try:
+            os.makedirs(local_pkg_data_dir)
+        except Exception as e:
+            pass
+        try:
+            os.makedirs(os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME))
+        except Exception as e:
+            pass
+
+        training_info_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, "training_infos.yaml")
+        training_info = dict()
+        training_info["edge_id"] = edge_id
+        training_info["training_status"] = str(training_status)
+        ClientConstants.generate_yaml_doc(training_info, training_info_file)
+
+    @staticmethod
+    def get_training_infos():
+        local_pkg_data_dir = ClientConstants.get_data_dir()
+        training_info_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, "training_infos.yaml")
+        training_info = dict()
+        training_info["edge_id"] = 0
+        training_info["training_status"] = "INITIALIZING"
+        try:
+            training_info = load_yaml_config(training_info_file)
+        except Exception as e:
+            pass
+        return training_info
+
+    @staticmethod
+    def generate_yaml_doc(run_config_object, yaml_file):
+        try:
+            file = open(yaml_file, 'w', encoding='utf-8')
+            yaml.dump(run_config_object, file)
+            file.close()
+        except Exception as e:
+            pass
+
+    @staticmethod
+    def exit_process(process):
+        if process is None:
+            return
+
+        try:
+            process.terminate()
+            process.join()
+            process = None
+        except Exception as e:
+            pass
+
+    @staticmethod
+    def exec_console_with_script(script_path):
+        try:
+            subprocess.check_output(['sh', '-c', script_path])
+        except subprocess.CalledProcessError as ex:
+            logging.error("exec_console_with_script {}".format(str(ex)))
+        script_process = subprocess.Popen(['sh', '-c', script_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = script_process.communicate()
+        return script_process, script_process.returncode, out, err
+
+    @staticmethod
+    def exec_console_with_shell(shell, script_path):
+        script_process = subprocess.Popen([shell, script_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = script_process.communicate()
+        return script_process, script_process.returncode, out, err
+
+    @staticmethod
+    def exec_console_with_shell_script_list(shell_script_list):
+        script_process = subprocess.Popen(shell_script_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = script_process.communicate()
+        return script_process, script_process.returncode, out, err

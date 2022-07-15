@@ -1,4 +1,5 @@
 import math
+from fedml.core.security.common.utils import get_total_sample_num
 from fedml.core.security.defense.defense_base import BaseDefenseMethod
 
 """
@@ -42,7 +43,17 @@ class SLSGDDefense(BaseDefenseMethod):
             model_list = self._sort_and_trim(model_list)  # process model list
         return model_list
 
-    def aggregate(self, avg_params, global_w):
+    def robust_aggregate(self, client_grad_list, global_w=None):
+        (num0, avg_params) = client_grad_list[0]
+        total_sample_num = get_total_sample_num(client_grad_list)
+        for k in avg_params.keys():
+            for i in range(0, len(client_grad_list)):
+                local_sample_number, local_model_params = client_grad_list[i]
+                w = local_sample_number / total_sample_num
+                if i == 0:
+                    avg_params[k] = local_model_params[k] * w
+                else:
+                    avg_params[k] += local_model_params[k] * w
         for k in avg_params.keys():
             avg_params[k] = (1 - self.alpha) * global_w[k] + self.alpha * avg_params[k]
         return avg_params
