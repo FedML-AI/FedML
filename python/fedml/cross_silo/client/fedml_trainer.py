@@ -2,7 +2,7 @@ import time
 
 from ...constants import FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
 from ...core.mlops.mlops_profiler_event import MLOpsProfilerEvent
-
+from fedml.data import split_data_for_dist_trainers
 
 class FedMLTrainer(object):
     def __init__(
@@ -19,7 +19,14 @@ class FedMLTrainer(object):
         self.trainer = model_trainer
 
         self.client_index = client_index
-        self.train_data_local_dict = train_data_local_dict
+
+        if args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
+            self.train_data_local_dict = split_data_for_dist_trainers(
+                train_data_local_dict, args.n_proc_in_silo
+            )
+        else:
+            self.train_data_local_dict = train_data_local_dict
+            
         self.train_data_local_num_dict = train_data_local_num_dict
         self.test_data_local_dict = test_data_local_dict
         self.all_train_data_num = train_data_num
