@@ -1,7 +1,9 @@
 import logging
-import torch.distributed as dist
 import os
+
 import torch
+import torch.distributed as dist
+
 
 class ProcessGroupManager:
     def __init__(self, rank, world_size, master_address, master_port, only_gpu):
@@ -17,22 +19,19 @@ class ProcessGroupManager:
 
         env_dict = {
             key: os.environ[key]
-            for key in (
-                "MASTER_ADDR",
-                "MASTER_PORT",
-                "RANK",
-                "WORLD_SIZE",
-            )
+            for key in ("MASTER_ADDR", "MASTER_PORT", "RANK", "WORLD_SIZE",)
         }
-        logging.info(
-            f"[{os.getpid()}] Initializing process group with: {env_dict}")
-            
-        backend = dist.Backend.NCCL if (only_gpu and torch.cuda.is_available()) else dist.Backend.GLOO
+        logging.info(f"[{os.getpid()}] Initializing process group with: {env_dict}")
+
+        backend = (
+            dist.Backend.NCCL
+            if (only_gpu and torch.cuda.is_available())
+            else dist.Backend.GLOO
+        )
         logging.info(f"Process group backend: {backend}")
 
         # initialize the process group
-        dist.init_process_group(
-            backend=backend)
+        dist.init_process_group(backend=backend)
 
         self.messaging_pg = dist.new_group()
 

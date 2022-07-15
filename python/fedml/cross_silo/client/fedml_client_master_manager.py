@@ -1,9 +1,10 @@
 import json
 import logging
 import platform
+import time
 
 import torch.distributed as dist
-import time
+
 from fedml.constants import FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
 from .message_define import MyMessage
 from .utils import convert_model_params_from_ddp, convert_model_params_to_ddp
@@ -65,7 +66,9 @@ class ClientMasterManager(ClientManager):
 
             if hasattr(self.args, "using_mlops") and self.args.using_mlops:
                 # Notify MLOps with training status.
-                self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_INITIALIZING)
+                self.report_training_status(
+                    MyMessage.MSG_MLOPS_CLIENT_STATUS_INITIALIZING
+                )
 
                 # Open new process for report system performances to MQTT server
                 MLOpsMetrics.report_sys_perf(self.args)
@@ -122,8 +125,9 @@ class ClientMasterManager(ClientManager):
 
     def cleanup(self):
         if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-            mlops_metrics = MLOpsMetrics()
-            mlops_metrics.set_sys_reporting_status(False)
+            # mlops_metrics = MLOpsMetrics()
+            # mlops_metrics.set_sys_reporting_status(False)
+            pass
         self.finish()
 
     def send_model_to_server(self, receive_id, weights, local_sample_num):
@@ -140,7 +144,9 @@ class ClientMasterManager(ClientManager):
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, weights)
         message.add_params(MyMessage.MSG_ARG_KEY_NUM_SAMPLES, local_sample_num)
         self.send_message(message)
-        MLOpsProfilerEvent.log_to_wandb({"Communiaction/Send_Total": time.time() - tick})
+        MLOpsProfilerEvent.log_to_wandb(
+            {"Communiaction/Send_Total": time.time() - tick}
+        )
         # Report client model to MLOps
         if hasattr(self.args, "using_mlops") and self.args.using_mlops:
             model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
@@ -169,6 +175,7 @@ class ClientMasterManager(ClientManager):
 
     def report_training_status(self, status):
         if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+            self.mlops_metrics.set_messenger(self.com_manager_status)
             self.mlops_metrics.report_client_training_status(
                 self.client_real_id, status
             )

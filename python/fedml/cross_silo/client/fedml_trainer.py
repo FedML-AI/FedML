@@ -1,5 +1,7 @@
 import time
+
 from ...core.mlops.mlops_profiler_event import MLOpsProfilerEvent
+
 
 class FedMLTrainer(object):
     def __init__(
@@ -32,7 +34,9 @@ class FedMLTrainer(object):
 
     def update_dataset(self, client_index):
         self.client_index = client_index
-        self.train_local = self.train_data_local_dict[client_index]
+        self.train_local = self.train_data_local_dict[client_index][
+            self.args.proc_rank_in_silo
+        ]
         self.local_sample_number = self.train_data_local_num_dict[client_index]
         self.test_local = self.test_data_local_dict[client_index]
 
@@ -40,7 +44,9 @@ class FedMLTrainer(object):
         self.args.round_idx = round_idx
         tick = time.time()
         self.trainer.train(self.train_local, self.device, self.args)
-        MLOpsProfilerEvent.log_to_wandb({"Train/Time": time.time() - tick, "round": round_idx})
+        MLOpsProfilerEvent.log_to_wandb(
+            {"Train/Time": time.time() - tick, "round": round_idx}
+        )
         weights = self.trainer.get_model_params()
         # transform Tensor to list
         return weights, self.local_sample_number
