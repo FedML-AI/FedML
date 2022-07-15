@@ -4,9 +4,9 @@ common_args:
 
 data_args:
   dataset: "CS"
-  data_cache_dir: "./data/ego-networks/"
+  data_cache_dir: ~/fedgraphnn_data
   partition_method: "hetero"
-  part_file: "./data/ego-networks/"
+  part_file: ~/fedgraphnn_data/partition
   partition_alpha: 0.5
   ego_number: 10
   hop_number: 2
