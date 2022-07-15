@@ -180,7 +180,7 @@ class FedMLServerRunner:
         #                  if this value is not null, the client will download data from this URL to use it as
         #                  federated training data set
         # ${FEDSYS_IS_USING_LOCAL_DATA}: whether use private local data as federated training data set
-        container_dynamic_args_config["data_cache_dir"] = "${FEDSYS.PRIVATE_LOCAL_DATA}"
+        # container_dynamic_args_config["data_cache_dir"] = "${FEDSYS.PRIVATE_LOCAL_DATA}"
         for constrain_variable_key, constrain_variable_value in self.FEDML_DYNAMIC_CONSTRAIN_VARIABLES.items():
             for argument_key, argument_value in container_dynamic_args_config.items():
                 if argument_value is not None and str(argument_value).find(constrain_variable_key) == 0:
@@ -239,7 +239,7 @@ class FedMLServerRunner:
         fedml_conf_object["train_args"]["server_agent_id"] = self.request_json.get("cloud_agent_id", self.edge_id)
         fedml_conf_object["train_args"]["group_server_id_list"] = self.request_json.get("group_server_id_list", list())
         fedml_conf_object["device_args"]["worker_num"] = int(package_dynamic_args["client_num_in_total"])
-        fedml_conf_object["data_args"]["data_cache_dir"] = package_dynamic_args["data_cache_dir"]
+        # fedml_conf_object["data_args"]["data_cache_dir"] = package_dynamic_args["data_cache_dir"]
         fedml_conf_object["tracking_args"]["log_file_dir"] = package_dynamic_args["log_file_dir"]
         fedml_conf_object["tracking_args"]["log_server_url"] = package_dynamic_args["log_server_url"]
         if hasattr(self.args, "local_server") and self.args.local_server is not None:
@@ -252,10 +252,10 @@ class FedMLServerRunner:
                 bootstrap_script_dir = os.path.join(base_dir, "fedml", os.path.dirname(bootstrap_script_file))
                 bootstrap_script_path = os.path.join(bootstrap_script_dir, bootstrap_script_dir,
                                                      os.path.basename(bootstrap_script_file))
-        try:
-            os.makedirs(package_dynamic_args["data_cache_dir"])
-        except Exception as e:
-            pass
+        # try:
+        #     os.makedirs(package_dynamic_args["data_cache_dir"])
+        # except Exception as e:
+        #     pass
         fedml_conf_object["dynamic_args"] = package_dynamic_args
 
         ServerConstants.generate_yaml_doc(fedml_conf_object, fedml_conf_path)
