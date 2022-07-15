@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-import pickle
 
 
 def vectorize_weight(state_dict):
@@ -74,18 +73,24 @@ def replace_original_class_with_target_class(data_labels, original_class, target
     return data_labels
 
 
-def load_data_loader_from_file(filename):
+def log_client_data_statistics(poisoned_client_ids, train_data_local_dict):
     """
-    Loads DataLoader object from a file if available.
+    Logs all client data statistics.
 
-    :param logger: loguru.Logger
-    :param filename: string
+    :param poisoned_client_ids: list of malicious clients
+    :type poisoned_client_ids: list
+    :param train_data_local_dict: distributed dataset
+    :type train_data_local_dict: list(tuple)
     """
-    print("Loading data loader from file: {}".format(filename))
-
-    with open(filename, "rb") as f:
-        return load_saved_data_loader(f)
-
-
-def load_saved_data_loader(file_obj):
-    return pickle.load(file_obj)
+    for client_idx in range(len(train_data_local_dict)):
+        if client_idx in poisoned_client_ids:
+            targets_set = {}
+            for _, (_, targets) in enumerate(train_data_local_dict[client_idx]):
+                for target in targets.numpy():
+                    if target not in targets_set.keys():
+                        targets_set[target] = 1
+                    else:
+                        targets_set[target] += 1
+            print("Client #{} has data distribution:".format(client_idx))
+            for item in targets_set.items():
+                print("target:{} num:{}".format(item[0], item[1]))
