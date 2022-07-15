@@ -1,4 +1,5 @@
 import logging
+from .common.utils import get_total_sample_num
 from .defense.geometric_median_defense import GeometricMedianDefense
 from .defense.krum_defense import KrumDefense
 from .defense.robust_learning_rate_defense import RobustLearningRateDefense
@@ -78,7 +79,9 @@ class FedMLDefender:
     def defend(self, local_w, global_w, refs=None):
         if self.defender is None:
             raise Exception("defender is not initialized!")
-        return self.defender.defend(local_w, global_w, refs)
+        new_grad_list = self.defender.defend(local_w, global_w, refs)
+        training_num = get_total_sample_num(new_grad_list)
+        return training_num, new_grad_list
 
     def robust_aggregate(self, client_grad_list, global_w=None):
         if self.defender is None:
