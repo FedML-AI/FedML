@@ -4,7 +4,7 @@ common_args:
 
 data_args:
   dataset: "stackoverflow_nwp"
-  data_cache_dir: "../../../data/stackoverflow"
+  data_cache_dir: ~/fedml_data
   partition_method: "hetero"
   partition_alpha: 0.5
 
