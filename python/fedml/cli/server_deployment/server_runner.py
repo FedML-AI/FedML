@@ -334,11 +334,8 @@ class FedMLServerRunner:
         self.send_training_request_to_edges()
         self.release_client_mqtt_mgr()
 
-        # process = subprocess.Popen([python_program, entry_file,
-        #                             '--cf', conf_file, '--rank', str(dynamic_args_config["rank"]),
-        #                             '--role', 'server'])
         process, ret_code, out, err = ServerConstants.exec_console_with_shell_script_list([python_program, entry_file,
-                                                                                           '--cf', conf_file, '--rank', str(dynamic_args_config["rank"]),
+                                                                                           '--cf', conf_file, '--rank', dynamic_args_config["rank"],
                                                                                            '--role', 'server'])
         ServerConstants.save_learning_process(process.pid)
         if ret_code != 0:
