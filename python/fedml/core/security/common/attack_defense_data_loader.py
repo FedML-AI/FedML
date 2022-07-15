@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import TensorDataset
 from fedml.data.cifar10.data_loader import load_partition_data_cifar10
 from torch.utils.data import DataLoader
+import pickle
 
 
 class AttackDefenseDataLoader:
@@ -43,3 +44,16 @@ class AttackDefenseDataLoader:
         dataset = TensorDataset(X_torch, Y_torch)
         kwargs.pop("classification_problem", None)
         return DataLoader(dataset, batch_size=batch_size, **kwargs)
+
+    @classmethod
+    def load_data_loader_from_file(cls, filename):
+        """
+        Loads DataLoader object from a file if available.
+
+        :param logger: loguru.Logger
+        :param filename: string
+        """
+        print("Loading data loader from file: {}".format(filename))
+
+        with open(filename, "rb") as file:
+            return pickle.load(file)

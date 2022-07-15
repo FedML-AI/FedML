@@ -3,58 +3,13 @@ from torch.utils.data import DataLoader
 from torch.utils.data import TensorDataset
 from fedml.core.security.common.utils import (
     get_malicious_client_id_list,
-    replace_original_class_with_target_class,
+    replace_original_class_with_target_class, log_client_data_statistics,
 )
 
 """
 ref: Tolpegin, Vale, Truex,  "Data Poisoning Attacks Against Federated Learning Systems."  (2021).
 attack @client, added by Yuhui, 07/08/2022
 """
-def get_data_loader_from_data(batch_size, X, Y, **kwargs):
-    """
-    Get a data loader created from a given set of data.
-
-    :param batch_size: batch size of data loader
-    :type batch_size: int
-    :param X: data features
-    :type X: numpy.Array()
-    :param Y: data labels
-    :type Y: numpy.Array()
-    :return: torch.utils.data.DataLoader
-    """
-    X_torch = torch.from_numpy(X).float()
-
-    if "classification_problem" in kwargs and kwargs["classification_problem"] == False:
-        Y_torch = torch.from_numpy(Y).float()
-    else:
-        Y_torch = torch.from_numpy(Y).long()
-    dataset = TensorDataset(X_torch, Y_torch)
-
-    kwargs.pop("classification_problem", None)
-
-    return DataLoader(dataset, batch_size=batch_size, **kwargs)
-
-def log_client_data_statistics(poisoned_client_ids, train_data_local_dict):
-    """
-    Logs all client data statistics.
-
-    :param poisoned_client_ids: list of malicious clients
-    :type poisoned_client_ids: list
-    :param train_data_local_dict: distributed dataset
-    :type train_data_local_dict: list(tuple)
-    """
-    for client_idx in range(len(train_data_local_dict)):
-        if client_idx in poisoned_client_ids:
-            targets_set = {}
-            for _, (_, targets) in enumerate(train_data_local_dict[client_idx]):
-                for target in targets.numpy():
-                    if target not in targets_set.keys():
-                        targets_set[target] = 1
-                    else:
-                        targets_set[target] += 1
-            print("Client #{} has data distribution:".format(client_idx))
-            for item in targets_set.items():
-                print("target:{} num:{}".format(item[0], item[1]))
 
 
 class LabelFlippingAttack:
@@ -102,7 +57,9 @@ class LabelFlippingAttack:
                     tmp_local_dataset_X = torch.cat((tmp_local_dataset_X, data))
                     tmp_local_dataset_Y = torch.cat((tmp_local_dataset_Y, target))
                 tmp_Y = replace_original_class_with_target_class(
-                    data_labels=tmp_local_dataset_Y, original_class=self.original_class, target_class=self.target_class
+                    data_labels=tmp_local_dataset_Y,
+                    original_class=self.original_class,
+                    target_class=self.target_class,
                 )
                 dataset = TensorDataset(tmp_local_dataset_X, tmp_Y)
                 data_loader = DataLoader(dataset, batch_size=self.batch_size)
