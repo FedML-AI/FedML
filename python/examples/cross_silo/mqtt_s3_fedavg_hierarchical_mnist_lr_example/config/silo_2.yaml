@@ -4,7 +4,7 @@ dist_training_args:
   node_addresses: [127.0.0.1]
   master_address: '127.0.0.1'
   launcher_rdzv_port: 29421
-  network_interface: lo
+  network_interface:
 
 
 device_args:

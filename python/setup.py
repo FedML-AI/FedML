@@ -26,7 +26,6 @@ requirements = [
     "wandb",
     "wget",
     "paho-mqtt",
-    "joblib",
     "boto3",
     "pynvml",
     "sklearn",
@@ -44,7 +43,7 @@ if platform.machine() == "x86_64":
 
 setup(
     name="fedml",
-    version="0.7.200",
+    version="0.7.205",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "

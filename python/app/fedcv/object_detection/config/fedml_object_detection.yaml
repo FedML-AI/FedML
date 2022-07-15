@@ -20,9 +20,9 @@ data_args:
   img_size: [64, 64] # [640, 640]
 
 model_args:
-  model: "yolov6" # "yolov5"
+  model: "yolov5" # "yolov5"
   class_num: 80
-  yolo_cfg: "./model/yolov6/configs/yolov6s.py" # "./model/yolov5/models/yolov5s.yaml" # yolo
+  yolo_cfg: "./model/yolov5/models/yolov5s.yaml" # "./model/yolov6/configs/yolov6s.py" # yolo
   yolo_hyp: "./config/hyps/hyp.scratch.yaml" # yolo
   weights: "none" # "best.pt" # yolo
   single_cls: false # yolo
@@ -35,11 +35,11 @@ train_args:
   client_id_list: "[]"
   client_num_in_total: 2
   client_num_per_round: 2
-  comm_round: 3
-  epochs: 1
+  comm_round: 20
+  epochs: 5
   batch_size: 4
   client_optimizer: adam
-  lr: 0.03
+  lr: 0.01
   weight_decay: 0.001
 
 validation_args:

@@ -1,5 +1,3 @@
-from fedml.cli.edge_deployment.client_constants import ClientConstants
-from fedml.cli.server_deployment.server_constants import ServerConstants
 
 
 class Singleton(object):
