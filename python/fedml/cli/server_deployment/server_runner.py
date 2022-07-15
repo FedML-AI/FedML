@@ -392,25 +392,10 @@ class FedMLServerRunner:
 
         logging.info("Stop run successfully when starting failed.")
 
-        # Stop log processor for current run
-        MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
-
-        time.sleep(4)
-
         # Notify MLOps with the stopping message
         self.mlops_metrics.report_server_id_status(self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
 
         time.sleep(1)
-
-        ServerConstants.cleanup_learning_process()
-
-        try:
-            local_package_path = ServerConstants.get_package_download_dir()
-            for package_file in listdir(local_package_path):
-                if os.path.basename(package_file).startswith("run_" + str(self.run_id)):
-                    shutil.rmtree(os.path.join(local_package_path, package_file), ignore_errors=True)
-        except Exception as e:
-            pass
 
         self.release_client_mqtt_mgr()
 
