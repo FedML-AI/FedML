@@ -9,18 +9,13 @@ import psutil
 import yaml
 
 import fedml
-from fedml.cli.comm_utils.yaml_utils import load_yaml_config
-from fedml.cli.edge_deployment.client_login import CLIENT_RUNNER_HOME_DIR
-from fedml.cli.edge_deployment.client_login import CLIENT_RUNNER_INFO_DIR
-from fedml.cli.edge_deployment.client_login import logout as client_logout
-from fedml.cli.edge_deployment.client_runner import FedMLClientRunner
-from fedml.cli.env.collect_env import collect_env
-from fedml.cli.server_deployment.server_login import SERVER_RUNNER_HOME_DIR
-from fedml.cli.server_deployment.server_login import SERVER_RUNNER_INFO_DIR
-from fedml.cli.server_deployment.server_login import login_role_list
-from fedml.cli.server_deployment.server_login import logout as server_logout
-from fedml.cross_silo.hierarchical.client_launcher import CrossSiloLauncher
 
+from ..cli.comm_utils.yaml_utils import load_yaml_config
+from ..cli.edge_deployment.client_constants import ClientConstants
+from ..cli.server_deployment.server_constants import ServerConstants
+from ..cli.edge_deployment.client_login import logout as client_logout
+from ..cli.env.collect_env import collect_env
+from ..cli.server_deployment.server_login import logout as server_logout
 
 @click.group()
 def cli():
@@ -34,7 +29,7 @@ def mlops_version():
 
 @cli.command("status", help="Display fedml client training status.")
 def mlops_status():
-    training_infos = FedMLClientRunner.get_training_infos()
+    training_infos = ClientConstants.get_training_infos()
     click.echo(
         "Client training status: " + str(training_infos["training_status"]).upper()
     )
@@ -72,10 +67,10 @@ def get_running_info(cs_home_dir, cs_info_dir):
 
 
 def display_client_logs():
-    run_id, edge_id = get_running_info(CLIENT_RUNNER_HOME_DIR, CLIENT_RUNNER_INFO_DIR)
+    run_id, edge_id = get_running_info(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
     home_dir = expanduser("~")
     log_file = "{}/{}/fedml/logs/fedml-run-{}-edge-{}.log".format(
-        home_dir, CLIENT_RUNNER_HOME_DIR, str(run_id), str(edge_id)
+        home_dir, ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME, str(run_id), str(edge_id)
     )
     if os.path.exists(log_file):
         with open(log_file) as file_handle:
@@ -85,10 +80,10 @@ def display_client_logs():
 
 
 def display_server_logs():
-    run_id, edge_id = get_running_info(SERVER_RUNNER_HOME_DIR, SERVER_RUNNER_INFO_DIR)
+    run_id, edge_id = get_running_info(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
     home_dir = expanduser("~")
     log_file = "{}/{}/fedml/logs/fedml-run-{}-edge-{}.log".format(
-        home_dir, SERVER_RUNNER_HOME_DIR, str(run_id), str(edge_id)
+        home_dir, ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME, str(run_id), str(edge_id)
     )
     if os.path.exists(log_file):
         with open(log_file) as file_handle:
@@ -124,7 +119,7 @@ def display_server_logs():
     "-r",
     type=str,
     default="edge_server",
-    help="run as the role (options: edge_server, cloud_agent, cloud_server.",
+    help="run as the role (options: edge_server, cloud_agent, cloud_server, edge_simulator.",
 )
 @click.option(
     "--runner_cmd",
@@ -166,8 +161,14 @@ def mlops_login(
         login_cmd = os.path.join(pip_source_dir, "edge_deployment", "client_login.py")
         # click.echo(login_cmd)
         client_logout()
-        cleanup_login_process(CLIENT_RUNNER_HOME_DIR, CLIENT_RUNNER_INFO_DIR)
+        cleanup_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
         cleanup_all_fedml_processes("client_login.py", exclude_login=True)
+
+        try:
+            ClientConstants.login_role_list.index(role)
+        except ValueError as e:
+            role = ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_CLIEN_INDEX]
+
         login_pid = subprocess.Popen(
             [
                 get_python_program(),
@@ -180,18 +181,20 @@ def mlops_login(
                 version,
                 "-ls",
                 local_server,
+                "-r",
+                role,
             ]
         ).pid
-        save_login_process(CLIENT_RUNNER_HOME_DIR, CLIENT_RUNNER_INFO_DIR, login_pid)
+        save_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
 
     if is_server is True:
         # Check login mode.
         try:
-            login_role_list.index(role)
+            ServerConstants.login_role_list.index(role)
         except ValueError as e:
             click.echo(
                 "Please specify login mode as follows ({}).".format(
-                    str(login_role_list)
+                    str(ServerConstants.login_role_list)
                 )
             )
             return
@@ -200,7 +203,7 @@ def mlops_login(
         login_cmd = os.path.join(pip_source_dir, "server_deployment", "server_login.py")
         # click.echo(login_cmd)
         server_logout()
-        cleanup_login_process(SERVER_RUNNER_HOME_DIR, SERVER_RUNNER_INFO_DIR)
+        cleanup_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
         cleanup_all_fedml_processes("server_login.py", exclude_login=True)
         login_pid = subprocess.Popen(
             [
@@ -222,7 +225,7 @@ def mlops_login(
                 device_id,
             ]
         ).pid
-        save_login_process(SERVER_RUNNER_HOME_DIR, SERVER_RUNNER_INFO_DIR, login_pid)
+        save_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
 
 
 def generate_yaml_doc(yaml_object, yaml_file):
@@ -331,11 +334,11 @@ def mlops_logout(client, server):
 
     if is_client is True:
         client_logout()
-        cleanup_login_process(CLIENT_RUNNER_HOME_DIR, CLIENT_RUNNER_INFO_DIR)
+        cleanup_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
         cleanup_all_fedml_processes("client_login.py")
     if is_server is True:
         server_logout()
-        cleanup_login_process(SERVER_RUNNER_HOME_DIR, SERVER_RUNNER_INFO_DIR)
+        cleanup_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
         cleanup_all_fedml_processes("server_login.py")
 
 
@@ -451,14 +454,14 @@ def mlops_build(type, source_folder, entry_point, config_folder, dest_folder):
 
 
 def build_mlops_package(
-    source_folder,
-    entry_point,
-    config_folder,
-    dest_folder,
-    mlops_build_path,
-    mlops_package_parent_dir,
-    mlops_package_name,
-    rank,
+        source_folder,
+        entry_point,
+        config_folder,
+        dest_folder,
+        mlops_build_path,
+        mlops_package_parent_dir,
+        mlops_package_name,
+        rank,
 ):
     if not os.path.exists(source_folder):
         click.echo("source folder is not exist: " + source_folder)
@@ -510,6 +513,31 @@ def build_mlops_package(
     except Exception as e:
         pass
 
+    mlops_pkg_conf_file = open(mlops_pkg_conf, mode="w")
+    mlops_pkg_conf_file.writelines(
+        [
+            "entry_config: \n",
+            "  entry_file: " + mlops_dest_entry + "\n",
+            "  conf_file: " + os.path.join("config", "fedml_config.yaml") + "\n",
+            "dynamic_args:\n",
+            "  rank: " + rank + "\n",
+            "  run_id: ${FEDSYS.RUN_ID}\n",
+            # "  data_cache_dir: ${FEDSYS.PRIVATE_LOCAL_DATA}\n",
+            # "  data_cache_dir: /fedml/fedml-package/fedml/data\n",
+            "  mqtt_config_path: /fedml/fedml_config/mqtt_config.yaml\n",
+            "  s3_config_path: /fedml/fedml_config/s3_config.yaml\n",
+            "  log_file_dir: /fedml/fedml-package/fedml/data\n",
+            "  log_server_url: ${FEDSYS.LOG_SERVER_URL}\n",
+            "  client_id_list: ${FEDSYS.CLIENT_ID_LIST}\n",
+            "  client_objects: ${FEDSYS.CLIENT_OBJECT_LIST}\n",
+            "  is_using_local_data: ${FEDSYS.IS_USING_LOCAL_DATA}\n",
+            "  synthetic_data_url: ${FEDSYS.SYNTHETIC_DATA_URL}\n",
+            "  client_num_in_total: ${FEDSYS.CLIENT_NUM}\n",
+            ]
+    )
+    mlops_pkg_conf_file.flush()
+    mlops_pkg_conf_file.close()
+
     local_mlops_package = os.path.join(mlops_package_base_dir, mlops_package_file_name)
     if os.path.exists(local_mlops_package):
         os.remove(os.path.join(mlops_package_base_dir, mlops_package_file_name))
@@ -531,34 +559,18 @@ def build_mlops_package(
     if os.path.exists(mlops_archive_zip_file):
         shutil.move(mlops_archive_zip_file, dist_package_file)
 
-    mlops_pkg_conf_file = open(mlops_pkg_conf, mode="w")
-    mlops_pkg_conf_file.writelines(
-        [
-            "entry_config: \n",
-            "  entry_file: " + mlops_dest_entry + "\n",
-            "  conf_file: " + os.path.join("config", "fedml_config.yaml") + "\n",
-            "dynamic_args:\n",
-            "  rank: " + rank + "\n",
-            "  run_id: ${FEDSYS.RUN_ID}\n",
-            # "  data_cache_dir: ${FEDSYS.PRIVATE_LOCAL_DATA}\n",
-            "  data_cache_dir: /fedml/fedml-package/fedml/data\n",
-            "  mqtt_config_path: /fedml/fedml_config/mqtt_config.yaml\n",
-            "  s3_config_path: /fedml/fedml_config/s3_config.yaml\n",
-            "  log_file_dir: /fedml/fedml-package/fedml/data\n",
-            "  log_server_url: ${FEDSYS.LOG_SERVER_URL}\n",
-            "  client_id_list: ${FEDSYS.CLIENT_ID_LIST}\n",
-            "  client_objects: ${FEDSYS.CLIENT_OBJECT_LIST}\n",
-            "  is_using_local_data: ${FEDSYS.IS_USING_LOCAL_DATA}\n",
-            "  synthetic_data_url: ${FEDSYS.SYNTHETIC_DATA_URL}\n",
-            "  client_num_in_total: ${FEDSYS.CLIENT_NUM}\n",
-        ]
-    )
-    mlops_pkg_conf_file.flush()
-    mlops_pkg_conf_file.close()
-
     shutil.rmtree(mlops_build_path, ignore_errors=True)
 
     return 0
+
+
+@cli.command("register", help="Register process to MLOps client as simulator.")
+@click.argument("process_id", nargs=-1)
+@click.option(
+    "--role", "-r", default=None, is_flag=True, help="logout from the FedML client.",
+)
+def mlops_register_simulator_process(process_id, role):
+    pass
 
 
 @cli.command(
@@ -578,7 +590,7 @@ def launch(arguments):
     for argument in arguments:
         click.echo(argument)
 
-    # TODO: pass the arguments to "fedml.cross_silo.hierarchical.client_launcher"
+    from fedml.cross_silo.client.client_launcher import CrossSiloLauncher
     CrossSiloLauncher.launch_dist_trainers(arguments[0], list(arguments[1:]))
 
 

@@ -1,8 +1,8 @@
 common_args:
   training_type: "cross_silo"
+  random_seed: 0
   scenario: "horizontal"
   using_mlops: false
-  random_seed: 0
   config_version: release
   name: "exp" # yolo
   project: "runs/train" # yolo
@@ -20,11 +20,9 @@ data_args:
   img_size: [64, 64] # [640, 640]
 
 model_args:
-  model: "yolov5"
+  model: "yolov5" # "yolov5"
   class_num: 80
-  model_file_cache_folder: "./model_file_cache" # will be filled by the server automatically
-  global_model_file_path: "./model_file_cache/global_model.pt"
-  yolo_cfg: "yolov5s-noupsample.yaml" # yolo
+  yolo_cfg: "./model/yolov5/models/yolov5s.yaml" # "./model/yolov6/configs/yolov6s.py" # yolo
   yolo_hyp: "./config/hyps/hyp.scratch.yaml" # yolo
   weights: "none" # "best.pt" # yolo
   single_cls: false # yolo
@@ -34,21 +32,21 @@ model_args:
 
 train_args:
   federated_optimizer: "FedAvg"
-  client_id_list:
+  client_id_list: "[]"
   client_num_in_total: 2
-  client_num_per_round: 1
-  comm_round: 2
-  epochs: 3
+  client_num_per_round: 2
+  comm_round: 20
+  epochs: 5
   batch_size: 4
   client_optimizer: adam
-  lr: 0.03
+  lr: 0.01
   weight_decay: 0.001
 
 validation_args:
-  frequency_of_the_test: 1
+  frequency_of_the_test: 5
 
 device_args:
-  worker_num: 2
+  worker_num: 0
   using_gpu: false
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_default
