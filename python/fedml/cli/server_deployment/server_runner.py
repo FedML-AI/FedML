@@ -397,7 +397,7 @@ class FedMLServerRunner:
         time.sleep(4)
 
         # Notify MLOps with the stopping message
-        self.mlops_metrics.report_server_id_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
+        self.mlops_metrics.report_server_id_status(self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
 
         time.sleep(1)
 
