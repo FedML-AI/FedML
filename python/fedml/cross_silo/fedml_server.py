@@ -2,7 +2,7 @@ from fedml.cross_silo.server import server_initializer
 from .lightsecagg.lsa_fedml_api import FedML_LSA_Horizontal
 
 
-class Server:
+class FedMLCrossSiloServer:
     def __init__(
         self, args, device, dataset, model, model_trainer=None, server_aggregator=None
     ):
