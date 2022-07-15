@@ -59,17 +59,24 @@ def get_malicious_client_id_list(random_seed, client_num, malicious_client_num):
     return client_indexes
 
 
-def replace_original_class_with_target_class(data_labels, original_class, target_class):
+def replace_original_class_with_target_class(data_labels, original_class_list=None, target_class_list=None):
     """
     :param targets: Target class IDs
     :type targets: list
     :return: new class IDs
     """
-    if original_class == target_class or original_class is None or target_class is None:
+
+    if len(original_class_list) == 0 or len(target_class_list) == 0 or original_class_list is None or target_class_list is None:
         return data_labels
-    for idx in range(len(data_labels)):
-        if data_labels[idx] == original_class:
-            data_labels[idx] = target_class
+    if len(original_class_list) != len(target_class_list):
+        raise ValueError("the length of the original class list is not equal to the length of the targeted class list")
+    if len(set(original_class_list)) < len(original_class_list):  # no need to check the targeted classes
+        raise ValueError("the original classes can not be same")
+
+    for i in range(len(original_class_list)):
+        for idx in range(len(data_labels)):
+            if data_labels[idx] == original_class_list[i]:
+                data_labels[idx] = target_class_list[i]
     return data_labels
 
 
