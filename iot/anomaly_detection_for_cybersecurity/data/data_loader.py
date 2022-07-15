@@ -1,6 +1,7 @@
 import logging
 import os
 import urllib.request
+import zipfile
 
 import numpy as np
 import pandas as pd
@@ -8,23 +9,12 @@ import torch
 
 
 def download_data(args, device_name):
-    url_root = "https://archive.ics.uci.edu/ml/machine-learning-databases/00442"
-    if device_name == "Ennio_Doorbell" or device_name == "Samsung_SNH_1011_N_Webcam":
-        file_list = ["benign_traffic.csv", "gafgyt_attacks.rar"]
-    else:
-        file_list = ["benign_traffic.csv", "gafgyt_attacks.rar", "mirai_attacks.rar"]
-
-    for file_name in file_list:
-        url = os.path.join(url_root, device_name, file_name)
-        file_saved_path = os.path.join(args.data_cache_dir, device_name, file_name)
-        urllib.request.urlretrieve(url, file_saved_path)
-        if file_name.endswith("rar"):
-            logging.info("Extracting fie {}".format(file_saved_path))
-            os.system(
-                "unar {} -o {}".format(
-                    file_saved_path, os.path.join(args.data_cache_dir, device_name)
-                )
-            )
+    url_root = "https://fediot.s3.us-west-1.amazonaws.com"
+    url = os.path.join(url_root, (device_name + ".zip"))
+    saved_path = os.path.join(args.data_cache_dir, (device_name + ".zip"))
+    urllib.request.urlretrieve(url, saved_path)
+    with zipfile.ZipFile(saved_path, "r") as f:
+        f.extractall(args.data_cache_dir)
 
 
 def load_data(args):
@@ -51,6 +41,9 @@ def load_data(args):
     min_max_file_path = "./data"
     min_dataset = np.loadtxt(os.path.join(min_max_file_path, "min_dataset.txt"))
     max_dataset = np.loadtxt(os.path.join(min_max_file_path, "max_dataset.txt"))
+
+    if not os.path.exists(args.data_cache_dir):
+        os.makedirs(args.data_cache_dir)
 
     if args.rank == 0:
         for i, device_name in enumerate(device_list):
