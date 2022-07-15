@@ -109,8 +109,9 @@ class YOLOv5Trainer(ClientTrainer):
                 imgs = imgs.to(device, non_blocking=True).float() / 256.0 - 0.5
 
                 optimizer.zero_grad()
+                # with torch.cuda.amp.autocast(amp):
                 pred = model(imgs)  # forward
-                loss, loss_items = compute_loss(pred, targets.to(device))  # loss scaled by batch_size
+                loss, loss_items = compute_loss(pred, targets.to(device).float())  # loss scaled by batch_size
 
                 # Backward
                 loss.backward()
