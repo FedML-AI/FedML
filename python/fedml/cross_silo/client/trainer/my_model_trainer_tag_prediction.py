@@ -1,10 +1,16 @@
 import torch
 from torch import nn
 
-from .my_model_trainer import MyModelTrainer
+from ....core.alg_frame.client_trainer import ClientTrainer
 
 
-class MyModelTrainer(MyModelTrainer):
+class ModelTrainerTAGPred(ClientTrainer):
+    def get_model_params(self):
+        return self.model.cpu().state_dict()
+
+    def set_model_params(self, model_parameters):
+        self.model.load_state_dict(model_parameters)
+
     def train(self, train_data, device, args):
         model = self.model
 
@@ -90,3 +96,8 @@ class MyModelTrainer(MyModelTrainer):
                 metrics["test_total"] += target.size(0)
 
         return metrics
+
+    def test_on_the_server(
+        self, train_data_local_dict, test_data_local_dict, device, args=None
+    ) -> bool:
+        return False
