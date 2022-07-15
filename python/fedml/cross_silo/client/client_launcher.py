@@ -1,6 +1,5 @@
 import os
 import subprocess
-import sys
 
 from fedml.arguments import load_arguments
 from fedml.constants import (
@@ -74,9 +73,7 @@ class CrossSiloLauncher:
             ] + inputs
 
         network_interface = (
-            None
-            if not hasattr(args, "network_interface")
-            else args.network_interface
+            None if not hasattr(args, "network_interface") else args.network_interface
         )
         print(
             f"Using network interface {network_interface} for process group and TRPC communication"
@@ -112,7 +109,9 @@ class CrossSiloLauncher:
             ).stdout.strip()
 
             if not which_pdsh:
-                raise Exception(f"Silo {args.rank} has {args.n_node_in_silo} nodes. Automatic Client Launcher for more than 1 nodes requires PSDH.")
+                raise Exception(
+                    f"Silo {args.rank} has {args.n_node_in_silo} nodes. Automatic Client Launcher for more than 1 nodes requires PSDH."
+                )
 
             print(f"Launching nodes using pdsh")
 
@@ -130,7 +129,5 @@ class CrossSiloLauncher:
 
             node_rank = "%n"
             torchrun_cmd_arguments = get_torchrun_arguments(node_rank)
-            process_args = (
-                pdsh_cmd_aruments + prerun_args + torchrun_cmd_arguments
-            )
+            process_args = pdsh_cmd_aruments + prerun_args + torchrun_cmd_arguments
             subprocess.run(process_args)

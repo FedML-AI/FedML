@@ -235,7 +235,7 @@ def init_cross_silo_hierarchical(args):
         # Rank in silo (process group)
         args.proc_rank_in_silo = int(os.environ.get("RANK", 0))
 
-        # Prcoess group master endpoint
+        # Process group master endpoint
         args.pg_master_address = os.environ.get("MASTER_ADDR", "127.0.0.1")
         args.pg_master_port = os.environ.get("MASTER_PORT", 29300)
 
