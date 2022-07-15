@@ -10,8 +10,8 @@ common_args:
 
 data_args:
   dataset: "mrqa"
-  data_file_path: ../fednlp_data/data_files/mrqa_data.h5
-  partition_file_path: ../fednlp_data/partition_files/mrqa_partition.h5
+  data_file_path: ~/fednlp_data/data_files/mrqa_data.h5
+  partition_file_path: ~/fednlp_data/partition_files/mrqa_partition.h5
   partition_method: "uniform_clients=6"
   reprocess_input_data: false
   global_model_file_path: "/home/ubuntu/FedML/python/app/model_cache_dir/"
