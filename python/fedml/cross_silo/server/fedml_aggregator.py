@@ -263,3 +263,11 @@ class FedMLAggregator(object):
                     # "test_loss": round(test_loss, 4),
                 }
                 self.mlops_metrics.report_server_training_metric(metric_for_mlops)
+        else:
+            if self.mlops_metrics is not None:
+                metric_for_mlops = {
+                    "run_id": self.args.run_id,
+                    "round_idx": round_idx,
+                    "timestamp": time.time()
+                }
+                self.mlops_metrics.report_server_training_metric(metric_for_mlops)
