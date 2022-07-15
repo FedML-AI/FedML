@@ -2,11 +2,12 @@ import copy
 import logging
 import random
 import time
+
 import numpy as np
 import torch
 import wandb
+
 from .utils import transform_list_to_tensor
-from ....core.security.fedml_defender import FedMLDefender
 
 
 class FedAVGAggregator(object):
@@ -64,10 +65,12 @@ class FedAVGAggregator(object):
             self.flag_client_model_uploaded_dict[idx] = False
         return True
 
-
     def workload_estimate(self, client_indexes, mode="simulate"):
         if mode == "simulate":
-            client_samples = [self.train_data_local_num_dict[client_index] for client_index in client_indexes]
+            client_samples = [
+                self.train_data_local_num_dict[client_index]
+                for client_index in client_indexes
+            ]
             workload = client_samples
         elif mode == "real":
             raise NotImplementedError
@@ -96,8 +99,6 @@ class FedAVGAggregator(object):
     def record_client_runtime(self, worker_id, client_runtimes):
         pass
 
-
-
     def client_schedule(self, round_idx, client_indexes, mode="simulate"):
         # scheduler(workloads, constraints, memory)
         # workload = self.workload_estimate(client_indexes, mode)
@@ -113,7 +114,6 @@ class FedAVGAggregator(object):
         client_schedule = np.array_split(client_indexes, self.worker_num)
         return client_schedule
 
-
     def get_average_weight(self, client_indexes):
         average_weight_dict = {}
         training_num = 0
@@ -121,9 +121,10 @@ class FedAVGAggregator(object):
             training_num += self.train_data_local_num_dict[client_index]
 
         for client_index in client_indexes:
-            average_weight_dict[client_index] = self.train_data_local_num_dict[client_index] / training_num
+            average_weight_dict[client_index] = (
+                self.train_data_local_num_dict[client_index] / training_num
+            )
         return average_weight_dict
-
 
     def aggregate(self):
         start_time = time.time()

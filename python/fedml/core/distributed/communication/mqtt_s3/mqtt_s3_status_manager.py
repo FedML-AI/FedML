@@ -18,7 +18,8 @@ from ..observer import Observer
 
 
 class MqttS3StatusManager(BaseCommunicationManager):
-    def __init__(self, config_path, s3_config_path, topic="fedml"):
+    def __init__(self, config_path, s3_config_path, topic="fedml", args=None):
+        self.args = args
         self.mqtt_pwd = None
         self.mqtt_user = None
         self.broker_port = None
