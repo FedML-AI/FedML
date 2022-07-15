@@ -1,4 +1,6 @@
+import numpy as np
 import torch
+import pickle
 
 
 def vectorize_weight(state_dict):
@@ -43,3 +45,47 @@ def get_total_sample_num(model_list):
         local_sample_num, local_model_params = model_list[i]
         sample_num += local_sample_num
     return sample_num
+
+
+def get_malicious_client_id_list(random_seed, client_num, malicious_client_num):
+    if client_num == malicious_client_num:
+        client_indexes = [client_index for client_index in range(client_num)]
+    else:
+        num_clients = min(malicious_client_num, client_num)
+        np.random.seed(
+            random_seed
+        )  # make sure for each comparison, we are selecting the same clients each round
+        client_indexes = np.random.choice(range(client_num), num_clients, replace=False)
+    print("client_indexes = %s" % str(client_indexes))
+    return client_indexes
+
+
+def replace_original_class_with_target_class(data_labels, original_class, target_class):
+    """
+    :param targets: Target class IDs
+    :type targets: list
+    :return: new class IDs
+    """
+    if original_class == target_class or original_class is None or target_class is None:
+        return data_labels
+    for idx in range(len(data_labels)):
+        if data_labels[idx] == original_class:
+            data_labels[idx] = target_class
+    return data_labels
+
+
+def load_data_loader_from_file(filename):
+    """
+    Loads DataLoader object from a file if available.
+
+    :param logger: loguru.Logger
+    :param filename: string
+    """
+    print("Loading data loader from file: {}".format(filename))
+
+    with open(filename, "rb") as f:
+        return load_saved_data_loader(f)
+
+
+def load_saved_data_loader(file_obj):
+    return pickle.load(file_obj)
