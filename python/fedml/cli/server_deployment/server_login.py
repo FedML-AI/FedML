@@ -289,7 +289,7 @@ def init_logs(edge_id):
     args.edge_id = edge_id
     setattr(args, "using_mlops", True)
     setattr(args, "server_agent_id", edge_id)
-    MLOpsRuntimeLog.get_instance(args).init_logs(show_stdout_log=False)
+    MLOpsRuntimeLog.get_instance(args).init_logs(show_stdout_log=True)
 
 
 def login(args):
