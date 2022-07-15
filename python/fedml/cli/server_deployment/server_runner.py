@@ -328,6 +328,10 @@ class FedMLServerRunner:
             if python_version_str.find("Python 3.") != -1:
                 python_program = 'python3'
 
+        # if self.check_server_is_ready():
+        self.send_training_request_to_edges()
+        self.release_client_mqtt_mgr()
+
         # process = subprocess.Popen([python_program, entry_file,
         #                             '--cf', conf_file, '--rank', str(dynamic_args_config["rank"]),
         #                             '--role', 'server'])
@@ -338,10 +342,6 @@ class FedMLServerRunner:
         if ret_code != 0:
             logging.error("Exception when executing server program: {}".format(err.decode(encoding="utf-8")))
             self.mlops_metrics.report_server_training_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
-
-        # if self.check_server_is_ready():
-        self.send_training_request_to_edges()
-        self.release_client_mqtt_mgr()
 
     def reset_all_devices_status(self):
         edge_id_list = self.request_json["edgeids"]
