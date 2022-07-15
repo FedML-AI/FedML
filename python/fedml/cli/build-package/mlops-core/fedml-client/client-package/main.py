@@ -102,9 +102,9 @@ def build_dynamic_args(run_config, base_dir):
     fedml_conf_object["device_args"]["worker_num"] = int(
         package_dynamic_args["client_num_in_total"]
     )
-    fedml_conf_object["data_args"]["data_cache_dir"] = package_dynamic_args[
-        "data_cache_dir"
-    ]
+    # fedml_conf_object["data_args"]["data_cache_dir"] = package_dynamic_args[
+    #     "data_cache_dir"
+    # ]
     fedml_conf_object["tracking_args"]["log_file_dir"] = package_dynamic_args[
         "log_file_dir"
     ]
@@ -115,10 +115,10 @@ def build_dynamic_args(run_config, base_dir):
     bootstrap_script_path = os.path.join(
         base_dir, "fedml", "config", os.path.basename(bootstrap_script_file)
     )
-    try:
-        os.makedirs(package_dynamic_args["data_cache_dir"])
-    except Exception as e:
-        pass
+    # try:
+    #     os.makedirs(package_dynamic_args["data_cache_dir"])
+    # except Exception as e:
+    #     pass
     fedml_dynamic_args = fedml_conf_object.get("dynamic_args", None)
     if fedml_dynamic_args is not None:
         for entry_key, entry_value in package_dynamic_args.items():
