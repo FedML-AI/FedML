@@ -24,6 +24,9 @@ model_args:
   do_lower_case: true
   formulation: "span_extraction"
 
+environment_args:
+  bootstrap: config/bootstrap.sh
+
 train_args:
   federated_optimizer: "FedAvg"
   client_id_list:
