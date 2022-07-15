@@ -9,13 +9,13 @@ import psutil
 import yaml
 
 import fedml
+
 from ..cli.comm_utils.yaml_utils import load_yaml_config
 from ..cli.edge_deployment.client_constants import ClientConstants
 from ..cli.server_deployment.server_constants import ServerConstants
 from ..cli.edge_deployment.client_login import logout as client_logout
 from ..cli.env.collect_env import collect_env
 from ..cli.server_deployment.server_login import logout as server_logout
-from ..cross_silo.hierarchical.client_launcher import CrossSiloLauncher
 
 @click.group()
 def cli():
@@ -590,7 +590,7 @@ def launch(arguments):
     for argument in arguments:
         click.echo(argument)
 
-    # TODO: pass the arguments to "fedml.cross_silo.hierarchical.client_launcher"
+    from fedml.cross_silo.client.client_launcher import CrossSiloLauncher
     CrossSiloLauncher.launch_dist_trainers(arguments[0], list(arguments[1:]))
 
 
