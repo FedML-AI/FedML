@@ -1,8 +1,8 @@
 from .client import client_initializer
-from .lightsecagg.lsa_fedml_api import FedML_LSA_Horizontal
 
 
-class Client:
+
+class FedMLCrossSiloClient:
     def __init__(
         self, args, device, dataset, model, model_trainer=None, server_aggregator=None
     ):
@@ -32,6 +32,7 @@ class Client:
             )
 
         elif args.federated_optimizer == "LSA":
+            from .lightsecagg.lsa_fedml_api import FedML_LSA_Horizontal
             self.fl_trainer = FedML_LSA_Horizontal(
                 args,
                 args.rank,

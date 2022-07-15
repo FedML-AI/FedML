@@ -1,6 +1,6 @@
 from .fedml_aggregator import FedMLAggregator
 from .fedml_server_manager import FedMLServerManager
-from ..client.retired.client_initializer import get_model_trainer
+from ..client.trainer.trainer_creator import create_model_trainer
 
 
 def init_server(
@@ -19,7 +19,7 @@ def init_server(
     model_trainer
 ):
     if model_trainer is None:
-        model_trainer = get_model_trainer(args, model)
+        model_trainer = create_model_trainer(args, model)
     model_trainer.set_id(0)
 
     # aggregator

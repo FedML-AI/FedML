@@ -1,5 +1,6 @@
 import time
 
+from ...constants import FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
 from ...core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
 
@@ -34,9 +35,12 @@ class FedMLTrainer(object):
 
     def update_dataset(self, client_index):
         self.client_index = client_index
-        self.train_local = self.train_data_local_dict[client_index][
-            self.args.proc_rank_in_silo
-        ]
+        if self.args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
+            self.train_local = self.train_data_local_dict[client_index][
+                self.args.proc_rank_in_silo
+            ]
+        else:
+            self.train_local = self.train_data_local_dict[client_index]
         self.local_sample_number = self.train_data_local_num_dict[client_index]
         self.test_local = self.test_data_local_dict[client_index]
 
