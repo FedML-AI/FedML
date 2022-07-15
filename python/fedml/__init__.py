@@ -193,12 +193,13 @@ def manage_mpi_args(args):
         # args.worker_num = worker_num
         assert (
             args.worker_num + 1 == world_size
-        ), f"Invalid number of mpi processes. Exepected {args.worker_num + 1}"
+        ), f"Invalid number of mpi processes. Expected {args.worker_num + 1}"
     else:
         args.comm = None
 
 
 def init_cross_silo_horizontal(args):
+    args.rank = int(args.rank)
     args.worker_num = args.client_num_per_round
     args.process_id = args.rank
     args.n_proc_in_silo = 1
@@ -209,6 +210,7 @@ def init_cross_silo_horizontal(args):
 
 
 def init_cross_silo_hierarchical(args):
+    args.rank = int(args.rank)
     args.worker_num = args.client_num_per_round
     manage_mpi_args(args)
     manage_cuda_rpc_args(args)
