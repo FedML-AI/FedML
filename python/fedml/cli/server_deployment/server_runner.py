@@ -268,11 +268,11 @@ class FedMLServerRunner:
                     os.chmod(bootstrap_script_path, bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
                 bootstrap_scripts = "cd {}; ./{}".format(bootstrap_script_dir, os.path.basename(bootstrap_script_file))
                 logging.info("Bootstrap scripts are being executed...")
-                process = ServerConstants.exec_console_with_script(bootstrap_scripts)
-                ret_code, out, err = ServerConstants.get_console_sys_out_pipe_err_results(process)
-                if out is not None:
+                process = ServerConstants.exec_console_with_script(bootstrap_scripts, should_capture_stdout_err=True)
+                ret_code, out, err = ServerConstants.get_console_pipe_out_err_results(process)
+                if out is not None and len(str(out.decode(encoding="utf-8"))) > 0:
                     logging.info("{}".format(out.decode(encoding="utf-8")))
-                if err is not None:
+                if err is not None and len(str(err.decode(encoding="utf-8"))) > 0:
                     logging.error("{}".format(err.decode(encoding="utf-8")))
         except Exception as e:
             logging.error("Bootstrap scripts error: {}".format(traceback.format_exc()))
@@ -396,7 +396,8 @@ class FedMLServerRunner:
         self.setup_client_mqtt_mgr()
 
         edge_id_list = self.request_json["edgeids"]
-        self.send_training_stop_request_to_edges(edge_id_list, json.dumps(self.request_json))
+        logging.info("edge ids {}".format(str(edge_id_list)))
+        self.send_exit_train_with_exception_request_to_edges(edge_id_list, json.dumps(self.request_json))
 
         logging.info("Stop run successfully when starting failed.")
 
@@ -673,8 +674,8 @@ class FedMLServerRunner:
     def on_client_mqtt_connected(self, mqtt_client_object):
         if self.mlops_metrics is None:
             self.mlops_metrics = MLOpsMetrics()
-            self.mlops_metrics.set_messenger(self.client_mqtt_mgr)
 
+        self.mlops_metrics.set_messenger(self.client_mqtt_mgr)
         self.mlops_metrics.run_id = self.run_id
         self.mlops_metrics.edge_id = self.edge_id
         self.mlops_metrics.server_agent_id = self.server_agent_id
@@ -745,6 +746,13 @@ class FedMLServerRunner:
             logging.info("stop_train: send topic " + topic_stop_train)
             self.client_mqtt_mgr.send_message(topic_stop_train, payload)
 
+    def send_exit_train_with_exception_request_to_edges(self, edge_id_list, payload):
+        self.wait_client_mqtt_connected()
+        for edge_id in edge_id_list:
+            topic_exit_train = "flserver_agent/" + str(edge_id) + "/exit_train_with_exception"
+            logging.info("exit_train_with_exception: send topic " + topic_exit_train)
+            self.client_mqtt_mgr.send_message(topic_exit_train, payload)
+
     def callback_stop_train(self, topic, payload):
         logging.info("callback_stop_train: topic = %s, payload = %s" % (topic, payload))
 
@@ -791,7 +799,7 @@ class FedMLServerRunner:
         ):
             logging.info("Received training finished message.")
 
-            logging.info("Stopping training server.")
+            logging.info("Will end training server.")
 
             # Stop cross-silo server with multi processing mode
             stop_request_json = self.running_request_json.get(str(run_id), None)
