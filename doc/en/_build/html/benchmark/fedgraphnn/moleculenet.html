@@ -15,7 +15,7 @@
   <!-- End Google Tag Manager -->
 
   <meta charset="utf-8">
-  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="google-site-verification" content="okUst94cAlWSsUsGZTB4xSS4UKTtRV8Nu5XZ9pdd3Aw" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -325,9 +325,9 @@
              <article itemprop="articleBody" id="pytorch-article" class="pytorch-article">
               
   <section id="federated-molecular-property-prediction">
-<h1>Federated Molecular Property Prediction<a class="headerlink" href="#federated-molecular-property-prediction" title="Permalink to this headline">¶</a></h1>
+<h1>Federated Molecular Property Prediction<a class="headerlink" href="#federated-molecular-property-prediction" title="Permalink to this heading">¶</a></h1>
 <section id="motivation">
-<h2>Motivation<a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<h2>Motivation<a class="headerlink" href="#motivation" title="Permalink to this heading">¶</a></h2>
 <p>Molecular ML has been maturing rapidly over the last few years thanks to the graph neural networks. Due to privacy concerns and regulatory restrictions, it is hard to collect users and/or organizations data into a single silo. This is especially crucial for bioinformatics and drug discovery applications. Coupled with the aforementioned reasons, learnable representations still struggle to deal with complex tasks under data scarcity, heterogeneity, and highly imbalanced classification. As an example, biomedical institutions might hold their own set of molecules which cannot be directly shared across silos due to commercial and privacy reasons. To simulate such scenarios, we utilize datasets from MoleculeNet.</p>
 <p>For this task we have two separate sub-tasks which have exactly the same coding style, only differing in task and the datasets:</p>
 <ul class="simple">
@@ -336,7 +336,7 @@
 </ul>
 </section>
 <section id="dataset-preparation">
-<h2>Dataset Preparation<a class="headerlink" href="#dataset-preparation" title="Permalink to this headline">¶</a></h2>
+<h2>Dataset Preparation<a class="headerlink" href="#dataset-preparation" title="Permalink to this heading">¶</a></h2>
 <p>Before training, each dataset has to be downloaded first from our servers. For instance, to process <code class="docutils literal notranslate"><span class="pre">sider</span></code> dataset, all you have to do is to run the bash script under  <code class="docutils literal notranslate"><span class="pre">/moleculenet_graph_clf/data/sider</span></code> folder:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">data</span><span class="o">/</span><span class="n">sider</span>
 <span class="n">sh</span> <span class="n">download_and_unzip</span><span class="o">.</span><span class="n">sh</span>
@@ -345,7 +345,7 @@
 <p>Dataset preparation is same for all datasets.</p>
 </section>
 <section id="training">
-<h2>Training<a class="headerlink" href="#training" title="Permalink to this headline">¶</a></h2>
+<h2>Training<a class="headerlink" href="#training" title="Permalink to this heading">¶</a></h2>
 <p>Before starting training, make sure that setup with  <code class="docutils literal notranslate"><span class="pre">config/fedml_config.yaml</span></code> is correct. Then start the training with the desired number of GPU workers.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>WORKSPACE=./FedML/app/fedgraphnn/applications/moleculenet_graph_clf
 cd $WORKSPACE
@@ -414,6 +414,7 @@ sh run_moleculenet_clf.sh 4
          <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
          <script src="../../_static/jquery.js"></script>
          <script src="../../_static/underscore.js"></script>
+         <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
          <script src="../../_static/doctools.js"></script>
      
 

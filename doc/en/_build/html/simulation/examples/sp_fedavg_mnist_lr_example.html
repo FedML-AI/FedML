@@ -15,7 +15,7 @@
   <!-- End Google Tag Manager -->
 
   <meta charset="utf-8">
-  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="google-site-verification" content="okUst94cAlWSsUsGZTB4xSS4UKTtRV8Nu5XZ9pdd3Aw" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -325,14 +325,14 @@
              <article itemprop="articleBody" id="pytorch-article" class="pytorch-article">
               
   <section id="simulation-with-a-single-process-standalone">
-<h1>Simulation with a Single Process (Standalone)<a class="headerlink" href="#simulation-with-a-single-process-standalone" title="Permalink to this headline">¶</a></h1>
+<h1>Simulation with a Single Process (Standalone)<a class="headerlink" href="#simulation-with-a-single-process-standalone" title="Permalink to this heading">¶</a></h1>
 <p>Simulating FL using a single process in your personal laptop or server. This is helpful when researchers hope to try a quick algorithmic idea in small synthetic datasets (MNIST, Shakespeare, etc.) and small models (ResNet-18, Logistic Regression, etc.).</p>
 <p>In this example, we will present how to apply the standalone simulation of FedML in the MINIST image classification <strong>using a single process</strong>. The complete code is available at <a class="reference external" href="https://github.com/FedML-AI/FedML/tree/master/python/examples/simulation/sp_fedavg_mnist_lr_example">https://github.com/FedML-AI/FedML/tree/master/python/examples/simulation/sp_fedavg_mnist_lr_example</a>.</p>
 <section id="one-line-api">
-<h2>One line API<a class="headerlink" href="#one-line-api" title="Permalink to this headline">¶</a></h2>
+<h2>One line API<a class="headerlink" href="#one-line-api" title="Permalink to this heading">¶</a></h2>
 <p>In this section, we present how to implement a stand-alone simulated version of the FedAvg algorithm running on  MNIST dataset using FedML with a single line of code.</p>
 <section id="step-1-preparation">
-<h3><strong>Step 1. preparation</strong><a class="headerlink" href="#step-1-preparation" title="Permalink to this headline">¶</a></h3>
+<h3><strong>Step 1. preparation</strong><a class="headerlink" href="#step-1-preparation" title="Permalink to this heading">¶</a></h3>
 <p>First we should  create a new python environment with conda</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>conda create -n fedml python
 conda activate fedml
@@ -346,7 +346,7 @@ python -m pip install fedml
 <p>The dataset is provided in this case, if you need to use other datasets you can refer to the detailed steps in <strong>Get Start</strong>.</p>
 </section>
 <section id="step-2-setup-parameters">
-<h3>Step 2. setup Parameters<a class="headerlink" href="#step-2-setup-parameters" title="Permalink to this headline">¶</a></h3>
+<h3>Step 2. setup Parameters<a class="headerlink" href="#step-2-setup-parameters" title="Permalink to this heading">¶</a></h3>
 <p>Once we have installed the dependent packages, we can set the parameters by editing the <code class="docutils literal notranslate"><span class="pre">fedml_config.yaml</span></code> as shown below, which defines the parameters <code class="docutils literal notranslate"><span class="pre">common_args</span></code>, <code class="docutils literal notranslate"><span class="pre">data_args</span></code>, <code class="docutils literal notranslate"><span class="pre">model_args</span></code>, <code class="docutils literal notranslate"><span class="pre">train_args</span></code>, <code class="docutils literal notranslate"><span class="pre">validation_args</span></code>, <code class="docutils literal notranslate"><span class="pre">device_args</span></code>, <code class="docutils literal notranslate"><span class="pre">tracking_args</span></code>  and <code class="docutils literal notranslate"><span class="pre">tracking_args</span></code>.</p>
 <div class="highlight-YAML notranslate"><div class="highlight"><pre><span></span><span class="nt">common_args</span><span class="p">:</span><span class="w"></span>
 <span class="w">  </span><span class="nt">training_type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;simulation&quot;</span><span class="w"></span>
@@ -395,7 +395,7 @@ python -m pip install fedml
 <p>In the current example,<code class="docutils literal notranslate"><span class="pre">common_args.training_type</span></code> is <strong>“simulation”</strong>, which means that the training here is a stand-alone simulation version,<code class="docutils literal notranslate"><span class="pre">data_args.dataset</span></code> is <strong>“mnist”</strong> corresponding to the current dataset used, <code class="docutils literal notranslate"><span class="pre">model_args.model</span></code> is <strong>“lr”</strong>, which means that the current model used is <strong>LogisticRegression (lr)</strong> . Please refer to XXX for other parameters and more detailed setup instructions.</p>
 </section>
 <section id="step-3-training">
-<h3>Step 3. training<a class="headerlink" href="#step-3-training" title="Permalink to this headline">¶</a></h3>
+<h3>Step 3. training<a class="headerlink" href="#step-3-training" title="Permalink to this heading">¶</a></h3>
 <p>Now that we have configured all the dependent environments, we can quickly implement the training of a federation learning model on the MNIST dataset for a single machine simulation with the following line of code:</p>
 <div class="highlight-Nginx notranslate"><div class="highlight"><pre><span></span><span class="k">python</span><span class="w"> </span><span class="s">torch_fedavg_mnist_lr_one_line_example.py</span><span class="w"> </span><span class="s">--cf</span><span class="w"> </span><span class="s">fedml_config.yaml</span><span class="w"></span>
 </pre></div>
@@ -451,12 +451,12 @@ python -m pip install fedml
 <p>As you can see, the <code class="docutils literal notranslate"><span class="pre">main()</span></code> function is a single line of code that implements the training of a standalone simulation of federal learning.</p>
 </section>
 <section id="step-4-view-the-results">
-<h3>step 4. view the results<a class="headerlink" href="#step-4-view-the-results" title="Permalink to this headline">¶</a></h3>
+<h3>step 4. view the results<a class="headerlink" href="#step-4-view-the-results" title="Permalink to this heading">¶</a></h3>
 <p>You can view the output log files in the <code class="docutils literal notranslate"><span class="pre">/log</span></code> directory under the current directory</p>
 </section>
 </section>
 <section id="step-by-step-api">
-<h2>Step by step API<a class="headerlink" href="#step-by-step-api" title="Permalink to this headline">¶</a></h2>
+<h2>Step by step API<a class="headerlink" href="#step-by-step-api" title="Permalink to this heading">¶</a></h2>
 <p>In this section, we will present how to use FedML to implement a stand-alone simulated version of the FedAvg algorithm on the MNIST dataset by calling specific functions <strong>step by step</strong> in the code.</p>
 <p>First we should also complete the step1 and step2 operations in the <strong>one line example</strong>, and then quickly implement the federation learning model training on the MNIST dataset with the following line of code for a single machine simulation.</p>
 <div class="highlight-Nginx notranslate"><div class="highlight"><pre><span></span><span class="k">python</span><span class="w"> </span><span class="s">torch_fedavg_mnist_lr_step_by_step_example.py</span><span class="w"> </span><span class="s">--cf</span><span class="w"> </span><span class="s">fedml_config.yaml</span><span class="w"></span>
@@ -475,7 +475,7 @@ python -m pip install fedml
 </ul>
 </section>
 <section id="custom-data-and-model">
-<h2>Custom data and model<a class="headerlink" href="#custom-data-and-model" title="Permalink to this headline">¶</a></h2>
+<h2>Custom data and model<a class="headerlink" href="#custom-data-and-model" title="Permalink to this heading">¶</a></h2>
 <p>In this section we will present how to <strong>customize the dataset and model</strong> using FedML based on the <code class="docutils literal notranslate"><span class="pre">Step</span> <span class="pre">by</span> <span class="pre">step</span> <span class="pre">example</span></code> and implement a stand-alone simulated version of the FedAvg algorithm.</p>
 <p>First we still need to complete the first two cases step1 and step2,  and then we can quickly implement the federation learning model training on the MNIST dataset with the following line of code for stand-alone simulation:</p>
 <div class="highlight-Nginx notranslate"><div class="highlight"><pre><span></span><span class="k">python</span><span class="w"> </span><span class="s">torch_fedavg_mnist_lr_custum_data_and_model_example.py</span><span class="w"> </span><span class="s">--cf</span><span class="w"> </span><span class="s">fedml_config.yaml</span><span class="w"></span>
@@ -619,6 +619,7 @@ python -m pip install fedml
          <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
          <script src="../../_static/jquery.js"></script>
          <script src="../../_static/underscore.js"></script>
+         <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
          <script src="../../_static/doctools.js"></script>
      
 
