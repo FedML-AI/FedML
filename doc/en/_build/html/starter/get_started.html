@@ -15,7 +15,7 @@
   <!-- End Google Tag Manager -->
 
   <meta charset="utf-8">
-  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="google-site-verification" content="okUst94cAlWSsUsGZTB4xSS4UKTtRV8Nu5XZ9pdd3Aw" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -327,10 +327,10 @@
              <article itemprop="articleBody" id="pytorch-article" class="pytorch-article">
               
   <section id="get-started">
-<h1>Get Started<a class="headerlink" href="#get-started" title="Permalink to this headline">¶</a></h1>
+<h1>Get Started<a class="headerlink" href="#get-started" title="Permalink to this heading">¶</a></h1>
 <p>Thank you for coming! This tutorial is a quick tour of FedML Open Source Library (<a class="reference external" href="https://github.com/FedML-AI/FedML">https://github.com/FedML-AI/FedML</a>) and MLOps Platform (<a class="reference external" href="https://open.fedml.ai">https://open.fedml.ai</a>) with examples in different scenario.</p>
 <section id="fedml-feature-overview">
-<h2><strong>FedML Feature Overview</strong><a class="headerlink" href="#fedml-feature-overview" title="Permalink to this headline">¶</a></h2>
+<h2><strong>FedML Feature Overview</strong><a class="headerlink" href="#fedml-feature-overview" title="Permalink to this heading">¶</a></h2>
 <p><img alt="image" src="../_static/image/4animals.png" /></p>
 <p>FedML logo reflects the mission of FedML Inc. FedML aims to build simple and versatile APIs for machine learning running anywhere at any scale.
 In other words, FedML supports both federated learning for data silos and distributed training for acceleration with MLOps and Open Source support, covering cutting-edge academia research and industrial grade use cases.</p>
@@ -344,10 +344,10 @@ In other words, FedML supports both federated learning for data silos and distri
 </ul>
 </section>
 <section id="quick-start-for-open-source-library">
-<h2><strong>Quick Start for Open Source Library</strong><a class="headerlink" href="#quick-start-for-open-source-library" title="Permalink to this headline">¶</a></h2>
+<h2><strong>Quick Start for Open Source Library</strong><a class="headerlink" href="#quick-start-for-open-source-library" title="Permalink to this heading">¶</a></h2>
 <p><a class="reference external" href="https://github.com/FedML-AI/FedML">https://github.com/FedML-AI/FedML</a></p>
 <section id="installation">
-<h3>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h3>
+<h3>Installation<a class="headerlink" href="#installation" title="Permalink to this heading">¶</a></h3>
 <p>To get started, let’s install FedML first.</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">fedml</span>
 </pre></div>
@@ -355,7 +355,7 @@ In other words, FedML supports both federated learning for data silos and distri
 <p>For more installation methods, please refer to <a class="reference internal" href="installation.html"><span class="doc std std-doc">installing FedML</span></a>.</p>
 </section>
 <section id="a-quick-overview-of-the-code-architecture">
-<h3>A Quick Overview of the Code Architecture<a class="headerlink" href="#a-quick-overview-of-the-code-architecture" title="Permalink to this headline">¶</a></h3>
+<h3>A Quick Overview of the Code Architecture<a class="headerlink" href="#a-quick-overview-of-the-code-architecture" title="Permalink to this heading">¶</a></h3>
 <p>In general, FedML source code architecture follows the paper which won <a class="reference external" href="https://chaoyanghe.com/wp-content/uploads/2021/02/NeurIPS-SpicyFL-2020-Baidu-best-paper-award-He-v2.pdf">Best Paper Award at NeurIPS 2020 (FL workshop)</a>. Its original idea is presented at the live <a class="reference external" href="https://www.youtube.com/watch?v=93SETZGZMyI">video</a> and
 <a class="reference external" href="https://arxiv.org/abs/2007.13518">white paper</a> by FedML co-founder Dr. <a class="reference external" href="https://chaoyanghe.com">Chaoyang He</a>.</p>
 <p><img alt="FedML Code Architecture" src="../_images/fedml.png" /></p>
@@ -375,7 +375,7 @@ Other low-level APIs related to security and privacy are also supported. All alg
 <p><strong>utils</strong>: Common utilities shared by other modules.</p>
 </section>
 <section id="simplified-apis">
-<h3>Simplified APIs<a class="headerlink" href="#simplified-apis" title="Permalink to this headline">¶</a></h3>
+<h3>Simplified APIs<a class="headerlink" href="#simplified-apis" title="Permalink to this heading">¶</a></h3>
 <img src="../_static/image/apioverview.jpg" alt="drawing" style="width:60%;"/> 
 <br />
 <p>Our philosophy of API design is to reduce the number of APIs to as few as possible while simultaneously keeping the flexibility.
@@ -473,7 +473,7 @@ Some high-level integrated APIs are also provided. For example, <code class="doc
 </div>
 <p>Now let’s run some examples as follows to get a sense of how FedML simplifies federated learning in diverse real-world settings.</p>
 <section id="fedml-parrot-examples">
-<h4><strong>FedML Parrot Examples</strong><a class="headerlink" href="#fedml-parrot-examples" title="Permalink to this headline">¶</a></h4>
+<h4><strong>FedML Parrot Examples</strong><a class="headerlink" href="#fedml-parrot-examples" title="Permalink to this heading">¶</a></h4>
 <p>Simulation with a Single Process (Standalone):</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="../simulation/examples/sp_fedavg_mnist_lr_example.html"><span class="doc std std-doc">sp_fedavg_mnist_lr_example</span></a>:
@@ -490,7 +490,7 @@ MPI-based Federated Learning for cross-GPU/CPU servers.</p></li>
 </ul>
 </section>
 <section id="fedml-octopu-examples">
-<h4><strong>FedML Octopu Examples</strong><a class="headerlink" href="#fedml-octopu-examples" title="Permalink to this headline">¶</a></h4>
+<h4><strong>FedML Octopu Examples</strong><a class="headerlink" href="#fedml-octopu-examples" title="Permalink to this heading">¶</a></h4>
 <p>Horizontal Federated Learning:</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="../cross-silo/examples/mqtt_s3_fedavg_mnist_lr_example.html"><span class="doc std std-doc">mqtt_s3_fedavg_mnist_lr_example</span></a>: an example to illustrate how to run horizontal federated learning in data silos (hospitals, banks, etc.)</p></li>
@@ -502,15 +502,15 @@ Here <code class="docutils literal notranslate"><span class="pre">hierarchical</
 </ul>
 </section>
 <section id="fedml-beehive-examples">
-<h4><strong>FedML Beehive Examples</strong><a class="headerlink" href="#fedml-beehive-examples" title="Permalink to this headline">¶</a></h4>
+<h4><strong>FedML Beehive Examples</strong><a class="headerlink" href="#fedml-beehive-examples" title="Permalink to this heading">¶</a></h4>
 <ul class="simple">
-<li><p><a class="reference internal" href="../cross-device/examples/mqtt_s3_fedavg_mnist_lr_example.html"><span class="doc std std-doc">Federated Learning on Android Smartphones</span></a></p></li>
+<li><p><span class="xref myst">Federated Learning on Android Smartphones</span></p></li>
 </ul>
 </section>
 </section>
 </section>
 <section id="mlops-user-guide">
-<h2><strong>MLOps User Guide</strong><a class="headerlink" href="#mlops-user-guide" title="Permalink to this headline">¶</a></h2>
+<h2><strong>MLOps User Guide</strong><a class="headerlink" href="#mlops-user-guide" title="Permalink to this heading">¶</a></h2>
 <p><a class="reference external" href="https://open.fedml.ai">https://open.fedml.ai</a></p>
 <p>Currently, the project developed based on FedML Octopus (cross-silo) and Beehive (cross-device) can be smoothly deployed into the real-world system using FedML MLOps.</p>
 <p>FedML MLOps Platform simplifies the workflow of federated learning anywhere at any scale.
@@ -523,9 +523,9 @@ It enables machine learning from decentralized data at various users/silos/edge 
 <p>A detailed guidance for the MLOps can be found at <a class="reference internal" href="../mlops/user_guide.html"><span class="doc std std-doc">FedML MLOps User Guide</span></a>.</p>
 </section>
 <section id="more-resource">
-<h2><strong>More Resource</strong><a class="headerlink" href="#more-resource" title="Permalink to this headline">¶</a></h2>
+<h2><strong>More Resource</strong><a class="headerlink" href="#more-resource" title="Permalink to this heading">¶</a></h2>
 <section id="reference">
-<h3>Reference<a class="headerlink" href="#reference" title="Permalink to this headline">¶</a></h3>
+<h3>Reference<a class="headerlink" href="#reference" title="Permalink to this heading">¶</a></h3>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@article</span><span class="p">{</span><span class="n">chaoyanghe2020fedml</span><span class="p">,</span>
   <span class="n">Author</span> <span class="o">=</span> <span class="p">{</span><span class="n">He</span><span class="p">,</span> <span class="n">Chaoyang</span> <span class="ow">and</span> <span class="n">Li</span><span class="p">,</span> <span class="n">Songze</span> <span class="ow">and</span> <span class="n">So</span><span class="p">,</span> <span class="n">Jinhyun</span> <span class="ow">and</span> <span class="n">Zhang</span><span class="p">,</span> <span class="n">Mi</span> <span class="ow">and</span> <span class="n">Wang</span><span class="p">,</span> <span class="n">Hongyi</span> <span class="ow">and</span> <span class="n">Wang</span><span class="p">,</span> <span class="n">Xiaoyang</span> <span class="ow">and</span> <span class="n">Vepakomma</span><span class="p">,</span> <span class="n">Praneeth</span> <span class="ow">and</span> <span class="n">Singh</span><span class="p">,</span> <span class="n">Abhishek</span> <span class="ow">and</span> <span class="n">Qiu</span><span class="p">,</span> <span class="n">Hang</span> <span class="ow">and</span> <span class="n">Shen</span><span class="p">,</span> <span class="n">Li</span> <span class="ow">and</span> <span class="n">Zhao</span><span class="p">,</span> <span class="n">Peilin</span> <span class="ow">and</span> <span class="n">Kang</span><span class="p">,</span> <span class="n">Yan</span> <span class="ow">and</span> <span class="n">Liu</span><span class="p">,</span> <span class="n">Yang</span> <span class="ow">and</span> <span class="n">Raskar</span><span class="p">,</span> <span class="n">Ramesh</span> <span class="ow">and</span> <span class="n">Yang</span><span class="p">,</span> <span class="n">Qiang</span> <span class="ow">and</span> <span class="n">Annavaram</span><span class="p">,</span> <span class="n">Murali</span> <span class="ow">and</span> <span class="n">Avestimehr</span><span class="p">,</span> <span class="n">Salman</span><span class="p">},</span>
   <span class="n">Journal</span> <span class="o">=</span> <span class="p">{</span><span class="n">Advances</span> <span class="ow">in</span> <span class="n">Neural</span> <span class="n">Information</span> <span class="n">Processing</span> <span class="n">Systems</span><span class="p">,</span> <span class="n">Best</span> <span class="n">Paper</span> <span class="n">Award</span> <span class="n">at</span> <span class="n">Federate</span> <span class="n">Learning</span> <span class="n">Workshop</span><span class="p">},</span>
@@ -536,13 +536,13 @@ It enables machine learning from decentralized data at various users/silos/edge 
 </div>
 </section>
 <section id="ecosystem">
-<h3>Ecosystem<a class="headerlink" href="#ecosystem" title="Permalink to this headline">¶</a></h3>
+<h3>Ecosystem<a class="headerlink" href="#ecosystem" title="Permalink to this heading">¶</a></h3>
 <img src="../_static/image/started_ecosystem.png" alt="drawing" style="width:100%;"/> 
 <p>FedML Ecosystem facilitates federated learning research and productization in diverse application domains. With the foundational support from FedML Core Framework, it supports FedNLP (Natural Language Processing), FedCV (Computer Vision), FedGraphNN (Graph Neural Networks), and FedIoT (Internet of Things).
 Please read this guidance for details: <a class="reference external" href="https://doc.fedml.ai/starter/ecosystem.html">https://doc.fedml.ai/starter/ecosystem.html</a></p>
 </section>
 <section id="publication">
-<h3>Publication<a class="headerlink" href="#publication" title="Permalink to this headline">¶</a></h3>
+<h3>Publication<a class="headerlink" href="#publication" title="Permalink to this heading">¶</a></h3>
 <p>FedML’s core technology is backed by years of cutting-edge research represented in <b>50+ publications</b> in ML/FL Algorithms, Security/Privacy, Systems, and Applications.</p>
 <ol class="arabic simple">
 <li><p>Vision Paper for High Scientific Impacts</p></li>
@@ -555,7 +555,7 @@ A Full-stack of Scientific Publications in ML Algorithms, Security/Privacy, Syst
 <p>Please check <a class="reference internal" href="../resource/papers.html"><span class="doc std std-doc">this publication list</span></a> for details.</p>
 </section>
 <section id="video-invited-talks">
-<h3>Video (Invited Talks)<a class="headerlink" href="#video-invited-talks" title="Permalink to this headline">¶</a></h3>
+<h3>Video (Invited Talks)<a class="headerlink" href="#video-invited-talks" title="Permalink to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><a class="reference external" href="https://www.youtube.com/watch?v=U3BiuWjhdaU">Trustworthy and Scalable Federated Learning</a>. Federated Learning One World Seminar (FLOW). By Salman Avestimehr</p></li>
 <li><p><a class="reference external" href="https://www.youtube.com/watch?v=AY7pCYTC8pQ">Distributed ML for Federated Learning feat</a>. Chaoyang He. Stanford MLSys Seminar. By Chaoyang He</p></li>
@@ -563,7 +563,7 @@ A Full-stack of Scientific Publications in ML Algorithms, Security/Privacy, Syst
 </ul>
 </section>
 <section id="join-the-community">
-<h3>Join the Community<a class="headerlink" href="#join-the-community" title="Permalink to this headline">¶</a></h3>
+<h3>Join the Community<a class="headerlink" href="#join-the-community" title="Permalink to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Join our Slack:</p></li>
 </ul>
@@ -577,12 +577,12 @@ A Full-stack of Scientific Publications in ML Algorithms, Security/Privacy, Syst
 <img src="./../_static/image/chaoyang-wechat.png" alt="drawing" style="width:200px;"/>
 </section>
 <section id="faq">
-<h3>FAQ<a class="headerlink" href="#faq" title="Permalink to this headline">¶</a></h3>
+<h3>FAQ<a class="headerlink" href="#faq" title="Permalink to this heading">¶</a></h3>
 <p>We organize the frequently asked questions at <a class="reference external" href="https://github.com/FedML-AI/FedML/discussions">https://github.com/FedML-AI/FedML/discussions</a>.
 Please feel free to ask questions there. We are happy to discuss on supporting your special demands.</p>
 </section>
 <section id="recruiting">
-<h3>Recruiting<a class="headerlink" href="#recruiting" title="Permalink to this headline">¶</a></h3>
+<h3>Recruiting<a class="headerlink" href="#recruiting" title="Permalink to this heading">¶</a></h3>
 <p>FedML is hiring researchers, engineers, product managers, and related interns.
 If you are interested, please apply at <a class="reference external" href="https://fedml.ai/careers">https://fedml.ai/careers</a>.</p>
 </section>
@@ -676,6 +676,7 @@ If you are interested, please apply at <a class="reference external" href="https
          <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
          <script src="../_static/jquery.js"></script>
          <script src="../_static/underscore.js"></script>
+         <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
          <script src="../_static/doctools.js"></script>
      
 
