@@ -1,5 +1,5 @@
 import logging
-import multiprocessing
+import multiprocess as multiprocessing
 import os
 import random
 
@@ -22,7 +22,7 @@ from .core.mlops import MLOpsRuntimeLog
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.7.205"
+__version__ = "0.7.206"
 
 
 def init(args=None):
@@ -193,7 +193,7 @@ def manage_mpi_args(args):
         # args.worker_num = worker_num
         assert (
             args.worker_num + 1 == world_size
-        ), f"Invalid number of mpi processes. Exepected {args.worker_num + 1}"
+        ), f"Invalid number of mpi processes. Expected {args.worker_num + 1}"
     else:
         args.comm = None
 
