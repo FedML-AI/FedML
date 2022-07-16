@@ -3,6 +3,15 @@ import logging
 import torch
 from fedml.constants import FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL, FEDML_TRAINING_PLATFORM_CROSS_SILO
 
+def get_device_type(args):
+    if not args.using_gpu:
+        device_type = "cpu"
+    else:
+        device_type = (
+            "gpu" if not hasattr(args, "device_type") else args.device_type
+        )
+    return device_type
+
 def get_device(args):
     if args.training_type == "simulation" and args.backend == "sp":
         if args.using_gpu:
@@ -53,12 +62,7 @@ def get_device(args):
             mapping_processes_to_gpu_device_from_yaml_file_cross_silo,
         )
 
-        if not args.using_gpu:
-            device_type = "cpu"
-        else:
-            device_type = (
-                "gpu" if not hasattr(args, "device_type") else args.device_type
-            )
+        device_type = get_device_type(args)
 
         if args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
             worker_number =  args.n_proc_in_silo
@@ -67,13 +71,19 @@ def get_device(args):
             worker_number = args.worker_num + 1
             process_id = args.process_id
 
+        gpu_mapping_file = args.gpu_mapping_file if args.using_gpu else None
+        gpu_mapping_key = args.gpu_mapping_key if args.using_gpu else None
+        scenario = args.scenario
+        gpu_id = args.gpu_id if hasattr(args, "gpu_id") else None
+
         device = mapping_processes_to_gpu_device_from_yaml_file_cross_silo(
             process_id,
             worker_number,
-            args.gpu_mapping_file if args.using_gpu else None,
-            args.gpu_mapping_key if args.using_gpu else None,
+            gpu_mapping_file,
+            gpu_mapping_key,
             device_type,
-            args.scenario
+            scenario,
+            gpu_id
         )
 
         logging.info("device = {}".format(device))
