@@ -1,5 +1,5 @@
 import logging
-import multiprocessing
+import multiprocess as multiprocessing
 import os
 import random
 
@@ -199,6 +199,7 @@ def manage_mpi_args(args):
 
 
 def init_cross_silo_horizontal(args):
+    args.rank = int(args.rank)
     args.worker_num = args.client_num_per_round
     args.process_id = args.rank
     args.n_proc_in_silo = 1
@@ -209,6 +210,7 @@ def init_cross_silo_horizontal(args):
 
 
 def init_cross_silo_hierarchical(args):
+    args.rank = int(args.rank)
     args.worker_num = args.client_num_per_round
     manage_mpi_args(args)
     manage_cuda_rpc_args(args)
