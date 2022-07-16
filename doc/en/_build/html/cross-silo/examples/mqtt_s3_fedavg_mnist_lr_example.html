@@ -15,7 +15,7 @@
   <!-- End Google Tag Manager -->
 
   <meta charset="utf-8">
-  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="google-site-verification" content="okUst94cAlWSsUsGZTB4xSS4UKTtRV8Nu5XZ9pdd3Aw" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -325,10 +325,10 @@
              <article itemprop="articleBody" id="pytorch-article" class="pytorch-article">
               
   <section id="fedml-octopus-example-with-mnist-logistic-regression">
-<h1>FedML Octopus Example with MNIST + Logistic Regression<a class="headerlink" href="#fedml-octopus-example-with-mnist-logistic-regression" title="Permalink to this headline">¶</a></h1>
+<h1>FedML Octopus Example with MNIST + Logistic Regression<a class="headerlink" href="#fedml-octopus-example-with-mnist-logistic-regression" title="Permalink to this heading">¶</a></h1>
 <p>This example illustrates how to do real-world cross-silo federated learning with FedML Octopus. The source code locates at <a class="reference external" href="https://github.com/FedML-AI/FedML/tree/master/python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example">https://github.com/FedML-AI/FedML/tree/master/python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example</a>.</p>
 <section id="one-line-api">
-<h2>One line API<a class="headerlink" href="#one-line-api" title="Permalink to this headline">¶</a></h2>
+<h2>One line API<a class="headerlink" href="#one-line-api" title="Permalink to this heading">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line</span></code></p>
 <p>The highly encapsulated server and client API calls are shown as below:</p>
 <p><code class="docutils literal notranslate"><span class="pre">run_server.sh</span></code> is as follows:</p>
@@ -424,7 +424,7 @@ python3 torch_client.py --cf config/fedml_config.yaml --rank <span class="nv">$R
 </pre></div>
 </div>
 <section id="training-results">
-<h3>Training Results<a class="headerlink" href="#training-results" title="Permalink to this headline">¶</a></h3>
+<h3>Training Results<a class="headerlink" href="#training-results" title="Permalink to this heading">¶</a></h3>
 <p>At the end of the 50th training round, the server window will see the following output:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>FedML-Server<span class="o">(</span><span class="m">0</span><span class="o">)</span> @device-id-0 - Wed, <span class="m">27</span> Apr <span class="m">2022</span> <span class="m">03</span>:38:28 fedml_aggregator.py<span class="o">[</span>line:199<span class="o">]</span> INFO <span class="c1">################test_on_server_for_all_clients : 49</span>
 FedML-Server<span class="o">(</span><span class="m">0</span><span class="o">)</span> @device-id-0 - Wed, <span class="m">27</span> Apr <span class="m">2022</span> <span class="m">03</span>:38:38 fedml_aggregator.py<span class="o">[</span>line:225<span class="o">]</span> INFO <span class="o">{</span><span class="s1">&#39;training_acc&#39;</span>: <span class="m">0</span>.7155714841722886, <span class="s1">&#39;training_loss&#39;</span>: <span class="m">1</span>.8997359397010631<span class="o">}</span>
@@ -463,7 +463,7 @@ FedML-Client<span class="o">(</span><span class="m">2</span><span class="o">)</s
 </section>
 </section>
 <section id="five-lines-of-apis">
-<h2>Five lines of APIs<a class="headerlink" href="#five-lines-of-apis" title="Permalink to this headline">¶</a></h2>
+<h2>Five lines of APIs<a class="headerlink" href="#five-lines-of-apis" title="Permalink to this heading">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">torch_client.py</span></code></p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">fedml</span>
 <span class="kn">from</span> <span class="nn">fedml.cross_silo</span> <span class="kn">import</span> <span class="n">Client</span>
@@ -487,7 +487,7 @@ FedML-Client<span class="o">(</span><span class="m">2</span><span class="o">)</s
 </div>
 </section>
 <section id="custom-data-and-model">
-<h2>Custom data and model<a class="headerlink" href="#custom-data-and-model" title="Permalink to this headline">¶</a></h2>
+<h2>Custom data and model<a class="headerlink" href="#custom-data-and-model" title="Permalink to this heading">¶</a></h2>
 <p>The custom data and model example locates at the following folder:</p>
 <p><code class="docutils literal notranslate"><span class="pre">python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/custum_data_and_model</span></code></p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">load_data</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
@@ -560,7 +560,7 @@ FedML-Client<span class="o">(</span><span class="m">2</span><span class="o">)</s
 </div>
 </section>
 <section id="a-better-user-experience-with-fedml-mlops-open-fedml-ai">
-<h2>A Better User-experience with FedML MLOps (open.fedml.ai)<a class="headerlink" href="#a-better-user-experience-with-fedml-mlops-open-fedml-ai" title="Permalink to this headline">¶</a></h2>
+<h2>A Better User-experience with FedML MLOps (open.fedml.ai)<a class="headerlink" href="#a-better-user-experience-with-fedml-mlops-open-fedml-ai" title="Permalink to this heading">¶</a></h2>
 <p>To reduce the difficulty and complexity of these CLI commands. We recommend you to use our MLOps (open.fedml.ai).
 FedML MLOps provides:</p>
 <ul class="simple">
@@ -639,6 +639,7 @@ FedML MLOps provides:</p>
          <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
          <script src="../../_static/jquery.js"></script>
          <script src="../../_static/underscore.js"></script>
+         <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
          <script src="../../_static/doctools.js"></script>
      
 

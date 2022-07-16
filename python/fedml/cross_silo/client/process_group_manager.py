@@ -33,7 +33,7 @@ class ProcessGroupManager:
         # initialize the process group
         dist.init_process_group(backend=backend)
 
-        self.messaging_pg = dist.new_group()
+        self.messaging_pg = dist.new_group(backend=backend)
 
         logging.info("Initiated")
 
