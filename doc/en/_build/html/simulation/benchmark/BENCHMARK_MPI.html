@@ -15,7 +15,7 @@
   <!-- End Google Tag Manager -->
 
   <meta charset="utf-8">
-  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="google-site-verification" content="okUst94cAlWSsUsGZTB4xSS4UKTtRV8Nu5XZ9pdd3Aw" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -325,26 +325,26 @@
              <article itemprop="articleBody" id="pytorch-article" class="pytorch-article">
               
   <section id="benchmarking-results-for-mpi-based-federated-learning">
-<h1>Benchmarking Results for MPI-based federated learning<a class="headerlink" href="#benchmarking-results-for-mpi-based-federated-learning" title="Permalink to this headline">¶</a></h1>
+<h1>Benchmarking Results for MPI-based federated learning<a class="headerlink" href="#benchmarking-results-for-mpi-based-federated-learning" title="Permalink to this heading">¶</a></h1>
 <p>Please visit the following link to check the latest benchmark experimental results: <a class="reference external" href="https://app.wandb.ai/automl/fedml/reports/FedML-Benchmark-Experimental-Results--VmlldzoxODE2NTU">https://app.wandb.ai/automl/fedml/reports/FedML-Benchmark-Experimental-Results–VmlldzoxODE2NTU</a>
 FedML white paper (<a class="reference external" href="https://arxiv.org/pdf/2007.13518.pdf">https://arxiv.org/pdf/2007.13518.pdf</a>) also summarizes the dataset list and related benchmarks.
 We refer the hyper-parameters and reproduce results from many top-tier ML conferences. Please check details of our reference hyperparameters as follows.</p>
 <section id="linear-models">
-<h2>Linear Models<a class="headerlink" href="#linear-models" title="Permalink to this headline">¶</a></h2>
-<table class="colwidths-auto docutils align-default">
+<h2>Linear Models<a class="headerlink" href="#linear-models" title="Permalink to this heading">¶</a></h2>
+<table class="docutils align-default">
 <thead>
-<tr class="row-odd"><th class="text-center head"><p>Data</p></th>
-<th class="text-center head"><p>Model</p></th>
-<th class="text-center head"><p>Alg</p></th>
-<th class="text-center head"><p>Partition</p></th>
-<th class="text-center head"><p>#C</p></th>
-<th class="text-center head"><p>#C_p</p></th>
-<th class="text-center head"><p>bs</p></th>
-<th class="text-center head"><p>c_opt</p></th>
-<th class="text-center head"><p>lr</p></th>
-<th class="text-center head"><p>e</p></th>
-<th class="text-center head"><p>#R</p></th>
-<th class="text-center head"><p>acc</p></th>
+<tr class="row-odd"><th class="head text-center"><p>Data</p></th>
+<th class="head text-center"><p>Model</p></th>
+<th class="head text-center"><p>Alg</p></th>
+<th class="head text-center"><p>Partition</p></th>
+<th class="head text-center"><p>#C</p></th>
+<th class="head text-center"><p>#C_p</p></th>
+<th class="head text-center"><p>bs</p></th>
+<th class="head text-center"><p>c_opt</p></th>
+<th class="head text-center"><p>lr</p></th>
+<th class="head text-center"><p>e</p></th>
+<th class="head text-center"><p>#R</p></th>
+<th class="head text-center"><p>acc</p></th>
 </tr>
 </thead>
 <tbody>
@@ -433,24 +433,24 @@ We refer the hyper-parameters and reproduce results from many top-tier ML confer
 </ul>
 </section>
 <section id="lightweight-and-shallow-neural-network-models">
-<h2>Lightweight and shallow neural network models<a class="headerlink" href="#lightweight-and-shallow-neural-network-models" title="Permalink to this headline">¶</a></h2>
-<table class="colwidths-auto docutils align-default">
+<h2>Lightweight and shallow neural network models<a class="headerlink" href="#lightweight-and-shallow-neural-network-models" title="Permalink to this heading">¶</a></h2>
+<table class="docutils align-default">
 <thead>
-<tr class="row-odd"><th class="text-center head"><p>Task</p></th>
-<th class="text-center head"><p>Data Set</p></th>
-<th class="text-center head"><p>Model</p></th>
-<th class="text-center head"><p>Alogrithm</p></th>
-<th class="text-center head"><p>Partition Method</p></th>
-<th class="text-center head"><p>Partition Alpha</p></th>
-<th class="text-center head"><p>client_num_in_total</p></th>
-<th class="text-center head"><p>client_num_per_round</p></th>
-<th class="text-center head"><p>batch_size</p></th>
-<th class="text-center head"><p>client_optimizer</p></th>
-<th class="text-center head"><p>lr</p></th>
-<th class="text-center head"><p>wd</p></th>
-<th class="text-center head"><p>epochs</p></th>
-<th class="text-center head"><p>comm_round</p></th>
-<th class="text-center head"><p>accuracy</p></th>
+<tr class="row-odd"><th class="head text-center"><p>Task</p></th>
+<th class="head text-center"><p>Data Set</p></th>
+<th class="head text-center"><p>Model</p></th>
+<th class="head text-center"><p>Alogrithm</p></th>
+<th class="head text-center"><p>Partition Method</p></th>
+<th class="head text-center"><p>Partition Alpha</p></th>
+<th class="head text-center"><p>client_num_in_total</p></th>
+<th class="head text-center"><p>client_num_per_round</p></th>
+<th class="head text-center"><p>batch_size</p></th>
+<th class="head text-center"><p>client_optimizer</p></th>
+<th class="head text-center"><p>lr</p></th>
+<th class="head text-center"><p>wd</p></th>
+<th class="head text-center"><p>epochs</p></th>
+<th class="head text-center"><p>comm_round</p></th>
+<th class="head text-center"><p>accuracy</p></th>
 </tr>
 </thead>
 <tbody>
@@ -578,22 +578,22 @@ We refer the hyper-parameters and reproduce results from many top-tier ML confer
 </ul>
 </section>
 <section id="benchmarking-using-modern-dnns">
-<h2>Benchmarking using modern DNNs<a class="headerlink" href="#benchmarking-using-modern-dnns" title="Permalink to this headline">¶</a></h2>
-<table class="colwidths-auto docutils align-default">
+<h2>Benchmarking using modern DNNs<a class="headerlink" href="#benchmarking-using-modern-dnns" title="Permalink to this heading">¶</a></h2>
+<table class="docutils align-default">
 <thead>
-<tr class="row-odd"><th class="text-center head"><p>Data</p></th>
-<th class="text-center head"><p>Model</p></th>
-<th class="text-center head"><p>Alg</p></th>
-<th class="text-center head"><p># C</p></th>
-<th class="text-center head"><p># C_p</p></th>
-<th class="text-center head"><p>bs</p></th>
-<th class="text-center head"><p>c_opt</p></th>
-<th class="text-center head"><p>lr</p></th>
-<th class="text-center head"><p>wd</p></th>
-<th class="text-center head"><p>e</p></th>
-<th class="text-center head"><p>round</p></th>
-<th class="text-center head"><p>IID acc</p></th>
-<th class="text-center head"><p>non-IID acc</p></th>
+<tr class="row-odd"><th class="head text-center"><p>Data</p></th>
+<th class="head text-center"><p>Model</p></th>
+<th class="head text-center"><p>Alg</p></th>
+<th class="head text-center"><p># C</p></th>
+<th class="head text-center"><p># C_p</p></th>
+<th class="head text-center"><p>bs</p></th>
+<th class="head text-center"><p>c_opt</p></th>
+<th class="head text-center"><p>lr</p></th>
+<th class="head text-center"><p>wd</p></th>
+<th class="head text-center"><p>e</p></th>
+<th class="head text-center"><p>round</p></th>
+<th class="head text-center"><p>IID acc</p></th>
+<th class="head text-center"><p>non-IID acc</p></th>
 </tr>
 </thead>
 <tbody>
@@ -745,6 +745,7 @@ We refer the hyper-parameters and reproduce results from many top-tier ML confer
          <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
          <script src="../../_static/jquery.js"></script>
          <script src="../../_static/underscore.js"></script>
+         <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
          <script src="../../_static/doctools.js"></script>
      
 
