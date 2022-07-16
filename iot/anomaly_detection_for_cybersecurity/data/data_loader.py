@@ -9,7 +9,7 @@ import torch
 
 
 def download_data(args, device_name):
-    url_root = "https://fediot.s3.us-west-1.amazonaws.com"
+    url_root = "https://fediot.s3.us-west-1.amazonaws.com/fediot"
     url = os.path.join(url_root, (device_name + ".zip"))
     saved_path = os.path.join(args.data_cache_dir, (device_name + ".zip"))
     urllib.request.urlretrieve(url, saved_path)
@@ -54,7 +54,8 @@ def load_data(args):
                     "Downloading dataset for device {} on server".format(i + 1)
                 )
                 download_data(args, device_name)
-
+            
+            logging.info("Creating dataset {}".format(device_name))
             benign_data = pd.read_csv(
                 os.path.join(args.data_cache_dir, device_name, "benign_traffic.csv")
             )
