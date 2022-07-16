@@ -326,7 +326,7 @@ class FedMLClientRunner:
         ClientConstants.save_learning_process(process.pid)
         self.release_client_mqtt_mgr()
         ret_code, out, err = ClientConstants.get_console_sys_out_pipe_err_results(process)
-        if ret_code != 0 and err is not None:
+        if ret_code != 0 and err is not None and str(err.decode(encoding="utf-8")).find('__finish ') == -1:
             logging.error("Exception when executing client program: {}".format(err.decode(encoding="utf-8")))
             self.setup_client_mqtt_mgr()
             self.wait_client_mqtt_connected()
