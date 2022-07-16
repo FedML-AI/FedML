@@ -1,2 +1,4 @@
 #!/bin/bash
-pip install opencv-python-headless pandas matplotlib seaborn addict mpi4py
+sh ./../data/coco/download_coco.sh
+
+pip install opencv-python-headless pandas matplotlib seaborn addict
