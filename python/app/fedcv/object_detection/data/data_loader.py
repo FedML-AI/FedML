@@ -104,6 +104,9 @@ def load_partition_data_coco(args, hyp, model):
 
     train_path = data_dict["train"]
     test_path = data_dict["val"]
+    train_path = os.path.expanduser(train_path)
+    test_path = os.path.expanduser(test_path)
+
     nc, names = (
         (1, ["item"]) if args.single_cls else (int(data_dict["nc"]), data_dict["names"])
     )  # number classes, names
