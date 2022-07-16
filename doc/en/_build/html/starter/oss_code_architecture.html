@@ -15,7 +15,7 @@
   <!-- End Google Tag Manager -->
 
   <meta charset="utf-8">
-  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="google-site-verification" content="okUst94cAlWSsUsGZTB4xSS4UKTtRV8Nu5XZ9pdd3Aw" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -327,12 +327,12 @@
              <article itemprop="articleBody" id="pytorch-article" class="pytorch-article">
               
   <section id="open-source-code-architecture">
-<h1>Open Source Code Architecture<a class="headerlink" href="#open-source-code-architecture" title="Permalink to this headline">¶</a></h1>
+<h1>Open Source Code Architecture<a class="headerlink" href="#open-source-code-architecture" title="Permalink to this heading">¶</a></h1>
 <p>In general, FedML source code architecture follows the paper which won <a class="reference external" href="https://chaoyanghe.com/wp-content/uploads/2021/02/NeurIPS-SpicyFL-2020-Baidu-best-paper-award-He-v2.pdf">Best Paper Award at NeurIPS 2020 (FL workshop)</a>. Its original idea is presented at the live <a class="reference external" href="https://www.youtube.com/watch?v=93SETZGZMyI">video</a> and
 <a class="reference external" href="https://arxiv.org/abs/2007.13518">white paper</a> by FedML co-founder Dr. <a class="reference external" href="https://chaoyanghe.com">Chaoyang He</a>.</p>
 <p><img alt="FedML Code Architecture" src="../_images/fedml.png" /></p>
 <section id="code-architecture">
-<h2>Code Architecture<a class="headerlink" href="#code-architecture" title="Permalink to this headline">¶</a></h2>
+<h2>Code Architecture<a class="headerlink" href="#code-architecture" title="Permalink to this heading">¶</a></h2>
 <p>After March 2022, FedML has been upgraded as an AI company which aims to provide machine learning capability anywhere at any scale. Now the python version of FedML <a class="reference external" href="https://github.com/FedML-AI/FedML-refactor/tree/master/python">https://github.com/FedML-AI/FedML-refactor/tree/master/python</a> is reorganized as follows:</p>
 <p><strong>core</strong>: The FedML low-level API package. This package implements distributed computing by communication backend like MPI, NCCL, MQTT, gRPC, PyTorch RPC, and also supports topology management.
 Other low-level APIs related to security and privacy are also supported. All algorithms and Scenarios are built based on the “core” package.</p>
@@ -349,7 +349,7 @@ Other low-level APIs related to security and privacy are also supported. All alg
 <p><strong>utils</strong>: Common utilities shared by other modules.</p>
 </section>
 <section id="reference">
-<h2>Reference<a class="headerlink" href="#reference" title="Permalink to this headline">¶</a></h2>
+<h2>Reference<a class="headerlink" href="#reference" title="Permalink to this heading">¶</a></h2>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@article</span><span class="p">{</span><span class="n">chaoyanghe2020fedml</span><span class="p">,</span>
   <span class="n">Author</span> <span class="o">=</span> <span class="p">{</span><span class="n">He</span><span class="p">,</span> <span class="n">Chaoyang</span> <span class="ow">and</span> <span class="n">Li</span><span class="p">,</span> <span class="n">Songze</span> <span class="ow">and</span> <span class="n">So</span><span class="p">,</span> <span class="n">Jinhyun</span> <span class="ow">and</span> <span class="n">Zhang</span><span class="p">,</span> <span class="n">Mi</span> <span class="ow">and</span> <span class="n">Wang</span><span class="p">,</span> <span class="n">Hongyi</span> <span class="ow">and</span> <span class="n">Wang</span><span class="p">,</span> <span class="n">Xiaoyang</span> <span class="ow">and</span> <span class="n">Vepakomma</span><span class="p">,</span> <span class="n">Praneeth</span> <span class="ow">and</span> <span class="n">Singh</span><span class="p">,</span> <span class="n">Abhishek</span> <span class="ow">and</span> <span class="n">Qiu</span><span class="p">,</span> <span class="n">Hang</span> <span class="ow">and</span> <span class="n">Shen</span><span class="p">,</span> <span class="n">Li</span> <span class="ow">and</span> <span class="n">Zhao</span><span class="p">,</span> <span class="n">Peilin</span> <span class="ow">and</span> <span class="n">Kang</span><span class="p">,</span> <span class="n">Yan</span> <span class="ow">and</span> <span class="n">Liu</span><span class="p">,</span> <span class="n">Yang</span> <span class="ow">and</span> <span class="n">Raskar</span><span class="p">,</span> <span class="n">Ramesh</span> <span class="ow">and</span> <span class="n">Yang</span><span class="p">,</span> <span class="n">Qiang</span> <span class="ow">and</span> <span class="n">Annavaram</span><span class="p">,</span> <span class="n">Murali</span> <span class="ow">and</span> <span class="n">Avestimehr</span><span class="p">,</span> <span class="n">Salman</span><span class="p">},</span>
   <span class="n">Journal</span> <span class="o">=</span> <span class="p">{</span><span class="n">Advances</span> <span class="ow">in</span> <span class="n">Neural</span> <span class="n">Information</span> <span class="n">Processing</span> <span class="n">Systems</span><span class="p">,</span> <span class="n">Best</span> <span class="n">Paper</span> <span class="n">Award</span> <span class="n">at</span> <span class="n">Federate</span> <span class="n">Learning</span> <span class="n">Workshop</span><span class="p">},</span>
@@ -360,7 +360,7 @@ Other low-level APIs related to security and privacy are also supported. All alg
 </div>
 </section>
 <section id="video">
-<h2>Video<a class="headerlink" href="#video" title="Permalink to this headline">¶</a></h2>
+<h2>Video<a class="headerlink" href="#video" title="Permalink to this heading">¶</a></h2>
 <p><a class="reference external" href="http://www.youtube.com/watch?v=93SETZGZMyI">http://www.youtube.com/watch?v=93SETZGZMyI</a></p>
 </section>
 </section>
@@ -432,6 +432,7 @@ Other low-level APIs related to security and privacy are also supported. All alg
          <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
          <script src="../_static/jquery.js"></script>
          <script src="../_static/underscore.js"></script>
+         <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
          <script src="../_static/doctools.js"></script>
      
 
