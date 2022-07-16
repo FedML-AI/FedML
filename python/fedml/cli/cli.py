@@ -414,6 +414,8 @@ def mlops_build(type, source_folder, entry_point, config_folder, dest_folder, ig
     except Exception as e:
         pass
 
+    pre_ignore_list = 'dist-packages,client-package.zip,server-package.zip'
+    ignore_list = "{},{}".format(ignore, pre_ignore_list)
     pip_source_dir = os.path.dirname(__file__)
     pip_build_path = os.path.join(pip_source_dir, "build-package")
     shutil.copytree(pip_build_path, mlops_build_path,
@@ -421,7 +423,7 @@ def mlops_build(type, source_folder, entry_point, config_folder, dest_folder, ig
 
     if type == "client":
         result = build_mlops_package(
-            ignore,
+            ignore_list,
             source_folder,
             entry_point,
             config_folder,
@@ -442,7 +444,7 @@ def mlops_build(type, source_folder, entry_point, config_folder, dest_folder, ig
         )
     elif type == "server":
         result = build_mlops_package(
-            ignore,
+            ignore_list,
             source_folder,
             entry_point,
             config_folder,
