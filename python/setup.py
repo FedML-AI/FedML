@@ -36,6 +36,7 @@ requirements = [
     "torchvision",
     "spacy",
     "gensim",
+    "multiprocess",
 ]
 
 if platform.machine() == "x86_64":
