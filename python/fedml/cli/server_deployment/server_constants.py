@@ -188,6 +188,14 @@ class ServerConstants(object):
             pass
 
     @staticmethod
+    def exec_console_with_script(script_path, should_capture_stdout_err=False):
+        if should_capture_stdout_err:
+            script_process = subprocess.Popen(['sh', '-c', script_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        else:
+            script_process = subprocess.Popen(['sh', '-c', script_path], stdout=sys.stdout, stderr=subprocess.PIPE)
+        return script_process
+
+    @staticmethod
     def exec_console_with_shell(shell, script_path, should_capture_stdout_err=False):
         if should_capture_stdout_err:
             script_process = subprocess.Popen([shell, script_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
