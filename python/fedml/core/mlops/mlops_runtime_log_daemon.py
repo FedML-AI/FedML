@@ -108,11 +108,13 @@ class MLOpsRuntimeLogProcessor:
                     prev_index = 0
                 prev_line_prefix = ''
                 prev_line_prefix_list = str(log_lines[prev_index]).split(']')
-                if len(prev_line_prefix_list) > 2:
-                    prev_line_prefix = "{}]{}]".format(prev_line_prefix_list[0], prev_line_prefix_list[1])
+                if len(prev_line_prefix_list) >= 3:
+                    prev_line_prefix = "{}]{}]{}]".format(prev_line_prefix_list[0],
+                                                          prev_line_prefix_list[1],
+                                                          prev_line_prefix_list[2])
 
                 if not str(log_lines[index]).startswith('[FedML-'):
-                    log_line = "{} [ERROR] {}".format(prev_line_prefix, log_lines[index])
+                    log_line = "{} {}".format(prev_line_prefix, log_lines[index])
                     log_lines[index] = log_line
 
                 index += 1

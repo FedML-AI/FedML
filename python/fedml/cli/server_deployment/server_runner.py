@@ -50,7 +50,7 @@ class FedMLServerRunner:
         self.run_id = run_id
         self.client_mqtt_mgr = None
         self.client_mqtt_is_connected = False
-        # self.client_mqtt_lock = None
+        self.client_mqtt_lock = None
         self.unique_device_id = None
         self.edge_id = 0
         self.server_agent_id = 0
@@ -267,13 +267,15 @@ class FedMLServerRunner:
                     bootstrap_stat = os.stat(bootstrap_script_path)
                     os.chmod(bootstrap_script_path, bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
                 bootstrap_scripts = "cd {}; ./{}".format(bootstrap_script_dir, os.path.basename(bootstrap_script_file))
-                process, ret_code, out, err = ClientConstants.exec_console_with_script(bootstrap_scripts)
-                if ret_code != 0:
-                    logging.error("Bootstrap script error: {}".format(err.decode(encoding="utf-8")))
-                else:
-                    logging.info("Bootstrap script output: {}".format(out.decode(encoding="utf-8")))
+                logging.info("Bootstrap scripts are being executed...")
+                process = ServerConstants.exec_console_with_script(bootstrap_scripts, should_capture_stdout_err=True)
+                ret_code, out, err = ServerConstants.get_console_pipe_out_err_results(process)
+                if out is not None and len(str(out.decode(encoding="utf-8"))) > 0:
+                    logging.info("{}".format(out.decode(encoding="utf-8")))
+                if err is not None and len(str(err.decode(encoding="utf-8"))) > 0:
+                    logging.error("{}".format(err.decode(encoding="utf-8")))
         except Exception as e:
-            logging.error("Bootstrap script error: {}".format(traceback.format_exc()))
+            logging.error("Bootstrap scripts error: {}".format(traceback.format_exc()))
 
     def build_image_unique_id(self, run_id, run_config):
         config_name = str(run_config.get("configName", "run_" + str(run_id)))
@@ -295,6 +297,8 @@ class FedMLServerRunner:
         # set mqtt connection for client
         self.setup_client_mqtt_mgr()
         self.wait_client_mqtt_connected()
+        self.send_training_request_to_edges()
+        self.release_client_mqtt_mgr()
 
         # report server running status
         self.mlops_metrics.report_server_training_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING)
@@ -330,11 +334,7 @@ class FedMLServerRunner:
             if python_version_str.find("Python 3.") != -1:
                 python_program = "python3"
 
-        # if self.check_server_is_ready():
-        self.send_training_request_to_edges()
-        self.release_client_mqtt_mgr()
-
-        process, ret_code, out, err = ServerConstants.exec_console_with_shell_script_list(
+        process = ServerConstants.exec_console_with_shell_script_list(
             [
                 python_program,
                 entry_file,
@@ -347,7 +347,9 @@ class FedMLServerRunner:
             ]
         )
         ServerConstants.save_learning_process(process.pid)
-        if ret_code != 0:
+        self.release_client_mqtt_mgr()
+        ret_code, out, err = ServerConstants.get_console_sys_out_pipe_err_results(process)
+        if ret_code != 0 and err is not None:
             logging.error("Exception when executing server program: {}".format(err.decode(encoding="utf-8")))
             self.stop_run_when_starting_failed()
 
@@ -392,7 +394,8 @@ class FedMLServerRunner:
         self.setup_client_mqtt_mgr()
 
         edge_id_list = self.request_json["edgeids"]
-        self.send_training_stop_request_to_edges(edge_id_list, json.dumps(self.request_json))
+        logging.info("edge ids {}".format(str(edge_id_list)))
+        self.send_exit_train_with_exception_request_to_edges(edge_id_list, json.dumps(self.request_json))
 
         logging.info("Stop run successfully when starting failed.")
 
@@ -657,43 +660,43 @@ class FedMLServerRunner:
         os.system(delete_deployment_cmd)
 
     def on_client_mqtt_disconnected(self, mqtt_client_object):
-        # if self.client_mqtt_lock is None:
-        #     self.client_mqtt_lock = threading.Lock()
-        #
-        # self.client_mqtt_lock.acquire()
+        if self.client_mqtt_lock is None:
+            self.client_mqtt_lock = threading.Lock()
+
+        self.client_mqtt_lock.acquire()
         self.client_mqtt_is_connected = False
-        # self.client_mqtt_lock.release()
+        self.client_mqtt_lock.release()
 
         logging.info("on_client_mqtt_disconnected: {}.".format(self.client_mqtt_is_connected))
 
     def on_client_mqtt_connected(self, mqtt_client_object):
         if self.mlops_metrics is None:
             self.mlops_metrics = MLOpsMetrics()
-            self.mlops_metrics.set_messenger(self.client_mqtt_mgr)
 
+        self.mlops_metrics.set_messenger(self.client_mqtt_mgr)
         self.mlops_metrics.run_id = self.run_id
         self.mlops_metrics.edge_id = self.edge_id
         self.mlops_metrics.server_agent_id = self.server_agent_id
 
-        # if self.client_mqtt_lock is None:
-        #     self.client_mqtt_lock = threading.Lock()
-        #
-        # self.client_mqtt_lock.acquire()
+        if self.client_mqtt_lock is None:
+            self.client_mqtt_lock = threading.Lock()
+
+        self.client_mqtt_lock.acquire()
         self.client_mqtt_is_connected = True
-        # self.client_mqtt_lock.release()
+        self.client_mqtt_lock.release()
 
         logging.info("on_client_mqtt_connected: {}.".format(self.client_mqtt_is_connected))
 
     def setup_client_mqtt_mgr(self):
-        # if self.client_mqtt_lock is None:
-        #     self.client_mqtt_lock = threading.Lock()
+        if self.client_mqtt_lock is None:
+            self.client_mqtt_lock = threading.Lock()
         if self.client_mqtt_mgr is not None:
-            # self.client_mqtt_lock.acquire()
+            self.client_mqtt_lock.acquire()
             self.client_mqtt_mgr.remove_disconnected_listener(self.on_client_mqtt_disconnected)
             self.client_mqtt_is_connected = False
             self.client_mqtt_mgr.disconnect()
             self.client_mqtt_mgr = None
-            # self.client_mqtt_lock.release()
+            self.client_mqtt_lock.release()
 
         logging.info(
             "client agent config: {},{}".format(
@@ -719,19 +722,19 @@ class FedMLServerRunner:
             self.client_mqtt_mgr.disconnect()
             self.client_mqtt_mgr.loop_stop()
 
-        # self.client_mqtt_lock.acquire()
+        self.client_mqtt_lock.acquire()
         if self.client_mqtt_mgr is not None:
             self.client_mqtt_is_connected = False
             self.client_mqtt_mgr = None
-        # self.client_mqtt_lock.release()
+        self.client_mqtt_lock.release()
 
     def wait_client_mqtt_connected(self):
         while True:
-            # self.client_mqtt_lock.acquire()
+            self.client_mqtt_lock.acquire()
             if self.client_mqtt_is_connected is True:
-                # self.client_mqtt_lock.release()
+                self.client_mqtt_lock.release()
                 break
-            # self.client_mqtt_lock.release()
+            self.client_mqtt_lock.release()
             time.sleep(0.1)
 
     def send_training_stop_request_to_edges(self, edge_id_list, payload):
@@ -740,6 +743,13 @@ class FedMLServerRunner:
             topic_stop_train = "flserver_agent/" + str(edge_id) + "/stop_train"
             logging.info("stop_train: send topic " + topic_stop_train)
             self.client_mqtt_mgr.send_message(topic_stop_train, payload)
+
+    def send_exit_train_with_exception_request_to_edges(self, edge_id_list, payload):
+        self.wait_client_mqtt_connected()
+        for edge_id in edge_id_list:
+            topic_exit_train = "flserver_agent/" + str(edge_id) + "/exit_train_with_exception"
+            logging.info("exit_train_with_exception: send topic " + topic_exit_train)
+            self.client_mqtt_mgr.send_message(topic_exit_train, payload)
 
     def callback_stop_train(self, topic, payload):
         logging.info("callback_stop_train: topic = %s, payload = %s" % (topic, payload))
@@ -787,7 +797,7 @@ class FedMLServerRunner:
         ):
             logging.info("Received training finished message.")
 
-            logging.info("Stopping training server.")
+            logging.info("Will end training server.")
 
             # Stop cross-silo server with multi processing mode
             stop_request_json = self.running_request_json.get(str(run_id), None)
