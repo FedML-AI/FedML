@@ -11,5 +11,5 @@ mkdir ${DATA_DIR}
 mkdir ${DATA_DIR}/data_files
 for data_name in "${data_names[@]}"
 do
-	wget --no-check-certificate --no-proxy -P ${DATA_DIR}/data_files https://fednlp.s3-us-west-1.amazonaws.com/data_files/${data_name}_data.h5
+	wget -N --no-check-certificate --no-proxy -P ${DATA_DIR}/data_files https://fednlp.s3-us-west-1.amazonaws.com/data_files/${data_name}_data.h5
 done
