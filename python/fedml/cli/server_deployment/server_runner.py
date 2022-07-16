@@ -52,7 +52,7 @@ class FedMLServerRunner:
         self.run_id = run_id
         self.client_mqtt_mgr = None
         self.client_mqtt_is_connected = False
-        self.client_mqtt_lock = None
+        # self.client_mqtt_lock = None
         self.unique_device_id = None
         self.edge_id = 0
         self.server_agent_id = 0
@@ -598,12 +598,12 @@ class FedMLServerRunner:
         os.system(delete_deployment_cmd)
 
     def on_client_mqtt_disconnected(self, mqtt_client_object):
-        if self.client_mqtt_lock is None:
-            self.client_mqtt_lock = threading.Lock()
-
-        self.client_mqtt_lock.acquire()
+        # if self.client_mqtt_lock is None:
+        #     self.client_mqtt_lock = threading.Lock()
+        #
+        # self.client_mqtt_lock.acquire()
         self.client_mqtt_is_connected = False
-        self.client_mqtt_lock.release()
+        # self.client_mqtt_lock.release()
 
         logging.info("on_client_mqtt_disconnected: {}.".format(self.client_mqtt_is_connected))
 
@@ -616,25 +616,25 @@ class FedMLServerRunner:
         self.mlops_metrics.edge_id = self.edge_id
         self.mlops_metrics.server_agent_id = self.server_agent_id
 
-        if self.client_mqtt_lock is None:
-            self.client_mqtt_lock = threading.Lock()
-
-        self.client_mqtt_lock.acquire()
+        # if self.client_mqtt_lock is None:
+        #     self.client_mqtt_lock = threading.Lock()
+        #
+        # self.client_mqtt_lock.acquire()
         self.client_mqtt_is_connected = True
-        self.client_mqtt_lock.release()
+        # self.client_mqtt_lock.release()
 
         logging.info("on_client_mqtt_connected: {}.".format(self.client_mqtt_is_connected))
 
     def setup_client_mqtt_mgr(self):
-        if self.client_mqtt_lock is None:
-            self.client_mqtt_lock = threading.Lock()
+        # if self.client_mqtt_lock is None:
+        #     self.client_mqtt_lock = threading.Lock()
         if self.client_mqtt_mgr is not None:
-            self.client_mqtt_lock.acquire()
+            # self.client_mqtt_lock.acquire()
             self.client_mqtt_mgr.remove_disconnected_listener(self.on_client_mqtt_disconnected)
             self.client_mqtt_is_connected = False
             self.client_mqtt_mgr.disconnect()
             self.client_mqtt_mgr = None
-            self.client_mqtt_lock.release()
+            # self.client_mqtt_lock.release()
 
         logging.info("client agent config: {},{}".format(self.agent_config["mqtt_config"]["BROKER_HOST"],
                                                          self.agent_config["mqtt_config"]["BROKER_PORT"]))
@@ -657,20 +657,20 @@ class FedMLServerRunner:
             self.client_mqtt_mgr.disconnect()
             self.client_mqtt_mgr.loop_stop()
 
-        self.client_mqtt_lock.acquire()
+        # self.client_mqtt_lock.acquire()
         if self.client_mqtt_mgr is not None:
             self.client_mqtt_is_connected = False
             self.client_mqtt_mgr = None
-        self.client_mqtt_lock.release()
+        # self.client_mqtt_lock.release()
 
     def wait_client_mqtt_connected(self):
         while True:
-            self.client_mqtt_lock.acquire()
+            # self.client_mqtt_lock.acquire()
             if self.client_mqtt_is_connected is True:
-                self.client_mqtt_lock.release()
+                # self.client_mqtt_lock.release()
                 break
-            self.client_mqtt_lock.release()
-            time.sleep(1)
+            # self.client_mqtt_lock.release()
+            time.sleep(0.1)
 
     def send_training_stop_request_to_edges(self, edge_id_list, payload):
         self.wait_client_mqtt_connected()
