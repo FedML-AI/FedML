@@ -587,8 +587,8 @@ def env():
 )
 @click.argument("arguments", nargs=-1, type=click.Path())
 def launch(arguments):
-    for argument in arguments:
-        click.echo(argument)
+    # for argument in arguments:
+    #     click.echo(argument)
 
     from fedml.cross_silo.client.client_launcher import CrossSiloLauncher
     CrossSiloLauncher.launch_dist_trainers(arguments[0], list(arguments[1:]))
