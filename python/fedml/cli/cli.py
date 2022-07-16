@@ -370,12 +370,20 @@ def mlops_logout(client, server):
     default="./",
     help="the destination package folder path",
 )
-def mlops_build(type, source_folder, entry_point, config_folder, dest_folder):
+@click.option(
+    "--ignore",
+    "-ig",
+    type=str,
+    default="",
+    help="the ignore list for copying files, the format is as follows: *.model,__pycache__,*.data*, ",
+)
+def mlops_build(type, source_folder, entry_point, config_folder, dest_folder, ignore):
     click.echo("Argument for type: " + type)
     click.echo("Argument for source folder: " + source_folder)
     click.echo("Argument for entry point: " + entry_point)
     click.echo("Argument for config folder: " + config_folder)
     click.echo("Argument for destination package folder: " + dest_folder)
+    click.echo("Argument for ignore lists: " + ignore)
 
     if type == "client" or type == "server":
         click.echo(
@@ -408,10 +416,12 @@ def mlops_build(type, source_folder, entry_point, config_folder, dest_folder):
 
     pip_source_dir = os.path.dirname(__file__)
     pip_build_path = os.path.join(pip_source_dir, "build-package")
-    shutil.copytree(pip_build_path, mlops_build_path)
+    shutil.copytree(pip_build_path, mlops_build_path,
+                    ignore_dangling_symlinks=True)
 
     if type == "client":
         result = build_mlops_package(
+            ignore,
             source_folder,
             entry_point,
             config_folder,
@@ -432,6 +442,7 @@ def mlops_build(type, source_folder, entry_point, config_folder, dest_folder):
         )
     elif type == "server":
         result = build_mlops_package(
+            ignore,
             source_folder,
             entry_point,
             config_folder,
@@ -454,6 +465,7 @@ def mlops_build(type, source_folder, entry_point, config_folder, dest_folder):
 
 
 def build_mlops_package(
+        ignore,
         source_folder,
         entry_point,
         config_folder,
@@ -496,15 +508,18 @@ def build_mlops_package(
     mlops_package_file_name = mlops_package_name + ".zip"
     dist_package_dir = os.path.join(dest_folder, "dist-packages")
     dist_package_file = os.path.join(dist_package_dir, mlops_package_file_name)
+    ignore_list = tuple(ignore.split(','))
 
     shutil.rmtree(mlops_dest_conf, ignore_errors=True)
     shutil.rmtree(mlops_dest, ignore_errors=True)
     try:
-        shutil.copytree(mlops_src, mlops_dest, copy_function=shutil.copy)
+        shutil.copytree(mlops_src, mlops_dest, copy_function=shutil.copy,
+                        ignore_dangling_symlinks=True, ignore=shutil.ignore_patterns(*ignore_list))
     except Exception as e:
         pass
     try:
-        shutil.copytree(mlops_conf, mlops_dest_conf, copy_function=shutil.copy)
+        shutil.copytree(mlops_conf, mlops_dest_conf, copy_function=shutil.copy,
+                        ignore_dangling_symlinks=True, ignore=shutil.ignore_patterns(*ignore_list))
     except Exception as e:
         pass
     try:
