@@ -128,6 +128,7 @@ pipeline {
             container('base') {
                 sh 'curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"'
                 sh 'unzip awscliv2.zip'
+                sh 'mkdir -p ./devops/scripts/aws'
                 sh 'cp -Rf ./aws/* ./devops/scripts/aws'
                 sh 'unzip docker.zip'
                 sh 'unzip kubectl.zip'
@@ -168,6 +169,7 @@ pipeline {
             container('base') {
               sh 'curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"'
               sh 'unzip awscliv2.zip'
+              sh 'mkdir -p ./devops/scripts/aws'
               sh 'cp -Rf ./aws/* ./devops/scripts/aws'
               sh 'unzip docker.zip'
               sh 'unzip kubectl.zip'
