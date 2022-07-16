@@ -26,6 +26,12 @@ pip install fedml
 After installation, please use "pip list | grep fedml" to check whether `fedml` is installed.
 
 
+## Install FedML from Debugging and Editable Mode
+```
+cd python
+pip install -e ./
+```
+
 ## Install FedML from Source
 ```
 git clone https://github.com/FedML-AI/FedML.git && \

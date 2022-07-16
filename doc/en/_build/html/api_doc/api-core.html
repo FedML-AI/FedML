@@ -15,7 +15,7 @@
   <!-- End Google Tag Manager -->
 
   <meta charset="utf-8">
-  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="google-site-verification" content="okUst94cAlWSsUsGZTB4xSS4UKTtRV8Nu5XZ9pdd3Aw" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -325,7 +325,7 @@
              <article itemprop="articleBody" id="pytorch-article" class="pytorch-article">
               
   <section id="fedml-apis-core">
-<h1>FedML APIs (core)<a class="headerlink" href="#fedml-apis-core" title="Permalink to this headline">¶</a></h1>
+<h1>FedML APIs (core)<a class="headerlink" href="#fedml-apis-core" title="Permalink to this heading">¶</a></h1>
 <p>FedML-core separates the communication and the model training into two core components.
 The first is the communication protocol component (labeled as distributed in the figure).
 It is responsible for low-level communication among different works in the network. The communication backend is based on MPI (message passing interface, https://pypi.org/project/mpi4py/).
@@ -340,7 +340,7 @@ allowing users to build distributed training applications;
 to design customized message flow and topology definitions
 by only focusing on algorithmic implementations while ignoring the low-level communication backend details.</p>
 <section id="worker-oriented-programming">
-<h2>Worker-Oriented Programming<a class="headerlink" href="#worker-oriented-programming" title="Permalink to this headline">¶</a></h2>
+<h2>Worker-Oriented Programming<a class="headerlink" href="#worker-oriented-programming" title="Permalink to this heading">¶</a></h2>
 <p>FedML-core provides the worker-oriented programming design pattern, which can be used to program the worker behavior
 when participating in training or coordination in the FL algorithm.
 We describe it as worker-oriented because its counterpart, the standard distributed training library
@@ -360,7 +360,7 @@ Note that <a class="reference external" href="https://pytorch.org/tutorials/inte
 that can finish any communication theoretically, but it is not user-friendly for federated learning researchers.</p>
 </section>
 <section id="message-definition-beyond-gradient-and-model">
-<h2>Message Definition Beyond Gradient and Model<a class="headerlink" href="#message-definition-beyond-gradient-and-model" title="Permalink to this headline">¶</a></h2>
+<h2>Message Definition Beyond Gradient and Model<a class="headerlink" href="#message-definition-beyond-gradient-and-model" title="Permalink to this heading">¶</a></h2>
 <p>FedML also considers supporting message exchange beyond the gradient or model from the perspective of message flow.
 This type of auxiliary information may be due to either the need for algorithm design or the need for system-wide configuration delivery.
 Each worker defines the message type from the perspective of sending.
@@ -369,7 +369,7 @@ The sending message is normally executed after handling the received message. As
 workers can send any message type and related message parameters during the train() function.</p>
 </section>
 <section id="topology-management">
-<h2>Topology management<a class="headerlink" href="#topology-management" title="Permalink to this headline">¶</a></h2>
+<h2>Topology management<a class="headerlink" href="#topology-management" title="Permalink to this heading">¶</a></h2>
 <p>?&gt; Code Path: https://github.com/FedML-AI/FedML/tree/master/fedml_core/distributed/topology</p>
 <p>As demonstrated in Figure 3, FL has various topology definitions,
 such as vertical FL, split learning, decentralized FL, and Hierarchical FL.
@@ -520,7 +520,7 @@ which has the same IN and OUT neighbor list, while <code class="docutils literal
 </div>
 </section>
 <section id="trainer-and-coordinator">
-<h2>Trainer and coordinator<a class="headerlink" href="#trainer-and-coordinator" title="Permalink to this headline">¶</a></h2>
+<h2>Trainer and coordinator<a class="headerlink" href="#trainer-and-coordinator" title="Permalink to this heading">¶</a></h2>
 <p>We also need the coordinator to complete the training (\textit{e.g.}, in the FedAvg algorithm, the central worker is the coordinator while the others are trainers). For the trainer and coordinator, \texttt{FedML} does not over-design. Rather, it gives the implementation completely to the developers, reflecting the flexibility of our framework. The implementation of the trainer and coordinator is similar to the process in Figure \ref{fig:overview_training_oriented}, which is completely consistent with the training implementation of a standalone version training. We provide some reference implementations of different trainers and coordinators in our source code (Section \ref{sec:reference_examples}).</p>
 </section>
 </section>
@@ -584,6 +584,7 @@ which has the same IN and OUT neighbor list, while <code class="docutils literal
          <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
          <script src="../_static/jquery.js"></script>
          <script src="../_static/underscore.js"></script>
+         <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
          <script src="../_static/doctools.js"></script>
      
 
