@@ -11,6 +11,7 @@ from ...core.security.constants import (
     DEFENSE_KRUM,
     DEFENSE_SLSGD,
     DEFENSE_GEO_MEDIAN,
+    DEFENSE_CCLIP,
 )
 
 
@@ -65,9 +66,12 @@ class FedMLDefender:
         return self.is_enabled and self.defense_type in [
             DEFENSE_NORM_DIFF_CLIPPING,
             DEFENSE_KRUM,
-            DEFENSE_SLSGD,
+            # DEFENSE_SLSGD,
             DEFENSE_GEO_MEDIAN,
         ]
+
+    def is_defense_at_global_model(self):
+        return self.is_enabled and self.defense_type in [DEFENSE_SLSGD, DEFENSE_CCLIP]
 
     def is_defense_at_aggregation(self):
         return self.is_enabled and self.defense_type in [
@@ -76,10 +80,10 @@ class FedMLDefender:
             DEFENSE_GEO_MEDIAN,
         ]
 
-    def defend(self, local_w, global_w, refs=None):
+    def defend(self, local_w, global_w):
         if self.defender is None:
             raise Exception("defender is not initialized!")
-        new_grad_list = self.defender.defend(local_w, global_w, refs)
+        new_grad_list = self.defender.defend(local_w, global_w)
         training_num = get_total_sample_num(new_grad_list)
         return training_num, new_grad_list
 
@@ -87,3 +91,8 @@ class FedMLDefender:
         if self.defender is None:
             raise Exception("defender is not initialized!")
         return self.defender.robust_aggregate(client_grad_list, global_w=global_w)
+
+    def robustify_global_model(self, avg_params, previous_global_w=None):
+        if self.defender is None:
+            raise Exception("defender is not initialized!")
+        return self.defender.robustify_global_model(avg_params, previous_global_w=previous_global_w)
