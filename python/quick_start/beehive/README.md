@@ -14,9 +14,16 @@ brew install android-platform-tools
 ../prepare.sh
 ```
 
-2. Launch FedML Android App or SDK (https://github.com/FedML-AI/FedML/tree/master/android), and bind the Android Device to open.fedml.ai.
+2. Launch FedML Android App or SDK [https://github.com/FedML-AI/FedML/tree/master/android](https://github.com/FedML-AI/FedML/tree/master/android), and bind the Android Device to open.fedml.ai.
 
 3. Check the device ID at open.fedml.ai (Edge Device)
 
 4. Build Python Server Package and Upload to FedML MLOps Platform ("Create Application")
-`https://github.com/FedML-AI/FedML/tree/master/python/quick_start/beehive`
+
+[https://github.com/FedML-AI/FedML/tree/master/python/quick_start/beehive](https://github.com/FedML-AI/FedML/tree/master/python/quick_start/beehive)
+
+5. For local debugging of cross-device server, please try 
+
+```
+sh run_server.sh
+```
