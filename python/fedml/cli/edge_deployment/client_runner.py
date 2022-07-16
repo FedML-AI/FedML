@@ -372,6 +372,9 @@ class FedMLClientRunner:
 
         logging.info("Exit run successfully.")
 
+        ClientConstants.cleanup_learning_process()
+        ClientConstants.cleanup_run_process()
+
         # Notify MLOps with the stopping message
         self.mlops_metrics.report_client_id_status(self.run_id, self.edge_id,
                                                    ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
