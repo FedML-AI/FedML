@@ -1,13 +1,13 @@
 import os
 import subprocess
-
+import torch
 from fedml.arguments import load_arguments
 from fedml.constants import (
     FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL,
     FEDML_TRAINING_PLATFORM_CROSS_SILO,
     FEDML_CROSS_SILO_SCENARIO_HORIZONTAL,
 )
-
+from fedml.device import get_device_type
 
 # env_variables = {
 #     'NCCL_DEBUG':'INFO',
@@ -50,8 +50,6 @@ class CrossSiloLauncher:
             ["which", "python"], capture_output=True, text=True
         ).stdout.strip()
         process_arguments = [python_path, torch_client_filename] + inputs
-        print("@@@@@@$$$$$$$$$$$$")
-        print(process_arguments)
         subprocess.run(process_arguments)
 
     @staticmethod
@@ -91,6 +89,16 @@ class CrossSiloLauncher:
         if args.n_node_in_silo == 1:
             args.node_rank = 0
             args.manual_launch = True
+            if not (hasattr(args, "n_proc_per_node") and args.n_proc_per_node):
+                print("Number of processes per node not specified.")
+                device_type = get_device_type(args)
+                if torch.cuda.is_available() and device_type == "gpu":
+                    gpu_count = torch.cuda.device_count()
+                    print(f"Using number of GPUs ({gpu_count}) as number of processeses.")
+                    args.n_proc_per_node = gpu_count
+                else: 
+                    print(f"Using number 1 as number of processeses.")
+                    args.n_proc_per_node = 1
 
         if hasattr(args, "manual_launch") and args.manual_launch:
             print(f"Manual Client Launcher")
@@ -98,7 +106,6 @@ class CrossSiloLauncher:
             torchrun_cmd_arguments = get_torchrun_arguments(node_rank)
             process_args = torchrun_cmd_arguments
             print(f"Launching node {node_rank} of silo {args.rank}")
-            print(process_args)
             subprocess.run(process_args, env=dict(os.environ, **env_variables))
 
         else:
