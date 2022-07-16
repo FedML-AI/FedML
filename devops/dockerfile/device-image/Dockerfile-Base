@@ -20,6 +20,7 @@ RUN chmod a+x ./fedml/set-aws-credentials.sh
 RUN ./fedml/setup-aws-cli.sh
 
 #RUN apt-get update
+RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf
 RUN apt-get update
 RUN apt-get -y install gettext-base
 RUN apt-get -y install unar wget
