@@ -334,10 +334,10 @@ class FedMLClientRunner:
                                                        ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
             self.release_client_mqtt_mgr()
 
-    def reset_devices_status(self, edge_id):
+    def reset_devices_status(self, edge_id, status):
         self.mlops_metrics.run_id = self.run_id
         self.mlops_metrics.edge_id = edge_id
-        self.mlops_metrics.broadcast_client_training_status(edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
+        self.mlops_metrics.broadcast_client_training_status(edge_id, status)
 
     def stop_run(self):
         self.setup_client_mqtt_mgr()
@@ -354,7 +354,7 @@ class FedMLClientRunner:
         # Notify MLOps with the stopping message
         self.mlops_metrics.report_client_training_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_STOPPING)
 
-        self.reset_devices_status(self.edge_id)
+        self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
 
         time.sleep(1)
 
@@ -362,6 +362,21 @@ class FedMLClientRunner:
             ClientConstants.cleanup_learning_process()
         except Exception as e:
             pass
+
+        self.release_client_mqtt_mgr()
+
+    def exit_run_with_exception(self):
+        self.setup_client_mqtt_mgr()
+
+        self.wait_client_mqtt_connected()
+
+        logging.info("Exit run successfully.")
+
+        # Notify MLOps with the stopping message
+        self.mlops_metrics.report_client_id_status(self.run_id, self.edge_id,
+                                                   ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+
+        time.sleep(1)
 
         self.release_client_mqtt_mgr()
 
@@ -377,7 +392,7 @@ class FedMLClientRunner:
 
         time.sleep(2)
 
-        self.reset_devices_status(self.edge_id)
+        self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
 
         time.sleep(2)
 
@@ -407,7 +422,7 @@ class FedMLClientRunner:
 
         time.sleep(2)
 
-        self.reset_devices_status(self.edge_id)
+        self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
 
         time.sleep(2)
 
@@ -436,8 +451,9 @@ class FedMLClientRunner:
     def on_client_mqtt_connected(self, mqtt_client_object):
         if self.mlops_metrics is None:
             self.mlops_metrics = MLOpsMetrics()
-            self.mlops_metrics.set_messenger(self.client_mqtt_mgr)
-            self.mlops_metrics.run_id = self.run_id
+
+        self.mlops_metrics.set_messenger(self.client_mqtt_mgr)
+        self.mlops_metrics.run_id = self.run_id
 
         if self.client_mqtt_lock is None:
             self.client_mqtt_lock = threading.Lock()
@@ -533,6 +549,25 @@ class FedMLClientRunner:
         except Exception as e:
             pass
 
+    def callback_exit_train_with_exception(self, topic, payload):
+        logging.info("callback_exit_train_with_exception: topic = %s, payload = %s" % (topic, payload))
+
+        request_json = json.loads(payload)
+        run_id = request_json["runId"]
+
+        logging.info("Exit run...")
+        logging.info("Exit run with multiprocessing.")
+
+        # Stop cross-silo server with multi processing mode
+        self.request_json = request_json
+        client_runner = FedMLClientRunner(
+            self.args, edge_id=self.edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id
+        )
+        try:
+            multiprocessing.Process(target=client_runner.exit_run_with_exception).start()
+        except Exception as e:
+            pass
+
     def cleanup_client_with_status(self):
         if self.device_status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED:
             self.cleanup_run_when_finished()
@@ -551,8 +586,8 @@ class FedMLClientRunner:
 
         if status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED or \
                 status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED:
-            logging.info("Received training finished message.")
-            logging.info("Stopping training client.")
+            logging.info("Received training status message.")
+            logging.info("Will end training client.")
 
             # Stop cross-silo server with multi processing mode
             self.request_json = request_json
@@ -674,6 +709,10 @@ class FedMLClientRunner:
         topic_stop_train = "flserver_agent/" + str(self.edge_id) + "/stop_train"
         self.mqtt_mgr.add_message_listener(topic_stop_train, self.callback_stop_train)
 
+        # Setup MQTT message listener for running failed
+        topic_exit_train_with_exception = "flserver_agent/" + str(self.edge_id) + "/exit_train_with_exception"
+        self.mqtt_mgr.add_message_listener(topic_exit_train_with_exception, self.callback_exit_train_with_exception)
+
         # Setup MQTT message listener for client status switching
         topic_client_status = "fl_client/flclient_agent_" + str(self.edge_id) + "/status"
         self.mqtt_mgr.add_message_listener(topic_client_status, self.callback_runner_id_status)
@@ -697,6 +736,7 @@ class FedMLClientRunner:
         mqtt_client_object.subscribe(topic_report_status)
         mqtt_client_object.subscribe(topic_last_will_msg)
         mqtt_client_object.subscribe(topic_active_msg)
+        mqtt_client_object.subscribe(topic_exit_train_with_exception)
 
         # Broadcast the first active message.
         self.send_agent_active_msg()
