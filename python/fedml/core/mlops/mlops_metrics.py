@@ -1,7 +1,7 @@
 import argparse
 import json
 import logging
-import multiprocessing
+import multiprocess as multiprocessing
 import os
 import time
 import uuid
@@ -12,7 +12,6 @@ from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
 
 from ...core.mlops.mlops_status import MLOpsStatus
 from ...core.mlops.system_stats import SysStats
-
 
 
 class Singleton(object):
@@ -34,9 +33,11 @@ class MLOpsMetrics(Singleton):
         self.server_agent_id = None
         self.sys_performances = None
         self.is_sys_perf_reporting = False
-        self.sys_perf_running_file = os.path.join(ClientConstants.get_data_dir(),
-                                                  ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
-                                                  MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME)
+        self.sys_perf_running_file = os.path.join(
+            ClientConstants.get_data_dir(),
+            ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+            MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME,
+        )
 
     def set_messenger(self, msg_messenger, args=None):
         self.messenger = msg_messenger
@@ -49,9 +50,11 @@ class MLOpsMetrics(Singleton):
                 else:
                     self.edge_id = 0
 
-                self.sys_perf_running_file = os.path.join(ServerConstants.get_data_dir(),
-                                                          ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
-                                                          MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME)
+                self.sys_perf_running_file = os.path.join(
+                    ServerConstants.get_data_dir(),
+                    ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                    MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME,
+                )
             else:
                 if hasattr(args, "client_id"):
                     self.edge_id = args.client_id
@@ -60,9 +63,11 @@ class MLOpsMetrics(Singleton):
                 else:
                     self.edge_id = 0
 
-                self.sys_perf_running_file = os.path.join(ClientConstants.get_data_dir(),
-                                                          ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
-                                                          MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME)
+                self.sys_perf_running_file = os.path.join(
+                    ClientConstants.get_data_dir(),
+                    ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                    MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME,
+                )
 
             if hasattr(args, "server_agent_id"):
                 self.server_agent_id = args.server_agent_id
@@ -81,7 +86,7 @@ class MLOpsMetrics(Singleton):
         #     logging.info("comm_sanity_check at report_client_training_status.")
         #     return
         """
-            this is used for notifying the client status to MLOps (both web UI, FedML CLI and backend can consume it)
+        this is used for notifying the client status to MLOps (both web UI, FedML CLI and backend can consume it)
         """
         run_id = 0
         if self.run_id is not None:
@@ -98,7 +103,7 @@ class MLOpsMetrics(Singleton):
         # if not self.comm_sanity_check():
         #     return
         """
-            this is used for broadcasting the client status to MLOps (both web UI and backend can consume it)
+        this is used for broadcasting the client status to MLOps (both web UI and backend can consume it)
         """
         run_id = 0
         if self.run_id is not None:
@@ -113,7 +118,7 @@ class MLOpsMetrics(Singleton):
         # if not self.comm_sanity_check():
         #     return
         """
-            this is used for communication between client agent (FedML cli module) and client
+        this is used for communication between client agent (FedML cli module) and client
         """
         topic_name = "fl_client/flclient_agent_" + str(edge_id) + "/status"
         msg = {"run_id": run_id, "edge_id": edge_id, "status": status}
@@ -207,43 +212,21 @@ class MLOpsMetrics(Singleton):
             metric_json = {
                 "run_id": self.run_id,
                 "edge_id": self.edge_id,
-                "cpu_utilization": round(
-                    self.sys_performances.get_cpu_utilization(), 4
-                ),
-                "SystemMemoryUtilization": round(
-                    self.sys_performances.get_system_memory_utilization(), 4
-                ),
-                "process_memory_in_use": round(
-                    self.sys_performances.get_process_memory_in_use(), 4
-                ),
-                "process_memory_in_use_size": round(
-                    self.sys_performances.get_process_memory_in_use_size(), 4
-                ),
-                "process_memory_available": round(
-                    self.sys_performances.get_process_memory_available(), 4
-                ),
-                "process_cpu_threads_in_use": round(
-                    self.sys_performances.get_process_cpu_threads_in_use(), 4
-                ),
-                "disk_utilization": round(
-                    self.sys_performances.get_disk_utilization(), 4
-                ),
-                "network_traffic": round(
-                    self.sys_performances.get_network_traffic(), 4
-                ),
-                "gpu_utilization": round(
-                    self.sys_performances.get_gpu_utilization(), 4
-                ),
+                "cpu_utilization": round(self.sys_performances.get_cpu_utilization(), 4),
+                "SystemMemoryUtilization": round(self.sys_performances.get_system_memory_utilization(), 4),
+                "process_memory_in_use": round(self.sys_performances.get_process_memory_in_use(), 4),
+                "process_memory_in_use_size": round(self.sys_performances.get_process_memory_in_use_size(), 4),
+                "process_memory_available": round(self.sys_performances.get_process_memory_available(), 4),
+                "process_cpu_threads_in_use": round(self.sys_performances.get_process_cpu_threads_in_use(), 4),
+                "disk_utilization": round(self.sys_performances.get_disk_utilization(), 4),
+                "network_traffic": round(self.sys_performances.get_network_traffic(), 4),
+                "gpu_utilization": round(self.sys_performances.get_gpu_utilization(), 4),
                 "gpu_temp": round(self.sys_performances.get_gpu_temp(), 4),
                 "gpu_time_spent_accessing_memory": round(
                     self.sys_performances.get_gpu_time_spent_accessing_memory(), 4
                 ),
-                "gpu_memory_allocated": round(
-                    self.sys_performances.get_gpu_memory_allocated(), 4
-                ),
-                "gpu_power_usage": round(
-                    self.sys_performances.get_gpu_power_usage(), 4
-                ),
+                "gpu_memory_allocated": round(self.sys_performances.get_gpu_memory_allocated(), 4),
+                "gpu_power_usage": round(self.sys_performances.get_gpu_power_usage(), 4),
             }
         message_json = json.dumps(metric_json)
         self.messenger.send_message_json(topic_name, message_json)
@@ -259,13 +242,17 @@ class MLOpsMetrics(Singleton):
 
     def set_sys_reporting_status(self, enable, is_client=True):
         if is_client:
-            self.sys_perf_running_file = os.path.join(ClientConstants.get_data_dir(),
-                                                      ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
-                                                      MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME)
+            self.sys_perf_running_file = os.path.join(
+                ClientConstants.get_data_dir(),
+                ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME,
+            )
         else:
-            self.sys_perf_running_file = os.path.join(ServerConstants.get_data_dir(),
-                                                      ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
-                                                      MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME)
+            self.sys_perf_running_file = os.path.join(
+                ServerConstants.get_data_dir(),
+                ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME,
+            )
         self.is_sys_perf_reporting = enable
         sys_perf_file_handle = open(self.sys_perf_running_file, "w")
         if sys_perf_file_handle is not None:
@@ -286,18 +273,18 @@ class MLOpsMetrics(Singleton):
         sys_metrics.args = sys_args
         sys_metrics.set_sys_reporting_status(True)
         sys_metrics.is_system_perf_reporting()
-        sys_metrics.sys_stats_process = multiprocessing.Process(
-            target=sys_metrics.report_sys_performances
-        )
+        sys_metrics.sys_stats_process = multiprocessing.Process(target=sys_metrics.report_sys_performances)
         sys_metrics.sys_stats_process.start()
 
     def report_sys_performances(self):
-        mqtt_mgr = MqttManager(self.args.mqtt_config_path["BROKER_HOST"],
-                               self.args.mqtt_config_path["BROKER_PORT"],
-                               self.args.mqtt_config_path["MQTT_USER"],
-                               self.args.mqtt_config_path["MQTT_PWD"],
-                               180,
-                               "MLOpsMetrics" + str(uuid.uuid4()))
+        mqtt_mgr = MqttManager(
+            self.args.mqtt_config_path["BROKER_HOST"],
+            self.args.mqtt_config_path["BROKER_PORT"],
+            self.args.mqtt_config_path["MQTT_USER"],
+            self.args.mqtt_config_path["MQTT_PWD"],
+            180,
+            "MLOpsMetrics" + str(uuid.uuid4()),
+        )
 
         self.set_messenger(mqtt_mgr, self.args)
         mqtt_mgr.connect()
