@@ -15,7 +15,7 @@
   <!-- End Google Tag Manager -->
 
   <meta charset="utf-8">
-  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="google-site-verification" content="okUst94cAlWSsUsGZTB4xSS4UKTtRV8Nu5XZ9pdd3Aw" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -325,8 +325,8 @@
              <article itemprop="articleBody" id="pytorch-article" class="pytorch-article">
               
   <section id="benchmarking-results-when-using-single-process-based-simulation">
-<h1>Benchmarking results when using single process-based simulation<a class="headerlink" href="#benchmarking-results-when-using-single-process-based-simulation" title="Permalink to this headline">¶</a></h1>
-<table class="colwidths-auto docutils align-default">
+<h1>Benchmarking results when using single process-based simulation<a class="headerlink" href="#benchmarking-results-when-using-single-process-based-simulation" title="Permalink to this heading">¶</a></h1>
+<table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>Dataset</p></th>
 <th class="head"><p>Model</p></th>
@@ -362,9 +362,9 @@
 </table>
 <p>Note: Experimental results are the test accuracy of the last communication rounds, while the reference results are the validation results from referenced paper.</p>
 <section id="hyper-parameters-to-reproduce-the-benchmarking-results-non-iid">
-<h2><strong>Hyper-parameters to reproduce the benchmarking results (non-IID)</strong><a class="headerlink" href="#hyper-parameters-to-reproduce-the-benchmarking-results-non-iid" title="Permalink to this headline">¶</a></h2>
+<h2><strong>Hyper-parameters to reproduce the benchmarking results (non-IID)</strong><a class="headerlink" href="#hyper-parameters-to-reproduce-the-benchmarking-results-non-iid" title="Permalink to this heading">¶</a></h2>
 <section id="mnist-logistic-regression">
-<h3><strong>MNIST + Logistic Regression</strong><a class="headerlink" href="#mnist-logistic-regression" title="Permalink to this headline">¶</a></h3>
+<h3><strong>MNIST + Logistic Regression</strong><a class="headerlink" href="#mnist-logistic-regression" title="Permalink to this heading">¶</a></h3>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">data_args</span><span class="p">:</span><span class="w"></span>
 <span class="w">  </span><span class="nt">dataset</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;mnist&quot;</span><span class="w"></span>
 <span class="w">  </span><span class="nt">partition_method</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;hetero&quot;</span><span class="w"></span>
@@ -389,7 +389,7 @@
 <img src="./../../_static/image/result_mnist_lr.png" alt="MNIST + Logistic Regressio" style="width:100%;"/>
 </section>
 <section id="shakespeare-leaf-rnn">
-<h3><strong>Shakespeare (LEAF) + RNN</strong><a class="headerlink" href="#shakespeare-leaf-rnn" title="Permalink to this headline">¶</a></h3>
+<h3><strong>Shakespeare (LEAF) + RNN</strong><a class="headerlink" href="#shakespeare-leaf-rnn" title="Permalink to this heading">¶</a></h3>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">data_args</span><span class="p">:</span><span class="w"></span>
 <span class="w">  </span><span class="nt">dataset</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;mnist&quot;</span><span class="w"></span>
 <span class="w">  </span><span class="nt">partition_method</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;hetero&quot;</span><span class="w"></span>
@@ -414,7 +414,7 @@
 <img src="./../../_static/image/result_sp_rnn.png" alt="Shakespeare + RNN" style="width:100%;"/>
 </section>
 <section id="shakespeare-google-rnn">
-<h3><strong>Shakespeare (Google) + RNN</strong><a class="headerlink" href="#shakespeare-google-rnn" title="Permalink to this headline">¶</a></h3>
+<h3><strong>Shakespeare (Google) + RNN</strong><a class="headerlink" href="#shakespeare-google-rnn" title="Permalink to this heading">¶</a></h3>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">data_args</span><span class="p">:</span><span class="w"></span>
 <span class="w">  </span><span class="nt">dataset</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;shakespeare&quot;</span><span class="w"></span>
 <span class="w">  </span><span class="nt">partition_method</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;hetero&quot;</span><span class="w"></span>
@@ -439,7 +439,7 @@
 <img src="./../../_static/image/result_sp_google_rnn.png" alt="Shakespeare + RNN" style="width:100%;"/>
 </section>
 <section id="federated-emnist-cnn">
-<h3><strong>Federated EMNIST + CNN</strong><a class="headerlink" href="#federated-emnist-cnn" title="Permalink to this headline">¶</a></h3>
+<h3><strong>Federated EMNIST + CNN</strong><a class="headerlink" href="#federated-emnist-cnn" title="Permalink to this heading">¶</a></h3>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">data_args</span><span class="p">:</span><span class="w"></span>
 <span class="w">  </span><span class="nt">dataset</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;femnist&quot;</span><span class="w"></span>
 <span class="w">  </span><span class="nt">partition_method</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;hetero&quot;</span><span class="w"></span>
@@ -464,7 +464,7 @@
 <img src="./../../_static/image/result_femnist_cnn.png" alt="Federated EMNIST + CNN" style="width:100%;"/>
 </section>
 <section id="fed-cifar100-cnn">
-<h3><strong>Fed-CIFAR100 + CNN</strong><a class="headerlink" href="#fed-cifar100-cnn" title="Permalink to this headline">¶</a></h3>
+<h3><strong>Fed-CIFAR100 + CNN</strong><a class="headerlink" href="#fed-cifar100-cnn" title="Permalink to this heading">¶</a></h3>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">data_args</span><span class="p">:</span><span class="w"></span>
 <span class="w">  </span><span class="nt">dataset</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;fed_cifar100&quot;</span><span class="w"></span>
 <span class="w">  </span><span class="nt">partition_method</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;hetero&quot;</span><span class="w"></span>
@@ -488,7 +488,7 @@
 <p>The experimental result refers to：<a class="reference external" href="https://wandb.ai/automl/fedml/runs/1canbwed">https://wandb.ai/automl/fedml/runs/1canbwed</a></p>
 </section>
 <section id="stackoverflow-logistic-regression">
-<h3><strong>Stackoverflow + Logistic Regression</strong><a class="headerlink" href="#stackoverflow-logistic-regression" title="Permalink to this headline">¶</a></h3>
+<h3><strong>Stackoverflow + Logistic Regression</strong><a class="headerlink" href="#stackoverflow-logistic-regression" title="Permalink to this heading">¶</a></h3>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">data_args</span><span class="p">:</span><span class="w"></span>
 <span class="w">  </span><span class="nt">dataset</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;stackoverflow_lr&quot;</span><span class="w"></span>
 <span class="w">  </span><span class="nt">partition_method</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;hetero&quot;</span><span class="w"></span>
@@ -512,7 +512,7 @@
 <p>The experimental result refers to：<a class="reference external" href="https://wandb.ai/automl/fedml/runs/3aponqml">https://wandb.ai/automl/fedml/runs/3aponqml</a></p>
 </section>
 <section id="stackoverflow-rnn">
-<h3><strong>Stackoverflow + RNN</strong><a class="headerlink" href="#stackoverflow-rnn" title="Permalink to this headline">¶</a></h3>
+<h3><strong>Stackoverflow + RNN</strong><a class="headerlink" href="#stackoverflow-rnn" title="Permalink to this heading">¶</a></h3>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">data_args</span><span class="p">:</span><span class="w"></span>
 <span class="w">  </span><span class="nt">dataset</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;stackoverflow_nwp&quot;</span><span class="w"></span>
 <span class="w">  </span><span class="nt">partition_method</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;hetero&quot;</span><span class="w"></span>
@@ -536,7 +536,7 @@
 <p>The experimental result refers to: <a class="reference external" href="https://wandb.ai/automl/fedml/runs/7pf2c9r2">https://wandb.ai/automl/fedml/runs/7pf2c9r2</a></p>
 </section>
 <section id="cifar-10-resnet-56">
-<h3><strong>CIFAR-10 + ResNet-56</strong><a class="headerlink" href="#cifar-10-resnet-56" title="Permalink to this headline">¶</a></h3>
+<h3><strong>CIFAR-10 + ResNet-56</strong><a class="headerlink" href="#cifar-10-resnet-56" title="Permalink to this heading">¶</a></h3>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">data_args</span><span class="p">:</span><span class="w"></span>
 <span class="w">  </span><span class="nt">dataset</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;cifar10&quot;</span><span class="w"></span>
 <span class="w">  </span><span class="nt">partition_method</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;hetero&quot;</span><span class="w"></span>
@@ -627,6 +627,7 @@
          <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
          <script src="../../_static/jquery.js"></script>
          <script src="../../_static/underscore.js"></script>
+         <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
          <script src="../../_static/doctools.js"></script>
      
 
