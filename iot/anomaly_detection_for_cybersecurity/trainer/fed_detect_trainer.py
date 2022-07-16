@@ -66,8 +66,9 @@ class MyModelTrainer(ClientTrainer):
             "SimpleHome_XCS7_1003_WHT_Security_Camera",
         ]
         th_local_dict = dict()
-        min_dataset = np.loadtxt(os.path.join(args.data_cache_dir, "min_dataset.txt"))
-        max_dataset = np.loadtxt(os.path.join(args.data_cache_dir, "max_dataset.txt"))
+        min_max_file_path = "./data"
+        min_dataset = np.loadtxt(os.path.join(min_max_file_path, "min_dataset.txt"))
+        max_dataset = np.loadtxt(os.path.join(min_max_file_path, "max_dataset.txt"))
         for i, device_name in enumerate(device_list):
             benign_data = pd.read_csv(
                 os.path.join(args.data_cache_dir, device_name, "benign_traffic.csv")
