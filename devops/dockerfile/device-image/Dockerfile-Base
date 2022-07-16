@@ -22,14 +22,14 @@ RUN ./fedml/setup-aws-cli.sh
 #RUN apt-get update
 RUN apt-get -y install gettext-base
 RUN apt-get update
-RUN apt-get -y install unar
+RUN apt-get -y install unar wget
 
 RUN chmod a+x ./fedml/setup-conda-env.sh
 RUN bash ./fedml/setup-conda-env.sh ${IS_BUILDING_GPU_IMAGE}
 
 #RUN pip install --upgrade pip
 #RUN pip3 uninstall fedml
-#RUN pip3 install fedml
+RUN pip3 install --upgrade fedml
 RUN pip3 install -r ./fedml/requirements.txt
 RUN pip3 install --upgrade gevent
 
