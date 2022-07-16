@@ -32,7 +32,7 @@ class SLSGDDefense(BaseDefenseMethod):
         self.alpha = alpha
         self.option_type = option_type
 
-    def defend(self, model_list, global_model=None, refs=None):
+    def defend(self, model_list, global_model=None):
         if self.b > math.ceil(len(model_list) / 2) - 1 or self.b < 0:
             raise ValueError(
                 "the bound of b is [0, {}])".format(math.ceil(len(model_list) / 2) - 1)
@@ -43,19 +43,9 @@ class SLSGDDefense(BaseDefenseMethod):
             model_list = self._sort_and_trim(model_list)  # process model list
         return model_list
 
-    def robust_aggregate(self, client_grad_list, global_w=None):
-        (num0, avg_params) = client_grad_list[0]
-        total_sample_num = get_total_sample_num(client_grad_list)
+    def robustify_global_model(self, avg_params, previous_global_w):
         for k in avg_params.keys():
-            for i in range(0, len(client_grad_list)):
-                local_sample_number, local_model_params = client_grad_list[i]
-                w = local_sample_number / total_sample_num
-                if i == 0:
-                    avg_params[k] = local_model_params[k] * w
-                else:
-                    avg_params[k] += local_model_params[k] * w
-        for k in avg_params.keys():
-            avg_params[k] = (1 - self.alpha) * global_w[k] + self.alpha * avg_params[k]
+            avg_params[k] = (1 - self.alpha) * previous_global_w[k] + self.alpha * avg_params[k]
         return avg_params
 
     def _sort_and_trim(self, model_list):
