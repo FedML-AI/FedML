@@ -182,4 +182,6 @@ def load_arguments(training_type=None, comm_backend=None):
         args.partition_file_path = os.path.expanduser(args.partition_file_path)
     if hasattr(args, "part_file"):
         args.part_file = os.path.expanduser(args.part_file)
+
+    args.rank = int(args.rank)
     return args

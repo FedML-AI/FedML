@@ -1,7 +1,7 @@
 dist_training_args:
-  n_node_in_silo: 2
-  n_proc_per_node: 1
-  node_addresses: [127.0.0.1, 127.0.0.1]
+  n_node_in_silo: 1
+  n_proc_per_node: 2
+  node_addresses: [127.0.0.1]
   master_address: '127.0.0.1'
   launcher_rdzv_port: 29450
   network_interface: lo
