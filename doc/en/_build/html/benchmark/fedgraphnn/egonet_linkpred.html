@@ -15,7 +15,7 @@
   <!-- End Google Tag Manager -->
 
   <meta charset="utf-8">
-  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="google-site-verification" content="okUst94cAlWSsUsGZTB4xSS4UKTtRV8Nu5XZ9pdd3Aw" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -325,16 +325,16 @@
              <article itemprop="articleBody" id="pytorch-article" class="pytorch-article">
               
   <section id="ego-networks-link-prediction">
-<h1>Ego Networks - Link Prediction<a class="headerlink" href="#ego-networks-link-prediction" title="Permalink to this headline">¶</a></h1>
+<h1>Ego Networks - Link Prediction<a class="headerlink" href="#ego-networks-link-prediction" title="Permalink to this heading">¶</a></h1>
 <section id="motivation">
-<h2>Motivation<a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<h2>Motivation<a class="headerlink" href="#motivation" title="Permalink to this heading">¶</a></h2>
 <p>Link prediction, related to the likelihood of having a link between two nodes of the network that are not connected, is a key problem in social network analysis. It is important in the node-level FL setting, where friend
 suggestion and social relation profiling can be attempted in users’ ego-networks, for example In federated settings, it is possible to represent each user in a graph as a ego network as each user’s personal data can be sensitive and only
 visible to his/her k-hop neighbors. Thus, it is natural to consider node-level FL in social networks with clients holding the user ego-networks. To simulate this scenario, we use the open social networks
 and publication networks and partition them into sets of ego-networks. For the rest of the tutorial, we refer to our [source code</p>
 </section>
 <section id="data-preparation">
-<h2>Data Preparation<a class="headerlink" href="#data-preparation" title="Permalink to this headline">¶</a></h2>
+<h2>Data Preparation<a class="headerlink" href="#data-preparation" title="Permalink to this heading">¶</a></h2>
 <p>For each dataset, ego-networks needs to be sampled first.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">data</span><span class="o">/</span><span class="n">ego</span><span class="o">-</span><span class="n">networks</span>
 
@@ -357,7 +357,7 @@ and publication networks and partition them into sets of ego-networks. For the r
 <p>Arguments for data preparation can be found in our source coede.</p>
 </section>
 <section id="training">
-<h2>Training<a class="headerlink" href="#training" title="Permalink to this headline">¶</a></h2>
+<h2>Training<a class="headerlink" href="#training" title="Permalink to this heading">¶</a></h2>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>WORKSPACE=./FedML/app/fedgraphnn/app/ego_networks_link_pred
 cd $WORKSPACE
 
@@ -425,6 +425,7 @@ sh run_fed_link_pred.sh 4
          <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
          <script src="../../_static/jquery.js"></script>
          <script src="../../_static/underscore.js"></script>
+         <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
          <script src="../../_static/doctools.js"></script>
      
 
