@@ -297,6 +297,8 @@ class FedMLServerRunner:
         # set mqtt connection for client
         self.setup_client_mqtt_mgr()
         self.wait_client_mqtt_connected()
+        self.send_training_request_to_edges()
+        self.release_client_mqtt_mgr()
 
         # report server running status
         self.mlops_metrics.report_server_training_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING)
@@ -331,10 +333,6 @@ class FedMLServerRunner:
             python_version_str = os.popen("python3 --version").read()
             if python_version_str.find("Python 3.") != -1:
                 python_program = "python3"
-
-        # if self.check_server_is_ready():
-        self.send_training_request_to_edges()
-        self.release_client_mqtt_mgr()
 
         process = ServerConstants.exec_console_with_shell_script_list(
             [
