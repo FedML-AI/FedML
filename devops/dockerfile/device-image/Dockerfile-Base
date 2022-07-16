@@ -29,6 +29,7 @@ RUN bash ./fedml/setup-conda-env.sh ${IS_BUILDING_GPU_IMAGE}
 
 #RUN pip install --upgrade pip
 #RUN pip3 uninstall fedml
+
 RUN pip3 install --upgrade fedml
 RUN pip3 install -r ./fedml/requirements.txt
 RUN pip3 install --upgrade gevent
