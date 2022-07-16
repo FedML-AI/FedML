@@ -15,7 +15,7 @@
   <!-- End Google Tag Manager -->
 
   <meta charset="utf-8">
-  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="google-site-verification" content="okUst94cAlWSsUsGZTB4xSS4UKTtRV8Nu5XZ9pdd3Aw" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -325,13 +325,13 @@
              <article itemprop="articleBody" id="pytorch-article" class="pytorch-article">
               
   <section id="simulation-with-message-passing-interface-mpi">
-<h1>Simulation with Message Passing Interface (MPI)<a class="headerlink" href="#simulation-with-message-passing-interface-mpi" title="Permalink to this headline">¶</a></h1>
+<h1>Simulation with Message Passing Interface (MPI)<a class="headerlink" href="#simulation-with-message-passing-interface-mpi" title="Permalink to this heading">¶</a></h1>
 <p>MPI-based Federated Learning for cross-GPU/CPU servers.</p>
 <p>In this example, we will present how to apply the standalone simulation of FedML in the MINIST image classification using an <strong>MPI-based FL simulator</strong>. The complete code is available at <a class="reference external" href="https://github.com/FedML-AI/FedML/tree/master/python/examples/simulation/mpi_torch_fedavg_mnist_lr_example">https://github.com/FedML-AI/FedML/tree/master/python/examples/simulation/mpi_torch_fedavg_mnist_lr_example</a>.</p>
 <section id="one-line-api">
-<h2>One line API<a class="headerlink" href="#one-line-api" title="Permalink to this headline">¶</a></h2>
+<h2>One line API<a class="headerlink" href="#one-line-api" title="Permalink to this heading">¶</a></h2>
 <section id="step-1-preparation">
-<h3>Step 1. preparation<a class="headerlink" href="#step-1-preparation" title="Permalink to this headline">¶</a></h3>
+<h3>Step 1. preparation<a class="headerlink" href="#step-1-preparation" title="Permalink to this heading">¶</a></h3>
 <p>In this example, we have to complete the operation of step1 in the One line API first, and then proceed to the subsequent operations.</p>
 <p>We use the <code class="docutils literal notranslate"><span class="pre">mpi4py</span></code> package for the MPI implementation in Python. Here you need to install <code class="docutils literal notranslate"><span class="pre">mpi4py</span></code> with <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">install</span></code> instead of <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span></code> because pip install will report an error.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>conda install mpi4py
@@ -339,7 +339,7 @@
 </div>
 </section>
 <section id="step-2-setup-parameters">
-<h3>Step 2. setup Parameters<a class="headerlink" href="#step-2-setup-parameters" title="Permalink to this headline">¶</a></h3>
+<h3>Step 2. setup Parameters<a class="headerlink" href="#step-2-setup-parameters" title="Permalink to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">config/fedml_config.yaml</span></code> is almost the same as <code class="docutils literal notranslate"><span class="pre">fedml_config.yaml</span></code> in <strong><u>One line API</u></strong> <strong>step2</strong>, only the backend setting in <code class="docutils literal notranslate"><span class="pre">comm_args</span></code> is different. Here comm_args.backend is “MPI”, which means the program is running based on an MPI-based FL Simulator.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">comm_args</span><span class="p">:</span><span class="w"></span>
 <span class="w">  </span><span class="nt">backend</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;MPI&quot;</span><span class="w"></span>
@@ -348,7 +348,7 @@
 </div>
 </section>
 <section id="step-3-training">
-<h3>Step 3. training<a class="headerlink" href="#step-3-training" title="Permalink to this headline">¶</a></h3>
+<h3>Step 3. training<a class="headerlink" href="#step-3-training" title="Permalink to this heading">¶</a></h3>
 <p>Now that we have configured all the dependencies, we can quickly implement the training of the federated learning model based on MPI-based FL Simulator on the MNIST dataset with the following line of code.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># 4 means 4 processes</span>
 bash run_one_line_example.sh <span class="m">4</span>
@@ -417,12 +417,12 @@ python torch_fedavg_mnist_lr_one_line_example.py --cf config/fedml_config.yaml
 </div>
 </section>
 <section id="step-4-view-the-results">
-<h3>Step 4. view the results<a class="headerlink" href="#step-4-view-the-results" title="Permalink to this headline">¶</a></h3>
+<h3>Step 4. view the results<a class="headerlink" href="#step-4-view-the-results" title="Permalink to this heading">¶</a></h3>
 <p>You can view the output log files in the <code class="docutils literal notranslate"><span class="pre">/log</span></code> directory under the current directory.</p>
 </section>
 </section>
 <section id="step-by-step-api">
-<h2>Step by step API<a class="headerlink" href="#step-by-step-api" title="Permalink to this headline">¶</a></h2>
+<h2>Step by step API<a class="headerlink" href="#step-by-step-api" title="Permalink to this heading">¶</a></h2>
 <p>First, we should also complete the step1 and step2 operations in the <strong>one-line example</strong> and quickly implement the federation learning model training on the MNIST dataset with the following line of code for the MPI-based FL Simulator.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>sh run_step_by_step_example.sh <span class="m">4</span>
 </pre></div>
@@ -467,7 +467,7 @@ python torch_fedavg_mnist_lr_step_by_step_example.py --cf config/fedml_config.ya
 </div>
 </section>
 <section id="custom-data-and-model">
-<h2>Custom data and model<a class="headerlink" href="#custom-data-and-model" title="Permalink to this headline">¶</a></h2>
+<h2>Custom data and model<a class="headerlink" href="#custom-data-and-model" title="Permalink to this heading">¶</a></h2>
 <p>The operation of this part is similar to the <strong>custom data and mode</strong>l part in example  <a class="reference internal" href="sp_fedavg_mnist_lr_example.html"><span class="doc std std-doc"><strong><u>Simulate FL using a single process</u></strong></span></a> .</p>
 <p>In this section we will present how to <strong>customize the dataset and model</strong> using FedML based on the <code class="docutils literal notranslate"><span class="pre">Step</span> <span class="pre">by</span> <span class="pre">step</span> <span class="pre">example</span></code> and implement a stand-alone simulated version of the FedAvg algorithm.</p>
 <p>First we still need to complete the first two cases step1 and step2,  and then we can quickly implement the federation learning model training on the MNIST dataset with the following line of code for stand-alone simulation:</p>
@@ -547,9 +547,9 @@ python torch_fedavg_mnist_lr_step_by_step_example.py --cf config/fedml_config.ya
 </div>
 </section>
 <section id="develop-new-algorithms">
-<h2>Develop new algorithms<a class="headerlink" href="#develop-new-algorithms" title="Permalink to this headline">¶</a></h2>
+<h2>Develop new algorithms<a class="headerlink" href="#develop-new-algorithms" title="Permalink to this heading">¶</a></h2>
 <section id="base-framework">
-<h3>Base framework<a class="headerlink" href="#base-framework" title="Permalink to this headline">¶</a></h3>
+<h3>Base framework<a class="headerlink" href="#base-framework" title="Permalink to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">python/examples/simulation/mpi_base_framework_example</span></code></p>
 <p>This is a base framework used to develop new algorithm.
 You can copy this directory and modify directly. The basic message flow is workable.
@@ -590,7 +590,7 @@ python mpi_base_framework_example.py --cf config/fedml_config.yaml
 <p>You can customize <strong>device, dataset, model</strong> in this base framework.</p>
 </section>
 <section id="decentralized-framework">
-<h3>Decentralized framework<a class="headerlink" href="#decentralized-framework" title="Permalink to this headline">¶</a></h3>
+<h3>Decentralized framework<a class="headerlink" href="#decentralized-framework" title="Permalink to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">python/examples/simulation/mpi_decentralized_fl_example</span></code></p>
 <p>This is a decentralized framework used to develop new algorithm.
 You can copy this directory and modify directly. The basic message flow is workable.
@@ -702,6 +702,7 @@ python mpi_decentralized_fl_example.py --cf config/fedml_config.yaml
          <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
          <script src="../../_static/jquery.js"></script>
          <script src="../../_static/underscore.js"></script>
+         <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
          <script src="../../_static/doctools.js"></script>
      
 
