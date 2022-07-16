@@ -82,7 +82,7 @@ class FedAVGAggregator(object):
             and FedMLDefender.get_instance().is_defense_at_gradients()
         ):
             training_num, model_list = FedMLDefender.get_instance().defend(
-                model_list, self.get_global_model_params(), refs=None
+                model_list, self.get_global_model_params()
             )
 
         # logging.info("################aggregate: %d" % len(model_list))

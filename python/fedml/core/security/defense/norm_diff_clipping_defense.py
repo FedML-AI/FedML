@@ -13,7 +13,7 @@ class NormDiffClippingDefense(BaseDefenseMethod):
     def __init__(self, norm_bound):
         self.norm_bound = norm_bound  # for norm diff clipping and weak DP defenses
 
-    def defend(self, client_grad_list, global_w=None, refs=None):
+    def defend(self, client_grad_list, global_w=None):
         vec_global_w = utils.vectorize_weight(global_w)
         new_grad_list = []
         for (sample_num, local_w) in client_grad_list:
