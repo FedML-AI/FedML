@@ -3,6 +3,7 @@ import logging
 import os
 import signal
 import subprocess
+import sys
 from os.path import expanduser
 
 import psutil
@@ -107,7 +108,7 @@ class ServerConstants(object):
             yaml_object['process_id'] = str(process_ids)
             ServerConstants.generate_yaml_doc(yaml_object, process_id_file)
         except Exception as e:
-            logging.info(traceback.format_exc())
+            pass
 
     @staticmethod
     def cleanup_learning_process():
@@ -187,23 +188,44 @@ class ServerConstants(object):
             pass
 
     @staticmethod
-    def exec_console_with_script(script_path):
-        try:
-            subprocess.check_output(['sh', '-c', script_path])
-        except subprocess.CalledProcessError as ex:
-            logging.error("exec_console_with_script {}".format(str(ex)))
-        script_process = subprocess.Popen(['sh', '-c', script_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err = script_process.communicate()
-        return script_process, script_process.returncode, out, err
+    def exec_console_with_script(script_path, should_capture_stdout_err=False):
+        if should_capture_stdout_err:
+            script_process = subprocess.Popen(['sh', '-c', script_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        else:
+            script_process = subprocess.Popen(['sh', '-c', script_path], stdout=sys.stdout, stderr=subprocess.PIPE)
+        return script_process
 
     @staticmethod
-    def exec_console_with_shell(shell, script_path):
-        script_process = subprocess.Popen([shell, script_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err = script_process.communicate()
-        return script_process, script_process.returncode, out, err
+    def exec_console_with_shell(shell, script_path, should_capture_stdout_err=False):
+        if should_capture_stdout_err:
+            script_process = subprocess.Popen([shell, script_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        else:
+            script_process = subprocess.Popen([shell, script_path], stdout=sys.stdout, stderr=subprocess.PIPE)
+        return script_process
 
     @staticmethod
-    def exec_console_with_shell_script_list(shell_script_list):
-        script_process = subprocess.Popen(shell_script_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err = script_process.communicate()
-        return script_process, script_process.returncode, out, err
+    def exec_console_with_shell_script_list(shell_script_list, should_capture_stdout_err=False):
+        if should_capture_stdout_err:
+            script_process = subprocess.Popen(shell_script_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        else:
+            script_process = subprocess.Popen(shell_script_list, stdout=sys.stdout, stderr=subprocess.PIPE)
+        return script_process
+
+    @staticmethod
+    def get_console_pipe_out_err_results(script_process):
+        exec_out, exec_err = script_process.communicate()
+        return script_process.returncode, exec_out, exec_err
+
+    @staticmethod
+    def get_console_sys_out_pipe_err_results(script_process):
+        pipe_out, pipe_err = script_process.communicate()
+        exec_out, exec_err = sys.stdout, pipe_err
+        return script_process.returncode, exec_out, exec_err
+
+    @staticmethod
+    def print_console_output(script_process):
+        for info in iter(script_process.stdout.readline, ""):
+            print(info)
+
+        for info in iter(script_process.stderr.readline, ""):
+            print(info)
