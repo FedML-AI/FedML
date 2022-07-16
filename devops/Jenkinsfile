@@ -130,12 +130,7 @@ pipeline {
                 sh 'unzip awscliv2.zip'
                 sh 'mkdir -p ./devops/scripts/aws'
                 sh 'cp -Rf ./aws/* ./devops/scripts/aws'
-                sh 'rm -f ./docker'
-                sh 'rm -f ./kubectl'
-                sh 'unzip ./devops/scripts/docker.zip'
-                sh 'unzip ./devops/scripts/kubectl.zip'
-                sh 'cp -f ./docker ./devops/scripts/'
-                sh 'cp -f ./kubectl ./devops/scripts/'
+                sh 'cd ./devops/scripts/;unzip ./docker.zip;unzip ./kubectl.zip;cd ../../'
 
                 sh 'docker pull public.ecr.aws/x6k8q1x9/fedml-device-image:base'
 
@@ -173,12 +168,7 @@ pipeline {
               sh 'unzip awscliv2.zip'
               sh 'mkdir -p ./devops/scripts/aws'
               sh 'cp -Rf ./aws/* ./devops/scripts/aws'
-              sh 'rm -f ./docker'
-              sh 'rm -f ./kubectl'
-              sh 'unzip ./devops/scripts/docker.zip'
-              sh 'unzip ./devops/scripts/kubectl.zip'
-              sh 'cp -f ./docker ./devops/scripts/'
-              sh 'cp -f ./kubectl ./devops/scripts/'
+              sh 'cd ./devops/scripts/;unzip ./docker.zip;unzip ./kubectl.zip;cd ../../'
 
               sh 'docker pull public.ecr.aws/x6k8q1x9/fedml-device-image:base'
 
