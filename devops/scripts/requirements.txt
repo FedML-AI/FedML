@@ -3,3 +3,4 @@ grpcio
 grpcio-tools
 loguru
 dill
+multiprocess

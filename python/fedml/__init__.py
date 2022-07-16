@@ -1,5 +1,5 @@
 import logging
-import multiprocessing
+import multiprocess as multiprocessing
 import os
 import random
 
@@ -22,7 +22,7 @@ from .core.mlops import MLOpsRuntimeLog
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.7.205"
+__version__ = "0.7.208"
 
 
 def init(args=None):
@@ -193,7 +193,7 @@ def manage_mpi_args(args):
         # args.worker_num = worker_num
         assert (
             args.worker_num + 1 == world_size
-        ), f"Invalid number of mpi processes. Exepected {args.worker_num + 1}"
+        ), f"Invalid number of mpi processes. Expected {args.worker_num + 1}"
     else:
         args.comm = None
 
@@ -222,10 +222,7 @@ def init_cross_silo_hierarchical(args):
     else:
         # Modify arguments to match info set in env by torchrun
         # Silo Topology
-        if not hasattr(args, "n_node_in_silo"):
-            args.n_node_in_silo = 1
-        if not hasattr(args, "n_proc_per_node"):
-            args.n_proc_per_node = 1
+
         args.n_proc_in_silo = int(os.environ.get("WORLD_SIZE", 1))
 
         # Rank in node
@@ -243,6 +240,20 @@ def init_cross_silo_hierarchical(args):
         if not hasattr(args, "launcher_rdzv_port"):
             args.launcher_rdzv_port = 29400
 
+        if not hasattr(args, "n_node_in_silo"):
+            args.n_node_in_silo = 1
+        if not (hasattr(args, "n_proc_per_node") and args.n_proc_per_node):
+            pass
+            if  args.n_node_in_silo == 1 and torch.cuda.is_available():
+                gpu_count = torch.cuda.device_count()
+                if gpu_count == args.n_proc_in_silo:
+                    print(f"Auto assigning GPU to processes.")
+                    args.gpu_id = args.proc_rank_in_silo
+                else:
+                    args.n_proc_per_node = 1
+            else:
+                args.n_proc_per_node = 1
+
     return args
 
 
@@ -252,7 +263,6 @@ def update_client_id_list(args):
         generate args.client_id_list for CLI mode where args.client_id_list is set to None
         In MLOps mode, args.client_id_list will be set to real-time client id list selected by UI (not starting from 1)
     """
-    print("########")
     if not hasattr(args, "using_mlops") or (
         hasattr(args, "using_mlops") and not args.using_mlops
     ):

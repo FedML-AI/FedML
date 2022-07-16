@@ -140,7 +140,7 @@ def build_fedml_entry_cmd(base_dir):
     fedml_conf_file = package_config["entry_config"]["conf_file"]
     package_dynamic_args = package_config["dynamic_args"]
     entry_cmd = (
-        " --cf " + fedml_conf_file + " --rank " + str(package_dynamic_args["rank"])
+        " --cf " + fedml_conf_file + " --rank " + int(package_dynamic_args["rank"])
     )
     if is_local_test:
         entry_cmd = (
