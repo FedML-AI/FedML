@@ -130,8 +130,10 @@ pipeline {
                 sh 'unzip awscliv2.zip'
                 sh 'mkdir -p ./devops/scripts/aws'
                 sh 'cp -Rf ./aws/* ./devops/scripts/aws'
-                sh 'unzip -o ./devops/scripts/docker.zip'
-                sh 'unzip -o ./devops/scripts/kubectl.zip'
+                sh 'rm -f ./devops/scripts/docker'
+                sh 'rm -f ./devops/scripts/kubectl'
+                sh 'unzip ./devops/scripts/docker.zip'
+                sh 'unzip ./devops/scripts/kubectl.zip'
                 sh 'cp -f ./docker ./devops/scripts/'
                 sh 'cp -f ./kubectl ./devops/scripts/'
 
