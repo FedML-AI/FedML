@@ -15,7 +15,7 @@
   <!-- End Google Tag Manager -->
 
   <meta charset="utf-8">
-  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="google-site-verification" content="okUst94cAlWSsUsGZTB4xSS4UKTtRV8Nu5XZ9pdd3Aw" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -298,7 +298,7 @@
       <li class="pytorch-breadcrumbs-aside">
         
             
-            <a href="../../_sources/cross-device/examples/mqtt_s3_fedavg_mnist_lr_example.md.txt" rel="nofollow"><img src="../../_static/images/view-page-source-icon.svg"></a>
+            <a href="../../_sources/cross-device/examples/cross_device_android_example.md.txt" rel="nofollow"><img src="../../_static/images/view-page-source-icon.svg"></a>
           
         
       </li>
@@ -325,16 +325,27 @@
              <article itemprop="articleBody" id="pytorch-article" class="pytorch-article">
               
   <section id="federated-learning-on-android-smartphones">
-<h1>Federated Learning on Android Smartphones<a class="headerlink" href="#federated-learning-on-android-smartphones" title="Permalink to this headline">¶</a></h1>
+<h1>Federated Learning on Android Smartphones<a class="headerlink" href="#federated-learning-on-android-smartphones" title="Permalink to this heading">¶</a></h1>
+<p>Please follow this tutorial (https://doc.fedml.ai/mlops/user_guide.html) to start training using FedML BeeHive Platform.</p>
+<table>
+<tr>
+<td valign="center">
+<img src="./../../_static/image/android_running.jpeg" alt="drawing" style="width:300px;"/>
+</td>
+<td valign="center">
+<img src="./../../_static/image/edge_devices_overview.png" alt="drawing" style="width:400px;"/>
+</td>
+</tr>
+</table>
 <p>This example will guide you to work through how to run federated learning on Android smartphones.
 The code for this example locates in the following two paths:</p>
-<p>Python Server: <code class="docutils literal notranslate"><span class="pre">python/examples/cross_device/mqtt_s3_fedavg_mnist_lr_example</span></code></p>
-<p>Android Client: <code class="docutils literal notranslate"><span class="pre">mobile/android</span></code></p>
-<p>For the source code of Android Client, we will release it soon. Currently, we show you the step-by-step user experiment of using FedML Beehive.</p>
+<p>Android Client (App) and SDK: <a class="reference external" href="https://github.com/FedML-AI/FedML/tree/master/android">https://github.com/FedML-AI/FedML/tree/master/android</a></p>
+<p>Python Server: <a class="reference external" href="https://github.com/FedML-AI/FedML/tree/master/python/quick_start/beehive">https://github.com/FedML-AI/FedML/tree/master/python/quick_start/beehive</a></p>
+<p>Android Client is an open source version. Check <a class="reference external" href="https://github.com/FedML-AI/FedML/blob/master/android/README.md">this guidance</a> to understand the software architecture design. Next show you the step-by-step user experiment of using FedML Beehive.</p>
 <section id="install-synthetic-data-on-android-devices">
-<h2><strong>1. Install Synthetic Data on Android Devices</strong><a class="headerlink" href="#install-synthetic-data-on-android-devices" title="Permalink to this headline">¶</a></h2>
+<h2><strong>1. Install Synthetic Data on Android Devices</strong><a class="headerlink" href="#install-synthetic-data-on-android-devices" title="Permalink to this heading">¶</a></h2>
 <section id="install-the-adb-command-tool-on-your-laptop">
-<h3>1.1 Install the adb command tool on your laptop<a class="headerlink" href="#install-the-adb-command-tool-on-your-laptop" title="Permalink to this headline">¶</a></h3>
+<h3>1.1 Install the adb command tool on your laptop<a class="headerlink" href="#install-the-adb-command-tool-on-your-laptop" title="Permalink to this heading">¶</a></h3>
 <p>If you haven’t installed <code class="docutils literal notranslate"><span class="pre">adb</span></code>, please refer to the installation steps at <a class="reference external" href="https://www.xda-developers.com/install-adb-windows-macos-linux/">https://www.xda-developers.com/install-adb-windows-macos-linux/</a></p>
 <p>Then you should turn on the developer mode and USB debugging options for your Android device. The specific operation of each brand of device is not consistent; you can find and refer to the relevant instructions.</p>
 <p>Next please connect the Android device to your laptop, and run the following command to see your device serial number.</p>
@@ -344,7 +355,7 @@ The code for this example locates in the following two paths:</p>
 <p>If it works correctly, it means you have successfully connected your laptop to your mobile device using adb.</p>
 </section>
 <section id="transferring-data-to-mobile-devices">
-<h3>1.2 Transferring data to mobile devices<a class="headerlink" href="#transferring-data-to-mobile-devices" title="Permalink to this headline">¶</a></h3>
+<h3>1.2 Transferring data to mobile devices<a class="headerlink" href="#transferring-data-to-mobile-devices" title="Permalink to this heading">¶</a></h3>
 <p>You can download the required data and transfer it to the specified directory of the device with the following command:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bash prepare.sh
 </pre></div>
@@ -372,33 +383,113 @@ adb push <span class="nv">$CIFAR10_DIR</span> <span class="nv">$ANDROID_DIR</spa
 <p>The MNIST dataset folder and the CIFAR-10 dataset folder can be moved to <code class="docutils literal notranslate"><span class="pre">/sdcard/ai</span></code> by running the above script.</p>
 </section>
 </section>
-<section id="install-android-apk-bind-your-android-smartphone-devices-to-fedml-mlops-platform-and-set-the-data-path">
-<h2><strong>2. Install Android Apk, bind your Android smartphone devices to FedML MLOps Platform, and set the data path</strong><a class="headerlink" href="#install-android-apk-bind-your-android-smartphone-devices-to-fedml-mlops-platform-and-set-the-data-path" title="Permalink to this headline">¶</a></h2>
-<p>After Android Application (APK) is installed, please go to the MLOps platform (open.fedml.ai) and switch to the <code class="docutils literal notranslate"><span class="pre">Edge</span> <span class="pre">Devices</span></code> page, you can see a list of <strong>My Edge Devices</strong> at the bottom, as well as a QR code and <strong>Account ID:XXX</strong> at the top right.</p>
-<img src="./../../_static/image/image-20220427204703095.png" alt="image-20220427204703095" style="zoom:67%;" />
+<section id="get-started-with-fedml-android-app">
+<h2>2. Get Started with FedML Android App<a class="headerlink" href="#get-started-with-fedml-android-app" title="Permalink to this heading">¶</a></h2>
+<p>This section guides you through 1) installing Android Apk, 2) binding your Android smartphone devices to FedML MLOps Platform, and 3) set the data path for training.</p>
+<p>After installing FedML Android App (https://github.com/FedML-AI/FedML/tree/master/android/app), please go to the MLOps platform (https://open.fedml.ai) - Beehive and switch to the <code class="docutils literal notranslate"><span class="pre">Edge</span> <span class="pre">Devices</span></code> page, you can see a list of <strong>My Edge Devices</strong> at the bottom, as well as a QR code and <strong>Account ID:XXX</strong> at the top right.</p>
+<img src="./../../_static/image/beehive-device.png" alt="image-20220427204703095" style="zoom:67%;" />
 <p>You can also see the binding devices in the <strong>My Edge Devices</strong> list on the web page.</p>
-<img src="./../../_static/image/image-20220428114641519.png" alt="image-20220428114641519" />
-<p>To set datapath on your device, click the top green bar. Set it as the path to the corresponding dataset moved to the Android device.</p>
-<img src="./../../_static/image/image-20220428113930309.png" alt="image-20220428113930309" style="width:300px;margin:0 auto" />
-<section id="start-fl-server">
-<h3>3. <strong>Start FL Server</strong><a class="headerlink" href="#start-fl-server" title="Permalink to this headline">¶</a></h3>
-<p>start the python server at <code class="docutils literal notranslate"><span class="pre">FedML-refactor/python/examples/cross_device/mqtt_s3_fedavg_mnist_lr_example</span></code> . Remember to start your application before start the server.</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bash run_server.sh
+<p>To set data path on your device, click the top green bar. Set it as the path to the corresponding dataset moved to the Android device (find the folder name starting from ai.fedml).</p>
+<section id="deploy-fl-server">
+<h3>3. <strong>Deploy FL Server</strong><a class="headerlink" href="#deploy-fl-server" title="Permalink to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Build Python Server Package and Upload to FedML MLOps Platform (“Create Application”)</p></li>
+</ul>
+<p><a class="reference external" href="https://github.com/FedML-AI/FedML/tree/master/python/quick_start/beehive">https://github.com/FedML-AI/FedML/tree/master/python/quick_start/beehive</a></p>
+<ul class="simple">
+<li><p>For local debugging of cross-device server, please try</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sh</span> <span class="n">run_server</span><span class="o">.</span><span class="n">sh</span>
 </pre></div>
 </div>
-<p>You will see the output in the server console similar to the following, with each round outputting the current test accuracy and loss:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>FedML-Server<span class="o">(</span><span class="m">0</span><span class="o">)</span> @device-id-0 - Thu, <span class="m">28</span> Apr <span class="m">2022</span> <span class="m">02</span>:48:53 mlops_metrics.py<span class="o">[</span>line:88<span class="o">]</span> INFO report_aggregated_model_info. <span class="nv">message_json</span> <span class="o">=</span> <span class="o">{</span><span class="s1">&#39;run_id&#39;</span>: <span class="s1">&#39;189&#39;</span>, <span class="s1">&#39;round_idx&#39;</span>: <span class="m">2</span>, <span class="s1">&#39;global_aggregated_model_s3_address&#39;</span>: None<span class="o">}</span>
-FedML-Server<span class="o">(</span><span class="m">0</span><span class="o">)</span> @device-id-0 - Thu, <span class="m">28</span> Apr <span class="m">2022</span> <span class="m">02</span>:49:22 mqtt_s3_comm_manager.py<span class="o">[</span>line:164<span class="o">]</span> INFO --------------------------
-...
-<span class="o">[</span><span class="m">2022</span>-04-28 <span class="m">02</span>:49:31,128<span class="o">]</span> <span class="o">[</span>INFO<span class="o">]</span> <span class="o">[</span>fedml_aggregator.py:76:aggregate<span class="o">]</span> <span class="nv">training_num</span> <span class="o">=</span> <span class="m">300</span>
-<span class="o">[</span><span class="m">2022</span>-04-28 <span class="m">02</span>:49:31,128<span class="o">]</span> <span class="o">[</span>INFO<span class="o">]</span> <span class="o">[</span>fedml_aggregator.py:77:aggregate<span class="o">]</span> len of self.model_dict<span class="o">[</span>idx<span class="o">]</span> <span class="o">=</span> <span class="m">1</span>
-<span class="o">[</span><span class="m">2022</span>-04-28 <span class="m">02</span>:49:31,129<span class="o">]</span> <span class="o">[</span>INFO<span class="o">]</span> <span class="o">[</span>fedml_aggregator.py:91:aggregate<span class="o">]</span> aggregate <span class="nb">time</span> cost: <span class="m">0</span>
-<span class="o">[</span><span class="m">2022</span>-04-28 <span class="m">02</span>:49:32,711<span class="o">]</span> <span class="o">[</span>INFO<span class="o">]</span> <span class="o">[</span>fedml_aggregator.py:200:test_on_server_for_all_clients<span class="o">]</span> <span class="nb">test</span> <span class="nv">acc</span> <span class="o">=</span> <span class="m">83</span>.27
-<span class="o">[</span><span class="m">2022</span>-04-28 <span class="m">02</span>:49:32,711<span class="o">]</span> <span class="o">[</span>INFO<span class="o">]</span> <span class="o">[</span>fedml_aggregator.py:201:test_on_server_for_all_clients<span class="o">]</span> <span class="nb">test</span> <span class="nv">loss</span> <span class="o">=</span> <span class="m">0</span>.5836178064346313
-...
+<ul class="simple">
+<li><p>Launch the training by using FedML MLOps (https://open.fedml.ai)</p></li>
+</ul>
+<p>Steps at MLOps: create group -&gt; create project -&gt; create run -&gt; select application (the one we created for Android) -&gt; start run</p>
+<p>On the Android side, you will see training status as follows if every step works correctly.</p>
+<img src="./../../_static/image/android_running.jpeg" alt="image-20220428113930309" style="width:350px;margin:0 auto" />
+</section>
+</section>
+<section id="get-started-with-integrating-android-sdk-for-your-host-app">
+<h2>3. Get Started with Integrating Android SDK for Your Host App<a class="headerlink" href="#get-started-with-integrating-android-sdk-for-your-host-app" title="Permalink to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">android/fedmlsdk_demo</span></code> is a short tutorial for integrating Android SDK for your host App.</p>
+<ol class="arabic simple">
+<li><p>add repositories by maven</p></li>
+</ol>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span>    <span class="n">maven</span> <span class="o">{</span> <span class="n">url</span> <span class="s1">&#39;https://s01.oss.sonatype.org/content/repositories/snapshots&#39;</span> <span class="o">}</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>add dependency in build.gradle</p></li>
+</ol>
+<p>check <code class="docutils literal notranslate"><span class="pre">android/fedmlsdk_demo/build.gradle</span></code> as an example:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span>    <span class="n">implementation</span> <span class="s1">&#39;ai.fedml:fedml-edge-android:1.0.0-SNAPSHOT&#39;</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="3">
+<li><p>add FedML account id to meta-data in AndroidManifest.xml</p></li>
+</ol>
+<p>check <code class="docutils literal notranslate"><span class="pre">android/fedmlsdk_demo/src/main/AndroidManifest.xml</span></code> as an example:</p>
+<div class="highlight-xml notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;meta-data</span> <span class="na">android:name=</span><span class="s">&quot;fedml_account&quot;</span> <span class="na">android:value=</span><span class="s">&quot;208&quot;</span> <span class="nt">/&gt;</span>
+</pre></div>
+</div>
+<p>or</p>
+<div class="highlight-xml notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;meta-data</span> <span class="na">android:name=</span><span class="s">&quot;fedml_account&quot;</span> <span class="na">android:resource=</span><span class="s">&quot;@string/fed_ml_account&quot;</span> <span class="nt">/&gt;</span>
+</pre></div>
+</div>
+<p>You can find your account ID at FedML Open Platform (https://open.fedml.ai):
+<img alt="account" src="../../_images/beehive_account.png" /></p>
+<ol class="arabic simple" start="4">
+<li><p>initial FedML Android SDK on your <code class="docutils literal notranslate"><span class="pre">Application</span></code> class.</p></li>
+</ol>
+<p>Taking <code class="docutils literal notranslate"><span class="pre">android/fedmlsdk_demo/src/main/java/ai/fedml/edgedemo/App.java</span></code> as an example:</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kn">package</span> <span class="nn">ai.fedml.edgedemo</span><span class="p">;</span>
+
+<span class="kn">import</span> <span class="nn">android.app.Application</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">android.os.Handler</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">android.os.Looper</span><span class="p">;</span>
+
+<span class="kn">import</span> <span class="nn">ai.fedml.edge.FedEdgeManager</span><span class="p">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">App</span> <span class="kd">extends</span> <span class="n">Application</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="n">Handler</span> <span class="n">sHandler</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Handler</span><span class="p">(</span><span class="n">Looper</span><span class="p">.</span><span class="na">getMainLooper</span><span class="p">());</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">onCreate</span><span class="p">()</span> <span class="p">{</span>
+        <span class="kd">super</span><span class="p">.</span><span class="na">onCreate</span><span class="p">();</span>
+        
+        <span class="c1">// initial Edge SDK</span>
+        <span class="n">FedEdgeManager</span><span class="p">.</span><span class="na">getFedEdgeApi</span><span class="p">().</span><span class="na">init</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
+        
+        <span class="c1">// set data path (to prepare data, please check this script `android/data/prepare.sh`)</span>
+        <span class="n">FedEdgeManager</span><span class="p">.</span><span class="na">getFedEdgeApi</span><span class="p">().</span><span class="na">setPrivatePath</span><span class="p">(</span><span class="n">Environment</span><span class="p">.</span><span class="na">getExternalStorageDirectory</span><span class="p">().</span><span class="na">getPath</span><span class="p">()</span>
+                <span class="o">+</span> <span class="s">&quot;/ai.fedml/device_1/user_0&quot;</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 </section>
+<section id="android-sdk-apis">
+<h2>Android SDK APIs<a class="headerlink" href="#android-sdk-apis" title="Permalink to this heading">¶</a></h2>
+<p>At the current stage, we provide high-level APIs with the following three classes.</p>
+<ul class="simple">
+<li><p>ai.fedml.edge.FedEdgeManager</p></li>
+</ul>
+<p>This is the top APIs in FedML Android SDK, it supports core training engine and related control commands on your Android devices.</p>
+<ul class="simple">
+<li><p>ai.fedml.edge.OnTrainProgressListener</p></li>
+</ul>
+<p>This is the message flow to interact between FedML Android SDK and your host APP.</p>
+<ul class="simple">
+<li><p>ai.fedml.edge.request.RequestManager</p></li>
+</ul>
+<p>This is used to to connect your Android SDK with FedML Open Platform (https://open.fedml.ai), which helps you to simplify the deployment, edge collaborative training, experimental tracking, and more.</p>
+<p>You can import them in your Java/Android projects as follows. See <span class="xref myst">android/fedmlsdk_demo/src/main/java/ai/fedml/edgedemo/ui/main/MainFragment.java</span> as an example.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">ai.fedml.edge.FedEdgeManager</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">ai.fedml.edge.OnTrainProgressListener</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">ai.fedml.edge.request.RequestManager</span><span class="p">;</span>
+</pre></div>
+</div>
 </section>
 </section>
 
@@ -442,10 +533,12 @@ FedML-Server<span class="o">(</span><span class="m">0</span><span class="o">)</s
 <li><a class="reference internal" href="#transferring-data-to-mobile-devices">1.2 Transferring data to mobile devices</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#install-android-apk-bind-your-android-smartphone-devices-to-fedml-mlops-platform-and-set-the-data-path"><strong>2. Install Android Apk, bind your Android smartphone devices to FedML MLOps Platform, and set the data path</strong></a><ul>
-<li><a class="reference internal" href="#start-fl-server">3. <strong>Start FL Server</strong></a></li>
+<li><a class="reference internal" href="#get-started-with-fedml-android-app">2. Get Started with FedML Android App</a><ul>
+<li><a class="reference internal" href="#deploy-fl-server">3. <strong>Deploy FL Server</strong></a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#get-started-with-integrating-android-sdk-for-your-host-app">3. Get Started with Integrating Android SDK for Your Host App</a></li>
+<li><a class="reference internal" href="#android-sdk-apis">Android SDK APIs</a></li>
 </ul>
 </li>
 </ul>
@@ -466,6 +559,7 @@ FedML-Server<span class="o">(</span><span class="m">0</span><span class="o">)</s
          <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
          <script src="../../_static/jquery.js"></script>
          <script src="../../_static/underscore.js"></script>
+         <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
          <script src="../../_static/doctools.js"></script>
      
 

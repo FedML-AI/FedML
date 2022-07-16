@@ -15,7 +15,7 @@
   <!-- End Google Tag Manager -->
 
   <meta charset="utf-8">
-  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="google-site-verification" content="okUst94cAlWSsUsGZTB4xSS4UKTtRV8Nu5XZ9pdd3Aw" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -327,7 +327,7 @@
              <article itemprop="articleBody" id="pytorch-article" class="pytorch-article">
               
   <section id="fedml-mlops-user-guide">
-<h1>FedML MLOps User Guide<a class="headerlink" href="#fedml-mlops-user-guide" title="Permalink to this headline">¶</a></h1>
+<h1>FedML MLOps User Guide<a class="headerlink" href="#fedml-mlops-user-guide" title="Permalink to this heading">¶</a></h1>
 <p>Video Tutorial:
 <a class="reference external" href="https://www.youtube.com/watch?v=Xgm0XEaMlVQ">https://www.youtube.com/watch?v=Xgm0XEaMlVQ</a></p>
 <p><strong>Write Once, Run Anywhere: Seamlessly Migrate Your Local Development to the Real-world Edge-cloud Deployment</strong></p>
@@ -341,7 +341,7 @@
 <li><p>Experimental Tracking via Simplified Project Management</p></li>
 </ul>
 <section id="how-does-fedml-mlops-platform-work">
-<h2>How Does FedML MLOps Platform Work?<a class="headerlink" href="#how-does-fedml-mlops-platform-work" title="Permalink to this headline">¶</a></h2>
+<h2>How Does FedML MLOps Platform Work?<a class="headerlink" href="#how-does-fedml-mlops-platform-work" title="Permalink to this heading">¶</a></h2>
 <p><img alt="image" src="../_images/mlops_workflow_new.png" /> <br />
 Figure 1: the workflow describing how MLOps works</p>
 <p>MLOps works as the figure shown above. Such a workflow is handled by web UI without the need to handle complex deployment.
@@ -352,7 +352,7 @@ Please open <a class="reference external" href="https://open.fedml.ai">https://o
 </ul>
 </section>
 <section id="local-development-and-building-mlops-packages">
-<h2>Local Development and Building MLOps Packages<a class="headerlink" href="#local-development-and-building-mlops-packages" title="Permalink to this headline">¶</a></h2>
+<h2>Local Development and Building MLOps Packages<a class="headerlink" href="#local-development-and-building-mlops-packages" title="Permalink to this heading">¶</a></h2>
 <p>After you finish the local developing/debugging of the FedML project using FedML library (e.g., successfully run the example <a class="reference external" href="https://doc.fedml.ai/cross-silo/examples/mqtt_s3_fedavg_mnist_lr_example.html">https://doc.fedml.ai/cross-silo/examples/mqtt_s3_fedavg_mnist_lr_example.html</a>),
 you can now deploy it into the real-world edge-cloud system.</p>
 <p>Next, we use the cross-silo project example at
@@ -360,7 +360,7 @@ you can now deploy it into the real-world edge-cloud system.</p>
 to guide you through how to deploy it and collaborate with others data silos.</p>
 </section>
 <section id="create-application-and-upload-local-packages">
-<h2>1. Create Application and Upload Local Packages<a class="headerlink" href="#create-application-and-upload-local-packages" title="Permalink to this headline">¶</a></h2>
+<h2>1. Create Application and Upload Local Packages<a class="headerlink" href="#create-application-and-upload-local-packages" title="Permalink to this heading">¶</a></h2>
 <p><img alt="image" src="../_images/mlops_create_application.png" /></p>
 <p>You can use the following FedML CLI to build the package, and then upload the packages as shown in the figure above.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>fedml build -t client -sf <span class="nv">$SOURCE</span> -ep <span class="nv">$ENTRY</span> -cf <span class="nv">$CONFIG</span> -df <span class="nv">$DEST</span>
@@ -438,7 +438,7 @@ Now you may use ./mlops/server-package.zip to start your federated learning run.
 <p>The output package locates at <code class="docutils literal notranslate"><span class="pre">mlops</span></code> folder.</p>
 </section>
 <section id="install-fedml-agent-fedml-login-account-id">
-<h2>2. Install FedML Agent: fedml login $account_id<a class="headerlink" href="#install-fedml-agent-fedml-login-account-id" title="Permalink to this headline">¶</a></h2>
+<h2>2. Install FedML Agent: fedml login $account_id<a class="headerlink" href="#install-fedml-agent-fedml-login-account-id" title="Permalink to this heading">¶</a></h2>
 <p>After <a class="reference external" href="https://doc.fedml.ai/starter/installation.html">installing the FedML library</a> at your edge devices, you can bind it to MLOps platform with a simple CLI:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>fedml login $account_id
 </pre></div>
@@ -467,7 +467,7 @@ Your device id is @0xb6ff42da6a7e.MacOS. You may review the device <span class="
 </div>
 </section>
 <section id="invite-collaborators-create-a-group-and-a-project">
-<h2>3. Invite Collaborators, Create a Group and a Project<a class="headerlink" href="#invite-collaborators-create-a-group-and-a-project" title="Permalink to this headline">¶</a></h2>
+<h2>3. Invite Collaborators, Create a Group and a Project<a class="headerlink" href="#invite-collaborators-create-a-group-and-a-project" title="Permalink to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>3.1 Invite Collaborators <br></p></li>
 </ul>
@@ -487,7 +487,7 @@ Figure 3: invite your collaborators</p>
 Figure 4: showing the topology of the group</p>
 </section>
 <section id="start-run-training-via-automated-deployment-and-scaling">
-<h2>4. Start Run (Training) via Automated Deployment and Scaling<a class="headerlink" href="#start-run-training-via-automated-deployment-and-scaling" title="Permalink to this headline">¶</a></h2>
+<h2>4. Start Run (Training) via Automated Deployment and Scaling<a class="headerlink" href="#start-run-training-via-automated-deployment-and-scaling" title="Permalink to this heading">¶</a></h2>
 <p>Now let’s create a project and get training started!</p>
 <ul class="simple">
 <li><p>Create a new project for a specific group or utilize the existing project you created before</p></li>
@@ -497,7 +497,7 @@ Figure 4: showing the topology of the group</p>
 Figure 5: create and start a new run</p>
 </section>
 <section id="experimental-tracking-via-simplified-project-management">
-<h2>5. Experimental Tracking via Simplified Project Management<a class="headerlink" href="#experimental-tracking-via-simplified-project-management" title="Permalink to this headline">¶</a></h2>
+<h2>5. Experimental Tracking via Simplified Project Management<a class="headerlink" href="#experimental-tracking-via-simplified-project-management" title="Permalink to this heading">¶</a></h2>
 <p>Now you are ready to start the training, enjoy! We provide the following experimental tracking abilities as follows.</p>
 <ul class="simple">
 <li><p>monitoring device status (including logging in each device) and training progress
@@ -585,6 +585,7 @@ Figure 5: create and start a new run</p>
          <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
          <script src="../_static/jquery.js"></script>
          <script src="../_static/underscore.js"></script>
+         <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
          <script src="../_static/doctools.js"></script>
      
 
