@@ -13,7 +13,7 @@ environment_args:
 
 data_args:
   dataset: "coco"
-  data_cache_dir: "./data/"
+  data_cache_dir: ~/fedcv_data
   partition_method: "homo"
   partition_alpha: 0.5
   data_conf: "./data/coco128.yaml" # yolo
@@ -48,8 +48,6 @@ validation_args:
 device_args:
   worker_num: 0
   using_gpu: false
-  gpu_mapping_file: config/gpu_mapping.yaml
-  gpu_mapping_key: mapping_default
 
 comm_args:
   backend: "MQTT_S3"

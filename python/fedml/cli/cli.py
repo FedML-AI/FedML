@@ -523,7 +523,7 @@ def build_mlops_package(
             "  rank: " + rank + "\n",
             "  run_id: ${FEDSYS.RUN_ID}\n",
             # "  data_cache_dir: ${FEDSYS.PRIVATE_LOCAL_DATA}\n",
-            "  data_cache_dir: /fedml/fedml-package/fedml/data\n",
+            # "  data_cache_dir: /fedml/fedml-package/fedml/data\n",
             "  mqtt_config_path: /fedml/fedml_config/mqtt_config.yaml\n",
             "  s3_config_path: /fedml/fedml_config/s3_config.yaml\n",
             "  log_file_dir: /fedml/fedml-package/fedml/data\n",
