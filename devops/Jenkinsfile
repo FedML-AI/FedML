@@ -126,13 +126,7 @@ pipeline {
           }
           steps {
             container('base') {
-                sh 'curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"'
-                sh 'unzip awscliv2.zip'
-                sh 'cp -Rf ./aws/* ./devops/scripts/aws'
-
                 sh 'docker pull public.ecr.aws/x6k8q1x9/fedml-device-image:base'
-
-                sh 'docker build -f ./devops/dockerfile/device-image/Dockerfile-Base -t public.ecr.aws/x6k8q1x9/fedml-device-image:base .'
 
                 sh 'docker build -f ./devops/dockerfile/device-image/Dockerfile-Dev -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_DEV .'
 
@@ -162,13 +156,7 @@ pipeline {
           }
           steps {
             container('base') {
-              sh 'curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"'
-              sh 'unzip awscliv2.zip'
-              sh 'cp -Rf ./aws/* ./devops/scripts/aws'
-
               sh 'docker pull public.ecr.aws/x6k8q1x9/fedml-device-image:base'
-
-              sh 'docker build -f ./devops/dockerfile/device-image/Dockerfile-Base -t public.ecr.aws/x6k8q1x9/fedml-device-image:base .'
 
               sh 'docker build -f ./devops/dockerfile/device-image/Dockerfile-Release -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_PRODUCTION .'
 
@@ -193,7 +181,6 @@ pipeline {
                  }
               }
 
-              sh 'docker push  public.ecr.aws/x6k8q1x9/fedml-device-image:base'
               sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_DEV'
               sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_DEV'
             }
@@ -215,7 +202,6 @@ pipeline {
                     sh 'docker login --username $AWS_ECR_USERNAME --password $(/usr/local/bin/aws ecr-public get-login-password --region $AWS_REGION) $REGISTRY_TEST'
                  }
               }
-
               sh 'docker push  $REGISTRY_TEST/$DOCKER_NAMESPACE_TEST$APP_NAME_DEVICE_IMAGE:$VERSION_TEST'
               sh 'docker push  $REGISTRY_TEST/$DOCKER_NAMESPACE_TEST$APP_NAME_SERVER_AGENT:$VERSION_TEST'
             }
@@ -238,7 +224,6 @@ pipeline {
                  }
               }
 
-              sh 'docker push  public.ecr.aws/x6k8q1x9/fedml-device-image:base'
               sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_PRODUCTION'
               sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_PRODUCTION'
             }
