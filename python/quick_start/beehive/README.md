@@ -27,3 +27,7 @@ brew install android-platform-tools
 ```
 sh run_server.sh
 ```
+
+6. Launch the training by using FedML MLOps (https://open.fedml.ai)
+
+create group -> create project -> create run -> select application (the one we created for Android)
