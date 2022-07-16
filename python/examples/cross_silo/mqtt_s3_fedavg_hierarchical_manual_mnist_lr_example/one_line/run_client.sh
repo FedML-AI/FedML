@@ -2,4 +2,4 @@
 RANK=$1
 NODE_RANK=$2
 
-python3 client_dist_launcher.py --cf config/fedml_config.yaml --rank $RANK --node_rank $NODE_RANK
+fedml launch main_fedml_cross_silo_hi.py --cf config/fedml_config.yaml --rank $RANK -node_rank $NODE_RANK --role client

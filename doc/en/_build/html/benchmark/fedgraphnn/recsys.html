@@ -15,7 +15,7 @@
   <!-- End Google Tag Manager -->
 
   <meta charset="utf-8">
-  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="google-site-verification" content="okUst94cAlWSsUsGZTB4xSS4UKTtRV8Nu5XZ9pdd3Aw" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -325,9 +325,9 @@
              <article itemprop="articleBody" id="pytorch-article" class="pytorch-article">
               
   <section id="subgraph-level-link-prediction-for-recommender-systems">
-<h1>Subgraph-Level Link Prediction for Recommender Systems<a class="headerlink" href="#subgraph-level-link-prediction-for-recommender-systems" title="Permalink to this headline">¶</a></h1>
+<h1>Subgraph-Level Link Prediction for Recommender Systems<a class="headerlink" href="#subgraph-level-link-prediction-for-recommender-systems" title="Permalink to this heading">¶</a></h1>
 <section id="motivation">
-<h2>Motivation<a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<h2>Motivation<a class="headerlink" href="#motivation" title="Permalink to this heading">¶</a></h2>
 <p>As graphs are getting bigger and bigger nowadays, it is common to see their subgraphs
 separately collected and stored in multiple local systems. Therefore, it is natural to
 consider the subgraph federated learning setting, where each local user/system holds
@@ -339,7 +339,7 @@ makes each data owner only holding a part of the global user-item graph. To simu
 scenarios, we use recommendation datasets from publicly available sources  which have high-quality meta-data information.</p>
 </section>
 <section id="training">
-<h2>Training<a class="headerlink" href="#training" title="Permalink to this headline">¶</a></h2>
+<h2>Training<a class="headerlink" href="#training" title="Permalink to this heading">¶</a></h2>
 <p>Before starting training, make sure that setup with  <code class="docutils literal notranslate"><span class="pre">config/fedml_config.yaml</span></code> is correct. For this tasks we have two available datasets:  <code class="docutils literal notranslate"><span class="pre">ciao</span></code> and <code class="docutils literal notranslate"><span class="pre">epinions</span></code>. Then, run the following script with the desired number of GPU workers.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sh</span> <span class="n">run_fed_subgraph_link_pred</span><span class="o">.</span><span class="n">sh</span> <span class="mi">4</span>
 </pre></div>
@@ -404,6 +404,7 @@ scenarios, we use recommendation datasets from publicly available sources  which
          <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
          <script src="../../_static/jquery.js"></script>
          <script src="../../_static/underscore.js"></script>
+         <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
          <script src="../../_static/doctools.js"></script>
      
 
