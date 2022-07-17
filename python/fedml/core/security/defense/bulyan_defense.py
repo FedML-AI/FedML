@@ -30,7 +30,7 @@ class BulyanDefense(BaseDefenseMethod):
             byzantine_client_num,
         )
 
-    def defend(self, client_grad_list, global_w=None, refs=None):
+    def defend(self, client_grad_list, global_w=None):
         # note: client_grad_list is a list, each item is (sample_num, gradients).
         num_clients = len(client_grad_list)
         (num0, localw0) = client_grad_list[0]
