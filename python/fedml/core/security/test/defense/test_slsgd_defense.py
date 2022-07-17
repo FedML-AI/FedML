@@ -25,17 +25,17 @@ def test__sort_and_trim():
     )
 
 
-def test_aggregation():
+def test_robustify_global_model():
     for alpha in [0, 0.5, 1]:
         avg_w, global_w = create_fake_local_w_global_w()
         print(f"avg_w = {avg_w}")
         print(f"global_w = {global_w}")
         print(
-            f"alpha = {alpha}, aggregation = {SLSGDDefense(trim_param_b=3, alpha=alpha, option_type=2).aggregate(avg_w, global_w)}"
+            f"alpha = {alpha}, aggregation = {SLSGDDefense(trim_param_b=3, alpha=alpha, option_type=2).robustify_global_model(avg_w, global_w)}"
         )
 
 
 if __name__ == "__main__":
     test_defense_option2()
     test__sort_and_trim()
-    test_aggregation()
+    test_robustify_global_model()
