@@ -1,15 +1,14 @@
 import logging
 import os
+import shutil
 import signal
 import subprocess
 import sys
-import traceback
 from os.path import expanduser
 
 import psutil
 import yaml
-#from ...cli.comm_utils.yaml_utils import load_yaml_config
-from fedml.cli.comm_utils.yaml_utils import load_yaml_config
+from ...cli.comm_utils.yaml_utils import load_yaml_config
 
 
 class ClientConstants(object):
@@ -255,8 +254,27 @@ class ClientConstants(object):
         for info in iter(script_process.stderr.readline, ""):
             print(info)
 
+#
+# import ast
+#
+# def parse_tuple(string):
+#     try:
+#         s = ast.literal_eval(str(string))
+#         if type(s) == tuple:
+#             return s
+#         return
+#     except Exception as e:
+#         pass
+
 
 if __name__ == "__main__":
+    ignore = "*test*,abc*"
+    ignore = tuple(ignore.split(','))
+    shutil.rmtree("/Users/alexliang/fedml-test/examples2", ignore_errors=True)
+    shutil.copytree("/Users/alexliang/fedml-test/examples",
+                    "/Users/alexliang/fedml-test/examples2",
+                    ignore=shutil.ignore_patterns(*ignore))
+
     script_process = ClientConstants.exec_console_with_shell_script_list(['sh', '-c', "while [ 1 = 1 ]; do echo 'hello'; sleep 1; done "])
     ClientConstants.print_console_output(script_process)
     ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(script_process)
