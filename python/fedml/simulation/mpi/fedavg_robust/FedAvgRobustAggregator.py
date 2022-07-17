@@ -7,20 +7,20 @@ import torch
 import wandb
 from torch import nn
 
+from ....core.security.robustness.robust_aggregation import RobustAggregator, is_weight_param
 from .utils import transform_list_to_tensor
-from ....core.robustness.robust_aggregation import RobustAggregator, is_weight_param
 
 import logging
 
 
 def test(
-    model,
-    device,
-    test_loader,
-    criterion,
-    mode="raw-task",
-    dataset="cifar10",
-    poison_type="fashion",
+        model,
+        device,
+        test_loader,
+        criterion,
+        mode="raw-task",
+        dataset="cifar10",
+        poison_type="fashion",
 ):
     class_correct = list(0.0 for i in range(10))
     class_total = list(0.0 for i in range(10))
@@ -155,19 +155,19 @@ def test(
 
 class FedAvgRobustAggregator(object):
     def __init__(
-        self,
-        train_global,
-        test_global,
-        all_train_data_num,
-        train_data_local_dict,
-        test_data_local_dict,
-        train_data_local_num_dict,
-        worker_num,
-        device,
-        model,
-        targetted_task_test_loader,
-        num_dps_poisoned_dataset,
-        args,
+            self,
+            train_global,
+            test_global,
+            all_train_data_num,
+            train_data_local_dict,
+            test_data_local_dict,
+            train_data_local_num_dict,
+            worker_num,
+            device,
+            model,
+            targetted_task_test_loader,
+            num_dps_poisoned_dataset,
+            args,
     ):
         self.train_global = train_global
         self.test_global = test_global
@@ -234,7 +234,6 @@ class FedAvgRobustAggregator(object):
                 self.model_dict[idx],
             )
 
-
             if self.robust_aggregator.defense_type in ("norm_diff_clipping", "weak_dp"):
                 clipped_local_state_dict = self.robust_aggregator.norm_diff_clipping(
                     local_model_params, self.model.state_dict()
@@ -298,8 +297,8 @@ class FedAvgRobustAggregator(object):
 
     def test_on_all_clients(self, round_idx):
         if (
-            round_idx % self.args.frequency_of_the_test == 0
-            or round_idx == self.args.comm_round - 1
+                round_idx % self.args.frequency_of_the_test == 0
+                or round_idx == self.args.comm_round - 1
         ):
             logging.info(
                 "################local_test_on_all_clients : {}".format(round_idx)
