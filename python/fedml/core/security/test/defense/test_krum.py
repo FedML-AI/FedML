@@ -5,12 +5,12 @@ from fedml.core.security.test.utils import create_fake_model_list
 def test_defense():
     model_list = create_fake_model_list(20)
     print(f"test krum")
-    krum = KrumDefense(k=2, multi=False)
+    krum = KrumDefense(byzantine_client_num=2, multi=False)
     filtered_model_list = krum.defend(model_list)
     print(f"filtered_model_list={filtered_model_list}")
 
     print(f"test multi-krum")
-    krum = KrumDefense(k=2, multi=True)
+    krum = KrumDefense(byzantine_client_num=2, multi=True)
     filtered_model_list = krum.defend(model_list)
     print(f"filtered_model_list={filtered_model_list}")
 

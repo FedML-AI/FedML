@@ -28,7 +28,7 @@ class GeometricMedianDefense(BaseDefenseMethod):
             self.batch_num = 1
         self.batch_size = math.ceil(self.client_num_per_round / self.batch_num)
 
-    def defend(self, client_grad_list, global_w=None, refs=None):
+    def defend(self, client_grad_list, global_w=None):
         (num0, averaged_params) = client_grad_list[0]
         batch_grad_list = []
         for batch_idx in range(0, math.ceil(len(client_grad_list) / self.batch_size)):
