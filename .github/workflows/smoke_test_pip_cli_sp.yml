@@ -9,9 +9,9 @@ on:
     # Nightly build at 12:12 A.M.
     - cron: "12 12 */1 * *"
   push:
-    branches: [ master,  test/v0.7.0 ]
+    branches: [ master,  test/v0.7.0, dev/0.7.0 ]
   pull_request:
-    branches: [ master,  test/v0.7.0 ]
+    branches: [ master,  test/v0.7.0, dev/0.7.0 ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -40,10 +40,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       # https://github.com/actions/checkout/issues/116#issuecomment-644419389
-      - uses: actions/checkout@v2
-#        with:
-#          token: ${{ secrets.CHAOYANG_TOKEN }}
-#          submodules: recursive
+      - uses: actions/checkout@v3
       - name: pip install -e ./
         run: |
           pip install -e ./
