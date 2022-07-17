@@ -16,6 +16,9 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+env:
+  AGENT_TOOLSDIRECTORY: ${{ runner.tool_cache }}
+
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   pip-install-fedml-and-test-sp:
@@ -36,8 +39,6 @@ jobs:
 #            python-version: '3.6'
     runs-on: [self-hosted]
     steps:
-      - env:
-          AGENT_TOOLSDIRECTORY: ${{ runner.tool_cache }}
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
