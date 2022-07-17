@@ -43,7 +43,7 @@ class SLSGDDefense(BaseDefenseMethod):
             model_list = self._sort_and_trim(model_list)  # process model list
         return model_list
 
-    def robustify_global_model(self, avg_params, previous_global_w):
+    def robustify_global_model(self, avg_params, previous_global_w=None):
         for k in avg_params.keys():
             avg_params[k] = (1 - self.alpha) * previous_global_w[k] + self.alpha * avg_params[k]
         return avg_params
