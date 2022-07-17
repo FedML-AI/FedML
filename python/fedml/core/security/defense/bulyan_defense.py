@@ -22,7 +22,6 @@ With the aggregated gradient, the parameter server performs a gradient descent u
 
 
 class BulyanDefense(BaseDefenseMethod):
-
     def __init__(self, config):
         self.byzantine_client_num = config.byzantine_client_num
         self.client_num_per_round = config.client_num_per_round
@@ -33,18 +32,24 @@ class BulyanDefense(BaseDefenseMethod):
             self.byzantine_client_num,
         )
 
-    def run(self, base_aggregation_func: Callable, raw_client_grad_list: List[Tuple[int, Dict]],
-            extra_auxiliary_info: Any = None) -> Dict:
+    def run(
+        self,
+        base_aggregation_func: Callable,
+        raw_client_grad_list: List[Tuple[int, Dict]],
+        extra_auxiliary_info: Any = None,
+    ) -> Dict:
         # note: raw_client_grad_list is a list, each item is (sample_num, gradients).
         num_clients = len(raw_client_grad_list)
         (num0, localw0) = raw_client_grad_list[0]
-        _len_local_params = vectorize_weight(localw0).shape[
+        local_params_len = vectorize_weight(localw0).shape[
             0
         ]  # lens of the flatted gradients
 
-        _params = np.zeros((num_clients, _len_local_params))
+        _params = np.zeros((num_clients, local_params_len))
         for i in range(num_clients):
-            _params[i] = vectorize_weight(raw_client_grad_list[i][1]).cpu().detach().numpy()
+            _params[i] = (
+                vectorize_weight(raw_client_grad_list[i][1]).cpu().detach().numpy()
+            )
 
         select_indexs, selected_set, agg_grads = self._bulyan(
             _params, self.client_num_per_round, self.byzantine_client_num
@@ -56,16 +61,14 @@ class BulyanDefense(BaseDefenseMethod):
         for item_index, (k, v) in enumerate(localw0.items()):
             if is_weight_param(k):
                 recons_local_w[k] = torch.from_numpy(
-                    agg_grads[index_bias: index_bias + v.numel()]
+                    agg_grads[index_bias : index_bias + v.numel()]
                 ).view(
                     v.size()
                 )  # todo: gpu/cpu issue for torch
                 index_bias += v.numel()
             else:
                 recons_local_w[k] = v
-
         return recons_local_w
-
 
     def _bulyan(self, users_params, users_count, corrupted_count):
         assert users_count >= 4 * corrupted_count + 3
