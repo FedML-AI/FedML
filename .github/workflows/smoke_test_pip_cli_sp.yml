@@ -36,9 +36,12 @@ jobs:
 #            python-version: '3.6'
     runs-on: [self-hosted]
     steps:
+      - env:
+          AGENT_TOOLSDIRECTORY: ${{ runner.tool_cache }}
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+
       # https://github.com/actions/checkout/issues/116#issuecomment-644419389
       - uses: actions/checkout@v3
       - name: pip install -e ./
