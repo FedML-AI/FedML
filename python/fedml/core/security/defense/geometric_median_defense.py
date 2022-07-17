@@ -1,5 +1,7 @@
 import math
 import numpy as np
+
+from ..common.bucket import Bucket
 from ..common.utils import compute_middle_point, compute_euclidean_distance
 from ...security.defense.defense_base import BaseDefenseMethod
 
@@ -29,28 +31,7 @@ class GeometricMedianDefense(BaseDefenseMethod):
         self.batch_size = math.ceil(self.client_num_per_round / self.batch_num)
 
     def defend(self, client_grad_list, global_w=None):
-        (num0, averaged_params) = client_grad_list[0]
-        batch_grad_list = []
-        for batch_idx in range(0, math.ceil(len(client_grad_list) / self.batch_size)):
-            client_num = self._get_client_num_current_batch(
-                self.batch_size, batch_idx, client_grad_list
-            )
-            sample_num = self._get_total_sample_num_for_current_batch(
-                batch_idx * self.batch_size, client_num, client_grad_list
-            )
-            batch_weight = dict()
-            for i in range(0, client_num):
-                local_sample_num, local_model_params = client_grad_list[
-                    batch_idx * self.batch_size + i
-                ]
-                w = local_sample_num / sample_num
-                for k in averaged_params.keys():
-                    if i == 0:
-                        batch_weight[k] = local_model_params[k] * w
-                    else:
-                        batch_weight[k] += local_model_params[k] * w
-            batch_grad_list.append((sample_num, batch_weight))
-        return batch_grad_list
+        return Bucket.bucketization(client_grad_list, self.batch_size)
 
     def robust_aggregate(self, batch_grad_list, global_w=None):
         (num0, avg_params) = batch_grad_list[0]
@@ -115,21 +96,3 @@ class GeometricMedianDefense(BaseDefenseMethod):
             ]
         )
 
-    @staticmethod
-    def _get_client_num_current_batch(batch_size, batch_idx, local_w):
-        current_batch_size = batch_size
-        # not divisible
-        if (
-            len(local_w) % batch_size > 0
-            and batch_idx == math.ceil(len(local_w) / batch_size) - 1
-        ):
-            current_batch_size = len(local_w) - (batch_idx * batch_size)
-        return current_batch_size
-
-    @staticmethod
-    def _get_total_sample_num_for_current_batch(start, current_batch_size, local_w):
-        training_num_for_batch = 0
-        for i in range(0, current_batch_size):
-            local_sample_number, local_model_params = local_w[start + i]
-            training_num_for_batch += local_sample_number
-        return training_num_for_batch
