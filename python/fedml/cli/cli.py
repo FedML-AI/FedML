@@ -17,6 +17,9 @@ from ..cli.edge_deployment.client_login import logout as client_logout
 from ..cli.env.collect_env import collect_env
 from ..cli.server_deployment.server_login import logout as server_logout
 
+FEDML_MLOPS_BUILD_PRE_IGNORE_LIST = 'dist-packages,client-package.zip,server-package.zip,__pycache__,*.git'
+
+
 @click.group()
 def cli():
     pass
@@ -414,6 +417,7 @@ def mlops_build(type, source_folder, entry_point, config_folder, dest_folder, ig
     except Exception as e:
         pass
 
+    ignore_list = "{},{}".format(ignore, FEDML_MLOPS_BUILD_PRE_IGNORE_LIST)
     pip_source_dir = os.path.dirname(__file__)
     pip_build_path = os.path.join(pip_source_dir, "build-package")
     shutil.copytree(pip_build_path, mlops_build_path,
@@ -421,7 +425,7 @@ def mlops_build(type, source_folder, entry_point, config_folder, dest_folder, ig
 
     if type == "client":
         result = build_mlops_package(
-            ignore,
+            ignore_list,
             source_folder,
             entry_point,
             config_folder,
@@ -442,7 +446,7 @@ def mlops_build(type, source_folder, entry_point, config_folder, dest_folder, ig
         )
     elif type == "server":
         result = build_mlops_package(
-            ignore,
+            ignore_list,
             source_folder,
             entry_point,
             config_folder,
