@@ -1,5 +1,6 @@
+from fedml.core.security.common.aggregation_functions import AggregationFunction
 from fedml.core.security.defense.cclip_defense import CClipDefense
-from fedml.core.security.test.utils import create_fake_model_list, normal_aggregation
+from fedml.core.security.test.utils import create_fake_model_list
 
 
 def test_defense():
@@ -11,7 +12,7 @@ def test_defense():
 
 def test_robustify_global_model():
     client_grad_list = create_fake_model_list(20)
-    avg_params = normal_aggregation(client_grad_list)
+    avg_params = AggregationFunction.FedAVG(client_grad_list)
     cclip = CClipDefense(tau=10, bucket_size=3)
     cclip.initial_guess = cclip._compute_an_initial_guess(client_grad_list)
     result = cclip.robustify_global_model(avg_params, previous_global_w=None)
