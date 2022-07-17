@@ -18,12 +18,12 @@ def test_defense():
     print(f"batch_model_list = {batch_model_list}")
 
 
-def test_aggregation():
+def test_robust_aggregate():
     print("-----test aggregation-----")
     gm = _get_geometric_median_obj()
     batch_model_list = gm.defend(create_fake_model_list(gm.client_num_per_round))
     print(f"batch_model_list = {batch_model_list}")
-    res = gm.aggregation(batch_model_list)
+    res = gm.robust_aggregate(batch_model_list)
     print(f"aggregation result = {res}")
 
 
@@ -50,6 +50,6 @@ def test__compute_geometric_median():
 
 if __name__ == "__main__":
     test_defense()
-    test_aggregation()
+    test_robust_aggregate()
     test__compute_middle_point()
     test__compute_geometric_median()
