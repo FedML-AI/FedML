@@ -4,6 +4,10 @@ from typing import List, Tuple, Dict, Any, Callable
 
 class BaseDefenseMethod(ABC):
     @abstractmethod
+    def __init__(self, config):
+        pass
+
+    @abstractmethod
     def run(
         self,
         base_aggregation_func: Callable,
