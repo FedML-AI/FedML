@@ -190,7 +190,7 @@ pipeline {
               withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_ID' ,usernameVariable : 'AWS_ECR_USERNAME' ,credentialsId : "$AWS_ECR_CREDENTIAL_ID_DEV" ,)]) {
                  withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_KEY' ,usernameVariable : 'AWS_REGION' ,credentialsId : "$AWS_IAM_CREDENTIAL_ID_DEV" ,)]) {
                     sh 'curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"'
-                    sh 'unzip awscliv2.zip'
+                    sh 'unzip -o awscliv2.zip'
                     sh './aws/install'
                     sh 'chmod a+x ./devops/scripts/set-aws-credentials.sh;./devops/scripts/set-aws-credentials.sh $AWS_IAM_ACCESS_ID $AWS_IAM_ACCESS_KEY $AWS_REGION'
                     sh 'docker login --username $AWS_ECR_USERNAME --password $(/usr/local/bin/aws ecr-public get-login-password --region $AWS_REGION) $REGISTRY_DEV'
@@ -213,7 +213,7 @@ pipeline {
               withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_ID' ,usernameVariable : 'AWS_ECR_USERNAME' ,credentialsId : "$AWS_ECR_CREDENTIAL_ID_TEST" ,)]) {
                  withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_KEY' ,usernameVariable : 'AWS_REGION' ,credentialsId : "$AWS_IAM_CREDENTIAL_ID_TEST" ,)]) {
                     sh 'curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"'
-                    sh 'unzip awscliv2.zip'
+                    sh 'unzip -o awscliv2.zip'
                     sh './aws/install'
                     sh 'chmod a+x ./devops/scripts/set-aws-credentials.sh;./devops/scripts/set-aws-credentials.sh $AWS_IAM_ACCESS_ID $AWS_IAM_ACCESS_KEY $AWS_REGION'
                     sh 'docker login --username $AWS_ECR_USERNAME --password $(/usr/local/bin/aws ecr-public get-login-password --region $AWS_REGION) $REGISTRY_TEST'
@@ -235,7 +235,7 @@ pipeline {
               withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_ID' ,usernameVariable : 'AWS_ECR_USERNAME' ,credentialsId : "$AWS_ECR_CREDENTIAL_ID_PRODUCTION" ,)]) {
                  withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_KEY' ,usernameVariable : 'AWS_REGION' ,credentialsId : "$AWS_IAM_CREDENTIAL_ID_PRODUCTION" ,)]) {
                     sh 'curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"'
-                    sh 'unzip awscliv2.zip'
+                    sh 'unzip -o awscliv2.zip'
                     sh './aws/install'
                     sh 'chmod a+x ./devops/scripts/set-aws-credentials.sh;./devops/scripts/set-aws-credentials.sh $AWS_IAM_ACCESS_ID $AWS_IAM_ACCESS_KEY $AWS_REGION'
                     sh 'docker login --username $AWS_ECR_USERNAME --password $(/usr/local/bin/aws ecr-public get-login-password --region $AWS_REGION) $REGISTRY_PRODUCTION'
