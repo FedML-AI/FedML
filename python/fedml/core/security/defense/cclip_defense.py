@@ -40,7 +40,6 @@ class CClipDefense(BaseDefenseMethod):
         print(f"cclip_score = {cclip_score}")
 
         avg_params = base_aggregation_func(new_grad_list)
-        initial_guess = self._compute_an_initial_guess(new_grad_list)
         for k in avg_params.keys():
             avg_params[k] = initial_guess[k] + avg_params[k]
         return avg_params
