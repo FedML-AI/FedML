@@ -12,7 +12,7 @@ class BaseDefenseMethod(ABC):
         self,
         base_aggregation_func: Callable,
         raw_client_grad_list: List[Tuple[int, Dict]],
-        extra_auxiliary_info: Any = None
+        extra_auxiliary_info: Any = None,
     ) -> Dict:
         """
         args:

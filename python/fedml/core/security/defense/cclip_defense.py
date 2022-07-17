@@ -13,19 +13,27 @@ https://arxiv.org/pdf/2006.09365.pdf
 
 
 class CClipDefense(BaseDefenseMethod):
-
     def __init__(self, config):
         self.tau = config.tau  # clipping raduis
         # element # in each bucket; a grad_list is partitioned into floor(len(grad_list)/bucket_size) buckets
         self.bucket_size = config.bucket_size
 
-    def run(self, base_aggregation_func: Callable, raw_client_grad_list: List[Tuple[int, Dict]],
-            extra_auxiliary_info: Any = None) -> Dict:
-        client_grad_buckets = Bucket.bucketization(raw_client_grad_list, self.bucket_size)
+    def run(
+        self,
+        base_aggregation_func: Callable,
+        raw_client_grad_list: List[Tuple[int, Dict]],
+        extra_auxiliary_info: Any = None,
+    ) -> Dict:
+        client_grad_buckets = Bucket.bucketization(
+            raw_client_grad_list, self.bucket_size
+        )
         initial_guess = self._compute_an_initial_guess(client_grad_buckets)
         bucket_num = len(client_grad_buckets)
         vec_local_w = [
-            (client_grad_buckets[i][0], utils.vectorize_weight(client_grad_buckets[i][1]))
+            (
+                client_grad_buckets[i][0],
+                utils.vectorize_weight(client_grad_buckets[i][1]),
+            )
             for i in range(bucket_num)
         ]
         vec_refs = utils.vectorize_weight(initial_guess)
