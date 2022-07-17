@@ -1,14 +1,36 @@
+import argparse
+
 from fedml.core.security.defense.cclip_defense import CClipDefense
 from fedml.core.security.test.aggregation.aggregation_functions import AggregationFunction
 from fedml.core.security.test.utils import create_fake_model_list
 
 
-def test_defense():
+def add_args():
+    parser = argparse.ArgumentParser(description="FedML")
+    parser.add_argument(
+        "--yaml_config_file",
+        "--cf",
+        help="yaml configuration file",
+        type=str,
+        default="",
+    )
+
+    # default arguments
+    parser.add_argument("--tau", type=int, default=10)
+
+    parser.add_argument("--bucket_size", type=int, default=3)
+
+    args, unknown = parser.parse_known_args()
+    return args
+
+
+def test_defense(config):
     client_grad_list = create_fake_model_list(20)
-    cclip = CClipDefense(tau=10, bucket_size=3)
+    cclip = CClipDefense(config)
     result = cclip.run(AggregationFunction.FedAVG, client_grad_list)
     print(f"result = {result}")
 
 
 if __name__ == "__main__":
-    test_defense()
+    args = add_args()
+    test_defense(args)
