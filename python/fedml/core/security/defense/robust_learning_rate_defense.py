@@ -26,9 +26,7 @@ class RobustLearningRateDefense(BaseDefenseMethod):
         self.robust_threshold = robust_threshold  # e.g., robust threshold = 4
         self.server_learning_rate = 1
 
-    def defend(
-        self, client_grad_list: List[Tuple[int, Dict]], global_w=None, refs=None
-    ) -> List[Tuple[int, Dict]]:
+    def defend(self, client_grad_list, global_w=None):
         pass
 
     def robust_aggregate(self, grad_list, global_w=None):
