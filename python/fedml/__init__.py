@@ -267,7 +267,7 @@ def update_client_id_list(args):
         hasattr(args, "using_mlops") and not args.using_mlops
     ):
         print("args.client_id_list = {}".format(print(args.client_id_list)))
-        if args.client_id_list is None or args.client_id_list == "None":
+        if args.client_id_list is None or args.client_id_list == "None" or args.client_id_list == "[]":
             if (
                 args.training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE
                 or args.training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO
