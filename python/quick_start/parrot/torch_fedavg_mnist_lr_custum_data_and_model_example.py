@@ -1,10 +1,8 @@
-import fedml
 import torch
 
+import fedml
 from fedml import FedMLRunner
 from fedml.data.MNIST.data_loader import download_mnist, load_partition_data_mnist
-
-from fedml.simulation import SimulatorSingleProcess as Simulator
 
 
 def load_data(args):
@@ -25,9 +23,10 @@ def load_data(args):
         test_data_local_dict,
         class_num,
     ) = load_partition_data_mnist(
+        args,
         args.batch_size,
-        train_path=args.data_cache_dir + "MNIST/train",
-        test_path=args.data_cache_dir + "MNIST/test",
+        train_path=args.data_cache_dir + "/MNIST/train",
+        test_path=args.data_cache_dir + "/MNIST/test",
     )
     """
     For shallow NN or linear models, 
@@ -73,4 +72,3 @@ if __name__ == "__main__":
     # start training
     fedml_runner = FedMLRunner(args, device, dataset, model)
     fedml_runner.run()
-
