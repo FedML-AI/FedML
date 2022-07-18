@@ -31,9 +31,7 @@ class GeometricMedianDefense(BaseDefenseMethod):
         self.batch_size = math.ceil(self.client_num_per_round / self.batch_num)
 
     def defend(self, client_grad_list, global_w=None):
-        return Bucket.bucketization(client_grad_list, self.batch_size)
-
-    def robust_aggregate(self, batch_grad_list, global_w=None):
+        batch_grad_list = Bucket.bucketization(client_grad_list, self.batch_size)
         (num0, avg_params) = batch_grad_list[0]
         alphas = {alpha for (alpha, params) in batch_grad_list}
         alphas = {alpha / sum(alphas, 0.0) for alpha in alphas}
