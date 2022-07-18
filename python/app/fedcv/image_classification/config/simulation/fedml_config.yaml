@@ -3,15 +3,15 @@ common_args:
   random_seed: 0
 
 data_args:
-  dataset: "MNIST"
+  dataset: "cifar10"
   data_cache_dir: "./data/"
   partition_method: "hetero"
   partition_alpha: 0.5
 
 model_args:
-  model: "cnn"
+  model: "mobilenetv3"
   image_size:
-  input_size: 1
+  input_size: 3
   class_num: 10
 
 train_args:
@@ -20,8 +20,8 @@ train_args:
   client_num_in_total: 2
   client_num_per_round: 2
   comm_round: 10
-  epochs: 5
-  batch_size: 64
+  epochs: 3
+  batch_size: 4
   client_optimizer: sgd
   lr: 0.03
   weight_decay: 0.001
