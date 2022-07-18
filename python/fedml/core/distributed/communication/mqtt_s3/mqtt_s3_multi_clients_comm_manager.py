@@ -127,6 +127,8 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
             # server
             self.subscribe_client_status_message()
 
+            logging.info("self.client_real_ids = {}".format(self.client_real_ids))
+            print("self.client_real_ids = {}".format(self.client_real_ids))
             for client_rank in range(0, self.client_num):
                 real_topic = self._topic + str(self.client_real_ids[client_rank])
                 result, mid = mqtt_client_object.subscribe(real_topic, 0)
