@@ -22,7 +22,7 @@ from .core.mlops import MLOpsRuntimeLog
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.7.210"
+__version__ = "0.7.212"
 
 
 def init(args=None):
@@ -267,7 +267,7 @@ def update_client_id_list(args):
         hasattr(args, "using_mlops") and not args.using_mlops
     ):
         print("args.client_id_list = {}".format(print(args.client_id_list)))
-        if args.client_id_list is None or args.client_id_list == "None":
+        if args.client_id_list is None or args.client_id_list == "None" or args.client_id_list == "[]":
             if (
                 args.training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE
                 or args.training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO
