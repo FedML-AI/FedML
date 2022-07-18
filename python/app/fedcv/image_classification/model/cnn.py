@@ -17,7 +17,7 @@ class CNN(nn.Module):
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Dropout(0.25),
             nn.Flatten(),
-            nn.Linear(64 * 12 * 12, 128),
+            nn.Linear(64 * 14 * 14, 128),
             nn.ReLU(),
             nn.Dropout(0.5),
             nn.Linear(128, num_classes),
