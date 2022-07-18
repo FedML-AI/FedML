@@ -31,7 +31,6 @@ requirements = [
     "sklearn",
     "networkx",
     "click",
-    "grpcio",
     "torch",
     "torchvision",
     "spacy",
@@ -39,12 +38,16 @@ requirements = [
     "multiprocess",
 ]
 
+requirements_extra_mpi = [
+    "mpi4py",
+]
+
 if platform.machine() == "x86_64":
     requirements.append("MNN==1.1.6")
 
 setup(
     name="fedml",
-    version="0.7.210",
+    version="0.7.212",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
@@ -87,6 +90,10 @@ setup(
         )
     ],
     install_requires=requirements,
+    extras_require={
+        "MPI": requirements_extra_mpi,
+        "gRPC": "grpcio",
+    },
     package_data={"": ["py.typed"]},
     license="Apache 2.0",
     entry_points={
