@@ -9,4 +9,4 @@ hostname > mpi_host_file
 
 $(which mpirun) -np $PROCESS_NUM \
 -hostfile mpi_host_file \
-python main_fedml_image_classification.py --cf config/fedml_config_mpi.yaml
+python main_fedml_image_classification.py --cf config/simulation/fedml_config.yaml

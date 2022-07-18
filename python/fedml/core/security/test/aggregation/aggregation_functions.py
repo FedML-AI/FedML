@@ -2,8 +2,8 @@ from fedml.core.security.common.utils import get_total_sample_num
 
 
 class AggregationFunction:
-    @classmethod
-    def FedAVG(cls, client_grad_list):
+    @staticmethod
+    def FedAVG(client_grad_list):
         (num0, avg_params) = client_grad_list[0]
         training_num = get_total_sample_num(client_grad_list)
         for k in avg_params.keys():
