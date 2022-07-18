@@ -34,8 +34,8 @@ class BulyanDefense(BaseDefenseMethod):
 
     def run(
         self,
-        base_aggregation_func: Callable,
-        raw_client_grad_list: List[Tuple[int, Dict]],
+        raw_client_grad_list: List[Tuple[float, Dict]],
+        base_aggregation_func: Callable = None,
         extra_auxiliary_info: Any = None,
     ) -> Dict:
         # note: raw_client_grad_list is a list, each item is (sample_num, gradients).
@@ -55,20 +55,20 @@ class BulyanDefense(BaseDefenseMethod):
             _params, self.client_num_per_round, self.byzantine_client_num
         )
 
-        recons_local_w = {}
+        aggregated_params = {}
         index_bias = 0
 
         for item_index, (k, v) in enumerate(localw0.items()):
             if is_weight_param(k):
-                recons_local_w[k] = torch.from_numpy(
+                aggregated_params[k] = torch.from_numpy(
                     agg_grads[index_bias : index_bias + v.numel()]
                 ).view(
                     v.size()
                 )  # todo: gpu/cpu issue for torch
                 index_bias += v.numel()
             else:
-                recons_local_w[k] = v
-        return recons_local_w
+                aggregated_params[k] = v
+        return aggregated_params
 
     def _bulyan(self, users_params, users_count, corrupted_count):
         assert users_count >= 4 * corrupted_count + 3
