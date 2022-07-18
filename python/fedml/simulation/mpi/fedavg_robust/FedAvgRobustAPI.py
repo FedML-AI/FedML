@@ -1,5 +1,3 @@
-from mpi4py import MPI
-
 from .FedAvgRobustAggregator import FedAvgRobustAggregator
 from .FedAvgRobustClientManager import FedAvgRobustClientManager
 from .FedAvgRobustServerManager import FedAvgRobustServerManager
@@ -7,6 +5,7 @@ from .FedAvgRobustTrainer import FedAvgRobustTrainer
 
 
 def FedML_init():
+    from mpi4py import MPI
     comm = MPI.COMM_WORLD
     process_id = comm.Get_rank()
     worker_number = comm.Get_size()

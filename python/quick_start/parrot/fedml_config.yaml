@@ -1,15 +1,14 @@
 common_args:
   training_type: "simulation"
-  using_mlops: true
   random_seed: 0
-  config_version: "release"
-  mlops_api_key: f5b88f5dca344e6faf17809139b89c48
-  mlops_project_name: sp_fedavg_test
-  mlops_run_name: fedml_torch_fedavg_mnist_lr
+  config_version: "local"
+  mlops_api_key: c9356b9c4ce44363bb66366b210201
+  mlops_project_name: alex-test-prj
+  mlops_run_name: fedml_torch_fedavg_mnist_lr_2
 
 data_args:
   dataset: "mnist"
-  data_cache_dir: "../../../data/mnist"
+  data_cache_dir: ~/fedml_data
   partition_method: "hetero"
   partition_alpha: 0.5
 
@@ -19,9 +18,9 @@ model_args:
 train_args:
   federated_optimizer: "FedAvg"
   client_id_list: "[]"
-  client_num_in_total: 1000
-  client_num_per_round: 10
-  comm_round: 200
+  client_num_in_total: 2
+  client_num_per_round: 2
+  comm_round: 10
   epochs: 1
   batch_size: 10
   client_optimizer: sgd
@@ -29,7 +28,7 @@ train_args:
   weight_decay: 0.001
 
 validation_args:
-  frequency_of_the_test: 5
+  frequency_of_the_test: 1
 
 device_args:
   using_gpu: true
@@ -46,3 +45,4 @@ tracking_args:
   wandb_entity: fedml-ai
   wandb_project: simulation
   run_name: fedml_torch_fedavg_mnist_lr
+  using_mlops: false
