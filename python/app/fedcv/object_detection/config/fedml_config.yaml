@@ -32,7 +32,7 @@ model_args:
 
 train_args:
   federated_optimizer: "FedAvg"
-  client_id_list: "[]"
+  client_id_list:
   client_num_in_total: 2
   client_num_per_round: 2
   comm_round: 20
@@ -46,7 +46,7 @@ validation_args:
   frequency_of_the_test: 1
 
 device_args:
-  worker_num: 0
+  worker_num: 2
   using_gpu: false
 
 comm_args:
