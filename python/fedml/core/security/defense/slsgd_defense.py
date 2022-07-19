@@ -36,9 +36,9 @@ class SLSGDDefense(BaseDefenseMethod):
             self,
             raw_client_grad_list: List[Tuple[float, Dict]],
             base_aggregation_func: Callable = None,
-            global_model=None,
             extra_auxiliary_info: Any = None,
     ):
+        global_model = extra_auxiliary_info
         if self.b > math.ceil(len(raw_client_grad_list) / 2) - 1 or self.b < 0:
             raise ValueError(
                 "the bound of b is [0, {}])".format(math.ceil(len(raw_client_grad_list) / 2) - 1)

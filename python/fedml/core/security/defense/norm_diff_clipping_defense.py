@@ -18,9 +18,9 @@ class NormDiffClippingDefense(BaseDefenseMethod):
         self,
         raw_client_grad_list: List[Tuple[float, Dict]],
         base_aggregation_func: Callable = None,
-        global_model=None,
         extra_auxiliary_info: Any = None,
     ):
+        global_model = extra_auxiliary_info
         vec_global_w = utils.vectorize_weight(global_model)
         new_grad_list = []
         for (sample_num, local_w) in raw_client_grad_list:
