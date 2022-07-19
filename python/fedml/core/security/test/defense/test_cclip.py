@@ -27,7 +27,7 @@ def add_args():
 def test_defense(config):
     client_grad_list = create_fake_model_list(20)
     cclip = CClipDefense(config)
-    result = cclip.run(client_grad_list, global_model=None, base_aggregation_func=AggregationFunction.FedAVG)
+    result = cclip.run(client_grad_list, base_aggregation_func=AggregationFunction.FedAVG)
     print(f"result = {result}")
 
 

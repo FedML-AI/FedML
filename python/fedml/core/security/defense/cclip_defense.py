@@ -21,7 +21,6 @@ class CClipDefense(BaseDefenseMethod):
         self,
         raw_client_grad_list: List[Tuple[float, Dict]],
         base_aggregation_func: Callable = None,
-        global_model=None,
         extra_auxiliary_info: Any = None,
     ) -> Dict:
         client_grad_buckets = Bucket.bucketization(
