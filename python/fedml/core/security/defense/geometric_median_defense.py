@@ -1,6 +1,6 @@
 import math
 import numpy as np
-
+from typing import Callable, List, Tuple, Dict, Any
 from ..common.bucket import Bucket
 from ..common.utils import compute_middle_point, compute_euclidean_distance
 from ...security.defense.defense_base import BaseDefenseMethod
@@ -30,8 +30,14 @@ class GeometricMedianDefense(BaseDefenseMethod):
             self.batch_num = 1
         self.batch_size = math.ceil(self.client_num_per_round / self.batch_num)
 
-    def defend(self, client_grad_list, global_w=None):
-        batch_grad_list = Bucket.bucketization(client_grad_list, self.batch_size)
+    def run(
+            self,
+            raw_client_grad_list: List[Tuple[float, Dict]],
+            base_aggregation_func: Callable = None,
+            global_model=None,
+            extra_auxiliary_info: Any = None,
+    ):
+        batch_grad_list = Bucket.bucketization(raw_client_grad_list, self.batch_size)
         (num0, avg_params) = batch_grad_list[0]
         alphas = {alpha for (alpha, params) in batch_grad_list}
         alphas = {alpha / sum(alphas, 0.0) for alpha in alphas}

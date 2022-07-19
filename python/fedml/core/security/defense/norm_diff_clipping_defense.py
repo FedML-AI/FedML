@@ -1,6 +1,7 @@
 import torch
 from .defense_base import BaseDefenseMethod
 from ..common import utils
+from typing import Callable, List, Tuple, Dict, Any
 
 """
 defense, added by Shanshan, 06/28/2022
@@ -13,17 +14,23 @@ class NormDiffClippingDefense(BaseDefenseMethod):
     def __init__(self, norm_bound):
         self.norm_bound = norm_bound  # for norm diff clipping and weak DP defenses
 
-    def defend(self, client_grad_list, global_w=None):
-        vec_global_w = utils.vectorize_weight(global_w)
+    def run(
+        self,
+        raw_client_grad_list: List[Tuple[float, Dict]],
+        base_aggregation_func: Callable = None,
+        global_model=None,
+        extra_auxiliary_info: Any = None,
+    ):
+        vec_global_w = utils.vectorize_weight(global_model)
         new_grad_list = []
-        for (sample_num, local_w) in client_grad_list:
+        for (sample_num, local_w) in raw_client_grad_list:
             vec_local_w = utils.vectorize_weight(local_w)
-            clipped_weight_diff = self._get_clipped_norm_diff(
-                vec_local_w, vec_global_w
+            clipped_weight_diff = self._get_clipped_norm_diff(vec_local_w, vec_global_w)
+            clipped_w = self._get_clipped_weights(
+                local_w, global_model, clipped_weight_diff
             )
-            clipped_w = self._get_clipped_weights(local_w, global_w, clipped_weight_diff)
             new_grad_list.append((sample_num, clipped_w))
-        return new_grad_list
+        return base_aggregation_func(new_grad_list)  # avg_params
 
     def _get_clipped_norm_diff(self, vec_local_w, vec_global_w):
         vec_diff = vec_local_w - vec_global_w
