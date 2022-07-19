@@ -1,5 +1,5 @@
 common_args:
-  training_type: "simulation"
+  training_type: "cross_silo"
   random_seed: 0
   scenario: "horizontal"
   using_mlops: false
@@ -10,7 +10,7 @@ environment_args:
 
 data_args:
   dataset: "Fed-KITS2019"
-  data_cache_dir: ~/fedmedicalcv_data # flamby: /media/beiyu/TOSHIBA EXT/dataset/kits19-master
+  data_cache_dir: ~/healthcare/kits19 # flamby: /media/beiyu/TOSHIBA EXT/dataset/kits19-master
   partition_method: "hetero"
   partition_alpha: 0.5
   debug: false # flamby: debug or not
@@ -23,7 +23,7 @@ model_args:
 train_args:
   federated_optimizer: "FedAvg"
   client_id_list:
-  client_num_in_total: 1
+  client_num_in_total: 6
   client_num_per_round: 1
   comm_round: 20
   epochs: 5
@@ -38,12 +38,11 @@ validation_args:
 device_args:
   worker_num: 4
   using_gpu: false
-  gpu_mapping_file: config/gpu_mapping.yaml
-  gpu_mapping_key: mapping_default
 
 comm_args:
-  backend: "MPI"
-  is_mobile: 0
+  backend: "MQTT_S3"
+  mqtt_config_path: config/mqtt_config.yaml
+  s3_config_path: config/s3_config.yaml
 
 tracking_args:
   log_file_dir: ./log

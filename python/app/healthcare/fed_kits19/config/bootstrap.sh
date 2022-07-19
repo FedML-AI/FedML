@@ -5,7 +5,7 @@ set -x
 
 ### please customize your script in this region ####
 pip install flamby[all]
-DATA_PATH=$HOME/fedmedicalcv_data
+DATA_PATH=$HOME/healthcare/kits19
 mkdir -p $DATA_PATH
 
 
