@@ -60,12 +60,12 @@ def test__defense_soteria_dlg():
     local_gradient = create_fake_gradient_Cifar100()
     local_w = create_fake_model_Cifar100()
     local_data = create_fake_data_Cifar100()
-    defense_methods = ["soteria", "model compression", "differential privacy"]
+    defense_methods = ["soteria"]
+    # defense_methods = ["soteria", "model compression", "differential privacy"]
     for med in defense_methods:
         defense = SoteriaDefense(
             num_class=100,
             model=LeNet(),
-            criterion=cross_entropy_for_onehot,
             defense_data=local_data,
             attack_method="dlg",
             defense_method=med,
