@@ -31,7 +31,6 @@ class RobustLearningRateDefense(BaseDefenseMethod):
             self,
             raw_client_grad_list: List[Tuple[float, Dict]],
             base_aggregation_func: Callable = None,
-            global_model=None,
             extra_auxiliary_info: Any = None,
     ):
         if self.robust_threshold == 0:
