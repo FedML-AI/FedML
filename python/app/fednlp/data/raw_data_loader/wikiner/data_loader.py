@@ -1,4 +1,4 @@
-from data.raw_data_loader.base.base_raw_data_loader import SeqTaggingRawDataLoader
+from fedml.data.fednlp.base.raw_data.base_raw_data_loader import SeqTaggingRawDataLoader
 import os
 import h5py
 import json

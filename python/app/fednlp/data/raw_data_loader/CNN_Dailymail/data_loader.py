@@ -1,7 +1,7 @@
 import os
 
 
-from data.raw_data_loader.base.base_raw_data_loader import Seq2SeqRawDataLoader
+from fedml.data.fednlp.base.raw_data.base_raw_data_loader import Seq2SeqRawDataLoader
 
 
 class RawDataLoader(Seq2SeqRawDataLoader):

@@ -1,6 +1,15 @@
-#!/bin/bash
-pip install fedml
-pip install matplotlib numpy opencv-python Pillow PyYAML scipy torch torchvision tqdm tensorboard seaborn pandas onnx onnxruntime onnx-simplifier thop pycocotools
-PROJECT_DIR=$(cd $(dirname $0); cd ..; pwd)
-cd $PROJECT_DIR
-bash ./data/coco128/download_coco128_mlops.sh
+### don't modify this part ###
+set -x
+##############################
+
+
+### please customize your script in this region ####
+pip install opencv-python-headless pandas matplotlib seaborn addict
+DATA_PATH=$HOME/fedcv_data
+mkdir -p $DATA_PATH
+sh ./../data/coco128/download_coco128.sh
+
+
+### don't modify this part ###
+exit 0
+##############################

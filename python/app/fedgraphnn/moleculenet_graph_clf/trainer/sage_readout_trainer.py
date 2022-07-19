@@ -17,7 +17,7 @@ class SageMoleculeNetTrainer(ClientTrainer):
 
     def set_model_params(self, model_parameters):
         logging.info("set_model_params")
-        self.model.load_state_dict(model_parameters)
+        self.model.load_state_dict(model_parameters, strict=False)
 
     def train(self, train_data, device, args):
         model = self.model

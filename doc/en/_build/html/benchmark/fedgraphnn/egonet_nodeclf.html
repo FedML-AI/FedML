@@ -15,7 +15,7 @@
   <!-- End Google Tag Manager -->
 
   <meta charset="utf-8">
-  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="google-site-verification" content="okUst94cAlWSsUsGZTB4xSS4UKTtRV8Nu5XZ9pdd3Aw" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -325,9 +325,9 @@
              <article itemprop="articleBody" id="pytorch-article" class="pytorch-article">
               
   <section id="federated-node-classification-over-ego-networks">
-<h1>Federated Node Classification over Ego Networks<a class="headerlink" href="#federated-node-classification-over-ego-networks" title="Permalink to this headline">¶</a></h1>
+<h1>Federated Node Classification over Ego Networks<a class="headerlink" href="#federated-node-classification-over-ego-networks" title="Permalink to this heading">¶</a></h1>
 <section id="motivation">
-<h2>Motivation<a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<h2>Motivation<a class="headerlink" href="#motivation" title="Permalink to this heading">¶</a></h2>
 <p>Node classification on graphs has attracted significant attention as the importance of large-scale
 graphs analysis increases in various domains such as bioinformatics and commercial graphs.
 For example, in retail services, acquiring the qualitative node representations for items or customers
@@ -336,7 +336,7 @@ visible to his/her k-hop neighbors. Thus, it is natural to consider node-level F
 and publication networks and partition them into sets of ego-networks.</p>
 </section>
 <section id="data-preparation">
-<h2>Data Preparation<a class="headerlink" href="#data-preparation" title="Permalink to this headline">¶</a></h2>
+<h2>Data Preparation<a class="headerlink" href="#data-preparation" title="Permalink to this heading">¶</a></h2>
 <p>For each dataset, ego-networks needs to be sampled first.  To sample, directories have to be created first and then <code class="docutils literal notranslate"><span class="pre">sampleEgonetworks.py</span></code> has to be used to generate ego-networks.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>
 <span class="n">mkdir</span> <span class="n">cora</span>
@@ -357,7 +357,7 @@ and publication networks and partition them into sets of ego-networks.</p>
 <p>Arguments for the data preparation process</p>
 </section>
 <section id="training">
-<h2>Training<a class="headerlink" href="#training" title="Permalink to this headline">¶</a></h2>
+<h2>Training<a class="headerlink" href="#training" title="Permalink to this heading">¶</a></h2>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>WORKSPACE=./FedML/app/fedgraphnn/app/ego_networks_node_clf
 cd $WORKSPACE
 
@@ -425,6 +425,7 @@ sh run_fed_node_clf.sh 4
          <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
          <script src="../../_static/jquery.js"></script>
          <script src="../../_static/underscore.js"></script>
+         <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
          <script src="../../_static/doctools.js"></script>
      
 

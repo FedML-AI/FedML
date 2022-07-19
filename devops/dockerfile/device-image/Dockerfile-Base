@@ -1,6 +1,7 @@
 ARG VERSION=base
 ARG IS_BUILDING_GPU_IMAGE=0
-ARG BASE_IMAGE=continuumio/miniconda3:4.7.12
+#ARG BASE_IMAGE=continuumio/miniconda3:4.7.12
+ARG BASE_IMAGE=fedml/fedml:cuda-11.4.0-devel-ubuntu20.04
 FROM ${BASE_IMAGE}
 
 ADD ./devops/scripts/aws ./fedml/aws
@@ -18,14 +19,19 @@ RUN chmod a+x ./fedml/setup-aws-cli.sh
 RUN chmod a+x ./fedml/set-aws-credentials.sh
 RUN ./fedml/setup-aws-cli.sh
 
+#RUN apt-get update
+RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf
+RUN apt-get update
 RUN apt-get -y install gettext-base
+RUN apt-get -y install unar wget
 
 RUN chmod a+x ./fedml/setup-conda-env.sh
 RUN bash ./fedml/setup-conda-env.sh ${IS_BUILDING_GPU_IMAGE}
 
-RUN pip install --upgrade pip
-RUN pip3 uninstall fedml
-RUN pip3 install fedml
+#RUN pip install --upgrade pip
+#RUN pip3 uninstall fedml
+
+RUN pip3 install --upgrade fedml
 RUN pip3 install -r ./fedml/requirements.txt
 RUN pip3 install --upgrade gevent
 
