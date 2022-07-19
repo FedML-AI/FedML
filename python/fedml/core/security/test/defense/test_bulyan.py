@@ -2,9 +2,11 @@ import argparse
 
 import numpy as np
 
-from fedml.core.security.test.aggregation.aggregation_functions import AggregationFunction
-from fedml.core.security.test.utils import create_fake_model_list
 from fedml.core.security.defense.bulyan_defense import BulyanDefense
+from fedml.core.security.test.aggregation.aggregation_functions import (
+    AggregationFunction,
+)
+from fedml.core.security.test.utils import create_fake_model_list
 
 
 def add_args():
@@ -29,14 +31,28 @@ def add_args():
 def test_defense(config):
     mk = BulyanDefense(config)
     model_list = create_fake_model_list(mk.client_num_per_round)
-    val = mk.run(AggregationFunction.FedAVG, model_list)
+    val = mk.run(model_list, AggregationFunction.FedAVG)
     print(f"val={val}")
 
 
 def test__compute_middle_point(config):
     by = BulyanDefense(config)
-    select_indexs, selected_set ,agg_grads= by._bulyan(np.array([[-10, -20, -30], [5, 8, 11], [3, 8, 9], [5, 7, 9],
-                                                   [5, 8, 9], [5, 8, 11], [3, 8, 9], [5, 7, 9]]), 8,1)
+    select_indexs, selected_set, agg_grads = by._bulyan(
+        np.array(
+            [
+                [-10, -20, -30],
+                [5, 8, 11],
+                [3, 8, 9],
+                [5, 7, 9],
+                [5, 8, 9],
+                [5, 8, 11],
+                [3, 8, 9],
+                [5, 7, 9],
+            ]
+        ),
+        8,
+        1,
+    )
     print(f"{select_indexs, selected_set ,agg_grads}")
 
 
