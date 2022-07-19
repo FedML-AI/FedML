@@ -4,37 +4,27 @@ common_args:
   scenario: "horizontal"
   using_mlops: false
   config_version: release
-  name: "exp" # yolo
-  project: "runs/train" # yolo
-  exist_ok: false # yolo
 
 environment_args:
   bootstrap: config/bootstrap.sh
 
 data_args:
-  dataset: "coco"
-  data_cache_dir: ~/fedcv_data
-  partition_method: "homo"
+  dataset: "Fed-KITS2019"
+  data_cache_dir: ~/fedmedicalcv_data # flamby: /media/beiyu/TOSHIBA EXT/dataset/kits19-master
+  partition_method: "hetero"
   partition_alpha: 0.5
-  data_conf: "./data/coco128.yaml" # yolo
-  img_size: [640, 640] # [640, 640]
+  debug: false # flamby: debug or not
+  preprocessed: false # flamby: preprocessed or not, need to preprocess in first
 
 model_args:
-  model: "yolov5" # "yolov5"
-  class_num: 80
-  yolo_cfg: "./model/yolov5/models/yolov5s.yaml" # "./model/yolov6/configs/yolov6s.py" # yolo
-  yolo_hyp: "./config/hyps/hyp.scratch.yaml" # yolo
-  weights: "none" # "best.pt" # yolo
-  single_cls: false # yolo
-  conf_thres: 0.001 # yolo
-  iou_thres: 0.6 # for yolo NMS
-  yolo_verbose: false # yolo
+  model: "nnU-Net"
+  class_num: 3
 
 train_args:
   federated_optimizer: "FedAvg"
   client_id_list:
-  client_num_in_total: 2
-  client_num_per_round: 2
+  client_num_in_total: 1
+  client_num_per_round: 1
   comm_round: 20
   epochs: 5
   batch_size: 1
@@ -46,7 +36,7 @@ validation_args:
   frequency_of_the_test: 1
 
 device_args:
-  worker_num: 0
+  worker_num: 4
   using_gpu: false
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_default
@@ -60,4 +50,4 @@ tracking_args:
   enable_wandb: false
   wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
   wandb_project: fedml
-  wandb_name: fedml_torch_object_detection
+  wandb_name: fedml_healthcare_flamby
