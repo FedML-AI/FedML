@@ -1,6 +1,5 @@
 import random
 from typing import Callable, List, Tuple, Dict, Any
-
 from .defense_base import BaseDefenseMethod
 from ..common import utils
 from ..common.bucket import Bucket
@@ -20,8 +19,8 @@ class CClipDefense(BaseDefenseMethod):
 
     def run(
         self,
-        base_aggregation_func: Callable,
-        raw_client_grad_list: List[Tuple[int, Dict]],
+        raw_client_grad_list: List[Tuple[float, Dict]],
+        base_aggregation_func: Callable = None,
         extra_auxiliary_info: Any = None,
     ) -> Dict:
         client_grad_buckets = Bucket.bucketization(
