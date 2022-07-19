@@ -6,7 +6,8 @@ from .message_define import MyMessage
 from .utils import write_tensor_dict_to_mnn
 from ...core.distributed.communication.message import Message
 from ...core.distributed.server.server_manager import ServerManager
-from ...core.mlops import MLOpsMetrics, MLOpsProfilerEvent
+from ...core.mlops.mlops_metrics import MLOpsMetrics
+from ...core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
 
 class FedMLServerManager(ServerManager):
@@ -219,7 +220,8 @@ class FedMLServerManager(ServerManager):
         # notify MLOps with RUNNING status
         if hasattr(self.args, "backend") and self.args.using_mlops:
             self.mlops_metrics.report_server_training_status(
-                self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING
+                self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING,
+                role="server"
             )
 
         all_client_is_online = True

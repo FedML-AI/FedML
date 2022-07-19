@@ -1,6 +1,5 @@
 # FedGraphNN: A Federated Learning System and Benchmark for Graph Neural Networks
-A Research-oriented Federated Learning Library and Benchmark Platform for Graph Neural Networks. 
-Accepted to ICLR'21-DPML and MLSys21 - GNNSys'21 workshops. 
+FedGraphNN: A Federated Learning Platform for Graph Neural Networks with MLOps Support. The previous research version is accepted to ICLR'2021 - DPML and MLSys'21 - GNNSys workshops.
 
 ## Introduction 
 
@@ -16,6 +15,7 @@ Install fedml library:
 ```
 pip install fedml
 ```
+
 
 Then, install  PyTorch Geometric library via a virtual environment:
 ```

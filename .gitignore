@@ -145,3 +145,17 @@ app/fedgraphnn/subgraph_link_pred/data/YAGO3-10/*.txt
 python/app/fedgraphnn/ego_networks_link_pred/data/ego-networks
 python/app/fedgraphnn/ego_networks_node_clf/data/ego-networks
 /devops/scripts/aws/
+devops/scripts/docker
+devops/scripts/kubectl
+android/gradlew
+android/gradlew.bat
+
+/iot/anomaly_detection_for_cybersecurity/data/Danmini_Doorbell/
+/iot/anomaly_detection_for_cybersecurity/data/Ecobee_Thermostat/
+/iot/anomaly_detection_for_cybersecurity/data/Ennio_Doorbell/
+/iot/anomaly_detection_for_cybersecurity/data/Philips_B120N10_Baby_Monitor/
+/iot/anomaly_detection_for_cybersecurity/data/Provision_PT_737E_Security_Camera/
+/iot/anomaly_detection_for_cybersecurity/data/Provision_PT_838_Security_Camera/
+/iot/anomaly_detection_for_cybersecurity/data/Samsung_SNH_1011_N_Webcam/
+/iot/anomaly_detection_for_cybersecurity/data/SimpleHome_XCS7_1002_WHT_Security_Camera/
+/iot/anomaly_detection_for_cybersecurity/data/SimpleHome_XCS7_1003_WHT_Security_Camera/

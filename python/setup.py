@@ -26,15 +26,20 @@ requirements = [
     "wandb",
     "wget",
     "paho-mqtt",
-    "joblib",
     "boto3",
     "pynvml",
     "sklearn",
     "networkx",
     "click",
-    "grpcio",
     "torch",
     "torchvision",
+    "spacy",
+    "gensim",
+    "multiprocess",
+]
+
+requirements_extra_mpi = [
+    "mpi4py",
 ]
 
 if platform.machine() == "x86_64":
@@ -42,7 +47,7 @@ if platform.machine() == "x86_64":
 
 setup(
     name="fedml",
-    version="0.7.123",
+    version="0.7.215",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
@@ -81,10 +86,21 @@ setup(
                 "fedml/cli/build-package/mlops-core/fedml-server/server-package/fedml/config/fedml_config.yaml",
                 "fedml/cli/build-package/mlops-core/fedml-client/client-package/conf/fedml.yaml",
                 "fedml/cli/build-package/mlops-core/fedml-client/client-package/fedml/config/fedml_config.yaml",
+                "fedml/cli/server_deployment/templates/fedml-aggregator-data-pv.yaml",
+                "fedml/cli/server_deployment/templates/fedml-aggregator-data-pvc.yaml",
+                "fedml/cli/server_deployment/templates/fedml-server-deployment.yaml",
+                "fedml/cli/server_deployment/templates/fedml-server-svc.yaml",
+                "fedml/core/mlops/ssl/open-dev.fedml.ai_bundle.crt",
+                "fedml/core/mlops/ssl/open-test.fedml.ai_bundle.crt",
+                "fedml/core/mlops/ssl/open-release.fedml.ai_bundle.crt",
             ],
         )
     ],
     install_requires=requirements,
+    extras_require={
+        "MPI": requirements_extra_mpi,
+        "gRPC": "grpcio",
+    },
     package_data={"": ["py.typed"]},
     license="Apache 2.0",
     entry_points={

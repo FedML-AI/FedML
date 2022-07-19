@@ -46,7 +46,7 @@ bash run_image_classification.sh 4
 For Windows
 
 ```bash
-mpiexec -np 5 python torch_mpi_image_classification.py --cf config\fedml_config.yaml
+mpiexec -np 5 python main_fedml_image_classification.py --cf config\fedml_config.yaml
 ```
 
 ### Run on MLOps
