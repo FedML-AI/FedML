@@ -1,10 +1,5 @@
-from fedml_core.dp.dp_primitives.mechanisms.binary import Binary
-from fedml_core.dp.dp_primitives.mechanisms.bingham import Bingham
-from fedml_core.dp.dp_primitives.mechanisms.exponential import Exponential
-from fedml_core.dp.dp_primitives.mechanisms.gaussian import Gaussian
-from fedml_core.dp.dp_primitives.mechanisms.geometric import Geometric
-from fedml_core.dp.dp_primitives.mechanisms.laplace import Laplace
-from fedml_core.dp.dp_primitives.mechanisms.staircase import Staircase
+from fedml.core.differential_privacy.mechanisms import Laplace, Gaussian, Binary, Bingham, Exponential, Geometric, \
+    Staircase
 
 
 class FedPrivacyMechanism:
