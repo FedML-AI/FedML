@@ -90,14 +90,14 @@ Note: please run the server first.
 The client script can also be used on the host machine along with the server script for testing purpose, 
 such that run `bash run_server.sh` in terminal 1, run `bash run_client.sh 1` in terminal 2, and etc.
 
-## Centralized Simulation Training Script
+## MPI-based Simulation Training Script
 
-We also support centralized MPI-based simulation for FedIoT, which the backend communication between server and client is done through MPI on a single machine.
+We also support MPI-based simulation for FedIoT application to verify the training result, which the backend communication between server and client is done through MPI on a single machine.
 All training related parameters are inside config_simulation/fedml_config.yaml, please modify it per your need.
 The worker_num under the device_args represents number of processes in MPI, as the number of parallel clients.
 
 For this application, the number of clients is up to 9 since there are 9 types of IoT devices in N-BaIoT dataset.
-Run the following script to begin the training:
+Run the following script to start the training:
 ```
 sh run_simulation.sh 9
 ```
