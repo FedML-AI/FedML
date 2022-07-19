@@ -22,7 +22,7 @@ from .core.mlops import MLOpsRuntimeLog
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.7.215"
+__version__ = "0.7.216"
 
 
 def init(args=None):
@@ -199,7 +199,6 @@ def manage_mpi_args(args):
 
 
 def init_cross_silo_horizontal(args):
-    args.worker_num = args.client_num_per_round
     args.process_id = args.rank
     args.n_proc_in_silo = 1
     args.proc_rank_in_silo = 0
@@ -209,7 +208,6 @@ def init_cross_silo_horizontal(args):
 
 
 def init_cross_silo_hierarchical(args):
-    args.worker_num = args.client_num_per_round
     manage_mpi_args(args)
     manage_cuda_rpc_args(args)
 
