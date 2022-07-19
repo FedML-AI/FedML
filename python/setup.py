@@ -86,6 +86,13 @@ setup(
                 "fedml/cli/build-package/mlops-core/fedml-server/server-package/fedml/config/fedml_config.yaml",
                 "fedml/cli/build-package/mlops-core/fedml-client/client-package/conf/fedml.yaml",
                 "fedml/cli/build-package/mlops-core/fedml-client/client-package/fedml/config/fedml_config.yaml",
+                "fedml/cli/server_deployment/templates/fedml-aggregator-data-pv.yaml",
+                "fedml/cli/server_deployment/templates/fedml-aggregator-data-pvc.yaml",
+                "fedml/cli/server_deployment/templates/fedml-server-deployment.yaml",
+                "fedml/cli/server_deployment/templates/fedml-server-svc.yaml",
+                "fedml/core/mlops/ssl/open-dev.fedml.ai_bundle.crt",
+                "fedml/core/mlops/ssl/open-test.fedml.ai_bundle.crt",
+                "fedml/core/mlops/ssl/open-release.fedml.ai_bundle.crt",
             ],
         )
     ],
