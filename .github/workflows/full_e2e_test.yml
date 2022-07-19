@@ -6,9 +6,9 @@ name: Full End-to-end Test
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ master, dev/v0.7.0, test/v0.7.0 ]
+    branches: [ master, test/v0.7.0 ]
   pull_request:
-    branches: [ master, dev/v0.7.0, test/v0.7.0 ]
+    branches: [ master, test/v0.7.0 ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -32,12 +32,8 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
-        with:
-          token: ${{ secrets.CHAOYANG_TOKEN }}
-          submodules: recursive
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
         #      - name: pip install -e ./
@@ -57,36 +53,28 @@ jobs:
           echo "this is for test sp_fedavg_mnist_lr_example"
           cd examples/simulation/sp_fedavg_mnist_lr_example
 
-          echo "train"
           python torch_fedavg_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
-          echo "finish"
 
       - name: test sp_fedopt_mnist_lr_example
         run: |
           echo "this is for test sp_fedopt_mnist_lr_example"
           cd examples/simulation/sp_fedopt_mnist_lr_example
 
-          echo "train"
           python torch_fedopt_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
-          echo "finish"
 
       - name: test sp_fednova_mnist_lr_example
         run: |
           echo "this is for test sp_fednova_mnist_lr_example"
           cd examples/simulation/sp_fednova_mnist_lr_example
 
-          echo "train"
           python torch_fednova_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
-          echo "finish"
 
       - name: test sp_turboaggregate_mnist_lr_example
         run: |
           echo "this is for test sp_turboaggregate_mnist_lr_example"
           cd examples/simulation/sp_turboaggregate_mnist_lr_example
 
-          echo "train"
           python torch_turboaggregate_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
-          echo "finish"
 
       - name: test sp_hierarchicalfl_mnist_lr_example
         run: |

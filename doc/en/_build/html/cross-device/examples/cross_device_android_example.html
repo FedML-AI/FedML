@@ -1,0 +1,761 @@
+
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-PQBQ3CV');
+  </script>
+  <!-- End Google Tag Manager -->
+
+  <meta charset="utf-8">
+  <meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="google-site-verification" content="okUst94cAlWSsUsGZTB4xSS4UKTtRV8Nu5XZ9pdd3Aw" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Federated Learning on Android Smartphones &mdash; FedML  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!-- <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" /> -->
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <!-- Google Analytics -->
+  
+  <!-- End Google Analytics -->
+  
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+  <!-- Preload the theme fonts -->
+
+<link rel="preload" href="../../_static/fonts/FreightSans/freight-sans-book.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../../_static/fonts/FreightSans/freight-sans-medium.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../../_static/fonts/IBMPlexMono/IBMPlexMono-Medium.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../../_static/fonts/FreightSans/freight-sans-bold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../../_static/fonts/FreightSans/freight-sans-medium-italic.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../../_static/fonts/IBMPlexMono/IBMPlexMono-SemiBold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../../_static/fonts/UCity/UCity-Light.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../../_static/fonts/UCity/UCity-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../../_static/fonts/UCity/UCity-Semibold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="../../_static/fonts/Inconsolata/Inconsolata.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+
+<!-- Preload the katex fonts -->
+
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Math-Italic.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Main-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Main-Bold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Size1-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Size4-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Size2-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Size3-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Caligraphic-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+  <script defer src="https://use.fontawesome.com/releases/v6.1.1/js/all.js" integrity="sha384-xBXmu0dk1bEoiwd71wOonQLyH+VpgR1XcDH3rtxrLww5ajNTuMvBdL5SOiFZnNdp" crossorigin="anonymous"></script>
+</head>
+
+<div class="container-fluid header-holder tutorials-header" id="header-holder">
+  <div class="container">
+    <div class="header-container">
+      <a class="header-logo" href="https://doc.fedml.ai/">
+      <!--  <img class="call-to-action-img" src="../../_static/images/logo-lightning-icon.png"/> -->
+      </a>
+
+      <div class="main-menu">
+        <ul>
+          <li>
+            <a href="https://doc.fedml.ai/starter/get_started.html">Get Started</a>
+          </li>
+
+          <li>
+            <a href="https://github.com/FedML-AI">Github</a>
+          </li>
+
+          <li>
+            <a href="https://open.fedml.ai">Platform</a>
+          </li>
+
+          <li>
+            <a href="https://join.slack.com/t/fedml/shared_invite/zt-havwx1ee-a1xfOUrATNfc9DFqU~r34w">Join the Community</a>
+          </li>
+
+
+
+          <li>
+            <div id="resourcesDropdownButton" data-toggle="resources-dropdown" class="resources-dropdown">
+              <a class="resource-option with-down-orange-arrow">
+                Resource
+              </a>
+              <div class="resources-dropdown-menu">
+                <a class="doc-dropdown-option nav-dropdown-item" href="https://doc.fedml.ai/resource/papers.html">
+                  <span class="dropdown-title">Publications</span>
+                </a>
+                <a class="doc-dropdown-option nav-dropdown-item" href="https://doc.fedml.ai/resource/video.html">
+                  <span class="dropdown-title">Videos</span>
+                </a>
+                <a class="doc-dropdown-option nav-dropdown-item" href="https://github.com/FedML-AI/FedML/discussions">
+                  <span class="dropdown-title">Discussion</span>
+                </a>
+            </div>
+          </li>
+
+          <!--<li>
+            <div id="resourcesDropdownButton" data-toggle="resources-dropdown" class="resources-dropdown">
+              <a class="resource-option with-down-arrow">
+                Resources
+              </a>
+              <div class="resources-dropdown-menu">
+                <a class="nav-dropdown-item" href="https://pytorch.org/#community-module">
+                  <span class="dropdown-title">Community</span>
+                  <p>Join the PyTorch developer community to contribute, learn, and get your questions answered.</p>
+                </a>
+                <a class="nav-dropdown-item" href="https://pytorch.org/resources">
+                  <span class="dropdown-title">Developer Resources</span>
+                  <p>Find resources and get questions answered</p>
+                </a>
+                <a class="nav-dropdown-item" href="https://discuss.pytorch.org/" target="_blank">
+                  <span class="dropdown-title">Forums</span>
+                  <p>A place to discuss PyTorch code, issues, install, research</p>
+                </a>
+                <a class="nav-dropdown-item" href="">
+                  <span class="dropdown-title">Models (Beta)</span>
+                  <p>Discover, publish, and reuse pre-trained models</p>
+                </a>
+              </div>
+            </div>
+          </li>-->
+
+          <li>
+            <a href="https://fedml.ai/">FedML.AI</a>
+          </li>
+
+        </ul>
+      </div>
+
+      <a class="main-menu-open-button" href="#" data-behavior="open-mobile-menu"></a>
+    </div>
+  </div>
+</div>
+
+<body class="pytorch-body">
+
+   
+
+    
+
+    <div class="table-of-contents-link-wrapper">
+      <span>Table of Contents</span>
+      <a href="#" class="toggle-table-of-contents" data-behavior="toggle-table-of-contents"></a>
+    </div>
+
+    <nav data-toggle="wy-nav-shift" class="pytorch-left-menu" id="pytorch-left-menu">
+      <div class="pytorch-side-scroll">
+        <div class="pytorch-menu pytorch-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          <div class="pytorch-left-menu-search">
+            
+
+            
+              
+              
+            
+
+            
+
+
+  
+
+
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search Docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+            
+          </div>
+
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../starter/get_started.html">Get Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../starter/installation.html">Installing FedML</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../starter/mission.html">Mission</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../starter/overview.html">Technology Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../starter/ecosystem.html">Application Ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../starter/oss_code_architecture.html">Open Source Code Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../starter/mlops_video.html">FedML MLOps Video Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../starter/faq.html">FedML FAQ</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">FedML MLOps - Landing FedML into Reality</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../starter/mlops_video.html">FedML MLOps Video Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mlops/user_guide.html">FedML MLOps User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mlops/api.html">FedML MLOps CLI and API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">FedML Parrot - Simulating the Real World</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../simulation/user_guide.html">FedML Parrot User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../simulation/examples.html">FedML Parrot Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../simulation/api.html">FedML Parrot API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">FedML Octopus - Simple Connector for Data Silos</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../cross-silo/user_guide.html">FedML Octopus User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cross-silo/examples.html">FedML Octopus Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cross-silo/api.html">FedML Octopus API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">FedML BeeHive - Collaborative Learning on Smartphones/IoTs</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../user_guide.html">FedML Beehive User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">FedML Beehive Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api.html">FedML BeeHive API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">FedML Cheetah - Speedy Training of Large Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../distributed/user_guide.html">FedML Cheetah User Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Benchmarks for FedNLP, FedCV, FedGraphNN and FedIoT</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../benchmark/fedgraphnn.html">Federated Graph Neural Networks (FedGraphNN)</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resource</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../resource/papers.html">Research Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../resource/video.html">Video</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../resource/community.html">Join the Community</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <div class="pytorch-container">
+      <div class="pytorch-page-level-bar" id="pytorch-page-level-bar">
+        <div class="pytorch-breadcrumbs-wrapper">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="pytorch-breadcrumbs">
+    
+      <li>
+        <a href="../../index.html">
+          
+            Docs
+          
+        </a> &gt;
+      </li>
+
+        
+      <li>Federated Learning on Android Smartphones</li>
+    
+    
+      <li class="pytorch-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/cross-device/examples/cross_device_android_example.md.txt" rel="nofollow"><img src="../../_static/images/view-page-source-icon.svg"></a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+</div>
+        </div>
+
+        <div class="pytorch-shortcuts-wrapper" id="pytorch-shortcuts-wrapper">
+          Shortcuts
+        </div>
+      </div>
+
+      <section data-toggle="wy-nav-shift" id="pytorch-content-wrap" class="pytorch-content-wrap">
+        <div class="pytorch-content-left">
+
+        
+          
+          <div class="rst-content">
+          
+            <div role="main" class="main-content" itemscope="itemscope" itemtype="http://schema.org/Article">
+             <article itemprop="articleBody" id="pytorch-article" class="pytorch-article">
+              
+  <section id="federated-learning-on-android-smartphones">
+<h1>Federated Learning on Android Smartphones<a class="headerlink" href="#federated-learning-on-android-smartphones" title="Permalink to this heading">¶</a></h1>
+<p>Please follow this tutorial (https://doc.fedml.ai/mlops/user_guide.html) to start training using FedML BeeHive Platform.</p>
+<table>
+<tr>
+<td valign="center">
+<img src="./../../_static/image/android_running.jpeg" alt="drawing" style="width:300px;"/>
+</td>
+<td valign="center">
+<img src="./../../_static/image/edge_devices_overview.png" alt="drawing" style="width:400px;"/>
+</td>
+</tr>
+</table>
+<p>This example will guide you to work through how to run federated learning on Android smartphones.
+The code for this example locates in the following two paths:</p>
+<p>Android Client (App) and SDK: <a class="reference external" href="https://github.com/FedML-AI/FedML/tree/master/android">https://github.com/FedML-AI/FedML/tree/master/android</a></p>
+<p>Python Server: <a class="reference external" href="https://github.com/FedML-AI/FedML/tree/master/python/quick_start/beehive">https://github.com/FedML-AI/FedML/tree/master/python/quick_start/beehive</a></p>
+<p>Android Client is an open source version. Check <a class="reference external" href="https://github.com/FedML-AI/FedML/blob/master/android/README.md">this guidance</a> to understand the software architecture design. Next show you the step-by-step user experiment of using FedML Beehive.</p>
+<section id="install-synthetic-data-on-android-devices">
+<h2><strong>1. Install Synthetic Data on Android Devices</strong><a class="headerlink" href="#install-synthetic-data-on-android-devices" title="Permalink to this heading">¶</a></h2>
+<section id="install-the-adb-command-tool-on-your-laptop">
+<h3>1.1 Install the adb command tool on your laptop<a class="headerlink" href="#install-the-adb-command-tool-on-your-laptop" title="Permalink to this heading">¶</a></h3>
+<p>If you haven’t installed <code class="docutils literal notranslate"><span class="pre">adb</span></code>, please refer to the installation steps at <a class="reference external" href="https://www.xda-developers.com/install-adb-windows-macos-linux/">https://www.xda-developers.com/install-adb-windows-macos-linux/</a></p>
+<p>Then you should turn on the developer mode and USB debugging options for your Android device. The specific operation of each brand of device is not consistent; you can find and refer to the relevant instructions.</p>
+<p>Next please connect the Android device to your laptop, and run the following command to see your device serial number.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>adb devices
+</pre></div>
+</div>
+<p>If it works correctly, it means you have successfully connected your laptop to your mobile device using adb.</p>
+</section>
+<section id="transferring-data-to-mobile-devices">
+<h3>1.2 Transferring data to mobile devices<a class="headerlink" href="#transferring-data-to-mobile-devices" title="Permalink to this heading">¶</a></h3>
+<p>You can download the required data and transfer it to the specified directory of the device with the following command:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bash prepare.sh
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">prepare.sh</span></code> is as follows:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">MNIST_DIR</span><span class="o">=</span>mnist
+<span class="nv">CIFAR10_DIR</span><span class="o">=</span>cifar10
+<span class="nv">ANDROID_DIR</span><span class="o">=</span>/sdcard/ai.fedml
+
+rm -rf <span class="nv">$MNIST_DIR</span>
+mkdir <span class="nv">$MNIST_DIR</span>
+wget http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz -P <span class="nv">$MNIST_DIR</span>
+wget http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz -P <span class="nv">$MNIST_DIR</span>
+
+rm -rf <span class="nv">$CIFAR10_DIR</span>
+rm -rf cifar-10-binary.tar.gz
+wget wget https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz
+tar -xzvf cifar-10-binary.tar.gz
+mv cifar-10-batches-bin <span class="nv">$CIFAR10_DIR</span>
+
+adb push <span class="nv">$MNIST_DIR</span> <span class="nv">$ANDROID_DIR</span>
+adb push <span class="nv">$CIFAR10_DIR</span> <span class="nv">$ANDROID_DIR</span>
+</pre></div>
+</div>
+<p>The MNIST dataset folder and the CIFAR-10 dataset folder can be moved to <code class="docutils literal notranslate"><span class="pre">/sdcard/ai</span></code> by running the above script.</p>
+</section>
+</section>
+<section id="get-started-with-fedml-android-app">
+<h2>2. Get Started with FedML Android App<a class="headerlink" href="#get-started-with-fedml-android-app" title="Permalink to this heading">¶</a></h2>
+<p>This section guides you through 1) installing Android Apk, 2) binding your Android smartphone devices to FedML MLOps Platform, and 3) set the data path for training.</p>
+<p>After installing FedML Android App (https://github.com/FedML-AI/FedML/tree/master/android/app), please go to the MLOps platform (https://open.fedml.ai) - Beehive and switch to the <code class="docutils literal notranslate"><span class="pre">Edge</span> <span class="pre">Devices</span></code> page, you can see a list of <strong>My Edge Devices</strong> at the bottom, as well as a QR code and <strong>Account ID:XXX</strong> at the top right.</p>
+<img src="./../../_static/image/beehive-device.png" alt="image-20220427204703095" style="zoom:67%;" />
+<p>You can also see the binding devices in the <strong>My Edge Devices</strong> list on the web page.</p>
+<p>To set data path on your device, click the top green bar. Set it as the path to the corresponding dataset moved to the Android device (find the folder name starting from ai.fedml).</p>
+<section id="deploy-fl-server">
+<h3>3. <strong>Deploy FL Server</strong><a class="headerlink" href="#deploy-fl-server" title="Permalink to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Build Python Server Package and Upload to FedML MLOps Platform (“Create Application”)</p></li>
+</ul>
+<p><a class="reference external" href="https://github.com/FedML-AI/FedML/tree/master/python/quick_start/beehive">https://github.com/FedML-AI/FedML/tree/master/python/quick_start/beehive</a></p>
+<ul class="simple">
+<li><p>For local debugging of cross-device server, please try</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sh</span> <span class="n">run_server</span><span class="o">.</span><span class="n">sh</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Launch the training by using FedML MLOps (https://open.fedml.ai)</p></li>
+</ul>
+<p>Steps at MLOps: create group -&gt; create project -&gt; create run -&gt; select application (the one we created for Android) -&gt; start run</p>
+<p>On the Android side, you will see training status as follows if every step works correctly.</p>
+<img src="./../../_static/image/android_running.jpeg" alt="image-20220428113930309" style="width:350px;margin:0 auto" />
+</section>
+</section>
+<section id="get-started-with-integrating-android-sdk-for-your-host-app">
+<h2>3. Get Started with Integrating Android SDK for Your Host App<a class="headerlink" href="#get-started-with-integrating-android-sdk-for-your-host-app" title="Permalink to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">android/fedmlsdk_demo</span></code> is a short tutorial for integrating Android SDK for your host App.</p>
+<ol class="arabic simple">
+<li><p>add repositories by maven</p></li>
+</ol>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span>    <span class="n">maven</span> <span class="o">{</span> <span class="n">url</span> <span class="s1">&#39;https://s01.oss.sonatype.org/content/repositories/snapshots&#39;</span> <span class="o">}</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>add dependency in build.gradle</p></li>
+</ol>
+<p>check <code class="docutils literal notranslate"><span class="pre">android/fedmlsdk_demo/build.gradle</span></code> as an example:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span>    <span class="n">implementation</span> <span class="s1">&#39;ai.fedml:fedml-edge-android:1.0.0-SNAPSHOT&#39;</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="3">
+<li><p>add FedML account id to meta-data in AndroidManifest.xml</p></li>
+</ol>
+<p>check <code class="docutils literal notranslate"><span class="pre">android/fedmlsdk_demo/src/main/AndroidManifest.xml</span></code> as an example:</p>
+<div class="highlight-xml notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;meta-data</span> <span class="na">android:name=</span><span class="s">&quot;fedml_account&quot;</span> <span class="na">android:value=</span><span class="s">&quot;208&quot;</span> <span class="nt">/&gt;</span>
+</pre></div>
+</div>
+<p>or</p>
+<div class="highlight-xml notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;meta-data</span> <span class="na">android:name=</span><span class="s">&quot;fedml_account&quot;</span> <span class="na">android:resource=</span><span class="s">&quot;@string/fed_ml_account&quot;</span> <span class="nt">/&gt;</span>
+</pre></div>
+</div>
+<p>You can find your account ID at FedML Open Platform (https://open.fedml.ai):
+<img alt="account" src="../../_images/beehive_account.png" /></p>
+<ol class="arabic simple" start="4">
+<li><p>initial FedML Android SDK on your <code class="docutils literal notranslate"><span class="pre">Application</span></code> class.</p></li>
+</ol>
+<p>Taking <code class="docutils literal notranslate"><span class="pre">android/fedmlsdk_demo/src/main/java/ai/fedml/edgedemo/App.java</span></code> as an example:</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kn">package</span> <span class="nn">ai.fedml.edgedemo</span><span class="p">;</span>
+
+<span class="kn">import</span> <span class="nn">android.app.Application</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">android.os.Handler</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">android.os.Looper</span><span class="p">;</span>
+
+<span class="kn">import</span> <span class="nn">ai.fedml.edge.FedEdgeManager</span><span class="p">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">App</span> <span class="kd">extends</span> <span class="n">Application</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="n">Handler</span> <span class="n">sHandler</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Handler</span><span class="p">(</span><span class="n">Looper</span><span class="p">.</span><span class="na">getMainLooper</span><span class="p">());</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">onCreate</span><span class="p">()</span> <span class="p">{</span>
+        <span class="kd">super</span><span class="p">.</span><span class="na">onCreate</span><span class="p">();</span>
+        
+        <span class="c1">// initial Edge SDK</span>
+        <span class="n">FedEdgeManager</span><span class="p">.</span><span class="na">getFedEdgeApi</span><span class="p">().</span><span class="na">init</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
+        
+        <span class="c1">// set data path (to prepare data, please check this script `android/data/prepare.sh`)</span>
+        <span class="n">FedEdgeManager</span><span class="p">.</span><span class="na">getFedEdgeApi</span><span class="p">().</span><span class="na">setPrivatePath</span><span class="p">(</span><span class="n">Environment</span><span class="p">.</span><span class="na">getExternalStorageDirectory</span><span class="p">().</span><span class="na">getPath</span><span class="p">()</span>
+                <span class="o">+</span> <span class="s">&quot;/ai.fedml/device_1/user_0&quot;</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="android-sdk-apis">
+<h2>Android SDK APIs<a class="headerlink" href="#android-sdk-apis" title="Permalink to this heading">¶</a></h2>
+<p>At the current stage, we provide high-level APIs with the following three classes.</p>
+<ul class="simple">
+<li><p>ai.fedml.edge.FedEdgeManager</p></li>
+</ul>
+<p>This is the top APIs in FedML Android SDK, it supports core training engine and related control commands on your Android devices.</p>
+<ul class="simple">
+<li><p>ai.fedml.edge.OnTrainProgressListener</p></li>
+</ul>
+<p>This is the message flow to interact between FedML Android SDK and your host APP.</p>
+<ul class="simple">
+<li><p>ai.fedml.edge.request.RequestManager</p></li>
+</ul>
+<p>This is used to to connect your Android SDK with FedML Open Platform (https://open.fedml.ai), which helps you to simplify the deployment, edge collaborative training, experimental tracking, and more.</p>
+<p>You can import them in your Java/Android projects as follows. See <span class="xref myst">android/fedmlsdk_demo/src/main/java/ai/fedml/edgedemo/ui/main/MainFragment.java</span> as an example.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">ai.fedml.edge.FedEdgeManager</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">ai.fedml.edge.OnTrainProgressListener</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">ai.fedml.edge.request.RequestManager</span><span class="p">;</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+             </article>
+             
+            </div>
+            <footer>
+  
+
+  
+
+    <hr>
+
+  
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2022, FedML, Inc..
+
+    </p>
+  </div>
+    
+      <div>
+        Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+      </div>
+     
+
+</footer>
+
+          </div>
+        </div>
+
+        <div class="pytorch-content-right" id="pytorch-content-right">
+          <div class="pytorch-right-menu" id="pytorch-right-menu">
+            <div class="pytorch-side-scroll" id="pytorch-side-scroll-right">
+              <ul>
+<li><a class="reference internal" href="#">Federated Learning on Android Smartphones</a><ul>
+<li><a class="reference internal" href="#install-synthetic-data-on-android-devices"><strong>1. Install Synthetic Data on Android Devices</strong></a><ul>
+<li><a class="reference internal" href="#install-the-adb-command-tool-on-your-laptop">1.1 Install the adb command tool on your laptop</a></li>
+<li><a class="reference internal" href="#transferring-data-to-mobile-devices">1.2 Transferring data to mobile devices</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#get-started-with-fedml-android-app">2. Get Started with FedML Android App</a><ul>
+<li><a class="reference internal" href="#deploy-fl-server">3. <strong>Deploy FL Server</strong></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#get-started-with-integrating-android-sdk-for-your-host-app">3. Get Started with Integrating Android SDK for Your Host App</a></li>
+<li><a class="reference internal" href="#android-sdk-apis">Android SDK APIs</a></li>
+</ul>
+</li>
+</ul>
+
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+  
+
+
+  
+
+     
+       <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+         <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+         <script src="../../_static/jquery.js"></script>
+         <script src="../../_static/underscore.js"></script>
+         <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+         <script src="../../_static/doctools.js"></script>
+     
+
+  
+
+  <script type="text/javascript" src="../../_static/js/vendor/popper.min.js"></script>
+  <script type="text/javascript" src="../../_static/js/vendor/bootstrap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/1.5.0/list.min.js"></script>
+  <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+  <!-- Begin Footer -->
+
+  <div class="container-fluid docs-tutorials-resources" id="docs-tutorials-resources">
+    <div class="container">
+      <div class="row">
+        <!--
+        <div class="col-md-4 text-center">
+          <h2>Docs</h2>
+          <p>Access comprehensive developer documentation for PyTorch</p>
+          <a class="with-right-arrow" href="https://pytorch.org/docs/stable/index.html">View Docs</a>
+        </div>
+
+        <div class="col-md-4 text-center">
+          <h2>Tutorials</h2>
+          <p>Get in-depth tutorials for beginners and advanced developers</p>
+          <a class="with-right-arrow" href="https://pytorch.org/tutorials">View Tutorials</a>
+        </div>
+
+        <div class="col-md-4 text-center">
+          <h2>Resources</h2>
+          <p>Find development resources and get your questions answered</p>
+          <a class="with-right-arrow" href="https://pytorch.org/resources">View Resources</a>
+        </div>
+        -->
+      </div>
+    </div>
+  </div>
+
+  <!--
+  <footer class="site-footer">
+    <div class="container footer-container">
+      <div class="footer-logo-wrapper">
+        <a href="https://pytorch.org/" class="footer-logo"></a>
+      </div>
+
+      <div class="footer-links-wrapper">
+        <div class="footer-links-col">
+          <ul>
+            <li class="list-title"><a href="https://pytorch.org/">PyTorch</a></li>
+            <li><a href="https://pytorch.org/get-started">Get Started</a></li>
+            <li><a href="https://pytorch.org/features">Features</a></li>
+            <li><a href="">Ecosystem</a></li>
+            <li><a href="https://pytorch.org/blog/">Blog</a></li>
+            <li><a href="https://github.com/pytorch/pytorch/blob/master/CONTRIBUTING.md">Contributing</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-links-col">
+          <ul>
+            <li class="list-title"><a href="https://pytorch.org/resources">Resources</a></li>
+            <li><a href="https://pytorch.org/tutorials">Tutorials</a></li>
+            <li><a href="https://pytorch.org/docs/stable/index.html">Docs</a></li>
+            <li><a href="https://discuss.pytorch.org" target="_blank">Discuss</a></li>
+            <li><a href="https://github.com/pytorch/pytorch/issues" target="_blank">Github Issues</a></li>
+            <li><a href="" target="_blank">Brand Guidelines</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-links-col follow-us-col">
+          <ul>
+            <li class="list-title">Stay Connected</li>
+            <li>
+              <div id="mc_embed_signup">
+                <form
+                  action="https://twitter.us14.list-manage.com/subscribe/post?u=75419c71fe0a935e53dfa4a3f&id=91d0dccd39"
+                  method="post"
+                  id="mc-embedded-subscribe-form"
+                  name="mc-embedded-subscribe-form"
+                  class="email-subscribe-form validate"
+                  target="_blank"
+                  novalidate>
+                  <div id="mc_embed_signup_scroll" class="email-subscribe-form-fields-wrapper">
+                    <div class="mc-field-group">
+                      <label for="mce-EMAIL" style="display:none;">Email Address</label>
+                      <input type="email" value="" name="EMAIL" class="required email" id="mce-EMAIL" placeholder="Email Address">
+                    </div>
+
+                    <div id="mce-responses" class="clear">
+                      <div class="response" id="mce-error-response" style="display:none"></div>
+                      <div class="response" id="mce-success-response" style="display:none"></div>
+                    </div>
+
+                    <div style="position: absolute; left: -5000px;" aria-hidden="true"><input type="text" name="b_75419c71fe0a935e53dfa4a3f_91d0dccd39" tabindex="-1" value=""></div>
+
+                    <div class="clear">
+                      <input type="submit" value="" name="subscribe" id="mc-embedded-subscribe" class="button email-subscribe-button">
+                    </div>
+                  </div>
+                </form>
+              </div>
+
+            </li>
+          </ul>
+
+          <div class="footer-social-icons">
+            <a href="" target="_blank" class="facebook"></a>
+            <a href="https://twitter.com/pytorch" target="_blank" class="twitter"></a>
+            <a href="" target="_blank" class="youtube"></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+  -->
+
+  <!-- End Footer -->
+
+  <!-- Begin Mobile Menu -->
+
+  <div class="mobile-main-menu">
+    <div class="container-fluid">
+      <div class="container">
+        <div class="mobile-main-menu-header-container">
+          <a class="header-logo" href="https://doc.fedml.ai/"></a>
+          <a class="main-menu-close-button" href="#" data-behavior="close-mobile-menu"></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="mobile-main-menu-links-container">
+      <div class="main-menu">
+        <ul>
+          <li>
+            <a href="https://doc.fedml.ai/starter/get_started.html">Get Started</a>
+          </li>
+          <li>
+            <a href="https://github.com/FedML-AI">Github</a>
+          </li>
+          <li>
+            <a href="https://open.fedml.ai/login?redirect=/platform/main">Platform</a>
+          </li>
+          <li>
+            <a href="https://fedml.slack.com/join/shared_invite/zt-havwx1ee-a1xfOUrATNfc9DFqU~r34w#/shared-invite/email">Join the Community</a>
+          </li>
+          <li>Resource
+            <ul>
+              <li>
+                <a href="https://doc.fedml.ai/resource/papers.html">Publications</a>
+              </li>
+              <li>
+                <a href="https://doc.fedml.ai/resource/video.html">Videos</a>
+              </li>
+              <li>
+                <a href="https://github.com/FedML-AI/FedML/discussions">Discussion</a>
+              </li>
+            </ul>
+          </li>
+          <li>
+            <a href="https://fedml.ai/">FedMl.AI</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- End Mobile Menu -->
+
+  <script type="text/javascript" src="../../_static/js/vendor/anchor.min.js"></script>
+
+  <script type="text/javascript">
+    $(document).ready(function() {
+      mobileMenu.bind();
+      mobileTOC.bind();
+      pytorchAnchors.bind();
+      sideMenus.bind();
+      scrollToAnchor.bind();
+      highlightNavigation.bind();
+      mainMenuDropdown.bind();
+      filterTags.bind();
+
+      // Add class to links that have code blocks, since we cannot create links in code blocks
+      $("article.pytorch-article a span.pre").each(function(e) {
+        $(this).closest("a").addClass("has-code");
+      });
+    })                                                                                         
+  </script>
+
+  <!-- Google Tag Manager (noscript) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PQBQ3CV"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager (noscript) -->
+ </body>
+</html>

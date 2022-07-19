@@ -2,10 +2,9 @@ import logging
 
 import fedml
 from data.data_loader import load_partition_data, get_data
+from fedml import FedMLRunner
 from model.gcn_link import GCNLinkPred
 from trainer.federated_lp_trainer import FedLinkPredTrainer
-
-from fedml.simulation import SimulatorMPI
 
 
 def load_data(args, dataset_name):
@@ -30,8 +29,7 @@ def load_data(args, dataset_name):
 
     unif = True if args.partition_method == "homo" else False
 
-    sgs,  num_graphs, num_feats, num_cats= get_data(
-        args.data_cache_dir, args.dataset)
+    sgs, num_graphs, num_feats, num_cats = get_data(args.data_cache_dir, args.dataset)
 
     feat_dim = sgs[0].x.shape[1]
     del sgs
@@ -88,7 +86,6 @@ def create_model(model_name, feat_dim, num_cats):
     return model, trainer
 
 
-
 if __name__ == "__main__":
     # init FedML framework
     args = fedml.init()
@@ -103,5 +100,5 @@ if __name__ == "__main__":
     model, trainer = create_model(args.model, feat_dim, num_cats)
 
     # start training
-    simulator = SimulatorMPI(args, device, dataset, model, trainer)
-    simulator.run()
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
+    fedml_runner.run()

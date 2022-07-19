@@ -34,8 +34,6 @@ class MpiCommunicationManager(BaseCommunicationManager):
 
         self.is_running = True
 
-        print("#$%#$%#$###########^^^^^^^^^^^^&&&&&&&&&&&&&&&")
-        print(self.rank)
         time.sleep(5)
         # assert False
 

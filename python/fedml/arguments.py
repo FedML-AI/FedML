@@ -15,6 +15,7 @@
 """Arguments."""
 
 import argparse
+import os
 from os import path
 
 import yaml
@@ -44,8 +45,15 @@ def add_args():
 
     # default arguments
     parser.add_argument("--rank", type=int, default=0)
+
     # default arguments
     parser.add_argument("--local_rank", type=int, default=0)
+    
+    # For hierarchical scenario
+    parser.add_argument("--node_rank", type=int, default=0)
+
+    # default arguments
+    parser.add_argument("--role", type=str, default="client")
 
     args, unknown = parser.parse_known_args()
     return args
@@ -133,6 +141,9 @@ class Arguments:
                 pass
             else:
                 pass
+            
+        if hasattr(self, "training_type") and training_type is None:
+            training_type = self.training_type
 
         if training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO:
             if (
@@ -160,46 +171,20 @@ def load_arguments(training_type=None, comm_backend=None):
     # Load all arguments from YAML config file
     args = Arguments(cmd_args, training_type, comm_backend)
 
-    """
-        generate args.client_id_list for CLI mode where args.client_id_list is set to None
-        In MLOps mode, args.client_id_list will be set to real-time client id list selected by UI (not starting from 1)
-    """
-    if not hasattr(args, "using_mlops") or (
-        hasattr(args, "using_mlops") and not args.using_mlops
-    ):
-        # print("args.client_id_list = {}".format(print(args.client_id_list)))
-        if args.client_id_list is None or args.client_id_list == "None":
-            if (
-                args.training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE
-                or args.training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO
-            ):
-                if args.rank == 0:
-                    client_id_list = []
-                    for client_idx in range(args.client_num_per_round):
-                        client_id_list.append(client_idx + 1)
-                    args.client_id_list = str(client_id_list)
-                    print(
-                        "------------------server client_id_list = {}-------------------".format(
-                            args.client_id_list
-                        )
-                    )
-                else:
-                    # for the client, we only specify its client id in the list, not including others.
-                    client_id_list = []
-                    client_id_list.append(args.rank)
-                    args.client_id_list = str(client_id_list)
-                    print(
-                        "------------------client client_id_list = {}-------------------".format(
-                            args.client_id_list
-                        )
-                    )
-            else:
-                print(
-                    "training_type != FEDML_TRAINING_PLATFORM_CROSS_DEVICE and training_type != FEDML_TRAINING_PLATFORM_CROSS_SILO"
-                )
-        else:
-            pass
-            # print("args.client_id_list is not None")
-    else:
-        print("using_mlops = true")
+    if args.worker_num == 0:
+        args.worker_num = args.client_num_per_round
+
+    # os.path.expanduser() method in Python is used
+    # to expand an initial path component ~( tilde symbol)
+    # or ~user in the given path to user’s home directory.
+    if hasattr(args, "data_cache_dir"):
+        args.data_cache_dir = os.path.expanduser(args.data_cache_dir)
+    if hasattr(args, "data_file_path"):
+        args.data_file_path = os.path.expanduser(args.data_file_path)
+    if hasattr(args, "partition_file_path"):
+        args.partition_file_path = os.path.expanduser(args.partition_file_path)
+    if hasattr(args, "part_file"):
+        args.part_file = os.path.expanduser(args.part_file)
+
+    args.rank = int(args.rank)
     return args
