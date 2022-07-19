@@ -173,6 +173,10 @@ def load_arguments(training_type=None, comm_backend=None):
 
     if hasattr(args, "worker_num") and args.worker_num == 0:
         args.worker_num = args.client_num_per_round
+    elif not hasattr(args, "worker_num"):
+        args.worker_num = args.client_num_per_round
+    else:
+        raise Exception("Please set worker_num properly according to your hardware configuration")
 
     # os.path.expanduser() method in Python is used
     # to expand an initial path component ~( tilde symbol)
