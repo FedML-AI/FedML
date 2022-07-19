@@ -171,7 +171,7 @@ def load_arguments(training_type=None, comm_backend=None):
     # Load all arguments from YAML config file
     args = Arguments(cmd_args, training_type, comm_backend)
 
-    if args.worker_num == 0:
+    if hasattr(args, "worker_num") and args.worker_num == 0:
         args.worker_num = args.client_num_per_round
 
     # os.path.expanduser() method in Python is used
