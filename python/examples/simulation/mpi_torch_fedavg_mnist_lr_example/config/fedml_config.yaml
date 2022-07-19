@@ -4,7 +4,7 @@ common_args:
 
 data_args:
   dataset: "mnist"
-  data_cache_dir: "../../../data/mnist"
+  data_cache_dir: ~/fedml_data
   partition_method: "hetero"
   partition_alpha: 0.5
 
@@ -50,6 +50,6 @@ attack_args:
   attack_type: None
 
 defense_args:
-  enable_defense: true
+  enable_defense: false
   defense_type: norm_diff_clipping
   norm_bound: 5.0

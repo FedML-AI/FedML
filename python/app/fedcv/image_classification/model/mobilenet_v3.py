@@ -2,10 +2,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-'''
+"""
     Refer to 
     https://github.com/leaderj1001/MobileNetV3-Pytorch.git
-'''
+"""
 
 
 def get_model_parameters(model):
@@ -38,7 +38,7 @@ class h_sigmoid(nn.Module):
         self.inplace = inplace
 
     def forward(self, x):
-        return F.relu6(x + 3., inplace=self.inplace) / 6.
+        return F.relu6(x + 3.0, inplace=self.inplace) / 6.0
 
 
 class h_swish(nn.Module):
@@ -47,7 +47,7 @@ class h_swish(nn.Module):
         self.inplace = inplace
 
     def forward(self, x):
-        out = F.relu6(x + 3., self.inplace) / 6.
+        out = F.relu6(x + 3.0, self.inplace) / 6.0
         return out * x
 
 
@@ -68,7 +68,7 @@ class SqueezeBlock(nn.Module):
             nn.Linear(exp_size, exp_size // divide),
             nn.ReLU(inplace=True),
             nn.Linear(exp_size // divide, exp_size),
-            h_sigmoid()
+            h_sigmoid(),
         )
 
     def forward(self, x):
@@ -99,7 +99,7 @@ class MobileBlock(nn.Module):
         self.conv = nn.Sequential(
             nn.Conv2d(in_channels, exp_size, kernel_size=1, stride=1, padding=0, bias=False),
             nn.BatchNorm2d(exp_size),
-            activation(inplace=True)
+            activation(inplace=True),
         )
         self.depth_conv = nn.Sequential(
             nn.Conv2d(exp_size, exp_size, kernel_size=kernal_size, stride=stride, padding=padding, groups=exp_size),
@@ -112,7 +112,7 @@ class MobileBlock(nn.Module):
         self.point_conv = nn.Sequential(
             nn.Conv2d(exp_size, out_channels, kernel_size=1, stride=1, padding=0),
             nn.BatchNorm2d(out_channels),
-            activation(inplace=True)
+            activation(inplace=True),
         )
 
     def forward(self, x):
@@ -135,7 +135,7 @@ class MobileBlock(nn.Module):
 
 
 class MobileNetV3(nn.Module):
-    def __init__(self, model_mode="LARGE", num_classes=1000, multiplier=1.0, dropout_rate=0.0):
+    def __init__(self, model_mode="SMALL", num_classes=1000, multiplier=1.0, dropout_rate=0.0):
         super(MobileNetV3, self).__init__()
         self.num_classes = num_classes
 
@@ -146,13 +146,11 @@ class MobileNetV3(nn.Module):
                 [24, 24, 3, 1, "RE", False, 72],
                 [24, 40, 5, 2, "RE", True, 72],
                 [40, 40, 5, 1, "RE", True, 120],
-
                 [40, 40, 5, 1, "RE", True, 120],
                 [40, 80, 3, 2, "HS", False, 240],
                 [80, 80, 3, 1, "HS", False, 200],
                 [80, 80, 3, 1, "HS", False, 184],
                 [80, 80, 3, 1, "HS", False, 184],
-
                 [80, 112, 3, 1, "HS", True, 480],
                 [112, 112, 3, 1, "HS", True, 672],
                 [112, 160, 5, 1, "HS", True, 672],

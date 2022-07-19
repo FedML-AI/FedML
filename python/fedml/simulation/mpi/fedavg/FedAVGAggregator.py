@@ -72,33 +72,34 @@ class FedAVGAggregator(object):
         for idx in range(self.worker_num):
             if self.args.is_mobile == 1:
                 self.model_dict[idx] = transform_list_to_tensor(self.model_dict[idx])
-
-            # added for attack & defense; enable multiple defenses
-            if FedMLDefender.get_instance().is_defense_enabled():
-                self.model_dict[idx] = FedMLDefender.get_instance().defend(
-                    self.model_dict[idx], self.get_global_model_params()
-                )
-
-            model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
-            training_num += self.sample_num_dict[idx]
+            model_list.append((self.sample_num_dict[idx], self. model_dict[idx]))
+            # training_num += self.sample_num_dict[idx]
         logging.info("len of self.model_dict[idx] = " + str(len(self.model_dict)))
 
-        # logging.info("################aggregate: %d" % len(model_list))
-        (num0, averaged_params) = model_list[0]
-        for k in averaged_params.keys():
-            for i in range(0, len(model_list)):
-                local_sample_number, local_model_params = model_list[i]
-                w = local_sample_number / training_num
-                if i == 0:
-                    averaged_params[k] = local_model_params[k] * w
-                else:
-                    averaged_params[k] += local_model_params[k] * w
+        if FedMLDefender.get_instance().is_defense_enabled():
+            averaged_params = FedMLDefender.get_instance().run(model_list, self._fedavg_aggregation_)
+        else:
+            averaged_params = self._fedavg_aggregation_(model_list)
 
         # update the global model which is cached at the server side
         self.set_global_model_params(averaged_params)
 
         end_time = time.time()
         logging.info("aggregate time cost: %d" % (end_time - start_time))
+        return averaged_params
+
+    def _fedavg_aggregation_(self, model_list):
+        (num0, averaged_params) = model_list[0]
+        for k in averaged_params.keys():
+            training_num = 0
+            for i in range(0, len(model_list)):
+                local_sample_number, local_model_params = model_list[i]
+                training_num += local_sample_number
+                if i == 0:
+                    averaged_params[k] = local_model_params[k] * local_sample_number
+                else:
+                    averaged_params[k] += local_model_params[k] * local_sample_number
+            averaged_params[k] /= training_num
         return averaged_params
 
     def client_sampling(self, round_idx, client_num_in_total, client_num_per_round):

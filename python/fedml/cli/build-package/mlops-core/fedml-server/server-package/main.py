@@ -73,7 +73,7 @@ def retrieve_and_unzip_package(package_name, package_url, saved_package_path):
     return unzip_package_path
 
 
-def build_dynamic_args(run_config, base_dir):
+def build_dynamic_args(base_dir):
     package_cfg_file = os.path.join(base_dir, "conf", "fedml.yaml")
     print("package_conf_file " + package_cfg_file)
     package_config = load_yaml_config(package_cfg_file)
@@ -102,9 +102,10 @@ def build_dynamic_args(run_config, base_dir):
     fedml_conf_object["device_args"]["worker_num"] = int(
         package_dynamic_args["client_num_in_total"]
     )
-    fedml_conf_object["data_args"]["data_cache_dir"] = package_dynamic_args[
-        "data_cache_dir"
-    ]
+    # fedml_conf_object["data_args"]["data_cache_dir"] = package_dynamic_args[
+    #     "data_cache_dir"
+    # ]
+
     fedml_conf_object["tracking_args"]["log_file_dir"] = package_dynamic_args[
         "log_file_dir"
     ]
@@ -115,10 +116,10 @@ def build_dynamic_args(run_config, base_dir):
     bootstrap_script_path = os.path.join(
         base_dir, "fedml", "config", os.path.basename(bootstrap_script_file)
     )
-    try:
-        os.makedirs(package_dynamic_args["data_cache_dir"])
-    except Exception as e:
-        pass
+    # try:
+    #     os.makedirs(package_dynamic_args["data_cache_dir"])
+    # except Exception as e:
+    #     pass
     fedml_dynamic_args = fedml_conf_object.get("dynamic_args", None)
     if fedml_dynamic_args is not None:
         for entry_key, entry_value in package_dynamic_args.items():
@@ -140,7 +141,7 @@ def build_fedml_entry_cmd(base_dir):
     fedml_conf_file = package_config["entry_config"]["conf_file"]
     package_dynamic_args = package_config["dynamic_args"]
     entry_cmd = (
-            " --cf " + fedml_conf_file + " --rank " + str(package_dynamic_args["rank"])
+            " --cf " + fedml_conf_file + " --rank " + int(package_dynamic_args["rank"])
     )
     if is_local_test:
         entry_cmd = (
