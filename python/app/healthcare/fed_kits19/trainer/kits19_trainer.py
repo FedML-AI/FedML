@@ -1,39 +1,14 @@
 import copy
 import logging
 import time
-import sys
-import os
-from pathlib import Path
-import math
-from matplotlib import pyplot as plt
 
 import numpy as np
 import torch
-import torch.nn as nn
-import torch.optim as optim
-import wandb
-from torch.optim import Adam, lr_scheduler
-import argparse
-import copy
-import os
-import time
-
-import numpy as np
-import torch
-from torch.optim import lr_scheduler
-
 from flamby.datasets.fed_kits19 import (
-    BATCH_SIZE,
     LR,
-    NUM_EPOCHS_POOLED,
-    Baseline,
-    BaselineLoss,
-    FedKits19,
-    evaluate_dice_on_tests,
-    metric,
     softmax_helper,
 )
-from flamby.utils import check_dataset_from_config
+from torch.optim import lr_scheduler
 
 from fedml.core.alg_frame.client_trainer import ClientTrainer
 

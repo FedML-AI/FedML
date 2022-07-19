@@ -1,54 +1,24 @@
-import argparse
-import copy
 import logging
 import os
-import time
-
-import numpy as np
-import torch
-from torch.optim import lr_scheduler
-
+import shutil
 
 import flamby
-
-from flamby.datasets.fed_kits19 import (
-    BATCH_SIZE,
-    LR,
-    NUM_EPOCHS_POOLED,
-    Baseline,
-    BaselineLoss,
-    FedKits19,
-    evaluate_dice_on_tests,
-    metric,
-    softmax_helper,
-)
-from flamby.utils import (
-    check_dataset_from_config,
-    create_config,
-    get_config_file_path,
-    write_value_in_config,
-)
-import argparse
-import csv
-import os
-import shutil
-from collections import defaultdict
-
-import numpy as np
+import torch
 from batchgenerators.utilities.file_and_folder_operations import (
     join,
     maybe_mkdir_p,
     save_json,
     subfolders,
 )
-
-from flamby.datasets.fed_kits19.dataset_creation_scripts.utils.set_environment_variables import (
-    set_environment_variables,
-)
-from flamby.utils import get_config_file_path, read_config, write_value_in_config
+from flamby.datasets.fed_kits19 import FedKits19
 from flamby.datasets.fed_kits19.dataset_creation_scripts.parsing_and_adding_metadata import (
     read_csv_file,
 )
+from flamby.datasets.fed_kits19.dataset_creation_scripts.utils.set_environment_variables import (
+    set_environment_variables,
+)
+from flamby.utils import create_config
+from flamby.utils import get_config_file_path, read_config, write_value_in_config
 
 
 def preprocess(args):
@@ -310,10 +280,7 @@ def config_dataset(args):
     test_patient_names = []
     all_cases = subfolders(base, join=False)
     csv_path = os.path.join(
-        os.path.dirname(flamby.__file__),
-        "datasets",
-        "fed_kits19",
-        "metadata",
+        os.path.dirname(flamby.__file__), "datasets", "fed_kits19", "metadata",
     )
     logging.info(f"csv_path: {csv_path}")
     case_ids, site_ids, unique_hospital_ids, thresholded_ids = read_csv_file(
