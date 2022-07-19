@@ -4,4 +4,4 @@ PROCESS_NUM=`expr $WORKER_NUM + 1`
 echo $PROCESS_NUM
 hostname > mpi_host_file
 $(which mpirun) -np $PROCESS_NUM \
-python main_fedml_flamby.py --cf config/simulation/fedml_config.yaml
+python main_fedml_kits19.py --cf config/simulation/fedml_config.yaml
