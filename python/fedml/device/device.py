@@ -9,10 +9,38 @@ from fedml.constants import (
 
 
 def get_device_type(args):
-    if not args.using_gpu:
-        device_type = "cpu"
+    if hasattr(args, "device_type"):
+        if args.device_type == "cpu":
+            device_type = "cpu"
+        elif args.device_type == "gpu":
+            if torch.cuda.is_available():
+                device_type = "gpu"
+            else:
+                print("PyTorch install was not built with GPU enabled")
+                device_type = "cpu"
+        elif args.device_type == "mps":
+            # Macbook M1: https://pytorch.org/docs/master/notes/mps.html
+            if not torch.backends.mps.is_available():
+                if not torch.backends.mps.is_built():
+                    print("MPS not available because the current PyTorch install was not "
+                          "built with MPS enabled.")
+                else:
+                    print("MPS not available because the current MacOS version is not 12.3+ "
+                          "and/or you do not have an MPS-enabled device on this machine.")
+                device_type = "cpu"
+            else:
+                device_type = "mps"
+        else:
+            raise Exception("do not support device type = {}".format(args.device_type))
     else:
-        device_type = "gpu" if not hasattr(args, "device_type") else args.device_type
+        if args.using_gpu:
+            if torch.cuda.is_available():
+                device_type = "gpu"
+            else:
+                print("PyTorch install was not built with GPU enabled")
+                device_type = "cpu"
+        else:
+            device_type = "cpu"
     return device_type
 
 

@@ -79,6 +79,9 @@ class InvertAttack(BaseAttackMethod):
                 self.num_images, img, self.model, loss_fn, save_files
             )
 
+    def attack_model(self, local_weights, global_weights, refs=None):
+        pass
+
     def create_fake_input(self, num_images, img, model, loss_fn, save_files):
         if num_images == 1:
             idx = 0
