@@ -85,7 +85,7 @@ def get_device(args):
             args.gpu_mapping_key,
         )
         return device
-    elif args.training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO:
+    elif args.training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO and args.backend == "MQTT_S3":
 
         from .gpu_mapping_cross_silo import (
             mapping_processes_to_gpu_device_from_yaml_file_cross_silo,
@@ -133,7 +133,7 @@ def get_device(args):
             ), f"GPU assignemnt inconsistent with cuda_rpc_gpu_mapping. Assigned to GPU {device.index} while expecting {args.cuda_rpc_gpu_mapping[args.rank]}"
 
         return device
-    elif args.training_type == "cross_device":
+    elif args.training_type == "cross_device" and args.backend == "MQTT_S3":
         if args.using_gpu:
             device = torch.device(
                 "cuda:" + args.gpu_id if torch.cuda.is_available() else "cpu"
@@ -141,6 +141,24 @@ def get_device(args):
         else:
             device = torch.device("cpu")
         logging.info("device = {}".format(device))
+        return device
+    elif args.training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO and args.backend == "MPI":
+        from .gpu_mapping_mpi import (
+            mapping_processes_to_gpu_device_from_yaml_file_mpi,
+            mapping_processes_to_gpu_device_from_gpu_util_parse,
+        )
+
+        if hasattr(args, "gpu_util_parse"):
+            device = mapping_processes_to_gpu_device_from_gpu_util_parse(
+                args.process_id, args.worker_num, args.gpu_util_parse,
+            )
+        else:
+            device = mapping_processes_to_gpu_device_from_yaml_file_mpi(
+                args.process_id,
+                args.worker_num,
+                args.gpu_mapping_file if args.using_gpu else None,
+                args.gpu_mapping_key,
+            )
         return device
     else:
         raise Exception(
