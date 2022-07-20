@@ -22,7 +22,7 @@ from .core.mlops import MLOpsRuntimeLog
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.7.218"
+__version__ = "0.7.219"
 
 
 def init(args=None):
@@ -76,8 +76,10 @@ def init(args=None):
         if not hasattr(args, "scenario"):
             args.scenario = "horizontal"
         if args.scenario == "horizontal":
-
-            args = init_cross_silo_horizontal(args)
+            if args.backend == "MQTT_S3":
+                args = init_cross_silo_horizontal(args)
+            elif args.backend == "MPI":
+                args = init_simulation_mpi(args)
 
         elif args.scenario == "hierarchical":
             args = init_cross_silo_hierarchical(args)
