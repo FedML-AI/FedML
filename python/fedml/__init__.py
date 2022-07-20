@@ -1,8 +1,8 @@
 import logging
-import multiprocess as multiprocessing
 import os
 import random
 
+import multiprocess as multiprocessing
 import numpy as np
 import torch
 import wandb
@@ -181,6 +181,7 @@ def manage_cuda_rpc_args(args):
     print(f"cpu_transfer: {args.cpu_transfer}")
     print(f"enable_cuda_rpc: {args.enable_cuda_rpc}")
 
+
 def manage_mpi_args(args):
     if hasattr(args, "backend") and args.backend == "MPI":
         from mpi4py import MPI
@@ -190,6 +191,8 @@ def manage_mpi_args(args):
         world_size = comm.Get_size()
         args.comm = comm
         args.rank = process_id
+        if process_id == 0:
+            args.role = "server"
         # args.worker_num = worker_num
         assert (
             args.worker_num + 1 == world_size
@@ -242,7 +245,7 @@ def init_cross_silo_hierarchical(args):
             args.n_node_in_silo = 1
         if not (hasattr(args, "n_proc_per_node") and args.n_proc_per_node):
             pass
-            if  args.n_node_in_silo == 1 and torch.cuda.is_available():
+            if args.n_node_in_silo == 1 and torch.cuda.is_available():
                 gpu_count = torch.cuda.device_count()
                 if gpu_count == args.n_proc_in_silo:
                     print(f"Auto assigning GPU to processes.")
@@ -265,7 +268,11 @@ def update_client_id_list(args):
         hasattr(args, "using_mlops") and not args.using_mlops
     ):
         print("args.client_id_list = {}".format(print(args.client_id_list)))
-        if args.client_id_list is None or args.client_id_list == "None" or args.client_id_list == "[]":
+        if (
+            args.client_id_list is None
+            or args.client_id_list == "None"
+            or args.client_id_list == "[]"
+        ):
             if (
                 args.training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE
                 or args.training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO
