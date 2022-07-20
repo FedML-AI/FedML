@@ -2,7 +2,8 @@ import numpy as np
 
 
 class scheduler:
-    def __init__(self, workloads, constraints, memory):
+    def __init__(self, workloads, constraints, memory,
+                uniform_client=True, uniform_gpu=False):
         self.workloads = workloads
         self.x = np.sort(workloads)[::-1]
         self.x_sorted_index = np.argsort(workloads)[::-1]
@@ -10,6 +11,9 @@ class scheduler:
         self.m = memory
         self.len_x = len(workloads)
         self.len_y = len(constraints)
+        self.uniform_client = uniform_client 
+        self.uniform_gpu = uniform_gpu
+
 
     def assign_a_workload_serial(self, x_maps, cost_maps):
         # Find the case with the minimum cost.

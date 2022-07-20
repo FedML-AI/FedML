@@ -19,6 +19,7 @@ from ..constants import (
     FedML_FEDERATED_OPTIMIZER_HIERACHICAL_FL,
     FedML_FEDERATED_OPTIMIZER_TURBO_AGGREGATE,
     FedML_FEDERATED_OPTIMIZER_FEDSGD,
+    FedML_FEDERATED_OPTIMIZER_ASYNC_FEDAVG,
 )
 
 
@@ -71,6 +72,7 @@ class SimulatorMPI:
         from .mpi.split_nn.SplitNNAPI import SplitNN_distributed
         from .mpi.fedgan.FedGanAPI import FedML_FedGan_distributed
         from .mpi.fedavg_seq.FedAvgSeqAPI import FedML_FedAvgSeq_distributed
+        from .mpi.async_fedavg.AsyncFedAvgSeqAPI import FedML_Async_distributed
 
         if args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDAVG:
             self.simulator = FedML_FedAvg_distributed(
@@ -182,6 +184,19 @@ class SimulatorMPI:
                 model_trainer=client_trainer,
                 preprocessed_sampling_lists=None,
             )
+        elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_ASYNC_FEDAVG:
+            self.simulator = FedML_Async_distributed(
+                args,
+                args.process_id,
+                args.worker_num,
+                args.comm,
+                device,
+                dataset,
+                model,
+                model_trainer=client_trainer,
+                preprocessed_sampling_lists=None,
+            )
+
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDSEG:
             pass
         elif args.fl_trainer == FedML_FEDERATED_OPTIMIZER_FEDAVG_ROBUST:
