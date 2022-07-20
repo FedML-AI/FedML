@@ -66,7 +66,7 @@ class CIFAR10_truncated(data.Dataset):
         self.data, self.target = self.__build_truncated_dataset__()
 
     def __build_truncated_dataset__(self):
-        logging("download = " + str(self.download))
+        logging.info("download = " + str(self.download))
         cifar_dataobj = CIFAR10(
             self.root, self.train, self.transform, self.target_transform, self.download
         )
