@@ -3,28 +3,9 @@
 KiTS19 dataset is an open access Kidney Tumor Segmentation dataset that was made public in 2019 for a segmentation Challenge (https://kits19.grand-challenge.org/data/).
 We use the official KiTS19 repository (https://github.com/neheller/kits19) to download the dataset.
 
-#License and Citations:
+## License:
+
 Find attached the link to [the full license](https://data.donders.ru.nl/doc/dua/CC-BY-NC-SA-4.0.html?0) and [dataset terms](https://kits19.grand-challenge.org/data/).
-
-See below the full citations:
-
-```bash
-@article{heller2020state,
-  title={The state of the art in kidney and kidney tumor segmentation in contrast-enhanced CT imaging: Results of the KiTS19 Challenge},
-  author={Heller, Nicholas and Isensee, Fabian and Maier-Hein, Klaus H and Hou, Xiaoshuai and Xie, Chunmei and Li, Fengyi and Nan, Yang and Mu, Guangrui and Lin, Zhiyong and Han, Miofei and others},
-  journal={Medical Image Analysis},
-  pages={101821},
-  year={2020},
-  publisher={Elsevier}
-}
-
-@article{heller2019kits19,
-  title={The kits19 challenge data: 300 kidney tumor cases with clinical context, ct semantic segmentations, and surgical outcomes},
-  author={Heller, Nicholas and Sathianathen, Niranjan and Kalapara, Arveen and Walczak, Edward and Moore, Keenan and Kaluzniak, Heather and Rosenberg, Joel and Blake, Paul and Rengel, Zachary and Oestreich, Makinna and others},
-  journal={arXiv preprint arXiv:1904.00445},
-  year={2019}
-}
-```
 
 ## Dataset Description
 
@@ -90,7 +71,7 @@ There are only 6 center in this case, so the maximum number of clients is 6.
 
 3. Run the edge server and client using MQTT or on MLOps
 
-If you want to run the edge server and client using MQTT, you need to install the following packages:
+If you want to run the edge server and client using MQTT, you need to run the following commands.
 
 ```bash
 bash run_server.sh
@@ -124,16 +105,18 @@ Note that estimated memory requirement for this training is around 14.5 GB.
 # Citation:
 
 ```bash
-@article{isensee2018nnu,
-  title={nnu-net: Self-adapting framework for u-net-based medical image segmentation},
-  author={Isensee, Fabian and Petersen, Jens and Klein, Andre and Zimmerer, David and Jaeger, Paul F and Kohl, Simon and Wasserthal, Jakob and Koehler, Gregor and Norajitra, Tobias and Wirkert, Sebastian and others},
-  journal={arXiv preprint arXiv:1809.10486},
-  year={2018}
+@article{he2021fedcv,
+  title={Fedcv: a federated learning framework for diverse computer vision tasks},
+  author={He, Chaoyang and Shah, Alay Dilipbhai and Tang, Zhenheng and Sivashunmugam, Di Fan1Adarshan Naiynar and Bhogaraju, Keerti and Shimpi, Mita and Shen, Li and Chu, Xiaowen and Soltanolkotabi, Mahdi and Avestimehr, Salman},
+  journal={arXiv preprint arXiv:2111.11066},
+  year={2021}
 }
-
-@misc{isensee2020batchgenerators,
-  title={batchgenerators—a python framework for data augmentation. 2020},
-  author={Isensee, F and J{\"a}ger, P and Wasserthal, J and Zimmerer, D and Petersen, J and Kohl, S and others},
-  year={2020}
+@misc{he2020fedml,
+      title={FedML: A Research Library and Benchmark for Federated Machine Learning},
+      author={Chaoyang He and Songze Li and Jinhyun So and Xiao Zeng and Mi Zhang and Hongyi Wang and Xiaoyang Wang and Praneeth Vepakomma and Abhishek Singh and Hang Qiu and Xinghua Zhu and Jianzong Wang and Li Shen and Peilin Zhao and Yan Kang and Yang Liu and Ramesh Raskar and Qiang Yang and Murali Annavaram and Salman Avestimehr},
+      year={2020},
+      eprint={2007.13518},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
 }
 ```
