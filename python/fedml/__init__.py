@@ -76,11 +76,7 @@ def init(args=None):
         if not hasattr(args, "scenario"):
             args.scenario = "horizontal"
         if args.scenario == "horizontal":
-            if args.backend == "MQTT_S3":
-                args = init_cross_silo_horizontal(args)
-            elif args.backend == "MPI":
-                args = init_simulation_mpi(args)
-
+            init_cross_silo_horizontal(args)
         elif args.scenario == "hierarchical":
             args = init_cross_silo_hierarchical(args)
 
