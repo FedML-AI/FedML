@@ -6,7 +6,6 @@ from model.gat_link import GATLinkPred
 from model.sage_link import SAGELinkPred
 
 from trainer.fed_subgraph_lp_trainer import FedSubgraphLPTrainer
-from fedml.simulation import SimulatorMPI
 
 
 def load_data(args):

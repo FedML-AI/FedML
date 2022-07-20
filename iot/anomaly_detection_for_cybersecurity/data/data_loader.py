@@ -7,11 +7,6 @@ import numpy as np
 import pandas as pd
 import torch
 
-from fedml.constants import (
-    FEDML_TRAINING_PLATFORM_SIMULATION,
-    FEDML_TRAINING_PLATFORM_CROSS_SILO,
-)
-
 
 def download_data(args, device_name):
     url_root = "https://fediot.s3.us-west-1.amazonaws.com/fediot"
@@ -20,133 +15,6 @@ def download_data(args, device_name):
     urllib.request.urlretrieve(url, saved_path)
     with zipfile.ZipFile(saved_path, "r") as f:
         f.extractall(args.data_cache_dir)
-
-
-def load_data_on_server(args, device_list):
-    train_data_global = list()
-    test_data_global = list()
-    train_data_local_dict = dict.fromkeys(range(9))
-    test_data_local_dict = dict.fromkeys(range(9))
-    train_data_local_num_dict = dict.fromkeys(range(9))
-    train_data_num = 0
-    test_data_num = 0
-
-    min_max_file_path = "./data"
-    min_dataset = np.loadtxt(os.path.join(min_max_file_path, "min_dataset.txt"))
-    max_dataset = np.loadtxt(os.path.join(min_max_file_path, "max_dataset.txt"))
-
-    for i, device_name in enumerate(device_list):
-        device_data_cache_dir = os.path.join(args.data_cache_dir, device_name)
-        if not os.path.exists(device_data_cache_dir):
-            os.makedirs(device_data_cache_dir)
-            logging.info("Downloading dataset for device {} on server".format(i + 1))
-            download_data(args, device_name)
-
-        logging.info("Creating dataset {}".format(device_name))
-        benign_data = pd.read_csv(
-            os.path.join(args.data_cache_dir, device_name, "benign_traffic.csv")
-        )
-        benign_data = benign_data[:5000]
-        benign_data = np.array(benign_data)
-        benign_data[np.isnan(benign_data)] = 0
-        benign_data = (benign_data - min_dataset) / (max_dataset - min_dataset)
-
-        g_attack_data_list = [
-            os.path.join(args.data_cache_dir, device_name, "gafgyt_attacks", f)
-            for f in os.listdir(
-                os.path.join(args.data_cache_dir, device_name, "gafgyt_attacks")
-            )
-        ]
-        if (
-            device_name == "Ennio_Doorbell"
-            or device_name == "Samsung_SNH_1011_N_Webcam"
-        ):
-            attack_data_list = g_attack_data_list
-        else:
-            m_attack_data_list = [
-                os.path.join(args.data_cache_dir, device_name, "mirai_attacks", f)
-                for f in os.listdir(
-                    os.path.join(args.data_cache_dir, device_name, "mirai_attacks")
-                )
-            ]
-            attack_data_list = g_attack_data_list + m_attack_data_list
-
-        attack_data = pd.concat([pd.read_csv(f)[:500] for f in attack_data_list])
-        attack_data = (attack_data - attack_data.mean()) / (attack_data.std())
-        attack_data = np.array(attack_data)
-        attack_data[np.isnan(attack_data)] = 0
-
-        train_data_local_dict[i] = torch.utils.data.DataLoader(
-            benign_data, batch_size=args.batch_size, shuffle=False, num_workers=0
-        )
-        test_data_local_dict[i] = torch.utils.data.DataLoader(
-            attack_data, batch_size=args.batch_size, shuffle=False, num_workers=0
-        )
-        train_data_local_num_dict[i] = len(train_data_local_dict[i])
-        train_data_num += train_data_local_num_dict[i]
-
-    class_num = 115
-    dataset = [
-        train_data_num,
-        test_data_num,
-        train_data_global,
-        test_data_global,
-        train_data_local_num_dict,
-        train_data_local_dict,
-        test_data_local_dict,
-        class_num,
-    ]
-    return dataset, class_num
-
-
-def load_data_on_client(args, device_list, client_index):
-    train_data_global = list()
-    test_data_global = list()
-    train_data_local_dict = dict.fromkeys(range(9))
-    test_data_local_dict = dict.fromkeys(range(9))
-    train_data_local_num_dict = dict.fromkeys(range(9))
-    train_data_num = 0
-    test_data_num = 0
-
-    min_max_file_path = "./data"
-    min_dataset = np.loadtxt(os.path.join(min_max_file_path, "min_dataset.txt"))
-    max_dataset = np.loadtxt(os.path.join(min_max_file_path, "max_dataset.txt"))
-
-    device_name = device_list[client_index - 1]
-    device_data_cache_dir = os.path.join(args.data_cache_dir, device_name)
-    if not os.path.exists(device_data_cache_dir):
-        os.makedirs(device_data_cache_dir)
-        logging.info("Downloading dataset for device {} on client".format(client_index))
-        download_data(args, device_name)
-
-    logging.info("Creating dataset {}".format(device_name))
-    benign_data = pd.read_csv(os.path.join(device_data_cache_dir, "benign_traffic.csv"))
-    benign_data = benign_data[:5000]
-    benign_data = np.array(benign_data)
-    benign_data[np.isnan(benign_data)] = 0
-    benign_data = (benign_data - min_dataset) / (max_dataset - min_dataset)
-
-    train_data_local_dict[client_index - 1] = torch.utils.data.DataLoader(
-        benign_data, batch_size=args.batch_size, shuffle=False, num_workers=0
-    )
-
-    train_data_local_num_dict[client_index - 1] = len(
-        train_data_local_dict[client_index - 1]
-    )
-    train_data_num += train_data_local_num_dict[client_index - 1]
-
-    class_num = 115
-    dataset = [
-        train_data_num,
-        test_data_num,
-        train_data_global,
-        test_data_global,
-        train_data_local_num_dict,
-        train_data_local_dict,
-        test_data_local_dict,
-        class_num,
-    ]
-    return dataset, class_num
 
 
 def load_data(args):
@@ -162,26 +30,111 @@ def load_data(args):
         "SimpleHome_XCS7_1003_WHT_Security_Camera",
     ]
 
+    train_data_global = list()
+    test_data_global = list()
+    train_data_local_dict = dict.fromkeys(range(9))
+    test_data_local_dict = dict.fromkeys(range(9))
+    train_data_local_num_dict = dict.fromkeys(range(9))
+    train_data_num = 0
+    test_data_num = 0
+
+    min_max_file_path = "./data"
+    min_dataset = np.loadtxt(os.path.join(min_max_file_path, "min_dataset.txt"))
+    max_dataset = np.loadtxt(os.path.join(min_max_file_path, "max_dataset.txt"))
+
     if not os.path.exists(args.data_cache_dir):
         os.makedirs(args.data_cache_dir)
 
-    if (
-        args.training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO
-        and args.scenario == "horizontal"
-    ):
-        if args.rank == 0:
-            logging.info("Cross-silo dataloading")
-            dataset, class_num = load_data_on_server(args, device_list)
-        else:
-            dataset, class_num = load_data_on_client(args, device_list, args.rank)
-        return dataset, class_num
-    elif (
-        args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
-        and args.backend == "MPI"
-    ):
-        if args.process_id == 0:
-            logging.info("Simulation mpi dataloading")
-            dataset, class_num = load_data_on_server(args, device_list)
-        else:
-            dataset, class_num = load_data_on_client(args, device_list, args.process_id)
-        return dataset, class_num
+    if args.rank == 0:
+        for i, device_name in enumerate(device_list):
+            device_data_cache_dir = os.path.join(args.data_cache_dir, device_name)
+            if not os.path.exists(device_data_cache_dir):
+                os.makedirs(device_data_cache_dir)
+                logging.info(
+                    "Downloading dataset for device {} on server".format(i + 1)
+                )
+                download_data(args, device_name)
+            
+            logging.info("Creating dataset {}".format(device_name))
+            benign_data = pd.read_csv(
+                os.path.join(args.data_cache_dir, device_name, "benign_traffic.csv")
+            )
+            benign_data = benign_data[:5000]
+            benign_data = np.array(benign_data)
+            benign_data[np.isnan(benign_data)] = 0
+            benign_data = (benign_data - min_dataset) / (max_dataset - min_dataset)
+
+            g_attack_data_list = [
+                os.path.join(args.data_cache_dir, device_name, "gafgyt_attacks", f)
+                for f in os.listdir(
+                    os.path.join(args.data_cache_dir, device_name, "gafgyt_attacks")
+                )
+            ]
+            if (
+                device_name == "Ennio_Doorbell"
+                or device_name == "Samsung_SNH_1011_N_Webcam"
+            ):
+                attack_data_list = g_attack_data_list
+            else:
+                m_attack_data_list = [
+                    os.path.join(args.data_cache_dir, device_name, "mirai_attacks", f)
+                    for f in os.listdir(
+                        os.path.join(args.data_cache_dir, device_name, "mirai_attacks")
+                    )
+                ]
+                attack_data_list = g_attack_data_list + m_attack_data_list
+
+            attack_data = pd.concat([pd.read_csv(f)[:500] for f in attack_data_list])
+            attack_data = (attack_data - attack_data.mean()) / (attack_data.std())
+            attack_data = np.array(attack_data)
+            attack_data[np.isnan(attack_data)] = 0
+
+            train_data_local_dict[i] = torch.utils.data.DataLoader(
+                benign_data, batch_size=args.batch_size, shuffle=False, num_workers=0
+            )
+            test_data_local_dict[i] = torch.utils.data.DataLoader(
+                attack_data, batch_size=args.batch_size, shuffle=False, num_workers=0
+            )
+            train_data_local_num_dict[i] = len(train_data_local_dict[i])
+            train_data_num += train_data_local_num_dict[i]
+
+    else:
+        device_name = device_list[args.rank - 1]
+        device_data_cache_dir = os.path.join(args.data_cache_dir, device_name)
+        if not os.path.exists(device_data_cache_dir):
+            os.makedirs(device_data_cache_dir)
+            logging.info(
+                "Downloading dataset for device {} on client".format(args.rank)
+            )
+            download_data(args, device_name)
+
+        logging.info("Creating dataset {}".format(device_name))
+        benign_data = pd.read_csv(
+            os.path.join(device_data_cache_dir, "benign_traffic.csv")
+        )
+        benign_data = benign_data[:5000]
+        benign_data = np.array(benign_data)
+        benign_data[np.isnan(benign_data)] = 0
+        benign_data = (benign_data - min_dataset) / (max_dataset - min_dataset)
+
+        train_data_local_dict[args.rank - 1] = torch.utils.data.DataLoader(
+            benign_data, batch_size=args.batch_size, shuffle=False, num_workers=0
+        )
+
+        train_data_local_num_dict[args.rank - 1] = len(
+            train_data_local_dict[args.rank - 1]
+        )
+        train_data_num += train_data_local_num_dict[args.rank - 1]
+
+    class_num = 115
+    dataset = [
+        train_data_num,
+        test_data_num,
+        train_data_global,
+        test_data_global,
+        train_data_local_num_dict,
+        train_data_local_dict,
+        test_data_local_dict,
+        class_num,
+    ]
+    return dataset, class_num
