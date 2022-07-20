@@ -8,13 +8,15 @@ environment_args:
   bootstrap: config/bootstrap.sh
 
 data_args:
-  dataset: "mnist"
+#  dataset: "mnist"
+  dataset: "cifar10"
   data_cache_dir: ~/fedml_data
   partition_method: "hetero"
   partition_alpha: 0.5
 
 model_args:
-  model: "lr"
+#  model: "lr"
+  model: "cnn"
   model_file_cache_folder: "./model_file_cache" # will be filled by the server automatically
   global_model_file_path: "./model_file_cache/global_model.pt"
 
