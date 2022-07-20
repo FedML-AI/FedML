@@ -188,6 +188,7 @@ class FedMLClientManager(ClientManager):
 
     def report_training_status(self, status):
         if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+            self.mlops_metrics.set_messenger(self.com_manager_status, self.args)
             self.mlops_metrics.report_client_training_status(self.client_real_id, status)
 
     def report_sys_performances(self):
