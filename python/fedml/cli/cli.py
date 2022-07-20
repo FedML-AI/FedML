@@ -420,8 +420,10 @@ def mlops_build(type, source_folder, entry_point, config_folder, dest_folder, ig
     ignore_list = "{},{}".format(ignore, FEDML_MLOPS_BUILD_PRE_IGNORE_LIST)
     pip_source_dir = os.path.dirname(__file__)
     pip_build_path = os.path.join(pip_source_dir, "build-package")
+    build_dir_ignore = "__pycache__,*.pyc"
+    build_dir_ignore_list = tuple(build_dir_ignore.split(','))
     shutil.copytree(pip_build_path, mlops_build_path,
-                    ignore_dangling_symlinks=True)
+                    ignore_dangling_symlinks=True, ignore=shutil.ignore_patterns(*build_dir_ignore_list))
 
     if type == "client":
         result = build_mlops_package(
