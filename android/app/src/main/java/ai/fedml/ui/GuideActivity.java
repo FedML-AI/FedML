@@ -15,7 +15,6 @@ import java.util.Arrays;
 
 import ai.fedml.edge.nativemnn.NativeFedMLTrainer;
 import ai.fedml.edge.nativemnn.TrainingCallback;
-import ai.fedml.edge.service.component.SysStats;
 import androidx.annotation.Nullable;
 
 import java.io.File;
