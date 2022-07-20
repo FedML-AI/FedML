@@ -310,7 +310,13 @@ def load_partition_data_distributed_cifar100(
 
 
 def load_partition_data_cifar100(
-    dataset, data_dir, partition_method, partition_alpha, client_number, batch_size
+    args,
+    dataset,
+    data_dir,
+    partition_method,
+    partition_alpha,
+    client_number,
+    batch_size,
 ):
     (
         X_train,
@@ -323,22 +329,29 @@ def load_partition_data_cifar100(
         dataset, data_dir, partition_method, client_number, partition_alpha
     )
     class_num = len(np.unique(y_train))
-    logging.info("traindata_cls_counts = " + str(traindata_cls_counts))
-    train_data_num = sum([len(net_dataidx_map[r]) for r in range(client_number)])
+    # logging.info("traindata_cls_counts = " + str(traindata_cls_counts))
+    # train_data_num = sum([len(net_dataidx_map[r]) for r in range(client_number)])
 
-    train_data_global, test_data_global = get_dataloader(
-        dataset, data_dir, batch_size, batch_size
-    )
-    logging.info("train_dl_global number = " + str(len(train_data_global)))
-    logging.info("test_dl_global number = " + str(len(train_data_global)))
-    test_data_num = len(test_data_global)
+    # train_data_global, test_data_global = get_dataloader(
+    # dataset, data_dir, batch_size, batch_size
+    # )
+    # logging.info("train_dl_global number = " + str(len(train_data_global)))
+    # logging.info("test_dl_global number = " + str(len(train_data_global)))
+    # test_data_num = len(test_data_global)
+    train_data_num = 0
+    test_data_num = 0
+    train_data_global = None
+    test_data_global = None
 
     # get local dataset
     data_local_num_dict = dict()
     train_data_local_dict = dict()
     test_data_local_dict = dict()
 
-    for client_idx in range(client_number):
+    if args.process_id == 0:
+        pass
+    else:
+        client_idx = int(args.process_id) - 1
         dataidxs = net_dataidx_map[client_idx]
         local_data_num = len(dataidxs)
         data_local_num_dict[client_idx] = local_data_num
