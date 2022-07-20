@@ -1,7 +1,7 @@
 import torch
 import numpy as np
-import torch.nn.functional as F
 from .defense_base import BaseDefenseMethod
+from ..common.utils import cross_entropy_for_onehot
 
 """
 defense @ client, added by Kai, 07/10/2022
@@ -74,7 +74,7 @@ class SoteriaDefense(BaseDefenseMethod):
                 np.float32
             )
 
-            y = self._cross_entropy_for_onehot(out, gt_onehot_label)
+            y = cross_entropy_for_onehot(out, gt_onehot_label)
             dy_dx = torch.autograd.grad(y, self.model.parameters())
 
             # share the gradients with other clients
@@ -103,7 +103,9 @@ class SoteriaDefense(BaseDefenseMethod):
             #         grad_tensor = grad_tensor + noise
             #         defensed_original_dy_dx[i] = torch.Tensor(grad_tensor)
         aggregation_result = defensed_original_dy_dx[0][0][0][0]
-        print(f"_original_gradient = {original_dy_dx[0][0][0][0]}, _after_defend_gradient = {aggregation_result}")
+        print(
+            f"_original_gradient = {original_dy_dx[0][0][0][0]}, _after_defend_gradient = {aggregation_result}"
+        )
 
         return aggregation_result
 
@@ -112,7 +114,3 @@ class SoteriaDefense(BaseDefenseMethod):
         onehot_target = torch.zeros(target.size(0), num_classes, device=target.device)
         onehot_target.scatter_(1, target, 1)
         return onehot_target
-
-    @staticmethod
-    def _cross_entropy_for_onehot(pred, target):
-        return torch.mean(torch.sum(-target * F.log_softmax(pred, dim=-1), 1))
