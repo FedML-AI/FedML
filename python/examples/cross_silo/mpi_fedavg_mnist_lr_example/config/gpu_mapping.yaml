@@ -1,3 +1,3 @@
 # this is used for 4 clients and 1 server training within a single machine which has 8 GPUs, but you hope to skip the GPU device ID.
 mapping_default:
-  host1: [1, 0, 0, 1, 1, 0, 1, 1]
+  host1: [0, 0, 0, 1, 1, 1, 1, 1]
