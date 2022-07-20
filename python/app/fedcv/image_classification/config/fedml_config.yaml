@@ -25,8 +25,8 @@ model_args:
 train_args:
   federated_optimizer: "FedAvg"
   client_id_list:
-  client_num_in_total: 2
-  client_num_per_round: 2
+  client_num_in_total: 100
+  client_num_per_round: 1
   comm_round: 10
   epochs: 3
   batch_size: 4
