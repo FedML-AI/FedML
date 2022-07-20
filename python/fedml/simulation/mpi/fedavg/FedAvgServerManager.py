@@ -6,6 +6,7 @@ from ....core.distributed.communication.message import Message
 from ....core.distributed.server.server_manager import ServerManager
 
 
+
 class FedAVGServerManager(ServerManager):
     def __init__(
         self,
