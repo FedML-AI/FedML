@@ -3,15 +3,13 @@ common_args:
   random_seed: 0
 
 data_args:
-#  dataset: "mnist"
-  dataset: "cifar10"
+  dataset: "mnist"
   data_cache_dir: ~/fedml_data
   partition_method: "hetero"
   partition_alpha: 0.5
 
 model_args:
-#  model: "lr"
-  model: "cnn"
+  model: "lr"
 
 train_args:
   federated_optimizer: "FedAvg"
