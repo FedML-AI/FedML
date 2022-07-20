@@ -11,5 +11,5 @@ sh ./../data/coco128/download_coco128.sh
 
 
 ### don't modify this part ###
-exit 0
+echo "[FedML]Bootstrap Finished"
 ##############################
