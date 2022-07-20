@@ -8,6 +8,10 @@ import wandb
 from .utils import transform_list_to_tensor
 from ....core.security.fedml_defender import FedMLDefender
 
+from ....core.schedule.scheduler import scheduler
+from ....core.schedule.runtime_estimate import t_sample_fit
+
+
 
 class FedAVGAggregator(object):
     def __init__(
@@ -42,6 +46,12 @@ class FedAVGAggregator(object):
         self.flag_client_model_uploaded_dict = dict()
         for idx in range(self.worker_num):
             self.flag_client_model_uploaded_dict[idx] = False
+        self.runtime_history = {}
+        for i in range(self.worker_num):
+            self.runtime_history[i] = {}
+            for j in range(self.args.client_num_in_total):
+                self.runtime_history[i][j] = []
+
 
     def get_global_model_params(self):
         return self.trainer.get_model_params()
@@ -94,11 +104,21 @@ class FedAVGAggregator(object):
         return resource
 
     def record_client_runtime(self, worker_id, client_runtimes):
-        pass
+        self.runtime_history
 
 
 
     def client_schedule(self, round_idx, client_indexes, mode="simulate"):
+        self.runtime_history = {}
+        for i in range(self.worker_num):
+            self.runtime_history[i] = {}
+            for j in range(self.args.client_num_in_total):
+                self.runtime_history[i][j] = []
+
+        fit_params, fit_funcs, fit_errors = t_sample_fit(
+            self.worker_num, self.args.client_num_in_total, self.runtime_history, 
+            self.train_data_local_num_dict, uniform_client=True, uniform_gpu=False)
+
         # scheduler(workloads, constraints, memory)
         # workload = self.workload_estimate(client_indexes, mode)
         # resource = self.resource_estimate(mode)
