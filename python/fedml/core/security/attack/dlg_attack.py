@@ -5,10 +5,12 @@ from .attack_base import BaseAttackMethod
 
 # test using local directory
 # from security.attack.attack_base import BaseAttackMethod
+from ..common.utils import cross_entropy_for_onehot
 
 """
 ref: Zhu, Ligeng, Zhijian Liu, and Song Han. "Deep leakage from gradients." Advances in neural information processing systems 32 (2019).
 attack @ server, added by Kai, 07/06/2022
+Reference: https://github.com/mit-han-lab/dlg/blob/master/main.py
 
 Steps:
 (1) At the very beginning, the malicious server sends initialized parameters to clients and receives the local gradients from one client.
@@ -17,15 +19,12 @@ Steps:
 
 
 class DLGAttack(BaseAttackMethod):
-    def __init__(
-        self, data_size, num_class, model, criterion, attack_epoch, attack_label=84
-    ):
+    def __init__(self, data_size, num_class, model, attack_epoch, attack_label=84):
         self.data_size = [
             1
         ] + data_size  # batched image size (list), e.g. [1, 3, 32, 32]
         self.num_class = num_class  # number of classess of the dataset
         self.model = model
-        self.criterion = criterion
         self.attack_epoch = attack_epoch
         self.attack_label = attack_label
 
@@ -51,7 +50,7 @@ class DLGAttack(BaseAttackMethod):
 
                 pred = self.model(dummy_data)
                 dummy_onehot_label = F.softmax(dummy_label, dim=-1)
-                dummy_loss = self.criterion(
+                dummy_loss = cross_entropy_for_onehot(
                     pred, dummy_onehot_label
                 )  # TODO: fix the gt_label to dummy_label in both code and slides.
                 dummy_dy_dx = torch.autograd.grad(
