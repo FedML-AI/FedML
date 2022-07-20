@@ -276,7 +276,8 @@ class FedMLClientRunner:
         self.setup_client_mqtt_mgr()
         self.wait_client_mqtt_connected()
 
-        self.mlops_metrics.report_client_training_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING)
+        self.mlops_metrics.report_client_training_status(self.edge_id,
+                                                         ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING)
 
         # get training params
         private_local_data_dir = data_config.get("privateLocalData", "")
