@@ -35,7 +35,7 @@
             android:layout_marginLeft="20dp"
             android:layout_marginTop="12dp"
             android:background="@color/color_54A158"
-            android:text="Set Priivata Path"
+            android:text="Set Private Path"
             android:textAllCaps="false"
             android:textColor="@color/white"
             android:textSize="14sp" />

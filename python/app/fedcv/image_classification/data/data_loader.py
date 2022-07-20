@@ -29,7 +29,11 @@ def combine_batches(batches):
 def load_synthetic_data(args):
     dataset_name = str(args.dataset).lower()
     # check if the centralized training is enabled
-    centralized = True if (args.client_num_in_total == 1 and args.training_type != "cross_silo") else False
+    centralized = (
+        True
+        if (args.client_num_in_total == 1 and args.training_type != "cross_silo")
+        else False
+    )
 
     # check if the full-batch training is enabled
     args_batch_size = args.batch_size
@@ -116,7 +120,9 @@ def load_synthetic_data(args):
     elif dataset_name in ["gld23k", "landmarks"]:
         logging.info("load_data. dataset_name = %s" % dataset_name)
         args.client_num_in_total = 233
-        fed_train_map_file = os.path.join(args.data_cache_dir, "mini_gld_train_split.csv")
+        fed_train_map_file = os.path.join(
+            args.data_cache_dir, "mini_gld_train_split.csv"
+        )
         fed_test_map_file = os.path.join(args.data_cache_dir, "mini_gld_test.csv")
 
         (
@@ -184,6 +190,7 @@ def load_synthetic_data(args):
             test_data_local_dict,
             class_num,
         ) = data_loader(
+            args,
             args.dataset,
             args.data_cache_dir,
             args.partition_method,
@@ -194,13 +201,24 @@ def load_synthetic_data(args):
 
     if centralized:
         train_data_local_num_dict = {
-            0: sum(user_train_data_num for user_train_data_num in train_data_local_num_dict.values())
+            0: sum(
+                user_train_data_num
+                for user_train_data_num in train_data_local_num_dict.values()
+            )
         }
         train_data_local_dict = {
-            0: [batch for cid in sorted(train_data_local_dict.keys()) for batch in train_data_local_dict[cid]]
+            0: [
+                batch
+                for cid in sorted(train_data_local_dict.keys())
+                for batch in train_data_local_dict[cid]
+            ]
         }
         test_data_local_dict = {
-            0: [batch for cid in sorted(test_data_local_dict.keys()) for batch in test_data_local_dict[cid]]
+            0: [
+                batch
+                for cid in sorted(test_data_local_dict.keys())
+                for batch in test_data_local_dict[cid]
+            ]
         }
         args.client_num_in_total = 1
 
@@ -208,9 +226,13 @@ def load_synthetic_data(args):
         train_data_global = combine_batches(train_data_global)
         test_data_global = combine_batches(test_data_global)
         train_data_local_dict = {
-            cid: combine_batches(train_data_local_dict[cid]) for cid in train_data_local_dict.keys()
+            cid: combine_batches(train_data_local_dict[cid])
+            for cid in train_data_local_dict.keys()
         }
-        test_data_local_dict = {cid: combine_batches(test_data_local_dict[cid]) for cid in test_data_local_dict.keys()}
+        test_data_local_dict = {
+            cid: combine_batches(test_data_local_dict[cid])
+            for cid in test_data_local_dict.keys()
+        }
         args.batch_size = args_batch_size
 
     dataset = [
