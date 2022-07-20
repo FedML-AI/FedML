@@ -254,18 +254,6 @@ class ClientConstants(object):
         for info in iter(script_process.stderr.readline, ""):
             print(info)
 
-#
-# import ast
-#
-# def parse_tuple(string):
-#     try:
-#         s = ast.literal_eval(str(string))
-#         if type(s) == tuple:
-#             return s
-#         return
-#     except Exception as e:
-#         pass
-
 
 if __name__ == "__main__":
     ignore = "*test*,abc*"
