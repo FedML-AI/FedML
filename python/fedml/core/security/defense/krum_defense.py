@@ -1,5 +1,5 @@
 import torch
-
+from typing import Callable, List, Tuple, Dict, Any
 from .defense_base import BaseDefenseMethod
 from ..common import utils
 
@@ -15,23 +15,28 @@ class KrumDefense(BaseDefenseMethod):
         self.k = byzantine_client_num  # assume there are k byzantine clients
         self.multi = multi  # krum or multi-krum
 
-    def defend(self, client_grad_list, global_w=None):
-        num_client = len(client_grad_list)
+    def run(
+        self,
+        raw_client_grad_list: List[Tuple[float, Dict]],
+        base_aggregation_func: Callable = None,
+        extra_auxiliary_info: Any = None,
+    ) -> Dict:
+        num_client = len(raw_client_grad_list)
         vec_local_w = [
-            (client_grad_list[i][0], utils.vectorize_weight(client_grad_list[i][1]))
+            (raw_client_grad_list[i][0], utils.vectorize_weight(raw_client_grad_list[i][1]))
             for i in range(0, num_client)
         ]
         print(vec_local_w)
         krum_score = self._compute_krum_score(vec_local_w)
         index = torch.argsort(torch.Tensor(krum_score)).tolist()
         if self.multi is True:
-            index = index[0 : num_client - self.k]
+            index = index[0:num_client - self.k]
         else:
             index = index[0:1]
 
-        grad_list = [client_grad_list[i] for i in index]
+        grad_list = [raw_client_grad_list[i] for i in index]
         print(f"krum_scores = {krum_score}")
-        return grad_list
+        return base_aggregation_func(grad_list)  # avg_params
 
     def _compute_krum_score(self, local_w):
         krum_score = []
