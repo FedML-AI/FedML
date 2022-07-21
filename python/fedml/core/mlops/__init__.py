@@ -428,11 +428,11 @@ def on_log_mqtt_connected(mqtt_client_object):
     MLOpsStore.mlops_metrics.edge_id = MLOpsStore.mlops_edge_id
 
     if MLOpsStore.mlops_event is None:
-        mlops_event = MLOpsProfilerEvent(MLOpsStore.mlops_args)
-        mlops_event.set_messenger(MLOpsStore.mlops_log_mqtt_mgr, MLOpsStore.mlops_args)
+        MLOpsStore.mlops_event = MLOpsProfilerEvent(MLOpsStore.mlops_args)
+        MLOpsStore.mlops_event.set_messenger(MLOpsStore.mlops_log_mqtt_mgr, MLOpsStore.mlops_args)
 
-    mlops_event.run_id = MLOpsStore.mlops_run_id
-    mlops_event.edge_id = MLOpsStore.mlops_edge_id
+    MLOpsStore.mlops_event.run_id = MLOpsStore.mlops_run_id
+    MLOpsStore.mlops_event.edge_id = MLOpsStore.mlops_edge_id
 
     if MLOpsStore.mlops_log_mqtt_lock is None:
         MLOpsStore.mlops_log_mqtt_lock = threading.Lock()
@@ -497,7 +497,7 @@ def wait_log_mqtt_connected():
         if MLOpsStore.mlops_log_mqtt_is_connected is True \
                 and MLOpsStore.mlops_metrics is not None:
             MLOpsStore.mlops_metrics.set_messenger(MLOpsStore.mlops_log_mqtt_mgr, MLOpsStore.mlops_args)
-            if  MLOpsStore.mlops_event is not None:
+            if MLOpsStore.mlops_event is not None:
                 MLOpsStore.mlops_event.set_messenger(MLOpsStore.mlops_log_mqtt_mgr, MLOpsStore.mlops_args)
             MLOpsStore.mlops_log_mqtt_lock.release()
             break
