@@ -152,24 +152,24 @@ class YOLOv5Trainer(ClientTrainer):
                 )
                 logging.info(s)
 
-                if batch_idx % 100 == 0:
-                    logging.info(
-                        f"Trainer {self.id} batch {batch_idx} box: {mloss[0]} obj: {mloss[1]} cls: {mloss[2]} total: {mloss.sum()} time: {(time.time() - t)/60}"
-                    )
+                # if batch_idx % 100 == 0:
+                #     logging.info(
+                #         f"Trainer {self.id} batch {batch_idx} box: {mloss[0]} obj: {mloss[1]} cls: {mloss[2]} total: {mloss.sum()} time: {(time.time() - t)/60}"
+                #     )
 
             scheduler.step()
 
             epoch_loss.append(copy.deepcopy(mloss.cpu().numpy()))
             logging.info(
-                f"***Trainer {self.id} epoch {epoch} box: {mloss[0]} obj: {mloss[1]} cls: {mloss[2]} total: {mloss.sum()} time: {(time.time() - t)/60}"
+                f"Trainer {self.id} epoch {epoch} box: {mloss[0]} obj: {mloss[1]} cls: {mloss[2]} total: {mloss.sum()} time: {(time.time() - t)}"
             )
 
-            logging.info("#" * 80)
+            logging.info("#" * 20)
 
             logging.info(
-                f"Trainer {self.id} epoch {epoch} time: {(time.time() - t)/60} batch_num: {batch_idx} speed: {(time.time() - t)/60/batch_idx}"
+                f"Trainer {self.id} epoch {epoch} time: {(time.time() - t)}s batch_num: {batch_idx} speed: {(time.time() - t)/batch_idx} s/batch"
             )
-            logging.info("#" * 80)
+            logging.info("#" * 20)
 
         # plot for client
         # plot box, obj, cls, total loss

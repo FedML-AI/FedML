@@ -10,7 +10,7 @@ from .nih_chest_xray.data_loader import load_partition_data_nihchestxray
 import logging
 
 
-def load(args):
+def load_data(args):
     return load_synthetic_data(args)
 
 

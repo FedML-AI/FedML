@@ -4,7 +4,7 @@ common_args:
 
 data_args:
   dataset: "chexpert"
-  data_cache_dir: "./data/"
+  data_cache_dir: "~/healthcare/"
   partition_method: "hetero"
   partition_alpha: 0.5
 
@@ -16,7 +16,7 @@ train_args:
   federated_optimizer: "FedAvg"
   client_id_list: "[]"
   client_num_in_total: 4
-  client_num_per_round: 4
+  client_num_per_round: 1
   comm_round: 100
   epochs: 5
   batch_size: 64
@@ -42,4 +42,4 @@ tracking_args:
   enable_wandb: false
   wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
   wandb_project: fedml
-  wandb_name: fedml_torch_medical_chest_xray_image_clf
+  wandb_name: fedml_healthcare_chestxray_clf
