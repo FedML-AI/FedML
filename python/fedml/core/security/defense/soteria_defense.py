@@ -1,14 +1,19 @@
 import torch
 import numpy as np
-
 from .defense_base import BaseDefenseMethod
+from ..common.utils import cross_entropy_for_onehot
 
 """
 defense @ client, added by Kai, 07/10/2022
 ref: Sun, Jingwei, et al. "Provable defense against privacy leakage in federated learning from representation perspective." 
 https://arxiv.org/pdf/2012.06043
-arXiv preprint arXiv:2012.06043 (2020).
 added by Kai, 07/10/2022
+
+Consider a malicious server; add a perturbation to data representation; 
+the reconstructed data using the perturbed data representations are as dissimilar as possible to the raw data. 
+
+Experiment setting in paper: FedAVG; defend against DLG attack GS attack; MNIST, CIFAR10
+
 
 TODO
 Steps:
@@ -23,7 +28,6 @@ class SoteriaDefense(BaseDefenseMethod):
         self,
         num_class,
         model,
-        criterion,
         defense_data,
         attack_method,
         defense_method,
@@ -31,7 +35,6 @@ class SoteriaDefense(BaseDefenseMethod):
     ):
         self.num_class = num_class  # number of classess of the dataset
         self.model = model
-        self.criterion = criterion
         self.defense_data = defense_data
         self.defense_label = defense_label
         self.attack_method = attack_method
@@ -71,34 +74,40 @@ class SoteriaDefense(BaseDefenseMethod):
                 np.float32
             )
 
-            y = self.criterion(out, gt_onehot_label)
+            y = cross_entropy_for_onehot(out, gt_onehot_label)
             dy_dx = torch.autograd.grad(y, self.model.parameters())
 
             # share the gradients with other clients
             defensed_original_dy_dx = list((_.detach().clone() for _ in dy_dx))
 
-            if self.defense_method == "soteria":
-                defensed_original_dy_dx[8] = defensed_original_dy_dx[8] * torch.Tensor(
-                    mask
-                )
+            defensed_original_dy_dx[8] = defensed_original_dy_dx[8] * torch.Tensor(mask)
 
-            elif self.defense_method == "model compression":
-                for i in range(len(defensed_original_dy_dx)):
-                    grad_tensor = defensed_original_dy_dx[i].cpu().numpy()
-                    flattened_weights = np.abs(grad_tensor.flatten())
-                    # Generate the pruning threshold according to 'prune by percentage'. (Your code: 1 Line)
-                    thresh = np.percentile(flattened_weights, 10)
-                    grad_tensor = np.where(abs(grad_tensor) < thresh, 0, grad_tensor)
-                    defensed_original_dy_dx[i] = torch.Tensor(grad_tensor)
+            # if self.defense_method == "soteria":
+            #     defensed_original_dy_dx[8] = defensed_original_dy_dx[8] * torch.Tensor(
+            #         mask
+            #     )
+            #
+            # elif self.defense_method == "model compression":
+            #     for i in range(len(defensed_original_dy_dx)):
+            #         grad_tensor = defensed_original_dy_dx[i].cpu().numpy()
+            #         flattened_weights = np.abs(grad_tensor.flatten())
+            #         # Generate the pruning threshold according to 'prune by percentage'. (Your code: 1 Line)
+            #         thresh = np.percentile(flattened_weights, 10)
+            #         grad_tensor = np.where(abs(grad_tensor) < thresh, 0, grad_tensor)
+            #         defensed_original_dy_dx[i] = torch.Tensor(grad_tensor)
+            #
+            # elif self.defense_method == "differential privacy":
+            #     for i in range(len(defensed_original_dy_dx)):
+            #         grad_tensor = defensed_original_dy_dx[i].cpu().numpy()
+            #         noise = np.random.laplace(0, 1e-1, size=grad_tensor.shape)
+            #         grad_tensor = grad_tensor + noise
+            #         defensed_original_dy_dx[i] = torch.Tensor(grad_tensor)
+        aggregation_result = defensed_original_dy_dx[0][0][0][0]
+        print(
+            f"_original_gradient = {original_dy_dx[0][0][0][0]}, _after_defend_gradient = {aggregation_result}"
+        )
 
-            elif self.defense_method == "differential privacy":
-                for i in range(len(defensed_original_dy_dx)):
-                    grad_tensor = defensed_original_dy_dx[i].cpu().numpy()
-                    noise = np.random.laplace(0, 1e-1, size=grad_tensor.shape)
-                    grad_tensor = grad_tensor + noise
-                    defensed_original_dy_dx[i] = torch.Tensor(grad_tensor)
-
-        return original_dy_dx[0][0][0][0], defensed_original_dy_dx[0][0][0][0]
+        return aggregation_result
 
     def label_to_onehot(self, target, num_classes=100):
         target = torch.unsqueeze(target, 1)

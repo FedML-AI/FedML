@@ -80,10 +80,10 @@ class FedMLDefender:
             DEFENSE_GEO_MEDIAN,
         ]
 
-    def defend(self, local_w, global_w):
+    def defend(self, client_grad_list, global_w):
         if self.defender is None:
             raise Exception("defender is not initialized!")
-        new_grad_list = self.defender.defend(local_w, global_w)
+        new_grad_list = self.defender.defend(client_grad_list, global_w)
         training_num = get_total_sample_num(new_grad_list)
         return training_num, new_grad_list
 

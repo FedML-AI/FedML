@@ -1,5 +1,5 @@
 import math
-from fedml.core.security.common.utils import get_total_sample_num
+from typing import Callable, List, Tuple, Dict, Any
 from fedml.core.security.defense.defense_base import BaseDefenseMethod
 
 """
@@ -32,20 +32,24 @@ class SLSGDDefense(BaseDefenseMethod):
         self.alpha = alpha
         self.option_type = option_type
 
-    def defend(self, model_list, global_model=None):
-        if self.b > math.ceil(len(model_list) / 2) - 1 or self.b < 0:
+    def run(
+            self,
+            raw_client_grad_list: List[Tuple[float, Dict]],
+            base_aggregation_func: Callable = None,
+            extra_auxiliary_info: Any = None,
+    ):
+        global_model = extra_auxiliary_info
+        if self.b > math.ceil(len(raw_client_grad_list) / 2) - 1 or self.b < 0:
             raise ValueError(
-                "the bound of b is [0, {}])".format(math.ceil(len(model_list) / 2) - 1)
+                "the bound of b is [0, {}])".format(math.ceil(len(raw_client_grad_list) / 2) - 1)
             )
         if self.option_type != 1 and self.option_type != 2:
             raise Exception("Such option type does not exist!")
         if self.option_type == 2:
-            model_list = self._sort_and_trim(model_list)  # process model list
-        return model_list
-
-    def robustify_global_model(self, avg_params, previous_global_w):
+            raw_client_grad_list = self._sort_and_trim(raw_client_grad_list)  # process model list
+        avg_params = base_aggregation_func(raw_client_grad_list)
         for k in avg_params.keys():
-            avg_params[k] = (1 - self.alpha) * previous_global_w[k] + self.alpha * avg_params[k]
+            avg_params[k] = (1 - self.alpha) * global_model[k] + self.alpha * avg_params[k]
         return avg_params
 
     def _sort_and_trim(self, model_list):
