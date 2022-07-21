@@ -1,10 +1,4 @@
 from torch.utils import data
-from .data_loader import load_synthetic_data
-
-
-def load_cross_silo(args):
-    return load_synthetic_data_cross_silo(args)
-
 
 def split_array(array, n_dist_trainer):
     r = len(array) % n_dist_trainer
@@ -55,32 +49,3 @@ def split_data_for_dist_trainers(data_loaders, n_dist_trainer):
     return data_loaders
 
 
-def load_synthetic_data_cross_silo(args):
-    n_dist_trainer = args.n_proc_in_silo
-    dataset, class_num = load_synthetic_data(args)
-    [
-        train_data_num,
-        test_data_num,
-        train_data_global,
-        test_data_global,
-        train_data_local_num_dict,
-        train_data_local_dict,
-        test_data_local_dict,
-        class_num,
-    ] = dataset
-
-    train_data_local_dict = split_data_for_dist_trainers(
-        train_data_local_dict, n_dist_trainer
-    )
-
-    dataset = [
-        train_data_num,
-        test_data_num,
-        train_data_global,
-        test_data_global,
-        train_data_local_num_dict,
-        train_data_local_dict,
-        test_data_local_dict,
-        class_num,
-    ]
-    return dataset, class_num

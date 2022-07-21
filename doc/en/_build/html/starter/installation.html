@@ -15,7 +15,7 @@
   <!-- End Google Tag Manager -->
 
   <meta charset="utf-8">
-  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="google-site-verification" content="okUst94cAlWSsUsGZTB4xSS4UKTtRV8Nu5XZ9pdd3Aw" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -327,21 +327,21 @@
              <article itemprop="articleBody" id="pytorch-article" class="pytorch-article">
               
   <section id="installing-fedml">
-<h1>Installing FedML<a class="headerlink" href="#installing-fedml" title="Permalink to this headline">¶</a></h1>
+<h1>Installing FedML<a class="headerlink" href="#installing-fedml" title="Permalink to this heading">¶</a></h1>
 <p>FedML supports Linux, MacOS, Windows, and Android.</p>
 <section id="fedml-source-code-repository">
-<h2>FedML Source Code Repository<a class="headerlink" href="#fedml-source-code-repository" title="Permalink to this headline">¶</a></h2>
+<h2>FedML Source Code Repository<a class="headerlink" href="#fedml-source-code-repository" title="Permalink to this heading">¶</a></h2>
 <p><a class="reference external" href="https://github.com/FedML-AI/FedML">https://github.com/FedML-AI/FedML</a></p>
 </section>
 <section id="install-with-pip">
-<h2>Install with pip<a class="headerlink" href="#install-with-pip" title="Permalink to this headline">¶</a></h2>
+<h2>Install with pip<a class="headerlink" href="#install-with-pip" title="Permalink to this heading">¶</a></h2>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">fedml</span>
 </pre></div>
 </div>
 <p>(Note: please use python 3.6, 3.7, 3.8, 3.9. We will support 3.10 systematically in the next iteration.)</p>
 </section>
 <section id="install-fedml-with-anaconda">
-<h2>Install FedML with Anaconda<a class="headerlink" href="#install-fedml-with-anaconda" title="Permalink to this headline">¶</a></h2>
+<h2>Install FedML with Anaconda<a class="headerlink" href="#install-fedml-with-anaconda" title="Permalink to this heading">¶</a></h2>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">create</span> <span class="o">--</span><span class="n">name</span> <span class="n">fedml</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.7</span>
 <span class="n">conda</span> <span class="n">activate</span> <span class="n">fedml</span>
 <span class="n">conda</span> <span class="n">install</span> <span class="o">--</span><span class="n">name</span> <span class="n">fedml</span> <span class="n">pip</span>
@@ -351,8 +351,15 @@
 <p>(Note: please use python 3.7 if you met any compatability issues. We will support 3.8, 3.9, 3.10 systematically in the next iteration.)</p>
 <p>After installation, please use “pip list | grep fedml” to check whether <code class="docutils literal notranslate"><span class="pre">fedml</span></code> is installed.</p>
 </section>
+<section id="install-fedml-from-debugging-and-editable-mode">
+<h2>Install FedML from Debugging and Editable Mode<a class="headerlink" href="#install-fedml-from-debugging-and-editable-mode" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">python</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">e</span> <span class="o">./</span>
+</pre></div>
+</div>
+</section>
 <section id="install-fedml-from-source">
-<h2>Install FedML from Source<a class="headerlink" href="#install-fedml-from-source" title="Permalink to this headline">¶</a></h2>
+<h2>Install FedML from Source<a class="headerlink" href="#install-fedml-from-source" title="Permalink to this heading">¶</a></h2>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">FedML</span><span class="o">-</span><span class="n">AI</span><span class="o">/</span><span class="n">FedML</span><span class="o">.</span><span class="n">git</span> <span class="o">&amp;&amp;</span> \
 <span class="n">cd</span> <span class="o">./</span><span class="n">FedML</span><span class="o">/</span><span class="n">python</span> <span class="o">&amp;&amp;</span> \
 <span class="n">python</span> <span class="n">setup</span><span class="o">.</span><span class="n">py</span> <span class="n">install</span>
@@ -368,7 +375,7 @@
 <p>Please change the above commit id to your own (you can find it at <a class="reference external" href="https://github.com/FedML-AI/FedML/commits/master">https://github.com/FedML-AI/FedML/commits/master</a>)</p>
 </section>
 <section id="run-fedml-in-docker-recommended">
-<h2>Run FedML in Docker (Recommended)<a class="headerlink" href="#run-fedml-in-docker-recommended" title="Permalink to this headline">¶</a></h2>
+<h2>Run FedML in Docker (Recommended)<a class="headerlink" href="#run-fedml-in-docker-recommended" title="Permalink to this heading">¶</a></h2>
 <p>FedML Docker Hub: <a class="reference external" href="https://hub.docker.com/repository/docker/fedml/fedml">https://hub.docker.com/repository/docker/fedml/fedml</a></p>
 <p>We recommend to use FedML in Docker environment to make your life easier without caring for complex and tedious installation debugging. Currently, we maintain docker images for two settings:</p>
 <ul class="simple">
@@ -486,19 +493,19 @@ docker container kill $(docker ps -q)
 </div>
 </section>
 <section id="guidance-for-windows-users">
-<h2>Guidance for Windows Users<a class="headerlink" href="#guidance-for-windows-users" title="Permalink to this headline">¶</a></h2>
+<h2>Guidance for Windows Users<a class="headerlink" href="#guidance-for-windows-users" title="Permalink to this heading">¶</a></h2>
 <p>Please follow instructions at <a class="reference internal" href="install/windows.html"><span class="doc std std-doc">Windows Installation</span></a></p>
 </section>
 <section id="guidance-for-raspberry-pi-users">
-<h2>Guidance for Raspberry Pi Users<a class="headerlink" href="#guidance-for-raspberry-pi-users" title="Permalink to this headline">¶</a></h2>
+<h2>Guidance for Raspberry Pi Users<a class="headerlink" href="#guidance-for-raspberry-pi-users" title="Permalink to this heading">¶</a></h2>
 <p>Please follow instructions at <a class="reference internal" href="install/rpi.html"><span class="doc std std-doc">Raspberry Pi Installation</span></a></p>
 </section>
 <section id="guidance-for-nvidia-jetson-devices">
-<h2>Guidance for NVIDIA Jetson Devices<a class="headerlink" href="#guidance-for-nvidia-jetson-devices" title="Permalink to this headline">¶</a></h2>
+<h2>Guidance for NVIDIA Jetson Devices<a class="headerlink" href="#guidance-for-nvidia-jetson-devices" title="Permalink to this heading">¶</a></h2>
 <p>Please follow instructions at <a class="reference internal" href="install/jetson.html"><span class="doc std std-doc">NVIDIA Jetson Device Installation</span></a></p>
 </section>
 <section id="test-if-the-installation-succeeded">
-<h2>Test if the installation succeeded<a class="headerlink" href="#test-if-the-installation-succeeded" title="Permalink to this headline">¶</a></h2>
+<h2>Test if the installation succeeded<a class="headerlink" href="#test-if-the-installation-succeeded" title="Permalink to this heading">¶</a></h2>
 <p>If the installation is correct, you will not see any issue when running <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">fedml</span></code>.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">(</span>mnn37<span class="o">)</span> chaoyanghe@Chaoyangs-MBP FedML-refactor % python
 Python <span class="m">3</span>.7.7 <span class="o">(</span>default, Mar <span class="m">26</span> <span class="m">2020</span>, <span class="m">10</span>:32:53<span class="o">)</span> 
@@ -510,11 +517,11 @@ Type <span class="s2">&quot;help&quot;</span>, <span class="s2">&quot;copyright&
 </div>
 </section>
 <section id="install-fedml-android-sdk-app">
-<h2>Install FedML Android SDK/APP<a class="headerlink" href="#install-fedml-android-sdk-app" title="Permalink to this headline">¶</a></h2>
+<h2>Install FedML Android SDK/APP<a class="headerlink" href="#install-fedml-android-sdk-app" title="Permalink to this heading">¶</a></h2>
 <p>Please follow the instructions at <code class="docutils literal notranslate"><span class="pre">https://github.com/FedML-AI/FedML/java/README.md</span></code></p>
 </section>
 <section id="troubleshooting">
-<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this headline">¶</a></h2>
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this heading">¶</a></h2>
 <p>If you met any issues during installation, or you have additional installation requirement, please post issues at <a class="reference external" href="https://github.com/FedML-AI/FedML/issues">https://github.com/FedML-AI/FedML/issues</a></p>
 </section>
 </section>
@@ -566,6 +573,7 @@ Type <span class="s2">&quot;help&quot;</span>, <span class="s2">&quot;copyright&
 <li><a class="reference internal" href="#fedml-source-code-repository">FedML Source Code Repository</a></li>
 <li><a class="reference internal" href="#install-with-pip">Install with pip</a></li>
 <li><a class="reference internal" href="#install-fedml-with-anaconda">Install FedML with Anaconda</a></li>
+<li><a class="reference internal" href="#install-fedml-from-debugging-and-editable-mode">Install FedML from Debugging and Editable Mode</a></li>
 <li><a class="reference internal" href="#install-fedml-from-source">Install FedML from Source</a></li>
 <li><a class="reference internal" href="#run-fedml-in-docker-recommended">Run FedML in Docker (Recommended)</a></li>
 <li><a class="reference internal" href="#guidance-for-windows-users">Guidance for Windows Users</a></li>
@@ -594,6 +602,7 @@ Type <span class="s2">&quot;help&quot;</span>, <span class="s2">&quot;copyright&
          <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
          <script src="../_static/jquery.js"></script>
          <script src="../_static/underscore.js"></script>
+         <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
          <script src="../_static/doctools.js"></script>
      
 

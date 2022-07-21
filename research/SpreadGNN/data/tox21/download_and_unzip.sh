@@ -1,0 +1,1 @@
+wget --no-check-certificate --no-proxy https://fedmol.s3-us-west-1.amazonaws.com/datasets/tox21/tox21.zip && unzip tox21.zip && rm tox21.zip

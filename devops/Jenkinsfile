@@ -126,7 +126,15 @@ pipeline {
           }
           steps {
             container('base') {
+                sh 'curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"'
+                sh 'unzip awscliv2.zip'
+                sh 'mkdir -p ./devops/scripts/aws'
+                sh 'cp -Rf ./aws/* ./devops/scripts/aws'
+                sh 'cd ./devops/scripts/;unzip ./docker.zip;unzip ./kubectl.zip;cd ../../'
+
                 sh 'docker pull public.ecr.aws/x6k8q1x9/fedml-device-image:base'
+
+                //sh 'docker build -f ./devops/dockerfile/device-image/Dockerfile-Base -t public.ecr.aws/x6k8q1x9/fedml-device-image:base .'
 
                 sh 'docker build -f ./devops/dockerfile/device-image/Dockerfile-Dev -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_DEV .'
 
@@ -156,7 +164,15 @@ pipeline {
           }
           steps {
             container('base') {
+              sh 'curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"'
+              sh 'unzip awscliv2.zip'
+              sh 'mkdir -p ./devops/scripts/aws'
+              sh 'cp -Rf ./aws/* ./devops/scripts/aws'
+              sh 'cd ./devops/scripts/;unzip ./docker.zip;unzip ./kubectl.zip;cd ../../'
+
               sh 'docker pull public.ecr.aws/x6k8q1x9/fedml-device-image:base'
+
+              //sh 'docker build -f ./devops/dockerfile/device-image/Dockerfile-Base -t public.ecr.aws/x6k8q1x9/fedml-device-image:base .'
 
               sh 'docker build -f ./devops/dockerfile/device-image/Dockerfile-Release -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_PRODUCTION .'
 
@@ -174,13 +190,14 @@ pipeline {
               withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_ID' ,usernameVariable : 'AWS_ECR_USERNAME' ,credentialsId : "$AWS_ECR_CREDENTIAL_ID_DEV" ,)]) {
                  withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_KEY' ,usernameVariable : 'AWS_REGION' ,credentialsId : "$AWS_IAM_CREDENTIAL_ID_DEV" ,)]) {
                     sh 'curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"'
-                    sh 'unzip awscliv2.zip'
+                    sh 'unzip -o awscliv2.zip'
                     sh './aws/install'
                     sh 'chmod a+x ./devops/scripts/set-aws-credentials.sh;./devops/scripts/set-aws-credentials.sh $AWS_IAM_ACCESS_ID $AWS_IAM_ACCESS_KEY $AWS_REGION'
                     sh 'docker login --username $AWS_ECR_USERNAME --password $(/usr/local/bin/aws ecr-public get-login-password --region $AWS_REGION) $REGISTRY_DEV'
                  }
               }
 
+              //sh 'docker push  public.ecr.aws/x6k8q1x9/fedml-device-image:base'
               sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_DEV'
               sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_DEV'
             }
@@ -196,12 +213,13 @@ pipeline {
               withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_ID' ,usernameVariable : 'AWS_ECR_USERNAME' ,credentialsId : "$AWS_ECR_CREDENTIAL_ID_TEST" ,)]) {
                  withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_KEY' ,usernameVariable : 'AWS_REGION' ,credentialsId : "$AWS_IAM_CREDENTIAL_ID_TEST" ,)]) {
                     sh 'curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"'
-                    sh 'unzip awscliv2.zip'
+                    sh 'unzip -o awscliv2.zip'
                     sh './aws/install'
                     sh 'chmod a+x ./devops/scripts/set-aws-credentials.sh;./devops/scripts/set-aws-credentials.sh $AWS_IAM_ACCESS_ID $AWS_IAM_ACCESS_KEY $AWS_REGION'
                     sh 'docker login --username $AWS_ECR_USERNAME --password $(/usr/local/bin/aws ecr-public get-login-password --region $AWS_REGION) $REGISTRY_TEST'
                  }
               }
+
               sh 'docker push  $REGISTRY_TEST/$DOCKER_NAMESPACE_TEST$APP_NAME_DEVICE_IMAGE:$VERSION_TEST'
               sh 'docker push  $REGISTRY_TEST/$DOCKER_NAMESPACE_TEST$APP_NAME_SERVER_AGENT:$VERSION_TEST'
             }
@@ -217,20 +235,21 @@ pipeline {
               withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_ID' ,usernameVariable : 'AWS_ECR_USERNAME' ,credentialsId : "$AWS_ECR_CREDENTIAL_ID_PRODUCTION" ,)]) {
                  withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_KEY' ,usernameVariable : 'AWS_REGION' ,credentialsId : "$AWS_IAM_CREDENTIAL_ID_PRODUCTION" ,)]) {
                     sh 'curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"'
-                    sh 'unzip awscliv2.zip'
+                    sh 'unzip -o awscliv2.zip'
                     sh './aws/install'
                     sh 'chmod a+x ./devops/scripts/set-aws-credentials.sh;./devops/scripts/set-aws-credentials.sh $AWS_IAM_ACCESS_ID $AWS_IAM_ACCESS_KEY $AWS_REGION'
                     sh 'docker login --username $AWS_ECR_USERNAME --password $(/usr/local/bin/aws ecr-public get-login-password --region $AWS_REGION) $REGISTRY_PRODUCTION'
                  }
               }
 
+              //sh 'docker push  public.ecr.aws/x6k8q1x9/fedml-device-image:base'
               sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_PRODUCTION'
               sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_PRODUCTION'
             }
           }
         }
 
-        stage('deploy for dev') {
+        stage('deploy for dev - new base docker image 1') {
           when {
             branch env.BRANCH_DEV
           }

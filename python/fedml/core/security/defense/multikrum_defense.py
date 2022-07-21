@@ -23,7 +23,7 @@ class MultiKrumDefense(BaseDefenseMethod):
             byzantine_client_num,
         )
 
-    def defend(self, local_w, global_w, refs=None):
+    def defend(self, local_w, global_w=None):
         num_clients = len(local_w)
         (num0, localw0) = local_w[0]
         _len_local_params = vectorize_weight(localw0).shape[
