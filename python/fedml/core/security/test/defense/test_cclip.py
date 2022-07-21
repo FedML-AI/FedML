@@ -1,23 +1,36 @@
+import argparse
+
 from fedml.core.security.defense.cclip_defense import CClipDefense
-from fedml.core.security.test.utils import create_fake_model_list, normal_aggregation
+from fedml.core.security.test.aggregation.aggregation_functions import AggregationFunction
+from fedml.core.security.test.utils import create_fake_model_list
 
 
-def test_defense():
+def add_args():
+    parser = argparse.ArgumentParser(description="FedML")
+    parser.add_argument(
+        "--yaml_config_file",
+        "--cf",
+        help="yaml configuration file",
+        type=str,
+        default="",
+    )
+
+    # default arguments
+    parser.add_argument("--tau", type=int, default=10)
+
+    parser.add_argument("--bucket_size", type=int, default=3)
+
+    args, unknown = parser.parse_known_args()
+    return args
+
+
+def test_defense(config):
     client_grad_list = create_fake_model_list(20)
-    cclip = CClipDefense(tau=10)
-    new_grad_list = cclip.defend(client_grad_list, global_w=None)
-    print(f"new_grad_list={new_grad_list}")
-
-
-def test_robustify_global_model():
-    client_grad_list = create_fake_model_list(20)
-    avg_params = normal_aggregation(client_grad_list)
-    cclip = CClipDefense(tau=10)
-    cclip.initial_guess = cclip._compute_an_initial_guess(client_grad_list)
-    result = cclip.robustify_global_model(avg_params, previous_global_w=None)
+    cclip = CClipDefense(config)
+    result = cclip.run(client_grad_list, base_aggregation_func=AggregationFunction.FedAVG)
     print(f"result = {result}")
 
 
 if __name__ == "__main__":
-    test_defense()
-    test_robustify_global_model()
+    args = add_args()
+    test_defense(args)
