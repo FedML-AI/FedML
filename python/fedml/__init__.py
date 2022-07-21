@@ -91,7 +91,7 @@ def init(args=None):
 
     mlops.init(args)
 
-    logging.info("args = {}".format(vars(args)))
+    logging.info("==== args = {}".format(vars(args)))
     return args
 
 
@@ -200,11 +200,11 @@ def manage_mpi_args(args):
 
 
 def init_cross_silo_horizontal(args):
-    args.process_id = args.rank
     args.n_proc_in_silo = 1
     args.proc_rank_in_silo = 0
     manage_mpi_args(args)
     manage_cuda_rpc_args(args)
+    args.process_id = args.rank
     return args
 
 
