@@ -1,12 +1,12 @@
 SOURCE=.
-ENTRY=torch_client.py
+ENTRY=main_fedml_image_classification.py
 CONFIG=config
 DEST=./mlops
 fedml build -t client -sf $SOURCE -ep $ENTRY -cf $CONFIG -df $DEST
 
 
 SOURCE=.
-ENTRY=torch_server.py
+ENTRY=main_fedml_image_classification.py
 CONFIG=config
 DEST=./mlops
 fedml build -t server -sf $SOURCE -ep $ENTRY -cf $CONFIG -df $DEST

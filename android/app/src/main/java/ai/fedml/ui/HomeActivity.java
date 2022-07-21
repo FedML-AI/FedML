@@ -115,9 +115,9 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
             }
 
             @Override
-            public void onProgressChanged(int round, int progress) {
+            public void onProgressChanged(int round, float progress) {
                 runOnUiThread(() ->
-                        mProgressView.setProgress(progress));
+                        mProgressView.setProgress(Math.round(progress)));
             }
         });
         FedEdgeManager.getFedEdgeApi().setTrainingStatusListener((status) ->

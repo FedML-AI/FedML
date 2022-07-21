@@ -8,10 +8,10 @@
 #     └── coco128  ← downloads here
 
 # Download/unzip images and labels
-d='.' # unzip directory
+d=$HOME/fedcv_data # unzip directory
+mkdir -p $d
 url=https://github.com/ultralytics/yolov5/releases/download/v1.0/
 f='coco128.zip' # or 'coco128-segments.zip', 68 MB
-cd ..
 echo 'Downloading' $url$f ' ...'
 curl -L $url$f -o $f && unzip -o -q $f -d $d && rm $f &
 

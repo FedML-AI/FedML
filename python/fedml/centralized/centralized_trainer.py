@@ -7,7 +7,7 @@ from torch import nn
 
 
 class CentralizedTrainer(object):
-    r"""
+    """
     This class is used to train federated non-IID dataset in a centralized way
     """
 

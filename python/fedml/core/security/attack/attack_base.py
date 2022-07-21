@@ -11,7 +11,6 @@ class BaseAttackMethod(ABC):
     ) -> (Dict, Dict):
         pass
 
-    @abstractmethod
     def poison_data(
         self, train_data_loader: DataLoader, test_data_loader: DataLoader
     ) -> (DataLoader, DataLoader):

@@ -49,7 +49,7 @@ class ServerManager(Observer):
             )
 
             self.com_manager_status = MqttS3StatusManager(
-                args.mqtt_config_path, args.s3_config_path, topic=args.run_id
+                args.mqtt_config_path, args.s3_config_path, topic=args.run_id, args=args
             )
         elif backend == "MQTT_S3_MNN":
             from ..communication.mqtt_s3_mnn.mqtt_s3_comm_manager import (
@@ -71,7 +71,7 @@ class ServerManager(Observer):
                 args=args,
             )
             self.com_manager_status = MqttS3StatusManager(
-                args.mqtt_config_path, args.s3_config_path, topic=args.run_id
+                args.mqtt_config_path, args.s3_config_path, topic=args.run_id, args=args
             )
 
         elif backend == "GRPC":
@@ -91,7 +91,7 @@ class ServerManager(Observer):
             )
             if hasattr(self.args, "backend") and self.args.using_mlops:
                 self.com_manager_status = MqttS3StatusManager(
-                    args.mqtt_config_path, args.s3_config_path, topic=args.run_id
+                    args.mqtt_config_path, args.s3_config_path, topic=args.run_id, args=args
                 )
         elif backend == "TRPC":
             from ..communication.trpc.trpc_comm_manager import TRPCCommManager
@@ -107,7 +107,7 @@ class ServerManager(Observer):
             )
             if hasattr(self.args, "backend") and self.args.using_mlops:
                 self.com_manager_status = MqttS3StatusManager(
-                    args.mqtt_config_path, args.s3_config_path, topic=args.run_id
+                    args.mqtt_config_path, args.s3_config_path, topic=args.run_id, args=args
                 )
         else:
             from ..communication.mqtt_s3.mqtt_s3_multi_clients_comm_manager import (
@@ -130,7 +130,7 @@ class ServerManager(Observer):
             )
 
             self.com_manager_status = MqttS3StatusManager(
-                args.mqtt_config_path, args.s3_config_path, topic=args.run_id
+                args.mqtt_config_path, args.s3_config_path, topic=args.run_id, args=args
             )
         self.com_manager.add_observer(self)
         self.message_handler_dict = dict()

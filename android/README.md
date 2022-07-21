@@ -36,7 +36,10 @@ https://github.com/FedML-AI/pytorch
 
 At this stage, the app layer is open sourced, the Android SDK is released to the open source community, and the Mobile NN C++ layer is close source.
 
-## Get Started 
+## Get Started with FedML Android APP
+[https://doc.fedml.ai/cross-device/examples/cross_device_android_example.html](https://doc.fedml.ai/cross-device/examples/cross_device_android_example.html)
+
+## Get Started with FedML Android SDK
 
 `android/fedmlsdk_demo` is a short tutorial for integrating Android SDK for your host App.
 
