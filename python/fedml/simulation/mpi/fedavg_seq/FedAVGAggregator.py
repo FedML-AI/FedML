@@ -102,11 +102,11 @@ class FedAVGAggregator(object):
     def client_schedule(self, round_idx, client_indexes, mode="simulate"):
         # scheduler(workloads, constraints, memory)
         # workload = self.workload_estimate(client_indexes, mode)
-        # resource = self.resource_estimate(mode)
+        # resources = self.resource_estimate(mode)
         # memory = self.memory_estimate(mode)
 
         # mode = 0
-        # my_scheduler = scheduler(workload, resource, memory)
+        # my_scheduler = scheduler(workload, resources, memory)
         # schedules = my_scheduler.DP_schedule(mode)
         # for i in range(len(schedules)):
         #     print("Resource %2d: %s\n" % (i, str(schedules[i])))
