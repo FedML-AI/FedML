@@ -4,7 +4,7 @@ common_args:
 
 data_args:
   dataset: "chexpert"
-  data_cache_dir: "~/healthcare/"
+  data_cache_dir: "~/healthcare/" # /media/beiyu/TOSHIBA EXT/dataset/CheXpert/CheXpert-v1.0-small
   partition_method: "hetero"
   partition_alpha: 0.5
 
@@ -14,21 +14,21 @@ model_args:
 
 train_args:
   federated_optimizer: "FedAvg"
-  client_id_list: "[]"
-  client_num_in_total: 4
+  client_id_list:
+  client_num_in_total: 1
   client_num_per_round: 1
   comm_round: 100
   epochs: 5
-  batch_size: 64
+  batch_size: 1
   client_optimizer: sgd
   lr: 0.03
   weight_decay: 0.001
 
 validation_args:
-  frequency_of_the_test: 5
+  frequency_of_the_test: 1
 
 device_args:
-  worker_num: 4
+  worker_num: 0
   using_gpu: false
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_default
