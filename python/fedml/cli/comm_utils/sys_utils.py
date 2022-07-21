@@ -45,7 +45,7 @@ def get_sys_runner_info():
         load1, load5, load15 = psutil.getloadavg()
         cpu_usage = "{:.0f}%".format((load15 / os.cpu_count()) * 100, 4)
         available_mem = "{:.1f} G".format(psutil.virtual_memory().available / 1024 / 1024 / 1024)
-        total_mem = "{}G".format(psutil.virtual_memory().total / 1024 / 1024 / 1024)
+        total_mem = "{:.1f}G".format(psutil.virtual_memory().total / 1024 / 1024 / 1024)
     except:
         cpu_usage = ""
         available_mem = ""
@@ -60,7 +60,7 @@ def get_sys_runner_info():
         info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
         gpu_info = str(handle)
         gpu_available_mem = "{:.1f} G".format(info.free / 1024 / 1024 / 1024)
-        gpu_total_mem = "{}G".format(info.total / 1024 / 1024 / 1024)
+        gpu_total_mem = "{:.1f}G".format(info.total / 1024 / 1024 / 1024)
         nvidia_smi.nvmlShutdown()
     except:
         pass
