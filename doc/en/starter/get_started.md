@@ -1,19 +1,19 @@
 # Get Started
 
-Thank you for coming! This tutorial is a quick tour of FedML Open Source Library ([https://github.com/FedML-AI/FedML](https://github.com/FedML-AI/FedML)) and MLOps Platform ([https://open.fedml.ai](https://open.fedml.ai)) with examples in different scenario. 
+Thank you for visiting! Here is a quick tour of FedML Open Source Library ([https://github.com/FedML-AI/FedML](https://github.com/FedML-AI/FedML)) and MLOps Platform ([https://open.fedml.ai](https://open.fedml.ai)) with examples for different scenarios. 
 
 ## **FedML Feature Overview**
 ![image](../../_static/image/4animals.png)
 
-FedML logo reflects the mission of FedML Inc. FedML aims to build simple and versatile APIs for machine learning running anywhere at any scale.
+The FedML logo reflects the mission of FedML Inc. We aim to build simple and versatile APIs for machine learning running anywhere and at any scale.
 In other words, FedML supports both federated learning for data silos and distributed training for acceleration with MLOps and Open Source support, covering cutting-edge academia research and industrial grade use cases. 
 
 - **FedML Cheetah** - Accelerate Model Training with User-friendly Distributed Training
-- **FedML Parrot** - Simulating federated learning in the real world (1) simulate FL using a single process (2) MPI-based FL Simulator (3) NCCL-based FL Simulator (fastest)
+- **FedML Parrot** - Simulating federated learning in the real world: (1) simulate FL using a single process (2) MPI-based FL Simulator (3) NCCL-based FL Simulator (fastest)
 - **FedML Octopus** - Cross-silo Federated Learning for cross-organization/account training, including Python-based edge SDK.
 - **FedML Beehive** - Cross-device Federated Learning for Smartphones and IoTs, including edge SDK for Android/iOS and embedded Linux.
 
-- **FedML MLOps**: FedML's machine learning operation pipeline for AI running anywhere at any scale.
+- **FedML MLOps**: FedML's machine learning operation pipeline for AI running anywhere and at any scale.
 - **Model Serving**: we focus on providing a better user experience for edge AI.
 
 ## **Quick Start for Open Source Library**
@@ -21,7 +21,7 @@ In other words, FedML supports both federated learning for data silos and distri
 
 ### Installation
 
-To get started, let's install FedML first.
+To get started, let's first install FedML.
 
 ```Python
 pip install fedml
@@ -30,14 +30,14 @@ For more installation methods, please refer to [installing FedML](./installation
 
 ### A Quick Overview of the Code Architecture
 
-In general, FedML source code architecture follows the paper which won [Best Paper Award at NeurIPS 2020 (FL workshop)](https://chaoyanghe.com/wp-content/uploads/2021/02/NeurIPS-SpicyFL-2020-Baidu-best-paper-award-He-v2.pdf). Its original idea is presented at the live [video](https://www.youtube.com/watch?v=93SETZGZMyI) and 
+In general, FedML source code architecture follows the paper which won the [Best Paper Award at NeurIPS 2020 (FL workshop)](https://chaoyanghe.com/wp-content/uploads/2021/02/NeurIPS-SpicyFL-2020-Baidu-best-paper-award-He-v2.pdf). Its original idea is presented at the live [video](https://www.youtube.com/watch?v=93SETZGZMyI) and 
 [white paper](https://arxiv.org/abs/2007.13518) by FedML co-founder Dr. [Chaoyang He](https://chaoyanghe.com). 
 
 ![FedML Code Architecture](../_static/image/fedml.png)
 
-After March 2022, FedML has been upgraded as an AI company which aims to provide machine learning capability anywhere at any scale. Now the python version of FedML [https://github.com/FedML-AI/FedML-refactor/tree/master/python](https://github.com/FedML-AI/FedML-refactor/tree/master/python) is reorganized as follows:
+As of March 2022, FedML has been made into an AI company which aims to provide machine learning capability from anywhere and at any scale. The python version of FedML [https://github.com/FedML-AI/FedML-refactor/tree/master/python](https://github.com/FedML-AI/FedML-refactor/tree/master/python) is now reorganized as follows:
 
-**core**: The FedML low-level API package. This package implements distributed computing by communication backend like MPI, NCCL, MQTT, gRPC, PyTorch RPC, and also supports topology management. 
+**core**: The FedML low-level API package. This package implements distributed computing by communication backend such as MPI, NCCL, MQTT, gRPC, PyTorch RPC, and also supports topology management. 
 Other low-level APIs related to security and privacy are also supported. All algorithms and Scenarios are built based on the "core" package.
 
 **data**: FedML will provide some default datasets for users to get started. Customization templates are also provided.
@@ -68,11 +68,11 @@ Other low-level APIs related to security and privacy are also supported. All alg
 <img src="../_static/image/apioverview.jpg" alt="drawing" style="width:60%;"/> 
 <br />
 
-Our philosophy of API design is to reduce the number of APIs to as few as possible while simultaneously keeping the flexibility. 
+Our philosophy behind our API design is to reduce the number of APIs to as few as possible while simultaneously maintaining the flexibility. 
 The figure above shows the high-level overview of the API design. Essentially, each module has a package entry point (e.g., fedml.cross-silo) to manage related APIs, and FedML users can wrapper these APIs to meet their specific demands. 
-Some high-level integrated APIs are also provided. For example, `fedml.run_simulation()` is just one-line API to have a quick start. 
+Some high-level integrated APIs are also provided. For example, `fedml.run_simulation()` is just a one-line API for a quick start. 
 
-Now let's get started with some simple examples. For Simplicity, FedML Parrot (simulator) supports one line API as the following example:
+Now let's get started with some simple examples. For Simplicity, FedML Parrot (simulator) supports one-line APIs as the following example:
 
 
 ```Python
@@ -96,9 +96,9 @@ You will get the following output:
 [FedML-Server(0) @device-id-0] [Sun, 01 May 2022 14:59:31] [INFO] [data_loader.py:57:load_synthetic_data] load_data. dataset_name = mnist
 ...
 ```
-You can also customize the hyper-parameters with `fedml_config.yaml`. Check [this tutorial for one-line example](https://doc.fedml.ai/simulation/examples/sp_fedavg_mnist_lr_example.html) for details.
+You can also customize the hyper-parameters with `fedml_config.yaml`. Check out [this tutorial for a one-line example](https://doc.fedml.ai/simulation/examples/sp_fedavg_mnist_lr_example.html) for details.
 
-For flexibility, one-line API can also be expanded into five lines of APIs. To illustrate this, now let's switch to FedML Octopus (cross-silo federated learning) as example (Source code: [https://github.com/FedML-AI/FedML/tree/master/python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example](https://github.com/FedML-AI/FedML/tree/master/python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example)).
+For flexibility, one-line API can also be expanded into five lines of APIs. To illustrate this, let's switch to FedML Octopus (cross-silo federated learning) as example (Source code: [https://github.com/FedML-AI/FedML/tree/master/python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example](https://github.com/FedML-AI/FedML/tree/master/python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example)).
 
 In this example, the FL Client APIs are as follows:
 
@@ -174,13 +174,13 @@ tracking_args:
 
 
 
-Now let's run some examples as follows to get a sense of how FedML simplifies federated learning in diverse real-world settings.
+Now let's run some examples to get a sense of how FedML simplifies federated learning in diverse real-world settings.
  
 #### **FedML Parrot Examples**
 Simulation with a Single Process (Standalone):
 
 - [sp_fedavg_mnist_lr_example](./../simulation/examples/sp_fedavg_mnist_lr_example.md): 
-  Simulating FL using a single process in your personal laptop or server. This is helpful when researchers hope to try a quick algorithmic idea in small synthetic datasets (MNIST, shakespeare, etc.) and small models (ResNet-18, Logistic Regression, etc.). 
+  Simulating FL using a single process in your personal laptop or server. This is helpful for researchers hoping to try a quick algorithmic idea in small synthetic datasets (MNIST, shakespeare, etc.) and small models (ResNet-18, Logistic Regression, etc.). 
 
 Simulation with Message Passing Interface (MPI):
 - [mpi_torch_fedavg_mnist_lr_example](./../simulation/examples/mpi_torch_fedavg_mnist_lr_example.md): 
@@ -188,17 +188,17 @@ Simulation with Message Passing Interface (MPI):
   
 
 Simulation with NCCL-based MPI (the fastest training):
-- In case your cross-GPU bandwidth is high (e.g., InfiniBand, NVLink, EFA, etc.), we suggest using this NCCL-based MPI FL simulator to accelerate your development. 
+- If your cross-GPU bandwidth is high (e.g., InfiniBand, NVLink, EFA, etc.), we suggest using this NCCL-based MPI FL simulator to accelerate your development. 
 
-#### **FedML Octopu Examples**
+#### **FedML Octopus Examples**
 Horizontal Federated Learning:
 
-- [mqtt_s3_fedavg_mnist_lr_example](./../cross-silo/examples/mqtt_s3_fedavg_mnist_lr_example.md): an example to illustrate how to run horizontal federated learning in data silos (hospitals, banks, etc.)
+- [mqtt_s3_fedavg_mnist_lr_example](./../cross-silo/examples/mqtt_s3_fedavg_mnist_lr_example.md): an example to illustrate running horizontal federated learning in data silos (hospitals, banks, etc.)
 
 Hierarchical Federated Learning:
 
-- [hierarchical_fedavg_mnist_lr_example](./../cross-silo/examples/hierarchical_fedavg_mnist_lr_example.md): an example to illustrate how to run hierarchical federated learning in data silos (hospitals, banks, etc.). 
-Here `hierarchical` means that inside each FL Client (data silo), there are multiple GPUs that can run local distributed training with PyTorch DDP, and then the FL server aggregates globally from the results received from all FL Clients.
+- [hierarchical_fedavg_mnist_lr_example](./../cross-silo/examples/hierarchical_fedavg_mnist_lr_example.md): an example to illustrate running hierarchical federated learning in data silos (hospitals, banks, etc.). 
+Here `hierarchical` implies that each FL Client (data silo) has multiple GPUs that can run local distributed training with PyTorch DDP, and the FL server then aggregates globally from the results received from all FL Clients.
 
 
 #### **FedML Beehive Examples**
@@ -212,25 +212,25 @@ Here `hierarchical` means that inside each FL Client (data silo), there are mult
 
 Currently, the project developed based on FedML Octopus (cross-silo) and Beehive (cross-device) can be smoothly deployed into the real-world system using FedML MLOps.
 
-FedML MLOps Platform simplifies the workflow of federated learning anywhere at any scale.
+The FedML MLOps Platform simplifies the workflow of federated learning from anywhere and at any scale.
 It enables zero-code, lightweight, cross-platform, and provably secure federated learning.
 It enables machine learning from decentralized data at various users/silos/edge nodes, without the need to centralize any data to the cloud, hence providing maximum privacy and efficiency.
 
 ![image](../../_static/image/mlops_workflow.png)
 
 
-The above figure shows the workflow. Such a workflow is handled by web UI without the need to handle complex deployment. Check the following live demo for details:
+The above figure shows the workflow, which is handled by a web UI that avoids using complex deployment. Check out the following live demo for details:
 
 ![image](../_static/image/mlops_invite.png)
 
-3 Minutes Introduction: [https://www.youtube.com/watch?v=E1k05jd1Tyw](https://www.youtube.com/watch?v=E1k05jd1Tyw)
+3-Minute Introduction: [https://www.youtube.com/watch?v=E1k05jd1Tyw](https://www.youtube.com/watch?v=E1k05jd1Tyw)
 
-A detailed guidance for the MLOps can be found at [FedML MLOps User Guide](./../mlops/user_guide.md). 
+Detailed guidance for the MLOps can be found at [FedML MLOps User Guide](./../mlops/user_guide.md). 
 
-## **More Resource**
+## **More Resources**
 
 
-### Reference
+### References
 ```
 @article{chaoyanghe2020fedml,
   Author = {He, Chaoyang and Li, Songze and So, Jinhyun and Zhang, Mi and Wang, Hongyi and Wang, Xiaoyang and Vepakomma, Praneeth and Singh, Abhishek and Qiu, Hang and Shen, Li and Zhao, Peilin and Kang, Yan and Liu, Yang and Raskar, Ramesh and Yang, Qiang and Annavaram, Murali and Avestimehr, Salman},
@@ -243,7 +243,7 @@ A detailed guidance for the MLOps can be found at [FedML MLOps User Guide](./../
 ### Ecosystem
 <img src="../_static/image/started_ecosystem.png" alt="drawing" style="width:100%;"/> 
 
-FedML Ecosystem facilitates federated learning research and productization in diverse application domains. With the foundational support from FedML Core Framework, it supports FedNLP (Natural Language Processing), FedCV (Computer Vision), FedGraphNN (Graph Neural Networks), and FedIoT (Internet of Things).
+The FedML Ecosystem facilitates federated learning research and productization in diverse application domains. With the foundational support from FedML Core Framework, it supports FedNLP (Natural Language Processing), FedCV (Computer Vision), FedGraphNN (Graph Neural Networks), and FedIoT (Internet of Things).
 Please read this guidance for details: [https://doc.fedml.ai/starter/ecosystem.html](https://doc.fedml.ai/starter/ecosystem.html)
 
 ### Publication
@@ -256,9 +256,9 @@ FedML’s core technology is backed by years of cutting-edge research represente
 5. AI Applications
 A Full-stack of Scientific Publications in ML Algorithms, Security/Privacy, Systems, Applications, and Visionary Impacts
 
-Please check [this publication list](./../resource/papers.md) for details.
+Please check out [the full publication list](./../resource/papers.md) for details.
 
-### Video (Invited Talks)
+### Invited Talks (Videos)
 
 - [Trustworthy and Scalable Federated Learning](https://www.youtube.com/watch?v=U3BiuWjhdaU). Federated Learning One World Seminar (FLOW). By Salman Avestimehr
 
@@ -277,15 +277,15 @@ Please check [this publication list](./../resource/papers.md) for details.
 
 - Join our WeChat Group:
 
-Our WeChat group exceeds 200 members, please add the following account and ask him to invite you to join. 
+Our WeChat group has 200+ members. Please add the following account and ask for an invitation to join. 
 
 <img src="./../_static/image/chaoyang-wechat.png" alt="drawing" style="width:200px;"/>
 
 ### FAQ
 
 We organize the frequently asked questions at [https://github.com/FedML-AI/FedML/discussions](https://github.com/FedML-AI/FedML/discussions). 
-Please feel free to ask questions there. We are happy to discuss on supporting your special demands.
+Please feel free to ask questions there. We are happy to discuss supporting your special requests.
 
-### Recruiting
+### Career Opportunities/Join Our Team
 FedML is hiring researchers, engineers, product managers, and related interns.
 If you are interested, please apply at [https://fedml.ai/careers](https://fedml.ai/careers).
