@@ -23,9 +23,9 @@ class DLGAttack(BaseAttackMethod):
         self.data_size = [
             1
         ] + data_size  # batched image size (list), e.g. [1, 3, 32, 32]
-        self.num_class = num_class  # number of classess of the dataset
+        self.num_class = num_class  # number of classess of the dataset todo: to remove
         self.model = model
-        self.attack_epoch = attack_epoch
+        self.attack_epoch = attack_epoch # todo: discuss with chaoyang
         self.attack_label = attack_label
 
     def attack(self, local_w, global_w, refs=None):
