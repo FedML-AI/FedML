@@ -8,7 +8,7 @@
 Welcome to FedML
 ========================
 
-Thank you for coming to FedML. This documentation provides all you need to know about using the FedML platform.
+Thank you for visiting our site. This documentation provides you with everything you need to know about using the FedML platform.
 
 .. image:: ./_static/image/mission.png
    :width: 100%
@@ -17,7 +17,7 @@ Thank you for coming to FedML. This documentation provides all you need to know 
 
 Why FedML?
 =================================
-FedML, Inc. (https://fedml.ai) is to help people or organizations have AI capability from data anywhere at any scale. FedML stands for “Fundamental Ecosystem Development/Design for Machine Learning” in a broad scope, and “Federated Machine Learning” in a specific scope. At the current stage, FedML is developing and maintaining a machine learning platform that enables zero-code, lightweight, cross-platform, and provably secure federated learning and analytics. It enables machine learning from decentralized data at various users/silos/edge nodes, without the need to centralize any data to the cloud, hence providing maximum privacy and efficiency. It consists of a lightweight and cross-platform Edge AI SDK that is deployable over edge GPUs, smartphones, and IoT devices. Furthermore, it also provides a user-friendly MLOps platform to simplify decentralized machine learning and real-world deployment. FedML supports vertical solutions across a broad range of industries (healthcare, finance, insurance, smart cities, IoT, etc.) and applications (computer vision, natural language processing, data mining, and time-series forecasting). Its core technology is backed by more than 3 years of cutting-edge research of its co-founders.
+FedML, Inc. (https://fedml.ai) enables people and/or organizations to have AI capability from data anywhere at any scale. FedML stands for “Fundamental Ecosystem Development/Design for Machine Learning” in a broad scope, and “Federated Machine Learning” in a specific scope. At its current stage, FedML is developing and maintaining a machine learning platform that enables zero-code, lightweight, cross-platform, and provably secure federated learning and analytics. It enables machine learning from decentralized data at various users/silos/edge nodes without requiring data centralization to the cloud, thus providing maximum privacy and efficiency. It consists of a lightweight and cross-platform Edge AI SDK that is deployable over edge GPUs, smartphones, and IoT devices. Furthermore, it also provides a user-friendly MLOps platform to simplify decentralized machine learning and real-world deployment. FedML supports vertical solutions across a broad range of industries (healthcare, finance, insurance, smart cities, IoT, etc.) and applications (computer vision, natural language processing, data mining, and time-series forecasting). Its core technology is backed by over 3 years of cutting-edge research by its co-founders.
 
 Outline
 =================================
@@ -32,7 +32,7 @@ This documentation is organized in the following sections:
    :name: start
    :caption: Overview
 
-   starter/get_started
+   starter/getting_started
    starter/installation.md
    starter/examples.md
    starter/mission.md
@@ -100,7 +100,7 @@ This documentation is organized in the following sections:
 .. toctree::
    :maxdepth: 3
    :name: Resource
-   :caption: Resource
+   :caption: Resources
 
    resource/papers.md
    resource/video.rst

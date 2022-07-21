@@ -2,7 +2,7 @@
 
 ## Overview
 ```shell
-# login to the MLOps Platform
+# log in to the MLOps Platform
 fedml login
 
 # build packages for the MLOps Platform
@@ -15,13 +15,13 @@ fedml logout
 fedml version
 ```
 
-## 1. Login into the FedML MLOps platform (open.fedml.ai)
+## 1. Log in to the FedML MLOps platform (open.fedml.ai)
 
 ```
 fedml login userid -v version(release/test)
 ```
 
-### 1.1. Examples for Logining into the FedML MLOps platform (open.fedml.ai)
+### 1.1. Examples for Logging in to the FedML MLOps platform (open.fedml.ai)
 
 ```
 fedml login 90 
@@ -69,7 +69,7 @@ fedml build -t server \
 -df $DEST
 ```
 
-## 3. Logout from the MLOps platform (open.fedml.ai)
+## 3. Log out the MLOps platform (open.fedml.ai)
 ```
 fedml logout
 ```
