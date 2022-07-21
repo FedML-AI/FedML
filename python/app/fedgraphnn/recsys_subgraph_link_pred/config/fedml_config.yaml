@@ -1,10 +1,16 @@
 common_args:
-  training_type: "simulation"
+  training_type: "cross_silo"
+  scenario: "horizontal"
+  using_mlops: false
+  config_version: release
+  name: "exp"
+  project: "runs/train"
+  exist_ok: false
   random_seed: 0
 
 data_args:
   dataset: "ciao"
-  data_cache_dir: ~/fedgraphnn_data
+  data_cache_dir: ~/fedgraphnn_data/
   part_file:  ~/fedgraphnn_data/partition
   partition_method: "hetero"
   partition_alpha: 0.5
@@ -27,12 +33,12 @@ model_args:
 
 train_args:
   federated_optimizer: "FedAvg"
-  client_id_list: "[]"
-  client_num_in_total: 4
-  client_num_per_round: 4
+  client_id_list: 
+  client_num_in_total: 1
+  client_num_per_round: 1
   comm_round: 100
   epochs: 5
-  batch_size: 1
+  batch_size: 32
   client_optimizer: sgd
   learning_rate: 0.03
   weight_decay: 0.001
@@ -42,14 +48,15 @@ validation_args:
   frequency_of_the_test: 5
 
 device_args:
-  worker_num: 4
+  worker_num: 1
   using_gpu: false
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_default
 
 comm_args:
-  backend: "MPI"
-  is_mobile: 0
+  backend: "MQTT_S3"
+  mqtt_config_path: config/mqtt_config.yaml
+  s3_config_path: config/s3_config.yaml
 
 
 tracking_args:
@@ -57,4 +64,4 @@ tracking_args:
   enable_wandb: false
   wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
   wandb_project: fedml
-  wandb_name: fed_node_classification
+  wandb_name: fed_subgraph_recsys_link_pred
