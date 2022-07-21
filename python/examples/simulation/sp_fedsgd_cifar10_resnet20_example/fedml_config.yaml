@@ -6,7 +6,7 @@ data_args:
   dataset: "cifar10"
   data_cache_dir: "../../../data/cifar10/"
   partition_method: "hetero"
-  partition_alpha: 0.5
+  partition_alpha: 0.1
 
 model_args:
   model: "cnn"
@@ -14,9 +14,9 @@ model_args:
 train_args:
   federated_optimizer: "FedSGD"
   client_id_list: "[]"
-  client_num_in_total: 100
-  client_num_per_round: 10
-  comm_round: 2000
+  client_num_in_total: 10
+  client_num_per_round: 5
+  comm_round: 20000
   epochs: 1
   batch_size: 128
   client_optimizer: sgd
