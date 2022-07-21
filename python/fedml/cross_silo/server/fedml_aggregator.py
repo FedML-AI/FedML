@@ -6,6 +6,7 @@ import time
 import numpy as np
 import torch
 import wandb
+from fedml import mlops
 
 
 class FedMLAggregator(object):
@@ -42,10 +43,10 @@ class FedMLAggregator(object):
         for idx in range(self.client_num):
             self.flag_client_model_uploaded_dict[idx] = False
 
-        self.mlops_metrics = None
+        # self.mlops_metrics = None
 
-    def set_mlops_logger(self, mlops_metrics):
-        self.mlops_metrics = mlops_metrics
+    # def set_mlops_logger(self, mlops_metrics):
+    #     self.mlops_metrics = mlops_metrics
 
     def get_global_model_params(self):
         return self.trainer.get_model_params()
@@ -221,6 +222,10 @@ class FedMLAggregator(object):
             if self.args.enable_wandb:
                 wandb.log({"Train/Acc": train_acc, "round": round_idx})
                 wandb.log({"Train/Loss": train_loss, "round": round_idx})
+
+            mlops.log({"Train/Acc": train_acc, "round": round_idx})
+            mlops.log({"Train/Loss": train_loss, "round": round_idx})
+
             stats = {"training_acc": train_acc, "training_loss": train_loss}
             logging.info(stats)
 
@@ -249,25 +254,30 @@ class FedMLAggregator(object):
             if self.args.enable_wandb:
                 wandb.log({"Test/Acc": test_acc, "round": round_idx})
                 wandb.log({"Test/Loss": test_loss, "round": round_idx})
+
+            mlops.log({"Test/Acc": test_acc, "round": round_idx})
+            mlops.log({"Test/Loss": test_loss, "round": round_idx})
+
             stats = {"test_acc": test_acc, "test_loss": test_loss}
             logging.info(stats)
 
-            if self.mlops_metrics is not None:
-                metric_for_mlops = {
-                    "run_id": self.args.run_id,
-                    "round_idx": round_idx,
-                    "timestamp": time.time(),
-                    "accuracy": round(test_acc, 4),
-                    "loss": round(test_loss, 4),
-                    # "test_accuracy": round(test_acc, 4),
-                    # "test_loss": round(test_loss, 4),
-                }
-                self.mlops_metrics.report_server_training_metric(metric_for_mlops)
+            # if self.mlops_metrics is not None:
+            #     metric_for_mlops = {
+            #         "run_id": self.args.run_id,
+            #         "round_idx": round_idx,
+            #         "timestamp": time.time(),
+            #         "accuracy": round(test_acc, 4),
+            #         "loss": round(test_loss, 4),
+            #         # "test_accuracy": round(test_acc, 4),
+            #         # "test_loss": round(test_loss, 4),
+            #     }
+            #     self.mlops_metrics.report_server_training_metric(metric_for_mlops)
         else:
-            if self.mlops_metrics is not None:
-                metric_for_mlops = {
-                    "run_id": self.args.run_id,
-                    "round_idx": round_idx,
-                    "timestamp": time.time()
-                }
-                self.mlops_metrics.report_server_training_metric(metric_for_mlops)
+            mlops.log({"round_idx": round_idx})
+            # if self.mlops_metrics is not None:
+            #     metric_for_mlops = {
+            #         "run_id": self.args.run_id,
+            #         "round_idx": round_idx,
+            #         "timestamp": time.time()
+            #     }
+            #     self.mlops_metrics.report_server_training_metric(metric_for_mlops)
