@@ -1,8 +1,8 @@
 common_args:
   training_type: "cross_silo"
+  random_seed: 0
   scenario: "horizontal"
   using_mlops: false
-  random_seed: 0
   config_version: release
   name: "exp" # yolo
   project: "runs/train" # yolo
@@ -13,18 +13,16 @@ environment_args:
 
 data_args:
   dataset: "coco"
-  data_cache_dir: "./data/"
+  data_cache_dir: ~/fedcv_data
   partition_method: "homo"
   partition_alpha: 0.5
   data_conf: "./data/coco128.yaml" # yolo
-  img_size: [64, 64] # [640, 640]
+  img_size: [640, 640] # [640, 640]
 
 model_args:
-  model: "yolov5"
+  model: "yolov5" # "yolov5"
   class_num: 80
-  model_file_cache_folder: "./model_file_cache" # will be filled by the server automatically
-  global_model_file_path: "./model_file_cache/global_model.pt"
-  yolo_cfg: "yolov5s-noupsample.yaml" # yolo
+  yolo_cfg: "./model/yolov5/models/yolov5s.yaml" # "./model/yolov6/configs/yolov6s.py" # yolo
   yolo_hyp: "./config/hyps/hyp.scratch.yaml" # yolo
   weights: "none" # "best.pt" # yolo
   single_cls: false # yolo
@@ -36,12 +34,12 @@ train_args:
   federated_optimizer: "FedAvg"
   client_id_list:
   client_num_in_total: 2
-  client_num_per_round: 1
-  comm_round: 2
-  epochs: 3
-  batch_size: 4
+  client_num_per_round: 2
+  comm_round: 20
+  epochs: 5
+  batch_size: 1
   client_optimizer: adam
-  lr: 0.03
+  lr: 0.01
   weight_decay: 0.001
 
 validation_args:
@@ -50,8 +48,6 @@ validation_args:
 device_args:
   worker_num: 2
   using_gpu: false
-  gpu_mapping_file: config/gpu_mapping.yaml
-  gpu_mapping_key: mapping_default
 
 comm_args:
   backend: "MQTT_S3"

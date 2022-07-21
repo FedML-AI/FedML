@@ -4,7 +4,7 @@ common_args:
 
 data_args:
   dataset: "mnist"
-  data_cache_dir: "../../../data/mnist"
+  data_cache_dir: ~/fedml_data
   partition_method: "hetero"
   partition_alpha: 0.5
 
@@ -28,7 +28,7 @@ validation_args:
 
 device_args:
   worker_num: 4
-  using_gpu: false
+  using_gpu: true
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_default
 

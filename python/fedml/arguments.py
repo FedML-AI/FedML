@@ -15,6 +15,7 @@
 """Arguments."""
 
 import argparse
+import os
 from os import path
 
 import yaml
@@ -47,6 +48,9 @@ def add_args():
 
     # default arguments
     parser.add_argument("--local_rank", type=int, default=0)
+    
+    # For hierarchical scenario
+    parser.add_argument("--node_rank", type=int, default=0)
 
     # default arguments
     parser.add_argument("--role", type=str, default="client")
@@ -142,6 +146,9 @@ class Arguments:
                 pass
             else:
                 pass
+            
+        if hasattr(self, "training_type") and training_type is None:
+            training_type = self.training_type
 
         if training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO:
             if (
@@ -168,4 +175,21 @@ def load_arguments(training_type=None, comm_backend=None):
     cmd_args = add_args()
     # Load all arguments from YAML config file
     args = Arguments(cmd_args, training_type, comm_backend)
+
+    if not hasattr(args, "worker_num"):
+        args.worker_num = args.client_num_per_round
+        
+    # os.path.expanduser() method in Python is used
+    # to expand an initial path component ~( tilde symbol)
+    # or ~user in the given path to user’s home directory.
+    if hasattr(args, "data_cache_dir"):
+        args.data_cache_dir = os.path.expanduser(args.data_cache_dir)
+    if hasattr(args, "data_file_path"):
+        args.data_file_path = os.path.expanduser(args.data_file_path)
+    if hasattr(args, "partition_file_path"):
+        args.partition_file_path = os.path.expanduser(args.partition_file_path)
+    if hasattr(args, "part_file"):
+        args.part_file = os.path.expanduser(args.part_file)
+
+    args.rank = int(args.rank)
     return args

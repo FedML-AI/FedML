@@ -1,12 +1,14 @@
 import math
+from typing import Callable, List, Tuple, Dict, Any
 
 import numpy as np
 
+from ..common.bucket import Bucket
 from ..common.utils import compute_middle_point, compute_euclidean_distance
 from ...security.defense.defense_base import BaseDefenseMethod
 
 """
-defense @ server, added by Shanshan, 07/01/2022
+defense @ server with aggregation, added by Shanshan, 07/01/2022
 "Distributed statistical machine learning in adversarial settings: Byzantine gradient descent. "
 https://dl.acm.org/doi/pdf/10.1145/3154503
 
@@ -30,38 +32,23 @@ class GeometricMedianDefense(BaseDefenseMethod):
             self.batch_num = 1
         self.batch_size = math.ceil(self.client_num_per_round / self.batch_num)
 
-    def defend(self, client_grad_list):
-        (num0, averaged_params) = client_grad_list[0]
-        for k in averaged_params.keys():
-            batch_w = []
-            alphas = []  # weights for each avg local_w for each batch
-            for batch_idx in range(
-                0, math.ceil(len(client_grad_list) / self.batch_size)
-            ):
-                client_num = self._get_client_num_current_batch(
-                    self.batch_size, batch_idx, client_grad_list
-                )
-                sample_num = self._get_total_sample_num_for_current_batch(
-                    batch_idx * self.batch_size, client_num, client_grad_list
-                )
-                alphas.append(sample_num)
-                batch_weight = 0
-                for i in range(0, client_num):
-                    local_sample_number, local_model_params = client_grad_list[
-                        batch_idx * self.batch_size + i
-                    ]
-                    w = local_sample_number / sample_num
-                    if i == 0:
-                        batch_weight = local_model_params[k] * w
-                    else:
-                        batch_weight += local_model_params[k] * w
-                batch_w.append(batch_weight)
-            alphas = {alpha / sum(alphas, 0.0) for alpha in alphas}
-            averaged_params[k] = self._compute_geometric_median(alphas, batch_w)
-        return averaged_params
+    def run(
+        self,
+        raw_client_grad_list: List[Tuple[float, Dict]],
+        base_aggregation_func: Callable = None,
+        extra_auxiliary_info: Any = None,
+    ):
+        batch_grad_list = Bucket.bucketization(raw_client_grad_list, self.batch_size)
+        (num0, avg_params) = batch_grad_list[0]
+        alphas = {alpha for (alpha, params) in batch_grad_list}
+        alphas = {alpha / sum(alphas, 0.0) for alpha in alphas}
+        for k in avg_params.keys():
+            batch_grads = [params[k] for (alpha, params) in batch_grad_list]
+            avg_params[k] = self._compute_geometric_median(alphas, batch_grads)
+        return avg_params
 
     @staticmethod
-    def _compute_geometric_median(alphas, batch_w):
+    def _compute_geometric_median(alphas, batch_grads):
         """
         Implementation of Weiszfeld's algorithm.
         Reference:  (1) https://github.com/krishnap25/RFA/blob/master/models/model.py
@@ -74,11 +61,11 @@ class GeometricMedianDefense(BaseDefenseMethod):
         """
         eps = 1e-5
         ftol = 1e-10
-        middle_point = compute_middle_point(alphas, batch_w)
+        middle_point = compute_middle_point(alphas, batch_grads)
         val = sum(
             [
                 alpha * compute_euclidean_distance(middle_point, p)
-                for alpha, p in zip(alphas, batch_w)
+                for alpha, p in zip(alphas, batch_grads)
             ]
         )
         for i in range(100):
@@ -90,15 +77,15 @@ class GeometricMedianDefense(BaseDefenseMethod):
                         alpha
                         / max(eps, compute_euclidean_distance(middle_point, a_batch_w)),
                     )
-                    for alpha, a_batch_w in zip(alphas, batch_w)
+                    for alpha, a_batch_w in zip(alphas, batch_grads)
                 ]
             )
             alphas = alphas / alphas.sum()
-            middle_point = compute_middle_point(alphas, batch_w)
+            middle_point = compute_middle_point(alphas, batch_grads)
             val = sum(
                 [
                     alpha * compute_euclidean_distance(middle_point, p)
-                    for alpha, p in zip(alphas, batch_w)
+                    for alpha, p in zip(alphas, batch_grads)
                 ]
             )
             if abs(prev_obj_val - val) < ftol * val:
@@ -113,22 +100,3 @@ class GeometricMedianDefense(BaseDefenseMethod):
                 for alpha, p in zip(alphas, batch_w)
             ]
         )
-
-    @staticmethod
-    def _get_client_num_current_batch(batch_size, batch_idx, local_w):
-        current_batch_size = batch_size
-        # not divisible
-        if (
-            len(local_w) % batch_size > 0
-            and batch_idx == math.ceil(len(local_w) / batch_size) - 1
-        ):
-            current_batch_size = len(local_w) - (batch_idx * batch_size)
-        return current_batch_size
-
-    @staticmethod
-    def _get_total_sample_num_for_current_batch(start, current_batch_size, local_w):
-        training_num_for_batch = 0
-        for i in range(0, current_batch_size):
-            local_sample_number, local_model_params = local_w[start + i]
-            training_num_for_batch += local_sample_number
-        return training_num_for_batch

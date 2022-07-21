@@ -1,8 +1,8 @@
 import logging
-import multiprocessing
 import os
 import random
 
+import multiprocess as multiprocessing
 import numpy as np
 import torch
 import wandb
@@ -22,7 +22,7 @@ from .core.mlops import MLOpsRuntimeLog
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.7.200"
+__version__ = "0.7.218"
 
 
 def init(args=None):
@@ -182,14 +182,6 @@ def manage_cuda_rpc_args(args):
     print(f"enable_cuda_rpc: {args.enable_cuda_rpc}")
 
 
-def init_cross_silo_horizontal(args):
-    args.worker_num = args.client_num_per_round
-    args.process_id = args.rank
-    manage_mpi_args(args)
-    manage_cuda_rpc_args(args)
-    return args
-
-
 def manage_mpi_args(args):
     if hasattr(args, "backend") and args.backend == "MPI":
         from mpi4py import MPI
@@ -199,17 +191,26 @@ def manage_mpi_args(args):
         world_size = comm.Get_size()
         args.comm = comm
         args.rank = process_id
+        if process_id == 0:
+            args.role = "server"
         # args.worker_num = worker_num
         assert (
             args.worker_num + 1 == world_size
-        ), f"Invalid number of mpi processes. Exepected {args.worker_num + 1}"
+        ), f"Invalid number of mpi processes. Expected {args.worker_num + 1}"
     else:
         args.comm = None
 
 
-def init_cross_silo_hierarchical(args):
+def init_cross_silo_horizontal(args):
+    args.process_id = args.rank
+    args.n_proc_in_silo = 1
+    args.proc_rank_in_silo = 0
+    manage_mpi_args(args)
+    manage_cuda_rpc_args(args)
+    return args
 
-    args.worker_num = args.client_num_per_round
+
+def init_cross_silo_hierarchical(args):
     manage_mpi_args(args)
     manage_cuda_rpc_args(args)
 
@@ -222,26 +223,37 @@ def init_cross_silo_hierarchical(args):
     else:
         # Modify arguments to match info set in env by torchrun
         # Silo Topology
-        if not hasattr(args, "n_node_in_silo"):
-            args.n_node_in_silo = 1
-        if not hasattr(args, "n_proc_per_node"):
-            args.n_proc_per_node = 1
+
         args.n_proc_in_silo = int(os.environ.get("WORLD_SIZE", 1))
 
         # Rank in node
-        args.rank_in_node = int(os.environ.get("LOCAL_RANK", 1))
+        args.rank_in_node = int(os.environ.get("LOCAL_RANK", 0))
         args.process_id = args.rank_in_node
 
         # Rank in silo (process group)
         args.proc_rank_in_silo = int(os.environ.get("RANK", 0))
 
-        # Prcoess group master endpoint
+        # Process group master endpoint
         args.pg_master_address = os.environ.get("MASTER_ADDR", "127.0.0.1")
         args.pg_master_port = os.environ.get("MASTER_PORT", 29300)
 
         # Launcher Rendezvous
         if not hasattr(args, "launcher_rdzv_port"):
             args.launcher_rdzv_port = 29400
+
+        if not hasattr(args, "n_node_in_silo"):
+            args.n_node_in_silo = 1
+        if not (hasattr(args, "n_proc_per_node") and args.n_proc_per_node):
+            pass
+            if args.n_node_in_silo == 1 and torch.cuda.is_available():
+                gpu_count = torch.cuda.device_count()
+                if gpu_count == args.n_proc_in_silo:
+                    print(f"Auto assigning GPU to processes.")
+                    args.gpu_id = args.proc_rank_in_silo
+                else:
+                    args.n_proc_per_node = 1
+            else:
+                args.n_proc_per_node = 1
 
     return args
 
@@ -252,12 +264,15 @@ def update_client_id_list(args):
         generate args.client_id_list for CLI mode where args.client_id_list is set to None
         In MLOps mode, args.client_id_list will be set to real-time client id list selected by UI (not starting from 1)
     """
-    print("########")
     if not hasattr(args, "using_mlops") or (
         hasattr(args, "using_mlops") and not args.using_mlops
     ):
         print("args.client_id_list = {}".format(print(args.client_id_list)))
-        if args.client_id_list is None or args.client_id_list == "None":
+        if (
+            args.client_id_list is None
+            or args.client_id_list == "None"
+            or args.client_id_list == "[]"
+        ):
             if (
                 args.training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE
                 or args.training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO
