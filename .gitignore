@@ -18,6 +18,7 @@ python/tests/smoke_test/data/*
 python/data
 python/fedml.egg-info
 python/examples/simulation/sp_fedavg_mnist_lr_example/data
+*/sp_fedsgd_cifar10_resnet20_example/*
 
 *.log
 
