@@ -5,7 +5,9 @@ from os import path
 
 import fedml
 from fedml import FedMLRunner
-from fedml.model.cv.resnet_gn import resnet18, resnet20
+from fedml.model.cv.resnet_gn import resnet18
+from fedml.model.cv.resnet import resnet20, resnet32, resnet44, resnet56
+
 from fedml.arguments import Arguments
 
 
@@ -40,13 +42,14 @@ def add_args():
 def load_arguments(training_type=None, comm_backend=None):
     cmd_args = add_args()
     # Load all arguments from YAML config file
-    args = Arguments(cmd_args, training_type, comm_backend)
+    args = Arguments(cmd_args, training_type, comm_backend, override_cmd_args=False)
     return args
 
 
 
 if __name__ == "__main__":
     # init FedML framework
+    args = load_arguments(fedml._global_training_type, fedml._global_comm_backend)
     args = fedml.init()
 
     # init device
