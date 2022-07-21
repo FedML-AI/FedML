@@ -6,6 +6,7 @@ import time
 import numpy as np
 import torch
 import wandb
+from fedml import mlops
 
 from ...core.mpc.lightsecagg import (
     LCC_decoding_with_points,
@@ -60,10 +61,10 @@ class LightSecAggAggregator(object):
         self.prime_number = args.prime_number
         self.precision_parameter = args.precision_parameter
 
-        self.mlops_metrics = None
+        # self.mlops_metrics = None
 
-    def set_mlops_logger(self, mlops_metrics):
-        self.mlops_metrics = mlops_metrics
+    # def set_mlops_logger(self, mlops_metrics):
+    #     self.mlops_metrics = mlops_metrics
 
     def get_global_model_params(self):
         global_model_params = self.trainer.get_model_params()
@@ -309,15 +310,17 @@ class LightSecAggAggregator(object):
             stats = {"training_acc": train_acc, "training_loss": train_loss}
             logging.info(stats)
 
-            train_metric = {
-                "run_id": self.args.run_id,
-                "round_idx": round_idx,
-                "timestamp": time.time(),
-                "accuracy": round(train_acc, 4),
-                "loss": round(train_loss, 4),
-            }
-            if self.mlops_metrics is not None:
-                self.mlops_metrics.report_server_training_metric(train_metric)
+            # train_metric = {
+            #     "run_id": self.args.run_id,
+            #     "round_idx": round_idx,
+            #     "timestamp": time.time(),
+            #     "accuracy": round(train_acc, 4),
+            #     "loss": round(train_loss, 4),
+            # }
+            # if self.mlops_metrics is not None:
+            #     self.mlops_metrics.report_server_training_metric(train_metric)
+
+            mlops.log({"accuracy": round(train_acc, 4), "loss": round(train_loss, 4)})
 
             # test data
             test_num_samples = []
