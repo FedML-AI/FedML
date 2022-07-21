@@ -1,6 +1,5 @@
 import json
 import logging
-import sys
 
 import multiprocess as multiprocessing
 import os
@@ -30,6 +29,7 @@ from ...core.mlops.mlops_metrics import MLOpsMetrics
 from ...core.mlops.mlops_configs import MLOpsConfigs
 from ...core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 from ...core.mlops.mlops_status import MLOpsStatus
+from ..comm_utils.sys_utils import get_sys_runner_info
 
 
 class FedMLClientRunner:
@@ -655,15 +655,36 @@ class FedMLClientRunner:
         return device_id
 
     def bind_account_and_device_id(self, url, account_id, device_id, os_name, role="client"):
+        ip = requests.get('https://checkip.amazonaws.com').text.strip()
+        fedml_ver, exec_path, os_ver, cpu_info, python_ver, torch_ver, mpi_installed, \
+            cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem = get_sys_runner_info()
         json_params = {
             "accountid": account_id,
             "deviceid": device_id,
             "type": os_name,
-            "gpu": "None",
-            "processor": "",
+            "processor": cpu_info,
+            "core_type": cpu_info,
             "network": "",
             "role": role,
+            "os_ver": os_ver,
+            "memory": total_mem,
+            "ip": ip,
+            "extra_infos": {"fedml_ver": fedml_ver, "exec_path": exec_path, "os_ver": os_ver,
+                            "cpu_info": cpu_info, "python_ver": python_ver, "torch_ver": torch_ver,
+                            "mpi_installed": mpi_installed, "cpu_sage": cpu_usage,
+                            "available_mem": available_mem, "total_mem": total_mem}
         }
+        if gpu_info is not None:
+            if gpu_total_mem is not None:
+                json_params.put("gpu", gpu_info + ", Total GPU Memory: " + gpu_total_mem)
+            else:
+                json_params.put("gpu", gpu_info)
+            json_params["extra_infos"].put("gpu_info", gpu_info)
+            if gpu_available_mem is not None:
+                json_params["extra_infos"].put("gpu_available_mem", gpu_available_mem)
+            if gpu_total_mem is not None:
+                json_params["extra_infos"].put("gpu_total_mem", gpu_total_mem)
+
         _, cert_path = MLOpsConfigs.get_instance(self.args).get_request_params()
         if cert_path is not None:
             requests.session().verify = cert_path
@@ -786,5 +807,6 @@ class FedMLClientRunner:
             try:
                 self.mqtt_mgr.loop_forever()
             except Exception as e:
-                self.mqtt_mgr.connect()
+                self.mlops_metrics = None
+                self.setup_agent_mqtt_connection(self.agent_config)
                 time.sleep(1)
