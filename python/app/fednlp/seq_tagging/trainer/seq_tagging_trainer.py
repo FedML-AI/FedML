@@ -1,6 +1,6 @@
 import copy
 import os
-
+import logging
 import numpy as np
 import torch
 from seqeval.metrics import (
@@ -129,7 +129,7 @@ class MyModelTrainer(ClientTrainer):
         attributes = BaseDataManager.load_attributes(args.data_file_path)
         args.num_labels = len(attributes["label_vocab"])
         args.labels_list = list(attributes["label_vocab"].keys())
-        args.pad_token_label_id = CrossEntropyLoss().ignore_index
+        args.pad_token_label_id = nn.CrossEntropyLoss().ignore_index
         results = {}
         eval_loss = 0.0
         nb_eval_steps = 0
@@ -157,7 +157,7 @@ class MyModelTrainer(ClientTrainer):
                 output = self.model(x)
                 logits = output[0]
 
-                loss_fct = CrossEntropyLoss()
+                loss_fct = nn.CrossEntropyLoss()
                 loss = loss_fct(logits.view(-1, args.num_labels), labels.view(-1))
                 eval_loss += loss.item()
                 # logging.info("test. batch index = %d, loss = %s" % (i, str(eval_loss)))

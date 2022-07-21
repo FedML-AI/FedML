@@ -20,5 +20,5 @@ Before starting training, make sure that setup with  `config/fedml_config.yaml` 
 WORKSPACE=./FedML/app/fedgraphnn/applications/moleculenet_graph_clf
 cd $WORKSPACE
 
-sh run_moleculenet_clf.sh 4
+sh run_distributed_simulation.sh 4
 ```

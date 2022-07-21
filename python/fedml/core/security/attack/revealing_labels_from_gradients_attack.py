@@ -13,7 +13,7 @@ this work supports image classification over ResNet or EfficientNet.
 
 
 # todo: need to check together with other label revealing attacks
-# todo: the author  this attack can be applied to a parameter update generated from a mini-batch (1-step, N -sample),
+# todo: the author indicates this attack can be applied to a parameter update generated from a mini-batch (1-step, N -sample),
 #  or after several steps (K-step, 1-sample each),
 #  or even the most general case of K-step update of N-sample at each step.
 #  Currently we only implement this attack on local gradients.  -- to design a new attack API?? gradient --> labels
@@ -104,13 +104,13 @@ class RevealingLabelsFromGradientsAttack(BaseAttackMethod):
 
     @staticmethod
     def solve_lp(grads, b, c):
-        from cvxopt import matrix, solvers
+        # from cvxopt import matrix, solvers
 
-        solvers.options["show_progress"] = False
+        np.solvers.options["show_progress"] = False
         np.random.seed(None)
         for t in range(1):
-            grads, b, c = matrix(grads), matrix(b), matrix(c)
-            sol = solvers.lp(c, grads, b)
+            grads, b, c = np.matrix(grads), np.matrix(b), np.matrix(c)
+            sol = np.solvers.lp(c, grads, b)
             x = sol["x"]
             if x is not None:
                 ret = grads * x
