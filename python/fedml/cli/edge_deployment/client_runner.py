@@ -33,6 +33,8 @@ from ..comm_utils.sys_utils import get_sys_runner_info
 
 
 class FedMLClientRunner:
+    FEDML_BOOTSTRAP_RUN_OK = "[FedML]Bootstrap Finished"
+
     def __init__(self, args, edge_id=0, request_json=None, agent_config=None, run_id=0):
         self.device_status = None
         self.current_training_status = None
@@ -252,9 +254,17 @@ class FedMLClientRunner:
                 process = ClientConstants.exec_console_with_script(bootstrap_scripts, should_capture_stdout_err=True)
                 ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(process)
                 if out is not None:
-                    logging.info("{}".format(out.decode(encoding="utf-8")))
+                    out_str = out.decode(encoding="utf-8")
+                    if str(out_str).find(FedMLClientRunner.FEDML_BOOTSTRAP_RUN_OK) == -1:
+                        logging.error("{}".format(out_str))
+                    else:
+                        logging.info("{}".format(out_str))
                 if err is not None:
-                    logging.error("{}".format(err.decode(encoding="utf-8")))
+                    err_str = err.decode(encoding="utf-8")
+                    if str(err_str).find(FedMLClientRunner.FEDML_BOOTSTRAP_RUN_OK) == -1:
+                        logging.error("{}".format(err_str))
+                    else:
+                        logging.info("{}".format(err_str))
         except Exception as e:
             logging.error("Bootstrap scripts error: {}".format(traceback.format_exc()))
 
@@ -276,7 +286,8 @@ class FedMLClientRunner:
         self.setup_client_mqtt_mgr()
         self.wait_client_mqtt_connected()
 
-        self.mlops_metrics.report_client_training_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING)
+        self.mlops_metrics.report_client_training_status(self.edge_id,
+                                                         ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING)
 
         # get training params
         private_local_data_dir = data_config.get("privateLocalData", "")

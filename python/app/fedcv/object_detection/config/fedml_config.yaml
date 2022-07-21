@@ -17,7 +17,7 @@ data_args:
   partition_method: "homo"
   partition_alpha: 0.5
   data_conf: "./data/coco128.yaml" # yolo
-  img_size: [64, 64] # [640, 640]
+  img_size: [640, 640] # [640, 640]
 
 model_args:
   model: "yolov5" # "yolov5"
@@ -32,12 +32,12 @@ model_args:
 
 train_args:
   federated_optimizer: "FedAvg"
-  client_id_list: "[]"
+  client_id_list:
   client_num_in_total: 2
   client_num_per_round: 2
   comm_round: 20
   epochs: 5
-  batch_size: 4
+  batch_size: 1
   client_optimizer: adam
   lr: 0.01
   weight_decay: 0.001
@@ -46,7 +46,7 @@ validation_args:
   frequency_of_the_test: 1
 
 device_args:
-  worker_num: 0
+  worker_num: 2
   using_gpu: false
 
 comm_args:

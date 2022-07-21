@@ -36,6 +36,7 @@ from ..comm_utils.sys_utils import get_sys_runner_info
 
 class FedMLServerRunner:
     FEDML_CLOUD_SERVER_PREFIX = "fedml-server-run-"
+    FEDML_BOOTSTRAP_RUN_OK = "[FedML]Bootstrap Finished"
 
     def __init__(self, args, run_id=0, request_json=None, agent_config=None):
         self.server_docker_image = None
@@ -271,10 +272,18 @@ class FedMLServerRunner:
                 logging.info("Bootstrap scripts are being executed...")
                 process = ServerConstants.exec_console_with_script(bootstrap_scripts, should_capture_stdout_err=True)
                 ret_code, out, err = ServerConstants.get_console_pipe_out_err_results(process)
-                if out is not None and len(str(out.decode(encoding="utf-8"))) > 0:
-                    logging.info("{}".format(out.decode(encoding="utf-8")))
-                if err is not None and len(str(err.decode(encoding="utf-8"))) > 0:
-                    logging.error("{}".format(err.decode(encoding="utf-8")))
+                if out is not None:
+                    out_str = out.decode(encoding="utf-8")
+                    if str(out_str).find(FedMLServerRunner.FEDML_BOOTSTRAP_RUN_OK) == -1:
+                        logging.error("{}".format(out_str))
+                    else:
+                        logging.info("{}".format(out_str))
+                if err is not None:
+                    err_str = err.decode(encoding="utf-8")
+                    if str(err_str).find(FedMLServerRunner.FEDML_BOOTSTRAP_RUN_OK) == -1:
+                        logging.error("{}".format(err_str))
+                    else:
+                        logging.info("{}".format(err_str))
         except Exception as e:
             logging.error("Bootstrap scripts error: {}".format(traceback.format_exc()))
 
