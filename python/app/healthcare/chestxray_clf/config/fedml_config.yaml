@@ -10,7 +10,7 @@ environment_args:
 
 data_args:
   dataset: "chexpert"
-  data_cache_dir: "~/healthcare/"
+  data_cache_dir: "~/healthcare/" # /media/beiyu/TOSHIBA EXT/dataset/CheXpert/CheXpert-v1.0-small
   partition_method: "hetero"
   partition_alpha: 0.5
 

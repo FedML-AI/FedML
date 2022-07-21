@@ -82,8 +82,12 @@ def get_dataloader(dataset, datadir, train_bs, test_bs, dataidxs=None, policy="z
 
 
 # for local devices
-def get_dataloader_test(dataset, datadir, train_bs, test_bs, dataidxs_train, dataidxs_test, policy="zeros"):
-    return get_dataloader_test_chexpert(datadir, train_bs, test_bs, dataidxs_train, dataidxs_test, policy=policy)
+def get_dataloader_test(
+    dataset, datadir, train_bs, test_bs, dataidxs_train, dataidxs_test, policy="zeros"
+):
+    return get_dataloader_test_chexpert(
+        datadir, train_bs, test_bs, dataidxs_train, dataidxs_test, policy=policy
+    )
 
 
 def get_dataloader_chexpert(datadir, train_bs, test_bs, dataidxs=None, policy="zeros"):
@@ -128,7 +132,9 @@ def get_dataloader_chexpert(datadir, train_bs, test_bs, dataidxs=None, policy="z
     return train_dl, test_dl
 
 
-def get_dataloader_test_chexpert(datadir, train_bs, test_bs, dataidxs_train=None, dataidxs_test=None, policy="zeros"):
+def get_dataloader_test_chexpert(
+    datadir, train_bs, test_bs, dataidxs_train=None, dataidxs_test=None, policy="zeros"
+):
     dl_obj = CheXpert
 
     transform_train, transform_test = _data_transforms_chexpert()
@@ -170,7 +176,9 @@ def get_dataloader_test_chexpert(datadir, train_bs, test_bs, dataidxs_train=None
     return train_dl, test_dl
 
 
-def distributed_centralized_chexpert_loader(dataset, data_dir, world_size, rank, batch_size):
+def distributed_centralized_chexpert_loader(
+    dataset, data_dir, world_size, rank, batch_size
+):
     """
     Used for generating distributed dataloader for
     accelerating centralized training
@@ -180,8 +188,12 @@ def distributed_centralized_chexpert_loader(dataset, data_dir, world_size, rank,
     test_bs = batch_size
 
     transform_train, transform_test = _data_transforms_chexpert()
-    train_dataset = CheXpert(data_dir=data_dir, dataidxs=None, train=True, transform=transform_train)
-    test_dataset = CheXpert(data_dir=data_dir, dataidxs=None, train=False, transform=transform_test)
+    train_dataset = CheXpert(
+        data_dir=data_dir, dataidxs=None, train=True, transform=transform_train
+    )
+    test_dataset = CheXpert(
+        data_dir=data_dir, dataidxs=None, train=False, transform=transform_test
+    )
 
     train_sam = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank)
     test_sam = DistributedSampler(test_dataset, num_replicas=world_size, rank=rank)
@@ -210,6 +222,7 @@ def distributed_centralized_chexpert_loader(dataset, data_dir, world_size, rank,
 
 
 def load_partition_data_chexpert(
+    args,
     data_dir,
     partition_method="random",
     partition_alpha=None,
@@ -217,6 +230,16 @@ def load_partition_data_chexpert(
     batch_size=10,
     policy="zeros",
 ):
+
+    train_data_num = 0
+    test_data_num = 0
+    train_data_global = None
+    test_data_global = None
+    data_local_num_dict = dict()
+    train_data_local_dict = dict()
+    test_data_local_dict = dict()
+    class_num = 14
+
     transform_train, transform_test = _data_transforms_chexpert()
 
     train_dataset = CheXpert(
@@ -226,7 +249,13 @@ def load_partition_data_chexpert(
         transform=transform_train,
         policy=policy,
     )
-    test_dataset = CheXpert(data_dir=data_dir, dataidxs=None, train=False, transform=transform_test, policy=policy)
+    test_dataset = CheXpert(
+        data_dir=data_dir,
+        dataidxs=None,
+        train=False,
+        transform=transform_test,
+        policy=policy,
+    )
 
     # get local dataset
     if partition_method == "random":
@@ -237,9 +266,15 @@ def load_partition_data_chexpert(
         all_test_idxs = list(range(len(test_dataset)))
         for client_idx in range(client_number):
             dict_client[client_idx] = {}
-            dict_client[client_idx]["train"] = set(np.random.choice(all_train_idxs, num_train_items, replace=False))
-            dict_client[client_idx]["test"] = set(np.random.choice(all_test_idxs, num_test_items, replace=False))
-            all_train_idxs = list(set(all_train_idxs) - dict_client[client_idx]["train"])
+            dict_client[client_idx]["train"] = set(
+                np.random.choice(all_train_idxs, num_train_items, replace=False)
+            )
+            dict_client[client_idx]["test"] = set(
+                np.random.choice(all_test_idxs, num_test_items, replace=False)
+            )
+            all_train_idxs = list(
+                set(all_train_idxs) - dict_client[client_idx]["train"]
+            )
             all_test_idxs = list(set(all_test_idxs) - dict_client[client_idx]["test"])
         if len(all_train_idxs) > 0:
             all_client_idxs = list(range(client_number))
@@ -257,9 +292,10 @@ def load_partition_data_chexpert(
         raise NotImplementedError
 
     # build dataloader
-    train_dl = []
-    test_dl = []
-    for client_idx in range(client_number):
+    if args.process_id == 0:
+        pass
+    else:
+        client_idx = args.process_id - 1
         train_data_idxs = list(dict_client[client_idx]["train"])
         test_data_idxs = list(dict_client[client_idx]["test"])
         train_dl_, test_dl_ = get_dataloader_test_chexpert(
@@ -270,24 +306,13 @@ def load_partition_data_chexpert(
             test_bs=batch_size,
             policy=policy,
         )
-        train_dl.append(train_dl_)
-        test_dl.append(test_dl_)
-
-        logging.info(f"Client {client_idx} train data num: {len(train_dl_)} test data num: {len(test_dl_)}")
+        data_local_num_dict[client_idx] = len(train_data_idxs) + len(test_data_idxs)
+        train_data_local_dict[client_idx] = train_dl_
+        test_data_local_dict[client_idx] = test_dl_
 
     logging.info("Partition data done")
     # logging.info("Partition data for each client: {}".format(dict_client))
 
-    train_data_num = len(train_dataset)
-    test_data_num = len(test_dataset)
-    train_data_global = train_dataset
-    test_data_global = test_dataset
-    data_local_num_dict = {
-        client_idx: len(dict_client[client_idx]["train"]) + len(dict_client[client_idx]["test"])
-        for client_idx in range(client_number)
-    }
-    train_data_local_dict = {client_idx: train_dl_ for client_idx, train_dl_ in enumerate(train_dl)}
-    test_data_local_dict = {client_idx: test_dl_ for client_idx, test_dl_ in enumerate(test_dl)}
     class_num = train_dataset.num_classes
 
     return (
@@ -325,6 +350,8 @@ if __name__ == "__main__":
         train_data_local_dict,
         test_data_local_dict,
         class_num,
-    ) = load_partition_data_chexpert(data_dir=data_path, client_number=10, batch_size=10, policy="zeros")
+    ) = load_partition_data_chexpert(
+        data_dir=data_path, client_number=10, batch_size=10, policy="zeros"
+    )
 
     print(train_data_num, test_data_num, class_num)

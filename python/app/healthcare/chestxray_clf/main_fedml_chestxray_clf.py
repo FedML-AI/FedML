@@ -2,7 +2,7 @@ import logging
 
 import fedml
 from fedml import FedMLRunner
-from .model import (
+from model import (
     densenet121,
     densenet161,
     densenet169,
@@ -11,7 +11,7 @@ from .model import (
     EfficientNet,
 )
 from trainer.classification_trainer import ClassificationTrainer
-from .data.data_loader import load
+from data.data_loader import load_data
 
 
 def create_model(args, model_name, output_dim):
