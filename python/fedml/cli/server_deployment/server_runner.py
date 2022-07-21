@@ -941,6 +941,8 @@ class FedMLServerRunner:
                 json_params["extra_infos"].put("gpu_available_mem", gpu_available_mem)
             if gpu_total_mem is not None:
                 json_params["extra_infos"].put("gpu_total_mem", gpu_total_mem)
+        else:
+            json_params.put("gpu", "None")
 
         _, cert_path = MLOpsConfigs.get_instance(self.args).get_request_params()
         if cert_path is not None:
