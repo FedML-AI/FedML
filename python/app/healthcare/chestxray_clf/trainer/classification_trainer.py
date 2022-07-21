@@ -24,7 +24,10 @@ class ClassificationTrainer(ClientTrainer):
             optimizer = torch.optim.SGD(model.parameters(), lr=args.lr)
         else:
             optimizer = torch.optim.Adam(
-                filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, weight_decay=args.wd, amsgrad=True
+                filter(lambda p: p.requires_grad, model.parameters()),
+                lr=args.lr,
+                weight_decay=args.wd,
+                amsgrad=True,
             )
         epoch_loss = []
         for epoch in range(args.epochs):
@@ -38,6 +41,11 @@ class ClassificationTrainer(ClientTrainer):
                 loss.backward()
                 optimizer.step()
                 batch_loss.append(loss.item())
+                logging.info(
+                    "Epoch: {}, Batch: {}, Loss: {}".format(
+                        epoch, batch_idx, loss.item()
+                    )
+                )
             if len(batch_loss) > 0:
                 epoch_loss.append(sum(batch_loss) / len(batch_loss))
                 logging.info(
@@ -52,7 +60,13 @@ class ClassificationTrainer(ClientTrainer):
         model.eval()
         model.to(device)
 
-        metrics = {"test_correct": 0, "test_loss": 0, "test_precision": 0, "test_recall": 0, "test_total": 0}
+        metrics = {
+            "test_correct": 0,
+            "test_loss": 0,
+            "test_precision": 0,
+            "test_recall": 0,
+            "test_total": 0,
+        }
 
         criterion = nn.CrossEntropyLoss().to(device)
         with torch.no_grad():
@@ -82,5 +96,7 @@ class ClassificationTrainer(ClientTrainer):
 
         return metrics
 
-    def test_on_the_server(self, train_data_local_dict, test_data_local_dict, device, args=None) -> bool:
+    def test_on_the_server(
+        self, train_data_local_dict, test_data_local_dict, device, args=None
+    ) -> bool:
         return False
