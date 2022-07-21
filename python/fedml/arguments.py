@@ -58,13 +58,18 @@ def add_args():
 class Arguments:
     """Argument class which contains all arguments from yaml config and constructs additional arguments"""
 
-    def __init__(self, cmd_args, training_type=None, comm_backend=None):
+    def __init__(self, cmd_args, training_type=None, comm_backend=None, override_cmd_args=True):
         # set the command line arguments
         cmd_args_dict = cmd_args.__dict__
         for arg_key, arg_val in cmd_args_dict.items():
             setattr(self, arg_key, arg_val)
 
         self.get_default_yaml_config(cmd_args, training_type, comm_backend)
+        if not override_cmd_args:
+            # reload cmd args again
+            for arg_key, arg_val in cmd_args_dict.items():
+                setattr(self, arg_key, arg_val)
+
 
     def load_yaml_config(self, yaml_path):
         with open(yaml_path, "r") as stream:

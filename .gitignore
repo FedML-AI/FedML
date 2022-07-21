@@ -19,6 +19,7 @@ python/data
 python/fedml.egg-info
 python/examples/simulation/sp_fedavg_mnist_lr_example/data
 python/examples/simulation/sp_fedsgd_cifar10_resnet20_example
+python/examples/simulation/sp_fedsgd_cifar10_resnet20_example/*
 
 *.log
 
