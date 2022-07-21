@@ -5,6 +5,7 @@ import platform
 import time
 
 import numpy as np
+from fedml import mlops
 
 from .lsa_message_define import MyMessage
 from ...core.distributed.client.client_manager import ClientManager
@@ -53,10 +54,10 @@ class FedMLClientManager(ClientManager):
         self.has_sent_online_msg = False
         self.sys_stats_process = None
 
-        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-            self.mlops_metrics = MLOpsMetrics()
-            self.mlops_metrics.set_messenger(self.com_manager_status, args)
-            self.mlops_event = MLOpsProfilerEvent(self.args)
+        # if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+        #     self.mlops_metrics = MLOpsMetrics()
+        #     self.mlops_metrics.set_messenger(self.com_manager_status, args)
+        #     self.mlops_event = MLOpsProfilerEvent(self.args)
 
     def register_message_receive_handlers(self):
         self.register_message_receive_handler(
@@ -90,13 +91,7 @@ class FedMLClientManager(ClientManager):
             self.has_sent_online_msg = True
             self.send_client_status(0)
 
-            if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-                # Notify MLOps with training status.
-                self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_INITIALIZING)
-
-                # Open new process for report system performances to MQTT server
-                self.sys_stats_process = multiprocessing.Process(target=self.report_sys_performances)
-                self.sys_stats_process.start()
+            mlops.log_sys_perf(self.args)
 
     def handle_message_check_status(self, msg_params):
         self.send_client_status(0)
@@ -141,12 +136,13 @@ class FedMLClientManager(ClientManager):
         if self.round_idx == self.num_rounds - 1:
 
             # Notify MLOps with the finished message
-            if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-                self.mlops_metrics.report_client_id_status(
-                    self.args.run_id,
-                    self.client_real_id,
-                    MyMessage.MSG_MLOPS_CLIENT_STATUS_FINISHED,
-                )
+            # if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+            #     self.mlops_metrics.report_client_id_status(
+            #         self.args.run_id,
+            #         self.client_real_id,
+            #         MyMessage.MSG_MLOPS_CLIENT_STATUS_FINISHED,
+            #     )
+            mlops.log_training_finished_status()
 
             self.finish()
             return
@@ -187,20 +183,21 @@ class FedMLClientManager(ClientManager):
         self.send_message(message)
 
     def report_training_status(self, status):
-        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-            self.mlops_metrics.set_messenger(self.com_manager_status, self.args)
-            self.mlops_metrics.report_client_training_status(self.client_real_id, status)
+        # if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+        #     self.mlops_metrics.report_client_training_status(self.client_real_id, status)
+        mlops.log_training_status(status)
 
-    def report_sys_performances(self):
-        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-            while self.round_idx != self.num_rounds - 1:
-                # Notify MLOps with system information.
-                self.mlops_metrics.report_system_metric()
-                time.sleep(30)
+    # def report_sys_performances(self):
+    #     if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+    #         while self.round_idx != self.num_rounds - 1:
+    #             # Notify MLOps with system information.
+    #             self.mlops_metrics.report_system_metric()
+    #             time.sleep(30)
 
     def send_model_to_server(self, receive_id, weights, local_sample_num):
-        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-            self.mlops_event.log_event_started("comm_c2s", event_value=str(self.round_idx))
+        # if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+        #     self.mlops_event.log_event_started("comm_c2s", event_value=str(self.round_idx))
+        mlops.event("comm_c2s", event_started=True, event_value=str(self.round_idx))
         message = Message(
             MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER,
             self.get_sender_id(),
@@ -212,15 +209,17 @@ class FedMLClientManager(ClientManager):
         self.send_message(message)
 
         # Report client model to MLOps
-        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-            model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
-            model_info = {
-                "run_id": self.args.run_id,
-                "edge_id": self.client_real_id,
-                "round_idx": self.round_idx + 1,
-                "client_model_s3_address": model_url,
-            }
-            self.mlops_metrics.report_client_model_info(model_info)
+        # if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+        #     model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
+        #     model_info = {
+        #         "run_id": self.args.run_id,
+        #         "edge_id": self.client_real_id,
+        #         "round_idx": self.round_idx + 1,
+        #         "client_model_s3_address": model_url,
+        #     }
+        #     self.mlops_metrics.report_client_model_info(model_info)
+        model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
+        mlops.log_client_model_info(self.round_idx + 1, model_url)
 
     def send_encoded_mask_to_server(self, receive_id, encoded_mask):
         message = Message(MyMessage.MSG_TYPE_C2S_SEND_ENCODED_MASK_TO_SERVER, self.get_sender_id(), 0)
@@ -283,14 +282,16 @@ class FedMLClientManager(ClientManager):
 
     def __train(self):
         logging.info("#######training########### round_id = %d" % self.round_idx)
-        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-            self.mlops_event.log_event_started("train", event_value=str(self.round_idx))
+        # if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+        #     self.mlops_event.log_event_started("train", event_value=str(self.round_idx))
+        mlops.event("train", event_started=True, event_value=str(self.round_idx))
 
         weights, local_sample_num = self.trainer.train(self.round_idx)
         logging.info("Client %d original weights = %s" % (self.get_sender_id(), weights))
 
-        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-            self.mlops_event.log_event_ended("train", event_value=str(self.round_idx))
+        # if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+        #     self.mlops_event.log_event_ended("train", event_value=str(self.round_idx))
+        mlops.event("train", event_started=False, event_value=str(self.round_idx))
 
         # Convert the model from real to finite
         p = self.prime_number

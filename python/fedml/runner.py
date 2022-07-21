@@ -48,24 +48,20 @@ class FedMLRunner:
         self, args, device, dataset, model, client_trainer=None, server_aggregator=None
     ):
         if args.scenario == "horizontal":
-            if hasattr(args, "backend") and args.backend == FEDML_SIMULATION_TYPE_MPI:
-                from .simulation.simulator import SimulatorMPI
-                runner = SimulatorMPI(args, device, dataset, model, client_trainer, server_aggregator)
+            if args.role == "client":
+                from .cross_silo import Client
+
+                runner = Client(
+                    args, device, dataset, model, client_trainer, server_aggregator
+                )
+            elif args.role == "server":
+                from .cross_silo import Server
+
+                runner = Server(
+                    args, device, dataset, model, client_trainer, server_aggregator
+                )
             else:
-                if args.role == "client":
-                    from .cross_silo import Client
-
-                    runner = Client(
-                        args, device, dataset, model, client_trainer, server_aggregator
-                    )
-                elif args.role == "server":
-                    from .cross_silo import Server
-
-                    runner = Server(
-                        args, device, dataset, model, client_trainer, server_aggregator
-                    )
-                else:
-                    raise Exception("no such role")
+                raise Exception("no such role")
         elif args.scenario == "hierarchical":
             if args.role == "client":
                 from .cross_silo import Client

@@ -4,6 +4,9 @@ import time
 import numpy as np
 
 from time import sleep
+
+from fedml import mlops
+
 from .lsa_message_define import MyMessage
 from ...core.distributed.communication.message import Message
 from ...core.distributed.server.server_manager import ServerManager
@@ -45,11 +48,11 @@ class FedMLServerManager(ServerManager):
         self.prime_number = args.prime_number
         self.precision_parameter = args.precision_parameter
 
-        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-            self.mlops_metrics = MLOpsMetrics()
-            self.mlops_metrics.set_messenger(self.com_manager_status, self.args)
-            self.mlops_event = MLOpsProfilerEvent(self.args)
-            self.aggregator.set_mlops_logger(self.mlops_metrics)
+        # if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+        #     self.mlops_metrics = MLOpsMetrics()
+        #     self.mlops_metrics.set_messenger(self.com_manager_status, self.args)
+        #     self.mlops_event = MLOpsProfilerEvent(self.args)
+        #     self.aggregator.set_mlops_logger(self.mlops_metrics)
 
         self.start_running_time = 0.0
         self.aggregated_model_url = None
@@ -73,10 +76,13 @@ class FedMLServerManager(ServerManager):
             )
             client_idx_in_this_round += 1
 
-        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-            self.mlops_event.log_event_started(
-                "server.wait", event_value=str(self.round_idx)
-            )
+        # if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+        #     self.mlops_event.log_event_started(
+        #         "server.wait", event_value=str(self.round_idx)
+        #     )
+        mlops.event(
+            "server.wait", event_started=True, event_value=str(self.round_idx)
+        )
 
     def register_message_receive_handlers(self):
         print("register_message_receive_handlers------")
@@ -116,6 +122,8 @@ class FedMLServerManager(ServerManager):
             len(self.client_id_list_in_this_round),
         )
         if not self.is_initialized:
+            mlops.log_round_info(self.round_num, 0)
+
             # check client status in case that some clients start earlier than the server
             client_idx_in_this_round = 0
             for client_id in self.client_id_list_in_this_round:
@@ -130,11 +138,12 @@ class FedMLServerManager(ServerManager):
             self.client_online_mapping[str(msg_params.get_sender_id())] = True
 
         # notify MLOps with RUNNING status
-        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-            self.mlops_metrics.report_server_training_status(
-                self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING,
-                role="server"
-            )
+        # if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+        #     self.mlops_metrics.report_server_training_status(
+        #         self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING,
+        #         role="server"
+        #     )
+        mlops.log_aggregation_status(MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING)
 
         all_client_is_online = True
         for client_id in self.client_id_list_in_this_round:
@@ -160,10 +169,13 @@ class FedMLServerManager(ServerManager):
 
     def handle_message_receive_model_from_client(self, msg_params):
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
-        if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-            self.mlops_event.log_event_ended(
-                "comm_c2s", event_value=str(self.round_idx), event_edge_id=sender_id
-            )
+        # if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+        #     self.mlops_event.log_event_ended(
+        #         "comm_c2s", event_value=str(self.round_idx), event_edge_id=sender_id
+        #     )
+        mlops.event(
+            "comm_c2s", event_started=False, event_value=str(self.round_idx), event_edge_id=sender_id
+        )
 
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         local_sample_number = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
@@ -198,13 +210,15 @@ class FedMLServerManager(ServerManager):
         # After receiving enough aggregate of encoded masks, server recovers the aggregate-model
         if b_all_received:
 
-            if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-                self.mlops_event.log_event_ended(
-                    "server.wait", event_value=str(self.round_idx)
-                )
-                self.mlops_event.log_event_started(
-                    "server.agg_and_eval", event_value=str(self.round_idx)
-                )
+            # if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+            #     self.mlops_event.log_event_ended(
+            #         "server.wait", event_value=str(self.round_idx)
+            #     )
+            #     self.mlops_event.log_event_started(
+            #         "server.agg_and_eval", event_value=str(self.round_idx)
+            #     )
+            mlops.event("server.wait", event_started=False, event_value=str(self.round_idx))
+            mlops.event("server.agg_and_eval", event_started=True, event_value=str(self.round_idx))
 
             # Secure Model Aggregation
             global_model_params = self.aggregator.aggregate_model_reconstruction(
@@ -216,20 +230,22 @@ class FedMLServerManager(ServerManager):
             except Exception as e:
                 logging.info("aggregator.test exception: " + str(e))
 
-            if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-                self.mlops_event.log_event_ended(
-                    "server.agg_and_eval", event_value=str(self.round_idx)
-                )
+            # if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+            #     self.mlops_event.log_event_ended(
+            #         "server.agg_and_eval", event_value=str(self.round_idx)
+            #     )
+            mlops.event("server.agg_and_eval", event_started=False, event_value=str(self.round_idx))
 
             # send round info to the MQTT backend
-            if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-                round_info = {
-                    "run_id": self.args.run_id,
-                    "round_index": self.round_idx,
-                    "total_rounds": self.round_num,
-                    "running_time": round(time.time() - self.start_running_time, 4),
-                }
-                self.mlops_metrics.report_server_training_round_info(round_info)
+            # if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+            #     round_info = {
+            #         "run_id": self.args.run_id,
+            #         "round_index": self.round_idx,
+            #         "total_rounds": self.round_num,
+            #         "running_time": round(time.time() - self.start_running_time, 4),
+            #     }
+            #     self.mlops_metrics.report_server_training_round_info(round_info)
+            mlops.log_round_info(self.round_num, self.round_idx)
 
             self.client_id_list_in_this_round = self.aggregator.client_selection(
                 self.round_idx, self.client_real_ids, self.args.client_num_per_round
@@ -249,14 +265,16 @@ class FedMLServerManager(ServerManager):
                 )
                 client_idx_in_this_round += 1
 
-            if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-                model_info = {
-                    "run_id": self.args.run_id,
-                    "round_idx": self.round_idx + 1,
-                    "global_aggregated_model_s3_address": self.aggregated_model_url,
-                }
-                self.mlops_metrics.report_aggregated_model_info(model_info)
-                self.aggregated_model_url = None
+            # if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+            #     model_info = {
+            #         "run_id": self.args.run_id,
+            #         "round_idx": self.round_idx + 1,
+            #         "global_aggregated_model_s3_address": self.aggregated_model_url,
+            #     }
+            #     self.mlops_metrics.report_aggregated_model_info(model_info)
+            #     self.aggregated_model_url = None
+            mlops.log_aggregated_model_info(self.round_idx + 1, self.aggregated_model_url)
+            self.aggregated_model_url = None
 
             # start the next round
             self.round_idx += 1
@@ -269,20 +287,22 @@ class FedMLServerManager(ServerManager):
                 self.finish()
             if self.is_preprocessed:
                 # post_complete_message_to_sweep_process(self.args)
-                if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-                    self.mlops_metrics.report_server_id_status(
-                        self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_FINISHED
-                    )
+                # if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+                #     self.mlops_metrics.report_server_id_status(
+                #         self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_FINISHED
+                #     )
+                mlops.log_training_finished_status()
                 logging.info(
                     "=============training is finished. Cleanup...============"
                 )
                 self.cleanup()
             else:
                 logging.info("waiting for another round...")
-                if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-                    self.mlops_event.log_event_started(
-                        "server.wait", event_value=str(self.round_idx)
-                    )
+                # if hasattr(self.args, "using_mlops") and self.args.using_mlops:
+                #     self.mlops_event.log_event_started(
+                #         "server.wait", event_value=str(self.round_idx)
+                #     )
+                mlops.event("server.wait", event_started=True, event_value=str(self.round_idx))
 
     def cleanup(self):
 
