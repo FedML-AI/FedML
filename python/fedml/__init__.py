@@ -17,7 +17,6 @@ from .constants import (
     FEDML_TRAINING_PLATFORM_CROSS_SILO,
     FEDML_TRAINING_PLATFORM_CROSS_DEVICE,
 )
-from .core.mlops import MLOpsRuntimeLog
 
 _global_training_type = None
 _global_comm_backend = None
@@ -49,6 +48,8 @@ def init(args=None):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
+
+    mlops.pre_setup(args)
 
     if (
         args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
