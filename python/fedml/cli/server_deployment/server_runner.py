@@ -946,8 +946,16 @@ class FedMLServerRunner:
 
         _, cert_path = MLOpsConfigs.get_instance(self.args).get_request_params()
         if cert_path is not None:
-            requests.session().verify = cert_path
-            response = requests.post(url, json=json_params, verify=True, headers={"Connection": "close"})
+            try:
+                requests.session().verify = cert_path
+                response = requests.post(
+                    url, json=json_params, verify=True, headers={"content-type": "application/json", "Connection": "close"}
+                )
+            except requests.exceptions.SSLError as err:
+                MLOpsConfigs.install_root_ca_file()
+                response = requests.post(
+                    url, json=json_params, verify=True, headers={"content-type": "application/json", "Connection": "close"}
+                )
         else:
             response = requests.post(url, json=json_params, headers={"Connection": "close"})
         status_code = response.json().get("code")

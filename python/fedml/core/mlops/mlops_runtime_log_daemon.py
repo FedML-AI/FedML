@@ -134,8 +134,16 @@ class MLOpsRuntimeLogProcessor:
             # send log data to the log server
             _, cert_path = MLOpsConfigs.get_instance(self.args).get_request_params()
             if cert_path is not None:
-                requests.session().verify = cert_path
-                response = requests.post(self.log_server_url, headers=log_headers, json=log_upload_request, verify=True)
+                try:
+                    requests.session().verify = cert_path
+                    response = requests.post(
+                        self.log_server_url, json=log_upload_request, verify=True, headers=log_headers
+                    )
+                except requests.exceptions.SSLError as err:
+                    MLOpsConfigs.install_root_ca_file()
+                    response = requests.post(
+                        self.log_server_url, json=log_upload_request, verify=True, headers=log_headers
+                    )
             else:
                 response = requests.post(self.log_server_url, headers=log_headers, json=log_upload_request)
             if response.status_code != 200:
