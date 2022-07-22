@@ -6,14 +6,14 @@ FedML supports Linux, MacOS, Windows, and Android.
 [https://github.com/FedML-AI/FedML](https://github.com/FedML-AI/FedML)
 
 
-## Install with pip
+## Installing with pip
 
 ```
 pip install fedml
 ```
 (Note: please use python 3.6, 3.7, 3.8, 3.9. We will support 3.10 systematically in the next iteration.)
 
-## Install FedML with Anaconda
+## Installing FedML with Anaconda
 
 ```
 conda create --name fedml python=3.7
@@ -26,13 +26,13 @@ pip install fedml
 After installation, please use "pip list | grep fedml" to check whether `fedml` is installed.
 
 
-## Install FedML from Debugging and Editable Mode
+## Installing FedML from Debugging and Editable Mode
 ```
 cd python
 pip install -e ./
 ```
 
-## Install FedML from Source
+## Installing FedML from Source
 ```
 git clone https://github.com/FedML-AI/FedML.git && \
 cd ./FedML/python && \
@@ -48,7 +48,7 @@ python setup.py install
 Please change the above commit id to your own (you can find it at [https://github.com/FedML-AI/FedML/commits/master](https://github.com/FedML-AI/FedML/commits/master))
 
 
-## Run FedML in Docker (Recommended)
+## Running FedML in Docker (Recommended)
 FedML Docker Hub: [https://hub.docker.com/repository/docker/fedml/fedml](https://hub.docker.com/repository/docker/fedml/fedml)
 
 We recommend using FedML in the Docker environment as it circumvents complex and tedious installation debugging. Currently, we maintain docker images for two settings:
@@ -191,7 +191,7 @@ Please follow instructions at [Raspberry Pi Installation](./install/rpi.md)
 
 Please follow instructions at [NVIDIA Jetson Device Installation](./install/jetson.md)
 
-## Test if the installation succeeded
+## Testing if the installation succeeded
 If the installation is successful, you will not see any issue when run `import fedml`.
 ```shell
 (mnn37) chaoyanghe@Chaoyangs-MBP FedML-refactor % python
@@ -203,7 +203,7 @@ Type "help", "copyright", "credits" or "license" for more information.
 
 ```
 
-## Install FedML Android SDK/APP
+## Installing FedML Android SDK/APP
 Please follow the instructions at `https://github.com/FedML-AI/FedML/java/README.md`
 
 ## Troubleshooting
