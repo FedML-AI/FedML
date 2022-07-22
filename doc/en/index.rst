@@ -34,7 +34,6 @@ This documentation is organized in the following sections:
 
    starter/getting_started
    starter/installation.md
-   starter/examples.md
    starter/mission.md
    starter/overview.md
    starter/ecosystem.md
