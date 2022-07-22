@@ -8,6 +8,8 @@ import uuid
 
 import click
 import requests
+from fedml.core.mlops.mlops_configs import MLOpsConfigs
+
 from ...cli.cli import mlops_register_simulator_process
 from ...cli.edge_deployment.client_constants import ClientConstants
 from ...cli.edge_deployment.client_runner import FedMLClientRunner
@@ -149,6 +151,10 @@ def log(metrics: dict, commit=True):
         k = str(k).replace("/", "_")
         if k.startswith("round"):
             k = "round_idx"
+
+        # if isinstance(v, int):
+        #     # k = "round_idx"
+        #     k = "round_idx_" + k
         MLOpsStore.mlops_log_metrics[k] = v
     MLOpsStore.mlops_log_metrics["run_id"] = str(MLOpsStore.mlops_run_id)
     MLOpsStore.mlops_log_metrics["timestamp"] = time.time()
@@ -333,10 +339,16 @@ def create_project(project_name, api_key):
                    "userids": api_key,
                    "platform_type": str(FEDML_TRAINING_PLATFORM_SIMULATION_TYPE)}
     if cert_path is not None:
-        requests.session().verify = cert_path
-        response = requests.post(
-            url, json=json_params, verify=True, headers={"Connection": "close"}
-        )
+        try:
+            requests.session().verify = cert_path
+            response = requests.post(
+                url, json=json_params, verify=True, headers={"content-type": "application/json", "Connection": "close"}
+            )
+        except requests.exceptions.SSLError as err:
+            MLOpsConfigs.install_root_ca_file()
+            response = requests.post(
+                url, json=json_params, verify=True, headers={"content-type": "application/json", "Connection": "close"}
+            )
     else:
         response = requests.post(
             url, json=json_params, headers={"Connection": "close"}
@@ -360,10 +372,16 @@ def create_run(project_id, api_key, run_name=None):
     if run_name is not None:
         json_params["name"] = run_name
     if cert_path is not None:
-        requests.session().verify = cert_path
-        response = requests.post(
-            url, json=json_params, verify=True, headers={"Connection": "close"}
-        )
+        try:
+            requests.session().verify = cert_path
+            response = requests.post(
+                url, json=json_params, verify=True, headers={"content-type": "application/json", "Connection": "close"}
+            )
+        except requests.exceptions.SSLError as err:
+            MLOpsConfigs.install_root_ca_file()
+            response = requests.post(
+                url, json=json_params, verify=True, headers={"content-type": "application/json", "Connection": "close"}
+            )
     else:
         response = requests.post(
             url, json=json_params, headers={"Connection": "close"}
