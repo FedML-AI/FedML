@@ -4,14 +4,13 @@ import platform
 import time
 
 import torch.distributed as dist
-from fedml import mlops
 
+from fedml import mlops
 from fedml.constants import FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
 from .message_define import MyMessage
 from .utils import convert_model_params_from_ddp, convert_model_params_to_ddp
 from ...core.distributed.client.client_manager import ClientManager
 from ...core.distributed.communication.message import Message
-from ...core.mlops.mlops_metrics import MLOpsMetrics
 from ...core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
 
@@ -67,7 +66,7 @@ class ClientMasterManager(ClientManager):
 
             if hasattr(self.args, "using_mlops") and self.args.using_mlops:
                 # Open new process for report system performances to MQTT server
-                #MLOpsMetrics.report_sys_perf(self.args)
+                # MLOpsMetrics.report_sys_perf(self.args)
                 mlops.log_sys_perf(self.args)
 
     def handle_message_check_status(self, msg_params):
@@ -146,18 +145,10 @@ class ClientMasterManager(ClientManager):
         MLOpsProfilerEvent.log_to_wandb(
             {"Communication/Send_Total": time.time() - tick}
         )
-        # Report client model to MLOps
-        # if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-        #     model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
-        #     model_info = {
-        #         "run_id": self.args.run_id,
-        #         "edge_id": self.client_real_id,
-        #         "round_idx": self.round_idx + 1,
-        #         "client_model_s3_address": model_url,
-        #     }
-        #     self.mlops_metrics.report_client_model_info(model_info)
-        model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
-        mlops.log_client_model_info(self.round_idx + 1, model_url)
+        mlops.log_client_model_info(
+            self.round_idx + 1,
+            model_url=message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL),
+        )
 
     def send_client_status(self, receive_id, status="ONLINE"):
         logging.info("send_client_status")
