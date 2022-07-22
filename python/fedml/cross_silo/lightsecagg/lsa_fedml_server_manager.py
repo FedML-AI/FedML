@@ -1,17 +1,14 @@
 import json
 import logging
 import time
-import numpy as np
-
 from time import sleep
 
-from fedml import mlops
+import numpy as np
 
+from fedml import mlops
 from .lsa_message_define import MyMessage
 from ...core.distributed.communication.message import Message
 from ...core.distributed.server.server_manager import ServerManager
-from ...core.mlops.mlops_metrics import MLOpsMetrics
-from ...core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
 
 class FedMLServerManager(ServerManager):
@@ -44,7 +41,7 @@ class FedMLServerManager(ServerManager):
         # self.targeted_number_active_clients = args.targeted_number_active_clients
         # self.privacy_guarantee = args.privacy_guarantee
         self.targeted_number_active_clients = args.worker_num
-        self.privacy_guarantee = int(np.floor(args.worker_num/2))
+        self.privacy_guarantee = int(np.floor(args.worker_num / 2))
         self.prime_number = args.prime_number
         self.precision_parameter = args.precision_parameter
 
@@ -80,9 +77,7 @@ class FedMLServerManager(ServerManager):
         #     self.mlops_event.log_event_started(
         #         "server.wait", event_value=str(self.round_idx)
         #     )
-        mlops.event(
-            "server.wait", event_started=True, event_value=str(self.round_idx)
-        )
+        mlops.event("server.wait", event_started=True, event_value=str(self.round_idx))
 
     def register_message_receive_handlers(self):
         print("register_message_receive_handlers------")
@@ -174,7 +169,10 @@ class FedMLServerManager(ServerManager):
         #         "comm_c2s", event_value=str(self.round_idx), event_edge_id=sender_id
         #     )
         mlops.event(
-            "comm_c2s", event_started=False, event_value=str(self.round_idx), event_edge_id=sender_id
+            "comm_c2s",
+            event_started=False,
+            event_value=str(self.round_idx),
+            event_edge_id=sender_id,
         )
 
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
@@ -190,21 +188,33 @@ class FedMLServerManager(ServerManager):
         if b_all_received:
             # Specify the active clients for the first round and inform them
             for receiver_id in range(1, self.size + 1):
-                self.send_message_to_active_client(receiver_id, self.active_clients_first_round)
+                self.send_message_to_active_client(
+                    receiver_id, self.active_clients_first_round
+                )
 
     def handle_message_receive_aggregate_encoded_mask_from_client(self, msg_params):
         # Receive the aggregate of encoded masks for active clients
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
-        aggregate_encoded_mask = msg_params.get(MyMessage.MSG_ARG_KEY_AGGREGATE_ENCODED_MASK)
-        self.aggregator.add_local_aggregate_encoded_mask(sender_id - 1, aggregate_encoded_mask)
+        aggregate_encoded_mask = msg_params.get(
+            MyMessage.MSG_ARG_KEY_AGGREGATE_ENCODED_MASK
+        )
+        self.aggregator.add_local_aggregate_encoded_mask(
+            sender_id - 1, aggregate_encoded_mask
+        )
         logging.info(
             "Server handle_message_receive_aggregate_mask = %d from_client =  %d"
             % (len(aggregate_encoded_mask), sender_id)
         )
         # Active clients for the second round
         self.active_clients_second_round.append(sender_id - 1)
-        b_all_received = self.aggregator.check_whether_all_aggregate_encoded_mask_receive()
-        logging.info("Server: mask_all_received = " + str(b_all_received) + " in round_idx %d" % self.round_idx)
+        b_all_received = (
+            self.aggregator.check_whether_all_aggregate_encoded_mask_receive()
+        )
+        logging.info(
+            "Server: mask_all_received = "
+            + str(b_all_received)
+            + " in round_idx %d" % self.round_idx
+        )
 
         # TODO: add a timeout step
         # After receiving enough aggregate of encoded masks, server recovers the aggregate-model
@@ -217,8 +227,14 @@ class FedMLServerManager(ServerManager):
             #     self.mlops_event.log_event_started(
             #         "server.agg_and_eval", event_value=str(self.round_idx)
             #     )
-            mlops.event("server.wait", event_started=False, event_value=str(self.round_idx))
-            mlops.event("server.agg_and_eval", event_started=True, event_value=str(self.round_idx))
+            mlops.event(
+                "server.wait", event_started=False, event_value=str(self.round_idx)
+            )
+            mlops.event(
+                "server.agg_and_eval",
+                event_started=True,
+                event_value=str(self.round_idx),
+            )
 
             # Secure Model Aggregation
             global_model_params = self.aggregator.aggregate_model_reconstruction(
@@ -234,7 +250,11 @@ class FedMLServerManager(ServerManager):
             #     self.mlops_event.log_event_ended(
             #         "server.agg_and_eval", event_value=str(self.round_idx)
             #     )
-            mlops.event("server.agg_and_eval", event_started=False, event_value=str(self.round_idx))
+            mlops.event(
+                "server.agg_and_eval",
+                event_started=False,
+                event_value=str(self.round_idx),
+            )
 
             # send round info to the MQTT backend
             # if hasattr(self.args, "using_mlops") and self.args.using_mlops:
@@ -273,7 +293,9 @@ class FedMLServerManager(ServerManager):
             #     }
             #     self.mlops_metrics.report_aggregated_model_info(model_info)
             #     self.aggregated_model_url = None
-            mlops.log_aggregated_model_info(self.round_idx + 1, self.aggregated_model_url)
+            mlops.log_aggregated_model_info(
+                self.round_idx + 1, self.aggregated_model_url
+            )
             self.aggregated_model_url = None
 
             # start the next round
@@ -302,7 +324,9 @@ class FedMLServerManager(ServerManager):
                 #     self.mlops_event.log_event_started(
                 #         "server.wait", event_value=str(self.round_idx)
                 #     )
-                mlops.event("server.wait", event_started=True, event_value=str(self.round_idx))
+                mlops.event(
+                    "server.wait", event_started=True, event_value=str(self.round_idx)
+                )
 
     def cleanup(self):
 
@@ -325,7 +349,11 @@ class FedMLServerManager(ServerManager):
         self.send_message(message)
 
     def send_message_encoded_mask_to_client(self, sender_id, receive_id, encoded_mask):
-        message = Message(MyMessage.MSG_TYPE_S2C_ENCODED_MASK_TO_CLIENT, self.get_sender_id(), receive_id)
+        message = Message(
+            MyMessage.MSG_TYPE_S2C_ENCODED_MASK_TO_CLIENT,
+            self.get_sender_id(),
+            receive_id,
+        )
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_ID, sender_id)
         message.add_params(MyMessage.MSG_ARG_KEY_ENCODED_MASK, encoded_mask)
         self.send_message(message)
@@ -363,13 +391,19 @@ class FedMLServerManager(ServerManager):
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")
         self.send_message(message)
 
-        if self.aggregated_model_url is None and self.args.backend == "MQTT_S3":
-            self.aggregated_model_url = message.get(
-                MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL
-            )
+        mlops.log_aggregated_model_info(
+            self.round_idx + 1,
+            model_url=message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL),
+        )
 
     def send_message_to_active_client(self, receive_id, active_clients):
-        logging.info("Server send_message_to_active_client. receive_id = %d" % receive_id)
-        message = Message(MyMessage.MSG_TYPE_S2C_SEND_TO_ACTIVE_CLIENT, self.get_sender_id(), receive_id)
+        logging.info(
+            "Server send_message_to_active_client. receive_id = %d" % receive_id
+        )
+        message = Message(
+            MyMessage.MSG_TYPE_S2C_SEND_TO_ACTIVE_CLIENT,
+            self.get_sender_id(),
+            receive_id,
+        )
         message.add_params(MyMessage.MSG_ARG_KEY_ACTIVE_CLIENTS, active_clients)
         self.send_message(message)
