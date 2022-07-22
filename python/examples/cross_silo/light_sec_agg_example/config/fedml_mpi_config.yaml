@@ -46,7 +46,7 @@ secure_aggregation_args:
 
 device_args:
   worker_num: 4
-  using_gpu: false
+  using_gpu: true
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_default
 
