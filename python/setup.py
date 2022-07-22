@@ -94,6 +94,7 @@ setup(
                 "fedml/core/mlops/ssl/open-dev.fedml.ai_bundle.crt",
                 "fedml/core/mlops/ssl/open-test.fedml.ai_bundle.crt",
                 "fedml/core/mlops/ssl/open-release.fedml.ai_bundle.crt",
+                "fedml/core/mlops/ssl/open-root-ca.crt",
             ],
         )
     ],
