@@ -1,9 +1,8 @@
 # FedML Octopus API Reference
 
+The philosophy of out API design is to reduce the number of APIs as much as possible while simultaneously maintaining the flexibility.
 
-Our philosophy of API design is to reduce the number of APIs as few as possible while simultaneously keep the flexibility.
-
-For Simplicity, FedML Parrot has only one line API as the following example:
+For simplicity, FedML Parrot has only one line API as the following example:
 
 ```Python
 import fedml
@@ -12,7 +11,7 @@ if __name__ == "__main__":
     fedml.run_simulation()
 ```
 
-To meet the customization demands, FedML Octopus also has five lines of APIs as the following example.
+To meet the customization requests, FedML Octopus also has five lines of APIs as the following example.
 
 The FL Client APIs:
 ```Python
