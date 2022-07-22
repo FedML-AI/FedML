@@ -177,8 +177,6 @@ def log_training_status(status):
 
     setup_log_mqtt_mgr()
     wait_log_mqtt_connected()
-    print("mlops args {}".format(MLOpsStore.mlops_args))
-    print("mlops mqtt mgr {}".format(MLOpsStore.mlops_log_mqtt_mgr))
     MLOpsStore.mlops_metrics.report_client_training_status(MLOpsStore.mlops_edge_id, status)
     release_log_mqtt_mgr()
 
@@ -421,7 +419,6 @@ def on_log_mqtt_disconnected(mqtt_client_object):
 def on_log_mqtt_connected(mqtt_client_object):
     if MLOpsStore.mlops_metrics is None:
         MLOpsStore.mlops_metrics = MLOpsMetrics()
-        print("log set messanger")
         MLOpsStore.mlops_metrics.set_messenger(MLOpsStore.mlops_log_mqtt_mgr, MLOpsStore.mlops_args)
 
     MLOpsStore.mlops_metrics.run_id = MLOpsStore.mlops_run_id
@@ -447,8 +444,6 @@ def on_log_mqtt_connected(mqtt_client_object):
 def setup_log_mqtt_mgr():
     if MLOpsStore.mlops_log_mqtt_mgr is not None:
         return
-
-    print("setup_log_mqtt_mgr")
 
     if MLOpsStore.mlops_log_mqtt_lock is None:
         MLOpsStore.mlops_log_mqtt_lock = threading.Lock()
