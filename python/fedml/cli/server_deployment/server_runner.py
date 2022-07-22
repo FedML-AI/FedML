@@ -38,7 +38,7 @@ class FedMLServerRunner:
     FEDML_CLOUD_SERVER_PREFIX = "fedml-server-run-"
     FEDML_BOOTSTRAP_RUN_OK = "[FedML]Bootstrap Finished"
 
-    def __init__(self, args, run_id=0, request_json=None, agent_config=None):
+    def __init__(self, args, run_id=0, request_json=None, agent_config=None, edge_id=0):
         self.server_docker_image = None
         self.cloud_server_name = None
         self.run_as_cloud_agent = False
@@ -54,7 +54,7 @@ class FedMLServerRunner:
         self.client_mqtt_is_connected = False
         self.client_mqtt_lock = None
         self.unique_device_id = None
-        self.edge_id = 0
+        self.edge_id = edge_id
         self.server_agent_id = 0
         if request_json is not None:
             self.server_agent_id = request_json.get("server_id", 0)
@@ -742,6 +742,10 @@ class FedMLServerRunner:
         while True:
             self.client_mqtt_lock.acquire()
             if self.client_mqtt_is_connected is True:
+                self.mlops_metrics.set_messenger(self.client_mqtt_mgr)
+                self.mlops_metrics.run_id = self.run_id
+                self.mlops_metrics.edge_id = self.edge_id
+                self.mlops_metrics.server_agent_id = self.server_agent_id
                 self.client_mqtt_lock.release()
                 break
             self.client_mqtt_lock.release()
@@ -777,13 +781,15 @@ class FedMLServerRunner:
             stop_request_json = request_json
         if self.run_as_edge_server_and_agent:
             server_runner = FedMLServerRunner(
-                self.args, run_id=run_id, request_json=stop_request_json, agent_config=self.agent_config
+                self.args, run_id=run_id, request_json=stop_request_json, agent_config=self.agent_config,
+                edge_id=self.edge_id
             )
             server_runner.run_as_edge_server_and_agent = self.run_as_edge_server_and_agent
             multiprocessing.Process(target=server_runner.stop_run).start()
         elif self.run_as_cloud_agent:
             server_runner = FedMLServerRunner(
-                self.args, run_id=run_id, request_json=stop_request_json, agent_config=self.agent_config
+                self.args, run_id=run_id, request_json=stop_request_json, agent_config=self.agent_config,
+                edge_id=self.edge_id
             )
             server_runner.run_as_cloud_agent = self.run_as_cloud_agent
             multiprocessing.Process(target=server_runner.stop_cloud_server_process).start()
