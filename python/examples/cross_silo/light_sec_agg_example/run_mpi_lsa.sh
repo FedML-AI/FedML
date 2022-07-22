@@ -9,4 +9,4 @@ hostname > mpi_host_file
 
 $(which mpirun) -np $PROCESS_NUM \
 -hostfile mpi_host_file \
-python fedml_ego_networks_node_clf.py --cf config/simulation/fedml_config.yaml
+python torch_mpi.py --cf config/fedml_mpi_config.yaml

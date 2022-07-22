@@ -68,6 +68,8 @@ def pre_setup(args):
 def init(args):
     MLOpsStore.mlops_args = args
     if not mlops_parrot_enabled(args):
+        if not hasattr(args, "config_version"):
+            args.config_version = "release"
         fetch_config(args, args.config_version)
         MLOpsRuntimeLog.get_instance(args).init_logs()
         setup_log_mqtt_mgr()
