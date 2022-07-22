@@ -160,3 +160,6 @@ android/gradlew.bat
 /iot/anomaly_detection_for_cybersecurity/data/SimpleHome_XCS7_1002_WHT_Security_Camera/
 /iot/anomaly_detection_for_cybersecurity/data/SimpleHome_XCS7_1003_WHT_Security_Camera/
 android/fedmlsdk
+
+
+doc/en/_build
