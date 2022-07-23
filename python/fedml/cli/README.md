@@ -28,9 +28,14 @@ fedml build \
 ```
 
 ## 2. Login into the FedML MLOps platform (open.fedml.ai)
-login as client:
+login as client with local pip mode:
 ```
 fedml login userid(or API Key)
+```
+
+login as client with docker mode:
+```
+fedml login userid(or API Key) --docker --docker-rank 1
 ```
 
 login as edge server
