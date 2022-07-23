@@ -254,6 +254,8 @@ def log_aggregation_finished_status():
 
 
 def log_aggregated_model_info(round_index, model_url):
+    if model_url is None:
+        return
     if not mlops_enabled(MLOpsStore.mlops_args):
         return
 
@@ -276,6 +278,8 @@ def log_aggregated_model_info(round_index, model_url):
 
 
 def log_client_model_info(round_index, model_url):
+    if model_url is None:
+        return
     if not mlops_enabled(MLOpsStore.mlops_args):
         return
 
@@ -299,6 +303,9 @@ def log_client_model_info(round_index, model_url):
 
 
 def log_sys_perf(sys_args=None):
+    if not mlops_enabled(sys_args):
+        return
+
     if sys_args is not None:
         MLOpsStore.mlops_args = sys_args
 
