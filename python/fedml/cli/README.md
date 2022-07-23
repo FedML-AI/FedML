@@ -54,9 +54,14 @@ fedml login 90 -s
 ```
 
 ## 3. Logout from the FedML MLOps platform (open.fedml.ai)
-logout from client:
+logout from client with local pip mode:
 ```
 fedml logout 
+```
+
+logout from client with docker mode:
+```
+fedml logout --docker --docker-rank 1
 ```
 
 logout from edge server:
@@ -66,3 +71,20 @@ fedml logout -s
 
 ## 4. Display fedml version
 fedml version
+
+
+## 5. Display logs
+logs from client with local pip mode:
+```
+fedml logs 
+```
+
+logs from client with docker mode:
+```
+fedml logs --docker --docker-rank 1
+```
+
+logs from edge server:
+```
+fedml logs -s
+```
