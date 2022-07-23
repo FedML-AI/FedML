@@ -36,6 +36,7 @@ requirements = [
     "spacy",
     "gensim",
     "multiprocess",
+    "smart-open==5.2.1",
 ]
 
 requirements_extra_mpi = [
@@ -47,7 +48,7 @@ if platform.machine() == "x86_64":
 
 setup(
     name="fedml",
-    version="0.7.216",
+    version="0.7.219",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
@@ -93,6 +94,7 @@ setup(
                 "fedml/core/mlops/ssl/open-dev.fedml.ai_bundle.crt",
                 "fedml/core/mlops/ssl/open-test.fedml.ai_bundle.crt",
                 "fedml/core/mlops/ssl/open-release.fedml.ai_bundle.crt",
+                "fedml/core/mlops/ssl/open-root-ca.crt",
             ],
         )
     ],
