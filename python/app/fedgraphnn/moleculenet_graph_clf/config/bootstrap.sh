@@ -13,5 +13,5 @@ unzip -n clintox.zip
 
 
 ### don't modify this part ###
-exit 0
+echo "[FedML]Bootstrap Finished"
 ##############################

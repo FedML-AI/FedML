@@ -1,7 +1,7 @@
 import os
 import sys
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import logging
 from pathlib import Path
@@ -21,29 +21,41 @@ from model.yolov5.models.yolo import Model as YOLOv5
 from model.yolov6.yolov6.models.yolo import Model as YOLOv6
 from model.yolov6.yolov6.utils.config import Config
 from model.yolov6.yolov6.models.yolo import build_model as build_yolov6
+from model.yolov7.models.yolo import Model as YOLOv7
 
 from trainer.yolov5_trainer import YOLOv5Trainer
 from trainer.yolov6_trainer import YOLOv6Trainer
+from trainer.yolov7_trainer import YOLOv7Trainer
 
 try:
     import wandb
 except ImportError:
     wandb = None
-    logging.info("Install Weights & Biases for experiment logging via 'pip install wandb' (recommended)")
+    logging.info(
+        "Install Weights & Biases for experiment logging via 'pip install wandb' (recommended)"
+    )
 
 
 def init_yolo(args, device="cpu"):
     # init settings
-    args.yolo_hyp = args.yolo_hyp or ("hyp.finetune.yaml" if args.weights else "hyp.scratch.yaml")
+    args.yolo_hyp = args.yolo_hyp or (
+        "hyp.finetune.yaml" if args.weights else "hyp.scratch.yaml"
+    )
     args.data_conf, args.yolo_cfg, args.yolo_hyp = (
         check_file(args.data_conf),
         check_file(args.yolo_cfg),
         check_file(args.yolo_hyp),
     )  # check files
-    assert len(args.yolo_cfg) or len(args.weights), "either yolo_cfg or weights must be specified"
-    args.img_size.extend([args.img_size[-1]] * (2 - len(args.img_size)))  # extend to 2 sizes (train, test)
+    assert len(args.yolo_cfg) or len(
+        args.weights
+    ), "either yolo_cfg or weights must be specified"
+    args.img_size.extend(
+        [args.img_size[-1]] * (2 - len(args.img_size))
+    )  # extend to 2 sizes (train, test)
     # args.name = "evolve" if args.evolve else args.name
-    args.save_dir = increment_path(Path(args.project) / args.name, exist_ok=args.exist_ok)  # increment run
+    args.save_dir = increment_path(
+        Path(args.project) / args.name, exist_ok=args.exist_ok
+    )  # increment run
 
     # Hyperparameters
     with open(args.yolo_hyp) as f:
@@ -83,7 +95,11 @@ def init_yolo(args, device="cpu"):
     nc, names = (
         (1, ["item"]) if args.single_cls else (int(data_dict["nc"]), data_dict["names"])
     )  # number classes, names
-    assert len(names) == nc, "%g names found for nc=%g dataset in %s" % (len(names), nc, args.data)  # check
+    assert len(names) == nc, "%g names found for nc=%g dataset in %s" % (
+        len(names),
+        nc,
+        args.data,
+    )  # check
     args.nc = nc  # change nc to actual number of classes
 
     # Model
@@ -94,14 +110,23 @@ def init_yolo(args, device="cpu"):
         if pretrained:
             ckpt = torch.load(weights, map_location=device)  # load checkpoint
             if hyp.get("anchors"):
-                ckpt["model"].yaml["anchors"] = round(hyp["anchors"])  # force autoanchor
-            model = YOLOv5(args.yolo_cfg or ckpt["model"].yaml, ch=3, nc=nc).to(device)  # create
-            exclude = ["anchor"] if args.yolo_cfg or hyp.get("anchors") else []  # exclude keys
+                ckpt["model"].yaml["anchors"] = round(
+                    hyp["anchors"]
+                )  # force autoanchor
+            model = YOLOv5(args.yolo_cfg or ckpt["model"].yaml, ch=3, nc=nc).to(
+                device
+            )  # create
+            exclude = (
+                ["anchor"] if args.yolo_cfg or hyp.get("anchors") else []
+            )  # exclude keys
             state_dict = ckpt["model"].float().state_dict()  # to FP32
-            state_dict = intersect_dicts(state_dict, model.state_dict(), exclude=exclude)  # intersect
+            state_dict = intersect_dicts(
+                state_dict, model.state_dict(), exclude=exclude
+            )  # intersect
             model.load_state_dict(state_dict, strict=False)  # load
             logging.info(
-                "Transferred %g/%g items from %s" % (len(state_dict), len(model.state_dict()), weights)
+                "Transferred %g/%g items from %s"
+                % (len(state_dict), len(model.state_dict()), weights)
             )  # report
         else:
             model = YOLOv5(args.yolo_cfg, ch=3, nc=nc).to(device)  # create
@@ -115,10 +140,38 @@ def init_yolo(args, device="cpu"):
             state_dict = ckpt["model"].float().state_dict()
             model_state_dict = model.state_dict()
             state_dict = {
-                k: v for k, v in state_dict.items() if k in model_state_dict and v.shape == model_state_dict[k].shape
+                k: v
+                for k, v in state_dict.items()
+                if k in model_state_dict and v.shape == model_state_dict[k].shape
             }
             model.load_state_dict(state_dict, strict=False)
             del ckpt, state_dict, model_state_dict
+    elif args.model.lower() == "yolov7":
+        pretrained = weights.endswith(".pt")
+        if pretrained:
+            ckpt = torch.load(weights, map_location=device)  # load checkpoint
+            if hyp.get("anchors"):
+                ckpt["model"].yaml["anchors"] = round(
+                    hyp["anchors"]
+                )  # force autoanchor
+            model = YOLOv7(args.yolo_cfg or ckpt["model"].yaml, ch=3, nc=nc).to(
+                device
+            )  # create
+            exclude = (
+                ["anchor"] if args.yolo_cfg or hyp.get("anchors") else []
+            )  # exclude keys
+            state_dict = ckpt["model"].float().state_dict()  # to FP32
+            state_dict = intersect_dicts(
+                state_dict, model.state_dict(), exclude=exclude
+            )  # intersect
+            model.load_state_dict(state_dict, strict=False)  # load
+            logging.info(
+                "Transferred %g/%g items from %s"
+                % (len(state_dict), len(model.state_dict()), weights)
+            )  # report
+        else:
+            model = YOLOv7(args.yolo_cfg, ch=3, nc=nc).to(device)  # create
+
     print(model)
 
     dataset = load_partition_data_coco(args, hyp, model)
@@ -135,19 +188,23 @@ def init_yolo(args, device="cpu"):
 
     args.model_stride = model.stride
     gs = int(max(model.stride))  # grid size (max stride)
-    imgsz, imgsz_test = [check_img_size(x, gs) for x in args.img_size]  # verify imgsz are gs-multiples
+    imgsz, imgsz_test = [
+        check_img_size(x, gs) for x in args.img_size
+    ]  # verify imgsz are gs-multiples
 
     hyp["cls"] *= nc / 80.0
     model.nc = nc  # attach number of classes to model
     model.hyp = hyp  # attach hyperparameters to model
     model.gr = 1.0  # iou loss ratio (obj_loss = 1.0 or iou)
-    model.class_weights = labels_to_class_weights(train_data_global.dataset.labels, nc).to(
-        device
-    )  # attach class weights
+    # model.class_weights = labels_to_class_weights(train_data_global.dataset.labels, nc).to(
+    # device
+    # )  # attach class weights
     model.names = names
     # Optimizer
     nbs = 64  # nominal batch size
-    accumulate = max(round(nbs / total_batch_size), 1)  # accumulate loss before optimizing
+    accumulate = max(
+        round(nbs / total_batch_size), 1
+    )  # accumulate loss before optimizing
     hyp["weight_decay"] *= total_batch_size * accumulate / nbs  # scale weight_decay
     # logger.info(f"Scaled weight_decay = {hyp['weight_decay']}")
 
@@ -166,5 +223,7 @@ def init_yolo(args, device="cpu"):
         trainer = YOLOv5Trainer(model=model, args=args)
     elif args.model == "yolov6":
         trainer = YOLOv6Trainer(model=model, args=args)
+    elif args.model == "yolov7":
+        trainer = YOLOv7Trainer(model=model, args=args)
 
     return model, dataset, trainer, args

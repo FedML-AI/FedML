@@ -17,11 +17,11 @@ Video Tutorial:
 ![image](../_static/image/mlops_workflow_new.png) \
 Figure 1: the workflow describing how MLOps works
 
-MLOps works as the figure shown above. Such a workflow is handled by web UI without the need to handle complex deployment. 
-Now please register an account and follow the following instruction step by step.
+MLOps works following the figure above; this workflow is handled by a web UI and thus avoids complex deployment. 
+To begin, please create an account:
 
 - Instructions for registration: \
-Please open [https://open.fedml.ai](https://open.fedml.ai) and find "Sign Up".
+Please open [https://open.fedml.ai](https://open.fedml.ai) and click "Sign Up".
 
 
 ### Local Development and Building MLOps Packages
@@ -31,7 +31,7 @@ you can now deploy it into the real-world edge-cloud system.
 
 Next, we use the cross-silo project example at
 [https://github.com/FedML-AI/FedML/tree/master/python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line](https://github.com/FedML-AI/FedML/tree/master/python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line)
-to guide you through how to deploy it and collaborate with others data silos.
+to guide you through how to deploy it and collaborate with others' data silos.
 
 ### 1. Create Application and Upload Local Packages
 ![image](../_static/image/mlops_create_application.png) 
@@ -65,7 +65,7 @@ CONFIG=config
 DEST=./mlops
 fedml build -t client -sf $SOURCE -ep $ENTRY -cf $CONFIG -df $DEST
 ```
-Note: for ENTRY, please only specify the file name (torch_client.py) under the SOURCE folder, please do not pass the absolute path.
+Note: for ENTRY, please only specify the file name (torch_client.py) under the SOURCE folder; please do not pass the absolute path.
 
 If the script works correctly, the console log should be as follows.
 ```shell
@@ -92,7 +92,7 @@ CONFIG=config
 DEST=./mlops
 fedml build -t server -sf $SOURCE -ep $ENTRY -cf $CONFIG -df $DEST
 ```
-Note: for ENTRY, please only specify the file name (torch_server.py) under the SOURCE folder, please do not pass the absolute path.
+Note: for ENTRY, please only specify the file name (torch_server.py) under the SOURCE folder; please do not pass the absolute path.
 
 If the script works correctly, the console log should be as follows.
 ```shell
@@ -111,7 +111,7 @@ You have finished all building process.
 Now you may use ./mlops/server-package.zip to start your federated learning run.
 ```
 
-The output package locates at `mlops` folder.
+The output package is located in `mlops` folder.
 
 ### 2. Install FedML Agent: fedml login $account_id
 
@@ -151,11 +151,11 @@ Your device id is @0xb6ff42da6a7e.MacOS. You may review the device in the MLOps 
 
 (1) Copy your invitation link
 
-(2) Send the invitation link to your collaborators via any communication tools e.g., Slack,  Facebook Messenger, Email.
+(2) Send the invitation link to your collaborators via any communication tools (e.g., Slack,  Facebook Messenger, Email, etc.)
 
-(3) Your collaborators can open the URL, and accept the invitation
+(3) Your collaborators can open the URL and accept the invitation
   
-Now you and your collaborators should be able to see each other on `My Collaborators` page.
+Now you and your collaborators should be able to see each other on the `My Collaborators` page.
 
 ![image](../_static/image/MLOps_invite_collaborators.png)
 Figure 3: invite your collaborators
@@ -166,7 +166,7 @@ After inviting your collaborators, you can `Create New Group`, input the group n
 
 We support a topology visualization to assist you and your collaborators in checking all collaborative edge devices in that group.
 
-Note that after creation, our platform will add newly bound devices from all members to the group. If you would like to change the members in this group, Please create a new group for it.
+Note that after creation, our platform will add newly bound devices from all members to the group. If you would like to change the members in this group, you will have to create a new group.
 
 ![image](../_static/image/MLOps_group_management.png)
 Figure 4: showing the topology of the group
@@ -175,7 +175,7 @@ Figure 4: showing the topology of the group
 Now let's create a project and get training started!
 
 - Create a new project for a specific group or utilize the existing project you created before
-- Open a project and create a new run under the project, by clicking `Start`, the run will get started.
+- Open a project and create a new run under the project. By clicking `Start`, the run will begin.
 
 ![image](../_static/image/mlops_start_run.png)
 Figure 5: create and start a new run
@@ -206,7 +206,7 @@ Figure 5: create and start a new run
 
 
 ## 5. Experimental Tracking via Simplified Project Management
-Now you are ready to start the training, enjoy! We provide the following experimental tracking abilities as follows.
+Now you are ready to start the training. Enjoy! We provide the following experimental tracking abilities as follows.
 
 - monitoring device status (including logging in each device) and training progress
 ![image](../_static/image/MLOps_experimental_tracking_status.png)

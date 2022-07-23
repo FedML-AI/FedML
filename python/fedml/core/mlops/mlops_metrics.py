@@ -33,6 +33,8 @@ class MLOpsMetrics(Singleton):
         self.server_agent_id = None
         self.sys_performances = None
         self.is_sys_perf_reporting = False
+        self.current_device_status = ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE
+        self.current_run_status = ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED
         self.sys_perf_running_file = os.path.join(
             ClientConstants.get_data_dir(),
             ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
