@@ -92,7 +92,7 @@ public class MainFragment extends Fragment {
             }
 
             @Override
-            public void onProgressChanged(int round, float progress) {
+            public void onProgressChanged(int round, int progress) {
                 App.runOnUiThread(() ->
                         mProgressView.setProgress(Math.round(progress)));
             }

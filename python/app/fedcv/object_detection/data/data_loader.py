@@ -21,7 +21,10 @@ def check_img_size(img_size, s=32):
     # Verify img_size is a multiple of stride s
     new_size = make_divisible(img_size, int(s))  # ceil gs-multiple
     if new_size != img_size:
-        print("WARNING: --img-size %g must be multiple of max stride %g, updating to %g" % (img_size, s, new_size))
+        print(
+            "WARNING: --img-size %g must be multiple of max stride %g, updating to %g"
+            % (img_size, s, new_size)
+        )
     return new_size
 
 
@@ -118,49 +121,57 @@ def load_partition_data_coco(args, hyp, model):
 
     # client_list = []
 
-    net_dataidx_map = partition_data(train_path, partition=partition, n_nets=client_number)
-    net_dataidx_map_test = partition_data(test_path, partition=partition, n_nets=client_number)
+    net_dataidx_map = partition_data(
+        train_path, partition=partition, n_nets=client_number
+    )
+    net_dataidx_map_test = partition_data(
+        test_path, partition=partition, n_nets=client_number
+    )
     train_data_loader_dict = dict()
     test_data_loader_dict = dict()
     train_data_num_dict = dict()
     train_dataset_dict = dict()
 
-    train_dataloader_global, train_dataset_global = create_dataloader(
-        train_path,
-        imgsz,
-        batch_size,
-        gs,
-        args,
-        hyp=hyp,
-        rect=True,
-        augment=True,
-        workers=args.worker_num,
-    )
-    train_data_num = train_dataset_global.data_size
+    # train_dataloader_global, train_dataset_global = create_dataloader(
+    #     train_path,
+    #     imgsz,
+    #     batch_size,
+    #     gs,
+    #     args,
+    #     hyp=hyp,
+    #     rect=True,
+    #     augment=True,
+    #     workers=args.worker_num,
+    # )
+    # train_data_num = train_dataset_global.data_size
 
-    test_dataloader_global = create_dataloader(
-        test_path,
-        imgsz_test,
-        total_batch_size,
-        gs,
-        args,  # testloader
-        hyp=hyp,
-        rect=True,
-        pad=0.5,
-        workers=args.worker_num,
-    )[0]
+    # test_dataloader_global = create_dataloader(
+    #     test_path,
+    #     imgsz_test,
+    #     total_batch_size,
+    #     gs,
+    #     args,  # testloader
+    #     hyp=hyp,
+    #     rect=True,
+    #     pad=0.5,
+    #     workers=args.worker_num,
+    # )[0]
 
-    test_data_num = test_dataloader_global.dataset.data_size
+    # test_data_num = test_dataloader_global.dataset.data_size
 
-    for i in range(client_number):
-        # if (i + 1) != args.rank:
-        #     train_dataset_dict[i] = None
-        #     train_data_num_dict[i] = None
-        #     train_data_loader_dict[i] = None
-        #     test_data_loader_dict[i] = None
-        #     continue
+    train_data_num = 0
+    test_data_num = 0
+    train_dataloader_global = None
+    test_dataloader_global = None
 
-        logging.info(f"net_dataidx_map trainer: {net_dataidx_map[i]}")
+    if args.process_id == 0:  # server
+        pass
+    else:
+        client_idx = int(args.process_id) - 1
+
+        logging.info(
+            f"{client_idx}: net_dataidx_map trainer: {net_dataidx_map[client_idx]}"
+        )
         dataloader, dataset = create_dataloader(
             train_path,
             imgsz,
@@ -170,7 +181,7 @@ def load_partition_data_coco(args, hyp, model):
             hyp=hyp,
             rect=True,
             augment=True,
-            net_dataidx_map=net_dataidx_map[i],
+            net_dataidx_map=net_dataidx_map[client_idx],
             workers=args.worker_num,
         )
         testloader = create_dataloader(
@@ -183,14 +194,14 @@ def load_partition_data_coco(args, hyp, model):
             rect=True,
             rank=-1,
             pad=0.5,
-            net_dataidx_map=net_dataidx_map_test[i],
+            net_dataidx_map=net_dataidx_map_test[client_idx],
             workers=args.worker_num,
         )[0]
 
-        train_dataset_dict[i] = dataset
-        train_data_num_dict[i] = len(dataset)
-        train_data_loader_dict[i] = dataloader
-        test_data_loader_dict[i] = testloader
+        train_dataset_dict[client_idx] = dataset
+        train_data_num_dict[client_idx] = len(dataset)
+        train_data_loader_dict[client_idx] = dataloader
+        test_data_loader_dict[client_idx] = testloader
         # client_list.append(
         #     Client(i, train_data_loader_dict[i], len(dataset), opt, device, model, tb_writer=tb_writer,
         #            hyp=hyp, wandb=wandb))

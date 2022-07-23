@@ -95,6 +95,8 @@ def __login_as_client(args, userid, version):
         return
 
     # Init runtime logs
+    setattr(args, "client_id", edge_id)
+    runner.args = args
     init_logs(args, edge_id)
     logging.info("args {}".format(args))
 
@@ -184,6 +186,8 @@ def __login_as_simulator(args, userid, version, mqtt_connection=True):
         return False, edge_id, args
 
     # Init runtime logs
+    setattr(args, "client_id", edge_id)
+    runner.args = args
     #init_logs(args, edge_id)
     logging.info("args {}".format(args))
 

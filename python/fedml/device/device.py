@@ -9,10 +9,42 @@ from fedml.constants import (
 
 
 def get_device_type(args):
-    if not args.using_gpu:
-        device_type = "cpu"
+    if hasattr(args, "device_type"):
+        if args.device_type == "cpu":
+            device_type = "cpu"
+        elif args.device_type == "gpu":
+            if torch.cuda.is_available():
+                device_type = "gpu"
+            else:
+                print("PyTorch install was not built with GPU enabled")
+                device_type = "cpu"
+        elif args.device_type == "mps":
+            # Macbook M1: https://pytorch.org/docs/master/notes/mps.html
+            if not torch.backends.mps.is_available():
+                if not torch.backends.mps.is_built():
+                    print(
+                        "MPS not available because the current PyTorch install was not "
+                        "built with MPS enabled."
+                    )
+                else:
+                    print(
+                        "MPS not available because the current MacOS version is not 12.3+ "
+                        "and/or you do not have an MPS-enabled device on this machine."
+                    )
+                device_type = "cpu"
+            else:
+                device_type = "mps"
+        else:
+            raise Exception("do not support device type = {}".format(args.device_type))
     else:
-        device_type = "gpu" if not hasattr(args, "device_type") else args.device_type
+        if args.using_gpu:
+            if torch.cuda.is_available():
+                device_type = "gpu"
+            else:
+                print("PyTorch install was not built with GPU enabled")
+                device_type = "cpu"
+        else:
+            device_type = "cpu"
     return device_type
 
 
@@ -43,6 +75,7 @@ def get_device(args):
                 args.gpu_mapping_file if args.using_gpu else None,
                 args.gpu_mapping_key,
             )
+        logging.info("device = {}".format(device))
         return device
     elif args.training_type == "simulation" and args.backend == "NCCL":
         from .gpu_mapping_mpi import (
@@ -56,6 +89,7 @@ def get_device(args):
             args.gpu_mapping_file if args.using_gpu else None,
             args.gpu_mapping_key,
         )
+        logging.info("device = {}".format(device))
         return device
     elif args.training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO:
 
@@ -73,14 +107,26 @@ def get_device(args):
             process_id = args.process_id
 
         if args.using_gpu:
-            gpu_mapping_file = args.gpu_mapping_file if hasattr(args, "gpu_mapping_file") else None
-            gpu_mapping_key = args.gpu_mapping_key if hasattr(args, "gpu_mapping_key") else None
-            gpu_id = args.gpu_id if hasattr(args, "gpu_id") else None
+            gpu_mapping_file = (
+                args.gpu_mapping_file if hasattr(args, "gpu_mapping_file") else None
+            )
+            gpu_mapping_key = (
+                args.gpu_mapping_key if hasattr(args, "gpu_mapping_key") else None
+            )
+            gpu_id = None  # no no need to set gpu_id
+
+
         else:
             gpu_mapping_file = None
             gpu_mapping_key = None
-            gpu_id = -1
+            gpu_id = None
 
+        logging.info(
+            "devide_type = {}, gpu_mapping_file = {}, "
+            "gpu_mapping_key = {}, gpu_id = {}".format(
+                device_type, gpu_mapping_file, gpu_mapping_key, gpu_id
+            )
+        )
         scenario = args.scenario
         device = mapping_processes_to_gpu_device_from_yaml_file_cross_silo(
             process_id,
