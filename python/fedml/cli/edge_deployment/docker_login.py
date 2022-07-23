@@ -2,8 +2,10 @@ import os
 import platform
 
 import click
-from .client_constants import ClientConstants
-from .client_runner import FedMLClientRunner
+#from .client_constants import ClientConstants
+#from .client_runner import FedMLClientRunner
+from fedml.cli.edge_deployment.client_constants import ClientConstants
+from fedml.cli.edge_deployment.client_runner import FedMLClientRunner
 
 
 def login_with_docker_mode(userid, version, docker_rank):
@@ -97,6 +99,8 @@ def login_with_docker_mode(userid, version, docker_rank):
         click.echo("Congratulations, you have deployed the FedML client agent successfully!")
         click.echo("Your device id is " + env_current_device_id + ".")
         click.echo("You may review the device in the MLOps edge device list.")
+
+        logs_with_docker_mode(docker_rank)
     else:
         click.echo("Oops, you failed to deploy the FedML client agent.")
         click.echo("Please check whether your Docker Application is installed and running normally!")
@@ -109,7 +113,19 @@ def logout_with_docker_mode(docker_rank):
     os.system("docker rm {}".format(fedml_docker_name))
 
 
+def logs_with_docker_mode(docker_rank):
+    fedml_docker_name = "fedml_client_agent_{}".format(str(docker_rank))
+    docker_name_format = 'name={}'.format(fedml_docker_name)
+    docker_name_proc = ClientConstants.exec_console_with_shell_script_list(['docker', 'ps', '-aqf', docker_name_format],
+                                                                           should_capture_stdout_err=True)
+    _, out_id, err_id = ClientConstants.get_console_pipe_out_err_results(docker_name_proc)
+    if out_id is not None:
+        out_id_str = out_id.decode(encoding="utf-8")
+        docker_logs_cmd = 'docker logs -f {}'.format(out_id_str)
+        os.system(docker_logs_cmd)
+
+
 if __name__ == "__main__":
     login_with_docker_mode("214", "dev", 1)
-    logout_with_docker_mode()
+    #logout_with_docker_mode(1)
 
