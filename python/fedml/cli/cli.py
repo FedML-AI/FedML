@@ -18,6 +18,7 @@ from ..cli.env.collect_env import collect_env
 from ..cli.server_deployment.server_login import logout as server_logout
 from ..cli.edge_deployment.docker_login import login_with_docker_mode
 from ..cli.edge_deployment.docker_login import logout_with_docker_mode
+from ..cli.edge_deployment.docker_login import logs_with_docker_mode
 
 FEDML_MLOPS_BUILD_PRE_IGNORE_LIST = 'dist-packages,client-package.zip,server-package.zip,__pycache__,*.pyc,*.git'
 
@@ -47,13 +48,26 @@ def mlops_status():
 @click.option(
     "--server", "-s", default=None, is_flag=True, help="Display server logs.",
 )
-def mlops_logs(client, server):
+@click.option(
+    "--docker", "-d", default=None, is_flag=True, help="Display client docker logs.",
+)
+@click.option(
+    "--docker-rank", "-dr", default="1", help="docker client rank index (from 1 to n).",
+)
+def mlops_logs(client, server, docker, docker_rank):
     is_client = client
     is_server = server
-    if client is False and server is False:
+    if client is None and server is None:
         is_client = True
 
+    is_docker = docker
+    if docker is None:
+        is_docker = False
+
     if is_client:
+        if is_docker:
+            logs_with_docker_mode(docker_rank)
+            return
         display_client_logs()
 
     if is_server:
