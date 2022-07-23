@@ -1,9 +1,9 @@
 import os
 import platform
-import uuid
 
 import click
 from .client_constants import ClientConstants
+from .client_runner import FedMLClientRunner
 
 
 def login_with_docker_mode(userid, version, docker_rank):
@@ -40,7 +40,7 @@ def login_with_docker_mode(userid, version, docker_rank):
 
     # Get device id based on your machine MAC address.
     os_name = sys_name
-    device_id = "{}@Rank{}".format(hex(uuid.getnode()), str(docker_rank))
+    device_id = "{}@Rank{}".format(FedMLClientRunner.get_device_id(), str(docker_rank))
 
     # Set environment variables for client agent docker
     env_account_id = account_id
