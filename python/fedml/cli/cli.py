@@ -174,8 +174,6 @@ def mlops_login(
     if docker is None:
         is_docker = False
 
-    click.echo("docker mode {}".format(is_docker))
-
     # click.echo("login as client: {}, as server: {}".format(is_client, is_server))
     if is_client is True:
         if is_docker:
