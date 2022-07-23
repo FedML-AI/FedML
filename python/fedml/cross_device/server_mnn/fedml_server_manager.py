@@ -8,7 +8,6 @@ from .message_define import MyMessage
 from .utils import write_tensor_dict_to_mnn
 from ...core.distributed.communication.message import Message
 from ...core.distributed.server.server_manager import ServerManager
-from ...core.mlops.mlops_metrics import MLOpsMetrics
 from ...core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
 
@@ -45,13 +44,6 @@ class FedMLServerManager(ServerManager):
         self.client_online_mapping = {}
         self.client_real_ids = json.loads(args.client_id_list)
 
-        # if hasattr(self.args, "backend") and self.args.using_mlops:
-        #     self.mlops_metrics = MLOpsMetrics()
-        #     self.mlops_metrics.set_messenger(self.com_manager_status, args)
-        #     self.mlops_event = MLOpsProfilerEvent(self.args)
-        #     self.aggregator.set_mlops_metrics_logger(self.mlops_metrics)
-
-        self.start_running_time = None
         self.aggregated_model_url = None
         self.event_sdk = MLOpsProfilerEvent(self.args)
 
@@ -60,7 +52,6 @@ class FedMLServerManager(ServerManager):
         self.data_silo_index_list = None
 
     def run(self):
-        self.start_running_time = time.time()
         super().run()
 
     def start_train(self):
@@ -194,10 +185,6 @@ class FedMLServerManager(ServerManager):
             )
             client_idx_in_this_round += 1
 
-        # if hasattr(self.args, "backend") and self.args.using_mlops:
-        #     self.mlops_event.log_event_started(
-        #         "server.wait", event_value=str(self.round_idx)
-        #     )
         mlops.event("server.wait", event_started=True, event_value=str(self.round_idx))
 
     def register_message_receive_handlers(self):
@@ -220,12 +207,6 @@ class FedMLServerManager(ServerManager):
         if client_status == "ONLINE":
             self.client_online_mapping[str(msg_params.get_sender_id())] = True
 
-        # notify MLOps with RUNNING status
-        # if hasattr(self.args, "backend") and self.args.using_mlops:
-        #     self.mlops_metrics.report_server_training_status(
-        #         self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING,
-        #         role="server"
-        #     )
         mlops.log_aggregation_status(MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING)
 
         all_client_is_online = True
@@ -275,10 +256,7 @@ class FedMLServerManager(ServerManager):
 
     def handle_message_receive_model_from_client(self, msg_params):
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
-        # if hasattr(self.args, "backend") and self.args.using_mlops:
-        #     self.mlops_event.log_event_ended(
-        #         "comm_c2s", event_value=str(self.round_idx), event_edge_id=sender_id
-        #     )
+
         mlops.event("comm_c2s", event_started=False, event_value=str(self.round_idx), event_edge_id=sender_id)
 
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
@@ -299,23 +277,14 @@ class FedMLServerManager(ServerManager):
                 )
             )
             logging.info("=================================================")
-            # if hasattr(self.args, "backend") and self.args.using_mlops:
-            #     self.mlops_event.log_event_ended(
-            #         "server.wait", event_value=str(self.round_idx)
-            #     )
-            #     self.mlops_event.log_event_started(
-            #         "aggregate", event_value=str(self.round_idx)
-            #     )
+
             mlops.event("server.wait", event_started=False, event_value=str(self.round_idx))
+
             mlops.event("aggregate", event_started=True, event_value=str(self.round_idx))
 
             global_model_params = self.aggregator.aggregate()
             write_tensor_dict_to_mnn(self.global_model_file_path, global_model_params)
 
-            # if hasattr(self.args, "backend") and self.args.using_mlops:
-            #     self.mlops_event.log_event_ended(
-            #         "aggregate", event_value=str(self.round_idx)
-            #     )
             mlops.event("aggregate", event_started=False, event_value=str(self.round_idx))
 
             self.aggregator.test_on_server_for_all_clients(
@@ -324,16 +293,6 @@ class FedMLServerManager(ServerManager):
 
             # send round info to the MQTT backend
             mlops.log_round_info(self.round_num, self.round_idx)
-
-            # if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-            #     round_info = {
-            #         "run_id": self.args.run_id,
-            #         "round_index": self.round_idx,
-            #         "total_rounds": self.round_num,
-            #         "running_time": round(time.time() - self.start_running_time, 4),
-            #     }
-            #     if self.mlops_metrics is not None:
-            #         self.mlops_metrics.report_server_training_round_info(round_info)
 
             client_id_list_in_this_round = self.aggregator.client_selection(
                 self.round_idx, self.client_real_ids, self.args.client_num_per_round
@@ -353,23 +312,11 @@ class FedMLServerManager(ServerManager):
                 )
                 client_idx_in_this_round += 1
 
-            # if hasattr(self.args, "backend") and self.args.using_mlops:
-            #     model_info = {
-            #         "run_id": self.args.run_id,
-            #         "round_idx": self.round_idx + 1,
-            #         "global_aggregated_model_s3_address": self.aggregated_model_url,
-            #     }
-            #     self.mlops_metrics.report_aggregated_model_info(model_info)
-            #     self.aggregated_model_url = None
             mlops.log_aggregated_model_info(self.round_idx + 1, self.aggregated_model_url)
             self.aggregated_model_url = None
 
             self.round_idx += 1
             if self.round_idx == self.round_num:
-                # if hasattr(self.args, "backend") and self.args.using_mlops:
-                #     self.mlops_metrics.report_server_id_status(
-                #         self.args.run_id, MyMessage.MSG_MLOPS_SERVER_STATUS_FINISHED
-                #     )
                 mlops.log_aggregation_finished_status()
                 logging.info("=================================================")
                 logging.info("=========== TRAINING IS FINISHED!!! =============")
@@ -377,11 +324,7 @@ class FedMLServerManager(ServerManager):
                 self.finish()
                 return
             else:
-                # if hasattr(self.args, "backend") and self.args.using_mlops:
-                #     self.mlops_event.log_event_started(
-                #         "server.wait", event_value=str(self.round_idx)
-                #     )
-                mlops.event("server.wait", event_value=str(self.round_idx))
+                mlops.event("server.wait", event_started=True, event_value=str(self.round_idx))
 
     def send_message_init_config(self, receive_id, global_model_params, client_index):
         message = Message(

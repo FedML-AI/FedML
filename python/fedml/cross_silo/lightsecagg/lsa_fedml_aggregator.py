@@ -61,11 +61,6 @@ class LightSecAggAggregator(object):
         self.prime_number = args.prime_number
         self.precision_parameter = args.precision_parameter
 
-        # self.mlops_metrics = None
-
-    # def set_mlops_logger(self, mlops_metrics):
-    #     self.mlops_metrics = mlops_metrics
-
     def get_global_model_params(self):
         global_model_params = self.trainer.get_model_params()
         self.dimensions, self.total_dimension = model_dimension(global_model_params)
@@ -309,16 +304,6 @@ class LightSecAggAggregator(object):
                 wandb.log({"Train/Loss": train_loss, "round": round_idx})
             stats = {"training_acc": train_acc, "training_loss": train_loss}
             logging.info(stats)
-
-            # train_metric = {
-            #     "run_id": self.args.run_id,
-            #     "round_idx": round_idx,
-            #     "timestamp": time.time(),
-            #     "accuracy": round(train_acc, 4),
-            #     "loss": round(train_loss, 4),
-            # }
-            # if self.mlops_metrics is not None:
-            #     self.mlops_metrics.report_server_training_metric(train_metric)
 
             mlops.log({"accuracy": round(train_acc, 4), "loss": round(train_loss, 4)})
 
