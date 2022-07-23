@@ -299,6 +299,9 @@ def log_client_model_info(round_index, model_url):
 
 
 def log_sys_perf(sys_args=None):
+    if not mlops_enabled(sys_args):
+        return
+
     if sys_args is not None:
         MLOpsStore.mlops_args = sys_args
 
