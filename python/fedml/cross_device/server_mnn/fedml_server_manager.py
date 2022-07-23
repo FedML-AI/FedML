@@ -157,7 +157,7 @@ class FedMLServerManager(ServerManager):
         }
         for client_id in self.client_real_ids:
             logging.info("com_manager_status - client_id = {}".format(client_id))
-            self.com_manager_status.send_message_json(
+            self.com_manager.send_message_json(
                 "flserver_agent/" + str(client_id) + "/start_train",
                 json.dumps(start_train_json),
             )
