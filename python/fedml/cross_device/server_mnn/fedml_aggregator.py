@@ -200,17 +200,7 @@ class FedMLAggregator(object):
         fedml.logging.info("test acc = {}".format(test_accuracy))
         fedml.logging.info("test loss = {}".format(test_loss))
 
-        # train_metric = {
-        #     "run_id": self.args.run_id,
-        #     "round_idx": round_idx,
-        #     "timestamp": time.time(),
-        #     "accuracy": round(np.round(test_accuracy, 4), 4),
-        #     "loss": round(np.round(test_loss, 4)),
-        # }
-        # if self.mlops_metrics is not None:
-        #     self.mlops_metrics.report_server_training_metric(train_metric)
-
-        mlops.log({"accuracy": round(np.round(test_accuracy, 4), 4),
+        mlops.log({"round_idx": round_idx, "accuracy": round(np.round(test_accuracy, 4), 4),
                    "loss": round(np.round(test_loss, 4))})
 
         if self.args.enable_wandb:
