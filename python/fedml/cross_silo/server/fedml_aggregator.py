@@ -43,11 +43,6 @@ class FedMLAggregator(object):
         for idx in range(self.client_num):
             self.flag_client_model_uploaded_dict[idx] = False
 
-        # self.mlops_metrics = None
-
-    # def set_mlops_logger(self, mlops_metrics):
-    #     self.mlops_metrics = mlops_metrics
-
     def get_global_model_params(self):
         return self.trainer.get_model_params()
 
@@ -260,24 +255,5 @@ class FedMLAggregator(object):
 
             stats = {"test_acc": test_acc, "test_loss": test_loss}
             logging.info(stats)
-
-            # if self.mlops_metrics is not None:
-            #     metric_for_mlops = {
-            #         "run_id": self.args.run_id,
-            #         "round_idx": round_idx,
-            #         "timestamp": time.time(),
-            #         "accuracy": round(test_acc, 4),
-            #         "loss": round(test_loss, 4),
-            #         # "test_accuracy": round(test_acc, 4),
-            #         # "test_loss": round(test_loss, 4),
-            #     }
-            #     self.mlops_metrics.report_server_training_metric(metric_for_mlops)
         else:
             mlops.log({"round_idx": round_idx})
-            # if self.mlops_metrics is not None:
-            #     metric_for_mlops = {
-            #         "run_id": self.args.run_id,
-            #         "round_idx": round_idx,
-            #         "timestamp": time.time()
-            #     }
-            #     self.mlops_metrics.report_server_training_metric(metric_for_mlops)
