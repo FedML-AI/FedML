@@ -1,6 +1,6 @@
-import logging
-import os
 
+import os
+import certifi
 import requests
 
 
@@ -56,18 +56,43 @@ class MLOpsConfigs(Singleton):
 
         return url, cert_path
 
+    @staticmethod
+    def get_root_ca_path(self):
+        cur_source_dir = os.path.dirname(__file__)
+        cert_path = os.path.join(
+            cur_source_dir, "ssl", "open-root-ca.crt"
+        )
+        return cert_path
+
+    @staticmethod
+    def install_root_ca_file():
+        ca_file = certifi.where()
+        open_root_ca_path = MLOpsConfigs.get_root_ca_path()
+        with open(open_root_ca_path, 'rb') as infile:
+            open_root_ca_file = infile.read()
+        with open(ca_file, 'ab') as outfile:
+            outfile.write(open_root_ca_file)
+
     def fetch_configs(self):
         url, cert_path = self.get_request_params()
         json_params = {"config_name": ["mqtt_config", "s3_config"]}
+
         if cert_path is not None:
-            requests.session().verify = cert_path
-            response = requests.post(
-                url, json=json_params, verify=True, headers={"Connection": "close"}
-            )
+            try:
+                requests.session().verify = cert_path
+                response = requests.post(
+                    url, json=json_params, verify=True, headers={"content-type": "application/json", "Connection": "close"}
+                )
+            except requests.exceptions.SSLError as err:
+                MLOpsConfigs.install_root_ca_file()
+                response = requests.post(
+                    url, json=json_params, verify=True, headers={"content-type": "application/json", "Connection": "close"}
+                )
         else:
             response = requests.post(
-                url, json=json_params, headers={"Connection": "close"}
+                url, json=json_params, headers={"content-type": "application/json", "Connection": "close"}
             )
+
         status_code = response.json().get("code")
         if status_code == "SUCCESS":
             mqtt_config = response.json().get("data").get("mqtt_config")
@@ -78,17 +103,24 @@ class MLOpsConfigs(Singleton):
 
     def fetch_all_configs(self):
         url, cert_path = self.get_request_params()
-        logging.info(url)
         json_params = {"config_name": ["mqtt_config", "s3_config", "ml_ops_config", "docker_config"]}
+
         if cert_path is not None:
-            requests.session().verify = cert_path
-            response = requests.post(
-                url, json=json_params, verify=True, headers={"Connection": "close"}
-            )
+            try:
+                requests.session().verify = cert_path
+                response = requests.post(
+                    url, json=json_params, verify=True, headers={"content-type": "application/json", "Connection": "close"}
+                )
+            except requests.exceptions.SSLError as err:
+                MLOpsConfigs.install_root_ca_file()
+                response = requests.post(
+                    url, json=json_params, verify=True, headers={"content-type": "application/json", "Connection": "close"}
+                )
         else:
             response = requests.post(
-                url, json=json_params, headers={"Connection": "close"}
+                url, json=json_params, headers={"content-type": "application/json", "Connection": "close"}
             )
+
         status_code = response.json().get("code")
         if status_code == "SUCCESS":
             mqtt_config = response.json().get("data").get("mqtt_config")

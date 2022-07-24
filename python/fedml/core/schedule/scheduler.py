@@ -102,7 +102,7 @@ class scheduler:
             resource_index = np.argmax(new_resources[i])
             if max_mem <= self.m[resource_index]:
                 x_maps.append(new_maps[i])
-                # print ("max_mem of resource %d: %d cost: %d %s\n" %(resource_index, max_mem, max(new_costs[i]), str(new_maps[i])))
+                # print ("max_mem of resources %d: %d cost: %d %s\n" %(resource_index, max_mem, max(new_costs[i]), str(new_maps[i])))
                 cost_maps.append(new_costs[i])
                 resource_maps.append(new_resources[i])
         return self.assign_a_workload(x_maps, cost_maps, resource_maps)

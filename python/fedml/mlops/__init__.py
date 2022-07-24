@@ -1,7 +1,11 @@
-from ..core import mlops
-from ..cli.edge_deployment.client_constants import ClientConstants as ClientStatus
-from ..cli.server_deployment.server_constants import ServerConstants as ServerStatus
 
+
+from ..core import mlops
+
+
+def pre_setup(args):
+    mlops.pre_setup(args)
+    
 
 def init(args):
     mlops.init(args)
@@ -20,11 +24,31 @@ def log_training_status(status):
     mlops.log_training_status(status)
 
 
+def log_training_finished_status():
+    mlops.log_training_finished_status()
+
+
 # status list : ServerStatus
 def log_aggregation_status(status):
     mlops.log_aggregation_status(status)
 
 
+def log_aggregation_finished_status():
+    mlops.log_aggregation_finished_status()
+
+
 def log_round_info(total_rounds, round_index):
     mlops.log_round_info(total_rounds, round_index)
+
+
+def log_aggregated_model_info(round_index, model_url):
+    mlops.log_aggregated_model_info(round_index, model_url)
+
+
+def log_client_model_info(round_index, model_url):
+    mlops.log_client_model_info(round_index, model_url)
+
+
+def log_sys_perf(sys_args=None):
+    mlops.log_sys_perf(sys_args)
 
