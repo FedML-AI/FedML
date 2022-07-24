@@ -5,7 +5,8 @@ import fedml.core.differential_privacy.common.utils as utils
 
 class Laplace:
     """
-    The classical Laplace mechanism in differential privacy. This code refers to IBM DP Library: https://github.com/IBM/differential-privacy-library
+    The classical Laplace mechanism in differential privacy.
+    This code refers to IBM DP Library: https://github.com/IBM/differential-privacy-library
     Our contribution: code refactoring; remove some redundant codes
 
     References
@@ -294,12 +295,9 @@ class LaplaceBoundedNoise(Laplace):
 
     def __init__(self, *, epsilon, delta, sensitivity):
         super().__init__(epsilon=epsilon, delta=delta, sensitivity=sensitivity)
-        if (
-            epsilon == 0
-        ):  # special requirements for epsilon and delta in LaplaceBoundedNoise
-            raise ValueError(
-                "Epsilon must be strictly positive. For zero epsilon, use :class:`.Uniform`."
-            )
+        # special requirements for epsilon and delta in LaplaceBoundedNoise
+        if epsilon == 0:
+            raise ValueError("Epsilon must be strictly positive.")
         if not 0 < delta < 0.5:
             raise ValueError(
                 "Delta must be strictly in the interval (0,0.5). For zero delta, use :class:`.Laplace`."
