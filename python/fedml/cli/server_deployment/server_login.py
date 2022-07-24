@@ -79,6 +79,8 @@ def __login_as_edge_server_and_agent(args, userid, version):
         click.echo("Oops, you failed to login the FedML MLOps platform.")
         click.echo("Please check whether your network is normal!")
         return
+    setattr(args, "server_id", edge_id)
+    runner.args = args
     runner.edge_id = edge_id
     init_logs(edge_id)
 
@@ -172,6 +174,8 @@ def __login_as_cloud_agent(args, userid, version):
         click.echo("Oops, you failed to login the FedML MLOps platform.")
         click.echo("Please check whether your network is normal!")
         return
+    setattr(args, "server_id", edge_id)
+    runner.args = args
     runner.edge_id = edge_id
     init_logs(edge_id)
     logging.info("args {}".format(args))
@@ -265,6 +269,8 @@ def __login_as_cloud_server(args, userid, version):
         click.echo("Oops, you failed to login the FedML MLOps platform.")
         click.echo("Please check whether your network is normal!")
         return
+    setattr(args, "server_id", edge_id)
+    runner.args = args
     runner.edge_id = edge_id
     init_logs(edge_id)
 
