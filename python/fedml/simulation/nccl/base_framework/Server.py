@@ -146,11 +146,11 @@ class BaseServer:
         # scheduler(workloads, constraints, memory)
         client_indexes = self.client_sampling(round_idx, client_num_in_total, client_num_per_round)
         # workload = self.workload_estimate(client_indexes, mode)
-        # resource = self.resource_estimate(mode)
+        # resources = self.resource_estimate(mode)
         # memory = self.memory_estimate(mode)
 
         # mode = 0
-        # my_scheduler = scheduler(workload, resource, memory)
+        # my_scheduler = scheduler(workload, resources, memory)
         # schedules = my_scheduler.DP_schedule(mode)
         # for i in range(len(schedules)):
         #     print("Resource %2d: %s\n" % (i, str(schedules[i])))

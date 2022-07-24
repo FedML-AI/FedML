@@ -60,7 +60,6 @@ def test__attack_dlg():
         data_size=[3, 32, 32],
         num_class=100,
         model=LeNet(),
-        criterion=cross_entropy_for_onehot,
         attack_epoch=100,
     )
     attack.attack(local_w, global_w=None, refs=local_gradient)
