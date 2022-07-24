@@ -16,6 +16,9 @@ from ..cli.server_deployment.server_constants import ServerConstants
 from ..cli.edge_deployment.client_login import logout as client_logout
 from ..cli.env.collect_env import collect_env
 from ..cli.server_deployment.server_login import logout as server_logout
+from ..cli.edge_deployment.docker_login import login_with_docker_mode
+from ..cli.edge_deployment.docker_login import logout_with_docker_mode
+from ..cli.edge_deployment.docker_login import logs_with_docker_mode
 
 FEDML_MLOPS_BUILD_PRE_IGNORE_LIST = 'dist-packages,client-package.zip,server-package.zip,__pycache__,*.pyc,*.git'
 
@@ -45,13 +48,26 @@ def mlops_status():
 @click.option(
     "--server", "-s", default=None, is_flag=True, help="Display server logs.",
 )
-def mlops_logs(client, server):
+@click.option(
+    "--docker", "-d", default=None, is_flag=True, help="Display client docker logs.",
+)
+@click.option(
+    "--docker-rank", "-dr", default="1", help="docker client rank index (from 1 to n).",
+)
+def mlops_logs(client, server, docker, docker_rank):
     is_client = client
     is_server = server
-    if client is False and server is False:
+    if client is None and server is None:
         is_client = True
 
+    is_docker = docker
+    if docker is None:
+        is_docker = False
+
     if is_client:
+        if is_docker:
+            logs_with_docker_mode(docker_rank)
+            return
         display_client_logs()
 
     if is_server:
@@ -134,8 +150,17 @@ def display_server_logs():
 @click.option(
     "--device_id", "-id", type=str, default="0", help="device id.",
 )
+@click.option(
+    "--os_name", "-os", type=str, default="", help="os name.",
+)
+@click.option(
+    "--docker", "-d", default=None, is_flag=True, help="login with docker mode at the client agent.",
+)
+@click.option(
+    "--docker-rank", "-dr", default="1", help="docker client rank index (from 1 to n).",
+)
 def mlops_login(
-    userid, version, client, server, local_server, role, runner_cmd, device_id
+    userid, version, client, server, local_server, role, runner_cmd, device_id, os_name, docker, docker_rank
 ):
     account_id = userid[0]
     platform_url = "open.fedml.ai"
@@ -158,8 +183,16 @@ def mlops_login(
     if client is None and server is None:
         is_client = True
 
+    # Check docker mode.
+    is_docker = docker
+    if docker is None:
+        is_docker = False
+
     # click.echo("login as client: {}, as server: {}".format(is_client, is_server))
     if is_client is True:
+        if is_docker:
+            login_with_docker_mode(account_id, version, docker_rank)
+            return
         pip_source_dir = os.path.dirname(__file__)
         login_cmd = os.path.join(pip_source_dir, "edge_deployment", "client_login.py")
         # click.echo(login_cmd)
@@ -186,6 +219,10 @@ def mlops_login(
                 local_server,
                 "-r",
                 role,
+                "-id",
+                device_id,
+                "-os",
+                os_name
             ]
         ).pid
         save_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
@@ -329,13 +366,26 @@ def cleanup_all_fedml_processes(login_program, exclude_login=False):
 @click.option(
     "--server", "-s", default=None, is_flag=True, help="logout from the FedML server.",
 )
-def mlops_logout(client, server):
+@click.option(
+    "--docker", "-d", default=None, is_flag=True, help="logout from docker mode at the client agent.",
+)
+@click.option(
+    "--docker-rank", "-dr", default=None, help="docker client rank index (from 1 to n).",
+)
+def mlops_logout(client, server, docker, docker_rank):
     is_client = client
     is_server = server
     if client is None and server is None:
         is_client = True
 
+    is_docker = docker
+    if docker is None:
+        is_docker = False
+
     if is_client is True:
+        if is_docker:
+            logout_with_docker_mode(docker_rank)
+            return
         client_logout()
         cleanup_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
         cleanup_all_fedml_processes("client_login.py")
