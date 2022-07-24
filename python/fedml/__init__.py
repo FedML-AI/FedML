@@ -17,12 +17,11 @@ from .constants import (
     FEDML_TRAINING_PLATFORM_CROSS_SILO,
     FEDML_TRAINING_PLATFORM_CROSS_DEVICE,
 )
-from .core.mlops import MLOpsRuntimeLog
 
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.7.218"
+__version__ = "0.7.220"
 
 
 def init(args=None):
@@ -50,6 +49,8 @@ def init(args=None):
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
 
+    mlops.pre_setup(args)
+
     if (
         args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
         and hasattr(args, "backend")
@@ -76,9 +77,7 @@ def init(args=None):
         if not hasattr(args, "scenario"):
             args.scenario = "horizontal"
         if args.scenario == "horizontal":
-
-            args = init_cross_silo_horizontal(args)
-
+            init_cross_silo_horizontal(args)
         elif args.scenario == "hierarchical":
             args = init_cross_silo_hierarchical(args)
 
@@ -93,7 +92,7 @@ def init(args=None):
 
     mlops.init(args)
 
-    logging.info("args = {}".format(vars(args)))
+    logging.info("==== args = {}".format(vars(args)))
     return args
 
 
@@ -202,11 +201,11 @@ def manage_mpi_args(args):
 
 
 def init_cross_silo_horizontal(args):
-    args.process_id = args.rank
     args.n_proc_in_silo = 1
     args.proc_rank_in_silo = 0
     manage_mpi_args(args)
     manage_cuda_rpc_args(args)
+    args.process_id = args.rank
     return args
 
 

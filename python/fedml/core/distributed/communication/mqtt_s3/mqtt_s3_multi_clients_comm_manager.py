@@ -16,6 +16,7 @@ from ..message import Message
 from ..observer import Observer
 import time
 
+
 class MqttS3MultiClientsCommManager(BaseCommunicationManager):
     def __init__(
         self,
