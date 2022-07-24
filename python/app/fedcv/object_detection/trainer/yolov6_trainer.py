@@ -14,6 +14,7 @@ import torch.optim as optim
 import wandb
 from torch.optim import Adam, lr_scheduler
 
+import fedml
 from fedml.core.alg_frame.client_trainer import ClientTrainer
 
 from model.yolov6.yolov6.models.loss import ComputeLoss
@@ -45,6 +46,7 @@ class YOLOv6Trainer(ClientTrainer):
         logging.info("Start training on Trainer {}".format(self.id))
         logging.info(f"Hyperparameters: {self.hyp}, Args: {self.args}")
         model = self.model
+        self.round_idx = args.round_idx
         args = self.args
         hyp = self.hyp if self.hyp else self.args.hyp
 
@@ -59,13 +61,22 @@ class YOLOv6Trainer(ClientTrainer):
             elif hasattr(v, "weight") and isinstance(v.weight, nn.Parameter):
                 pg1.append(v.weight)  # apply decay
         if args.client_optimizer == "adam":
-            optimizer = optim.Adam(pg0, lr=hyp["lr0"], betas=(hyp["momentum"], 0.999))  # adjust beta1 to momentum
+            optimizer = optim.Adam(
+                pg0, lr=hyp["lr0"], betas=(hyp["momentum"], 0.999)
+            )  # adjust beta1 to momentum
         else:
-            optimizer = optim.SGD(pg0, lr=hyp["lr0"], momentum=hyp["momentum"], nesterov=True)
+            optimizer = optim.SGD(
+                pg0, lr=hyp["lr0"], momentum=hyp["momentum"], nesterov=True
+            )
 
-        optimizer.add_param_group({"params": pg1, "weight_decay": hyp["weight_decay"]})  # add pg1 with weight_decay
+        optimizer.add_param_group(
+            {"params": pg1, "weight_decay": hyp["weight_decay"]}
+        )  # add pg1 with weight_decay
         optimizer.add_param_group({"params": pg2})  # add pg2 (biases)
-        logging.info("Optimizer groups: %g .bias, %g conv.weight, %g other" % (len(pg2), len(pg1), len(pg0)))
+        logging.info(
+            "Optimizer groups: %g .bias, %g conv.weight, %g other"
+            % (len(pg2), len(pg1), len(pg0))
+        )
         del pg0, pg1, pg2
 
         # Freeze
@@ -78,13 +89,19 @@ class YOLOv6Trainer(ClientTrainer):
 
         total_epochs = epochs * args.comm_round
 
-        lf = lambda x: ((1 + math.cos(x * math.pi / total_epochs)) / 2) * (1 - hyp["lrf"]) + hyp["lrf"]  # cosine
+        lf = (
+            lambda x: ((1 + math.cos(x * math.pi / total_epochs)) / 2)
+            * (1 - hyp["lrf"])
+            + hyp["lrf"]
+        )  # cosine
         scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)
 
         model.to(device)
         model.train()
 
-        scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda epoch: 1.0 - epoch / args.epochs)
+        scheduler = lr_scheduler.LambdaLR(
+            optimizer, lr_lambda=lambda epoch: 1.0 - epoch / args.epochs
+        )
         compute_loss = ComputeLoss(iou_type=self.args.yolov6_cfg.model.head.iou_type)
 
         epoch_loss = []
@@ -104,15 +121,23 @@ class YOLOv6Trainer(ClientTrainer):
                 pred = model(imgs)  # forward
                 # print(f"image shape: {imgs.shape}, pred shape: {pred[0].shape}")
                 # print("shape:", pred[0].shape)
-                total_loss, loss_items = compute_loss(pred, targets.to(device))  # loss scaled by batch_size
+                total_loss, loss_items = compute_loss(
+                    pred, targets.to(device)
+                )  # loss scaled by batch_size
 
                 # Backward
                 total_loss.backward()
                 optimizer.step()
                 batch_loss.append(total_loss.item())
 
-                mloss = (mloss * batch_idx + loss_items) / (batch_idx + 1)  # update mean losses
-                mem = "%.3gG" % (torch.cuda.memory_reserved() / 1e9 if torch.cuda.is_available() else 0)  # (GB)
+                mloss = (mloss * batch_idx + loss_items) / (
+                    batch_idx + 1
+                )  # update mean losses
+                mem = "%.3gG" % (
+                    torch.cuda.memory_reserved() / 1e9
+                    if torch.cuda.is_available()
+                    else 0
+                )  # (GB)
                 s = ("%10s" * 3 + "%10.4g" * 6) % (
                     self.id,
                     "%g/%g" % (epoch, epochs - 1),
@@ -123,54 +148,48 @@ class YOLOv6Trainer(ClientTrainer):
                 )
                 logging.info(s)
 
-                if batch_idx % 100 == 0:
-                    logging.info(
-                        f"Trainer {self.id} batch {batch_idx} box: {mloss[0]} obj: {mloss[1]} cls: {mloss[2]} total: {mloss[3]} time: {(time.time() - t)/60}"
-                    )
-
             scheduler.step()
 
             epoch_loss.append(copy.deepcopy(mloss.cpu().numpy()))
             logging.info(
-                f"***Trainer {self.id} epoch {epoch} box: {mloss[0]} obj: {mloss[1]} cls: {mloss[2]} total: {mloss[3]} time: {(time.time() - t)/60}"
+                f"Trainer {self.id} epoch {epoch} box: {mloss[0]} obj: {mloss[1]} cls: {mloss[2]} total: {mloss[3]} time: {(time.time() - t)/60}"
             )
+
+            logging.info("#" * 20)
+
+            logging.info(
+                f"Trainer {self.id} epoch {epoch} time: {(time.time() - t)}s batch_num: {batch_idx} speed: {(time.time() - t)/batch_idx} s/batch"
+            )
+            logging.info("#" * 20)
 
         # plot for client
         # plot box, obj, cls, total loss
         epoch_loss = np.array(epoch_loss)
-        logging.info(f"Epoch loss: {epoch_loss}")
-        # plt.figure(figsize=(10, 5))
-        # plt.title("Box, Obj, Cls, Total Loss")
-        # plt.plot(epoch_loss[:, 0], label="box")
-        # plt.plot(epoch_loss[:, 1], label="obj")
-        # plt.plot(epoch_loss[:, 2], label="cls")
-        # plt.plot(epoch_loss[:, 3], label="total")
-        # plt.legend()
-        # plt.savefig(f"{args.save_dir}/trainer_{self.id}_epoch_loss_round_{self.round_idx}.png")
-        # plt.close()
-        self.round_idx += 1
+
+        fedml.mlops.log(
+            {
+                f"round_idx": self.round_idx,
+                f"train_box_loss": np.float(epoch_loss[-1, 0]),
+                f"train_obj_loss": np.float(epoch_loss[-1, 1]),
+                f"train_cls_loss": np.float(epoch_loss[-1, 2]),
+                f"train_total_loss": np.float(epoch_loss[-1, 3]),
+            }
+        )
 
         self.round_loss.append(epoch_loss[-1, :])
         if self.round_idx == args.comm_round:
             self.round_loss = np.array(self.round_loss)
             # logging.info(f"round_loss shape: {self.round_loss.shape}")
-            logging.info(f"Trainer {self.id} round {self.round_idx} finished, round loss: {self.round_loss}")
-
-            # plt.figure(figsize=(10, 5))
-            # plt.title("Box, Obj, Cls, Total Loss per round")
-            # plt.plot(self.round_loss[:, 0], label="box")
-            # plt.plot(self.round_loss[:, 1], label="obj")
-            # plt.plot(self.round_loss[:, 2], label="cls")
-            # plt.plot(self.round_loss[:, 3], label="total")
-            # plt.legend()
-            # plt.savefig(f"{args.save_dir}/trainer_{self.id}_round_loss.png")
-            # plt.close()
+            logging.info(
+                f"Trainer {self.id} round {self.round_idx} finished, round loss: {self.round_loss}"
+            )
 
         return
 
     def test(self, test_data, device, args):
         logging.info("Evaluating on Trainer ID: {}".format(self.id))
         model = self.model
+        self.round_idx = args.round_idx
         args = self.args
 
         test_metrics = {
@@ -192,9 +211,32 @@ class YOLOv6Trainer(ClientTrainer):
         niou = iouv.numel()
 
         seen = 0
-        names = {k: v for k, v in enumerate(model.names if hasattr(model, "names") else model.module.names)}
-        s = ("%20s" + "%12s" * 6) % ("Class", "Images", "Targets", "P", "R", "mAP@.5", "mAP@.5:.95")
-        p, r, f1, mp, mr, map50, map, t0, t1 = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+        names = {
+            k: v
+            for k, v in enumerate(
+                model.names if hasattr(model, "names") else model.module.names
+            )
+        }
+        s = ("%20s" + "%12s" * 6) % (
+            "Class",
+            "Images",
+            "Targets",
+            "P",
+            "R",
+            "mAP@.5",
+            "mAP@.5:.95",
+        )
+        p, r, f1, mp, mr, map50, map, t0, t1 = (
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        )
         # loss = torch.zeros(4, device=device)
         # compute_loss = ComputeLoss(iou_type=args.yolov6_cfg.model.head.iou_type)
         jdict, stats, ap, ap_class, wandb_images = [], [], [], [], []
@@ -214,7 +256,9 @@ class YOLOv6Trainer(ClientTrainer):
                 # print(f"image shape: {img.shape}, output shape: {outputs[0].shape}")
 
                 # Run NMS
-                output = non_max_suppression(outputs, conf_thres=args.conf_thres, iou_thres=args.iou_thres)
+                output = non_max_suppression(
+                    outputs, conf_thres=args.conf_thres, iou_thres=args.iou_thres
+                )
 
             # Statistics per image
             for si, pred in enumerate(output):
@@ -225,7 +269,14 @@ class YOLOv6Trainer(ClientTrainer):
 
                 if len(pred) == 0:
                     if nl:
-                        stats.append((torch.zeros(0, niou, dtype=torch.bool), torch.Tensor(), torch.Tensor(), tcls))
+                        stats.append(
+                            (
+                                torch.zeros(0, niou, dtype=torch.bool),
+                                torch.Tensor(),
+                                torch.Tensor(),
+                                tcls,
+                            )
+                        )
                     continue
 
                 # W&B logging
@@ -235,7 +286,9 @@ class YOLOv6Trainer(ClientTrainer):
                 clip_coords(pred, (height, width))
 
                 # Assign all predictions as incorrect
-                correct = torch.zeros(pred.shape[0], niou, dtype=torch.bool, device=device)
+                correct = torch.zeros(
+                    pred.shape[0], niou, dtype=torch.bool, device=device
+                )
                 if nl:
                     detected = []  # target indices
                     tcls_tensor = labels[:, 0]
@@ -245,13 +298,19 @@ class YOLOv6Trainer(ClientTrainer):
 
                     # Per target class
                     for cls in torch.unique(tcls_tensor):
-                        ti = (cls == tcls_tensor).nonzero(as_tuple=False).view(-1)  # prediction indices
-                        pi = (cls == pred[:, 5]).nonzero(as_tuple=False).view(-1)  # target indices
+                        ti = (
+                            (cls == tcls_tensor).nonzero(as_tuple=False).view(-1)
+                        )  # prediction indices
+                        pi = (
+                            (cls == pred[:, 5]).nonzero(as_tuple=False).view(-1)
+                        )  # target indices
 
                         # Search for detections
                         if pi.shape[0]:
                             # Prediction to target ious
-                            ious, i = box_iou(pred[pi, :4], tbox[ti]).max(1)  # best ious, indices
+                            ious, i = box_iou(pred[pi, :4], tbox[ti]).max(
+                                1
+                            )  # best ious, indices
 
                             # Append detections
                             detected_set = set()
@@ -261,7 +320,9 @@ class YOLOv6Trainer(ClientTrainer):
                                     detected_set.add(d.item())
                                     detected.append(d)
                                     correct[pi[j]] = ious[j] > iouv  # iou_thres is 1xn
-                                    if len(detected) == nl:  # all targets already located in image
+                                    if (
+                                        len(detected) == nl
+                                    ):  # all targets already located in image
                                         break
 
                 # Append statistics (correct, conf, pcls, tcls)
@@ -273,10 +334,14 @@ class YOLOv6Trainer(ClientTrainer):
         # Compute statistics
         stats = [np.concatenate(x, 0) for x in zip(*stats)]  # to numpy
         if len(stats) and stats[0].any():
-            tp, fp, p, r, f1, ap, ap_class = ap_per_class(*stats, plot=False, save_dir=args.save_dir, names=names)
+            tp, fp, p, r, f1, ap, ap_class = ap_per_class(
+                *stats, plot=False, save_dir=args.save_dir, names=names
+            )
             ap50, ap = ap[:, 0], ap.mean(1)  # AP@0.5, AP@0.5:0.95
             mp, mr, map50, map = p.mean(), r.mean(), ap50.mean(), ap.mean()
-            nt = np.bincount(stats[3].astype(np.int64), minlength=args.nc)  # number of targets per class
+            nt = np.bincount(
+                stats[3].astype(np.int64), minlength=args.nc
+            )  # number of targets per class
         else:
             nt = torch.zeros(1)
 
@@ -292,7 +357,11 @@ class YOLOv6Trainer(ClientTrainer):
                 print(pf % (names[c], seen, nt[c], p[i], r[i], ap50[i], ap[i]))
 
         # Print speeds
-        t = tuple(x / seen * 1e3 for x in (t0, t1, t0 + t1)) + (args.img_size, args.img_size, args.batch_size)  # tuple
+        t = tuple(x / seen * 1e3 for x in (t0, t1, t0 + t1)) + (
+            args.img_size,
+            args.img_size,
+            args.batch_size,
+        )  # tuple
 
         maps = np.zeros(args.nc) + map
         for i, c in enumerate(ap_class):
@@ -307,11 +376,28 @@ class YOLOv6Trainer(ClientTrainer):
         # metrics = (mp, mr, map50, map, *(loss.cpu() / len(test_data)).tolist()), maps, t
         # logging.info(f"Test metrics: {metrics}")
 
-        test_metrics = {"test_correct": ap_class, "test_total": len(test_data), "test_loss": map}
+        fedml.mlops.log(
+            {
+                f"round_idx": self.round_idx,
+                f"test_mp": np.float(mp),
+                f"test_mr": np.float(mr),
+                f"test_map50": np.float(map50),
+                f"test_map": np.float(map),
+                # f"test_loss": np.float(sum((loss.cpu() / len(test_data)).tolist())),
+            }
+        )
+
+        test_metrics = {
+            "test_correct": ap_class,
+            "test_total": len(test_data),
+            "test_loss": map,
+        }
         logging.info(f"Test metrics: {test_metrics}")
         return test_metrics
 
-    def test_on_the_server(self, train_data_local_dict, test_data_local_dict, device, args=None):
+    def test_on_the_server(
+        self, train_data_local_dict, test_data_local_dict, device, args=None
+    ):
         return False
         logging.info("Testing on the server")
         logging.info(f"rank id: {args.rank}")
@@ -322,13 +408,17 @@ class YOLOv6Trainer(ClientTrainer):
             # logging.info(f"{k}: {train_data[k]}")
             if train_data[k] is None:
                 continue
-            train_data_results = self.test(test_data=train_data[k], device=device, args=args)
+            train_data_results = self.test(
+                test_data=train_data[k], device=device, args=args
+            )
             logging.info(f"{k}: {train_data_results}")
 
         for k in test_data.keys():
             # logging.info(f"{k}: {test_data[k]}")
             if test_data[k] is None:
                 continue
-            test_data_results = self.test(test_data=test_data[k], device=device, args=args)
+            test_data_results = self.test(
+                test_data=test_data[k], device=device, args=args
+            )
             logging.info(f"{k}: {test_data_results}")
         return True
