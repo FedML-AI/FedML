@@ -1,7 +1,7 @@
 import os
 import sys
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import logging
 from pathlib import Path
@@ -21,9 +21,11 @@ from model.yolov5.models.yolo import Model as YOLOv5
 from model.yolov6.yolov6.models.yolo import Model as YOLOv6
 from model.yolov6.yolov6.utils.config import Config
 from model.yolov6.yolov6.models.yolo import build_model as build_yolov6
+from model.yolov7.models.yolo import Model as YOLOv7
 
 from trainer.yolov5_trainer import YOLOv5Trainer
 from trainer.yolov6_trainer import YOLOv6Trainer
+from trainer.yolov7_trainer import YOLOv7Trainer
 
 try:
     import wandb
@@ -144,6 +146,32 @@ def init_yolo(args, device="cpu"):
             }
             model.load_state_dict(state_dict, strict=False)
             del ckpt, state_dict, model_state_dict
+    elif args.model.lower() == "yolov7":
+        pretrained = weights.endswith(".pt")
+        if pretrained:
+            ckpt = torch.load(weights, map_location=device)  # load checkpoint
+            if hyp.get("anchors"):
+                ckpt["model"].yaml["anchors"] = round(
+                    hyp["anchors"]
+                )  # force autoanchor
+            model = YOLOv7(args.yolo_cfg or ckpt["model"].yaml, ch=3, nc=nc).to(
+                device
+            )  # create
+            exclude = (
+                ["anchor"] if args.yolo_cfg or hyp.get("anchors") else []
+            )  # exclude keys
+            state_dict = ckpt["model"].float().state_dict()  # to FP32
+            state_dict = intersect_dicts(
+                state_dict, model.state_dict(), exclude=exclude
+            )  # intersect
+            model.load_state_dict(state_dict, strict=False)  # load
+            logging.info(
+                "Transferred %g/%g items from %s"
+                % (len(state_dict), len(model.state_dict()), weights)
+            )  # report
+        else:
+            model = YOLOv7(args.yolo_cfg, ch=3, nc=nc).to(device)  # create
+
     print(model)
 
     dataset = load_partition_data_coco(args, hyp, model)
@@ -195,5 +223,7 @@ def init_yolo(args, device="cpu"):
         trainer = YOLOv5Trainer(model=model, args=args)
     elif args.model == "yolov6":
         trainer = YOLOv6Trainer(model=model, args=args)
+    elif args.model == "yolov7":
+        trainer = YOLOv7Trainer(model=model, args=args)
 
     return model, dataset, trainer, args

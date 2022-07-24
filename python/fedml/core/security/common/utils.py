@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import torch.nn.functional as F
 
 
 def vectorize_weight(state_dict):
@@ -59,18 +60,29 @@ def get_malicious_client_id_list(random_seed, client_num, malicious_client_num):
     return client_indexes
 
 
-def replace_original_class_with_target_class(data_labels, original_class_list=None, target_class_list=None):
+def replace_original_class_with_target_class(
+    data_labels, original_class_list=None, target_class_list=None
+):
     """
     :param targets: Target class IDs
     :type targets: list
     :return: new class IDs
     """
 
-    if len(original_class_list) == 0 or len(target_class_list) == 0 or original_class_list is None or target_class_list is None:
+    if (
+        len(original_class_list) == 0
+        or len(target_class_list) == 0
+        or original_class_list is None
+        or target_class_list is None
+    ):
         return data_labels
     if len(original_class_list) != len(target_class_list):
-        raise ValueError("the length of the original class list is not equal to the length of the targeted class list")
-    if len(set(original_class_list)) < len(original_class_list):  # no need to check the targeted classes
+        raise ValueError(
+            "the length of the original class list is not equal to the length of the targeted class list"
+        )
+    if len(set(original_class_list)) < len(
+        original_class_list
+    ):  # no need to check the targeted classes
         raise ValueError("the original classes can not be same")
 
     for i in range(len(original_class_list)):
@@ -101,3 +113,7 @@ def log_client_data_statistics(poisoned_client_ids, train_data_local_dict):
             print("Client #{} has data distribution:".format(client_idx))
             for item in targets_set.items():
                 print("target:{} num:{}".format(item[0], item[1]))
+
+
+def cross_entropy_for_onehot(pred, target):
+    return torch.mean(torch.sum(-target * F.log_softmax(pred, dim=-1), 1))

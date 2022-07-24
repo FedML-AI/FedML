@@ -31,13 +31,14 @@ from ...core.mlops.mlops_metrics import MLOpsMetrics
 from ...core.mlops.mlops_configs import MLOpsConfigs
 from ...core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 from ...core.mlops.mlops_status import MLOpsStatus
+from ..comm_utils.sys_utils import get_sys_runner_info
 
 
 class FedMLServerRunner:
     FEDML_CLOUD_SERVER_PREFIX = "fedml-server-run-"
     FEDML_BOOTSTRAP_RUN_OK = "[FedML]Bootstrap Finished"
 
-    def __init__(self, args, run_id=0, request_json=None, agent_config=None):
+    def __init__(self, args, run_id=0, request_json=None, agent_config=None, edge_id=0):
         self.server_docker_image = None
         self.cloud_server_name = None
         self.run_as_cloud_agent = False
@@ -53,7 +54,7 @@ class FedMLServerRunner:
         self.client_mqtt_is_connected = False
         self.client_mqtt_lock = None
         self.unique_device_id = None
-        self.edge_id = 0
+        self.edge_id = edge_id
         self.server_agent_id = 0
         if request_json is not None:
             self.server_agent_id = request_json.get("server_id", 0)
@@ -741,6 +742,10 @@ class FedMLServerRunner:
         while True:
             self.client_mqtt_lock.acquire()
             if self.client_mqtt_is_connected is True:
+                self.mlops_metrics.set_messenger(self.client_mqtt_mgr)
+                self.mlops_metrics.run_id = self.run_id
+                self.mlops_metrics.edge_id = self.edge_id
+                self.mlops_metrics.server_agent_id = self.server_agent_id
                 self.client_mqtt_lock.release()
                 break
             self.client_mqtt_lock.release()
@@ -776,13 +781,15 @@ class FedMLServerRunner:
             stop_request_json = request_json
         if self.run_as_edge_server_and_agent:
             server_runner = FedMLServerRunner(
-                self.args, run_id=run_id, request_json=stop_request_json, agent_config=self.agent_config
+                self.args, run_id=run_id, request_json=stop_request_json, agent_config=self.agent_config,
+                edge_id=self.edge_id
             )
             server_runner.run_as_edge_server_and_agent = self.run_as_edge_server_and_agent
             multiprocessing.Process(target=server_runner.stop_run).start()
         elif self.run_as_cloud_agent:
             server_runner = FedMLServerRunner(
-                self.args, run_id=run_id, request_json=stop_request_json, agent_config=self.agent_config
+                self.args, run_id=run_id, request_json=stop_request_json, agent_config=self.agent_config,
+                edge_id=self.edge_id
             )
             server_runner.run_as_cloud_agent = self.run_as_cloud_agent
             multiprocessing.Process(target=server_runner.stop_cloud_server_process).start()
@@ -910,19 +917,51 @@ class FedMLServerRunner:
             role = "cloud_agent"
         elif self.run_as_cloud_server:
             role = "cloud_server"
+
+        ip = requests.get('https://checkip.amazonaws.com').text.strip()
+        fedml_ver, exec_path, os_ver, cpu_info, python_ver, torch_ver, mpi_installed, \
+        cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem = get_sys_runner_info()
         json_params = {
             "accountid": account_id,
             "deviceid": device_id,
             "type": os_name,
-            "gpu": "None",
-            "processor": "",
+            "processor": cpu_info,
+            "core_type": cpu_info,
             "network": "",
             "role": role,
+            "os_ver": os_ver,
+            "memory": total_mem,
+            "ip": ip,
+            "extra_infos": {"fedml_ver": fedml_ver, "exec_path": exec_path, "os_ver": os_ver,
+                            "cpu_info": cpu_info, "python_ver": python_ver, "torch_ver": torch_ver,
+                            "mpi_installed": mpi_installed, "cpu_sage": cpu_usage,
+                            "available_mem": available_mem, "total_mem": total_mem}
         }
+        if gpu_info is not None:
+            if gpu_total_mem is not None:
+                json_params["gpu"] = gpu_info + ", Total GPU Memory: " + gpu_total_mem
+            else:
+                json_params["gpu"] = gpu_info
+            json_params["extra_infos"]["gpu_info"] = gpu_info
+            if gpu_available_mem is not None:
+                json_params["extra_infos"]["gpu_available_mem"] = gpu_available_mem
+            if gpu_total_mem is not None:
+                json_params["extra_infos"]["gpu_total_mem"]  = gpu_total_mem
+        else:
+            json_params["gpu"] = "None"
+
         _, cert_path = MLOpsConfigs.get_instance(self.args).get_request_params()
         if cert_path is not None:
-            requests.session().verify = cert_path
-            response = requests.post(url, json=json_params, verify=True, headers={"Connection": "close"})
+            try:
+                requests.session().verify = cert_path
+                response = requests.post(
+                    url, json=json_params, verify=True, headers={"content-type": "application/json", "Connection": "close"}
+                )
+            except requests.exceptions.SSLError as err:
+                MLOpsConfigs.install_root_ca_file()
+                response = requests.post(
+                    url, json=json_params, verify=True, headers={"content-type": "application/json", "Connection": "close"}
+                )
         else:
             response = requests.post(url, json=json_params, headers={"Connection": "close"})
         status_code = response.json().get("code")
