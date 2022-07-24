@@ -48,7 +48,6 @@ class FedMLRunner:
         self, args, device, dataset, model, client_trainer=None, server_aggregator=None
     ):
         if args.scenario == "horizontal":
-
             if args.role == "client":
                 from .cross_silo import Client
 

@@ -169,7 +169,9 @@ def load_partition_data_coco(args, hyp, model):
     else:
         client_idx = int(args.process_id) - 1
 
-        logging.info(f"net_dataidx_map trainer: {net_dataidx_map[client_idx]}")
+        logging.info(
+            f"{client_idx}: net_dataidx_map trainer: {net_dataidx_map[client_idx]}"
+        )
         dataloader, dataset = create_dataloader(
             train_path,
             imgsz,

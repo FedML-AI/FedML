@@ -8,12 +8,14 @@ environment_args:
   bootstrap: config/bootstrap.sh
 
 data_args:
+#  dataset: "mnist"
   dataset: "mnist"
   data_cache_dir: ~/fedml_data
   partition_method: "hetero"
   partition_alpha: 0.5
 
 model_args:
+#  model: "lr"
   model: "lr"
   model_file_cache_folder: "./model_file_cache" # will be filled by the server automatically
   global_model_file_path: "./model_file_cache/global_model.pt"
@@ -23,7 +25,7 @@ train_args:
 #  federated_optimizer: "FedAvg"
   client_id_list:
   client_num_in_total: 1000
-  client_num_per_round: 2
+  client_num_per_round: 4
   comm_round: 50
   epochs: 1
   batch_size: 10
@@ -43,13 +45,14 @@ secure_aggregation_args:
   precision_parameter: 10
 
 device_args:
-  worker_num: 2
+  worker_num: 4
   using_gpu: false
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_default
 
 comm_args:
-  backend: "MQTT_S3"
+  # backend: "MQTT_S3"
+  backend: "MPI"
   mqtt_config_path: config/mqtt_config.yaml
   s3_config_path: config/s3_config.yaml
 
