@@ -973,6 +973,7 @@ $(document).ready(function() {
       $(this.firstChild).after("<span class='expand-menu collapse menu-item-decorator'>" + chevronRight + "</span>");
       $(this.firstChild).after("<span class='hide-menu menu-item-decorator'>" + chevronDown + "</span>");
     }
+    $("#pytorch-left-menu p.caption").next("ul").first().toggle();
   });
 
   $(".expand-menu").on("click", function () {
