@@ -13,7 +13,7 @@ https://arxiv.org/pdf/1703.02757.pdf
 class KrumDefense(BaseDefenseMethod):
     def __init__(self, config):
         self.k = config.byzantine_client_num  # assume there are k byzantine clients
-        if config.multi is None:
+        if config.multi:
             self.multi = False
         else:
             self.multi = config.multi  # krum or multi-krum
