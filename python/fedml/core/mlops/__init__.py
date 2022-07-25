@@ -58,6 +58,7 @@ class MLOpsStore:
     mlops_event = None
     mlops_bind_result = False
     server_agent_id = None
+    current_parrot_process = None
 
     def __init__(self):
         pass
@@ -111,6 +112,9 @@ def init(args):
     # Init runtime logs
     init_logs(MLOpsStore.mlops_args, MLOpsStore.mlops_edge_id)
     logging.info("mlops.init args {}".format(MLOpsStore.mlops_args))
+
+    # Save current process id
+    MLOpsStore.current_parrot_process = os.getpid()
 
     # Start simulator login process as daemon
     # mlops_simulator_login(api_key)
