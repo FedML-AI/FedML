@@ -21,13 +21,13 @@ With the aggregated gradient, the parameter server performs a gradient descent u
 
 
 class GeometricMedianDefense(BaseDefenseMethod):
-    def __init__(self, byzantine_client_num, client_num_per_round, batch_num):
-        self.byzantine_client_num = byzantine_client_num
-        self.client_num_per_round = client_num_per_round
+    def __init__(self, config):
+        self.byzantine_client_num = config.byzantine_client_num
+        self.client_num_per_round = config.client_num_per_round
         # 2(1 + ε )q ≤ batch_num ≤ client_num_per_round
         # trade-off between accuracy & robustness:
         #       larger batch_num --> more Byzantine robustness, larger estimation error.
-        self.batch_num = batch_num
+        self.batch_num = config.batch_num
         if self.byzantine_client_num == 0:
             self.batch_num = 1
         self.batch_size = math.ceil(self.client_num_per_round / self.batch_num)

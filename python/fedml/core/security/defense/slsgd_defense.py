@@ -25,12 +25,12 @@ and alpha = 0 indicates the global model is identical to the old one.
 
 
 class SLSGDDefense(BaseDefenseMethod):
-    def __init__(self, trim_param_b, alpha, option_type):
-        self.b = trim_param_b  # parameter of trimmed mean
-        if alpha > 1 or alpha < 0:
+    def __init__(self, config):
+        self.b = config.trim_param_b  # parameter of trimmed mean
+        if config.alpha > 1 or config.alpha < 0:
             raise ValueError("the bound of alpha is [0, 1]")
-        self.alpha = alpha
-        self.option_type = option_type
+        self.alpha = config.alpha
+        self.option_type = config.option_type
 
     def run(
             self,
