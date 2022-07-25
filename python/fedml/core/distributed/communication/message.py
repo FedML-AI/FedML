@@ -57,6 +57,8 @@ class Message(object):
         self.msg_params[key] = value
 
     def get(self, key):
+        if key not in self.msg_params.keys():
+            return None
         return self.msg_params[key]
 
     def get_type(self):
