@@ -11,6 +11,9 @@ fedml build
 # Logout from the MLOps platform
 fedml logout
 
+# Display logs during training
+fedml logs 
+
 # Display FedML environment
 fedml env
 
