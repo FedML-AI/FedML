@@ -1,7 +1,6 @@
 import argparse
 
 import numpy as np
-
 from fedml.core.security.defense.bulyan_defense import BulyanDefense
 from fedml.core.security.test.aggregation.aggregation_functions import (
     AggregationFunction,
@@ -21,7 +20,6 @@ def add_args():
 
     # default arguments
     parser.add_argument("--byzantine_client_num", type=int, default=1)
-
     parser.add_argument("--client_num_per_round", type=int, default=8)
 
     args, unknown = parser.parse_known_args()
