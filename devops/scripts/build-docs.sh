@@ -22,6 +22,7 @@
 #conda install sphinx
 #conda install -c conda-forge myst-parser
 
+pip install --upgrade pip
 pip install -U sphinx
 pip install myst-parser
 
