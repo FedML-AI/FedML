@@ -1,13 +1,31 @@
+import argparse
+
 import torch
 from fedml.core.security.common.utils import compute_middle_point
 from fedml.core.security.defense.geometric_median_defense import GeometricMedianDefense
 from fedml.core.security.test.utils import create_fake_model_list
 
 
-def _get_geometric_median_obj():
-    return GeometricMedianDefense(
-        byzantine_client_num=2, client_num_per_round=20, batch_num=5
+def add_args():
+    parser = argparse.ArgumentParser(description="FedML")
+    parser.add_argument(
+        "--yaml_config_file",
+        "--cf",
+        help="yaml configuration file",
+        type=str,
+        default="",
     )
+    # default arguments
+    parser.add_argument("--byzantine_client_num", type=int, default=2)
+    parser.add_argument("--client_num_per_round", type=int, default=20)
+    parser.add_argument("--batch_num", type=int, default=5)
+    args, unknown = parser.parse_known_args()
+    return args
+
+
+def _get_geometric_median_obj():
+    config = add_args()
+    return GeometricMedianDefense(config)
 
 
 def test_defense():
