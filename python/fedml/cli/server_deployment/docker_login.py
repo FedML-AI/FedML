@@ -2,11 +2,11 @@ import os
 import platform
 
 import click
-from .client_constants import ClientConstants
-from .client_runner import FedMLClientRunner
+from .server_constants import ServerConstants
+from .server_runner import FedMLServerRunner
 
 
-def login_with_docker_mode(userid, version, docker_rank):
+def login_with_server_docker_mode(userid, version, docker_rank):
     account_id = userid
 
     # Get os name
@@ -15,7 +15,7 @@ def login_with_docker_mode(userid, version, docker_rank):
         sys_name = "MacOS"
 
     # Get data directory
-    cur_dir = ClientConstants.get_fedml_home_dir()
+    cur_dir = ServerConstants.get_fedml_home_dir()
 
     # Set default version if the version argument is empty
     if version == "":
@@ -34,13 +34,13 @@ def login_with_docker_mode(userid, version, docker_rank):
     tag = version
 
     # Set client agent image path and client image path
-    client_image_name = "fedml-client-agent:" + tag
+    client_image_name = "fedml-edge-server:" + tag
     image_path = image_dir + "/" + client_image_name
-    client_agent_image = registry_server + image_path
+    edge_server_image = registry_server + image_path
 
     # Get device id based on your machine MAC address.
     os_name = sys_name
-    device_id = "{}@Rank{}".format(FedMLClientRunner.get_device_id(), str(docker_rank))
+    device_id = "{}@Rank{}".format(FedMLServerRunner.get_device_id(), str(docker_rank))
 
     # Set environment variables for client agent docker
     env_account_id = account_id
@@ -50,39 +50,39 @@ def login_with_docker_mode(userid, version, docker_rank):
     env_current_device_id = device_id
 
     # Cleanup the running docker
-    click.echo("Your FedML client agent is being deployed, please wait for a moment...")
+    click.echo("Your FedML edge server is being deployed, please wait for a moment...")
 
     # Pull client agent docker
-    fedml_docker_name = "fedml_client_agent_{}".format(str(docker_rank))
-    click.echo("Now is pulling fedml docker client.........................")
-    os.system("docker pull " + client_agent_image)
-    click.echo("Now is opening fedml docker client.........................")
-    docker_stop_proc = ClientConstants.exec_console_with_shell_script_list(['docker', 'stop', fedml_docker_name])
-    _, _, _ = ClientConstants.get_console_pipe_out_err_results(docker_stop_proc)
-    docker_rm_proc = ClientConstants.exec_console_with_shell_script_list(['docker', 'rm', fedml_docker_name])
-    _, _, _ = ClientConstants.get_console_pipe_out_err_results(docker_rm_proc)
+    fedml_docker_name = "fedml_edge_server_{}".format(str(docker_rank))
+    click.echo("Now is pulling fedml docker server.........................")
+    os.system("docker pull " + edge_server_image)
+    click.echo("Now is opening fedml docker server.........................")
+    docker_stop_proc = ServerConstants.exec_console_with_shell_script_list(['docker', 'stop', fedml_docker_name])
+    _, _, _ = ServerConstants.get_console_pipe_out_err_results(docker_stop_proc)
+    docker_rm_proc = ServerConstants.exec_console_with_shell_script_list(['docker', 'rm', fedml_docker_name])
+    _, _, _ = ServerConstants.get_console_pipe_out_err_results(docker_rm_proc)
 
     # Compose the command for running the client agent docker
-    fedml_client_home_dir = os.path.join(env_current_running_dir, "docker", "rank-"+str(docker_rank))
+    fedml_server_home_dir = os.path.join(env_current_running_dir, "docker", "rank-"+str(docker_rank))
     try:
-        os.makedirs(fedml_client_home_dir)
+        os.makedirs(fedml_server_home_dir)
     except:
         pass
     docker_run_cmd = "docker run --name " + fedml_docker_name + \
-                     " -v " + fedml_client_home_dir + ":/home/fedml/fedml-client" + \
+                     " -v " + fedml_server_home_dir + ":/home/fedml/fedml-server" + \
                      " --env ACCOUNT_ID=" + str(env_account_id) + \
                      " --env FEDML_VERSION=" + env_version + \
-                     " --env CLIENT_DEVICE_ID=" + env_current_device_id + \
-                     " --env CLIENT_OS_NAME=" + env_current_os_name + \
-                     " -d " + client_agent_image
+                     " --env SERVER_DEVICE_ID=" + env_current_device_id + \
+                     " --env SERVER_OS_NAME=" + env_current_os_name + \
+                     " -d " + edge_server_image
 
     # Run the client agent docker
     os.system(docker_run_cmd)
 
     # Get the running state for the client agent docker
-    docker_ps_process = ClientConstants.exec_console_with_shell_script_list(['docker', 'ps', '-a'],
+    docker_ps_process = ServerConstants.exec_console_with_shell_script_list(['docker', 'ps', '-a'],
                                                                             should_capture_stdout_err=True)
-    ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(docker_ps_process)
+    ret_code, out, err = ServerConstants.get_console_pipe_out_err_results(docker_ps_process)
     is_deployment_ok = False
     if out is not None:
         out_str = out.decode(encoding="utf-8")
@@ -98,25 +98,25 @@ def login_with_docker_mode(userid, version, docker_rank):
         click.echo("Your device id is " + env_current_device_id + ".")
         click.echo("You may review the device in the MLOps edge device list.")
 
-        logs_with_docker_mode(docker_rank)
+        logs_with_server_docker_mode(docker_rank)
     else:
         click.echo("Oops, you failed to deploy the FedML client agent.")
         click.echo("Please check whether your Docker Application is installed and running normally!")
 
 
-def logout_with_docker_mode(docker_rank):
-    fedml_docker_name = "fedml_client_agent_{}".format(str(docker_rank))
+def logout_with_server_docker_mode(docker_rank):
+    fedml_docker_name = "fedml_edge_server_{}".format(str(docker_rank))
     click.echo("Logout.........................")
     os.system("docker stop {}".format(fedml_docker_name))
     os.system("docker rm {}".format(fedml_docker_name))
 
 
-def logs_with_docker_mode(docker_rank):
-    fedml_docker_name = "fedml_client_agent_{}".format(str(docker_rank))
+def logs_with_server_docker_mode(docker_rank):
+    fedml_docker_name = "fedml_edge_server_{}".format(str(docker_rank))
     docker_name_format = 'name={}'.format(fedml_docker_name)
-    docker_name_proc = ClientConstants.exec_console_with_shell_script_list(['docker', 'ps', '-aqf', docker_name_format],
+    docker_name_proc = ServerConstants.exec_console_with_shell_script_list(['docker', 'ps', '-aqf', docker_name_format],
                                                                            should_capture_stdout_err=True)
-    _, out_id, err_id = ClientConstants.get_console_pipe_out_err_results(docker_name_proc)
+    _, out_id, err_id = ServerConstants.get_console_pipe_out_err_results(docker_name_proc)
     if out_id is not None:
         out_id_str = out_id.decode(encoding="utf-8")
         docker_logs_cmd = 'docker logs -f {}'.format(out_id_str)
@@ -124,6 +124,6 @@ def logs_with_docker_mode(docker_rank):
 
 
 if __name__ == "__main__":
-    login_with_docker_mode("214", "dev", 1)
-    #logout_with_docker_mode(1)
+    login_with_server_docker_mode("214", "dev", 1)
+    #logout_with_server_docker_mode(1)
 
