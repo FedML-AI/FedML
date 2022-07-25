@@ -74,7 +74,7 @@ fedml build -t client \
 -sf $SOURCE \
 -ep $ENTRY \
 -cf $CONFIG \
--df $DEST
+-df $DEST  \
 --ignore $IGNORE
 ```
 
@@ -90,7 +90,7 @@ fedml build -t server \
 -sf $SOURCE \
 -ep $ENTRY \
 -cf $CONFIG \
--df $DEST
+-df $DEST  \
 --ignore $IGNORE
 ```
 
