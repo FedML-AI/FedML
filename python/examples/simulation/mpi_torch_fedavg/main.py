@@ -16,9 +16,12 @@ import torch
 from fedml.simulation import SimulatorMPI
 
 from fedml.model.cv.resnet_gn import resnet18
+from fedml.model.cv.resnet import resnet20, resnet32, resnet44, resnet56
+
+
 from fedml.arguments import Arguments
 
-
+from fedml import FedMLRunner
 
 
 # def str2bool(v):
@@ -112,10 +115,17 @@ if __name__ == "__main__":
     # load model (the size of MNIST image is 28 x 28)
     if args.model == "resnet18":
         logging.info("ResNet18_GN")
-        model = resnet18()
+        model = resnet18(group_norm=32)
+    elif args.model == "resnet20":
+        model = resnet20(class_num=output_dim)
     else:
         model = fedml.model.create(args, output_dim)
 
     # start training
-    simulator = SimulatorMPI(args, device, dataset, model)
-    simulator.run()
+    fedml_runner = FedMLRunner(args, device, dataset, model)
+    fedml_runner.run()
+    # simulator = SimulatorMPI(args, device, dataset, model)
+    # simulator.run()
+
+
+
