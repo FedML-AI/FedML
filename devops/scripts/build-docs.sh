@@ -13,23 +13,11 @@ conda info -a
 conda config --add channels defaults
 conda config --add channels conda-forge
 conda config --add channels bioconda
-#
-#/bin/bash
-#source /etc/profile
-#source ~/.bashrc
-#source $WORKSPACE/miniconda/etc/profile.d/conda.sh
-#
-#which conda
 
-conda info
 conda create -y -n fedml-docs python=3.8
 conda activate fedml-docs
 conda install sphinx
 conda install -c conda-forge myst-parser
-
-#pip3 install --upgrade pip
-#pip3 install -U sphinx
-#pip3 install myst-parser
 
 cd doc/en/
 make html
