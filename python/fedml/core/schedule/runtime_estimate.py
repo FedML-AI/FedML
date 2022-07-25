@@ -1,3 +1,5 @@
+import logging
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -67,6 +69,9 @@ def t_sample_fit(num_workers, num_clients, runtime_history, train_data_local_num
                     data_local_num_dict[worker_id][client_id] = []
                 runtime_to_fit[worker_id][client_id] += runtime_history[worker_id][client_id]
                 data_local_num_dict[worker_id][client_id] += [train_data_local_num_dict[client_id]] * len(runtime_history[worker_id][client_id])
+
+    logging.info(f"runtime_to_fit: {runtime_to_fit}")
+    logging.info(f"data_local_num_dict: {data_local_num_dict}")
     for worker_id, runtime_on_clients in runtime_to_fit.items():
         fit_params[worker_id] = {}
         fit_funcs[worker_id] = {}
