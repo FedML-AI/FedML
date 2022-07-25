@@ -96,9 +96,7 @@ pipeline {
           steps {
             container('base') {
               sh 'echo "building..."'
-              sh 'conda install sphinx'
-              sh 'conda install -c conda-forge myst-parser'
-              sh 'cd doc/en/;make html;make clean html;cd ../../'
+              sh './devops/scripts/build-docs.sh'
             }
           }
         }
@@ -122,9 +120,7 @@ pipeline {
             container('base') {
               withCredentials([usernamePassword(passwordVariable : 'FEDML_PIP_PASSWORD' ,usernameVariable : 'FEDML_PIP_USER' ,credentialsId : "$FEDML_PIP_CREDENTIAL_ID_PRODUCTION" ,)]) {
                 sh 'echo "building..."'
-                sh 'conda install sphinx'
-                sh 'conda install -c conda-forge myst-parser'
-                sh 'cd doc/en/;make html;make clean html;cd ../../'
+                sh './devops/scripts/build-docs.sh'
               }
             }
           }
