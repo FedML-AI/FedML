@@ -41,6 +41,8 @@ train_args:
 
 If you want to run the edge server and client using MQTT, you need to run the following commands.
 
+> !!IMPORTANT!! In order to avoid crosstalk during use, it is strongly recommended to modify `run_id` in `run_server.sh` and `run_client.sh` to avoid conflict.
+
 ```bash
 bash run_server.sh
 

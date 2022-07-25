@@ -38,9 +38,14 @@ login as client with docker mode:
 fedml login userid(or API Key) --docker --docker-rank 1
 ```
 
-login as edge server
+login as edge server with local pip mode:
 ```
 fedml login userid(or API Key) -s
+```
+
+login as edge server with docker mode:
+```
+fedml login userid(or API Key) -s --docker --docker-rank 1
 ```
 
 ### 2.1. Examples for Logining into the FedML MLOps platform (open.fedml.ai)
@@ -64,9 +69,14 @@ logout from client with docker mode:
 fedml logout --docker --docker-rank 1
 ```
 
-logout from edge server:
+logout from edge server with local pip mode:
 ```
 fedml logout -s
+```
+
+logout from edge server with docker mode:
+```
+fedml logout -s --docker --docker-rank 1
 ```
 
 ## 4. Display fedml version
@@ -84,7 +94,12 @@ logs from client with docker mode:
 fedml logs --docker --docker-rank 1
 ```
 
-logs from edge server:
+logs from edge server with local pip mode:
 ```
 fedml logs -s
+```
+
+logs from edge server with docker mode:
+```
+fedml logs --docker --docker-rank 1
 ```
