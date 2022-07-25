@@ -11,7 +11,10 @@ fedml build
 # Logout from the MLOps platform
 fedml logout
 
-# Display fedml version
+# Display FedML environment
+fedml env
+
+# Display FedML version
 fedml version
 
 # Display fedml logs
@@ -112,8 +115,9 @@ logout from edge server with docker mode:
 fedml logout -s --docker --docker-rank 1
 ```
 
-## 4. Display fedml version
+## 4. Display FedML Environment and Version
 ```
+fedml env
 fedml version
 ```
 
