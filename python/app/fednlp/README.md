@@ -11,10 +11,10 @@ The figure below is the overall structure of FedNLP.
 After `git clone`-ing this repository, please run the following command to install our dependencies.
 
 ```bash
-sudo apt install libopenmpi-dev
-pip install mpi4py
 cd FedML/python/app/fednlp
 conda create -n fednlp python=3.8
+sudo apt install libopenmpi-dev
+pip install mpi4py
 pip install fedml
 pip install -r requirements.txt
 ```
@@ -97,3 +97,43 @@ We have provided examples with BERT and DistilBert for text classification, seq 
 
 
 * Here {application_name} refers to any one of text_classification, span_extraction, seq_tagging or seq2seq.
+
+
+## Citation
+
+Please cite our FedNLP and FedML paper if it helps your research.
+You can describe us in your paper like this: "We develop our experiments based on FedNLP [1] and FedML [2]".
+
+```
+@inproceedings{lin-etal-2022-fednlp,
+title = "{F}ed{NLP}: Benchmarking Federated Learning Methods for Natural Language Processing Tasks",
+author = "Lin, Bill Yuchen  and
+He, Chaoyang  and
+Ze, Zihang  and
+Wang, Hulin  and
+Hua, Yufen  and
+Dupuy, Christophe  and
+Gupta, Rahul  and
+Soltanolkotabi, Mahdi  and
+Ren, Xiang  and
+Avestimehr, Salman",
+booktitle = "Findings of the Association for Computational Linguistics: NAACL 2022",
+month = jul,
+year = "2022",
+address = "Seattle, United States",
+publisher = "Association for Computational Linguistics",
+url = "https://aclanthology.org/2022.findings-naacl.13",
+pages = "157--175",
+abstract = "Increasing concerns and regulations about data privacy and sparsity necessitate the study of privacy-preserving, decentralized learning methods for natural language processing (NLP) tasks. Federated learning (FL) provides promising approaches for a large number of clients (e.g., personal devices or organizations) to collaboratively learn a shared global model to benefit all clients while allowing users to keep their data locally. Despite interest in studying FL methods for NLP tasks, a systematic comparison and analysis is lacking in the literature. Herein, we present the FedNLP, a benchmarking framework for evaluating federated learning methods on four different task formulations: text classification, sequence tagging, question answering, and seq2seq. We propose a universal interface between Transformer-based language models (e.g., BERT, BART) and FL methods (e.g., FedAvg, FedOPT, etc.) under various non-IID partitioning strategies. Our extensive experiments with FedNLP provide empirical comparisons between FL methods and help us better understand the inherent challenges of this direction. The comprehensive analysis points to intriguing and exciting future research aimed at developing FL methods for NLP tasks.",
+}
+```
+
+```
+@article{chaoyanghe2020fedml,
+Author = {He, Chaoyang and Li, Songze and So, Jinhyun and Zhang, Mi and Wang, Hongyi and Wang, Xiaoyang and Vepakomma, Praneeth and Singh, Abhishek and Qiu, Hang and Shen, Li and Zhao, Peilin and Kang, Yan and Liu, Yang and Raskar, Ramesh and Yang, Qiang and Annavaram, Murali and Avestimehr, Salman},
+Journal = {arXiv preprint arXiv:2007.13518},
+Title = {FedML: A Research Library and Benchmark for Federated Machine Learning},
+Year = {2020}
+}
+
+```
