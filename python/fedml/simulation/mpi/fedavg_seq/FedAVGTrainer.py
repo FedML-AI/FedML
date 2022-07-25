@@ -36,10 +36,19 @@ class FedAVGTrainer(object):
         self.local_sample_number = self.train_data_local_num_dict[client_index]
         self.test_local = self.test_data_local_dict[client_index]
 
+    def get_lr(self, progress):
+        # This aims to make a float step_size work.
+        if self.args.lr_schedule == "StepLR":
+            exp_num = progress / self.args.lr_step_size
+            lr = self.args.learning_rate * (self.args.lr_decay_rate**exp_num)
+        else:
+            raise NotImplementedError
+        return lr
+
     def train(self, round_idx=None):
         self.args.round_idx = round_idx
-        self.trainer.train(self.train_local, self.device, self.args)
-
+        lr = self.get_lr(round_idx)
+        self.trainer.train(self.train_local, self.device, self.args, lr=lr)
         weights = self.trainer.get_model_params()
 
         # transform Tensor to list
