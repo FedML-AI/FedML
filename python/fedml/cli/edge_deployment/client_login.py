@@ -30,10 +30,18 @@ def __login_as_client(args, userid, version):
     sys_name = platform.system()
     if sys_name == "Darwin":
         sys_name = "MacOS"
-    setattr(args, "os_name", sys_name)
+    if hasattr(args, "os_name") and args.os_name is not None and args.os_name != "":
+        pass
+    else:
+        setattr(args, "os_name", sys_name)
     setattr(args, "version", version)
     setattr(args, "log_file_dir", ClientConstants.get_log_file_dir())
-    setattr(args, "device_id", FedMLClientRunner.get_device_id())
+    is_from_docker = False
+    if hasattr(args, "device_id") and args.device_id is not None and args.device_id != "0":
+        setattr(args, "current_device_id", args.device_id)
+        is_from_docker = True
+    else:
+        setattr(args, "current_device_id", FedMLClientRunner.get_device_id())
     setattr(args, "config_version", version)
     setattr(args, "cloud_region", "")
 
@@ -69,8 +77,10 @@ def __login_as_client(args, userid, version):
         return
 
     # Build unique device id
-    if args.device_id is not None and len(str(args.device_id)) > 0:
-        unique_device_id = args.device_id + "@" + args.os_name + ".Edge.Device"
+    if is_from_docker:
+        unique_device_id = args.current_device_id + "@" + args.os_name + ".Docker.Edge.Device"
+    else:
+        unique_device_id = args.current_device_id + "@" + args.os_name + ".Edge.Device"
 
     # Bind account id to the MLOps platform.
     register_try_count = 0
@@ -104,7 +114,7 @@ def __login_as_client(args, userid, version):
     logging.info("login: unique_device_id = %s" % str(unique_device_id))
     logging.info("login: edge_id = %s" % str(edge_id))
     runner.unique_device_id = unique_device_id
-    ClientConstants.save_runner_infos(args.device_id + "." + args.os_name, edge_id, run_id=0)
+    ClientConstants.save_runner_infos(args.current_device_id + "." + args.os_name, edge_id, run_id=0)
 
     # Setup MQTT connection for communication with the FedML server.
     runner.setup_agent_mqtt_connection(service_config)
@@ -227,6 +237,8 @@ if __name__ == "__main__":
     parser.add_argument("--version", "-v", type=str, default="release")
     parser.add_argument("--local_server", "-ls", type=str, default="127.0.0.1")
     parser.add_argument("--role", "-r", type=str, default="client")
+    parser.add_argument("--device_id", "-id", type=str, default="0")
+    parser.add_argument("--os_name", "-os", type=str, default="")
     args = parser.parse_args()
     args.user = args.user
     if args.type == 'login':
