@@ -9,7 +9,7 @@ data_args:
   partition_alpha: 0.1
 
 model_args:
-  model: "resnet18"
+  model: "resnet20"
 
 train_args:
   federated_optimizer: "FedAvg_seq"
@@ -20,7 +20,7 @@ train_args:
   epochs: 1
   batch_size: 20
   client_optimizer: sgd
-  learning_rate: 0.1
+  learning_rate: 0.01
   weight_decay: 0.0001
 
 validation_args:
@@ -40,7 +40,7 @@ comm_args:
 
 tracking_args:
   log_file_dir: ./log
-  enable_wandb: True
+  enable_wandb: False
   wandb_entity: automl
   wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
   wandb_project: bench_optim
@@ -48,6 +48,7 @@ tracking_args:
   run_name: fedml_optim_bench
   wandb_only_server: True
   using_mlops: False
+  simulation_schedule: "LinearFit-DP"
 
 attack_args:
   enable_attack: false

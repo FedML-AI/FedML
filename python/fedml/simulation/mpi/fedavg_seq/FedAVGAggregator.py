@@ -107,29 +107,37 @@ class FedAVGAggregator(object):
         return resource
 
     def record_client_runtime(self, worker_id, client_runtimes):
-        self.runtime_history
+        for client_id, runtime in client_runtimes.items():
+            self.runtime_history[worker_id][client_id].append(runtime)
 
-    def client_schedule(self, round_idx, client_indexes, mode="simulate"):
-        self.runtime_history = {}
-        for i in range(self.worker_num):
-            self.runtime_history[i] = {}
-            for j in range(self.args.client_num_in_total):
-                self.runtime_history[i][j] = []
 
-        fit_params, fit_funcs, fit_errors = t_sample_fit(
-            self.worker_num, self.args.client_num_in_total, self.runtime_history, 
-            self.train_data_local_num_dict, uniform_client=True, uniform_gpu=False)
+    def client_schedule(self, round_idx, client_indexes):
+        # self.runtime_history = {}
+        # for i in range(self.worker_num):
+        #     self.runtime_history[i] = {}
+        #     for j in range(self.args.client_num_in_total):
+        #         self.runtime_history[i][j] = []
 
-        # scheduler(workloads, constraints, memory)
-        # workload = self.workload_estimate(client_indexes, mode)
-        # resource = self.resource_estimate(mode)
-        # memory = self.memory_estimate(mode)
+        if hasattr(self.args, "simulation_schedule") and round_idx > 5:
+            # Need some rounds to record some information. 
+            simulation_schedule = self.args.simulation_schedule
+            fit_params, fit_funcs, fit_errors = t_sample_fit(
+                self.worker_num, self.args.client_num_in_total, self.runtime_history, 
+                self.train_data_local_num_dict, uniform_client=True, uniform_gpu=False)
 
-        # mode = 0
-        # my_scheduler = scheduler(workload, resource, memory)
-        # schedules = my_scheduler.DP_schedule(mode)
-        # for i in range(len(schedules)):
-        #     print("Resource %2d: %s\n" % (i, str(schedules[i])))
+            logging.info(f"fit_params: {fit_params}")
+            logging.info(f"fit_errors: {fit_errors}")
+
+            # scheduler(workloads, constraints, memory)
+            # workload = self.workload_estimate(client_indexes, mode)
+            # resource = self.resource_estimate(mode)
+            # memory = self.memory_estimate(mode)
+
+            # mode = 0
+            # my_scheduler = scheduler(workload, resource, memory)
+            # schedules = my_scheduler.DP_schedule(mode)
+            # for i in range(len(schedules)):
+            #     print("Resource %2d: %s\n" % (i, str(schedules[i])))
 
         client_schedule = np.array_split(client_indexes, self.worker_num)
         return client_schedule

@@ -95,7 +95,7 @@ class SimulatorMPI:
                 device,
                 dataset,
                 model,
-                model_trainer=model_trainer,
+                model_trainer=client_trainer,
                 preprocessed_sampling_lists=None,
             )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_BASE_FRAMEWORK:
