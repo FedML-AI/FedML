@@ -12,7 +12,7 @@ class MyModelTrainer(ClientTrainer):
     def set_model_params(self, model_parameters):
         self.model.load_state_dict(model_parameters)
 
-    def train(self, train_data, device, args):
+    def train(self, train_data, device, args, lr=None):
         model = self.model
 
         model.to(device)
@@ -23,7 +23,8 @@ class MyModelTrainer(ClientTrainer):
         if args.client_optimizer == "sgd":
             optimizer = torch.optim.SGD(
                 filter(lambda p: p.requires_grad, self.model.parameters()),
-                lr=args.learning_rate,
+                lr=lr,
+                momentum=args.momentum
             )
         else:
             optimizer = torch.optim.Adam(
