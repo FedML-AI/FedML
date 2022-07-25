@@ -224,7 +224,6 @@ pipeline {
               sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_DEV'
               sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_CLIENT_AGENT:$VERSION_DEV'
               sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_EDGE_SERVER:$VERSION_DEV'
-              sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DOCS_SERVER:$VERSION_PRODUCTION'
             }
           }
         }
