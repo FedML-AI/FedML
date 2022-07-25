@@ -11,14 +11,15 @@ fedml build
 # Logout from the MLOps platform
 fedml logout
 
+# Display logs during training
+fedml logs 
+
 # Display FedML environment
 fedml env
 
 # Display FedML version
 fedml version
 
-# Display fedml logs
-fedml logs
 ```
 
 ## 1. Log in to the FedML MLOps platform (open.fedml.ai)
