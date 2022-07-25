@@ -1,8 +1,9 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 /bin/bash
 source /etc/profile
 source ~/.bashrc
+source $WORKSPACE/miniconda/etc/profile.d/conda.sh
 
 which conda
 conda info
