@@ -36,6 +36,7 @@ pipeline {
         HTTPS_REGISTRY_PRODUCTION = 'https://public.ecr.aws'
         AWS_REGION_NAME_PRODUCTION = 'us-east-1'
         DEPLOY_NAMESPACE_PRODUCTION = 'fedml-devops-aggregator-release'
+        DOCS_DEPLOY_NAMESPACE_PRODUCTION = 'fedml-devops-release'
         VERSION_PRODUCTION = 'release'
         BRANCH_PRODUCTION = 'master'
 
@@ -329,8 +330,8 @@ pipeline {
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DEPLOY_NAME'
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION  --replicas=1 deployment/$DEPLOY_NAME'
 
-                    sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DOCS_DEPLOY_NAME'
-                    sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION --replicas=1 deployment/$DOCS_DEPLOY_NAME'
+                    sh 'kubectl scale -n $DOCS_DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DOCS_DEPLOY_NAME'
+                    sh 'kubectl scale -n $DOCS_DEPLOY_NAMESPACE_PRODUCTION --replicas=1 deployment/$DOCS_DEPLOY_NAME'
                 }
              }
           }
