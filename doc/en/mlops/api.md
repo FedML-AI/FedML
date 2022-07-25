@@ -13,6 +13,9 @@ fedml logout
 
 # Display fedml version
 fedml version
+
+# Display fedml logs
+fedml logs
 ```
 
 ## 1. Log in to the FedML MLOps platform (open.fedml.ai)
