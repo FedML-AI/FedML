@@ -22,9 +22,9 @@
 #conda install sphinx
 #conda install -c conda-forge myst-parser
 
-pip install --upgrade pip
-pip install -U sphinx
-pip install myst-parser
+#pip3 install --upgrade pip
+pip3 install -U sphinx
+pip3 install myst-parser
 
 cd doc/en/
 make html
