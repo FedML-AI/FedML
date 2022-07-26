@@ -1,6 +1,6 @@
 import secrets
 import numpy as np
-import fedml.core.differential_privacy.common.utils as utils
+from ..common.utils import check_bounds, check_numeric_value, check_params
 
 
 class Laplace:
@@ -20,7 +20,7 @@ class Laplace:
     """
 
     def __init__(self, *, epsilon, delta=0.0, sensitivity):
-        utils.check_params(epsilon, delta, sensitivity)
+        check_params(epsilon, delta, sensitivity)
         self.epsilon = float(epsilon)
         self.delta = float(delta)
         self.sensitivity = float(sensitivity)
@@ -42,7 +42,7 @@ class Laplace:
 
     def randomise(self, value):
         """Randomise `value` with the mechanism."""
-        utils.check_numeric_value(value)
+        check_numeric_value(value)
         scale = self.sensitivity / (self.epsilon - np.log(1 - self.delta))
         standard_laplace = self._laplace_sampler(
             self._rng.random(),
@@ -61,7 +61,7 @@ class LaplaceTruncated(Laplace):
 
     def __init__(self, *, epsilon, delta=0.0, sensitivity, lower_bound, upper_bound):
         super().__init__(epsilon=epsilon, delta=delta, sensitivity=sensitivity)
-        self.lower_bound, self.upper_bound = utils.check_bounds(
+        self.lower_bound, self.upper_bound = check_bounds(
             lower_bound, upper_bound
         )
 
@@ -93,7 +93,7 @@ class LaplaceTruncated(Laplace):
         return variance
 
     def randomise(self, value):
-        utils.check_numeric_value(value)
+        check_numeric_value(value)
         noisy_value = super().randomise(value)
         return self._truncate(noisy_value)
 
@@ -118,7 +118,7 @@ class LaplaceFolded(Laplace):
         )
 
     def bias(self, value):
-        utils.check_numeric_value(value)
+        check_numeric_value(value)
         shape = self.sensitivity / self.epsilon
         bias = shape * (
             np.exp((self.lower_bound + self.upper_bound - 2 * value) / shape) - 1
@@ -129,7 +129,7 @@ class LaplaceFolded(Laplace):
         return bias
 
     def randomise(self, value):
-        utils.check_numeric_value(value)
+        check_numeric_value(value)
         noisy_value = super().randomise(value)
         return self._fold(noisy_value)
 
@@ -227,7 +227,7 @@ class LaplaceBoundedDomain(LaplaceTruncated):
         return bias
 
     def variance(self, value):
-        utils.check_numeric_value(value)
+        check_numeric_value(value)
         if self._scale is None:
             self._scale = self._find_scale()
         variance = value**2
@@ -256,7 +256,7 @@ class LaplaceBoundedDomain(LaplaceTruncated):
         return variance
 
     def randomise(self, value):
-        utils.check_numeric_value(value)
+        check_numeric_value(value)
         if self._scale is None:
             self._scale = self._find_scale()
         value = max(min(value, self.upper_bound), self.lower_bound)
@@ -310,7 +310,7 @@ class LaplaceBoundedNoise(Laplace):
         return 0.0
 
     def randomise(self, value):
-        utils.check_numeric_value(value)
+        check_numeric_value(value)
         if self._scale is None or self._noise_bound is None:
             self._scale = self.sensitivity / self.epsilon
             self._noise_bound = (
