@@ -17,8 +17,8 @@ class Message(object):
     MSG_ARG_KEY_MODEL_PARAMS = "model_params"
     MSG_ARG_KEY_MODEL_PARAMS_URL = "model_params_url"
 
-    def __init__(self, type=0, sender_id=0, receiver_id=0):
-        self.type = type
+    def __init__(self, type="default", sender_id=0, receiver_id=0):
+        self.type = str(type)
         self.sender_id = sender_id
         self.receiver_id = receiver_id
         self.msg_params = {}

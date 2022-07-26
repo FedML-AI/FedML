@@ -235,7 +235,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
             raise Exception("This is only used for the server")
 
     def send_message_json(self, topic_name, json_message):
-        self.mqtt_mgr.send_message_json(topic_name, payload=json_message)
+        self.mqtt_mgr.send_message_json(topic_name, json_message)
 
     def handle_receive_message(self):
         self.run_loop_forever()

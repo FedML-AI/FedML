@@ -20,9 +20,7 @@ from fedml.model.nlp.rnn import RNN_OriginalFedAvg, RNN_StackOverFlow, RNN_FedSh
 def create(args, output_dim):
     global model
     model_name = args.model
-    logging.info(
-        "create_model. model_name = %s, output_dim = %s" % (model_name, output_dim)
-    )
+    logging.info("create_model. model_name = %s, output_dim = %s" % (model_name, output_dim))
     if model_name == "lr" and args.dataset == "mnist":
         logging.info("LogisticRegression + MNIST")
         model = LogisticRegression(28 * 28, output_dim)
@@ -67,29 +65,19 @@ def create(args, output_dim):
             model = Network(args.init_channels, output_dim, args.layers, criterion)
         elif args.stage == "train":
             genotype = genotypes.FedNAS_V1
-            model = NetworkCIFAR(
-                args.init_channels, output_dim, args.layers, args.auxiliary, genotype
-            )
+            model = NetworkCIFAR(args.init_channels, output_dim, args.layers, args.auxiliary, genotype)
     elif model_name == "GAN" and args.dataset == "mnist":
         gen = Generator()
         disc = Discriminator()
         model = (gen, disc)
-    elif (
-            model_name == "lenet"
-            and hasattr(args, "deeplearning_backend")
-            and args.deeplearning_backend == "mnn"
-    ):
+    elif model_name == "lenet" and hasattr(args, "deeplearning_backend") and args.deeplearning_backend == "mnn":
         from .mobile.mnn_lenet import create_mnn_lenet5_model
 
         model = create_mnn_lenet5_model(args.global_model_file_path)
-    elif (
-            model_name == "resnet20"
-            and hasattr(args, "deeplearning_backend")
-            and args.deeplearning_backend == "mnn"
-    ):
+    elif model_name == "resnet20" and hasattr(args, "deeplearning_backend") and args.deeplearning_backend == "mnn":
         from .mobile.mnn_resnet import create_mnn_resnet20_model
 
         model = create_mnn_resnet20_model(args.global_model_file_path)
     else:
-        model = LogisticRegression(28 * 28, output_dim)
+        raise Exception("no such model definition, please check the argument spelling or customize your own model")
     return model

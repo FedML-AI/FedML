@@ -1,10 +1,11 @@
-from .message_def import MyMessage
-from ....core.distributed.client.client_manager import ClientManager
-from ....core.distributed.communication.message import Message
 import logging
 
+from .message_def import MyMessage
+from ....core.distributed.fedml_comm_manager import FedMLCommManager
+from ....core.distributed.communication.message import Message
 
-class GKTClientMananger(ClientManager):
+
+class GKTClientMananger(FedMLCommManager):
     def __init__(self, args, trainer, comm=None, rank=0, size=0, backend="MPI"):
         super().__init__(args, comm, rank, size, backend)
 
