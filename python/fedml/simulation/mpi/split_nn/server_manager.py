@@ -1,9 +1,9 @@
 from .message_define import MyMessage
+from ....core.distributed.fedml_comm_manager import FedMLCommManager
 from ....core.distributed.communication.message import Message
-from ....core.distributed.server.server_manager import ServerManager
 
 
-class SplitNNServerManager(ServerManager):
+class SplitNNServerManager(FedMLCommManager):
     def __init__(self, arg_dict, trainer, backend="MPI"):
         super().__init__(
             arg_dict["args"],

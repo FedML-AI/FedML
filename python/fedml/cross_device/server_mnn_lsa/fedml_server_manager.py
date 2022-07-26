@@ -5,12 +5,12 @@ from fedml import mlops
 from .message_define import MyMessage
 from .utils import write_tensor_dict_to_mnn
 from ...core.distributed.communication.message import Message
-from ...core.distributed.server.server_manager import ServerManager
+from ...core.distributed.fedml_comm_manager import FedMLCommManager
 from ...core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 import logging
 
 
-class FedMLServerManager(ServerManager):
+class FedMLServerManager(FedMLCommManager):
     def __init__(
         self,
         args,
@@ -52,7 +52,6 @@ class FedMLServerManager(ServerManager):
         self.client_online_mapping = {}
         self.client_real_ids = json.loads(args.client_id_list)
 
-        self.aggregated_model_url = None
         self.event_sdk = MLOpsProfilerEvent(self.args)
 
     def run(self):
@@ -283,9 +282,6 @@ class FedMLServerManager(ServerManager):
                 )
                 client_idx_in_this_round += 1
 
-            mlops.log_aggregated_model_info(self.round_idx + 1, self.aggregated_model_url)
-            self.aggregated_model_url = None
-
             self.round_idx += 1
             if self.round_idx == self.round_num:
                 mlops.log_aggregation_finished_status()
@@ -315,3 +311,8 @@ class FedMLServerManager(ServerManager):
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(data_silo_index))
         self.send_message(message)
+
+        mlops.log_aggregated_model_info(
+            self.round_idx + 1,
+            model_url=message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL),
+        )

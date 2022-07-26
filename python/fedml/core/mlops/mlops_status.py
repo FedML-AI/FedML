@@ -1,11 +1,4 @@
-
-
-class Singleton(object):
-    def __new__(cls, *args, **kw):
-        if not hasattr(cls, "_instance"):
-            orig = super(Singleton, cls)
-            cls._instance = orig.__new__(cls, *args, **kw)
-        return cls._instance
+from ..common.singleton import Singleton
 
 
 class MLOpsStatus(Singleton):
@@ -50,4 +43,3 @@ class MLOpsStatus(Singleton):
 
     def get_server_status(self, edge_id):
         return self.server_status.get(edge_id, None)
-

@@ -4,12 +4,13 @@ import time
 
 from fedml import mlops
 from .message_define import MyMessage
+
 from ...core.distributed.communication.message import Message
-from ...core.distributed.server.server_manager import ServerManager
+from ...core.distributed.fedml_comm_manager import FedMLCommManager
 from ...core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
 
-class FedMLServerManager(ServerManager):
+class FedMLServerManager(FedMLCommManager):
     def __init__(
         self,
         args,

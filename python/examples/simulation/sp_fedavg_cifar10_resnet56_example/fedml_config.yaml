@@ -31,7 +31,7 @@ device_args:
   gpu_id: 0
 
 comm_args:
-  backend: "single_process"
+  backend: "sp"
   is_mobile: 0
 
 tracking_args:

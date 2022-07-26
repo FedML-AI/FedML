@@ -9,12 +9,12 @@ from fedml import mlops
 from fedml.constants import FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
 from .message_define import MyMessage
 from .utils import convert_model_params_from_ddp, convert_model_params_to_ddp
-from ...core.distributed.client.client_manager import ClientManager
+from ...core.distributed.fedml_comm_manager import FedMLCommManager
 from ...core.distributed.communication.message import Message
 from ...core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
 
-class ClientMasterManager(ClientManager):
+class ClientMasterManager(FedMLCommManager):
     def __init__(
         self, args, trainer_dist_adapter, comm=None, rank=0, size=0, backend="MPI"
     ):
@@ -118,6 +118,7 @@ class ClientMasterManager(ClientManager):
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, weights)
         message.add_params(MyMessage.MSG_ARG_KEY_NUM_SAMPLES, local_sample_num)
         self.send_message(message)
+
         MLOpsProfilerEvent.log_to_wandb(
             {"Communication/Send_Total": time.time() - tick}
         )
@@ -128,6 +129,7 @@ class ClientMasterManager(ClientManager):
 
     def send_client_status(self, receive_id, status="ONLINE"):
         logging.info("send_client_status")
+        logging.info("self.client_real_id = {}".format(self.client_real_id))
         message = Message(
             MyMessage.MSG_TYPE_C2S_CLIENT_STATUS, self.client_real_id, receive_id
         )

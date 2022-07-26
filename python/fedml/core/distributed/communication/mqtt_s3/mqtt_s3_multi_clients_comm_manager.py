@@ -138,9 +138,8 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                     "mqtt_s3.on_connect: subscribes real_topic = %s, mid = %s, result = %s"
                     % (real_topic, mid, str(result))
                 )
-
-            self._notify_connection_ready()
             logging.info("mqtt_s3.on_connect: server subscribes")
+            self._notify_connection_ready()
         else:
             # client
             real_topic = self._topic + str(self.server_id) + "_" + str(self.client_real_ids[0])
@@ -172,7 +171,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         msg_params = Message()
         msg_params.init_from_json_object(msg_obj)
         msg_type = msg_params.get_type()
-        logging.info("mqtt_s3.notify: msg type = %d" % msg_type)
+        logging.info("mqtt_s3.notify: msg type = %s" % msg_type)
         for observer in self._observers:
             observer.receive_message(msg_type, msg_params)
 
