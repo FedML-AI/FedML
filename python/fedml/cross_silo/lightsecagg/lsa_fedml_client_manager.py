@@ -6,7 +6,7 @@ import numpy as np
 
 from fedml import mlops
 from .lsa_message_define import MyMessage
-from ...core.distributed.client.client_manager import ClientManager
+from ...core.distributed.fedml_comm_manager import FedMLCommManager
 from ...core.distributed.communication.message import Message
 from ...core.mpc.lightsecagg import (
     compute_aggregate_encoded_mask,
@@ -17,7 +17,7 @@ from ...core.mpc.lightsecagg import (
 )
 
 
-class FedMLClientManager(ClientManager):
+class FedMLClientManager(FedMLCommManager):
     def __init__(
         self, args, trainer, comm=None, client_rank=0, client_num=0, backend="MPI"
     ):

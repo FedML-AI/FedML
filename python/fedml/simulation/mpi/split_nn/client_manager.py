@@ -1,11 +1,11 @@
 import logging
 
 from .message_define import MyMessage
-from ....core.distributed.client.client_manager import ClientManager
+from ....core.distributed.fedml_comm_manager import FedMLCommManager
 from ....core.distributed.communication.message import Message
 
 
-class SplitNNClientManager(ClientManager):
+class SplitNNClientManager(FedMLCommManager):
     def __init__(self, arg_dict, trainer, backend="MPI"):
         super().__init__(
             arg_dict["args"],

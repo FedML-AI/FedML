@@ -1,10 +1,7 @@
 common_args:
   training_type: "simulation"
   random_seed: 0
-  config_version: "local"
-  mlops_api_key: c9356b9c4ce44363bb66366b210201
-  mlops_project_name: alex-test-prj
-  mlops_run_name: fedml_torch_fedavg_mnist_lr_2
+  config_version: release
 
 data_args:
   dataset: "mnist"
@@ -39,10 +36,10 @@ comm_args:
 
 tracking_args:
   enable_tracking: true
-  log_file_dir: ./log
   enable_wandb: false
-  wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
-  wandb_entity: fedml-ai
-  wandb_project: simulation
+  log_file_dir: ./log
   run_name: fedml_torch_fedavg_mnist_lr
-  using_mlops: false
+  mlops_api_key: c9356b9c4ce44363bb66366b210201
+  mlops_project_name: alex-test-prj
+  mlops_run_name: fedml_torch_fedavg_mnist_lr_2
+
