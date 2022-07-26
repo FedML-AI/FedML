@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.data import TensorDataset
-from fedml.core.security.common.utils import (
+from ..common.utils import (
     get_malicious_client_id_list,
     replace_original_class_with_target_class, log_client_data_statistics,
 )
