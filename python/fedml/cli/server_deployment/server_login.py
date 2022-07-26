@@ -15,10 +15,18 @@ def __login_as_edge_server_and_agent(args, userid, version):
     sys_name = platform.system()
     if sys_name == "Darwin":
         sys_name = "MacOS"
-    setattr(args, "os_name", sys_name)
+    if hasattr(args, "os_name") and args.os_name is not None and args.os_name != "":
+        pass
+    else:
+        setattr(args, "os_name", sys_name)
     setattr(args, "version", version)
     setattr(args, "log_file_dir", ServerConstants.get_log_file_dir())
-    setattr(args, "current_device_id", FedMLServerRunner.get_device_id())
+    is_from_docker = False
+    if hasattr(args, "device_id") and args.device_id is not None and args.device_id != "0":
+        setattr(args, "current_device_id", args.device_id)
+        is_from_docker = True
+    else:
+        setattr(args, "current_device_id", FedMLServerRunner.get_device_id())
     setattr(args, "config_version", version)
     setattr(args, "cloud_region", "")
 
@@ -55,7 +63,9 @@ def __login_as_edge_server_and_agent(args, userid, version):
         return
 
     # Build unique device id
-    if args.current_device_id is not None and len(str(args.current_device_id)) > 0:
+    if is_from_docker:
+        unique_device_id = args.current_device_id + "@" + args.os_name + ".Docker.Edge.Server"
+    else:
         unique_device_id = args.current_device_id + "@" + args.os_name + ".Edge.Server"
 
     # Bind account id to the MLOps platform.
@@ -321,6 +331,7 @@ if __name__ == "__main__":
     parser.add_argument("--role", "-r", type=str, default="local")
     parser.add_argument("--runner_cmd", "-rc", type=str, default="{}")
     parser.add_argument("--device_id", "-id", type=str, default="0")
+    parser.add_argument("--os_name", "-os", type=str, default="")
 
     args = parser.parse_args()
     args.user = args.user

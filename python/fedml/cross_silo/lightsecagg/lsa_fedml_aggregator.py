@@ -106,6 +106,7 @@ class LightSecAggAggregator(object):
         T = self.privacy_guarantee
         p = self.prime_number
         logging.debug("d = {}, N = {}, U = {}, T = {}, p = {}".format(d, N, U, T, p))
+        d = int(np.ceil(float(d)/(U-T))) * (U-T)
 
         alpha_s = np.array(range(N)) + 1
         beta_s = np.array(range(U)) + (N + 1)
