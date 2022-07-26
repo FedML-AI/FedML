@@ -1,3 +1,6 @@
+from torch import nn
+
+from . import ClientTrainer, ServerAggregator
 from .constants import (
     FEDML_TRAINING_PLATFORM_SIMULATION,
     FEDML_SIMULATION_TYPE_NCCL,
@@ -10,8 +13,19 @@ from .constants import (
 
 class FedMLRunner:
     def __init__(
-        self, args, device, dataset, model, client_trainer=None, server_aggregator=None
+        self,
+        args,
+        device,
+        dataset,
+        model: nn.Module,
+        client_trainer: ClientTrainer = None,
+        server_aggregator: ServerAggregator = None,
+        algorithm_flow=None,
     ):
+        if algorithm_flow is not None:
+            self.runner = algorithm_flow
+            return
+
         if args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION:
             init_runner_func = self._init_simulation_runner
 
@@ -32,13 +46,22 @@ class FedMLRunner:
     ):
         if hasattr(args, "backend") and args.backend == FEDML_SIMULATION_TYPE_SP:
             from .simulation.simulator import SimulatorSingleProcess
-            runner = SimulatorSingleProcess(args, device, dataset, model, client_trainer, server_aggregator)
+
+            runner = SimulatorSingleProcess(
+                args, device, dataset, model, client_trainer, server_aggregator
+            )
         elif hasattr(args, "backend") and args.backend == FEDML_SIMULATION_TYPE_MPI:
             from .simulation.simulator import SimulatorMPI
-            runner = SimulatorMPI(args, device, dataset, model, client_trainer, server_aggregator)
+
+            runner = SimulatorMPI(
+                args, device, dataset, model, client_trainer, server_aggregator
+            )
         elif hasattr(args, "backend") and args.backend == FEDML_SIMULATION_TYPE_NCCL:
             from .simulation.simulator import SimulatorNCCL
-            runner = SimulatorNCCL(args, device, dataset, model, client_trainer, server_aggregator)
+
+            runner = SimulatorNCCL(
+                args, device, dataset, model, client_trainer, server_aggregator
+            )
         else:
             raise Exception("not such backend {}".format(args.backend))
 

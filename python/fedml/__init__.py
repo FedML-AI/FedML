@@ -84,7 +84,7 @@ def init(args=None):
     elif args.training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE:
         args = init_cross_device(args)
     else:
-        raise Exception("no such setting")
+        raise Exception("no such setting: training_type = {}, backend = {}".format(args.training_type, args.backend))
 
     manage_profiling_args(args)
 

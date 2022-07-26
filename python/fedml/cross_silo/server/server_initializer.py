@@ -7,8 +7,8 @@ def init_server(
     args,
     device,
     comm,
-    client_rank,
-    client_num,
+    rank,
+    worker_num,
     model,
     train_data_num,
     train_data_global,
@@ -30,7 +30,7 @@ def init_server(
         train_data_local_dict,
         test_data_local_dict,
         train_data_local_num_dict,
-        client_num,
+        worker_num,
         device,
         args,
         model_trainer,
@@ -39,6 +39,6 @@ def init_server(
     # start the distributed training
     backend = args.backend
     server_manager = FedMLServerManager(
-        args, aggregator, comm, client_rank, client_num, backend
+        args, aggregator, comm, rank, worker_num, backend
     )
     server_manager.run()

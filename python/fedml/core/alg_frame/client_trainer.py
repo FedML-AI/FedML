@@ -26,7 +26,15 @@ class ClientTrainer(ABC):
         pass
 
     @abstractmethod
+    def on_before_local_training(self, train_data, device, args=None):
+        pass
+
+    @abstractmethod
     def train(self, train_data, device, args=None):
+        pass
+
+    @abstractmethod
+    def on_after_local_training(self, train_data, device, args=None):
         pass
 
     @abstractmethod

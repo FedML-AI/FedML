@@ -4,11 +4,11 @@ import time
 
 from .message_define import MyMessage
 from .utils import transform_list_to_tensor
-from ....core.distributed.client.client_manager import ClientManager
+from ....core.distributed.fedml_comm_manager import FedMLCommManager
 from ....core.distributed.communication.message import Message
 
 
-class FedAVGClientManager(ClientManager):
+class FedAVGClientManager(FedMLCommManager):
     def __init__(
         self,
         args,

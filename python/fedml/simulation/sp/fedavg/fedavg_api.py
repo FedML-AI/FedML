@@ -5,13 +5,12 @@ import random
 import numpy as np
 import torch
 import wandb
-from fedml import mlops
 
+from fedml import mlops
 from .client import Client
 from .my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
 from .my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
 from .my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
-import logging
 
 
 class FedAvgAPI(object):
@@ -52,18 +51,11 @@ class FedAvgAPI(object):
         logging.info("self.model_trainer = {}".format(self.model_trainer))
 
         self._setup_clients(
-            train_data_local_num_dict,
-            train_data_local_dict,
-            test_data_local_dict,
-            self.model_trainer,
+            train_data_local_num_dict, train_data_local_dict, test_data_local_dict, self.model_trainer,
         )
 
     def _setup_clients(
-            self,
-            train_data_local_num_dict,
-            train_data_local_dict,
-            test_data_local_dict,
-            model_trainer,
+        self, train_data_local_num_dict, train_data_local_dict, test_data_local_dict, model_trainer,
     ):
         logging.info("############setup_clients (START)#############")
         for client_idx in range(self.args.client_num_per_round):
@@ -82,8 +74,8 @@ class FedAvgAPI(object):
     def train(self):
         logging.info("self.model_trainer = {}".format(self.model_trainer))
         w_global = self.model_trainer.get_model_params()
-        mlops.log_training_status(mlops.ClientStatus.MSG_MLOPS_CLIENT_STATUS_TRAINING)
-        mlops.log_aggregation_status(mlops.ServerStatus.MSG_MLOPS_SERVER_STATUS_RUNNING)
+        mlops.log_training_status(mlops.ClientConstants.MSG_MLOPS_CLIENT_STATUS_TRAINING)
+        mlops.log_aggregation_status(mlops.ServerConstants.MSG_MLOPS_SERVER_STATUS_RUNNING)
         mlops.log_round_info(self.args.comm_round, 0)
         for round_idx in range(self.args.comm_round):
 
@@ -111,11 +103,9 @@ class FedAvgAPI(object):
                 )
 
                 # train on new dataset
-                mlops.event("train", event_started=True,
-                            event_value="{}_{}".format(str(round_idx), str(idx)))
+                mlops.event("train", event_started=True, event_value="{}_{}".format(str(round_idx), str(idx)))
                 w = client.train(copy.deepcopy(w_global))
-                mlops.event("train", event_started=False,
-                            event_value="{}_{}".format(str(round_idx), str(idx)))
+                mlops.event("train", event_started=False, event_value="{}_{}".format(str(round_idx), str(idx)))
                 # self.logging.info("local weights = " + str(w))
                 w_locals.append((client.get_sample_number(), copy.deepcopy(w)))
 
@@ -138,35 +128,24 @@ class FedAvgAPI(object):
 
             mlops.log_round_info(self.args.comm_round, round_idx)
 
-        mlops.log_training_status(mlops.ClientStatus.MSG_MLOPS_CLIENT_STATUS_FINISHED)
-        mlops.log_aggregation_status(mlops.ServerStatus.MSG_MLOPS_SERVER_STATUS_FINISHED)
-
+        mlops.log_training_status(mlops.ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
+        mlops.log_aggregation_status(mlops.ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED)
 
     def _client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
         if client_num_in_total == client_num_per_round:
-            client_indexes = [
-                client_index for client_index in range(client_num_in_total)
-            ]
+            client_indexes = [client_index for client_index in range(client_num_in_total)]
         else:
             num_clients = min(client_num_per_round, client_num_in_total)
-            np.random.seed(
-                round_idx
-            )  # make sure for each comparison, we are selecting the same clients each round
-            client_indexes = np.random.choice(
-                range(client_num_in_total), num_clients, replace=False
-            )
+            np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round
+            client_indexes = np.random.choice(range(client_num_in_total), num_clients, replace=False)
         logging.info("client_indexes = %s" % str(client_indexes))
         return client_indexes
 
     def _generate_validation_set(self, num_samples=10000):
         test_data_num = len(self.test_global.dataset)
-        sample_indices = random.sample(
-            range(test_data_num), min(num_samples, test_data_num)
-        )
+        sample_indices = random.sample(range(test_data_num), min(num_samples, test_data_num))
         subset = torch.utils.data.Subset(self.test_global.dataset, sample_indices)
-        sample_testset = torch.utils.data.DataLoader(
-            subset, batch_size=self.args.batch_size
-        )
+        sample_testset = torch.utils.data.DataLoader(subset, batch_size=self.args.batch_size)
         self.val_global = sample_testset
 
     def _aggregate(self, w_locals):
@@ -226,32 +205,18 @@ class FedAvgAPI(object):
             )
             # train data
             train_local_metrics = client.local_test(False)
-            train_metrics["num_samples"].append(
-                copy.deepcopy(train_local_metrics["test_total"])
-            )
-            train_metrics["num_correct"].append(
-                copy.deepcopy(train_local_metrics["test_correct"])
-            )
-            train_metrics["losses"].append(
-                copy.deepcopy(train_local_metrics["test_loss"])
-            )
+            train_metrics["num_samples"].append(copy.deepcopy(train_local_metrics["test_total"]))
+            train_metrics["num_correct"].append(copy.deepcopy(train_local_metrics["test_correct"]))
+            train_metrics["losses"].append(copy.deepcopy(train_local_metrics["test_loss"]))
 
             # test data
             test_local_metrics = client.local_test(True)
-            test_metrics["num_samples"].append(
-                copy.deepcopy(test_local_metrics["test_total"])
-            )
-            test_metrics["num_correct"].append(
-                copy.deepcopy(test_local_metrics["test_correct"])
-            )
-            test_metrics["losses"].append(
-                copy.deepcopy(test_local_metrics["test_loss"])
-            )
+            test_metrics["num_samples"].append(copy.deepcopy(test_local_metrics["test_total"]))
+            test_metrics["num_correct"].append(copy.deepcopy(test_local_metrics["test_correct"]))
+            test_metrics["losses"].append(copy.deepcopy(test_local_metrics["test_loss"]))
 
         # test on training dataset
-        train_acc = sum(train_metrics["num_correct"]) / sum(
-            train_metrics["num_samples"]
-        )
+        train_acc = sum(train_metrics["num_correct"]) / sum(train_metrics["num_samples"])
         train_loss = sum(train_metrics["losses"]) / sum(train_metrics["num_samples"])
 
         # test on test dataset
@@ -278,9 +243,7 @@ class FedAvgAPI(object):
 
     def _local_test_on_validation_set(self, round_idx):
 
-        logging.info(
-            "################local_test_on_validation_set : {}".format(round_idx)
-        )
+        logging.info("################local_test_on_validation_set : {}".format(round_idx))
 
         if self.val_global is None:
             self._generate_validation_set()
@@ -323,8 +286,6 @@ class FedAvgAPI(object):
             mlops.log({"Test/Rec": test_rec, "round": round_idx})
             mlops.log({"Test/Loss": test_loss, "round": round_idx})
         else:
-            raise Exception(
-                "Unknown format to log metrics for dataset {}!" % self.args.dataset
-            )
+            raise Exception("Unknown format to log metrics for dataset {}!" % self.args.dataset)
 
         logging.info(stats)
