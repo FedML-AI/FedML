@@ -19,6 +19,9 @@ from ..cli.server_deployment.server_login import logout as server_logout
 from ..cli.edge_deployment.docker_login import login_with_docker_mode
 from ..cli.edge_deployment.docker_login import logout_with_docker_mode
 from ..cli.edge_deployment.docker_login import logs_with_docker_mode
+from ..cli.server_deployment.docker_login import login_with_server_docker_mode
+from ..cli.server_deployment.docker_login import logout_with_server_docker_mode
+from ..cli.server_deployment.docker_login import logs_with_server_docker_mode
 
 FEDML_MLOPS_BUILD_PRE_IGNORE_LIST = 'dist-packages,client-package.zip,server-package.zip,__pycache__,*.pyc,*.git'
 
@@ -71,6 +74,9 @@ def mlops_logs(client, server, docker, docker_rank):
         display_client_logs()
 
     if is_server:
+        if is_docker:
+            logs_with_server_docker_mode(docker_rank)
+            return
         display_server_logs()
 
 
@@ -239,6 +245,10 @@ def mlops_login(
             )
             return
 
+        if is_docker:
+            login_with_server_docker_mode(account_id, version, docker_rank)
+            return
+
         pip_source_dir = os.path.dirname(__file__)
         login_cmd = os.path.join(pip_source_dir, "server_deployment", "server_login.py")
         # click.echo(login_cmd)
@@ -263,6 +273,8 @@ def mlops_login(
                 runner_cmd,
                 "-id",
                 device_id,
+                "-os",
+                os_name
             ]
         ).pid
         save_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
@@ -389,7 +401,11 @@ def mlops_logout(client, server, docker, docker_rank):
         client_logout()
         cleanup_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
         cleanup_all_fedml_processes("client_login.py")
+
     if is_server is True:
+        if is_docker:
+            logout_with_server_docker_mode(docker_rank)
+            return
         server_logout()
         cleanup_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
         cleanup_all_fedml_processes("server_login.py")
