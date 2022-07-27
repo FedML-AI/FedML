@@ -1,11 +1,10 @@
-import torch
-import torch.nn as nn
-import numpy as np
 import random
+
+import numpy as np
+import torch
 from torch.utils.data import TensorDataset, DataLoader
 
 from .attack_base import BaseAttackMethod
-from ..common.utils import is_weight_param, get_total_sample_num
 
 """
 ref: Baruch, Gilad, Moran Baruch, and Yoav Goldberg. 
@@ -30,12 +29,7 @@ num_std -> how many standard deviations should the attacker change
 
 class BackdoorAttack(BaseAttackMethod):
     def __init__(
-        self,
-        backdoor_client_num,
-        client_num,
-        num_std=None,
-        dataset=None,
-        backdoor_type="pattern",
+        self, backdoor_client_num, client_num, num_std=None, dataset=None, backdoor_type="pattern",
     ):
         self.backdoor_client_num = backdoor_client_num
         self.client_num = client_num
@@ -50,10 +44,7 @@ class BackdoorAttack(BaseAttackMethod):
                 target = dataset[1]
                 target = (target + 1) % 5
             self.train_loader = DataLoader(
-                dataset=TensorDataset(dataset[0], target),
-                batch_size=3,
-                shuffle=True,
-                num_workers=2,
+                dataset=TensorDataset(dataset[0], target), batch_size=3, shuffle=True, num_workers=2,
             )
             self.test_loader = self.train_loader
         else:
@@ -72,32 +63,24 @@ class BackdoorAttack(BaseAttackMethod):
         for i in backdoor_idxs:
             (_, param) = model_list[i]
             # grad = np.concatenate([param.grad.data.cpu().numpy().flatten() for param in model.parameters()]) // for real net
-            grad = np.concatenate(
-                [param[p_name].numpy().flatten() * 0.5 for p_name in param]
-            )
+            grad = np.concatenate([param[p_name].numpy().flatten() * 0.5 for p_name in param])
             grads.append(grad)
         grads_mean = np.mean(grads, axis=0)
         grads_stdev = np.var(grads, axis=0) ** 0.5
 
         learning_rate = 0.1
-        original_params_flat = np.concatenate(
-            [averaged_params[p_name].numpy().flatten() for p_name in averaged_params]
-        )
+        original_params_flat = np.concatenate([averaged_params[p_name].numpy().flatten() for p_name in averaged_params])
         initial_params_flat = (
             original_params_flat - learning_rate * grads_mean
         )  # the corrected param after the user optimized, because we still want the model to improve
-        mal_net_params = self.train_malicious_network(
-            initial_params_flat, original_params_flat
-        )
+        mal_net_params = self.train_malicious_network(initial_params_flat, original_params_flat)
 
         # Getting from the final required mal_net_params to the gradients that needs to be applied on the parameters of the previous round.
         new_params = mal_net_params + learning_rate * grads_mean
         new_grads = (initial_params_flat - new_params) / learning_rate
         # authors in the paper claims to limit the range of parameters but the code limits the gradient.
         new_user_grads = np.clip(
-            new_grads,
-            grads_mean - self.num_std * grads_stdev,
-            grads_mean + self.num_std * grads_stdev,
+            new_grads, grads_mean - self.num_std * grads_stdev, grads_mean + self.num_std * grads_stdev,
         )
         # the returned gradient controls the local update for malicious clients
         return new_user_grads
