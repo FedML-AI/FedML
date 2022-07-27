@@ -1,10 +1,10 @@
+import logging
+
 import torch
 import torch.nn.functional as F
 
 from .attack_base import BaseAttackMethod
 from ..common.utils import cross_entropy_for_onehot
-
-import logging
 
 logging.getLogger().setLevel(logging.INFO)
 
@@ -23,7 +23,6 @@ class DLGAttack(BaseAttackMethod):
         self.attack_client_idx = attack_client_idx
         self.model = model
         self.attack_epoch = attack_epoch  # todo: discuss with chaoyang
-
 
     def attack_model(self, local_w, global_w, refs=None):
         self.data_size, self.attack_label, self.num_class = refs
@@ -47,15 +46,11 @@ class DLGAttack(BaseAttackMethod):
                 dummy_loss = cross_entropy_for_onehot(
                     pred, dummy_onehot_label
                 )  # TODO: fix the gt_label to dummy_label in both code and slides.
-                dummy_dy_dx = torch.autograd.grad(
-                    dummy_loss, self.model.parameters(), create_graph=True
-                )
+                dummy_dy_dx = torch.autograd.grad(dummy_loss, self.model.parameters(), create_graph=True)
 
                 grad_diff = 0
                 grad_count = 0
-                for gx, gy in zip(
-                    dummy_dy_dx, original_dy_dx
-                ):  # TODO: fix the variablas here
+                for gx, gy in zip(dummy_dy_dx, original_dy_dx):  # TODO: fix the variablas here
                     grad_diff += ((gx - gy) ** 2).sum()
                     grad_count += gx.nelement()
                 # grad_diff = grad_diff / grad_count * 1000
@@ -69,9 +64,7 @@ class DLGAttack(BaseAttackMethod):
                 print(iters, "%.4f" % current_loss.item())
 
         logging.info("Ground truth label is %s." % self.attack_label)
-        logging.info(
-            "After DLG, Dummy label is %s." % torch.argmax(dummy_label, dim=-1).item()
-        )
+        logging.info("After DLG, Dummy label is %s." % torch.argmax(dummy_label, dim=-1).item())
         if self.attack_label == torch.argmax(dummy_label, dim=-1).item():
             logging.info("The DLG attack client %s succeeds!" % self.attack_client_idx)
         else:
