@@ -221,7 +221,9 @@ class FedMLServerRunner:
 
     def build_dynamic_args(self, run_config, package_conf_object, base_dir):
         fedml_conf_file = package_conf_object["entry_config"]["conf_file"]
-        fedml_conf_path = os.path.join(base_dir, "fedml", "config", os.path.basename(fedml_conf_file))
+        fedml_conf_file_processed = str(fedml_conf_file).replace('\\', os.sep).replace('/', os.sep)
+        fedml_conf_path = os.path.join(base_dir, "fedml", "config",
+                                       os.path.basename(fedml_conf_file_processed))
         fedml_conf_object = load_yaml_config(fedml_conf_path)
 
         # Replace local fedml config objects with parameters from MLOps web

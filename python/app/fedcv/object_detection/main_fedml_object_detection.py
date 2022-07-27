@@ -1,6 +1,6 @@
 import fedml
 from fedml import FedMLRunner
-from utils.init_yolo import init_yolo
+from .utils.init_yolo import init_yolo
 
 
 if __name__ == "__main__":

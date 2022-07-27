@@ -975,6 +975,9 @@ $(document).ready(function() {
     }
     $("#pytorch-left-menu p.caption").next("ul").first().toggle();
   });
+  $("#pytorch-left-menu p.caption").next("ul").first().toggle();
+  $("#pytorch-left-menu p.caption").first().children(".expand-menu").toggle()
+  $("#pytorch-left-menu p.caption").first().children(".hide-menu").toggle()
 
   $(".expand-menu").on("click", function () {
     $(this).prev(".hide-menu").toggle();
