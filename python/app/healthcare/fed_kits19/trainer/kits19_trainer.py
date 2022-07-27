@@ -55,11 +55,11 @@ class KITS19Trainer(ClientTrainer):
         # To draw loss and accuracy plots
         training_loss_list = []
         training_dice_list = []
-        print(" Train Data Size " + str(len(train_data.dataset)))
-        # print(" Test Data Size " + str(dataset_sizes["test"]))
+        logging.info(" Train Data Size " + str(len(train_data.dataset)))
+        # logging.info(" Test Data Size " + str(dataset_sizes["test"]))
         for epoch in range(epochs):
-            print("Epoch {}/{}".format(epoch, epochs - 1))
-            print("-" * 10)
+            logging.info("Epoch {}/{}".format(epoch, epochs - 1))
+            logging.info("-" * 10)
 
             dice_list = []
             running_loss = 0.0
@@ -91,7 +91,7 @@ class KITS19Trainer(ClientTrainer):
                 best_acc = epoch_acc
                 best_model_wts = copy.deepcopy(model.state_dict())
 
-            print(
+            logging.info(
                 "Training Loss: {:.4f} Validation Acc: {:.4f} ".format(
                     epoch_loss, epoch_acc
                 )
@@ -100,16 +100,16 @@ class KITS19Trainer(ClientTrainer):
             training_dice_list.append(epoch_acc)
 
         time_elapsed = time.time() - since
-        print(
+        logging.info(
             "Training complete in {:.0f}m {:.0f}s".format(
                 time_elapsed // 60, time_elapsed % 60
             )
         )
-        print("Best test Balanced acc: {:4f}".format(best_acc))
-        print("----- Training Loss ---------")
-        print(training_loss_list)
-        print("------Validation Accuracy ------")
-        print(training_dice_list)
+        logging.info("Best test Balanced acc: {:4f}".format(best_acc))
+        logging.info("----- Training Loss ---------")
+        logging.info(training_loss_list)
+        logging.info("------Validation Accuracy ------")
+        logging.info(training_dice_list)
         # load best model weights
         model.load_state_dict(best_model_wts)
         return model
