@@ -1,11 +1,9 @@
-
-
 from ..core import mlops
 
 
 def pre_setup(args):
     mlops.pre_setup(args)
-    
+
 
 def init(args):
     mlops.init(args)
@@ -52,3 +50,11 @@ def log_client_model_info(round_index, model_url):
 def log_sys_perf(sys_args=None):
     mlops.log_sys_perf(sys_args)
 
+
+from ..cli.edge_deployment.client_constants import ClientConstants
+from ..cli.server_deployment.server_constants import ServerConstants
+
+__all__ = [
+    "ClientConstants",
+    "ServerConstants",
+]

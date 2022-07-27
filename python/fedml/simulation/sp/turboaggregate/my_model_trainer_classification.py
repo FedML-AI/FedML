@@ -88,8 +88,3 @@ class MyModelTrainer(ClientTrainer):
                 metrics["test_loss"] += loss.item() * target.size(0)
                 metrics["test_total"] += target.size(0)
         return metrics
-
-    def test_on_the_server(
-        self, train_data_local_dict, test_data_local_dict, device, args=None
-    ) -> bool:
-        return False

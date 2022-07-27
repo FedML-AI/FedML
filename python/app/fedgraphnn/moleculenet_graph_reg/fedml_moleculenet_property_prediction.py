@@ -6,8 +6,11 @@ from fedml import FedMLRunner
 from model.gat_readout import GatMoleculeNet
 from model.gcn_readout import GcnMoleculeNet
 from model.sage_readout import SageMoleculeNet
+from trainer.gat_readout_aggregator_regression import GatMoleculeNetAggregator
 from trainer.gat_readout_trainer_regression import GatMoleculeNetTrainer
+from trainer.gcn_aggregator_readout_regression import GcnMoleculeNetAggregator
 from trainer.gcn_trainer_readout_regression import GcnMoleculeNetTrainer
+from trainer.sage_readout_aggregator_regression import SageMoleculeNetAggregator
 from trainer.sage_readout_trainer_regression import SageMoleculeNetTrainer
 
 
@@ -63,9 +66,7 @@ def load_data(args, dataset_name):
 
 
 def create_model(args, model_name, feat_dim, num_cats, output_dim):
-    logging.info(
-        "create_model. model_name = %s, output_dim = %s" % (model_name, output_dim)
-    )
+    logging.info("create_model. model_name = %s, output_dim = %s" % (model_name, output_dim))
     if model_name == "graphsage":
         model = SageMoleculeNet(
             feat_dim,
@@ -76,7 +77,8 @@ def create_model(args, model_name, feat_dim, num_cats, output_dim):
             args.graph_embedding_dim,
             num_cats,
         )
-        trainer = SageMoleculeNetTrainer(model)
+        trainer = SageMoleculeNetTrainer(model, args)
+        aggregator = SageMoleculeNetAggregator(model, args)
     elif model_name == "gat":
         model = GatMoleculeNet(
             feat_dim,
@@ -89,7 +91,8 @@ def create_model(args, model_name, feat_dim, num_cats, output_dim):
             args.graph_embedding_dim,
             num_cats,
         )
-        trainer = GatMoleculeNetTrainer(model)
+        trainer = GatMoleculeNetTrainer(model, args)
+        aggregator = GatMoleculeNetAggregator(model, args)
     elif model_name == "gcn":
         model = GcnMoleculeNet(
             feat_dim,
@@ -101,11 +104,12 @@ def create_model(args, model_name, feat_dim, num_cats, output_dim):
             num_cats,
             sparse_adj=args.sparse_adjacency,
         )
-        trainer = GcnMoleculeNetTrainer(model)
+        trainer = GcnMoleculeNetTrainer(model, args)
+        aggregator = GcnMoleculeNetAggregator(model, args)
     else:
         raise Exception("such model does not exist !")
 
-    return model, trainer
+    return model, trainer, aggregator
 
 
 if __name__ == "__main__":
@@ -119,8 +123,8 @@ if __name__ == "__main__":
     dataset, feat_dim, num_cats = load_data(args, args.dataset)
 
     # load model
-    model, trainer = create_model(args, args.model, feat_dim, num_cats, output_dim=None)
+    model, trainer, aggregator = create_model(args, args.model, feat_dim, num_cats, output_dim=None)
 
     # start training
-    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer, aggregator)
     fedml_runner.run()

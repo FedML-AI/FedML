@@ -2,11 +2,11 @@ import logging
 
 from .message_define import MyMessage
 from .utils import transform_tensor_to_list, post_complete_message_to_sweep_process
+from ....core.distributed.fedml_comm_manager import FedMLCommManager
 from ....core.distributed.communication.message import Message
-from ....core.distributed.server.server_manager import ServerManager
 
 
-class FedProxServerManager(ServerManager):
+class FedProxServerManager(FedMLCommManager):
     def __init__(
         self,
         args,
