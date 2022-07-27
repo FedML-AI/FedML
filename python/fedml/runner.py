@@ -75,13 +75,13 @@ class FedMLRunner:
                 from .cross_silo import Client
 
                 runner = Client(
-                    args, device, dataset, model, client_trainer, server_aggregator
+                    args, device, dataset, model, client_trainer
                 )
             elif args.role == "server":
                 from .cross_silo import Server
 
                 runner = Server(
-                    args, device, dataset, model, client_trainer, server_aggregator
+                    args, device, dataset, model, server_aggregator
                 )
             else:
                 raise Exception("no such role")
@@ -90,13 +90,13 @@ class FedMLRunner:
                 from .cross_silo import Client
 
                 runner = Client(
-                    args, device, dataset, model, client_trainer, server_aggregator
+                    args, device, dataset, model, client_trainer
                 )
             elif args.role == "server":
                 from .cross_silo import Server
 
                 runner = Server(
-                    args, device, dataset, model, client_trainer, server_aggregator
+                    args, device, dataset, model, server_aggregator
                 )
             else:
                 raise Exception("no such role")
