@@ -14,7 +14,7 @@ from data.data_loader import load
 from fedml.model.nlp.model_args import *
 from fedml import FedMLRunner
 from trainer.span_extraction_trainer import MyModelTrainer as MySETrainer
-
+from trainer.extraction_aggregator import ExtractionAggregator
 
 def create_model(args, device, output_dim=1):
     model_name = args.model
@@ -80,7 +80,7 @@ def create_model(args, device, output_dim=1):
     model_config = {}
     config = config_class.from_pretrained(args.model, **model_config)
     model = model_class.from_pretrained(args.model, config=config)
-    trainer = MySETrainer(model_args, device, model, tokenizer=tokenizer)
+    trainer = MySETrainer(model_args, device, model, args,tokenizer=tokenizer)
     return model, trainer
 
 
@@ -106,7 +106,7 @@ if __name__ == "__main__":
     args.num_labels = output_dim
     # load model and trainer
     model, trainer = create_model(args, output_dim)
-
+    aggregator = ExtractionAggregator(model, args)
     # start training
-    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer, aggregator)
     fedml_runner.run()

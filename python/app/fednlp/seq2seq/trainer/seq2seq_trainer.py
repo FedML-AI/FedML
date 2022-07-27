@@ -1,17 +1,17 @@
-from fedml.core import ClientTrainer
-from .seq2seq_utils import *
-from multiprocessing.dummy import Pool
 import copy
 import logging
-from fedml.model.nlp.model_args import *
-import numpy as np
-from tqdm import tqdm
+from multiprocessing.dummy import Pool
+
 import torch
+from tqdm import tqdm
+
+from fedml.core import ClientTrainer
+from fedml.model.nlp.model_args import *
+from .seq2seq_utils import *
+
 
 class MyModelTrainer(ClientTrainer):
-    def __init__(
-        self, args, device, model, train_dl=None, test_dl=None, tokenizer=None
-    ):
+    def __init__(self, args, device, model, train_dl=None, test_dl=None, tokenizer=None):
 
         super(MyModelTrainer, self).__init__(model, args=args)
         self.device = device
@@ -39,9 +39,7 @@ class MyModelTrainer(ClientTrainer):
             params = group.pop("params")
             custom_parameter_names.update(params)
             param_group = {**group}
-            param_group["params"] = [
-                p for n, p in self.model.named_parameters() if n in params
-            ]
+            param_group["params"] = [p for n, p in self.model.named_parameters() if n in params]
             optimizer_grouped_parameters.append(param_group)
 
         for group in args.custom_layer_parameters:
@@ -72,8 +70,7 @@ class MyModelTrainer(ClientTrainer):
                         "params": [
                             p
                             for n, p in self.model.named_parameters()
-                            if n not in custom_parameter_names
-                            and not any(nd in n for nd in no_decay)
+                            if n not in custom_parameter_names and not any(nd in n for nd in no_decay)
                         ],
                         "weight_decay": args.weight_decay,
                     },
@@ -81,8 +78,7 @@ class MyModelTrainer(ClientTrainer):
                         "params": [
                             p
                             for n, p in self.model.named_parameters()
-                            if n not in custom_parameter_names
-                            and any(nd in n for nd in no_decay)
+                            if n not in custom_parameter_names and any(nd in n for nd in no_decay)
                         ],
                         "weight_decay": 0.0,
                     },
@@ -90,9 +86,7 @@ class MyModelTrainer(ClientTrainer):
             )
 
         # build optimizer and scheduler
-        iteration_in_total = (
-            len(train_data) // args.gradient_accumulation_steps * args.epochs
-        )
+        iteration_in_total = len(train_data) // args.gradient_accumulation_steps * args.epochs
         optimizer, scheduler = build_optimizer(self.model, iteration_in_total, args)
 
         if args.n_gpu > 1:
@@ -143,16 +137,12 @@ class MyModelTrainer(ClientTrainer):
                     loss = outputs[0]
 
                 if args.n_gpu > 1:
-                    loss = (
-                        loss.mean()
-                    )  # mean() to average on multi-gpu parallel training
+                    loss = loss.mean()  # mean() to average on multi-gpu parallel training
 
                 if self.args.fl_algorithm == "FedProx":
                     fed_prox_reg = 0.0
                     mu = self.args.fedprox_mu
-                    for (p, g_p) in zip(
-                        self.model.parameters(), global_model.parameters()
-                    ):
+                    for (p, g_p) in zip(self.model.parameters(), global_model.parameters()):
                         fed_prox_reg += (mu / 2) * torch.norm((p - g_p.data)) ** 2
                     loss += fed_prox_reg
 
@@ -174,9 +164,7 @@ class MyModelTrainer(ClientTrainer):
                 if (batch_idx + 1) % args.gradient_accumulation_steps == 0:
                     if args.fp16:
                         scaler.unscale_(optimizer)
-                    torch.nn.utils.clip_grad_norm_(
-                        self.model.parameters(), args.max_grad_norm
-                    )
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), args.max_grad_norm)
 
                     if args.fp16:
                         scaler.step(optimizer)
@@ -191,9 +179,7 @@ class MyModelTrainer(ClientTrainer):
 
             # epoch_loss.append(sum(batch_loss) / len(batch_loss))
             logging.info(
-                "Client Index = {}\tEpoch: {}\tLoss: {:.6f}".format(
-                    self.id, epoch, sum(batch_loss) / len(batch_loss)
-                )
+                "Client Index = {}\tEpoch: {}\tLoss: {:.6f}".format(self.id, epoch, sum(batch_loss) / len(batch_loss))
             )
             if (
                 self.args.evaluate_during_training
@@ -268,11 +254,7 @@ class MyModelTrainer(ClientTrainer):
             nb_eval_steps += 1
             start_index = self.args.eval_batch_size * i
 
-            end_index = (
-                start_index + self.args.eval_batch_size
-                if i != (n_batches - 1)
-                else test_sample_len
-            )
+            end_index = start_index + self.args.eval_batch_size if i != (n_batches - 1) else test_sample_len
         #   logging.info(
         #      "batch index = %d, start_index = %d, end_index = %d"
         #     % (i, start_index, end_index)
@@ -307,25 +289,6 @@ class MyModelTrainer(ClientTrainer):
 
         return result, model_preds, None
 
-    def test_on_the_server(
-        self, train_data_local_dict, test_data_local_dict, device, args=None
-    ) -> bool:
-        logging.info("----------test_on_the_server--------")
-        f1_list, metric_list = [], []
-        for client_idx in test_data_local_dict.keys():
-            test_data = test_data_local_dict[client_idx]
-            metrics, _, _ = self.test(test_data, device, args)
-            metric_list.append(metrics)
-            f1_list.append(metrics["rouge_score"])
-            logging.info(
-                "Client {}, Test rouge_score = {}".format(
-                    client_idx, metrics["rouge_score"]
-                )
-            )
-        avg_accuracy = np.mean(np.array(f1_list))
-        logging.info("Test avg rouge_score = {}".format(avg_accuracy))
-        return True
-
     def _get_inputs_dict(self, batch, device):
         # device = self.device
         if self.args.model_type in ["bart", "marian"]:
@@ -355,9 +318,7 @@ class MyModelTrainer(ClientTrainer):
         else:
             lm_labels = batch[1]
             lm_labels_masked = lm_labels.clone()
-            lm_labels_masked[
-                lm_labels_masked == self.decoder_tokenizer.pad_token_id
-            ] = -100
+            lm_labels_masked[lm_labels_masked == self.decoder_tokenizer.pad_token_id] = -100
 
             inputs = {
                 "input_ids": batch[0].to(device),
@@ -381,8 +342,7 @@ class MyModelTrainer(ClientTrainer):
         all_outputs = []
         # Batching
         for batch in [
-            to_predict[i : i + self.args.eval_batch_size]
-            for i in range(0, len(to_predict), self.args.eval_batch_size)
+            to_predict[i : i + self.args.eval_batch_size] for i in range(0, len(to_predict), self.args.eval_batch_size)
         ]:
             if self.args.model_type == "marian":
                 input_ids = self.encoder_tokenizer.prepare_seq2seq_batch(
@@ -425,9 +385,7 @@ class MyModelTrainer(ClientTrainer):
                     num_return_sequences=self.args.num_return_sequences,
                 )
             elif self.args.model_type in ["mbart"]:
-                tgt_lang_token = self.decoder_tokenizer._convert_token_to_id(
-                    self.args.tgt_lang
-                )
+                tgt_lang_token = self.decoder_tokenizer._convert_token_to_id(self.args.tgt_lang)
 
                 outputs = self.model.generate(
                     input_ids=input_ids,
@@ -464,11 +422,7 @@ class MyModelTrainer(ClientTrainer):
             with Pool(self.args.process_count) as p:
                 outputs = list(
                     tqdm(
-                        p.imap(
-                            self._decode,
-                            all_outputs,
-                            chunksize=self.args.multiprocessing_chunksize,
-                        ),
+                        p.imap(self._decode, all_outputs, chunksize=self.args.multiprocessing_chunksize,),
                         total=len(all_outputs),
                         desc="Decoding outputs",
                         disable=self.args.silent,
@@ -478,9 +432,7 @@ class MyModelTrainer(ClientTrainer):
         else:
             outputs = [
                 self.decoder_tokenizer.decode(
-                    output_id,
-                    skip_special_tokens=self.args.skip_special_tokens,
-                    clean_up_tokenization_spaces=True,
+                    output_id, skip_special_tokens=self.args.skip_special_tokens, clean_up_tokenization_spaces=True,
                 )
                 for output_id in all_outputs
             ]
@@ -495,7 +447,5 @@ class MyModelTrainer(ClientTrainer):
 
     def _decode(self, output_id):
         return self.decoder_tokenizer.decode(
-            output_id,
-            skip_special_tokens=self.args.skip_special_tokens,
-            clean_up_tokenization_spaces=True,
+            output_id, skip_special_tokens=self.args.skip_special_tokens, clean_up_tokenization_spaces=True,
         )
