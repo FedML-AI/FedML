@@ -1,9 +1,11 @@
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.data import TensorDataset
+
 from ..common.utils import (
     get_malicious_client_id_list,
-    replace_original_class_with_target_class, log_client_data_statistics,
+    replace_original_class_with_target_class,
+    log_client_data_statistics,
 )
 
 """
@@ -14,12 +16,7 @@ attack @client, added by Yuhui, 07/08/2022
 
 class LabelFlippingAttack:
     def __init__(
-        self,
-        original_class_list,
-        target_class_list,
-        client_num,
-        poisoned_client_num,
-        batch_size,
+        self, original_class_list, target_class_list, client_num, poisoned_client_num, batch_size,
     ):
         self.original_class_list = original_class_list
         self.target_class_list = target_class_list
@@ -29,7 +26,7 @@ class LabelFlippingAttack:
         self.batch_size = batch_size
         self.poisoned_client_list = []
 
-    def attack_on_data_labels(self, dataset):
+    def poison_data(self, dataset):
         [
             train_data_num,
             test_data_num,
@@ -41,9 +38,7 @@ class LabelFlippingAttack:
             class_num,
         ] = dataset
         self.poisoned_client_list = get_malicious_client_id_list(
-            random_seed=self.attack_epoch,
-            client_num=self.client_num,
-            malicious_client_num=self.poisoned_client_num,
+            random_seed=self.attack_epoch, client_num=self.client_num, malicious_client_num=self.poisoned_client_num,
         )
         self.attack_epoch += 1
         poisoned_dataset = []
@@ -51,9 +46,7 @@ class LabelFlippingAttack:
             if client_idx in self.poisoned_client_list:
                 tmp_local_dataset_X = torch.Tensor([])
                 tmp_local_dataset_Y = torch.Tensor([])
-                for batch_idx, (data, target) in enumerate(
-                    train_data_local_dict[client_idx]
-                ):
+                for batch_idx, (data, target) in enumerate(train_data_local_dict[client_idx]):
                     tmp_local_dataset_X = torch.cat((tmp_local_dataset_X, data))
                     tmp_local_dataset_Y = torch.cat((tmp_local_dataset_Y, target))
                 tmp_Y = replace_original_class_with_target_class(
