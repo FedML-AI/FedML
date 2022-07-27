@@ -70,6 +70,8 @@ mimiconda.sh
 
 data/fednlp/*
 
+python/app/fednlp/text_classification/cache_dir
+
 *.npz
 python/tests/smoke_test/simulation_sp/data/mnist/MNIST/stats.sh
 python/tests/smoke_test/simulation_sp/data/mnist/MNIST/stats.py
