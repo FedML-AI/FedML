@@ -1,18 +1,10 @@
 from mpi4py import MPI
 
+from fedml.ml.trainer.trainer_creator import create_model_trainer
 from .FedProxAggregator import FedProxAggregator
 from .FedProxClientManager import FedProxClientManager
 from .FedProxServerManager import FedProxServerManager
 from .FedProxTrainer import FedProxTrainer
-from .my_model_trainer_classification import (
-    MyModelTrainer as MyModelTrainerCLS,
-)
-from .my_model_trainer_nwp import (
-    MyModelTrainer as MyModelTrainerNWP,
-)
-from .my_model_trainer_tag_prediction import (
-    MyModelTrainer as MyModelTrainerTAG,
-)
 
 
 def FedML_init():
@@ -93,12 +85,7 @@ def init_server(
     preprocessed_sampling_lists=None,
 ):
     if model_trainer is None:
-        if args.dataset == "stackoverflow_lr":
-            model_trainer = MyModelTrainerTAG(model)
-        elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
-            model_trainer = MyModelTrainerNWP(model)
-        else:  # default model trainer is for classification problem
-            model_trainer = MyModelTrainerCLS(model)
+        model_trainer = create_model_trainer(model, args)
     model_trainer.set_id(-1)
 
     # aggregator
@@ -152,12 +139,7 @@ def init_client(
 ):
     client_index = process_id - 1
     if model_trainer is None:
-        if args.dataset == "stackoverflow_lr":
-            model_trainer = MyModelTrainerTAG(model)
-        elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
-            model_trainer = MyModelTrainerNWP(model)
-        else:  # default model trainer is for classification problem
-            model_trainer = MyModelTrainerCLS(model)
+        model_trainer = create_model_trainer(model, args)
     model_trainer.set_id(client_index)
     backend = args.backend
     trainer = FedProxTrainer(
