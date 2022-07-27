@@ -50,7 +50,7 @@ if __name__ == "__main__":
     # load model and trainer
     args.num_labels = output_dim
     model, trainer = create_model(args, output_dim)
-    aggregator = TaggingAggregator(args, model)
+    aggregator = TaggingAggregator(model, args)
     # start training
     fedml_runner = FedMLRunner(args, device, dataset, model, trainer, aggregator)
     fedml_runner.run()
