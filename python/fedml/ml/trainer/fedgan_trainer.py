@@ -4,14 +4,14 @@ import numpy as np
 import torch
 from torch import nn
 
-from ....core.alg_frame.client_trainer import ClientTrainer
+from ...core.alg_frame.client_trainer import ClientTrainer
 
 
-class MyModelTrainer(ClientTrainer):
+class FedGANTrainer(ClientTrainer):
     def __init__(self, netd, netg):
         self.netg = netg
         self.netd = netd
-        super(MyModelTrainer, self).__init__(model=None, args=None)
+        super(FedGANTrainer, self).__init__(model=None, args=None)
 
     def get_model_params(self):
         weights_d = self.netd.cpu().state_dict()

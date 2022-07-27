@@ -7,10 +7,8 @@ import torch
 import wandb
 
 from fedml import mlops
+from fedml.ml.trainer.trainer_creator import create_model_trainer
 from .client import Client
-from .my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
-from .my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
-from .my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
 
 
 class FedAvgAPI(object):
@@ -39,14 +37,7 @@ class FedAvgAPI(object):
         self.test_data_local_dict = test_data_local_dict
 
         logging.info("model = {}".format(model))
-        if args.dataset == "stackoverflow_lr":
-            model_trainer = MyModelTrainerTAG(model, args)
-        elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
-            model_trainer = MyModelTrainerNWP(model, args)
-        else:
-            # default model trainer is for classification problem
-            model_trainer = MyModelTrainerCLS(model, args)
-        self.model_trainer = model_trainer
+        self.model_trainer = create_model_trainer(model, args)
         self.model = model
         logging.info("self.model_trainer = {}".format(self.model_trainer))
 
