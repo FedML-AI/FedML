@@ -22,7 +22,7 @@ class GatMoleculeNetAggregator(ServerAggregator):
     def test(self, test_data, device, args):
         pass
 
-    def test_on_the_server(self, train_data_local_dict, test_data_local_dict, device, args=None) -> bool:
+    def test_on_the_server(self, train_data_local_dict, test_data_local_dict, device, args) -> bool:
         logging.info("----------test_on_the_server--------")
 
         model_list, score_list = [], []
