@@ -7,16 +7,9 @@ import torch
 import wandb
 
 from .client import Client
-from .my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
-from .my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
-from .my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
-import logging
-
+from ....ml.trainer.trainer_creator import create_model_trainer
 from ....utils.compression import compressors
-from ....utils.model_utils import (
-    average_named_params,
-    get_average_weight
-)
+from ....utils.model_utils import average_named_params, get_average_weight
 
 
 class FedSGDAPI(object):
@@ -46,27 +39,17 @@ class FedSGDAPI(object):
 
         self.train_local_iter_dict = {}
 
-
         logging.info("model = {}".format(model))
-        if args.dataset == "stackoverflow_lr":
-            model_trainer = MyModelTrainerTAG(model)
-        elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
-            model_trainer = MyModelTrainerNWP(model)
-        else:
-            # default model trainer is for classification problem
-            model_trainer = MyModelTrainerCLS(model, device, args)
-        self.model_trainer = model_trainer
+
+        self.model_trainer = create_model_trainer(model, args)
         self.model = model
         logging.info("self.model_trainer = {}".format(self.model_trainer))
 
         self._setup_clients(
-            train_data_local_num_dict,
-            train_data_local_dict,
-            test_data_local_dict,
-            self.model_trainer,
+            train_data_local_num_dict, train_data_local_dict, test_data_local_dict, self.model_trainer,
         )
 
-        if args.compression is None or self.args.compression == 'no':
+        if args.compression is None or self.args.compression == "no":
             pass
         else:
             self.compressor = compressors[args.compression]()
@@ -74,13 +57,8 @@ class FedSGDAPI(object):
             for k, v in model_params.items():
                 self.compressor.update_shapes_dict(model_params[k], k)
 
-
     def _setup_clients(
-            self,
-            train_data_local_num_dict,
-            train_data_local_dict,
-            test_data_local_dict,
-            model_trainer,
+        self, train_data_local_num_dict, train_data_local_dict, test_data_local_dict, model_trainer,
     ):
         logging.info("############setup_clients (START)#############")
         for client_idx in range(self.args.client_num_per_round):
@@ -96,16 +74,17 @@ class FedSGDAPI(object):
             self.client_list.append(c)
         logging.info("############setup_clients (END)#############")
 
-
-
     def get_train_batch_data(self, client_idx):
         try:
             # train_batch_data = self.train_local_iter.next()
             train_batch_data = self.train_local_iter_dict[client_idx].next()
             # logging.debug("len(train_batch_data[0]): {}".format(len(train_batch_data[0])))
             if len(train_batch_data[0]) < self.args.batch_size:
-                logging.debug("WARNING: len(train_batch_data[0]): {} < self.args.batch_size: {}".format(
-                    len(train_batch_data[0]), self.args.batch_size))
+                logging.debug(
+                    "WARNING: len(train_batch_data[0]): {} < self.args.batch_size: {}".format(
+                        len(train_batch_data[0]), self.args.batch_size
+                    )
+                )
                 # logging.debug("train_batch_data[0]: {}".format(train_batch_data[0]))
                 # logging.debug("train_batch_data[0].shape: {}".format(train_batch_data[0].shape))
         except:
@@ -116,14 +95,16 @@ class FedSGDAPI(object):
 
         return train_batch_data
 
-
     def get_global_train_batch_data(self, client_idx):
         try:
             train_batch_data = self.train_global_iter.next()
             # logging.debug("len(train_batch_data[0]): {}".format(len(train_batch_data[0])))
             if len(train_batch_data[0]) < self.args.batch_size:
-                logging.debug("WARNING: len(train_batch_data[0]): {} < self.args.batch_size: {}".format(
-                    len(train_batch_data[0]), self.args.batch_size))
+                logging.debug(
+                    "WARNING: len(train_batch_data[0]): {} < self.args.batch_size: {}".format(
+                        len(train_batch_data[0]), self.args.batch_size
+                    )
+                )
                 # logging.debug("train_batch_data[0]: {}".format(train_batch_data[0]))
                 # logging.debug("train_batch_data[0].shape: {}".format(train_batch_data[0].shape))
         except:
@@ -206,29 +187,19 @@ class FedSGDAPI(object):
 
     def _client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
         if client_num_in_total == client_num_per_round:
-            client_indexes = [
-                client_index for client_index in range(client_num_in_total)
-            ]
+            client_indexes = [client_index for client_index in range(client_num_in_total)]
         else:
             num_clients = min(client_num_per_round, client_num_in_total)
-            np.random.seed(
-                round_idx
-            )  # make sure for each comparison, we are selecting the same clients each round
-            client_indexes = np.random.choice(
-                range(client_num_in_total), num_clients, replace=False
-            )
+            np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round
+            client_indexes = np.random.choice(range(client_num_in_total), num_clients, replace=False)
         logging.info("client_indexes = %s" % str(client_indexes))
         return client_indexes
 
     def _generate_validation_set(self, num_samples=10000):
         test_data_num = len(self.test_global.dataset)
-        sample_indices = random.sample(
-            range(test_data_num), min(num_samples, test_data_num)
-        )
+        sample_indices = random.sample(range(test_data_num), min(num_samples, test_data_num))
         subset = torch.utils.data.Subset(self.test_global.dataset, sample_indices)
-        sample_testset = torch.utils.data.DataLoader(
-            subset, batch_size=self.args.batch_size
-        )
+        sample_testset = torch.utils.data.DataLoader(subset, batch_size=self.args.batch_size)
         self.val_global = sample_testset
 
     def uncompress_grad_params(self, grad_params, grad_indexes):
@@ -238,8 +209,9 @@ class FedSGDAPI(object):
                 #     model_params[k], model_indexes[k], k
                 # ))
                 grad_params[k] = self.compressor.unflatten(
-                    self.compressor.decompress_new(grad_params[k], grad_indexes[k], k), k)
-        elif self.args.compression is not None and self.args.compression != 'no':
+                    self.compressor.decompress_new(grad_params[k], grad_indexes[k], k), k
+                )
+        elif self.args.compression is not None and self.args.compression != "no":
             # TODO, add quantize here
             for k in grad_params.keys():
                 # logging.debug("model_params[k]:{}, model_indexes[k]:{}, k:{}".format(
@@ -250,7 +222,6 @@ class FedSGDAPI(object):
             pass
         return grad_params
 
-
     def _aggregate(self, g_locals, bn_locals):
 
         sample_num_list = [item[0] for item in g_locals]
@@ -259,35 +230,20 @@ class FedSGDAPI(object):
         for item in g_locals:
             # grad_params = self.uncompress_grad_params(
             #     grad_params, grad_indexes)
-            grad_params = self.uncompress_grad_params(
-                item[1], item[2])
+            grad_params = self.uncompress_grad_params(item[1], item[2])
             new_g_locals.append(grad_params)
 
         average_weights_dict_list = get_average_weight(sample_num_list)
 
-        averaged_g = average_named_params(
-            new_g_locals,
-            average_weights_dict_list
-        )
+        averaged_g = average_named_params(new_g_locals, average_weights_dict_list)
 
-        averaged_bn_params = average_named_params(
-            bn_locals,
-            average_weights_dict_list
-        )
+        averaged_bn_params = average_named_params(bn_locals, average_weights_dict_list)
 
         return averaged_g, averaged_bn_params
 
-
-
-
     def test_on_server_for_all_clients(self, round_idx):
-        if (
-            round_idx % self.args.frequency_of_the_test == 0
-            or round_idx == self.args.comm_round - 1
-        ):
-            logging.info(
-                "################test_on_server_for_all_clients : {}".format(round_idx)
-            )
+        if round_idx % self.args.frequency_of_the_test == 0 or round_idx == self.args.comm_round - 1:
+            logging.info("################test_on_server_for_all_clients : {}".format(round_idx))
             train_num_samples = []
             train_tot_corrects = []
             train_losses = []
