@@ -1,18 +1,18 @@
-import logging
+import os
 
 import numpy as np
 import torch
-import wandb
-from sklearn.metrics import confusion_matrix
-
-from fedml.core import ServerAggregator
 from seqeval.metrics import (
     f1_score,
     precision_score,
     recall_score,
 )
-from .seq_tagging_utils import *
+from torch import nn
+
+from fedml.core import ServerAggregator
 from fedml.data.fednlp.base.data_manager.base_data_manager import BaseDataManager
+from .seq_tagging_utils import *
+
 
 # Trainer for MoleculeNet. The evaluation metric is ROC-AUC
 
@@ -69,11 +69,7 @@ class TaggingAggregator(ServerAggregator):
             nb_eval_steps += 1
             start_index = args.eval_batch_size * i
 
-            end_index = (
-                start_index + args.eval_batch_size
-                if i != (n_batches - 1)
-                else test_sample_len
-            )
+            end_index = start_index + args.eval_batch_size if i != (n_batches - 1) else test_sample_len
 
             if preds is None:
                 preds = logits.detach().cpu().numpy()
@@ -82,15 +78,9 @@ class TaggingAggregator(ServerAggregator):
                 out_attention_mask = batch[2].detach().cpu().numpy()
             else:
                 preds = np.append(preds, logits.detach().cpu().numpy(), axis=0)
-                out_label_ids = np.append(
-                    out_label_ids, batch[4].detach().cpu().numpy(), axis=0
-                )
-                out_input_ids = np.append(
-                    out_input_ids, batch[1].detach().cpu().numpy(), axis=0
-                )
-                out_attention_mask = np.append(
-                    out_attention_mask, batch[2].detach().cpu().numpy(), axis=0,
-                )
+                out_label_ids = np.append(out_label_ids, batch[4].detach().cpu().numpy(), axis=0)
+                out_input_ids = np.append(out_input_ids, batch[1].detach().cpu().numpy(), axis=0)
+                out_attention_mask = np.append(out_attention_mask, batch[2].detach().cpu().numpy(), axis=0,)
 
         eval_loss = eval_loss / nb_eval_steps
 
@@ -127,9 +117,7 @@ class TaggingAggregator(ServerAggregator):
 
         return result
 
-    def test_all(
-        self, train_data_local_dict, test_data_local_dict, device, args=None
-    ) -> bool:
+    def test_all(self, train_data_local_dict, test_data_local_dict, device, args=None) -> bool:
         logging.info("----------test_on_the_server--------")
         f1_list, metric_list = [], []
         for client_idx in test_data_local_dict.keys():
@@ -137,9 +125,7 @@ class TaggingAggregator(ServerAggregator):
             metrics = self.test(test_data, device, args)
             metric_list.append(metrics)
             f1_list.append(metrics["f1_score"])
-            logging.info(
-                "Client {}, Test f1 = {}".format(client_idx, metrics["f1_score"])
-            )
+            logging.info("Client {}, Test f1 = {}".format(client_idx, metrics["f1_score"]))
         avg_f1 = np.mean(np.array(f1_list))
         logging.info("Avg Test f1 = {}".format(avg_f1))
         return True
