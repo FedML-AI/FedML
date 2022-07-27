@@ -41,8 +41,8 @@ To run text classification using MPI simulator follow the following steps:
 
 ```bash
 1. cd text_classification/
-2. bash ../data/download_data.sh
-3. bash ../data/download_partition.sh
+2. cd config
+3. bash bootstrap.sh
 4. bash run_simulation.sh 5
 ```
 
@@ -56,8 +56,8 @@ To run sequence tagging on wikiner dataset using MPI simulator follow the follow
 
 ```bash
 1. cd seq_tagging/
-2. bash ../data/download_data.sh
-3. bash ../data/download_partition.sh
+2. cd config
+3. bash bootstrap.sh
 4. bash run_simulation.sh 5
 ```
 
@@ -69,8 +69,8 @@ To run span extraction on MRQA dataset using MPI simulator follow the following 
 
 ```bash
 1. cd span_extraction/
-2. bash ../data/download_data.sh
-3. bash ../data/download_partition.sh
+2. cd config
+3. bash bootstrap.sh
 4. bash run_simulation.sh 4
 ```
 
@@ -85,8 +85,8 @@ To run seq2seq using MPI simulator on cornell_movie_dialogue dataset follow the 
 
 ```bash
 1. cd seq2seq/
-2. bash ../data/download_data.sh
-3. bash ../data/download_partition.sh
+2. cd config
+3. bash bootstrap.sh
 4. bash run_simulation.sh 1
 ```
 
