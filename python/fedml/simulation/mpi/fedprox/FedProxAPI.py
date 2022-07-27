@@ -1,6 +1,7 @@
 from mpi4py import MPI
 
 from ....core import ClientTrainer, ServerAggregator
+from ....ml.aggregator.aggregator_creator import create_server_aggregator
 from ....ml.trainer.trainer_creator import create_model_trainer
 from .FedProxAggregator import FedProxAggregator
 from .FedProxClientManager import FedProxClientManager
@@ -84,7 +85,7 @@ def init_server(
     server_aggregator,
 ):
     if server_aggregator is None:
-        server_aggregator = create_model_trainer(args, model)
+        server_aggregator = create_server_aggregator(args, model)
     server_aggregator.set_id(-1)
 
     # aggregator
