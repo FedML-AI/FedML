@@ -18,6 +18,7 @@ pipeline {
         AWS_ECR_CREDENTIAL_ID_PRODUCTION = 'aws-ecr-id-release'
         FEDML_PIP_CREDENTIAL_ID_PRODUCTION = 'fedml-pip-upload-id'
         PRODUCTION_KUBECONFIG_CREDENTIAL_ID = 'fedml-release-kubeconfig'
+        PRODUCTION_KUBECONFIG_CREDENTIAL_ID_FOR_DOCS = 'fedml-release-kubeconfig-for-docs'
 
         REGISTRY_DEV = 'public.ecr.aws'
         REGISTRY_TEST = 'public.ecr.aws'
@@ -329,13 +330,19 @@ pipeline {
                     ]) {
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DEPLOY_NAME'
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION  --replicas=1 deployment/$DEPLOY_NAME'
+                }
 
+                withCredentials([
+                    kubeconfigFile(
+                    credentialsId: env.PRODUCTION_KUBECONFIG_CREDENTIAL_ID_FOR_DOCS,
+                    variable: 'KUBECONFIG')
+                    ]) {
                     sh 'kubectl scale -n $DOCS_DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DOCS_DEPLOY_NAME'
                     sh 'kubectl scale -n $DOCS_DEPLOY_NAMESPACE_PRODUCTION --replicas=1 deployment/$DOCS_DEPLOY_NAME'
                 }
              }
           }
-        }
+       }
   }
 
   post {
