@@ -2,10 +2,8 @@ import os
 import platform
 
 import click
-#from .client_constants import ClientConstants
-#from .client_runner import FedMLClientRunner
-from fedml.cli.edge_deployment.client_constants import ClientConstants
-from fedml.cli.edge_deployment.client_runner import FedMLClientRunner
+from .client_constants import ClientConstants
+from .client_runner import FedMLClientRunner
 
 
 def login_with_docker_mode(userid, version, docker_rank):

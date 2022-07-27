@@ -18,7 +18,7 @@ class ByzantineAttack(BaseAttackMethod):
             attack_mode  # random: randomly generate a weight; zero: set the weight to 0
         )
 
-    def attack(self, local_w, global_w, refs=None):
+    def attack_model(self, local_w, global_w, refs=None):
         if self.attack_mode == "zero":
             byzantine_local_w = self._attack_zero_mode(local_w)
         elif self.attack_mode == "random":

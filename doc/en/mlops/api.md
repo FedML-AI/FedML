@@ -11,14 +11,36 @@ fedml build
 # Logout from the MLOps platform
 fedml logout
 
-# Display fedml version
+# Display logs during training
+fedml logs 
+
+# Display FedML environment
+fedml env
+
+# Display FedML version
 fedml version
+
 ```
 
 ## 1. Log in to the FedML MLOps platform (open.fedml.ai)
-
+login as client with local pip mode:
 ```
-fedml login userid -v version(release/test)
+fedml login userid(or API Key)
+```
+
+login as client with docker mode:
+```
+fedml login userid(or API Key) --docker --docker-rank rank_index
+```
+
+login as edge server with local pip mode:
+```
+fedml login userid(or API Key) -s
+```
+
+login as edge server with docker mode:
+```
+fedml login userid(or API Key) -s --docker --docker-rank rank_index
 ```
 
 ### 1.1. Examples for Logging in to the FedML MLOps platform (open.fedml.ai)
@@ -29,14 +51,14 @@ Notes: this will login the production environment for FedML MLOps platform
 ```
 
 ```
-fedml login 90 -v test
-Notes: this will login the test environment for FedML MLOps platform 
+fedml login 90 --docker --docker-rank 1
+Notes: this will login the production environment with docker mode for FedML MLOps platform
 ```
 
 ## 2. Build the client and server package in the FedML MLOps platform (open.fedml.ai)
 
 ```
-fedml build -t client(or server) -sf source_folder -ep entry_point_file -cf config_folder -df destination_package_folder
+fedml build -t client(or server) -sf source_folder -ep entry_point_file -cf config_folder -df destination_package_folder --ignore ignore_file_and_directory(concat with ,)
 ```
 
 ### 2.1. Examples for building the client and server package
@@ -47,12 +69,14 @@ SOURCE=./../cross_silo/client/
 ENTRY=torch_client.py
 CONFIG=./../cross_silo/config
 DEST=./
+IGNORE=__pycache__,*.git
 
 fedml build -t client \
 -sf $SOURCE \
 -ep $ENTRY \
 -cf $CONFIG \
--df $DEST
+-df $DEST  \
+--ignore $IGNORE
 ```
 
 ```
@@ -61,22 +85,62 @@ SOURCE=./../cross_silo/server/
 ENTRY=torch_server.py
 CONFIG=./../cross_silo/config
 DEST=./
+IGNORE=__pycache__,*.git
 
 fedml build -t server \
 -sf $SOURCE \
 -ep $ENTRY \
 -cf $CONFIG \
--df $DEST
+-df $DEST  \
+--ignore $IGNORE
 ```
 
 ## 3. Log out the MLOps platform (open.fedml.ai)
+logout from client with local pip mode:
 ```
-fedml logout
+fedml logout 
 ```
 
-## 4. Display fedml version
+logout from client with docker mode:
 ```
+fedml logout --docker --docker-rank 1
+```
+
+logout from edge server with local pip mode:
+```
+fedml logout -s
+```
+
+logout from edge server with docker mode:
+```
+fedml logout -s --docker --docker-rank 1
+```
+
+## 4. Display FedML Environment and Version
+```
+fedml env
 fedml version
+```
+
+## 5. Display logs
+logs from client with local pip mode:
+```
+fedml logs 
+```
+
+logs from client with docker mode:
+```
+fedml logs --docker --docker-rank 1
+```
+
+logs from edge server with local pip mode:
+```
+fedml logs -s
+```
+
+logs from edge server with docker mode:
+```
+fedml logs --docker --docker-rank 1
 ```
 
 You can also refer to a sanity check test example here:

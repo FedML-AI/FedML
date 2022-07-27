@@ -1,12 +1,10 @@
 from mpi4py import MPI
 
+from fedml.ml.trainer.trainer_creator import create_model_trainer
 from .FedOptAggregator import FedOptAggregator
 from .FedOptClientManager import FedOptClientManager
 from .FedOptServerManager import FedOptServerManager
 from .FedOptTrainer import FedOptTrainer
-from .my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
-from .my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
-from .my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
 
 
 def FedML_init():
@@ -17,15 +15,7 @@ def FedML_init():
 
 
 def FedML_FedOpt_distributed(
-    args,
-    process_id,
-    worker_number,
-    comm,
-    device,
-    dataset,
-    model,
-    model_trainer,
-    preprocessed_sampling_lists = None
+    args, process_id, worker_number, comm, device, dataset, model, model_trainer, preprocessed_sampling_lists=None
 ):
     [
         train_data_num,
@@ -87,12 +77,7 @@ def init_server(
     preprocessed_sampling_lists=None,
 ):
     if model_trainer is None:
-        if args.dataset == "stackoverflow_lr":
-            model_trainer = MyModelTrainerTAG(model)
-        elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
-            model_trainer = MyModelTrainerNWP(model)
-        else:  # default model trainer is for classification problem
-            model_trainer = MyModelTrainerCLS(model)
+        model_trainer = create_model_trainer(model, args)
     model_trainer.set_id(-1)
     # aggregator
     worker_num = size - 1
@@ -142,22 +127,11 @@ def init_client(
 ):
     client_index = process_id - 1
     if model_trainer is None:
-        if args.dataset == "stackoverflow_lr":
-            model_trainer = MyModelTrainerTAG(model)
-        elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
-            model_trainer = MyModelTrainerNWP(model)
-        else:  # default model trainer is for classification problem
-            model_trainer = MyModelTrainerCLS(model)
+        model_trainer = create_model_trainer(model, args)
     model_trainer.set_id(client_index)
 
     trainer = FedOptTrainer(
-        client_index,
-        train_data_local_dict,
-        train_data_local_num_dict,
-        train_data_num,
-        device,
-        args,
-        model_trainer,
+        client_index, train_data_local_dict, train_data_local_num_dict, train_data_num, device, args, model_trainer,
     )
     client_manager = FedOptClientManager(args, trainer, comm, process_id, size)
     client_manager.run()
