@@ -8,4 +8,4 @@ hostname > mpi_host_file
 
 $(which mpirun) -np $PROCESS_NUM \
 -hostfile mpi_host_file \
-/home/ubuntu/fednlp_migration/bin/python3 torch_main.py --cf config/simulation/fedml_config.yaml
+/home/chaoyanghe/anaconda3/envs/fednlp/bin/python torch_main.py --cf config/simulation/fedml_config.yaml
