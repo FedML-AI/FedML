@@ -26,8 +26,7 @@ def compute_correct_prediction(*, y_targets, y_prob_preds, threshold=0.5):
 
 class FederatedLearningFixture(object):
     def __init__(
-        self,
-        federated_learning: VerticalMultiplePartyLogisticRegressionFederatedLearning,
+        self, federated_learning: VerticalMultiplePartyLogisticRegressionFederatedLearning,
     ):
         self.federated_learning = federated_learning
 
@@ -62,12 +61,8 @@ class FederatedLearningFixture(object):
                 global_step += 1
 
                 # prepare batch data for party A, which has both X and y.
-                Xa_batch = Xa_train[
-                    batch_idx * batch_size : batch_idx * batch_size + batch_size
-                ]
-                Y_batch = y_train[
-                    batch_idx * batch_size : batch_idx * batch_size + batch_size
-                ]
+                Xa_batch = Xa_train[batch_idx * batch_size : batch_idx * batch_size + batch_size]
+                Y_batch = y_train[batch_idx * batch_size : batch_idx * batch_size + batch_size]
 
                 # prepare batch data for all other parties, which only has both X.
                 party_X_train_batch_dict = dict()
@@ -76,9 +71,7 @@ class FederatedLearningFixture(object):
                         batch_idx * batch_size : batch_idx * batch_size + batch_size
                     ]
 
-                loss = self.federated_learning.fit(
-                    Xa_batch, Y_batch, party_X_train_batch_dict, global_step
-                )
+                loss = self.federated_learning.fit(Xa_batch, Y_batch, party_X_train_batch_dict, global_step)
                 loss_list.append(loss)
                 if (global_step + 1) % recording_period == 0:
                     recording_step += 1
@@ -87,9 +80,7 @@ class FederatedLearningFixture(object):
                     party_X_test_dict = dict()
                     for party_id, party_X in test_data["party_list"].items():
                         party_X_test_dict[party_id] = party_X
-                    y_prob_preds = self.federated_learning.predict(
-                        Xa_test, party_X_test_dict
-                    )
+                    y_prob_preds = self.federated_learning.predict(Xa_test, party_X_test_dict)
                     y_hat_lbls, statistics = compute_correct_prediction(
                         y_targets=y_test, y_prob_preds=y_prob_preds, threshold=threshold
                     )
@@ -101,8 +92,5 @@ class FederatedLearningFixture(object):
                         )
                     )
                     print(
-                        "---",
-                        precision_recall_fscore_support(
-                            y_test, y_hat_lbls, average="macro", warn_for=tuple()
-                        ),
+                        "---", precision_recall_fscore_support(y_test, y_hat_lbls, average="macro", warn_for=tuple()),
                     )

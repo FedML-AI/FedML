@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
-mkdir datasets
-cd datasets
+DATA_PATH=~/fedml_data/stackoverflow
+mkdir $DATA_PATH
+cd $DATA_PATH
 wget --no-check-certificate --no-proxy https://fedml.s3-us-west-1.amazonaws.com/stackoverflow.tag_count.tar.bz2
 wget --no-check-certificate --no-proxy https://fedml.s3-us-west-1.amazonaws.com/stackoverflow.word_count.tar.bz2
 wget --no-check-certificate --no-proxy https://fedml.s3-us-west-1.amazonaws.com/stackoverflow.tar.bz2

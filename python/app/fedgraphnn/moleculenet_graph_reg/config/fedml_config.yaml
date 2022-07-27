@@ -9,8 +9,8 @@ common_args:
   exist_ok: false
 
 data_args:
-  dataset: "esol"
-  data_cache_dir: ~/fedgraphnn_data
+  dataset: "freesolv"
+  data_cache_dir: ~/fedgraphnn_data/
   part_file:  ~/fedgraphnn_data/partition
   partition_method: "hetero"
   partition_alpha: 0.5
@@ -19,7 +19,7 @@ environment_args:
   bootstrap: config/bootstrap.sh
 
 model_args:
-  model: "graphsage"
+  model: "gat"
   hidden_size: 32
   node_embedding_dim: 32
   graph_embedding_dim: 64
@@ -30,14 +30,12 @@ model_args:
   normalize_features: False
   normalize_adjacency: False
   sparse_adjacency: False
-  model_file_cache_folder: "./model_file_cache" # will be filled by the server automatically
-  global_model_file_path: "./model_file_cache/global_model.pt"
 
 train_args:
   federated_optimizer: "FedAvg"
   client_id_list: 
-  client_num_in_total: 4
-  client_num_per_round: 4
+  client_num_in_total: 1
+  client_num_per_round: 1
   comm_round: 100
   epochs: 5
   batch_size: 64
@@ -47,7 +45,7 @@ train_args:
   metric: "rmse"
 
 validation_args:
-  frequency_of_the_test: 5
+  frequency_of_the_test: 1
 
 device_args:
   worker_num: 1
