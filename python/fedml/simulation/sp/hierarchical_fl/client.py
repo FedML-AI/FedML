@@ -7,15 +7,9 @@ from ..fedavg.client import Client
 
 
 class Client(Client):
-    def __init__(self,
-                 client_idx,
-                 local_training_data,
-                 local_test_data,
-                 local_sample_number,
-                 args,
-                 device,
-                 model,
-                 model_trainer):
+    def __init__(
+        self, client_idx, local_training_data, local_test_data, local_sample_number, args, device, model, model_trainer
+    ):
 
         self.client_idx = client_idx
         self.local_training_data = local_training_data
@@ -52,13 +46,10 @@ class Client(Client):
                 loss.backward()
                 optimizer.step()
             global_epoch = (
-                    global_round_idx * self.args.group_comm_round * self.args.epochs
-                    + group_round_idx * self.args.epochs
-                    + epoch
+                global_round_idx * self.args.group_comm_round * self.args.epochs
+                + group_round_idx * self.args.epochs
+                + epoch
             )
-            if (
-                    global_epoch % self.args.frequency_of_the_test == 0
-                    or epoch == self.args.epochs - 1
-            ):
+            if global_epoch % self.args.frequency_of_the_test == 0 or epoch == self.args.epochs - 1:
                 w_list.append((global_epoch, copy.deepcopy(self.model.state_dict())))
         return w_list

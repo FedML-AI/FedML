@@ -5,8 +5,6 @@ from .FedGANTrainer import FedGANTrainer
 from .FedGanClientManager import FedGANClientManager
 from .FedGanServerManager import FedGANServerManager
 
-from .MyModelTrainer import MyModelTrainer
-
 
 def FedML_init():
     comm = MPI.COMM_WORLD
@@ -41,7 +39,7 @@ def FedML_FedGan_distributed(
     netg, netd = model
 
     if model_trainer is None:
-        model_trainer = MyModelTrainer(netd, netg)
+        model_trainer = FedGANTrainer(netd, netg)
 
     if process_id == 0:
         init_server(
