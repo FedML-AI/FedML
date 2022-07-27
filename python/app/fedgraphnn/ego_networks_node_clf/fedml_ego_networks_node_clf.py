@@ -97,7 +97,7 @@ if __name__ == "__main__":
 
     # load model
     model, trainer = create_model(args, feat_dim, num_cats)
-    aggregator = FedNodeClfAggregator(args, model)
+    aggregator = FedNodeClfAggregator(model, args)
 
     # start training
     fedml_runner = FedMLRunner(args, device, dataset, model, trainer, aggregator)

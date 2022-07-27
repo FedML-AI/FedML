@@ -9,24 +9,26 @@ import torch
 import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
-from yolov6.utils.figure_iou import IOUloss, pairwise_bbox_iou
+from ..utils.figure_iou import IOUloss, pairwise_bbox_iou
 
 
 class ComputeLoss:
-    '''Loss computation func.
+    """Loss computation func.
     This func contains SimOTA and siou loss.
-    '''
-    def __init__(self,
-                 reg_weight=5.0,
-                 iou_weight=3.0,
-                 cls_weight=1.0,
-                 center_radius=2.5,
-                 eps=1e-7,
-                 in_channels=[256, 512, 1024],
-                 strides=[8, 16, 32],
-                 n_anchors=1,
-                 iou_type='ciou'
-                 ):
+    """
+
+    def __init__(
+        self,
+        reg_weight=5.0,
+        iou_weight=3.0,
+        cls_weight=1.0,
+        center_radius=2.5,
+        eps=1e-7,
+        in_channels=[256, 512, 1024],
+        strides=[8, 16, 32],
+        n_anchors=1,
+        iou_type="ciou",
+    ):
 
         self.reg_weight = reg_weight
         self.iou_weight = iou_weight
@@ -43,19 +45,24 @@ class ComputeLoss:
         self.bcewithlog_loss = nn.BCEWithLogitsLoss(reduction="none")
         self.iou_loss = IOUloss(iou_type=iou_type, reduction="none")
 
-    def __call__(
-        self,
-        outputs,
-        targets
-    ):
+    def __call__(self, outputs, targets):
         dtype = outputs[0].type()
         device = targets.device
-        loss_cls, loss_obj, loss_iou, loss_l1 = torch.zeros(1, device=device), torch.zeros(1, device=device), \
-            torch.zeros(1, device=device), torch.zeros(1, device=device)
+        loss_cls, loss_obj, loss_iou, loss_l1 = (
+            torch.zeros(1, device=device),
+            torch.zeros(1, device=device),
+            torch.zeros(1, device=device),
+            torch.zeros(1, device=device),
+        )
         num_classes = outputs[0].shape[-1] - 5
 
-        outputs, outputs_origin, gt_bboxes_scale, xy_shifts, expanded_strides = self.get_outputs_and_grids(
-            outputs, self.strides, dtype, device)
+        (
+            outputs,
+            outputs_origin,
+            gt_bboxes_scale,
+            xy_shifts,
+            expanded_strides,
+        ) = self.get_outputs_and_grids(outputs, self.strides, dtype, device)
 
         total_num_anchors = outputs.shape[1]
         bbox_preds = outputs[:, :, :4]  # [batch, n_anchors_all, 4]
@@ -70,7 +77,16 @@ class ComputeLoss:
             targets_list[int(item[0])].append(item[1:])
         max_len = max((len(l) for l in targets_list))
 
-        targets = torch.from_numpy(np.array(list(map(lambda l:l + [[-1,0,0,0,0]]*(max_len - len(l)), targets_list)))[:,1:,:]).to(targets.device)
+        targets = torch.from_numpy(
+            np.array(
+                list(
+                    map(
+                        lambda l: l + [[-1, 0, 0, 0, 0]] * (max_len - len(l)),
+                        targets_list,
+                    )
+                )
+            )[:, 1:, :]
+        ).to(targets.device)
         num_targets_list = (targets.sum(dim=2) > 0).sum(dim=1)  # number of objects
 
         num_fg, num_gts = 0, 0
@@ -87,7 +103,9 @@ class ComputeLoss:
                 fg_mask = outputs.new_zeros(total_num_anchors).bool()
             else:
 
-                gt_bboxes_per_image = targets[batch_idx, :num_gt, 1:5].mul_(gt_bboxes_scale)
+                gt_bboxes_per_image = targets[batch_idx, :num_gt, 1:5].mul_(
+                    gt_bboxes_scale
+                )
                 gt_classes = targets[batch_idx, :num_gt, 0]
                 bboxes_preds_per_image = bbox_preds[batch_idx]
                 cls_preds_per_image = cls_preds[batch_idx]
@@ -111,7 +129,7 @@ class ComputeLoss:
                         obj_preds_per_image,
                         expanded_strides,
                         xy_shifts,
-                        num_classes
+                        num_classes,
                     )
 
                 except RuntimeError:
@@ -149,7 +167,7 @@ class ComputeLoss:
                         _obj_preds_per_image,
                         _expanded_strides,
                         _xy_shifts,
-                        num_classes
+                        num_classes,
                     )
 
                     gt_matched_classes = gt_matched_classes.cuda()
@@ -187,14 +205,27 @@ class ComputeLoss:
 
         num_fg = max(num_fg, 1)
         # loss
-        loss_iou += (self.iou_loss(bbox_preds.view(-1, 4)[fg_masks].T, reg_targets)).sum() / num_fg
-        loss_l1 += (self.l1_loss(bbox_preds_org.view(-1, 4)[fg_masks], l1_targets)).sum() / num_fg
+        loss_iou += (
+            self.iou_loss(bbox_preds.view(-1, 4)[fg_masks].T, reg_targets)
+        ).sum() / num_fg
+        loss_l1 += (
+            self.l1_loss(bbox_preds_org.view(-1, 4)[fg_masks], l1_targets)
+        ).sum() / num_fg
 
-        loss_obj += (self.bcewithlog_loss(obj_preds.view(-1, 1), obj_targets*1.0)).sum() / num_fg
-        loss_cls += (self.bcewithlog_loss(cls_preds.view(-1, num_classes)[fg_masks], cls_targets)).sum() / num_fg
+        loss_obj += (
+            self.bcewithlog_loss(obj_preds.view(-1, 1), obj_targets * 1.0)
+        ).sum() / num_fg
+        loss_cls += (
+            self.bcewithlog_loss(cls_preds.view(-1, num_classes)[fg_masks], cls_targets)
+        ).sum() / num_fg
 
         total_losses = self.reg_weight * loss_iou + loss_l1 + loss_obj + loss_cls
-        return total_losses, torch.cat((self.reg_weight * loss_iou, loss_l1, loss_obj, loss_cls)).detach()
+        return (
+            total_losses,
+            torch.cat(
+                (self.reg_weight * loss_iou, loss_l1, loss_obj, loss_cls)
+            ).detach(),
+        )
 
     def decode_output(self, output, k, stride, dtype, device):
         grid = self.grids[k].to(device)
@@ -202,7 +233,12 @@ class ComputeLoss:
         hsize, wsize = output.shape[2:4]
         if grid.shape[2:4] != output.shape[2:4]:
             yv, xv = torch.meshgrid([torch.arange(hsize), torch.arange(wsize)])
-            grid = torch.stack((xv, yv), 2).view(1, 1, hsize, wsize, 2).type(dtype).to(device)
+            grid = (
+                torch.stack((xv, yv), 2)
+                .view(1, 1, hsize, wsize, 2)
+                .type(dtype)
+                .to(device)
+            )
             self.grids[k] = grid
 
         output = output.reshape(batch_size, self.n_anchors * hsize * wsize, -1)
@@ -222,10 +258,13 @@ class ComputeLoss:
 
         for k, output in enumerate(outputs):
             output, output_origin, grid, feat_h, feat_w = self.decode_output(
-                output, k, strides[k], dtype, device)
+                output, k, strides[k], dtype, device
+            )
 
             xy_shift = grid
-            expanded_stride = torch.full((1, grid.shape[1], 1), strides[k], dtype=grid.dtype, device=grid.device)
+            expanded_stride = torch.full(
+                (1, grid.shape[1], 1), strides[k], dtype=grid.dtype, device=grid.device
+            )
 
             xy_shifts.append(xy_shift)
             expanded_strides.append(expanded_stride)
@@ -233,13 +272,15 @@ class ComputeLoss:
             outputs_origin.append(output_origin)
 
         xy_shifts = torch.cat(xy_shifts, 1)  # [1, n_anchors_all, 2]
-        expanded_strides = torch.cat(expanded_strides, 1) # [1, n_anchors_all, 1]
+        expanded_strides = torch.cat(expanded_strides, 1)  # [1, n_anchors_all, 1]
         outputs_origin = torch.cat(outputs_origin, 1)
         outputs = torch.cat(outputs_new, 1)
 
         feat_h *= strides[-1]
         feat_w *= strides[-1]
-        gt_bboxes_scale = torch.Tensor([[feat_w, feat_h, feat_w, feat_h]]).type_as(outputs)
+        gt_bboxes_scale = torch.Tensor([[feat_w, feat_h, feat_w, feat_h]]).type_as(
+            outputs
+        )
 
         return outputs, outputs_origin, gt_bboxes_scale, xy_shifts, expanded_strides
 
@@ -262,7 +303,7 @@ class ComputeLoss:
         obj_preds_per_image,
         expanded_strides,
         xy_shifts,
-        num_classes
+        num_classes,
     ):
 
         fg_mask, is_in_boxes_and_center = self.get_in_boxes_info(
@@ -279,7 +320,9 @@ class ComputeLoss:
         num_in_boxes_anchor = bboxes_preds_per_image.shape[0]
 
         # cost
-        pair_wise_ious = pairwise_bbox_iou(gt_bboxes_per_image, bboxes_preds_per_image, box_format='xywh')
+        pair_wise_ious = pairwise_bbox_iou(
+            gt_bboxes_per_image, bboxes_preds_per_image, box_format="xywh"
+        )
         pair_wise_ious_loss = -torch.log(pair_wise_ious + 1e-8)
 
         gt_cls_per_image = (
@@ -290,10 +333,9 @@ class ComputeLoss:
         )
 
         with torch.cuda.amp.autocast(enabled=False):
-            cls_preds_ = (
-                cls_preds_.float().sigmoid_().unsqueeze(0).repeat(num_gt, 1, 1)
-                * obj_preds_.float().sigmoid_().unsqueeze(0).repeat(num_gt, 1, 1)
-            )
+            cls_preds_ = cls_preds_.float().sigmoid_().unsqueeze(0).repeat(
+                num_gt, 1, 1
+            ) * obj_preds_.float().sigmoid_().unsqueeze(0).repeat(num_gt, 1, 1)
             pair_wise_cls_loss = F.binary_cross_entropy(
                 cls_preds_.sqrt_(), gt_cls_per_image, reduction="none"
             ).sum(-1)
@@ -387,9 +429,7 @@ class ComputeLoss:
         dynamic_ks = dynamic_ks.tolist()
 
         for gt_idx in range(num_gt):
-            _, pos_idx = torch.topk(
-                cost[gt_idx], k=dynamic_ks[gt_idx], largest=False
-            )
+            _, pos_idx = torch.topk(cost[gt_idx], k=dynamic_ks[gt_idx], largest=False)
             matching_matrix[gt_idx][pos_idx] = 1
         del topk_ious, dynamic_ks, pos_idx
 

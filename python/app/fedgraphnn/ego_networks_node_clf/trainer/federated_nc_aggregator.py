@@ -22,7 +22,7 @@ class FedNodeClfAggregator(ServerAggregator):
     def test(self, test_data, device, args):
         pass
 
-    def test_all(self, train_data_local_dict, test_data_local_dict, device, args=None) -> bool:
+    def test_all(self, train_data_local_dict, test_data_local_dict, device, args) -> bool:
         logging.info("----------test_on_the_server--------")
 
         model_list, micro_list, macro_list = [], [], []
