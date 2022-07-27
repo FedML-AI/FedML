@@ -27,7 +27,7 @@ train_args:
   eval_batch_size: 4
   max_seq_length: 128
   fp16: false
-  output_dir: "/home/ubuntu/output_dir"
+  output_dir: "./output_dir"
   client_optimizer: sgd
   server_optimizer: sgd
   server_lr: 0.01
