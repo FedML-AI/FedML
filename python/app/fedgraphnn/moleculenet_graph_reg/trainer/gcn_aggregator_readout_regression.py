@@ -7,7 +7,9 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 from fedml.core import ServerAggregator
 
-class GatMoleculeNetAggregator(ServerAggregator):
+
+
+class GcnMoleculeNetAggregator(ServerAggregator):
     def get_model_params(self):
         return self.model.cpu().state_dict()
 
@@ -32,15 +34,12 @@ class GatMoleculeNetAggregator(ServerAggregator):
                 y_pred.append(logits.cpu().numpy())
                 y_true.append(label.cpu().numpy())
 
-            # logging.info(y_true)
-            # logging.info(y_pred)
             if args.metric == "rmse":
                 score = mean_squared_error(np.array(y_true), np.array(y_pred), squared=False)
             elif args.metric == "r2":
                 score = r2_score(np.array(y_true), np.array(y_pred))
             else:
                 score = mean_absolute_error(np.array(y_true), np.array(y_pred))
-
         return score, model
 
     def test_on_the_server(self, train_data_local_dict, test_data_local_dict, device, args=None) -> bool:
@@ -76,7 +75,7 @@ class GatMoleculeNetAggregator(ServerAggregator):
             else:
                 models_differ += 1
                 if key_item_1[0] == key_item_2[0]:
-                    logging.info("Mismtach found at", key_item_1[0])
+                    logging.info("Mismatch found at", key_item_1[0])
                 else:
                     raise Exception
         if models_differ == 0:
