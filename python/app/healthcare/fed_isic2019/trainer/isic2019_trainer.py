@@ -4,14 +4,14 @@ import time
 
 import numpy as np
 import torch
-
-from flamby.datasets.fed_heart_disease import (
+from sklearn import metrics
+from flamby.datasets.fed_isic2019 import (
     BATCH_SIZE,
     LR,
     NUM_EPOCHS_POOLED,
     Baseline,
     BaselineLoss,
-    FedHeartDisease,
+    FedIsic2019,
     metric,
 )
 from flamby.utils import evaluate_model_on_tests
@@ -20,7 +20,7 @@ from torch.optim import lr_scheduler
 from fedml.core.alg_frame.client_trainer import ClientTrainer
 
 
-class HeartDiseaseTrainer(ClientTrainer):
+class ISIC2019Trainer(ClientTrainer):
     def __init__(self, model, args=None):
         super().__init__(model, args)
 
@@ -38,10 +38,11 @@ class HeartDiseaseTrainer(ClientTrainer):
 
         epochs = args.epochs  # number of epochs
 
-        from flamby.datasets.fed_heart_disease import BaselineLoss
-
         loss_func = BaselineLoss()
         optimizer = torch.optim.Adam(model.parameters(), lr=LR)
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(
+            optimizer, milestones=[3, 5, 7, 9, 11, 13, 15, 17], gamma=0.5
+        )
 
         since = time.time()
 
@@ -49,7 +50,7 @@ class HeartDiseaseTrainer(ClientTrainer):
         model = model.to(device)
         # To draw loss and accuracy plots
         training_loss_list = []
-        training_auc_list = []
+        training_acc_list = []
 
         logging.info(" Train Data Size " + str(len(train_data.dataset)))
         # logging.info(" Test Data Size " + str(dataset_sizes["test"]))
@@ -58,32 +59,52 @@ class HeartDiseaseTrainer(ClientTrainer):
             logging.info("-" * 10)
 
             running_loss = 0.0
-            auc = 0.0
+            running_acc = 0.0
             model.train()  # Set model to training mode
+            y_pred = []
+            y_true = []
 
             # Iterate over data.
             for idx, (X, y) in enumerate(train_data):
+                y_true.append(y)
                 X = X.to(device)
                 y = y.to(device)
 
                 optimizer.zero_grad()
-                y_pred = model(X)
-                loss = loss_func(y_pred, y)
+                outputs = model(X)
+                loss = loss_func(outputs, y)
+                _, preds = torch.max(outputs, 1)
+                y_pred.append(preds)
                 loss.backward()
                 optimizer.step()
-                running_loss += loss.item()
-                auc += metric(y_pred.detach().cpu().numpy(), y.detach().cpu().numpy())
+                running_loss += loss.item() * X.size(0)
+                running_acc += torch.sum(preds == y.data)
+
+                if idx % 10 == 0:
+                    logging.info(
+                        "Iter: {}, Loss: {}, Acc: {}".format(
+                            idx,
+                            loss.item(),
+                            running_acc.double() / (idx + 1) / args.batch_size,
+                        )
+                    )
+
+            scheduler.step()
 
             epoch_loss = running_loss / len(train_data.dataset)
-            epoch_auc = auc / len(train_data.dataset)
+            epoch_acc = running_acc.double() / len(train_data.dataset)
+            y = torch.cat(y_true)
+            y_hat = torch.cat(y_pred)
+
+            epoch_balanced_acc = metrics.balanced_accuracy_score(y.cpu(), y_hat.cpu())
 
             logging.info(
-                "Training Loss: {:.4f} Validation AUC: {:.4f} ".format(
-                    epoch_loss, epoch_auc
+                "{} Loss: {:.4f} Acc: {:.4f} Balanced acc: {:.4f}".format(
+                    "train", epoch_loss, epoch_acc, epoch_balanced_acc
                 )
             )
             training_loss_list.append(epoch_loss)
-            training_auc_list.append(epoch_auc)
+            training_acc_list.append(epoch_acc)
 
         time_elapsed = time.time() - since
         logging.info(
@@ -94,7 +115,7 @@ class HeartDiseaseTrainer(ClientTrainer):
         logging.info("----- Training Loss ---------")
         logging.info(training_loss_list)
         logging.info("------Validation AUC ------")
-        logging.info(training_auc_list)
+        logging.info(training_acc_list)
         # load best model weights
         model.load_state_dict(best_model_wts)
         return model
@@ -117,17 +138,15 @@ class HeartDiseaseTrainer(ClientTrainer):
         model.eval()
         model.to(device)
 
-        from flamby.datasets.fed_heart_disease.metric import metric
-
         with torch.inference_mode():
-            auc_list = []
+            acc = 0.0
             for (X, y) in test_data:
                 X, y = X.to(device), y.to(device)
                 y_pred = model(X)
-                auc = metric(y_pred.detach().cpu().numpy(), y.detach().cpu().numpy())
-                auc_list.append(auc)
+                _, preds = torch.max(y_pred, 1)
+                acc += torch.sum(preds == y.data)
 
-            test_metrics = np.mean(auc_list)
+            test_metrics = acc.double() / len(test_data.dataset)
 
         logging.info(f"Test metrics: {test_metrics}")
         return test_metrics
