@@ -7,11 +7,11 @@ import numpy as np
 
 from fedml import mlops
 from .lsa_message_define import MyMessage
+from ...core.distributed.fedml_comm_manager import FedMLCommManager
 from ...core.distributed.communication.message import Message
-from ...core.distributed.server.server_manager import ServerManager
 
 
-class FedMLServerManager(ServerManager):
+class FedMLServerManager(FedMLCommManager):
     def __init__(
         self,
         args,

@@ -1,4 +1,4 @@
-from fedml.core.differential_privacy.mechanisms import Laplace, Gaussian
+from .mechanisms import Laplace, Gaussian
 
 
 class FedPrivacyMechanism:

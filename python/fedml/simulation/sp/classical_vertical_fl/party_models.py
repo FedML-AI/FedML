@@ -17,9 +17,7 @@ class VFLGuestModel(object):
         self.is_debug = False
 
         self.classifier_criterion = nn.BCEWithLogitsLoss()
-        self.dense_model = DenseModel(
-            input_dim=self.feature_dim, output_dim=1, bias=True
-        )
+        self.dense_model = DenseModel(input_dim=self.feature_dim, output_dim=1, bias=True)
         self.parties_grad_component_list = []
         self.current_global_step = None
         self.X = None
@@ -86,9 +84,7 @@ class VFLHostModel(object):
         self.feature_dim = local_model.get_output_dim()
         self.is_debug = False
 
-        self.dense_model = DenseModel(
-            input_dim=self.feature_dim, output_dim=1, bias=False
-        )
+        self.dense_model = DenseModel(input_dim=self.feature_dim, output_dim=1, bias=False)
         self.common_grad = None
         self.partial_common_grad = None
         self.current_global_step = None
