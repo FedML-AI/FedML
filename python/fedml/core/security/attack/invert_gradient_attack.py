@@ -133,7 +133,7 @@ class InvertAttack(BaseAttackMethod):
             input_parameters = [p.detach() for p in input_parameters]
             return ground_truth, input_parameters, labels
 
-    def attack(self, local_w, global_w, refs=None):
+    def reconstruct(self, local_w, global_w, refs=None):
         if not self.use_updates:
             rec_machine = inversefed.GradientReconstructor(
                 self.model, (self.dm, self.ds), config=refs, num_images=self.num_images
