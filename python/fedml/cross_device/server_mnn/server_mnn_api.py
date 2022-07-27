@@ -36,7 +36,7 @@ def init_server(
     args, device, comm, rank, size, model, test_dataloader, model_trainer, preprocessed_sampling_lists=None,
 ):
     if model_trainer is None:
-        model_trainer = create_model_trainer(model, args)
+        model_trainer = create_model_trainer(args, model)
     model_trainer.set_id(-1)
 
     td_id = id(test_dataloader)
