@@ -41,7 +41,7 @@ class FedSGDAPI(object):
 
         logging.info("model = {}".format(model))
 
-        self.model_trainer = create_model_trainer(args, model)
+        self.model_trainer = create_model_trainer(model, args)
         self.model = model
         logging.info("self.model_trainer = {}".format(self.model_trainer))
 

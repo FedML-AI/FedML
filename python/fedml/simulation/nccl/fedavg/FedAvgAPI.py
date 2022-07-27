@@ -5,7 +5,7 @@ from .Server import FedAvgServer
 
 def FedML_FedAvg_NCCL(args, process_id, worker_number, comm, device, dataset, model, model_trainer=None):
     if model_trainer is None:
-        model_trainer = create_model_trainer(args, model)
+        model_trainer = create_model_trainer(model, args)
     if process_id == 0:
         return FedAvgServer(args, process_id, worker_number, comm, device, dataset, model, model_trainer)
     else:
