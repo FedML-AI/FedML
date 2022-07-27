@@ -7,7 +7,8 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 from fedml.core import ServerAggregator
 
-class GatMoleculeNetAggregator(ServerAggregator):
+
+class SageMoleculeNetAggregator(ServerAggregator):
     def get_model_params(self):
         return self.model.cpu().state_dict()
 
@@ -24,11 +25,11 @@ class GatMoleculeNetAggregator(ServerAggregator):
         with torch.no_grad():
             y_pred = []
             y_true = []
-            for mol_idx, (adj_matrix, feature_matrix, label, _) in enumerate(test_data):
-                adj_matrix = adj_matrix.to(device=device, dtype=torch.float32, non_blocking=True)
+            for mol_idx, (forest, feature_matrix, label, _) in enumerate(test_data):
+                forest = [level.to(device=device, dtype=torch.long, non_blocking=True) for level in forest]
                 feature_matrix = feature_matrix.to(device=device, dtype=torch.float32, non_blocking=True)
                 label = label.to(device=device, dtype=torch.float32, non_blocking=True)
-                logits = model(adj_matrix, feature_matrix)
+                logits = model(forest, feature_matrix)
                 y_pred.append(logits.cpu().numpy())
                 y_true.append(label.cpu().numpy())
 
@@ -76,7 +77,7 @@ class GatMoleculeNetAggregator(ServerAggregator):
             else:
                 models_differ += 1
                 if key_item_1[0] == key_item_2[0]:
-                    logging.info("Mismtach found at", key_item_1[0])
+                    logging.info("Mismatch found at", key_item_1[0])
                 else:
                     raise Exception
         if models_differ == 0:
