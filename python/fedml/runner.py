@@ -1,6 +1,5 @@
 from torch import nn
 
-from . import ClientTrainer, ServerAggregator
 from .constants import (
     FEDML_TRAINING_PLATFORM_SIMULATION,
     FEDML_SIMULATION_TYPE_NCCL,
@@ -9,6 +8,7 @@ from .constants import (
     FEDML_SIMULATION_TYPE_MPI,
     FEDML_SIMULATION_TYPE_SP,
 )
+from .core import ClientTrainer, ServerAggregator
 
 
 class FedMLRunner:
