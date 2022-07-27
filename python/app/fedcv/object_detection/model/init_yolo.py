@@ -10,15 +10,14 @@ import yaml
 import torch
 
 from data.data_loader import load_partition_data_coco
-from utils.general import (
+from model.yolov5.utils.general import (
     labels_to_class_weights,
     increment_path,
     check_file,
     check_img_size,
 )
-from utils.general import intersect_dicts
+from model.yolov5.utils.general import intersect_dicts
 from model.yolov5.models.yolo import Model as YOLOv5
-from model.yolov6.yolov6.models.yolo import Model as YOLOv6
 from model.yolov6.yolov6.utils.config import Config
 from model.yolov6.yolov6.models.yolo import build_model as build_yolov6
 from model.yolov7.models.yolo import Model as YOLOv7
@@ -221,9 +220,18 @@ def init_yolo(args, device="cpu"):
     # Trainer
     if args.model == "yolov5":
         trainer = YOLOv5Trainer(model=model, args=args)
+        sys.path.append(
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "yolov5")
+        )
     elif args.model == "yolov6":
         trainer = YOLOv6Trainer(model=model, args=args)
+        sys.path.append(
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "yolov6", "yolov6")
+        )
     elif args.model == "yolov7":
         trainer = YOLOv7Trainer(model=model, args=args)
+        sys.path.append(
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "yolov7")
+        )
 
     return model, dataset, trainer, args
