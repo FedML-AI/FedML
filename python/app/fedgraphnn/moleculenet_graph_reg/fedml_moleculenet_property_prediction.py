@@ -8,7 +8,9 @@ from model.gcn_readout import GcnMoleculeNet
 from model.sage_readout import SageMoleculeNet
 from trainer.gat_readout_aggregator_regression import GatMoleculeNetAggregator
 from trainer.gat_readout_trainer_regression import GatMoleculeNetTrainer
+from trainer.gcn_aggregator_readout_regression import GcnMoleculeNetAggregator
 from trainer.gcn_trainer_readout_regression import GcnMoleculeNetTrainer
+from trainer.sage_readout_aggregator_regression import SageMoleculeNetAggregator
 from trainer.sage_readout_trainer_regression import SageMoleculeNetTrainer
 
 
@@ -76,6 +78,7 @@ def create_model(args, model_name, feat_dim, num_cats, output_dim):
             num_cats,
         )
         trainer = SageMoleculeNetTrainer(model, args)
+        aggregator = SageMoleculeNetAggregator(model, args)
     elif model_name == "gat":
         model = GatMoleculeNet(
             feat_dim,
@@ -102,6 +105,7 @@ def create_model(args, model_name, feat_dim, num_cats, output_dim):
             sparse_adj=args.sparse_adjacency,
         )
         trainer = GcnMoleculeNetTrainer(model, args)
+        aggregator = GcnMoleculeNetAggregator(model, args)
     else:
         raise Exception("such model does not exist !")
 
