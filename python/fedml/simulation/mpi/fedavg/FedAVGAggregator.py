@@ -21,9 +21,9 @@ class FedAVGAggregator(object):
         worker_num,
         device,
         args,
-        model_trainer,
+        server_aggregator,
     ):
-        self.trainer = model_trainer
+        self.aggregator = server_aggregator
 
         self.args = args
         self.train_global = train_global
@@ -44,10 +44,10 @@ class FedAVGAggregator(object):
             self.flag_client_model_uploaded_dict[idx] = False
 
     def get_global_model_params(self):
-        return self.trainer.get_model_params()
+        return self.aggregator.get_model_params()
 
     def set_global_model_params(self, model_parameters):
-        self.trainer.set_model_params(model_parameters)
+        self.aggregator.set_model_params(model_parameters)
 
     def add_local_trained_result(self, index, model_params, sample_num):
         logging.info("add_model. index = %d" % index)
@@ -140,7 +140,7 @@ class FedAVGAggregator(object):
             return self.test_global
 
     def test_on_server_for_all_clients(self, round_idx):
-        if self.trainer.test_on_the_server(
+        if self.aggregator.test_all(
             self.train_data_local_dict,
             self.test_data_local_dict,
             self.device,
@@ -160,7 +160,7 @@ class FedAVGAggregator(object):
             train_losses = []
             for client_idx in range(self.args.client_num_in_total):
                 # train data
-                metrics = self.trainer.test(
+                metrics = self.aggregator.test(
                     self.train_data_local_dict[client_idx], self.device, self.args
                 )
                 train_tot_correct, train_num_sample, train_loss = (
@@ -187,9 +187,9 @@ class FedAVGAggregator(object):
             test_losses = []
 
             if round_idx == self.args.comm_round - 1:
-                metrics = self.trainer.test(self.test_global, self.device, self.args)
+                metrics = self.aggregator.test(self.test_global, self.device, self.args)
             else:
-                metrics = self.trainer.test(self.val_global, self.device, self.args)
+                metrics = self.aggregator.test(self.val_global, self.device, self.args)
 
             test_tot_correct, test_num_sample, test_loss = (
                 metrics["test_correct"],
