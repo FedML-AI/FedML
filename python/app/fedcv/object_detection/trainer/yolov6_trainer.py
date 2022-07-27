@@ -36,7 +36,7 @@ class YOLOv6Trainer(ClientTrainer):
         logging.info("set_model_params")
         self.model.load_state_dict(model_parameters)
 
-    def train(self, train_data, device, args=None):
+    def train(self, train_data, device, args):
         logging.info("Start training on Trainer {}".format(self.id))
         logging.info(f"Hyperparameters: {self.hyp}, Args: {self.args}")
         model = self.model

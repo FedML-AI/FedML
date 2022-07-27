@@ -1,16 +1,15 @@
-from typing import List, Tuple, Dict
-
 import torch
 from torch import nn
 
-from .agg_operator import FedMLAggOperator
-from ...core.alg_frame.server_aggregator import ServerAggregator
+from fedml.core import ClientTrainer
+import logging
 
 
-class MyServerAggregator(ServerAggregator):
+class MyModelTrainer(ClientTrainer):
+
     def __init__(self, model, args):
         super().__init__(model, args)
-        self.cpu_transfer = False if not hasattr(self.args, "cpu_transfer") else self.args.cpu_transfer
+        self.cpu_transfer =  False if not hasattr(self.args, "cpu_transfer") else self.args.cpu_transfer
 
     def get_model_params(self):
         if self.cpu_transfer:
@@ -19,6 +18,57 @@ class MyServerAggregator(ServerAggregator):
 
     def set_model_params(self, model_parameters):
         self.model.load_state_dict(model_parameters)
+
+    def on_after_local_training(self, train_data, device, args):
+        logging.info("do something here for self.model (compression, encoding, etc.)")
+
+    def train(self, train_data, device, args):
+        model = self.model
+
+        model.to(device)
+        model.train()
+
+        # train and update
+        criterion = nn.CrossEntropyLoss().to(device)
+        if args.client_optimizer == "sgd":
+            optimizer = torch.optim.SGD(self.model.parameters(), lr=args.learning_rate)
+        else:
+            optimizer = torch.optim.Adam(
+                filter(lambda p: p.requires_grad, self.model.parameters()),
+                lr=args.learning_rate,
+                weight_decay=args.weight_decay,
+                amsgrad=True,
+            )
+
+        epoch_loss = []
+        for epoch in range(args.epochs):
+            batch_loss = []
+            for batch_idx, (x, labels) in enumerate(train_data):
+                x, labels = x.to(device), labels.to(device)
+                # logging.info("x.size = " + str(x.size()))
+                # logging.info("labels.size = " + str(labels.size()))
+                model.zero_grad()
+                log_probs = model(x)
+                loss = criterion(log_probs, labels)
+                loss.backward()
+
+                # to avoid nan loss
+                # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 0.5)
+
+                optimizer.step()
+                logging.info(
+                    "Update Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
+                        epoch,
+                        (batch_idx + 1) * args.batch_size,
+                        len(train_data) * args.batch_size,
+                        100.0 * (batch_idx + 1) / len(train_data),
+                        loss.item(),
+                    )
+                )
+                batch_loss.append(loss.item())
+            epoch_loss.append(sum(batch_loss) / len(batch_loss))
+            # logging.info('Client Index = {}\tEpoch: {}\tLoss: {:.6f}'.format(
+            #     self.client_idx, epoch, sum(epoch_loss) / len(epoch_loss)))
 
     def test(self, test_data, device, args):
         model = self.model

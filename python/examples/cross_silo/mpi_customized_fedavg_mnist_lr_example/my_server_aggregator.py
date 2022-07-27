@@ -1,10 +1,11 @@
+import logging
 from typing import List, Tuple, Dict
 
 import torch
 from torch import nn
 
-from .agg_operator import FedMLAggOperator
-from ...core.alg_frame.server_aggregator import ServerAggregator
+from fedml.core import FedMLAggOperator
+from fedml.core import ServerAggregator
 
 
 class MyServerAggregator(ServerAggregator):
@@ -19,6 +20,13 @@ class MyServerAggregator(ServerAggregator):
 
     def set_model_params(self, model_parameters):
         self.model.load_state_dict(model_parameters)
+
+    def on_before_aggregation(
+        self, raw_client_model_or_grad_list: List[Tuple[float, Dict]]
+    ) -> List[Tuple[float, Dict]]:
+        #
+        logging.info("do decoding here for raw_client_model_or_grad_list")
+        return raw_client_model_or_grad_list
 
     def test(self, test_data, device, args):
         model = self.model
