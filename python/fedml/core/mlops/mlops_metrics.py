@@ -1,25 +1,18 @@
 import argparse
 import json
 import logging
-import multiprocess as multiprocessing
 import os
 import time
 import uuid
 
+import multiprocess as multiprocessing
+
+from ..common.singleton import Singleton
 from ...cli.edge_deployment.client_constants import ClientConstants
 from ...cli.server_deployment.server_constants import ServerConstants
 from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
-
 from ...core.mlops.mlops_status import MLOpsStatus
 from ...core.mlops.system_stats import SysStats
-
-
-class Singleton(object):
-    def __new__(cls, *args, **kw):
-        if not hasattr(cls, "_instance"):
-            orig = super(Singleton, cls)
-            cls._instance = orig.__new__(cls, *args, **kw)
-        return cls._instance
 
 
 class MLOpsMetrics(Singleton):
@@ -135,7 +128,12 @@ class MLOpsMetrics(Singleton):
         topic_name = "fl_server/mlops/status"
         if role is None:
             role = "normal"
-        msg = {"run_id": run_id, "edge_id": self.edge_id, "status": status, "role": role}
+        msg = {
+            "run_id": run_id,
+            "edge_id": self.edge_id,
+            "status": status,
+            "role": role,
+        }
         logging.info("report_server_training_status. msg = %s" % msg)
         message_json = json.dumps(msg)
         MLOpsStatus.get_instance().set_server_status(self.edge_id, status)
@@ -214,21 +212,43 @@ class MLOpsMetrics(Singleton):
             metric_json = {
                 "run_id": self.run_id,
                 "edge_id": self.edge_id,
-                "cpu_utilization": round(self.sys_performances.get_cpu_utilization(), 4),
-                "SystemMemoryUtilization": round(self.sys_performances.get_system_memory_utilization(), 4),
-                "process_memory_in_use": round(self.sys_performances.get_process_memory_in_use(), 4),
-                "process_memory_in_use_size": round(self.sys_performances.get_process_memory_in_use_size(), 4),
-                "process_memory_available": round(self.sys_performances.get_process_memory_available(), 4),
-                "process_cpu_threads_in_use": round(self.sys_performances.get_process_cpu_threads_in_use(), 4),
-                "disk_utilization": round(self.sys_performances.get_disk_utilization(), 4),
-                "network_traffic": round(self.sys_performances.get_network_traffic(), 4),
-                "gpu_utilization": round(self.sys_performances.get_gpu_utilization(), 4),
+                "cpu_utilization": round(
+                    self.sys_performances.get_cpu_utilization(), 4
+                ),
+                "SystemMemoryUtilization": round(
+                    self.sys_performances.get_system_memory_utilization(), 4
+                ),
+                "process_memory_in_use": round(
+                    self.sys_performances.get_process_memory_in_use(), 4
+                ),
+                "process_memory_in_use_size": round(
+                    self.sys_performances.get_process_memory_in_use_size(), 4
+                ),
+                "process_memory_available": round(
+                    self.sys_performances.get_process_memory_available(), 4
+                ),
+                "process_cpu_threads_in_use": round(
+                    self.sys_performances.get_process_cpu_threads_in_use(), 4
+                ),
+                "disk_utilization": round(
+                    self.sys_performances.get_disk_utilization(), 4
+                ),
+                "network_traffic": round(
+                    self.sys_performances.get_network_traffic(), 4
+                ),
+                "gpu_utilization": round(
+                    self.sys_performances.get_gpu_utilization(), 4
+                ),
                 "gpu_temp": round(self.sys_performances.get_gpu_temp(), 4),
                 "gpu_time_spent_accessing_memory": round(
                     self.sys_performances.get_gpu_time_spent_accessing_memory(), 4
                 ),
-                "gpu_memory_allocated": round(self.sys_performances.get_gpu_memory_allocated(), 4),
-                "gpu_power_usage": round(self.sys_performances.get_gpu_power_usage(), 4),
+                "gpu_memory_allocated": round(
+                    self.sys_performances.get_gpu_memory_allocated(), 4
+                ),
+                "gpu_power_usage": round(
+                    self.sys_performances.get_gpu_power_usage(), 4
+                ),
             }
         message_json = json.dumps(metric_json)
         self.messenger.send_message_json(topic_name, message_json)
@@ -275,7 +295,9 @@ class MLOpsMetrics(Singleton):
         sys_metrics.args = sys_args
         sys_metrics.set_sys_reporting_status(True)
         sys_metrics.is_system_perf_reporting()
-        sys_metrics.sys_stats_process = multiprocessing.Process(target=sys_metrics.report_sys_performances)
+        sys_metrics.sys_stats_process = multiprocessing.Process(
+            target=sys_metrics.report_sys_performances
+        )
         sys_metrics.sys_stats_process.start()
 
     def report_sys_performances(self):
@@ -305,7 +327,9 @@ class MLOpsMetrics(Singleton):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
     parser.add_argument("--run_id", "-r", help="run id")
     parser.add_argument("--client_id", "-c", help="client id")
     parser.add_argument("--server_id", "-s", help="server id")
