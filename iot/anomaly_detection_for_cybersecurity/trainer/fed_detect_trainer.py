@@ -6,7 +6,7 @@ from torch import nn
 from fedml.core import ClientTrainer
 
 
-class MyModelTrainer(ClientTrainer):
+class FedDetectTrainer(ClientTrainer):
     def get_model_params(self):
         return self.model.cpu().state_dict()
 

@@ -1,6 +1,5 @@
 import logging
 import os
-from typing import List, Tuple, Dict
 
 import numpy as np
 import pandas as pd
@@ -8,19 +7,15 @@ import torch
 from torch import nn
 
 from fedml.core import ServerAggregator
-from fedml.core import FedMLAggOperator
 
 
-class MyServerAggregator(ServerAggregator):
+class FedDetectAggregator(ServerAggregator):
 
     def get_model_params(self):
         return self.model.cpu().state_dict()
 
     def set_model_params(self, model_parameters):
         self.model.load_state_dict(model_parameters)
-
-    def aggregate(self, raw_client_model_or_grad_list: List[Tuple[float, Dict]]) -> Dict:
-        return FedMLAggOperator.FedAVG(raw_client_model_or_grad_list)
 
     def test(self, test_data, device, args):
         pass
