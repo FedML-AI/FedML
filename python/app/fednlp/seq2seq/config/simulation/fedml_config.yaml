@@ -4,8 +4,8 @@ common_args:
 
 data_args:
   dataset: "cornell_movie_dialogue"
-  data_file_path: ../fednlp_data/data_files/cornell_movie_dialogue_data.h5
-  partition_file_path: ../fednlp_data/partition_files/cornell_movie_dialogue_partition.h5
+  data_file_path: ~/fednlp_data/data_files/cornell_movie_dialogue_data.h5
+  partition_file_path: ~/fednlp_data/partition_files/cornell_movie_dialogue_partition.h5
   partition_method: "uniform"
   reprocess_input_data: false
 
