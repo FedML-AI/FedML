@@ -51,5 +51,18 @@ class FedMLAttacker:
     def is_client_attack(self, attack_type):
         pass
 
-    def attack(self, local_w, global_w, refs=None):
-        return self.attacker.attack(local_w, global_w, refs)
+    def attack_model(self, local_w, global_w, refs=None):
+        if self.attacker is None:
+            raise Exception("attacker is not initialized!")
+        return self.attacker.attack_model(local_w, global_w, refs)
+
+    def poison_data(self, dataset):
+        if self.attacker is None:
+            raise Exception("attacker is not initialized!")
+        return self.attacker.poison_data(dataset)
+
+    def reconstruct(self, local_w, global_w, refs=None):
+        if self.attacker is None:
+            raise Exception("attacker is not initialized!")
+        return self.attacker.reconstruct(self, local_w, global_w, refs=None)
+
