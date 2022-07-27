@@ -25,7 +25,7 @@ class RevealingLabelsFromGradientsAttack(BaseAttackMethod):
         self.batch_size = batch_size
         self.model_type = model_type
 
-    def attack(self, local_w, global_w, refs=None):
+    def reconstruct(self, local_w, global_w, refs=None):
         vec_local_weight = utils.vectorize_weight(local_w)
         print(vec_local_weight)
 
