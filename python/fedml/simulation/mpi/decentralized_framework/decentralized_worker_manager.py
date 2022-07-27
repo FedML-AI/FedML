@@ -1,11 +1,11 @@
 import logging
 
 from .message_define import MyMessage
-from ....core.distributed.client.client_manager import ClientManager
+from ....core.distributed.fedml_comm_manager import FedMLCommManager
 from ....core.distributed.communication.message import Message
 
 
-class DecentralizedWorkerManager(ClientManager):
+class DecentralizedWorkerManager(FedMLCommManager):
     def __init__(self, args, comm, rank, size, trainer, topology_manager):
         super().__init__(args, comm, rank, size)
         self.worker_index = rank

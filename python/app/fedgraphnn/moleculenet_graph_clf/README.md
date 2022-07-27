@@ -8,8 +8,8 @@ Molecular ML has been maturing rapidly over the last few years thanks to the gra
 Before training, each dataset has to be downloaded first from our servers.  For graph property classification task, we provide 9 datasets. To process `sider` dataset, all you have to do is to run the bash script under each dataset folder: 
 
 ```
-cd data/sider
-sh download_and_unzip.sh
+cd config/bootstrap.sh
+sh bootstrap.sh
 ```
 
 Dataset preparation is same for all datasets.
