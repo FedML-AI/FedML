@@ -1,12 +1,10 @@
-import logging
+import os
 
 import numpy as np
 import torch
-import wandb
-
+from tqdm import tqdm
 
 from fedml.core import ServerAggregator
-
 from .span_extraction_utils import *
 
 
@@ -34,9 +32,7 @@ class ExtractionAggregator(ServerAggregator):
         logging.info("test_model self.device: " + str(device))
         self.model.to(device)
 
-        all_predictions, all_nbest_json, scores_diff_json, eval_loss = self.evaluate(
-            output_dir, test_data, device
-        )
+        all_predictions, all_nbest_json, scores_diff_json, eval_loss = self.evaluate(output_dir, test_data, device)
 
         result, texts = self.calculate_results(all_predictions, test_data)
         result["eval_loss"] = eval_loss
@@ -125,9 +121,7 @@ class ExtractionAggregator(ServerAggregator):
                         )
                     else:
                         result = RawResult(
-                            unique_id=unique_id,
-                            start_logits=to_list(outputs[0][i]),
-                            end_logits=to_list(outputs[1][i]),
+                            unique_id=unique_id, start_logits=to_list(outputs[0][i]), end_logits=to_list(outputs[1][i]),
                         )
                     all_results.append(result)
 
@@ -138,24 +132,13 @@ class ExtractionAggregator(ServerAggregator):
         prefix = "test"
         os.makedirs(output_dir, exist_ok=True)
 
-        output_prediction_file = os.path.join(
-            output_dir, "predictions_{}.json".format(prefix)
-        )
-        output_nbest_file = os.path.join(
-            output_dir, "nbest_predictions_{}.json".format(prefix)
-        )
-        output_null_log_odds_file = os.path.join(
-            output_dir, "null_odds_{}.json".format(prefix)
-        )
+        output_prediction_file = os.path.join(output_dir, "predictions_{}.json".format(prefix))
+        output_nbest_file = os.path.join(output_dir, "nbest_predictions_{}.json".format(prefix))
+        output_null_log_odds_file = os.path.join(output_dir, "null_odds_{}.json".format(prefix))
 
         if args.model_type in ["xlnet", "xlm"]:
             # XLNet uses a more complex post-processing procedure
-            (
-                all_predictions,
-                all_nbest_json,
-                scores_diff_json,
-                out_eval,
-            ) = write_predictions_extended(
+            (all_predictions, all_nbest_json, scores_diff_json, out_eval,) = write_predictions_extended(
                 examples,
                 features,
                 all_results,
@@ -271,9 +254,7 @@ class ExtractionAggregator(ServerAggregator):
 
         return result, texts
 
-    def test_all(
-        self, train_data_local_dict, test_data_local_dict, device, args=None
-    ) -> bool:
+    def test_all(self, train_data_local_dict, test_data_local_dict, device, args=None) -> bool:
         logging.info("----------test_on_the_server--------")
         f1_list, metric_list = [], []
         for client_idx in test_data_local_dict.keys():
@@ -281,9 +262,7 @@ class ExtractionAggregator(ServerAggregator):
             metrics, _, _ = self.test(test_data, device, args)
             metric_list.append(metrics)
             f1_list.append(metrics["f1_score"])
-            logging.info(
-                "Client {}, Test F1 = {}".format(client_idx, metrics["f1_score"])
-            )
+            logging.info("Client {}, Test F1 = {}".format(client_idx, metrics["f1_score"]))
         avg_accuracy = np.mean(np.array(f1_list))
         logging.info("Test avg F1 = {}".format(avg_accuracy))
         return True
@@ -311,7 +290,7 @@ class ExtractionAggregator(ServerAggregator):
             "end_positions": batch[5],
         }
 
-        if args.model_type in [
+        if self.args.model_type in [
             "xlm",
             "roberta",
             "distilbert",
@@ -322,7 +301,7 @@ class ExtractionAggregator(ServerAggregator):
         ]:
             del inputs["token_type_ids"]
 
-        if args.model_type in ["xlnet", "xlm"]:
+        if self.args.model_type in ["xlnet", "xlm"]:
             inputs.update({"cls_index": batch[6], "p_mask": batch[7]})
 
         return inputs
