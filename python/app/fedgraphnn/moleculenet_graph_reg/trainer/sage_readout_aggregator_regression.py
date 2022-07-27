@@ -44,7 +44,7 @@ class SageMoleculeNetAggregator(ServerAggregator):
 
         return score, model
 
-    def test_on_the_server(self, train_data_local_dict, test_data_local_dict, device, args=None) -> bool:
+    def test_on_the_server(self, train_data_local_dict, test_data_local_dict, device, args) -> bool:
         logging.info("----------test_on_the_server--------")
         # for client_idx in train_data_local_dict.keys():
         #     train_data = train_data_local_dict[client_idx]
