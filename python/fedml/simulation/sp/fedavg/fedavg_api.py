@@ -37,7 +37,7 @@ class FedAvgAPI(object):
         self.test_data_local_dict = test_data_local_dict
 
         logging.info("model = {}".format(model))
-        self.model_trainer = create_model_trainer(model, args)
+        self.model_trainer = create_model_trainer(args, model)
         self.model = model
         logging.info("self.model_trainer = {}".format(self.model_trainer))
 

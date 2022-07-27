@@ -34,7 +34,7 @@ class TurboAggregateTrainer(object):
         self.model_global.train()
 
         logging.info("model = {}".format(model))
-        self.model_trainer = create_model_trainer(model, args)
+        self.model_trainer = create_model_trainer(args, model)
 
         self.client_list = []
         self.setup_clients(data_local_num_dict, train_data_local_dict, test_data_local_dict)
