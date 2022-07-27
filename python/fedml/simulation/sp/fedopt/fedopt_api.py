@@ -39,7 +39,7 @@ class FedOptAPI(object):
         self.train_data_local_dict = train_data_local_dict
         self.test_data_local_dict = test_data_local_dict
 
-        self.model_trainer = create_model_trainer(args, model)
+        self.model_trainer = create_model_trainer(model, args)
         self._instanciate_opt()
         self._setup_clients(train_data_local_num_dict, train_data_local_dict, test_data_local_dict)
 

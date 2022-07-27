@@ -85,7 +85,7 @@ def init_server(
     server_aggregator,
 ):
     if server_aggregator is None:
-        server_aggregator = create_server_aggregator(args, model)
+        server_aggregator = create_server_aggregator(model, args)
     server_aggregator.set_id(-1)
     # aggregator
     worker_num = size - 1
@@ -123,7 +123,7 @@ def init_client(
 ):
     client_index = process_id - 1
     if model_trainer is None:
-        model_trainer = create_model_trainer(args, model)
+        model_trainer = create_model_trainer(model, args)
     model_trainer.set_id(client_index)
 
     trainer = FedOptTrainer(
