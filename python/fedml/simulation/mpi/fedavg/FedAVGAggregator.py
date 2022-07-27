@@ -91,12 +91,14 @@ class FedAVGAggregator(object):
         return averaged_params
 
     def _fedavg_aggregation_(self, model_list):
+        training_num = 0
+        for i in range(0, len(model_list)):
+            local_sample_number, local_model_params = model_list[i]
+            training_num += local_sample_number
         (num0, averaged_params) = model_list[0]
         for k in averaged_params.keys():
-            training_num = 0
             for i in range(0, len(model_list)):
                 local_sample_number, local_model_params = model_list[i]
-                training_num += local_sample_number
                 if i == 0:
                     averaged_params[k] = (
                         local_model_params[k] * local_sample_number / training_num
