@@ -40,12 +40,12 @@ class FedAvgAPI(object):
 
         logging.info("model = {}".format(model))
         if args.dataset == "stackoverflow_lr":
-            model_trainer = MyModelTrainerTAG(model)
+            model_trainer = MyModelTrainerTAG(model, args)
         elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
-            model_trainer = MyModelTrainerNWP(model)
+            model_trainer = MyModelTrainerNWP(model, args)
         else:
             # default model trainer is for classification problem
-            model_trainer = MyModelTrainerCLS(model)
+            model_trainer = MyModelTrainerCLS(model, args)
         self.model_trainer = model_trainer
         self.model = model
         logging.info("self.model_trainer = {}".format(self.model_trainer))
