@@ -2,13 +2,23 @@ from .FedAVGAggregator import FedAVGAggregator
 from .FedAVGTrainer import FedAVGTrainer
 from .FedAvgClientManager import FedAVGClientManager
 from .FedAvgServerManager import FedAVGServerManager
+from ....core import ClientTrainer, ServerAggregator
 from ....core.security.fedml_attacker import FedMLAttacker
 from ....core.security.fedml_defender import FedMLDefender
+from ....ml.aggregator.aggregator_creator import create_server_aggregator
 from ....ml.trainer.trainer_creator import create_model_trainer
 
 
 def FedML_FedAvg_distributed(
-    args, process_id, worker_number, comm, device, dataset, model, model_trainer=None, preprocessed_sampling_lists=None,
+    args,
+    process_id,
+    worker_number,
+    comm,
+    device,
+    dataset,
+    model,
+    client_trainer: ClientTrainer = None,
+    server_aggregator: ServerAggregator = None,
 ):
     [
         train_data_num,
@@ -38,8 +48,7 @@ def FedML_FedAvg_distributed(
             train_data_local_dict,
             test_data_local_dict,
             train_data_local_num_dict,
-            model_trainer,
-            preprocessed_sampling_lists,
+            server_aggregator
         )
     else:
         init_client(
@@ -53,7 +62,7 @@ def FedML_FedAvg_distributed(
             train_data_local_num_dict,
             train_data_local_dict,
             test_data_local_dict,
-            model_trainer,
+            client_trainer,
         )
 
 
@@ -70,12 +79,11 @@ def init_server(
     train_data_local_dict,
     test_data_local_dict,
     train_data_local_num_dict,
-    model_trainer,
-    preprocessed_sampling_lists=None,
+    server_aggregator
 ):
-    if model_trainer is None:
-        model_trainer = create_model_trainer(args, model)
-    model_trainer.set_id(-1)
+    if server_aggregator is None:
+        server_aggregator = create_server_aggregator(args, model)
+    server_aggregator.set_id(-1)
 
     # aggregator
     worker_num = size - 1
@@ -89,24 +97,12 @@ def init_server(
         worker_num,
         device,
         args,
-        model_trainer,
+        server_aggregator,
     )
 
     # start the distributed training
     backend = args.backend
-    if preprocessed_sampling_lists is None:
-        server_manager = FedAVGServerManager(args, aggregator, comm, rank, size, backend)
-    else:
-        server_manager = FedAVGServerManager(
-            args,
-            aggregator,
-            comm,
-            rank,
-            size,
-            backend,
-            is_preprocessed=True,
-            preprocessed_client_lists=preprocessed_sampling_lists,
-        )
+    server_manager = FedAVGServerManager(args, aggregator, comm, rank, size, backend)
     server_manager.send_init_msg()
     server_manager.run()
 
