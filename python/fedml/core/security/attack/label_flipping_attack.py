@@ -29,7 +29,7 @@ class LabelFlippingAttack:
         self.batch_size = batch_size
         self.poisoned_client_list = []
 
-    def attack_on_data_labels(self, dataset):
+    def poison_data(self, dataset):
         [
             train_data_num,
             test_data_num,
