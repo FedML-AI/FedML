@@ -14,11 +14,9 @@ attack @ server, added by Shanshan, 07/04/2022
 class ByzantineAttack(BaseAttackMethod):
     def __init__(self, byzantine_client_num, attack_mode):
         self.byzantine_client_num = byzantine_client_num
-        self.attack_mode = (
-            attack_mode  # random: randomly generate a weight; zero: set the weight to 0
-        )
+        self.attack_mode = attack_mode  # random: randomly generate a weight; zero: set the weight to 0
 
-    def attack(self, local_w, global_w, refs=None):
+    def attack_model(self, local_w, global_w, refs=None):
         if self.attack_mode == "zero":
             byzantine_local_w = self._attack_zero_mode(local_w)
         elif self.attack_mode == "random":
@@ -39,9 +37,7 @@ class ByzantineAttack(BaseAttackMethod):
                 w = local_sample_number / total_sample_num
                 if i in byzantine_idxs:
                     if is_weight_param(k):
-                        local_model_params[k] = torch.from_numpy(
-                            np.zeros(local_model_params[k].size())
-                        ).float()
+                        local_model_params[k] = torch.from_numpy(np.zeros(local_model_params[k].size())).float()
                 if i == 0:
                     averaged_params[k] = local_model_params[k] * w
                 else:
@@ -78,9 +74,7 @@ class ByzantineAttack(BaseAttackMethod):
                 w = local_sample_number / total_sample_num
                 if i in byzantine_idxs:
                     if is_weight_param(k):
-                        local_model_params[k] = global_params[k] + (
-                            global_params[k] - local_model_params[k]
-                        )
+                        local_model_params[k] = global_params[k] + (global_params[k] - local_model_params[k])
                 if i == 0:
                     averaged_params[k] = local_model_params[k] * w
                 else:
