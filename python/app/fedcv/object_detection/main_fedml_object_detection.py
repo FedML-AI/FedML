@@ -1,7 +1,7 @@
 import fedml
 from fedml import FedMLRunner
-from .utils.init_yolo import init_yolo
-
+from model.init_yolo import init_yolo
+from trainer.yolo_aggregator import YOLOAggregator
 
 if __name__ == "__main__":
     # init FedML framework
@@ -12,7 +12,8 @@ if __name__ == "__main__":
 
     # init yolo
     model, dataset, trainer, args = init_yolo(args=args, device=device)
+    aggregator = YOLOAggregator(args, model)
 
     # start training
-    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer, aggregator)
     fedml_runner.run()
