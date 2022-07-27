@@ -72,12 +72,14 @@ class FedAVGAggregator(object):
         for idx in range(self.worker_num):
             if self.args.is_mobile == 1:
                 self.model_dict[idx] = transform_list_to_tensor(self.model_dict[idx])
-            model_list.append((self.sample_num_dict[idx], self. model_dict[idx]))
+            model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
             # training_num += self.sample_num_dict[idx]
         logging.info("len of self.model_dict[idx] = " + str(len(self.model_dict)))
 
         if FedMLDefender.get_instance().is_defense_enabled():
-            averaged_params = FedMLDefender.get_instance().run(model_list, self._fedavg_aggregation_)
+            averaged_params = FedMLDefender.get_instance().run(
+                model_list, self._fedavg_aggregation_
+            )
         else:
             averaged_params = self._fedavg_aggregation_(model_list)
 
@@ -96,10 +98,13 @@ class FedAVGAggregator(object):
                 local_sample_number, local_model_params = model_list[i]
                 training_num += local_sample_number
                 if i == 0:
-                    averaged_params[k] = local_model_params[k] * local_sample_number
+                    averaged_params[k] = (
+                        local_model_params[k] * local_sample_number / training_num
+                    )
                 else:
-                    averaged_params[k] += local_model_params[k] * local_sample_number
-            averaged_params[k] /= training_num
+                    averaged_params[k] += (
+                        local_model_params[k] * local_sample_number / training_num
+                    )
         return averaged_params
 
     def client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
