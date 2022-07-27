@@ -2,9 +2,11 @@ import copy
 import logging
 import random
 import time
+
 import numpy as np
 import torch
 import wandb
+
 from .utils import transform_list_to_tensor
 from ....core.security.fedml_defender import FedMLDefender
 
@@ -77,9 +79,7 @@ class FedAVGAggregator(object):
         logging.info("len of self.model_dict[idx] = " + str(len(self.model_dict)))
 
         if FedMLDefender.get_instance().is_defense_enabled():
-            averaged_params = FedMLDefender.get_instance().run(
-                model_list, self._fedavg_aggregation_
-            )
+            averaged_params = FedMLDefender.get_instance().run(model_list, self._fedavg_aggregation_)
         else:
             averaged_params = self._fedavg_aggregation_(model_list)
 
@@ -100,69 +100,43 @@ class FedAVGAggregator(object):
             for i in range(0, len(model_list)):
                 local_sample_number, local_model_params = model_list[i]
                 if i == 0:
-                    averaged_params[k] = (
-                        local_model_params[k] * local_sample_number / training_num
-                    )
+                    averaged_params[k] = local_model_params[k] * local_sample_number / training_num
                 else:
-                    averaged_params[k] += (
-                        local_model_params[k] * local_sample_number / training_num
-                    )
+                    averaged_params[k] += local_model_params[k] * local_sample_number / training_num
         return averaged_params
 
     def client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
         if client_num_in_total == client_num_per_round:
-            client_indexes = [
-                client_index for client_index in range(client_num_in_total)
-            ]
+            client_indexes = [client_index for client_index in range(client_num_in_total)]
         else:
             num_clients = min(client_num_per_round, client_num_in_total)
-            np.random.seed(
-                round_idx
-            )  # make sure for each comparison, we are selecting the same clients each round
-            client_indexes = np.random.choice(
-                range(client_num_in_total), num_clients, replace=False
-            )
+            np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round
+            client_indexes = np.random.choice(range(client_num_in_total), num_clients, replace=False)
         logging.info("client_indexes = %s" % str(client_indexes))
         return client_indexes
 
     def _generate_validation_set(self, num_samples=10000):
         if self.args.dataset.startswith("stackoverflow"):
             test_data_num = len(self.test_global.dataset)
-            sample_indices = random.sample(
-                range(test_data_num), min(num_samples, test_data_num)
-            )
+            sample_indices = random.sample(range(test_data_num), min(num_samples, test_data_num))
             subset = torch.utils.data.Subset(self.test_global.dataset, sample_indices)
-            sample_testset = torch.utils.data.DataLoader(
-                subset, batch_size=self.args.batch_size
-            )
+            sample_testset = torch.utils.data.DataLoader(subset, batch_size=self.args.batch_size)
             return sample_testset
         else:
             return self.test_global
 
     def test_on_server_for_all_clients(self, round_idx):
-        if self.aggregator.test_all(
-            self.train_data_local_dict,
-            self.test_data_local_dict,
-            self.device,
-            self.args,
-        ):
+        if self.aggregator.test_all(self.train_data_local_dict, self.test_data_local_dict, self.device, self.args,):
             return
 
-        if (
-            round_idx % self.args.frequency_of_the_test == 0
-            or round_idx == self.args.comm_round - 1
-        ):
-            logging.info(
-                "################test_on_server_for_all_clients : {}".format(round_idx)
-            )
+        if round_idx % self.args.frequency_of_the_test == 0 or round_idx == self.args.comm_round - 1:
+            logging.info("################test_on_server_for_all_clients : {}".format(round_idx))
             train_num_samples = []
             train_tot_corrects = []
             train_losses = []
             for client_idx in range(self.args.client_num_in_total):
                 # train data
-                metrics = self.aggregator.test(
-                    self.train_data_local_dict[client_idx], self.device, self.args
-                )
+                metrics = self.aggregator.test(self.train_data_local_dict[client_idx], self.device, self.args)
                 train_tot_correct, train_num_sample, train_loss = (
                     metrics["test_correct"],
                     metrics["test_total"],
