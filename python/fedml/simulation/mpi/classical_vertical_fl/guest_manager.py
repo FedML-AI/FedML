@@ -1,9 +1,9 @@
 from .message_define import MyMessage
+from ....core.distributed.fedml_comm_manager import FedMLCommManager
 from ....core.distributed.communication.message import Message
-from ....core.distributed.server.server_manager import ServerManager
 
 
-class GuestManager(ServerManager):
+class GuestManager(FedMLCommManager):
     def __init__(self, args, comm, rank, size, guest_trainer):
         super().__init__(args, comm, rank, size)
 

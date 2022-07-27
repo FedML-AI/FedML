@@ -6,7 +6,7 @@ import numpy as np
 
 from fedml import mlops
 from .lsa_message_define import MyMessage
-from ...core.distributed.client.client_manager import ClientManager
+from ...core.distributed.fedml_comm_manager import FedMLCommManager
 from ...core.distributed.communication.message import Message
 from ...core.mpc.lightsecagg import (
     compute_aggregate_encoded_mask,
@@ -17,7 +17,7 @@ from ...core.mpc.lightsecagg import (
 )
 
 
-class FedMLClientManager(ClientManager):
+class FedMLClientManager(FedMLCommManager):
     def __init__(
         self, args, trainer, comm=None, client_rank=0, client_num=0, backend="MPI"
     ):
@@ -101,6 +101,7 @@ class FedMLClientManager(ClientManager):
         self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_TRAINING)
 
         self.dimensions, self.total_dimension = model_dimension(global_model_params)
+        
         self.trainer.update_model(global_model_params)
         self.trainer.update_dataset(int(client_index))
         self.round_idx = 0
@@ -250,12 +251,12 @@ class FedMLClientManager(ClientManager):
         T = self.privacy_guarantee
         p = self.prime_number
         logging.info("d = {}, N = {}, U = {}, T = {}, p = {}".format(d, N, U, T, p))
-
+        d = int(np.ceil(float(d)/(U-T))) * (U-T)
         # For debugging
         self.local_mask = np.random.randint(p, size=(d, 1))
-        logging.info("local mask = {}".format(self.local_mask))
+        # logging.info("local mask = {}".format(self.local_mask))
         # self.local_mask = np.zeros((d, 1)).astype("int64")
-
+        print("new d is ", d)
         encoded_mask_set = mask_encoding(d, N, U, T, p, self.local_mask)
 
         # Send the encoded masks to other clients (via server)

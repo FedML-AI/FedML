@@ -24,6 +24,7 @@ class DLGAttack(BaseAttackMethod):
         self.model = model
         self.attack_epoch = attack_epoch  # todo: discuss with chaoyang
 
+
     def attack_model(self, local_w, global_w, refs=None):
         self.data_size, self.attack_label, self.num_class = refs
         # generate dummy data and label

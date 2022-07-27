@@ -36,6 +36,7 @@ pipeline {
         HTTPS_REGISTRY_PRODUCTION = 'https://public.ecr.aws'
         AWS_REGION_NAME_PRODUCTION = 'us-east-1'
         DEPLOY_NAMESPACE_PRODUCTION = 'fedml-devops-aggregator-release'
+        DOCS_DEPLOY_NAMESPACE_PRODUCTION = 'fedml-devops-release'
         VERSION_PRODUCTION = 'release'
         BRANCH_PRODUCTION = 'master'
 
@@ -44,7 +45,10 @@ pipeline {
         APP_NAME_DEVICE_IMAGE = 'fedml-device-image'
         APP_NAME_SERVER_AGENT = 'fedml-server-agent'
         APP_NAME_CLIENT_AGENT = 'fedml-client-agent'
+        APP_NAME_EDGE_SERVER = 'fedml-edge-server'
+        APP_NAME_DOCS_SERVER = 'fedml-docs-server'
         DEPLOY_NAME = 'fedml-server-agent'
+        DOCS_DEPLOY_NAME = 'fedml-docs-web'
         GIT_URL = 'https://github.com/FedML-AI/FedML.git'
         SONAR_HOST = ''
         SONAR_CREDENTIAL_ID = 'sonar-token'
@@ -93,6 +97,7 @@ pipeline {
           steps {
             container('base') {
               sh 'echo "building..."'
+              sh './devops/scripts/build-docs.sh'
             }
           }
         }
@@ -116,6 +121,7 @@ pipeline {
             container('base') {
               withCredentials([usernamePassword(passwordVariable : 'FEDML_PIP_PASSWORD' ,usernameVariable : 'FEDML_PIP_USER' ,credentialsId : "$FEDML_PIP_CREDENTIAL_ID_PRODUCTION" ,)]) {
                 sh 'echo "building..."'
+                sh './devops/scripts/build-docs.sh'
               }
             }
           }
@@ -142,6 +148,10 @@ pipeline {
                 sh 'docker build -f ./devops/dockerfile/server-agent/Dockerfile-Dev -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_DEV .'
 
                 sh 'docker build -f ./devops/dockerfile/client-agent/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_CLIENT_AGENT:$VERSION_DEV --build-arg VERSION=$VERSION_DEV .'
+
+                sh 'docker build -f ./devops/dockerfile/edge-server/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_EDGE_SERVER:$VERSION_DEV --build-arg VERSION=$VERSION_DEV .'
+
+                sh 'docker build -f ./devops/dockerfile/docs-server/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DOCS_SERVER:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
             }
           }
         }
@@ -159,6 +169,8 @@ pipeline {
               sh 'docker build -f ./devops/dockerfile/server-agent/Dockerfile-Test -t $REGISTRY_TEST/$DOCKER_NAMESPACE_TEST$APP_NAME_SERVER_AGENT:$VERSION_TEST .'
 
               sh 'docker build -f ./devops/dockerfile/client-agent/Dockerfile -t $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_CLIENT_AGENT:$VERSION_TEST --build-arg VERSION=$VERSION_TEST .'
+
+              sh 'docker build -f ./devops/dockerfile/edge-server/Dockerfile -t $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_EDGE_SERVER:$VERSION_TEST --build-arg VERSION=$VERSION_TEST .'
             }
           }
         }
@@ -184,6 +196,10 @@ pipeline {
               sh 'docker build -f ./devops/dockerfile/server-agent/Dockerfile-Release -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_PRODUCTION .'
 
               sh 'docker build -f ./devops/dockerfile/client-agent/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_CLIENT_AGENT:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
+
+              sh 'docker build -f ./devops/dockerfile/edge-server/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_EDGE_SERVER:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
+
+              sh 'docker build -f ./devops/dockerfile/docs-server/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DOCS_SERVER:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
             }
           }
         }
@@ -208,6 +224,8 @@ pipeline {
               sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_DEV'
               sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_DEV'
               sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_CLIENT_AGENT:$VERSION_DEV'
+              sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_EDGE_SERVER:$VERSION_DEV'
+              sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DOCS_SERVER:$VERSION_PRODUCTION'
             }
           }
         }
@@ -231,6 +249,7 @@ pipeline {
               sh 'docker push  $REGISTRY_TEST/$DOCKER_NAMESPACE_TEST$APP_NAME_DEVICE_IMAGE:$VERSION_TEST'
               sh 'docker push  $REGISTRY_TEST/$DOCKER_NAMESPACE_TEST$APP_NAME_SERVER_AGENT:$VERSION_TEST'
               sh 'docker push  $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_CLIENT_AGENT:$VERSION_TEST'
+              sh 'docker push  $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_EDGE_SERVER:$VERSION_TEST'
             }
           }
         }
@@ -255,11 +274,13 @@ pipeline {
               sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_PRODUCTION'
               sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_PRODUCTION'
               sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_CLIENT_AGENT:$VERSION_PRODUCTION'
+              sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_EDGE_SERVER:$VERSION_PRODUCTION'
+              sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DOCS_SERVER:$VERSION_PRODUCTION'
             }
           }
         }
 
-        stage('deploy for dev - new base docker image 1') {
+        stage('deploy for dev') {
           when {
             branch env.BRANCH_DEV
           }
@@ -308,6 +329,9 @@ pipeline {
                     ]) {
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DEPLOY_NAME'
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION  --replicas=1 deployment/$DEPLOY_NAME'
+
+                    sh 'kubectl scale -n $DOCS_DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DOCS_DEPLOY_NAME'
+                    sh 'kubectl scale -n $DOCS_DEPLOY_NAMESPACE_PRODUCTION --replicas=1 deployment/$DOCS_DEPLOY_NAME'
                 }
              }
           }
