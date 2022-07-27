@@ -1,203 +1,31 @@
-from tqdm import tqdm
-import torch
-from fedml.core import ClientTrainer
-from .span_extraction_utils import *
+import logging
+
 import numpy as np
-import os
+import torch
+import wandb
 
-class MyModelTrainer(ClientTrainer):
-    def __init__(
-        self, args, device, model, train_dl=None, test_dl=None, tokenizer=None
-    ):
 
-        super(MyModelTrainer, self).__init__(model, args=args)
-        self.device = device
-        self.tokenizer = tokenizer
-        self.results = {}
+from fedml.core import ServerAggregator
 
+from .span_extraction_utils import *
+
+
+# Trainer for MoleculeNet. The evaluation metric is ROC-AUC
+
+
+class ExtractionAggregator(ServerAggregator):
     def get_model_params(self):
         return self.model.cpu().state_dict()
 
     def set_model_params(self, model_parameters):
+        logging.info("set_model_params")
         self.model.load_state_dict(model_parameters)
 
-    def train(self, train_data, device, args, test_data=None):
-        if not device:
-            device = self.device
-        logging.info("train_model self.device: " + str(device))
-        self.model.to(device)
-
-        args = self.args
-
-        no_decay = ["bias", "LayerNorm.weight"]
-
-        optimizer_grouped_parameters = []
-        custom_parameter_names = set()
-        for group in args.custom_parameter_groups:
-            params = group.pop("params")
-            custom_parameter_names.update(params)
-            param_group = {**group}
-            param_group["params"] = [
-                p for n, p in self.model.named_parameters() if n in params
-            ]
-            optimizer_grouped_parameters.append(param_group)
-
-        for group in args.custom_layer_parameters:
-            layer_number = group.pop("layer")
-            layer = f"layer.{layer_number}."
-            group_d = {**group}
-            group_nd = {**group}
-            group_nd["weight_decay"] = 0.0
-            params_d = []
-            params_nd = []
-            for n, p in self.model.named_parameters():
-                if n not in custom_parameter_names and layer in n:
-                    if any(nd in n for nd in no_decay):
-                        params_nd.append(p)
-                    else:
-                        params_d.append(p)
-                    custom_parameter_names.add(n)
-            group_d["params"] = params_d
-            group_nd["params"] = params_nd
-
-            optimizer_grouped_parameters.append(group_d)
-            optimizer_grouped_parameters.append(group_nd)
-
-        if not args.train_custom_parameters_only:
-            optimizer_grouped_parameters.extend(
-                [
-                    {
-                        "params": [
-                            p
-                            for n, p in self.model.named_parameters()
-                            if n not in custom_parameter_names
-                            and not any(nd in n for nd in no_decay)
-                        ],
-                        "weight_decay": args.weight_decay,
-                    },
-                    {
-                        "params": [
-                            p
-                            for n, p in self.model.named_parameters()
-                            if n not in custom_parameter_names
-                            and any(nd in n for nd in no_decay)
-                        ],
-                        "weight_decay": 0.0,
-                    },
-                ]
-            )
-
-        # build optimizer and scheduler
-        iteration_in_total = (
-            len(train_data) // args.gradient_accumulation_steps * args.epochs
-        )
-        optimizer, scheduler = build_optimizer(self.model, iteration_in_total, args)
-
-        if args.n_gpu > 1:
-            print("gpu number", args.n_gpu)
-            logging.info("torch.nn.DataParallel(self.model)")
-            self.model = torch.nn.DataParallel(self.model)
-
-        # training result
-        global_step = 0
-        training_progress_scores = None
-        tr_loss, logging_loss = 0.0, 0.0
-        self.model.zero_grad()
-        best_eval_metric = None
-        early_stopping_counter = 0
-        steps_trained_in_current_epoch = 0
-        epochs_trained = 0
-
-        if args.evaluate_during_training:
-            training_progress_scores = self._create_training_progress_scores()
-
-        if args.fp16:
-            from torch.cuda import amp
-
-            scaler = amp.GradScaler()
-
-        if self.args.fl_algorithm == "FedProx":
-            global_model = copy.deepcopy(self.model)
-        epoch_loss = []
-        for epoch in range(0, args.epochs):
-            batch_loss = []
-            for batch_idx, batch in tqdm(enumerate(train_data)):
-                self.model.train()
-                batch = tuple(t.to(device) for t in batch)
-                # dataset = TensorDataset(all_guid, all_input_ids, all_attention_masks, all_token_type_ids, all_cls_index,
-                # all_p_mask, all_is_impossible)
-
-                inputs = self._get_inputs_dict(batch)
-
-                if args.fp16:
-                    with amp.autocast():
-                        outputs = self.model(**inputs)
-                        # model outputs are always tuple in pytorch-transformers (see doc)
-                        loss = outputs[0]
-                else:
-                    outputs = self.model(**inputs)
-                    # model outputs are always tuple in pytorch-transformers (see doc)
-                    loss = outputs[0]
-
-                if args.n_gpu > 1:
-                    loss = (
-                        loss.mean()
-                    )  # mean() to average on multi-gpu parallel training
-
-                if self.args.fl_algorithm == "FedProx":
-                    fed_prox_reg = 0.0
-                    mu = self.args.fedprox_mu
-                    for (p, g_p) in zip(
-                        self.model.parameters(), global_model.parameters()
-                    ):
-                        fed_prox_reg += (mu / 2) * torch.norm((p - g_p.data)) ** 2
-                    loss += fed_prox_reg
-
-                current_loss = loss.item()
-
-                if args.gradient_accumulation_steps > 1:
-                    loss = loss / args.gradient_accumulation_steps
-                if args.fp16:
-                    scaler.scale(loss).backward()
-                else:
-                    loss.backward()
-                tr_loss += loss.item()
-
-                if (batch_idx + 1) % args.gradient_accumulation_steps == 0:
-                    if args.fp16:
-                        scaler.unscale_(optimizer)
-                    torch.nn.utils.clip_grad_norm_(
-                        self.model.parameters(), args.max_grad_norm
-                    )
-
-                    if args.fp16:
-                        scaler.step(optimizer)
-                        scaler.update()
-                    else:
-                        optimizer.step()
-                    scheduler.step()  # Update learning rate schedule
-                    self.model.zero_grad()
-                    global_step += 1
-                    batch_loss.append(tr_loss)
-                    tr_loss = 0
-            epoch_loss.append(sum(batch_loss) / len(batch_loss))
-            logging.info(
-                "Client Index = {}\tEpoch: {}\tLoss: {:.6f}".format(
-                    self.id, epoch, sum(epoch_loss) / len(epoch_loss)
-                )
-            )
-            if (
-                self.args.evaluate_during_training
-                and (
-                    self.args.evaluate_during_training_steps > 0
-                    and global_step % self.args.evaluate_during_training_steps == 0
-                )
-                and test_data is not None
-            ):
-                results, _, _ = self.test(test_data, device, args)
-                logging.info(results)
-
     def test(self, test_data, device, args):
+        pass
+
+    def _test(self, test_data, device):
+        args = self.args
         output_dir = self.args.output_dir
 
         if not device:
@@ -244,7 +72,7 @@ class MyModelTrainer(ClientTrainer):
         # if args.n_gpu > 1:
         #     model = torch.nn.DataParallel(model)
 
-        if self.args.fp16:
+        if args.fp16:
             from torch.cuda import amp
 
         all_results = []
@@ -258,7 +86,7 @@ class MyModelTrainer(ClientTrainer):
                     "token_type_ids": batch[3],
                 }
 
-                if self.args.model_type in [
+                if args.model_type in [
                     "xlm",
                     "roberta",
                     "distilbert",
@@ -274,7 +102,7 @@ class MyModelTrainer(ClientTrainer):
                 if args.model_type in ["xlnet", "xlm"]:
                     inputs.update({"cls_index": batch[5], "p_mask": batch[6]})
 
-                if self.args.fp16:
+                if args.fp16:
                     with amp.autocast():
                         outputs = model(**inputs)
                         eval_loss += outputs[0].mean().item()
@@ -443,7 +271,7 @@ class MyModelTrainer(ClientTrainer):
 
         return result, texts
 
-    def test_on_the_server(
+    def test_all(
         self, train_data_local_dict, test_data_local_dict, device, args=None
     ) -> bool:
         logging.info("----------test_on_the_server--------")
@@ -483,7 +311,7 @@ class MyModelTrainer(ClientTrainer):
             "end_positions": batch[5],
         }
 
-        if self.args.model_type in [
+        if args.model_type in [
             "xlm",
             "roberta",
             "distilbert",
@@ -494,7 +322,7 @@ class MyModelTrainer(ClientTrainer):
         ]:
             del inputs["token_type_ids"]
 
-        if self.args.model_type in ["xlnet", "xlm"]:
+        if args.model_type in ["xlnet", "xlm"]:
             inputs.update({"cls_index": batch[6], "p_mask": batch[7]})
 
         return inputs

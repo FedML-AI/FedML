@@ -11,7 +11,7 @@ import fedml
 from data.data_loader import load
 from fedml import FedMLRunner
 from trainer.seq_tagging_trainer import MyModelTrainer as MySTTrainer
-
+from trainer.tagging_aggregator import TaggingAggregator 
 
 def create_model(args, output_dim=1):
     model_name = args.model
@@ -33,7 +33,7 @@ def create_model(args, output_dim=1):
     model_args["num_labels"] = output_dim
     config = config_class.from_pretrained(args.model, **model_args)
     model = model_class.from_pretrained(args.model, config=config)
-    trainer = MySTTrainer(model)
+    trainer = MySTTrainer(model, args)
     return model, trainer
 
 
@@ -50,7 +50,7 @@ if __name__ == "__main__":
     # load model and trainer
     args.num_labels = output_dim
     model, trainer = create_model(args, output_dim)
-
+    aggregator = TaggingAggregator(args, model)
     # start training
-    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer, aggregator)
     fedml_runner.run()
