@@ -6,24 +6,13 @@ import numpy as np
 import torch
 import wandb
 
+from fedml.ml.trainer.trainer_creator import create_model_trainer
 from .client import Client
 from .optrepo import OptRepo
-from .my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
-from .my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
-from .my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
-
-
-def custom_model_trainer(args, model):
-    if args.dataset == "stackoverflow_lr":
-        return MyModelTrainerTAG(model)
-    elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
-        return MyModelTrainerNWP(model)
-    else: # default model trainer is for classification problem
-        return MyModelTrainerCLS(model)
 
 
 class FedOptAPI(object):
-    def __init__(self,  args, device, dataset, model):
+    def __init__(self, args, device, dataset, model):
         self.device = device
         self.args = args
         [
@@ -50,15 +39,11 @@ class FedOptAPI(object):
         self.train_data_local_dict = train_data_local_dict
         self.test_data_local_dict = test_data_local_dict
 
-        self.model_trainer = custom_model_trainer(args, model)
+        self.model_trainer = create_model_trainer(model, args)
         self._instanciate_opt()
-        self._setup_clients(
-            train_data_local_num_dict, train_data_local_dict, test_data_local_dict
-        )
+        self._setup_clients(train_data_local_num_dict, train_data_local_dict, test_data_local_dict)
 
-    def _setup_clients(
-        self, train_data_local_num_dict, train_data_local_dict, test_data_local_dict
-    ):
+    def _setup_clients(self, train_data_local_num_dict, train_data_local_dict, test_data_local_dict):
         logging.info("############setup_clients (START)#############")
         for client_idx in range(self.args.client_num_per_round):
             c = Client(
@@ -75,29 +60,19 @@ class FedOptAPI(object):
 
     def _client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
         if client_num_in_total == client_num_per_round:
-            client_indexes = [
-                client_index for client_index in range(client_num_in_total)
-            ]
+            client_indexes = [client_index for client_index in range(client_num_in_total)]
         else:
             num_clients = min(client_num_per_round, client_num_in_total)
-            np.random.seed(
-                round_idx
-            )  # make sure for each comparison, we are selecting the same clients each round
-            client_indexes = np.random.choice(
-                range(client_num_in_total), num_clients, replace=False
-            )
+            np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round
+            client_indexes = np.random.choice(range(client_num_in_total), num_clients, replace=False)
         logging.info("client_indexes = %s" % str(client_indexes))
         return client_indexes
 
     def _generate_validation_set(self, num_samples=10000):
         test_data_num = len(self.test_global.dataset)
-        sample_indices = random.sample(
-            range(test_data_num), min(num_samples, test_data_num)
-        )
+        sample_indices = random.sample(range(test_data_num), min(num_samples, test_data_num))
         subset = torch.utils.data.Subset(self.test_global.dataset, sample_indices)
-        sample_testset = torch.utils.data.DataLoader(
-            subset, batch_size=self.args.batch_size
-        )
+        sample_testset = torch.utils.data.DataLoader(subset, batch_size=self.args.batch_size)
         self.val_global = sample_testset
 
     def _instanciate_opt(self):
@@ -186,9 +161,7 @@ class FedOptAPI(object):
         new_model = copy.deepcopy(self.model_trainer.model)
         new_model.load_state_dict(new_state)
         with torch.no_grad():
-            for parameter, new_parameter in zip(
-                self.model_trainer.model.parameters(), new_model.parameters()
-            ):
+            for parameter, new_parameter in zip(self.model_trainer.model.parameters(), new_model.parameters()):
                 parameter.grad = parameter.data - new_parameter.data
                 # because we go to the opposite direction of the gradient
         model_state_dict = self.model_trainer.model.state_dict()
@@ -217,30 +190,18 @@ class FedOptAPI(object):
             )
             # train data
             train_local_metrics = client.local_test(False)
-            train_metrics["num_samples"].append(
-                copy.deepcopy(train_local_metrics["test_total"])
-            )
-            train_metrics["num_correct"].append(
-                copy.deepcopy(train_local_metrics["test_correct"])
-            )
-            train_metrics["losses"].append(
-                copy.deepcopy(train_local_metrics["test_loss"])
-            )
+            train_metrics["num_samples"].append(copy.deepcopy(train_local_metrics["test_total"]))
+            train_metrics["num_correct"].append(copy.deepcopy(train_local_metrics["test_correct"]))
+            train_metrics["losses"].append(copy.deepcopy(train_local_metrics["test_loss"]))
 
             # Train and test might have different number of clients
             if self.test_data_local_dict[client_idx] is None:
                 continue
             # test data
             test_local_metrics = client.local_test(True)
-            test_metrics["num_samples"].append(
-                copy.deepcopy(test_local_metrics["test_total"])
-            )
-            test_metrics["num_correct"].append(
-                copy.deepcopy(test_local_metrics["test_correct"])
-            )
-            test_metrics["losses"].append(
-                copy.deepcopy(test_local_metrics["test_loss"])
-            )
+            test_metrics["num_samples"].append(copy.deepcopy(test_local_metrics["test_total"]))
+            test_metrics["num_correct"].append(copy.deepcopy(test_local_metrics["test_correct"]))
+            test_metrics["losses"].append(copy.deepcopy(test_local_metrics["test_loss"]))
 
             """
             Note: CI environment is CPU-based computing. 
@@ -250,9 +211,7 @@ class FedOptAPI(object):
                 break
 
         # test on training dataset
-        train_acc = sum(train_metrics["num_correct"]) / sum(
-            train_metrics["num_samples"]
-        )
+        train_acc = sum(train_metrics["num_correct"]) / sum(train_metrics["num_samples"])
         train_loss = sum(train_metrics["losses"]) / sum(train_metrics["num_samples"])
 
         # test on test dataset
@@ -272,9 +231,7 @@ class FedOptAPI(object):
         logging.info(stats)
 
     def _local_test_on_validation_set(self, round_idx):
-        logging.info(
-            "################local_test_on_validation_set : {}".format(round_idx)
-        )
+        logging.info("################local_test_on_validation_set : {}".format(round_idx))
 
         if self.val_global is None:
             self._generate_validation_set()
@@ -308,8 +265,6 @@ class FedOptAPI(object):
                 wandb.log({"Test/Rec": test_rec, "round": round_idx})
                 wandb.log({"Test/Loss": test_loss, "round": round_idx})
         else:
-            raise Exception(
-                "Unknown format to log metrics for dataset {}!" % self.args.dataset
-            )
+            raise Exception("Unknown format to log metrics for dataset {}!" % self.args.dataset)
 
         logging.info(stats)
