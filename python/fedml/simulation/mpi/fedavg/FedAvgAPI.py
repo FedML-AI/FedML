@@ -85,11 +85,11 @@ def init_server(
 ):
     if model_trainer is None:
         if args.dataset == "stackoverflow_lr":
-            model_trainer = MyModelTrainerTAG(model)
+            model_trainer = MyModelTrainerTAG(model, args)
         elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
-            model_trainer = MyModelTrainerNWP(model)
+            model_trainer = MyModelTrainerNWP(model, args)
         else:  # default model trainer is for classification problem
-            model_trainer = MyModelTrainerCLS(model)
+            model_trainer = MyModelTrainerCLS(model, args)
     model_trainer.set_id(-1)
 
     # aggregator
@@ -144,11 +144,11 @@ def init_client(
     client_index = process_id - 1
     if model_trainer is None:
         if args.dataset == "stackoverflow_lr":
-            model_trainer = MyModelTrainerTAG(model)
+            model_trainer = MyModelTrainerTAG(model, args)
         elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
-            model_trainer = MyModelTrainerNWP(model)
+            model_trainer = MyModelTrainerNWP(model, args)
         else:  # default model trainer is for classification problem
-            model_trainer = MyModelTrainerCLS(model)
+            model_trainer = MyModelTrainerCLS(model, args)
     model_trainer.set_id(client_index)
     backend = args.backend
     trainer = FedAVGTrainer(

@@ -3,9 +3,9 @@ The classic Gaussian mechanism in differential privacy, and its derivatives.
 """
 import secrets
 from math import erf
-from numbers import Real, Integral
+from numbers import Integral
 import numpy as np
-import fedml.core.differential_privacy.common.utils as utils
+from ..common.utils import check_numeric_value, check_params, check_integer_value, bernoulli_neg_exp
 
 
 class Gaussian:
@@ -33,7 +33,7 @@ class Gaussian:
     """
 
     def __init__(self, *, epsilon, delta, sensitivity):
-        utils.check_params(epsilon, delta, sensitivity)
+        check_params(epsilon, delta, sensitivity)
         self.epsilon = float(epsilon)
         self.delta = float(delta)
         self.sensitivity = float(sensitivity)
@@ -59,7 +59,7 @@ class Gaussian:
         return self._scale**2
 
     def randomise(self, value):
-        utils.check_numeric_value(value)
+        check_numeric_value(value)
         standard_normal = (
             self._rng.normalvariate(0, 1) + self._rng.normalvariate(0, 1)
         ) / np.sqrt(2)
@@ -160,20 +160,20 @@ class GaussianDiscrete(Gaussian):
         return 0.0
 
     def randomise(self, value):
-        utils.check_integer_value(value)
+        check_integer_value(value)
         if self._scale == 0:
             return value
         tau = 1 / (1 + np.floor(self._scale))
         sigma2 = self._scale**2
         while True:
             geom_x = 0
-            while utils.bernoulli_neg_exp(tau, self._rng):
+            while bernoulli_neg_exp(tau, self._rng):
                 geom_x += 1
             bern_b = np.random.binomial(1, 0.5)
             if bern_b and not geom_x:
                 continue
             lap_y = int((1 - 2 * bern_b) * geom_x)
-            bern_c = utils.bernoulli_neg_exp(
+            bern_c = bernoulli_neg_exp(
                 (abs(lap_y) - tau * sigma2) ** 2 / 2 / sigma2, self._rng
             )
             if bern_c:

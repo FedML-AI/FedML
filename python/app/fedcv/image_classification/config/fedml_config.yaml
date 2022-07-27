@@ -15,7 +15,7 @@ data_args:
   partition_alpha: 0.5
 
 model_args:
-  model: "mobilenetv3"
+  model: "mobilenet_v3"
   image_size:
   input_size: 3
   class_num: 10

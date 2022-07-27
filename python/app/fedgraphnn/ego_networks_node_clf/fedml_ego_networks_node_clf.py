@@ -1,4 +1,5 @@
 import fedml
+from app.fedgraphnn.ego_networks_node_clf.trainer.federated_nc_aggregator import FedNodeClfAggregator
 from data.data_loader import *
 from fedml import FedMLRunner
 from model.gat import GATNodeCLF
@@ -63,35 +64,23 @@ def load_data(args):
 
 
 def create_model(args, feat_dim, num_cats, output_dim=None):
-    logging.info(
-        "create_model. model_name = %s, output_dim = %s" % (args.model, num_cats)
-    )
+    logging.info("create_model. model_name = %s, output_dim = %s" % (args.model, num_cats))
     if args.model == "gcn":
         model = GCNNodeCLF(
-            nfeat=feat_dim,
-            nhid=args.hidden_size,
-            nclass=num_cats,
-            nlayer=args.n_layers,
-            dropout=args.dropout,
+            nfeat=feat_dim, nhid=args.hidden_size, nclass=num_cats, nlayer=args.n_layers, dropout=args.dropout,
         )
     elif args.model == "sgc":
         model = SGCNodeCLF(in_dim=feat_dim, num_classes=num_cats, K=args.n_layers)
     elif args.model == "sage":
         model = SAGENodeCLF(
-            nfeat=feat_dim,
-            nhid=args.hidden_size,
-            nclass=num_cats,
-            nlayer=args.n_layers,
-            dropout=args.dropout,
+            nfeat=feat_dim, nhid=args.hidden_size, nclass=num_cats, nlayer=args.n_layers, dropout=args.dropout,
         )
     elif args.model == "gat":
-        model = GATNodeCLF(
-            in_channels=feat_dim, out_channels=num_cats, dropout=args.dropout,
-        )
+        model = GATNodeCLF(in_channels=feat_dim, out_channels=num_cats, dropout=args.dropout,)
     else:
         # MORE MODELS
         raise Exception("such model does not exist !")
-    trainer = FedNodeClfTrainer(model)
+    trainer = FedNodeClfTrainer(model, args)
     logging.info("Model and Trainer  - done")
     return model, trainer
 
@@ -108,7 +97,8 @@ if __name__ == "__main__":
 
     # load model
     model, trainer = create_model(args, feat_dim, num_cats)
+    aggregator = FedNodeClfAggregator(args, model)
 
     # start training
-    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer, aggregator)
     fedml_runner.run()

@@ -33,7 +33,6 @@ class FedMLAttacker:
                     args.data_size,
                     args.num_class,
                     args.model,
-                    args.criterion,
                     args.attack_epoch,
                     args.attack_label,
                 )
