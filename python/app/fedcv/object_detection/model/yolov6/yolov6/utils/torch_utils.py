@@ -8,7 +8,7 @@ import torch
 import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
-from yolov6.utils.events import LOGGER
+from .events import LOGGER
 
 try:
     import thop  # for FLOPs computation
@@ -98,6 +98,7 @@ def get_model_info(model, img_size=640):
     Code base on https://github.com/Megvii-BaseDetection/YOLOX/blob/main/yolox/utils/model_utils.py
     """
     from thop import profile
+
     stride = 32
     img = torch.zeros((1, 3, stride, stride), device=next(model.parameters()).device)
     flops, params = profile(deepcopy(model), inputs=(img,), verbose=False)

@@ -19,7 +19,7 @@ class MyModelTrainer(ClientTrainer):
     def set_model_params(self, model_parameters):
         self.model.load_state_dict(model_parameters)
 
-    def on_before_local_training(self, train_data, device, args=None):
+    def on_before_local_training(self, train_data, device, args):
         pass
 
     def train(self, train_data, device, args):
