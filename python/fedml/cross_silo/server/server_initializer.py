@@ -1,6 +1,6 @@
 from .fedml_aggregator import FedMLAggregator
 from .fedml_server_manager import FedMLServerManager
-from ..client.trainer.trainer_creator import create_model_trainer
+from ...ml.aggregator.aggregator_creator import create_server_aggregator
 
 
 def init_server(
@@ -16,11 +16,11 @@ def init_server(
     train_data_local_dict,
     test_data_local_dict,
     train_data_local_num_dict,
-    model_trainer
+    server_aggregator,
 ):
-    if model_trainer is None:
-        model_trainer = create_model_trainer(args, model)
-    model_trainer.set_id(0)
+    if server_aggregator is None:
+        server_aggregator = create_server_aggregator(args, model)
+    server_aggregator.set_id(0)
 
     # aggregator
     aggregator = FedMLAggregator(
@@ -33,12 +33,10 @@ def init_server(
         worker_num,
         device,
         args,
-        model_trainer,
+        server_aggregator,
     )
 
     # start the distributed training
     backend = args.backend
-    server_manager = FedMLServerManager(
-        args, aggregator, comm, rank, worker_num, backend
-    )
+    server_manager = FedMLServerManager(args, aggregator, comm, rank, worker_num, backend)
     server_manager.run()

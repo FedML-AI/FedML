@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Tuple, Dict, Any, Callable
+from typing import List, Tuple, Dict
 
 
 class ServerAggregator(ABC):
@@ -21,32 +21,21 @@ class ServerAggregator(ABC):
     def set_model_params(self, model_parameters):
         pass
 
-    @abstractmethod
     def on_before_aggregation(
-        self,
-        raw_client_model_or_grad_list: List[Tuple[float, Dict]]
+        self, raw_client_model_or_grad_list: List[Tuple[float, Dict]]
     ) -> List[Tuple[float, Dict]]:
         pass
 
     @abstractmethod
-    def aggregate(
-        self,
-        raw_client_model_or_grad_list: List[Tuple[float, Dict]],
-        base_aggregation_func: Callable = None
-    ) -> Dict:
+    def aggregate(self, raw_client_model_or_grad_list: List[Tuple[float, Dict]]) -> Dict:
+        pass
+
+    def on_after_aggregation(self, aggregated_model_or_grad: Dict) -> Dict:
         pass
 
     @abstractmethod
-    def on_after_aggregation(
-        self,
-        aggregated_model_or_grad: Dict
-    ) -> Dict:
+    def test(self, test_data, device, args):
         pass
 
-    @abstractmethod
-    def eval(self, eval_data, device, args=None):
-        pass
-
-    @abstractmethod
-    def test(self, test_data, device, args=None):
+    def test_all(self, train_data_local_dict, test_data_local_dict, device, args) -> bool:
         pass

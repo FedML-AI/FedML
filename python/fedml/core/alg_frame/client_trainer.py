@@ -9,7 +9,7 @@ class ClientTrainer(ABC):
     3. This class is an operator which does not cache any states inside.
     """
 
-    def __init__(self, model, args=None):
+    def __init__(self, model, args):
         self.model = model
         self.id = 0
         self.args = args
@@ -25,24 +25,15 @@ class ClientTrainer(ABC):
     def set_model_params(self, model_parameters):
         pass
 
-    @abstractmethod
-    def on_before_local_training(self, train_data, device, args=None):
+    def on_before_local_training(self, train_data, device, args):
         pass
 
     @abstractmethod
-    def train(self, train_data, device, args=None):
+    def train(self, train_data, device, args):
         pass
 
-    @abstractmethod
-    def on_after_local_training(self, train_data, device, args=None):
+    def on_after_local_training(self, train_data, device, args):
         pass
 
-    @abstractmethod
-    def test(self, test_data, device, args=None):
-        pass
-
-    @abstractmethod
-    def test_on_the_server(
-        self, train_data_local_dict, test_data_local_dict, device, args=None
-    ) -> bool:
+    def test(self, test_data, device, args):
         pass
