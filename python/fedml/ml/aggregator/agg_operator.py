@@ -1,3 +1,6 @@
+from typing import List, Tuple, Dict
+
+
 class FedMLAggOperator:
     @staticmethod
     def FedAVG(raw_grad_list):
@@ -16,3 +19,11 @@ class FedMLAggOperator:
                 else:
                     avg_params[k] += local_model_params[k] * w
         return avg_params
+
+    @staticmethod
+    def agg(args, raw_grad_list: List[Tuple[float, Dict]]) -> Dict:
+        if args.federated_optimizer == "FedAvg":
+            agg_func = FedMLAggOperator.FedAVG
+        else:
+            raise Exception("will support many optimizers in a unified framework soon")
+        return agg_func(raw_grad_list)

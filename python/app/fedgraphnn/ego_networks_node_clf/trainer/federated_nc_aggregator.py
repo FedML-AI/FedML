@@ -19,10 +19,46 @@ class FedNodeClfAggregator(ServerAggregator):
         logging.info("set_model_params")
         self.model.load_state_dict(model_parameters)
 
-    def aggregate(self, raw_client_model_or_grad_list: List[Tuple[float, Dict]]) -> Dict:
-        return FedMLAggOperator.FedAVG(raw_client_model_or_grad_list)
-
     def test(self, test_data, device, args):
+        pass
+
+    def test_all(self, train_data_local_dict, test_data_local_dict, device, args=None) -> bool:
+        logging.info("----------test_on_the_server--------")
+
+        model_list, micro_list, macro_list = [], [], []
+        for client_idx in test_data_local_dict.keys():
+            test_data = test_data_local_dict[client_idx]
+            score, model = self._test(test_data, device)
+            for idx in range(len(model_list)):
+                self._compare_models(model, model_list[idx])
+            model_list.append(model)
+            micro_list.append(score)
+            logging.info("Client {}, Test Micro F1 = {}".format(client_idx, score))
+            if args.enable_wandb:
+                wandb.log({"Client {} Test/Micro F1".format(client_idx): score})
+
+        avg_micro = np.mean(np.array(micro_list))
+        logging.info("Test Micro F1 = {}".format(avg_micro))
+        if args.enable_wandb:
+            wandb.log({"Test/ Micro F1": avg_micro})
+
+        return True
+
+    def _compare_models(self, model_1, model_2):
+        models_differ = 0
+        for key_item_1, key_item_2 in zip(model_1.state_dict().items(), model_2.state_dict().items()):
+            if torch.equal(key_item_1[1], key_item_2[1]):
+                pass
+            else:
+                models_differ += 1
+                if key_item_1[0] == key_item_2[0]:
+                    logging.info("Mismatch found at", key_item_1[0])
+                else:
+                    raise Exception
+        if models_differ == 0:
+            logging.info("Models match perfectly! :)")
+
+    def _test(self, test_data, device):
         logging.info("----------test--------")
         model = self.model
         model.eval()
@@ -61,43 +97,3 @@ class FedNodeClfAggregator(ServerAggregator):
         micro_F1 = 2 * micro_pr * micro_rec / denominator
         logging.info("score = {}".format(micro_F1))
         return micro_F1, model
-
-    def test_all(
-        self, train_data_local_dict, test_data_local_dict, device, args=None
-    ) -> bool:
-        logging.info("----------test_on_the_server--------")
-
-        model_list, micro_list, macro_list = [], [], []
-        for client_idx in test_data_local_dict.keys():
-            test_data = test_data_local_dict[client_idx]
-            score, model = self.test(test_data, device)
-            for idx in range(len(model_list)):
-                self._compare_models(model, model_list[idx])
-            model_list.append(model)
-            micro_list.append(score)
-            logging.info("Client {}, Test Micro F1 = {}".format(client_idx, score))
-            if args.enable_wandb:
-                wandb.log({"Client {} Test/Micro F1".format(client_idx): score})
-
-        avg_micro = np.mean(np.array(micro_list))
-        logging.info("Test Micro F1 = {}".format(avg_micro))
-        if args.enable_wandb:
-            wandb.log({"Test/ Micro F1": avg_micro})
-
-        return True
-
-    def _compare_models(self, model_1, model_2):
-        models_differ = 0
-        for key_item_1, key_item_2 in zip(
-            model_1.state_dict().items(), model_2.state_dict().items()
-        ):
-            if torch.equal(key_item_1[1], key_item_2[1]):
-                pass
-            else:
-                models_differ += 1
-                if key_item_1[0] == key_item_2[0]:
-                    logging.info("Mismatch found at", key_item_1[0])
-                else:
-                    raise Exception
-        if models_differ == 0:
-            logging.info("Models match perfectly! :)")

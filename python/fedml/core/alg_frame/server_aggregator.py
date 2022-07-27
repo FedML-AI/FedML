@@ -1,11 +1,13 @@
 from abc import ABC, abstractmethod
 from typing import List, Tuple, Dict
 
+from fedml.ml.aggregator.agg_operator import FedMLAggOperator
+
 
 class ServerAggregator(ABC):
     """Abstract base class for federated learning trainer."""
 
-    def __init__(self, model, args=None):
+    def __init__(self, model, args):
         self.model = model
         self.id = 0
         self.args = args
@@ -26,9 +28,8 @@ class ServerAggregator(ABC):
     ) -> List[Tuple[float, Dict]]:
         pass
 
-    @abstractmethod
     def aggregate(self, raw_client_model_or_grad_list: List[Tuple[float, Dict]]) -> Dict:
-        pass
+        return FedMLAggOperator.agg(self.args, raw_client_model_or_grad_list)
 
     def on_after_aggregation(self, aggregated_model_or_grad: Dict) -> Dict:
         pass
