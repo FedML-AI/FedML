@@ -11,7 +11,6 @@ from ..constants import (
     FedML_FEDERATED_OPTIMIZER_SPLIT_NN,
     FedML_FEDERATED_OPTIMIZER_DECENTRALIZED_FL,
     FedML_FEDERATED_OPTIMIZER_FEDGAN,
-    FedML_FEDERATED_OPTIMIZER_FEDAVG_ROBUST,
     FedML_FEDERATED_OPTIMIZER_FEDAVG_SEQ,
     FedML_FEDERATED_OPTIMIZER_FEDGKT,
     FedML_FEDERATED_OPTIMIZER_FEDNAS,
@@ -70,7 +69,6 @@ class SimulatorMPI:
         from .mpi.base_framework.algorithm_api import FedML_Base_distributed
         from .mpi.decentralized_framework.algorithm_api import FedML_Decentralized_Demo_distributed
         from .mpi.fedavg.FedAvgAPI import FedML_FedAvg_distributed
-        from .mpi.fedavg_robust.FedAvgRobustAPI import FedML_FedAvgRobust_distributed
         from .mpi.fedgkt.FedGKTAPI import FedML_FedGKT_distributed
         from .mpi.fednas.FedNASAPI import FedML_FedNAS_distributed
         from .mpi.fedopt.FedOptAPI import FedML_FedOpt_distributed
@@ -141,10 +139,6 @@ class SimulatorMPI:
             self.simulator = FedML_FedGan_distributed(
                 args.process_id, args.worker_num, device, args.comm, model, args, dataset,
             )
-        elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDAVG_ROBUST:
-            self.simulator = FedML_FedAvgRobust_distributed(
-                args, args.process_id, args.worker_num, device, args.comm, model, dataset,
-            )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDGKT:
             self.simulator = FedML_FedGKT_distributed(
                 args.process_id, args.worker_num, device, args.comm, model, dataset, args,
@@ -159,14 +153,10 @@ class SimulatorMPI:
                 dataset,
                 model,
                 client_trainer=client_trainer,
-                server_aggregator=server_aggregator
+                server_aggregator=server_aggregator,
             )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDSEG:
             pass
-        elif args.fl_trainer == FedML_FEDERATED_OPTIMIZER_FEDAVG_ROBUST:
-            self.fl_trainer = FedML_FedAvgRobust_distributed(
-                args, args.process_id, args.worker_num, device, args.comm, model, dataset,
-            )
         elif args.fl_trainer == FedML_FEDERATED_OPTIMIZER_FEDGAN:
             self.fl_trainer = FedML_FedGan_distributed(
                 args, args.process_id, args.worker_num, device, args.comm, model, dataset
