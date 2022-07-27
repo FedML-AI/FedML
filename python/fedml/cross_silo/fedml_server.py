@@ -1,4 +1,4 @@
-from .. import ServerAggregator
+from fedml.core import ServerAggregator
 
 
 class FedMLCrossSiloServer:
