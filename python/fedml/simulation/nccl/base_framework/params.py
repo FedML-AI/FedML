@@ -1,18 +1,12 @@
 import logging
 
-from ....core.alg_frame.params import Params
+from .common import ReduceOp
 from .common import fedml_nccl_broadcast
 from .common import fedml_nccl_reduce
-from .common import fedml_nccl_barrier
 from .common import fedml_nccl_send_to_server
-from .common import (get_server_rank, get_rank, get_world_size, get_worker_number)
+from .common import get_server_rank, get_worker_number
+from ....core.alg_frame.params import Params
 
-from .common import ReduceOp
-
-from .common import (
-    move_to_cpu, move_to_gpu,
-    clear_optim_buffer, optimizer_to
-)
 
 class Params(Params):
     """
@@ -26,16 +20,16 @@ class Params(Params):
         >> # get parameter
         >> my_params.w
     """
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
-
 
 
 class ServerToClientParams(Params):
     """
     Normally, ServerToClient only broadcast parameters, hence all devices will receive same data from server.
     """
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._broadcast_params = []
@@ -70,14 +64,11 @@ class LocalAggregatorToServerParams(Params):
             This will be used for gathering data.
         """
         super().__init__(**kwargs)
-        self._reduce_params = dict([
-            (ReduceOp.SUM, []),
-        ])
+        self._reduce_params = dict([(ReduceOp.SUM, []),])
         self._gather_params = []
         self.client_indexes = client_indexes
         # self.rank = rank
         # self.group = group
-
 
     def add_reduce_param(self, name, param, op=ReduceOp.SUM):
         if name in self.__dict__:
@@ -89,7 +80,6 @@ class LocalAggregatorToServerParams(Params):
         else:
             self.__dict__.update({name: param})
             self._reduce_params[op].append(name)
-
 
     def add_gather_params(self, client_index, name, param):
         """
@@ -104,7 +94,6 @@ class LocalAggregatorToServerParams(Params):
             self.__dict__.update({name: {}})
             self._gather_params.append(name)
         self.__dict__[name][client_index] = param
-
 
     def communicate(self, rank, groups, client_schedule=None):
         for param_name in self._reduce_params[ReduceOp.SUM]:
@@ -122,9 +111,10 @@ class LocalAggregatorToServerParams(Params):
                     # logging.info(f"server:  rank:{device}, has client_indexes: {client_schedule[device]}")
                     for client_index in client_schedule[device]:
                         device_rank = device + 1
-                        # Here the 
+                        # Here the
                         fedml_nccl_send_to_server(
-                            tensor=self.__dict__[param_name][client_index], src=device_rank, group=groups[device_rank])
+                            tensor=self.__dict__[param_name][client_index], src=device_rank, group=groups[device_rank]
+                        )
         else:
             # logging.info(f"rank:{rank}, groups: {groups}")
             for param_name in self._gather_params:
@@ -137,24 +127,16 @@ class LocalAggregatorToServerParams(Params):
                     fedml_nccl_send_to_server(param, src=rank, group=groups[rank])
 
 
-
-
-
 class ClientToLocalAggregatorParams(Params):
     def __init__(self, client_index, **kwargs):
         super().__init__(**kwargs)
         self.client_index = client_index
-        self._reduce_params = dict([
-            (ReduceOp.MEAN, []),
-            (ReduceOp.SUM, []),
-        ])
+        self._reduce_params = dict([(ReduceOp.MEAN, []), (ReduceOp.SUM, []),])
         self._gather_params = []
-
 
     def add_reduce_param(self, name, param, op=ReduceOp.SUM):
         self.__dict__.update({name: param})
         self._reduce_params[op].append(name)
-
 
     def add_gather_params(self, name, param):
         self.__dict__.update({name: param})
@@ -170,24 +152,5 @@ class ClientToLocalAggregatorParams(Params):
         return self._gather_params
 
 
-
-
-
 def local_gather(local_gather_params):
     pass
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
