@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
     # load model and trainer
     model, trainer = create_model(args, output_dim)
-    aggregator = ClassificationAggregator(args, model)
+    aggregator = ClassificationAggregator(model, args)
     # start training
     fedml_runner = FedMLRunner(args, device, dataset, model, trainer, aggregator)
     fedml_runner.run()
