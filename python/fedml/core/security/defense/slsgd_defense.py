@@ -1,6 +1,6 @@
 import math
 from typing import Callable, List, Tuple, Dict, Any
-from fedml.core.security.defense.defense_base import BaseDefenseMethod
+from ..defense.defense_base import BaseDefenseMethod
 
 """
 defense with aggregation, added by Shanshan, 07/13/2022

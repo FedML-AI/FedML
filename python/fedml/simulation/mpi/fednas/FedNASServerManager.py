@@ -3,11 +3,11 @@ import logging
 import torch
 
 from .message_define import MyMessage
+from ....core.distributed.fedml_comm_manager import FedMLCommManager
 from ....core.distributed.communication.message import Message
-from ....core.distributed.server.server_manager import ServerManager
 
 
-class FedNASServerManager(ServerManager):
+class FedNASServerManager(FedMLCommManager):
     def __init__(self, args, comm, rank, size, aggregator):
         super().__init__(args, comm, rank, size)
 

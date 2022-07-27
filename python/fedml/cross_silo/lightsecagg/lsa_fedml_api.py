@@ -2,21 +2,11 @@ from .lsa_fedml_aggregator import LightSecAggAggregator
 from .lsa_fedml_client_manager import FedMLClientManager
 from .lsa_fedml_server_manager import FedMLServerManager
 from ..client.fedml_trainer import FedMLTrainer
-from ..client.trainer.my_model_trainer_classification import ModelTrainerCLS
-from ..client.trainer.my_model_trainer_nwp import ModelTrainerNWP
-from ..client.trainer.my_model_trainer_tag_prediction import ModelTrainerTAGPred
+from ...ml.trainer.trainer_creator import create_model_trainer
 
 
 def FedML_LSA_Horizontal(
-    args,
-    client_rank,
-    client_num,
-    comm,
-    device,
-    dataset,
-    model,
-    model_trainer=None,
-    preprocessed_sampling_lists=None,
+    args, client_rank, client_num, comm, device, dataset, model, model_trainer=None, preprocessed_sampling_lists=None,
 ):
     [
         train_data_num,
@@ -78,12 +68,7 @@ def init_server(
     preprocessed_sampling_lists=None,
 ):
     if model_trainer is None:
-        if args.dataset == "stackoverflow_lr":
-            model_trainer = ModelTrainerTAGPred(model, args)
-        elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
-            model_trainer = ModelTrainerNWP(model, args)
-        else:  # default model trainer is for classification problem
-            model_trainer = ModelTrainerCLS(model, args)
+        model_trainer = create_model_trainer(args, model)
     model_trainer.set_id(0)
 
     # aggregator
@@ -103,9 +88,7 @@ def init_server(
     # start the distributed training
     backend = args.backend
     if preprocessed_sampling_lists is None:
-        server_manager = FedMLServerManager(
-            args, aggregator, comm, client_rank, client_num, backend
-        )
+        server_manager = FedMLServerManager(args, aggregator, comm, client_rank, client_num, backend)
     else:
         server_manager = FedMLServerManager(
             args,
@@ -135,12 +118,7 @@ def init_client(
     model_trainer=None,
 ):
     if model_trainer is None:
-        if args.dataset == "stackoverflow_lr":
-            model_trainer = ModelTrainerTAGPred(model, args)
-        elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
-            model_trainer = ModelTrainerNWP(model, args)
-        else:  # default model trainer is for classification problem
-            model_trainer = ModelTrainerCLS(model, args)
+        model_trainer = create_model_trainer(args, model)
     model_trainer.set_id(client_rank)
     backend = args.backend
     trainer = FedMLTrainer(
@@ -153,7 +131,5 @@ def init_client(
         args,
         model_trainer,
     )
-    client_manager = FedMLClientManager(
-        args, trainer, comm, client_rank, client_num, backend
-    )
+    client_manager = FedMLClientManager(args, trainer, comm, client_rank, client_num, backend)
     client_manager.run()

@@ -22,9 +22,6 @@ from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 lock = threading.Lock()
 
 
-
-
-
 class TRPCCommManager(BaseCommunicationManager):
     def __init__(
         self,

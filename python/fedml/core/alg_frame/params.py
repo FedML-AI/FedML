@@ -14,10 +14,16 @@ class Params(object):
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
-    def add(self, name: str, param):
-        self.__dict__.update({name: param})
+    def add(self, name: str, value):
+        self.__dict__[name] = value
 
     def get(self, name: str):
         if not hasattr(self, name):
             raise ValueError(f"Attribute not found: {name}")
         return getattr(self, name)
+
+    def keys(self):
+        return self.__dict__.keys()
+
+    def values(self):
+        return self.__dict__.values()
