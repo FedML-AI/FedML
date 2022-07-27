@@ -8,7 +8,7 @@ import torch
 from torch import nn
 
 from fedml.core import ServerAggregator
-from fedml.ml.aggregator.agg_operator import FedMLAggOperator
+from fedml.core import FedMLAggOperator
 
 
 class MyServerAggregator(ServerAggregator):
