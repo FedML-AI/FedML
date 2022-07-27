@@ -1,6 +1,6 @@
 import fedml
 from fedml import FedMLRunner
-from .trainer import ClassificationTrainer
+from trainer import ClassificationTrainer
 
 if __name__ == "__main__":
     # init FedML framework
