@@ -117,7 +117,7 @@ class Seq2SeqAggregator(ServerAggregator):
 
         return result, model_preds, None
 
-    def test_all(self, train_data_local_dict, test_data_local_dict, device, args=None) -> bool:
+    def test_all(self, train_data_local_dict, test_data_local_dict, device, args) -> bool:
         logging.info("----------test_on_the_server--------")
         f1_list, metric_list = [], []
         for client_idx in test_data_local_dict.keys():
