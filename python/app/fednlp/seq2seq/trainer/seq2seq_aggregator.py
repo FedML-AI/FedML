@@ -1,12 +1,11 @@
-import logging
+import os
+from multiprocessing import Pool
 
-import numpy as np
 import torch
-from .seq2seq_utils import *
-
-
+from tqdm import tqdm
 
 from fedml.core import ServerAggregator
+from .seq2seq_utils import *
 
 
 class Seq2SeqAggregator(ServerAggregator):
@@ -83,11 +82,7 @@ class Seq2SeqAggregator(ServerAggregator):
             nb_eval_steps += 1
             start_index = self.args.eval_batch_size * i
 
-            end_index = (
-                start_index + self.args.eval_batch_size
-                if i != (n_batches - 1)
-                else test_sample_len
-            )
+            end_index = start_index + self.args.eval_batch_size if i != (n_batches - 1) else test_sample_len
         #   logging.info(
         #      "batch index = %d, start_index = %d, end_index = %d"
         #     % (i, start_index, end_index)
@@ -122,9 +117,7 @@ class Seq2SeqAggregator(ServerAggregator):
 
         return result, model_preds, None
 
-    def test_all(
-        self, train_data_local_dict, test_data_local_dict, device, args=None
-    ) -> bool:
+    def test_all(self, train_data_local_dict, test_data_local_dict, device, args=None) -> bool:
         logging.info("----------test_on_the_server--------")
         f1_list, metric_list = [], []
         for client_idx in test_data_local_dict.keys():
@@ -132,11 +125,7 @@ class Seq2SeqAggregator(ServerAggregator):
             metrics, _, _ = self.test(test_data, device, args)
             metric_list.append(metrics)
             f1_list.append(metrics["rouge_score"])
-            logging.info(
-                "Client {}, Test rouge_score = {}".format(
-                    client_idx, metrics["rouge_score"]
-                )
-            )
+            logging.info("Client {}, Test rouge_score = {}".format(client_idx, metrics["rouge_score"]))
         avg_accuracy = np.mean(np.array(f1_list))
         logging.info("Test avg rouge_score = {}".format(avg_accuracy))
         return True
@@ -170,9 +159,7 @@ class Seq2SeqAggregator(ServerAggregator):
         else:
             lm_labels = batch[1]
             lm_labels_masked = lm_labels.clone()
-            lm_labels_masked[
-                lm_labels_masked == self.decoder_tokenizer.pad_token_id
-            ] = -100
+            lm_labels_masked[lm_labels_masked == self.decoder_tokenizer.pad_token_id] = -100
 
             inputs = {
                 "input_ids": batch[0].to(device),
@@ -196,8 +183,7 @@ class Seq2SeqAggregator(ServerAggregator):
         all_outputs = []
         # Batching
         for batch in [
-            to_predict[i : i + self.args.eval_batch_size]
-            for i in range(0, len(to_predict), self.args.eval_batch_size)
+            to_predict[i : i + self.args.eval_batch_size] for i in range(0, len(to_predict), self.args.eval_batch_size)
         ]:
             if self.args.model_type == "marian":
                 input_ids = self.encoder_tokenizer.prepare_seq2seq_batch(
@@ -240,9 +226,7 @@ class Seq2SeqAggregator(ServerAggregator):
                     num_return_sequences=self.args.num_return_sequences,
                 )
             elif self.args.model_type in ["mbart"]:
-                tgt_lang_token = self.decoder_tokenizer._convert_token_to_id(
-                    self.args.tgt_lang
-                )
+                tgt_lang_token = self.decoder_tokenizer._convert_token_to_id(self.args.tgt_lang)
 
                 outputs = self.model.generate(
                     input_ids=input_ids,
@@ -279,11 +263,7 @@ class Seq2SeqAggregator(ServerAggregator):
             with Pool(self.args.process_count) as p:
                 outputs = list(
                     tqdm(
-                        p.imap(
-                            self._decode,
-                            all_outputs,
-                            chunksize=self.args.multiprocessing_chunksize,
-                        ),
+                        p.imap(self._decode, all_outputs, chunksize=self.args.multiprocessing_chunksize,),
                         total=len(all_outputs),
                         desc="Decoding outputs",
                         disable=self.args.silent,
@@ -293,9 +273,7 @@ class Seq2SeqAggregator(ServerAggregator):
         else:
             outputs = [
                 self.decoder_tokenizer.decode(
-                    output_id,
-                    skip_special_tokens=self.args.skip_special_tokens,
-                    clean_up_tokenization_spaces=True,
+                    output_id, skip_special_tokens=self.args.skip_special_tokens, clean_up_tokenization_spaces=True,
                 )
                 for output_id in all_outputs
             ]
@@ -310,7 +288,5 @@ class Seq2SeqAggregator(ServerAggregator):
 
     def _decode(self, output_id):
         return self.decoder_tokenizer.decode(
-            output_id,
-            skip_special_tokens=self.args.skip_special_tokens,
-            clean_up_tokenization_spaces=True,
+            output_id, skip_special_tokens=self.args.skip_special_tokens, clean_up_tokenization_spaces=True,
         )
