@@ -1,8 +1,6 @@
 import fedml
 from fedml import FedMLRunner
-from data import load_data
-from model import create_model
-from trainer import ClassificationTrainer
+from .trainer import ClassificationTrainer
 
 if __name__ == "__main__":
     # init FedML framework
@@ -12,10 +10,10 @@ if __name__ == "__main__":
     device = fedml.device.get_device(args)
 
     # load data
-    dataset, class_num = load_data(args)
+    dataset, class_num = fedml.data.load(args)
 
     # create model and trainer
-    model = create_model(args, args.model, output_dim=class_num)
+    model = fedml.model.create(args, output_dim=class_num)
     trainer = ClassificationTrainer(model=model, args=args)
 
     # start training

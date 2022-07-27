@@ -1,8 +1,9 @@
 import time
 
+from fedml.data import split_data_for_dist_trainers
 from ...constants import FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
 from ...core.mlops.mlops_profiler_event import MLOpsProfilerEvent
-from fedml.data import split_data_for_dist_trainers
+
 
 class FedMLTrainer(object):
     def __init__(
@@ -21,12 +22,10 @@ class FedMLTrainer(object):
         self.client_index = client_index
 
         if args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
-            self.train_data_local_dict = split_data_for_dist_trainers(
-                train_data_local_dict, args.n_proc_in_silo
-            )
+            self.train_data_local_dict = split_data_for_dist_trainers(train_data_local_dict, args.n_proc_in_silo)
         else:
             self.train_data_local_dict = train_data_local_dict
-            
+
         self.train_data_local_num_dict = train_data_local_num_dict
         self.test_data_local_dict = test_data_local_dict
         self.all_train_data_num = train_data_num
@@ -43,9 +42,7 @@ class FedMLTrainer(object):
     def update_dataset(self, client_index):
         self.client_index = client_index
         if self.args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
-            self.train_local = self.train_data_local_dict[client_index][
-                self.args.proc_rank_in_silo
-            ]
+            self.train_local = self.train_data_local_dict[client_index][self.args.proc_rank_in_silo]
         else:
             self.train_local = self.train_data_local_dict[client_index]
         self.local_sample_number = self.train_data_local_num_dict[client_index]
@@ -55,9 +52,7 @@ class FedMLTrainer(object):
         self.args.round_idx = round_idx
         tick = time.time()
         self.trainer.train(self.train_local, self.device, self.args)
-        MLOpsProfilerEvent.log_to_wandb(
-            {"Train/Time": time.time() - tick, "round": round_idx}
-        )
+        MLOpsProfilerEvent.log_to_wandb({"Train/Time": time.time() - tick, "round": round_idx})
         weights = self.trainer.get_model_params()
         # transform Tensor to list
         return weights, self.local_sample_number

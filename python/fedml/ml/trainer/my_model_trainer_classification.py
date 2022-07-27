@@ -1,11 +1,11 @@
 import torch
 from torch import nn
 
-from ....core.alg_frame.client_trainer import ClientTrainer
+from ...core.alg_frame.client_trainer import ClientTrainer
 import logging
 
 
-class MyModelTrainer(ClientTrainer):
+class ModelTrainerCLS(ClientTrainer):
     def get_model_params(self):
         return self.model.cpu().state_dict()
 
