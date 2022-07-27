@@ -2,7 +2,7 @@ import logging
 
 from fedml.constants import FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
 from .fedml_trainer import FedMLTrainer
-from .trainer.trainer_creator import create_model_trainer
+from ...ml.trainer.trainer_creator import create_model_trainer
 
 
 class TrainerDistAdapter:

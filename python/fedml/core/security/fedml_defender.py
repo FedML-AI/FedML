@@ -38,19 +38,15 @@ class FedMLDefender:
             logging.info("self.defense_type = {}".format(self.defense_type))
             self.defender = None
             if self.defense_type == DEFENSE_NORM_DIFF_CLIPPING:
-                self.defender = NormDiffClippingDefense(args.norm_bound)
+                self.defender = NormDiffClippingDefense(args)
             elif self.defense_type == DEFENSE_ROBUST_LEARNING_RATE:
-                self.defender = RobustLearningRateDefense(args.robust_threshold)
+                self.defender = RobustLearningRateDefense(args)
             elif self.defense_type == DEFENSE_KRUM:
-                self.defender = KrumDefense(args.byzantine_client_num, args.multi)
+                self.defender = KrumDefense(args)
             elif self.defense_type == DEFENSE_SLSGD:
-                self.defender = SLSGDDefense(
-                    args.trim_param_b, args.alpha, args.option_type
-                )
+                self.defender = SLSGDDefense(args)
             elif self.defense_type == DEFENSE_GEO_MEDIAN:
-                self.defender = GeometricMedianDefense(
-                    args.byzantine_client_num, args.client_num_per_round, args.batch_num
-                )
+                self.defender = GeometricMedianDefense(args)
             else:
                 raise Exception("args.attack_type is not defined!")
         else:
@@ -95,4 +91,6 @@ class FedMLDefender:
     def robustify_global_model(self, avg_params, previous_global_w=None):
         if self.defender is None:
             raise Exception("defender is not initialized!")
-        return self.defender.robustify_global_model(avg_params, previous_global_w=previous_global_w)
+        return self.defender.robustify_global_model(
+            avg_params, previous_global_w=previous_global_w
+        )
