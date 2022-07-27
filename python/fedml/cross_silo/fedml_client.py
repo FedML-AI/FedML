@@ -1,5 +1,5 @@
 from .client import client_initializer
-from .. import ClientTrainer
+from ..core import ClientTrainer
 
 
 class FedMLCrossSiloClient:
