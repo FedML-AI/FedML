@@ -100,5 +100,5 @@ if __name__ == "__main__":
     aggregator = FedNodeClfAggregator(args, model)
 
     # start training
-    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer, aggregator)
     fedml_runner.run()
