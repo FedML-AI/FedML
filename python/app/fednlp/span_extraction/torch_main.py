@@ -106,7 +106,7 @@ if __name__ == "__main__":
     args.num_labels = output_dim
     # load model and trainer
     model, trainer = create_model(args, output_dim)
-    aggregator = ExtractionAggregator(args, model)
+    aggregator = ExtractionAggregator(model, args)
     # start training
     fedml_runner = FedMLRunner(args, device, dataset, model, trainer, aggregator)
     fedml_runner.run()
