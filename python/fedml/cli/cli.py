@@ -605,7 +605,7 @@ def build_mlops_package(
         [
             "entry_config: \n",
             "  entry_file: " + mlops_dest_entry + "\n",
-            "  conf_file: " + os.path.join("config", "fedml_config.yaml") + "\n",
+            "  conf_file: fedml_config.yaml\n",
             "dynamic_args:\n",
             "  rank: " + rank + "\n",
             "  run_id: ${FEDSYS.RUN_ID}\n",
