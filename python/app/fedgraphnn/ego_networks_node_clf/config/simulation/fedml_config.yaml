@@ -3,9 +3,9 @@ common_args:
   random_seed: 0
 
 data_args:
-  dataset: "CS"
-  data_cache_dir: "./data/ego-networks"
-  part_file: "./data/partition"
+  dataset: "citeseer"
+  data_cache_dir: ~/fedgraphnn_data/
+  part_file: ~/fedgraphnn_data/citeseer/partition
   partition_method: "hetero"
   partition_alpha: 0.5
   ego_number: 1000
