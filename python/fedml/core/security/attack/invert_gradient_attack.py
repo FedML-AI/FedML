@@ -1,15 +1,15 @@
-import torch
-import torchvision
-import torch.nn as nn
-import torch.nn.functional as F
-from torch.nn.modules.utils import _pair, _quadruple
-
 import logging
 import time
-from collections import defaultdict, OrderedDict
-from functools import partial
 import warnings
+from collections import defaultdict, OrderedDict
 from copy import deepcopy
+from functools import partial
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torchvision
+from torch.nn.modules.utils import _pair, _quadruple
 
 from .attack_base import BaseAttackMethod
 from ..constants import cifar10_mean, cifar10_std
@@ -34,12 +34,7 @@ TODO: add more description abour different settings and variables
 
 class InvertAttack(BaseAttackMethod):
     def __init__(
-        self,
-        attack_client_idx=0,
-        trained_model=False,
-        model=None,
-        num_images=1,
-        use_updates=False,
+        self, attack_client_idx=0, trained_model=False, model=None, num_images=1, use_updates=False,
     ):
         defs = ConservativeStrategy()
         loss_fn = Classification()
@@ -57,15 +52,10 @@ class InvertAttack(BaseAttackMethod):
 
         if not self.use_updates:
             rec_machine = GradientReconstructor(
-                self.model,
-                (self.dm, self.ds),
-                config=refs[1],
-                num_images=self.num_images,
+                self.model, (self.dm, self.ds), config=refs[1], num_images=self.num_images,
             )
             self.input_gradient = local_w
-            output, stats = rec_machine.reconstruct(
-                self.input_gradient, self.labels, self.img_shape
-            )
+            output, stats = rec_machine.reconstruct(self.input_gradient, self.labels, self.img_shape)
         else:
             rec_machine = FedAvgReconstructor(
                 self.model,
@@ -76,14 +66,10 @@ class InvertAttack(BaseAttackMethod):
                 use_updates=self.use_updates,
             )
             self.input_parameters = local_w
-            output, stats = rec_machine.reconstruct(
-                self.input_parameters, self.labels, self.img_shape
-            )
+            output, stats = rec_machine.reconstruct(self.input_parameters, self.labels, self.img_shape)
 
         test_mse = (output.detach() - self.ground_truth).pow(2).mean()
-        feat_mse = (
-            (self.model(output.detach()) - self.model(self.ground_truth)).pow(2).mean()
-        )
+        feat_mse = (self.model(output.detach()) - self.model(self.ground_truth)).pow(2).mean()
         test_psnr = psnr(output, self.ground_truth, factor=1 / self.ds)
         logging.info(
             f"Rec. loss: {stats['opt']:2.4f} | MSE: {test_mse:2.4f} | PSNR: {test_psnr:4.2f} | FMSE: {feat_mse:2.4e} |"
@@ -149,11 +135,7 @@ class Classification(Loss):
     def __init__(self):
         """Init with torch MSE."""
         self.loss_fn = torch.nn.CrossEntropyLoss(
-            weight=None,
-            size_average=None,
-            ignore_index=-100,
-            reduce=None,
-            reduction="mean",
+            weight=None, size_average=None, ignore_index=-100, reduce=None, reduction="mean",
         )
 
     def __call__(self, x=None, y=None):
@@ -221,9 +203,7 @@ class GradientReconstructor:
         """Initialize with algorithm setup."""
         self.config = _validate_config(config)
         self.model = model
-        self.setup = dict(
-            device=next(model.parameters()).device, dtype=next(model.parameters()).dtype
-        )
+        self.setup = dict(device=next(model.parameters()).device, dtype=next(model.parameters()).dtype)
 
         self.mean_std = mean_std
         self.num_images = num_images
@@ -235,13 +215,7 @@ class GradientReconstructor:
         self.iDLG = True
 
     def reconstruct(
-        self,
-        input_data,
-        labels,
-        img_shape=(3, 32, 32),
-        dryrun=False,
-        eval=True,
-        tol=None,
+        self, input_data, labels, img_shape=(3, 32, 32), dryrun=False, eval=True, tol=None,
     ):
         """Reconstruct image from gradient."""
         start_time = time.time()
@@ -255,9 +229,7 @@ class GradientReconstructor:
         if labels is None:
             if self.num_images == 1 and self.iDLG:
                 # iDLG trick:
-                last_weight_min = torch.argmin(
-                    torch.sum(input_data[-2], dim=-1), dim=-1
-                )
+                last_weight_min = torch.argmin(torch.sum(input_data[-2], dim=-1), dim=-1)
                 labels = last_weight_min.detach().reshape((1,)).requires_grad_(False)
                 self.reconstruct_label = False
             else:
@@ -267,11 +239,7 @@ class GradientReconstructor:
 
                 def loss_fn(pred, labels):
                     labels = torch.nn.functional.softmax(labels, dim=-1)
-                    return torch.mean(
-                        torch.sum(
-                            -labels * torch.nn.functional.log_softmax(pred, dim=-1), 1
-                        )
-                    )
+                    return torch.mean(torch.sum(-labels * torch.nn.functional.log_softmax(pred, dim=-1), 1))
 
                 self.loss_fn = loss_fn
         else:
@@ -280,9 +248,7 @@ class GradientReconstructor:
 
         try:
             for trial in range(self.config["restarts"]):
-                x_trial, labels = self._run_trial(
-                    x[trial], input_data, labels, dryrun=dryrun
-                )
+                x_trial, labels = self._run_trial(x[trial], input_data, labels, dryrun=dryrun)
                 # Finalize
                 scores[trial] = self._score_trial(x_trial, input_data, labels)
                 x[trial] = x_trial
@@ -315,9 +281,7 @@ class GradientReconstructor:
         x_trial.requires_grad = True
         if self.reconstruct_label:
             output_test = self.model(x_trial)
-            labels = (
-                torch.randn(output_test.shape[1]).to(**self.setup).requires_grad_(True)
-            )
+            labels = torch.randn(output_test.shape[1]).to(**self.setup).requires_grad_(True)
 
             if self.config["optim"] == "adam":
                 optimizer = torch.optim.Adam([x_trial, labels], lr=self.config["lr"])
@@ -327,9 +291,7 @@ class GradientReconstructor:
             if self.config["optim"] == "adam":
                 optimizer = torch.optim.Adam([x_trial], lr=self.config["lr"])
             elif self.config["optim"] == "sgd":  # actually gd
-                optimizer = torch.optim.SGD(
-                    [x_trial], lr=0.01, momentum=0.9, nesterov=True
-                )
+                optimizer = torch.optim.SGD([x_trial], lr=0.01, momentum=0.9, nesterov=True)
             elif self.config["optim"] == "LBFGS":
                 optimizer = torch.optim.LBFGS([x_trial])
             else:
@@ -340,11 +302,7 @@ class GradientReconstructor:
         if self.config["lr_decay"]:
             scheduler = torch.optim.lr_scheduler.MultiStepLR(
                 optimizer,
-                milestones=[
-                    max_iterations // 2.667,
-                    max_iterations // 1.6,
-                    max_iterations // 1.142,
-                ],
+                milestones=[max_iterations // 2.667, max_iterations // 1.6, max_iterations // 1.142,],
                 gamma=0.1,
             )  # 3/8 5/8 7/8
         try:
@@ -357,9 +315,7 @@ class GradientReconstructor:
                 with torch.no_grad():
                     # Project into image space
                     if self.config["boxed"]:
-                        x_trial.data = torch.max(
-                            torch.min(x_trial, (1 - dm) / ds), -dm / ds
-                        )
+                        x_trial.data = torch.max(torch.min(x_trial, (1 - dm) / ds), -dm / ds)
 
                     if (iteration + 1 == max_iterations) or iteration % 500 == 0:
                         print(f"It: {iteration}. Rec. loss: {rec_loss.item():2.4f}.")
@@ -368,9 +324,7 @@ class GradientReconstructor:
                         if self.config["filter"] == "none":
                             pass
                         elif self.config["filter"] == "median":
-                            x_trial.data = MedianPool2d(
-                                kernel_size=3, stride=1, padding=1, same=False
-                            )(x_trial)
+                            x_trial.data = MedianPool2d(kernel_size=3, stride=1, padding=1, same=False)(x_trial)
                         else:
                             raise ValueError()
 
@@ -386,9 +340,7 @@ class GradientReconstructor:
             optimizer.zero_grad()
             self.model.zero_grad()
             loss = self.loss_fn(self.model(x_trial), label)
-            gradient = torch.autograd.grad(
-                loss, self.model.parameters(), create_graph=True
-            )
+            gradient = torch.autograd.grad(loss, self.model.parameters(), create_graph=True)
             rec_loss = reconstruction_costs(
                 [gradient],
                 input_gradient,
@@ -411,9 +363,7 @@ class GradientReconstructor:
             self.model.zero_grad()
             x_trial.grad = None
             loss = self.loss_fn(self.model(x_trial), label)
-            gradient = torch.autograd.grad(
-                loss, self.model.parameters(), create_graph=False
-            )
+            gradient = torch.autograd.grad(loss, self.model.parameters(), create_graph=False)
             return reconstruction_costs(
                 [gradient],
                 input_gradient,
@@ -498,14 +448,7 @@ class FedAvgReconstructor(GradientReconstructor):
 
 
 def loss_steps(
-    model,
-    inputs,
-    labels,
-    loss_fn=torch.nn.CrossEntropyLoss(),
-    lr=1e-4,
-    local_steps=4,
-    use_updates=True,
-    batch_size=0,
+    model, inputs, labels, loss_fn=torch.nn.CrossEntropyLoss(), lr=1e-4, local_steps=4, use_updates=True, batch_size=0,
 ):
     """Take a few gradient descent steps to fit the model to the given input."""
     patched_model = MetaMonkey(model)
@@ -517,62 +460,43 @@ def loss_steps(
             labels_ = labels
         else:
             idx = i % (inputs.shape[0] // batch_size)
-            outputs = patched_model(
-                inputs[idx * batch_size : (idx + 1) * batch_size],
-                patched_model.parameters,
-            )
+            outputs = patched_model(inputs[idx * batch_size : (idx + 1) * batch_size], patched_model.parameters,)
             labels_ = labels[idx * batch_size : (idx + 1) * batch_size]
         loss = loss_fn(outputs, labels_).sum()
         grad = torch.autograd.grad(
-            loss,
-            patched_model.parameters.values(),
-            retain_graph=True,
-            create_graph=True,
-            only_inputs=True,
+            loss, patched_model.parameters.values(), retain_graph=True, create_graph=True, only_inputs=True,
         )
 
         patched_model.parameters = OrderedDict(
-            (name, param - lr * grad_part)
-            for ((name, param), grad_part) in zip(
-                patched_model.parameters.items(), grad
-            )
+            (name, param - lr * grad_part) for ((name, param), grad_part) in zip(patched_model.parameters.items(), grad)
         )
 
     if use_updates:
         patched_model.parameters = OrderedDict(
             (name, param - param_origin)
             for ((name, param), (name_origin, param_origin)) in zip(
-                patched_model.parameters.items(),
-                patched_model_origin.parameters.items(),
+                patched_model.parameters.items(), patched_model_origin.parameters.items(),
             )
         )
     return list(patched_model.parameters.values())
 
 
-def reconstruction_costs(
-    gradients, input_gradient, cost_fn="l2", indices="def", weights="equal"
-):
+def reconstruction_costs(gradients, input_gradient, cost_fn="l2", indices="def", weights="equal"):
     """Input gradient is given data."""
     if isinstance(indices, list):
         pass
     elif indices == "def":
         indices = torch.arange(len(input_gradient))
     elif indices == "top10":
-        _, indices = torch.topk(
-            torch.stack([p.norm() for p in input_gradient], dim=0), 10
-        )
+        _, indices = torch.topk(torch.stack([p.norm() for p in input_gradient], dim=0), 10)
     else:
         raise ValueError()
 
     ex = input_gradient[0]
     if weights == "linear":
-        weights = torch.arange(
-            len(input_gradient), 0, -1, dtype=ex.dtype, device=ex.device
-        ) / len(input_gradient)
+        weights = torch.arange(len(input_gradient), 0, -1, dtype=ex.dtype, device=ex.device) / len(input_gradient)
     elif weights == "exp":
-        weights = torch.arange(
-            len(input_gradient), 0, -1, dtype=ex.dtype, device=ex.device
-        )
+        weights = torch.arange(len(input_gradient), 0, -1, dtype=ex.dtype, device=ex.device)
         weights = weights.softmax(dim=0)
         weights = weights / weights[0]
     else:
@@ -648,9 +572,7 @@ class MetaMonkey(torch.nn.Module):
                     if module.num_batches_tracked is not None:
                         module.num_batches_tracked += 1
                         if module.momentum is None:  # use cumulative moving average
-                            exponential_average_factor = 1.0 / float(
-                                module.num_batches_tracked
-                            )
+                            exponential_average_factor = 1.0 / float(module.num_batches_tracked)
                         else:  # use exponential moving average
                             exponential_average_factor = module.momentum
 
@@ -682,9 +604,7 @@ class MetaMonkey(torch.nn.Module):
                 pass
             else:
                 # Warn for other containers
-                warnings.warn(
-                    f"Patching for module {module.__class__} is not implemented."
-                )
+                warnings.warn(f"Patching for module {module.__class__} is not implemented.")
 
         output = self.net(inputs)
 
@@ -749,14 +669,10 @@ class MedianPool2d(nn.Module):
 class InceptionScore(torch.nn.Module):
     """Class that manages and returns the inception score of images."""
 
-    def __init__(
-        self, batch_size=32, setup=dict(device=torch.device("cpu"), dtype=torch.float)
-    ):
+    def __init__(self, batch_size=32, setup=dict(device=torch.device("cpu"), dtype=torch.float)):
         """Initialize with setup and target inception batch size."""
         super().__init__()
-        self.preprocessing = torch.nn.Upsample(
-            size=(299, 299), mode="bilinear", align_corners=False
-        )
+        self.preprocessing = torch.nn.Upsample(size=(299, 299), mode="bilinear", align_corners=False)
         self.model = torchvision.models.inception_v3(pretrained=True).to(**setup)
         self.model.eval()
         self.batch_size = batch_size
@@ -769,14 +685,10 @@ class InceptionScore(torch.nn.Module):
         batches = B // self.batch_size
         scores = []
         for batch in range(batches):
-            input = self.preprocessing(
-                image_batch[batch * self.batch_size : (batch + 1) * self.batch_size]
-            )
+            input = self.preprocessing(image_batch[batch * self.batch_size : (batch + 1) * self.batch_size])
             scores.append(self.model(input))
         prob_yx = torch.nn.functional.softmax(torch.cat(scores, 0), dim=1)
-        entropy = torch.where(
-            prob_yx > 0, -prob_yx * prob_yx.log(), torch.zeros_like(prob_yx)
-        )
+        entropy = torch.where(prob_yx > 0, -prob_yx * prob_yx.log(), torch.zeros_like(prob_yx))
         return entropy.sum()
 
 
@@ -798,11 +710,7 @@ def psnr(img_batch, ref_batch, batched=False, factor=1.0):
         [B, C, m, n] = img_batch.shape
         psnrs = []
         for sample in range(B):
-            psnrs.append(
-                get_psnr(
-                    img_batch.detach()[sample, :, :, :], ref_batch[sample, :, :, :]
-                )
-            )
+            psnrs.append(get_psnr(img_batch.detach()[sample, :, :, :], ref_batch[sample, :, :, :]))
         psnr = torch.stack(psnrs, dim=0).mean()
 
     return psnr.item()
