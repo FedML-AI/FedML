@@ -467,7 +467,6 @@ class FedAvgReconstructor(GradientReconstructor):
                 indices=self.config["indices"],
                 weights=self.config["weights"],
             )
-
             if self.config["total_variation"] > 0:
                 rec_loss += self.config["total_variation"] * total_variation(x_trial)
             rec_loss.backward()
