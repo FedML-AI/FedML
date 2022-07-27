@@ -1,7 +1,6 @@
 import logging
 from abc import abstractmethod
 
-from google.api.logging_pb2 import Logging
 
 from .communication.base_com_manager import BaseCommunicationManager
 from .communication.constants import CommunicationConstants
@@ -128,6 +127,6 @@ class FedMLCommManager(Observer):
                 self.args.trpc_master_config_path, process_id=self.rank, world_size=self.size + 1, args=self.args,
             )
         else:
-            Logging.info("using self-defined communication backend")
+            logging.info("using self-defined communication backend")
 
         self.com_manager.add_observer(self)
