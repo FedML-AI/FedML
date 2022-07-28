@@ -918,19 +918,24 @@ class FedMLServerRunner:
                 device_id = hex(device_id)
 
         if device_id is not None and device_id != "":
-            with open(file_for_device_id, 'w', encoding='utf-8') as f:
-                f.write(device_id)
+            try:
+                with open(file_for_device_id, 'x', encoding='utf-8') as f:
+                    f.write(device_id)
+            except:
+                pass
         else:
-            device_id_from_file = None
-            if os.path.exists(file_for_device_id):
+            try:
+                device_id_from_file = None
                 with open(file_for_device_id, 'r', encoding='utf-8') as f:
                     device_id_from_file = f.readline()
-            if device_id_from_file is not None and device_id_from_file != "":
-                device_id = device_id_from_file
-            else:
-                device_id = hex(uuid.uuid4())
-                with open(file_for_device_id, 'w', encoding='utf-8') as f:
-                    f.write(device_id)
+                if device_id_from_file is not None and device_id_from_file != "":
+                    device_id = device_id_from_file
+                else:
+                    device_id = hex(uuid.uuid4())
+                    with open(file_for_device_id, 'x', encoding='utf-8') as f:
+                        f.write(device_id)
+            except:
+                pass
 
         return device_id
 
