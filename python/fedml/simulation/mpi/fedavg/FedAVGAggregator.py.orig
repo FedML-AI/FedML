@@ -2,9 +2,11 @@ import copy
 import logging
 import random
 import time
+
 import numpy as np
 import torch
 import wandb
+
 from .utils import transform_list_to_tensor
 from ....core.security.fedml_defender import FedMLDefender
 
@@ -77,12 +79,16 @@ class FedAVGAggregator(object):
         logging.info("len of self.model_dict[idx] = " + str(len(self.model_dict)))
 
         if FedMLDefender.get_instance().is_defense_enabled():
-        # todo: update extra_auxiliary_info according to defense type
+<<<<<<< HEAD
+            averaged_params = FedMLDefender.get_instance().run(model_list, self._fedavg_aggregation_)
+=======
+            # todo: update extra_auxiliary_info according to defense type
             averaged_params = FedMLDefender.get_instance().defend(
                 raw_client_grad_list=model_list,
                 base_aggregation_func=self._fedavg_aggregation_,
                 extra_auxiliary_info=self.get_global_model_params(),
             )
+>>>>>>> e2472517 (attack & defense: delete fedrobust codes; test defenses)
         else:
             averaged_params = self._fedavg_aggregation_(model_list)
 
