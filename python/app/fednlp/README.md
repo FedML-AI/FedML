@@ -40,10 +40,10 @@ Adjust the hyperparameters in `text_classificationconfig/fedml_config_mpi.yaml`
 To run text classification using MPI simulator follow the following steps:
 
 ```bash
-1. cd text_classification/
-2. cd config
-3. bash bootstrap.sh
-4. bash run_simulation.sh 5
+cd text_classification/
+cd config
+bash bootstrap.sh
+bash run_simulation.sh 5
 ```
 
 **SEQ TAGGING**
@@ -55,10 +55,10 @@ Adjust the hyperparameters in `seq_tagging/config/fedml_config_mpi.yaml`
 To run sequence tagging on wikiner dataset using MPI simulator follow the following steps:
 
 ```bash
-1. cd seq_tagging/
-2. cd config
-3. bash bootstrap.sh
-4. bash run_simulation.sh 5
+cd seq_tagging/
+cd config
+bash bootstrap.sh
+bash run_simulation.sh 5
 ```
 
 **SPAN EXTRACTION**
@@ -68,10 +68,10 @@ Adjust the hyperparameters in `span_extraction/config/fedml_config.yaml` and mak
 To run span extraction on MRQA dataset using MPI simulator follow the following steps:
 
 ```bash
-1. cd span_extraction/
-2. cd config
-3. bash bootstrap.sh
-4. bash run_simulation.sh 4
+cd span_extraction/
+cd config
+bash bootstrap.sh
+bash run_simulation.sh 4
 ```
 
 
@@ -84,10 +84,10 @@ Adjust the hyperparameters in `seq2seq/config/fedml_config.yaml` and make sure d
 To run seq2seq using MPI simulator on cornell_movie_dialogue dataset follow the following steps:
 
 ```bash
-1. cd seq2seq/
-2. cd config
-3. bash bootstrap.sh
-4. bash run_simulation.sh 1
+cd seq2seq/
+cd config
+bash bootstrap.sh
+bash run_simulation.sh 1
 ```
 
 We have provided examples of trainers in each example. For running custom trainers feel free to follow the folder `{application_name}/trainer/` and write your own custom trainer. To include this trainer please follow the create_model function in the python executable in the folder `{application_name}/` and replace the current trainer with your own trainer. Every trainer should inherit the Client Trainer class and should contain a train and a test function.
