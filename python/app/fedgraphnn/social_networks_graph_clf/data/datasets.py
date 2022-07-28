@@ -29,7 +29,7 @@ class CompactAdjacency:
             if subset is not None:
                 logging.info(
                     "WARNING: subset is provided. It is ignored, since precomputed is supplied."
-                )ku
+                )
             self.compact_adj, self.degrees = precomputed
             self.num_nodes = len(self.degrees)
         else:
