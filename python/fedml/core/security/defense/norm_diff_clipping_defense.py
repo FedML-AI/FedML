@@ -11,8 +11,8 @@ https://arxiv.org/pdf/1911.07963.pdf
 
 
 class NormDiffClippingDefense(BaseDefenseMethod):
-    def __init__(self, norm_bound):
-        self.norm_bound = norm_bound  # for norm diff clipping and weak DP defenses
+    def __init__(self, config):
+        self.norm_bound = config.norm_bound  # for norm diff clipping and weak DP defenses
 
     def run(
         self,

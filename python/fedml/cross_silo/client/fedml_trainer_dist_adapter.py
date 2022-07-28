@@ -2,7 +2,7 @@ import logging
 
 from fedml.constants import FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
 from .fedml_trainer import FedMLTrainer
-from .trainer.trainer_creator import create_model_trainer
+from ...ml.trainer.trainer_creator import create_model_trainer
 
 
 class TrainerDistAdapter:
@@ -36,7 +36,7 @@ class TrainerDistAdapter:
             model = DDP(model, device_ids=[device] if only_gpu else None)
 
         if model_trainer is None:
-            model_trainer = create_model_trainer(args, model)
+            model_trainer = create_model_trainer(model, args)
         else:
             model_trainer.model = model
 

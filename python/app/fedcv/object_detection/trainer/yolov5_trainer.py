@@ -1,36 +1,23 @@
 import copy
 import logging
-import time
-import sys
-import os
-from pathlib import Path
 import math
-from matplotlib import pyplot as plt
+import time
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import wandb
-from torch.optim import Adam, lr_scheduler
+from torch.optim import lr_scheduler
 
-from fedml.core.alg_frame.client_trainer import ClientTrainer
-
-from model.yolov5.utils.loss import ComputeLoss
+import fedml
+from fedml.core import ClientTrainer
 from model.yolov5.utils.general import (
-    coco80_to_coco91_class,
-    check_dataset,
-    check_file,
-    check_img_size,
     box_iou,
     non_max_suppression,
-    scale_coords,
-    xyxy2xywh,
     xywh2xyxy,
     clip_coords,
-    set_logging,
-    increment_path,
 )
+from model.yolov5.utils.loss import ComputeLoss
 from model.yolov5.utils.metrics import ap_per_class
 
 
@@ -39,8 +26,8 @@ class YOLOv5Trainer(ClientTrainer):
         super(YOLOv5Trainer, self).__init__(model, args)
         self.hyp = args.hyp
         self.args = args
-        self.round_idx = 0
         self.round_loss = []
+        self.round_idx = 0
 
     def get_model_params(self):
         return self.model.cpu().state_dict()
@@ -49,10 +36,11 @@ class YOLOv5Trainer(ClientTrainer):
         logging.info("set_model_params")
         self.model.load_state_dict(model_parameters)
 
-    def train(self, train_data, device, args=None):
+    def train(self, train_data, device, args):
         logging.info("Start training on Trainer {}".format(self.id))
         logging.info(f"Hyperparameters: {self.hyp}, Args: {self.args}")
         model = self.model
+        self.round_idx = args.round_idx
         args = self.args
         hyp = self.hyp if self.hyp else self.args.hyp
 
@@ -152,40 +140,34 @@ class YOLOv5Trainer(ClientTrainer):
                 )
                 logging.info(s)
 
-                if batch_idx % 100 == 0:
-                    logging.info(
-                        f"Trainer {self.id} batch {batch_idx} box: {mloss[0]} obj: {mloss[1]} cls: {mloss[2]} total: {mloss.sum()} time: {(time.time() - t)/60}"
-                    )
-
             scheduler.step()
 
             epoch_loss.append(copy.deepcopy(mloss.cpu().numpy()))
             logging.info(
-                f"***Trainer {self.id} epoch {epoch} box: {mloss[0]} obj: {mloss[1]} cls: {mloss[2]} total: {mloss.sum()} time: {(time.time() - t)/60}"
+                f"Trainer {self.id} epoch {epoch} box: {mloss[0]} obj: {mloss[1]} cls: {mloss[2]} total: {mloss.sum()} time: {(time.time() - t)}"
             )
 
-            logging.info("#" * 80)
+            logging.info("#" * 20)
 
             logging.info(
-                f"Trainer {self.id} epoch {epoch} time: {(time.time() - t)/60} batch_num: {batch_idx} speed: {(time.time() - t)/60/batch_idx}"
+                f"Trainer {self.id} epoch {epoch} time: {(time.time() - t)}s batch_num: {batch_idx} speed: {(time.time() - t)/batch_idx} s/batch"
             )
-            logging.info("#" * 80)
+            logging.info("#" * 20)
 
         # plot for client
         # plot box, obj, cls, total loss
         epoch_loss = np.array(epoch_loss)
-        logging.info(f"Epoch loss: {epoch_loss}")
-        # plt.figure(figsize=(10, 5))
-        # plt.title("Box, Obj, Cls, Total Loss")
-        # plt.plot(epoch_loss[:, 0], label="box")
-        # plt.plot(epoch_loss[:, 1], label="obj")
-        # plt.plot(epoch_loss[:, 2], label="cls")
-        # plt.plot(epoch_loss[:, 3], label="total")
-        # plt.legend()
+        # logging.info(f"Epoch loss: {epoch_loss}")
 
-        # plt.savefig(f"{args.save_dir}/trainer_{self.id}_epoch_loss_round_{self.round_idx}.png")
-        # plt.close()
-        self.round_idx += 1
+        fedml.mlops.log(
+            {
+                f"round_idx": self.round_idx,
+                f"train_box_loss": np.float(epoch_loss[-1, 0]),
+                f"train_obj_loss": np.float(epoch_loss[-1, 1]),
+                f"train_cls_loss": np.float(epoch_loss[-1, 2]),
+                f"train_total_loss": np.float(epoch_loss[-1, :].sum()),
+            }
+        )
 
         self.round_loss.append(epoch_loss[-1, :])
         if self.round_idx == args.comm_round:
@@ -195,21 +177,12 @@ class YOLOv5Trainer(ClientTrainer):
                 f"Trainer {self.id} round {self.round_idx} finished, round loss: {self.round_loss}"
             )
 
-            # plt.figure(figsize=(10, 5))
-            # plt.title("Box, Obj, Cls, Total Loss per round")
-            # plt.plot(self.round_loss[:, 0], label="box")
-            # plt.plot(self.round_loss[:, 1], label="obj")
-            # plt.plot(self.round_loss[:, 2], label="cls")
-            # plt.plot(self.round_loss[:, 3], label="total")
-            # plt.legend()
-            # plt.savefig(f"{args.save_dir}/trainer_{self.id}_round_loss.png")
-            # plt.close()
-
         return
 
     def test(self, test_data, device, args):
         logging.info("Evaluating on Trainer ID: {}".format(self.id))
         model = self.model
+        self.round_idx = args.round_idx
         args = self.args
 
         test_metrics = {
@@ -395,6 +368,17 @@ class YOLOv5Trainer(ClientTrainer):
         # metrics = (mp, mr, map50, map, *(loss.cpu() / len(test_data)).tolist()), maps, t
         # logging.info(f"Test metrics: {metrics}")
 
+        fedml.mlops.log(
+            {
+                f"round_idx": self.round_idx,
+                f"test_mp": np.float(mp),
+                f"test_mr": np.float(mr),
+                f"test_map50": np.float(map50),
+                f"test_map": np.float(map),
+                f"test_loss": np.float(sum((loss.cpu() / len(test_data)).tolist())),
+            }
+        )
+
         test_metrics = {
             "test_correct": 0,
             "test_total": len(test_data),
@@ -405,28 +389,5 @@ class YOLOv5Trainer(ClientTrainer):
 
     def test_on_the_server(
         self, train_data_local_dict, test_data_local_dict, device, args=None
-    ):
-        return False
-        logging.info("Testing on the server")
-        logging.info(f"rank id: {args.rank}")
-        train_data = train_data_local_dict
-        test_data = test_data_local_dict
-
-        for k in train_data.keys():
-            # logging.info(f"{k}: {train_data[k]}")
-            if train_data[k] is None:
-                continue
-            train_data_results = self.test(
-                test_data=train_data[k], device=device, args=args
-            )
-            logging.info(f"{k}: {train_data_results}")
-
-        for k in test_data.keys():
-            # logging.info(f"{k}: {test_data[k]}")
-            if test_data[k] is None:
-                continue
-            test_data_results = self.test(
-                test_data=test_data[k], device=device, args=args
-            )
-            logging.info(f"{k}: {test_data_results}")
+    ) -> bool:
         return True

@@ -1,7 +1,6 @@
 ssh -i amir-github-actions-key.cer ubuntu@54.183.200.162
-ssh -i amir-github-actions-key.cer ubuntu@54.177.84.62
-ssh -i amir-github-actions-key.cer ubuntu@54.241.168.204
 ssh -i amir-github-actions-key.cer ubuntu@52.53.164.162
+ssh -i github_actions.cer ubuntu@54.153.18.24
 
 https://github.com/FedML-AI/FedML/settings/actions/runners/new
 

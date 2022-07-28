@@ -6,6 +6,7 @@ import time
 import numpy as np
 import torch
 import wandb
+from fedml import mlops
 
 
 class FedMLAggregator(object):
@@ -20,9 +21,9 @@ class FedMLAggregator(object):
         client_num,
         device,
         args,
-        model_trainer,
+        server_aggregator,
     ):
-        self.trainer = model_trainer
+        self.aggregator = server_aggregator
 
         self.args = args
         self.train_global = train_global
@@ -42,16 +43,11 @@ class FedMLAggregator(object):
         for idx in range(self.client_num):
             self.flag_client_model_uploaded_dict[idx] = False
 
-        self.mlops_metrics = None
-
-    def set_mlops_logger(self, mlops_metrics):
-        self.mlops_metrics = mlops_metrics
-
     def get_global_model_params(self):
-        return self.trainer.get_model_params()
+        return self.aggregator.get_model_params()
 
     def set_global_model_params(self, model_parameters):
-        self.trainer.set_model_params(model_parameters)
+        self.aggregator.set_model_params(model_parameters)
 
     def add_local_trained_result(self, index, model_params, sample_num):
         logging.info("add_model. index = %d" % index)
@@ -70,27 +66,17 @@ class FedMLAggregator(object):
 
     def aggregate(self):
         start_time = time.time()
-        model_list = []
-        training_num = 0
 
+
+
+        model_list = []
         for idx in range(self.client_num):
             model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
-            training_num += self.sample_num_dict[idx]
 
-        logging.info("len of self.model_dict[idx] = " + str(len(self.model_dict)))
+        model_list = self.aggregator.on_before_aggregation(model_list)
+        averaged_params = self.aggregator.aggregate(model_list)
+        averaged_params = self.aggregator.on_after_aggregation(averaged_params)
 
-        # logging.info("################aggregate: %d" % len(model_list))
-        (num0, averaged_params) = model_list[0]
-        for k in averaged_params.keys():
-            for i in range(0, len(model_list)):
-                local_sample_number, local_model_params = model_list[i]
-                w = local_sample_number / training_num
-                if i == 0:
-                    averaged_params[k] = local_model_params[k] * w
-                else:
-                    averaged_params[k] += local_model_params[k] * w
-
-        # update the global model which is cached at the server side
         self.set_global_model_params(averaged_params)
 
         end_time = time.time()
@@ -183,7 +169,7 @@ class FedMLAggregator(object):
             return self.test_global
 
     def test_on_server_for_all_clients(self, round_idx):
-        if self.trainer.test_on_the_server(
+        if self.aggregator.test_all(
             self.train_data_local_dict,
             self.test_data_local_dict,
             self.device,
@@ -203,7 +189,7 @@ class FedMLAggregator(object):
             train_losses = []
             for client_idx in range(self.args.client_num_in_total):
                 # train data
-                metrics = self.trainer.test(
+                metrics = self.aggregator.test(
                     self.train_data_local_dict[client_idx], self.device, self.args
                 )
                 train_tot_correct, train_num_sample, train_loss = (
@@ -221,6 +207,10 @@ class FedMLAggregator(object):
             if self.args.enable_wandb:
                 wandb.log({"Train/Acc": train_acc, "round": round_idx})
                 wandb.log({"Train/Loss": train_loss, "round": round_idx})
+
+            mlops.log({"Train/Acc": train_acc, "round": round_idx})
+            mlops.log({"Train/Loss": train_loss, "round": round_idx})
+
             stats = {"training_acc": train_acc, "training_loss": train_loss}
             logging.info(stats)
 
@@ -230,9 +220,9 @@ class FedMLAggregator(object):
             test_losses = []
 
             if round_idx == self.args.comm_round - 1:
-                metrics = self.trainer.test(self.test_global, self.device, self.args)
+                metrics = self.aggregator.test(self.test_global, self.device, self.args)
             else:
-                metrics = self.trainer.test(self.val_global, self.device, self.args)
+                metrics = self.aggregator.test(self.val_global, self.device, self.args)
 
             test_tot_correct, test_num_sample, test_loss = (
                 metrics["test_correct"],
@@ -249,25 +239,11 @@ class FedMLAggregator(object):
             if self.args.enable_wandb:
                 wandb.log({"Test/Acc": test_acc, "round": round_idx})
                 wandb.log({"Test/Loss": test_loss, "round": round_idx})
+
+            mlops.log({"Test/Acc": test_acc, "round": round_idx})
+            mlops.log({"Test/Loss": test_loss, "round": round_idx})
+
             stats = {"test_acc": test_acc, "test_loss": test_loss}
             logging.info(stats)
-
-            if self.mlops_metrics is not None:
-                metric_for_mlops = {
-                    "run_id": self.args.run_id,
-                    "round_idx": round_idx,
-                    "timestamp": time.time(),
-                    "accuracy": round(test_acc, 4),
-                    "loss": round(test_loss, 4),
-                    # "test_accuracy": round(test_acc, 4),
-                    # "test_loss": round(test_loss, 4),
-                }
-                self.mlops_metrics.report_server_training_metric(metric_for_mlops)
         else:
-            if self.mlops_metrics is not None:
-                metric_for_mlops = {
-                    "run_id": self.args.run_id,
-                    "round_idx": round_idx,
-                    "timestamp": time.time()
-                }
-                self.mlops_metrics.report_server_training_metric(metric_for_mlops)
+            mlops.log({"round_idx": round_idx})

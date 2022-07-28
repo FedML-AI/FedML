@@ -72,6 +72,11 @@ mimiconda.sh
 
 data/fednlp/*
 
+python/app/fednlp/text_classification/cache_dir
+python/app/fednlp/span_extraction/cache_dir
+python/app/fednlp/seq_tagging/cache_dir
+python/app/fednlp/seq2seq/cache_dir
+
 *.npz
 python/tests/smoke_test/simulation_sp/data/mnist/MNIST/stats.sh
 python/tests/smoke_test/simulation_sp/data/mnist/MNIST/stats.py
@@ -162,3 +167,7 @@ android/gradlew.bat
 /iot/anomaly_detection_for_cybersecurity/data/SimpleHome_XCS7_1002_WHT_Security_Camera/
 /iot/anomaly_detection_for_cybersecurity/data/SimpleHome_XCS7_1003_WHT_Security_Camera/
 android/fedmlsdk
+
+
+doc/en/_build
+

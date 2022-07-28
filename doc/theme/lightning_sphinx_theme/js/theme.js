@@ -276,11 +276,14 @@ $(document).ready(function() {
       $(this.firstChild).after("<span class='expand-menu menu-item-decorator'>" + chevronRight + "  </span>");
       $(this.firstChild).after("<span class='hide-menu collapse menu-item-decorator'>" + chevronDown + "</span>");
       $(this).next("ul").hide();
+      $("#pytorch-left-menu p.caption").next("ul").first().toggle();
     } else if (collapseAdded || sessionStorage.getItem(menuName) == "expand") {
       $(this.firstChild).after("<span class='expand-menu collapse menu-item-decorator'>" + chevronRight + "</span>");
       $(this.firstChild).after("<span class='hide-menu menu-item-decorator'>" + chevronDown + "</span>");
+      $("#pytorch-left-menu p.caption").next("ul").first().toggle();
     }
   });
+  $("#pytorch-left-menu p.caption").next("ul").first().toggle();
 
   $(".expand-menu").on("click", function () {
     $(this).prev(".hide-menu").toggle();
@@ -464,4 +467,4 @@ $(window).scroll(function () {
     }
   });
 });
-
+$("#pytorch-left-menu p.caption").next("ul").first().toggle();
