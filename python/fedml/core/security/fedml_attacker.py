@@ -25,17 +25,9 @@ class FedMLAttacker:
             self.attack_type = args.attack_type.strip()
             self.attacker = None
             if self.attack_type == ATTACK_METHOD_BYZANTINE_ATTACK:
-                self.attacker = ByzantineAttack(
-                    args.byzantine_client_num, args.attack_mode
-                )
-            elif self.attack_type == ATTACK_METHOD_DLG:
-                self.attacker = DLGAttack(
-                    args.data_size,
-                    args.num_class,
-                    args.model,
-                    args.attack_epoch,
-                    args.attack_label,
-                )
+                self.attacker = ByzantineAttack(args)
+            # elif self.attack_type == ATTACK_METHOD_DLG:
+            #     self.attacker = DLGAttack(model=args.model, attack_epoch=args.attack_epoch)
         else:
             self.is_enabled = False
 
@@ -64,5 +56,4 @@ class FedMLAttacker:
     def reconstruct(self, local_w, global_w, refs=None):
         if self.attacker is None:
             raise Exception("attacker is not initialized!")
-        return self.attacker.reconstruct(self, local_w, global_w, refs=None)
-
+        return self.attacker.reconstruct(local_w, global_w, refs=None)
