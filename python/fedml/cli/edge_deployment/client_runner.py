@@ -640,12 +640,7 @@ class FedMLClientRunner:
 
     @staticmethod
     def get_device_id():
-        file_for_device_id = os.path.join(ClientConstants.get_data_dir(), ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
-        try:
-            os.makedirs(file_for_device_id)
-        except:
-            pass
-        file_for_device_id = os.path.join(file_for_device_id, "devices.id")
+        file_for_device_id = os.path.join(ClientConstants.get_data_dir(), ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, "devices.id")
 
         sys_name = platform.system()
         if sys_name == "Darwin":
@@ -676,6 +671,9 @@ class FedMLClientRunner:
                 )
                 device_id = hex(device_id)
 
+        device_file_path = os.path.join(ClientConstants.get_data_dir(), ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
+        if not os.path.exists(device_file_path):
+            os.makedirs(device_file_path)
         if device_id is not None and device_id != "":
             with open(file_for_device_id, 'w', encoding='utf-8') as f:
                 f.write(device_id)
