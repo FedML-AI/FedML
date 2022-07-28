@@ -1,8 +1,6 @@
 import logging
-
 import torch
 import torch.nn.functional as F
-
 from .attack_base import BaseAttackMethod
 from ..common.utils import cross_entropy_for_onehot
 
@@ -19,12 +17,12 @@ Steps:
 
 
 class DLGAttack(BaseAttackMethod):
-    def __init__(self, attack_client_idx, model, attack_epoch):
-        self.attack_client_idx = attack_client_idx
+    def __init__(self, model, attack_epoch):
+        # self.attack_client_idx = attack_client_idx # todo: how to determine which clients to attack??
         self.model = model
         self.attack_epoch = attack_epoch  # todo: discuss with chaoyang
 
-    def attack_model(self, local_w, global_w, refs=None):
+    def reconstruct(self, local_w, global_w, refs=None):
         self.data_size, self.attack_label, self.num_class = refs
         # generate dummy data and label
         dummy_data = torch.randn(self.data_size).requires_grad_(True)
@@ -66,6 +64,8 @@ class DLGAttack(BaseAttackMethod):
         logging.info("Ground truth label is %s." % self.attack_label)
         logging.info("After DLG, Dummy label is %s." % torch.argmax(dummy_label, dim=-1).item())
         if self.attack_label == torch.argmax(dummy_label, dim=-1).item():
-            logging.info("The DLG attack client %s succeeds!" % self.attack_client_idx)
+            # logging.info("The DLG attack client %s succeeds!" % self.attack_client_idx)
+            logging.info("The DLG attack succeeds!")
         else:
-            logging.info("The DLG attack client %s fails!" % self.attack_client_idx)
+            # logging.info("The DLG attack client %s fails!" % self.attack_client_idx)
+            logging.info("The DLG attack fails!")
