@@ -99,6 +99,8 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         self.mqtt_mgr.add_disconnected_listener(self.on_disconnected)
         self.mqtt_mgr.connect()
 
+        self.is_connected = False
+
     @property
     def client_id(self):
         return self._client_id
@@ -121,6 +123,8 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         receiving message topic (subscribe): serverID_clientID
 
         """
+        if self.is_connected:
+            return
         self.mqtt_mgr.add_message_passthrough_listener(self._on_message)
 
         # Subscribe one topic
@@ -151,9 +155,10 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                 "mqtt_s3.on_connect: client subscribes real_topic = %s, mid = %s, result = %s"
                 % (real_topic, mid, str(result))
             )
+        self.is_connected = True
 
     def on_disconnected(self, mqtt_client_object):
-        pass
+        self.is_connected = False
 
     def add_observer(self, observer: Observer):
         self._observers.append(observer)
