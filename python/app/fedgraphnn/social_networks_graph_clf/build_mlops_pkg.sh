@@ -1,5 +1,5 @@
 SOURCE=.
-ENTRY=fedml_ego_networks_node_clf.py
+ENTRY=fedml_social_networks_clf.py
 CONFIG=config
 DEST=./mlops
 IGNORE=__pycache__,*.git
@@ -11,7 +11,7 @@ fedml build -t client \
 --ignore $IGNORE
 
 SOURCE=.
-ENTRY=fedml_ego_networks_node_clf.py
+ENTRY=fedml_social_networks_clf.py
 CONFIG=config
 DEST=./mlops
 fedml build -t server -sf $SOURCE -ep $ENTRY -cf $CONFIG -df $DEST
