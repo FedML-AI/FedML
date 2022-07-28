@@ -921,8 +921,9 @@ class FedMLServerRunner:
         if not os.path.exists(device_file_path):
             os.makedirs(device_file_path)
         if device_id is not None and device_id != "":
-            with open(file_for_device_id, 'x', encoding='utf-8') as f:
-                f.write(device_id)
+            if not os.path.exists(file_for_device_id):
+                with open(file_for_device_id, 'x', encoding='utf-8') as f:
+                    f.write(device_id)
         else:
             device_id_from_file = None
             with open(file_for_device_id, 'r', encoding='utf-8') as f:
@@ -931,8 +932,10 @@ class FedMLServerRunner:
                 device_id = device_id_from_file
             else:
                 device_id = hex(uuid.uuid4())
-                with open(file_for_device_id, 'x', encoding='utf-8') as f:
-                    f.write(device_id)
+                if not os.path.exists(file_for_device_id):
+                    with open(file_for_device_id, 'x', encoding='utf-8') as f:
+                        f.write(device_id)
+
         return device_id
 
     def bind_account_and_device_id(self, url, account_id, device_id, os_name):
