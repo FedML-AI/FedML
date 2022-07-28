@@ -101,9 +101,9 @@ This documentation is organized in the following sections:
    :name: Resource
    :caption: Resources
 
-   resource/papers.md
-   resource/video.rst
-   resource/community
+   resources/papers.md
+   resources/video.rst
+   resources/community
 
 
 Careers
