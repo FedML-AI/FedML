@@ -1,29 +1,18 @@
-import logging
-import pickle
-from pathlib import Path
-
 import numpy as np
 import scipy.sparse as sp
 import torch
-import torch.nn.functional as F
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+
 from torch_geometric.utils import to_networkx, degree
+import torch.nn.functional as F
 
 
-def convert_to_nodeDegreeFeatures(path, graphs):
-    collab_pickle_file = Path(path + "collab.pickle")
-    if collab_pickle_file.exists():
-        with open(path + "collab.pickle", "rb") as handle:
-            new_graphs = pickle.load(handle)
-            return new_graphs
-
+def convert_to_nodeDegreeFeatures(graphs):
     # print(graph.x)
     graph_infos = []
     maxdegree = 0
-    logging.info("len(graphs) = {}".format(len(graphs)))
     for i, graph in enumerate(graphs):
-        # logging.info("convert_to_nodeDegreeFeatures {}".format(i))
         g = to_networkx(graph, to_undirected=True)
         gdegree = max(dict(g.degree).values())
         if gdegree > maxdegree:
@@ -41,9 +30,6 @@ def convert_to_nodeDegreeFeatures(path, graphs):
         new_graph = tuple[0].clone()
         new_graph.__setitem__("x", deg)
         new_graphs.append(new_graph)
-
-    with open(path + "collab.pickle", "wb") as handle:
-        pickle.dump(new_graphs, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     return new_graphs
 
@@ -117,7 +103,6 @@ class WalkForestCollator(object):
         node_ids = np.array(list(range(feature_matrix.shape[0])), dtype=np.int32)
         forest = np_traverse(comp_adj, node_ids, fanouts)
         torch_forest = [torch.from_numpy(forest[0]).flatten()]
-        mask = np.where(np.isnan(label), 0.0, 1.0)
         label = np.where(np.isnan(label), 0.0, label)
 
         for i in range(len(forest) - 1):
@@ -140,7 +125,6 @@ class WalkForestCollator(object):
             torch_forest,
             torch.as_tensor(normalized_feature_matrix, dtype=torch.float32),
             torch.as_tensor(label, dtype=torch.float32),
-            torch.as_tensor(mask, dtype=torch.float32),
         )
 
 
@@ -151,7 +135,6 @@ class DefaultCollator(object):
 
     def __call__(self, molecule):
         adj_matrix, feature_matrix, label, _ = molecule[0]
-        mask = np.where(np.isnan(label), 0.0, 1.0)
         label = np.where(np.isnan(label), 0.0, label)
 
         if self.normalize_features:
@@ -184,5 +167,4 @@ class DefaultCollator(object):
             ),
             torch.as_tensor(normalized_feature_matrix, dtype=torch.float32),
             torch.as_tensor(label, dtype=torch.float32),
-            torch.as_tensor(mask, dtype=torch.float32),
         )
