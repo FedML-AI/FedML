@@ -3,7 +3,6 @@ from typing import Dict
 
 
 class BaseAttackMethod(ABC):
-    @abstractmethod
     def attack_model(
         self, local_weights: Dict, global_weights: Dict, refs=None
     ) -> (Dict, Dict):
