@@ -20,9 +20,6 @@ class MyServerAggregator(ServerAggregator):
     def set_model_params(self, model_parameters):
         self.model.load_state_dict(model_parameters)
 
-    def aggregate(self, raw_client_model_or_grad_list: List[Tuple[float, Dict]]) -> Dict:
-        return FedMLAggOperator.FedAVG(raw_client_model_or_grad_list)
-
     def test(self, test_data, device, args):
         model = self.model
 

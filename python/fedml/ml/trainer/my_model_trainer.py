@@ -9,7 +9,7 @@ class MyModelTrainer(ClientTrainer):
 
     def __init__(self, model, args):
         super().__init__(model, args)
-        self.cpu_transfer =  False if not hasattr(self.args, "cpu_transfer") else self.args.cpu_transfer
+        self.cpu_transfer = False if not hasattr(self.args, "cpu_transfer") else self.args.cpu_transfer
 
     def get_model_params(self):
         if self.cpu_transfer:
@@ -19,7 +19,7 @@ class MyModelTrainer(ClientTrainer):
     def set_model_params(self, model_parameters):
         self.model.load_state_dict(model_parameters)
 
-    def on_before_local_training(self, train_data, device, args=None):
+    def on_before_local_training(self, train_data, device, args):
         pass
 
     def train(self, train_data, device, args):
