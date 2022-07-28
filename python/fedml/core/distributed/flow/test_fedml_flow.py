@@ -24,7 +24,7 @@ class Client(FedMLExecutor):
     def local_training(self):
         logging.info("local_training")
         params = self.get_params()
-        model_params = params.get("model_params")
+        # model_params = params.get("model_params")
         return params
 
 
@@ -52,7 +52,7 @@ class Server(FedMLExecutor):
     def init_global_model(self):
         logging.info("init_global_model")
         params = Params()
-        params.add("model_params", self.model.state_dict())
+        # params.add("model_params", self.model.state_dict())
         return params
 
     def server_aggregate(self):
