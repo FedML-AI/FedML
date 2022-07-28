@@ -23,8 +23,8 @@ Steps:
 
 
 class RobustLearningRateDefense(BaseDefenseMethod):
-    def __init__(self, robust_threshold):
-        self.robust_threshold = robust_threshold  # e.g., robust threshold = 4
+    def __init__(self, config):
+        self.robust_threshold = config.robust_threshold  # e.g., robust threshold = 4
         self.server_learning_rate = 1
 
     def run(

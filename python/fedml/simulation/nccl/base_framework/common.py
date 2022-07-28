@@ -1,21 +1,14 @@
-import logging
-import socket
 import os
-import random
-import sys
 from enum import Enum
-from copy import deepcopy
-from datetime import datetime
 
-import numpy as np
+from enum import Enum
+
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-
 import torch.distributed as dist
 
-
 """ model util """
+
+
 def get_weights(state):
     """
     Returns list of weights from state_dict
@@ -32,19 +25,18 @@ def set_model_params_with_list(model, new_model_params):
         # model_param.data = model_update_param
 
 
-
 def clear_optim_buffer(optimizer):
     for group in optimizer.param_groups:
-        for p in group['params']:
+        for p in group["params"]:
             param_state = optimizer.state[p]
             # Reinitialize momentum buffer
-            if 'momentum_buffer' in param_state:
-                param_state['momentum_buffer'].zero_()
-
-
+            if "momentum_buffer" in param_state:
+                param_state["momentum_buffer"].zero_()
 
 
 """ cpu --- gpu """
+
+
 def optimizer_to(optim, device):
     for param in optim.state.values():
         # Not sure there are any global tensors in the state dict
@@ -61,18 +53,18 @@ def optimizer_to(optim, device):
 
 
 def move_to_cpu(model, optimizer):
-    if str(next(model.parameters()).device) == 'cpu':
+    if str(next(model.parameters()).device) == "cpu":
         pass
     else:
-        model = model.to('cpu')
+        model = model.to("cpu")
         # optimizer_to(self.trainer.optimizer, 'cpu')
     if len(list(optimizer.state.values())) > 0:
-        optimizer_to(optimizer, 'cpu')
+        optimizer_to(optimizer, "cpu")
     return model
 
 
 def move_to_gpu(model, optimizer, device):
-    if str(next(model.parameters()).device) == 'cpu':
+    if str(next(model.parameters()).device) == "cpu":
         model = model.to(device)
     else:
         pass
@@ -90,7 +82,8 @@ class ReduceOp(Enum):
     """
     Reduction Op to perform in reduce/allreduce ops. The reduction op is applied element-wise.
     """
-    SUM  = 1
+
+    SUM = 1
     MEAN = 2
 
 
@@ -110,18 +103,17 @@ class CommState:
     # role_comm: dist.Communicator = None
 
 
-
 def init_ddp(args):
     # use InfiniBand
-    os.environ['NCCL_DEBUG'] = 'INFO'
-    os.environ['NCCL_SOCKET_IFNAME'] = 'lo'
+    os.environ["NCCL_DEBUG"] = "INFO"
+    os.environ["NCCL_SOCKET_IFNAME"] = "lo"
 
     # This the global rank: 0, 1, 2, ..., 15
-    global_rank = int(os.environ['RANK'])
+    global_rank = int(os.environ["RANK"])
     print("int(os.environ['RANK']) = %d" % global_rank)
 
     # This the globak world_size
-    world_size = int(os.environ['WORLD_SIZE'])
+    world_size = int(os.environ["WORLD_SIZE"])
     print("world_size = %d" % world_size)
 
     # initialize the process group
@@ -132,7 +124,6 @@ def init_ddp(args):
     local_rank = args.local_rank
     print(f"Running basic DDP example on local rank {local_rank}.")
     return global_rank, world_size
-
 
 
 def FedML_NCCL_Similulation_init(args):
@@ -169,10 +160,8 @@ def get_rank():
     return dist.get_rank()
 
 
-
 def get_server_rank():
     return CommState.server_rank
-
 
 
 def get_world_size():
@@ -196,15 +185,12 @@ def fedml_nccl_send_to_server(tensor, src=0, group=None):
     dist.broadcast(tensor=tensor, src=src, group=group)
 
 
-
-
 def fedml_nccl_broadcast(tensor, src):
     is_cuda = tensor.is_cuda
     # if not is_cuda:
     #     logging.info("Warning: Tensor is not on GPU!!!")
     input_tensor = tensor
     dist.broadcast(tensor=input_tensor, src=src)
-
 
 
 def fedml_nccl_reduce(tensor, dst, op: ReduceOp = ReduceOp.SUM):
@@ -224,18 +210,13 @@ def fedml_nccl_reduce(tensor, dst, op: ReduceOp = ReduceOp.SUM):
         raise NotImplementedError
 
 
-
 # def fedml_nccl_allreduce(src, op=dist.ReduceOp.SUM, grou=None):
 #     dst.copy_(src)
 #     dist.all_reduce(tensor, op)
 
 
-
 def fedml_nccl_barrier():
     dist.barrier()
-
-
-
 
 
 def broadcast_model_state(state_dict, src):
@@ -245,15 +226,3 @@ def broadcast_model_state(state_dict, src):
         # logging.info(f"In broadcast_model_state... param: {param}, param.shape: {param.shape}")
         # logging.info(f"In broadcast_model_state... param.shape: {param.shape}")
         dist.broadcast(tensor=param, src=src)
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,8 +1,6 @@
-##############################################
-Learning FedML with Examples
-##############################################
+# Learning FedML with Examples
 
-This tutorial will show you how to use FedML and Pytorch to perform Federated Learning with following examples:
+This tutorial will show you how to use FedML and Pytorch to perform Federated Learning with the following examples:
 
 
 

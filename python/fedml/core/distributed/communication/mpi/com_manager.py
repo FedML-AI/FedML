@@ -12,13 +12,14 @@ from ..observer import Observer
 
 
 class MpiCommunicationManager(BaseCommunicationManager):
-    def __init__(self, comm, rank, size, node_type="client"):
+    def __init__(self, comm, rank, size):
         self.comm = comm
         self.rank = rank
         self.size = size
 
         self._observers: List[Observer] = []
 
+        node_type = "client" if self.rank == 0 else "server"
         if node_type == "client":
             self.q_sender, self.q_receiver = self.init_client_communication()
         elif node_type == "server":
