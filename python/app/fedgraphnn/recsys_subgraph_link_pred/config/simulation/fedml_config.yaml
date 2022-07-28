@@ -15,8 +15,6 @@ data_args:
   partition_alpha: 0.5
   ego_number: 10
   hop_number: 2
-  global_model_file_path: "/home/ubuntu/FedML/python/app/model_cache_dir/"
-  model_file_cache_folder: "/home/ubuntu/FedML/python/app/model_cache_dir/global_model.pt"
 
 
 model_args:
@@ -36,8 +34,8 @@ model_args:
 train_args:
   federated_optimizer: "FedAvg"
   client_id_list: 
-  client_num_in_total: 1
-  client_num_per_round: 1
+  client_num_in_total: 4
+  client_num_per_round: 4
   comm_round: 100
   epochs: 5
   batch_size: 1
@@ -53,13 +51,13 @@ environment_args:
   bootstrap: config/bootstrap.sh
 
 device_args:
-  worker_num: 1
+  worker_num: 4
   using_gpu: true
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_default
 
 comm_args:
-  backend: "MQTT_S3"
+  backend: "MPI"
   mqtt_config_path: config/mqtt_config.yaml
   s3_config_path: config/s3_config.yaml
 

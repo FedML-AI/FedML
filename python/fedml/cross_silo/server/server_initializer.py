@@ -19,7 +19,7 @@ def init_server(
     server_aggregator,
 ):
     if server_aggregator is None:
-        server_aggregator = create_server_aggregator(args, model)
+        server_aggregator = create_server_aggregator(model, args)
     server_aggregator.set_id(0)
 
     # aggregator

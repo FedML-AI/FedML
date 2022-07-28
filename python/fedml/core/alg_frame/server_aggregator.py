@@ -26,13 +26,13 @@ class ServerAggregator(ABC):
     def on_before_aggregation(
         self, raw_client_model_or_grad_list: List[Tuple[float, Dict]]
     ) -> List[Tuple[float, Dict]]:
-        pass
+        return raw_client_model_or_grad_list
 
     def aggregate(self, raw_client_model_or_grad_list: List[Tuple[float, Dict]]) -> Dict:
         return FedMLAggOperator.agg(self.args, raw_client_model_or_grad_list)
 
     def on_after_aggregation(self, aggregated_model_or_grad: Dict) -> Dict:
-        pass
+        return aggregated_model_or_grad
 
     @abstractmethod
     def test(self, test_data, device, args):
