@@ -640,7 +640,12 @@ class FedMLClientRunner:
 
     @staticmethod
     def get_device_id():
-        file_for_device_id = os.path.join(ClientConstants.get_data_dir(), ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, "devices.id")
+        file_for_device_id = os.path.join(ClientConstants.get_data_dir(), ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
+        try:
+            os.makedirs(file_for_device_id)
+        except:
+            pass
+        file_for_device_id = os.path.join(file_for_device_id, "devices.id")
 
         sys_name = platform.system()
         if sys_name == "Darwin":
@@ -672,24 +677,18 @@ class FedMLClientRunner:
                 device_id = hex(device_id)
 
         if device_id is not None and device_id != "":
-            try:
-                with open(file_for_device_id, 'x', encoding='utf-8') as f:
-                    f.write(device_id)
-            except:
-                pass
+            with open(file_for_device_id, 'w', encoding='utf-8') as f:
+                f.write(device_id)
         else:
-            try:
-                device_id_from_file = None
-                with open(file_for_device_id, 'r', encoding='utf-8') as f:
-                    device_id_from_file = f.readline()
-                if device_id_from_file is not None and device_id_from_file != "":
-                    device_id = device_id_from_file
-                else:
-                    device_id = hex(uuid.uuid4())
-                    with open(file_for_device_id, 'x', encoding='utf-8') as f:
-                        f.write(device_id)
-            except:
-                pass
+            device_id_from_file = None
+            with open(file_for_device_id, 'r', encoding='utf-8') as f:
+                device_id_from_file = f.readline()
+            if device_id_from_file is not None and device_id_from_file != "":
+                device_id = device_id_from_file
+            else:
+                device_id = hex(uuid.uuid4())
+                with open(file_for_device_id, 'w', encoding='utf-8') as f:
+                    f.write(device_id)
 
         return device_id
 
