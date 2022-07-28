@@ -41,11 +41,17 @@ class ClassificationTrainer(ClientTrainer):
                 loss.backward()
                 optimizer.step()
                 batch_loss.append(loss.item())
-                logging.info(
-                    "Epoch: {}, Batch: {}, Loss: {}".format(
-                        epoch, batch_idx, loss.item()
+
+                if batch_idx % 100 == 0:
+                    logging.info(
+                        "Epoch: {}/{} | Batch: {}/{} | Loss: {}".format(
+                            epoch + 1,
+                            args.epochs,
+                            batch_idx,
+                            len(train_data),
+                            loss.item(),
+                        )
                     )
-                )
             if len(batch_loss) > 0:
                 epoch_loss.append(sum(batch_loss) / len(batch_loss))
                 logging.info(
