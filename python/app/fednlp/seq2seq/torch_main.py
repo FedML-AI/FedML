@@ -86,7 +86,7 @@ if __name__ == "__main__":
     # args.num_labels = output_dim
     # load model and trainer
     model, trainer, model_args = create_model(args, output_dim)
-    aggregator = Seq2SeqAggregator(model_args, model)
+    aggregator = Seq2SeqAggregator(model, model_args)
     # start training
     fedml_runner = FedMLRunner(args, device, dataset, model, trainer, aggregator)
     fedml_runner.run()
