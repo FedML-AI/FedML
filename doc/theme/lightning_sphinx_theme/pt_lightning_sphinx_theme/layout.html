@@ -117,7 +117,7 @@
       <div class="main-menu">
         <ul>
           <li>
-            <a href="../starter/getting_started.html">Get Started</a>
+            <a id="getStarted">Get Started</a>
           </li>
 
           <li>
@@ -483,7 +483,7 @@
       <div class="main-menu">
         <ul>
           <li>
-            <a href="#/html/starter/getting_started.html">Get Started</a>
+            <a href="a">Get Started</a>
           </li>
           <li>
             <a href="https://github.com/FedML-AI">Github</a>
@@ -529,6 +529,10 @@
       highlightNavigation.bind();
       mainMenuDropdown.bind();
       filterTags.bind();
+      $("#getStarted").click(function(){
+        window.location.href='https://doc.fedml.ai/starter/getting_started.html';
+      })
+
 
       // Add class to links that have code blocks, since we cannot create links in code blocks
       $("article.pytorch-article a span.pre").each(function(e) {
