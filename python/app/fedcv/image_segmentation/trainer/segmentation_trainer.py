@@ -1,18 +1,16 @@
-import logging, time
-import sys, os
+import logging
+import time
 
 import numpy as np
 import torch
-import wandb
 
 # add the FedML root directory to the python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../")))
-from fedml.core.alg_frame.client_trainer import ClientTrainer
+from fedml.core import ClientTrainer
 from fedml.simulation.mpi.fedseg.utils import SegmentationLosses, Evaluator, LR_Scheduler, EvaluationMetricsKeeper
 
 
 class SegmentationTrainer(ClientTrainer):
-    def __init__(self, model, args=None):
+    def __init__(self, model, args):
         super(SegmentationTrainer, self).__init__(model, args)
 
     def get_model_params(self):
@@ -31,7 +29,7 @@ class SegmentationTrainer(ClientTrainer):
             logging.info("Updating Global model")
             self.model.load_state_dict(model_parameters)
 
-    def train(self, train_data, device):
+    def train(self, train_data, device, args):
         model = self.model
         args = self.args
         model.to(device)
@@ -98,7 +96,7 @@ class SegmentationTrainer(ClientTrainer):
                     )
                 )
 
-    def test(self, test_data, device):
+    def test(self, test_data, device, args):
         logging.info("Evaluating on Trainer ID: {}".format(self.id))
         model = self.model
         args = self.args
@@ -150,6 +148,3 @@ class SegmentationTrainer(ClientTrainer):
 
         eval_metrics = EvaluationMetricsKeeper(test_acc, test_acc_class, test_mIoU, test_FWIoU, test_loss)
         return eval_metrics
-
-    def test_on_the_server(self, train_data_local_dict, test_data_local_dict, device, args=None):
-        pass

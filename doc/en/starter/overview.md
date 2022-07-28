@@ -32,4 +32,4 @@ MLOps platform further reuses the source code of the open-source library (the gr
 
 - AI Applications
 
-Please check [this publication list](./../resource/papers.md) for details.
+Please check out [this publication list](./../resources/papers.md) for details.

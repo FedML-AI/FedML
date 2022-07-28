@@ -2,11 +2,11 @@ import logging
 
 from .message_define import MyMessage
 from .utils import transform_tensor_to_list
+from ....core.distributed.fedml_comm_manager import FedMLCommManager
 from ....core.distributed.communication.message import Message
-from ....core.distributed.server.server_manager import ServerManager
 
 
-class FedSegServerManager(ServerManager):
+class FedSegServerManager(FedMLCommManager):
     def __init__(self, args, aggregator, comm=None, rank=0, size=0, backend="MPI"):
         super().__init__(args, comm, rank, size, backend)
         self.args = args

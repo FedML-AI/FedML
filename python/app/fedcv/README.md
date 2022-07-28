@@ -88,7 +88,7 @@ fedml login [ACCOUNT_ID]
 
 ```bash
 pip install fedml --upgrade
-bash build_mlops_package.sh
+bash build_mlops_pkg.sh
 ```
 
 2. Create an application and upload package in mlops folder to MLOps

@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Dict
 
-from torch.utils.data import DataLoader
-
 
 class BaseAttackMethod(ABC):
     @abstractmethod
@@ -11,7 +9,8 @@ class BaseAttackMethod(ABC):
     ) -> (Dict, Dict):
         pass
 
-    def poison_data(
-        self, train_data_loader: DataLoader, test_data_loader: DataLoader
-    ) -> (DataLoader, DataLoader):
+    def poison_data(self, dataset):
+        pass
+
+    def reconstruct(self, local_w, global_w, refs=None):
         pass

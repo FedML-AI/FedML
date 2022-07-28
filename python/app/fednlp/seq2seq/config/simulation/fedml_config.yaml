@@ -4,8 +4,8 @@ common_args:
 
 data_args:
   dataset: "cornell_movie_dialogue"
-  data_file_path: ../fednlp_data/data_files/cornell_movie_dialogue_data.h5
-  partition_file_path: ../fednlp_data/partition_files/cornell_movie_dialogue_partition.h5
+  data_file_path: ~/fednlp_data/data_files/cornell_movie_dialogue_data.h5
+  partition_file_path: ~/fednlp_data/partition_files/cornell_movie_dialogue_partition.h5
   partition_method: "uniform"
   reprocess_input_data: false
 
@@ -27,7 +27,7 @@ train_args:
   eval_batch_size: 4
   max_seq_length: 128
   fp16: false
-  output_dir: "/home/ubuntu/output_dir"
+  output_dir: "./output_dir"
   client_optimizer: sgd
   server_optimizer: sgd
   server_lr: 0.01

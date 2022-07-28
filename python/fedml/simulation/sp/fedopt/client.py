@@ -3,14 +3,7 @@ import logging
 
 class Client:
     def __init__(
-        self,
-        client_idx,
-        local_training_data,
-        local_test_data,
-        local_sample_number,
-        args,
-        device,
-        model_trainer,
+        self, client_idx, local_training_data, local_test_data, local_sample_number, args, device, model_trainer,
     ):
         self.client_idx = client_idx
         self.local_training_data = local_training_data
@@ -22,9 +15,7 @@ class Client:
         self.device = device
         self.model_trainer = model_trainer
 
-    def update_local_dataset(
-        self, client_idx, local_training_data, local_test_data, local_sample_number
-    ):
+    def update_local_dataset(self, client_idx, local_training_data, local_test_data, local_sample_number):
         self.client_idx = client_idx
         self.local_training_data = local_training_data
         self.local_test_data = local_test_data
