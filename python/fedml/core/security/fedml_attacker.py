@@ -25,11 +25,9 @@ class FedMLAttacker:
             self.attack_type = args.attack_type.strip()
             self.attacker = None
             if self.attack_type == ATTACK_METHOD_BYZANTINE_ATTACK:
-                self.attacker = ByzantineAttack(
-                    args.byzantine_client_num, args.attack_mode
-                )
-            elif self.attack_type == ATTACK_METHOD_DLG:
-                self.attacker = DLGAttack(model=args.model, attack_epoch=args.attack_epoch)
+                self.attacker = ByzantineAttack(args)
+            # elif self.attack_type == ATTACK_METHOD_DLG:
+            #     self.attacker = DLGAttack(model=args.model, attack_epoch=args.attack_epoch)
         else:
             self.is_enabled = False
 
