@@ -1,8 +1,6 @@
 import random
-
 import numpy as np
 import torch
-
 from .attack_base import BaseAttackMethod
 from ..common.utils import is_weight_param, get_total_sample_num
 
@@ -12,9 +10,9 @@ attack @ server, added by Shanshan, 07/04/2022
 
 
 class ByzantineAttack(BaseAttackMethod):
-    def __init__(self, byzantine_client_num, attack_mode):
-        self.byzantine_client_num = byzantine_client_num
-        self.attack_mode = attack_mode  # random: randomly generate a weight; zero: set the weight to 0
+    def __init__(self, args):
+        self.byzantine_client_num = args.byzantine_client_num
+        self.attack_mode = args.attack_mode  # random: randomly generate a weight; zero: set the weight to 0
 
     def attack_model(self, local_w, global_w, refs=None):
         if self.attack_mode == "zero":

@@ -8,12 +8,9 @@ PYTORCH_VERSION=$5
 NCCL_VERSION=$6
 CUDA_VERSION=$7
 
-rm -rf ./FedML
-mkdir -p ./FedML
-cp -Rf ../* ./FedML/
-if [[ "$ARCH" == "x86_64" ]]
-thenls
 
+if [[ "$ARCH" == "x86_64" ]]
+then
   docker build . -f ./x86-64/Dockerfile \
   --build-arg OS=$OS \
   --build-arg DISTRO=$DISTRO \

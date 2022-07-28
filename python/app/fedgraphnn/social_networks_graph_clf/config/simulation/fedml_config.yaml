@@ -4,8 +4,8 @@ common_args:
 
 data_args:
   dataset: "COLLAB"
-  data_cache_dir: "./data/TUDataset/"
-  partition_method: "hetero"
+  data_cache_dir: ~/fedgraphnn_data/
+  part_file:  ~/fedgraphnn_data/partition/
   partition_alpha: 0.5
 
 model_args:
