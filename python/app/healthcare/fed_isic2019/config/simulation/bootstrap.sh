@@ -4,7 +4,7 @@ set -x
 
 
 ### please customize your script in this region ####
-pip install flamby[all]
+pip install flamby[all_extra]
 DATA_PATH=$HOME/healthcare/isic2019
 mkdir -p $DATA_PATH
 
