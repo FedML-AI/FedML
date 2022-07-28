@@ -917,14 +917,16 @@ class FedMLServerRunner:
                 )
                 device_id = hex(device_id)
 
+        device_file_path = os.path.join(ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
+        if not os.path.exists(device_file_path):
+            os.makedirs(device_file_path)
         if device_id is not None and device_id != "":
             with open(file_for_device_id, 'w', encoding='utf-8') as f:
                 f.write(device_id)
         else:
             device_id_from_file = None
-            if os.path.exists(file_for_device_id):
-                with open(file_for_device_id, 'r', encoding='utf-8') as f:
-                    device_id_from_file = f.readline()
+            with open(file_for_device_id, 'r', encoding='utf-8') as f:
+                device_id_from_file = f.readline()
             if device_id_from_file is not None and device_id_from_file != "":
                 device_id = device_id_from_file
             else:
