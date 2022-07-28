@@ -2,6 +2,8 @@ import base64
 import copy
 import json
 import logging
+import platform
+
 import multiprocess as multiprocessing
 import os
 import re
@@ -270,31 +272,24 @@ class FedMLServerRunner:
                 if os.path.exists(bootstrap_script_path):
                     bootstrap_stat = os.stat(bootstrap_script_path)
                     os.chmod(bootstrap_script_path, bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-                bootstrap_scripts = "cd {}; ./{}".format(bootstrap_script_dir, os.path.basename(bootstrap_script_file))
-                logging.info("Bootstrap scripts are being executed...")
-                process = ServerConstants.exec_console_with_script(bootstrap_scripts, should_capture_stdout_err=True)
-                ret_code, out, err = ServerConstants.get_console_pipe_out_err_results(process)
-                if out is not None:
-                    out_str = out.decode(encoding="utf-8")
-                    if str(out_str).find(FedMLServerRunner.FEDML_BOOTSTRAP_RUN_OK) == -1:
-                        logging.error("{}".format(out_str))
-                    else:
-                        logging.info("{}".format(out_str))
-                if err is not None:
-                    err_str = err.decode(encoding="utf-8")
-                    if str(err_str).find(FedMLServerRunner.FEDML_BOOTSTRAP_RUN_OK) == -1:
-                        logging.error("{}".format(err_str))
-                    else:
-                        logging.info("{}".format(err_str))
+                    bootstrap_scripts = "cd {}; ./{}".format(bootstrap_script_dir, os.path.basename(bootstrap_script_file))
+                    logging.info("Bootstrap scripts are being executed...")
+                    process = ServerConstants.exec_console_with_script(bootstrap_scripts, should_capture_stdout_err=True)
+                    ret_code, out, err = ServerConstants.get_console_pipe_out_err_results(process)
+                    if out is not None:
+                        out_str = out.decode(encoding="utf-8")
+                        if str(out_str).find(FedMLServerRunner.FEDML_BOOTSTRAP_RUN_OK) == -1:
+                            logging.error("{}".format(out_str))
+                        else:
+                            logging.info("{}".format(out_str))
+                    if err is not None:
+                        err_str = err.decode(encoding="utf-8")
+                        if str(err_str).find(FedMLServerRunner.FEDML_BOOTSTRAP_RUN_OK) == -1:
+                            logging.error("{}".format(err_str))
+                        else:
+                            logging.info("{}".format(err_str))
         except Exception as e:
             logging.error("Bootstrap scripts error: {}".format(traceback.format_exc()))
-
-    def build_image_unique_id(self, run_id, run_config):
-        config_name = str(run_config.get("configName", "run_" + str(run_id)))
-        config_creater = str(run_config.get("userId", "user_" + str(run_id)))
-        image_unique_id = re.sub("[^a-zA-Z0-9_-]", "", str(config_name + "_" + config_creater))
-        image_unique_id = image_unique_id.lower()
-        return image_unique_id
 
     def run(self):
         run_id = self.request_json["runId"]
@@ -335,7 +330,9 @@ class FedMLServerRunner:
         entry_file_config = fedml_config_object["entry_config"]
         dynamic_args_config = fedml_config_object["dynamic_args"]
         entry_file = os.path.basename(entry_file_config["entry_file"])
+        entry_file = str(entry_file).replace('\\', os.sep).replace('/', os.sep)
         conf_file = entry_file_config["conf_file"]
+        conf_file = str(conf_file).replace('\\', os.sep).replace('/', os.sep)
         ServerConstants.cleanup_learning_process()
         os.chdir(os.path.join(unzip_package_path, "fedml"))
 
@@ -890,24 +887,50 @@ class FedMLServerRunner:
 
     @staticmethod
     def get_device_id():
-        if "nt" in os.name:
-            # Windows will go this path
-            def GetUUID():
-                cmd = "wmic csproduct get uuid"
-                uuid = str(subprocess.check_output(cmd))
-                pos1 = uuid.find("\\n") + 2
-                uuid = uuid[pos1:-15]
-                return str(uuid)
+        file_for_device_id = os.path.join(ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, "devices.id")
 
-            device_id = str(GetUUID())
-            logging.info(device_id)
-        elif "posix" in os.name:
-            # MacBook Pro and Linux (e.g., Ubuntu 20.04) will go this path
-            device_id = hex(uuid.getnode())
+        sys_name = platform.system()
+        if sys_name == "Darwin":
+            cmd_get_serial_num = "system_profiler SPHardwareDataType | grep Serial | awk '{gsub(/ /,\"\")}{print}' |awk -F':' '{print $2}'"
+            device_id = os.popen(cmd_get_serial_num).read()
+            device_id = device_id.replace('\n', '').replace(' ', '')
+            if device_id is None or device_id == "":
+                device_id = hex(uuid.getnode())
+            else:
+                device_id = "0x" + device_id
         else:
-            device_id = subprocess.Popen(
-                "hal-get-property --udi /org/freedesktop/Hal/devices/computer --key system.hardware.uuid".split()
-            )
+            if "nt" in os.name:
+
+                def GetUUID():
+                    cmd = "wmic csproduct get uuid"
+                    uuid = str(subprocess.check_output(cmd))
+                    pos1 = uuid.find("\\n") + 2
+                    uuid = uuid[pos1:-15]
+                    return str(uuid)
+
+                device_id = str(GetUUID())
+                logging.info(device_id)
+            elif "posix" in os.name:
+                device_id = hex(uuid.getnode())
+            else:
+                device_id = subprocess.Popen(
+                    "hal-get-property --udi /org/freedesktop/Hal/devices/computer --key system.hardware.uuid".split()
+                )
+                device_id = hex(device_id)
+
+        if device_id is not None and device_id != "":
+            with open(file_for_device_id, 'w', encoding='utf-8') as f:
+                f.write(device_id)
+        else:
+            device_id_from_file = None
+            with open(file_for_device_id, 'r', encoding='utf-8') as f:
+                device_id_from_file = f.readline()
+            if device_id_from_file is not None and device_id_from_file != "":
+                device_id = device_id_from_file
+            else:
+                device_id = hex(uuid.uuid4())
+                with open(file_for_device_id, 'w', encoding='utf-8') as f:
+                    f.write(device_id)
 
         return device_id
 
