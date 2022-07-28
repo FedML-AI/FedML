@@ -87,6 +87,8 @@ python/tests/smoke_test/simulation_mpi/data/mnist/__MACOSX/MNIST/._test
 python/tests/smoke_test/simulation_mpi/data/mnist/__MACOSX/MNIST/._.DS_Store
 
 python/app/fednlp/text_classification/cache_dir
+python/app/fednlp/seq2seq/cache_dir
+python/app/fednlp/span_extraction/cache_dir
 
 app/fedgraphnn/moleculenet_graph_clf/data/bace/*.pkl
 app/fedgraphnn/moleculenet_graph_clf/data/bace/*.npy
