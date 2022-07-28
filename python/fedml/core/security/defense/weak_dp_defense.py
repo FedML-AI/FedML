@@ -1,5 +1,5 @@
 from typing import Callable, List, Tuple, Dict, Any
-from wandb.wandb_torch import torch
+import torch
 from .defense_base import BaseDefenseMethod
 
 """
@@ -21,11 +21,12 @@ class WeakDPDefense(BaseDefenseMethod):
     ) -> Dict:
         new_grad_list = []
         for (sample_num, local_w) in raw_client_grad_list:
-            new_w = self.add_noise(local_w)
+            new_w = self._add_noise(local_w)
             new_grad_list.append((sample_num, new_w))
         return base_aggregation_func(new_grad_list)  # avg_params
 
-    def add_noise(self, local_weight):
-        gaussian_noise = torch.randn(local_weight.size()) * self.stddev
-        dp_weight = local_weight + gaussian_noise
-        return dp_weight
+    def _add_noise(self, param):
+        dp_param = dict()
+        for k in param.keys():
+            dp_param[k] = param[k] + torch.randn(param[k].size()) * self.stddev
+        return dp_param

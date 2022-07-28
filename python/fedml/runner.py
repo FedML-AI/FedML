@@ -8,7 +8,7 @@ from .constants import (
     FEDML_SIMULATION_TYPE_MPI,
     FEDML_SIMULATION_TYPE_SP,
 )
-from .core import ClientTrainer, ServerAggregator
+from .core import ClientTrainer, ServerAggregator, FedMLAlgorithmFlow
 
 
 class FedMLRunner:
@@ -20,7 +20,7 @@ class FedMLRunner:
         model: nn.Module,
         client_trainer: ClientTrainer = None,
         server_aggregator: ServerAggregator = None,
-        algorithm_flow=None,
+        algorithm_flow: FedMLAlgorithmFlow = None,
     ):
         if algorithm_flow is not None:
             self.runner = algorithm_flow

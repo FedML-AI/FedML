@@ -7,6 +7,7 @@ from fedml import FedMLRunner
 from data import load_data
 from model import create_model
 from trainer import create_trainer
+from trainer.heart_disease_aggregator import HeartDiseaseAggregator
 
 if __name__ == "__main__":
     # init FedML framework
@@ -21,7 +22,8 @@ if __name__ == "__main__":
     # create model and trainer
     model = create_model(args, args.model)
     trainer = create_trainer(model=model, args=args)
+    aggregator = HeartDiseaseAggregator(model=model, args=args)
 
     # start training
-    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer, aggregator)
     fedml_runner.run()
