@@ -216,12 +216,12 @@ class FedMLAlgorithmFlow(FedMLCommManager):
         if executor_task_cls_name_next == self.executor_cls_name:
             params.add(PARAMS_KEY_RECEIVER_ID, [self.executor.get_id()])
             # call locally
-            self._pass_message_locally(flow_name, params)
             logging.info("receive_id = {}".format([self.executor.get_id()]))
+            self._pass_message_locally(flow_name, params)
         else:
             params.add(PARAMS_KEY_RECEIVER_ID, self.executor.get_neighbor_id_list())
-            self._send_msg(flow_name, params)
             logging.info("receive_id = {}".format(self.executor.get_neighbor_id_list()))
+            self._send_msg(flow_name, params)
 
     def __direct_to_next_flow(self, flow_name, flow_tag):
         if flow_tag == FedMLAlgorithmFlow.LOOP_END and self.loop_count < self.loop_times:
@@ -247,7 +247,7 @@ class FedMLAlgorithmFlow(FedMLCommManager):
         receiver_id = params.get(PARAMS_KEY_RECEIVER_ID)
         logging.info("sender_id = {}, receiver_id = {}".format(sender_id, receiver_id))
         for rid in receiver_id:
-            message = Message(flow_name, sender_id, rid,)
+            message = Message(flow_name, sender_id, rid)
             logging.info("params.keys() = {}".format(params.keys()))
             for key in params.keys():
                 message.add_params(key, params.get(key))
