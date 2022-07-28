@@ -22,7 +22,7 @@ class DLGAttack(BaseAttackMethod):
         self.model = model
         self.attack_epoch = attack_epoch  # todo: discuss with chaoyang
 
-    def attack_model(self, local_w, global_w, refs=None):
+    def reconstruct(self, local_w, global_w, refs=None):
         self.data_size, self.attack_label, self.num_class = refs
         # generate dummy data and label
         dummy_data = torch.randn(self.data_size).requires_grad_(True)
