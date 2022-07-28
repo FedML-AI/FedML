@@ -48,7 +48,7 @@ tracking_args:
 attack_args:
   enable_attack: true
   attack_type: byzantine
-  attack_mode: zero
+  attack_mode: flip # zero; random
   byzantine_client_num: 2
 
 
