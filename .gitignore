@@ -72,11 +72,6 @@ mimiconda.sh
 
 data/fednlp/*
 
-python/app/fednlp/text_classification/cache_dir
-python/app/fednlp/span_extraction/cache_dir
-python/app/fednlp/seq_tagging/cache_dir
-python/app/fednlp/seq2seq/cache_dir
-
 *.npz
 python/tests/smoke_test/simulation_sp/data/mnist/MNIST/stats.sh
 python/tests/smoke_test/simulation_sp/data/mnist/MNIST/stats.py
@@ -170,4 +165,4 @@ android/fedmlsdk
 
 
 doc/en/_build
-
+/docker-2/
