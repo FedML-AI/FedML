@@ -11,7 +11,7 @@ from fedml import FedMLRunner
 from model.bert_model import BertForSequenceClassification
 from model.distilbert_model import DistilBertForSequenceClassification
 from trainer.classification_trainer import MyModelTrainer as MyCLSTrainer
-
+from trainer.classification_aggregator import ClassificationAggregator
 
 def create_model(args, output_dim=1):
     model_name = args.model
@@ -35,7 +35,7 @@ def create_model(args, output_dim=1):
     model_args["num_labels"] = output_dim
     config = config_class.from_pretrained(args.model, **model_args)
     model = model_class.from_pretrained(args.model, config=config)
-    trainer = MyCLSTrainer(model)
+    trainer = MyCLSTrainer(model, args)
     return model, trainer
 
 
@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
     # load model and trainer
     model, trainer = create_model(args, output_dim)
-
+    aggregator = ClassificationAggregator(model, args)
     # start training
-    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer, aggregator)
     fedml_runner.run()

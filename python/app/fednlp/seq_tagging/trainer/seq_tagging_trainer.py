@@ -1,6 +1,6 @@
 import copy
 import os
-import logging
+
 import numpy as np
 import torch
 from seqeval.metrics import (
@@ -65,9 +65,7 @@ class MyModelTrainer(ClientTrainer):
         tr_loss = 0
         # train and update
         criterion = nn.CrossEntropyLoss().to(device)
-        iteration_in_total = (
-            len(train_data) // args.gradient_accumulation_steps * args.epochs
-        )
+        iteration_in_total = len(train_data) // args.gradient_accumulation_steps * args.epochs
         optimizer, scheduler = build_optimizer(model, iteration_in_total, model_args)
         if args.federated_optimizer == "FedProx":
             global_model = copy.deepcopy(model)
@@ -93,9 +91,7 @@ class MyModelTrainer(ClientTrainer):
                 tr_loss += loss.item()
                 if (batch_idx + 1) % args.gradient_accumulation_steps == 0:
                     if args.clip_grad_norm == 1:
-                        torch.nn.utils.clip_grad_norm_(
-                            model.parameters(), args.max_grad_norm
-                        )
+                        torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
                     optimizer.step()
                     scheduler.step()  # Update learning rate schedule
                     model.zero_grad()
@@ -112,17 +108,11 @@ class MyModelTrainer(ClientTrainer):
                 # optimizer.step()
 
             epoch_loss.append(sum(batch_loss) / len(batch_loss))
-            logging.info(
-                "Client Index = {}\tEpoch: {}\tLoss: {:.6f}".format(
-                    self.id, epoch, epoch_loss[-1]
-                )
-            )
+            logging.info("Client Index = {}\tEpoch: {}\tLoss: {:.6f}".format(self.id, epoch, epoch_loss[-1]))
             if args.evaluate_during_training and test_data is not None:
                 results, _, _ = self.test(test_data, device, args)
                 logging.info(
-                    "Client Index = {}\tEpoch: {}\tF1 Score: {:.6f}".format(
-                        self.id, epoch, results["f1_score"]
-                    )
+                    "Client Index = {}\tEpoch: {}\tF1 Score: {:.6f}".format(self.id, epoch, results["f1_score"])
                 )
 
     def test(self, test_data, device, args):
@@ -165,11 +155,7 @@ class MyModelTrainer(ClientTrainer):
             nb_eval_steps += 1
             start_index = args.eval_batch_size * i
 
-            end_index = (
-                start_index + args.eval_batch_size
-                if i != (n_batches - 1)
-                else test_sample_len
-            )
+            end_index = start_index + args.eval_batch_size if i != (n_batches - 1) else test_sample_len
 
             if preds is None:
                 preds = logits.detach().cpu().numpy()
@@ -178,15 +164,9 @@ class MyModelTrainer(ClientTrainer):
                 out_attention_mask = batch[2].detach().cpu().numpy()
             else:
                 preds = np.append(preds, logits.detach().cpu().numpy(), axis=0)
-                out_label_ids = np.append(
-                    out_label_ids, batch[4].detach().cpu().numpy(), axis=0
-                )
-                out_input_ids = np.append(
-                    out_input_ids, batch[1].detach().cpu().numpy(), axis=0
-                )
-                out_attention_mask = np.append(
-                    out_attention_mask, batch[2].detach().cpu().numpy(), axis=0,
-                )
+                out_label_ids = np.append(out_label_ids, batch[4].detach().cpu().numpy(), axis=0)
+                out_input_ids = np.append(out_input_ids, batch[1].detach().cpu().numpy(), axis=0)
+                out_attention_mask = np.append(out_attention_mask, batch[2].detach().cpu().numpy(), axis=0,)
 
         eval_loss = eval_loss / nb_eval_steps
 
@@ -222,20 +202,3 @@ class MyModelTrainer(ClientTrainer):
         # self.results.update(result)
 
         return result
-
-    def test_on_the_server(
-        self, train_data_local_dict, test_data_local_dict, device, args=None
-    ) -> bool:
-        logging.info("----------test_on_the_server--------")
-        f1_list, metric_list = [], []
-        for client_idx in test_data_local_dict.keys():
-            test_data = test_data_local_dict[client_idx]
-            metrics = self.test(test_data, device, args)
-            metric_list.append(metrics)
-            f1_list.append(metrics["f1_score"])
-            logging.info(
-                "Client {}, Test f1 = {}".format(client_idx, metrics["f1_score"])
-            )
-        avg_f1 = np.mean(np.array(f1_list))
-        logging.info("Avg Test f1 = {}".format(avg_f1))
-        return True
