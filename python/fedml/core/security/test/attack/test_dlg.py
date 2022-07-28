@@ -15,7 +15,6 @@ from fedml.core.security.common.attack_defense_data_loader import (
 )
 
 import torch
-import torch.nn.functional as F
 import torch.nn as nn
 
 
@@ -43,7 +42,7 @@ class LeNet(nn.Module):
 
 
 def test__attack_dlg(attack_client_idx, net, attack_epoch=5):
-    attack = DLGAttack(attack_client_idx, net, attack_epoch,)
+    attack = DLGAttack(net, attack_epoch,)
     # train_data_local_dict -> 5, attack_client_idx -> 0
     data = dataset[5][attack_client_idx].dataset
     img, label = data[0]  # the first image

@@ -19,8 +19,8 @@ Steps:
 
 
 class DLGAttack(BaseAttackMethod):
-    def __init__(self, attack_client_idx, model, attack_epoch):
-        self.attack_client_idx = attack_client_idx
+    def __init__(self, model, attack_epoch):
+        # self.attack_client_idx = attack_client_idx
         self.model = model
         self.attack_epoch = attack_epoch  # todo: discuss with chaoyang
 
@@ -66,6 +66,8 @@ class DLGAttack(BaseAttackMethod):
         logging.info("Ground truth label is %s." % self.attack_label)
         logging.info("After DLG, Dummy label is %s." % torch.argmax(dummy_label, dim=-1).item())
         if self.attack_label == torch.argmax(dummy_label, dim=-1).item():
-            logging.info("The DLG attack client %s succeeds!" % self.attack_client_idx)
+            # logging.info("The DLG attack client %s succeeds!" % self.attack_client_idx)
+            logging.info("The DLG attack succeeds!")
         else:
-            logging.info("The DLG attack client %s fails!" % self.attack_client_idx)
+            # logging.info("The DLG attack client %s fails!" % self.attack_client_idx)
+            logging.info("The DLG attack fails!")
