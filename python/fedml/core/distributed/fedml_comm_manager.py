@@ -127,6 +127,9 @@ class FedMLCommManager(Observer):
                 self.args.trpc_master_config_path, process_id=self.rank, world_size=self.size + 1, args=self.args,
             )
         else:
-            logging.info("using self-defined communication backend")
+            if self.com_manager is None:
+                raise Exception("no such backend. Please check the comm_backend spelling.")
+            else:
+                logging.info("using self-defined communication backend")
 
         self.com_manager.add_observer(self)
