@@ -128,7 +128,7 @@ class FedMLCommManager(Observer):
             )
         else:
             if self.com_manager is None:
-                raise Exception("no such backend. Please check the comm_backend spelling.")
+                raise Exception("no such backend: {}. Please check the comm_backend spelling.".format(self.backend))
             else:
                 logging.info("using self-defined communication backend")
 
