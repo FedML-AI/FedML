@@ -170,12 +170,14 @@ RUN pip3 install --upgrade requests
 #    imblearn \
 #    tabulate
 
-RUN cd ${INSTALL_DIR} && \
-git clone https://github.com/FedML-AI/FedML.git && cd ${INSTALL_DIR}/FedML && git pull
-RUN cd ${INSTALL_DIR}/FedML/python && \
-git submodule sync && \
-git submodule update --init --recursive --jobs 0 && \
-sudo python setup.py install
+#RUN cd ${INSTALL_DIR} && \
+#git clone https://github.com/FedML-AI/FedML.git && cd ${INSTALL_DIR}/FedML && git pull
+#RUN cd ${INSTALL_DIR}/FedML/python && \
+#git submodule sync && \
+#git submodule update --init --recursive --jobs 0 && \
+#sudo python setup.py install
+
+COPY ../python
 RUN rm -rf ${INSTALL_DIR}/FedML
 
 RUN python -c "import fedml; fedml.__version__"

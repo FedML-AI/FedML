@@ -208,7 +208,7 @@ class ServerConstants(object):
         if should_capture_stdout_err:
             script_process = subprocess.Popen(shell_script_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         else:
-            script_process = subprocess.Popen(shell_script_list, stdout=sys.stdout, stderr=subprocess.PIPE)
+            script_process = subprocess.Popen(shell_script_list, stdout=sys.stdout, stderr=sys.stderr)
         return script_process
 
     @staticmethod

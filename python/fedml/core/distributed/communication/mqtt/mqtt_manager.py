@@ -4,7 +4,8 @@ import uuid
 
 import paho.mqtt.client as mqtt
 import time
-from  fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
+from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
+
 
 class MqttManager(object):
     def __init__(self, host, port, user, pwd, keepalive_time,
@@ -61,7 +62,7 @@ class MqttManager(object):
         self._client.loop_stop()
 
     def loop_forever(self):
-        self._client.loop_forever()
+        self._client.loop_forever(retry_first_connection=True)
 
     def send_message(self, topic, message):
         mqtt_send_start_time = time.time()
@@ -74,6 +75,9 @@ class MqttManager(object):
     def on_connect(self, client, userdata, flags, rc):
         # Callback connected listeners
         self.callback_connected_listener(client)
+
+    def is_connected(self):
+        return self._client.is_connected()
 
     def subscribe_will_set_msg(self, client):
         self.add_message_listener(self.last_will_topic, self.callback_will_set_msg)

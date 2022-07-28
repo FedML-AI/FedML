@@ -2,7 +2,8 @@ import fedml
 from data.data_loader import load_data
 from fedml import FedMLRunner
 from model.autoencoder import AutoEncoder
-from trainer.fed_detect_trainer import MyModelTrainer
+from trainer.fed_detect_aggregator import FedDetectAggregator
+from trainer.fed_detect_trainer import FedDetectTrainer
 
 if __name__ == "__main__":
     # init FedML framework
@@ -18,8 +19,9 @@ if __name__ == "__main__":
     model = AutoEncoder(output_dim)
 
     # create trainer
-    trainer = MyModelTrainer(model)
+    trainer = FedDetectTrainer(model, args)
+    aggregator = FedDetectAggregator(model, args)
 
     # start training
-    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer, aggregator)
     fedml_runner.run()
