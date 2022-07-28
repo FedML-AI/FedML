@@ -13,6 +13,7 @@ from fedml.core.mlops.mlops_configs import MLOpsConfigs
 from ...cli.cli import mlops_register_simulator_process
 from ...cli.edge_deployment.client_constants import ClientConstants
 from ...cli.edge_deployment.client_runner import FedMLClientRunner
+from ...cli.server_deployment.server_runner import FedMLServerRunner
 from ...constants import FEDML_TRAINING_PLATFORM_SIMULATION, FEDML_TRAINING_PLATFORM_SIMULATION_TYPE
 from ...cli.server_deployment.server_constants import ServerConstants
 
@@ -552,13 +553,16 @@ def bind_simulation_device(args, userid, version="release"):
         sys_name = "MacOS"
     setattr(args, "os_name", sys_name)
     setattr(args, "version", version)
-    setattr(args, "log_file_dir", ClientConstants.get_log_file_dir())
-    setattr(args, "device_id", FedMLClientRunner.get_device_id())
+    if args.rank == 0:
+        setattr(args, "log_file_dir", ServerConstants.get_log_file_dir())
+        setattr(args, "device_id", FedMLServerRunner.get_device_id())
+        runner = FedMLServerRunner(args)
+    else:
+        setattr(args, "log_file_dir", ClientConstants.get_log_file_dir())
+        setattr(args, "device_id", FedMLClientRunner.get_device_id())
+        runner = FedMLClientRunner(args)
     setattr(args, "config_version", version)
     setattr(args, "cloud_region", "")
-
-    # Create client runner for communication with the FedML server.
-    runner = FedMLClientRunner(args)
 
     # Fetch configs from the MLOps config server.
     service_config = dict()
@@ -633,13 +637,16 @@ def bind_real_device(args, userid, version="release"):
         sys_name = "MacOS"
     setattr(args, "os_name", sys_name)
     setattr(args, "version", version)
-    setattr(args, "log_file_dir", ClientConstants.get_log_file_dir())
-    setattr(args, "device_id", FedMLClientRunner.get_device_id())
+    if args.rank == 0:
+        setattr(args, "log_file_dir", ServerConstants.get_log_file_dir())
+        setattr(args, "device_id", FedMLServerRunner.get_device_id())
+        runner = FedMLServerRunner(args)
+    else:
+        setattr(args, "log_file_dir", ClientConstants.get_log_file_dir())
+        setattr(args, "device_id", FedMLClientRunner.get_device_id())
+        runner = FedMLClientRunner(args)
     setattr(args, "config_version", version)
     setattr(args, "cloud_region", "")
-
-    # Create client runner for communication with the FedML server.
-    runner = FedMLClientRunner(args)
 
     # Fetch configs from the MLOps config server.
     service_config = dict()
@@ -715,13 +722,16 @@ def fetch_config(args, version="release"):
         sys_name = "MacOS"
     setattr(args, "os_name", sys_name)
     setattr(args, "version", version)
-    setattr(args, "log_file_dir", ClientConstants.get_log_file_dir())
-    setattr(args, "device_id", FedMLClientRunner.get_device_id())
+    if args.rank == 0:
+        setattr(args, "log_file_dir", ServerConstants.get_log_file_dir())
+        setattr(args, "device_id", FedMLServerRunner.get_device_id())
+        runner = FedMLServerRunner(args)
+    else:
+        setattr(args, "log_file_dir", ClientConstants.get_log_file_dir())
+        setattr(args, "device_id", FedMLClientRunner.get_device_id())
+        runner = FedMLClientRunner(args)
     setattr(args, "config_version", version)
     setattr(args, "cloud_region", "")
-
-    # Create client runner for communication with the FedML server.
-    runner = FedMLClientRunner(args)
 
     # Fetch configs from the MLOps config server.
     service_config = dict()

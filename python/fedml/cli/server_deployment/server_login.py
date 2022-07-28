@@ -9,7 +9,7 @@ from fedml.cli.server_deployment.server_constants import ServerConstants
 
 
 def __login_as_edge_server_and_agent(args, userid, version):
-    setattr(args, "account_id", userid)
+    setattr(args, "account_sid", userid)
     setattr(args, "current_running_dir", ServerConstants.get_fedml_home_dir())
 
     sys_name = platform.system()
