@@ -2,6 +2,8 @@ import argparse
 import logging
 import platform
 import time
+import traceback
+
 import click
 from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from fedml.cli.server_deployment.server_runner import FedMLServerRunner
@@ -9,7 +11,7 @@ from fedml.cli.server_deployment.server_constants import ServerConstants
 
 
 def __login_as_edge_server_and_agent(args, userid, version):
-    setattr(args, "account_sid", userid)
+    setattr(args, "account_id", userid)
     setattr(args, "current_running_dir", ServerConstants.get_fedml_home_dir())
 
     sys_name = platform.system()
