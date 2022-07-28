@@ -1,8 +1,6 @@
 import logging
-
 import torch
 import torch.nn.functional as F
-
 from .attack_base import BaseAttackMethod
 from ..common.utils import cross_entropy_for_onehot
 
@@ -20,7 +18,7 @@ Steps:
 
 class DLGAttack(BaseAttackMethod):
     def __init__(self, model, attack_epoch):
-        # self.attack_client_idx = attack_client_idx
+        # self.attack_client_idx = attack_client_idx # todo: how to determine which clients to attack??
         self.model = model
         self.attack_epoch = attack_epoch  # todo: discuss with chaoyang
 
