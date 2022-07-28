@@ -923,8 +923,9 @@ class FedMLServerRunner:
                 f.write(device_id)
         else:
             device_id_from_file = None
-            with open(file_for_device_id, 'r', encoding='utf-8') as f:
-                device_id_from_file = f.readline()
+            if os.path.exists(file_for_device_id):
+                with open(file_for_device_id, 'r', encoding='utf-8') as f:
+                    device_id_from_file = f.readline()
             if device_id_from_file is not None and device_id_from_file != "":
                 device_id = device_id_from_file
             else:
