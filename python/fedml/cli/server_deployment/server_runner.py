@@ -65,7 +65,6 @@ class FedMLServerRunner:
         self.request_json = copy.deepcopy(request_json)
         self.version = args.version
         self.device_id = args.device_id
-        self.cloud_region = args.cloud_region
         self.cur_dir = os.path.split(os.path.realpath(__file__))[0]
         if args.current_running_dir is not None:
             self.cur_dir = args.current_running_dir
