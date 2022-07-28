@@ -63,7 +63,7 @@ class SageMoleculeNetAggregator(ServerAggregator):
         score = np.nanmean(results)
         return score, model
 
-    def test_on_the_server(self, train_data_local_dict, test_data_local_dict, device, args=None) -> bool:
+    def test_on_the_server(self, train_data_local_dict, test_data_local_dict, device, args) -> bool:
         logging.info("----------test_on_the_server--------")
 
         model_list, score_list = [], []

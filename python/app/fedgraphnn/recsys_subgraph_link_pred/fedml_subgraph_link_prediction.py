@@ -1,4 +1,5 @@
 import fedml
+from app.fedgraphnn.recsys_subgraph_link_pred.trainer.fed_subgraph_lp_aggregator import FedSubgraphLPAggregator
 from data.data_loader import *
 from fedml import FedMLRunner
 from model.gcn_link import GCNLinkPred
@@ -76,9 +77,10 @@ if __name__ == "__main__":
     # load model
     model = create_model(args, args.model, dataset[7])
 
-    trainer = FedSubgraphLPTrainer(model)
+    trainer = FedSubgraphLPTrainer(model, args)
+    aggregator = FedSubgraphLPAggregator(model, args)
 
     # start training
-    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer, aggregator)
     fedml_runner.run()
 
