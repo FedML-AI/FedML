@@ -4,7 +4,6 @@ from typing import List, Tuple, Dict
 import torch
 from torch import nn
 
-from fedml.core import FedMLAggOperator
 from fedml.core import ServerAggregator
 
 

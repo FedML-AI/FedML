@@ -11,6 +11,7 @@ from model import (
     EfficientNet,
 )
 from trainer.classification_trainer import ClassificationTrainer
+from trainer.classification_aggregator import ClassificationAggregator
 from data.data_loader import load_data
 
 
@@ -35,10 +36,9 @@ def create_model(args, model_name, output_dim):
     else:
         raise Exception("such model does not exist !")
 
-    trainer = ClassificationTrainer(model=model)
     logging.info("done")
 
-    return model, trainer
+    return model
 
 
 if __name__ == "__main__":
@@ -52,10 +52,12 @@ if __name__ == "__main__":
     dataset, class_num = load_data(args)
 
     # create model.
-    # Note if the model is DNN (e.g., ResNet), the training will be very slow.
-    # In this case, please use our FedML distributed version (./fedml_experiments/distributed_fedavg)
-    model, trainer = create_model(args, args.model, output_dim=class_num)
+    model = create_model(args, args.model, output_dim=class_num)
+    trainer = ClassificationTrainer(model=model, args=args)
+    aggregator = ClassificationAggregator(model=model, args=args)
+
+    logging.info("start training")
 
     # start training
-    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer, aggregator)
     fedml_runner.run()
