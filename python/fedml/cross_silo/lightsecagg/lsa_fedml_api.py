@@ -68,7 +68,7 @@ def init_server(
     preprocessed_sampling_lists=None,
 ):
     if model_trainer is None:
-        model_trainer = create_model_trainer(args, model)
+        model_trainer = create_model_trainer(model, args)
     model_trainer.set_id(0)
 
     # aggregator
@@ -118,7 +118,7 @@ def init_client(
     model_trainer=None,
 ):
     if model_trainer is None:
-        model_trainer = create_model_trainer(args, model)
+        model_trainer = create_model_trainer(model, args)
     model_trainer.set_id(client_rank)
     backend = args.backend
     trainer = FedMLTrainer(

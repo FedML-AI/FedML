@@ -12,7 +12,7 @@ if __name__ == "__main__":
 
     # init yolo
     model, dataset, trainer, args = init_yolo(args=args, device=device)
-    aggregator = YOLOAggregator(args, model)
+    aggregator = YOLOAggregator(model, args)
 
     # start training
     fedml_runner = FedMLRunner(args, device, dataset, model, trainer, aggregator)
