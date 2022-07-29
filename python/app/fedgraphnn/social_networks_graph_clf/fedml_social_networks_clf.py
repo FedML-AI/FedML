@@ -6,7 +6,7 @@ from data.data_loader import load_partition_data, get_data
 from fedml import FedMLRunner
 from model.gin import GIN
 from trainer.gin_trainer import GINSocialNetworkTrainer
-
+from trainer.gin_aggregator import GINSocialNetworkAggregator
 
 def load_data(args, dataset_name):
     if args.dataset not in [
@@ -95,5 +95,5 @@ if __name__ == "__main__":
     model, trainer, aggregator = create_model(args, args.model, feat_dim, num_cats, output_dim=None)
 
     # start training
-    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer, aggregator)
     fedml_runner.run()
