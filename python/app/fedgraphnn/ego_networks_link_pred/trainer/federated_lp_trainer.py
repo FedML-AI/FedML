@@ -97,7 +97,7 @@ class FedLinkPredTrainer(ClientTrainer):
 
         return max_test_score, best_model_params
 
-    def test(self, test_data, device):
+    def test(self, test_data, device, args):
         logging.info("----------test--------")
         model = self.model
         model.eval()
@@ -123,48 +123,6 @@ class FedLinkPredTrainer(ClientTrainer):
             ngraphs += batch.num_graphs
 
         return cum_score / ngraphs, model
-
-    def test_on_the_server(
-        self, train_data_local_dict, test_data_local_dict, device, args=None
-    ) -> bool:
-        logging.info("----------test_on_the_server--------")
-
-        model_list, score_list = [], []
-        for client_idx in test_data_local_dict.keys():
-            test_data = test_data_local_dict[client_idx]
-            score, model = self.test(test_data, device)
-            for idx in range(len(model_list)):
-                self._compare_models(model, model_list[idx])
-            model_list.append(model)
-            score_list.append(score)
-            logging.info(
-                "Client {}, Test {} = {}".format(client_idx, args.metric, score)
-            )
-            if args.enable_wandb:
-                wandb.log({"Client {}, Test/{}".format(client_idx, args.metric): score})
-
-        avg_score = np.mean(np.array(score_list))
-        logging.info("Test {} = {}".format(args.metric, avg_score))
-        if args.enable_wandb:
-            wandb.log({"Test/{}".format(args.metric): avg_score})
-
-        return True
-
-    def _compare_models(self, model_1, model_2):
-        models_differ = 0
-        for key_item_1, key_item_2 in zip(
-            model_1.state_dict().items(), model_2.state_dict().items()
-        ):
-            if torch.equal(key_item_1[1], key_item_2[1]):
-                pass
-            else:
-                models_differ += 1
-                if key_item_1[0] == key_item_2[0]:
-                    logging.info("Mismatch found at", key_item_1[0])
-                else:
-                    raise Exception
-        if models_differ == 0:
-            logging.info("Models match perfectly! :)")
 
     def get_link_labels(self, pos_edge_index, neg_edge_index, device):
         num_links = pos_edge_index.size(1) + neg_edge_index.size(1)
