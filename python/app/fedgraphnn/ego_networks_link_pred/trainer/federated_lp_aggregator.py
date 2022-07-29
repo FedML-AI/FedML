@@ -7,7 +7,8 @@ from sklearn.metrics import (
     mean_absolute_error,
     mean_squared_error,
 )
-
+from sklearn.metrics import average_precision_score, roc_auc_score
+from torch_geometric.utils import negative_sampling
 from fedml.core import ServerAggregator
 
 
@@ -23,30 +24,32 @@ class FedLPAggregator(ServerAggregator):
         pass
 
     def _test(self, test_data, device, val=True, metric=mean_absolute_error):
+        logging.info("----------test--------")
         model = self.model
         model.eval()
         model.to(device)
-        metric = metric
-        mae, rmse, mse = [], [], []
-
+        
+        cum_score = 0.0
+        ngraphs = 0
+        threshold = torch.tensor([0.7], device = device)
         for batch in test_data:
             batch.to(device)
             with torch.no_grad():
-                train_z = model.encode(batch.x, batch.edge_train)
-                if val:
-                    link_logits = model.decode(train_z, batch.edge_val)
-                else:
-                    link_logits = model.decode(train_z, batch.edge_test)
+               
+                neg_edge_index = negative_sampling(
+                    edge_index=batch.edge_index,
+                    num_nodes=batch.num_nodes,
+                    num_neg_samples=batch.edge_index.size(1),
+                )
+                z = model.encode(batch.x, batch.edge_index)
+                out = model.decode(z, batch.edge_index, neg_edge_index).view(-1).sigmoid()
+                pred = (out > threshold).float() * 1
+            
+            cum_score += average_precision_score(np.ones(pred.numel()), pred.cpu())
+            print(cum_score)
+            ngraphs += batch.num_graphs
 
-                if val:
-                    link_labels = batch.label_val
-                else:
-                    link_labels = batch.label_test
-                score = metric(link_labels.cpu(), link_logits.cpu())
-                mae.append(mean_absolute_error(link_labels.cpu(), link_logits.cpu()))
-                rmse.append(mean_squared_error(link_labels.cpu(), link_logits.cpu(), squared=False))
-                mse.append(mean_squared_error(link_labels.cpu(), link_logits.cpu()))
-        return score, model, mae, rmse, mse
+        return cum_score / ngraphs, model
 
     def test_all(self, train_data_local_dict, test_data_local_dict, device, args) -> bool:
         logging.info("----------test_on_the_server--------")
@@ -54,41 +57,36 @@ class FedLPAggregator(ServerAggregator):
         model_list, score_list, mae_list, rmse_list, mse_list = [], [], [], [], []
         for client_idx in test_data_local_dict.keys():
             test_data = test_data_local_dict[client_idx]
-            score, model, mae, rmse, mse = self._test(test_data, device, val=False)
+            score, model = self._test(test_data, device, val=False)
 
             for idx in range(len(model_list)):
                 self._compare_models(model, model_list[idx])
             model_list.append(model)
             score_list.append(score)
-            mae_list.append(mae)
-            rmse_list.append(rmse)
-            mse_list.append(mse)
+
 
             logging.info(
-                "Client {}, Test {} = {}, mae = {}, rmse = {}, mse = {}".format(
-                    client_idx, args.metric, score, mae, rmse, mse
+                "Client {}, Test {} = {}".format(
+                    client_idx, args.metric, score
                 )
             )
             if args.enable_wandb:
                 wandb.log(
-                    {"Client {} Test/{}".format(client_idx, args.metric): score, "MAE, RMSE, MSE": [mae, rmse, mse],}
+                    {"Client {} Test/{}".format(client_idx, args.metric): score,}
                 )
 
         avg_score = np.mean(np.array(score_list))
-        mae_score = np.mean(np.array(mae_list))
-        rmse_score = np.mean(np.array(rmse_list))
-        mse_score = np.mean(np.array(mse_list))
+
 
         logging.info(
-            "Test {} = {}, mae = {}, rmse = {}, mse = {}".format(
-                args.metric, avg_score, mae_score, rmse_score, mse_score
+            "Test {} = {}".format(
+                args.metric, avg_score
             )
         )
         if args.enable_wandb:
             wandb.log(
                 {
                     "Client {} Test/{}".format(client_idx, args.metric): avg_score,
-                    "MAE, RMSE, MSE = ": [mae_score, rmse_score, mse_score],
                 }
             )
 
