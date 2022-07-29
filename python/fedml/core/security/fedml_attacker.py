@@ -43,6 +43,11 @@ class FedMLAttacker:
     def is_client_attack(self, attack_type):
         pass
 
+    def is_model_attack(self):
+        if self.is_attack_enabled() and self.attack_type in [ATTACK_METHOD_BYZANTINE_ATTACK]:
+            return True
+        return False
+
     def attack_model(self, local_w, global_w, refs=None):
         if self.attacker is None:
             raise Exception("attacker is not initialized!")
