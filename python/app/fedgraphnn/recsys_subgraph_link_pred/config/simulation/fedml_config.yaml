@@ -1,12 +1,7 @@
 common_args:
-  training_type: "cross_silo"
+  training_type: "simulation"
   random_seed: 0
-  scenario: "horizontal"
-  using_mlops: false
-  config_version: release
-  name: "exp"
-  project: "runs/train"
-  exist_ok: false
+  
 
 data_args:
   dataset: "ciao"
@@ -58,6 +53,7 @@ device_args:
 
 comm_args:
   backend: "MPI"
+  is_mobile: 0
   
 
 
