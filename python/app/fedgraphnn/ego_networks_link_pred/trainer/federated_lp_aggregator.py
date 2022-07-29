@@ -48,7 +48,7 @@ class FedLPAggregator(ServerAggregator):
                 mse.append(mean_squared_error(link_labels.cpu(), link_logits.cpu()))
         return score, model, mae, rmse, mse
 
-    def test_on_the_server(self, train_data_local_dict, test_data_local_dict, device, args=None) -> bool:
+    def test_all(self, train_data_local_dict, test_data_local_dict, device, args) -> bool:
         logging.info("----------test_on_the_server--------")
 
         model_list, score_list, mae_list, rmse_list, mse_list = [], [], [], [], []
