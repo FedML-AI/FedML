@@ -42,7 +42,7 @@ class GINSocialNetworkAggregator(ServerAggregator):
         model_list, score_list = [], []
         for client_idx in test_data_local_dict.keys():
             test_data = test_data_local_dict[client_idx]
-            score, model = self._test(test_data, device)
+            score, model = self._test(test_data, device, args)
             # for idx in range(len(model_list)):
             #     self._compare_models(model, model_list[idx])
             model_list.append(model)
