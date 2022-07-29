@@ -13,7 +13,7 @@ This tutorial guides you to install FedML python library on Windows. The followi
 ## Install with conda
 
 ```
-conda create --name fedml python=3.7
+conda create --name fedml python
 conda activate fedml
 conda install --name fedml pip
 pip install fedml
