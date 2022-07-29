@@ -19,10 +19,7 @@ class GatMoleculeNetAggregator(ServerAggregator):
         logging.info("set_model_params")
         self.model.load_state_dict(model_parameters)
 
-    def test(self, test_data, device, args):
-        pass
-
-    def test_on_the_server(self, train_data_local_dict, test_data_local_dict, device, args) -> bool:
+    def test_all(self, train_data_local_dict, test_data_local_dict, device, args) -> bool:
         logging.info("----------test_on_the_server--------")
 
         model_list, score_list = [], []
@@ -56,7 +53,7 @@ class GatMoleculeNetAggregator(ServerAggregator):
         if models_differ == 0:
             logging.info("Models match perfectly! :)")
 
-    def _test(self, test_data, device, args):
+    def test(self, test_data, device, args):
         logging.info("----------test--------")
         model = self.model
         model.eval()
