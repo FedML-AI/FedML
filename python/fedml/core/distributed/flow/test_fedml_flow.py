@@ -57,9 +57,9 @@ class Server(FedMLExecutor):
 
     def server_aggregate(self):
         logging.info("server_aggregate")
-        params = self.get_params()
-        value1 = params.get("whatever_key_as_you_like_1")
-        logging.info("value1 = {}".format(value1))
+        # params = self.get_params()
+        # value1 = params.get("whatever_key_as_you_like_1")
+        # logging.info("value1 = {}".format(value1))
         self.round_idx += 1
         if self.client_count == self.client_num:
             self.client_count = 0
