@@ -5,7 +5,6 @@ class FedMLExecutor(abc.ABC):
     def __init__(self, id, neighbor_id_list):
         self.id = id
         self.neighbor_id_list = neighbor_id_list
-        self.loop_times = 1
         self.params = None
         self.context = None
 
@@ -20,12 +19,6 @@ class FedMLExecutor(abc.ABC):
 
     def set_params(self, params):
         self.params = params
-
-    def set_loop_times(self, loop_times):
-        self.loop_times = loop_times
-
-    def get_loop_times(self):
-        return self.loop_times
 
     def set_id(self, id):
         self.id = id
