@@ -61,13 +61,11 @@ class Server(FedMLExecutor):
         # value1 = params.get("whatever_key_as_you_like_1")
         # logging.info("value1 = {}".format(value1))
         self.round_idx += 1
+        self.client_count += 1
         if self.client_count == self.client_num:
             self.client_count = 0
             params = Params()
             return params
-        else:
-            self.client_count += 1
-            return None
 
     def final_eval(self):
         logging.info("final_eval")

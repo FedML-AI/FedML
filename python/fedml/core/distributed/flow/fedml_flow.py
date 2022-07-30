@@ -9,7 +9,8 @@ from .fedml_flow_constants import (
     MSG_TYPE_NEIGHBOR_REPORT_NODE_STATUS,
     MSG_TYPE_NEIGHBOR_CHECK_NODE_STATUS,
     PARAMS_KEY_SENDER_ID,
-    PARAMS_KEY_RECEIVER_ID, MSG_TYPE_FLOW_FINISH,
+    PARAMS_KEY_RECEIVER_ID,
+    MSG_TYPE_FLOW_FINISH,
 )
 from ..communication.message import Message
 from ..fedml_comm_manager import FedMLCommManager
@@ -194,13 +195,18 @@ class FedMLAlgorithmFlow(FedMLCommManager):
         )
         self.executor.set_params(flow_params)
         if self.executor_cls_name != executor_task_cls_name:
-            raise Exception("The current executor cannot execute a task in a different executor")
+            raise Exception(
+                "The current executor cannot execute a task in a different executor. executed flow = {}".format(
+                    self.flow_sequence_executed
+                )
+            )
         params = executor_task(self.executor)
         logging.info(
             "\n###########_execute_flow (END). loop_count = {}, flow_name = {}, executor_task name = {}() #######\n\n".format(
                 self.loop_count, flow_name, executor_task.__name__
             )
         )
+        self.flow_sequence_executed.append(flow_name)
         (flow_name_next, executor_task_next, executor_task_cls_name_next, flow_tag_next,) = self.__direct_to_next_flow(
             flow_name, flow_tag
         )
@@ -216,11 +222,11 @@ class FedMLAlgorithmFlow(FedMLCommManager):
         if executor_task_cls_name_next == self.executor_cls_name:
             params.add(PARAMS_KEY_RECEIVER_ID, [self.executor.get_id()])
             # call locally
-            logging.info("receive_id = {}".format([self.executor.get_id()]))
+            logging.info("flow_name = {}, receive_id = {}".format(flow_name, [self.executor.get_id()]))
             self._pass_message_locally(flow_name, params)
         else:
             params.add(PARAMS_KEY_RECEIVER_ID, self.executor.get_neighbor_id_list())
-            logging.info("receive_id = {}".format(self.executor.get_neighbor_id_list()))
+            logging.info("flow_name = {}, receive_id = {}".format(flow_name, self.executor.get_neighbor_id_list()))
             self._send_msg(flow_name, params)
 
     def __direct_to_next_flow(self, flow_name, flow_tag):
@@ -274,6 +280,8 @@ class FedMLAlgorithmFlow(FedMLCommManager):
             message = Message(flow_name, sender_id, rid,)
             logging.info("params.keys() = {}".format(params.keys()))
             for key in params.keys():
+                if key == Message.MSG_ARG_KEY_TYPE:
+                    continue
                 value = params.get(key)
                 message.add_params(key, value)
             self._handle_message_received(message)
