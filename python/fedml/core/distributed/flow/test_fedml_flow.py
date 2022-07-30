@@ -32,7 +32,7 @@ class Server(FedMLExecutor):
     def __init__(self, args):
         self.args = args
         id = args.rank
-        neighbor_id_list = [1]
+        neighbor_id_list = [1, 2]
         super().__init__(id, neighbor_id_list)
 
         self.device = None
