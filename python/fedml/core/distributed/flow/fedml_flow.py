@@ -19,30 +19,20 @@ from ...alg_frame.params import Params
 
 class FedMLAlgorithmFlow(FedMLCommManager):
     ONCE = "FLOW_TAG_ONCE"
-    LOOP_START = "FLOW_TAG_LOOP_START"
-    LOOP_END = "FLOW_TAG_LOOP_END"
     FINISH = "FLOW_TAG_FINISH"
 
-    def __init__(self, args, executor: FedMLExecutor, loop_times=1):
+    def __init__(self, args, executor: FedMLExecutor):
         super().__init__(args, args.comm, args.rank, args.worker_num, args.backend)
         self.executor = executor
-        self.executor.set_loop_times(loop_times)
         self.executor_cls_name = self.executor.__class__.__name__
         logging.info("self.executor class name = {}".format(self.executor.__class__.__name__))
 
+        self.flow_index = 0
         self.flow_sequence_original = []
-        self.flow_loop_start_index = 0
-        self.flow_loop_end_index = 0
 
         self.flow_sequence_current_map = dict()
         self.flow_sequence_next_map = dict()
         self.flow_sequence_executed = []
-
-        self.flow_loop_start = None
-        self.flow_loop_end = None
-        self.flow_after_loop = None
-        self.loop_times = loop_times
-        self.loop_count = 1
 
         # neighbor_node_online_status
         self.neighbor_node_online_map = dict()
@@ -69,45 +59,17 @@ class FedMLAlgorithmFlow(FedMLCommManager):
                 executor_task_cls_name_next,
                 flow_tag_next,
             ) = self.flow_sequence_next_map[flow_name]
-            (flow_name_end, executor_task_end, executor_task_cls_name_end, flow_tag_end,) = self.flow_loop_end
-            if flow_name_end == flow_name:
-                (
-                    flow_name_start,
-                    executor_task_start,
-                    executor_task_cls_name_start,
-                    flow_tag_start,
-                ) = self.flow_loop_start
-                if executor_task_cls_name_start == self.executor_cls_name:
-                    logging.info("self.register_message_receive_handler. msg_type = {}".format(flow_name))
-                    self.register_message_receive_handler(flow_name, self._handle_message_received)
-
             if executor_task_cls_name_next == self.executor_cls_name:
                 logging.info("self.register_message_receive_handler. msg_type = {}".format(flow_name))
                 self.register_message_receive_handler(flow_name, self._handle_message_received)
 
     def add_flow(self, flow_name, executor_task: Callable, flow_tag=ONCE):
+
         logging.info("flow_name = {}, executor_task = {}".format(flow_name, executor_task))
         executor_task_cls_name = self._get_class_that_defined_method(executor_task)
         logging.info("executor_task class name = {}".format(executor_task_cls_name))
-        self.flow_sequence_original.append((flow_name, executor_task, executor_task_cls_name, flow_tag))
-        if flow_tag == FedMLAlgorithmFlow.LOOP_START:
-            self.flow_loop_start_index = len(self.flow_sequence_original) - 1
-            self.flow_loop_start = (
-                flow_name,
-                executor_task,
-                executor_task_cls_name,
-                flow_tag,
-            )
-            logging.info("self.flow_loop_start = {}".format(self.flow_loop_start))
-        if flow_tag == FedMLAlgorithmFlow.LOOP_END:
-            self.flow_loop_end_index = len(self.flow_sequence_original) - 1
-            self.flow_loop_end = (
-                flow_name,
-                executor_task,
-                executor_task_cls_name,
-                flow_tag,
-            )
-            logging.info("self.flow_loop_end = {}".format(self.flow_loop_end))
+        self.flow_sequence_original.append((flow_name + str(self.flow_index), executor_task, executor_task_cls_name, flow_tag))
+        self.flow_index += 1
 
     def run(self):
         super().run()
@@ -136,6 +98,7 @@ class FedMLAlgorithmFlow(FedMLCommManager):
             if flow_idx == len(self.flow_sequence_original) - 1:
                 self.flow_sequence_next_map[flow_name] = (None, None, None, None)
                 break
+
             (
                 flow_name_next,
                 executor_task_next,
@@ -148,16 +111,6 @@ class FedMLAlgorithmFlow(FedMLCommManager):
                 executor_task_cls_name_next,
                 flow_tag_next,
             )
-        (flow_name, executor_task, executor_task_cls_name, flow_tag,) = self.flow_loop_end
-        (flow_name_next, executor_task_next, executor_task_cls_name_next, flow_tag_next,) = self.flow_sequence_next_map[
-            flow_name
-        ]
-        self.flow_after_loop = (
-            flow_name_next,
-            executor_task_next,
-            executor_task_cls_name_next,
-            flow_tag_next,
-        )
         logging.info("self.flow_sequence_next_map = {}".format(self.flow_sequence_next_map))
 
     def _on_ready_to_run_flow(self):
@@ -189,8 +142,8 @@ class FedMLAlgorithmFlow(FedMLCommManager):
 
     def _execute_flow(self, flow_params, flow_name, executor_task, executor_task_cls_name, flow_tag):
         logging.info(
-            "\n\n###########_execute_flow (START). loop_count = {}, flow_name = {}, executor_task name = {}() #######".format(
-                self.loop_count, flow_name, executor_task.__name__
+            "\n\n###########_execute_flow (START). flow_name = {}, executor_task name = {}() #######".format(
+                flow_name, executor_task.__name__
             )
         )
         self.executor.set_params(flow_params)
@@ -202,8 +155,8 @@ class FedMLAlgorithmFlow(FedMLCommManager):
             )
         params = executor_task(self.executor)
         logging.info(
-            "\n###########_execute_flow (END). loop_count = {}, flow_name = {}, executor_task name = {}() #######\n\n".format(
-                self.loop_count, flow_name, executor_task.__name__
+            "\n###########_execute_flow (END). flow_name = {}, executor_task name = {}() #######\n\n".format(
+                flow_name, executor_task.__name__
             )
         )
         self.flow_sequence_executed.append(flow_name)
@@ -230,17 +183,12 @@ class FedMLAlgorithmFlow(FedMLCommManager):
             self._send_msg(flow_name, params)
 
     def __direct_to_next_flow(self, flow_name, flow_tag):
-        if flow_tag == FedMLAlgorithmFlow.LOOP_END and self.loop_count < self.loop_times:
-            # loop back
-            (flow_name_next, executor_task_next, executor_task_cls_name_next, flow_tag_next,) = self.flow_loop_start
-            self.loop_count += 1
-        else:
-            (
-                flow_name_next,
-                executor_task_next,
-                executor_task_cls_name_next,
-                flow_tag_next,
-            ) = self.flow_sequence_next_map[flow_name]
+        (
+            flow_name_next,
+            executor_task_next,
+            executor_task_cls_name_next,
+            flow_tag_next,
+        ) = self.flow_sequence_next_map[flow_name]
         return (
             flow_name_next,
             executor_task_next,
