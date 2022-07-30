@@ -249,7 +249,10 @@ class FedMLAlgorithmFlow(FedMLCommManager):
         for rid in receiver_id:
             message = Message(flow_name, sender_id, rid)
             logging.info("params.keys() = {}".format(params.keys()))
+            logging.info("params.values() = {}".format(params.values()))
             for key in params.keys():
+                if key == Message.MSG_ARG_KEY_TYPE:
+                    continue
                 message.add_params(key, params.get(key))
             self.send_message(message)
 
