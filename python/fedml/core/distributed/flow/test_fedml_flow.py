@@ -35,6 +35,7 @@ class Client(FedMLExecutor):
         params.add(Params.KEY_MODEL_PARAMS, model_params)
         return params
 
+
 class Server(FedMLExecutor):
     def __init__(self, args):
         self.args = args
