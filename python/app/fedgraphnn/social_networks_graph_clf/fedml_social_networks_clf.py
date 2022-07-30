@@ -1,7 +1,6 @@
 import logging
 
 import fedml
-from app.fedgraphnn.social_networks_graph_clf.trainer.gin_aggregator import GINSocialNetworkAggregator
 from data.data_loader import load_partition_data, get_data
 from fedml import FedMLRunner
 from model.gin import GIN
