@@ -4,7 +4,7 @@ from typing import Dict
 
 class BaseAttackMethod(ABC):
     def attack_model(
-        self, local_weights: Dict, global_weights: Dict, refs=None
+        self, model_list: Dict, global_weights: Dict, refs=None
     ) -> (Dict, Dict):
         pass
 

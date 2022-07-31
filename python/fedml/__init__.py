@@ -21,7 +21,7 @@ from .constants import (
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.7.280"
+__version__ = "0.7.282"
 
 
 def init(args=None):
