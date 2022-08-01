@@ -1,7 +1,14 @@
 # FedML MLOps User Guide
 Video Tutorial:
-[https://www.youtube.com/embed/Xgm0XEaMlVQ](https://www.youtube.com/watch?v=Xgm0XEaMlVQ)
+<a id="videoPlay"><font color=blue>https://www.youtube.com/embed/Xgm0XEaMlVQ</font></a>
 
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+
+<script>
+	    $("#videoPlay").click(function(){
+            window.location.href='https://www.youtube.com/embed/Xgm0XEaMlVQ';
+        })
+</script>
 **Write Once, Run Anywhere: Seamlessly Migrate Your Local Development to the Real-world Edge-cloud Deployment**
 
 - How Does FedML MLOps Platform Work?

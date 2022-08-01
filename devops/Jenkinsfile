@@ -333,8 +333,7 @@ pipeline {
                     credentialsId: env.PRODUCTION_KUBECONFIG_CREDENTIAL_ID_FOR_DOCS,
                     variable: 'KUBECONFIG')
                     ]) {
-                    sh 'kubectl scale -n $DOCS_DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DOCS_DEPLOY_NAME'
-                    sh 'kubectl scale -n $DOCS_DEPLOY_NAMESPACE_PRODUCTION --replicas=1 deployment/$DOCS_DEPLOY_NAME'
+                    sh 'kubectl rollout restart -n $DOCS_DEPLOY_NAMESPACE_PRODUCTION deployment/$DOCS_DEPLOY_NAME'
                 }
              }
           }
