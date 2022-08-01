@@ -22,7 +22,7 @@ class ClassificationAggregator(ServerAggregator):
     def test(self, test_data, device, args):
         pass
 
-    def _test(self, test_data, device):
+    def _test(self, test_data, device, args):
         model = self.model
 
         model.to(device)
@@ -57,7 +57,7 @@ class ClassificationAggregator(ServerAggregator):
         accuracy_list, metric_list = [], []
         for client_idx in test_data_local_dict.keys():
             test_data = test_data_local_dict[client_idx]
-            metrics = self.test(test_data, device, args)
+            metrics = self._test(test_data, device, args)
             metric_list.append(metrics)
             accuracy_list.append(metrics["test_correct"] / metrics["test_total"])
             logging.info(
