@@ -3,10 +3,10 @@ common_args:
   random_seed: 0
 
 data_args:
-  dataset: "CS"
-  data_cache_dir: "./data/ego-networks/"
+  dataset: "citeseer"
+  data_cache_dir: ~/fedgraphnn_data/
   partition_method: "hetero"
-  part_file: "./data/ego-networks/"
+  part_file: ~/fedgraphnn_data/citeseer/partition
   partition_alpha: 0.5
   ego_number: 10
   hop_number: 2
@@ -42,9 +42,9 @@ validation_args:
   frequency_of_the_test: 5
 
 device_args:
-  worker_num: 2
-  using_gpu: true
-  gpu_mapping_file: config/gpu_mapping.yaml
+  worker_num: 4
+  using_gpu: false
+  gpu_mapping_file: config/simulation/gpu_mapping.yaml
   gpu_mapping_key: mapping_config1_5
 
 
@@ -64,7 +64,7 @@ comm_args:
 
 tracking_args:
   log_file_dir: ./log
-  enable_wandb: true
+  enable_wandb: false
   wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
   wandb_project: fedml
   wandb_name: fed_node_classification
