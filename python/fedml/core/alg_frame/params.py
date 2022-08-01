@@ -1,4 +1,5 @@
 class Params(object):
+    KEY_MODEL_PARAMS = "model_params"
     """
     Unified Parameter Object for passing arguments among APIs
             from the algorithm frame (e.g., client_trainer.py and server aggregator.py).
