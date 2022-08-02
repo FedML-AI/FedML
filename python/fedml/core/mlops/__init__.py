@@ -21,22 +21,25 @@ from ..distributed.communication.mqtt.mqtt_manager import MqttManager
 
 from .mlops_metrics import MLOpsMetrics
 from .mlops_profiler_event import MLOpsProfilerEvent
-from .mlops_runtime_log import MLOpsRuntimeLog
 from .system_stats import SysStats
+from .mlops_status import MLOpsStatus
+from .mlops_runtime_log import MLOpsRuntimeLog
 from .mlops_runtime_log_daemon import MLOpsRuntimeLogProcessor
 from .mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
-from .mlops_status import MLOpsStatus
+
 
 FEDML_MLOPS_API_RESPONSE_SUCCESS_CODE = "SUCCESS"
 
 __all__ = [
     "MLOpsMetrics",
     "MLOpsProfilerEvent",
+    "SysStats",
+    "MLOpsStatus",
     "MLOpsRuntimeLog",
     "MLOpsRuntimeLogProcessor",
     "MLOpsRuntimeLogDaemon",
-    "SysStats",
-    "MLOpsStatus",
+    "log_aggregation_failed_status",
+    "log_training_failed_status"
 ]
 
 
@@ -234,9 +237,26 @@ def log_training_finished_status():
     release_log_mqtt_mgr()
 
 
-def log_aggregation_finished_status():
-    log_aggregation_status(ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED)
+def log_training_failed_status():
+    if not mlops_enabled(MLOpsStore.mlops_args):
+        return
 
+    set_realtime_params()
+
+    if not MLOpsStore.mlops_bind_result:
+        return
+
+    logging.info("log training inner status {}".format(ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED))
+
+    setup_log_mqtt_mgr()
+    wait_log_mqtt_connected()
+    MLOpsStore.mlops_metrics.report_client_id_status(MLOpsStore.mlops_run_id,
+                                                     MLOpsStore.mlops_edge_id,
+                                                     ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+    release_log_mqtt_mgr()
+
+
+def log_aggregation_finished_status():
     if not mlops_enabled(MLOpsStore.mlops_args):
         return
 
@@ -251,6 +271,24 @@ def log_aggregation_finished_status():
     wait_log_mqtt_connected()
     MLOpsStore.mlops_metrics.report_server_id_status(MLOpsStore.mlops_run_id,
                                                      ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED)
+    release_log_mqtt_mgr()
+
+
+def log_aggregation_failed_status():
+    if not mlops_enabled(MLOpsStore.mlops_args):
+        return
+
+    set_realtime_params()
+
+    if not MLOpsStore.mlops_bind_result:
+        return
+
+    logging.info("log aggregation inner status {}".format(ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED))
+
+    setup_log_mqtt_mgr()
+    wait_log_mqtt_connected()
+    MLOpsStore.mlops_metrics.report_server_id_status(MLOpsStore.mlops_run_id,
+                                                     ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
     release_log_mqtt_mgr()
 
 
@@ -325,7 +363,7 @@ def log_round_info(total_rounds, round_index):
     if not MLOpsStore.mlops_bind_result:
         return
 
-    if round_index == 0:
+    if round_index == -1:
         MLOpsStore.mlops_log_round_start_time = time.time()
 
     setup_log_mqtt_mgr()
