@@ -243,7 +243,7 @@ class FedMLServerManager(FedMLCommManager):
         )
 
         if not self.is_initialized:
-            mlops.log_round_info(self.round_num, 0)
+            mlops.log_round_info(self.round_num, -1)
 
             # check client status in case that some clients start earlier than the server
             client_idx_in_this_round = 0
