@@ -181,4 +181,7 @@ class MqttManager(object):
             if listener is not None and callable(listener):
                 listener(client)
 
+    def subscribe_msg(self, topic):
+        self._client.subscribe(topic)
+
 
