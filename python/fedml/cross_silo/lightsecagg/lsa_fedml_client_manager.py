@@ -81,7 +81,6 @@ class FedMLClientManager(FedMLCommManager):
         )
 
     def handle_message_connection_ready(self, msg_params):
-        logging.info("Connection is ready!")
         if not self.has_sent_online_msg:
             self.has_sent_online_msg = True
             self.send_client_status(0)
