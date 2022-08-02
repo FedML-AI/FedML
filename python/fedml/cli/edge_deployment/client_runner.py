@@ -234,6 +234,7 @@ class FedMLClientRunner:
         if hasattr(self.args, "local_server") and self.args.local_server is not None:
             fedml_conf_object["comm_args"]["local_server"] = self.args.local_server
         bootstrap_script_file = fedml_conf_object["environment_args"]["bootstrap"]
+        bootstrap_script_file = str(bootstrap_script_file).replace('\\', os.sep).replace('/', os.sep)
         bootstrap_script_dir = os.path.join(base_dir, "fedml", os.path.dirname(bootstrap_script_file))
         bootstrap_script_path = os.path.join(
             bootstrap_script_dir, bootstrap_script_dir, os.path.basename(bootstrap_script_file)
@@ -303,8 +304,8 @@ class FedMLClientRunner:
 
         entry_file_config = fedml_config_object["entry_config"]
         dynamic_args_config = fedml_config_object["dynamic_args"]
-        entry_file = os.path.basename(entry_file_config["entry_file"])
-        entry_file = str(entry_file).replace('\\', os.sep).replace('/', os.sep)
+        entry_file = str(entry_file_config["entry_file"]).replace('\\', os.sep).replace('/', os.sep)
+        entry_file = os.path.basename(entry_file)
         conf_file = entry_file_config["conf_file"]
         conf_file = str(conf_file).replace('\\', os.sep).replace('/', os.sep)
         ClientConstants.cleanup_learning_process()
