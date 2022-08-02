@@ -49,6 +49,8 @@ pipeline {
         APP_NAME_EDGE_SERVER = 'fedml-edge-server'
         APP_NAME_DOCS_SERVER = 'fedml-docs-server'
         DEPLOY_NAME = 'fedml-server-agent'
+        DEPLOY_NAME_2 = 'fedml-server-agent-2'
+        DEPLOY_NAME_3 = 'fedml-server-agent-3'
         DOCS_DEPLOY_NAME = 'fedml-docs-web'
         GIT_URL = 'https://github.com/FedML-AI/FedML.git'
         SONAR_HOST = ''
@@ -290,6 +292,9 @@ pipeline {
                     ]) {
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_DEV --replicas=0 deployment/$DEPLOY_NAME'
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_DEV --replicas=1 deployment/$DEPLOY_NAME'
+
+                    sh 'kubectl scale -n $DEPLOY_NAMESPACE_DEV --replicas=0 deployment/$DEPLOY_NAME_2'
+                    sh 'kubectl scale -n $DEPLOY_NAMESPACE_DEV --replicas=1 deployment/$DEPLOY_NAME_2'
                 }
              }
           }
@@ -326,6 +331,12 @@ pipeline {
                     ]) {
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DEPLOY_NAME'
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION  --replicas=1 deployment/$DEPLOY_NAME'
+
+                    sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DEPLOY_NAME_2'
+                    sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION  --replicas=1 deployment/$DEPLOY_NAME_2'
+
+                    sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DEPLOY_NAME_3'
+                    sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION  --replicas=1 deployment/$DEPLOY_NAME_3'
                 }
 
                 withCredentials([
