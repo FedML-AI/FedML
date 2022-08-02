@@ -95,8 +95,6 @@ class FedMLServerManager(FedMLCommManager):
         )
 
     def handle_messag_connection_ready(self, msg_params):
-        logging.info("Connection is ready!")
-        logging.info("self.client_real_ids = {}".format(self.client_real_ids))
         self.client_id_list_in_this_round = self.aggregator.client_selection(
             self.round_idx, self.client_real_ids, self.args.client_num_per_round
         )

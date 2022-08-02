@@ -483,7 +483,7 @@ def on_log_mqtt_disconnected(mqtt_client_object):
     MLOpsStore.mlops_log_mqtt_is_connected = False
     MLOpsStore.mlops_log_mqtt_lock.release()
 
-    logging.info("on_client_mqtt_disconnected: {}.".format(MLOpsStore.mlops_log_mqtt_is_connected))
+    # logging.info("on_client_mqtt_disconnected: {}.".format(MLOpsStore.mlops_log_mqtt_is_connected))
 
 
 def on_log_mqtt_connected(mqtt_client_object):
@@ -508,7 +508,7 @@ def on_log_mqtt_connected(mqtt_client_object):
     MLOpsStore.mlops_log_mqtt_is_connected = True
     MLOpsStore.mlops_log_mqtt_lock.release()
 
-    logging.info("on_client_mqtt_connected: {}.".format(MLOpsStore.mlops_log_mqtt_is_connected))
+    # logging.info("on_client_mqtt_connected: {}.".format(MLOpsStore.mlops_log_mqtt_is_connected))
 
 
 def setup_log_mqtt_mgr():
