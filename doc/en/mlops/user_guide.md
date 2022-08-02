@@ -184,9 +184,8 @@ Now let's create a project and get training started!
 - Create a new project for a specific group or utilize the existing project you created before
 - Open a project and create a new run under the project. By clicking `Start`, the run will begin.
 
-![image](../_static/image/mlops_start_run.png)
+![image](../_static/image/MLOps_start_run.png)
 Figure 5: create and start a new run
-
 
 [//]: # ()
 [//]: # (#### 3.3 Data Management &#40;synthetic data or private data&#41;)
