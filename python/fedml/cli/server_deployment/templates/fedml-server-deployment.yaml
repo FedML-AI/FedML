@@ -41,10 +41,10 @@ spec:
         resources:
           requests:
             memory: "1400Mi"
-            cpu: "250m"
+            cpu: "1000m"
           limits:
             memory: "2048Mi"
-            cpu: "500m"
+            cpu: "2000m"
       volumes:
         - name: localtime
           hostPath:
