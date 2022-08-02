@@ -187,7 +187,6 @@ Now let's create a project and get training started!
 ![image](../_static/image/mlops_start_run.png)
 Figure 5: create and start a new run
 
-
 [//]: # ()
 [//]: # (#### 3.3 Data Management &#40;synthetic data or private data&#41;)
 
