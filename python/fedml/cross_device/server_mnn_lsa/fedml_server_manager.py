@@ -55,7 +55,7 @@ class FedMLServerManager(FedMLCommManager):
         self.event_sdk = MLOpsProfilerEvent(self.args)
 
     def run(self):
-        mlops.log_round_info(self.round_num, 0)
+        mlops.log_round_info(self.round_num, -1)
         super().run()
 
     def start_train(self):

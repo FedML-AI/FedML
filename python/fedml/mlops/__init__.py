@@ -26,6 +26,10 @@ def log_training_finished_status():
     mlops.log_training_finished_status()
 
 
+def log_training_failed_status():
+    mlops.log_training_failed_status()
+
+
 # status list : ServerStatus
 def log_aggregation_status(status):
     mlops.log_aggregation_status(status)
@@ -33,6 +37,10 @@ def log_aggregation_status(status):
 
 def log_aggregation_finished_status():
     mlops.log_aggregation_finished_status()
+
+
+def log_aggregation_failed_status():
+    mlops.log_aggregation_failed_status()
 
 
 def log_round_info(total_rounds, round_index):
