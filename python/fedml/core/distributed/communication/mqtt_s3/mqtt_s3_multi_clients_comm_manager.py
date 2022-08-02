@@ -132,16 +132,16 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
             # server
             self.subscribe_client_status_message()
 
-            logging.info("self.client_real_ids = {}".format(self.client_real_ids))
+            # logging.info("self.client_real_ids = {}".format(self.client_real_ids))
             for client_rank in range(0, self.client_num):
                 real_topic = self._topic + str(self.client_real_ids[client_rank])
                 result, mid = mqtt_client_object.subscribe(real_topic, 0)
 
-                logging.info(
-                    "mqtt_s3.on_connect: subscribes real_topic = %s, mid = %s, result = %s"
-                    % (real_topic, mid, str(result))
-                )
-            logging.info("mqtt_s3.on_connect: server subscribes")
+                # logging.info(
+                #     "mqtt_s3.on_connect: subscribes real_topic = %s, mid = %s, result = %s"
+                #     % (real_topic, mid, str(result))
+                # )
+            # logging.info("mqtt_s3.on_connect: server subscribes")
             self._notify_connection_ready()
         else:
             # client
@@ -150,10 +150,10 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
 
             self._notify_connection_ready()
 
-            logging.info(
-                "mqtt_s3.on_connect: client subscribes real_topic = %s, mid = %s, result = %s"
-                % (real_topic, mid, str(result))
-            )
+            # logging.info(
+            #     "mqtt_s3.on_connect: client subscribes real_topic = %s, mid = %s, result = %s"
+            #     % (real_topic, mid, str(result))
+            # )
         self.is_connected = True
 
     def on_disconnected(self, mqtt_client_object):
