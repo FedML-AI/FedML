@@ -6,7 +6,7 @@ Video Tutorial:
 
 <script>
 	    $("#videoPlay").click(function(){
-            window.location.href='https://www.youtube.com/embed/Xgm0XEaMlVQ';
+            window.open('https://www.youtube.com/embed/Xgm0XEaMlVQ');
         })
 </script>
 **Write Once, Run Anywhere: Seamlessly Migrate Your Local Development to the Real-world Edge-cloud Deployment**
