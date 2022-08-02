@@ -523,12 +523,13 @@ class FedMLServerRunner:
         self.request_json = request_json
         self.running_request_json[str(run_id)] = request_json
 
-        # Setup MQTT message listener to the client status message from the server.
-        edge_id_list = request_json["edgeids"]
-        for edge_id in edge_id_list:
-            topic_name = "fl_client/flclient_agent_" + str(edge_id) + "/status"
-            self.mqtt_mgr.add_message_listener(topic_name, self.callback_client_status_msg)
-            self.mqtt_mgr.subscribe_msg(topic_name)
+        if not self.run_as_cloud_server:
+            # Setup MQTT message listener to the client status message from the server.
+            edge_id_list = request_json["edgeids"]
+            for edge_id in edge_id_list:
+                topic_name = "fl_client/flclient_agent_" + str(edge_id) + "/status"
+                self.mqtt_mgr.add_message_listener(topic_name, self.callback_client_status_msg)
+                self.mqtt_mgr.subscribe_msg(topic_name)
 
         if self.run_as_edge_server_and_agent:
             # Start log processor for current run
