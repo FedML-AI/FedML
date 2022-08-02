@@ -253,6 +253,7 @@ class FedMLServerRunner:
         env_args = fedml_conf_object.get("environment_args", None)
         if env_args is not None:
             bootstrap_script_file = env_args.get("bootstrap", None)
+            bootstrap_script_file = str(bootstrap_script_file).replace('\\', os.sep).replace('/', os.sep)
             if bootstrap_script_file is not None:
                 bootstrap_script_dir = os.path.join(base_dir, "fedml", os.path.dirname(bootstrap_script_file))
                 bootstrap_script_path = os.path.join(
@@ -330,8 +331,8 @@ class FedMLServerRunner:
 
         entry_file_config = fedml_config_object["entry_config"]
         dynamic_args_config = fedml_config_object["dynamic_args"]
-        entry_file = os.path.basename(entry_file_config["entry_file"])
-        entry_file = str(entry_file).replace('\\', os.sep).replace('/', os.sep)
+        entry_file = str(entry_file_config["entry_file"]).replace('\\', os.sep).replace('/', os.sep)
+        entry_file = os.path.basename(entry_file)
         conf_file = entry_file_config["conf_file"]
         conf_file = str(conf_file).replace('\\', os.sep).replace('/', os.sep)
         ServerConstants.cleanup_learning_process()
@@ -703,7 +704,7 @@ class FedMLServerRunner:
         self.client_mqtt_is_connected = False
         self.client_mqtt_lock.release()
 
-        logging.info("on_client_mqtt_disconnected: {}.".format(self.client_mqtt_is_connected))
+        # logging.info("on_client_mqtt_disconnected: {}.".format(self.client_mqtt_is_connected))
 
     def on_client_mqtt_connected(self, mqtt_client_object):
         if self.mlops_metrics is None:
@@ -721,7 +722,7 @@ class FedMLServerRunner:
         self.client_mqtt_is_connected = True
         self.client_mqtt_lock.release()
 
-        logging.info("on_client_mqtt_connected: {}.".format(self.client_mqtt_is_connected))
+        # logging.info("on_client_mqtt_connected: {}.".format(self.client_mqtt_is_connected))
 
     def setup_client_mqtt_mgr(self):
         if self.client_mqtt_lock is None:
