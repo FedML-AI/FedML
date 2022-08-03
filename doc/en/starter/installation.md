@@ -16,7 +16,7 @@ pip install fedml
 ## Installing FedML with Anaconda
 
 ```
-conda create --name fedml python=3.7
+conda create --name fedml python
 conda activate fedml
 conda install --name fedml pip
 pip install fedml
