@@ -129,6 +129,10 @@ python/app/fedgraphnn/social_networks_graph_clf/data/TUDataset/*
 python/app/fedgraphnn/social_networks_graph_clf/data/TUDataset/collab.pickle
 python/app/fedgraphnn/social_networks_graph_clf/x_hist.png
 
+python/app/fedgraphnn/social_networks_graph_clf/x_hist.png
+python/app/healthcare/fed_lidc_idri /*
+
+
 
 python/app/fedgraphnn/social_networks_graph_clf/data/TUDataset/*
 python/app/fedgraphnn/social_networks_graph_clf/data/TUDataset/collab.pickle
