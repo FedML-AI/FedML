@@ -67,8 +67,6 @@ class FedMLServerManager(FedMLCommManager):
         )
 
     def handle_messag_connection_ready(self, msg_params):
-        logging.info("Connection is ready!")
-        logging.info("self.client_real_ids = {}".format(self.client_real_ids))
         self.client_id_list_in_this_round = self.aggregator.client_selection(
             self.round_idx, self.client_real_ids, self.args.client_num_per_round
         )
@@ -78,7 +76,7 @@ class FedMLServerManager(FedMLCommManager):
             len(self.client_id_list_in_this_round),
         )
         if not self.is_initialized:
-            mlops.log_round_info(self.round_num, self.round_idx)
+            mlops.log_round_info(self.round_num, -1)
 
             # check client status in case that some clients start earlier than the server
             client_idx_in_this_round = 0

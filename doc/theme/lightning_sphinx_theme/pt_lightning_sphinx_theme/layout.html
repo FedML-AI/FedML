@@ -483,7 +483,7 @@
       <div class="main-menu">
         <ul>
           <li>
-            <a href="a">Get Started</a>
+            <a id="getStartedMobile">Get Started</a>
           </li>
           <li>
             <a href="https://github.com/FedML-AI">Github</a>
@@ -530,6 +530,9 @@
       mainMenuDropdown.bind();
       filterTags.bind();
       $("#getStarted").click(function(){
+        window.location.href='https://doc.fedml.ai/starter/getting_started.html';
+      })
+      $("#getStartedMobile").click(function(){
         window.location.href='https://doc.fedml.ai/starter/getting_started.html';
       })
 

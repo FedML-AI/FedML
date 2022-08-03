@@ -6,8 +6,8 @@ DEFENSE_GEO_MEDIAN = "geometric_median"
 DEFENSE_CCLIP = "cclip"
 DEFENSE_WEAK_DP = "weak_dp"
 
-ATTACK_METHOD_BYZANTINE_ATTACK = "attack_method_byzantine"
-ATTACK_METHOD_DLG = "attack_method_dlg"
+ATTACK_METHOD_BYZANTINE_ATTACK = "byzantine"
+ATTACK_METHOD_DLG = "dlg"
 
 
 """

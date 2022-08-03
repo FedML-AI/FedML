@@ -13,5 +13,5 @@ python ../data/sampleEgonetworks.py --path $DATA_PATH --data citeseer --ego_numb
 
 
 ### don't modify this part ###
-exit 0
+echo "[FedML]Bootstrap Finished"
 ##############################

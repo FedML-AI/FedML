@@ -49,6 +49,8 @@ pipeline {
         APP_NAME_EDGE_SERVER = 'fedml-edge-server'
         APP_NAME_DOCS_SERVER = 'fedml-docs-server'
         DEPLOY_NAME = 'fedml-server-agent'
+        DEPLOY_NAME_2 = 'fedml-server-agent-2'
+        DEPLOY_NAME_3 = 'fedml-server-agent-3'
         DOCS_DEPLOY_NAME = 'fedml-docs-web'
         GIT_URL = 'https://github.com/FedML-AI/FedML.git'
         SONAR_HOST = ''
@@ -98,7 +100,6 @@ pipeline {
           steps {
             container('base') {
               sh 'echo "building..."'
-              sh './devops/scripts/build-docs.sh'
             }
           }
         }
@@ -151,8 +152,6 @@ pipeline {
                 sh 'docker build -f ./devops/dockerfile/client-agent/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_CLIENT_AGENT:$VERSION_DEV --build-arg VERSION=$VERSION_DEV .'
 
                 sh 'docker build -f ./devops/dockerfile/edge-server/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_EDGE_SERVER:$VERSION_DEV --build-arg VERSION=$VERSION_DEV .'
-
-                sh 'docker build -f ./devops/dockerfile/docs-server/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DOCS_SERVER:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
             }
           }
         }
@@ -226,7 +225,6 @@ pipeline {
               sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_DEV'
               sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_CLIENT_AGENT:$VERSION_DEV'
               sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_EDGE_SERVER:$VERSION_DEV'
-              sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DOCS_SERVER:$VERSION_PRODUCTION'
             }
           }
         }
@@ -294,6 +292,9 @@ pipeline {
                     ]) {
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_DEV --replicas=0 deployment/$DEPLOY_NAME'
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_DEV --replicas=1 deployment/$DEPLOY_NAME'
+
+                    sh 'kubectl scale -n $DEPLOY_NAMESPACE_DEV --replicas=0 deployment/$DEPLOY_NAME_2'
+                    sh 'kubectl scale -n $DEPLOY_NAMESPACE_DEV --replicas=1 deployment/$DEPLOY_NAME_2'
                 }
              }
           }
@@ -330,6 +331,12 @@ pipeline {
                     ]) {
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DEPLOY_NAME'
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION  --replicas=1 deployment/$DEPLOY_NAME'
+
+                    sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DEPLOY_NAME_2'
+                    sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION  --replicas=1 deployment/$DEPLOY_NAME_2'
+
+                    sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DEPLOY_NAME_3'
+                    sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION  --replicas=1 deployment/$DEPLOY_NAME_3'
                 }
 
                 withCredentials([
@@ -337,8 +344,7 @@ pipeline {
                     credentialsId: env.PRODUCTION_KUBECONFIG_CREDENTIAL_ID_FOR_DOCS,
                     variable: 'KUBECONFIG')
                     ]) {
-                    sh 'kubectl scale -n $DOCS_DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DOCS_DEPLOY_NAME'
-                    sh 'kubectl scale -n $DOCS_DEPLOY_NAMESPACE_PRODUCTION --replicas=1 deployment/$DOCS_DEPLOY_NAME'
+                    sh 'kubectl rollout restart -n $DOCS_DEPLOY_NAMESPACE_PRODUCTION deployment/$DOCS_DEPLOY_NAME'
                 }
              }
           }

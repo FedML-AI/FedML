@@ -46,4 +46,4 @@ def test__attack_random_mode():
 def test__attack_flip_mode():
     local_w = create_fake_model_list(10)
     attack = ByzantineAttack(add_args(byzantine_client_num=2, attack_mode="flip"))
-    print(attack.attack_model(local_w, global_w=local_w[0]))
+    print(attack.attack_model(local_w, global_w=local_w[0][1]))

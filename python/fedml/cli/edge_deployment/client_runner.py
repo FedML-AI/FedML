@@ -23,6 +23,7 @@ from ...core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
 from ...cli.comm_utils.yaml_utils import load_yaml_config
 from ...cli.edge_deployment.client_constants import ClientConstants
+from ...cli.server_deployment.server_constants import ServerConstants
 
 from ...core.mlops.mlops_metrics import MLOpsMetrics
 
@@ -50,7 +51,6 @@ class FedMLClientRunner:
         self.request_json = request_json
         self.version = args.version
         self.device_id = args.device_id
-        self.cloud_region = args.cloud_region
         self.cur_dir = os.path.split(os.path.realpath(__file__))[0]
         if args.current_running_dir is not None:
             self.cur_dir = args.current_running_dir
@@ -234,6 +234,7 @@ class FedMLClientRunner:
         if hasattr(self.args, "local_server") and self.args.local_server is not None:
             fedml_conf_object["comm_args"]["local_server"] = self.args.local_server
         bootstrap_script_file = fedml_conf_object["environment_args"]["bootstrap"]
+        bootstrap_script_file = str(bootstrap_script_file).replace('\\', os.sep).replace('/', os.sep)
         bootstrap_script_dir = os.path.join(base_dir, "fedml", os.path.dirname(bootstrap_script_file))
         bootstrap_script_path = os.path.join(
             bootstrap_script_dir, bootstrap_script_dir, os.path.basename(bootstrap_script_file)
@@ -303,8 +304,8 @@ class FedMLClientRunner:
 
         entry_file_config = fedml_config_object["entry_config"]
         dynamic_args_config = fedml_config_object["dynamic_args"]
-        entry_file = os.path.basename(entry_file_config["entry_file"])
-        entry_file = str(entry_file).replace('\\', os.sep).replace('/', os.sep)
+        entry_file = str(entry_file_config["entry_file"]).replace('\\', os.sep).replace('/', os.sep)
+        entry_file = os.path.basename(entry_file)
         conf_file = entry_file_config["conf_file"]
         conf_file = str(conf_file).replace('\\', os.sep).replace('/', os.sep)
         ClientConstants.cleanup_learning_process()
@@ -453,6 +454,19 @@ class FedMLClientRunner:
 
         self.release_client_mqtt_mgr()
 
+    def callback_server_status_msg(self, topic=None, payload=None):
+        payload_json = json.loads(payload)
+        run_id = payload_json["run_id"]
+        edge_id = payload_json["edge_id"]
+        status = payload_json["status"]
+        if status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED:
+            client_runner = FedMLClientRunner(
+                self.args, run_id=run_id, request_json=self.request_json,
+                agent_config=self.agent_config, edge_id=self.edge_id
+            )
+            client_runner.device_status = ClientConstants.MSG_MLOPS_SERVER_DEVICE_STATUS_FAILED
+            multiprocessing.Process(target=client_runner.cleanup_client_with_status).start()
+
     def on_client_mqtt_disconnected(self, mqtt_client_object):
         if self.client_mqtt_lock is None:
             self.client_mqtt_lock = threading.Lock()
@@ -524,6 +538,7 @@ class FedMLClientRunner:
         # get training params
         request_json = json.loads(payload)
         run_id = request_json["runId"]
+        server_agent_id = request_json["cloud_agent_id"]
 
         # Terminate previous process about starting or stopping run command
         ClientConstants.exit_process(self.process)
@@ -533,6 +548,11 @@ class FedMLClientRunner:
         # Start log processor for current run
         self.args.run_id = run_id
         MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
+
+        # Subscribe server status message.
+        topic_name = "fl_server/flserver_agent_" + str(server_agent_id) + "/status"
+        self.mqtt_mgr.add_message_listener(topic_name, self.callback_server_status_msg)
+        self.mqtt_mgr.subscribe_msg(topic_name)
 
         # Start cross-silo server with multi processing mode
         self.request_json = request_json
@@ -672,6 +692,9 @@ class FedMLClientRunner:
                 )
                 device_id = hex(device_id)
 
+        device_file_path = os.path.join(ClientConstants.get_data_dir(), ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
+        if not os.path.exists(device_file_path):
+            os.makedirs(device_file_path)
         if device_id is not None and device_id != "":
             with open(file_for_device_id, 'w', encoding='utf-8') as f:
                 f.write(device_id)
@@ -791,11 +814,11 @@ class FedMLClientRunner:
         topic_report_status = "/mlops/report_device_status"
         self.mqtt_mgr.add_message_listener(topic_report_status, self.callback_report_current_status)
 
-        # Setup MQTT message listener to the last will message form the client.
+        # Setup MQTT message listener to the last will message from the client.
         topic_last_will_msg = "/flclient/last_will_msg"
         self.mqtt_mgr.add_message_listener(topic_last_will_msg, self.callback_client_last_will_msg)
 
-        # Setup MQTT message listener to the active status message form the client.
+        # Setup MQTT message listener to the active status message from the client.
         topic_active_msg = "/flclient/active"
         self.mqtt_mgr.add_message_listener(topic_active_msg, self.callback_client_active_msg)
 
