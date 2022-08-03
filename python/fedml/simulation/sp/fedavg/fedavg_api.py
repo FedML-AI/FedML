@@ -67,7 +67,7 @@ class FedAvgAPI(object):
         w_global = self.model_trainer.get_model_params()
         mlops.log_training_status(mlops.ClientConstants.MSG_MLOPS_CLIENT_STATUS_TRAINING)
         mlops.log_aggregation_status(mlops.ServerConstants.MSG_MLOPS_SERVER_STATUS_RUNNING)
-        mlops.log_round_info(self.args.comm_round, 0)
+        mlops.log_round_info(self.args.comm_round, -1)
         for round_idx in range(self.args.comm_round):
 
             logging.info("################Communication round : {}".format(round_idx))

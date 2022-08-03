@@ -6,6 +6,7 @@ import numpy as np
 import torch
 import wandb
 from .utils import transform_list_to_tensor
+from ....core.security.fedml_attacker import FedMLAttacker
 from ....core.security.fedml_defender import FedMLDefender
 
 class FedAVGAggregator(object):
@@ -73,6 +74,9 @@ class FedAVGAggregator(object):
             model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
             # training_num += self.sample_num_dict[idx]
         logging.info("len of self.model_dict[idx] = " + str(len(self.model_dict)))
+
+        if FedMLAttacker.get_instance().is_model_attack():
+            model_list = FedMLAttacker.get_instance().attack_model(local_w=model_list, global_w=self.get_global_model_params(), refs=None)
 
         if FedMLDefender.get_instance().is_defense_enabled():
             # todo: update extra_auxiliary_info according to defense type
