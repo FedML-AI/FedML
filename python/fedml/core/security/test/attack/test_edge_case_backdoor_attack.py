@@ -1,3 +1,4 @@
+import torch
 from torch.utils.data import TensorDataset
 
 from fedml.core.security.attack.edge_case_backdoor_attack import EdgeCaseBackdoorAttack
@@ -19,8 +20,8 @@ def test_attack_cifar10():
     edge_case_backdoor_attack = EdgeCaseBackdoorAttack(
         client_num=client_num,
         poisoned_client_num=attack_client_num,
-        backdoor_sample_percentage=
-        backdoor_dataset=
+        backdoor_sample_percentage=0.1,
+        backdoor_dataset=dataset,
         batch_size=batch_size,
     )
     edge_case_backdoor_attack.backdoor_data(dataset)
