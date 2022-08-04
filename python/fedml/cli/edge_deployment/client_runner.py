@@ -4,7 +4,6 @@ import logging
 import multiprocess as multiprocessing
 import os
 import platform
-import re
 import shutil
 import stat
 import subprocess
@@ -676,11 +675,15 @@ class FedMLClientRunner:
             if "nt" in os.name:
 
                 def GetUUID():
-                    cmd = "wmic csproduct get uuid"
-                    uuid = str(subprocess.check_output(cmd))
-                    pos1 = uuid.find("\\n") + 2
-                    uuid = uuid[pos1:-15]
-                    return str(uuid)
+                    guid = ""
+                    try:
+                        cmd = "wmic csproduct get uuid"
+                        guid = str(subprocess.check_output(cmd))
+                        pos1 = guid.find("\\n") + 2
+                        guid = guid[pos1:-15]
+                    except Exception as ex:
+                        pass
+                    return str(guid)
 
                 device_id = str(GetUUID())
                 logging.info(device_id)
@@ -700,8 +703,9 @@ class FedMLClientRunner:
                 f.write(device_id)
         else:
             device_id_from_file = None
-            with open(file_for_device_id, 'r', encoding='utf-8') as f:
-                device_id_from_file = f.readline()
+            if os.path.exists(file_for_device_id):
+                with open(file_for_device_id, 'r', encoding='utf-8') as f:
+                    device_id_from_file = f.readline()
             if device_id_from_file is not None and device_id_from_file != "":
                 device_id = device_id_from_file
             else:
@@ -874,6 +878,4 @@ class FedMLClientRunner:
             try:
                 self.mqtt_mgr.loop_forever()
             except Exception as e:
-                self.mlops_metrics = None
-                self.setup_agent_mqtt_connection(self.agent_config)
-                time.sleep(1)
+                break
