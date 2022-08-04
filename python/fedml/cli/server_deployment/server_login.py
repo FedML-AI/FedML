@@ -2,7 +2,6 @@ import argparse
 import logging
 import platform
 import time
-import traceback
 
 import click
 from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
