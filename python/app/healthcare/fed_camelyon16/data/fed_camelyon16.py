@@ -14,13 +14,15 @@ from flamby.datasets.fed_camelyon16.dataset import FedCamelyon16
 
 def load_partition_fed_camelyon16(args):
     if args.download:
+        print("In Download")
         from flamby.datasets.fed_camelyon16.dataset_creation_scripts.download import (
             main as download_main,
         )
 
         if (not os.path.exists(args.data_cache_dir)) or len(
             os.listdir(args.data_cache_dir)
-        ) == 0:
+        ) <= 1:
+            print("In IF")
             download_main(args.secret_path, args.data_cache_dir, args.download_port, args.debug)
 
     if not args.preprocessed:
