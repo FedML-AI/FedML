@@ -51,10 +51,9 @@ class BackdoorAttack(BaseAttackMethod):
         else:
             pass
 
-    def attack_model(self, local_w, global_w, refs=None):
+    def attack_model(self, model_list, global_w, refs=None):
         # the local_w comes from local training (regular)
-        backdoor_idxs = self._get_malicious_client_idx(len(local_w))
-        model_list = [(k, v) for k, v in local_w.items()]
+        backdoor_idxs = self._get_malicious_client_idx(len(model_list))
         (num0, averaged_params) = model_list[0]
 
         # fake grad
