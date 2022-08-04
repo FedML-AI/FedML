@@ -11,7 +11,7 @@ environment_args:
 data_args:
   dataset: "Fed-Camelyon16"
   data_cache_dir: ~/healthcare/camelyon16
-  secret_path: ~/healthcare/client_secret_1050214326187-s1vt68rfjc6daf09gab6163d871sti4r.apps.googleusercontent.com.json
+  secret_path: /home/chaoyanghe/healthcare/client_secret_1050214326187-s1vt68rfjc6daf09gab6163d871sti4r.apps.googleusercontent.com.json
   partition_method: "hetero"
   partition_alpha: 0.5
   debug: false # flamby: debug or not
