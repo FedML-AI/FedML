@@ -23,7 +23,7 @@ def load_partition_fed_camelyon16(args):
         ) == 0:
             download_main(args.secret_path, args.data_cache_dir, args.download_port, args.debug)
 
-    if !args.preprocessed:
+    if not args.preprocessed:
         from flamby.datasets.fed_camelyon16.dataset_creation_scripts.tiling_slides import (
             main as download_main_tile,
         )
