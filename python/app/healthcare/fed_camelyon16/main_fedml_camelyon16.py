@@ -11,11 +11,9 @@ from trainer.camelyon16_aggregator import Camelyon16Aggregator
 
 if __name__ == "__main__":
     # init FedML framework
-    print("init fedml")
     args = fedml.init()
 
     # init device
-    print("init device")
     device = fedml.device.get_device(args)
 
     # load data
