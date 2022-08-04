@@ -1,0 +1,61 @@
+common_args:
+  training_type: "simulation"
+  random_seed: 0
+  scenario: "horizontal"
+  using_mlops: false
+  config_version: release
+
+environment_args:
+  bootstrap: config/bootstrap.sh
+
+data_args:
+  dataset: "Fed-Camelyon16"
+  data_cache_dir: ~/healthcare/camelyon16
+  secret_path: /home/chaoyanghe/healthcare/client_secret_1050214326187-s1vt68rfjc6daf09gab6163d871sti4r.apps.googleusercontent.com.json
+  partition_method: "hetero"
+  partition_alpha: 0.5
+  debug: false # flamby: debug or not
+  preprocessed: false # flamby: preprocessed or not, need to preprocess in first
+  download: true # flamby: download or not
+  download_port: 8005 #set to 6006
+  tile_batch_size: 64
+  num_workers_tile: 4
+  tile_from_scratch: false
+  remove_big_tiff: false
+
+model_args:
+  model: "DeepMIL"
+  input_dim: 2048
+  output_dim: 1
+
+train_args:
+  federated_optimizer: "FedAvg"
+  client_id_list:
+  client_num_in_total: 2
+  client_num_per_round: 2
+  comm_round: 20
+  epochs: 5
+  batch_size: 1
+  client_optimizer: adam
+  lr: 0.01
+  weight_decay: 0.001
+
+validation_args:
+  frequency_of_the_test: 1
+
+device_args:
+  worker_num: 4
+  using_gpu: false
+  gpu_mapping_file: config/gpu_mapping.yaml
+  gpu_mapping_key: mapping_default
+
+comm_args:
+  backend: "MPI"
+  is_mobile: 0
+
+tracking_args:
+  log_file_dir: ./log
+  enable_wandb: false
+  wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
+  wandb_project: fedml
+  wandb_name: fedml_healthcare_camelyon16
