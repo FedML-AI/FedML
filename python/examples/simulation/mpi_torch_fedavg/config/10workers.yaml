@@ -29,17 +29,22 @@ train_args:
   lr_step_size: 1
   lr_milestones: [1000, 2000, 3000]
   lr_decay_rate: 0.1
-
+  server_optimizer: sgd
+  lr: 0.1
+  server_lr: 1.0
+  wd: 0.001
+  ci: 0
+  server_momentum: 0.9
 
 validation_args:
   frequency_of_the_test: 100
 
 device_args:
-  worker_num: 8
+  worker_num: 10
   using_gpu: True
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_default
-  gpu_util_parse: "localhost:2,1,1,1,1,1,1,1"
+  gpu_util_parse: "localhost:2,2,2,1,1,1,1,1"
 
 comm_args:
   backend: "MPI"
