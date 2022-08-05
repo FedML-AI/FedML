@@ -10,6 +10,7 @@ import wandb
 from .utils import transform_list_to_tensor
 
 from ....core.schedule.scheduler import scheduler
+from ....core.schedule.scheduler import scheduler_c
 from ....core.schedule.runtime_estimate import t_sample_fit
 
 
@@ -118,7 +119,7 @@ class FedAVGAggregator(object):
         #     for j in range(self.args.client_num_in_total):
         #         self.runtime_history[i][j] = []
 
-        if hasattr(self.args, "simulation_schedule") and round_idx > 5:
+        if hasattr(self.args, "simulation_schedule") and round_idx > 2:
             # Need some rounds to record some information. 
             simulation_schedule = self.args.simulation_schedule
             fit_params, fit_funcs, fit_errors = t_sample_fit(
@@ -128,18 +129,17 @@ class FedAVGAggregator(object):
             logging.info(f"fit_params: {fit_params}")
             logging.info(f"fit_errors: {fit_errors}")
 
-            # scheduler(workloads, constraints, memory)
-            # workload = self.workload_estimate(client_indexes, mode)
-            # resource = self.resource_estimate(mode)
-            # memory = self.memory_estimate(mode)
-
-            # mode = 0
-            # my_scheduler = scheduler(workload, resource, memory)
-            # schedules = my_scheduler.DP_schedule(mode)
-            # for i in range(len(schedules)):
-            #     print("Resource %2d: %s\n" % (i, str(schedules[i])))
-
-        client_schedule = np.array_split(client_indexes, self.worker_num)
+            
+            mode = 0
+            workloads = np.array([ self.train_data_local_num_dict[client_id] for client_id in client_indexes])
+            constraints = np.array([1]*self.worker_num)
+            memory = np.array([100])
+            my_scheduler = scheduler_c(workloads, constraints, memory, self.train_data_local_num_dict,
+                fit_funcs, uniform_client=True, uniform_gpu=False)
+            schedules, output_schedules = my_scheduler.DP_schedule(mode)
+            logging.info(f"Schedules: {schedules}")
+        else:
+            client_schedule = np.array_split(client_indexes, self.worker_num)
         return client_schedule
 
     def get_average_weight(self, client_indexes):
