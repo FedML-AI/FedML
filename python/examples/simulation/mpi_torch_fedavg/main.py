@@ -115,7 +115,7 @@ if __name__ == "__main__":
     # load model (the size of MNIST image is 28 x 28)
     if args.model == "resnet18":
         logging.info("ResNet18_GN")
-        model = resnet18(group_norm=32)
+        model = resnet18(group_norm=args.group_norm_channels)
     elif args.model == "resnet20":
         model = resnet20(class_num=output_dim)
     else:
