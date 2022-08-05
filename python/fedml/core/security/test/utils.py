@@ -145,3 +145,8 @@ def create_fake_model_Cifar100(file_path="./fake_data/fake_model_Cifar100.pt"):
 def create_fake_data_Cifar100(file_path="./fake_data/fake_data_Cifar100.pkl"):
     data = torch.load(file_path)
     return data
+
+def create_fake_dataloader():
+    x = torch.rand(10, 3)
+    y = torch.linspace(10, 1, 10)
+    return (x,y)

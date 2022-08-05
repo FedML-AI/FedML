@@ -11,10 +11,10 @@ from sklearn.preprocessing import StandardScaler
 from torch_geometric.utils import to_networkx, degree
 
 
-def convert_to_nodeDegreeFeatures(graphs):
-    collab_pickle_file = Path("./data/TUDataset/collab.pickle")
+def convert_to_nodeDegreeFeatures(path, graphs):
+    collab_pickle_file = Path(path + "collab.pickle")
     if collab_pickle_file.exists():
-        with open("./data/TUDataset/collab.pickle", "rb") as handle:
+        with open(path + "collab.pickle", "rb") as handle:
             new_graphs = pickle.load(handle)
             return new_graphs
 
@@ -42,7 +42,7 @@ def convert_to_nodeDegreeFeatures(graphs):
         new_graph.__setitem__("x", deg)
         new_graphs.append(new_graph)
 
-    with open("./data/TUDataset/collab.pickle", "wb") as handle:
+    with open(path + "collab.pickle", "wb") as handle:
         pickle.dump(new_graphs, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     return new_graphs

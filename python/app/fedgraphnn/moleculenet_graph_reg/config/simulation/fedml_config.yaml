@@ -3,14 +3,13 @@ common_args:
   random_seed: 0
 
 data_args:
-  dataset: "esol"
-  data_cache_dir: ~/fedgraphnn_data
-  part_file:  ~/fedgraphnn_data/partition
+  dataset: "freesolv"
+  data_cache_dir: ~/fedgraphnn_data/
   partition_method: "hetero"
   partition_alpha: 0.5
 
 model_args:
-  model: "graphsage"
+  model: "gat"
   hidden_size: 32
   node_embedding_dim: 32
   graph_embedding_dim: 64
@@ -36,12 +35,12 @@ train_args:
   metric: "rmse"
 
 validation_args:
-  frequency_of_the_test: 5
+  frequency_of_the_test: 1
 
 device_args:
   worker_num: 4
-  using_gpu: false
-  gpu_mapping_file: config/gpu_mapping.yaml
+  using_gpu: true
+  gpu_mapping_file: config/simulation/gpu_mapping.yaml
   gpu_mapping_key: mapping_default
 
 comm_args:

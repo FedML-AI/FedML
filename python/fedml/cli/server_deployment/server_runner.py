@@ -2,6 +2,8 @@ import base64
 import copy
 import json
 import logging
+import platform
+
 import multiprocess as multiprocessing
 import os
 import re
@@ -31,13 +33,14 @@ from ...core.mlops.mlops_metrics import MLOpsMetrics
 from ...core.mlops.mlops_configs import MLOpsConfigs
 from ...core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 from ...core.mlops.mlops_status import MLOpsStatus
+from ..comm_utils.sys_utils import get_sys_runner_info
 
 
 class FedMLServerRunner:
     FEDML_CLOUD_SERVER_PREFIX = "fedml-server-run-"
     FEDML_BOOTSTRAP_RUN_OK = "[FedML]Bootstrap Finished"
 
-    def __init__(self, args, run_id=0, request_json=None, agent_config=None):
+    def __init__(self, args, run_id=0, request_json=None, agent_config=None, edge_id=0):
         self.server_docker_image = None
         self.cloud_server_name = None
         self.run_as_cloud_agent = False
@@ -53,7 +56,7 @@ class FedMLServerRunner:
         self.client_mqtt_is_connected = False
         self.client_mqtt_lock = None
         self.unique_device_id = None
-        self.edge_id = 0
+        self.edge_id = edge_id
         self.server_agent_id = 0
         if request_json is not None:
             self.server_agent_id = request_json.get("server_id", 0)
@@ -62,7 +65,6 @@ class FedMLServerRunner:
         self.request_json = copy.deepcopy(request_json)
         self.version = args.version
         self.device_id = args.device_id
-        self.cloud_region = args.cloud_region
         self.cur_dir = os.path.split(os.path.realpath(__file__))[0]
         if args.current_running_dir is not None:
             self.cur_dir = args.current_running_dir
@@ -220,7 +222,9 @@ class FedMLServerRunner:
 
     def build_dynamic_args(self, run_config, package_conf_object, base_dir):
         fedml_conf_file = package_conf_object["entry_config"]["conf_file"]
-        fedml_conf_path = os.path.join(base_dir, "fedml", "config", os.path.basename(fedml_conf_file))
+        fedml_conf_file_processed = str(fedml_conf_file).replace('\\', os.sep).replace('/', os.sep)
+        fedml_conf_path = os.path.join(base_dir, "fedml", "config",
+                                       os.path.basename(fedml_conf_file_processed))
         fedml_conf_object = load_yaml_config(fedml_conf_path)
 
         # Replace local fedml config objects with parameters from MLOps web
@@ -249,6 +253,7 @@ class FedMLServerRunner:
         env_args = fedml_conf_object.get("environment_args", None)
         if env_args is not None:
             bootstrap_script_file = env_args.get("bootstrap", None)
+            bootstrap_script_file = str(bootstrap_script_file).replace('\\', os.sep).replace('/', os.sep)
             if bootstrap_script_file is not None:
                 bootstrap_script_dir = os.path.join(base_dir, "fedml", os.path.dirname(bootstrap_script_file))
                 bootstrap_script_path = os.path.join(
@@ -267,31 +272,26 @@ class FedMLServerRunner:
                 if os.path.exists(bootstrap_script_path):
                     bootstrap_stat = os.stat(bootstrap_script_path)
                     os.chmod(bootstrap_script_path, bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-                bootstrap_scripts = "cd {}; ./{}".format(bootstrap_script_dir, os.path.basename(bootstrap_script_file))
-                logging.info("Bootstrap scripts are being executed...")
-                process = ServerConstants.exec_console_with_script(bootstrap_scripts, should_capture_stdout_err=True)
-                ret_code, out, err = ServerConstants.get_console_pipe_out_err_results(process)
-                if out is not None:
-                    out_str = out.decode(encoding="utf-8")
-                    if str(out_str).find(FedMLServerRunner.FEDML_BOOTSTRAP_RUN_OK) == -1:
-                        logging.error("{}".format(out_str))
-                    else:
-                        logging.info("{}".format(out_str))
-                if err is not None:
-                    err_str = err.decode(encoding="utf-8")
-                    if str(err_str).find(FedMLServerRunner.FEDML_BOOTSTRAP_RUN_OK) == -1:
-                        logging.error("{}".format(err_str))
-                    else:
-                        logging.info("{}".format(err_str))
+                    bootstrap_scripts = "cd {}; ./{}".format(bootstrap_script_dir,
+                                                             os.path.basename(bootstrap_script_file))
+                    logging.info("Bootstrap scripts are being executed...")
+                    process = ServerConstants.exec_console_with_script(bootstrap_scripts,
+                                                                       should_capture_stdout_err=True)
+                    ret_code, out, err = ServerConstants.get_console_pipe_out_err_results(process)
+                    if out is not None:
+                        out_str = out.decode(encoding="utf-8")
+                        if str(out_str).find(FedMLServerRunner.FEDML_BOOTSTRAP_RUN_OK) == -1:
+                            logging.error("{}".format(out_str))
+                        else:
+                            logging.info("{}".format(out_str))
+                    if err is not None:
+                        err_str = err.decode(encoding="utf-8")
+                        if str(err_str).find(FedMLServerRunner.FEDML_BOOTSTRAP_RUN_OK) == -1:
+                            logging.error("{}".format(err_str))
+                        else:
+                            logging.info("{}".format(err_str))
         except Exception as e:
             logging.error("Bootstrap scripts error: {}".format(traceback.format_exc()))
-
-    def build_image_unique_id(self, run_id, run_config):
-        config_name = str(run_config.get("configName", "run_" + str(run_id)))
-        config_creater = str(run_config.get("userId", "user_" + str(run_id)))
-        image_unique_id = re.sub("[^a-zA-Z0-9_-]", "", str(config_name + "_" + config_creater))
-        image_unique_id = image_unique_id.lower()
-        return image_unique_id
 
     def run(self):
         run_id = self.request_json["runId"]
@@ -331,8 +331,10 @@ class FedMLServerRunner:
 
         entry_file_config = fedml_config_object["entry_config"]
         dynamic_args_config = fedml_config_object["dynamic_args"]
-        entry_file = os.path.basename(entry_file_config["entry_file"])
+        entry_file = str(entry_file_config["entry_file"]).replace('\\', os.sep).replace('/', os.sep)
+        entry_file = os.path.basename(entry_file)
         conf_file = entry_file_config["conf_file"]
+        conf_file = str(conf_file).replace('\\', os.sep).replace('/', os.sep)
         ServerConstants.cleanup_learning_process()
         os.chdir(os.path.join(unzip_package_path, "fedml"))
 
@@ -486,6 +488,24 @@ class FedMLServerRunner:
             logging.info("start_train: send topic " + topic_start_train + " to client...")
             self.client_mqtt_mgr.send_message(topic_start_train, json.dumps(self.request_json))
 
+    def callback_client_status_msg(self, topic=None, payload=None):
+        payload_json = json.loads(payload)
+        run_id = payload_json["run_id"]
+        edge_id = payload_json["edge_id"]
+        status = payload_json["status"]
+        edge_id_list = self.request_json["edgeids"]
+        if len(edge_id_list) == 1 and edge_id_list[0] == edge_id and \
+                status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED:
+            if self.run_as_edge_server_and_agent or self.run_as_cloud_agent:
+                server_runner = FedMLServerRunner(
+                    self.args, run_id=run_id, request_json=self.request_json, agent_config=self.agent_config
+                )
+                server_runner.edge_id = self.edge_id
+                server_runner.run_as_edge_server_and_agent = self.run_as_edge_server_and_agent
+                server_runner.run_as_cloud_agent = self.run_as_cloud_agent
+                server_runner.run_status = ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED
+                multiprocessing.Process(target=server_runner.cleanup_client_with_status).start()
+
     def callback_start_train(self, topic=None, payload=None):
         logging.info("callback_start_train from Web: {}".format(payload))
 
@@ -503,6 +523,14 @@ class FedMLServerRunner:
         # Start server with multi processing mode
         self.request_json = request_json
         self.running_request_json[str(run_id)] = request_json
+
+        if not self.run_as_cloud_server:
+            # Setup MQTT message listener to the client status message from the server.
+            edge_id_list = request_json["edgeids"]
+            for edge_id in edge_id_list:
+                topic_name = "fl_client/flclient_agent_" + str(edge_id) + "/status"
+                self.mqtt_mgr.add_message_listener(topic_name, self.callback_client_status_msg)
+                self.mqtt_mgr.subscribe_msg(topic_name)
 
         if self.run_as_edge_server_and_agent:
             # Start log processor for current run
@@ -547,32 +575,32 @@ class FedMLServerRunner:
     def start_cloud_server(self, packages_config):
         self.cloud_server_name = FedMLServerRunner.FEDML_CLOUD_SERVER_PREFIX + str(self.run_id)
         self.server_docker_image = (
-            self.agent_config["docker_config"]["registry_server"]
-            + self.agent_config["docker_config"]["registry_dir"]
-            + self.server_docker_base_image
+                self.agent_config["docker_config"]["registry_server"]
+                + self.agent_config["docker_config"]["registry_dir"]
+                + self.server_docker_base_image
         )
 
         logging.info("docker image {}".format(self.server_docker_image))
         # logging.info("file_sys_driver {}".format(self.agent_config["docker_config"]["file_sys_driver"]))
 
         registry_secret_cmd = (
-            "kubectl create namespace fedml-devops-aggregator-"
-            + self.version
-            + ";kubectl -n fedml-devops-aggregator-"
-            + self.version
-            + " delete secret secret-"
-            + self.cloud_server_name
-            + " ;kubectl create secret docker-registry secret-"
-            + self.cloud_server_name
-            + " --docker-server="
-            + self.agent_config["docker_config"]["registry_server"]
-            + " --docker-username="
-            + self.agent_config["docker_config"]["user_name"]
-            + " --docker-password=$(aws ecr-public get-login-password --region "
-            + self.agent_config["docker_config"]["public_cloud_region"]
-            + ")"
-            + " --docker-email=fedml@fedml.ai -n fedml-devops-aggregator-"
-            + self.version
+                "kubectl create namespace fedml-devops-aggregator-"
+                + self.version
+                + ";kubectl -n fedml-devops-aggregator-"
+                + self.version
+                + " delete secret secret-"
+                + self.cloud_server_name
+                + " ;kubectl create secret docker-registry secret-"
+                + self.cloud_server_name
+                + " --docker-server="
+                + self.agent_config["docker_config"]["registry_server"]
+                + " --docker-username="
+                + self.agent_config["docker_config"]["user_name"]
+                + " --docker-password=$(aws ecr-public get-login-password --region "
+                + self.agent_config["docker_config"]["public_cloud_region"]
+                + ")"
+                + " --docker-email=fedml@fedml.ai -n fedml-devops-aggregator-"
+                + self.version
         )
         logging.info("Create secret cmd: " + registry_secret_cmd)
         os.system(registry_secret_cmd)
@@ -584,40 +612,40 @@ class FedMLServerRunner:
         # logging.info("runner_cmd_decoded: {}".format(base64.b64decode(runner_cmd_encoded).decode()))
         cur_dir = os.path.dirname(__file__)
         run_deployment_cmd = (
-            "export FEDML_AGGREGATOR_NAME="
-            + self.cloud_server_name
-            + ";export FEDML_AGGREGATOR_SVC="
-            + self.cloud_server_name
-            + ";export FEDML_AGGREGATOR_VERSION="
-            + self.version
-            + ';export FEDML_AGGREGATOR_IMAGE_PATH="'
-            + self.server_docker_image
-            + '"'
-            + ";export FEDML_CONF_ID="
-            + self.cloud_server_name
-            + ";export FEDML_DATA_PV_ID="
-            + self.cloud_server_name
-            + ";export FEDML_DATA_PVC_ID="
-            + self.cloud_server_name
-            + ";export FEDML_REGISTRY_SECRET_SUFFIX="
-            + self.cloud_server_name
-            + ";export FEDML_ACCOUNT_ID=0"
-            + ";export FEDML_SERVER_DEVICE_ID="
-            + self.request_json.get("cloudServerDeviceId", "0")
-            + ";export FEDML_VERSION="
-            + self.version
-            + ";export FEDML_PACKAGE_NAME="
-            + packages_config.get("server", "")
-            + ";export FEDML_PACKAGE_URL="
-            + packages_config.get("serverUrl", "")
-            + ";export FEDML_RUNNER_CMD="
-            + runner_cmd_encoded
-            + ";envsubst < "
-            + os.path.join(cur_dir, "templates", "fedml-server-deployment.yaml")
-            + " | kubectl apply -f - "
-            + ";envsubst < "
-            + os.path.join(cur_dir, "templates", "fedml-server-svc.yaml")
-            + " | kubectl apply -f - "
+                "export FEDML_AGGREGATOR_NAME="
+                + self.cloud_server_name
+                + ";export FEDML_AGGREGATOR_SVC="
+                + self.cloud_server_name
+                + ";export FEDML_AGGREGATOR_VERSION="
+                + self.version
+                + ';export FEDML_AGGREGATOR_IMAGE_PATH="'
+                + self.server_docker_image
+                + '"'
+                + ";export FEDML_CONF_ID="
+                + self.cloud_server_name
+                + ";export FEDML_DATA_PV_ID="
+                + self.cloud_server_name
+                + ";export FEDML_DATA_PVC_ID="
+                + self.cloud_server_name
+                + ";export FEDML_REGISTRY_SECRET_SUFFIX="
+                + self.cloud_server_name
+                + ";export FEDML_ACCOUNT_ID=0"
+                + ";export FEDML_SERVER_DEVICE_ID="
+                + self.request_json.get("cloudServerDeviceId", "0")
+                + ";export FEDML_VERSION="
+                + self.version
+                + ";export FEDML_PACKAGE_NAME="
+                + packages_config.get("server", "")
+                + ";export FEDML_PACKAGE_URL="
+                + packages_config.get("serverUrl", "")
+                + ";export FEDML_RUNNER_CMD="
+                + runner_cmd_encoded
+                + ";envsubst < "
+                + os.path.join(cur_dir, "templates", "fedml-server-deployment.yaml")
+                + " | kubectl apply -f - "
+                + ";envsubst < "
+                + os.path.join(cur_dir, "templates", "fedml-server-svc.yaml")
+                + " | kubectl apply -f - "
         )
         logging.info("FedMLServerRunner.run with k8s: " + run_deployment_cmd)
         os.system(run_deployment_cmd)
@@ -630,40 +658,40 @@ class FedMLServerRunner:
     def stop_cloud_server(self):
         self.cloud_server_name = FedMLServerRunner.FEDML_CLOUD_SERVER_PREFIX + str(self.run_id)
         self.server_docker_image = (
-            self.agent_config["docker_config"]["registry_server"]
-            + self.agent_config["docker_config"]["registry_dir"]
-            + self.server_docker_base_image
+                self.agent_config["docker_config"]["registry_server"]
+                + self.agent_config["docker_config"]["registry_dir"]
+                + self.server_docker_base_image
         )
         delete_deployment_cmd = (
-            "export FEDML_AGGREGATOR_NAME="
-            + self.cloud_server_name
-            + ";export FEDML_AGGREGATOR_SVC="
-            + self.cloud_server_name
-            + ";export FEDML_AGGREGATOR_VERSION="
-            + self.version
-            + ';export FEDML_AGGREGATOR_IMAGE_PATH="'
-            + self.server_docker_image
-            + '"'
-            + ";export FEDML_CONF_ID="
-            + self.cloud_server_name
-            + ";export FEDML_DATA_PV_ID="
-            + self.cloud_server_name
-            + ";export FEDML_DATA_PVC_ID="
-            + self.cloud_server_name
-            + ";export FEDML_REGISTRY_SECRET_SUFFIX="
-            + self.cloud_server_name
-            + ";kubectl -n fedml-devops-aggregator-"
-            + self.version
-            + " delete deployment "
-            + self.cloud_server_name
-            + ";kubectl -n fedml-devops-aggregator-"
-            + self.version
-            + " delete svc "
-            + self.cloud_server_name
-            + ";kubectl -n fedml-devops-aggregator-"
-            + self.version
-            + " delete secret secret-"
-            + self.cloud_server_name
+                "export FEDML_AGGREGATOR_NAME="
+                + self.cloud_server_name
+                + ";export FEDML_AGGREGATOR_SVC="
+                + self.cloud_server_name
+                + ";export FEDML_AGGREGATOR_VERSION="
+                + self.version
+                + ';export FEDML_AGGREGATOR_IMAGE_PATH="'
+                + self.server_docker_image
+                + '"'
+                + ";export FEDML_CONF_ID="
+                + self.cloud_server_name
+                + ";export FEDML_DATA_PV_ID="
+                + self.cloud_server_name
+                + ";export FEDML_DATA_PVC_ID="
+                + self.cloud_server_name
+                + ";export FEDML_REGISTRY_SECRET_SUFFIX="
+                + self.cloud_server_name
+                + ";kubectl -n fedml-devops-aggregator-"
+                + self.version
+                + " delete deployment "
+                + self.cloud_server_name
+                + ";kubectl -n fedml-devops-aggregator-"
+                + self.version
+                + " delete svc "
+                + self.cloud_server_name
+                + ";kubectl -n fedml-devops-aggregator-"
+                + self.version
+                + " delete secret secret-"
+                + self.cloud_server_name
         )
         logging.info("FedMLServerRunner.stop_run with k8s: " + delete_deployment_cmd)
         os.system(delete_deployment_cmd)
@@ -676,7 +704,7 @@ class FedMLServerRunner:
         self.client_mqtt_is_connected = False
         self.client_mqtt_lock.release()
 
-        logging.info("on_client_mqtt_disconnected: {}.".format(self.client_mqtt_is_connected))
+        # logging.info("on_client_mqtt_disconnected: {}.".format(self.client_mqtt_is_connected))
 
     def on_client_mqtt_connected(self, mqtt_client_object):
         if self.mlops_metrics is None:
@@ -694,7 +722,7 @@ class FedMLServerRunner:
         self.client_mqtt_is_connected = True
         self.client_mqtt_lock.release()
 
-        logging.info("on_client_mqtt_connected: {}.".format(self.client_mqtt_is_connected))
+        # logging.info("on_client_mqtt_connected: {}.".format(self.client_mqtt_is_connected))
 
     def setup_client_mqtt_mgr(self):
         if self.client_mqtt_lock is None:
@@ -741,6 +769,10 @@ class FedMLServerRunner:
         while True:
             self.client_mqtt_lock.acquire()
             if self.client_mqtt_is_connected is True:
+                self.mlops_metrics.set_messenger(self.client_mqtt_mgr)
+                self.mlops_metrics.run_id = self.run_id
+                self.mlops_metrics.edge_id = self.edge_id
+                self.mlops_metrics.server_agent_id = self.server_agent_id
                 self.client_mqtt_lock.release()
                 break
             self.client_mqtt_lock.release()
@@ -776,13 +808,15 @@ class FedMLServerRunner:
             stop_request_json = request_json
         if self.run_as_edge_server_and_agent:
             server_runner = FedMLServerRunner(
-                self.args, run_id=run_id, request_json=stop_request_json, agent_config=self.agent_config
+                self.args, run_id=run_id, request_json=stop_request_json, agent_config=self.agent_config,
+                edge_id=self.edge_id
             )
             server_runner.run_as_edge_server_and_agent = self.run_as_edge_server_and_agent
             multiprocessing.Process(target=server_runner.stop_run).start()
         elif self.run_as_cloud_agent:
             server_runner = FedMLServerRunner(
-                self.args, run_id=run_id, request_json=stop_request_json, agent_config=self.agent_config
+                self.args, run_id=run_id, request_json=stop_request_json, agent_config=self.agent_config,
+                edge_id=self.edge_id
             )
             server_runner.run_as_cloud_agent = self.run_as_cloud_agent
             multiprocessing.Process(target=server_runner.stop_cloud_server_process).start()
@@ -801,8 +835,8 @@ class FedMLServerRunner:
         edge_id = request_json["edge_id"]
 
         if (
-            status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED
-            or status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED
+                status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED
+                or status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED
         ):
             logging.info("Received training finished message.")
 
@@ -881,24 +915,54 @@ class FedMLServerRunner:
 
     @staticmethod
     def get_device_id():
-        if "nt" in os.name:
-            # Windows will go this path
-            def GetUUID():
-                cmd = "wmic csproduct get uuid"
-                uuid = str(subprocess.check_output(cmd))
-                pos1 = uuid.find("\\n") + 2
-                uuid = uuid[pos1:-15]
-                return str(uuid)
+        file_for_device_id = os.path.join(ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                                          "devices.id")
 
-            device_id = str(GetUUID())
-            logging.info(device_id)
-        elif "posix" in os.name:
-            # MacBook Pro and Linux (e.g., Ubuntu 20.04) will go this path
-            device_id = hex(uuid.getnode())
+        sys_name = platform.system()
+        if sys_name == "Darwin":
+            cmd_get_serial_num = "system_profiler SPHardwareDataType | grep Serial | awk '{gsub(/ /,\"\")}{print}' |awk -F':' '{print $2}'"
+            device_id = os.popen(cmd_get_serial_num).read()
+            device_id = device_id.replace('\n', '').replace(' ', '')
+            if device_id is None or device_id == "":
+                device_id = hex(uuid.getnode())
+            else:
+                device_id = "0x" + device_id
         else:
-            device_id = subprocess.Popen(
-                "hal-get-property --udi /org/freedesktop/Hal/devices/computer --key system.hardware.uuid".split()
-            )
+            if "nt" in os.name:
+
+                def GetUUID():
+                    cmd = "wmic csproduct get uuid"
+                    uuid = str(subprocess.check_output(cmd))
+                    pos1 = uuid.find("\\n") + 2
+                    uuid = uuid[pos1:-15]
+                    return str(uuid)
+
+                device_id = str(GetUUID())
+                logging.info(device_id)
+            elif "posix" in os.name:
+                device_id = hex(uuid.getnode())
+            else:
+                device_id = subprocess.Popen(
+                    "hal-get-property --udi /org/freedesktop/Hal/devices/computer --key system.hardware.uuid".split()
+                )
+                device_id = hex(device_id)
+
+        device_file_path = os.path.join(ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
+        if not os.path.exists(device_file_path):
+            os.makedirs(device_file_path)
+        if device_id is not None and device_id != "":
+            with open(file_for_device_id, 'w', encoding='utf-8') as f:
+                f.write(device_id)
+        else:
+            device_id_from_file = None
+            with open(file_for_device_id, 'r', encoding='utf-8') as f:
+                device_id_from_file = f.readline()
+            if device_id_from_file is not None and device_id_from_file != "":
+                device_id = device_id_from_file
+            else:
+                device_id = hex(uuid.uuid4())
+                with open(file_for_device_id, 'w', encoding='utf-8') as f:
+                    f.write(device_id)
 
         return device_id
 
@@ -910,19 +974,53 @@ class FedMLServerRunner:
             role = "cloud_agent"
         elif self.run_as_cloud_server:
             role = "cloud_server"
+
+        ip = requests.get('https://checkip.amazonaws.com').text.strip()
+        fedml_ver, exec_path, os_ver, cpu_info, python_ver, torch_ver, mpi_installed, \
+        cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem = get_sys_runner_info()
         json_params = {
             "accountid": account_id,
             "deviceid": device_id,
             "type": os_name,
-            "gpu": "None",
-            "processor": "",
+            "processor": cpu_info,
+            "core_type": cpu_info,
             "network": "",
             "role": role,
+            "os_ver": os_ver,
+            "memory": total_mem,
+            "ip": ip,
+            "extra_infos": {"fedml_ver": fedml_ver, "exec_path": exec_path, "os_ver": os_ver,
+                            "cpu_info": cpu_info, "python_ver": python_ver, "torch_ver": torch_ver,
+                            "mpi_installed": mpi_installed, "cpu_sage": cpu_usage,
+                            "available_mem": available_mem, "total_mem": total_mem}
         }
+        if gpu_info is not None:
+            if gpu_total_mem is not None:
+                json_params["gpu"] = gpu_info + ", Total GPU Memory: " + gpu_total_mem
+            else:
+                json_params["gpu"] = gpu_info
+            json_params["extra_infos"]["gpu_info"] = gpu_info
+            if gpu_available_mem is not None:
+                json_params["extra_infos"]["gpu_available_mem"] = gpu_available_mem
+            if gpu_total_mem is not None:
+                json_params["extra_infos"]["gpu_total_mem"] = gpu_total_mem
+        else:
+            json_params["gpu"] = "None"
+
         _, cert_path = MLOpsConfigs.get_instance(self.args).get_request_params()
         if cert_path is not None:
-            requests.session().verify = cert_path
-            response = requests.post(url, json=json_params, verify=True, headers={"Connection": "close"})
+            try:
+                requests.session().verify = cert_path
+                response = requests.post(
+                    url, json=json_params, verify=True,
+                    headers={"content-type": "application/json", "Connection": "close"}
+                )
+            except requests.exceptions.SSLError as err:
+                MLOpsConfigs.install_root_ca_file()
+                response = requests.post(
+                    url, json=json_params, verify=True,
+                    headers={"content-type": "application/json", "Connection": "close"}
+                )
         else:
             response = requests.post(url, json=json_params, headers={"Connection": "close"})
         status_code = response.json().get("code")
@@ -939,9 +1037,9 @@ class FedMLServerRunner:
         active_topic = "/flserver_agent/active"
         status = MLOpsStatus.get_instance().get_server_agent_status(self.edge_id)
         if (
-            status is not None
-            and status != ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE
-            and status != ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE
+                status is not None
+                and status != ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE
+                and status != ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE
         ):
             return
         status = ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE
@@ -980,19 +1078,19 @@ class FedMLServerRunner:
         topic_report_status = "/mlops/report_device_status"
         self.mqtt_mgr.add_message_listener(topic_report_status, self.callback_report_current_status)
 
-        # Setup MQTT message listener to the last will message form the client agent.
+        # Setup MQTT message listener to the last will message from the client agent.
         topic_client_agent_last_will_msg = "/flclient_agent/last_will_msg"
         self.mqtt_mgr.add_message_listener(topic_client_agent_last_will_msg, self.callback_client_agent_last_will_msg)
 
-        # Setup MQTT message listener to the active status message form the client agent.
+        # Setup MQTT message listener to the active status message from the client agent.
         topic_client_agent_active_msg = "/flclient_agent/active"
         self.mqtt_mgr.add_message_listener(topic_client_agent_active_msg, self.callback_client_agent_active_msg)
 
-        # Setup MQTT message listener to the last will message form the server.
+        # Setup MQTT message listener to the last will message from the server.
         topic_server_last_will_msg = "/flserver/last_will_msg"
         self.mqtt_mgr.add_message_listener(topic_server_last_will_msg, self.callback_server_last_will_msg)
 
-        # Setup MQTT message listener to the active status message form the server.
+        # Setup MQTT message listener to the active status message from the server.
         topic_server_active_msg = "/flserver/active"
         self.mqtt_mgr.add_message_listener(topic_server_active_msg, self.callback_server_active_msg)
 

@@ -1,18 +1,12 @@
 from mpi4py import MPI
 
+from ....core import ClientTrainer, ServerAggregator
+from ....ml.aggregator.aggregator_creator import create_server_aggregator
+from ....ml.trainer.trainer_creator import create_model_trainer
 from .FedProxAggregator import FedProxAggregator
 from .FedProxClientManager import FedProxClientManager
 from .FedProxServerManager import FedProxServerManager
 from .FedProxTrainer import FedProxTrainer
-from .my_model_trainer_classification import (
-    MyModelTrainer as MyModelTrainerCLS,
-)
-from .my_model_trainer_nwp import (
-    MyModelTrainer as MyModelTrainerNWP,
-)
-from .my_model_trainer_tag_prediction import (
-    MyModelTrainer as MyModelTrainerTAG,
-)
 
 
 def FedML_init():
@@ -23,15 +17,15 @@ def FedML_init():
 
 
 def FedML_FedProx_distributed(
-        args,
-        process_id,
-        worker_number,
-        comm,
-        device,
-        dataset,
-        model,
-        model_trainer=None,
-        preprocessed_sampling_lists=None,
+    args,
+    process_id,
+    worker_number,
+    comm,
+    device,
+    dataset,
+    model,
+    client_trainer: ClientTrainer = None,
+    server_aggregator: ServerAggregator = None,
 ):
     [
         train_data_num,
@@ -57,8 +51,7 @@ def FedML_FedProx_distributed(
             train_data_local_dict,
             test_data_local_dict,
             train_data_local_num_dict,
-            model_trainer,
-            preprocessed_sampling_lists,
+            server_aggregator,
         )
     else:
         init_client(
@@ -72,7 +65,7 @@ def FedML_FedProx_distributed(
             train_data_local_num_dict,
             train_data_local_dict,
             test_data_local_dict,
-            model_trainer,
+            client_trainer,
         )
 
 
@@ -89,17 +82,11 @@ def init_server(
     train_data_local_dict,
     test_data_local_dict,
     train_data_local_num_dict,
-    model_trainer,
-    preprocessed_sampling_lists=None,
+    server_aggregator,
 ):
-    if model_trainer is None:
-        if args.dataset == "stackoverflow_lr":
-            model_trainer = MyModelTrainerTAG(model)
-        elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
-            model_trainer = MyModelTrainerNWP(model)
-        else:  # default model trainer is for classification problem
-            model_trainer = MyModelTrainerCLS(model)
-    model_trainer.set_id(-1)
+    if server_aggregator is None:
+        server_aggregator = create_server_aggregator(model, args)
+    server_aggregator.set_id(-1)
 
     # aggregator
     worker_num = size - 1
@@ -113,26 +100,12 @@ def init_server(
         worker_num,
         device,
         args,
-        model_trainer,
+        server_aggregator,
     )
 
     # start the distributed training
     backend = args.backend
-    if preprocessed_sampling_lists is None:
-        server_manager = FedProxServerManager(
-            args, aggregator, comm, rank, size, backend
-        )
-    else:
-        server_manager = FedProxServerManager(
-            args,
-            aggregator,
-            comm,
-            rank,
-            size,
-            backend,
-            is_preprocessed=True,
-            preprocessed_client_lists=preprocessed_sampling_lists,
-        )
+    server_manager = FedProxServerManager(args, aggregator, comm, rank, size, backend)
     server_manager.send_init_msg()
     server_manager.run()
 
@@ -152,12 +125,7 @@ def init_client(
 ):
     client_index = process_id - 1
     if model_trainer is None:
-        if args.dataset == "stackoverflow_lr":
-            model_trainer = MyModelTrainerTAG(model)
-        elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
-            model_trainer = MyModelTrainerNWP(model)
-        else:  # default model trainer is for classification problem
-            model_trainer = MyModelTrainerCLS(model)
+        model_trainer = create_model_trainer(model, args)
     model_trainer.set_id(client_index)
     backend = args.backend
     trainer = FedProxTrainer(
@@ -170,7 +138,5 @@ def init_client(
         args,
         model_trainer,
     )
-    client_manager = FedProxClientManager(
-        args, trainer, comm, process_id, size, backend
-    )
+    client_manager = FedProxClientManager(args, trainer, comm, process_id, size, backend)
     client_manager.run()

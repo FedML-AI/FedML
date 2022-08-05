@@ -1,6 +1,5 @@
 import json
 import logging
-import sys
 
 import multiprocess as multiprocessing
 import os
@@ -24,12 +23,14 @@ from ...core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
 from ...cli.comm_utils.yaml_utils import load_yaml_config
 from ...cli.edge_deployment.client_constants import ClientConstants
+from ...cli.server_deployment.server_constants import ServerConstants
 
 from ...core.mlops.mlops_metrics import MLOpsMetrics
 
 from ...core.mlops.mlops_configs import MLOpsConfigs
 from ...core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 from ...core.mlops.mlops_status import MLOpsStatus
+from ..comm_utils.sys_utils import get_sys_runner_info
 
 
 class FedMLClientRunner:
@@ -50,7 +51,6 @@ class FedMLClientRunner:
         self.request_json = request_json
         self.version = args.version
         self.device_id = args.device_id
-        self.cloud_region = args.cloud_region
         self.cur_dir = os.path.split(os.path.realpath(__file__))[0]
         if args.current_running_dir is not None:
             self.cur_dir = args.current_running_dir
@@ -207,7 +207,9 @@ class FedMLClientRunner:
 
     def build_dynamic_args(self, run_config, package_conf_object, base_dir):
         fedml_conf_file = package_conf_object["entry_config"]["conf_file"]
-        fedml_conf_path = os.path.join(base_dir, "fedml", "config", os.path.basename(fedml_conf_file))
+        fedml_conf_file_processed = str(fedml_conf_file).replace('\\', os.sep).replace('/', os.sep)
+        fedml_conf_path = os.path.join(base_dir, "fedml", "config",
+                                       os.path.basename(fedml_conf_file_processed))
         fedml_conf_object = load_yaml_config(fedml_conf_path)
 
         # Replace local fedml config objects with parameters from MLOps web
@@ -232,6 +234,7 @@ class FedMLClientRunner:
         if hasattr(self.args, "local_server") and self.args.local_server is not None:
             fedml_conf_object["comm_args"]["local_server"] = self.args.local_server
         bootstrap_script_file = fedml_conf_object["environment_args"]["bootstrap"]
+        bootstrap_script_file = str(bootstrap_script_file).replace('\\', os.sep).replace('/', os.sep)
         bootstrap_script_dir = os.path.join(base_dir, "fedml", os.path.dirname(bootstrap_script_file))
         bootstrap_script_path = os.path.join(
             bootstrap_script_dir, bootstrap_script_dir, os.path.basename(bootstrap_script_file)
@@ -249,31 +252,24 @@ class FedMLClientRunner:
                 if os.path.exists(bootstrap_script_path):
                     bootstrap_stat = os.stat(bootstrap_script_path)
                     os.chmod(bootstrap_script_path, bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-                bootstrap_scripts = "cd {}; ./{}".format(bootstrap_script_dir, os.path.basename(bootstrap_script_file))
-                logging.info("Bootstrap scripts are being executed...")
-                process = ClientConstants.exec_console_with_script(bootstrap_scripts, should_capture_stdout_err=True)
-                ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(process)
-                if out is not None:
-                    out_str = out.decode(encoding="utf-8")
-                    if str(out_str).find(FedMLClientRunner.FEDML_BOOTSTRAP_RUN_OK) == -1:
-                        logging.error("{}".format(out_str))
-                    else:
-                        logging.info("{}".format(out_str))
-                if err is not None:
-                    err_str = err.decode(encoding="utf-8")
-                    if str(err_str).find(FedMLClientRunner.FEDML_BOOTSTRAP_RUN_OK) == -1:
-                        logging.error("{}".format(err_str))
-                    else:
-                        logging.info("{}".format(err_str))
+                    bootstrap_scripts = "cd {}; ./{}".format(bootstrap_script_dir, os.path.basename(bootstrap_script_file))
+                    logging.info("Bootstrap scripts are being executed...")
+                    process = ClientConstants.exec_console_with_script(bootstrap_scripts, should_capture_stdout_err=True)
+                    ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(process)
+                    if out is not None:
+                        out_str = out.decode(encoding="utf-8")
+                        if str(out_str).find(FedMLClientRunner.FEDML_BOOTSTRAP_RUN_OK) == -1:
+                            logging.error("{}".format(out_str))
+                        else:
+                            logging.info("{}".format(out_str))
+                    if err is not None:
+                        err_str = err.decode(encoding="utf-8")
+                        if str(err_str).find(FedMLClientRunner.FEDML_BOOTSTRAP_RUN_OK) == -1:
+                            logging.error("{}".format(err_str))
+                        else:
+                            logging.info("{}".format(err_str))
         except Exception as e:
             logging.error("Bootstrap scripts error: {}".format(traceback.format_exc()))
-
-    def build_image_unique_id(self, run_id, run_config):
-        config_name = str(run_config.get("configName", "run_" + str(run_id)))
-        config_creater = str(run_config.get("userId", "user_" + str(run_id)))
-        image_unique_id = re.sub("[^a-zA-Z0-9_-]", "", str(config_name + "_" + config_creater))
-        image_unique_id = image_unique_id.lower()
-        return image_unique_id
 
     def run(self):
         run_id = self.request_json["runId"]
@@ -308,8 +304,10 @@ class FedMLClientRunner:
 
         entry_file_config = fedml_config_object["entry_config"]
         dynamic_args_config = fedml_config_object["dynamic_args"]
-        entry_file = os.path.basename(entry_file_config["entry_file"])
+        entry_file = str(entry_file_config["entry_file"]).replace('\\', os.sep).replace('/', os.sep)
+        entry_file = os.path.basename(entry_file)
         conf_file = entry_file_config["conf_file"]
+        conf_file = str(conf_file).replace('\\', os.sep).replace('/', os.sep)
         ClientConstants.cleanup_learning_process()
         os.chdir(os.path.join(unzip_package_path, "fedml"))
 
@@ -456,6 +454,19 @@ class FedMLClientRunner:
 
         self.release_client_mqtt_mgr()
 
+    def callback_server_status_msg(self, topic=None, payload=None):
+        payload_json = json.loads(payload)
+        run_id = payload_json["run_id"]
+        edge_id = payload_json["edge_id"]
+        status = payload_json["status"]
+        if status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED:
+            client_runner = FedMLClientRunner(
+                self.args, run_id=run_id, request_json=self.request_json,
+                agent_config=self.agent_config, edge_id=self.edge_id
+            )
+            client_runner.device_status = ClientConstants.MSG_MLOPS_SERVER_DEVICE_STATUS_FAILED
+            multiprocessing.Process(target=client_runner.cleanup_client_with_status).start()
+
     def on_client_mqtt_disconnected(self, mqtt_client_object):
         if self.client_mqtt_lock is None:
             self.client_mqtt_lock = threading.Lock()
@@ -527,6 +538,7 @@ class FedMLClientRunner:
         # get training params
         request_json = json.loads(payload)
         run_id = request_json["runId"]
+        server_agent_id = request_json["cloud_agent_id"]
 
         # Terminate previous process about starting or stopping run command
         ClientConstants.exit_process(self.process)
@@ -536,6 +548,11 @@ class FedMLClientRunner:
         # Start log processor for current run
         self.args.run_id = run_id
         MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
+
+        # Subscribe server status message.
+        topic_name = "fl_server/flserver_agent_" + str(server_agent_id) + "/status"
+        self.mqtt_mgr.add_message_listener(topic_name, self.callback_server_status_msg)
+        self.mqtt_mgr.subscribe_msg(topic_name)
 
         # Start cross-silo server with multi processing mode
         self.request_json = request_json
@@ -644,41 +661,101 @@ class FedMLClientRunner:
 
     @staticmethod
     def get_device_id():
-        if "nt" in os.name:
+        file_for_device_id = os.path.join(ClientConstants.get_data_dir(), ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, "devices.id")
 
-            def GetUUID():
-                cmd = "wmic csproduct get uuid"
-                uuid = str(subprocess.check_output(cmd))
-                pos1 = uuid.find("\\n") + 2
-                uuid = uuid[pos1:-15]
-                return str(uuid)
-
-            device_id = str(GetUUID())
-            logging.info(device_id)
-        elif "posix" in os.name:
-            device_id = hex(uuid.getnode())
+        sys_name = platform.system()
+        if sys_name == "Darwin":
+            cmd_get_serial_num = "system_profiler SPHardwareDataType | grep Serial | awk '{gsub(/ /,\"\")}{print}' |awk -F':' '{print $2}'"
+            device_id = os.popen(cmd_get_serial_num).read()
+            device_id = device_id.replace('\n', '').replace(' ', '')
+            if device_id is None or device_id == "":
+                device_id = hex(uuid.getnode())
+            else:
+                device_id = "0x" + device_id
         else:
-            device_id = subprocess.Popen(
-                "hal-get-property --udi /org/freedesktop/Hal/devices/computer --key system.hardware.uuid".split()
-            )
-            device_id = hex(device_id)
+            if "nt" in os.name:
+
+                def GetUUID():
+                    cmd = "wmic csproduct get uuid"
+                    uuid = str(subprocess.check_output(cmd))
+                    pos1 = uuid.find("\\n") + 2
+                    uuid = uuid[pos1:-15]
+                    return str(uuid)
+
+                device_id = str(GetUUID())
+                logging.info(device_id)
+            elif "posix" in os.name:
+                device_id = hex(uuid.getnode())
+            else:
+                device_id = subprocess.Popen(
+                    "hal-get-property --udi /org/freedesktop/Hal/devices/computer --key system.hardware.uuid".split()
+                )
+                device_id = hex(device_id)
+
+        device_file_path = os.path.join(ClientConstants.get_data_dir(), ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
+        if not os.path.exists(device_file_path):
+            os.makedirs(device_file_path)
+        if device_id is not None and device_id != "":
+            with open(file_for_device_id, 'w', encoding='utf-8') as f:
+                f.write(device_id)
+        else:
+            device_id_from_file = None
+            with open(file_for_device_id, 'r', encoding='utf-8') as f:
+                device_id_from_file = f.readline()
+            if device_id_from_file is not None and device_id_from_file != "":
+                device_id = device_id_from_file
+            else:
+                device_id = hex(uuid.uuid4())
+                with open(file_for_device_id, 'w', encoding='utf-8') as f:
+                    f.write(device_id)
 
         return device_id
 
     def bind_account_and_device_id(self, url, account_id, device_id, os_name, role="client"):
+        ip = requests.get('https://checkip.amazonaws.com').text.strip()
+        fedml_ver, exec_path, os_ver, cpu_info, python_ver, torch_ver, mpi_installed, \
+            cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem = get_sys_runner_info()
         json_params = {
             "accountid": account_id,
             "deviceid": device_id,
             "type": os_name,
-            "gpu": "None",
-            "processor": "",
+            "processor": cpu_info,
+            "core_type": cpu_info,
             "network": "",
             "role": role,
+            "os_ver": os_ver,
+            "memory": total_mem,
+            "ip": ip,
+            "extra_infos": {"fedml_ver": fedml_ver, "exec_path": exec_path, "os_ver": os_ver,
+                            "cpu_info": cpu_info, "python_ver": python_ver, "torch_ver": torch_ver,
+                            "mpi_installed": mpi_installed, "cpu_sage": cpu_usage,
+                            "available_mem": available_mem, "total_mem": total_mem}
         }
+        if gpu_info is not None:
+            if gpu_total_mem is not None:
+                json_params["gpu"] = gpu_info + ", Total GPU Memory: " + gpu_total_mem
+            else:
+                json_params["gpu"] = gpu_info
+            json_params["extra_infos"]["gpu_info"] = gpu_info
+            if gpu_available_mem is not None:
+                json_params["extra_infos"]["gpu_available_mem"] = gpu_available_mem
+            if gpu_total_mem is not None:
+                json_params["extra_infos"]["gpu_total_mem"]  = gpu_total_mem
+        else:
+            json_params["gpu"] = "None"
+
         _, cert_path = MLOpsConfigs.get_instance(self.args).get_request_params()
         if cert_path is not None:
-            requests.session().verify = cert_path
-            response = requests.post(url, json=json_params, verify=True, headers={"Connection": "close"})
+            try:
+                requests.session().verify = cert_path
+                response = requests.post(
+                    url, json=json_params, verify=True, headers={"content-type": "application/json", "Connection": "close"}
+                )
+            except requests.exceptions.SSLError as err:
+                MLOpsConfigs.install_root_ca_file()
+                response = requests.post(
+                    url, json=json_params, verify=True, headers={"content-type": "application/json", "Connection": "close"}
+                )
         else:
             response = requests.post(url, json=json_params, headers={"Connection": "close"})
         status_code = response.json().get("code")
@@ -737,11 +814,11 @@ class FedMLClientRunner:
         topic_report_status = "/mlops/report_device_status"
         self.mqtt_mgr.add_message_listener(topic_report_status, self.callback_report_current_status)
 
-        # Setup MQTT message listener to the last will message form the client.
+        # Setup MQTT message listener to the last will message from the client.
         topic_last_will_msg = "/flclient/last_will_msg"
         self.mqtt_mgr.add_message_listener(topic_last_will_msg, self.callback_client_last_will_msg)
 
-        # Setup MQTT message listener to the active status message form the client.
+        # Setup MQTT message listener to the active status message from the client.
         topic_active_msg = "/flclient/active"
         self.mqtt_mgr.add_message_listener(topic_active_msg, self.callback_client_active_msg)
 
@@ -797,5 +874,6 @@ class FedMLClientRunner:
             try:
                 self.mqtt_mgr.loop_forever()
             except Exception as e:
-                self.mqtt_mgr.connect()
+                self.mlops_metrics = None
+                self.setup_agent_mqtt_connection(self.agent_config)
                 time.sleep(1)

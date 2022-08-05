@@ -4,9 +4,9 @@ from .FedOptAggregator import FedOptAggregator
 from .FedOptClientManager import FedOptClientManager
 from .FedOptServerManager import FedOptServerManager
 from .FedOptTrainer import FedOptTrainer
-from .my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
-from .my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
-from .my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
+from ....core import ClientTrainer, ServerAggregator
+from ....ml.aggregator.aggregator_creator import create_server_aggregator
+from ....ml.trainer.trainer_creator import create_model_trainer
 
 
 def FedML_init():
@@ -24,8 +24,8 @@ def FedML_FedOpt_distributed(
     device,
     dataset,
     model,
-    model_trainer,
-    preprocessed_sampling_lists = None
+    client_trainer: ClientTrainer = None,
+    server_aggregator: ServerAggregator = None,
 ):
     [
         train_data_num,
@@ -51,8 +51,7 @@ def FedML_FedOpt_distributed(
             train_data_local_dict,
             test_data_local_dict,
             train_data_local_num_dict,
-            model_trainer,
-            preprocessed_sampling_lists,
+            server_aggregator,
         )
     else:
         init_client(
@@ -66,7 +65,7 @@ def FedML_FedOpt_distributed(
             train_data_local_num_dict,
             train_data_local_dict,
             test_data_local_dict,
-            model_trainer,
+            client_trainer,
         )
 
 
@@ -83,17 +82,11 @@ def init_server(
     train_data_local_dict,
     test_data_local_dict,
     train_data_local_num_dict,
-    model_trainer,
-    preprocessed_sampling_lists=None,
+    server_aggregator,
 ):
-    if model_trainer is None:
-        if args.dataset == "stackoverflow_lr":
-            model_trainer = MyModelTrainerTAG(model)
-        elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
-            model_trainer = MyModelTrainerNWP(model)
-        else:  # default model trainer is for classification problem
-            model_trainer = MyModelTrainerCLS(model)
-    model_trainer.set_id(-1)
+    if server_aggregator is None:
+        server_aggregator = create_server_aggregator(model, args)
+    server_aggregator.set_id(-1)
     # aggregator
     worker_num = size - 1
     aggregator = FedOptAggregator(
@@ -106,23 +99,11 @@ def init_server(
         worker_num,
         device,
         args,
-        model_trainer,
+        server_aggregator,
     )
 
     # start the distributed training
-    if preprocessed_sampling_lists is None:
-        server_manager = FedOptServerManager(args, aggregator, comm, rank, size)
-    else:
-        server_manager = FedOptServerManager(
-            args,
-            aggregator,
-            comm,
-            rank,
-            size,
-            backend="MPI",
-            is_preprocessed=True,
-            preprocessed_client_lists=preprocessed_sampling_lists,
-        )
+    server_manager = FedOptServerManager(args, aggregator, comm, rank, size)
     server_manager.send_init_msg()
     server_manager.run()
 
@@ -142,22 +123,11 @@ def init_client(
 ):
     client_index = process_id - 1
     if model_trainer is None:
-        if args.dataset == "stackoverflow_lr":
-            model_trainer = MyModelTrainerTAG(model)
-        elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
-            model_trainer = MyModelTrainerNWP(model)
-        else:  # default model trainer is for classification problem
-            model_trainer = MyModelTrainerCLS(model)
+        model_trainer = create_model_trainer(model, args)
     model_trainer.set_id(client_index)
 
     trainer = FedOptTrainer(
-        client_index,
-        train_data_local_dict,
-        train_data_local_num_dict,
-        train_data_num,
-        device,
-        args,
-        model_trainer,
+        client_index, train_data_local_dict, train_data_local_num_dict, train_data_num, device, args, model_trainer,
     )
     client_manager = FedOptClientManager(args, trainer, comm, process_id, size)
     client_manager.run()

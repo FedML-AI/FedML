@@ -1,7 +1,7 @@
 # FedML Parrot API Reference
 
 
-Our philosophy of API design is to reduce the number of APIs as few as possible while simultaneously keep the flexibility.
+The philosophy of our API design is to reduce the number of APIs as much as possible while simultaneously maintaining the flexibility.
 
 For Simplicity, FedML Parrot has only one line API as the following example:
 
@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
 
 
-For newly developed features, we will try to keep the form of these APIs and only add new arguments. 
+For newly developed features, we will try to preserve the form of these APIs and only add new arguments. 
 
-To check the details of the latest definition of each API, the best resource is always the source code itself. Please check comments of each API at:
+To check out the details of the latest definition of each API, the best resource is always the source code itself. Please check comments of each API at:
 [https://github.com/FedML-AI/FedML/blob/master/python/fedml/__init__.py](https://github.com/FedML-AI/FedML/blob/master/python/fedml/__init__.py)

@@ -11,7 +11,7 @@ from data.data_loader import load
 from fedml import FedMLRunner
 from fedml.model.nlp.model_args import *
 from trainer.seq2seq_trainer import MyModelTrainer as MySSTrainer
-
+from trainer.seq2seq_aggregator import Seq2SeqAggregator
 
 def create_model(args, device, output_dim=1):
     model_name = args.model
@@ -71,7 +71,7 @@ def create_model(args, device, output_dim=1):
     model = model_class.from_pretrained(args.model, config=config)
     print("reached_here")
     trainer = MySSTrainer(model_args, device, model, tokenizer=tokenizer)
-    return model, trainer
+    return model, trainer, model_args
 
 
 if __name__ == "__main__":
@@ -85,8 +85,8 @@ if __name__ == "__main__":
     dataset, output_dim = load(args)
     # args.num_labels = output_dim
     # load model and trainer
-    model, trainer = create_model(args, output_dim)
-
+    model, trainer, model_args = create_model(args, output_dim)
+    aggregator = Seq2SeqAggregator(model, model_args)
     # start training
-    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer, aggregator)
     fedml_runner.run()

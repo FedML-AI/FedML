@@ -17,7 +17,7 @@ DEFAULT_TRAIN_FILE = "stackoverflow_train.h5"
 DEFAULT_TEST_FILE = "stackoverflow_test.h5"
 
 # cache
-DEFAULT_CACHE_FILE = "stackoverflow_nwp.pkl"
+DEFAULT_CACHE_FILE = "stackoverflow_nwp_new.pkl"
 
 
 def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
