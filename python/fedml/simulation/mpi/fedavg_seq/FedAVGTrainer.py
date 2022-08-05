@@ -41,6 +41,16 @@ class FedAVGTrainer(object):
         if self.args.lr_schedule == "StepLR":
             exp_num = progress / self.args.lr_step_size
             lr = self.args.learning_rate * (self.args.lr_decay_rate**exp_num)
+        elif self.args.lr_schedule == "MultiStepLR":
+            index = 0
+            for milestone in self.args.lr_milestones:
+                if progress < milestone:
+                    break
+                else:
+                    index += 1
+            lr = self.args.learning_rate * (self.args.lr_decay_rate**index)
+        elif self.args.lr_schedule == "None":
+            lr = self.args.learning_rate
         else:
             raise NotImplementedError
         return lr
