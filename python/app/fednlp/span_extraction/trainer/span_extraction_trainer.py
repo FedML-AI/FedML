@@ -1,14 +1,15 @@
-from tqdm import tqdm
-import torch
-from fedml.core import ClientTrainer
-from .span_extraction_utils import *
-import numpy as np
+import copy
 import os
 
+import torch
+from tqdm import tqdm
+
+from fedml.core import ClientTrainer
+from .span_extraction_utils import *
+
+
 class MyModelTrainer(ClientTrainer):
-    def __init__(
-        self, args, device, model, train_dl=None, test_dl=None, tokenizer=None
-    ):
+    def __init__(self, args, device, model, train_dl=None, test_dl=None, tokenizer=None):
 
         super(MyModelTrainer, self).__init__(model, args=args)
         self.device = device
@@ -37,9 +38,7 @@ class MyModelTrainer(ClientTrainer):
             params = group.pop("params")
             custom_parameter_names.update(params)
             param_group = {**group}
-            param_group["params"] = [
-                p for n, p in self.model.named_parameters() if n in params
-            ]
+            param_group["params"] = [p for n, p in self.model.named_parameters() if n in params]
             optimizer_grouped_parameters.append(param_group)
 
         for group in args.custom_layer_parameters:
@@ -70,8 +69,7 @@ class MyModelTrainer(ClientTrainer):
                         "params": [
                             p
                             for n, p in self.model.named_parameters()
-                            if n not in custom_parameter_names
-                            and not any(nd in n for nd in no_decay)
+                            if n not in custom_parameter_names and not any(nd in n for nd in no_decay)
                         ],
                         "weight_decay": args.weight_decay,
                     },
@@ -79,8 +77,7 @@ class MyModelTrainer(ClientTrainer):
                         "params": [
                             p
                             for n, p in self.model.named_parameters()
-                            if n not in custom_parameter_names
-                            and any(nd in n for nd in no_decay)
+                            if n not in custom_parameter_names and any(nd in n for nd in no_decay)
                         ],
                         "weight_decay": 0.0,
                     },
@@ -88,9 +85,7 @@ class MyModelTrainer(ClientTrainer):
             )
 
         # build optimizer and scheduler
-        iteration_in_total = (
-            len(train_data) // args.gradient_accumulation_steps * args.epochs
-        )
+        iteration_in_total = len(train_data) // args.gradient_accumulation_steps * args.epochs
         optimizer, scheduler = build_optimizer(self.model, iteration_in_total, args)
 
         if args.n_gpu > 1:
@@ -140,16 +135,12 @@ class MyModelTrainer(ClientTrainer):
                     loss = outputs[0]
 
                 if args.n_gpu > 1:
-                    loss = (
-                        loss.mean()
-                    )  # mean() to average on multi-gpu parallel training
+                    loss = loss.mean()  # mean() to average on multi-gpu parallel training
 
                 if self.args.fl_algorithm == "FedProx":
                     fed_prox_reg = 0.0
                     mu = self.args.fedprox_mu
-                    for (p, g_p) in zip(
-                        self.model.parameters(), global_model.parameters()
-                    ):
+                    for (p, g_p) in zip(self.model.parameters(), global_model.parameters()):
                         fed_prox_reg += (mu / 2) * torch.norm((p - g_p.data)) ** 2
                     loss += fed_prox_reg
 
@@ -166,9 +157,7 @@ class MyModelTrainer(ClientTrainer):
                 if (batch_idx + 1) % args.gradient_accumulation_steps == 0:
                     if args.fp16:
                         scaler.unscale_(optimizer)
-                    torch.nn.utils.clip_grad_norm_(
-                        self.model.parameters(), args.max_grad_norm
-                    )
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), args.max_grad_norm)
 
                     if args.fp16:
                         scaler.step(optimizer)
@@ -182,9 +171,7 @@ class MyModelTrainer(ClientTrainer):
                     tr_loss = 0
             epoch_loss.append(sum(batch_loss) / len(batch_loss))
             logging.info(
-                "Client Index = {}\tEpoch: {}\tLoss: {:.6f}".format(
-                    self.id, epoch, sum(epoch_loss) / len(epoch_loss)
-                )
+                "Client Index = {}\tEpoch: {}\tLoss: {:.6f}".format(self.id, epoch, sum(epoch_loss) / len(epoch_loss))
             )
             if (
                 self.args.evaluate_during_training
@@ -206,9 +193,7 @@ class MyModelTrainer(ClientTrainer):
         logging.info("test_model self.device: " + str(device))
         self.model.to(device)
 
-        all_predictions, all_nbest_json, scores_diff_json, eval_loss = self.evaluate(
-            output_dir, test_data, device
-        )
+        all_predictions, all_nbest_json, scores_diff_json, eval_loss = self.evaluate(output_dir, test_data, device)
 
         result, texts = self.calculate_results(all_predictions, test_data)
         result["eval_loss"] = eval_loss
@@ -297,9 +282,7 @@ class MyModelTrainer(ClientTrainer):
                         )
                     else:
                         result = RawResult(
-                            unique_id=unique_id,
-                            start_logits=to_list(outputs[0][i]),
-                            end_logits=to_list(outputs[1][i]),
+                            unique_id=unique_id, start_logits=to_list(outputs[0][i]), end_logits=to_list(outputs[1][i]),
                         )
                     all_results.append(result)
 
@@ -310,24 +293,13 @@ class MyModelTrainer(ClientTrainer):
         prefix = "test"
         os.makedirs(output_dir, exist_ok=True)
 
-        output_prediction_file = os.path.join(
-            output_dir, "predictions_{}.json".format(prefix)
-        )
-        output_nbest_file = os.path.join(
-            output_dir, "nbest_predictions_{}.json".format(prefix)
-        )
-        output_null_log_odds_file = os.path.join(
-            output_dir, "null_odds_{}.json".format(prefix)
-        )
+        output_prediction_file = os.path.join(output_dir, "predictions_{}.json".format(prefix))
+        output_nbest_file = os.path.join(output_dir, "nbest_predictions_{}.json".format(prefix))
+        output_null_log_odds_file = os.path.join(output_dir, "null_odds_{}.json".format(prefix))
 
         if args.model_type in ["xlnet", "xlm"]:
             # XLNet uses a more complex post-processing procedure
-            (
-                all_predictions,
-                all_nbest_json,
-                scores_diff_json,
-                out_eval,
-            ) = write_predictions_extended(
+            (all_predictions, all_nbest_json, scores_diff_json, out_eval,) = write_predictions_extended(
                 examples,
                 features,
                 all_results,
@@ -442,23 +414,6 @@ class MyModelTrainer(ClientTrainer):
         }
 
         return result, texts
-
-    def test_on_the_server(
-        self, train_data_local_dict, test_data_local_dict, device, args=None
-    ) -> bool:
-        logging.info("----------test_on_the_server--------")
-        f1_list, metric_list = [], []
-        for client_idx in test_data_local_dict.keys():
-            test_data = test_data_local_dict[client_idx]
-            metrics, _, _ = self.test(test_data, device, args)
-            metric_list.append(metrics)
-            f1_list.append(metrics["f1_score"])
-            logging.info(
-                "Client {}, Test F1 = {}".format(client_idx, metrics["f1_score"])
-            )
-        avg_accuracy = np.mean(np.array(f1_list))
-        logging.info("Test avg F1 = {}".format(avg_accuracy))
-        return True
 
     def _create_training_progress_scores(self, **kwargs):
         extra_metrics = {key: [] for key in kwargs}

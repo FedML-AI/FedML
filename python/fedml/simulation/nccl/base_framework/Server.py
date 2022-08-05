@@ -1,36 +1,15 @@
 import copy
 import logging
-import random
-import time
 
 import numpy as np
 import torch
 import wandb
 
-import logging
-
-from ....core.schedule.scheduler import scheduler
-
-
-from .params import Params
-from .params import ServerToClientParams
-from .params import LocalAggregatorToServerParams
-from .params import ClientToLocalAggregatorParams
-
-from .common import fedml_nccl_broadcast
-from .common import fedml_nccl_reduce
-from .common import fedml_nccl_barrier
-from .common import broadcast_model_state
-from .common import set_model_params_with_list
-from .common import (get_server_rank, get_rank, new_group)
-
 from .common import ReduceOp
-
-from .common import (
-    move_to_cpu, move_to_gpu,
-    clear_optim_buffer, optimizer_to,
-    get_weights
-)
+from .common import broadcast_model_state
+from .common import new_group
+from .params import LocalAggregatorToServerParams
+from .params import ServerToClientParams
 
 
 class BaseServer:
@@ -40,8 +19,7 @@ class BaseServer:
     """
 
     # def __init__(self, args, trainer, device, dataset, comm=None, rank=0, size=0, backend="NCCL"):
-    def __init__(self, args, rank, worker_number, comm,
-            device, dataset, model, trainer):
+    def __init__(self, args, rank, worker_number, comm, device, dataset, model, trainer):
         self.device = device
         self.args = args
         self.trainer = trainer
@@ -77,24 +55,15 @@ class BaseServer:
         logging.info("self.trainer = {}".format(self.trainer))
         self.client_runtime_history = {}
 
-
-
     def client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
         if client_num_in_total == client_num_per_round:
-            client_indexes = [
-                client_index for client_index in range(client_num_in_total)
-            ]
+            client_indexes = [client_index for client_index in range(client_num_in_total)]
         else:
             num_clients = min(client_num_per_round, client_num_in_total)
-            np.random.seed(
-                round_idx
-            )  # make sure for each comparison, we are selecting the same clients each round
-            client_indexes = np.random.choice(
-                range(client_num_in_total), num_clients, replace=False
-            )
+            np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round
+            client_indexes = np.random.choice(range(client_num_in_total), num_clients, replace=False)
         logging.info("client_indexes = %s" % str(client_indexes))
         return client_indexes
-
 
     def simulate_all_tasks(self, server_params, client_indexes):
         localAggregatorToServerParams = LocalAggregatorToServerParams(None)
@@ -110,7 +79,6 @@ class BaseServer:
         for client_index in client_indexes:
             localAggregatorToServerParams.add_gather_params(client_index, "runtime", torch.tensor(0.0))
         return localAggregatorToServerParams
-
 
     def workload_estimate(self, client_indexes, mode="simulate"):
         if mode == "simulate":
@@ -140,17 +108,15 @@ class BaseServer:
             raise NotImplementedError
         return resource
 
-
-    def client_schedule(self, round_idx, client_num_in_total, client_num_per_round, server_params,
-                        mode="simulate"):
+    def client_schedule(self, round_idx, client_num_in_total, client_num_per_round, server_params, mode="simulate"):
         # scheduler(workloads, constraints, memory)
         client_indexes = self.client_sampling(round_idx, client_num_in_total, client_num_per_round)
         # workload = self.workload_estimate(client_indexes, mode)
-        # resource = self.resource_estimate(mode)
+        # resources = self.resource_estimate(mode)
         # memory = self.memory_estimate(mode)
 
         # mode = 0
-        # my_scheduler = scheduler(workload, resource, memory)
+        # my_scheduler = scheduler(workload, resources, memory)
         # schedules = my_scheduler.DP_schedule(mode)
         # for i in range(len(schedules)):
         #     print("Resource %2d: %s\n" % (i, str(schedules[i])))
@@ -158,11 +124,9 @@ class BaseServer:
         client_schedule = np.array_split(client_indexes, self.device_number)
         for i in range(self.device_number):
             simulate_client_indexes = np.zeros([client_num_per_round], dtype=int) - 1
-            simulate_client_indexes[:len(client_schedule[i])] = client_schedule[i]
-            server_params.add_broadcast_param(name=f"client_schedule{i}",
-                                            param=torch.tensor(simulate_client_indexes))
+            simulate_client_indexes[: len(client_schedule[i])] = client_schedule[i]
+            server_params.add_broadcast_param(name=f"client_schedule{i}", param=torch.tensor(simulate_client_indexes))
         return client_indexes, client_schedule
-
 
     def get_average_weight(self, client_indexes):
         average_weight_dict = {}
@@ -174,26 +138,23 @@ class BaseServer:
             average_weight_dict[client_index] = self.train_data_local_num_dict[client_index] / training_num
         return average_weight_dict
 
-
     def encode_average_weight_dict(self, server_params, average_weight_dict):
-        server_params.add_broadcast_param(name="average_weight_dict_keys",
-                                param=torch.tensor(list(average_weight_dict.keys())))
-        server_params.add_broadcast_param(name="average_weight_dict_values",
-                                param=torch.tensor(list(average_weight_dict.values())))
-
+        server_params.add_broadcast_param(
+            name="average_weight_dict_keys", param=torch.tensor(list(average_weight_dict.keys()))
+        )
+        server_params.add_broadcast_param(
+            name="average_weight_dict_values", param=torch.tensor(list(average_weight_dict.values()))
+        )
 
     def decode_average_weight_dict(self, server_params):
         pass
 
-
     def record_client_runtime(self, client_runtimes):
         pass
 
-
     def train(self):
         server_params = ServerToClientParams()
-        server_params.add_broadcast_param(name="broadcastTest",
-                                param=torch.tensor([1, 2, 3]))
+        server_params.add_broadcast_param(name="broadcastTest", param=torch.tensor([1, 2, 3]))
         server_params.broadcast()
         logging.info(f'server_params.get("broadcastTest") {server_params.get("broadcastTest")}')
 
@@ -203,7 +164,8 @@ class BaseServer:
             broadcast_model_state(self.trainer.model.state_dict(), src=0)
             server_params = ServerToClientParams()
             client_indexes, client_schedule = self.client_schedule(
-                round, self.args.client_num_in_total, self.args.client_num_per_round, server_params)
+                round, self.args.client_num_in_total, self.args.client_num_per_round, server_params
+            )
             average_weight_dict = self.get_average_weight(client_indexes)
             self.encode_average_weight_dict(server_params, average_weight_dict)
             # model_params = get_weights(self.trainer.get_model_params())
@@ -215,7 +177,7 @@ class BaseServer:
             localAggregatorToServerParams.communicate(self.rank, self.groups, client_schedule)
             # for device_rank in range(self.device_number):
             # localAggregatorToServerParams.add_gather_params(client_index, "runtime", client_runtime)
-            client_runtimes = localAggregatorToServerParams.get('runtime')
+            client_runtimes = localAggregatorToServerParams.get("runtime")
             logging.info(f"Client Runtime: {client_runtimes}")
             self.record_client_runtime(client_runtimes)
             # logging.info(f"localAggregatorToServerParams.get('fc.bias')[:5]: {localAggregatorToServerParams.get('fc.bias')[:5]}, ")
@@ -235,24 +197,14 @@ class BaseServer:
             #     {self.trainer.model.conv1.weight[0,0,:,:]}")
             self.test_on_server_for_all_clients(round)
 
-
-
     def test_on_server_for_all_clients(self, round_idx):
         if self.trainer.test_on_the_server(
-            self.train_data_local_dict,
-            self.test_data_local_dict,
-            self.device,
-            self.args,
+            self.train_data_local_dict, self.test_data_local_dict, self.device, self.args,
         ):
             return
 
-        if (
-            round_idx % self.args.frequency_of_the_test == 0
-            or round_idx == self.args.comm_round - 1
-        ):
-            logging.info(
-                "################test_on_server_for_all_clients : {}".format(round_idx)
-            )
+        if round_idx % self.args.frequency_of_the_test == 0 or round_idx == self.args.comm_round - 1:
+            logging.info("################test_on_server_for_all_clients : {}".format(round_idx))
             train_num_samples = []
             train_tot_corrects = []
             train_losses = []
@@ -307,11 +259,3 @@ class BaseServer:
                 wandb.log({"Test/Loss": test_loss, "round": round_idx})
             stats = {"test_acc": test_acc, "test_loss": test_loss}
             logging.info(stats)
-
-
-
-
-
-
-
-

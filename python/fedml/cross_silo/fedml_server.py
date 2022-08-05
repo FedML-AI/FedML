@@ -1,12 +1,11 @@
-from fedml.cross_silo.server import server_initializer
-from .lightsecagg.lsa_fedml_api import FedML_LSA_Horizontal
+from fedml.core import ServerAggregator
 
 
 class FedMLCrossSiloServer:
-    def __init__(
-        self, args, device, dataset, model, model_trainer=None, server_aggregator=None
-    ):
+    def __init__(self, args, device, dataset, model, server_aggregator: ServerAggregator = None):
         if args.federated_optimizer == "FedAvg":
+            from fedml.cross_silo.server import server_initializer
+
             [
                 train_data_num,
                 test_data_num,
@@ -30,10 +29,12 @@ class FedMLCrossSiloServer:
                 train_data_local_dict,
                 test_data_local_dict,
                 train_data_local_num_dict,
-                model_trainer
+                server_aggregator,
             )
 
         elif args.federated_optimizer == "LSA":
+            from .lightsecagg.lsa_fedml_api import FedML_LSA_Horizontal
+
             self.fl_trainer = FedML_LSA_Horizontal(
                 args,
                 0,

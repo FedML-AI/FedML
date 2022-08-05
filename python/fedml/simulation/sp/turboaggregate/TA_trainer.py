@@ -5,10 +5,8 @@ import torch
 import wandb
 from torch import nn
 
+from fedml.ml.trainer.trainer_creator import create_model_trainer
 from .TA_client import TA_Client
-from .my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
-from .my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
-from .my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
 
 
 class TurboAggregateTrainer(object):
@@ -36,23 +34,12 @@ class TurboAggregateTrainer(object):
         self.model_global.train()
 
         logging.info("model = {}".format(model))
-        if args.dataset == "stackoverflow_lr":
-            model_trainer = MyModelTrainerTAG(model)
-        elif args.dataset in ["fed_shakespeare", "stackoverflow_nwp"]:
-            model_trainer = MyModelTrainerNWP(model)
-        else:
-            # default model trainer is for classification problem
-            model_trainer = MyModelTrainerCLS(model)
-        self.model_trainer = model_trainer
+        self.model_trainer = create_model_trainer(model, args)
 
         self.client_list = []
-        self.setup_clients(
-            data_local_num_dict, train_data_local_dict, test_data_local_dict
-        )
+        self.setup_clients(data_local_num_dict, train_data_local_dict, test_data_local_dict)
 
-    def setup_clients(
-            self, data_local_num_dict, train_data_local_dict, test_data_local_dict
-    ):
+    def setup_clients(self, data_local_num_dict, train_data_local_dict, test_data_local_dict):
         logging.info("############setup_clients (START)#############")
         for client_idx in range(self.args.client_num_in_total):
             c = TA_Client(
@@ -62,7 +49,7 @@ class TurboAggregateTrainer(object):
                 data_local_num_dict[client_idx],
                 self.args,
                 self.device,
-                self.model_trainer
+                self.model_trainer,
             )
             self.client_list.append(c)
         logging.info("############setup_clients (END)#############")

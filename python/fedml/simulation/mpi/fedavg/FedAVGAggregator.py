@@ -6,6 +6,7 @@ import numpy as np
 import torch
 import wandb
 from .utils import transform_list_to_tensor
+from ....core.security.fedml_attacker import FedMLAttacker
 from ....core.security.fedml_defender import FedMLDefender
 
 class FedAVGAggregator(object):
@@ -20,9 +21,9 @@ class FedAVGAggregator(object):
         worker_num,
         device,
         args,
-        model_trainer,
+        server_aggregator,
     ):
-        self.trainer = model_trainer
+        self.aggregator = server_aggregator
 
         self.args = args
         self.train_global = train_global
@@ -43,10 +44,10 @@ class FedAVGAggregator(object):
             self.flag_client_model_uploaded_dict[idx] = False
 
     def get_global_model_params(self):
-        return self.trainer.get_model_params()
+        return self.aggregator.get_model_params()
 
     def set_global_model_params(self, model_parameters):
-        self.trainer.set_model_params(model_parameters)
+        self.aggregator.set_model_params(model_parameters)
 
     def add_local_trained_result(self, index, model_params, sample_num):
         logging.info("add_model. index = %d" % index)
@@ -66,17 +67,24 @@ class FedAVGAggregator(object):
     def aggregate(self):
         start_time = time.time()
         model_list = []
-        training_num = 0
 
         for idx in range(self.worker_num):
             if self.args.is_mobile == 1:
                 self.model_dict[idx] = transform_list_to_tensor(self.model_dict[idx])
-            model_list.append((self.sample_num_dict[idx], self. model_dict[idx]))
+            model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
             # training_num += self.sample_num_dict[idx]
         logging.info("len of self.model_dict[idx] = " + str(len(self.model_dict)))
 
+        if FedMLAttacker.get_instance().is_model_attack():
+            model_list = FedMLAttacker.get_instance().attack_model(local_w=model_list, global_w=self.get_global_model_params(), refs=None)
+
         if FedMLDefender.get_instance().is_defense_enabled():
-            averaged_params = FedMLDefender.get_instance().run(model_list, self._fedavg_aggregation_)
+            # todo: update extra_auxiliary_info according to defense type
+            averaged_params = FedMLDefender.get_instance().defend(
+                raw_client_grad_list=model_list,
+                base_aggregation_func=self._fedavg_aggregation_,
+                extra_auxiliary_info=self.get_global_model_params(),
+            )
         else:
             averaged_params = self._fedavg_aggregation_(model_list)
 
@@ -88,17 +96,22 @@ class FedAVGAggregator(object):
         return averaged_params
 
     def _fedavg_aggregation_(self, model_list):
+        training_num = 0
+        for i in range(0, len(model_list)):
+            local_sample_number, local_model_params = model_list[i]
+            training_num += local_sample_number
         (num0, averaged_params) = model_list[0]
         for k in averaged_params.keys():
-            training_num = 0
             for i in range(0, len(model_list)):
                 local_sample_number, local_model_params = model_list[i]
-                training_num += local_sample_number
                 if i == 0:
-                    averaged_params[k] = local_model_params[k] * local_sample_number
+                    averaged_params[k] = (
+                        local_model_params[k] * local_sample_number / training_num
+                    )
                 else:
-                    averaged_params[k] += local_model_params[k] * local_sample_number
-            averaged_params[k] /= training_num
+                    averaged_params[k] += (
+                        local_model_params[k] * local_sample_number / training_num
+                    )
         return averaged_params
 
     def client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
@@ -132,7 +145,7 @@ class FedAVGAggregator(object):
             return self.test_global
 
     def test_on_server_for_all_clients(self, round_idx):
-        if self.trainer.test_on_the_server(
+        if self.aggregator.test_all(
             self.train_data_local_dict,
             self.test_data_local_dict,
             self.device,
@@ -152,7 +165,7 @@ class FedAVGAggregator(object):
             train_losses = []
             for client_idx in range(self.args.client_num_in_total):
                 # train data
-                metrics = self.trainer.test(
+                metrics = self.aggregator.test(
                     self.train_data_local_dict[client_idx], self.device, self.args
                 )
                 train_tot_correct, train_num_sample, train_loss = (
@@ -179,9 +192,9 @@ class FedAVGAggregator(object):
             test_losses = []
 
             if round_idx == self.args.comm_round - 1:
-                metrics = self.trainer.test(self.test_global, self.device, self.args)
+                metrics = self.aggregator.test(self.test_global, self.device, self.args)
             else:
-                metrics = self.trainer.test(self.val_global, self.device, self.args)
+                metrics = self.aggregator.test(self.val_global, self.device, self.args)
 
             test_tot_correct, test_num_sample, test_loss = (
                 metrics["test_correct"],

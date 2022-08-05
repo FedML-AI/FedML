@@ -7,6 +7,8 @@ import threading
 import time
 from logging import handlers
 
+from fedml import mlops
+
 
 class MLOpsRuntimeLog:
     FED_LOG_LINE_NUMS_PER_UPLOADING = 1000
@@ -30,6 +32,16 @@ class MLOpsRuntimeLog:
             return
 
         logging.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
+
+        if MLOpsRuntimeLog._log_sdk_instance is not None and \
+            hasattr(MLOpsRuntimeLog._log_sdk_instance, "args") and \
+                hasattr(MLOpsRuntimeLog._log_sdk_instance.args, "rank"):
+            if MLOpsRuntimeLog._log_sdk_instance.args.rank == 0:
+                mlops.log_aggregation_failed_status()
+            else:
+                mlops.log_training_failed_status()
+        else:
+            mlops.log_aggregation_failed_status()
 
     def __init__(self, args):
         self.logger = None

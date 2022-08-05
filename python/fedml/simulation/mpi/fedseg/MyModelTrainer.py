@@ -25,7 +25,7 @@ class MyModelTrainer(ClientTrainer):
             logging.info("Updating Global model")
             self.model.load_state_dict(model_parameters)
 
-    def train(self, train_data, device):
+    def train(self, train_data, device, args):
         model = self.model
         args = self.args
 
@@ -99,7 +99,7 @@ class MyModelTrainer(ClientTrainer):
                     )
                 )
 
-    def test(self, test_data, device):
+    def test(self, test_data, device, args):
         logging.info("Evaluation on trainer ID:{}".format(self.id))
         model = self.model
         args = self.args
@@ -155,8 +155,3 @@ class MyModelTrainer(ClientTrainer):
             test_acc, test_acc_class, test_mIoU, test_FWIoU, test_loss
         )
         return eval_metrics
-
-    def test_on_the_server(
-        self, train_data_local_dict, test_data_local_dict, device, args=None
-    ) -> bool:
-        return False
