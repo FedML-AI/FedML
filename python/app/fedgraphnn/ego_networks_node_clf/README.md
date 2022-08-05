@@ -30,12 +30,12 @@ mkdir PubMed
 mkdir CS
 mkdir Physics
 
-python fedml_ego_networks_node_clf.py --path ego_networks_node_clf/ --data cora --ego_number 1000 --hop_number 2
-python fedml_ego_networks_node_clf.py --path ego_networks_node_clf/ --data citeseer --ego_number 1000 --hop_number 2
-python fedml_ego_networks_node_clf.py --path ego_networks_node_clf/ --data DBLP --ego_number 1000 --hop_number 2
-python fedml_ego_networks_node_clf.py --path ego_networks_node_clf/ --data PubMed --ego_number 1000 --hop_number 2
-python fedml_ego_networks_node_clf.py --path ego_networks_node_clf/ --data CS --ego_number 1000 --hop_number 2
-python fedml_ego_networks_node_clf.py --path ego_networks_node_clf/ --data Physics --ego_number 1000 --hop_number 2
+python ./data/sampleEgonetworks.py --path ego-networks/ --data cora --ego_number 1000 --hop_number 2
+python ./data/sampleEgonetworks.py --path ego-networks/ --data citeseer --ego_number 1000 --hop_number 2
+python ./data/sampleEgonetworks.py --path ego-networks/ --data DBLP --ego_number 1000 --hop_number 2
+python ./data/sampleEgonetworks.py --path ego-networks/ --data PubMed --ego_number 1000 --hop_number 2
+python ./data/sampleEgonetworks.py --path ego-networks/ --data CS --ego_number 1000 --hop_number 2
+python ./data/sampleEgonetworks.py --path ego-networks/ --data Physics --ego_number 1000 --hop_number 2
 ```
 
 #### Arguments for Data Preparation code
