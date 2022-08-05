@@ -153,26 +153,72 @@ def save_login_process(runner_home_dir, runner_info_dir, edge_process_id):
         pass
 
 
-def cleanup_all_fedml_processes(login_program, exclude_login=False):
-    # Cleanup all fedml relative processes.
+def cleanup_all_fedml_client_learning_processes():
+    # Cleanup all fedml client learning processes.
+    for process in psutil.process_iter():
+        try:
+            pinfo = process.as_dict(attrs=["pid", "name", "cmdline"])
+            found_learning_process = False
+            found_client_process = False
+            for cmd in pinfo["cmdline"]:
+                if str(cmd).find("fedml_config.yaml") != -1:
+                    found_learning_process = True
+
+                if str(cmd).find("client") != -1:
+                    found_client_process = True
+
+            if found_learning_process and found_client_process:
+                click.echo("find client learning process at {}.".format(process.pid))
+                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+        except Exception as e:
+            pass
+
+
+def cleanup_all_fedml_client_login_processes(login_program):
+    # Cleanup all fedml client login processes.
     for process in psutil.process_iter():
         try:
             pinfo = process.as_dict(attrs=["pid", "name", "cmdline"])
             for cmd in pinfo["cmdline"]:
-                if exclude_login:
-                    if str(cmd).find("fedml_config.yaml") != -1:
-                        click.echo("find fedml process at {}.".format(process.pid))
+                if str(cmd).find(login_program) != -1:
+                    if os.path.basename(cmd) == login_program:
+                        click.echo("find client login process at {}.".format(process.pid))
                         os.killpg(os.getpgid(process.pid), signal.SIGTERM)
-                        # process.terminate()
-                        # process.join()
-                else:
-                    if (
-                            str(cmd).find(login_program) != -1
-                            or str(cmd).find("fedml_config.yaml") != -1
-                    ):
-                        click.echo("find fedml process at {}.".format(process.pid))
-                        os.killpg(os.getpgid(process.pid), signal.SIGTERM)
-                        # process.terminate()
-                        # process.join()
         except Exception as e:
             pass
+
+
+def cleanup_all_fedml_server_learning_processes():
+    # Cleanup all fedml server learning processes.
+    for process in psutil.process_iter():
+        try:
+            pinfo = process.as_dict(attrs=["pid", "name", "cmdline"])
+            found_learning_process = False
+            found_server_process = False
+            for cmd in pinfo["cmdline"]:
+                if str(cmd).find("fedml_config.yaml") != -1:
+                    found_learning_process = True
+
+                if str(cmd).find("server") != -1:
+                    found_server_process = True
+
+            if found_learning_process and found_server_process:
+                click.echo("find server learning process at {}.".format(process.pid))
+                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+        except Exception as e:
+            pass
+
+
+def cleanup_all_fedml_server_login_processes(login_program):
+    # Cleanup all fedml client login processes.
+    for process in psutil.process_iter():
+        try:
+            pinfo = process.as_dict(attrs=["pid", "name", "cmdline"])
+            for cmd in pinfo["cmdline"]:
+                if str(cmd).find(login_program) != -1:
+                    if os.path.basename(cmd) == login_program:
+                        click.echo("find server login process at {}.".format(process.pid))
+                        os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+        except Exception as e:
+            pass
+
