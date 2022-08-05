@@ -9,6 +9,15 @@ is critical for improving the quality of recommendation systems. In federated se
 visible to his/her k-hop neighbors. Thus, it is natural to consider node-level FL in social networks with clients holding the user ego-networks. To simulate this scenario, we use the open social networks
 and publication networks and partition them into sets of ego-networks.
 
+## Simulation
+```
+pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.12.0+cpu.html
+WORKSPACE=./FedML/app/fedgraphnn/app/ego_networks_node_clf
+cd $WORKSPACE
+sh run_fed_node_clf.sh 4
+
+```
+
 ## Data Preparation
 
 For each dataset, ego-networks needs to be sampled first.  
@@ -21,12 +30,12 @@ mkdir PubMed
 mkdir CS
 mkdir Physics
 
-python sampleEgonetworks.py --path ego-networks/ --data cora --ego_number 1000 --hop_number 2
-python sampleEgonetworks.py --path ego-networks/ --data citeseer --ego_number 1000 --hop_number 2
-python sampleEgonetworks.py --path ego-networks/ --data DBLP --ego_number 1000 --hop_number 2
-python sampleEgonetworks.py --path ego-networks/ --data PubMed --ego_number 1000 --hop_number 2
-python sampleEgonetworks.py --path ego-networks/ --data CS --ego_number 1000 --hop_number 2
-python sampleEgonetworks.py --path ego-networks/ --data Physics --ego_number 1000 --hop_number 2
+python fedml_ego_networks_node_clf.py --path ego_networks_node_clf/ --data cora --ego_number 1000 --hop_number 2
+python fedml_ego_networks_node_clf.py --path ego_networks_node_clf/ --data citeseer --ego_number 1000 --hop_number 2
+python fedml_ego_networks_node_clf.py --path ego_networks_node_clf/ --data DBLP --ego_number 1000 --hop_number 2
+python fedml_ego_networks_node_clf.py --path ego_networks_node_clf/ --data PubMed --ego_number 1000 --hop_number 2
+python fedml_ego_networks_node_clf.py --path ego_networks_node_clf/ --data CS --ego_number 1000 --hop_number 2
+python fedml_ego_networks_node_clf.py --path ego_networks_node_clf/ --data Physics --ego_number 1000 --hop_number 2
 ```
 
 #### Arguments for Data Preparation code
