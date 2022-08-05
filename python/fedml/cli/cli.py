@@ -188,11 +188,10 @@ def mlops_login(
             return
         pip_source_dir = os.path.dirname(__file__)
         login_cmd = os.path.join(pip_source_dir, "edge_deployment", "client_daemon.py")
-        # click.echo(login_cmd)
         client_logout()
         sys_utils.cleanup_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
-        sys_utils.cleanup_all_fedml_processes("client_login.py", exclude_login=True)
-        sys_utils.cleanup_all_fedml_processes("client_daemon.py", exclude_login=True)
+        sys_utils.cleanup_all_fedml_client_learning_processes()
+        sys_utils.cleanup_all_fedml_client_login_processes("client_login.py")
 
         try:
             ClientConstants.login_role_list.index(role)
@@ -238,11 +237,11 @@ def mlops_login(
             return
 
         pip_source_dir = os.path.dirname(__file__)
-        login_cmd = os.path.join(pip_source_dir, "server_deployment", "server_login.py")
-        # click.echo(login_cmd)
+        login_cmd = os.path.join(pip_source_dir, "server_deployment", "server_daemon.py")
         server_logout()
         sys_utils.cleanup_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
-        sys_utils.cleanup_all_fedml_processes("server_login.py", exclude_login=True)
+        sys_utils.cleanup_all_fedml_server_learning_processes()
+        sys_utils.cleanup_all_fedml_server_login_processes("server_login.py")
         login_pid = subprocess.Popen(
             [
                 sys_utils.get_python_program(),
@@ -297,7 +296,8 @@ def mlops_logout(client, server, docker, docker_rank):
             return
         client_logout()
         sys_utils.cleanup_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
-        sys_utils.cleanup_all_fedml_processes("client_login.py")
+        sys_utils.cleanup_all_fedml_client_learning_processes()
+        sys_utils.cleanup_all_fedml_client_login_processes("client_login.py")
 
     if is_server is True:
         if is_docker:
@@ -305,7 +305,8 @@ def mlops_logout(client, server, docker, docker_rank):
             return
         server_logout()
         sys_utils.cleanup_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
-        sys_utils.cleanup_all_fedml_processes("server_login.py")
+        sys_utils.cleanup_all_fedml_server_learning_processes()
+        sys_utils.cleanup_all_fedml_server_login_processes("server_login.py")
 
 
 @cli.command("build", help="Build packages for MLOps platform (open.fedml.ai)")
