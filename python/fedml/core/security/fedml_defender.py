@@ -1,9 +1,10 @@
 import logging
-from .common.utils import get_total_sample_num
+from .defense.cclip_defense import CClipDefense
 from .defense.geometric_median_defense import GeometricMedianDefense
 from .defense.krum_defense import KrumDefense
 from .defense.robust_learning_rate_defense import RobustLearningRateDefense
 from .defense.slsgd_defense import SLSGDDefense
+from .defense.weak_dp_defense import WeakDPDefense
 from ...core.security.defense.norm_diff_clipping_defense import NormDiffClippingDefense
 from ...core.security.constants import (
     DEFENSE_NORM_DIFF_CLIPPING,
@@ -11,8 +12,9 @@ from ...core.security.constants import (
     DEFENSE_KRUM,
     DEFENSE_SLSGD,
     DEFENSE_GEO_MEDIAN,
-    DEFENSE_CCLIP,
+    DEFENSE_CCLIP, DEFENSE_WEAK_DP,
 )
+from typing import List, Tuple, Dict, Any, Callable
 
 
 class FedMLDefender:
@@ -38,19 +40,19 @@ class FedMLDefender:
             logging.info("self.defense_type = {}".format(self.defense_type))
             self.defender = None
             if self.defense_type == DEFENSE_NORM_DIFF_CLIPPING:
-                self.defender = NormDiffClippingDefense(args.norm_bound)
+                self.defender = NormDiffClippingDefense(args)
             elif self.defense_type == DEFENSE_ROBUST_LEARNING_RATE:
-                self.defender = RobustLearningRateDefense(args.robust_threshold)
+                self.defender = RobustLearningRateDefense(args)
             elif self.defense_type == DEFENSE_KRUM:
-                self.defender = KrumDefense(args.byzantine_client_num, args.multi)
+                self.defender = KrumDefense(args)
             elif self.defense_type == DEFENSE_SLSGD:
-                self.defender = SLSGDDefense(
-                    args.trim_param_b, args.alpha, args.option_type
-                )
+                self.defender = SLSGDDefense(args)
             elif self.defense_type == DEFENSE_GEO_MEDIAN:
-                self.defender = GeometricMedianDefense(
-                    args.byzantine_client_num, args.client_num_per_round, args.batch_num
-                )
+                self.defender = GeometricMedianDefense(args)
+            elif self.defense_type == DEFENSE_WEAK_DP:
+                self.defender = WeakDPDefense(args)
+            elif self.defense_type == DEFENSE_CCLIP:
+                self.defender = CClipDefense(args)
             else:
                 raise Exception("args.attack_type is not defined!")
         else:
@@ -62,37 +64,15 @@ class FedMLDefender:
     def get_defense_types(self):
         return self.defense_type
 
-    def is_defense_at_gradients(self):
-        return self.is_enabled and self.defense_type in [
-            DEFENSE_NORM_DIFF_CLIPPING,
-            DEFENSE_KRUM,
-            # DEFENSE_SLSGD,
-            DEFENSE_GEO_MEDIAN,
-        ]
-
-    def is_defense_at_global_model(self):
-        return self.is_enabled and self.defense_type in [DEFENSE_SLSGD, DEFENSE_CCLIP]
-
-    def is_defense_at_aggregation(self):
-        return self.is_enabled and self.defense_type in [
-            DEFENSE_ROBUST_LEARNING_RATE,
-            DEFENSE_SLSGD,
-            DEFENSE_GEO_MEDIAN,
-        ]
-
-    def defend(self, client_grad_list, global_w):
+    def defend(
+        self,
+        raw_client_grad_list: List[Tuple[float, Dict]],
+        base_aggregation_func: Callable = None,
+        extra_auxiliary_info: Any = None,
+    ):
         if self.defender is None:
             raise Exception("defender is not initialized!")
-        new_grad_list = self.defender.defend(client_grad_list, global_w)
-        training_num = get_total_sample_num(new_grad_list)
-        return training_num, new_grad_list
+        return self.defender.run(
+            raw_client_grad_list, base_aggregation_func, extra_auxiliary_info
+        )
 
-    def robust_aggregate(self, client_grad_list, global_w=None):
-        if self.defender is None:
-            raise Exception("defender is not initialized!")
-        return self.defender.robust_aggregate(client_grad_list, global_w=global_w)
-
-    def robustify_global_model(self, avg_params, previous_global_w=None):
-        if self.defender is None:
-            raise Exception("defender is not initialized!")
-        return self.defender.robustify_global_model(avg_params, previous_global_w=previous_global_w)

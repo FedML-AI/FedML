@@ -38,6 +38,13 @@ spec:
         volumeMounts:
           - name: localtime
             mountPath: "/etc/localtime"
+        resources:
+          requests:
+            memory: "1400Mi"
+            cpu: "1000m"
+          limits:
+            memory: "4096Mi"
+            cpu: "4000m"
       volumes:
         - name: localtime
           hostPath:

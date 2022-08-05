@@ -4,6 +4,7 @@ import fedml
 from data.data_loader import load_partition_data, get_data
 from fedml import FedMLRunner
 from model.gcn_link import GCNLinkPred
+from trainer.federated_lp_aggregator import FedLPAggregator
 from trainer.federated_lp_trainer import FedLinkPredTrainer
 
 
@@ -13,7 +14,7 @@ def load_data(args, dataset_name):
         "Physics",
         "cora",
         "Cora_ML",
-        "CiteSeer",
+        "citeseer",
         "DBLP",
         "PubMed",
     ]:
@@ -81,9 +82,10 @@ def create_model(model_name, feat_dim, num_cats):
         model = GCNLinkPred(in_channels=feat_dim, out_channels=feat_dim)
     else:
         raise Exception("such model does not exist !")
-    trainer = FedLinkPredTrainer(model)
+    trainer = FedLinkPredTrainer(model, args)
+    aggregator = FedLPAggregator(model, args)
     logging.info("Model and Trainer  - done")
-    return model, trainer
+    return model, trainer, aggregator
 
 
 if __name__ == "__main__":
@@ -97,8 +99,8 @@ if __name__ == "__main__":
     dataset, num_cats, feat_dim = load_data(args, args.dataset)
 
     # load model
-    model, trainer = create_model(args.model, feat_dim, num_cats)
+    model, trainer, aggregator = create_model(args.model, feat_dim, num_cats)
 
     # start training
-    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer, aggregator)
     fedml_runner.run()

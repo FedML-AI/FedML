@@ -1,7 +1,6 @@
 import argparse
 
 import numpy as np
-
 from fedml.core.security.defense.bulyan_defense import BulyanDefense
 from fedml.core.security.test.aggregation.aggregation_functions import (
     AggregationFunction,
@@ -21,21 +20,22 @@ def add_args():
 
     # default arguments
     parser.add_argument("--byzantine_client_num", type=int, default=1)
-
     parser.add_argument("--client_num_per_round", type=int, default=8)
 
     args, unknown = parser.parse_known_args()
     return args
 
 
-def test_defense(config):
+def test_defense():
+    config = add_args()
     mk = BulyanDefense(config)
     model_list = create_fake_model_list(mk.client_num_per_round)
     val = mk.run(model_list, AggregationFunction.FedAVG)
     print(f"val={val}")
 
 
-def test__compute_middle_point(config):
+def test__compute_middle_point():
+    config = add_args()
     by = BulyanDefense(config)
     select_indexs, selected_set, agg_grads = by._bulyan(
         np.array(
@@ -57,6 +57,5 @@ def test__compute_middle_point(config):
 
 
 if __name__ == "__main__":
-    args = add_args()
-    test_defense(args)
-    # test__compute_middle_point(args)
+    test_defense()
+    test__compute_middle_point()

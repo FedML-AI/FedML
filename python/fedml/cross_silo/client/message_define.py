@@ -37,6 +37,10 @@ class MyMessage(object):
     MSG_ARG_KEY_TEST_ERROR = "test_error"
     MSG_ARG_KEY_TEST_NUM = "test_num_sample"
 
+    MSG_ARG_KEY_AVG_WEIGHTS = "avg_weights"
+    MSG_ARG_KEY_CLIENT_SCHEDULE = "client_schedule"
+    MSG_ARG_KEY_CLIENT_RUNTIME_INFO = "client_runtime"
+
     MSG_ARG_KEY_CLIENT_STATUS = "client_status"
     MSG_ARG_KEY_CLIENT_OS = "client_os"
 

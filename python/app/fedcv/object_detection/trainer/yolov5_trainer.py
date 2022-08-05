@@ -1,37 +1,17 @@
 import copy
 import logging
-import time
-import sys
-import os
-from pathlib import Path
 import math
-from matplotlib import pyplot as plt
+import time
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import wandb
-from torch.optim import Adam, lr_scheduler
+from torch.optim import lr_scheduler
 
-from fedml.core.alg_frame.client_trainer import ClientTrainer
-
+import fedml
+from fedml.core import ClientTrainer
 from model.yolov5.utils.loss import ComputeLoss
-from model.yolov5.utils.general import (
-    coco80_to_coco91_class,
-    check_dataset,
-    check_file,
-    check_img_size,
-    box_iou,
-    non_max_suppression,
-    scale_coords,
-    xyxy2xywh,
-    xywh2xyxy,
-    clip_coords,
-    set_logging,
-    increment_path,
-)
-from model.yolov5.utils.metrics import ap_per_class
 
 
 class YOLOv5Trainer(ClientTrainer):
@@ -39,8 +19,8 @@ class YOLOv5Trainer(ClientTrainer):
         super(YOLOv5Trainer, self).__init__(model, args)
         self.hyp = args.hyp
         self.args = args
-        self.round_idx = 0
         self.round_loss = []
+        self.round_idx = 0
 
     def get_model_params(self):
         return self.model.cpu().state_dict()
@@ -49,10 +29,11 @@ class YOLOv5Trainer(ClientTrainer):
         logging.info("set_model_params")
         self.model.load_state_dict(model_parameters)
 
-    def train(self, train_data, device, args=None):
+    def train(self, train_data, device, args):
         logging.info("Start training on Trainer {}".format(self.id))
         logging.info(f"Hyperparameters: {self.hyp}, Args: {self.args}")
         model = self.model
+        self.round_idx = args.round_idx
         args = self.args
         hyp = self.hyp if self.hyp else self.args.hyp
 
@@ -152,40 +133,34 @@ class YOLOv5Trainer(ClientTrainer):
                 )
                 logging.info(s)
 
-                if batch_idx % 100 == 0:
-                    logging.info(
-                        f"Trainer {self.id} batch {batch_idx} box: {mloss[0]} obj: {mloss[1]} cls: {mloss[2]} total: {mloss.sum()} time: {(time.time() - t)/60}"
-                    )
-
             scheduler.step()
 
             epoch_loss.append(copy.deepcopy(mloss.cpu().numpy()))
             logging.info(
-                f"***Trainer {self.id} epoch {epoch} box: {mloss[0]} obj: {mloss[1]} cls: {mloss[2]} total: {mloss.sum()} time: {(time.time() - t)/60}"
+                f"Trainer {self.id} epoch {epoch} box: {mloss[0]} obj: {mloss[1]} cls: {mloss[2]} total: {mloss.sum()} time: {(time.time() - t)}"
             )
 
-            logging.info("#" * 80)
+            logging.info("#" * 20)
 
             logging.info(
-                f"Trainer {self.id} epoch {epoch} time: {(time.time() - t)/60} batch_num: {batch_idx} speed: {(time.time() - t)/60/batch_idx}"
+                f"Trainer {self.id} epoch {epoch} time: {(time.time() - t)}s batch_num: {batch_idx} speed: {(time.time() - t)/batch_idx} s/batch"
             )
-            logging.info("#" * 80)
+            logging.info("#" * 20)
 
         # plot for client
         # plot box, obj, cls, total loss
         epoch_loss = np.array(epoch_loss)
-        logging.info(f"Epoch loss: {epoch_loss}")
-        # plt.figure(figsize=(10, 5))
-        # plt.title("Box, Obj, Cls, Total Loss")
-        # plt.plot(epoch_loss[:, 0], label="box")
-        # plt.plot(epoch_loss[:, 1], label="obj")
-        # plt.plot(epoch_loss[:, 2], label="cls")
-        # plt.plot(epoch_loss[:, 3], label="total")
-        # plt.legend()
+        # logging.info(f"Epoch loss: {epoch_loss}")
 
-        # plt.savefig(f"{args.save_dir}/trainer_{self.id}_epoch_loss_round_{self.round_idx}.png")
-        # plt.close()
-        self.round_idx += 1
+        fedml.mlops.log(
+            {
+                f"round_idx": self.round_idx,
+                f"train_box_loss": np.float(epoch_loss[-1, 0]),
+                f"train_obj_loss": np.float(epoch_loss[-1, 1]),
+                f"train_cls_loss": np.float(epoch_loss[-1, 2]),
+                f"train_total_loss": np.float(epoch_loss[-1, :].sum()),
+            }
+        )
 
         self.round_loss.append(epoch_loss[-1, :])
         if self.round_idx == args.comm_round:
@@ -195,238 +170,4 @@ class YOLOv5Trainer(ClientTrainer):
                 f"Trainer {self.id} round {self.round_idx} finished, round loss: {self.round_loss}"
             )
 
-            # plt.figure(figsize=(10, 5))
-            # plt.title("Box, Obj, Cls, Total Loss per round")
-            # plt.plot(self.round_loss[:, 0], label="box")
-            # plt.plot(self.round_loss[:, 1], label="obj")
-            # plt.plot(self.round_loss[:, 2], label="cls")
-            # plt.plot(self.round_loss[:, 3], label="total")
-            # plt.legend()
-            # plt.savefig(f"{args.save_dir}/trainer_{self.id}_round_loss.png")
-            # plt.close()
-
         return
-
-    def test(self, test_data, device, args):
-        logging.info("Evaluating on Trainer ID: {}".format(self.id))
-        model = self.model
-        args = self.args
-
-        test_metrics = {
-            "test_correct": 0,
-            "test_total": 0,
-            "test_loss": 0,
-        }
-
-        if not test_data:
-            logging.info("No test data for this trainer")
-            return test_metrics
-
-        model.eval()
-        model.to(device)
-
-        iouv = torch.linspace(0.5, 0.95, 10).to(device)  # iou vector for mAP@0.5:0.95
-        niou = iouv.numel()
-
-        seen = 0
-        names = {
-            k: v
-            for k, v in enumerate(
-                model.names if hasattr(model, "names") else model.module.names
-            )
-        }
-        s = ("%20s" + "%12s" * 6) % (
-            "Class",
-            "Images",
-            "Targets",
-            "P",
-            "R",
-            "mAP@.5",
-            "mAP@.5:.95",
-        )
-        p, r, f1, mp, mr, map50, map, t0, t1 = (
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        )
-        loss = torch.zeros(3, device=device)
-        compute_loss = ComputeLoss(model)
-        jdict, stats, ap, ap_class, wandb_images = [], [], [], [], []
-
-        for batch_i, (img, targets, paths, shapes) in enumerate(test_data):
-            img = img.to(device, non_blocking=True)
-            # img = img.half() if half else img.float()  # uint8 to fp16/32
-            img = img.float() / 256.0 - 0.5
-            targets = targets.to(device)
-            nb, _, height, width = img.shape  # batch size, channels, height, width
-            whwh = torch.Tensor([width, height, width, height]).to(device)
-
-            # Disable gradients
-            with torch.no_grad():
-                # Run model
-                inf_out, train_out = model(img)  # inference and training outputs
-
-                # Loss
-                loss += compute_loss([x.float() for x in train_out], targets)[1][
-                    :3
-                ]  # box, obj, cls
-
-                # Run NMS
-                output = non_max_suppression(
-                    inf_out, conf_thres=args.conf_thres, iou_thres=args.iou_thres
-                )
-
-            # Statistics per image
-            for si, pred in enumerate(output):
-                labels = targets[targets[:, 0] == si, 1:]
-                nl = len(labels)
-                tcls = labels[:, 0].tolist() if nl else []  # target class
-                seen += 1
-
-                if len(pred) == 0:
-                    if nl:
-                        stats.append(
-                            (
-                                torch.zeros(0, niou, dtype=torch.bool),
-                                torch.Tensor(),
-                                torch.Tensor(),
-                                tcls,
-                            )
-                        )
-                    continue
-
-                # W&B logging
-                # TODO
-
-                # Clip boxes to image bounds
-                clip_coords(pred, (height, width))
-
-                # Assign all predictions as incorrect
-                correct = torch.zeros(
-                    pred.shape[0], niou, dtype=torch.bool, device=device
-                )
-                if nl:
-                    detected = []  # target indices
-                    tcls_tensor = labels[:, 0]
-
-                    # target boxes
-                    tbox = xywh2xyxy(labels[:, 1:5]) * whwh
-
-                    # Per target class
-                    for cls in torch.unique(tcls_tensor):
-                        ti = (
-                            (cls == tcls_tensor).nonzero(as_tuple=False).view(-1)
-                        )  # prediction indices
-                        pi = (
-                            (cls == pred[:, 5]).nonzero(as_tuple=False).view(-1)
-                        )  # target indices
-
-                        # Search for detections
-                        if pi.shape[0]:
-                            # Prediction to target ious
-                            ious, i = box_iou(pred[pi, :4], tbox[ti]).max(
-                                1
-                            )  # best ious, indices
-
-                            # Append detections
-                            detected_set = set()
-                            for j in (ious > iouv[0]).nonzero(as_tuple=False):
-                                d = ti[i[j]]  # detected target
-                                if d.item() not in detected_set:
-                                    detected_set.add(d.item())
-                                    detected.append(d)
-                                    correct[pi[j]] = ious[j] > iouv  # iou_thres is 1xn
-                                    if (
-                                        len(detected) == nl
-                                    ):  # all targets already located in image
-                                        break
-
-                # Append statistics (correct, conf, pcls, tcls)
-                stats.append((correct.cpu(), pred[:, 4].cpu(), pred[:, 5].cpu(), tcls))
-
-            # Plot images
-            # TODO
-
-        # Compute statistics
-        stats = [np.concatenate(x, 0) for x in zip(*stats)]  # to numpy
-        if len(stats) and stats[0].any():
-            tp, fp, p, r, f1, ap, ap_class = ap_per_class(
-                *stats, plot=False, save_dir=args.save_dir, names=names
-            )
-            ap50, ap = ap[:, 0], ap.mean(1)  # AP@0.5, AP@0.5:0.95
-            mp, mr, map50, map = p.mean(), r.mean(), ap50.mean(), ap.mean()
-            nt = np.bincount(
-                stats[3].astype(np.int64), minlength=args.nc
-            )  # number of targets per class
-        else:
-            nt = torch.zeros(1)
-
-        # W&B logging
-        # TODO
-        # Print results
-        pf = "%20s" + "%12.3g" * 6  # print format
-        print(pf % ("all", seen, nt.sum(), mp, mr, map50, map))
-
-        # Print results per class
-        if args.yolo_verbose and args.nc > 1 and len(stats):
-            for i, c in enumerate(ap_class):
-                print(pf % (names[c], seen, nt[c], p[i], r[i], ap50[i], ap[i]))
-
-        # Print speeds
-        t = tuple(x / seen * 1e3 for x in (t0, t1, t0 + t1)) + (
-            args.img_size,
-            args.img_size,
-            args.batch_size,
-        )  # tuple
-
-        # Return results
-        model.float()  # for training
-        maps = np.zeros(args.nc) + map
-        for i, c in enumerate(ap_class):
-            maps[c] = ap[i]
-
-        # all metrics
-        # metrics = (mp, mr, map50, map, *(loss.cpu() / len(test_data)).tolist()), maps, t
-        # logging.info(f"Test metrics: {metrics}")
-
-        test_metrics = {
-            "test_correct": 0,
-            "test_total": len(test_data),
-            "test_loss": sum((loss.cpu() / len(test_data)).tolist()),
-        }
-        logging.info(f"Test metrics: {test_metrics}")
-        return test_metrics
-
-    def test_on_the_server(
-        self, train_data_local_dict, test_data_local_dict, device, args=None
-    ):
-        return False
-        logging.info("Testing on the server")
-        logging.info(f"rank id: {args.rank}")
-        train_data = train_data_local_dict
-        test_data = test_data_local_dict
-
-        for k in train_data.keys():
-            # logging.info(f"{k}: {train_data[k]}")
-            if train_data[k] is None:
-                continue
-            train_data_results = self.test(
-                test_data=train_data[k], device=device, args=args
-            )
-            logging.info(f"{k}: {train_data_results}")
-
-        for k in test_data.keys():
-            # logging.info(f"{k}: {test_data[k]}")
-            if test_data[k] is None:
-                continue
-            test_data_results = self.test(
-                test_data=test_data[k], device=device, args=args
-            )
-            logging.info(f"{k}: {test_data_results}")
-        return True

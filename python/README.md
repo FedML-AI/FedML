@@ -27,7 +27,7 @@ Other low-level APIs related to security and privacy are also supported. All alg
 
 **device**: FedML computing resource management.
 
-**simulation**: FedML parrot can support (1) simulate FL using a single process (2) MPI-based FL Simulator (3) NCCL-based FL Simulator (fastest)
+**simulation**: FedML parrot can support: (1) simulate FL using a single process (2) MPI-based FL Simulator (3) NCCL-based FL Simulator (fastest)
 
 **cross-silo**: Cross-silo Federated Learning for cross-organization/account training
 

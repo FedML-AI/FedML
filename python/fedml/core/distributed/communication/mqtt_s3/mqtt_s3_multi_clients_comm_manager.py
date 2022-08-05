@@ -16,6 +16,7 @@ from ..message import Message
 from ..observer import Observer
 import time
 
+
 class MqttS3MultiClientsCommManager(BaseCommunicationManager):
     def __init__(
         self,
@@ -98,6 +99,8 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         self.mqtt_mgr.add_disconnected_listener(self.on_disconnected)
         self.mqtt_mgr.connect()
 
+        self.is_connected = False
+
     @property
     def client_id(self):
         return self._client_id
@@ -120,6 +123,8 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         receiving message topic (subscribe): serverID_clientID
 
         """
+        if self.is_connected:
+            return
         self.mqtt_mgr.add_message_passthrough_listener(self._on_message)
 
         # Subscribe one topic
@@ -127,19 +132,17 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
             # server
             self.subscribe_client_status_message()
 
-            logging.info("self.client_real_ids = {}".format(self.client_real_ids))
-            print("self.client_real_ids = {}".format(self.client_real_ids))
+            # logging.info("self.client_real_ids = {}".format(self.client_real_ids))
             for client_rank in range(0, self.client_num):
                 real_topic = self._topic + str(self.client_real_ids[client_rank])
                 result, mid = mqtt_client_object.subscribe(real_topic, 0)
 
-                logging.info(
-                    "mqtt_s3.on_connect: subscribes real_topic = %s, mid = %s, result = %s"
-                    % (real_topic, mid, str(result))
-                )
-
+                # logging.info(
+                #     "mqtt_s3.on_connect: subscribes real_topic = %s, mid = %s, result = %s"
+                #     % (real_topic, mid, str(result))
+                # )
+            # logging.info("mqtt_s3.on_connect: server subscribes")
             self._notify_connection_ready()
-            logging.info("mqtt_s3.on_connect: server subscribes")
         else:
             # client
             real_topic = self._topic + str(self.server_id) + "_" + str(self.client_real_ids[0])
@@ -147,13 +150,14 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
 
             self._notify_connection_ready()
 
-            logging.info(
-                "mqtt_s3.on_connect: client subscribes real_topic = %s, mid = %s, result = %s"
-                % (real_topic, mid, str(result))
-            )
+            # logging.info(
+            #     "mqtt_s3.on_connect: client subscribes real_topic = %s, mid = %s, result = %s"
+            #     % (real_topic, mid, str(result))
+            # )
+        self.is_connected = True
 
     def on_disconnected(self, mqtt_client_object):
-        pass
+        self.is_connected = False
 
     def add_observer(self, observer: Observer):
         self._observers.append(observer)
@@ -171,7 +175,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         msg_params = Message()
         msg_params.init_from_json_object(msg_obj)
         msg_type = msg_params.get_type()
-        logging.info("mqtt_s3.notify: msg type = %d" % msg_type)
+        logging.info("mqtt_s3.notify: msg type = %s" % msg_type)
         for observer in self._observers:
             observer.receive_message(msg_type, msg_params)
 

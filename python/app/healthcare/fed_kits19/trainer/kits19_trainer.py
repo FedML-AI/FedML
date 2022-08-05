@@ -24,7 +24,7 @@ class KITS19Trainer(ClientTrainer):
         logging.info("set_model_params")
         self.model.load_state_dict(model_parameters)
 
-    def train(self, train_data, device, args=None):
+    def train(self, train_data, device, args):
         logging.info("Start training on Trainer {}".format(self.id))
         model = self.model
         args = self.args
@@ -55,11 +55,11 @@ class KITS19Trainer(ClientTrainer):
         # To draw loss and accuracy plots
         training_loss_list = []
         training_dice_list = []
-        print(" Train Data Size " + str(len(train_data.dataset)))
-        # print(" Test Data Size " + str(dataset_sizes["test"]))
+        logging.info(" Train Data Size " + str(len(train_data.dataset)))
+        # logging.info(" Test Data Size " + str(dataset_sizes["test"]))
         for epoch in range(epochs):
-            print("Epoch {}/{}".format(epoch, epochs - 1))
-            print("-" * 10)
+            logging.info("Epoch {}/{}".format(epoch, epochs - 1))
+            logging.info("-" * 10)
 
             dice_list = []
             running_loss = 0.0
@@ -91,7 +91,7 @@ class KITS19Trainer(ClientTrainer):
                 best_acc = epoch_acc
                 best_model_wts = copy.deepcopy(model.state_dict())
 
-            print(
+            logging.info(
                 "Training Loss: {:.4f} Validation Acc: {:.4f} ".format(
                     epoch_loss, epoch_acc
                 )
@@ -100,56 +100,16 @@ class KITS19Trainer(ClientTrainer):
             training_dice_list.append(epoch_acc)
 
         time_elapsed = time.time() - since
-        print(
+        logging.info(
             "Training complete in {:.0f}m {:.0f}s".format(
                 time_elapsed // 60, time_elapsed % 60
             )
         )
-        print("Best test Balanced acc: {:4f}".format(best_acc))
-        print("----- Training Loss ---------")
-        print(training_loss_list)
-        print("------Validation Accuracy ------")
-        print(training_dice_list)
+        logging.info("Best test Balanced acc: {:4f}".format(best_acc))
+        logging.info("----- Training Loss ---------")
+        logging.info(training_loss_list)
+        logging.info("------Validation Accuracy ------")
+        logging.info(training_dice_list)
         # load best model weights
         model.load_state_dict(best_model_wts)
         return model
-
-    def test(self, test_data, device, args):
-        logging.info("Evaluating on Trainer ID: {}".format(self.id))
-        model = self.model
-        args = self.args
-
-        test_metrics = {
-            "test_correct": 0,
-            "test_total": 0,
-            "test_loss": 0,
-        }
-
-        if not test_data:
-            logging.info("No test data for this trainer")
-            return test_metrics
-
-        model.eval()
-        model.to(device)
-
-        from flamby.datasets.fed_kits19.metric import metric
-
-        with torch.inference_mode():
-            dice_list = []
-            for (X, y) in test_data:
-                X, y = X.to(device), y.to(device)
-                y_pred = model(X).detach().cpu()
-                preds_softmax = softmax_helper(y_pred)
-                preds = preds_softmax.argmax(1)
-                y = y.detach().cpu()
-                dice_score = metric(preds, y)
-                dice_list.append(dice_score)
-            test_metrics = np.mean(dice_list)
-
-        logging.info(f"Test metrics: {test_metrics}")
-        return test_metrics
-
-    def test_on_the_server(
-        self, train_data_local_dict, test_data_local_dict, device, args=None
-    ):
-        return False

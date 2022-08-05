@@ -1,4 +1,3 @@
-import copy
 import logging
 import os
 import pickle
@@ -8,7 +7,6 @@ import numpy as np
 from torch_geometric.data import DataLoader
 
 from fedml.core import partition_class_samples_with_dirichlet_distribution
-
 from .utils import DefaultCollator, WalkForestCollator
 
 
@@ -28,15 +26,11 @@ def create_random_split(path, data):
     train_size = int(len(subgraphs) * 0.8)
     val_size = int(len(subgraphs) * 0.1)
     test_size = int(len(subgraphs) * 0.1)
-    logging.info(
-        "train_size = {}, val_size = {}, test_size = {}".format(
-            train_size, val_size, test_size
-        )
-    )
+    logging.info("train_size = {}, val_size = {}, test_size = {}".format(train_size, val_size, test_size))
 
     graphs_train = subgraphs[:train_size]
-    graphs_test = subgraphs[train_size: train_size + test_size]
-    graphs_val = subgraphs[train_size + test_size:]
+    graphs_test = subgraphs[train_size : train_size + test_size]
+    graphs_val = subgraphs[train_size + test_size :]
 
     # tranductive: train & test data are from the same subgraphs
     # TODO
@@ -60,10 +54,7 @@ def create_non_uniform_split(args, idxs, client_number, data_type="train", is_lo
         min_size = 0
         while min_size < 1:
             idx_batch_per_client = [[] for _ in range(client_number)]
-            (
-                idx_batch_per_client,
-                min_size,
-            ) = partition_class_samples_with_dirichlet_distribution(
+            (idx_batch_per_client, min_size,) = partition_class_samples_with_dirichlet_distribution(
                 N, alpha, client_number, idx_batch_per_client, idxs
             )
             logging.info("searching for min_size < 1")
@@ -76,18 +67,13 @@ def create_non_uniform_split(args, idxs, client_number, data_type="train", is_lo
 
     for client_id in range(client_number):
         sample_num_distribution.append(len(idx_batch_per_client[client_id]))
-        logging.info(
-            "client_id = %d, sample_number = %d"
-            % (client_id, len(idx_batch_per_client[client_id]))
-        )
+        logging.info("client_id = %d, sample_number = %d" % (client_id, len(idx_batch_per_client[client_id])))
     logging.info("create_non_uniform_split******************************************")
 
     return idx_batch_per_client
 
 
-def partition_data_by_sample_size(
-        args, path, client_number, uniform=True, compact=True
-):
+def partition_data_by_sample_size(args, path, client_number, uniform=True, compact=True):
     graphs_train, graphs_val, graphs_test = create_random_split(path, args.dataset)
 
     num_train_samples = len(graphs_train)
@@ -109,15 +95,9 @@ def partition_data_by_sample_size(
         clients_idxs_val = np.array_split(val_idxs, client_number)
         clients_idxs_test = np.array_split(test_idxs, client_number)
     else:
-        clients_idxs_train = create_non_uniform_split(
-            args, train_idxs, client_number, data_type="train"
-        )
-        clients_idxs_val = create_non_uniform_split(
-            args, val_idxs, client_number, data_type="val"
-        )
-        clients_idxs_test = create_non_uniform_split(
-            args, test_idxs, client_number, data_type="test"
-        )
+        clients_idxs_train = create_non_uniform_split(args, train_idxs, client_number, data_type="train")
+        clients_idxs_val = create_non_uniform_split(args, val_idxs, client_number, data_type="val")
+        clients_idxs_test = create_non_uniform_split(args, test_idxs, client_number, data_type="test")
 
     labels_of_all_clients = []
     for client in range(client_number):
@@ -154,16 +134,17 @@ def partition_data_by_sample_size(
 
     return global_data_dict, partition_dicts
 
+
 # Single process sequential
 def load_partition_data(
-        args,
-        path,
-        client_number,
-        uniform=True,
-        global_test=True,
-        compact=True,
-        normalize_features=False,
-        normalize_adj=False,
+    args,
+    path,
+    client_number,
+    uniform=True,
+    global_test=True,
+    compact=True,
+    normalize_features=False,
+    normalize_adj=False,
 ):
     global_data_dict, partition_dicts = partition_data_by_sample_size(
         args, path, client_number, uniform, compact=compact
@@ -177,32 +158,18 @@ def load_partition_data(
     collator = (
         WalkForestCollator(normalize_features=normalize_features)
         if compact
-        else DefaultCollator(
-            normalize_features=normalize_features, normalize_adj=normalize_adj
-        )
+        else DefaultCollator(normalize_features=normalize_features, normalize_adj=normalize_adj)
     )
 
     # This is a PyG Dataloader
     train_data_global = DataLoader(
-        global_data_dict["train"],
-        batch_size=args.batch_size,
-        shuffle=True,
-        collate_fn=collator,
-        pin_memory=True,
+        global_data_dict["train"], batch_size=args.batch_size, shuffle=True, collate_fn=collator, pin_memory=True,
     )
     val_data_global = DataLoader(
-        global_data_dict["val"],
-        batch_size=args.batch_size,
-        shuffle=True,
-        collate_fn=collator,
-        pin_memory=True,
+        global_data_dict["val"], batch_size=args.batch_size, shuffle=True, collate_fn=collator, pin_memory=True,
     )
     test_data_global = DataLoader(
-        global_data_dict["test"],
-        batch_size=args.batch_size,
-        shuffle=True,
-        collate_fn=collator,
-        pin_memory=True,
+        global_data_dict["test"], batch_size=args.batch_size, shuffle=True, collate_fn=collator, pin_memory=True,
     )
 
     train_data_num = len(global_data_dict["train"])
@@ -216,36 +183,20 @@ def load_partition_data(
 
         data_local_num_dict[client] = len(train_dataset_client)
         train_data_local_dict[client] = DataLoader(
-            train_dataset_client,
-            batch_size=args.batch_size,
-            shuffle=True,
-            collate_fn=collator,
-            pin_memory=True,
+            train_dataset_client, batch_size=args.batch_size, shuffle=True, collate_fn=collator, pin_memory=True,
         )
         val_data_local_dict[client] = DataLoader(
-            val_dataset_client,
-            batch_size=args.batch_size,
-            shuffle=False,
-            collate_fn=collator,
-            pin_memory=True,
+            val_dataset_client, batch_size=args.batch_size, shuffle=False, collate_fn=collator, pin_memory=True,
         )
         test_data_local_dict[client] = (
             test_data_global
             if global_test
             else DataLoader(
-                test_dataset_client,
-                batch_size=args.batch_size,
-                shuffle=False,
-                collate_fn=collator,
-                pin_memory=True,
+                test_dataset_client, batch_size=args.batch_size, shuffle=False, collate_fn=collator, pin_memory=True,
             )
         )
 
-        logging.info(
-            "Client idx = {}, local sample number = {}".format(
-                client, len(train_dataset_client)
-            )
-        )
+        logging.info("Client idx = {}, local sample number = {}".format(client, len(train_dataset_client)))
 
     return (
         train_data_num,

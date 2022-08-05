@@ -22,13 +22,15 @@ class MLOpsProfilerEvent:
         return MLOpsProfilerEvent._instance
 
     def __init__(self, args):
-        from ..distributed.communication.mqtt_s3.mqtt_s3_status_manager import (
-            MqttS3StatusManager,
-        )
-
         self.args = args
         self.enable_wandb = args.enable_wandb
         self.run_id = args.run_id
+        self.edge_id = 0
+        self.com_manager = None
+        self.set_messenger(self.com_manager, args)
+
+    def set_messenger(self, msg_messenger, args=None):
+        self.com_manager = msg_messenger
         if args.rank == 0:
             if hasattr(args, "server_id"):
                 self.edge_id = args.server_id
@@ -41,10 +43,6 @@ class MLOpsProfilerEvent:
                 self.edge_id = json.loads(args.client_id_list)[0]
             else:
                 self.edge_id = 0
-
-        self.com_manager = MqttS3StatusManager(
-            args.mqtt_config_path, args.s3_config_path, topic=args.run_id
-        )
 
     @classmethod
     def enable_sys_perf_profiling(cls):
