@@ -17,11 +17,11 @@ Video Tutorial:
 ![image](../_static/image/mlops_workflow_new.png) \
 Figure 1: the workflow describing how MLOps works
 
-MLOps works as the figure shown above. Such a workflow is handled by web UI without the need to handle complex deployment. 
-Now please register an account and follow the following instruction step by step.
+MLOps works as the figure shown above. Such a workflow is handled by a web UI to avoid complex deployment. 
+Now please create an account.
 
 - Instructions for registration: \
-Please open [https://open.fedml.ai](https://open.fedml.ai) and find "Sign Up".
+Please open [https://open.fedml.ai](https://open.fedml.ai) and click "Sign Up".
 
 
 ### Local Development and Building MLOps Packages

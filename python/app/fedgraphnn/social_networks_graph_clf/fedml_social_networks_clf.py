@@ -5,7 +5,7 @@ from data.data_loader import load_partition_data, get_data
 from fedml import FedMLRunner
 from model.gin import GIN
 from trainer.gin_trainer import GINSocialNetworkTrainer
-
+from trainer.gin_aggregator import GINSocialNetworkAggregator
 
 def load_data(args, dataset_name):
     if args.dataset not in [
@@ -60,9 +60,7 @@ def load_data(args, dataset_name):
 
 
 def create_model(args, model_name, feat_dim, num_cats, output_dim):
-    logging.info(
-        "create_model. model_name = %s, output_dim = %s" % (model_name, output_dim)
-    )
+    logging.info("create_model. model_name = %s, output_dim = %s" % (model_name, output_dim))
     if model_name == "gin":
         model = GIN(
             nfeat=feat_dim,
@@ -72,11 +70,12 @@ def create_model(args, model_name, feat_dim, num_cats, output_dim):
             dropout=args.dropout,
             eps=args.eps,
         )
-        trainer = GINSocialNetworkTrainer(model)
+        trainer = GINSocialNetworkTrainer(model, args)
+        aggregator = GINSocialNetworkAggregator(model, args)
     else:
         raise Exception("such model does not exist !")
     logging.info("done")
-    return model, trainer
+    return model, trainer, aggregator
 
 
 if __name__ == "__main__":
@@ -92,8 +91,8 @@ if __name__ == "__main__":
     # create model
     # Note if the model is DNN (e.g., ResNet), the training will be very slow.
     # In this case, please use our FedML distributed version (./fedml_experiments/distributed_fedavg)
-    model, trainer = create_model(args, args.model, feat_dim, num_cats, output_dim=None)
+    model, trainer, aggregator = create_model(args, args.model, feat_dim, num_cats, output_dim=None)
 
     # start training
-    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer, aggregator)
     fedml_runner.run()
