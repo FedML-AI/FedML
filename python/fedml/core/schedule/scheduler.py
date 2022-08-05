@@ -178,7 +178,8 @@ class scheduler:
 
 if __name__ == "__main__":
     mode = 1
-    workloads = np.array([1, 2, 3, 5, 7, 14])
+    # workloads = np.array([1, 2, 3, 5, 7, 14])
+    workloads = np.array([1, 2, 3, 5, 7, 14, 20, 30, 45, 70])
     constraints = np.array([1, 5])
     memory = np.array([15, 100])
     my_scheduler = scheduler(workloads, constraints, memory)
