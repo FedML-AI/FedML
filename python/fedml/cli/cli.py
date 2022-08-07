@@ -22,6 +22,7 @@ from ..cli.comm_utils import sys_utils
 
 
 FEDML_MLOPS_BUILD_PRE_IGNORE_LIST = 'dist-packages,client-package.zip,server-package.zip,__pycache__,*.pyc,*.git'
+simulator_process_list = list()
 
 
 @click.group()
@@ -152,8 +153,11 @@ def display_server_logs():
 @click.option(
     "--docker-rank", "-dr", default="1", help="docker client rank index (from 1 to n).",
 )
+@click.option(
+    "--run_id", "-ri", type=int, default=0, help="run id.",
+)
 def mlops_login(
-    userid, version, client, server, local_server, role, runner_cmd, device_id, os_name, docker, docker_rank
+    userid, version, client, server, local_server, role, runner_cmd, device_id, os_name, docker, docker_rank, run_id
 ):
     account_id = userid[0]
     platform_url = "open.fedml.ai"
@@ -215,10 +219,13 @@ def mlops_login(
                 "-id",
                 device_id,
                 "-os",
-                os_name
+                os_name,
+                "--run_id",
+                str(run_id)
             ]
         ).pid
-        sys_utils.save_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
+        sys_utils.save_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
+                                     ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
 
     if is_server is True:
         # Check login mode.
@@ -264,7 +271,8 @@ def mlops_login(
                 os_name
             ]
         ).pid
-        sys_utils.save_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
+        sys_utils.save_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME,
+                                     ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
 
 
 @cli.command("logout", help="Logout from MLOps platform (open.fedml.ai)")
@@ -547,15 +555,6 @@ def build_mlops_package(
     shutil.rmtree(mlops_build_path, ignore_errors=True)
 
     return 0
-
-
-@cli.command("register", help="Register process to MLOps client as simulator.")
-@click.argument("process_id", nargs=-1)
-@click.option(
-    "--role", "-r", default=None, is_flag=True, help="logout from the FedML client.",
-)
-def mlops_register_simulator_process(process_id, role):
-    pass
 
 
 @cli.command(
