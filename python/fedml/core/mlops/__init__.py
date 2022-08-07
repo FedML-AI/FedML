@@ -2,15 +2,16 @@ import json
 import logging
 import os
 import platform
+import subprocess
 import threading
 import time
 import uuid
 
 import click
 import requests
+from fedml.cli.comm_utils import sys_utils
 from fedml.core.mlops.mlops_configs import MLOpsConfigs
 
-from ...cli.cli import mlops_register_simulator_process
 from ...cli.edge_deployment.client_constants import ClientConstants
 from ...cli.edge_deployment.client_runner import FedMLClientRunner
 from ...cli.server_deployment.server_runner import FedMLServerRunner
@@ -26,7 +27,6 @@ from .mlops_status import MLOpsStatus
 from .mlops_runtime_log import MLOpsRuntimeLog
 from .mlops_runtime_log_daemon import MLOpsRuntimeLogProcessor
 from .mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
-
 
 FEDML_MLOPS_API_RESPONSE_SUCCESS_CODE = "SUCCESS"
 
@@ -81,6 +81,16 @@ def init(args):
         MLOpsRuntimeLog.get_instance(args).init_logs()
         setup_log_mqtt_mgr()
         return
+    else:
+        if hasattr(args, "simulator_daemon"):
+            # Bind local device as simulation device on the MLOps platform.
+            setattr(args, "using_mlops", True)
+            setattr(args, "rank", 1)
+            MLOpsStore.mlops_bind_result = bind_simulation_device(args, args.user, args.version)
+            if not MLOpsStore.mlops_bind_result:
+                setup_log_mqtt_mgr()
+            return
+
     project_name = None
     api_key = None
     run_name = None
@@ -95,6 +105,7 @@ def init(args):
 
     # Bind local device as simulation device on the MLOps platform.
     setattr(args, "using_mlops", True)
+    setattr(args, "rank", 1)
     MLOpsStore.mlops_bind_result = bind_simulation_device(args, api_key, args.config_version)
     if not MLOpsStore.mlops_bind_result:
         setattr(args, "using_mlops", False)
@@ -121,7 +132,7 @@ def init(args):
     MLOpsStore.current_parrot_process = os.getpid()
 
     # Start simulator login process as daemon
-    # mlops_simulator_login(api_key)
+    mlops_simulator_login(api_key, MLOpsStore.mlops_run_id)
 
 
 def event(event_name, event_started=True, event_value=None, event_edge_id=None):
@@ -180,10 +191,13 @@ def log(metrics: dict, commit=True):
         release_log_mqtt_mgr()
 
 
-def log_training_status(status):
+def log_training_status(status, run_id=None):
     if not mlops_enabled(MLOpsStore.mlops_args):
         return
 
+    if run_id is not None:
+        MLOpsStore.mlops_args.run_id = run_id
+        MLOpsStore.mlops_run_id = run_id
     set_realtime_params()
 
     if not MLOpsStore.mlops_bind_result:
@@ -193,14 +207,20 @@ def log_training_status(status):
 
     setup_log_mqtt_mgr()
     wait_log_mqtt_connected()
-    MLOpsStore.mlops_metrics.report_client_training_status(MLOpsStore.mlops_edge_id, status)
+    if mlops_parrot_enabled(MLOpsStore.mlops_args):
+        MLOpsStore.mlops_metrics.broadcast_client_training_status(MLOpsStore.mlops_edge_id, status)
+    else:
+        MLOpsStore.mlops_metrics.report_client_training_status(MLOpsStore.mlops_edge_id, status)
     release_log_mqtt_mgr()
 
 
-def log_aggregation_status(status):
+def log_aggregation_status(status, run_id=None):
     if not mlops_enabled(MLOpsStore.mlops_args):
         return
 
+    if run_id is not None:
+        MLOpsStore.mlops_args.run_id = run_id
+        MLOpsStore.mlops_run_id = run_id
     set_realtime_params()
 
     if not MLOpsStore.mlops_bind_result:
@@ -214,11 +234,23 @@ def log_aggregation_status(status):
         device_role = "simulator"
     else:
         device_role = "server"
-    MLOpsStore.mlops_metrics.report_server_training_status(MLOpsStore.mlops_run_id, status, role=device_role)
+    if mlops_parrot_enabled(MLOpsStore.mlops_args):
+        MLOpsStore.mlops_metrics.broadcast_server_training_status(MLOpsStore.mlops_run_id, status, role=device_role)
+        sys_utils.save_simulator_process(ClientConstants.get_data_dir(),
+                                         ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, os.getpid(),
+                                         str(MLOpsStore.mlops_run_id),
+                                         run_status=status)
+    else:
+        MLOpsStore.mlops_metrics.report_server_training_status(MLOpsStore.mlops_run_id, status, role=device_role)
     release_log_mqtt_mgr()
 
 
-def log_training_finished_status():
+def log_training_finished_status(run_id=None):
+    if mlops_parrot_enabled(MLOpsStore.mlops_args):
+        log_training_status(ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED, run_id)
+        time.sleep(2)
+        return
+
     if not mlops_enabled(MLOpsStore.mlops_args):
         return
 
@@ -237,7 +269,12 @@ def log_training_finished_status():
     release_log_mqtt_mgr()
 
 
-def log_training_failed_status():
+def log_training_failed_status(run_id=None):
+    if mlops_parrot_enabled(MLOpsStore.mlops_args):
+        log_training_status(ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED, run_id)
+        time.sleep(2)
+        return
+
     if not mlops_enabled(MLOpsStore.mlops_args):
         return
 
@@ -256,7 +293,12 @@ def log_training_failed_status():
     release_log_mqtt_mgr()
 
 
-def log_aggregation_finished_status():
+def log_aggregation_finished_status(run_id=None):
+    if mlops_parrot_enabled(MLOpsStore.mlops_args):
+        log_aggregation_status(ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED, run_id)
+        time.sleep(15)
+        return
+
     if not mlops_enabled(MLOpsStore.mlops_args):
         return
 
@@ -274,7 +316,11 @@ def log_aggregation_finished_status():
     release_log_mqtt_mgr()
 
 
-def log_aggregation_failed_status():
+def log_aggregation_failed_status(run_id=None):
+    if mlops_parrot_enabled(MLOpsStore.mlops_args):
+        log_aggregation_status(ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED, run_id)
+        return
+
     if not mlops_enabled(MLOpsStore.mlops_args):
         return
 
@@ -283,7 +329,7 @@ def log_aggregation_failed_status():
     if not MLOpsStore.mlops_bind_result:
         return
 
-    logging.info("log aggregation inner status {}".format(ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED))
+    # logging.info("log aggregation inner status {}".format(ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED))
 
     setup_log_mqtt_mgr()
     wait_log_mqtt_connected()
@@ -377,9 +423,6 @@ def log_round_info(total_rounds, round_index):
     logging.info("log round info {}".format(round_info))
     MLOpsStore.mlops_metrics.report_server_training_round_info(round_info)
     release_log_mqtt_mgr()
-
-    if round_index == total_rounds:
-        mlops_simulator_logout()
 
 
 def create_project(project_name, api_key):
@@ -526,9 +569,9 @@ def setup_log_mqtt_mgr():
         MLOpsStore.mlops_log_mqtt_mgr = None
         MLOpsStore.mlops_log_mqtt_lock.release()
 
-    logging.info(
-        "mlops log metrics agent config: {},{}".format(MLOpsStore.mlops_log_agent_config["mqtt_config"]["BROKER_HOST"],
-                                                       MLOpsStore.mlops_log_agent_config["mqtt_config"]["BROKER_PORT"]))
+    # logging.info(
+    #    "mlops log metrics agent config: {},{}".format(MLOpsStore.mlops_log_agent_config["mqtt_config"]["BROKER_HOST"],
+    #                                                   MLOpsStore.mlops_log_agent_config["mqtt_config"]["BROKER_PORT"]))
 
     MLOpsStore.mlops_log_mqtt_mgr = MqttManager(
         MLOpsStore.mlops_log_agent_config["mqtt_config"]["BROKER_HOST"],
@@ -657,6 +700,7 @@ def bind_simulation_device(args, userid, version="release"):
         click.echo("Please check whether your network is normal!")
         return False
     MLOpsStore.mlops_edge_id = edge_id
+    setattr(MLOpsStore.mlops_args, "client_id", edge_id)
 
     # Log arguments and binding results.
     runner.unique_device_id = unique_device_id
@@ -800,43 +844,48 @@ def fetch_config(args, version="release"):
 
 
 def set_realtime_params():
+    should_parse_args = False
     if mlops_parrot_enabled(MLOpsStore.mlops_args):
-        return False
+        return
+    else:
+        MLOpsStore.mlops_bind_result = True
+        should_parse_args = True
 
-    MLOpsStore.mlops_bind_result = True
-    if MLOpsStore.mlops_args is not None:
-        MLOpsStore.mlops_run_id = MLOpsStore.mlops_args.run_id
-        if MLOpsStore.mlops_args.rank == 0:
-            if hasattr(MLOpsStore.mlops_args, "server_id"):
-                MLOpsStore.mlops_edge_id = MLOpsStore.mlops_args.server_id
+    if should_parse_args:
+        if MLOpsStore.mlops_args is not None:
+            MLOpsStore.mlops_run_id = MLOpsStore.mlops_args.run_id
+            if MLOpsStore.mlops_args.rank == 0:
+                if hasattr(MLOpsStore.mlops_args, "server_id"):
+                    MLOpsStore.mlops_edge_id = MLOpsStore.mlops_args.server_id
+                else:
+                    MLOpsStore.mlops_edge_id = 0
             else:
-                MLOpsStore.mlops_edge_id = 0
-        else:
-            if hasattr(MLOpsStore.mlops_args, "client_id"):
-                MLOpsStore.mlops_edge_id = MLOpsStore.mlops_args.client_id
-            elif hasattr(MLOpsStore.mlops_args, "client_id_list"):
-                MLOpsStore.mlops_edge_id = json.loads(MLOpsStore.mlops_args.client_id_list)[0]
-            else:
-                MLOpsStore.mlops_edge_id = 0
+                if hasattr(MLOpsStore.mlops_args, "client_id"):
+                    MLOpsStore.mlops_edge_id = MLOpsStore.mlops_args.client_id
+                elif hasattr(MLOpsStore.mlops_args, "client_id_list"):
+                    MLOpsStore.mlops_edge_id = json.loads(MLOpsStore.mlops_args.client_id_list)[0]
+                else:
+                    MLOpsStore.mlops_edge_id = 0
 
-        if hasattr(MLOpsStore.mlops_args, "server_agent_id"):
-            MLOpsStore.server_agent_id = MLOpsStore.mlops_args.server_agent_id
-        else:
-            MLOpsStore.server_agent_id = MLOpsStore.mlops_edge_id
+            if hasattr(MLOpsStore.mlops_args, "server_agent_id"):
+                MLOpsStore.server_agent_id = MLOpsStore.mlops_args.server_agent_id
+            else:
+                MLOpsStore.server_agent_id = MLOpsStore.mlops_edge_id
 
     return True
 
 
-def mlops_simulator_login(userid):
-    login_simulator_cmd = "fedml login {} -c -r edge_simulator".format(userid)
-    os.system(login_simulator_cmd)
+def mlops_simulator_login(userid, run_id):
+    # pass
+    if not sys_utils.edge_simulator_has_login():
+        subprocess.Popen(
+            ["fedml", "login", str(userid),
+             "-v", MLOpsStore.mlops_args.version,
+             "-c", "-r", "edge_simulator",
+             "-ri", str(run_id)])
 
-    mlops_register_simulator_process(os.getpid(),
-                                     ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_EDGE_SIMULATOR_INDEX])
-
-
-def mlops_simulator_logout():
-    exit(-1)
+    sys_utils.save_simulator_process(ClientConstants.get_data_dir(),
+                                     ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, os.getpid(), str(run_id))
 
 
 def mlops_parrot_enabled(args):
