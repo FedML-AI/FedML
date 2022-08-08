@@ -1,9 +1,9 @@
-from .mechanisms import Laplace, Gaussian
+from ..mechanisms import Laplace, Gaussian
 
 
-class FedPrivacyMechanism:
+class GlobalDP:
     def __init__(
-        self, epsilon, delta=0, sensitivity=1.0, type="GlobalDP", mechanism_type="laplace"
+        self, epsilon, delta=0, sensitivity=1.0, mechanism_type="laplace"
     ):
         self.dp_type = type
         mechanism_type = mechanism_type.lower()
