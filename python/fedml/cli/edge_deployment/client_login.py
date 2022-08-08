@@ -211,7 +211,7 @@ def __login_as_simulator(args, userid, version, mqtt_connection=True):
     runner.unique_device_id = unique_device_id
 
     if mqtt_connection:
-        ClientConstants.save_runner_infos(args.device_id + "." + args.os_name, edge_id, run_id=args.run_id)
+        ClientConstants.save_runner_infos(args.device_id + "." + args.os_name, edge_id, run_id=0)
 
         # Setup MQTT connection for communication with the FedML server.
         runner.setup_agent_mqtt_connection(service_config)
@@ -274,7 +274,6 @@ if __name__ == "__main__":
     parser.add_argument("--role", "-r", type=str, default="client")
     parser.add_argument("--device_id", "-id", type=str, default="0")
     parser.add_argument("--os_name", "-os", type=str, default="")
-    parser.add_argument("--run_id", "-ri", type=str, default="0")
     args = parser.parse_args()
     args.user = args.user
     if args.type == 'login':

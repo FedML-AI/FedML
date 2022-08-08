@@ -153,11 +153,8 @@ def display_server_logs():
 @click.option(
     "--docker-rank", "-dr", default="1", help="docker client rank index (from 1 to n).",
 )
-@click.option(
-    "--run_id", "-ri", type=int, default=0, help="run id.",
-)
 def mlops_login(
-    userid, version, client, server, local_server, role, runner_cmd, device_id, os_name, docker, docker_rank, run_id
+    userid, version, client, server, local_server, role, runner_cmd, device_id, os_name, docker, docker_rank
 ):
     account_id = userid[0]
     platform_url = "open.fedml.ai"
@@ -219,9 +216,7 @@ def mlops_login(
                 "-id",
                 device_id,
                 "-os",
-                os_name,
-                "--run_id",
-                str(run_id)
+                os_name
             ]
         ).pid
         sys_utils.save_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
