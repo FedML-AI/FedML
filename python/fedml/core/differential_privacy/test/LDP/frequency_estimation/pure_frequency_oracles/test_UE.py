@@ -12,7 +12,7 @@ def test_sue_client_permute():
     print("Real value:", input_data)
     ue = UE(attr_domain_size=10, epsilon=1, optimal=False)
     print(
-        "Sanitization w/ GRR protocol:", ue.client_permute(input_data)
+        "Sanitization w/ SUE protocol:", ue.client_permute(input_data)
     )  # k: number of values
 
 
@@ -44,7 +44,7 @@ def test_oue_client_permute():
     print("Real value:", input_data)
     ue = UE(attr_domain_size=10, epsilon=1, optimal=True)
     print(
-        "Sanitization w/ GRR protocol:", ue.client_permute(input_data)
+        "Sanitization w/ OUE protocol:", ue.client_permute(input_data)
     )  # k: number of values
 
 
