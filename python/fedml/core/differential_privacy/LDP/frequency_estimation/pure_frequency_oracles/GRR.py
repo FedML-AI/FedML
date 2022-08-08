@@ -7,7 +7,7 @@ import numpy as np
 class GRR:
     def __init__(self, attr_domain_size, epsilon):
         if epsilon is None or attr_domain_size is None:
-            raise ValueError("k (int) and epsilon (float) need a numerical value.")
+            raise ValueError("attr_domain_size (int) and epsilon (float) need a numerical value.")
         self.attr_domain_size = attr_domain_size
         self.epsilon = epsilon
         # GRR parameters
