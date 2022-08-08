@@ -56,15 +56,15 @@ class MyModelTrainer(ClientTrainer):
                 # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 0.5)
 
                 optimizer.step()
-                logging.info(
-                    "Update Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
-                        epoch,
-                        (batch_idx + 1) * args.batch_size,
-                        len(train_data) * args.batch_size,
-                        100.0 * (batch_idx + 1) / len(train_data),
-                        loss.item(),
-                    )
-                )
+                # logging.info(
+                #     "Update Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
+                #         epoch,
+                #         (batch_idx + 1) * args.batch_size,
+                #         len(train_data) * args.batch_size,
+                #         100.0 * (batch_idx + 1) / len(train_data),
+                #         loss.item(),
+                #     )
+                # )
                 batch_loss.append(loss.item())
             epoch_loss.append(sum(batch_loss) / len(batch_loss))
             # logging.info('Client Index = {}\tEpoch: {}\tLoss: {:.6f}'.format(

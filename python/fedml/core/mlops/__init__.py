@@ -240,6 +240,12 @@ def log_aggregation_status(status, run_id=None):
                                          ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, os.getpid(),
                                          str(MLOpsStore.mlops_run_id),
                                          run_status=status)
+
+        # Start log processor for current run
+        if status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED or \
+                status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED:
+            MLOpsRuntimeLogDaemon.get_instance(MLOpsStore.mlops_args).stop_log_processor(MLOpsStore.mlops_run_id,
+                                                                                         MLOpsStore.mlops_edge_id)
     else:
         MLOpsStore.mlops_metrics.report_server_training_status(MLOpsStore.mlops_run_id, status, role=device_role)
     release_log_mqtt_mgr()
@@ -411,6 +417,7 @@ def log_round_info(total_rounds, round_index):
 
     if round_index == -1:
         MLOpsStore.mlops_log_round_start_time = time.time()
+        return
 
     setup_log_mqtt_mgr()
     wait_log_mqtt_connected()
@@ -622,6 +629,10 @@ def init_logs(args, edge_id):
     client_ids.append(edge_id)
     args.client_id_list = json.dumps(client_ids)
     MLOpsRuntimeLog.get_instance(args).init_logs()
+
+    # Start log processor for current run
+    MLOpsRuntimeLogDaemon.get_instance(args).start_log_processor(MLOpsStore.mlops_run_id, MLOpsStore.mlops_edge_id)
+
     logging.info("client ids:{}".format(args.client_id_list))
 
 
@@ -658,8 +669,8 @@ def bind_simulation_device(args, userid, version="release"):
             service_config["docker_config"] = docker_config
             runner.agent_config = service_config
             MLOpsStore.mlops_log_agent_config = service_config
-            setattr(args, "mqtt_config_path", mqtt_config)
-            setattr(args, "s3_config_path", s3_config)
+            # setattr(args, "mqtt_config_path", mqtt_config)
+            # setattr(args, "s3_config_path", s3_config)
             setattr(args, "log_server_url", mlops_config["LOG_SERVER_URL"])
             break
         except Exception as e:
@@ -701,93 +712,6 @@ def bind_simulation_device(args, userid, version="release"):
         return False
     MLOpsStore.mlops_edge_id = edge_id
     setattr(MLOpsStore.mlops_args, "client_id", edge_id)
-
-    # Log arguments and binding results.
-    runner.unique_device_id = unique_device_id
-
-    MLOpsStore.mlops_args = args
-
-    return True
-
-
-def bind_real_device(args, userid, version="release"):
-    setattr(args, "account_id", userid)
-    setattr(args, "current_running_dir", ClientConstants.get_fedml_home_dir())
-
-    sys_name = platform.system()
-    if sys_name == "Darwin":
-        sys_name = "MacOS"
-    setattr(args, "os_name", sys_name)
-    setattr(args, "version", version)
-    if args.rank == 0:
-        setattr(args, "log_file_dir", ServerConstants.get_log_file_dir())
-        setattr(args, "device_id", FedMLServerRunner.get_device_id())
-        runner = FedMLServerRunner(args)
-    else:
-        setattr(args, "log_file_dir", ClientConstants.get_log_file_dir())
-        setattr(args, "device_id", FedMLClientRunner.get_device_id())
-        runner = FedMLClientRunner(args)
-    setattr(args, "config_version", version)
-    setattr(args, "cloud_region", "")
-
-    # Fetch configs from the MLOps config server.
-    service_config = dict()
-    config_try_count = 0
-    edge_id = 0
-    while config_try_count < 5:
-        try:
-            mqtt_config, s3_config, mlops_config, docker_config = runner.fetch_configs()
-            service_config["mqtt_config"] = mqtt_config
-            service_config["s3_config"] = s3_config
-            service_config["ml_ops_config"] = mlops_config
-            service_config["docker_config"] = docker_config
-            runner.agent_config = service_config
-            MLOpsStore.mlops_log_agent_config = service_config
-            setattr(args, "mqtt_config_path", mqtt_config)
-            setattr(args, "s3_config_path", s3_config)
-            setattr(args, "log_server_url", mlops_config["LOG_SERVER_URL"])
-            break
-        except Exception as e:
-            config_try_count += 1
-            time.sleep(0.5)
-            continue
-
-    if config_try_count >= 5:
-        click.echo("\nNote: Internet is not connected. "
-                   "Experimental tracking results will not be synchronized to the MLOps (open.fedml.ai).\n")
-        return False
-
-    # Build unique device id
-    if args.device_id is not None and len(str(args.device_id)) > 0:
-        if args.rank == 0:
-            device_role = "Edge.Device"
-        else:
-            device_role = "Edge.Server"
-        unique_device_id = "{}@{}.{}".format(args.device_id, args.os_name, device_role)
-
-    # Bind account id to the MLOps platform.
-    register_try_count = 0
-    edge_id = 0
-    while register_try_count < 5:
-        try:
-            edge_id = runner.bind_account_and_device_id(
-                service_config["ml_ops_config"]["EDGE_BINDING_URL"],
-                args.account_id, unique_device_id, args.os_name,
-                role="simulator"
-            )
-            if edge_id > 0:
-                runner.edge_id = edge_id
-                break
-        except Exception as e:
-            register_try_count += 1
-            time.sleep(3)
-            continue
-
-    if edge_id <= 0:
-        click.echo("Oops, you failed to login the FedML MLOps platform.")
-        click.echo("Please check whether your network is normal!")
-        return False
-    MLOpsStore.mlops_edge_id = edge_id
 
     # Log arguments and binding results.
     runner.unique_device_id = unique_device_id
@@ -881,8 +805,7 @@ def mlops_simulator_login(userid, run_id):
         subprocess.Popen(
             ["fedml", "login", str(userid),
              "-v", MLOpsStore.mlops_args.version,
-             "-c", "-r", "edge_simulator",
-             "-ri", str(run_id)])
+             "-c", "-r", "edge_simulator"])
 
     sys_utils.save_simulator_process(ClientConstants.get_data_dir(),
                                      ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, os.getpid(), str(run_id))
