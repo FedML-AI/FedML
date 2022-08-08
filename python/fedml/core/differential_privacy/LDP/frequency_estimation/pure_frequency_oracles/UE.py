@@ -9,7 +9,7 @@ class UE:
         # domain size: # of distinct values of the attribute
         # param optimal: if True, it uses the Optimized UE (OUE) protocol from [2];
         if epsilon is None or attr_domain_size is None:
-            raise ValueError("k (int) and epsilon (float) need a numerical value.")
+            raise ValueError("attr_domain_size (int) and epsilon (float) need a numerical value.")
         self.epsilon = epsilon
         self.attr_domain_size = attr_domain_size
         # Symmetric parameters (p+q = 1)

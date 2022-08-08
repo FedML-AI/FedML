@@ -1,4 +1,4 @@
-from fedml.core.differential_privacy.LDP.frequency_estimation.pure_frequency_oracles.UE import (
+from ......differential_privacy.LDP.frequency_estimation.pure_frequency_oracles.UE import (
     UE,
 )
 import numpy as np
