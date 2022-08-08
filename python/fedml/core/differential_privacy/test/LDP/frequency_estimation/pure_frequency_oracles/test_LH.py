@@ -12,7 +12,7 @@ def test_blh_client_permute():
     print("Real value:", input_data)
     blh = LH(attr_domain_size=10, epsilon=1, optimal=False)
     print(
-        "Sanitization w/ GRR protocol:", blh.client_permute(input_data)
+        "Sanitization w/ BLH protocol:", blh.client_permute(input_data)
     )  # k: number of values
 
 
@@ -44,7 +44,7 @@ def test_olh_client_permute():
     print("Real value:", input_data)
     olh = LH(attr_domain_size=10, epsilon=1, optimal=True)
     print(
-        "Sanitization w/ GRR protocol:", olh.client_permute(input_data)
+        "Sanitization w/ OLH protocol:", olh.client_permute(input_data)
     )  # k: number of values
 
 
