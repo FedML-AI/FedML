@@ -4,73 +4,55 @@ import numpy as np
 # [2] Kairouz, Bonawitz, and Ramage (2016) "Discrete distribution estimation under local privacy" (ICML)
 
 
-def GRR_Client(input_data, k, epsilon):
-    """
-    Generalized Randomized Response (GRR) protocol, a.k.a., direct encoding [1] or k-RR [2].
-
-    :param input_data: user's true value;
-    :param k: attribute's domain size;
-    :param epsilon: privacy guarantee;
-    :return: sanitized value.
-    """
-
-    if epsilon is not None or k is not None:
-        
+class GRR:
+    def __init__(self, attr_domain_size, epsilon):
+        if epsilon is None or attr_domain_size is None:
+            raise ValueError("k (int) and epsilon (float) need a numerical value.")
+        self.attr_domain_size = attr_domain_size
+        self.epsilon = epsilon
         # GRR parameters
-        p = np.exp(epsilon) / (np.exp(epsilon) + k - 1)
+        self.p = np.exp(self.epsilon) / (
+            np.exp(self.epsilon) + self.attr_domain_size - 1
+        )
+        self.q = (1 - self.p) / (self.attr_domain_size - 1)
 
-        # Mapping domain size k to the range [0, ..., k-1]
-        domain = np.arange(k) 
-        
-        # GRR perturbation function
+    def client_permute(self, input_data):
+        """
+        Generalized Randomized Response (GRR) protocol, i.e., direct encoding [1] or k-RR [2].
+
+        :param input_data: user's true value;
+        :return: sanitized value.
+        """
         rnd = np.random.random()
-        if rnd <= p:
+        if rnd <= self.p:
             return input_data
-
         else:
+            # Mapping domain size to the range [0, ..., attr_domain_size-1]
+            domain = np.arange(self.attr_domain_size)
             return np.random.choice(domain[domain != input_data])
 
-    else:
-        raise ValueError('k (int) and epsilon (float) need a numerical value.')
+    def server_aggregate(self, reports):
+        """
+        Statistical Estimator for Normalized Frequency (0 -- 1) with post-processing to ensure non-negativity.
 
+        :param reports: list of all GRR-based sanitized values;
+        :return: normalized frequency (histogram) estimation.
+        """
 
-def GRR_Aggregator(reports, k, epsilon):
-    """
-    Statistical Estimator for Normalized Frequency (0 -- 1) with post-processing to ensure non-negativity.
+        if len(reports) == 0:
+            raise ValueError("List of reports is empty.")
 
-    :param reports: list of all GRR-based sanitized values;
-    :param k: attribute's domain size;
-    :param epsilon: privacy guarantee;
-    :return: normalized frequency (histogram) estimation.
-    """
+        # Number of reports
+        n = len(reports)
 
-    if len(reports) == 0:
+        # Count how many times each value has been reported
+        count_report = np.zeros(self.attr_domain_size)
+        for rep in reports:
+            count_report[rep] += 1
 
-        raise ValueError('List of reports is empty.')
-        
-    else:
+        # Ensure non-negativity of estimated frequency
+        est_freq = np.array((count_report - n * self.q) / (self.p - self.q)).clip(0)
 
-        if epsilon is not None or k is not None:
-            
-            # Number of reports
-            n = len(reports)
-            
-            # GRR parameters
-            p = np.exp(epsilon) / (np.exp(epsilon) + k - 1)
-            q = (1 - p) / (k - 1)
-
-            # Count how many times each value has been reported
-            count_report = np.zeros(k)
-            for rep in reports: 
-                count_report[rep] += 1
-
-            # Ensure non-negativity of estimated frequency
-            est_freq = np.array((count_report - n*q) / (p-q)).clip(0)
-
-            # Re-normalized estimated frequency
-            norm_est_freq = np.nan_to_num(est_freq / sum(est_freq))
-                 
-            return norm_est_freq
-
-        else:
-            raise ValueError('k (int) and epsilon (float) need a numerical value.')
+        # Re-normalized estimated frequency
+        norm_est_freq = np.nan_to_num(est_freq / sum(est_freq))
+        return norm_est_freq
