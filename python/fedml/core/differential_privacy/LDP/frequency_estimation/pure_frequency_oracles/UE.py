@@ -4,84 +4,74 @@ import numpy as np
 # [2] Wang et al (2017) "Locally differentially private protocols for frequency estimation" (USENIX Security).
 
 
-def UE_Client(input_data, k, epsilon, optimal=True):
-    """
-    Unary Encoding (UE) protocol, a.k.a. Basic One-Time RAPPOR (if optimal=False) [1]
+class UE:
+    def __init__(self, attr_domain_size, epsilon, optimal=True):
+        # domain size: # of distinct values of the attribute
+        # param optimal: if True, it uses the Optimized UE (OUE) protocol from [2];
+        if epsilon is None or attr_domain_size is None:
+            raise ValueError("k (int) and epsilon (float) need a numerical value.")
+        self.epsilon = epsilon
+        self.attr_domain_size = attr_domain_size
+        # Symmetric parameters (p+q = 1)
+        self.p = np.exp(epsilon / 2) / (np.exp(epsilon / 2) + 1)
+        self.q = 1 - self.p
 
-    :param input_data: user's true value;
-    :param k: attribute's domain size;
-    :param epsilon: privacy guarantee;
-    :param optimal: if True, it uses the Optimized UE (OUE) protocol from [2];
-    :return: sanitized UE vector.
-    """
+        # Optimized parameters
+        if optimal:
+            self.p = 1 / 2
+            self.q = 1 / (np.exp(epsilon) + 1)
 
-    # Symmetric parameters (p+q = 1)
-    p = np.exp(epsilon/2) / (np.exp(epsilon/2) + 1)
-    q = 1 - p
+    def client_permute(self, input_data):
+        """
+        Unary Encoding (UE) protocol, a.k.a. Basic One-Time RAPPOR (if optimal=False) [1]
 
-    # Optimized parameters
-    if optimal:
-        p = 1 / 2
-        q = 1 / (np.exp(epsilon) + 1)
-        
-    # Unary encoding
-    input_ue_data = np.zeros(k)
-    if input_data != None:
-        input_ue_data[input_data] = 1
+        :param input_data: user's true value;
+        :return: sanitized UE vector.
+        """
 
-    # Initializing a zero-vector
-    sanitized_vec = np.zeros(k)
+        # Unary encoding
+        input_ue_data = np.zeros(self.attr_domain_size)
+        if input_data != None:
+            input_ue_data[input_data] = 1
 
-    # UE perturbation function
-    for ind in range(k):
-        if input_ue_data[ind] != 1:
-            rnd = np.random.random()
-            if rnd <= q:
-                sanitized_vec[ind] = 1
+        # Initializing a zero-vector
+        sanitized_vec = np.zeros(self.attr_domain_size)
+
+        # UE perturbation function
+        for ind in range(self.attr_domain_size):
+            if input_ue_data[ind] != 1:
+                rnd = np.random.random()
+                if rnd <= self.q:
+                    sanitized_vec[ind] = 1
+            else:
+                rnd = np.random.random()
+                if rnd <= self.p:
+                    sanitized_vec[ind] = 1
+        return sanitized_vec
+
+    def server_aggregate(self, reports):
+
+        """
+        Statistical Estimator for Normalized Frequency (0 -- 1) with post-processing to ensure non-negativity.
+
+        :param reports: list of all UE-based sanitized vectors;
+        :param epsilon: privacy guarantee;
+        :param optimal: if True, it uses the Optimized UE (OUE) protocol from [2];
+        :return: normalized frequency (histogram) estimation.
+        """
+
+        if len(reports) == 0:
+
+            raise ValueError("List of reports is empty.")
+
         else:
-            rnd = np.random.random()
-            if rnd <= p:
-                sanitized_vec[ind] = 1
-    return sanitized_vec
-        
-def UE_Aggregator(reports, epsilon, optimal=True):
-
-    """
-    Statistical Estimator for Normalized Frequency (0 -- 1) with post-processing to ensure non-negativity.
-
-    :param reports: list of all UE-based sanitized vectors;
-    :param epsilon: privacy guarantee;
-    :param optimal: if True, it uses the Optimized UE (OUE) protocol from [2];
-    :return: normalized frequency (histogram) estimation.
-    """
-
-    if len(reports) == 0: 
-        
-        raise ValueError('List of reports is empty.')
-        
-    else:
-
-        if epsilon is not None:
-
             # Number of reports
             n = len(reports)
 
-            # Symmetric parameters (p+q = 1)
-            p = np.exp(epsilon/2) / (np.exp(epsilon/2) + 1)
-            q = 1 - p
-
-            # Optimized parameters
-            if optimal:
-                p = 1 / 2
-                q = 1 / (np.exp(epsilon) + 1)
-
             # Ensure non-negativity of estimated frequency
-            est_freq = np.array((sum(reports) - q * n) / (p-q)).clip(0)
+            est_freq = np.array((sum(reports) - self.q * n) / (self.p - self.q)).clip(0)
 
             # Re-normalized estimated frequency
             norm_est_freq = np.nan_to_num(est_freq / sum(est_freq))
-                 
-            return norm_est_freq
 
-        else:
-            raise ValueError('epsilon (float) needs a numerical value.')
+            return norm_est_freq
