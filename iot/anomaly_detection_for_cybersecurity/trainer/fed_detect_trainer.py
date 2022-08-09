@@ -34,15 +34,15 @@ class FedDetectTrainer(ClientTrainer):
                 loss.backward()
                 optimizer.step()
 
-                logging.info(
-                    "Update Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
-                        epoch,
-                        (batch_idx + 1) * args.batch_size,
-                        len(train_data) * args.batch_size,
-                        100.0 * (batch_idx + 1) / len(train_data),
-                        loss.item(),
-                    )
-                )
+                # logging.info(
+                #     "Update Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
+                #         epoch,
+                #         (batch_idx + 1) * args.batch_size,
+                #         len(train_data) * args.batch_size,
+                #         100.0 * (batch_idx + 1) / len(train_data),
+                #         loss.item(),
+                #     )
+                # )
                 batch_loss.append(loss.item())
             epoch_loss.append(sum(batch_loss) / len(batch_loss))
             logging.info(
