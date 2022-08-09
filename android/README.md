@@ -9,7 +9,7 @@
 </table>
 - Android project root path: https://github.com/FedML-AI/FedML/tree/master/android
 
-<img src="./doc/mobile.png" alt="drawing" style="width:450px;"/>
+<img src="./doc/mobile.png" alt="drawing" style="width:680px;"/>
 
 The architecture is divided into three vertical layers and multiple horizontal modules:
 
