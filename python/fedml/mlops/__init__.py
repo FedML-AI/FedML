@@ -18,29 +18,29 @@ def log(metrics):
 
 
 # status list : ClientStatus
-def log_training_status(status):
-    mlops.log_training_status(status)
+def log_training_status(status, run_id=None):
+    mlops.log_training_status(status, run_id)
 
 
-def log_training_finished_status():
-    mlops.log_training_finished_status()
+def log_training_finished_status(run_id=None):
+    mlops.log_training_finished_status(run_id)
 
 
-def log_training_failed_status():
-    mlops.log_training_failed_status()
+def log_training_failed_status(run_id=None):
+    mlops.log_training_failed_status(run_id)
 
 
 # status list : ServerStatus
-def log_aggregation_status(status):
-    mlops.log_aggregation_status(status)
+def log_aggregation_status(status, run_id=None):
+    mlops.log_aggregation_status(status, run_id)
 
 
-def log_aggregation_finished_status():
-    mlops.log_aggregation_finished_status()
+def log_aggregation_finished_status(run_id=None):
+    mlops.log_aggregation_finished_status(run_id)
 
 
-def log_aggregation_failed_status():
-    mlops.log_aggregation_failed_status()
+def log_aggregation_failed_status(run_id=None):
+    mlops.log_aggregation_failed_status(run_id)
 
 
 def log_round_info(total_rounds, round_index):
