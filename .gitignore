@@ -18,6 +18,8 @@ python/tests/smoke_test/data/*
 python/data
 python/fedml.egg-info
 python/examples/simulation/sp_fedavg_mnist_lr_example/data
+python/examples/simulation/sp_fedsgd_cifar10_resnet20_example
+python/examples/simulation/sp_fedsgd_cifar10_resnet20_example/*
 
 *.log
 
@@ -126,6 +128,10 @@ app/fedgraphnn/moleculenet_graph_reg/data/qm9/*.npy
 python/app/fedgraphnn/social_networks_graph_clf/data/TUDataset/*
 python/app/fedgraphnn/social_networks_graph_clf/data/TUDataset/collab.pickle
 python/app/fedgraphnn/social_networks_graph_clf/x_hist.png
+
+python/app/fedgraphnn/social_networks_graph_clf/x_hist.png
+python/app/healthcare/fed_lidc_idri /*
+
 
 
 python/app/fedgraphnn/social_networks_graph_clf/data/TUDataset/*
