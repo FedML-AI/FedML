@@ -1,5 +1,6 @@
 import os
 import signal
+import traceback
 from os.path import expanduser
 
 import click
@@ -76,9 +77,12 @@ def get_sys_runner_info():
            cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem
 
 
-def generate_yaml_doc(yaml_object, yaml_file):
+def generate_yaml_doc(yaml_object, yaml_file, append=False):
     try:
-        file = open(yaml_file, "w", encoding="utf-8")
+        open_mode = "w"
+        if append:
+            open_mode = "a"
+        file = open(yaml_file, open_mode, encoding="utf-8")
         yaml.dump(yaml_object, file)
         file.close()
     except Exception as e:
@@ -153,26 +157,157 @@ def save_login_process(runner_home_dir, runner_info_dir, edge_process_id):
         pass
 
 
-def cleanup_all_fedml_processes(login_program, exclude_login=False):
-    # Cleanup all fedml relative processes.
+def cleanup_all_fedml_client_learning_processes():
+    # Cleanup all fedml client learning processes.
+    for process in psutil.process_iter():
+        try:
+            pinfo = process.as_dict(attrs=["pid", "name", "cmdline"])
+            found_learning_process = False
+            found_client_process = False
+            for cmd in pinfo["cmdline"]:
+                if str(cmd).find("fedml_config.yaml") != -1:
+                    found_learning_process = True
+
+                if str(cmd).find("client") != -1:
+                    found_client_process = True
+
+            if found_learning_process and found_client_process:
+                click.echo("find client learning process at {}.".format(process.pid))
+                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+        except Exception as e:
+            pass
+
+
+def cleanup_all_fedml_client_login_processes(login_program):
+    # Cleanup all fedml client login processes.
     for process in psutil.process_iter():
         try:
             pinfo = process.as_dict(attrs=["pid", "name", "cmdline"])
             for cmd in pinfo["cmdline"]:
-                if exclude_login:
-                    if str(cmd).find("fedml_config.yaml") != -1:
-                        click.echo("find fedml process at {}.".format(process.pid))
+                if str(cmd).find(login_program) != -1:
+                    if os.path.basename(cmd) == login_program:
+                        click.echo("find client login process at {}.".format(process.pid))
                         os.killpg(os.getpgid(process.pid), signal.SIGTERM)
-                        # process.terminate()
-                        # process.join()
-                else:
-                    if (
-                            str(cmd).find(login_program) != -1
-                            or str(cmd).find("fedml_config.yaml") != -1
-                    ):
-                        click.echo("find fedml process at {}.".format(process.pid))
-                        os.killpg(os.getpgid(process.pid), signal.SIGTERM)
-                        # process.terminate()
-                        # process.join()
         except Exception as e:
             pass
+
+
+def cleanup_all_fedml_server_learning_processes():
+    # Cleanup all fedml server learning processes.
+    for process in psutil.process_iter():
+        try:
+            pinfo = process.as_dict(attrs=["pid", "name", "cmdline"])
+            found_learning_process = False
+            found_server_process = False
+            for cmd in pinfo["cmdline"]:
+                if str(cmd).find("fedml_config.yaml") != -1:
+                    found_learning_process = True
+
+                if str(cmd).find("server") != -1:
+                    found_server_process = True
+
+            if found_learning_process and found_server_process:
+                click.echo("find server learning process at {}.".format(process.pid))
+                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+        except Exception as e:
+            pass
+
+
+def cleanup_all_fedml_server_login_processes(login_program):
+    # Cleanup all fedml client login processes.
+    for process in psutil.process_iter():
+        try:
+            pinfo = process.as_dict(attrs=["pid", "name", "cmdline"])
+            for cmd in pinfo["cmdline"]:
+                if str(cmd).find(login_program) != -1:
+                    if os.path.basename(cmd) == login_program:
+                        click.echo("find server login process at {}.".format(process.pid))
+                        os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+        except Exception as e:
+            pass
+
+
+def edge_simulator_has_login(login_program="client_login.py"):
+    for process in psutil.process_iter():
+        try:
+            pinfo = process.as_dict(attrs=["pid", "name", "cmdline"])
+            found_login_process = False
+            found_simulator_process = False
+            for cmd in pinfo["cmdline"]:
+                if str(cmd).find(login_program) != -1:
+                    if os.path.basename(cmd) == login_program:
+                        found_login_process = True
+
+                if str(cmd).find("edge_simulator") != -1:
+                    found_simulator_process = True
+
+            if found_login_process and found_simulator_process:
+                return True
+        except Exception as e:
+            pass
+
+    return False
+
+
+def save_simulator_process(data_dir, runner_info_dir, process_id, run_id, run_status=None):
+    simulator_proc_path = os.path.join(data_dir, runner_info_dir, "simulator-processes")
+    try:
+        os.makedirs(simulator_proc_path)
+    except Exception as e:
+        pass
+
+    try:
+        simulator_process_id_file = os.path.join(
+            simulator_proc_path, "simulator-process-{}".format(str(process_id))
+        )
+        yaml_object = dict()
+        yaml_object["run_id"] = str(run_id)
+        if run_status is not None:
+            yaml_object["run_status"] = run_status
+        generate_yaml_doc(yaml_object, simulator_process_id_file, append=False)
+    except Exception as e:
+        pass
+
+
+def get_simulator_process_list(data_dir, runner_info_dir):
+    simulator_proc_path = os.path.join(data_dir, runner_info_dir, "simulator-processes")
+    process_files = os.listdir(simulator_proc_path)
+    running_info = dict()
+    status_info = dict()
+    for process_file in process_files:
+        process_spit = str(process_file).split('-')
+        if len(process_spit) == 3:
+            process_id = process_spit[2]
+        else:
+            continue
+        run_id_info = load_yaml_config(os.path.join(simulator_proc_path, process_file))
+        running_info[str(process_id)] = run_id_info["run_id"]
+        status_info[str(run_id_info["run_id"])] = run_id_info.get("run_status", "")
+
+    return running_info, status_info
+
+
+def remove_simulator_process(data_dir, runner_info_dir, process_id):
+    simulator_proc_path = os.path.join(data_dir, runner_info_dir, "simulator-processes")
+    try:
+        os.makedirs(simulator_proc_path)
+    except Exception as e:
+        pass
+
+    try:
+        simulator_process_id_file = os.path.join(
+            simulator_proc_path, "simulator-process-{}".format(str(process_id))
+        )
+        os.remove(simulator_process_id_file)
+    except Exception as e:
+        pass
+
+
+def simulator_process_is_running(process_id):
+    for process in psutil.process_iter():
+        if str(process.pid) == str(process_id):
+            return True
+
+    return False
+
+

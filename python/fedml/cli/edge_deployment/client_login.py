@@ -2,10 +2,13 @@
 import argparse
 import json
 import logging
+import os
 import platform
+import subprocess
 import time
 
 import click
+from fedml.cli.comm_utils import sys_utils
 from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from fedml.cli.edge_deployment.client_runner import FedMLClientRunner
 from fedml.cli.edge_deployment.client_constants import ClientConstants
@@ -212,6 +215,37 @@ def __login_as_simulator(args, userid, version, mqtt_connection=True):
 
         # Setup MQTT connection for communication with the FedML server.
         runner.setup_agent_mqtt_connection(service_config)
+
+        # Open simulator daemon process to process run status.
+        simulator_daemon_cmd = os.path.join(os.path.dirname(__file__), "simulator_daemon.py")
+        simulator_daemon_process = subprocess.Popen(
+            [
+                sys_utils.get_python_program(),
+                simulator_daemon_cmd,
+                "-t",
+                "login",
+                "-u",
+                str(args.user),
+                "-v",
+                args.version,
+                "-ls",
+                args.local_server,
+                "-r",
+                args.role,
+                "-id",
+                args.device_id,
+                "-os",
+                args.os_name,
+                "-rk",
+                "1",
+                "-lfd",
+                args.log_file_dir,
+                "-cf",
+                args.config_version,
+                "-ci",
+                str(edge_id)
+            ]
+        ).pid
 
         # Start mqtt looper
         runner.start_agent_mqtt_loop()
