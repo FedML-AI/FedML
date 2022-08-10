@@ -16,9 +16,9 @@ def add_args(dp_type):
     )
     parser.add_argument("--dp_type", type=str, default=dp_type)
     parser.add_argument("--epsilon", type=float, default=0.5)
-    parser.add_argument("--delta", type=float, default=0)
+    parser.add_argument("--delta", type=float, default=1)
     parser.add_argument("--sensitivity", type=int, default=1)
-    parser.add_argument("--mechanism_type", type=str, default="laplace")
+    parser.add_argument("--mechanism_type", type=str, default="gaussian")
     args, unknown = parser.parse_known_args()
     return args
 

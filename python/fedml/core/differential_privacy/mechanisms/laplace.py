@@ -21,9 +21,7 @@ class Laplace:
 
     def __init__(self, *, epsilon, delta=0.0, sensitivity):
         check_params(epsilon, delta, sensitivity)
-        self.epsilon = float(epsilon)
-        self.delta = float(delta)
-        self.sensitivity = float(sensitivity)
+        self.scale = float(sensitivity) / (float(epsilon) - np.log(1 - float(delta)))
         self._rng = secrets.SystemRandom()
 
     def bias(self, value):
@@ -32,7 +30,7 @@ class Laplace:
 
     def variance(self, value):
         """Returns the variance of the mechanism at a given `value`."""
-        return 2 * (self.sensitivity / (self.epsilon - np.log(1 - self.delta))) ** 2
+        return 2 * self.scale ** 2
 
     @staticmethod
     def _laplace_sampler(unif1, unif2, unif3, unif4):
@@ -47,12 +45,12 @@ class Laplace:
         return value + noise
 
     def compute_a_noise(self):
-        scale = self.sensitivity / (self.epsilon - np.log(1 - self.delta))
+
         standard_laplace = self._laplace_sampler(
             self._rng.random(),
             self._rng.random(),
             self._rng.random(),
             self._rng.random(),
         )
-        return -scale * standard_laplace
+        return -self.scale * standard_laplace
 
