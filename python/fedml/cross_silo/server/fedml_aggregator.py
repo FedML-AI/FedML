@@ -51,7 +51,6 @@ class FedMLAggregator(object):
             for j in range(self.args.client_num_in_total):
                 self.runtime_history[i][j] = []
 
-
     def get_global_model_params(self):
         return self.aggregator.get_model_params()
 
@@ -108,7 +107,6 @@ class FedMLAggregator(object):
     def record_client_runtime(self, worker_id, client_runtimes):
         for client_id, runtime in client_runtimes.items():
             self.runtime_history[worker_id][client_id].append(runtime)
-
 
     def client_schedule(self, round_idx, client_indexes):
         # self.runtime_history = {}
