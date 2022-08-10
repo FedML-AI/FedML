@@ -1,5 +1,6 @@
 import logging
 from .defense.cclip_defense import CClipDefense
+from .defense.dp import DifferentialPrivacy
 from .defense.geometric_median_defense import GeometricMedianDefense
 from .defense.krum_defense import KrumDefense
 from .defense.robust_learning_rate_defense import RobustLearningRateDefense
@@ -12,7 +13,7 @@ from ...core.security.constants import (
     DEFENSE_KRUM,
     DEFENSE_SLSGD,
     DEFENSE_GEO_MEDIAN,
-    DEFENSE_CCLIP, DEFENSE_WEAK_DP,
+    DEFENSE_CCLIP, DEFENSE_WEAK_DP, DEFENSE_DP
 )
 from typing import List, Tuple, Dict, Any, Callable
 
@@ -53,6 +54,8 @@ class FedMLDefender:
                 self.defender = WeakDPDefense(args)
             elif self.defense_type == DEFENSE_CCLIP:
                 self.defender = CClipDefense(args)
+            elif self.defense_type == DEFENSE_DP:
+                self.defender = DifferentialPrivacy(args)
             else:
                 raise Exception("args.attack_type is not defined!")
         else:
