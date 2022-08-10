@@ -57,8 +57,9 @@ class FedAVGTrainer(object):
 
     def train(self, round_idx=None):
         self.args.round_idx = round_idx
-        lr = self.get_lr(round_idx)
-        self.trainer.train(self.train_local, self.device, self.args, lr=lr)
+        # lr = self.get_lr(round_idx)
+        # self.trainer.train(self.train_local, self.device, self.args, lr=lr)
+        self.trainer.train(self.train_local, self.device, self.args)
         weights = self.trainer.get_model_params()
 
         # transform Tensor to list

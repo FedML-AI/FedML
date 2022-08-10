@@ -112,32 +112,44 @@ class FedAVGAggregator(object):
             self.runtime_history[worker_id][client_id].append(runtime)
 
 
-    def client_schedule(self, round_idx, client_indexes):
+    def generate_client_schedule(self, round_idx, client_indexes):
         # self.runtime_history = {}
         # for i in range(self.worker_num):
         #     self.runtime_history[i] = {}
         #     for j in range(self.args.client_num_in_total):
         #         self.runtime_history[i][j] = []
 
-        if hasattr(self.args, "simulation_schedule") and round_idx > 2:
+        if hasattr(self.args, "simulation_schedule") and round_idx > 5:
             # Need some rounds to record some information. 
             simulation_schedule = self.args.simulation_schedule
             fit_params, fit_funcs, fit_errors = t_sample_fit(
                 self.worker_num, self.args.client_num_in_total, self.runtime_history, 
                 self.train_data_local_num_dict, uniform_client=True, uniform_gpu=False)
-
             logging.info(f"fit_params: {fit_params}")
             logging.info(f"fit_errors: {fit_errors}")
+            avg_fit_error = 0.0
+            sum_times = 0
+            for gpu, gpu_erros in fit_errors.items():
+                for client, client_error in gpu_erros.items():
+                    avg_fit_error += client_error
+                    sum_times += 1
+            avg_fit_error /= sum_times
+            if self.args.enable_wandb:
+                wandb.log({"RunTimeEstimateError": avg_fit_error, "round": round_idx})
 
-            
             mode = 0
             workloads = np.array([ self.train_data_local_num_dict[client_id] for client_id in client_indexes])
             constraints = np.array([1]*self.worker_num)
             memory = np.array([100])
-            my_scheduler = scheduler_c(workloads, constraints, memory, self.train_data_local_num_dict,
+            my_scheduler = scheduler_c(workloads, constraints, memory,
                 fit_funcs, uniform_client=True, uniform_gpu=False)
-            schedules, output_schedules = my_scheduler.DP_schedule(mode)
-            logging.info(f"Schedules: {schedules}")
+            # my_scheduler = scheduler_c(workloads, constraints, memory, self.train_data_local_num_dict,
+            #     fit_funcs, uniform_client=True, uniform_gpu=False)
+            y_schedule, output_schedules = my_scheduler.DP_schedule(mode)
+            client_schedule = []
+            for indexes in y_schedule:
+                client_schedule.append(client_indexes[indexes])
+            logging.info(f"Schedules: {client_schedule}")
         else:
             client_schedule = np.array_split(client_indexes, self.worker_num)
         return client_schedule
@@ -169,8 +181,9 @@ class FedAVGAggregator(object):
             #         self.model_dict[idx], self.get_global_model_params()
             #     )
 
-            # model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
-            model_list.append(self.model_dict[idx])
+            if len(self.model_dict[idx]) > 0:
+                # some workers may not have parameters 
+                model_list.append(self.model_dict[idx])
             # training_num += self.sample_num_dict[idx]
         logging.info("len of self.model_dict[idx] = " + str(len(self.model_dict)))
 

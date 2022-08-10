@@ -17,6 +17,12 @@ mpirun -np 11 \
 
 
 
+#  Scheduling, test performance.
+
+mpirun -np 9 \
+-host "localhost:9" \
+/home/chaoyanghe/anaconda3/envs/fedml/bin/python main.py --cf config/schedule_LDAcifar10.yaml \
+
 
 
 
