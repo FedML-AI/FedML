@@ -1,23 +1,21 @@
-from ......differential_privacy.LDP.frequency_estimation.pure_frequency_oracles.LH import (
-    LH,
-)
+from .....differential_privacy.LDP.frequency_estimation.UE import UE
 import numpy as np
 import pandas as pd
 from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import LabelEncoder
 
 
-def test_blh_client_permute():
+def test_sue_client_permute():
     input_data = 2  # real input value
     print("Real value:", input_data)
-    blh = LH(attr_domain_size=10, epsilon=1, optimal=False)
+    ue = UE(attr_domain_size=10, epsilon=1, optimal=False)
     print(
-        "Sanitization w/ BLH protocol:", blh.client_permute(input_data)
+        "Sanitization w/ SUE protocol:", ue.client_permute(input_data)
     )  # k: number of values
 
 
-def test_blh_server_aggregate():
-    df = pd.read_csv("../datasets/db_adults.csv", usecols=["age"])
+def test_sue_server_aggregate():
+    df = pd.read_csv("datasets/db_adults.csv", usecols=["age"])
     # ## Encoding values
     LE = LabelEncoder()
     df["age"] = LE.fit_transform(df["age"])
@@ -32,24 +30,24 @@ def test_blh_server_aggregate():
 
     # Real normalized frequency
     real_freq = np.unique(df, return_counts=True)[-1] / n
-    blh = LH(attr_domain_size=k, epsilon=0.5, optimal=False)
-    reports = [blh.client_permute(input_data) for input_data in df["age"]]
-    est_freq = blh.server_aggregate(reports)
+    ue = UE(attr_domain_size=k, epsilon=0.5, optimal=False)
+    reports = [ue.client_permute(input_data) for input_data in df["age"]]
+    est_freq = ue.server_aggregate(reports)
     mse = mean_squared_error(real_freq, est_freq)
     print(f"est_freq={est_freq}, mse={mse}")
 
 
-def test_olh_client_permute():
+def test_oue_client_permute():
     input_data = 2  # real input value
     print("Real value:", input_data)
-    olh = LH(attr_domain_size=10, epsilon=1, optimal=True)
+    ue = UE(attr_domain_size=10, epsilon=1, optimal=True)
     print(
-        "Sanitization w/ OLH protocol:", olh.client_permute(input_data)
+        "Sanitization w/ OUE protocol:", ue.client_permute(input_data)
     )  # k: number of values
 
 
-def test_olh_server_aggregate():
-    df = pd.read_csv("../datasets/db_adults.csv", usecols=["age"])
+def test_oue_server_aggregate():
+    df = pd.read_csv("datasets/db_adults.csv", usecols=["age"])
     # ## Encoding values
     LE = LabelEncoder()
     df["age"] = LE.fit_transform(df["age"])
@@ -64,15 +62,15 @@ def test_olh_server_aggregate():
 
     # Real normalized frequency
     real_freq = np.unique(df, return_counts=True)[-1] / n
-    olh = LH(attr_domain_size=k, epsilon=0.5, optimal=True)
-    reports = [olh.client_permute(input_data) for input_data in df["age"]]
-    est_freq = olh.server_aggregate(reports)
+    ue = UE(attr_domain_size=k, epsilon=0.5, optimal=True)
+    reports = [ue.client_permute(input_data) for input_data in df["age"]]
+    est_freq = ue.server_aggregate(reports)
     mse = mean_squared_error(real_freq, est_freq)
     print(f"est_freq={est_freq}, mse={mse}")
 
 
 if __name__ == "__main__":
-    test_blh_server_aggregate()
-    test_blh_client_permute()
-    test_olh_server_aggregate()
-    test_olh_client_permute()
+    test_sue_server_aggregate()
+    test_sue_client_permute()
+    test_oue_server_aggregate()
+    test_oue_client_permute()
