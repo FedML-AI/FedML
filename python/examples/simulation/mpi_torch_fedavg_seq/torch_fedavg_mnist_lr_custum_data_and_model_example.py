@@ -33,6 +33,8 @@ if __name__ == "__main__":
     if args.model == "resnet18":
         logging.info("ResNet18_GN")
         model = resnet18()
+    elif args.model == "resnet20":
+        model = resnet20(class_num=output_dim)
     else:
         model = fedml.model.create(args, output_dim)
 
