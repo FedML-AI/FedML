@@ -128,6 +128,8 @@ class FedMLServerManager(FedMLCommManager):
 
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         local_sample_number = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
+        client_runtime_info = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_RUNTIME_INFO)
+        self.aggregator.record_client_runtime(sender_id - 1, client_runtime_info)
 
         self.aggregator.add_local_trained_result(
             self.client_real_ids.index(sender_id), model_params, local_sample_number
@@ -174,6 +176,8 @@ class FedMLServerManager(FedMLCommManager):
                 self.args.client_num_in_total,
                 len(self.client_id_list_in_this_round),
             )
+            client_schedule = self.aggregator.client_schedule(self.round_idx, self.data_silo_index_list)
+            average_weight_dict = self.aggregator.get_average_weight(self.data_silo_index_list)
 
             if self.round_idx == 0:
                 MLOpsProfilerEvent.log_to_wandb({"BenchmarkStart": time.time()})
@@ -183,7 +187,9 @@ class FedMLServerManager(FedMLCommManager):
                 self.send_message_sync_model_to_client(
                     receiver_id,
                     global_model_params,
-                    self.data_silo_index_list[client_idx_in_this_round],
+                    average_weight_dict,
+                    client_schedule,
+                    # self.data_silo_index_list[client_idx_in_this_round],
                 )
                 client_idx_in_this_round += 1
 
@@ -219,13 +225,17 @@ class FedMLServerManager(FedMLCommManager):
         time.sleep(3)
         self.finish()
 
-    def send_message_init_config(self, receive_id, global_model_params, datasilo_index):
+    # def send_message_init_config(self, receive_id, global_model_params, datasilo_index):
+    def send_message_init_config(self, receive_id, global_model_params,
+                                average_weight_dict, client_schedule):
         tick = time.time()
         message = Message(
             MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id
         )
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
-        message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
+        # message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
+        message.add_params(MyMessage.MSG_ARG_KEY_AVG_WEIGHTS, average_weight_dict)
+        message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_SCHEDULE, client_schedule)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")
         self.send_message(message)
         MLOpsProfilerEvent.log_to_wandb(
@@ -251,9 +261,11 @@ class FedMLServerManager(FedMLCommManager):
             )
         )
 
-    def send_message_sync_model_to_client(
-        self, receive_id, global_model_params, client_index
-    ):
+    # def send_message_sync_model_to_client(
+    #     self, receive_id, global_model_params, client_index
+    # ):
+    def send_message_sync_model_to_client(self, receive_id, global_model_params,
+                                average_weight_dict, client_schedule):
         tick = time.time()
         logging.info("send_message_sync_model_to_client. receive_id = %d" % receive_id)
         message = Message(
@@ -262,7 +274,9 @@ class FedMLServerManager(FedMLCommManager):
             receive_id,
         )
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
-        message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(client_index))
+        # message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(client_index))
+        message.add_params(MyMessage.MSG_ARG_KEY_AVG_WEIGHTS, average_weight_dict)
+        message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_SCHEDULE, client_schedule)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")
         self.send_message(message)
 
