@@ -32,23 +32,22 @@ class Gaussian:
 
     def __init__(self, *, epsilon, delta, sensitivity):
         check_params(epsilon, delta, sensitivity)
-        self.epsilon = float(epsilon)
-        self.delta = float(delta)
-        self.sensitivity = float(sensitivity)
+        # self.epsilon = float(epsilon)
+        # self.delta = float(delta)
+        # self.sensitivity = float(sensitivity)
         # special requirements for epsilon and delta in Gaussian
         if epsilon == 0 or delta == 0:
             raise ValueError("Neither Epsilon nor Delta can be zero")
-        self.special_check_for_params()
-        self._scale = (
-            np.sqrt(2 * np.log(1.25 / self.delta)) * self.sensitivity / self.epsilon
-        )
-        self._rng = secrets.SystemRandom()
-
-    def special_check_for_params(self):
-        if self.epsilon > 1.0:
+        if epsilon > 1.0:
             raise ValueError(
                 "Epsilon cannot be greater than 1. If required, use GaussianAnalytic instead."
             )
+        self._scale = (
+            np.sqrt(2 * np.log(1.25 / float(delta)))
+            * float(sensitivity)
+            / float(epsilon)
+        )
+        self._rng = secrets.SystemRandom()
 
     def bias(self, value):
         return 0.0
