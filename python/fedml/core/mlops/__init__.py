@@ -417,7 +417,6 @@ def log_round_info(total_rounds, round_index):
 
     if round_index == -1:
         MLOpsStore.mlops_log_round_start_time = time.time()
-        return
 
     setup_log_mqtt_mgr()
     wait_log_mqtt_connected()
