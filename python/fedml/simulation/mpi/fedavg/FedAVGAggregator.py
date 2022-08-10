@@ -9,7 +9,6 @@ from .utils import transform_list_to_tensor
 from ....core.security.fedml_attacker import FedMLAttacker
 from ....core.security.fedml_defender import FedMLDefender
 
-
 class FedAVGAggregator(object):
     def __init__(
         self,
