@@ -262,6 +262,37 @@ def check_device(data_src, device=None):
 
 
 
+"""Dif Utils"""
+def get_diff_weights(weights1, weights2):
+    """ Produce a direction from 'weights1' to 'weights2'."""
+    if isinstance(weights1, list) and isinstance(weights2, list):
+        return [w2 - w1 for (w1, w2) in zip(weights1, weights2)]
+    elif isinstance(weights1, torch.Tensor) and isinstance(weights2, torch.Tensor):
+        return weights2 - weights1
+    else:
+        raise NotImplementedError
+
+
+def get_name_params_difference(named_parameters1, named_parameters2):
+    """
+        return named_parameters2 - named_parameters1
+    """
+    common_names = list(set(named_parameters1.keys()).intersection(set(named_parameters2.keys())))
+    named_diff_parameters = {}
+    for key in common_names:
+        named_diff_parameters[key] = get_diff_weights(named_parameters1[key], named_parameters2[key])
+    return named_diff_parameters
+
+
+def get_name_params_difference_abs(named_parameters1, named_parameters2):
+    """
+        return named_parameters2 - named_parameters1
+    """
+    common_names = list(set(named_parameters1.keys()).intersection(set(named_parameters2.keys())))
+    named_diff_parameters = {}
+    for key in common_names:
+        named_diff_parameters[key] = get_diff_weights_abs(named_parameters1[key], named_parameters2[key])
+    return named_diff_parameters
 
 
 
