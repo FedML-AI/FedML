@@ -140,11 +140,18 @@ class MLOpsMetrics(Singleton):
         self.messenger.send_message_json(topic_name, message_json)
         self.report_server_id_status(run_id, status)
 
-    def broadcast_server_training_status(self, run_id, status):
+    def broadcast_server_training_status(self, run_id, status, role=None):
         if self.messenger is None:
             return
         topic_name = "fl_server/mlops/status"
-        msg = {"run_id": run_id, "edge_id": self.edge_id, "status": status}
+        if role is None:
+            role = "normal"
+        msg = {
+            "run_id": run_id,
+            "edge_id": self.edge_id,
+            "status": status,
+            "role": role,
+        }
         logging.info("broadcast_server_training_status. msg = %s" % msg)
         message_json = json.dumps(msg)
         self.messenger.send_message_json(topic_name, message_json)
@@ -156,8 +163,8 @@ class MLOpsMetrics(Singleton):
         topic_name = "fl_server/flserver_agent_" + str(server_agent_id) + "/status"
         msg = {"run_id": run_id, "edge_id": self.edge_id, "status": status}
         message_json = json.dumps(msg)
-        logging.info("report_server_id_status server id {}".format(server_agent_id))
-        logging.info("report_server_id_status. message_json = %s" % message_json)
+        # logging.info("report_server_id_status server id {}".format(server_agent_id))
+        # logging.info("report_server_id_status. message_json = %s" % message_json)
         MLOpsStatus.get_instance().set_server_agent_status(server_agent_id, status)
         self.messenger.send_message_json(topic_name, message_json)
 

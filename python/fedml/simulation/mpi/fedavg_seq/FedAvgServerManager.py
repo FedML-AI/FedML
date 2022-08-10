@@ -41,7 +41,7 @@ class FedAVGServerManager(FedMLCommManager):
             self.args.client_num_per_round,
         )
 
-        client_schedule = self.aggregator.client_schedule(self.round_idx, client_indexes)
+        client_schedule = self.aggregator.generate_client_schedule(self.round_idx, client_indexes)
         average_weight_dict = self.aggregator.get_average_weight(client_indexes)
 
         global_model_params = self.aggregator.get_global_model_params()
@@ -100,7 +100,7 @@ class FedAVGServerManager(FedMLCommManager):
                     self.args.client_num_in_total,
                     self.args.client_num_per_round,
                 )
-            client_schedule = self.aggregator.client_schedule(self.round_idx, client_indexes)
+            client_schedule = self.aggregator.generate_client_schedule(self.round_idx, client_indexes)
             average_weight_dict = self.aggregator.get_average_weight(client_indexes)
 
             global_model_params = self.aggregator.get_global_model_params()
