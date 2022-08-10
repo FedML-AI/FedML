@@ -9,8 +9,7 @@ pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geo
 DATA_PATH=~/fedgraphnn_data/
 mkdir $DATA_PATH
 
-python ../data/sampleEgonetworks.py --path $DATA_PATH --data citeseer --ego_number 1000 --hop_number 2
-
+python ../data/sampleEgonetworks.py --path $DATA_PATH --data citeseer --ego_number 1000 --hop_number 2 --cf config/simulation/fedml_config.yaml
 
 ### don't modify this part ###
 echo "[FedML]Bootstrap Finished"
