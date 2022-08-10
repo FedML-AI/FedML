@@ -1,7 +1,7 @@
 # Examples
 
 - This is the outline of all examples. For more detailed instructions, please refer to [https://doc.fedml.ai](https://doc.fedml.ai)
-- In [FedML/python/app](./../app) folder, we also provide applications in real-world settings.
+- <b>In [FedML/python/app](./../app) folder, we also provide applications in real-world settings</b>.
 
 
 
