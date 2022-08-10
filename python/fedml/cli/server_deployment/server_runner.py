@@ -1140,4 +1140,7 @@ class FedMLServerRunner:
 
     def start_agent_mqtt_loop(self):
         # Start MQTT message loop
-        self.mqtt_mgr.loop_forever()
+        try:
+            self.mqtt_mgr.loop_forever()
+        except Exception as e:
+            pass

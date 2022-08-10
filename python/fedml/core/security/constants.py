@@ -5,6 +5,7 @@ DEFENSE_SLSGD = "slsgd"
 DEFENSE_GEO_MEDIAN = "geometric_median"
 DEFENSE_CCLIP = "cclip"
 DEFENSE_WEAK_DP = "weak_dp"
+DEFENSE_DP = "dp"
 
 ATTACK_METHOD_BYZANTINE_ATTACK = "byzantine"
 ATTACK_METHOD_DLG = "dlg"

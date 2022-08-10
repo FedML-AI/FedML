@@ -1,4 +1,3 @@
-# Please check "GPU_MAPPING.md" to see how to define the topology
 # You can define a cluster containing multiple GPUs within multiple machines by defining `gpu_mapping.yaml` as follows:
 
 # config_cluster0:
