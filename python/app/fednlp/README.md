@@ -1,6 +1,6 @@
 # FedNLP: A Research Platform for Federated Learning in Natural Language Processing
 
-Arxiv: https://arxiv.org/abs/2104.08815
+Arxiv: https://arxiv.org/abs/2104.08815 (NACCL 2022)
 
 <!-- This is FedNLP, an application ecosystem for federated natural language processing based on FedML framework (https://github.com/FedML-AI/FedML). -->
 
