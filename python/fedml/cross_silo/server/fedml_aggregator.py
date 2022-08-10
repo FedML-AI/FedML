@@ -8,6 +8,9 @@ import torch
 import wandb
 from fedml import mlops
 
+from ...core.schedule.scheduler import scheduler
+from ...core.schedule.runtime_estimate import t_sample_fit
+
 
 class FedMLAggregator(object):
     def __init__(
@@ -42,6 +45,12 @@ class FedMLAggregator(object):
         self.flag_client_model_uploaded_dict = dict()
         for idx in range(self.client_num):
             self.flag_client_model_uploaded_dict[idx] = False
+        self.runtime_history = {}
+        for i in range(self.client_num):
+            self.runtime_history[i] = {}
+            for j in range(self.args.client_num_in_total):
+                self.runtime_history[i][j] = []
+
 
     def get_global_model_params(self):
         return self.aggregator.get_model_params()
@@ -64,12 +73,90 @@ class FedMLAggregator(object):
             self.flag_client_model_uploaded_dict[idx] = False
         return True
 
+
+    def workload_estimate(self, client_indexes, mode="simulate"):
+        if mode == "simulate":
+            client_samples = [
+                self.train_data_local_num_dict[client_index]
+                for client_index in client_indexes
+            ]
+            workload = client_samples
+        elif mode == "real":
+            raise NotImplementedError
+        else:
+            raise NotImplementedError
+        return workload
+
+    def memory_estimate(self, client_indexes, mode="simulate"):
+        if mode == "simulate":
+            memory = np.ones(self.client_num)
+        elif mode == "real":
+            raise NotImplementedError
+        else:
+            raise NotImplementedError
+        return memory
+
+    def resource_estimate(self, mode="simulate"):
+        if mode == "simulate":
+            resource = np.ones(self.client_num)
+        elif mode == "real":
+            raise NotImplementedError
+        else:
+            raise NotImplementedError
+        return resource
+
+    def record_client_runtime(self, worker_id, client_runtimes):
+        for client_id, runtime in client_runtimes.items():
+            self.runtime_history[worker_id][client_id].append(runtime)
+
+
+    def client_schedule(self, round_idx, client_indexes):
+        # self.runtime_history = {}
+        # for i in range(self.client_num):
+        #     self.runtime_history[i] = {}
+        #     for j in range(self.args.client_num_in_total):
+        #         self.runtime_history[i][j] = []
+
+        if hasattr(self.args, "simulation_schedule") and round_idx > 5:
+            # Need some rounds to record some information. 
+            simulation_schedule = self.args.simulation_schedule
+            fit_params, fit_funcs, fit_errors = t_sample_fit(
+                self.client_num, self.args.client_num_in_total, self.runtime_history, 
+                self.train_data_local_num_dict, uniform_client=True, uniform_gpu=False)
+
+            logging.info(f"fit_params: {fit_params}")
+            logging.info(f"fit_errors: {fit_errors}")
+
+            # scheduler(workloads, constraints, memory)
+            # workload = self.workload_estimate(client_indexes, mode)
+            # resource = self.resource_estimate(mode)
+            # memory = self.memory_estimate(mode)
+
+            # mode = 0
+            # my_scheduler = scheduler(workload, resource, memory)
+            # schedules = my_scheduler.DP_schedule(mode)
+            # for i in range(len(schedules)):
+            #     print("Resource %2d: %s\n" % (i, str(schedules[i])))
+
+        client_schedule = np.array_split(client_indexes, self.client_num)
+        return client_schedule
+
+    def get_average_weight(self, client_indexes):
+        average_weight_dict = {}
+        training_num = 0
+        for client_index in client_indexes:
+            training_num += self.train_data_local_num_dict[client_index]
+
+        for client_index in client_indexes:
+            average_weight_dict[client_index] = (
+                self.train_data_local_num_dict[client_index] / training_num
+            )
+        return average_weight_dict
+
     def aggregate(self):
         start_time = time.time()
-
-
-
         model_list = []
+        training_num = 0
         for idx in range(self.client_num):
             model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
 

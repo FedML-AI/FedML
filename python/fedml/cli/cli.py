@@ -22,6 +22,7 @@ from ..cli.comm_utils import sys_utils
 
 
 FEDML_MLOPS_BUILD_PRE_IGNORE_LIST = 'dist-packages,client-package.zip,server-package.zip,__pycache__,*.pyc,*.git'
+simulator_process_list = list()
 
 
 @click.group()
@@ -188,11 +189,10 @@ def mlops_login(
             return
         pip_source_dir = os.path.dirname(__file__)
         login_cmd = os.path.join(pip_source_dir, "edge_deployment", "client_daemon.py")
-        # click.echo(login_cmd)
         client_logout()
         sys_utils.cleanup_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
-        sys_utils.cleanup_all_fedml_processes("client_login.py", exclude_login=True)
-        sys_utils.cleanup_all_fedml_processes("client_daemon.py", exclude_login=True)
+        sys_utils.cleanup_all_fedml_client_learning_processes()
+        sys_utils.cleanup_all_fedml_client_login_processes("client_login.py")
 
         try:
             ClientConstants.login_role_list.index(role)
@@ -219,7 +219,8 @@ def mlops_login(
                 os_name
             ]
         ).pid
-        sys_utils.save_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
+        sys_utils.save_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
+                                     ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
 
     if is_server is True:
         # Check login mode.
@@ -238,11 +239,11 @@ def mlops_login(
             return
 
         pip_source_dir = os.path.dirname(__file__)
-        login_cmd = os.path.join(pip_source_dir, "server_deployment", "server_login.py")
-        # click.echo(login_cmd)
+        login_cmd = os.path.join(pip_source_dir, "server_deployment", "server_daemon.py")
         server_logout()
         sys_utils.cleanup_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
-        sys_utils.cleanup_all_fedml_processes("server_login.py", exclude_login=True)
+        sys_utils.cleanup_all_fedml_server_learning_processes()
+        sys_utils.cleanup_all_fedml_server_login_processes("server_login.py")
         login_pid = subprocess.Popen(
             [
                 sys_utils.get_python_program(),
@@ -265,7 +266,8 @@ def mlops_login(
                 os_name
             ]
         ).pid
-        sys_utils.save_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
+        sys_utils.save_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME,
+                                     ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
 
 
 @cli.command("logout", help="Logout from MLOps platform (open.fedml.ai)")
@@ -297,7 +299,8 @@ def mlops_logout(client, server, docker, docker_rank):
             return
         client_logout()
         sys_utils.cleanup_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
-        sys_utils.cleanup_all_fedml_processes("client_login.py")
+        sys_utils.cleanup_all_fedml_client_learning_processes()
+        sys_utils.cleanup_all_fedml_client_login_processes("client_login.py")
 
     if is_server is True:
         if is_docker:
@@ -305,7 +308,8 @@ def mlops_logout(client, server, docker, docker_rank):
             return
         server_logout()
         sys_utils.cleanup_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
-        sys_utils.cleanup_all_fedml_processes("server_login.py")
+        sys_utils.cleanup_all_fedml_server_learning_processes()
+        sys_utils.cleanup_all_fedml_server_login_processes("server_login.py")
 
 
 @cli.command("build", help="Build packages for MLOps platform (open.fedml.ai)")
@@ -546,15 +550,6 @@ def build_mlops_package(
     shutil.rmtree(mlops_build_path, ignore_errors=True)
 
     return 0
-
-
-@cli.command("register", help="Register process to MLOps client as simulator.")
-@click.argument("process_id", nargs=-1)
-@click.option(
-    "--role", "-r", default=None, is_flag=True, help="logout from the FedML client.",
-)
-def mlops_register_simulator_process(process_id, role):
-    pass
 
 
 @cli.command(

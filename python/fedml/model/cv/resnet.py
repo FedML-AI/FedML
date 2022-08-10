@@ -254,6 +254,46 @@ class ResNet(nn.Module):
             return x
 
 
+def resnet20(class_num, pretrained=False, path=None, **kwargs):
+    """
+    Constructs a ResNet-110 model.
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained.
+    """
+    model = ResNet(BasicBlock, [3, 3, 3], class_num, **kwargs)
+    if pretrained:
+        raise NotImplementedError
+    return model
+
+
+
+def resnet32(class_num, pretrained=False, path=None, **kwargs):
+    """
+    Constructs a ResNet-110 model.
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained.
+    """
+    model = ResNet(BasicBlock, [5, 5, 5], class_num, **kwargs)
+    if pretrained:
+        raise NotImplementedError
+    return model
+
+
+def resnet44(class_num, pretrained=False, path=None, **kwargs):
+    """
+    Constructs a ResNet-110 model.
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained.
+    """
+    model = ResNet(BasicBlock, [7, 7, 7], class_num, **kwargs)
+    if pretrained:
+        raise NotImplementedError
+    return model
+
+
 def resnet56(class_num, pretrained=False, path=None, **kwargs):
     """
     Constructs a ResNet-110 model.
