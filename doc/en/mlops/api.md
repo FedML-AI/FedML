@@ -22,7 +22,7 @@ fedml version
 
 ```
 
-## 1. Log in to the FedML MLOps platform (open.fedml.ai)
+## 1. Login to the FedML MLOps platform (open.fedml.ai)
 login as client with local pip mode:
 ```
 fedml login userid(or API Key)
@@ -36,6 +36,11 @@ fedml login userid(or API Key) --docker --docker-rank rank_index
 login as edge server with local pip mode:
 ```
 fedml login userid(or API Key) -s
+```
+
+login as edge simulator with local pip mode:
+```
+fedml login userid(or API Key) -c -r edge_simulator
 ```
 
 login as edge server with docker mode:

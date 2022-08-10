@@ -119,8 +119,8 @@ class FedAvgAPI(object):
 
             mlops.log_round_info(self.args.comm_round, round_idx)
 
-        mlops.log_training_status(mlops.ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
-        mlops.log_aggregation_status(mlops.ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED)
+        mlops.log_training_finished_status()
+        mlops.log_aggregation_finished_status()
 
     def _client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
         if client_num_in_total == client_num_per_round:
