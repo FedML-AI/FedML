@@ -6,6 +6,7 @@ from fedml.cli.comm_utils import sys_utils
 from fedml.cli.edge_deployment.client_constants import ClientConstants
 from fedml.cli.server_deployment.server_constants import ServerConstants
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--type", "-t", help="Login or logout to MLOps platform")
