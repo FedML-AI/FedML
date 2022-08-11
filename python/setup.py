@@ -37,7 +37,8 @@ requirements = [
     "gensim",
     "multiprocess",
     "smart-open==5.2.1",
-    "nvidia-ml-py3"
+    "nvidia-ml-py3",
+    "matplotlib"
 ]
 
 requirements_extra_mpi = [
