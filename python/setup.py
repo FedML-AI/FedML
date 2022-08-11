@@ -37,6 +37,7 @@ requirements = [
     "gensim",
     "multiprocess",
     "smart-open==5.2.1",
+    "nvidia-ml-py3"
 ]
 
 requirements_extra_mpi = [
@@ -48,7 +49,7 @@ if platform.machine() == "x86_64":
 
 setup(
     name="fedml",
-    version="0.7.285",
+    version="0.7.287",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "

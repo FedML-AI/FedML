@@ -54,7 +54,11 @@ class MLOpsMetrics(Singleton):
                 if hasattr(args, "client_id"):
                     self.edge_id = args.client_id
                 elif hasattr(args, "client_id_list"):
-                    self.edge_id = json.loads(args.client_id_list)[0]
+                    edge_ids = json.loads(args.client_id_list)
+                    if len(edge_ids) > 0:
+                        self.edge_id = edge_ids[0]
+                    else:
+                        self.edge_id = 0
                 else:
                     self.edge_id = 0
 
