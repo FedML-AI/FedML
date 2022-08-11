@@ -65,47 +65,39 @@ class ClientMasterManager(FedMLCommManager):
 
     def handle_message_init(self, msg_params):
         global_model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
-        # data_silo_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
-        average_weight_dict = msg_params.get(MyMessage.MSG_ARG_KEY_AVG_WEIGHTS)
-        client_schedule = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_SCHEDULE)
-        # client_indexes = client_schedule[self.rank - 1]
-        client_indexes = client_schedule[self.client_real_id]
+        data_silo_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
 
-        logging.info("data_silo_index = %s" % str(client_indexes))
+        logging.info("data_silo_index = %s" % str(data_silo_index))
 
         # Notify MLOps with training status.
         self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_TRAINING)
 
         if self.args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
             global_model_params = convert_model_params_to_ddp(global_model_params)
-            # self.sync_process_group(0, global_model_params, data_silo_index)
-            self.sync_process_group(0, global_model_params, client_indexes)
+            self.sync_process_group(0, global_model_params, data_silo_index)
 
-        # self.trainer_dist_adapter.update_model(global_model_params)
-        # self.trainer_dist_adapter.update_dataset(int(data_silo_index))
+        self.trainer_dist_adapter.update_model(global_model_params)
+        self.trainer_dist_adapter.update_dataset(int(data_silo_index))
         self.round_idx = 0
-        self.__train(global_model_params, client_indexes, average_weight_dict)
+
+        self.__train()
 
     def handle_message_receive_model_from_server(self, msg_params):
         logging.info("handle_message_receive_model_from_server.")
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
-        # client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
-        average_weight_dict = msg_params.get(MyMessage.MSG_ARG_KEY_AVG_WEIGHTS)
-        client_schedule = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_SCHEDULE)
-        # client_indexes = client_schedule[self.rank - 1]
-        client_indexes = client_schedule[self.client_real_id]
+        client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
 
         if self.args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
             model_params = convert_model_params_to_ddp(model_params)
-            self.sync_process_group(self.round_idx, model_params, client_indexes)
+            self.sync_process_group(self.round_idx, model_params, client_index)
 
-        # self.trainer_dist_adapter.update_model(model_params)
-        # self.trainer_dist_adapter.update_dataset(int(client_index))
+        self.trainer_dist_adapter.update_model(model_params)
+        self.trainer_dist_adapter.update_dataset(int(client_index))
         if self.round_idx == self.num_rounds - 1:
             mlops.log_training_finished_status()
             return
         self.round_idx += 1
-        self.__train(model_params, client_indexes, average_weight_dict)
+        self.__train()
 
     def handle_message_finish(self, msg_params):
         logging.info(" ====================cleanup ====================")
@@ -114,7 +106,7 @@ class ClientMasterManager(FedMLCommManager):
     def cleanup(self):
         self.finish()
 
-    def send_model_to_server(self, receive_id, weights, local_sample_num, client_runtime_info):
+    def send_model_to_server(self, receive_id, weights, local_sample_num):
         tick = time.time()
         mlops.event("comm_c2s", event_started=True, event_value=str(self.round_idx))
         message = Message(
@@ -124,7 +116,6 @@ class ClientMasterManager(FedMLCommManager):
         )
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, weights)
         message.add_params(MyMessage.MSG_ARG_KEY_NUM_SAMPLES, local_sample_num)
-        message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_RUNTIME_INFO, client_runtime_info)
         self.send_message(message)
 
         MLOpsProfilerEvent.log_to_wandb(
@@ -166,39 +157,12 @@ class ClientMasterManager(FedMLCommManager):
         )
         logging.info("round number %d broadcast to process group" % round_number[0])
 
-
-    def add_client_model(self, local_agg_model_params, model_params, weight=1.0):
-        # Add params that needed to be reduces from clients
-        for name, param in model_params.items():
-            if name not in local_agg_model_params:
-                local_agg_model_params[name] = param * weight
-            else:
-                local_agg_model_params[name] += param * weight
-
-
-    def __train(self, global_model_params, client_indexes, average_weight_dict):
+    def __train(self):
         logging.info("#######training########### round_id = %d" % self.round_idx)
 
         mlops.event("train", event_started=True, event_value=str(self.round_idx))
 
-        local_agg_model_params = {}
-        client_runtime_info = {}
-        for client_index in client_indexes:
-            logging.info("#######training########### Simulating client_index = %d, average weight: %f " % \
-                (client_index, average_weight_dict[client_index]))
-            start_time = time.time()
-            self.trainer_dist_adapter.update_model(global_model_params)
-            self.trainer_dist_adapter.update_dataset(int(client_index))
-            weights, local_sample_num = self.trainer_dist_adapter.train(
-                self.round_idx)
-            self.add_client_model(local_agg_model_params, weights,
-                                weight=average_weight_dict[client_index])
-
-            end_time = time.time()
-            client_runtime = end_time - start_time
-            client_runtime_info[client_index] = client_runtime
-            logging.info("#######training########### End Simulating client_index = %d, consuming time: %f" % \
-                (client_index, client_runtime))
+        weights, local_sample_num = self.trainer_dist_adapter.train(self.round_idx)
 
         mlops.event("train", event_started=False, event_value=str(self.round_idx))
 
@@ -206,10 +170,7 @@ class ClientMasterManager(FedMLCommManager):
         if self.args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
             weights = convert_model_params_from_ddp(weights)
 
-        self.send_model_to_server(0, weights, local_sample_num, client_runtime_info)
+        self.send_model_to_server(0, weights, local_sample_num)
 
     def run(self):
         super().run()
-
-
-

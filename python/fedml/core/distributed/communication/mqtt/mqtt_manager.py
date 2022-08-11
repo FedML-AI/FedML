@@ -68,13 +68,19 @@ class MqttManager(object):
         mqtt_send_start_time = time.time()
         ret_info = self._client.publish(topic, payload=message, qos=2)
         if wait_for_publish:
-            ret_info.wait_for_publish(1)
+            try:
+                ret_info.wait_for_publish(1)
+            except Exception as e:
+                pass
         MLOpsProfilerEvent.log_to_wandb({"Comm/send_delay_mqtt": time.time() - mqtt_send_start_time})
 
     def send_message_json(self, topic, message, wait_for_publish=True):
         ret_info = self._client.publish(topic, payload=message, qos=2)
         if wait_for_publish:
-            ret_info.wait_for_publish(1)
+            try:
+                ret_info.wait_for_publish(1)
+            except Exception as e:
+                pass
 
     def on_connect(self, client, userdata, flags, rc):
         # Callback connected listeners
