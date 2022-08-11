@@ -65,7 +65,11 @@ class MLOpsRuntimeLog:
             if hasattr(args, "client_id"):
                 self.edge_id = args.client_id
             elif hasattr(args, "client_id_list"):
-                self.edge_id = json.loads(args.client_id_list)[0]
+                edge_ids = json.loads(args.client_id_list)
+                if len(edge_ids) > 0:
+                    self.edge_id = edge_ids[0]
+                else:
+                    self.edge_id = 0
             else:
                 if hasattr(args, "edge_id"):
                     self.edge_id = args.edge_id
@@ -129,7 +133,11 @@ class MLOpsRuntimeLog:
             if hasattr(in_args, "client_id"):
                 edge_id = in_args.client_id
             elif hasattr(in_args, "client_id_list"):
-                edge_id = json.loads(in_args.client_id_list)[0]
+                edge_ids = json.loads(in_args.client_id_list)
+                if len(edge_ids) > 0:
+                    edge_id = edge_ids[0]
+                else:
+                    edge_id = 0
             else:
                 if hasattr(in_args, "edge_id"):
                     edge_id = in_args.edge_id
