@@ -79,7 +79,6 @@ def init(args):
             args.config_version = "release"
         fetch_config(args, args.config_version)
         MLOpsRuntimeLog.get_instance(args).init_logs()
-        setup_log_mqtt_mgr()
         return
     else:
         if hasattr(args, "simulator_daemon"):
@@ -87,8 +86,6 @@ def init(args):
             setattr(args, "using_mlops", True)
             setattr(args, "rank", 1)
             MLOpsStore.mlops_bind_result = bind_simulation_device(args, args.user, args.version)
-            if not MLOpsStore.mlops_bind_result:
-                setup_log_mqtt_mgr()
             return
 
     project_name = None
@@ -110,7 +107,6 @@ def init(args):
     if not MLOpsStore.mlops_bind_result:
         setattr(args, "using_mlops", False)
         MLOpsRuntimeLog.get_instance(args).init_logs()
-        setup_log_mqtt_mgr()
         return
 
     # Init project and run
@@ -574,6 +570,9 @@ def setup_log_mqtt_mgr():
         MLOpsStore.mlops_log_mqtt_mgr.disconnect()
         MLOpsStore.mlops_log_mqtt_mgr = None
         MLOpsStore.mlops_log_mqtt_lock.release()
+
+    if MLOpsStore.mlops_log_agent_config is None:
+        return
 
     # logging.info(
     #    "mlops log metrics agent config: {},{}".format(MLOpsStore.mlops_log_agent_config["mqtt_config"]["BROKER_HOST"],
