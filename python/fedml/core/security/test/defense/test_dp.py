@@ -1,8 +1,8 @@
 import argparse
 
-from fedml.core.security.defense.dp import DifferentialPrivacy
-from fedml.core.security.test.aggregation.aggregation_functions import AggregationFunction
-from fedml.core.security.test.utils import create_fake_model_list
+from ....security.defense.dp import DifferentialPrivacy
+from ....security.test.aggregation.aggregation_functions import AggregationFunction
+from ....security.test.utils import create_fake_model_list
 
 
 def add_args(dp_type):

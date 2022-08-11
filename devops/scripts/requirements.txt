@@ -4,3 +4,5 @@ grpcio-tools
 loguru
 dill
 multiprocess
+nvidia-ml-py3
+matplotlib
