@@ -214,7 +214,10 @@ def __login_as_simulator(args, userid, version, mqtt_connection=True):
         ClientConstants.save_runner_infos(args.device_id + "." + args.os_name, edge_id, run_id=0)
 
         # Setup MQTT connection for communication with the FedML server.
-        runner.setup_agent_mqtt_connection(service_config)
+        try:
+            runner.setup_agent_mqtt_connection(service_config)
+        except Exception as e:
+            pass
 
         # Open simulator daemon process to process run status.
         simulator_daemon_cmd = os.path.join(os.path.dirname(__file__), "simulator_daemon.py")
