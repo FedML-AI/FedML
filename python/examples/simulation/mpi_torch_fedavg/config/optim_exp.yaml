@@ -9,8 +9,8 @@ data_args:
   partition_alpha: 0.1
 
 model_args:
-  model: "resnet18"
-  group_norm_channels: 0
+  model: "resnet18_cifar"
+  group_norm_channels: 32
 
 train_args:
   # federated_optimizer: "FedAvg_seq"
