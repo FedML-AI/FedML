@@ -10,6 +10,36 @@ mpirun -np 9 \
 
 
 
+
+
+# 
+
+mpirun -np 9 \
+-host "localhost:9" \
+/home/chaoyanghe/anaconda3/envs/fedml/bin/python main.py --cf config/optim_exp.yaml \
+model resnet18_cifar  group_norm_channels 0 \
+federated_optimizer FedAvg_seq  learning_rate 0.3 \
+
+
+mpirun -np 9 \
+-host "localhost:9" \
+/home/chaoyanghe/anaconda3/envs/fedml/bin/python main.py --cf config/optim_exp.yaml \
+model resnet18_cifar  group_norm_channels 32 \
+federated_optimizer FedAvg_seq  learning_rate 0.3 \
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # run 10 workers, not using sequential
 mpirun -np 11 \
 -host "localhost:11" \
@@ -22,6 +52,22 @@ mpirun -np 11 \
 mpirun -np 9 \
 -host "localhost:9" \
 /home/chaoyanghe/anaconda3/envs/fedml/bin/python main.py --cf config/schedule_LDAcifar10.yaml \
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
