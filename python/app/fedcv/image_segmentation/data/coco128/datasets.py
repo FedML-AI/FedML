@@ -77,6 +77,8 @@ class CocoSegmentDataset(VisionDataset):
     def __getitem__(self, idx: int) -> t.Tuple[Image.Image, np.ndarray]:
         """Get the image and label at the given index."""
         image = Image.open(str(self.images[idx]))
+        # to RGB
+        image = image.convert("RGB")
         label_file = self.labels[idx]
 
         masks = []

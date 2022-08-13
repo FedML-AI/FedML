@@ -1,3 +1,4 @@
+import logging
 from typing import Iterable, Dict
 
 import numpy as np
@@ -29,6 +30,9 @@ class Normalize(object):
         mask = sample["label"]
         img = np.array(img).astype(np.float32)
         mask = np.array(mask).astype(np.float32)
+
+        # logging.info(f"Image shape: {img.shape}")
+
         img /= 255.0
         img -= self.mean
         img /= self.std
