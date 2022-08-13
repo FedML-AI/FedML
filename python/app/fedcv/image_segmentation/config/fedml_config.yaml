@@ -16,7 +16,7 @@ model_args:
   class_num: 80
   backbone: resnet
   backbone_pretrained: true
-  backbone_freezed: true
+  backbone_freezed: false
   extract_feat: true
   outstride: 16
   sync_bn: true
