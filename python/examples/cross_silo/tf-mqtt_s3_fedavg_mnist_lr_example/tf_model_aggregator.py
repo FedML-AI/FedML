@@ -1,51 +1,44 @@
-import torch
+
+import tensorflow as tf
 from fedml.core import ServerAggregator
-from torch import nn
 
 
 class TfServerAggregator(ServerAggregator):
     def __init__(self, model, args):
         super().__init__(model, args)
-        self.cpu_transfer = False if not hasattr(self.args, "cpu_transfer") else self.args.cpu_transfer
+        if args.client_optimizer == "sgd":
+            optimizer = tf.keras.optimizers.SGD(
+                learning_rate=args.learning_rate,
+                name='SGD'
+            )
+        else:
+            optimizer = tf.keras.optimizers.Adam(
+                learning_rate=args.learning_rate,
+                name='Adam'
+            )
+
+        self.model.compile(optimizer=optimizer, loss=['sparse_categorical_crossentropy'], metrics=['accuracy'])
 
     def get_model_params(self):
-        if self.cpu_transfer:
-            return self.model.cpu().state_dict()
-        return self.model.state_dict()
+        return self.model.get_weights()
 
     def set_model_params(self, model_parameters):
-        self.model.load_state_dict(model_parameters)
+        self.model.set_weights(model_parameters)
 
     def test(self, test_data, device, args):
-        model = self.model
+        metrics = {"test_correct": 0, "test_loss": 0, "test_total": 0}
 
-        model.to(device)
-        model.eval()
+        for batch_idx, (x, target) in enumerate(test_data):
+            x = x.numpy()
+            target = target.numpy()
+            y_pred = self.model.test_on_batch(x=x, y=target)
+            y = self.model.predict(x, verbose=0)
+            loss = y_pred[0]
+            accuracy = y_pred[1]
+            correct = tf.equal(tf.argmax(y, 1), tf.cast(target, tf.int64))
 
-        metrics = {
-            "test_correct": 0,
-            "test_loss": 0,
-            "test_precision": 0,
-            "test_recall": 0,
-            "test_total": 0,
-        }
+            # metrics["test_correct"] += tf.reduce_mean(tf.cast(correct, tf.float32))
+            metrics["test_loss"] += loss
+            metrics["test_total"] += 1
 
-        criterion = nn.CrossEntropyLoss().to(device)
-
-        with torch.no_grad():
-            for batch_idx, (x, target) in enumerate(test_data):
-                x = x.to(device)
-                target = target.to(device)
-                pred = model(x)
-                loss = criterion(pred, target)
-
-                _, predicted = torch.max(pred, 1)
-                correct = predicted.eq(target).sum()
-
-                metrics["test_correct"] += correct.item()
-                metrics["test_loss"] += loss.item() * target.size(0)
-                if len(target.size()) == 1:  #
-                    metrics["test_total"] += target.size(0)
-                elif len(target.size()) == 2:  # for tasks of next word prediction
-                    metrics["test_total"] += target.size(0) * target.size(1)
         return metrics
