@@ -1,90 +1,65 @@
-import torch
-from fedml.core import ClientTrainer
-from torch import nn
 
 import logging
+
+from fedml.core import ClientTrainer
+import tensorflow as tf
 
 
 class TfModelTrainerCLS(ClientTrainer):
     def get_model_params(self):
-        return self.model.cpu().state_dict()
+        return self.model.get_weights()
 
     def set_model_params(self, model_parameters):
-        self.model.load_state_dict(model_parameters)
+        self.model.set_weights(model_parameters)
 
     def train(self, train_data, device, args):
-        model = self.model
-
-        model.to(device)
-        model.train()
-
-        # train and update
-        criterion = nn.CrossEntropyLoss().to(device)
         if args.client_optimizer == "sgd":
-            optimizer = torch.optim.SGD(
-                filter(lambda p: p.requires_grad, self.model.parameters()),
-                lr=args.learning_rate,
+            optimizer = tf.keras.optimizers.SGD(
+                learning_rate=args.learning_rate,
+                name='SGD'
             )
         else:
-            optimizer = torch.optim.Adam(
-                filter(lambda p: p.requires_grad, self.model.parameters()),
-                lr=args.learning_rate,
-                weight_decay=args.weight_decay,
-                amsgrad=True,
+            optimizer = tf.keras.optimizers.Adam(
+                learning_rate=args.learning_rate,
+                name='Adam'
             )
 
+        self.model.compile(optimizer=optimizer, loss=['sparse_categorical_crossentropy'], metrics=['accuracy'])
+
         epoch_loss = []
+        accuracy = 0.0
         for epoch in range(args.epochs):
             batch_loss = []
             for batch_idx, (x, labels) in enumerate(train_data):
-                x, labels = x.to(device), labels.to(device)
-                model.zero_grad()
-                log_probs = model(x)
-                loss = criterion(log_probs, labels)
-                loss.backward()
+                x = x.numpy()
+                labels = labels.numpy()
+                y_pred = self.model.train_on_batch(x=x, y=labels)
+                loss = y_pred[0]
+                accuracy = y_pred[1]
+                batch_loss.append(loss)
 
-                # Uncommet this following line to avoid nan loss
-                # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
-
-                optimizer.step()
-                # logging.info(
-                #     "Update Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
-                #         epoch,
-                #         (batch_idx + 1) * args.batch_size,
-                #         len(train_data) * args.batch_size,
-                #         100.0 * (batch_idx + 1) / len(train_data),
-                #         loss.item(),
-                #     )
-                # )
-                batch_loss.append(loss.item())
             epoch_loss.append(sum(batch_loss) / len(batch_loss))
             logging.info(
-                "Client Index = {}\tEpoch: {}\tLoss: {:.6f}".format(
-                    self.id, epoch, sum(epoch_loss) / len(epoch_loss)
+                "Client Index = {}\tEpoch: {}\tLoss: {:.6f}\tAccuracy: {:.6f}".format(
+                    self.id, epoch, sum(epoch_loss) / len(epoch_loss), accuracy
                 )
             )
 
     def test(self, test_data, device, args):
-        model = self.model
-
-        model.to(device)
-        model.eval()
-
         metrics = {"test_correct": 0, "test_loss": 0, "test_total": 0}
 
-        criterion = nn.CrossEntropyLoss().to(device)
+        for batch_idx, (x, target) in enumerate(test_data):
+            x = x.numpy()
+            target = target.numpy()
+            y_pred = self.model.test_on_batch(x=x, y=target)
+            y = self.model.predict(x, verbose=0)
+            loss = y_pred[0]
+            accuracy = y_pred[1]
 
-        with torch.no_grad():
-            for batch_idx, (x, target) in enumerate(test_data):
-                x = x.to(device)
-                target = target.to(device)
-                pred = model(x)
-                loss = criterion(pred, target)
+            correct = tf.equal(tf.argmax(y, 1), tf.cast(target, tf.int64))
 
-                _, predicted = torch.max(pred, -1)
-                correct = predicted.eq(target).sum()
+            # metrics["test_correct"] += tf.reduce_mean(tf.cast(correct, tf.float32))
+            metrics["test_loss"] += loss * target.size(0)
+            metrics["test_total"] += target.size(0)
 
-                metrics["test_correct"] += correct.item()
-                metrics["test_loss"] += loss.item() * target.size(0)
-                metrics["test_total"] += target.size(0)
         return metrics
