@@ -67,8 +67,6 @@ class FedMLAggregator(object):
     def aggregate(self):
         start_time = time.time()
 
-
-
         model_list = []
         for idx in range(self.client_num):
             model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))

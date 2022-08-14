@@ -1,7 +1,7 @@
 import os
 import sys
 
-import torch
+import tensorflow as tf
 
 import fedml
 from fedml import FedMLRunner
@@ -53,33 +53,44 @@ def load_data(args):
     return dataset, class_num
 
 
+class LogisticRegressionModel(tf.keras.Model):
+    def __init__(self, input_dim, out_dim, name=None):
+        super(LogisticRegressionModel, self).__init__(name=name)
+        self.output_dim = out_dim
+        self.layer1 = tf.keras.layers.Dense(out_dim, input_shape=(input_dim, ), activation="sigmoid")
+        self.layer1.build(input_shape=(input_dim, ))
+
+    def call(self, x):
+        return self.layer1(x)
+
+    def get_config(self):
+        return {"output_dim": self.output_dim, "name": self.name}
+
+
+def create_model(input_dim, out_dim):
+    client_model = LogisticRegressionModel(input_dim, out_dim)
+    return client_model
+
+
 def create_model_trainer(in_model, in_args):
     trainer = TfModelTrainerCLS(in_model, in_args)
     return trainer
 
 
-class LogisticRegression(torch.nn.Module):
-    def __init__(self, input_dim, output_dim):
-        super(LogisticRegression, self).__init__()
-        self.linear = torch.nn.Linear(input_dim, output_dim)
-
-    def forward(self, x):
-        outputs = torch.sigmoid(self.linear(x))
-        return outputs
-
-
 if __name__ == "__main__":
     # init FedML framework
     args = fedml.init()
+    setattr(args, "run_id", "1979")
 
     # init device
     device = fedml.device.get_device(args)
 
     # load data
     dataset, output_dim = load_data(args)
+    args.client_num_in_total = 1
 
     # load model (the size of MNIST image is 28 x 28)
-    model = LogisticRegression(28 * 28, output_dim)
+    model = create_model(28*28, output_dim)
 
     # create model trainer
     trainer = create_model_trainer(model, args)
