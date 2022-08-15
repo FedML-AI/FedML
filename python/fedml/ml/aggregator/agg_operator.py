@@ -10,14 +10,24 @@ class FedMLAggOperator:
             local_sample_num, local_model_params = raw_grad_list[i]
             training_num += local_sample_num
 
-        for k in avg_params.keys():
-            for i in range(0, len(raw_grad_list)):
-                local_sample_number, local_model_params = raw_grad_list[i]
-                w = local_sample_number / training_num
-                if i == 0:
-                    avg_params[k] = local_model_params[k] * w
-                else:
-                    avg_params[k] += local_model_params[k] * w
+        if isinstance(avg_params, dict):
+            for k in avg_params.keys():
+                for i in range(0, len(raw_grad_list)):
+                    local_sample_number, local_model_params = raw_grad_list[i]
+                    w = local_sample_number / training_num
+                    if i == 0:
+                        avg_params[k] = local_model_params[k] * w
+                    else:
+                        avg_params[k] += local_model_params[k] * w
+        elif isinstance(avg_params, list):
+            for k in range(0, len(avg_params)):
+                for i in range(0, len(raw_grad_list)):
+                    local_sample_number, local_model_params = raw_grad_list[i]
+                    w = local_sample_number / training_num
+                    if i == 0:
+                        avg_params[k] = local_model_params[k] * w
+                    else:
+                        avg_params[k] += local_model_params[k] * w
         return avg_params
 
     @staticmethod
