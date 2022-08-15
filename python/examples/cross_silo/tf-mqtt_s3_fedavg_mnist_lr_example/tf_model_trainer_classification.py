@@ -29,37 +29,17 @@ class TfModelTrainerCLS(ClientTrainer):
         epoch_loss = []
         accuracy = 0.0
         for epoch in range(args.epochs):
-            batch_loss = []
+            loss = 0.0
             for batch_idx, (x, labels) in enumerate(train_data):
                 x = x.numpy()
                 labels = labels.numpy()
-                y_pred = self.model.train_on_batch(x=x, y=labels)
+                y_pred = self.model.train_on_batch(x=x, y=labels, reset_metrics=False)
                 loss = y_pred[0]
                 accuracy = y_pred[1]
-                batch_loss.append(loss)
 
-            epoch_loss.append(sum(batch_loss) / len(batch_loss))
+            epoch_loss.append(loss)
             logging.info(
                 "Client Index = {}\tEpoch: {}\tLoss: {:.6f}\tAccuracy: {:.6f}".format(
                     self.id, epoch, sum(epoch_loss) / len(epoch_loss), accuracy
                 )
             )
-
-    def test(self, test_data, device, args):
-        metrics = {"test_correct": 0, "test_loss": 0, "test_total": 0}
-
-        for batch_idx, (x, target) in enumerate(test_data):
-            x = x.numpy()
-            target = target.numpy()
-            y_pred = self.model.test_on_batch(x=x, y=target)
-            y = self.model.predict(x, verbose=0)
-            loss = y_pred[0]
-            accuracy = y_pred[1]
-
-            correct = tf.equal(tf.argmax(y, 1), tf.cast(target, tf.int64))
-
-            # metrics["test_correct"] += tf.reduce_mean(tf.cast(correct, tf.float32))
-            metrics["test_loss"] += loss * target.size(0)
-            metrics["test_total"] += target.size(0)
-
-        return metrics
