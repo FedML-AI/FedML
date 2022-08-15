@@ -1,5 +1,8 @@
+import logging
 
 import tensorflow as tf
+
+from fedml import mlops
 from fedml.core import ServerAggregator
 
 
@@ -26,19 +29,11 @@ class TfServerAggregator(ServerAggregator):
         self.model.set_weights(model_parameters)
 
     def test(self, test_data, device, args):
-        metrics = {"test_correct": 0, "test_loss": 0, "test_total": 0}
-
+        test_results = []
         for batch_idx, (x, target) in enumerate(test_data):
             x = x.numpy()
             target = target.numpy()
-            y_pred = self.model.test_on_batch(x=x, y=target)
-            y = self.model.predict(x, verbose=0)
-            loss = y_pred[0]
-            accuracy = y_pred[1]
-            correct = tf.equal(tf.argmax(y, 1), tf.cast(target, tf.int64))
-
-            # metrics["test_correct"] += tf.reduce_mean(tf.cast(correct, tf.float32))
-            metrics["test_loss"] += loss
-            metrics["test_total"] += 1
-
-        return metrics
+            test_results = self.model.test_on_batch(x=x, y=target, reset_metrics=False)
+        logging.info("test_results = {}".format(test_results))
+        mlops.log({"Test/Loss": test_results[1], "round": args.round_idx})
+        mlops.log({"Test/Acc": test_results[0], "round": args.round_idx})

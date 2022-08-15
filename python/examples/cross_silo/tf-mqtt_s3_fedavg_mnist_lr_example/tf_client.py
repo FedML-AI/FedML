@@ -1,15 +1,9 @@
-import os
-import sys
-
 import tensorflow as tf
 
 import fedml
 from fedml import FedMLRunner
 from fedml.data.MNIST.data_loader import download_mnist, load_partition_data_mnist
-
-sys.path.append(os.path.abspath("."))
-
-from tf_model_aggregator import TfServerAggregator
+from tf_model_trainer_classification import TfModelTrainerCLS
 
 
 def load_data(args):
@@ -57,8 +51,8 @@ class LogisticRegressionModel(tf.keras.Model):
     def __init__(self, input_dim, out_dim, name=None):
         super(LogisticRegressionModel, self).__init__(name=name)
         self.output_dim = out_dim
-        self.layer1 = tf.keras.layers.Dense(out_dim, input_shape=(input_dim, ), activation="sigmoid")
-        self.layer1.build(input_shape=(input_dim, ))
+        self.layer1 = tf.keras.layers.Dense(out_dim, input_shape=(input_dim,), activation="sigmoid")
+        self.layer1.build(input_shape=(input_dim,))
 
     def call(self, x):
         return self.layer1(x)
@@ -72,9 +66,9 @@ def create_model(input_dim, out_dim):
     return client_model
 
 
-def create_model_aggregator(in_model, in_args):
-    aggregator = TfServerAggregator(in_model, in_args)
-    return aggregator
+def create_model_trainer(in_model, in_args):
+    trainer = TfModelTrainerCLS(in_model, in_args)
+    return trainer
 
 
 if __name__ == "__main__":
@@ -87,14 +81,13 @@ if __name__ == "__main__":
 
     # load data
     dataset, output_dim = load_data(args)
-    args.client_num_in_total = 1
 
     # load model (the size of MNIST image is 28 x 28)
-    model = create_model(28*28, output_dim)
+    model = create_model(28 * 28, output_dim)
 
-    # create model aggregator
-    aggregator = create_model_aggregator(model, args)
+    # create model trainer
+    trainer = create_model_trainer(model, args)
 
     # start training
-    fedml_runner = FedMLRunner(args, device, dataset, model, server_aggregator=aggregator)
+    fedml_runner = FedMLRunner(args, device, dataset, model, client_trainer=trainer)
     fedml_runner.run()
