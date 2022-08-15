@@ -25,7 +25,8 @@ Homepage: [https://FedML.ai](https://FedML.ai)
 
 
 # News
-* <b>[2022/03/15] (Product Introduction) FedML AI platform releases the world’s federated learning open platform on the public cloud with an in-depth introduction of products and technologies! Please visit <a href="https://medium.com/@FedML/fedml-ai-platform-releases-the-worlds-federated-learning-open-platform-on-public-cloud-with-an-8024e68a70b6">this blog</a> for details. 
+* <b>[2022/08/01] (Product Introduction)</b> FedML AI platform releases the world’s federated learning open platform on the public cloud with an in-depth introduction of products and technologies! Please visit <a href="https://medium.com/@FedML/fedml-ai-platform-releases-the-worlds-federated-learning-open-platform-on-public-cloud-with-an-8024e68a70b6">this blog</a> for details. 
+
 * <b>[2022/03/15] (Fundraising)</b>: FedML, Inc. has finished the 1st-round fundraising. We are backed by top VCs who focus on AI, SaaS, and Blockchain/Web3/Crypto from the Bay Area, California of the USA.
 * <b>[2022/02/14] (Company)</b>: FedML is upgraded as a Delaware-registered C-Corp company. Our headquarter is in California, USA. The two co-founders are CEO Salman Avestimehr (https://www.avestimehr.com/) and CTO Chaoyang He (https://chaoyanghe.com). We welcome contributors anywhere in the world. 
 * <b>[2021/02/01] (Award)</b>: #NeurIPS 2020# FedML won <a href="https://chaoyanghe.com/wp-content/uploads/2021/02/NeurIPS-SpicyFL-2020-Baidu-best-paper-award-He-v2.pdf">Best Paper Award</a> at NeurIPS Federated Learning workshop 2020
