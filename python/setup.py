@@ -45,6 +45,11 @@ requirements_extra_mpi = [
     "mpi4py",
 ]
 
+requirements_extra_tf = [
+    "tensorflow",
+    "tensorflow_datasets",
+]
+
 if platform.machine() == "x86_64":
     requirements.append("MNN==1.1.6")
 
@@ -104,6 +109,7 @@ setup(
     extras_require={
         "MPI": requirements_extra_mpi,
         "gRPC": "grpcio",
+        "tensorflow": requirements_extra_tf,
     },
     package_data={"": ["py.typed"]},
     license="Apache 2.0",
