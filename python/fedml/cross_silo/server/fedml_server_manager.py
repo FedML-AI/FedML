@@ -24,7 +24,7 @@ class FedMLServerManager(FedMLCommManager):
         self.args = args
         self.aggregator = aggregator
         self.round_num = args.comm_round
-        self.round_idx = 0
+        self.args.round_idx = 0
 
         self.client_online_mapping = {}
         self.client_real_ids = json.loads(args.client_id_list)
@@ -48,7 +48,7 @@ class FedMLServerManager(FedMLCommManager):
             )
             client_idx_in_this_round += 1
 
-        mlops.event("server.wait", event_started=True, event_value=str(self.round_idx))
+        mlops.event("server.wait", event_started=True, event_value=str(self.args.round_idx))
 
     def register_message_receive_handlers(self):
         logging.info("register_message_receive_handlers------")
@@ -68,10 +68,10 @@ class FedMLServerManager(FedMLCommManager):
 
     def handle_messag_connection_ready(self, msg_params):
         self.client_id_list_in_this_round = self.aggregator.client_selection(
-            self.round_idx, self.client_real_ids, self.args.client_num_per_round
+            self.args.round_idx, self.client_real_ids, self.args.client_num_per_round
         )
         self.data_silo_index_list = self.aggregator.data_silo_selection(
-            self.round_idx,
+            self.args.round_idx,
             self.args.client_num_in_total,
             len(self.client_id_list_in_this_round),
         )
@@ -122,7 +122,7 @@ class FedMLServerManager(FedMLCommManager):
         mlops.event(
             "comm_c2s",
             event_started=False,
-            event_value=str(self.round_idx),
+            event_value=str(self.args.round_idx),
             event_edge_id=sender_id,
         )
 
@@ -137,45 +137,42 @@ class FedMLServerManager(FedMLCommManager):
         if b_all_received:
             # if hasattr(self.args, "using_mlops") and self.args.using_mlops:
             #     self.mlops_event.log_event_ended(
-            #         "server.wait", event_value=str(self.round_idx)
+            #         "server.wait", event_value=str(self.args.round_idx)
             #     )
             #     self.mlops_event.log_event_started(
-            #         "server.agg_and_eval", event_value=str(self.round_idx)
+            #         "server.agg_and_eval", event_value=str(self.args.round_idx)
             #     )
             mlops.event(
-                "server.wait", event_started=False, event_value=str(self.round_idx)
+                "server.wait", event_started=False, event_value=str(self.args.round_idx)
             )
             mlops.event(
                 "server.agg_and_eval",
                 event_started=True,
-                event_value=str(self.round_idx),
+                event_value=str(self.args.round_idx),
             )
             tick = time.time()
             global_model_params = self.aggregator.aggregate()
             MLOpsProfilerEvent.log_to_wandb(
-                {"AggregationTime": time.time() - tick, "round": self.round_idx}
+                {"AggregationTime": time.time() - tick, "round": self.args.round_idx}
             )
 
-            try:
-                self.aggregator.test_on_server_for_all_clients(self.round_idx)
-            except Exception as e:
-                logging.info("aggregator.test exception: " + str(e))
+            self.aggregator.test_on_server_for_all_clients(self.args.round_idx)
 
-            mlops.event("server.agg_and_eval", event_started=False, event_value=str(self.round_idx))
+            mlops.event("server.agg_and_eval", event_started=False, event_value=str(self.args.round_idx))
 
             # send round info to the MQTT backend
-            mlops.log_round_info(self.round_num, self.round_idx)
+            mlops.log_round_info(self.round_num, self.args.round_idx)
 
             self.client_id_list_in_this_round = self.aggregator.client_selection(
-                self.round_idx, self.client_real_ids, self.args.client_num_per_round
+                self.args.round_idx, self.client_real_ids, self.args.client_num_per_round
             )
             self.data_silo_index_list = self.aggregator.data_silo_selection(
-                self.round_idx,
+                self.args.round_idx,
                 self.args.client_num_in_total,
                 len(self.client_id_list_in_this_round),
             )
 
-            if self.round_idx == 0:
+            if self.args.round_idx == 0:
                 MLOpsProfilerEvent.log_to_wandb({"BenchmarkStart": time.time()})
 
             client_idx_in_this_round = 0
@@ -187,8 +184,8 @@ class FedMLServerManager(FedMLCommManager):
                 )
                 client_idx_in_this_round += 1
 
-            self.round_idx += 1
-            if self.round_idx == self.round_num:
+            self.args.round_idx += 1
+            if self.args.round_idx == self.round_num:
                 mlops.log_aggregation_finished_status()
                 logging.info(
                     "=============training is finished. Cleanup...============"
@@ -197,15 +194,15 @@ class FedMLServerManager(FedMLCommManager):
             else:
                 logging.info(
                     "\n\n==========start {}-th round training===========\n".format(
-                        self.round_idx
+                        self.args.round_idx
                     )
                 )
                 # if hasattr(self.args, "using_mlops") and self.args.using_mlops:
                 #     self.mlops_event.log_event_started(
-                #         "server.wait", event_value=str(self.round_idx)
+                #         "server.wait", event_value=str(self.args.round_idx)
                 #     )
                 mlops.event(
-                    "server.wait", event_started=True, event_value=str(self.round_idx)
+                    "server.wait", event_started=True, event_value=str(self.args.round_idx)
                 )
 
     def cleanup(self):
@@ -271,6 +268,6 @@ class FedMLServerManager(FedMLCommManager):
         )
 
         mlops.log_aggregated_model_info(
-            self.round_idx + 1,
+            self.args.round_idx + 1,
             model_url=message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL),
         )
