@@ -69,15 +69,15 @@ def add_args():
     parser.add_argument("--server_optimizer", type=str, default="sgd")
     parser.add_argument("--server_lr", type=float, default=1.0)
     parser.add_argument("--server_momentum", type=float, default=0.9)
-
-
-
-    args, unknown = parser.parse_known_args()
+    # args, unknown = parser.parse_known_args()
+    args = parser.parse_args()
     return args
 
 
 def load_arguments(training_type=None, comm_backend=None):
     cmd_args = add_args()
+    logging.info(f"cmd_args: {cmd_args}" )
+
     # Load all arguments from YAML config file
     args = Arguments(cmd_args, training_type, comm_backend,
                     override_cmd_args=False)
@@ -103,6 +103,7 @@ def load_arguments(training_type=None, comm_backend=None):
 if __name__ == "__main__":
     # init FedML framework
     args = load_arguments(fedml._global_training_type, fedml._global_comm_backend)
+    logging.info(f"args: {args}" )
     args = fedml.init(args)
     # args = fedml.init()
 
