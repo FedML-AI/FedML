@@ -1,15 +1,9 @@
-import os
-import sys
-
-import torch
+import tensorflow as tf
 
 import fedml
 from fedml import FedMLRunner
 from fedml.data.MNIST.data_loader import download_mnist, load_partition_data_mnist
-
-sys.path.append(os.path.abspath("."))
-
-from tf_model_trainer_classification import TfModelTrainerCLS
+from tf_model_aggregator import TfServerAggregator
 
 
 def load_data(args):
@@ -53,24 +47,34 @@ def load_data(args):
     return dataset, class_num
 
 
-def create_model_trainer(in_model, in_args):
-    trainer = TfModelTrainerCLS(in_model, in_args)
-    return trainer
+class LogisticRegressionModel(tf.keras.Model):
+    def __init__(self, input_dim, out_dim, name=None):
+        super(LogisticRegressionModel, self).__init__(name=name)
+        self.output_dim = out_dim
+        self.layer1 = tf.keras.layers.Dense(out_dim, input_shape=(input_dim,), activation="sigmoid")
+        self.layer1.build(input_shape=(input_dim,))
+
+    def call(self, x):
+        return self.layer1(x)
+
+    def get_config(self):
+        return {"output_dim": self.output_dim, "name": self.name}
 
 
-class LogisticRegression(torch.nn.Module):
-    def __init__(self, input_dim, output_dim):
-        super(LogisticRegression, self).__init__()
-        self.linear = torch.nn.Linear(input_dim, output_dim)
+def create_model(input_dim, out_dim):
+    client_model = LogisticRegressionModel(input_dim, out_dim)
+    return client_model
 
-    def forward(self, x):
-        outputs = torch.sigmoid(self.linear(x))
-        return outputs
+
+def create_model_aggregator(in_model, in_args):
+    aggregator = TfServerAggregator(in_model, in_args)
+    return aggregator
 
 
 if __name__ == "__main__":
     # init FedML framework
     args = fedml.init()
+    setattr(args, "run_id", "1979")
 
     # init device
     device = fedml.device.get_device(args)
@@ -79,11 +83,11 @@ if __name__ == "__main__":
     dataset, output_dim = load_data(args)
 
     # load model (the size of MNIST image is 28 x 28)
-    model = LogisticRegression(28 * 28, output_dim)
+    model = create_model(28 * 28, output_dim)
 
-    # create model trainer
-    trainer = create_model_trainer(model, args)
+    # create model aggregator
+    aggregator = create_model_aggregator(model, args)
 
     # start training
-    fedml_runner = FedMLRunner(args, device, dataset, model, client_trainer=trainer)
+    fedml_runner = FedMLRunner(args, device, dataset, model, server_aggregator=aggregator)
     fedml_runner.run()
