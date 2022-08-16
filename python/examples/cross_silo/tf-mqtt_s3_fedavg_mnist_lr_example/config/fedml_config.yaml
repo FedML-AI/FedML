@@ -19,11 +19,12 @@ model_args:
   global_model_file_path: "./model_file_cache/global_model.pt"
 
 train_args:
+  ml_engine: "tf"
   federated_optimizer: "FedAvg"
   client_id_list:
-  client_num_in_total: 1
-  client_num_per_round: 1
-  comm_round: 10
+  client_num_in_total: 1000
+  client_num_per_round: 2
+  comm_round: 50
   epochs: 1
   batch_size: 10
   client_optimizer: sgd
@@ -34,7 +35,7 @@ validation_args:
   frequency_of_the_test: 1
 
 device_args:
-  worker_num: 1
+  worker_num: 2
   using_gpu: false
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_default
@@ -50,7 +51,3 @@ tracking_args:
   wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
   wandb_project: fedml
   wandb_name: fedml_torch_fedavg_mnist_lr
-
-#lsa_args:
-#  prime_number: 2 ** 15 - 19
-#  precision_parameter: 10

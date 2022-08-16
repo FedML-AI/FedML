@@ -30,14 +30,16 @@ class CocoSegmentation(COCOBase):
     img_ids: List[int]
     target: np.ndarray
 
-    def __init__(self,
-                 root: str = '../../../data/coco/',
-                 transform: Optional[Callable] = None,
-                 download_dataset: bool = False,
-                 year: Literal['2014', '2017'] = '2017',
-                 split: Literal['train', 'test', 'val'] = 'train',
-                 categories: Optional[List[str]] = None,
-                 data_idxs: Optional[List[int]] = None) -> None:
+    def __init__(
+        self,
+        root: str = "../../../data/coco/",
+        transform: Optional[Callable] = None,
+        download_dataset: bool = False,
+        year: Literal["2014", "2017"] = "2017",
+        split: Literal["train", "test", "val"] = "train",
+        categories: Optional[List[str]] = None,
+        data_idxs: Optional[List[int]] = None,
+    ) -> None:
         """
         The dataset class for COCO segmentation.
 
@@ -50,18 +52,36 @@ class CocoSegmentation(COCOBase):
             categories: The categories of the COCO dataset.
             data_idxs: The indexes used for partitioning dataset.
         """
-        super(COCOBase, self).__init__(root, download_dataset, year, split)
+        super(CocoSegmentation, self).__init__(root, download_dataset, year, split)
 
         if categories is None:
-            categories = ['__background__', 'airplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus',
-                          'car', 'cat',
-                          'chair', 'cow', 'dining table', 'dog', 'horse', 'motorcycle', 'person',
-                          'potted plant',
-                          'sheep', 'sofa', 'tv', 'train']
+            categories = [
+                "__background__",
+                "airplane",
+                "bicycle",
+                "bird",
+                "boat",
+                "bottle",
+                "bus",
+                "car",
+                "cat",
+                "chair",
+                "cow",
+                "dining table",
+                "dog",
+                "horse",
+                "motorcycle",
+                "person",
+                "potted plant",
+                "sheep",
+                "sofa",
+                "tv",
+                "train",
+            ]
         self.coco = COCO(self.instances_path)
         self.transform = transform
         self.data_idxs = data_idxs
-        self.ids_file = Path('{}/{}_{}.ids'.format(self.root_dir, split, year))
+        self.ids_file = Path("{}/{}_{}.ids".format(self.root_dir, split, year))
 
         if self.downloaded:
             os.remove(self.ids_file)
@@ -90,7 +110,9 @@ class CocoSegmentation(COCOBase):
         Returns:
             The valid set of image ids
         """
-        logging.info("Pre-processing mask, this will take a while. It only runs once for each split.")
+        logging.info(
+            "Pre-processing mask, this will take a while. It only runs once for each split."
+        )
         new_ids = []
         for i in range(len(ids)):
             img_id = ids[i]
@@ -99,10 +121,17 @@ class CocoSegmentation(COCOBase):
                 new_ids.append(ids[i])
             done = int(50 * i / len(ids))
             sys.stdout.write(
-                '\r[{}{}] {}% ({}/{})'.format('#' * done, '.' * (50 - done), int((i / len(ids)) * 100), i, len(ids)))
-        sys.stdout.write('\n')
+                "\r[{}{}] {}% ({}/{})".format(
+                    "#" * done,
+                    "." * (50 - done),
+                    int((i / len(ids)) * 100),
+                    i,
+                    len(ids),
+                )
+            )
+        sys.stdout.write("\n")
         sys.stdout.flush()
-        logging.info('Found number of qualified images: {}'.format(len(new_ids)))
+        logging.info("Found number of qualified images: {}".format(len(new_ids)))
         torch.save(new_ids, self.ids_file)
         return new_ids
 
@@ -120,9 +149,9 @@ class CocoSegmentation(COCOBase):
         """
         mask = np.zeros((height, width), dtype=np.uint8)
         for ann in annotations:
-            rle = coco_mask.frPyObjects(ann['segmentation'], height, width)
+            rle = coco_mask.frPyObjects(ann["segmentation"], height, width)
             m = coco_mask.decode(rle)
-            cat = ann['category_id']
+            cat = ann["category_id"]
             if cat in self.cat_ids:
                 c = self.cat_ids.index(cat)
             else:
@@ -130,7 +159,9 @@ class CocoSegmentation(COCOBase):
             if len(m.shape) < 3:
                 mask[:, :] += (mask == 0) * (m * c)
             else:
-                mask[:, :] += (mask == 0) * (((np.sum(m, axis=2)) > 0) * c).astype(np.uint8)
+                mask[:, :] += (mask == 0) * (((np.sum(m, axis=2)) > 0) * c).astype(
+                    np.uint8
+                )
         return mask
 
     def __get_datapoint(self, img_id: int) -> Tuple[Image, np.ndarray]:
@@ -146,11 +177,13 @@ class CocoSegmentation(COCOBase):
         annotations_ids = self.coco.getAnnIds(imgIds=img_id, catIds=self.cat_ids)
 
         img_metadata = self.coco.loadImgs(ids=img_id)[0]
-        img_file = img_metadata['file_name']
-        img = Image.open(self.images_path.joinpath(img_file)).convert('RGB')
+        img_file = img_metadata["file_name"]
+        img = Image.open(self.images_path.joinpath(img_file)).convert("RGB")
 
         annotations = self.coco.loadAnns(ids=annotations_ids)
-        mask = self.__get_mask(annotations, img_metadata['height'], img_metadata['width'])
+        mask = self.__get_mask(
+            annotations, img_metadata["height"], img_metadata["width"]
+        )
 
         return img, mask
 
@@ -162,13 +195,13 @@ class CocoSegmentation(COCOBase):
         for img_id in self.img_ids:
             annotation_ids = self.coco.getAnnIds(imgIds=img_id, catIds=self.cat_ids)
             annotations = self.coco.loadAnns(ids=annotation_ids)
-            category_list = np.asarray([ann['category_id'] for ann in annotations])
+            category_list = np.asarray([ann["category_id"] for ann in annotations])
             target.append(category_list)
         self.target = np.asarray(target)
 
     def __getitem__(self, index: int) -> Datapoint:
         img, mask = self.__get_datapoint(self.img_ids[index])
-        datapoint = {'image': img, 'label': Image.fromarray(mask)}
+        datapoint = {"image": img, "label": Image.fromarray(mask)}
         if self.transform is None:
             return datapoint
         return self.transform(datapoint)
@@ -177,7 +210,7 @@ class CocoSegmentation(COCOBase):
         return len(self.img_ids)
 
 
-if __name__ == '__main__':
-    root_dir = './data/coco'
+if __name__ == "__main__":
+    root_dir = "./data/coco"
     train_data = CocoSegmentation(root=root_dir)
-    val_Data = CocoSegmentation(root=root_dir, split='val')
+    val_Data = CocoSegmentation(root=root_dir, split="val")
