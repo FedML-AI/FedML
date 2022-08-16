@@ -174,7 +174,7 @@ class FedNova(Optimizer):
 
 
 
-class FedNovaTrainer(ClientTrainer):
+class FedNovaModelTrainer(ClientTrainer):
     def get_model_params(self):
         return self.model.cpu().state_dict()
 
@@ -215,7 +215,7 @@ class FedNovaTrainer(ClientTrainer):
             ratio=kwargs["ratio"],
             momentum=self.args.momentum,
             dampening=self.args.dampening,
-            weight_decay=self.args.wd,
+            weight_decay=self.args.weight_decay,
             nesterov=self.args.nesterov,
         )
 
