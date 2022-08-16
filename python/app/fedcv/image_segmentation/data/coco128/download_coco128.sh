@@ -8,7 +8,7 @@
 #     └── coco128  ← downloads here
 
 # Download/unzip images and labels
-d='.' # unzip directory
+d=$HOME/fedcv_data/ # unzip directory
 url=https://github.com/ultralytics/yolov5/releases/download/v1.0/
 f='coco128-segments.zip'
 cd ..
