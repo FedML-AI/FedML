@@ -169,3 +169,26 @@ def label_to_onehot(target, num_classes=100):
     onehot_target = torch.zeros(target.size(0), num_classes, device=target.device)
     onehot_target.scatter_(1, target, 1)
     return onehot_target
+
+
+
+def trimmed_mean(model_list, trimmed_num):
+    model_list2 = []
+    for i in range(0, len(model_list)):
+        local_sample_number, local_model_params = model_list[i]
+        model_list2.append(
+            (
+                local_sample_number,
+                local_model_params,
+                compute_a_score(local_sample_number),
+            )
+        )
+    model_list2.sort(key=lambda grad: grad[2])  # sort by coordinate-wise scores
+    model_list2 = model_list2[trimmed_num : len(model_list) - trimmed_num]
+    model_list = [(t[0], t[1]) for t in model_list2]
+    return model_list
+
+
+def compute_a_score(local_sample_number):
+    # todo: change to coordinate-wise score
+    return local_sample_number
