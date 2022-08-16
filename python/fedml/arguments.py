@@ -74,13 +74,6 @@ class Arguments:
             # reload cmd args again
             for arg_key, arg_val in cmd_args_dict.items():
                 setattr(self, arg_key, arg_val)
-        logging.info(f"args.learning_rate: {self.learning_rate}" )
-        logging.info(f"args.learning_rate: {self.learning_rate}" )
-        logging.info(f"args.learning_rate: {self.learning_rate}" )
-        logging.info(f"args.learning_rate: {self.learning_rate}" )
-        logging.info(f"args.learning_rate: {self.learning_rate}" )
-        logging.info(f"args.learning_rate: {self.learning_rate}" )
-
     def load_yaml_config(self, yaml_path):
         with open(yaml_path, "r") as stream:
             try:

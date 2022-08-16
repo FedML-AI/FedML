@@ -237,14 +237,6 @@ class FedAVGAggregator(object):
             return self.test_global
 
     def test_on_server_for_all_clients(self, round_idx):
-        if self.aggregator.test_all(
-            self.train_data_local_dict,
-            self.test_data_local_dict,
-            self.device,
-            self.args,
-        ):
-            return
-
         if (
             round_idx % self.args.frequency_of_the_test == 0
             or round_idx == self.args.comm_round - 1
@@ -283,25 +275,26 @@ class FedAVGAggregator(object):
             test_tot_corrects = []
             test_losses = []
 
+            self.args.round_idx = round_idx
             if round_idx == self.args.comm_round - 1:
                 metrics = self.aggregator.test(self.test_global, self.device, self.args)
             else:
                 metrics = self.aggregator.test(self.val_global, self.device, self.args)
 
-            test_tot_correct, test_num_sample, test_loss = (
-                metrics["test_correct"],
-                metrics["test_total"],
-                metrics["test_loss"],
-            )
-            test_tot_corrects.append(copy.deepcopy(test_tot_correct))
-            test_num_samples.append(copy.deepcopy(test_num_sample))
-            test_losses.append(copy.deepcopy(test_loss))
+            # test_tot_correct, test_num_sample, test_loss = (
+            #     metrics["test_correct"],
+            #     metrics["test_total"],
+            #     metrics["test_loss"],
+            # )
+            # test_tot_corrects.append(copy.deepcopy(test_tot_correct))
+            # test_num_samples.append(copy.deepcopy(test_num_sample))
+            # test_losses.append(copy.deepcopy(test_loss))
 
-            # test on test dataset
-            test_acc = sum(test_tot_corrects) / sum(test_num_samples)
-            test_loss = sum(test_losses) / sum(test_num_samples)
-            if self.args.enable_wandb:
-                wandb.log({"Test/Acc": test_acc, "round": round_idx})
-                wandb.log({"Test/Loss": test_loss, "round": round_idx})
-            stats = {"test_acc": test_acc, "test_loss": test_loss}
-            logging.info(stats)
+            # # test on test dataset
+            # test_acc = sum(test_tot_corrects) / sum(test_num_samples)
+            # test_loss = sum(test_losses) / sum(test_num_samples)
+            # if self.args.enable_wandb:
+            #     wandb.log({"Test/Acc": test_acc, "round": round_idx})
+            #     wandb.log({"Test/Loss": test_loss, "round": round_idx})
+            # stats = {"test_acc": test_acc, "test_loss": test_loss}
+            # logging.info(stats)

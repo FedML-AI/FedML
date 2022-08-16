@@ -185,8 +185,16 @@ class SimulatorMPI:
                 preprocessed_sampling_lists=None,
             )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDNOVA:
-            self.simulator = FedML_FedNova_distributed(dataset, model, device, args)
-
+            self.simulator = FedML_FedNova_distributed(
+                args,
+                args.process_id,
+                args.worker_num,
+                args.comm,
+                device,
+                dataset,
+                model,
+                client_trainer=client_trainer,
+            )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDSEG:
             pass
         elif args.fl_trainer == FedML_FEDERATED_OPTIMIZER_FEDGAN:

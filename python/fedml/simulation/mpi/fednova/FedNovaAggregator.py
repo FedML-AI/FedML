@@ -43,7 +43,7 @@ class FedNovaAggregator(object):
 
         self.worker_num = worker_num
         self.device = device
-        self.model_dict = dict()
+        self.result_dict = dict()
         self.sample_num_dict = dict()
         self.flag_client_model_uploaded_dict = dict()
         for idx in range(self.worker_num):
@@ -63,9 +63,9 @@ class FedNovaAggregator(object):
     def set_global_model_params(self, model_parameters):
         self.aggregator.set_model_params(model_parameters)
 
-    def add_local_trained_result(self, index, model_params):
+    def add_local_trained_result(self, index, local_result):
         logging.info("add_model. index = %d" % index)
-        self.model_dict[index] = model_params
+        self.result_dict[index] = local_result
         # self.sample_num_dict[index] = sample_num
         self.flag_client_model_uploaded_dict[index] = True
 
@@ -147,9 +147,9 @@ class FedNovaAggregator(object):
         for k in norm_grads[0].keys():
             for i in range(0, len(norm_grads)):
                 if i == 0:
-                    cum_grad[k] = norm_grads[i][k] * tau_eff
+                    cum_grad[k] = (norm_grads[i][k] * tau_eff)
                 else:
-                    cum_grad[k] += norm_grads[i][k] * tau_eff
+                    cum_grad[k] += (norm_grads[i][k] * tau_eff)
         # update params
         for k in params.keys():
             if self.args.gmf != 0:
@@ -161,9 +161,9 @@ class FedNovaAggregator(object):
                 else:
                     buf = self.global_momentum_buffer[k]
                     buf.mul_(self.args.gmf).add_(1 / self.args.learning_rate, cum_grad[k])
-                params[k].sub_(self.args.learning_rate, buf)
+                params[k].sub_(self.args.learning_rate, buf.to(params[k].device))
             else:
-                params[k].sub_(cum_grad[k])
+                params[k].sub_(cum_grad[k].to(params[k].device))
 
         return params
 
@@ -176,21 +176,16 @@ class FedNovaAggregator(object):
 
         for idx in range(self.worker_num):
             if self.args.is_mobile == 1:
-                self.model_dict[idx] = transform_list_to_tensor(self.model_dict[idx])
+                self.result_dict[idx] = transform_list_to_tensor(self.result_dict[idx])
 
-            # added for attack & defense; enable multiple defenses
-            # if FedMLDefender.get_instance().is_defense_enabled():
-            #     self.model_dict[idx] = FedMLDefender.get_instance().defend(
-            #         self.model_dict[idx], self.get_global_model_params()
-            #     )
-
-            if len(self.model_dict[idx]) > 0:
+            if len(self.result_dict[idx]) > 0:
                 # some workers may not have parameters 
-                for client_index, client_result in self.model_dict[idx].items():
+                # for client_index, client_result in self.result_dict[idx].items():
+                for client_result in self.result_dict[idx]:
                     grad_results.append(client_result["grad"])
                     t_eff_results.append(client_result["t_eff"])
             # training_num += self.sample_num_dict[idx]
-        logging.info("len of self.model_dict[idx] = " + str(len(self.model_dict)))
+        logging.info("len of self.result_dict[idx] = " + str(len(self.result_dict)))
 
         # update the global model which is cached at the server side
         init_params = self.get_global_model_params()
@@ -233,14 +228,6 @@ class FedNovaAggregator(object):
             return self.test_global
 
     def test_on_server_for_all_clients(self, round_idx):
-        if self.aggregator.test_all(
-            self.train_data_local_dict,
-            self.test_data_local_dict,
-            self.device,
-            self.args,
-        ):
-            return
-
         if (
             round_idx % self.args.frequency_of_the_test == 0
             or round_idx == self.args.comm_round - 1
@@ -274,30 +261,8 @@ class FedNovaAggregator(object):
             # stats = {"training_acc": train_acc, "training_loss": train_loss}
             # logging.info(stats)
 
-            # test data
-            test_num_samples = []
-            test_tot_corrects = []
-            test_losses = []
-
+            self.args.round_idx = round_idx
             if round_idx == self.args.comm_round - 1:
                 metrics = self.aggregator.test(self.test_global, self.device, self.args)
             else:
                 metrics = self.aggregator.test(self.val_global, self.device, self.args)
-
-            test_tot_correct, test_num_sample, test_loss = (
-                metrics["test_correct"],
-                metrics["test_total"],
-                metrics["test_loss"],
-            )
-            test_tot_corrects.append(copy.deepcopy(test_tot_correct))
-            test_num_samples.append(copy.deepcopy(test_num_sample))
-            test_losses.append(copy.deepcopy(test_loss))
-
-            # test on test dataset
-            test_acc = sum(test_tot_corrects) / sum(test_num_samples)
-            test_loss = sum(test_losses) / sum(test_num_samples)
-            if self.args.enable_wandb:
-                wandb.log({"Test/Acc": test_acc, "round": round_idx})
-                wandb.log({"Test/Loss": test_loss, "round": round_idx})
-            stats = {"test_acc": test_acc, "test_loss": test_loss}
-            logging.info(stats)
