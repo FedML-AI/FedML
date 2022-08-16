@@ -39,6 +39,52 @@ def compute_middle_point(alphas, model_list):
     return sum_batch
 
 
+def compute_geometric_median(weights, client_grads):
+    """
+    Implementation of Weiszfeld's algorithm.
+    Reference:  (1) https://github.com/krishnap25/RFA/blob/master/models/model.py
+                (2) https://github.com/bladesteam/blades/blob/master/src/blades/aggregators/geomed.py
+    our contribution: (07/01/2022)
+    1) fix one bug in (1): (1) can not correctly compute a weighted average. The function weighted_average_oracle
+    returns zero.
+    2) fix one bug in (2): (2) can not correctly handle multidimensional tensors.
+    3) reconstruct the code.
+    """
+    eps = 1e-5
+    ftol = 1e-10
+    middle_point = compute_middle_point(weights, client_grads)
+    val = sum(
+        [
+            alpha * compute_euclidean_distance(middle_point, p)
+            for alpha, p in zip(weights, client_grads)
+        ]
+    )
+    for i in range(100):
+        prev_median, prev_obj_val = middle_point, val
+        weights = np.asarray(
+            [
+                max(
+                    eps,
+                    alpha
+                    / max(eps, compute_euclidean_distance(middle_point, a_batch_w)),
+                )
+                for alpha, a_batch_w in zip(weights, client_grads)
+            ]
+        )
+        weights = weights / weights.sum()
+        middle_point = compute_middle_point(weights, client_grads)
+        val = sum(
+            [
+                alpha * compute_euclidean_distance(middle_point, p)
+                for alpha, p in zip(weights, client_grads)
+            ]
+        )
+        if abs(prev_obj_val - val) < ftol * val:
+            break
+    return middle_point
+
+
+
 def get_total_sample_num(model_list):
     sample_num = 0
     for i in range(len(model_list)):
