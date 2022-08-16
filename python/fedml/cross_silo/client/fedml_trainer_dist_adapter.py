@@ -19,7 +19,10 @@ class TrainerDistAdapter:
         model_trainer,
     ):
 
-        model.to(device)
+        try:
+            model.to(device)
+        except Exception as e:
+            pass
 
         if args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
             from torch.nn.parallel import DistributedDataParallel as DDP

@@ -9,14 +9,22 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from fedml.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
-from unet_utils import Conv2dReLU, Activation, Attention
+from .unet_utils import Conv2dReLU, Activation, Attention
 from ..resnet import ResNet101
 
 
 class SegmentationHead(nn.Sequential):
-    def __init__(self, in_channels, out_channels, kernel_size=3, activation=None, upsampling=1):
-        conv2d = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=kernel_size // 2)
-        upsampling = nn.UpsamplingBilinear2d(scale_factor=upsampling) if upsampling > 1 else nn.Identity()
+    def __init__(
+        self, in_channels, out_channels, kernel_size=3, activation=None, upsampling=1
+    ):
+        conv2d = nn.Conv2d(
+            in_channels, out_channels, kernel_size=kernel_size, padding=kernel_size // 2
+        )
+        upsampling = (
+            nn.UpsamplingBilinear2d(scale_factor=upsampling)
+            if upsampling > 1
+            else nn.Identity()
+        )
         activation = Activation(activation)
         super().__init__(conv2d, upsampling, activation)
 
@@ -38,7 +46,9 @@ class DecoderBlock(nn.Module):
             padding=1,
             use_batchnorm=use_batchnorm,
         )
-        self.attention1 = Attention(attention_type, in_channels=in_channels + skip_channels)
+        self.attention1 = Attention(
+            attention_type, in_channels=in_channels + skip_channels
+        )
         self.conv2 = Conv2dReLU(
             out_channels,
             out_channels,
@@ -100,8 +110,12 @@ class UnetDecoder(nn.Module):
                 )
             )
 
-        encoder_channels = encoder_channels[1:]  # remove first skip with same spatial resolution
-        encoder_channels = encoder_channels[::-1]  # reverse channels to start from head of encoder
+        encoder_channels = encoder_channels[
+            1:
+        ]  # remove first skip with same spatial resolution
+        encoder_channels = encoder_channels[
+            ::-1
+        ]  # reverse channels to start from head of encoder
 
         # computing blocks input and output channels
         head_channels = encoder_channels[0]
@@ -110,7 +124,9 @@ class UnetDecoder(nn.Module):
         out_channels = decoder_channels
 
         if center:
-            self.center = CenterBlock(head_channels, head_channels, use_batchnorm=use_batchnorm)
+            self.center = CenterBlock(
+                head_channels, head_channels, use_batchnorm=use_batchnorm
+            )
         else:
             self.center = nn.Identity()
 
@@ -142,7 +158,10 @@ class FeatureExtractor(nn.Module):
     def __init__(self, backbone, output_stride, BatchNorm, pretrained):
         super(FeatureExtractor, self).__init__()
         self.backbone = self.build_backbone(
-            backbone=backbone, output_stride=output_stride, BatchNorm=BatchNorm, pretrained=pretrained
+            backbone=backbone,
+            output_stride=output_stride,
+            BatchNorm=BatchNorm,
+            pretrained=pretrained,
         )
 
     def forward(self, input):
@@ -151,7 +170,11 @@ class FeatureExtractor(nn.Module):
 
     @staticmethod
     def build_backbone(
-        backbone="resnet", output_stride=16, BatchNorm=nn.BatchNorm2d, pretrained=False, model_name="unet"
+        backbone="resnet",
+        output_stride=16,
+        BatchNorm=nn.BatchNorm2d,
+        pretrained=False,
+        model_name="unet",
     ):
 
         if backbone == "resnet":
@@ -194,7 +217,10 @@ class UNet(nn.Module):
         )
 
         self.encoder = FeatureExtractor(
-            backbone=backbone, output_stride=output_stride, BatchNorm=BatchNorm2d, pretrained=pretrained
+            backbone=backbone,
+            output_stride=output_stride,
+            BatchNorm=BatchNorm2d,
+            pretrained=pretrained,
         )
 
         self.decoder = UnetDecoder(

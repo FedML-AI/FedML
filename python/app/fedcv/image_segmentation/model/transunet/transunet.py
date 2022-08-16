@@ -19,7 +19,7 @@ from torch.nn import CrossEntropyLoss, Dropout, Softmax, Linear, Conv2d, LayerNo
 from torch.nn.modules.utils import _pair
 from scipy import ndimage
 
-import transunet_configs as configs
+import model.transunet.transunet_configs as configs
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +34,18 @@ ATTENTION_NORM = "LayerNorm_0"
 MLP_NORM = "LayerNorm_2"
 
 
+CONFIGS = {
+    "ViT-B_16": configs.get_b16_config(),
+    "ViT-B_32": configs.get_b32_config(),
+    "ViT-L_16": configs.get_l16_config(),
+    "ViT-L_32": configs.get_l32_config(),
+    "ViT-H_14": configs.get_h14_config(),
+    "R50-ViT-B_16": configs.get_r50_b16_config(),
+    "R50-ViT-L_16": configs.get_r50_l16_config(),
+    "testing": configs.get_testing(),
+}
+
+
 def np2th(weights, conv=False):
     """Possibly convert HWIO to OIHW."""
     if conv:
@@ -45,7 +57,11 @@ def swish(x):
     return x * torch.sigmoid(x)
 
 
-ACT2FN = {"gelu": torch.nn.functional.gelu, "relu": torch.nn.functional.relu, "swish": swish}
+ACT2FN = {
+    "gelu": torch.nn.functional.gelu,
+    "relu": torch.nn.functional.relu,
+    "swish": swish,
+}
 
 
 class StdConv2d(nn.Conv2d):
@@ -53,11 +69,15 @@ class StdConv2d(nn.Conv2d):
         w = self.weight
         v, m = torch.var_mean(w, dim=[1, 2, 3], keepdim=True, unbiased=False)
         w = (w - m) / torch.sqrt(v + 1e-5)
-        return F.conv2d(x, w, self.bias, self.stride, self.padding, self.dilation, self.groups)
+        return F.conv2d(
+            x, w, self.bias, self.stride, self.padding, self.dilation, self.groups
+        )
 
 
 def conv3x3(cin, cout, stride=1, groups=1, bias=False):
-    return StdConv2d(cin, cout, kernel_size=3, stride=stride, padding=1, bias=bias, groups=groups)
+    return StdConv2d(
+        cin, cout, kernel_size=3, stride=stride, padding=1, bias=bias, groups=groups
+    )
 
 
 def conv1x1(cin, cout, stride=1, bias=False):
@@ -75,7 +95,9 @@ class PreActBottleneck(nn.Module):
         self.gn1 = nn.GroupNorm(32, cmid, eps=1e-6)
         self.conv1 = conv1x1(cin, cmid, bias=False)
         self.gn2 = nn.GroupNorm(32, cmid, eps=1e-6)
-        self.conv2 = conv3x3(cmid, cmid, stride, bias=False)  # Original code has it on conv1!!
+        self.conv2 = conv3x3(
+            cmid, cmid, stride, bias=False
+        )  # Original code has it on conv1!!
         self.gn3 = nn.GroupNorm(32, cout, eps=1e-6)
         self.conv3 = conv1x1(cmid, cout, bias=False)
         self.relu = nn.ReLU(inplace=True)
@@ -129,7 +151,9 @@ class PreActBottleneck(nn.Module):
         self.gn3.bias.copy_(gn3_bias.view(-1))
 
         if hasattr(self, "downsample"):
-            proj_conv_weight = np2th(weights[pjoin(n_block, n_unit, "conv_proj/kernel")], conv=True)
+            proj_conv_weight = np2th(
+                weights[pjoin(n_block, n_unit, "conv_proj/kernel")], conv=True
+            )
             proj_gn_weight = np2th(weights[pjoin(n_block, n_unit, "gn_proj/scale")])
             proj_gn_bias = np2th(weights[pjoin(n_block, n_unit, "gn_proj/bias")])
 
@@ -149,7 +173,12 @@ class ResNetV2(nn.Module):
         self.root = nn.Sequential(
             OrderedDict(
                 [
-                    ("conv", StdConv2d(3, width, kernel_size=7, stride=2, bias=False, padding=3)),
+                    (
+                        "conv",
+                        StdConv2d(
+                            3, width, kernel_size=7, stride=2, bias=False, padding=3
+                        ),
+                    ),
                     ("gn", nn.GroupNorm(32, width, eps=1e-6)),
                     ("relu", nn.ReLU(inplace=True)),
                     # ('pool', nn.MaxPool2d(kernel_size=3, stride=2, padding=0))
@@ -164,9 +193,21 @@ class ResNetV2(nn.Module):
                         "block1",
                         nn.Sequential(
                             OrderedDict(
-                                [("unit1", PreActBottleneck(cin=width, cout=width * 4, cmid=width))]
+                                [
+                                    (
+                                        "unit1",
+                                        PreActBottleneck(
+                                            cin=width, cout=width * 4, cmid=width
+                                        ),
+                                    )
+                                ]
                                 + [
-                                    (f"unit{i:d}", PreActBottleneck(cin=width * 4, cout=width * 4, cmid=width))
+                                    (
+                                        f"unit{i:d}",
+                                        PreActBottleneck(
+                                            cin=width * 4, cout=width * 4, cmid=width
+                                        ),
+                                    )
                                     for i in range(2, block_units[0] + 1)
                                 ],
                             )
@@ -176,9 +217,26 @@ class ResNetV2(nn.Module):
                         "block2",
                         nn.Sequential(
                             OrderedDict(
-                                [("unit1", PreActBottleneck(cin=width * 4, cout=width * 8, cmid=width * 2, stride=2))]
+                                [
+                                    (
+                                        "unit1",
+                                        PreActBottleneck(
+                                            cin=width * 4,
+                                            cout=width * 8,
+                                            cmid=width * 2,
+                                            stride=2,
+                                        ),
+                                    )
+                                ]
                                 + [
-                                    (f"unit{i:d}", PreActBottleneck(cin=width * 8, cout=width * 8, cmid=width * 2))
+                                    (
+                                        f"unit{i:d}",
+                                        PreActBottleneck(
+                                            cin=width * 8,
+                                            cout=width * 8,
+                                            cmid=width * 2,
+                                        ),
+                                    )
                                     for i in range(2, block_units[1] + 1)
                                 ],
                             )
@@ -188,9 +246,26 @@ class ResNetV2(nn.Module):
                         "block3",
                         nn.Sequential(
                             OrderedDict(
-                                [("unit1", PreActBottleneck(cin=width * 8, cout=width * 16, cmid=width * 4, stride=2))]
+                                [
+                                    (
+                                        "unit1",
+                                        PreActBottleneck(
+                                            cin=width * 8,
+                                            cout=width * 16,
+                                            cmid=width * 4,
+                                            stride=2,
+                                        ),
+                                    )
+                                ]
                                 + [
-                                    (f"unit{i:d}", PreActBottleneck(cin=width * 16, cout=width * 16, cmid=width * 4))
+                                    (
+                                        f"unit{i:d}",
+                                        PreActBottleneck(
+                                            cin=width * 16,
+                                            cout=width * 16,
+                                            cmid=width * 4,
+                                        ),
+                                    )
                                     for i in range(2, block_units[2] + 1)
                                 ],
                             )
@@ -211,8 +286,12 @@ class ResNetV2(nn.Module):
             right_size = int(in_size / 4 / (i + 1))
             if x.size()[2] != right_size:
                 pad = right_size - x.size()[2]
-                assert pad < 3 and pad > 0, "x {} should {}".format(x.size(), right_size)
-                feat = torch.zeros((b, x.size()[1], right_size, right_size), device=x.device)
+                assert pad < 3 and pad > 0, "x {} should {}".format(
+                    x.size(), right_size
+                )
+                feat = torch.zeros(
+                    (b, x.size()[1], right_size, right_size), device=x.device
+                )
                 feat[:, :, 0 : x.size()[2], 0 : x.size()[3]] = x[:]
             else:
                 feat = x
@@ -240,7 +319,10 @@ class Attention(nn.Module):
         self.softmax = Softmax(dim=-1)
 
     def transpose_for_scores(self, x):
-        new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
+        new_x_shape = x.size()[:-1] + (
+            self.num_attention_heads,
+            self.attention_head_size,
+        )
         x = x.view(*new_x_shape)
         return x.permute(0, 2, 1, 3)
 
@@ -304,9 +386,14 @@ class Embeddings(nn.Module):
 
         if config.patches.get("grid") is not None:  # ResNet
             grid_size = config.patches["grid"]
-            patch_size = (img_size[0] // 16 // grid_size[0], img_size[1] // 16 // grid_size[1])
+            patch_size = (
+                img_size[0] // 16 // grid_size[0],
+                img_size[1] // 16 // grid_size[1],
+            )
             patch_size_real = (patch_size[0] * 16, patch_size[1] * 16)
-            n_patches = (img_size[0] // patch_size_real[0]) * (img_size[1] // patch_size_real[1])
+            n_patches = (img_size[0] // patch_size_real[0]) * (
+                img_size[1] // patch_size_real[1]
+            )
             self.hybrid = True
         else:
             patch_size = _pair(config.patches["size"])
@@ -314,12 +401,20 @@ class Embeddings(nn.Module):
             self.hybrid = False
 
         if self.hybrid:
-            self.hybrid_model = ResNetV2(block_units=config.resnet.num_layers, width_factor=config.resnet.width_factor)
+            self.hybrid_model = ResNetV2(
+                block_units=config.resnet.num_layers,
+                width_factor=config.resnet.width_factor,
+            )
             in_channels = self.hybrid_model.width * 16
         self.patch_embeddings = Conv2d(
-            in_channels=in_channels, out_channels=config.hidden_size, kernel_size=patch_size, stride=patch_size
+            in_channels=in_channels,
+            out_channels=config.hidden_size,
+            kernel_size=patch_size,
+            stride=patch_size,
         )
-        self.position_embeddings = nn.Parameter(torch.zeros(1, n_patches, config.hidden_size))
+        self.position_embeddings = nn.Parameter(
+            torch.zeros(1, n_patches, config.hidden_size)
+        )
 
         self.dropout = Dropout(config.transformer["dropout_rate"])
 
@@ -362,14 +457,24 @@ class Block(nn.Module):
         ROOT = f"Transformer/encoderblock_{n_block}"
         with torch.no_grad():
             query_weight = (
-                np2th(weights[pjoin(ROOT, ATTENTION_Q, "kernel")]).view(self.hidden_size, self.hidden_size).t()
+                np2th(weights[pjoin(ROOT, ATTENTION_Q, "kernel")])
+                .view(self.hidden_size, self.hidden_size)
+                .t()
             )
-            key_weight = np2th(weights[pjoin(ROOT, ATTENTION_K, "kernel")]).view(self.hidden_size, self.hidden_size).t()
+            key_weight = (
+                np2th(weights[pjoin(ROOT, ATTENTION_K, "kernel")])
+                .view(self.hidden_size, self.hidden_size)
+                .t()
+            )
             value_weight = (
-                np2th(weights[pjoin(ROOT, ATTENTION_V, "kernel")]).view(self.hidden_size, self.hidden_size).t()
+                np2th(weights[pjoin(ROOT, ATTENTION_V, "kernel")])
+                .view(self.hidden_size, self.hidden_size)
+                .t()
             )
             out_weight = (
-                np2th(weights[pjoin(ROOT, ATTENTION_OUT, "kernel")]).view(self.hidden_size, self.hidden_size).t()
+                np2th(weights[pjoin(ROOT, ATTENTION_OUT, "kernel")])
+                .view(self.hidden_size, self.hidden_size)
+                .t()
             )
 
             query_bias = np2th(weights[pjoin(ROOT, ATTENTION_Q, "bias")]).view(-1)
@@ -396,8 +501,12 @@ class Block(nn.Module):
             self.ffn.fc1.bias.copy_(mlp_bias_0)
             self.ffn.fc2.bias.copy_(mlp_bias_1)
 
-            self.attention_norm.weight.copy_(np2th(weights[pjoin(ROOT, ATTENTION_NORM, "scale")]))
-            self.attention_norm.bias.copy_(np2th(weights[pjoin(ROOT, ATTENTION_NORM, "bias")]))
+            self.attention_norm.weight.copy_(
+                np2th(weights[pjoin(ROOT, ATTENTION_NORM, "scale")])
+            )
+            self.attention_norm.bias.copy_(
+                np2th(weights[pjoin(ROOT, ATTENTION_NORM, "bias")])
+            )
             self.ffn_norm.weight.copy_(np2th(weights[pjoin(ROOT, MLP_NORM, "scale")]))
             self.ffn_norm.bias.copy_(np2th(weights[pjoin(ROOT, MLP_NORM, "bias")]))
 
@@ -495,8 +604,14 @@ class DecoderBlock(nn.Module):
 
 class SegmentationHead(nn.Sequential):
     def __init__(self, in_channels, out_channels, kernel_size=3, upsampling=1):
-        conv2d = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=kernel_size // 2)
-        upsampling = nn.UpsamplingBilinear2d(scale_factor=upsampling) if upsampling > 1 else nn.Identity()
+        conv2d = nn.Conv2d(
+            in_channels, out_channels, kernel_size=kernel_size, padding=kernel_size // 2
+        )
+        upsampling = (
+            nn.UpsamplingBilinear2d(scale_factor=upsampling)
+            if upsampling > 1
+            else nn.Identity()
+        )
         super().__init__(conv2d, upsampling)
 
 
@@ -518,19 +633,28 @@ class DecoderCup(nn.Module):
 
         if self.config.n_skip != 0:
             skip_channels = self.config.skip_channels
-            for i in range(4 - self.config.n_skip):  # re-select the skip channels according to n_skip
+            for i in range(
+                4 - self.config.n_skip
+            ):  # re-select the skip channels according to n_skip
                 skip_channels[3 - i] = 0
 
         else:
             skip_channels = [0, 0, 0, 0]
 
         blocks = [
-            DecoderBlock(in_ch, out_ch, sk_ch) for in_ch, out_ch, sk_ch in zip(in_channels, out_channels, skip_channels)
+            DecoderBlock(in_ch, out_ch, sk_ch)
+            for in_ch, out_ch, sk_ch in zip(in_channels, out_channels, skip_channels)
         ]
         self.blocks = nn.ModuleList(blocks)
 
     def forward(self, hidden_states, features=None):
-        B, n_patch, hidden = hidden_states.size()  # reshape from (B, n_patch, hidden) to (B, h, w, hidden)
+        (
+            B,
+            n_patch,
+            hidden,
+        ) = (
+            hidden_states.size()
+        )  # reshape from (B, n_patch, hidden) to (B, h, w, hidden)
         h, w = int(np.sqrt(n_patch)), int(np.sqrt(n_patch))
         x = hidden_states.permute(0, 2, 1)
         x = x.contiguous().view(B, hidden, h, w)
@@ -545,8 +669,16 @@ class DecoderCup(nn.Module):
 
 
 class VisionTransformer(nn.Module):
-    def __init__(self, config, img_size=224, num_classes=21843, zero_head=False, vis=False):
+    def __init__(
+        self,
+        vit_name="ViT-B_16",
+        img_size=224,
+        num_classes=21843,
+        zero_head=False,
+        vis=False,
+    ):
         super(VisionTransformer, self).__init__()
+        config = CONFIGS[vit_name]
         self.num_classes = num_classes
         self.zero_head = zero_head
         self.classifier = config.classifier
@@ -571,11 +703,19 @@ class VisionTransformer(nn.Module):
         with torch.no_grad():
 
             res_weight = weights
-            self.transformer.embeddings.patch_embeddings.weight.copy_(np2th(weights["embedding/kernel"], conv=True))
-            self.transformer.embeddings.patch_embeddings.bias.copy_(np2th(weights["embedding/bias"]))
+            self.transformer.embeddings.patch_embeddings.weight.copy_(
+                np2th(weights["embedding/kernel"], conv=True)
+            )
+            self.transformer.embeddings.patch_embeddings.bias.copy_(
+                np2th(weights["embedding/bias"])
+            )
 
-            self.transformer.encoder.encoder_norm.weight.copy_(np2th(weights["Transformer/encoder_norm/scale"]))
-            self.transformer.encoder.encoder_norm.bias.copy_(np2th(weights["Transformer/encoder_norm/bias"]))
+            self.transformer.encoder.encoder_norm.weight.copy_(
+                np2th(weights["Transformer/encoder_norm/scale"])
+            )
+            self.transformer.encoder.encoder_norm.bias.copy_(
+                np2th(weights["Transformer/encoder_norm/bias"])
+            )
 
             posemb = np2th(weights["Transformer/posembed_input/pos_embedding"])
 
@@ -586,7 +726,10 @@ class VisionTransformer(nn.Module):
                 posemb = posemb[:, 1:]
                 self.transformer.embeddings.position_embeddings.copy_(posemb)
             else:
-                logger.info("load_pretrained: resized variant: %s to %s" % (posemb.size(), posemb_new.size()))
+                logger.info(
+                    "load_pretrained: resized variant: %s to %s"
+                    % (posemb.size(), posemb_new.size())
+                )
                 ntok_new = posemb_new.size(1)
                 if self.classifier == "seg":
                     _, posemb_grid = posemb[:, :1], posemb[0, 1:]
@@ -614,21 +757,13 @@ class VisionTransformer(nn.Module):
                 self.transformer.embeddings.hybrid_model.root.gn.weight.copy_(gn_weight)
                 self.transformer.embeddings.hybrid_model.root.gn.bias.copy_(gn_bias)
 
-                for bname, block in self.transformer.embeddings.hybrid_model.body.named_children():
+                for (
+                    bname,
+                    block,
+                ) in self.transformer.embeddings.hybrid_model.body.named_children():
                     for uname, unit in block.named_children():
                         unit.load_from(res_weight, n_block=bname, n_unit=uname)
 
-
-CONFIGS = {
-    "ViT-B_16": configs.get_b16_config(),
-    "ViT-B_32": configs.get_b32_config(),
-    "ViT-L_16": configs.get_l16_config(),
-    "ViT-L_32": configs.get_l32_config(),
-    "ViT-H_14": configs.get_h14_config(),
-    "R50-ViT-B_16": configs.get_r50_b16_config(),
-    "R50-ViT-L_16": configs.get_r50_l16_config(),
-    "testing": configs.get_testing(),
-}
 
 ### Sample Driver Code
 if __name__ == "__main__":
@@ -638,8 +773,13 @@ if __name__ == "__main__":
     config_vit.n_classes = 9
     config_vit.n_skip = 3
     if vit_name.find("R50") != -1:
-        config_vit.patches.grid = (int(img_size / vit_patches_size), int(img_size / vit_patches_size))
-    net = VisionTransformer(config_vit, img_size=img_size, num_classes=config_vit.n_classes)
+        config_vit.patches.grid = (
+            int(img_size / vit_patches_size),
+            int(img_size / vit_patches_size),
+        )
+    net = VisionTransformer(
+        config_vit, img_size=img_size, num_classes=config_vit.n_classes
+    )
     # net.load_from(weights=np.load(config_vit.pretrained_path))
     image = torch.randn(1, 3, 224, 224)
     with torch.no_grad():
