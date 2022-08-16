@@ -71,6 +71,8 @@ class LightSecAggAggregator(object):
 
     def add_local_trained_result(self, index, model_params, sample_num):
         logging.info("add_model. index = %d" % index)
+        for key in model_params.keys():
+            model_params[key] = model_params[key].to(self.device)
         self.model_dict[index] = model_params
         self.sample_num_dict[index] = sample_num
         self.flag_client_model_uploaded_dict[index] = True

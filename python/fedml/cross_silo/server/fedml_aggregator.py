@@ -53,7 +53,6 @@ class FedMLAggregator(object):
         logging.info("add_model. index = %d" % index)
         for key in model_params.keys():
             model_params[key] = model_params[key].to(self.device)
-        logging.info("model_params = {}".format(model_params))
         self.model_dict[index] = model_params
         self.sample_num_dict[index] = sample_num
         self.flag_client_model_uploaded_dict[index] = True
