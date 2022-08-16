@@ -1,25 +1,35 @@
 common_args:
-  training_type: "simulation"
+  training_type: "cross_silo"
   random_seed: 0
+  scenario: "horizontal"
+  using_mlops: false
+  config_version: release
 
 data_args:
-  dataset: "cityscapes"
-  data_cache_dir: "./data/"
-  partition_method: "hetero"
+  dataset: "coco128"
+  data_cache_dir: "~/fedcv_data/coco128"
+  partition_method: "homo"
   partition_alpha: 0.5
 
 model_args:
   model: "unet"
-  class_num: 1000
+  class_num: 80
+  backbone: resnet
+  backbone_pretrained: true
+  backbone_freezed: false
+  extract_feat: true
+  outstride: 16
+  sync_bn: true
+  lr_scheduler: cos
 
 train_args:
   federated_optimizer: "FedAvg"
-  client_id_list: "[]"
+  client_id_list:
   client_num_in_total: 4
   client_num_per_round: 4
-  comm_round: 100
-  epochs: 5
-  batch_size: 64
+  comm_round: 10
+  epochs: 1
+  batch_size: 1
   client_optimizer: sgd
   lr: 0.03
   momentum: 0.9
@@ -28,7 +38,7 @@ train_args:
   loss_type: "ce"
 
 validation_args:
-  frequency_of_the_test: 5
+  frequency_of_the_test: 1
 
 device_args:
   worker_num: 4
@@ -37,8 +47,9 @@ device_args:
   gpu_mapping_key: mapping_default
 
 comm_args:
-  backend: "MPI"
-  is_mobile: 0
+  backend: "MQTT_S3"
+  mqtt_config_path: config/mqtt_config.yaml
+  s3_config_path: config/s3_config.yaml
 
 tracking_args:
   log_file_dir: ./log
