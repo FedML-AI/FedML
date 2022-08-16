@@ -24,6 +24,7 @@ class FedNovaTrainer(object):
         self.local_sample_number = None
         self.test_local = None
 
+        self.total_train_num = sum(list(self.train_data_local_num_dict.values()))
         self.device = device
         self.args = args
 
@@ -59,13 +60,16 @@ class FedNovaTrainer(object):
         self.args.round_idx = round_idx
         # lr = self.get_lr(round_idx)
         # self.trainer.train(self.train_local, self.device, self.args, lr=lr)
-        self.trainer.train(self.train_local, self.device, self.args)
-        weights = self.trainer.get_model_params()
+        avg_loss, norm_grad, tau_eff = self.trainer.train(self.train_local, self.device, self.args,
+            ratio=self.local_sample_number / self.total_train_num)
+        # weights = self.trainer.get_model_params()
 
         # transform Tensor to list
         if self.args.is_mobile == 1:
             weights = transform_tensor_to_list(weights)
-        return weights, self.local_sample_number
+        # return weights, self.local_sample_number
+        return avg_loss, norm_grad, tau_eff
+
 
     def test(self):
         # train data

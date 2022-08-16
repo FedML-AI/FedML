@@ -6,7 +6,7 @@ from ....core.security.fedml_attacker import FedMLAttacker
 from ....core.security.fedml_defender import FedMLDefender
 from ....ml.aggregator.aggregator_creator import create_server_aggregator
 from ....ml.trainer.trainer_creator import create_model_trainer
-from ....ml.trainer.fednova_trainer import FedNovaTrainer
+from ....ml.trainer.fednova_trainer import FedNovaModelTrainer
 
 def FedML_FedNova_distributed(
     args, process_id, worker_number, comm, device, dataset, model, client_trainer=None, server_aggregator=None
@@ -114,7 +114,7 @@ def init_client(
     client_index = process_id - 1
     if client_trainer is None:
         # client_trainer = create_model_trainer(model, args)
-        client_trainer = FedNovaTrainer(model, args)
+        client_trainer = FedNovaModelTrainer(model, args)
     client_trainer.set_id(client_index)
     backend = args.backend
     trainer = FedNovaTrainer(

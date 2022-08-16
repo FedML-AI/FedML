@@ -51,6 +51,10 @@ def add_args():
     # default arguments
     parser.add_argument("--role", type=str, default="client")
 
+    # cluster arguments
+    parser.add_argument("--worker_num", type=int, default=8)
+    parser.add_argument("--gpu_util_parse", type=str, default="localhost:2,1,1,1,1,1,1,1")
+
     # Model and dataset
     parser.add_argument("--model", type=str, default="resnet18_cifar")
     parser.add_argument("--group_norm_channels", type=int, default=32)
@@ -82,8 +86,8 @@ def load_arguments(training_type=None, comm_backend=None):
     args = Arguments(cmd_args, training_type, comm_backend,
                     override_cmd_args=False)
 
-    if not hasattr(args, "worker_num"):
-        args.worker_num = args.client_num_per_round
+    # if not hasattr(args, "worker_num"):
+    #     args.worker_num = args.client_num_per_round
         
     # os.path.expanduser() method in Python is used
     # to expand an initial path component ~( tilde symbol)
@@ -105,6 +109,7 @@ if __name__ == "__main__":
     args = load_arguments(fedml._global_training_type, fedml._global_comm_backend)
     logging.info(f"args: {args}" )
     args = fedml.init(args)
+    logging.info(f"args: {args}" )
     # args = fedml.init()
 
     # init device
@@ -115,12 +120,12 @@ if __name__ == "__main__":
     # load model (the size of MNIST image is 28 x 28)
     if args.model == "resnet18":
         logging.info("ResNet18_GN")
-        model = resnet18(group_norm=args.group_norm_channels)
+        model = resnet18(group_norm=args.group_norm_channels, num_classes=output_dim)
     elif args.model == "resnet20":
         model = resnet20(class_num=output_dim)
     elif args.model == "resnet18_cifar":
         logging.info("ResNet18_GN")
-        model = resnet18_cifar(group_norm=args.group_norm_channels)
+        model = resnet18_cifar(group_norm=args.group_norm_channels, num_classes=output_dim)
     else:
         model = fedml.model.create(args, output_dim)
 

@@ -14,7 +14,7 @@ def cifar100_transform(img_mean, img_std, train=True, crop_size=32):
         return transforms.Compose(
             [
                 transforms.ToPILImage(),
-                transforms.RandomCrop(crop_size, padding=4),
+                transforms.RandomCrop(crop_size),
                 transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
                 transforms.Normalize(mean=img_mean, std=img_std),
