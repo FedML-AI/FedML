@@ -62,6 +62,7 @@ class LogisticRegressionModel(tf.keras.Model):
 
 
 def create_model(input_dim, out_dim):
+    # tf.compat.v1.disable_eager_execution()
     client_model = LogisticRegressionModel(input_dim, out_dim)
     return client_model
 
