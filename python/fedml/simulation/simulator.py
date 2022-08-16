@@ -80,6 +80,7 @@ class SimulatorMPI:
         from .mpi.fedgan.FedGanAPI import FedML_FedGan_distributed
         from .mpi.fedavg_seq.FedAvgSeqAPI import FedML_FedAvgSeq_distributed
         from .mpi.async_fedavg.AsyncFedAvgSeqAPI import FedML_Async_distributed
+        from .mpi.fednova.FedNovaAPI import FedML_FedNova_distributed
 
         if args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDAVG:
             self.simulator = FedML_FedAvg_distributed(
@@ -183,6 +184,8 @@ class SimulatorMPI:
                 model_trainer=client_trainer,
                 preprocessed_sampling_lists=None,
             )
+        elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDNOVA:
+            self.simulator = FedML_FedNova_distributed(dataset, model, device, args)
 
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDSEG:
             pass
