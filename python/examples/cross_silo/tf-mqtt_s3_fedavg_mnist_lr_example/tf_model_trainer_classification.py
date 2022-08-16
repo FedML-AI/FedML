@@ -1,6 +1,5 @@
 
 import logging
-import time
 
 from fedml.core import ClientTrainer
 import tensorflow as tf
@@ -35,10 +34,6 @@ class TfModelTrainerCLS(ClientTrainer):
                 y_pred = self.model.train_on_batch(x=x, y=labels, reset_metrics=False)
                 loss = y_pred[0]
                 accuracy = y_pred[1]
-
-                # start_time = time.time_ns()
-                # test_results = self.model.test_on_batch(x=x, y=labels, reset_metrics=False)
-                # logging.info("train test consume time: {}".format(time.time_ns() - start_time))
 
             epoch_loss.append(loss)
             logging.info(
