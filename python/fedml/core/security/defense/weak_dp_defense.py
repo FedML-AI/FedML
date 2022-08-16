@@ -4,8 +4,6 @@ from .defense_base import BaseDefenseMethod
 
 """
 defense @ server, added by Shanshan
-
-Coordinate-wise Median from "Byzantine-Robust Distributed Learning: Towards Optimal Statistical Rates".
 """
 
 

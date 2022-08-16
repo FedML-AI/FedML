@@ -10,7 +10,7 @@ model_list has been created
  """
 
 
-class CoordinateMedianDefense(BaseDefenseMethod):
+class CoordinateWiseMedianDefense(BaseDefenseMethod):
     def __init__(self, config):
         pass
 
@@ -41,3 +41,4 @@ class CoordinateMedianDefense(BaseDefenseMethod):
             averaged_params[k] = median_params
 
         return averaged_params
+
