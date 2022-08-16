@@ -17,7 +17,7 @@ class FedMLRunner:
         args,
         device,
         dataset,
-        model: nn.Module,
+        model,
         client_trainer: ClientTrainer = None,
         server_aggregator: ServerAggregator = None,
         algorithm_flow: FedMLAlgorithmFlow = None,
