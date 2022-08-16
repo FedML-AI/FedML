@@ -46,17 +46,15 @@ class TfServerAggregator(ServerAggregator):
         }
 
         for batch_idx, (x, target) in enumerate(test_data):
-            x = x.numpy()
-            origin_target = target
-            target = target.numpy()
-            # start_time = time.time_ns()
+            start_time = time.time_ns()
             test_results = self.model.test_on_batch(x=x, y=target, reset_metrics=False)
-            # logging.info("test consume time: {}".format(time.time_ns() - start_time))
+            logging.info("test consume time: {}".format(time.time_ns() - start_time))
 
-            if len(origin_target.size()) == 1:  #
-                metrics["test_total"] += origin_target.size(0)
-            elif len(origin_target.size()) == 2:  # for tasks of next word prediction
-                metrics["test_total"] += origin_target.size(0) * origin_target.size(1)
+            metrics["test_total"] += target.get_shape().num_elements()
+            # if len(target.size()) == 1:  #
+            #     metrics["test_total"] += target.size(0)
+            # elif len(target.size()) == 2:  # for tasks of next word prediction
+            #     metrics["test_total"] += target.size(0) * origin_target.size(1)
 
         metrics["test_acc"] = test_results[1]
         metrics["test_loss"] = test_results[0]
