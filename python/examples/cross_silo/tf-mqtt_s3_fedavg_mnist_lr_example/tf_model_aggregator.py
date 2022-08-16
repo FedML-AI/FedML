@@ -31,8 +31,6 @@ class TfServerAggregator(ServerAggregator):
     def test(self, test_data, device, args):
         test_results = []
         for batch_idx, (x, target) in enumerate(test_data):
-            x = x.numpy()
-            target = target.numpy()
             test_results = self.model.test_on_batch(x=x, y=target, reset_metrics=False)
         logging.info("test_results = {}".format(test_results))
         mlops.log({"Test/Loss": test_results[0], "round": args.round_idx})
