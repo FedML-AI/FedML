@@ -42,6 +42,11 @@ def init(args=None):
         # force all platforms (Windows/Linux/MacOS) to use the same way (spawn) for multiprocessing
         multiprocessing.set_start_method("spawn", force=True)
 
+    """
+    # https://stackoverflow.com/questions/53014306/error-15-initializing-libiomp5-dylib-but-found-libiomp5-dylib-already-initial
+    """
+    os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
+
     seed = args.random_seed
     random.seed(seed)
     np.random.seed(seed)
