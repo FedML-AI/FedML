@@ -30,6 +30,12 @@ train_args:
   lr_milestones: [1000, 2000, 3000]
   lr_decay_rate: 0.1
   nesterov: False
+  server_optimizer: sgd
+  server_lr: 1.0
+  wd: 0.001
+  ci: 0
+  server_momentum: 0.9
+
 
 fednova_args:
   gmf: 0.0
