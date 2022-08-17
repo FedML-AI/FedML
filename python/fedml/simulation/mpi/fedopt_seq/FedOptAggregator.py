@@ -69,10 +69,10 @@ class FedOptAggregator(object):
     def set_global_model_params(self, model_parameters):
         self.aggregator.set_model_params(model_parameters)
 
-    def add_local_trained_result(self, index, model_params, sample_num):
+    def add_local_trained_result(self, index, model_params):
         logging.info("add_model. index = %d" % index)
         self.model_dict[index] = model_params
-        self.sample_num_dict[index] = sample_num
+        # self.sample_num_dict[index] = sample_num
         self.flag_client_model_uploaded_dict[index] = True
 
     def check_whether_all_receive(self):
@@ -154,12 +154,12 @@ class FedOptAggregator(object):
         for idx in range(self.worker_num):
             if self.args.is_mobile == 1:
                 self.model_dict[idx] = transform_list_to_tensor(self.model_dict[idx])
-            model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
-            training_num += self.sample_num_dict[idx]
-
+            if len(self.model_dict[idx]) > 0:
+                # some workers may not have parameters 
+                model_list.append(self.model_dict[idx])
         logging.info("len of self.model_dict[idx] = " + str(len(self.model_dict)))
-
         # logging.info("################aggregate: %d" % len(model_list))
+        # (num0, averaged_params) = model_list[0]
         averaged_params = model_list[0]
         for k in averaged_params.keys():
             for i in range(0, len(model_list)):
@@ -169,6 +169,7 @@ class FedOptAggregator(object):
                     averaged_params[k] = local_model_params[k]
                 else:
                     averaged_params[k] += local_model_params[k]
+
 
         # server optimizer
         # save optimizer state
