@@ -72,14 +72,21 @@ mpirun -np 3 \
 --federated_optimizer FedNova  --learning_rate 0.3
 
 
-
-
-# debug fednova
-mpirun -np 5 \
--host "localhost:5" \
+# debug fedOpt Seq
+mpirun -np 3 \
+-host "localhost:3" \
 /home/chaoyanghe/anaconda3/envs/fedml/bin/python main.py --cf 'config/optim_exp_debug.yaml' \
+--worker_num 2 --gpu_util_parse 'localhost:0,0,0,0,0,1,1,1' \
 --model resnet18_cifar  --group_norm_channels 32 \
---federated_optimizer FedNova  --learning_rate 0.3
+--federated_optimizer FedOpt_seq  --learning_rate 0.3
+
+
+
+
+
+
+
+
 
 
 
