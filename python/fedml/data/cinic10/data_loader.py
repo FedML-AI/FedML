@@ -321,7 +321,7 @@ def load_partition_data_distributed_cinic10(
             dataset, data_dir, batch_size, batch_size
         )
         logging.info("train_dl_global number = " + str(len(train_data_global)))
-        logging.info("test_dl_global number = " + str(len(train_data_global)))
+        logging.info("test_dl_global number = " + str(len(test_data_global)))
         test_data_num = len(test_data_global)
         train_data_local = None
         test_data_local = None
@@ -378,7 +378,7 @@ def load_partition_data_cinic10(
         dataset, data_dir, batch_size, batch_size
     )
     logging.info("train_dl_global number = " + str(len(train_data_global)))
-    logging.info("test_dl_global number = " + str(len(train_data_global)))
+    logging.info("test_dl_global number = " + str(len(test_data_global)))
     test_data_num = len(test_data_global)
 
     # get local dataset

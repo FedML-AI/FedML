@@ -71,6 +71,8 @@ class LightSecAggAggregator(object):
 
     def add_local_trained_result(self, index, model_params, sample_num):
         logging.info("add_model. index = %d" % index)
+        # for key in model_params.keys():
+        #     model_params[key] = model_params[key].to(self.device)
         self.model_dict[index] = model_params
         self.sample_num_dict[index] = sample_num
         self.flag_client_model_uploaded_dict[index] = True
@@ -130,7 +132,7 @@ class LightSecAggAggregator(object):
         )
         aggregate_mask = np.reshape(aggregate_mask, (U * (d // (U - T)), 1))
         aggregate_mask = aggregate_mask[0:d]
-        logging.info("aggregated mask = {}".format(aggregate_mask))
+        # logging.info("aggregated mask = {}".format(aggregate_mask))
         return aggregate_mask
 
     def aggregate_model_reconstruction(
@@ -161,8 +163,8 @@ class LightSecAggAggregator(object):
             pos += d
 
         # Convert the model from finite to real
-        logging.info("Server converts the aggregate_model from finite to tensor")
-        logging.info("aggregate model before transform = {}".format(averaged_params))
+        # logging.info("Server converts the aggregate_model from finite to tensor")
+        # logging.info("aggregate model before transform = {}".format(averaged_params))
         averaged_params = transform_finite_to_tensor(averaged_params, p, q_bits)
 
         # do the avg after transform
@@ -170,7 +172,7 @@ class LightSecAggAggregator(object):
             w = 1 / len(active_clients_first_round)
             averaged_params[k] = averaged_params[k] * w
 
-        logging.info("aggregate model after transform = {}".format(averaged_params))
+        # logging.info("aggregate model after transform = {}".format(averaged_params))
 
         # update the global model which is cached at the server side
         self.set_global_model_params(averaged_params)
@@ -265,13 +267,13 @@ class LightSecAggAggregator(object):
             return self.test_global
 
     def test_on_server_for_all_clients(self, round_idx):
-        if self.trainer.test_on_the_server(
-            self.train_data_local_dict,
-            self.test_data_local_dict,
-            self.device,
-            self.args,
-        ):
-            return
+        # if self.trainer.test_on_the_server(
+        #     self.train_data_local_dict,
+        #     self.test_data_local_dict,
+        #     self.device,
+        #     self.args,
+        # ):
+        #     return
 
         if (
             round_idx % self.args.frequency_of_the_test == 0
