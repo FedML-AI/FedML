@@ -268,9 +268,9 @@ class FedMLClientManager(FedMLCommManager):
         mlops.event("train", event_started=True, event_value=str(self.round_idx))
 
         weights, local_sample_num = self.trainer.train(self.round_idx)
-        logging.info(
-            "Client %d original weights = %s" % (self.get_sender_id(), weights)
-        )
+        # logging.info(
+        #     "Client %d original weights = %s" % (self.get_sender_id(), weights)
+        # )
 
         mlops.event("train", event_started=False, event_value=str(self.round_idx))
 
@@ -283,10 +283,10 @@ class FedMLClientManager(FedMLCommManager):
         masked_weights = model_masking(
             weights_finite, self.dimensions, self.local_mask, self.prime_number
         )
-        logging.info(
-            "Client %d send encode weights = %s"
-            % (self.get_sender_id(), masked_weights)
-        )
+        # logging.info(
+        #     "Client %d send encode weights = %s"
+        #     % (self.get_sender_id(), masked_weights)
+        # )
 
         self.send_model_to_server(0, masked_weights, local_sample_num)
 

@@ -1,5 +1,6 @@
 import math
 from typing import Callable, List, Tuple, Dict, Any
+from ..common.utils import trimmed_mean
 from ..defense.defense_base import BaseDefenseMethod
 
 """
@@ -46,29 +47,9 @@ class SLSGDDefense(BaseDefenseMethod):
         if self.option_type != 1 and self.option_type != 2:
             raise Exception("Such option type does not exist!")
         if self.option_type == 2:
-            raw_client_grad_list = self._sort_and_trim(raw_client_grad_list)  # process model list
+            raw_client_grad_list = trimmed_mean(raw_client_grad_list, self.b)  # process model list
         avg_params = base_aggregation_func(raw_client_grad_list)
         for k in avg_params.keys():
             avg_params[k] = (1 - self.alpha) * global_model[k] + self.alpha * avg_params[k]
         return avg_params
 
-    def _sort_and_trim(self, model_list):
-        model_list2 = []
-        for i in range(0, len(model_list)):
-            local_sample_number, local_model_params = model_list[i]
-            model_list2.append(
-                (
-                    local_sample_number,
-                    local_model_params,
-                    self.compute_a_score(local_sample_number, local_model_params),
-                )
-            )
-        model_list2.sort(key=lambda grad: grad[2])  # sort by coordinate-wise scores
-        model_list2 = model_list2[self.b : len(model_list) - self.b]
-        model_list = [(t[0], t[1]) for t in model_list2]
-        return model_list
-
-    @staticmethod
-    def compute_a_score(local_sample_number, local_model_params):
-        # todo: change to coordinate-wise score
-        return local_sample_number
