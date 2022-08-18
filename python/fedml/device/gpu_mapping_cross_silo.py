@@ -1,26 +1,26 @@
 import logging
 import socket
 
-import torch
 import yaml
 from fedml.constants import FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
+from ..ml.engine import ml_engine_adapter
 
 
 def mapping_processes_to_gpu_device_from_yaml_file_cross_silo(
-    process_id, worker_number, gpu_util_file, gpu_util_key, device_type, scenario, gpu_id=None
+    process_id, worker_number, gpu_util_file, gpu_util_key, device_type, scenario, gpu_id=None, args=None
 ):
     if device_type != "gpu":
-        device = mapping_single_process_to_gpu_device_cross_silo(device_type)
+        device = mapping_single_process_to_gpu_device_cross_silo(device_type, args=args)
         logging.info(f"Training on device: {device}")
         return device
     else:
         if gpu_id is not None:
             device = mapping_single_process_to_gpu_device_cross_silo(
-                device_type, gpu_id
+                device_type, gpu_id, args=args
             )
         elif gpu_util_file is None:
             device = mapping_single_process_to_gpu_device_cross_silo(
-                device_type
+                device_type, args=args
             )
         else:
             unique_gpu = (
@@ -62,13 +62,9 @@ def mapping_processes_to_gpu_device_from_yaml_file_cross_silo(
                 assert (
                     i == worker_number
                 ), f"Invalid GPU Number. Expected {worker_number}, Received {i}."
-            if torch.cuda.is_available():
-                torch.cuda.set_device(gpu_util_map[process_id][1])
-            device = torch.device(
-                "cuda:" + str(gpu_util_map[process_id][1])
-                if torch.cuda.is_available()
-                else "cpu"
-            )
+
+            device = ml_engine_adapter.get_device(args, str(gpu_util_map[process_id][1]))
+
         logging.info(
             "process_id = {}, GPU device = {}".format(process_id, device)
         )
@@ -76,22 +72,13 @@ def mapping_processes_to_gpu_device_from_yaml_file_cross_silo(
 
 
 def mapping_single_process_to_gpu_device_cross_silo(
-    device_type, gpu_id=0
+    device_type, gpu_id=0, args=None
 ):
     if device_type == "cpu":
-        device = torch.device("cpu")
+        device = ml_engine_adapter.get_device(args)
     else:
-        if torch.cuda.is_available() and device_type == "gpu":
-            device = torch.device(f"cuda:{gpu_id}")
-            torch.cuda.set_device(gpu_id)
-        elif device_type == "mps":
-            # https://pytorch.org/docs/master/notes/mps.html
-            device = torch.device("mps")
-        else:
-            device = torch.device("cpu")
+        device = ml_engine_adapter.get_device(args, using_gpu=True, device_id=gpu_id, device_type=device_type)
     return device
-
-
 
 
 # # Ugly Delete
