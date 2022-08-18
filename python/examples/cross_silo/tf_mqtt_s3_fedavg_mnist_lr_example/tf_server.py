@@ -68,8 +68,8 @@ def create_model(input_dim, out_dim):
 
 
 def create_model_aggregator(in_model, in_args):
-    aggregator = TfServerAggregator(in_model, in_args)
-    return aggregator
+    model_aggregator = TfServerAggregator(in_model, in_args)
+    return model_aggregator
 
 
 if __name__ == "__main__":
