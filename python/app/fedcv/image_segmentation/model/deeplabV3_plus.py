@@ -5,8 +5,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from fedml.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
-from resnet import ResNet101
-from mobilenet_v2 import MobileNetV2Encoder, IntermediateLayerGetter
+from .resnet import ResNet101
+from .mobilenet_v2 import MobileNetV2Encoder, IntermediateLayerGetter
 
 
 class _ASPPModule(nn.Module):
@@ -21,7 +21,13 @@ class _ASPPModule(nn.Module):
             padding = dilation
 
         self.atrous_convolution = nn.Conv2d(
-            inplanes, planes, kernel_size=kernel_size, stride=1, padding=padding, dilation=dilation, bias=False
+            inplanes,
+            planes,
+            kernel_size=kernel_size,
+            stride=1,
+            padding=padding,
+            dilation=dilation,
+            bias=False,
         )
         self.bn = BatchNorm(planes)
         self.relu = nn.ReLU()
@@ -63,12 +69,23 @@ class ASPP(nn.Module):
         else:
             raise NotImplementedError
 
-        self.aspp1 = _ASPPModule(inplanes, 256, dilation=dilations[0], BatchNorm=BatchNorm)
-        self.aspp2 = _ASPPModule(inplanes, 256, dilation=dilations[1], BatchNorm=BatchNorm)
-        self.aspp3 = _ASPPModule(inplanes, 256, dilation=dilations[2], BatchNorm=BatchNorm)
-        self.aspp4 = _ASPPModule(inplanes, 256, dilation=dilations[3], BatchNorm=BatchNorm)
+        self.aspp1 = _ASPPModule(
+            inplanes, 256, dilation=dilations[0], BatchNorm=BatchNorm
+        )
+        self.aspp2 = _ASPPModule(
+            inplanes, 256, dilation=dilations[1], BatchNorm=BatchNorm
+        )
+        self.aspp3 = _ASPPModule(
+            inplanes, 256, dilation=dilations[2], BatchNorm=BatchNorm
+        )
+        self.aspp4 = _ASPPModule(
+            inplanes, 256, dilation=dilations[3], BatchNorm=BatchNorm
+        )
         self.global_avg_pool = nn.Sequential(
-            nn.AdaptiveAvgPool2d((1, 1)), nn.Conv2d(inplanes, 256, 1, stride=1, bias=False), BatchNorm(256), nn.ReLU()
+            nn.AdaptiveAvgPool2d((1, 1)),
+            nn.Conv2d(inplanes, 256, 1, stride=1, bias=False),
+            BatchNorm(256),
+            nn.ReLU(),
         )
         self.conv1 = nn.Conv2d(1280, 256, 1, bias=False)
         self.bn1 = BatchNorm(256)
@@ -136,7 +153,9 @@ class Decoder(nn.Module):
         low_level_feat = self.bn1(low_level_feat)
         low_level_feat = self.relu(low_level_feat)
 
-        x = F.interpolate(x, size=low_level_feat.size()[2:], mode="bilinear", align_corners=True)
+        x = F.interpolate(
+            x, size=low_level_feat.size()[2:], mode="bilinear", align_corners=True
+        )
         x = torch.cat((x, low_level_feat), dim=1)
         x = self.last_conv(x)
 
@@ -155,7 +174,9 @@ class Decoder(nn.Module):
 
 
 class FeatureExtractor(nn.Module):
-    def __init__(self, backbone, n_channels, output_stride, BatchNorm, pretrained, num_classes):
+    def __init__(
+        self, backbone, n_channels, output_stride, BatchNorm, pretrained, num_classes
+    ):
         super(FeatureExtractor, self).__init__()
         self.backbone = self.build_backbone(
             backbone=backbone,
@@ -181,7 +202,9 @@ class FeatureExtractor(nn.Module):
         model_name="deeplabV3_plus",
     ):
         if backbone == "resnet":
-            return ResNet101(output_stride, BatchNorm, model_name, pretrained=pretrained)
+            return ResNet101(
+                output_stride, BatchNorm, model_name, pretrained=pretrained
+            )
         elif backbone == "mobilenet":
             backbone_model = MobileNetV2Encoder(
                 output_stride=output_stride, batch_norm=BatchNorm, pretrained=pretrained
@@ -190,7 +213,10 @@ class FeatureExtractor(nn.Module):
             backbone_model.high_level_features = backbone_model.features[4:-1]
             backbone_model.features = None
             backbone_model.classifier = None
-            return_layers = {"high_level_features": "out", "low_level_features": "low_level"}
+            return_layers = {
+                "high_level_features": "out",
+                "low_level_features": "low_level",
+            }
             return IntermediateLayerGetter(backbone_model, return_layers=return_layers)
         else:
             raise NotImplementedError
@@ -332,7 +358,12 @@ class DeepLabV3_plus(nn.Module):
 
 if __name__ == "__main__":
     model = DeepLabV3_plus(
-        backbone="mobilenet", nInputChannels=3, n_classes=3, output_stride=16, pretrained=False, _print=True
+        backbone="mobilenet",
+        nInputChannels=3,
+        n_classes=3,
+        output_stride=16,
+        pretrained=False,
+        _print=True,
     )
     image = torch.randn(1, 3, 512, 512)
     with torch.no_grad():
@@ -340,18 +371,26 @@ if __name__ == "__main__":
     print(output.size())
     from ptflops import get_model_complexity_info
 
-    print("================================================================================")
+    print(
+        "================================================================================"
+    )
     print("DeepLab V3+, ResNet, 513x513")
-    print("================================================================================")
+    print(
+        "================================================================================"
+    )
     model = DeepLabV3_plus(pretrained=True)
     flops, params = get_model_complexity_info(model, (3, 513, 513), verbose=True)
 
     print("{:<30}  {:<8}".format("Computational complexity: ", flops))
     print("{:<30}  {:<8}".format("Number of parameters: ", params))
 
-    print("================================================================================")
+    print(
+        "================================================================================"
+    )
     print("DeepLab V3+, ResNet, 769x769")
-    print("================================================================================")
+    print(
+        "================================================================================"
+    )
     model = DeepLabV3_plus(pretrained=True)
     flops, params = get_model_complexity_info(model, (3, 769, 769), verbose=True)
 

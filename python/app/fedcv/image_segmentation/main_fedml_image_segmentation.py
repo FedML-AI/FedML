@@ -1,9 +1,9 @@
 import fedml
 from fedml import FedMLRunner
-from .data.data_loader import load_data
+from data.data_loader import load_data
 from model import create_model
-from trainer import SegmentationTrainer
-
+from trainer.segmentation_trainer import SegmentationTrainer
+from trainer.segmentation_aggregator import SegmentationAggregator
 
 if __name__ == "__main__":
     # init FedML framework
@@ -16,10 +16,11 @@ if __name__ == "__main__":
     dataset, class_num = load_data(args)
 
     # create model and trainer
-    model = create_model(args, args.model, output_dim=class_num)
+    model = create_model(args)
     trainer = SegmentationTrainer(model=model, args=args)
+    aggregator = SegmentationAggregator(model=model, args=args)
 
     # start training
     # start training
-    fedml_runner = FedMLRunner(args, device, dataset, model, trainer)
+    fedml_runner = FedMLRunner(args, device, dataset, model, trainer, aggregator)
     fedml_runner.run()
