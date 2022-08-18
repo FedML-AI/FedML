@@ -13,7 +13,8 @@ FedML Platform: https://open.fedml.ai \
 FedML Use Cases: https://open.fedml.ai/platform/appStore \
 FedML Documentation: https://doc.fedml.ai \
 FedML Blog: https://medium.com/@FedML \
-FedML Research: https://fedml.ai/research-papers/
+FedML Research: https://fedml.ai/research-papers/ \
+FedML Product Overview: https://medium.com/@FedML/fedml-ai-platform-releases-the-worlds-federated-learning-open-platform-on-public-cloud-with-an-8024e68a70b6
 
 [//]: # ()
 [//]: # (<p align="center">)
