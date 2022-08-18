@@ -68,8 +68,8 @@ def create_model(input_dim, out_dim):
 
 
 def create_model_trainer(in_model, in_args):
-    trainer = TfModelTrainerCLS(in_model, in_args)
-    return trainer
+    model_trainer = TfModelTrainerCLS(in_model, in_args)
+    return model_trainer
 
 
 if __name__ == "__main__":
