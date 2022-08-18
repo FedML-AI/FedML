@@ -1,10 +1,8 @@
 import math
 from typing import Callable, List, Tuple, Dict, Any
 
-import numpy as np
-
 from ..common.bucket import Bucket
-from ..common.utils import compute_middle_point, compute_euclidean_distance
+from ..common.utils import compute_geometric_median
 from ...security.defense.defense_base import BaseDefenseMethod
 
 """
@@ -44,59 +42,7 @@ class GeometricMedianDefense(BaseDefenseMethod):
         alphas = {alpha / sum(alphas, 0.0) for alpha in alphas}
         for k in avg_params.keys():
             batch_grads = [params[k] for (alpha, params) in batch_grad_list]
-            avg_params[k] = self._compute_geometric_median(alphas, batch_grads)
+            avg_params[k] = compute_geometric_median(alphas, batch_grads)
         return avg_params
 
-    @staticmethod
-    def _compute_geometric_median(alphas, batch_grads):
-        """
-        Implementation of Weiszfeld's algorithm.
-        Reference:  (1) https://github.com/krishnap25/RFA/blob/master/models/model.py
-                    (2) https://github.com/bladesteam/blades/blob/master/src/blades/aggregators/geomed.py
-        our contribution: (07/01/2022)
-        1) fix one bug in (1): (1) can not correctly compute a weighted average. The function weighted_average_oracle
-        returns zero.
-        2) fix one bug in (2): (2) can not correctly handle multidimensional tensors.
-        3) reconstruct the code.
-        """
-        eps = 1e-5
-        ftol = 1e-10
-        middle_point = compute_middle_point(alphas, batch_grads)
-        val = sum(
-            [
-                alpha * compute_euclidean_distance(middle_point, p)
-                for alpha, p in zip(alphas, batch_grads)
-            ]
-        )
-        for i in range(100):
-            prev_median, prev_obj_val = middle_point, val
-            alphas = np.asarray(
-                [
-                    max(
-                        eps,
-                        alpha
-                        / max(eps, compute_euclidean_distance(middle_point, a_batch_w)),
-                    )
-                    for alpha, a_batch_w in zip(alphas, batch_grads)
-                ]
-            )
-            alphas = alphas / alphas.sum()
-            middle_point = compute_middle_point(alphas, batch_grads)
-            val = sum(
-                [
-                    alpha * compute_euclidean_distance(middle_point, p)
-                    for alpha, p in zip(alphas, batch_grads)
-                ]
-            )
-            if abs(prev_obj_val - val) < ftol * val:
-                break
-        return middle_point
 
-    @staticmethod
-    def compute_obj(alphas, batch_w, middle_point):
-        return sum(
-            [
-                alpha * compute_euclidean_distance(middle_point, p)
-                for alpha, p in zip(alphas, batch_w)
-            ]
-        )

@@ -15,7 +15,7 @@ from ...core.mpc.lightsecagg import (
 )
 
 
-class LightSecAggAggregator(object):
+class SecAggAggregator(object):
     def __init__(
         self,
         train_global,
