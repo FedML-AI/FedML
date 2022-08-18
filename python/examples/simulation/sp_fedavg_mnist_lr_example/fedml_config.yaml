@@ -1,7 +1,7 @@
 common_args:
   training_type: "simulation"
   random_seed: 0
-  config_version: "release"
+  config_version: "dev"
   mlops_api_key: c9356b9c4ce44363bb66366b210201
   mlops_project_name: alex-test-prj
   mlops_run_name: fedml_torch_fedavg_mnist_lr_2
@@ -18,8 +18,8 @@ model_args:
 train_args:
   federated_optimizer: "FedAvg"
   client_id_list: "[]"
-  client_num_in_total: 2
-  client_num_per_round: 2
+  client_num_in_total: 1
+  client_num_per_round: 1
   comm_round: 10
   epochs: 1
   batch_size: 10
@@ -45,4 +45,4 @@ tracking_args:
   wandb_entity: fedml-ai
   wandb_project: simulation
   run_name: fedml_torch_fedavg_mnist_lr
-  using_mlops: false
+  using_mlops: true
