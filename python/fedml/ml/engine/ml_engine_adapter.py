@@ -40,9 +40,13 @@ def is_device_available(args, device_type="gpu"):
                 return True
             return False
         elif args.ml_engine == "jax":
-            device_count = jax.device_count(device_type)
-            if device_count > 0:
-                return True
+            try:
+                device_count = jax.device_count(device_type)
+                if device_count > 0:
+                    return True
+            except Exception as ex:
+                return False
+
             return False
         else:
             return is_torch_device_available(args, device_type)
