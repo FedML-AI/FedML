@@ -38,8 +38,16 @@ def t_sample_fit(num_workers, num_clients, runtime_history, train_data_local_num
         data_local_num_dict[0][0] = []
         for worker_id in range(num_workers):
             for client_id in range(num_clients):
-                runtime_to_fit[0][0] += runtime_history[worker_id][client_id]
-                data_local_num_dict[0][0] += [train_data_local_num_dict[client_id]] * len(runtime_history[worker_id][client_id])
+                runtime_info = runtime_history[worker_id][client_id]
+                if isinstance(runtime_info, list):
+                    runtime_to_fit[0][0] += runtime_info
+                    data_local_num_dict[0][0] += [train_data_local_num_dict[client_id]] * len(runtime_info)
+                elif runtime_info is None:
+                    pass
+                elif runtime_info > 0:
+                    runtime_to_fit[0][0].append(runtime_info)
+                    data_local_num_dict[0][0] += [train_data_local_num_dict[client_id]]
+
     elif not uniform_client and uniform_gpu:
         runtime_to_fit[0] = {}
         data_local_num_dict[0] = {}
@@ -48,8 +56,16 @@ def t_sample_fit(num_workers, num_clients, runtime_history, train_data_local_num
                 if client_id not in runtime_to_fit[0]:
                     runtime_to_fit[0][client_id] = []
                     data_local_num_dict[0][client_id] = []
-                runtime_to_fit[0][client_id] += runtime_history[worker_id][client_id]
-                data_local_num_dict[0][client_id] += [train_data_local_num_dict[client_id]] * len(runtime_history[worker_id][client_id])
+                runtime_info = runtime_history[worker_id][client_id]
+                if isinstance(runtime_info, list):
+                    runtime_to_fit[0][client_id] += runtime_info
+                    data_local_num_dict[0][client_id] += [train_data_local_num_dict[client_id]] * len(runtime_info)
+                elif runtime_info is None:
+                    pass
+                elif runtime_info > 0:
+                    runtime_to_fit[0][client_id].append(runtime_info)
+                    data_local_num_dict[0][client_id] += [train_data_local_num_dict[client_id]]
+
     elif uniform_client and not uniform_gpu:
         for worker_id in range(num_workers):
             runtime_to_fit[worker_id] = {}
@@ -57,8 +73,15 @@ def t_sample_fit(num_workers, num_clients, runtime_history, train_data_local_num
             data_local_num_dict[worker_id] = {}
             data_local_num_dict[worker_id][0] = []
             for client_id in range(num_clients):
-                runtime_to_fit[worker_id][0] += runtime_history[worker_id][client_id]
-                data_local_num_dict[worker_id][0] += [train_data_local_num_dict[client_id]] * len(runtime_history[worker_id][client_id])
+                runtime_info = runtime_history[worker_id][client_id]
+                if isinstance(runtime_info, list):
+                    runtime_to_fit[worker_id][0] += runtime_info
+                    data_local_num_dict[worker_id][0] += [train_data_local_num_dict[client_id]] * len(runtime_info)
+                elif runtime_info is None:
+                    pass
+                elif runtime_info > 0:
+                    runtime_to_fit[worker_id][0].append(runtime_info)
+                    data_local_num_dict[worker_id][0] += [train_data_local_num_dict[client_id]]
     else:
         for worker_id in range(num_workers):
             runtime_to_fit[worker_id] = {}
@@ -67,11 +90,18 @@ def t_sample_fit(num_workers, num_clients, runtime_history, train_data_local_num
                 if client_id not in runtime_to_fit[worker_id]:
                     runtime_to_fit[worker_id][client_id] = []
                     data_local_num_dict[worker_id][client_id] = []
-                runtime_to_fit[worker_id][client_id] += runtime_history[worker_id][client_id]
-                data_local_num_dict[worker_id][client_id] += [train_data_local_num_dict[client_id]] * len(runtime_history[worker_id][client_id])
+                runtime_info = runtime_history[worker_id][client_id]
+                if isinstance(runtime_info, list):
+                    runtime_to_fit[worker_id][client_id] += runtime_info
+                    data_local_num_dict[worker_id][client_id] += [train_data_local_num_dict[client_id]] * len(runtime_info)
+                elif runtime_info is None:
+                    pass
+                elif runtime_info > 0:
+                    runtime_to_fit[worker_id][client_id].append(runtime_info)
+                    data_local_num_dict[worker_id][client_id] += [train_data_local_num_dict[client_id]]
 
-    logging.info(f"runtime_to_fit: {runtime_to_fit}")
-    logging.info(f"data_local_num_dict: {data_local_num_dict}")
+    # logging.info(f"runtime_to_fit: {runtime_to_fit}")
+    # logging.info(f"data_local_num_dict: {data_local_num_dict}")
     for worker_id, runtime_on_clients in runtime_to_fit.items():
         fit_params[worker_id] = {}
         fit_funcs[worker_id] = {}
