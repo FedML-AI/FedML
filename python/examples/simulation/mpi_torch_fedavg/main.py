@@ -13,12 +13,15 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../")))
 
 import fedml
 import torch
+import torchvision.models as tormodels
 from fedml.simulation import SimulatorMPI
 
 from fedml.model.cv.resnet_gn import resnet18
 from fedml.model.cv.resnet import resnet20, resnet32, resnet44, resnet56
 
 from fedml.model.cv.resnet_cifar import resnet18_cifar, resnet34_cifar, resnet50_cifar
+
+from fedml.model.cv.resnet_torch import resnet18 as resnet18_torch
 
 from fedml.arguments import Arguments
 
@@ -74,6 +77,10 @@ def add_args():
     parser.add_argument("--server_lr", type=float, default=1.0)
     parser.add_argument("--server_momentum", type=float, default=0.9)
     # args, unknown = parser.parse_known_args()
+
+    parser.add_argument("--override_cmd_args", action='store_true')
+
+
     args = parser.parse_args()
     return args
 
@@ -84,7 +91,7 @@ def load_arguments(training_type=None, comm_backend=None):
 
     # Load all arguments from YAML config file
     args = Arguments(cmd_args, training_type, comm_backend,
-                    override_cmd_args=False)
+                    override_cmd_args=cmd_args.override_cmd_args)
 
     # if not hasattr(args, "worker_num"):
     #     args.worker_num = args.client_num_per_round
@@ -114,8 +121,16 @@ if __name__ == "__main__":
 
     # init device
     device = fedml.device.get_device(args)
+    logging.info(f"======================================================== \
+        process_id: {args.process_id}, device: {device} ==============" )
+
     # load data
     dataset, output_dim = fedml.data.load(args)
+
+    if args.dataset == "femnist":
+        in_channels = 1
+    else:
+        in_channels = 3
 
     # load model (the size of MNIST image is 28 x 28)
     if args.model == "resnet18":
@@ -123,6 +138,8 @@ if __name__ == "__main__":
         model = resnet18(group_norm=args.group_norm_channels, num_classes=output_dim)
     elif args.model == "resnet20":
         model = resnet20(class_num=output_dim)
+    elif args.model == "resnet18_torch":
+        model = resnet18_torch(num_classes=output_dim, in_channels=in_channels)
     elif args.model == "resnet18_cifar":
         logging.info("ResNet18_GN")
         model = resnet18_cifar(group_norm=args.group_norm_channels, num_classes=output_dim)
