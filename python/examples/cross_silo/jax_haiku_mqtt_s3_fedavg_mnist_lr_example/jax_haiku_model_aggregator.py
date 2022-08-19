@@ -83,6 +83,9 @@ class JaxHaikuServerAggregator(ServerAggregator):
             # start_time = time.time_ns()
             x = x.numpy()
             target = target.numpy()
+            jax.device_put(x, device)
+            jax.device_put(target, device)
+
             accuracy = np.array(
                 JaxHaikuServerAggregator.evaluate(self.aggregator_state.params, x, target)).item()
             loss = JaxHaikuServerAggregator.loss(self.aggregator_state.params, x, target)
