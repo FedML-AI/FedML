@@ -5,3 +5,5 @@
 - Examples of FedML IoT: [FedML/iot](../iot)
 
 - Examples of FedML Android: [FedML/android](../android)
+
+- Adavanced Applications developed on FedML: [https://github.com/FedML-AI/FedML/tree/master/python/app](https://github.com/FedML-AI/FedML/tree/master/python/app) 
