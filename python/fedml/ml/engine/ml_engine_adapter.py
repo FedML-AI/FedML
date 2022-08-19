@@ -5,6 +5,51 @@ import jax
 import tensorflow as tf
 
 
+def is_torch_device_available(args, device_type):
+    if device_type == "gpu":
+        if torch.cuda.is_available():
+            return True
+        return False
+    elif device_type == "mps":
+        # Macbook M1: https://pytorch.org/docs/master/notes/mps.html
+        if not torch.backends.mps.is_available():
+            if not torch.backends.mps.is_built():
+                print(
+                    "MPS not available because the current PyTorch install was not "
+                    "built with MPS enabled."
+                )
+            else:
+                print(
+                    "MPS not available because the current MacOS version is not 12.3+ "
+                    "and/or you do not have an MPS-enabled device on this machine."
+                )
+            return False
+        else:
+            return True
+    elif device_type == "cpu":
+        return True
+
+    return False
+
+
+def is_device_available(args, device_type="gpu"):
+    if hasattr(args, "ml_engine"):
+        if args.ml_engine == "tf":
+            devices = tf.config.list_physical_devices(device_type.upper())
+            if len(devices) > 0:
+                return True
+            return False
+        elif args.ml_engine == "jax":
+            device_count = jax.device_count(device_type)
+            if device_count > 0:
+                return True
+            return False
+        else:
+            return is_torch_device_available(args, device_type)
+    else:
+        return is_torch_device_available(args, device_type)
+
+
 def get_torch_device(args, using_gpu, device_id, device_type):
     if using_gpu:
         gpu_id = args.gpu_id
@@ -61,7 +106,9 @@ def get_device(args, using_gpu=False, device_id=None, device_type="cpu"):
 def dict_to_device(args, dict_obj, device):
     if hasattr(args, "ml_engine"):
         if args.ml_engine == "tf":
-            return dict_obj
+            with device:
+                dict_ret = dict_obj
+                return dict_ret
         elif args.ml_engine == "jax":
             return jax.device_put(dict_obj, device)
         else:
@@ -70,10 +117,31 @@ def dict_to_device(args, dict_obj, device):
         return dict_obj.to(device)
 
 
+def model_params_to_device(args, params_obj, device):
+    if hasattr(args, "ml_engine"):
+        if args.ml_engine == "tf":
+            with device:
+                params_ret = params_obj
+                return params_ret
+        elif args.ml_engine == "jax":
+            for key in params_obj.keys():
+                params_obj[key] = dict_to_device(args, params_obj[key], device)
+        else:
+            for key in params_obj.keys():
+                params_obj[key] = dict_to_device(args, params_obj[key], device)
+    else:
+        for key in params_obj.keys():
+            params_obj[key] = dict_to_device(args, params_obj[key], device)
+
+    return params_obj
+
+
 def model_to_device(args, model_obj, device):
     if hasattr(args, "ml_engine"):
         if args.ml_engine == "tf":
-            return model_obj
+            with device:
+                model_ret = model_obj
+                return model_ret
         elif args.ml_engine == "jax":
             return model_obj
         else:
@@ -170,6 +238,8 @@ def tf_aggregator(args, raw_grad_list, training_num):
                     avg_params[k] += local_model_params[k]
     elif args.federated_optimizer == "FedOpt":
         pass
+
+    return avg_params
 
 
 def jax_aggregator(args, raw_grad_list, training_num):
