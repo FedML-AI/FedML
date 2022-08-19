@@ -1,7 +1,5 @@
 import logging
 
-import torch
-
 from ..ml.engine import ml_engine_adapter
 
 
@@ -16,24 +14,14 @@ def get_device_type(args):
         if args.device_type == "cpu":
             device_type = "cpu"
         elif args.device_type == "gpu":
-            if torch.cuda.is_available():
+            if ml_engine_adapter.is_device_available(args, args.device_type):
                 device_type = "gpu"
             else:
                 print("PyTorch install was not built with GPU enabled")
                 device_type = "cpu"
         elif args.device_type == "mps":
             # Macbook M1: https://pytorch.org/docs/master/notes/mps.html
-            if not torch.backends.mps.is_available():
-                if not torch.backends.mps.is_built():
-                    print(
-                        "MPS not available because the current PyTorch install was not "
-                        "built with MPS enabled."
-                    )
-                else:
-                    print(
-                        "MPS not available because the current MacOS version is not 12.3+ "
-                        "and/or you do not have an MPS-enabled device on this machine."
-                    )
+            if not ml_engine_adapter.is_device_available(args, args.device_type):
                 device_type = "cpu"
             else:
                 device_type = "mps"
@@ -41,7 +29,7 @@ def get_device_type(args):
             raise Exception("do not support device type = {}".format(args.device_type))
     else:
         if args.using_gpu:
-            if torch.cuda.is_available():
+            if ml_engine_adapter.is_device_available(args, "gpu"):
                 device_type = "gpu"
             else:
                 print("PyTorch install was not built with GPU enabled")
@@ -114,8 +102,6 @@ def get_device(args):
                 args.gpu_mapping_key if hasattr(args, "gpu_mapping_key") else None
             )
             gpu_id = None  # no no need to set gpu_id
-
-
         else:
             gpu_mapping_file = None
             gpu_mapping_key = None
