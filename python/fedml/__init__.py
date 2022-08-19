@@ -109,16 +109,9 @@ def init_simulation_mpi(args):
     world_size = comm.Get_size()
     args.comm = comm
     args.process_id = process_id
-    # args.worker_num = worker_num
-    print(f"========= process_id: {process_id}")
-    print(f"========= world_size: {world_size}")
-    print(f"========= args.worker_num: {args.worker_num}")
+    args.worker_num = world_size
     if process_id == 0:
         args.role = "server"
-    assert (
-        args.worker_num + 1 == world_size
-    ), f"Invalid number of mpi processes. Expected {args.worker_num + 1}"
-
     return args
 
 
