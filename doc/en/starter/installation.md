@@ -38,6 +38,15 @@ git clone https://github.com/FedML-AI/FedML.git && \
 cd ./FedML/python && \
 python setup.py install
 ```
+
+If you want to run examples with tensforflow or jax, you need to install optional dependencies:
+```
+git clone https://github.com/FedML-AI/FedML.git && \
+cd ./FedML/python && \
+python install -e '.[tensorflow, jax]'
+```
+(Notes: Tensorflow example located in tf_mqtt_s3_fedavg_mnist_lr_example directory, Jax example location in jax_haiku_mqtt_s3_fedavg_mnist_lr_example directory)
+
 If you need to install from a specific commit (normally used for the debugging/development phase), please follow commands below:
 ```
 git clone https://github.com/FedML-AI/FedML.git && \
