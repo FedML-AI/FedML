@@ -3,21 +3,23 @@ common_args:
   random_seed: 0
 
 data_args:
-  dataset: "cifar10"
-  data_cache_dir: "/home/chaoyanghe/FedML/data/cifar10"
+  dataset: "femnist"
+  data_cache_dir: "/home/chaoyanghe/FedML/data/FederatedEMNIST/datasets"
   partition_method: "hetero"
   partition_alpha: 0.5
 
 model_args:
-  model: "cnn"
+  # model: "cnn"
+  model: "resnet18_torch"  #  resnet18
+
 
 train_args:
   federated_optimizer: "FedAvg_seq"
   client_id_list: "[]"
-  client_num_in_total: 100
-  client_num_per_round: 10
-  comm_round: 500
-  epochs: 1
+  client_num_in_total: 3400
+  client_num_per_round: 100
+  comm_round: 200
+  epochs: 5
   batch_size: 20
   client_optimizer: sgd
   learning_rate: 0.01
@@ -27,7 +29,7 @@ train_args:
 
 
 validation_args:
-  frequency_of_the_test: 100
+  frequency_of_the_test: 1000
 
 device_args:
   worker_num: 8
@@ -52,6 +54,7 @@ tracking_args:
   wandb_only_server: True
   using_mlops: False
   # simulation_schedule: "LinearFit-DP"
+  # runtime_est_mode: "time_window" # EMA
 
 attack_args:
   enable_attack: false

@@ -57,7 +57,10 @@ class ModelTrainerCLS(ClientTrainer):
                 #     )
                 # )
                 batch_loss.append(loss.item())
-            epoch_loss.append(sum(batch_loss) / len(batch_loss))
+            if len(batch_loss) == 0:
+                epoch_loss.append(0.0)
+            else:
+                epoch_loss.append(sum(batch_loss) / len(batch_loss))
             logging.info(
                 "Client Index = {}\tEpoch: {}\tLoss: {:.6f}".format(
                     self.id, epoch, sum(epoch_loss) / len(epoch_loss)

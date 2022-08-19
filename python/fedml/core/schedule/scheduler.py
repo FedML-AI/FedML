@@ -200,7 +200,7 @@ class scheduler_c:
         self.x_sorted_index = np.argsort(workloads)[::-1]
         # print(f"self.x_sorted_index: {self.x_sorted_index} len(self.x_sorted_index): {len(self.x_sorted_index)}")
         self.y = constraints
-        logging.info(f"self.workloads: {self.workloads}, self.y: {self.y}")
+        # logging.info(f"self.workloads: {self.workloads}, self.y: {self.y}")
         self.m = memory
         self.cost_funcs = cost_funcs
         self.uniform_client = uniform_client
@@ -372,7 +372,7 @@ class scheduler_c:
                     my_jobs.append(self.x_sorted_index[j])
             schedules.append(my_jobs)
 
-        logging.info(f"schedules: {schedules}  len(schedules): {len(schedules)}")
+        # logging.info(f"schedules: {schedules}  len(schedules): {len(schedules)}")
         logging.info(f"self.iter_times: {self.iter_times}")
         logging.info(
             "The optimal maximum cost: %f, assignment: %s\n"
