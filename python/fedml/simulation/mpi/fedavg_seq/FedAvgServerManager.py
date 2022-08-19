@@ -1,5 +1,7 @@
 import logging
 import numpy as np
+import time
+import wandb
 
 from .message_define import MyMessage
 from .utils import transform_tensor_to_list
@@ -35,6 +37,7 @@ class FedAVGServerManager(FedMLCommManager):
 
     def send_init_msg(self):
         # sampling clients
+        self.previous_time = time.time()
         client_indexes = self.aggregator.client_sampling(
             self.round_idx,
             self.args.client_num_in_total,
@@ -77,6 +80,10 @@ class FedAVGServerManager(FedMLCommManager):
         b_all_received = self.aggregator.check_whether_all_receive()
         logging.info("b_all_received = " + str(b_all_received))
         if b_all_received:
+            if self.args.enable_wandb:
+                wandb.log({"RunTimeOneRound": time.time() - self.previous_time, "round": self.round_idx})
+                self.previous_time = time.time()
+
             global_model_params = self.aggregator.aggregate()
             self.aggregator.test_on_server_for_all_clients(self.round_idx)
 
