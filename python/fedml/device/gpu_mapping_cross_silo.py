@@ -63,7 +63,9 @@ def mapping_processes_to_gpu_device_from_yaml_file_cross_silo(
                     i == worker_number
                 ), f"Invalid GPU Number. Expected {worker_number}, Received {i}."
 
-            device = ml_engine_adapter.get_device(args, str(gpu_util_map[process_id][1]))
+            device = ml_engine_adapter.get_device(args, using_gpu=True,
+                                                  device_id=str(gpu_util_map[process_id][1]),
+                                                  device_type="gpu")
 
         logging.info(
             "process_id = {}, GPU device = {}".format(process_id, device)
@@ -75,7 +77,7 @@ def mapping_single_process_to_gpu_device_cross_silo(
     device_type, gpu_id=0, args=None
 ):
     if device_type == "cpu":
-        device = ml_engine_adapter.get_device(args)
+        device = ml_engine_adapter.get_device(args, using_gpu=False, device_id=gpu_id, device_type=device_type)
     else:
         device = ml_engine_adapter.get_device(args, using_gpu=True, device_id=gpu_id, device_type=device_type)
     return device

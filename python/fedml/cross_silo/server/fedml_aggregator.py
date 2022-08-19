@@ -52,8 +52,9 @@ class FedMLAggregator(object):
 
     def add_local_trained_result(self, index, model_params, sample_num):
         logging.info("add_model. index = %d" % index)
-        for key in model_params.keys():
-            model_params[key] = ml_engine_adapter.dict_to_device(self.args, model_params[key], self.device)
+
+        model_params = ml_engine_adapter.model_params_to_device(self.args, model_params, self.device)
+
         self.model_dict[index] = model_params
         self.sample_num_dict[index] = sample_num
         self.flag_client_model_uploaded_dict[index] = True
