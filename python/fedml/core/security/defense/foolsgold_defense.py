@@ -2,20 +2,19 @@ import numpy as np
 from .defense_base import BaseDefenseMethod
 from typing import Callable, List, Tuple, Dict, Any
 from ..common import utils
-from numpy import dot
-from numpy.linalg import norm
+from scipy import spatial
 
 
 """
 The Limitations of Federated Learning in Sybil Settings.
 https://www.usenix.org/system/files/raid20-fung.pdf 
+https://github.com/DistributedML/FoolsGold
 potential bugs when using memory: when only some of clients participate in computing, grads in different iterations may be from different clients
 """
 
 class FoolsGoldDefense(BaseDefenseMethod):
     def __init__(self, config):
         self.memory = None
-        # self.wv_history = []
         self.use_memory = config.use_memory
 
     def run(
@@ -37,13 +36,11 @@ class FoolsGoldDefense(BaseDefenseMethod):
         else:
             grads = [grad for (_, grad) in raw_client_grad_list]
             alphas = self.fools_gold_score(grads)  # Use FG
-        print(f"alphas = {alphas}")
 
         assert len(alphas) == len(
             raw_client_grad_list), 'len of wv {} is not consistent with len of client_grads {}'.format(
             len(alphas), len(raw_client_grad_list))
         new_grad_list = []
-
         client_num = len(raw_client_grad_list)
         for i in range(client_num):
             sample_num, grad = raw_client_grad_list[i]
@@ -58,8 +55,7 @@ class FoolsGoldDefense(BaseDefenseMethod):
         cs = np.zeros((n_clients, n_clients))
         for i in range(n_clients):
             for j in range(n_clients):
-                cs[i][j] = dot(grads[i].tolist(), grads[j].tolist()) / (norm(grads[i].tolist()) * norm(grads[j].tolist())) # cosine_similarity(grads[i].tolist(), grads[j].tolist())
-
+                cs[i][j] = 1 - spatial.distance.cosine(grads[i].tolist(), grads[j].tolist())
         cs -= np.eye(n_clients)
         maxcs = np.max(cs, axis=1)
         # pardoning
@@ -71,12 +67,14 @@ class FoolsGoldDefense(BaseDefenseMethod):
         alpha[alpha > 1] = 1
         alpha[alpha < 0] = 0
 
-        # Rescale so that max value is wv
-        alpha = alpha / max(1, np.max(alpha))
+        # Rescale so that max value is alpha
+        alpha = alpha / np.max(alpha)
         alpha[(alpha == 1)] = .99
 
         # Logit function
-        alpha = (np.log(alpha / (1 - alpha)) + 0.5)
+        for i in range(len(alpha)):
+            if alpha[i] != 0:
+                alpha[i] = np.log(alpha[i] / (1 - alpha[i])) + 0.5
         alpha[(np.isinf(alpha) + alpha > 1)] = 1
         alpha[(alpha < 0)] = 0
 
