@@ -1,8 +1,6 @@
 import torch
 
 from .torch_process_group_manager import TorchProcessGroupManager
-import jax
-import tensorflow as tf
 
 
 def is_torch_device_available(args, device_type):
@@ -14,10 +12,7 @@ def is_torch_device_available(args, device_type):
         # Macbook M1: https://pytorch.org/docs/master/notes/mps.html
         if not torch.backends.mps.is_available():
             if not torch.backends.mps.is_built():
-                print(
-                    "MPS not available because the current PyTorch install was not "
-                    "built with MPS enabled."
-                )
+                print("MPS not available because the current PyTorch install was not " "built with MPS enabled.")
             else:
                 print(
                     "MPS not available because the current MacOS version is not 12.3+ "
@@ -35,12 +30,16 @@ def is_torch_device_available(args, device_type):
 def is_device_available(args, device_type="gpu"):
     if hasattr(args, "ml_engine"):
         if args.ml_engine == "tf":
+            import tensorflow as tf
+
             devices = tf.config.list_physical_devices(device_type.upper())
             if len(devices) > 0:
                 return True
             return False
         elif args.ml_engine == "jax":
             try:
+                import jax
+
                 device_count = jax.device_count(device_type)
                 if device_count > 0:
                     return True
@@ -75,13 +74,17 @@ def get_torch_device(args, using_gpu, device_id, device_type):
 
 
 def get_tf_device(args, using_gpu, device_id, device_type):
+    import tensorflow as tf
+
     if using_gpu:
-        return tf.device('/device:gpu:{}'.format(device_id))
+        return tf.device("/device:gpu:{}".format(device_id))
     else:
-        return tf.device('/device:cpu:0')
+        return tf.device("/device:cpu:0")
 
 
 def get_jax_device(args, using_gpu, device_id, device_type):
+    import jax
+
     devices = jax.devices(None)
     if len(devices) > 0:
         for dev in devices:
@@ -114,6 +117,8 @@ def dict_to_device(args, dict_obj, device):
                 dict_ret = dict_obj
                 return dict_ret
         elif args.ml_engine == "jax":
+            import jax
+
             return jax.device_put(dict_obj, device)
         else:
             return dict_obj.to(device)
@@ -159,11 +164,7 @@ def torch_model_ddp(args, model_obj, device):
 
     only_gpu = args.using_gpu
     process_group_manager = TorchProcessGroupManager(
-        args.proc_rank_in_silo,
-        args.n_proc_in_silo,
-        args.pg_master_address,
-        args.pg_master_port,
-        only_gpu,
+        args.proc_rank_in_silo, args.n_proc_in_silo, args.pg_master_address, args.pg_master_port, only_gpu,
     )
     model = DDP(model_obj, device_ids=[device] if only_gpu else None)
     return process_group_manager, model
@@ -255,21 +256,21 @@ def jax_aggregator(args, raw_grad_list, training_num):
                 local_sample_number, local_model_params = raw_grad_list[i]
                 w = local_sample_number / training_num
                 if i == 0:
-                    avg_params[k]['w'] = local_model_params[k]['w'] * w
-                    avg_params[k]['b'] = local_model_params[k]['b'] * w
+                    avg_params[k]["w"] = local_model_params[k]["w"] * w
+                    avg_params[k]["b"] = local_model_params[k]["b"] * w
                 else:
-                    avg_params[k]['w'] += local_model_params[k]['w'] * w
-                    avg_params[k]['b'] += local_model_params[k]['b'] * w
+                    avg_params[k]["w"] += local_model_params[k]["w"] * w
+                    avg_params[k]["b"] += local_model_params[k]["b"] * w
     elif args.federated_optimizer == "FedAvg_seq":
         for k in avg_params.keys():
             for i in range(0, len(raw_grad_list)):
                 local_sample_number, local_model_params = raw_grad_list[i]
                 if i == 0:
-                    avg_params[k]['b'] = local_model_params[k]['b']
-                    avg_params[k]['w'] = local_model_params[k]['w']
+                    avg_params[k]["b"] = local_model_params[k]["b"]
+                    avg_params[k]["w"] = local_model_params[k]["w"]
                 else:
-                    avg_params[k]['b'] += local_model_params[k]['b']
-                    avg_params[k]['w'] += local_model_params[k]['w']
+                    avg_params[k]["b"] += local_model_params[k]["b"]
+                    avg_params[k]["w"] += local_model_params[k]["w"]
     elif args.federated_optimizer == "FedOpt":
         pass
 
