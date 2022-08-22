@@ -7,6 +7,13 @@
 
 ## Cross-silo Federated Learning for cross-organization/account training
 
+The following examples include:
+1. diverse communication backends (MPI, gRPC, PyTorch RPC, MQTT + S3)
+2. Differential Privacy (CDP-central DP; LDP-local DP)
+3. Attacker (fedml.core.FedMLAttacker)
+4. Defender (fedml.core.FedMLDefender)
+5. Agnostic to Machine Learning Framework. Currently, FedML supports PyTorch, TensorFlow, JAX with Haiku, and MXNet.
+
 |                                           | platform/scenario    | federated optimizer | dataset | model               | communication backend | machine learning backend | source code                                                       | example doc                                                               |
 |-------------------------------------------| -------------------- | ------------------- | ------- | ------------------- | --------------------- |--------------------------|-------------------------------------------------------------------|---------------------------------------------------------------------------|
 | mqtt_s3_fedavg_mnist_lr_example           | Octopus (cross-silo) | FedAvg              | MNIST   | Logistic Regression | MQTT_S3               | pytorch                  | [Link](cross_silo/mqtt_s3_fedavg_mnist_lr_example)                | [Link](cross_silo/mqtt_s3_fedavg_mnist_lr_example/README.md)              |

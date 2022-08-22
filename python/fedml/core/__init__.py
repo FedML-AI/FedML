@@ -6,6 +6,8 @@ from .distributed.fedml_comm_manager import FedMLCommManager
 from .distributed.flow.fedml_executor import FedMLExecutor
 from .distributed.flow.fedml_flow import FedMLAlgorithmFlow
 from ..ml.aggregator.agg_operator import FedMLAggOperator
+from .security.fedml_attacker import FedMLAttacker
+from .security.fedml_defender import FedMLDefender
 
 __all__ = [
     "Params",
@@ -15,5 +17,7 @@ __all__ = [
     "FedMLExecutor",
     "FedMLAlgorithmFlow",
     "FedMLCommManager",
+    "FedMLAttacker",
+    "FedMLDefender",
     "partition_class_samples_with_dirichlet_distribution",
 ]
