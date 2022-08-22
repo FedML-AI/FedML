@@ -10,8 +10,8 @@
 The following examples include:
 1. diverse communication backends (MPI, gRPC, PyTorch RPC, MQTT + S3)
 2. Differential Privacy (CDP-central DP; LDP-local DP)
-3. Attacker (fedml.core.FedMLAttacker)
-4. Defender (fedml.core.FedMLDefender)
+3. Attacker (API: fedml.core.FedMLAttacker); README: [python/fedml/core/security/readme.md](python/fedml/core/security/readme.md)
+4. Defender (API: fedml.core.FedMLDefender); README: [python/fedml/core/security/readme.md](python/fedml/core/security/readme.md)
 5. Agnostic to Machine Learning Framework. Currently, FedML supports PyTorch, TensorFlow, JAX with Haiku, and MXNet.
 
 |                                           | platform/scenario    | federated optimizer | dataset | model               | communication backend | machine learning backend | source code                                                       | example doc                                                               |
