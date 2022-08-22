@@ -219,11 +219,7 @@ def torch_model_ddp(args, model_obj, device):
 
     only_gpu = args.using_gpu
     process_group_manager = TorchProcessGroupManager(
-        args.proc_rank_in_silo,
-        args.n_proc_in_silo,
-        args.pg_master_address,
-        args.pg_master_port,
-        only_gpu,
+        args.proc_rank_in_silo, args.n_proc_in_silo, args.pg_master_address, args.pg_master_port, only_gpu,
     )
     model = DDP(model_obj, device_ids=[device] if only_gpu else None)
     return process_group_manager, model
@@ -322,21 +318,21 @@ def jax_aggregator(args, raw_grad_list, training_num):
                 local_sample_number, local_model_params = raw_grad_list[i]
                 w = local_sample_number / training_num
                 if i == 0:
-                    avg_params[k]['w'] = local_model_params[k]['w'] * w
-                    avg_params[k]['b'] = local_model_params[k]['b'] * w
+                    avg_params[k]["w"] = local_model_params[k]["w"] * w
+                    avg_params[k]["b"] = local_model_params[k]["b"] * w
                 else:
-                    avg_params[k]['w'] += local_model_params[k]['w'] * w
-                    avg_params[k]['b'] += local_model_params[k]['b'] * w
+                    avg_params[k]["w"] += local_model_params[k]["w"] * w
+                    avg_params[k]["b"] += local_model_params[k]["b"] * w
     elif args.federated_optimizer == "FedAvg_seq":
         for k in avg_params.keys():
             for i in range(0, len(raw_grad_list)):
                 local_sample_number, local_model_params = raw_grad_list[i]
                 if i == 0:
-                    avg_params[k]['b'] = local_model_params[k]['b']
-                    avg_params[k]['w'] = local_model_params[k]['w']
+                    avg_params[k]["b"] = local_model_params[k]["b"]
+                    avg_params[k]["w"] = local_model_params[k]["w"]
                 else:
-                    avg_params[k]['b'] += local_model_params[k]['b']
-                    avg_params[k]['w'] += local_model_params[k]['w']
+                    avg_params[k]["b"] += local_model_params[k]["b"]
+                    avg_params[k]["w"] += local_model_params[k]["w"]
     elif args.federated_optimizer == "FedOpt":
         pass
 
