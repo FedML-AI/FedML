@@ -17,7 +17,7 @@ def get_device_type(args):
             if ml_engine_adapter.is_device_available(args, args.device_type):
                 device_type = "gpu"
             else:
-                print("PyTorch install was not built with GPU enabled")
+                print("ML engine install was not built with GPU enabled")
                 device_type = "cpu"
         elif args.device_type == "mps":
             # Macbook M1: https://pytorch.org/docs/master/notes/mps.html
@@ -32,7 +32,7 @@ def get_device_type(args):
             if ml_engine_adapter.is_device_available(args, "gpu"):
                 device_type = "gpu"
             else:
-                print("PyTorch install was not built with GPU enabled")
+                print("ML engine install was not built with GPU enabled")
                 device_type = "cpu"
         else:
             device_type = "cpu"
