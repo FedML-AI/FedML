@@ -1,7 +1,7 @@
 import argparse
 
 import torch
-from fedml.core.security.common.utils import compute_middle_point
+from fedml.core.security.common.utils import compute_middle_point, compute_geometric_median
 from fedml.core.security.defense.geometric_median_defense import GeometricMedianDefense
 from fedml.core.security.test.utils import create_fake_model_list
 
@@ -45,7 +45,7 @@ def test__compute_middle_point():
     print(f"middle_point = {compute_middle_point(alphas, batch_w)}")
 
 
-def test__compute_geometric_median():
+def test_compute_geometric_median():
     alphas = [0.3, 0.3, 0.4]
     batch_w = [
         torch.FloatTensor([[1, 0, 1], [2, 2, 2], [1, 1, 1]]),
@@ -53,11 +53,11 @@ def test__compute_geometric_median():
         torch.FloatTensor([[2, 2, 2], [2, 2, 2], [1, 2, 1]]),
     ]
     print(
-        f"_compute_geometric_median = {GeometricMedianDefense._compute_geometric_median(alphas, batch_w)}"
+        f"_compute_geometric_median = {compute_geometric_median(alphas, batch_w)}"
     )
 
 
 if __name__ == "__main__":
     test_defense()
     test__compute_middle_point()
-    test__compute_geometric_median()
+    test_compute_geometric_median()

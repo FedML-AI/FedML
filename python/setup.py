@@ -50,12 +50,19 @@ requirements_extra_tf = [
     "tensorflow_datasets",
 ]
 
+requirements_extra_jax = [
+    "jax[cpu]",
+    "dm-haiku",
+    "optax"
+]
+
+
 if platform.machine() == "x86_64":
     requirements.append("MNN==1.1.6")
 
 setup(
     name="fedml",
-    version="0.7.287",
+    version="0.7.290",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
@@ -110,6 +117,7 @@ setup(
         "MPI": requirements_extra_mpi,
         "gRPC": "grpcio",
         "tensorflow": requirements_extra_tf,
+        "jax": requirements_extra_jax,
     },
     package_data={"": ["py.typed"]},
     license="Apache 2.0",

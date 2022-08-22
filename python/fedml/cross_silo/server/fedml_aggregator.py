@@ -6,6 +6,7 @@ import numpy as np
 import torch
 
 from fedml import mlops
+from ...ml.engine import ml_engine_adapter
 
 
 class FedMLAggregator(object):
@@ -36,6 +37,7 @@ class FedMLAggregator(object):
 
         self.client_num = client_num
         self.device = device
+        logging.info("self.device = {}".format(self.device))
         self.model_dict = dict()
         self.sample_num_dict = dict()
         self.flag_client_model_uploaded_dict = dict()
@@ -50,6 +52,9 @@ class FedMLAggregator(object):
 
     def add_local_trained_result(self, index, model_params, sample_num):
         logging.info("add_model. index = %d" % index)
+
+        model_params = ml_engine_adapter.model_params_to_device(self.args, model_params, self.device)
+
         self.model_dict[index] = model_params
         self.sample_num_dict[index] = sample_num
         self.flag_client_model_uploaded_dict[index] = True
