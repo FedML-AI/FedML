@@ -2,7 +2,6 @@ import collections
 import copy
 import torch
 import pickle
-from fedml.core.security.common.utils import get_total_sample_num
 
 
 def create_fake_global_w_local_w_MNIST():
@@ -61,12 +60,15 @@ def create_fake_local_w_global_w():
 def create_fake_model_list(active_worker_num):
     a_local_w = dict()
     a_local_w["linear.weight"] = torch.FloatTensor(
-        [[0.3, 0.3, 0.3], [0.2, 0.2, 0.2], [0.1, 0.1, 0.1]]
+        [[0.1, 0.2, 0.2, 0.1], [0.15, 0.12, 0.02, 0.2], [0.3, 0.01, 0.21, 0.11]]
     )
-    a_local_w["linear.bias"] = torch.FloatTensor([0.2, 0.3, 0.1])
+    a_local_w["linear.bias"] = torch.FloatTensor([0.01, 0.19, 0.21])
     model_list = []
     for i in range(active_worker_num):
-        model_list.append((i + 20, a_local_w))  # add a random sample num
+        local_w = dict()
+        local_w["linear.weight"] = (i+1) * a_local_w["linear.weight"]
+        local_w["linear.bias"] = (i+1) * a_local_w["linear.bias"]
+        model_list.append((i + 10, local_w))  # add a random sample num
     return model_list
 
 

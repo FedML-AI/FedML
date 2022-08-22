@@ -31,8 +31,6 @@ class TfModelTrainerCLS(ClientTrainer):
         for epoch in range(args.epochs):
             loss = 0.0
             for batch_idx, (x, labels) in enumerate(train_data):
-                x = x.numpy()
-                labels = labels.numpy()
                 y_pred = self.model.train_on_batch(x=x, y=labels, reset_metrics=False)
                 loss = y_pred[0]
                 accuracy = y_pred[1]
