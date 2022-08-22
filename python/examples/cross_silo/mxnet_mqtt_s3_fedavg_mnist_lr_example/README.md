@@ -1,6 +1,6 @@
 ## Training Script
 
-Run training and aggregator with JAX at haiku framework.
+Run training and aggregator with MXNet framework.
 
 At the client side, the client ID (a.k.a rank) starts from 1.
 Please also modify config/fedml_config.yaml, changing the `worker_num` the as the number of clients you plan to run.
