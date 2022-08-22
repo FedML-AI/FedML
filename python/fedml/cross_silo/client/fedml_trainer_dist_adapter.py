@@ -3,6 +3,7 @@ import logging
 from fedml.constants import FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
 from .fedml_trainer import FedMLTrainer
 from ...ml.trainer.trainer_creator import create_model_trainer
+from ...ml.engine import ml_engine_adapter
 
 
 class TrainerDistAdapter:
@@ -19,24 +20,10 @@ class TrainerDistAdapter:
         model_trainer,
     ):
 
-        try:
-            model.to(device)
-        except Exception as e:
-            pass
+        ml_engine_adapter.model_to_device(args, model, device)
 
         if args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
-            from torch.nn.parallel import DistributedDataParallel as DDP
-            from .process_group_manager import ProcessGroupManager
-
-            only_gpu = args.using_gpu
-            self.process_group_manager = ProcessGroupManager(
-                args.proc_rank_in_silo,
-                args.n_proc_in_silo,
-                args.pg_master_address,
-                args.pg_master_port,
-                only_gpu,
-            )
-            model = DDP(model, device_ids=[device] if only_gpu else None)
+            self.process_group_manager, model = ml_engine_adapter.model_ddp(args, model, device)
 
         if model_trainer is None:
             model_trainer = create_model_trainer(model, args)
