@@ -18,18 +18,18 @@ train_args:
   client_id_list: "[]"
   client_num_in_total: 3400
   client_num_per_round: 100
-  comm_round: 200
-  epochs: 5
+  comm_round: 500
+  epochs: 10
   batch_size: 20
   client_optimizer: sgd
-  learning_rate: 0.01
-  momentum: 0.0
-  weight_decay: 0.0001
+  learning_rate: 0.05
+  momentum: 0.9
+  weight_decay: 0.0005
   lr_schedule: None
 
 
 validation_args:
-  frequency_of_the_test: 1000
+  frequency_of_the_test: 10
 
 device_args:
   worker_num: 8
