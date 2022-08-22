@@ -1,6 +1,7 @@
 import logging
 
-import torch
+from ..ml.engine import ml_engine_adapter
+
 
 from fedml.constants import (
     FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL,
@@ -13,24 +14,14 @@ def get_device_type(args):
         if args.device_type == "cpu":
             device_type = "cpu"
         elif args.device_type == "gpu":
-            if torch.cuda.is_available():
+            if ml_engine_adapter.is_device_available(args, args.device_type):
                 device_type = "gpu"
             else:
-                print("PyTorch install was not built with GPU enabled")
+                print("ML engine install was not built with GPU enabled")
                 device_type = "cpu"
         elif args.device_type == "mps":
             # Macbook M1: https://pytorch.org/docs/master/notes/mps.html
-            if not torch.backends.mps.is_available():
-                if not torch.backends.mps.is_built():
-                    print(
-                        "MPS not available because the current PyTorch install was not "
-                        "built with MPS enabled."
-                    )
-                else:
-                    print(
-                        "MPS not available because the current MacOS version is not 12.3+ "
-                        "and/or you do not have an MPS-enabled device on this machine."
-                    )
+            if not ml_engine_adapter.is_device_available(args, args.device_type):
                 device_type = "cpu"
             else:
                 device_type = "mps"
@@ -38,10 +29,10 @@ def get_device_type(args):
             raise Exception("do not support device type = {}".format(args.device_type))
     else:
         if args.using_gpu:
-            if torch.cuda.is_available():
+            if ml_engine_adapter.is_device_available(args, "gpu"):
                 device_type = "gpu"
             else:
-                print("PyTorch install was not built with GPU enabled")
+                print("ML engine install was not built with GPU enabled")
                 device_type = "cpu"
         else:
             device_type = "cpu"
@@ -50,12 +41,7 @@ def get_device_type(args):
 
 def get_device(args):
     if args.training_type == "simulation" and args.backend == "sp":
-        if args.using_gpu:
-            device = torch.device(
-                "cuda:" + str(args.gpu_id) if torch.cuda.is_available() else "cpu"
-            )
-        else:
-            device = torch.device("cpu")
+        device = ml_engine_adapter.get_device(args)
         logging.info("device = {}".format(device))
         return device
     elif args.training_type == "simulation" and args.backend == "MPI":
@@ -66,7 +52,7 @@ def get_device(args):
 
         if hasattr(args, "gpu_util_parse"):
             device = mapping_processes_to_gpu_device_from_gpu_util_parse(
-                args.process_id, args.worker_num, args.gpu_util_parse,
+                args.process_id, args.worker_num, args.gpu_util_parse, args=args
             )
         else:
             device = mapping_processes_to_gpu_device_from_yaml_file_mpi(
@@ -74,6 +60,7 @@ def get_device(args):
                 args.worker_num,
                 args.gpu_mapping_file if args.using_gpu else None,
                 args.gpu_mapping_key,
+                args=args
             )
         logging.info("device = {}".format(device))
         return device
@@ -88,6 +75,7 @@ def get_device(args):
             args.worker_num,
             args.gpu_mapping_file if args.using_gpu else None,
             args.gpu_mapping_key,
+            args=args
         )
         logging.info("device = {}".format(device))
         return device
@@ -114,8 +102,6 @@ def get_device(args):
                 args.gpu_mapping_key if hasattr(args, "gpu_mapping_key") else None
             )
             gpu_id = None  # no no need to set gpu_id
-
-
         else:
             gpu_mapping_file = None
             gpu_mapping_key = None
@@ -136,6 +122,7 @@ def get_device(args):
             device_type,
             scenario,
             gpu_id,
+            args=args
         )
 
         logging.info("device = {}".format(device))
@@ -152,12 +139,7 @@ def get_device(args):
 
         return device
     elif args.training_type == "cross_device":
-        if args.using_gpu:
-            device = torch.device(
-                "cuda:" + args.gpu_id if torch.cuda.is_available() else "cpu"
-            )
-        else:
-            device = torch.device("cpu")
+        device = ml_engine_adapter.get_device(args)
         logging.info("device = {}".format(device))
         return device
     else:

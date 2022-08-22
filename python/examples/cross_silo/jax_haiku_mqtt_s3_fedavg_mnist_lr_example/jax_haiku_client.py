@@ -2,8 +2,8 @@
 import fedml
 from fedml import FedMLRunner
 from fedml.data.MNIST.data_loader import download_mnist, load_partition_data_mnist
-from tf_model_aggregator import TfServerAggregator
-import tf_model
+from jax_haiku_model_trainer_classification import JaxHaikuModelTrainerCLS
+import jax_haiku_model
 
 
 def load_data(args):
@@ -47,9 +47,9 @@ def load_data(args):
     return dataset, class_num
 
 
-def create_model_aggregator(in_model, in_args):
-    model_aggregator = TfServerAggregator(in_model, in_args)
-    return model_aggregator
+def create_model_trainer(in_model, in_args):
+    model_trainer = JaxHaikuModelTrainerCLS(in_model, in_args)
+    return model_trainer
 
 
 if __name__ == "__main__":
@@ -64,11 +64,11 @@ if __name__ == "__main__":
     dataset, output_dim = load_data(args)
 
     # load model (the size of MNIST image is 28 x 28)
-    model = tf_model.create_model(28 * 28, output_dim)
+    model = jax_haiku_model.create_model(28 * 28, output_dim)
 
-    # create model aggregator
-    aggregator = create_model_aggregator(model, args)
+    # create model trainer
+    trainer = create_model_trainer(model, args)
 
     # start training
-    fedml_runner = FedMLRunner(args, device, dataset, model, server_aggregator=aggregator)
+    fedml_runner = FedMLRunner(args, device, dataset, model, client_trainer=trainer)
     fedml_runner.run()
