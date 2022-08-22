@@ -43,7 +43,7 @@ class FedMLCrossSiloServer:
                 device,
                 dataset,
                 model,
-                model_trainer=model_trainer,
+                model_trainer=None,
                 preprocessed_sampling_lists=None,
             )
         else:

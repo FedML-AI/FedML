@@ -39,6 +39,52 @@ def compute_middle_point(alphas, model_list):
     return sum_batch
 
 
+def compute_geometric_median(weights, client_grads):
+    """
+    Implementation of Weiszfeld's algorithm.
+    Reference:  (1) https://github.com/krishnap25/RFA/blob/master/models/model.py
+                (2) https://github.com/bladesteam/blades/blob/master/src/blades/aggregators/geomed.py
+    our contribution: (07/01/2022)
+    1) fix one bug in (1): (1) can not correctly compute a weighted average. The function weighted_average_oracle
+    returns zero.
+    2) fix one bug in (2): (2) can not correctly handle multidimensional tensors.
+    3) reconstruct the code.
+    """
+    eps = 1e-5
+    ftol = 1e-10
+    middle_point = compute_middle_point(weights, client_grads)
+    val = sum(
+        [
+            alpha * compute_euclidean_distance(middle_point, p)
+            for alpha, p in zip(weights, client_grads)
+        ]
+    )
+    for i in range(100):
+        prev_median, prev_obj_val = middle_point, val
+        weights = np.asarray(
+            [
+                max(
+                    eps,
+                    alpha
+                    / max(eps, compute_euclidean_distance(middle_point, a_batch_w)),
+                )
+                for alpha, a_batch_w in zip(weights, client_grads)
+            ]
+        )
+        weights = weights / weights.sum()
+        middle_point = compute_middle_point(weights, client_grads)
+        val = sum(
+            [
+                alpha * compute_euclidean_distance(middle_point, p)
+                for alpha, p in zip(weights, client_grads)
+            ]
+        )
+        if abs(prev_obj_val - val) < ftol * val:
+            break
+    return middle_point
+
+
+
 def get_total_sample_num(model_list):
     sample_num = 0
     for i in range(len(model_list)):
@@ -123,3 +169,26 @@ def label_to_onehot(target, num_classes=100):
     onehot_target = torch.zeros(target.size(0), num_classes, device=target.device)
     onehot_target.scatter_(1, target, 1)
     return onehot_target
+
+
+
+def trimmed_mean(model_list, trimmed_num):
+    model_list2 = []
+    for i in range(0, len(model_list)):
+        local_sample_number, local_model_params = model_list[i]
+        model_list2.append(
+            (
+                local_sample_number,
+                local_model_params,
+                compute_a_score(local_sample_number),
+            )
+        )
+    model_list2.sort(key=lambda grad: grad[2])  # sort by coordinate-wise scores
+    model_list2 = model_list2[trimmed_num : len(model_list) - trimmed_num]
+    model_list = [(t[0], t[1]) for t in model_list2]
+    return model_list
+
+
+def compute_a_score(local_sample_number):
+    # todo: change to coordinate-wise score
+    return local_sample_number
