@@ -13,6 +13,8 @@ https://packaging.python.org/en/latest/tutorials/installing-packages/#installing
 # TensorFlow extra installation
 pip install -e '.[tensorflow]'
 
+# JAX extra installation
+pip install -e '.[jax]'
 
 # for different communication backends
 pip install -e '.[MPI]'

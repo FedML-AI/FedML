@@ -19,7 +19,7 @@ model_args:
   global_model_file_path: "./model_file_cache/global_model.pt"
 
 train_args:
-  ml_engine: "tf"
+  ml_engine: "jax"
   federated_optimizer: "FedAvg"
   client_id_list:
   client_num_in_total: 1000
