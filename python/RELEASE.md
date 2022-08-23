@@ -16,6 +16,9 @@ pip install -e '.[tensorflow]'
 # JAX extra installation
 pip install -e '.[jax]'
 
+# MXNet extra installation
+pip install -e '.[mxnet]'
+
 # for different communication backends
 pip install -e '.[MPI]'
 pip install -e '.[gRPC]'
