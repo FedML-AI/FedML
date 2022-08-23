@@ -70,9 +70,6 @@ class FedMLDefender:
     def is_defense_enabled(self):
         return self.is_enabled
 
-    def get_defense_types(self):
-        return self.defense_type
-
     def defend(
         self,
         raw_client_grad_list: List[Tuple[float, Dict]],

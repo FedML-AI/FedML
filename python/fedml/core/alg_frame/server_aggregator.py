@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List, Tuple, Dict
 
 from fedml.core import FedMLAttacker, FedMLDefender
+from fedml.core.differential_privacy.fed_privacy_mechanism import DifferentialPrivacy
 from fedml.ml.aggregator.agg_operator import FedMLAggOperator
 
 
@@ -55,6 +56,10 @@ class ServerAggregator(ABC):
         return FedMLAggOperator.agg(self.args, raw_client_model_or_grad_list)
 
     def on_after_aggregation(self, aggregated_model_or_grad: Dict) -> Dict:
+        if DifferentialPrivacy.get_instance().is_dp_enabled():
+            aggregated_model_or_grad = DifferentialPrivacy.get_instance().add_cdp_noise(
+                aggregated_model_or_grad
+            )
         return aggregated_model_or_grad
 
     @abstractmethod
