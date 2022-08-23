@@ -6,7 +6,19 @@
 
 
 At the current stage, FedML library provides a research and production integrated edge-cloud platform for Federated/Distributed Machine Learning at anywhere at any scale. 
-Homepage: [https://FedML.ai](https://FedML.ai)
+
+FedML Homepage: https://fedml.ai/ \
+FedML Open Source: https://github.com/FedML-AI \
+FedML Platform: https://open.fedml.ai \
+FedML Use Cases: https://open.fedml.ai/platform/appStore \
+FedML Documentation: https://doc.fedml.ai \
+FedML Blog: https://medium.com/@FedML \
+FedML Research: https://fedml.ai/research-papers/ \
+FedML Product Overview: https://medium.com/@FedML/fedml-ai-platform-releases-the-worlds-federated-learning-open-platform-on-public-cloud-with-an-8024e68a70b6
+
+Join the Community: \
+Slack: https://join.slack.com/t/fedml/shared_invite/zt-havwx1ee-a1xfOUrATNfc9DFqU~r34w \
+Discord: https://discord.gg/9xkW8ae6RV
 
 [//]: # ()
 [//]: # (<p align="center">)
