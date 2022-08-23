@@ -429,9 +429,11 @@ def mxnet_aggregator(args, raw_grad_list, training_num):
             for i in range(0, len(raw_grad_list)):
                 local_sample_number, local_model_params = raw_grad_list[i]
                 if i == 0:
-                    avg_params[k] = local_model_params[k]
+                    for j in range(0, len(avg_params[k])):
+                        avg_params[k][j] = local_model_params[k][j]
                 else:
-                    avg_params[k] += local_model_params[k]
+                    for j in range(0, len(avg_params[k])):
+                        avg_params[k][j] += local_model_params[k][j]
     elif args.federated_optimizer == "FedOpt":
         pass
 
