@@ -21,7 +21,8 @@ jobs:
         python-version: ["3.8", "3.9", "3.7", "3.6"]
     steps:
     - uses: actions/checkout@v3
-      - ref: ${{ github.event.pull_request.head.sha }}
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v3
       with:
