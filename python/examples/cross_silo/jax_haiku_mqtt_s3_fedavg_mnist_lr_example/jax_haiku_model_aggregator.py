@@ -86,7 +86,7 @@ class JaxHaikuServerAggregator(ServerAggregator):
 
             accuracy = np.array(
                 JaxHaikuServerAggregator.evaluate(self.aggregator_state.params, x, target)).item()
-            loss = JaxHaikuServerAggregator.loss(self.aggregator_state.params, x, target)
+            loss = JaxHaikuServerAggregator.loss(self.aggregator_state.params, x, target).item()
 
             # logging.info("test consume time: {}".format(time.time_ns() - start_time))
 
