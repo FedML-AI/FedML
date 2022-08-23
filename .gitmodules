@@ -1,0 +1,3 @@
+[submodule "android/fedmlsdk"]
+	path = fedmlsdk
+	url = https://github.com/FedML-AI/FedMLAndroidSDK.git
