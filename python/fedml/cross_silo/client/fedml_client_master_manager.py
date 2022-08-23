@@ -9,6 +9,7 @@ from fedml import mlops
 from fedml.constants import FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
 from .message_define import MyMessage
 from .utils import convert_model_params_from_ddp, convert_model_params_to_ddp
+from ...core.differential_privacy.fed_privacy_mechanism import DifferentialPrivacy
 from ...core.distributed.fedml_comm_manager import FedMLCommManager
 from ...core.distributed.communication.message import Message
 from ...core.mlops.mlops_profiler_event import MLOpsProfilerEvent
@@ -50,7 +51,8 @@ class ClientMasterManager(FedMLCommManager):
         )
 
         self.register_message_receive_handler(
-            MyMessage.MSG_TYPE_S2C_FINISH, self.handle_message_finish,
+            MyMessage.MSG_TYPE_S2C_FINISH,
+            self.handle_message_finish,
         )
 
     def handle_message_connection_ready(self, msg_params):
@@ -169,6 +171,9 @@ class ClientMasterManager(FedMLCommManager):
         # the current model is still DDP-wrapped under cross-silo-hi setting
         if self.args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
             weights = convert_model_params_from_ddp(weights)
+
+        if DifferentialPrivacy.get_instance().is_dp_enabled():
+            weights = DifferentialPrivacy.get_instance().add_ldp_noise(weights)
 
         self.send_model_to_server(0, weights, local_sample_num)
 
