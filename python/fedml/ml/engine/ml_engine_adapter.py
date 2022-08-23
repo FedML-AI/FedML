@@ -410,32 +410,6 @@ def jax_aggregator(args, raw_grad_list, training_num):
     return avg_params
 
 
-def mxnet_aggregator2(args, raw_grad_list, training_num):
-    (num0, avg_params) = raw_grad_list[0]
-
-    if args.federated_optimizer == "FedAvg":
-        for k in range(0, len(avg_params)):
-            for i in range(0, len(raw_grad_list)):
-                local_sample_number, local_model_params = raw_grad_list[i]
-                w = local_sample_number / training_num
-                if i == 0:
-                    avg_params[k] = local_model_params[k] * w
-                else:
-                    avg_params[k] += local_model_params[k] * w
-    elif args.federated_optimizer == "FedAvg_seq":
-        for k in range(0, len(avg_params)):
-            for i in range(0, len(raw_grad_list)):
-                local_sample_number, local_model_params = raw_grad_list[i]
-                if i == 0:
-                    avg_params[k] = local_model_params[k]
-                else:
-                    avg_params[k] += local_model_params[k]
-    elif args.federated_optimizer == "FedOpt":
-        pass
-
-    return avg_params
-
-
 def mxnet_aggregator(args, raw_grad_list, training_num):
     (num0, avg_params) = raw_grad_list[0]
 
