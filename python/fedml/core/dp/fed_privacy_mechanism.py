@@ -1,14 +1,14 @@
 from .mechanisms import Laplace, Gaussian
 
 
-class DifferentialPrivacy:
+class FedMLDifferentialPrivacy:
     _defender_instance = None
 
     @staticmethod
     def get_instance():
-        if DifferentialPrivacy._defender_instance is None:
-            DifferentialPrivacy._defender_instance = DifferentialPrivacy()
-        return DifferentialPrivacy._defender_instance
+        if FedMLDifferentialPrivacy._defender_instance is None:
+            FedMLDifferentialPrivacy._defender_instance = FedMLDifferentialPrivacy()
+        return FedMLDifferentialPrivacy._defender_instance
 
     def __init__(self):
         self.is_dp_enabled = False
@@ -17,7 +17,7 @@ class DifferentialPrivacy:
 
     def init(
         self, args
-    ):  # epsilon, delta=0, sensitivity=1.0, mechanism_type="laplace"
+    ):
         mechanism_type = args.mechanism_type.lower()
         self.is_dp_enabled = True
         self.dp_type = args.dp_type.lower()
@@ -36,17 +36,14 @@ class DifferentialPrivacy:
     def get_dp_type(self):
         return self.dp_type
 
-    def randomise(self, value):
-        return self.dp.randomise(value)
-
-    def compute_a_noise(self):
-        return self.dp.compute_a_noise()
+    def compute_a_noise(self, size):
+        return self.dp.compute_a_noise(size)
 
     # add noise
     def compute_randomized_gradient(self, grad):
         new_grad = dict()
         for k in grad.keys():
-            new_grad[k] = self.compute_a_noise() + grad[k]
+            new_grad[k] = self.compute_a_noise(grad[k].shape) + grad[k]
         return new_grad
 
     def add_cdp_noise(self, avg_param):

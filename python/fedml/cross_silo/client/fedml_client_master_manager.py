@@ -9,7 +9,7 @@ from fedml import mlops
 from fedml.constants import FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
 from .message_define import MyMessage
 from .utils import convert_model_params_from_ddp, convert_model_params_to_ddp
-from ...core.differential_privacy.fed_privacy_mechanism import DifferentialPrivacy
+from ...core.dp.fed_privacy_mechanism import FedMLDifferentialPrivacy
 from ...core.distributed.fedml_comm_manager import FedMLCommManager
 from ...core.distributed.communication.message import Message
 from ...core.mlops.mlops_profiler_event import MLOpsProfilerEvent
@@ -172,8 +172,8 @@ class ClientMasterManager(FedMLCommManager):
         if self.args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
             weights = convert_model_params_from_ddp(weights)
 
-        if DifferentialPrivacy.get_instance().is_dp_enabled():
-            weights = DifferentialPrivacy.get_instance().add_ldp_noise(weights)
+        if FedMLDifferentialPrivacy.get_instance().is_dp_enabled():
+            weights = FedMLDifferentialPrivacy.get_instance().add_ldp_noise(weights)
 
         self.send_model_to_server(0, weights, local_sample_num)
 
