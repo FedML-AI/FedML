@@ -15,13 +15,15 @@ from ...core.security.constants import (
     DEFENSE_KRUM,
     DEFENSE_SLSGD,
     DEFENSE_GEO_MEDIAN,
-    DEFENSE_CCLIP, DEFENSE_WEAK_DP, DEFENSE_DP, DEFENSE_RFA
+    DEFENSE_CCLIP,
+    DEFENSE_WEAK_DP,
+    DEFENSE_DP,
+    DEFENSE_RFA,
 )
 from typing import List, Tuple, Dict, Any, Callable
 
 
 class FedMLDefender:
-
     _defender_instance = None
 
     @staticmethod
@@ -83,3 +85,35 @@ class FedMLDefender:
             raw_client_grad_list, base_aggregation_func, extra_auxiliary_info
         )
 
+    def is_defense_on_aggregation(self):
+        return self.is_enabled and self.defense_type in [DEFENSE_SLSGD]
+
+    def is_defense_before_aggregation(self):
+        return self.is_enabled and self.defense_type in [DEFENSE_SLSGD]
+
+    def defend_before_aggregation(
+        self,
+        raw_client_grad_list: List[Tuple[float, Dict]],
+        extra_auxiliary_info: Any = None,
+    ):
+        if self.defender is None:
+            raise Exception("defender is not initialized!")
+        if self.is_defense_before_aggregation():
+            return self.defender.defend_before_aggregation(
+                raw_client_grad_list, extra_auxiliary_info
+            )
+        return raw_client_grad_list
+
+    def defend_on_aggregation(
+        self,
+        raw_client_grad_list: List[Tuple[float, Dict]],
+        base_aggregation_func: Callable = None,
+        extra_auxiliary_info: Any = None,
+    ):
+        if self.defender is None:
+            raise Exception("defender is not initialized!")
+        if self.is_defense_on_aggregation():
+            return self.defender.defend_on_aggregation(
+                raw_client_grad_list, base_aggregation_func, extra_auxiliary_info
+            )
+        return base_aggregation_func(raw_client_grad_list)

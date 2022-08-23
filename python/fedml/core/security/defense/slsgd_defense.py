@@ -39,7 +39,13 @@ class SLSGDDefense(BaseDefenseMethod):
             base_aggregation_func: Callable = None,
             extra_auxiliary_info: Any = None,
     ):
-        global_model = extra_auxiliary_info
+        pass
+
+    def defend_before_aggregation(
+            self,
+            raw_client_grad_list: List[Tuple[float, Dict]],
+            extra_auxiliary_info: Any = None,
+    ):
         if self.b > math.ceil(len(raw_client_grad_list) / 2) - 1 or self.b < 0:
             raise ValueError(
                 "the bound of b is [0, {}])".format(math.ceil(len(raw_client_grad_list) / 2) - 1)
@@ -48,6 +54,15 @@ class SLSGDDefense(BaseDefenseMethod):
             raise Exception("Such option type does not exist!")
         if self.option_type == 2:
             raw_client_grad_list = trimmed_mean(raw_client_grad_list, self.b)  # process model list
+        return raw_client_grad_list
+
+    def defend_on_aggregation(
+            self,
+            raw_client_grad_list: List[Tuple[float, Dict]],
+            base_aggregation_func: Callable = None,
+            extra_auxiliary_info: Any = None,
+    ):
+        global_model = extra_auxiliary_info
         avg_params = base_aggregation_func(raw_client_grad_list)
         for k in avg_params.keys():
             avg_params[k] = (1 - self.alpha) * global_model[k] + self.alpha * avg_params[k]
