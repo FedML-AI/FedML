@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Tuple, Dict
 
+from fedml.core import FedMLAttacker, FedMLDefender
 from fedml.ml.aggregator.agg_operator import FedMLAggOperator
 
 
@@ -26,9 +27,31 @@ class ServerAggregator(ABC):
     def on_before_aggregation(
         self, raw_client_model_or_grad_list: List[Tuple[float, Dict]]
     ) -> List[Tuple[float, Dict]]:
+        if FedMLAttacker.get_instance().is_model_attack():
+            raw_client_model_or_grad_list = FedMLAttacker.get_instance().attack_model(
+                local_w=raw_client_model_or_grad_list,
+                global_w=self.get_model_params(),
+                refs=None,
+            )
+        if FedMLDefender.get_instance().is_defense_enabled():
+            raw_client_model_or_grad_list = (
+                FedMLDefender.get_instance().defend_before_aggregation(
+                    raw_client_grad_list=raw_client_model_or_grad_list,
+                    extra_auxiliary_info=self.get_model_params(),
+                )
+            )
+
         return raw_client_model_or_grad_list
 
-    def aggregate(self, raw_client_model_or_grad_list: List[Tuple[float, Dict]]) -> Dict:
+    def aggregate(
+        self, raw_client_model_or_grad_list: List[Tuple[float, Dict]]
+    ) -> Dict:
+        if FedMLDefender.get_instance().is_defense_enabled():
+            return FedMLDefender.get_instance().defend_on_aggregation(
+                raw_client_grad_list=raw_client_model_or_grad_list,
+                base_aggregation_func=FedMLAggOperator.agg,
+                extra_auxiliary_info=self.get_model_params(),
+            )
         return FedMLAggOperator.agg(self.args, raw_client_model_or_grad_list)
 
     def on_after_aggregation(self, aggregated_model_or_grad: Dict) -> Dict:
@@ -38,5 +61,7 @@ class ServerAggregator(ABC):
     def test(self, test_data, device, args):
         pass
 
-    def test_all(self, train_data_local_dict, test_data_local_dict, device, args) -> bool:
+    def test_all(
+        self, train_data_local_dict, test_data_local_dict, device, args
+    ) -> bool:
         pass
