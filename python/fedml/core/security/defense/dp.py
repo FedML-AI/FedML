@@ -1,5 +1,5 @@
 from typing import Callable, List, Tuple, Dict, Any
-from ...differential_privacy.fed_privacy_mechanism import DP
+from ...dp.fed_privacy_mechanism import DP
 
 
 class DifferentialPrivacy:
