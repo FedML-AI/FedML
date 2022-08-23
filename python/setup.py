@@ -56,6 +56,10 @@ requirements_extra_jax = [
     "optax"
 ]
 
+requirements_extra_mxnet = [
+    "mxnet"
+]
+
 
 if platform.machine() == "x86_64":
     requirements.append("MNN==1.1.6")
@@ -118,6 +122,7 @@ setup(
         "gRPC": "grpcio",
         "tensorflow": requirements_extra_tf,
         "jax": requirements_extra_jax,
+        "mxnet": requirements_extra_mxnet,
     },
     package_data={"": ["py.typed"]},
     license="Apache 2.0",
