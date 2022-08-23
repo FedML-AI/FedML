@@ -81,10 +81,8 @@ class JaxHaikuServerAggregator(ServerAggregator):
         batch_loss = []
         for batch_idx, (x, target) in enumerate(test_data):
             # start_time = time.time_ns()
-            x = x.numpy()
-            target = target.numpy()
-            jax.device_put(x, device)
-            jax.device_put(target, device)
+            x = jax.device_put(x, device)
+            target = jax.device_put(target, device)
 
             accuracy = np.array(
                 JaxHaikuServerAggregator.evaluate(self.aggregator_state.params, x, target)).item()

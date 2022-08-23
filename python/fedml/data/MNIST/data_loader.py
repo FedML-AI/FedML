@@ -3,6 +3,7 @@ import os
 
 import numpy as np
 import wget
+from ...ml.engine import ml_engine_adapter
 
 cwd = os.getcwd()
 
@@ -70,32 +71,6 @@ def read_data(train_data_dir, test_data_dir):
     return clients, groups, train_data, test_data
 
 
-def _convert_numpy_to_tensor_for_torch(args, batched_x, batched_y):
-    import torch
-
-    if args.model == "lr":
-        batched_x = torch.from_numpy(np.asarray(batched_x)).float()  # LR_MINST
-    else:
-        batched_x = torch.from_numpy(np.asarray(batched_x)).float().reshape(-1, 28, 28)  # CNN_MINST
-
-    batched_y = torch.from_numpy(np.asarray(batched_y)).long()
-    return batched_x, batched_y
-
-
-def _convert_numpy_to_tensor_for_tf(args, batched_x, batched_y):
-    # https://www.tensorflow.org/api_docs/python/tf/convert_to_tensor
-    import tensorflow as tf
-
-    if args.model == "lr":
-        batched_x = tf.convert_to_tensor(np.asarray(batched_x), dtype=tf.float32)  # LR_MINST
-    else:
-        batched_x = tf.convert_to_tensor(np.asarray(batched_x), dtype=tf.float32)  # CNN_MINST
-        batched_x = tf.reshape(batched_x, [-1, 28, 28])
-
-    batched_y = tf.convert_to_tensor(np.asarray(batched_y), dtype=tf.int64)
-    return batched_x, batched_y
-
-
 def batch_data(args, data, batch_size):
 
     """
@@ -117,10 +92,7 @@ def batch_data(args, data, batch_size):
     for i in range(0, len(data_x), batch_size):
         batched_x = data_x[i : i + batch_size]
         batched_y = data_y[i : i + batch_size]
-        if hasattr(args, "ml_engine") and args.ml_engine == "tf":
-            batched_x, batched_y = _convert_numpy_to_tensor_for_tf(args, batched_x, batched_y)
-        else:
-            batched_x, batched_y = _convert_numpy_to_tensor_for_torch(args, batched_x, batched_y)
+        batched_x, batched_y = ml_engine_adapter.convert_numpy_to_ml_engine_data_format(args, batched_x, batched_y)
         batch_data.append((batched_x, batched_y))
     return batch_data
 

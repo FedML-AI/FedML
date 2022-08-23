@@ -16,6 +16,74 @@ class MLEngineBackend:
     ml_device_type_mps = "mps"
 
 
+def convert_numpy_to_torch_data_format(args, batched_x, batched_y):
+    import torch
+    import numpy as np
+
+    if args.model == "cnn":
+        batched_x = torch.from_numpy(np.asarray(batched_x)).float().reshape(-1, 28, 28)  # CNN_MINST
+    else:
+        batched_x = torch.from_numpy(np.asarray(batched_x)).float()  # LR_MINST or other
+
+    batched_y = torch.from_numpy(np.asarray(batched_y)).long()
+    return batched_x, batched_y
+
+
+def convert_numpy_to_tf_data_format(args, batched_x, batched_y):
+    # https://www.tensorflow.org/api_docs/python/tf/convert_to_tensor
+    import tensorflow as tf
+    import numpy as np
+
+    if args.model == "cnn":
+        batched_x = tf.convert_to_tensor(np.asarray(batched_x), dtype=tf.float32)  # CNN_MINST
+        batched_x = tf.reshape(batched_x, [-1, 28, 28])
+    else:
+        batched_x = tf.convert_to_tensor(np.asarray(batched_x), dtype=tf.float32)  # LR_MINST or other
+
+    batched_y = tf.convert_to_tensor(np.asarray(batched_y), dtype=tf.int64)
+    return batched_x, batched_y
+
+
+def convert_numpy_to_jax_data_format(args, batched_x, batched_y):
+    import numpy as np
+
+    if args.model == "cnn":
+        batched_x = np.asarray(batched_x, dtype=np.float32)     # CNN_MINST
+        batched_x = np.reshape(batched_x, [-1, 28, 28])
+    else:
+        batched_x = np.asarray(batched_x, dtype=np.float32)     # LR_MINST or other
+
+    batched_y = np.asarray(batched_y, dtype=np.float32)
+    return batched_x, batched_y
+
+
+def convert_numpy_to_mxnet_data_format(args, batched_x, batched_y):
+    from mxnet import np as mx_np
+
+    if args.model == "cnn":
+        batched_x = mx_np.array(batched_x)  # CNN_MINST
+        batched_x = mx_np.reshape(batched_x, [-1, 28, 28])
+    else:
+        batched_x = mx_np.array(batched_x)  # LR_MINST or other
+
+    batched_y = mx_np.array(batched_y)
+    return batched_x, batched_y
+
+
+def convert_numpy_to_ml_engine_data_format(args, batched_x, batched_y):
+    if hasattr(args, MLEngineBackend.ml_engine_args_flag):
+        if args.ml_engine == MLEngineBackend.ml_engine_backend_tf:
+            return convert_numpy_to_tf_data_format(args, batched_x, batched_y)
+        elif args.ml_engine == MLEngineBackend.ml_engine_backend_jax:
+            return convert_numpy_to_jax_data_format(args, batched_x, batched_y)
+        elif args.ml_engine == MLEngineBackend.ml_engine_backend_mxnet:
+            return convert_numpy_to_mxnet_data_format(args, batched_x, batched_y)
+        else:
+            return convert_numpy_to_torch_data_format(args, batched_x, batched_y)
+    else:
+        return convert_numpy_to_torch_data_format(args, batched_x, batched_y)
+
+
 def is_torch_device_available(args, device_type):
     if device_type == MLEngineBackend.ml_device_type_gpu:
         if torch.cuda.is_available():
@@ -225,16 +293,19 @@ def torch_model_ddp(args, model_obj, device):
     return process_group_manager, model
 
 
+# Todo: add tf ddp
 def tf_model_ddp(args, model_obj, device):
     process_group_manager, model = None, model_obj
     return process_group_manager, model
 
 
+# Todo: add jax ddp
 def jax_model_ddp(args, model_obj, device):
     process_group_manager, model = None, model_obj
     return process_group_manager, model
 
 
+# Todo: add mxnet ddp
 def mxnet_model_ddp(args, model_obj, device):
     process_group_manager, model = None, model_obj
     return process_group_manager, model
@@ -339,6 +410,32 @@ def jax_aggregator(args, raw_grad_list, training_num):
     return avg_params
 
 
+def mxnet_aggregator2(args, raw_grad_list, training_num):
+    (num0, avg_params) = raw_grad_list[0]
+
+    if args.federated_optimizer == "FedAvg":
+        for k in range(0, len(avg_params)):
+            for i in range(0, len(raw_grad_list)):
+                local_sample_number, local_model_params = raw_grad_list[i]
+                w = local_sample_number / training_num
+                if i == 0:
+                    avg_params[k] = local_model_params[k] * w
+                else:
+                    avg_params[k] += local_model_params[k] * w
+    elif args.federated_optimizer == "FedAvg_seq":
+        for k in range(0, len(avg_params)):
+            for i in range(0, len(raw_grad_list)):
+                local_sample_number, local_model_params = raw_grad_list[i]
+                if i == 0:
+                    avg_params[k] = local_model_params[k]
+                else:
+                    avg_params[k] += local_model_params[k]
+    elif args.federated_optimizer == "FedOpt":
+        pass
+
+    return avg_params
+
+
 def mxnet_aggregator(args, raw_grad_list, training_num):
     (num0, avg_params) = raw_grad_list[0]
 
@@ -348,9 +445,11 @@ def mxnet_aggregator(args, raw_grad_list, training_num):
                 local_sample_number, local_model_params = raw_grad_list[i]
                 w = local_sample_number / training_num
                 if i == 0:
-                    avg_params[k] = local_model_params[k] * w
+                    for j in range(0, len(avg_params[k])):
+                        avg_params[k][j] = local_model_params[k][j] * w
                 else:
-                    avg_params[k] += local_model_params[k] * w
+                    for j in range(0, len(avg_params[k])):
+                        avg_params[k][j] += local_model_params[k][j] * w
     elif args.federated_optimizer == "FedAvg_seq":
         for k in avg_params.keys():
             for i in range(0, len(raw_grad_list)):
