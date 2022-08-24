@@ -21,12 +21,12 @@ jobs:
   pip-install-fedml-and-test-sp:
     defaults:
       run:
-        shell: bash
+        shell: powershell
         working-directory: python
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, macos-latest ]
+        os: [ windows-latest ]
         arch: [X64, ARM64]
         python-version: ['3.7', '3.8', '3.9']
 #        exclude:
