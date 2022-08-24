@@ -3,13 +3,13 @@ import logging
 
 
 class FedMLDifferentialPrivacy:
-    _defender_instance = None
+    _dp_instance = None
 
     @staticmethod
     def get_instance():
-        if FedMLDifferentialPrivacy._defender_instance is None:
-            FedMLDifferentialPrivacy._defender_instance = FedMLDifferentialPrivacy()
-        return FedMLDifferentialPrivacy._defender_instance
+        if FedMLDifferentialPrivacy._dp_instance is None:
+            FedMLDifferentialPrivacy._dp_instance = FedMLDifferentialPrivacy()
+        return FedMLDifferentialPrivacy._dp_instance
 
     def __init__(self):
         self.is_dp_enabled = False

@@ -32,6 +32,7 @@ class SLSGDDefense(BaseDefenseMethod):
             raise ValueError("the bound of alpha is [0, 1]")
         self.alpha = config.alpha
         self.option_type = config.option_type
+        self.config = config
 
     def run(
         self,
@@ -75,7 +76,7 @@ class SLSGDDefense(BaseDefenseMethod):
         extra_auxiliary_info: Any = None,
     ):
         global_model = extra_auxiliary_info
-        avg_params = base_aggregation_func(raw_client_grad_list)
+        avg_params = base_aggregation_func(args=self.config, raw_grad_list=raw_client_grad_list)
         for k in avg_params.keys():
             avg_params[k] = (1 - self.alpha) * global_model[
                 k
