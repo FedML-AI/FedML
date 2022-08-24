@@ -75,7 +75,7 @@ tracking_args:
   run_name: fedml_torch_fedavg_mnist_lr
 ```
 
-In the current example,`common_args.training_type` is **"simulation"**, which means that the training here is a stand-alone simulation version,`data_args.dataset` is **"mnist"** corresponding to the current dataset used, `model_args.model` is **"lr"**, which means that the current model used is **LogisticRegression (lr)** . Please refer to XXX for other parameters and more detailed setup instructions.
+In the current example,`common_args.training_type` is **"simulation"**, which means that the training here is a stand-alone simulation version,`data_args.dataset` is **"mnist"** corresponding to the current dataset used, `model_args.model` is **"lr"**, which means that the current model used is **LogisticRegression (lr)** . Please refer to https://github.com/FedML-AI/FedML/tree/master/python/examples for other parameters and more detailed setup instructions.
 
 ### Step 3. training
 
