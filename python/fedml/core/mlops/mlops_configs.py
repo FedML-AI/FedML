@@ -16,7 +16,7 @@ class MLOpsConfigs(Singleton):
     _config_instance = None
 
     def __init__(self):
-        pass
+        self.args = None
 
     @staticmethod
     def get_instance(args):
