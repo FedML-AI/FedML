@@ -18,17 +18,18 @@ class FedMLDifferentialPrivacy:
     def init(
         self, args
     ):
-        mechanism_type = args.mechanism_type.lower()
-        self.is_dp_enabled = True
-        self.dp_type = args.dp_type.lower()
-        if self.dp_type not in ["cdp", "ldp"]:
-            raise ValueError("DP type can only be cdp (for central DP) and ldp (for local DP)! ")
-        if mechanism_type == "laplace":
-            self.dp = Laplace(epsilon=args.epsilon, delta=args.delta, sensitivity=args.sensitivity)
-        elif mechanism_type == "gaussian":
-            self.dp = Gaussian(epsilon=args.epsilon, delta=args.delta, sensitivity=args.sensitivity)
-        else:
-            raise NotImplementedError("DP mechanism not implemented!")
+        if hasattr(args, "enable_dp") and args.enable_dp:
+            self.is_dp_enabled = True
+            mechanism_type = args.mechanism_type.lower()
+            self.dp_type = args.dp_type.lower()
+            if self.dp_type not in ["cdp", "ldp"]:
+                raise ValueError("DP type can only be cdp (for central DP) and ldp (for local DP)! ")
+            if mechanism_type == "laplace":
+                self.dp = Laplace(epsilon=args.epsilon, delta=args.delta, sensitivity=args.sensitivity)
+            elif mechanism_type == "gaussian":
+                self.dp = Gaussian(epsilon=args.epsilon, delta=args.delta, sensitivity=args.sensitivity)
+            else:
+                raise NotImplementedError("DP mechanism not implemented!")
 
     def is_enabled(self):
         return self.is_dp_enabled
