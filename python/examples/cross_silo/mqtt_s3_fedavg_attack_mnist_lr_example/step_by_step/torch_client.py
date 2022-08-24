@@ -2,7 +2,6 @@ import fedml
 from fedml import FedMLRunner
 
 if __name__ == "__main__":
-    # init FedML framework
     args = fedml.init()
 
     # init device

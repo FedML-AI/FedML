@@ -173,6 +173,7 @@ class ClientMasterManager(FedMLCommManager):
             weights = convert_model_params_from_ddp(weights)
 
         if FedMLDifferentialPrivacy.get_instance().is_enabled():
+            logging.info("-----add ldp noise ----")
             weights = FedMLDifferentialPrivacy.get_instance().add_ldp_noise(weights)
 
         self.send_model_to_server(0, weights, local_sample_num)

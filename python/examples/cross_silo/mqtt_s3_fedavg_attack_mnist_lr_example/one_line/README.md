@@ -1,14 +1,24 @@
 ## Training Script
 
+At the client side, the client ID (a.k.a rank) starts from 1.
+Please also modify config/fedml_config.yaml, changing the `worker_num` the as the number of clients you plan to run.
 
-Then, run the following script, where client_num is the number of clients you wish to train.
+At the server side, run the following script:
 ```
-bash run_cross_silo_mpi.sh $client_num
+bash run_server.sh
 ```
 
-If you need to configure GPU device mapping, please refer to `config/gpu_mapping.yaml`.
-
-Please note the node running the script should have passwordless SSH access to other nodes.
+For client 1, run the following script:
+```
+bash run_client.sh 1
+```
+For client 2, run the following script:
+```
+bash run_client.sh 2
+```
+Note: 
+1. please change the run_id in run_client/run_server scripts to your own.
+2. For Windows users, please use *.bat scripts.
 
 ## A Better User-experience with FedML MLOps (open.fedml.ai)
 To reduce the difficulty and complexity of these CLI commands. We recommend you to use our MLOps (open.fedml.ai).
