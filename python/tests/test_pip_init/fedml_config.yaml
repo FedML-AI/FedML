@@ -35,5 +35,5 @@ comm_args:
   backend: "sp"
 
 tracking_args:
-  log_file_dir: ./log
+  # the default log path is at ~/fedml-client/fedml/logs/ and ~/fedml-server/fedml/logs/
   enable_wandb: false
