@@ -11,7 +11,7 @@ class FedMLDifferentialPrivacy:
         return FedMLDifferentialPrivacy._defender_instance
 
     def __init__(self):
-        self.is_dp_enabled = False
+        self.__is_dp_enabled = False
         self.dp_type = None
         self.dp = None
 
@@ -31,7 +31,7 @@ class FedMLDifferentialPrivacy:
             raise NotImplementedError("DP mechanism not implemented!")
 
     def is_dp_enabled(self):
-        return self.is_dp_enabled
+        return self.__is_dp_enabled
 
     def get_dp_type(self):
         return self.dp_type
