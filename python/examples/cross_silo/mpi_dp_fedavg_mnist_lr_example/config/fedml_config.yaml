@@ -1,5 +1,5 @@
 common_args:
-  training_type: "simulation"
+  training_type: "cross_silo"
   random_seed: 0
 
 data_args:
@@ -13,7 +13,7 @@ model_args:
 
 train_args:
   federated_optimizer: "FedAvg"
-  client_id_list: "[]"
+  client_id_list:
   client_num_in_total: 1000
   client_num_per_round: 4
   comm_round: 50
@@ -28,7 +28,7 @@ validation_args:
 
 device_args:
   worker_num: 4
-  using_gpu: false
+  using_gpu: true
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_default
 
@@ -45,12 +45,7 @@ tracking_args:
   wandb_name: fedml_torch_fedavg_mnist_lr
   using_mlops: false
 
-attack_args:
-  enable_attack: false
-  attack_type: None
 
-
-# example:
 dp_args:
   enable_dp: true
   dp_type: cdp # cdp or ldp
