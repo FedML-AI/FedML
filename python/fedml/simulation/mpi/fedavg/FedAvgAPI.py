@@ -3,7 +3,7 @@ from .FedAVGTrainer import FedAVGTrainer
 from .FedAvgClientManager import FedAVGClientManager
 from .FedAvgServerManager import FedAVGServerManager
 from ....core import ClientTrainer, ServerAggregator
-from ....core.differential_privacy.fed_privacy_mechanism import DifferentialPrivacy
+from ....core.dp.fed_privacy_mechanism import FedMLDifferentialPrivacy
 from ....core.security.fedml_attacker import FedMLAttacker
 from ....core.security.fedml_defender import FedMLDefender
 from ....ml.aggregator.aggregator_creator import create_server_aggregator
@@ -34,7 +34,7 @@ def FedML_FedAvg_distributed(
 
     FedMLAttacker.get_instance().init(args)
     FedMLDefender.get_instance().init(args)
-    DifferentialPrivacy.get_instance().init(args)
+    FedMLDifferentialPrivacy.get_instance().init(args)
 
     if process_id == 0:
         init_server(

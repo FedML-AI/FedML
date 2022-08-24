@@ -5,7 +5,7 @@ from .AsyncFedAvgServerManager import AsyncFedAVGServerManager
 from .my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
 from .my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
 from .my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
-from ....core.differential_privacy.fed_privacy_mechanism import DifferentialPrivacy
+from ....core.dp.fed_privacy_mechanism import FedMLDifferentialPrivacy
 from ....core.security.fedml_attacker import FedMLAttacker
 from ....core.security.fedml_defender import FedMLDefender
 
@@ -34,7 +34,7 @@ def FedML_Async_distributed(
 
     FedMLAttacker.get_instance().init(args)
     FedMLDefender.get_instance().init(args)
-    DifferentialPrivacy.get_instance().init(args)
+    FedMLDifferentialPrivacy.get_instance().init(args)
 
     if process_id == 0:
         init_server(
