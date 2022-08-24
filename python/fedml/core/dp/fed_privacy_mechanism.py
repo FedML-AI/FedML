@@ -1,4 +1,5 @@
 from .mechanisms import Laplace, Gaussian
+import logging
 
 
 class FedMLDifferentialPrivacy:
@@ -19,9 +20,10 @@ class FedMLDifferentialPrivacy:
         self, args
     ):
         if hasattr(args, "enable_dp") and args.enable_dp:
+            logging.info(".......init dp......." + args.mechanism_type + "-" + args.dp_type)
             self.is_dp_enabled = True
             mechanism_type = args.mechanism_type.lower()
-            self.dp_type = args.dp_type.lower()
+            self.dp_type = args.dp_type.lower().strip()
             if self.dp_type not in ["cdp", "ldp"]:
                 raise ValueError("DP type can only be cdp (for central DP) and ldp (for local DP)! ")
             if mechanism_type == "laplace":

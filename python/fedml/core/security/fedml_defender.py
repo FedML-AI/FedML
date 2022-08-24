@@ -37,6 +37,7 @@ class FedMLDefender:
 
     def init(self, args):
         if hasattr(args, "enable_defense") and args.enable_defense:
+            logging.info("------init defense..." + args.defense_type)
             self.is_enabled = True
             self.defense_type = args.defense_type.strip()
             logging.info("self.defense_type = {}".format(self.defense_type))
