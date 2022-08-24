@@ -175,3 +175,4 @@ android/fedmlsdk
 doc/en/_build
 /docker-2/
 /swap/actions-runner/
+*.txt
