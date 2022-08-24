@@ -55,7 +55,6 @@ def create_model_trainer(in_model, in_args):
 if __name__ == "__main__":
     # init FedML framework
     args = fedml.init()
-    setattr(args, "run_id", "1979")
 
     # init device
     device = fedml.device.get_device(args)

@@ -1,8 +1,6 @@
 import logging
-
 from .defense.RFA_defense import RFA_defense
 from .defense.cclip_defense import CClipDefense
-from .defense.dp import DifferentialPrivacy
 from .defense.geometric_median_defense import GeometricMedianDefense
 from .defense.krum_defense import KrumDefense
 from .defense.robust_learning_rate_defense import RobustLearningRateDefense
@@ -17,7 +15,6 @@ from ...core.security.constants import (
     DEFENSE_GEO_MEDIAN,
     DEFENSE_CCLIP,
     DEFENSE_WEAK_DP,
-    DEFENSE_DP,
     DEFENSE_RFA,
 )
 from typing import List, Tuple, Dict, Any, Callable
@@ -58,8 +55,8 @@ class FedMLDefender:
                 self.defender = WeakDPDefense(args)
             elif self.defense_type == DEFENSE_CCLIP:
                 self.defender = CClipDefense(args)
-            elif self.defense_type == DEFENSE_DP:
-                self.defender = DifferentialPrivacy(args)
+            # elif self.defense_type == DEFENSE_DP:
+            #     self.defender = DifferentialPrivacy(args)
             elif self.defense_type == DEFENSE_RFA:
                 self.defender = RFA_defense(args)
             else:

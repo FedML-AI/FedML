@@ -2,10 +2,10 @@ name: Pylint - FedML
 
 on:
   push:
-    branches: [ master,  test/v0.7.0 ]
+    branches: [ master,  dev/v0.7.0, test/v0.7.0 ]
 
   pull_request:
-    branches: [ master,  test/v0.7.0 ]
+    branches: [ master,  dev/v0.7.0, test/v0.7.0 ]
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -21,7 +21,8 @@ jobs:
         python-version: ["3.8", "3.9", "3.7", "3.6"]
     steps:
     - uses: actions/checkout@v3
-      - ref: ${{ github.event.pull_request.head.sha }}
+      with:
+        ref: dev/v0.7.0
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v3
       with:
