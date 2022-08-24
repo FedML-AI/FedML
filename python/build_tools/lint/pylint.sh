@@ -1,0 +1,1 @@
+pylint --rcfile=.pylintrc --disable=C,R,W ../../fedml/core/security > pylint_log.txt
