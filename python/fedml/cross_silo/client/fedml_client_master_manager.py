@@ -172,7 +172,7 @@ class ClientMasterManager(FedMLCommManager):
         if self.args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
             weights = convert_model_params_from_ddp(weights)
 
-        if FedMLDifferentialPrivacy.get_instance().is_dp_enabled():
+        if FedMLDifferentialPrivacy.get_instance().is_enabled():
             weights = FedMLDifferentialPrivacy.get_instance().add_ldp_noise(weights)
 
         self.send_model_to_server(0, weights, local_sample_num)
