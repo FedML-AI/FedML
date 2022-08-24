@@ -25,7 +25,10 @@ sudo rpm -Uvh https://packages.microsoft.com/config/rhel/7/packages-microsoft-pr
 sudo apt-get update && sudo apt-get install -y dotnet6
 dotnet --version
 ./config.sh --url https://github.com/FedML-AI/FedML --token AXRYPLYQC7HPYXZ5ULI2PBLDAZOI2
-nohup bash run.sh > actions.log 2>&1 &
+#nohup bash run.sh > actions.log 2>&1 &
+sudo ./svc.sh install
+sudo ./svc.sh start
+sudo ./svc.sh status
 
 
 # Install GitHub runner in Windows:
