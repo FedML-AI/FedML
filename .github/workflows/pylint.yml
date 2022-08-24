@@ -33,4 +33,4 @@ jobs:
         pip install pylint
     - name: Analysing the code with pylint
       run: |
-        pylint python/fedml
+        pylint fedml
