@@ -48,7 +48,7 @@ comm_args:
   s3_config_path: config/s3_config.yaml
 
 tracking_args:
-  log_file_dir: ./log
+  # the default log path is at ~/fedml-client/fedml/logs/ and ~/fedml-server/fedml/logs/
   enable_wandb: false
   wandb_project: fedml
   run_name: fedml_torch_fedavg_mnist_lr
