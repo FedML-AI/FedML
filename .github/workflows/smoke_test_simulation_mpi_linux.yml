@@ -17,32 +17,55 @@ on:
   workflow_dispatch:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
+
 jobs:
-  test-simulation-mpi:
+  # https://github.com/mpi4py/mpi4py/actions/runs/34979774/workflow
+  mpi_run:
+    runs-on: ${{ matrix.os }}
     defaults:
       run:
         shell: bash
         working-directory: python
     strategy:
-      fail-fast: false
       matrix:
-        os: [ ubuntu-latest ]
-        arch: [X64]
-        python-version: ['3.8']
-    runs-on: [self-hosted, runner-linux, devops]
+        python-version: [3.8]
+        mpi: [mpich, openmpi]
+        os: [ubuntu-latest, macos-latest]
+        include:
+        - os: ubuntu-latest
+          mpi: mpich
+          install-mpi: sudo apt install -y mpich libmpich-dev
+        - os: ubuntu-latest
+          mpi: openmpi
+          install-mpi: sudo apt install -y openmpi-bin libopenmpi-dev
+        - os: macos-latest
+          mpi: mpich
+          install-mpi: brew install mpich
+        - os: macos-latest
+          mpi: openmpi
+          install-mpi: brew install openmpi
     steps:
-      - uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-      - uses: actions/checkout@v2
-      - name: pip install -e ./
-        run: |
-          pip install -e ./
-
-      # https://github.com/mpi4py/setup-mpi
-      - uses: mpi4py/setup-mpi@v1
-      - name: test simulation-mpi
-        run: |
-          cd tests/smoke_test/simulation_mpi
-          hostname > mpi_host_file
-          mpiexec --oversubscribe -np 5 -hostfile mpi_host_file python main.py --cf fedml_config.yaml
+    - uses: actions/checkout@v2
+    - name: Install MPI
+      run: ${{ matrix.install-mpi }}
+    - name: Use Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install packaging tools
+      run:  python -m pip install --upgrade setuptools pip wheel
+    - name: Install build dependencies
+      run:  python -m pip install --upgrade cython
+    - name: Build package
+      run:  python -m pip wheel -vvv --wheel-dir=dist .
+    - name: Install test dependencies
+      run:  python -m pip install --upgrade numpy
+    - name: Install package for testing
+      run:  python -m pip install --no-index --find-links=dist mpi4py
+    - name: Test package
+      run: |
+        cd tests/smoke_test/simulation_mpi
+        hostname > mpi_host_file
+        mpiexec --oversubscribe -np 5 -hostfile mpi_host_file python main.py --cf fedml_config.yaml
+    - name: Uninstall package after testing
+      run:  python -m pip uninstall --yes mpi4py
