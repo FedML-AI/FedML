@@ -15,6 +15,9 @@ class ServerAggregator(ABC):
         self.model = model
         self.id = 0
         self.args = args
+        FedMLAttacker.get_instance().init(args)
+        FedMLDefender.get_instance().init(args)
+        FedMLDifferentialPrivacy.get_instance().init(args)
 
     def set_id(self, aggregator_id):
         self.id = aggregator_id
@@ -51,7 +54,7 @@ class ServerAggregator(ABC):
         return FedMLAggOperator.agg(self.args, raw_client_model_or_grad_list)
 
     def on_after_aggregation(self, aggregated_model_or_grad: Dict) -> Dict:
-        if FedMLDifferentialPrivacy.get_instance().is_enabled():
+        if FedMLDifferentialPrivacy.get_instance().is_cdp_enabled():
             logging.info("-----add cdp noise ----")
             aggregated_model_or_grad = FedMLDifferentialPrivacy.get_instance().add_cdp_noise(aggregated_model_or_grad)
         return aggregated_model_or_grad
