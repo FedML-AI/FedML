@@ -48,8 +48,8 @@ jobs:
       - name: test "fedml login" and "fedml build"
         run: |
           cd tests/smoke_test/cli
-          cmd login.bat
-          cmd build.bat
+          .\login.bat
+          .\build.bat
       - name: test simulation-sp
         run: |
           cd tests/smoke_test/simulation_sp
