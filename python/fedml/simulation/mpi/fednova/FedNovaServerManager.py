@@ -2,12 +2,12 @@ import logging
 import numpy as np
 
 from .message_define import MyMessage
-from .utils import transform_tensor_to_list, post_complete_message_to_sweep_process
+from .utils import transform_tensor_to_list
 from ....core.distributed.fedml_comm_manager import FedMLCommManager
 from ....core.distributed.communication.message import Message
 
 
-class FedOptServerManager(FedMLCommManager):
+class FedNovaServerManager(FedMLCommManager):
     def __init__(
         self,
         args,
@@ -30,6 +30,9 @@ class FedOptServerManager(FedMLCommManager):
     def run(self):
         super().run()
 
+
+
+
     def send_init_msg(self):
         # sampling clients
         client_indexes = self.aggregator.client_sampling(
@@ -42,6 +45,9 @@ class FedOptServerManager(FedMLCommManager):
         average_weight_dict = self.aggregator.get_average_weight(client_indexes)
 
         global_model_params = self.aggregator.get_global_model_params()
+
+        if self.args.is_mobile == 1:
+            global_model_params = transform_tensor_to_list(global_model_params)
         for process_id in range(1, self.size):
             self.send_message_init_config(
                 process_id, global_model_params, 
@@ -61,9 +67,13 @@ class FedOptServerManager(FedMLCommManager):
         client_runtime_info = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_RUNTIME_INFO)
         self.aggregator.record_client_runtime(sender_id - 1, client_runtime_info)
 
+        # self.aggregator.add_local_trained_result(
+        #     sender_id - 1, model_params, local_sample_number
+        # )
         self.aggregator.add_local_trained_result(
-            sender_id - 1, model_params,
+            sender_id - 1, model_params
         )
+
         b_all_received = self.aggregator.check_whether_all_receive()
         logging.info("b_all_received = " + str(b_all_received))
         if b_all_received:
@@ -73,11 +83,10 @@ class FedOptServerManager(FedMLCommManager):
             # start the next round
             self.round_idx += 1
             if self.round_idx == self.round_num:
-                post_complete_message_to_sweep_process(self.args)
+                # post_complete_message_to_sweep_process(self.args)
                 self.finish()
+                print("here")
                 return
-
-            # sampling clients
             if self.is_preprocessed:
                 if self.preprocessed_client_lists is None:
                     # sampling has already been done in data preprocessor
@@ -85,7 +94,7 @@ class FedOptServerManager(FedMLCommManager):
                 else:
                     client_indexes = self.preprocessed_client_lists[self.round_idx]
             else:
-                # # sampling clients
+                # sampling clients
                 client_indexes = self.aggregator.client_sampling(
                     self.round_idx,
                     self.args.client_num_in_total,
@@ -95,15 +104,17 @@ class FedOptServerManager(FedMLCommManager):
             average_weight_dict = self.aggregator.get_average_weight(client_indexes)
 
             global_model_params = self.aggregator.get_global_model_params()
+            if self.args.is_mobile == 1:
+                global_model_params = transform_tensor_to_list(global_model_params)
 
+            print("indexes of clients: " + str(client_indexes))
             print("size = %d" % self.size)
             if self.args.is_mobile == 1:
-                print("transform_tensor_to_list")
                 global_model_params = transform_tensor_to_list(global_model_params)
 
             for receiver_id in range(1, self.size):
                 self.send_message_sync_model_to_client(
-                    receiver_id, global_model_params,
+                    receiver_id, global_model_params, 
                     average_weight_dict, client_schedule
                 )
 
@@ -131,6 +142,3 @@ class FedOptServerManager(FedMLCommManager):
         message.add_params(MyMessage.MSG_ARG_KEY_AVG_WEIGHTS, average_weight_dict)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_SCHEDULE, client_schedule)
         self.send_message(message)
-
-
-

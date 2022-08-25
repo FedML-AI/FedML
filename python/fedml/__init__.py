@@ -106,10 +106,12 @@ def init_simulation_mpi(args):
 
     comm = MPI.COMM_WORLD
     process_id = comm.Get_rank()
-    worker_num = comm.Get_size()
+    world_size = comm.Get_size()
     args.comm = comm
     args.process_id = process_id
-    args.worker_num = worker_num
+    args.worker_num = world_size
+    if process_id == 0:
+        args.role = "server"
     return args
 
 
