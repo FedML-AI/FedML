@@ -37,6 +37,8 @@ class FedMLDefender:
 
     def init(self, args):
         if hasattr(args, "enable_defense") and args.enable_defense:
+            self.args = args
+            logging.info("------init defense..." + args.defense_type)
             self.is_enabled = True
             self.defense_type = args.defense_type.strip()
             logging.info("self.defense_type = {}".format(self.defense_type))
@@ -80,10 +82,10 @@ class FedMLDefender:
         )
 
     def is_defense_on_aggregation(self):
-        return self.is_enabled and self.defense_type in [DEFENSE_SLSGD]
+        return self.is_defense_enabled() and self.defense_type in [DEFENSE_SLSGD]
 
     def is_defense_before_aggregation(self):
-        return self.is_enabled and self.defense_type in [DEFENSE_SLSGD]
+        return self.is_defense_enabled() and self.defense_type in [DEFENSE_SLSGD]
 
     def defend_before_aggregation(
         self,
@@ -110,4 +112,4 @@ class FedMLDefender:
             return self.defender.defend_on_aggregation(
                 raw_client_grad_list, base_aggregation_func, extra_auxiliary_info
             )
-        return base_aggregation_func(raw_client_grad_list)
+        return base_aggregation_func(args=self.args, raw_grad_list=raw_client_grad_list)

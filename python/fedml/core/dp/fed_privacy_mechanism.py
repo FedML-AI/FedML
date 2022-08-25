@@ -1,14 +1,15 @@
 from .mechanisms import Laplace, Gaussian
+import logging
 
 
 class FedMLDifferentialPrivacy:
-    _defender_instance = None
+    _dp_instance = None
 
     @staticmethod
     def get_instance():
-        if FedMLDifferentialPrivacy._defender_instance is None:
-            FedMLDifferentialPrivacy._defender_instance = FedMLDifferentialPrivacy()
-        return FedMLDifferentialPrivacy._defender_instance
+        if FedMLDifferentialPrivacy._dp_instance is None:
+            FedMLDifferentialPrivacy._dp_instance = FedMLDifferentialPrivacy()
+        return FedMLDifferentialPrivacy._dp_instance
 
     def __init__(self):
         self.is_dp_enabled = False
@@ -18,17 +19,19 @@ class FedMLDifferentialPrivacy:
     def init(
         self, args
     ):
-        mechanism_type = args.mechanism_type.lower()
-        self.is_dp_enabled = True
-        self.dp_type = args.dp_type.lower()
-        if self.dp_type not in ["cdp", "ldp"]:
-            raise ValueError("DP type can only be cdp (for central DP) and ldp (for local DP)! ")
-        if mechanism_type == "laplace":
-            self.dp = Laplace(epsilon=args.epsilon, delta=args.delta, sensitivity=args.sensitivity)
-        elif mechanism_type == "gaussian":
-            self.dp = Gaussian(epsilon=args.epsilon, delta=args.delta, sensitivity=args.sensitivity)
-        else:
-            raise NotImplementedError("DP mechanism not implemented!")
+        if hasattr(args, "enable_dp") and args.enable_dp:
+            logging.info(".......init dp......." + args.mechanism_type + "-" + args.dp_type)
+            self.is_dp_enabled = True
+            mechanism_type = args.mechanism_type.lower()
+            self.dp_type = args.dp_type.lower().strip()
+            if self.dp_type not in ["cdp", "ldp"]:
+                raise ValueError("DP type can only be cdp (for central DP) and ldp (for local DP)! ")
+            if mechanism_type == "laplace":
+                self.dp = Laplace(epsilon=args.epsilon, delta=args.delta, sensitivity=args.sensitivity)
+            elif mechanism_type == "gaussian":
+                self.dp = Gaussian(epsilon=args.epsilon, delta=args.delta, sensitivity=args.sensitivity)
+            else:
+                raise NotImplementedError("DP mechanism not implemented!")
 
     def is_enabled(self):
         return self.is_dp_enabled
