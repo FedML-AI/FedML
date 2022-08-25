@@ -2,17 +2,13 @@ import argparse
 
 import torch
 
-from fedml.core import FedMLDifferentialPrivacy
+from ..fed_privacy_mechanism import FedMLDifferentialPrivacy
 
 
 def add_args():
     parser = argparse.ArgumentParser(description="FedML")
     parser.add_argument(
-        "--yaml_config_file",
-        "--cf",
-        help="yaml configuration file",
-        type=str,
-        default="",
+        "--yaml_config_file", "--cf", help="yaml configuration file", type=str, default="",
     )
     # default arguments
     parser.add_argument("--mechanism_type", type=str, default="gaussian")
@@ -24,6 +20,7 @@ def add_args():
     # epsilon, delta=0, sensitivity=1.0, mechanism_type="laplace"
     args, unknown = parser.parse_known_args()
     return args
+
 
 def test_FedMLDifferentialPrivacy():
     FedMLDifferentialPrivacy.get_instance().init(add_args())
@@ -38,5 +35,5 @@ def test_FedMLDifferentialPrivacy():
     print(FedMLDifferentialPrivacy.get_instance().compute_randomized_gradient(a_local_w))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test_FedMLDifferentialPrivacy()

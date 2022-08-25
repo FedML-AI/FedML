@@ -1,6 +1,3 @@
-import logging
-import traceback
-
 from ..constants import (
     FedML_FEDERATED_OPTIMIZER_BASE_FRAMEWORK,
     FedML_FEDERATED_OPTIMIZER_FEDAVG,
@@ -36,19 +33,19 @@ class SimulatorSingleProcess:
         from .sp.fedsgd.fedsgd_api import FedSGDAPI
 
         if args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDAVG:
-            self.fl_trainer = FedAvgAPI(args, device, dataset, model)
+            FedAvgAPI(args, device, dataset, model)
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDOPT:
-            self.fl_trainer = FedOptAPI(args, device, dataset, model)
+            FedOptAPI(args, device, dataset, model)
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDNOVA:
-            self.fl_trainer = FedNovaTrainer(dataset, model, device, args)
+            FedNovaTrainer(dataset, model, device, args)
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_HIERACHICAL_FL:
-            self.fl_trainer = HierachicalTrainer(args, device, dataset, model)
+            HierachicalTrainer(args, device, dataset, model)
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_TURBO_AGGREGATE:
-            self.fl_trainer = TurboAggregateTrainer(dataset, model, device, args)
+            TurboAggregateTrainer(dataset, model, device, args)
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_CLASSICAL_VFL:
-            self.fl_trainer = VflFedAvgAPI(args, device, dataset, model)
+            VflFedAvgAPI(args, device, dataset, model)
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDSGD:
-            self.fl_trainer = FedSGDAPI(args, device, dataset, model)
+            FedSGDAPI(args, device, dataset, model)
 
         # elif args.fl_trainer == FedML_FEDERATED_OPTIMIZER_DECENTRALIZED_FL:
         #     self.fl_trainer = FedML_decentralized_fl()
@@ -56,7 +53,7 @@ class SimulatorSingleProcess:
             raise Exception("Exception")
 
     def run(self):
-        self.fl_trainer.train()
+        pass
 
 
 class SimulatorMPI:
@@ -85,7 +82,7 @@ class SimulatorMPI:
         from .mpi.fedlocalsgd.FedLocalSGDAPI import FedML_FedLocalSGD_distributed
 
         if args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDAVG:
-            self.simulator = FedML_FedAvg_distributed(
+            FedML_FedAvg_distributed(
                 args,
                 args.process_id,
                 args.worker_num,
@@ -97,7 +94,7 @@ class SimulatorMPI:
                 server_aggregator=server_aggregator,
             )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDAVG_SEQ:
-            self.simulator = FedML_FedAvgSeq_distributed(
+            FedML_FedAvgSeq_distributed(
                 args,
                 args.process_id,
                 args.worker_num,
@@ -109,7 +106,7 @@ class SimulatorMPI:
                 server_aggregator=server_aggregator,
             )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDLOCALSGD:
-            self.simulator = FedML_FedLocalSGD_distributed(
+            FedML_FedLocalSGD_distributed(
                 args,
                 args.process_id,
                 args.worker_num,
@@ -121,9 +118,9 @@ class SimulatorMPI:
                 server_aggregator=server_aggregator,
             )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_BASE_FRAMEWORK:
-            self.simulator = FedML_Base_distributed(args, args.process_id, args.worker_num, args.comm)
+            FedML_Base_distributed(args, args.process_id, args.worker_num, args.comm)
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDOPT:
-            self.simulator = FedML_FedOpt_distributed(
+            FedML_FedOpt_distributed(
                 args,
                 args.process_id,
                 args.worker_num,
@@ -135,7 +132,7 @@ class SimulatorMPI:
                 server_aggregator=server_aggregator,
             )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDOPT_SEQ:
-            self.simulator = FedML_FedOptSeq_distributed(
+            FedML_FedOptSeq_distributed(
                 args,
                 args.process_id,
                 args.worker_num,
@@ -147,7 +144,7 @@ class SimulatorMPI:
                 server_aggregator=server_aggregator,
             )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDPROX:
-            self.simulator = FedML_FedProx_distributed(
+            FedML_FedProx_distributed(
                 args,
                 args.process_id,
                 args.worker_num,
@@ -161,21 +158,21 @@ class SimulatorMPI:
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_CLASSICAL_VFL:
             pass
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_SPLIT_NN:
-            self.simulator = SplitNN_distributed(
+            SplitNN_distributed(
                 args.process_id, args.worker_num, device, args.comm, model, dataset=dataset, args=args,
             )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_DECENTRALIZED_FL:
-            self.simulator = FedML_Decentralized_Demo_distributed(args, args.process_id, args.worker_num, args.comm)
+            FedML_Decentralized_Demo_distributed(args, args.process_id, args.worker_num, args.comm)
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDGAN:
-            self.simulator = FedML_FedGan_distributed(
+            FedML_FedGan_distributed(
                 args.process_id, args.worker_num, device, args.comm, model, args, dataset,
             )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDGKT:
-            self.simulator = FedML_FedGKT_distributed(
+            FedML_FedGKT_distributed(
                 args.process_id, args.worker_num, device, args.comm, model, dataset, args,
             )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDNAS:
-            self.simulator = FedML_FedNAS_distributed(
+            FedML_FedNAS_distributed(
                 args,
                 args.process_id,
                 args.worker_num,
@@ -187,7 +184,7 @@ class SimulatorMPI:
                 server_aggregator=server_aggregator,
             )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_ASYNC_FEDAVG:
-            self.simulator = FedML_Async_distributed(
+            FedML_Async_distributed(
                 args,
                 args.process_id,
                 args.worker_num,
@@ -199,7 +196,7 @@ class SimulatorMPI:
                 preprocessed_sampling_lists=None,
             )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDNOVA:
-            self.simulator = FedML_FedNova_distributed(
+            FedML_FedNova_distributed(
                 args,
                 args.process_id,
                 args.worker_num,
@@ -212,20 +209,12 @@ class SimulatorMPI:
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDSEG:
             pass
         elif args.fl_trainer == FedML_FEDERATED_OPTIMIZER_FEDGAN:
-            self.fl_trainer = FedML_FedGan_distributed(
-                args, args.process_id, args.worker_num, device, args.comm, model, dataset
-            )
+            FedML_FedGan_distributed(args, args.process_id, args.worker_num, device, args.comm, model, dataset)
         else:
             raise Exception("Exception")
 
     def run(self):
-        try:
-            self.simulator.train()
-        except Exception as e:
-            logging.info("traceback.format_exc():\n%s" % traceback.format_exc())
-            from mpi4py import MPI
-
-            MPI.COMM_WORLD.Abort()
+        pass
 
 
 class SimulatorNCCL:

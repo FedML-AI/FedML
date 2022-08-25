@@ -13,7 +13,7 @@ class SplitNNServerManager(FedMLCommManager):
             backend,
         )
         self.trainer = trainer
-        self.round_idx = 0
+        self.args.round_idx = 0
 
     def run(self):
         super().run()

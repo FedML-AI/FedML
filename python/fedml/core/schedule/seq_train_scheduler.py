@@ -1,13 +1,12 @@
-import sys
-import numpy as np
 import logging
+import sys
+
+import numpy as np
 
 sys.setrecursionlimit(10000)
 
 
-
 class SeqTrainScheduler:
-    # def __init__(self, workloads, constraints, memory, client_data_nums, cost_funcs, uniform_client=True, uniform_gpu=False):
     def __init__(self, workloads, constraints, memory, cost_funcs, uniform_client=True, uniform_gpu=False, prune_equal_sub_solution=True):
         self.workloads = workloads
         self.x = np.sort(workloads)[::-1]
@@ -237,8 +236,6 @@ class SeqTrainScheduler:
 
 
 
-
-
 if __name__ == "__main__":
     mode = 0
     # mode = 1
@@ -248,7 +245,7 @@ if __name__ == "__main__":
     # constraints = np.array([1, 5])
     constraints = np.array([1, 5, 8, 10])
     memory = np.array([15, 100])
-    my_scheduler = scheduler(workloads, constraints, memory)
+    my_scheduler = SeqTrainScheduler(workloads, constraints, memory)
     schedules = my_scheduler.DP_schedule(mode)
     for i in range(len(schedules)):
         print("Resource %2d: %s\n" % (i, str(schedules[i])))
