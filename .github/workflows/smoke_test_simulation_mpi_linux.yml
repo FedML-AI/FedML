@@ -29,7 +29,8 @@ jobs:
     strategy:
       matrix:
         python-version: [3.8]
-        mpi: [mpich, openmpi]
+        mpi: [mpich]
+#        mpi: [mpich, openmpi]
         os: [ ubuntu-latest ]
         include:
         - os: ubuntu-latest
