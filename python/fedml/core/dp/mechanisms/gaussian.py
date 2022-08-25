@@ -64,5 +64,5 @@ class Gaussian:
     #     return standard_normal * self._scale
 
     def compute_a_noise(self, size):
-        print(f"scale = {self._scale}")
+        # print(f"scale = {self._scale}")
         return torch.normal(mean=0, std=self._scale, size=size)
