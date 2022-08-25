@@ -74,7 +74,6 @@ class FedMLAggregator(object):
         model_list = []
         for idx in range(self.client_num):
             model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
-
         model_list = self.aggregator.on_before_aggregation(model_list)
         averaged_params = self.aggregator.aggregate(model_list)
         averaged_params = self.aggregator.on_after_aggregation(averaged_params)
