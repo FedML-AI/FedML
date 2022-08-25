@@ -39,7 +39,8 @@ requirements = [
     "smart-open==5.2.1",
     "nvidia-ml-py3",
     "matplotlib",
-    "dill"
+    "dill",
+    "pandas",
 ]
 
 requirements_extra_mpi = [
@@ -49,6 +50,7 @@ requirements_extra_mpi = [
 requirements_extra_tf = [
     "tensorflow",
     "tensorflow_datasets",
+    "tensorflow_federated",
 ]
 
 requirements_extra_jax = [
