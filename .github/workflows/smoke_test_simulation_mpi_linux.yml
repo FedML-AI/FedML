@@ -35,9 +35,9 @@ jobs:
         - os: ubuntu-latest
           mpi: mpich
           install-mpi: sudo apt install -y mpich libmpich-dev
-        - os: ubuntu-latest
-          mpi: openmpi
-          install-mpi: sudo apt install -y openmpi-bin libopenmpi-dev
+#        - os: ubuntu-latest
+#          mpi: openmpi
+#          install-mpi: sudo apt install -y openmpi-bin libopenmpi-dev
     steps:
     - uses: actions/checkout@v2
     - name: Install MPI
@@ -55,11 +55,10 @@ jobs:
     - name: Install test dependencies
       run:  python -m pip install --upgrade numpy
 
-    - uses: mpi4py/setup-mpi@v1
-
     - name: pip install -e ./
       run: |
         pip install -e ./
+        python -m pip install mpi4py
 
     - name: Test package
       run: |
