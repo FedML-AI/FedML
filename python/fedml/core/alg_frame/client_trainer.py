@@ -40,6 +40,6 @@ class ClientTrainer(ABC):
             logging.info("-----add ldp noise ----")
             model_params_with_dp_noise = FedMLDifferentialPrivacy.get_instance().add_ldp_noise(self.get_model_params())
             self.set_model_params(model_params_with_dp_noise)
-
+            
     def test(self, test_data, device, args):
         pass

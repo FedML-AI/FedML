@@ -68,6 +68,7 @@ class FedMLDifferentialPrivacy:
         return new_grad
 
     def add_ldp_noise(self, grads):
+        print(f"grads = {grads}")
         new_grads = []
         for i in range(len(grads)):
             list = []
