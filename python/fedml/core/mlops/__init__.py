@@ -57,7 +57,7 @@ class MLOpsStore:
     mlops_log_mqtt_mgr = None
     mlops_log_mqtt_lock = None
     mlops_log_mqtt_is_connected = False
-    mlops_log_agent_config = None
+    mlops_log_agent_config = dict()
     mlops_metrics = None
     mlops_event = None
     mlops_bind_result = False
@@ -571,7 +571,7 @@ def setup_log_mqtt_mgr():
         MLOpsStore.mlops_log_mqtt_mgr = None
         MLOpsStore.mlops_log_mqtt_lock.release()
 
-    if MLOpsStore.mlops_log_agent_config is None:
+    if len(MLOpsStore.mlops_log_agent_config) == 0:
         return
 
     # logging.info(
@@ -693,8 +693,7 @@ def bind_simulation_device(args, userid, version="release"):
         try:
             edge_id = runner.bind_account_and_device_id(
                 service_config["ml_ops_config"]["EDGE_BINDING_URL"],
-                args.account_id, unique_device_id, args.os_name,
-                role="simulator"
+                args.account_id, unique_device_id, args.os_name
             )
             if edge_id > 0:
                 runner.edge_id = edge_id

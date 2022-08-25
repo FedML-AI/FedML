@@ -1,7 +1,7 @@
 import json
 import logging
 
-import multiprocess as multiprocessing
+from multiprocessing import Process
 import os
 import platform
 import shutil
@@ -464,7 +464,7 @@ class FedMLClientRunner:
                 agent_config=self.agent_config, edge_id=self.edge_id
             )
             client_runner.device_status = ClientConstants.MSG_MLOPS_SERVER_DEVICE_STATUS_FAILED
-            multiprocessing.Process(target=client_runner.cleanup_client_with_status).start()
+            Process(target=client_runner.cleanup_client_with_status).start()
 
     def on_client_mqtt_disconnected(self, mqtt_client_object):
         if self.client_mqtt_lock is None:
@@ -558,7 +558,7 @@ class FedMLClientRunner:
         client_runner = FedMLClientRunner(
             self.args, edge_id=self.edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id
         )
-        self.process = multiprocessing.Process(target=client_runner.run)
+        self.process = Process(target=client_runner.run)
         self.process.start()
         ClientConstants.save_run_process(self.process.pid)
 
@@ -577,7 +577,7 @@ class FedMLClientRunner:
             self.args, edge_id=self.edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id
         )
         try:
-            multiprocessing.Process(target=client_runner.stop_run).start()
+            Process(target=client_runner.stop_run).start()
         except Exception as e:
             pass
 
@@ -596,7 +596,7 @@ class FedMLClientRunner:
             self.args, edge_id=self.edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id
         )
         try:
-            multiprocessing.Process(target=client_runner.exit_run_with_exception).start()
+            Process(target=client_runner.exit_run_with_exception).start()
         except Exception as e:
             pass
 
@@ -631,7 +631,7 @@ class FedMLClientRunner:
                 run_id=run_id,
             )
             client_runner.device_status = status
-            multiprocessing.Process(target=client_runner.cleanup_client_with_status).start()
+            Process(target=client_runner.cleanup_client_with_status).start()
 
     def report_client_status(self):
         self.send_agent_active_msg()

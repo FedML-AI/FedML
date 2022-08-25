@@ -23,7 +23,7 @@ jobs:
         arch: [X64, ARM64]
         python-version: ['3.8']
     # The type of runner that the job will run on
-    runs-on: [self-hosted]
+    runs-on: [self-hosted, devops]
     defaults:
       run:
         shell: bash
