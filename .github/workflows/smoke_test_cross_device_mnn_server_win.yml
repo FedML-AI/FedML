@@ -1,12 +1,12 @@
 # This is a basic workflow to help you get started with Actions
 
-name: CROSS-DEVICE-MNN, Windows
+name: CROSS-DEVICE-MNN-Windows
 
 # Controls when the workflow will run
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   schedule:
-    # Nightly build at 12:12 A.M. 
+    # Nightly build at 12:12 A.M.
     - cron: "12 12 */1 * *"
   push:
     branches: [ master,  test/v0.7.0, dev/v0.7.0 ]
@@ -16,6 +16,7 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+permissions: write-all
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   cross-device-mnn-server:
@@ -39,6 +40,7 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+      # https://github.com/actions/checkout/issues/116#issuecomment-644419389
       - uses: actions/checkout@v3
       - name: pip install -e ./
         run: |
