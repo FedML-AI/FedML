@@ -4,8 +4,6 @@ import time
 
 from fedml import mlops
 from .message_define import MyMessage
-from ...core import FedMLAttacker, FedMLDefender, FedMLDifferentialPrivacy
-
 from ...core.distributed.communication.message import Message
 from ...core.distributed.fedml_comm_manager import FedMLCommManager
 from ...core.mlops.mlops_profiler_event import MLOpsProfilerEvent
@@ -34,9 +32,6 @@ class FedMLServerManager(FedMLCommManager):
         self.client_id_list_in_this_round = None
         self.data_silo_index_list = None
 
-        FedMLAttacker.get_instance().init(args)
-        FedMLDefender.get_instance().init(args)
-        FedMLDifferentialPrivacy.get_instance().init(args)
 
     def run(self):
         super().run()
