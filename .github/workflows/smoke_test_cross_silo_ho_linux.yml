@@ -9,9 +9,9 @@ on:
     # Nightly build at 12:12 A.M.
     - cron: "12 12 */1 * *"
   push:
-    branches: [ master,  test/v0.7.0 ]
+    branches: [ master,  test/v0.7.0, dev/v0.7.0 ]
   pull_request:
-    branches: [ master,  test/v0.7.0 ]
+    branches: [ master,  test/v0.7.0, dev/v0.7.0 ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -26,7 +26,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        os: [ ubuntu-latest ]
         arch: [X64, ARM64]
         python-version: ['3.7', '3.8', '3.9']
         client-index: ['0', '1', '2']
@@ -35,7 +35,7 @@ jobs:
 #            python-version: '3.8'
 #          - os: windows-latest
 #            python-version: '3.6'
-    runs-on: [self-hosted, devops]
+    runs-on: [self-hosted, runner-linux, devops]
     steps:
       - uses: actions/setup-python@v4
         with:
@@ -47,7 +47,7 @@ jobs:
 
       - name: server - cross-silo - ho
         run: |
-          cd tests/smoke_test/cross_silo
+          cd quick_start/octopus
           run_id=${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
           echo ${run_id}
           bash run_server.sh $run_id
@@ -55,7 +55,7 @@ jobs:
 
       - name: client 1 - cross-silo - ho
         run: |
-          cd tests/smoke_test/cross_silo
+          cd quick_start/octopus
           run_id=${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
           echo run_id
           bash run_client.sh 1 $run_id
@@ -63,7 +63,7 @@ jobs:
 
       - name: client 2 - cross-silo - ho
         run: |
-          cd tests/smoke_test/cross_silo
+          cd quick_start/octopus
           run_id=${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
           echo run_id
           bash run_client.sh 2 $run_id
