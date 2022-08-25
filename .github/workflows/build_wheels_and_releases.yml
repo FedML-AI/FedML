@@ -16,7 +16,7 @@ on:
 
 jobs:
   build_wheels:
-    runs-on: [self-hosted]
+    runs-on: [self-hosted, devops]
     defaults:
       run:
         shell: bash

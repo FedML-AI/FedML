@@ -40,7 +40,7 @@ def collect_env():
         load1, load5, load15 = psutil.getloadavg()
         cpu_usage = (load15 / os.cpu_count()) * 100
 
-        print("The CPU usage is : {:.0f}%".format(cpu_usage, 4))
+        print("The CPU usage is : {:.0f}%".format(cpu_usage))
         print(
             "Available CPU Memory: {:.1f} G / {}G".format(
                 psutil.virtual_memory().available / 1024 / 1024 / 1024,
