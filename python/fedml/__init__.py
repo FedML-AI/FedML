@@ -161,7 +161,7 @@ def manage_profiling_args(args):
 
             from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
-            MLOpsProfilerEvent.enable_wandb()
+            MLOpsProfilerEvent.open_wandb()
 
 
 def manage_cuda_rpc_args(args):
