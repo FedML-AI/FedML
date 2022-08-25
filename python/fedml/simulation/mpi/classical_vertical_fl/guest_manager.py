@@ -9,7 +9,7 @@ class GuestManager(FedMLCommManager):
 
         self.guest_trainer = guest_trainer
         self.round_num = args.comm_round
-        self.round_idx = 0
+        self.args.round_idx = 0
 
     def run(self):
         for process_id in range(1, self.size):
