@@ -7,7 +7,7 @@ from ....core.distributed.fedml_comm_manager import FedMLCommManager
 from ....core.distributed.communication.message import Message
 
 
-class FedOptClientManager(FedMLCommManager):
+class FedLocalSGDClientManager(FedMLCommManager):
     def __init__(self, args, trainer, comm=None, rank=0, size=0, backend="MPI"):
         super().__init__(args, comm, rank, size, backend)
         self.trainer = trainer
@@ -74,20 +74,19 @@ class FedOptClientManager(FedMLCommManager):
         self.send_message(message)
 
 
-    def add_client_model(self, local_agg_model_params, model_params, weight=1.0):
+    def add_client_model(self, local_agg_model_params, compressed_weights, model_indexes, weight=1.0):
         # Add params that needed to be reduces from clients
-        for name, param in model_params.items():
-            if name not in local_agg_model_params:
-                local_agg_model_params[name] = param * weight
-            else:
-                local_agg_model_params[name] += param * weight
+        local_agg_model_params.append({
+            "compressed_weights": compressed_weights,
+            "model_indexes": model_indexes,
+        })
 
 
 
     def __train(self, global_model_params, client_indexes, average_weight_dict):
         logging.info("#######training########### round_id = %d" % self.round_idx)
 
-        local_agg_model_params = {}
+        local_agg_model_params = []
         client_runtime_info = {}
         for client_index in client_indexes:
             logging.info("#######training########### Simulating client_index = %d, average weight: %f " % \
@@ -95,8 +94,8 @@ class FedOptClientManager(FedMLCommManager):
             start_time = time.time()
             self.trainer.update_model(global_model_params)
             self.trainer.update_dataset(int(client_index))
-            weights, local_sample_num = self.trainer.train(self.round_idx)
-            self.add_client_model(local_agg_model_params, weights,
+            compressed_weights, model_indexes, local_sample_num = self.trainer.train(self.round_idx)
+            self.add_client_model(local_agg_model_params, compressed_weights, model_indexes,
                                 weight=average_weight_dict[client_index])
 
             end_time = time.time()

@@ -1,14 +1,23 @@
 import logging
 import time
 
+
 from .message_define import MyMessage
-from .utils import transform_list_to_tensor, post_complete_message_to_sweep_process
+from .utils import transform_list_to_tensor
 from ....core.distributed.fedml_comm_manager import FedMLCommManager
 from ....core.distributed.communication.message import Message
 
 
-class FedOptClientManager(FedMLCommManager):
-    def __init__(self, args, trainer, comm=None, rank=0, size=0, backend="MPI"):
+class FedNovaClientManager(FedMLCommManager):
+    def __init__(
+        self,
+        args,
+        trainer,
+        comm=None,
+        rank=0,
+        size=0,
+        backend="MPI",
+    ):
         super().__init__(args, comm, rank, size, backend)
         self.trainer = trainer
         self.num_rounds = args.comm_round
@@ -37,12 +46,12 @@ class FedOptClientManager(FedMLCommManager):
 
         if self.args.is_mobile == 1:
             global_model_params = transform_list_to_tensor(global_model_params)
-
         self.round_idx = 0
         self.__train(global_model_params, client_indexes, average_weight_dict)
 
     def start_training(self):
         self.round_idx = 0
+        # self.__train()
 
     def handle_message_receive_model_from_server(self, msg_params):
         logging.info("handle_message_receive_model_from_server.")
@@ -59,10 +68,11 @@ class FedOptClientManager(FedMLCommManager):
         self.round_idx += 1
         self.__train(global_model_params, client_indexes, average_weight_dict)
         if self.round_idx == self.num_rounds - 1:
-            post_complete_message_to_sweep_process(self.args)
+            # post_complete_message_to_sweep_process(self.args)
             self.finish()
 
-    def send_model_to_server(self, receive_id, weights, client_runtime_info):
+
+    def send_result_to_server(self, receive_id, weights, client_runtime_info):
         message = Message(
             MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER,
             self.get_sender_id(),
@@ -74,20 +84,25 @@ class FedOptClientManager(FedMLCommManager):
         self.send_message(message)
 
 
-    def add_client_model(self, local_agg_model_params, model_params, weight=1.0):
+    def add_client_model(self, local_agg_model_params, client_index, grad, t_eff, weight=1.0):
         # Add params that needed to be reduces from clients
-        for name, param in model_params.items():
-            if name not in local_agg_model_params:
-                local_agg_model_params[name] = param * weight
-            else:
-                local_agg_model_params[name] += param * weight
-
+        # for name, param in model_params.items():
+        #     if name not in local_agg_model_params:
+        #         local_agg_model_params[name] = param * weight
+        #     else:
+        #         local_agg_model_params[name] += param * weight
+        # local_agg_model_params[client_index]["grad"] = grad
+        # local_agg_model_params[client_index]["t_eff"] = t_eff
+        local_agg_model_params.append({
+            "grad": grad, "t_eff": t_eff,
+        })
 
 
     def __train(self, global_model_params, client_indexes, average_weight_dict):
         logging.info("#######training########### round_id = %d" % self.round_idx)
 
-        local_agg_model_params = {}
+        # local_agg_model_params = {}
+        local_agg_model_params = []
         client_runtime_info = {}
         for client_index in client_indexes:
             logging.info("#######training########### Simulating client_index = %d, average weight: %f " % \
@@ -95,8 +110,9 @@ class FedOptClientManager(FedMLCommManager):
             start_time = time.time()
             self.trainer.update_model(global_model_params)
             self.trainer.update_dataset(int(client_index))
-            weights, local_sample_num = self.trainer.train(self.round_idx)
-            self.add_client_model(local_agg_model_params, weights,
+            # weights, local_sample_num = self.trainer.train(self.round_idx)
+            loss, grad, t_eff = self.trainer.train(self.round_idx)
+            self.add_client_model(local_agg_model_params, client_index, grad, t_eff,
                                 weight=average_weight_dict[client_index])
 
             end_time = time.time()
@@ -104,7 +120,15 @@ class FedOptClientManager(FedMLCommManager):
             client_runtime_info[client_index] = client_runtime
             logging.info("#######training########### End Simulating client_index = %d, consuming time: %f" % \
                 (client_index, client_runtime))
-        self.send_model_to_server(0, local_agg_model_params, client_runtime_info)
+        self.send_result_to_server(0, local_agg_model_params, client_runtime_info)
+
+
+
+
+
+
+
+
 
 
 
