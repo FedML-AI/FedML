@@ -12,7 +12,7 @@ class FedNASServerManager(FedMLCommManager):
         super().__init__(args, comm, rank, size)
 
         self.round_num = args.comm_round
-        self.round_idx = 0
+        self.args.round_idx = 0
 
         self.aggregator = aggregator
 
@@ -69,17 +69,17 @@ class FedNASServerManager(FedMLCommManager):
             else:
                 global_model_params = self.aggregator.aggregate()
                 global_arch_params = []
-            self.aggregator.infer(self.round_idx)  # for NAS, it cost 151 seconds
-            self.aggregator.statistics(self.round_idx)
+            self.aggregator.infer(self.args.round_idx)  # for NAS, it cost 151 seconds
+            self.aggregator.statistics(self.args.round_idx)
             if self.args.stage == "search":
-                self.aggregator.record_model_global_architecture(self.round_idx)
+                self.aggregator.record_model_global_architecture(self.args.round_idx)
 
             # free all teh GPU memory cache
             torch.cuda.empty_cache()
 
             # start the next round
-            self.round_idx += 1
-            if self.round_idx == self.round_num:
+            self.args.round_idx += 1
+            if self.args.round_idx == self.round_num:
                 self.finish()
                 return
 

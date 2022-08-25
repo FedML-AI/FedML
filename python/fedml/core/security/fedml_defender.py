@@ -1,6 +1,7 @@
 import logging
 from .defense.RFA_defense import RFA_defense
 from .defense.cclip_defense import CClipDefense
+from .defense.foolsgold_defense import FoolsGoldDefense
 from .defense.geometric_median_defense import GeometricMedianDefense
 from .defense.krum_defense import KrumDefense
 from .defense.robust_learning_rate_defense import RobustLearningRateDefense
@@ -16,6 +17,7 @@ from ...core.security.constants import (
     DEFENSE_CCLIP,
     DEFENSE_WEAK_DP,
     DEFENSE_RFA,
+    DEFENSE_FOOLSGOLD
 )
 from typing import List, Tuple, Dict, Any, Callable
 
@@ -61,8 +63,10 @@ class FedMLDefender:
             #     self.defender = DifferentialPrivacy(args)
             elif self.defense_type == DEFENSE_RFA:
                 self.defender = RFA_defense(args)
+            elif self.defense_type == DEFENSE_FOOLSGOLD:
+                self.defender = FoolsGoldDefense(args)
             else:
-                raise Exception("args.attack_type is not defined!")
+                raise Exception("args.defense_type is not defined!")
         else:
             self.is_enabled = False
 
@@ -85,7 +89,7 @@ class FedMLDefender:
         return self.is_defense_enabled() and self.defense_type in [DEFENSE_SLSGD]
 
     def is_defense_before_aggregation(self):
-        return self.is_defense_enabled() and self.defense_type in [DEFENSE_SLSGD]
+        return self.is_defense_enabled() and self.defense_type in [DEFENSE_SLSGD, DEFENSE_FOOLSGOLD]
 
     def defend_before_aggregation(
         self,
