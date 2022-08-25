@@ -63,6 +63,10 @@ jobs:
 
     - uses: mpi4py/setup-mpi@v1
 
+    - name: pip install -e ./
+      run: |
+        pip install -e ./
+
     - name: Test package
       run: |
         cd tests/smoke_test/simulation_mpi
