@@ -28,9 +28,13 @@ The following examples include:
 
 ## Cross-device Federated Learning for Smartphones
 
-|                                 | platform/scenario     | federated optimizer | dataset | model               | communication backend | source code                                          | example doc                                                  |
-| ------------------------------- | --------------------- | ------------------- | ------- | ------------------- | --------------------- | ---------------------------------------------------- | ------------------------------------------------------------ |
-| mqtt_s3_fedavg_mnist_lr_example | Beehive(Cross-device) | FedAvg              | MNIST   | Logistic Regression | MQTT_S3               | [Link](cross_device/mqtt_s3_fedavg_mnist_lr_example) | [Link](cross_device/mqtt_s3_fedavg_mnist_lr_example/README.md) |
+|                                            | platform/scenario     | federated optimizer | dataset | model               | communication backend | source code                                                     | example doc                                                               |
+|--------------------------------------------| --------------------- | ------------------- | ------- | ------------------- | --------------------- |-----------------------------------------------------------------|---------------------------------------------------------------------------|
+| mqtt_s3_fedavg_mnist_lr_example            | Beehive(Cross-device) | FedAvg              | MNIST   | Logistic Regression | MQTT_S3               | [Link](cross_device/mqtt_s3_fedavg_mnist_lr_example)            | [Link](cross_device/mqtt_s3_fedavg_mnist_lr_example/README.md)            |
+| mqtt_s3_fedavg_attack_mnist_lr_example     | Beehive(Cross-device) | FedAvg              | MNIST   | Logistic Regression | MQTT_S3               | [Link](cross_device/mqtt_s3_fedavg_attack_mnist_lr_example)     | [Link](cross_device/mqtt_s3_fedavg_attack_mnist_lr_example/README.md)     |
+| mqtt_s3_fedavg_defense_mnist_lr_example    | Beehive(Cross-device) | FedAvg              | MNIST   | Logistic Regression | MQTT_S3               | [Link](cross_device/mqtt_s3_fedavg_defense_mnist_lr_example)    | [Link](cross_device/mqtt_s3_fedavg_defense_mnist_lr_example/README.md)    |
+| mqtt_s3_fedavg_central_dp_mnist_lr_example | Beehive(Cross-device) | FedAvg              | MNIST   | Logistic Regression | MQTT_S3               | [Link](cross_device/mqtt_s3_fedavg_central_dp_mnist_lr_example) | [Link](cross_device/mqtt_s3_fedavg_central_dp_mnist_lr_example/README.md) |
+| mqtt_s3_fedavg_local_dp_mnist_lr_example   | Beehive(Cross-device) | FedAvg              | MNIST   | Logistic Regression | MQTT_S3               | [Link](cross_device/mqtt_s3_fedavg_local_dp_mnist_lr_example)   | [Link](cross_device/mqtt_s3_fedavg_local_dp_mnist_lr_example/README.md)   |
 
 
 ## Simulation: (1) simulate FL using a single process (2) MPI-based FL Simulator (3) NCCL-based FL Simulator (fastest)
