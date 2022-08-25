@@ -32,10 +32,10 @@ jobs:
         mpi: [mpich]
 #        mpi: [mpich, openmpi]
         os: [ ubuntu-latest ]
-        include:
-        - os: ubuntu-latest
-          mpi: mpich
-          install-mpi: sudo apt install -y mpich libmpich-dev
+#        include:
+#        - os: ubuntu-latest
+#          mpi: mpich
+#          install-mpi: sudo apt install -y mpich libmpich-dev
 #        - os: ubuntu-latest
 #          mpi: openmpi
 #          install-mpi: sudo apt install -y openmpi-bin libopenmpi-dev
