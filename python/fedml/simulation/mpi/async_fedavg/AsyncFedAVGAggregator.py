@@ -10,7 +10,7 @@ import collections
 from .utils import transform_list_to_tensor
 from ....core.security.fedml_defender import FedMLDefender
 
-from ....core.schedule.scheduler import scheduler
+from ....core.schedule.seq_train_scheduler import scheduler
 from ....core.schedule.runtime_estimate import t_sample_fit
 
 
