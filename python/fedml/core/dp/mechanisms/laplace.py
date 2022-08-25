@@ -1,9 +1,11 @@
 import secrets
 import numpy as np
+
+from .base_dp_mechanism import BaseDPMechanism
 from ..common.utils import check_numeric_value, check_params
 
 
-class Laplace:
+class Laplace(BaseDPMechanism):
     """
     The classical Laplace mechanism in differential privacy.
     This code refers to IBM DP Library: https://github.com/IBM/differential-privacy-library
@@ -41,10 +43,10 @@ class Laplace:
     def randomise(self, value):
         """Randomise `value` with the mechanism."""
         check_numeric_value(value)
-        noise = self.compute_a_noise()
+        noise = self.compute_noise(0)
         return value + noise
 
-    def compute_a_noise(self):
+    def compute_noise(self, size):
 
         standard_laplace = self._laplace_sampler(
             self._rng.random(),

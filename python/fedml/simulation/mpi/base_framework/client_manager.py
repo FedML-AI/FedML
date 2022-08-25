@@ -8,7 +8,7 @@ class BaseClientManager(FedMLCommManager):
         super().__init__(args, comm, rank, size)
         self.trainer = trainer
         self.num_rounds = args.comm_round
-        self.round_idx = 0
+        self.args.round_idx = 0
 
     def run(self):
         super().run()
@@ -24,15 +24,15 @@ class BaseClientManager(FedMLCommManager):
 
     def handle_message_init(self, msg_params):
         self.trainer.update(0)
-        self.round_idx = 0
+        self.args.round_idx = 0
         self.__train()
 
     def handle_message_receive_model_from_server(self, msg_params):
         global_result = msg_params.get(MyMessage.MSG_ARG_KEY_INFORMATION)
         self.trainer.update(global_result)
-        self.round_idx += 1
+        self.args.round_idx += 1
         self.__train()
-        if self.round_idx == self.num_rounds - 1:
+        if self.args.round_idx == self.num_rounds - 1:
             self.finish()
 
     def send_model_to_server(self, receive_id, client_gradient):
