@@ -4,6 +4,7 @@ from fedml.core.security.fedml_defender import FedMLDefender
 from fedml.core.security.fedml_attacker import FedMLAttacker
 from fedml.core.dp.fed_privacy_mechanism import FedMLDifferentialPrivacy
 from fedml.ml.aggregator.agg_operator import FedMLAggOperator
+import logging
 
 
 class ServerAggregator(ABC):
@@ -57,6 +58,7 @@ class ServerAggregator(ABC):
 
     def on_after_aggregation(self, aggregated_model_or_grad: Dict) -> Dict:
         if FedMLDifferentialPrivacy.get_instance().is_enabled():
+            logging.info("-----add cdp noise ----")
             aggregated_model_or_grad = FedMLDifferentialPrivacy.get_instance().add_cdp_noise(
                 aggregated_model_or_grad
             )
