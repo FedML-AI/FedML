@@ -17,7 +17,7 @@ def download_mnist(data_cache_dir):
     if not os.path.exists(data_cache_dir):
         os.makedirs(data_cache_dir)
 
-    file_path = data_cache_dir + "/MNIST.zip"
+    file_path = os.path.join(data_cache_dir, "MNIST.zip")
     logging.info(file_path)
 
     # Download the file (if we haven't already)
@@ -98,13 +98,14 @@ def batch_data(args, data, batch_size):
 
 
 def load_partition_data_mnist_by_device_id(batch_size, device_id, train_path="MNIST_mobile", test_path="MNIST_mobile"):
-    train_path += "/" + device_id + "/" + "train"
-    test_path += "/" + device_id + "/" + "test"
+    train_path += os.path.join("/", device_id, "train")
+    test_path += os.path.join("/", device_id, "test")
     return load_partition_data_mnist(batch_size, train_path, test_path)
 
 
 def load_partition_data_mnist(
-    args, batch_size, train_path="./MNIST/train", test_path="./MNIST/test",
+    args, batch_size, train_path=os.path.join(os.getcwd(), "MNIST", "train"),
+        test_path=os.path.join(os.getcwd(), "MNIST", "test")
 ):
     users, groups, train_data, test_data = read_data(train_path, test_path)
 

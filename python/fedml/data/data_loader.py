@@ -73,8 +73,8 @@ def load_synthetic_data(args):
         ) = load_partition_data_mnist(
             args,
             args.batch_size,
-            train_path=args.data_cache_dir + "/MNIST/train",
-            test_path=args.data_cache_dir + "/MNIST/test",
+            train_path=os.path.join(args.data_cache_dir, "MNIST", "train"),
+            test_path=os.path.join(args.data_cache_dir, "MNIST", "test")
         )
         """
         For shallow NN or linear models, 
