@@ -171,7 +171,7 @@ class FedOptAPI(object):
         self.model_trainer.set_model_params(new_model_state_dict)
 
     def _local_test_on_all_clients(self, round_idx):
-        logging.info("################local_test_on_all_clients : {}".format(round_idx))
+        logging.info("################local_test_on_all_clients in round: {}".format(round_idx))
         train_metrics = {"num_samples": [], "num_correct": [], "losses": []}
 
         test_metrics = {"num_samples": [], "num_correct": [], "losses": []}

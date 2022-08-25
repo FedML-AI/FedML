@@ -164,7 +164,7 @@ class FedNovaTrainer(object):
         return params
 
     def local_test_on_all_clients(self, model_global, round_idx):
-        logging.info("################local_test_on_all_clients : {}".format(round_idx))
+        logging.info("################local_test_on_all_clients in round: {}".format(round_idx))
         train_metrics = {
             "num_samples": [],
             "num_correct": [],
