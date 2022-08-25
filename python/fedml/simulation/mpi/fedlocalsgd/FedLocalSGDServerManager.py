@@ -7,7 +7,7 @@ from ....core.distributed.fedml_comm_manager import FedMLCommManager
 from ....core.distributed.communication.message import Message
 
 
-class FedOptServerManager(FedMLCommManager):
+class FedLocalSGDServerManager(FedMLCommManager):
     def __init__(
         self,
         args,
