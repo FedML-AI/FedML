@@ -41,11 +41,11 @@ jobs:
 
       # https://github.com/mpi4py/setup-mpi
       - uses: mpi4py/setup-mpi@v1
-#      - name: Setup MPI (Linux)
-#        run: |
-#          sudo apt install -y -q openmpi-bin libopenmpi-dev
-#          pip install mpi4py
-#        if:   ${{ matrix.os == 'ubuntu-latest' }}
+      - name: Setup MPI (Linux)
+        run: |
+          sudo apt install -y -q openmpi-bin libopenmpi-dev
+          pip install mpi4py
+        if:   ${{ matrix.os == 'ubuntu-latest' }}
       - name: Show MPI info (Ubuntu)
         run:  mpichversion
         if:   ${{ matrix.os == 'ubuntu-latest' }}
