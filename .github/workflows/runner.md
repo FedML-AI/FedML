@@ -15,6 +15,7 @@ nohup bash run.sh > actions.log 2>&1 &
 # Install GitHub runner in Ubuntu from AWS:
 ssh -i "fedml-github-action.pem" ubuntu@ec2-54-176-61-229.us-west-1.compute.amazonaws.com
 ssh -i "fedml-github-action.pem" ubuntu@ec2-54-219-186-81.us-west-1.compute.amazonaws.com
+ssh -i "fedml-github-action.pem" ubuntu@ec2-54-219-187-134.us-west-1.compute.amazonaws.com
 
 mkdir actions-runner && cd actions-runner
 curl -o actions-runner-linux-x64-2.295.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.295.0/actions-runner-linux-x64-2.295.0.tar.gz
@@ -24,7 +25,8 @@ tar xzf ./actions-runner-linux-x64-2.295.0.tar.gz
 sudo rpm -Uvh https://packages.microsoft.com/config/rhel/7/packages-microsoft-prod.rpm
 sudo apt-get update && sudo apt-get install -y dotnet6
 dotnet --version
-./config.sh --url https://github.com/FedML-AI/FedML --token AXRYPLYQC7HPYXZ5ULI2PBLDAZOI2
+#Replace this $TOKEN variable from github action (https://github.com/FedML-AI/FedML/settings/actions/runners/new?arch=x64&os=linux)
+./config.sh --url https://github.com/FedML-AI/FedML --token $TOKEN  
 #nohup bash run.sh > actions.log 2>&1 &
 sudo ./svc.sh install
 sudo ./svc.sh start
