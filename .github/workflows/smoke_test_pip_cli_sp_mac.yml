@@ -36,7 +36,7 @@ jobs:
 #            python-version: '3.8'
 #          - os: windows-latest
 #            python-version: '3.6'
-    runs-on: [self-hosted, runner-mac, devops]
+    runs-on: [self-hosted, runner-mac, runner-linux, devops]
     steps:
       - uses: actions/setup-python@v4
         with:
