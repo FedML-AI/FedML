@@ -26,7 +26,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, runner-linux ]
+        os: [ ubuntu-latest, macos-latest ]
         arch: [X64]
         python-version: ['3.8']
 #        exclude:
