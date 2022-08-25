@@ -52,28 +52,19 @@ class FedMLDifferentialPrivacy:
         # print(f"grad = {grad}")
         return self.compute_a_noise(grad.shape) + grad
 
-    # add noise
-    # def compute_global_gradient(self, avg_param):
-    #     new_grad = dict()
-    #     print(f"grad={avg_param}")
-    #     for k in avg_param.keys():
-    #         new_grad[k] = self.compute_a_noise(avg_param[k].shape)
-    #     return new_grad
-
-    def add_cdp_noise(self, avg_param):
+    def add_a_noise(self, grad):
         new_grad = dict()
         # print(f"grad={avg_param}")
-        for k in avg_param.keys():
-            new_grad[k] = self.compute_new_grad(avg_param[k])
+        for k in grad.keys():
+            new_grad[k] = self.compute_new_grad(grad[k])
         return new_grad
 
-    def add_ldp_noise(self, grads):
-        print(f"grads = {grads}")
-        new_grads = []
-        for i in range(len(grads)):
+    def add_a_noise_to_local_data(self, local_data):
+        new_data = []
+        for i in range(len(local_data)):
             list = []
-            for x in grads[i]:
+            for x in local_data[i]:
                 y = self.compute_new_grad(x)
                 list.append(y)
-            new_grads.append(tuple(list))
-        return new_grads
+            new_data.append(tuple(list))
+        return new_data
