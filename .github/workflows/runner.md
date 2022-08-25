@@ -12,7 +12,7 @@ tar xzf ./actions-runner-linux-x64-2.293.0.tar.gz
 ./config.sh --url https://github.com/FedML-AI/FedML --token AQLQ4JAGL4KICTWDZSXVXQDCV7GSO
 nohup bash run.sh > actions.log 2>&1 &
 
-# Install GitHub runner in Ubuntu:
+# Install GitHub runner in Ubuntu from AWS:
 ssh -i "fedml-github-action.pem" ubuntu@ec2-54-176-61-229.us-west-1.compute.amazonaws.com
 ssh -i "fedml-github-action.pem" ubuntu@ec2-54-219-186-81.us-west-1.compute.amazonaws.com
 
@@ -31,7 +31,7 @@ sudo ./svc.sh start
 sudo ./svc.sh status
 
 
-# Install GitHub runner in Windows:
+# Install GitHub runner in Windows from AWS:
 host: ec2-184-169-242-201.us-west-1.compute.amazonaws.com
 
 mkdir actions-runner; cd actions-runner
