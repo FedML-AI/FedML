@@ -15,7 +15,6 @@ potential bugs when using memory: when only some of clients participate in compu
 
 class FoolsGoldDefense(BaseDefenseMethod):
     def __init__(self, config):
-        print(f"init fools gold===========")
         self.memory = None
         self.use_memory = config.use_memory
 
