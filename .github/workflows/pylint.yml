@@ -2,10 +2,10 @@ name: Pylint - FedML
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, test/v0.7.0, dev/v0.7.0 ]
 
   pull_request:
-    branches: [ master ]
+    branches: [ master, test/v0.7.0, dev/v0.7.0 ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -16,10 +16,10 @@ jobs:
       run:
         shell: bash
         working-directory: python
-    runs-on: [self-hosted, devops]
+    runs-on: [self-hosted, runner-linux, devops]
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.7"]
+        python-version: ["3.7", "3.8", "3.9"]
     steps:
     - uses: actions/checkout@v3
       with:
