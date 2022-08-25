@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: SMOKE TEST (PIP, CLI, SP On Linux)
+name: SMOKE TEST (CROSS-SILO-HO)
 
 # Controls when the workflow will run
 on:
@@ -18,7 +18,7 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  pip-install-fedml-and-test-sp:
+  cross-silo-horizontal-test:
     defaults:
       run:
         shell: bash
@@ -26,34 +26,45 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest ]
+        os: [ windows-2019 ]
         arch: [X64, ARM64]
         python-version: ['3.7', '3.8', '3.9']
+        client-index: ['0', '1', '2']
 #        exclude:
 #          - os: macos-latest
 #            python-version: '3.8'
 #          - os: windows-latest
 #            python-version: '3.6'
-    runs-on: [self-hosted, runner-linux, devops]
+    runs-on: [self-hosted, runner-windows, devops]
     steps:
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      # https://github.com/actions/checkout/issues/116#issuecomment-644419389
       - uses: actions/checkout@v3
       - name: pip install -e ./
         run: |
           pip install -e ./
 
-      - name: test "fedml login" and "fedml build"
+      - name: server - cross-silo - ho
         run: |
-          cd tests/smoke_test/cli
-          bash login.sh
-          bash build.sh
-      - name: test simulation-sp
+          cd quick_start/octopus
+          run_id=${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
+          echo ${run_id}
+          .\run_server.bat $run_id
+        if:   ${{ matrix.client-index == '0' }}
+
+      - name: client 1 - cross-silo - ho
         run: |
-          cd quick_start/parrot
-          python torch_fedavg_mnist_lr_one_line_example.py --cf fedml_config.yaml
-          python torch_fedavg_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
-          python torch_fedavg_mnist_lr_custum_data_and_model_example.py --cf fedml_config.yaml
-          
+          cd quick_start/octopus
+          run_id=${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
+          echo run_id
+          .\run_client.bat 1 $run_id
+        if:   ${{ matrix.client-index == '1' }}
+
+      - name: client 2 - cross-silo - ho
+        run: |
+          cd quick_start/octopus
+          run_id=${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
+          echo run_id
+          .\run_client.bat 2 $run_id
+        if: ${{ matrix.client-index == '2' }}
