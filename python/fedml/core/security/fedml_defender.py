@@ -1,6 +1,7 @@
 import logging
 from .defense.RFA_defense import RFA_defense
 from .defense.cclip_defense import CClipDefense
+from .defense.foolsgold_defense import FoolsGoldDefense
 from .defense.geometric_median_defense import GeometricMedianDefense
 from .defense.krum_defense import KrumDefense
 from .defense.robust_learning_rate_defense import RobustLearningRateDefense
@@ -62,8 +63,10 @@ class FedMLDefender:
             #     self.defender = DifferentialPrivacy(args)
             elif self.defense_type == DEFENSE_RFA:
                 self.defender = RFA_defense(args)
+            elif self.defense_type == DEFENSE_FOOLSGOLD:
+                self.defender = FoolsGoldDefense(args)
             else:
-                raise Exception("args.attack_type is not defined!")
+                raise Exception("args.defense_type is not defined!")
         else:
             self.is_enabled = False
 
