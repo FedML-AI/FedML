@@ -21,7 +21,7 @@ jobs:
   cross-silo-horizontal-test:
     defaults:
       run:
-        shell: bash
+        shell: powershell
         working-directory: python
     strategy:
       fail-fast: false
