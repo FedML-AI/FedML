@@ -1,9 +1,10 @@
 import time
 
 import MNN
-import fedml
 import numpy as np
 import wandb
+
+import fedml
 from fedml import mlops
 
 F = MNN.expr
@@ -15,14 +16,9 @@ import logging
 
 class FedMLAggregator(object):
     def __init__(
-        self,
-        test_dataloader,
-        worker_num,
-        device,
-        args,
-        model_trainer,
+        self, test_dataloader, worker_num, device, args, aggregator,
     ):
-        self.trainer = model_trainer
+        self.aggregator = aggregator
 
         self.args = args
         self.test_global = test_dataloader
@@ -36,14 +32,14 @@ class FedMLAggregator(object):
             self.flag_client_model_uploaded_dict[idx] = False
 
     def get_global_model_params(self):
-        return self.trainer.get_model_params()
+        return self.aggregator.get_model_params()
 
     # TODO: refactor MNN-related file processing
     def get_global_model_params_file(self):
-        return self.trainer.get_model_params_file()
+        return self.aggregator.get_model_params_file()
 
     def set_global_model_params(self, model_parameters):
-        self.trainer.set_model_params(model_parameters)
+        self.aggregator.set_model_params(model_parameters)
 
     def add_local_trained_result(self, index, model_params, sample_num):
         logging.info("add_model. index = %d" % index)
@@ -89,9 +85,7 @@ class FedMLAggregator(object):
         logging.info("aggregate time cost: %d" % (end_time - start_time))
         return averaged_params
 
-    def data_silo_selection(
-        self, round_idx, data_silo_num_in_total, client_num_in_total
-    ):
+    def data_silo_selection(self, round_idx, data_silo_num_in_total, client_num_in_total):
         """
 
         Args:
@@ -106,24 +100,17 @@ class FedMLAggregator(object):
 
         """
         logging.info(
-            "data_silo_num_in_total = %d, client_num_in_total = %d"
-            % (data_silo_num_in_total, client_num_in_total)
+            "data_silo_num_in_total = %d, client_num_in_total = %d" % (data_silo_num_in_total, client_num_in_total)
         )
         assert data_silo_num_in_total >= client_num_in_total
         if client_num_in_total == data_silo_num_in_total:
             return [i for i in range(data_silo_num_in_total)]
         else:
-            np.random.seed(
-                round_idx
-            )  # make sure for each comparison, we are selecting the same clients each round
-            data_silo_index_list = np.random.choice(
-                range(data_silo_num_in_total), client_num_in_total, replace=False
-            )
+            np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round
+            data_silo_index_list = np.random.choice(range(data_silo_num_in_total), client_num_in_total, replace=False)
         return data_silo_index_list
 
-    def client_selection(
-        self, round_idx, client_id_list_in_total, client_num_per_round
-    ):
+    def client_selection(self, round_idx, client_id_list_in_total, client_num_per_round):
         """
         Args:
             round_idx: round index, starting from 0
@@ -135,32 +122,19 @@ class FedMLAggregator(object):
         Returns:
             client_id_list_in_this_round: sampled real edge ID list, e.g., [64, 66]
         """
-        if (
-            client_num_per_round == len(client_id_list_in_total)
-            or len(client_id_list_in_total) == 1  # for debugging
-        ):
+        if client_num_per_round == len(client_id_list_in_total) or len(client_id_list_in_total) == 1:  # for debugging
             return client_id_list_in_total
-        np.random.seed(
-            round_idx
-        )  # make sure for each comparison, we are selecting the same clients each round
-        client_id_list_in_this_round = np.random.choice(
-            client_id_list_in_total, client_num_per_round, replace=False
-        )
+        np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round
+        client_id_list_in_this_round = np.random.choice(client_id_list_in_total, client_num_per_round, replace=False)
         return client_id_list_in_this_round
 
     def client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
         if client_num_in_total == client_num_per_round:
-            client_indexes = [
-                client_index for client_index in range(client_num_in_total)
-            ]
+            client_indexes = [client_index for client_index in range(client_num_in_total)]
         else:
             num_clients = min(client_num_per_round, client_num_in_total)
-            np.random.seed(
-                round_idx
-            )  # make sure for each comparison, we are selecting the same clients each round
-            client_indexes = np.random.choice(
-                range(client_num_in_total), num_clients, replace=False
-            )
+            np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round
+            client_indexes = np.random.choice(range(client_num_in_total), num_clients, replace=False)
         logging.info("client_indexes = %s" % str(client_indexes))
         return client_indexes
 
@@ -200,14 +174,15 @@ class FedMLAggregator(object):
         fedml.logging.info("test acc = {}".format(test_accuracy))
         fedml.logging.info("test loss = {}".format(test_loss))
 
-        mlops.log({"round_idx": round_idx, "accuracy": round(np.round(test_accuracy, 4), 4),
-                   "loss": round(np.round(test_loss, 4))})
+        mlops.log(
+            {
+                "round_idx": round_idx,
+                "accuracy": round(np.round(test_accuracy, 4), 4),
+                "loss": round(np.round(test_loss, 4)),
+            }
+        )
 
         if self.args.enable_wandb:
             wandb.log(
-                {
-                    "round idx": round_idx,
-                    "test acc": test_accuracy,
-                    "test loss": test_loss,
-                }
+                {"round idx": round_idx, "test acc": test_accuracy, "test loss": test_loss,}
             )
