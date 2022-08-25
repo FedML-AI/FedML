@@ -67,6 +67,6 @@ jobs:
       run: |
         cd tests/smoke_test/simulation_mpi
         hostname > mpi_host_file
-        mpiexec --oversubscribe -np 5 -hostfile mpi_host_file python main.py --cf fedml_config.yaml
+        mpiexec -np 5 -hostfile mpi_host_file python main.py --cf fedml_config.yaml
     - name: Uninstall package after testing
       run:  python -m pip uninstall --yes mpi4py
