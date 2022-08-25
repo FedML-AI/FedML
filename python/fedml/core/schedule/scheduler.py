@@ -1,12 +1,13 @@
-import sys
-import numpy as np
 import logging
+import sys
+
+import numpy as np
 
 sys.setrecursionlimit(10000)
 
+
 class scheduler:
-    def __init__(self, workloads, constraints, memory,
-                uniform_client=True, uniform_gpu=False):
+    def __init__(self, workloads, constraints, memory, uniform_client=True, uniform_gpu=False):
         self.workloads = workloads
         self.x = np.sort(workloads)[::-1]
         self.x_sorted_index = np.argsort(workloads)[::-1]
@@ -14,7 +15,7 @@ class scheduler:
         self.m = memory
         self.len_x = len(workloads)
         self.len_y = len(constraints)
-        self.uniform_client = uniform_client 
+        self.uniform_client = uniform_client
         self.uniform_gpu = uniform_gpu
         self.iter_times = 0
 
@@ -25,7 +26,7 @@ class scheduler:
         for i in range(len(cost_maps)):
             costs.append(max(cost_maps[i]))
         costs = np.array(costs)
-        # delete other items that are not optimimal sub combinations. 
+        # delete other items that are not optimimal sub combinations.
         min_indexes = np.argwhere(costs == np.amin(costs))
         min_indexes = [i[0] for i in min_indexes]
         costs = costs[min_indexes]
@@ -129,9 +130,7 @@ class scheduler:
         if mode == 1:
             resource_maps = []
             resource_maps.append(np.zeros((self.len_y)))
-            x_maps, cost_maps, resource_maps = self.assign_a_workload(
-                x_maps, cost_maps, resource_maps
-            )
+            x_maps, cost_maps, resource_maps = self.assign_a_workload(x_maps, cost_maps, resource_maps)
         else:
             x_maps, cost_maps = self.assign_a_workload_serial(x_maps, cost_maps)
 
@@ -150,10 +149,7 @@ class scheduler:
         print(f"self.iter_times: {self.iter_times}")
         print(f"x_maps: {x_maps} len(x_maps): {len(x_maps)}")
         print(f"cost_maps: {cost_maps}  len(cost_maps): {len(cost_maps)}")
-        print(
-            "The optimal maximum cost: %f, assignment: %s\n"
-            % (costs[target_index], str(x_maps[target_index]))
-        )
+        print("The optimal maximum cost: %f, assignment: %s\n" % (costs[target_index], str(x_maps[target_index])))
         print(f"target_index: {target_index} cost_map: {cost_maps[target_index]}")
 
         if mode == 1:
@@ -190,11 +186,18 @@ class scheduler:
         return output_schedules
 
 
-
-
 class scheduler_c:
     # def __init__(self, workloads, constraints, memory, client_data_nums, cost_funcs, uniform_client=True, uniform_gpu=False):
-    def __init__(self, workloads, constraints, memory, cost_funcs, uniform_client=True, uniform_gpu=False, prune_equal_sub_solution=True):
+    def __init__(
+        self,
+        workloads,
+        constraints,
+        memory,
+        cost_funcs,
+        uniform_client=True,
+        uniform_gpu=False,
+        prune_equal_sub_solution=True,
+    ):
         self.workloads = workloads
         self.x = np.sort(workloads)[::-1]
         self.x_sorted_index = np.argsort(workloads)[::-1]
@@ -235,7 +238,7 @@ class scheduler_c:
             costs.append(max(cost_maps[i]))
         costs = np.array(costs)
         # logging.info(f"self.iter_times: {self.iter_times}, cost_maps:{cost_maps} ")
-        # delete other items that are not optimimal sub combinations. 
+        # delete other items that are not optimimal sub combinations.
         if self.prune_equal_sub_solution:
             target_case_index = np.argmin(costs)
             costs = [costs[target_case_index]]
@@ -272,7 +275,7 @@ class scheduler_c:
             new_maps.append(np.copy(x_map))
             new_maps[i][target_index] = i
             new_costs.append(np.copy(cost_map))
-#             new_costs[i][i] += self.y[i] * self.x[target_index]
+            #             new_costs[i][i] += self.y[i] * self.x[target_index]
             new_costs[i][i] += self.obtain_client_cost(i, client_id)
 
         # Insert all the new maps.
@@ -280,7 +283,7 @@ class scheduler_c:
             # Check if this case violates the memory constraints.
             max_cost = max(new_costs[i])
             resource_index = np.argmax(new_costs[i])
-#             if max_cost <= self.m[resource_index]:
+            #             if max_cost <= self.m[resource_index]:
             x_maps.append(new_maps[i])
             cost_maps.append(new_costs[i])
         return self.assign_a_workload_serial(x_maps, cost_maps)
@@ -350,9 +353,7 @@ class scheduler_c:
         if mode == 1:
             resource_maps = []
             resource_maps.append(np.zeros((self.len_y)))
-            x_maps, cost_maps, resource_maps = self.assign_a_workload(
-                x_maps, cost_maps, resource_maps
-            )
+            x_maps, cost_maps, resource_maps = self.assign_a_workload(x_maps, cost_maps, resource_maps)
         else:
             x_maps, cost_maps = self.assign_a_workload_serial(x_maps, cost_maps)
 
@@ -375,8 +376,7 @@ class scheduler_c:
         # logging.info(f"schedules: {schedules}  len(schedules): {len(schedules)}")
         logging.info(f"self.iter_times: {self.iter_times}")
         logging.info(
-            "The optimal maximum cost: %f, assignment: %s\n"
-            % (costs[target_index], str(x_maps[target_index]))
+            "The optimal maximum cost: %f, assignment: %s\n" % (costs[target_index], str(x_maps[target_index]))
         )
         logging.info(f"target_index: {target_index} cost_map: {cost_maps[target_index]}")
 
@@ -420,9 +420,6 @@ class scheduler_c:
                     schedule[num_bunches] = jobs
                 output_schedules.append(schedule)
         return schedules, output_schedules
-
-
-
 
 
 if __name__ == "__main__":

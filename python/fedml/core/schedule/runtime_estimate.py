@@ -1,6 +1,3 @@
-import logging
-
-import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -16,9 +13,9 @@ def linear_fit(x, y):
     return z1, p1, yvals, fit_error
 
 
-
-
-def t_sample_fit(num_workers, num_clients, runtime_history, train_data_local_num_dict, uniform_client=False, uniform_gpu=False):
+def t_sample_fit(
+    num_workers, num_clients, runtime_history, train_data_local_num_dict, uniform_client=False, uniform_gpu=False
+):
     """
         runtime_history: {
             0: {0: [], 1: [], 2: []...},
@@ -93,7 +90,9 @@ def t_sample_fit(num_workers, num_clients, runtime_history, train_data_local_num
                 runtime_info = runtime_history[worker_id][client_id]
                 if isinstance(runtime_info, list):
                     runtime_to_fit[worker_id][client_id] += runtime_info
-                    data_local_num_dict[worker_id][client_id] += [train_data_local_num_dict[client_id]] * len(runtime_info)
+                    data_local_num_dict[worker_id][client_id] += [train_data_local_num_dict[client_id]] * len(
+                        runtime_info
+                    )
                 elif runtime_info is None:
                     pass
                 elif runtime_info > 0:
@@ -118,24 +117,19 @@ def t_sample_fit(num_workers, num_clients, runtime_history, train_data_local_num
 if __name__ == "__main__":
     num_workers = 4
     num_clients = 5
-    train_data_local_num_dict = {0: 100, 1: 200, 2: 300, 3:400, 4:250}
+    train_data_local_num_dict = {0: 100, 1: 200, 2: 300, 3: 400, 4: 250}
     gpu_power = {0: 1, 1: 1, 2: 1, 3: 1}
 
     runtime_history = {}
     for i in range(num_workers):
         runtime_history[i] = {}
         for j in range(num_clients):
-            runtime_history[i][j] = (train_data_local_num_dict[j] + 10*np.random.rand(3)).tolist()
+            runtime_history[i][j] = (train_data_local_num_dict[j] + 10 * np.random.rand(3)).tolist()
 
     fit_params, fit_funcs, fit_errors = t_sample_fit(
-        4, 5, runtime_history, train_data_local_num_dict, uniform_client=True, uniform_gpu=False)
+        4, 5, runtime_history, train_data_local_num_dict, uniform_client=True, uniform_gpu=False
+    )
 
     print(fit_params)
     print(fit_funcs)
     print(fit_errors)
-
-
-
-
-
-
