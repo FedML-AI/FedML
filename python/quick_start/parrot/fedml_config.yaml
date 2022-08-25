@@ -35,7 +35,7 @@ comm_args:
   backend: "sp"
 
 tracking_args:
-  enable_tracking: false
+  enable_tracking: false # logging to MLOps
   enable_wandb: false
   log_file_dir: ./log
   run_name: fedml_torch_fedavg_mnist_lr
