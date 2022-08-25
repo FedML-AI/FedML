@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+import logging
+from ...core.dp.fed_privacy_mechanism import FedMLDifferentialPrivacy
 
 
 class ClientTrainer(ABC):
@@ -13,6 +15,7 @@ class ClientTrainer(ABC):
         self.model = model
         self.id = 0
         self.args = args
+        FedMLDifferentialPrivacy.get_instance().init(args)
 
     def set_id(self, trainer_id):
         self.id = trainer_id
@@ -33,7 +36,10 @@ class ClientTrainer(ABC):
         pass
 
     def on_after_local_training(self, train_data, device, args):
-        pass
+        if FedMLDifferentialPrivacy.get_instance().is_ldp_enabled():
+            logging.info("-----add ldp noise ----")
+            model_params_with_dp_noise = FedMLDifferentialPrivacy.get_instance().add_ldp_noise(self.get_model_params())
+            self.set_model_params(model_params_with_dp_noise)
 
     def test(self, test_data, device, args):
         pass
