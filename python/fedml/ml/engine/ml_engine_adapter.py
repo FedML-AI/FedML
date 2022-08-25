@@ -1,19 +1,7 @@
 import torch
 
 from .torch_process_group_manager import TorchProcessGroupManager
-
-
-class MLEngineBackend:
-    ml_engine_args_flag = "ml_engine"
-
-    ml_engine_backend_torch = "torch"
-    ml_engine_backend_tf = "tf"
-    ml_engine_backend_jax = "jax"
-    ml_engine_backend_mxnet = "mxnet"
-
-    ml_device_type_gpu = "gpu"
-    ml_device_type_cpu = "cpu"
-    ml_device_type_mps = "mps"
+from ...core.common.ml_engine_backend import MLEngineBackend
 
 
 def convert_numpy_to_torch_data_format(args, batched_x, batched_y):
@@ -48,10 +36,10 @@ def convert_numpy_to_jax_data_format(args, batched_x, batched_y):
     import numpy as np
 
     if args.model == "cnn":
-        batched_x = np.asarray(batched_x, dtype=np.float32)     # CNN_MINST
+        batched_x = np.asarray(batched_x, dtype=np.float32)  # CNN_MINST
         batched_x = np.reshape(batched_x, [-1, 28, 28])
     else:
-        batched_x = np.asarray(batched_x, dtype=np.float32)     # LR_MINST or other
+        batched_x = np.asarray(batched_x, dtype=np.float32)  # LR_MINST or other
 
     batched_y = np.asarray(batched_y, dtype=np.float32)
     return batched_x, batched_y
@@ -93,10 +81,7 @@ def is_torch_device_available(args, device_type):
         # Macbook M1: https://pytorch.org/docs/master/notes/mps.html
         if not torch.backends.mps.is_available():
             if not torch.backends.mps.is_built():
-                print(
-                    "MPS not available because the current PyTorch install was not "
-                    "built with MPS enabled."
-                )
+                print("MPS not available because the current PyTorch install was not " "built with MPS enabled.")
             else:
                 print(
                     "MPS not available because the current MacOS version is not 12.3+ "
@@ -180,9 +165,9 @@ def get_tf_device(args, using_gpu, device_id, device_type):
     import tensorflow as tf
 
     if using_gpu:
-        return tf.device('/device:gpu:{}'.format(device_id))
+        return tf.device("/device:gpu:{}".format(device_id))
     else:
-        return tf.device('/device:cpu:0')
+        return tf.device("/device:cpu:0")
 
 
 def get_jax_device(args, using_gpu, device_id, device_type):
@@ -200,6 +185,7 @@ def get_jax_device(args, using_gpu, device_id, device_type):
 
 def get_mxnet_device(args, using_gpu, device_id, device_type):
     import mxnet as mx
+
     if using_gpu:
         return mx.gpu(device_id)
     else:
