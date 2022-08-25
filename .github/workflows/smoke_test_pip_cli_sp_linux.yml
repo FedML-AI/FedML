@@ -56,4 +56,3 @@ jobs:
           python torch_fedavg_mnist_lr_one_line_example.py --cf fedml_config.yaml
           python torch_fedavg_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
           python torch_fedavg_mnist_lr_custum_data_and_model_example.py --cf fedml_config.yaml
-          
