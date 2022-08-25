@@ -23,8 +23,8 @@ train_args:
   federated_optimizer: "FedAvg"
   # for CLI running, this can be None; in MLOps deployment, `client_id_list` will be replaced with real-time selected devices
   client_id_list:
-  client_num_in_total: 2
-  client_num_per_round: 2
+  client_num_in_total: 4
+  client_num_per_round: 4
   comm_round: 10
   epochs: 1
   batch_size: 10
@@ -59,7 +59,12 @@ attack_args:
   attack_type: None
 
 
+# example:
+#  norm_diff_clipping: norm_bound: 5.0
+#  slsgd: trim_param_b: 1, alpha: 0.95, option_type: 2
 defense_args:
   enable_defense: true
-  defense_type: foolsgold
-  use_memory: true
+  defense_type: slsgd
+  trim_param_b: 1
+  alpha: 0.95
+  option_type: 2
