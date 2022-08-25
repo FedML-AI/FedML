@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: PIP, CLI, SP On Linux
+name: PIP, CLI, SP - On Linux
 
 # Controls when the workflow will run
 on:
