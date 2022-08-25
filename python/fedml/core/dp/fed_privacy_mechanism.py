@@ -36,25 +36,43 @@ class FedMLDifferentialPrivacy:
     def is_enabled(self):
         return self.is_dp_enabled
 
+    def is_cdp_enabled(self):
+        return self.is_enabled() and self.get_dp_type() == "cdp"
+
+    def is_ldp_enabled(self):
+        return self.is_enabled() and self.get_dp_type() == "ldp"
+
     def get_dp_type(self):
         return self.dp_type
 
     def compute_a_noise(self, size):
         return self.dp.compute_a_noise(size)
 
+    def compute_new_grad(self, grad):
+        # print(f"grad = {grad}")
+        return self.compute_a_noise(grad.shape) + grad
+
     # add noise
-    def compute_randomized_gradient(self, grad):
-        new_grad = dict()
-        for k in grad.keys():
-            new_grad[k] = self.compute_a_noise(grad[k].shape) + grad[k]
-        return new_grad
+    # def compute_global_gradient(self, avg_param):
+    #     new_grad = dict()
+    #     print(f"grad={avg_param}")
+    #     for k in avg_param.keys():
+    #         new_grad[k] = self.compute_a_noise(avg_param[k].shape)
+    #     return new_grad
 
     def add_cdp_noise(self, avg_param):
-        if self.dp_type == "cdp":
-            avg_param = self.compute_randomized_gradient(avg_param)
-        return avg_param
+        new_grad = dict()
+        # print(f"grad={avg_param}")
+        for k in avg_param.keys():
+            new_grad[k] = self.compute_new_grad(avg_param[k])
+        return new_grad
 
-    def add_ldp_noise(self, grad):
-        if self.dp_type == "ldp":
-            grad = self.compute_randomized_gradient(grad)
-        return grad
+    def add_ldp_noise(self, grads):
+        new_grads = []
+        for i in range(len(grads)):
+            list = []
+            for x in grads[i]:
+                y = self.compute_new_grad(x)
+                list.append(y)
+            new_grads.append(tuple(list))
+        return new_grads
