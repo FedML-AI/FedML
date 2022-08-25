@@ -56,7 +56,7 @@ class ServerAggregator(ABC):
     def on_after_aggregation(self, aggregated_model_or_grad: Dict) -> Dict:
         if FedMLDifferentialPrivacy.get_instance().is_cdp_enabled():
             logging.info("-----add cdp noise ----")
-            aggregated_model_or_grad = FedMLDifferentialPrivacy.get_instance().add_a_noise(aggregated_model_or_grad)
+            aggregated_model_or_grad = FedMLDifferentialPrivacy.get_instance().add_noise(aggregated_model_or_grad)
         return aggregated_model_or_grad
 
     @abstractmethod

@@ -1,5 +1,6 @@
-from .mechanisms import Laplace, Gaussian
 import logging
+
+from .mechanisms import Laplace, Gaussian
 
 
 class FedMLDifferentialPrivacy:
@@ -16,9 +17,7 @@ class FedMLDifferentialPrivacy:
         self.dp_type = None
         self.dp = None
 
-    def init(
-        self, args
-    ):
+    def init(self, args):
         if hasattr(args, "enable_dp") and args.enable_dp:
             logging.info(".......init dp......." + args.mechanism_type + "-" + args.dp_type)
             self.is_dp_enabled = True
@@ -45,18 +44,11 @@ class FedMLDifferentialPrivacy:
     def get_dp_type(self):
         return self.dp_type
 
-    def compute_a_noise(self, size):
-        return self.dp.compute_a_noise(size)
-
-    def compute_new_grad(self, grad):
-        # print(f"grad = {grad}")
-        return self.compute_a_noise(grad.shape) + grad
-
-    def add_a_noise(self, grad):
+    def add_noise(self, grad):
         new_grad = dict()
         # print(f"grad={avg_param}")
         for k in grad.keys():
-            new_grad[k] = self.compute_new_grad(grad[k])
+            new_grad[k] = self._compute_new_grad(grad[k])
         return new_grad
 
     def add_a_noise_to_local_data(self, local_data):
@@ -64,7 +56,14 @@ class FedMLDifferentialPrivacy:
         for i in range(len(local_data)):
             list = []
             for x in local_data[i]:
-                y = self.compute_new_grad(x)
+                y = self._compute_new_grad(x)
                 list.append(y)
             new_data.append(tuple(list))
         return new_data
+
+    def __compute_a_noise(self, size):
+        return self.dp.compute_a_noise(size)
+
+    def _compute_new_grad(self, grad):
+        # print(f"grad = {grad}")
+        return self.__compute_a_noise(grad.shape) + grad
