@@ -41,11 +41,7 @@ jobs:
 
       # https://github.com/mpi4py/setup-mpi
       - uses: mpi4py/setup-mpi@v1
-      - name: Setup MPI (Linux)
-        run: |
-          sudo apt install -y -q openmpi-bin libopenmpi-dev
-          pip install mpi4py
-        if:   ${{ matrix.os == 'ubuntu-latest' }}
+
       - name: Show MPI info (Ubuntu)
         run:  mpichversion
         if:   ${{ matrix.os == 'ubuntu-latest' }}
@@ -53,4 +49,5 @@ jobs:
       - name: test simulation-mpi
         run: |
           cd tests/smoke_test/simulation_mpi
-          bash run_one_line_example.sh
+          hostname > mpi_host_file
+          mpiexec --oversubscribe -np 5 -hostfile mpi_host_file python main.py --cf fedml_config.yaml
