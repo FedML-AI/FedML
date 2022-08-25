@@ -17,29 +17,19 @@ ssh -i "fedml-github-action.pem" ubuntu@ec2-54-176-61-229.us-west-1.compute.amaz
 ssh -i "fedml-github-action.pem" ubuntu@ec2-54-219-186-81.us-west-1.compute.amazonaws.com
 ssh -i "fedml-github-action.pem" ubuntu@ec2-54-219-187-134.us-west-1.compute.amazonaws.com
 
-mkdir actions-runner && cd actions-runner
-curl -o actions-runner-linux-x64-2.295.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.295.0/actions-runner-linux-x64-2.295.0.tar.gz
-echo "a80c1ab58be3cd4920ac2e51948723af33c2248b434a8a20bd9b3891ca4000b6  actions-runner-linux-x64-2.295.0.tar.gz" | shasum -a 256 -c
-tar xzf ./actions-runner-linux-x64-2.295.0.tar.gz
-
 sudo rpm -Uvh https://packages.microsoft.com/config/rhel/7/packages-microsoft-prod.rpm
 sudo apt-get update && sudo apt-get install -y dotnet6
 dotnet --version
-#Replace this $TOKEN variable from github action (https://github.com/FedML-AI/FedML/settings/actions/runners/new?arch=x64&os=linux)
-./config.sh --url https://github.com/FedML-AI/FedML --token $TOKEN  
-#nohup bash run.sh > actions.log 2>&1 &
+#install runner based on the following url: https://github.com/FedML-AI/FedML/settings/actions/runners/new?arch=x64&os=linux
+
 sudo ./svc.sh install
 sudo ./svc.sh start
 sudo ./svc.sh status
 
 
 # Install GitHub runner in Windows from AWS:
+You may connect to AWS Windows server by RDP client from MAC AppStore based on the url:  https://docs.microsoft.com/en-us/windows-server/remote/remote-desktop-services/clients/remote-desktop-mac
+
 host: ec2-184-169-242-201.us-west-1.compute.amazonaws.com
 
-mkdir actions-runner; cd actions-runner
-Invoke-WebRequest -Uri https://github.com/actions/runner/releases/download/v2.295.0/actions-runner-win-x64-2.295.0.zip -OutFile actions-runner-win-x64-2.295.0.zip
-if((Get-FileHash -Path actions-runner-win-x64-2.295.0.zip -Algorithm SHA256).Hash.ToUpper() -ne 'bd448c6ce36121eeb7f71c2c56025c1a05027c133b3cff9c7094c6bfbcc1314f'.ToUpper()){ throw 'Computed checksum did not match' }
-Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory("$PWD/actions-runner-win-x64-2.295.0.zip", "$PWD")
-
-./config.cmd --url https://github.com/FedML-AI/FedML --token AXRYPL3CQM6U6OMHN5KLJATDAZKJ4
-./run.cmd
+install runner based on the following url: https://github.com/FedML-AI/FedML/settings/actions/runners/new?arch=x64&os=win
