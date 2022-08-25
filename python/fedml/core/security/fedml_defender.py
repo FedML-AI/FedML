@@ -16,6 +16,7 @@ from ...core.security.constants import (
     DEFENSE_CCLIP,
     DEFENSE_WEAK_DP,
     DEFENSE_RFA,
+    DEFENSE_FOOLSGOLD
 )
 from typing import List, Tuple, Dict, Any, Callable
 
@@ -85,7 +86,7 @@ class FedMLDefender:
         return self.is_defense_enabled() and self.defense_type in [DEFENSE_SLSGD]
 
     def is_defense_before_aggregation(self):
-        return self.is_defense_enabled() and self.defense_type in [DEFENSE_SLSGD]
+        return self.is_defense_enabled() and self.defense_type in [DEFENSE_SLSGD, DEFENSE_FOOLSGOLD]
 
     def defend_before_aggregation(
         self,
