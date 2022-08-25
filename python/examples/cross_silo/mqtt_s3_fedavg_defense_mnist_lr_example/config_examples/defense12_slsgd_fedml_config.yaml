@@ -58,8 +58,13 @@ attack_args:
   enable_attack: false
   attack_type: None
 
-# for FoolsGold Defense, if use_memory is true, then client_num_in_total should be equal to client_number_per_round
+
+# example:
+#  norm_diff_clipping: norm_bound: 5.0
+#  slsgd: trim_param_b: 1, alpha: 0.95, option_type: 2
 defense_args:
   enable_defense: true
-  defense_type: foolsgold
-  use_memory: true
+  defense_type: slsgd
+  trim_param_b: 1
+  alpha: 0.95
+  option_type: 2
