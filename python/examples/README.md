@@ -1,18 +1,23 @@
 # Examples
 
-- This is the outline of all examples. For more detailed instructions, please refer to [https://doc.fedml.ai](https://doc.fedml.ai)
+- This is the outline of all examples. Examples demonstrate:
+1. Multiple scenarios: Cross-silo Federated Learning; Cross-device Federated Learning; FL Simulation with Single Process or Distributed Computing.
+2. Support Any Machine Learning Framework: PyTorch, TensorFlow, JAX with Haiku, and MXNet.
+3. Diverse communication backends (MPI, gRPC, PyTorch RPC, MQTT + S3)
+4. Differential Privacy (CDP-central DP; LDP-local DP)
+5. Attacker (API: fedml.core.FedMLAttacker); README: [python/fedml/core/security/readme.md](python/fedml/core/security/readme.md)
+6. Defender (API: fedml.core.FedMLDefender); README: [python/fedml/core/security/readme.md](python/fedml/core/security/readme.md)
+7. Secure Aggregation (multi-party computation): [cross_silo/light_sec_agg_example](cross_silo/light_sec_agg_example) 
+
+
+
 - <b>In [FedML/python/app](./../app) folder, we also provide applications in real-world settings</b>.
 
 
+- For more detailed instructions, please refer to [https://doc.fedml.ai](https://doc.fedml.ai)
 
 ## Cross-silo Federated Learning for cross-organization/account training
 
-The following examples include:
-1. diverse communication backends (MPI, gRPC, PyTorch RPC, MQTT + S3)
-2. Differential Privacy (CDP-central DP; LDP-local DP)
-3. Attacker (API: fedml.core.FedMLAttacker); README: [python/fedml/core/security/readme.md](python/fedml/core/security/readme.md)
-4. Defender (API: fedml.core.FedMLDefender); README: [python/fedml/core/security/readme.md](python/fedml/core/security/readme.md)
-5. Agnostic to Machine Learning Framework. Currently, FedML supports PyTorch, TensorFlow, JAX with Haiku, and MXNet.
 
 |                                           | platform/scenario    | federated optimizer | dataset | model               | communication backend | machine learning backend | source code                                                       | example doc                                                               |
 |-------------------------------------------| -------------------- | ------------------- | ------- | ------------------- | --------------------- |--------------------------|-------------------------------------------------------------------|---------------------------------------------------------------------------|
@@ -25,6 +30,7 @@ The following examples include:
 | tf_mqtt_s3_fedavg_mnist_lr_example        | Octopus (cross-silo) | FedAvg              | MNIST   | Logistic Regression | MQTT_S3               | tensorflow               | [Link](cross_silo/tf_mqtt_s3_fedavg_mnist_lr_example)             | [Link](cross_silo/tf_mqtt_s3_fedavg_mnist_lr_example/README.md)           |
 | jax_haiku_mqtt_s3_fedavg_mnist_lr_example | Octopus (cross-silo) | FedAvg              | MNIST   | Logistic Regression | MQTT_S3               | jax at haiku             | [Link](cross_silo/jax_haiku_mqtt_s3_fedavg_mnist_lr_example)      | [Link](cross_silo/jax_haiku_mqtt_s3_fedavg_mnist_lr_example/README.md)    |
 | mxnet_mqtt_s3_fedavg_mnist_lr_example     | Octopus (cross-silo) | FedAvg              | MNIST   | Logistic Regression | MQTT_S3               | mxnet                    | [Link](cross_silo/mxnet_mqtt_s3_fedavg_mnist_lr_example)          | [Link](cross_silo/mxnet_mqtt_s3_fedavg_mnist_lr_example/README.md)        |
+| light_sec_agg_example                     | Octopus (cross-silo) | FedAvg              | MNIST   | Logistic Regression | MQTT_S3               | pytorch                  | [Link](cross_silo/light_sec_agg_example)          | [Link](cross_silo/light_sec_agg_example)        |
 
 ## Cross-device Federated Learning for Smartphones
 
