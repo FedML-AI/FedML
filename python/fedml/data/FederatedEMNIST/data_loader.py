@@ -58,7 +58,7 @@ def get_dataloader(dataset, data_dir, train_bs, test_bs, client_idx=None):
         torch.tensor(train_x), torch.tensor(train_y, dtype=torch.long)
     )
     train_dl = data.DataLoader(
-        dataset=train_ds, batch_size=train_bs, shuffle=True, drop_last=False
+        dataset=train_ds, batch_size=train_bs, shuffle=True, drop_last=True
     )
 
     test_ds = data.TensorDataset(
