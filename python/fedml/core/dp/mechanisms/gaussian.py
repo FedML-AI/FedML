@@ -5,10 +5,11 @@ import secrets
 import numpy as np
 import torch
 
+from .base_dp_mechanism import BaseDPMechanism
 from ..common.utils import check_numeric_value, check_params
 
 
-class Gaussian:
+class Gaussian(BaseDPMechanism):
     r"""The Gaussian mechanism in differential privacy.
     This code refers to IBM DP Library: https://github.com/IBM/differential-privacy-library
     Our contribution: code refactoring; remove some redundant codes
@@ -63,6 +64,6 @@ class Gaussian:
     #     ) / np.sqrt(2)
     #     return standard_normal * self._scale
 
-    def compute_a_noise(self, size):
+    def compute_noise(self, size):
         # print(f"scale = {self._scale}")
         return torch.normal(mean=0, std=self._scale, size=size)
