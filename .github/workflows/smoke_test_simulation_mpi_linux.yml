@@ -30,7 +30,7 @@ jobs:
       matrix:
         python-version: [3.8]
         mpi: [mpich, openmpi]
-        os: [ubuntu-latest ]
+        os: [ ubuntu-latest ]
         include:
         - os: ubuntu-latest
           mpi: mpich
@@ -38,12 +38,6 @@ jobs:
         - os: ubuntu-latest
           mpi: openmpi
           install-mpi: sudo apt install -y openmpi-bin libopenmpi-dev
-        - os: macos-latest
-          mpi: mpich
-          install-mpi: brew install mpich
-        - os: macos-latest
-          mpi: openmpi
-          install-mpi: brew install openmpi
     steps:
     - uses: actions/checkout@v2
     - name: Install MPI
