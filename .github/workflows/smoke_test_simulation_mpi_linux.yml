@@ -34,18 +34,13 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
       - name: pip install -e ./
         run: |
           pip install -e ./
 
       # https://github.com/mpi4py/setup-mpi
       - uses: mpi4py/setup-mpi@v1
-
-      - name: Show MPI info (Ubuntu)
-        run:  mpichversion
-        if:   ${{ matrix.os == 'ubuntu-latest' }}
-
       - name: test simulation-mpi
         run: |
           cd tests/smoke_test/simulation_mpi
