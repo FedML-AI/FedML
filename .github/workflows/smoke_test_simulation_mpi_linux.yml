@@ -30,7 +30,7 @@ jobs:
       matrix:
         python-version: [3.8]
         mpi: [mpich, openmpi]
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest ]
         include:
         - os: ubuntu-latest
           mpi: mpich
