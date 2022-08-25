@@ -5,7 +5,7 @@ import os
 import time
 import uuid
 
-import multiprocess as multiprocessing
+import multiprocessing
 
 from ..common.singleton import Singleton
 from ...cli.edge_deployment.client_constants import ClientConstants
