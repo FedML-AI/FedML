@@ -61,9 +61,9 @@ class FedMLDifferentialPrivacy:
             new_data.append(tuple(list))
         return new_data
 
-    def __compute_a_noise(self, size):
-        return self.dp.compute_a_noise(size)
+    def __compute_noise(self, size):
+        return self.dp.compute_noise(size)
 
     def _compute_new_grad(self, grad):
         # print(f"grad = {grad}")
-        return self.__compute_a_noise(grad.shape) + grad
+        return self.__compute_noise(grad.shape) + grad
