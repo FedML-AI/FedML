@@ -1,9 +1,10 @@
 import logging
 import time
 
-import numpy as np
+from mxnet import npx
 import mxnet as mx
-from mxnet import gluon, autograd
+from mxnet import gluon
+from mxnet import nd
 import wandb
 
 from fedml import mlops
@@ -12,28 +13,41 @@ from fedml.core import ServerAggregator
 
 class MxServerAggregator(ServerAggregator):
     static_model = None
+    npx.set_np()
 
     def __init__(self, model, args):
         super().__init__(model, args)
-        self.optimizer = None
         self.mx_trainer = None
         self.mx_metric = None
         self.mx_loss = None
+        self.metrics = None
         self.init_aggregator()
 
     def get_model_params(self):
-        return self.model.collect_params()
+        return self.model.get_params()
 
     def set_model_params(self, model_parameters):
-        if self.optimizer is None:
+        if model_parameters is None:
             return
 
-        self.model.share_parameters(model_parameters)
+        self.model.set_params(model_parameters)
 
     def init_aggregator(self):
-        # Trainer is for updating parameters with gradient.
+        init_x = nd.random.uniform(shape=(self.model.output_dim, self.model.input_dim))
+        init_x = init_x.as_np_ndarray()
+        self.model(init_x)
+
+        self.reset_aggregator()
+
+    def reset_aggregator(self):
         self.mx_metric = mx.gluon.metric.Accuracy()
         self.mx_loss = gluon.loss.SoftmaxCrossEntropyLoss()
+
+        accuracy_metric = mx.gluon.metric.Accuracy()
+        loss_metric = mx.gluon.metric.CrossEntropy()
+        self.metrics = mx.gluon.metric.CompositeEvalMetric()
+        for child_metric in [accuracy_metric, loss_metric]:
+            self.metrics.add(child_metric)
 
     def _test(self, test_data, device, args):
         metrics = {
@@ -48,15 +62,15 @@ class MxServerAggregator(ServerAggregator):
         batch_loss = []
         for batch_idx, (x, target) in enumerate(test_data):
             # start_time = time.time_ns()
-            with device:
-                x = x.numpy()
-                target = target.numpy()
+            x = x.to_device(device)
+            target = target.to_device(device)
 
             output = self.model(x)
-            self.mx_metric.update([target], [output])
+            self.mx_metric.update(target, output)
             loss_func = self.mx_loss(output, target)
-            loss = loss_func.mean()
-            accuracy = self.mx_metric.get()
+            loss = loss_func.mean().item()
+
+            _, accuracy = self.mx_metric.get()
 
             # logging.info("test consume time: {}".format(time.time_ns() - start_time))
 
@@ -69,6 +83,38 @@ class MxServerAggregator(ServerAggregator):
         metrics["test_loss"] = sum(batch_loss) / len(batch_loss)
 
         return metrics
+
+    def _test_method2(self, test_data, device, args):
+        num_examples = 0
+
+        batch_acc = []
+        batch_loss = []
+        for batch_idx, (x, target) in enumerate(test_data):
+            data = gluon.utils.split_and_load(x, ctx_list=[device], batch_axis=0)
+            label = gluon.utils.split_and_load(
+                target, ctx_list=[device], batch_axis=0
+            )
+
+            outputs = list()
+            for x_item in data:
+                pred = self.model(x_item)
+                pred = npx.softmax(pred)
+                outputs.append(pred)
+                num_examples += len(x_item)
+
+            self.metrics.update(label, outputs)
+            acc, loss = self.metrics.get_name_value()
+            batch_acc.append(acc[1])
+            batch_loss.append(loss[1])
+
+        ret_metrics = dict()
+        ret_metrics["test_precision"] = 0,
+        ret_metrics["test_recall"] = 0
+        ret_metrics["test_acc"] = sum(batch_acc) / len(batch_acc)
+        ret_metrics["test_loss"] = sum(batch_loss) / len(batch_loss)
+        ret_metrics["test_total"] = num_examples
+
+        return ret_metrics
 
     def test(self, test_data, device, args):
         # test data

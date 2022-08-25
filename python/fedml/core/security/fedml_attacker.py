@@ -1,6 +1,7 @@
 from .attack.byzantine_attack import ByzantineAttack
 from .attack.dlg_attack import DLGAttack
 from .constants import ATTACK_METHOD_BYZANTINE_ATTACK, ATTACK_METHOD_DLG
+import logging
 
 
 class FedMLAttacker:
@@ -21,6 +22,7 @@ class FedMLAttacker:
 
     def init(self, args):
         if hasattr(args, "enable_attack") and args.enable_attack:
+            logging.info("------init attack..." + args.attack_type.strip())
             self.is_enabled = True
             self.attack_type = args.attack_type.strip()
             self.attacker = None

@@ -38,7 +38,8 @@ requirements = [
     "multiprocess",
     "smart-open==5.2.1",
     "nvidia-ml-py3",
-    "matplotlib"
+    "matplotlib",
+    "dill"
 ]
 
 requirements_extra_mpi = [
@@ -54,6 +55,10 @@ requirements_extra_jax = [
     "jax[cpu]",
     "dm-haiku",
     "optax"
+]
+
+requirements_extra_mxnet = [
+    "mxnet"
 ]
 
 
@@ -118,6 +123,7 @@ setup(
         "gRPC": "grpcio",
         "tensorflow": requirements_extra_tf,
         "jax": requirements_extra_jax,
+        "mxnet": requirements_extra_mxnet,
     },
     package_data={"": ["py.typed"]},
     license="Apache 2.0",
