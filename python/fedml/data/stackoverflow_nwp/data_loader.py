@@ -1,6 +1,6 @@
 import logging
 import os
-import pickle
+import dill as pickle
 
 import torch.utils.data as data
 import tqdm

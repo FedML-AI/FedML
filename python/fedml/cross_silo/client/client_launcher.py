@@ -33,7 +33,7 @@ class CrossSiloLauncher:
             CrossSiloLauncher._run_cross_silo_hierarchical(
                 args, torch_client_filename, inputs
             )
-        elif args.scenarios == FEDML_CROSS_SILO_SCENARIO_HORIZONTAL:
+        elif args.scenario == FEDML_CROSS_SILO_SCENARIO_HORIZONTAL:
             CrossSiloLauncher._run_cross_silo_horizontal(
                 args, torch_client_filename, inputs
             )

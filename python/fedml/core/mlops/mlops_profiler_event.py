@@ -53,7 +53,7 @@ class MLOpsProfilerEvent:
         cls._sys_perf_profiling = True
 
     @classmethod
-    def enable_wandb(cls):
+    def open_wandb(cls):
         cls._enable_wandb = True
 
     @classmethod

@@ -4,7 +4,8 @@ import json
 import logging
 import platform
 
-import multiprocess as multiprocessing
+import multiprocessing
+from multiprocessing import Process
 import os
 import shutil
 import stat
@@ -503,7 +504,7 @@ class FedMLServerRunner:
                 server_runner.run_as_edge_server_and_agent = self.run_as_edge_server_and_agent
                 server_runner.run_as_cloud_agent = self.run_as_cloud_agent
                 server_runner.run_status = ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED
-                multiprocessing.Process(target=server_runner.cleanup_client_with_status).start()
+                Process(target=server_runner.cleanup_client_with_status).start()
 
     def callback_start_train(self, topic=None, payload=None):
         logging.info("callback_start_train from Web: {}".format(payload))
@@ -541,7 +542,7 @@ class FedMLServerRunner:
             )
             server_runner.run_as_edge_server_and_agent = self.run_as_edge_server_and_agent
             server_runner.edge_id = self.edge_id
-            server_process = multiprocessing.Process(target=server_runner.run)
+            server_process = Process(target=server_runner.run)
             server_process.start()
             ServerConstants.save_run_process(server_process.pid)
         elif self.run_as_cloud_agent:
@@ -554,7 +555,7 @@ class FedMLServerRunner:
                 self.args, run_id=run_id, request_json=request_json, agent_config=self.agent_config
             )
             server_runner.run_as_cloud_agent = self.run_as_cloud_agent
-            server_process = multiprocessing.Process(target=server_runner.start_cloud_server_process)
+            server_process = Process(target=server_runner.start_cloud_server_process)
             server_process.start()
             ServerConstants.save_run_process(server_process.pid)
         elif self.run_as_cloud_server:
@@ -811,14 +812,14 @@ class FedMLServerRunner:
                 edge_id=self.edge_id
             )
             server_runner.run_as_edge_server_and_agent = self.run_as_edge_server_and_agent
-            multiprocessing.Process(target=server_runner.stop_run).start()
+            Process(target=server_runner.stop_run).start()
         elif self.run_as_cloud_agent:
             server_runner = FedMLServerRunner(
                 self.args, run_id=run_id, request_json=stop_request_json, agent_config=self.agent_config,
                 edge_id=self.edge_id
             )
             server_runner.run_as_cloud_agent = self.run_as_cloud_agent
-            multiprocessing.Process(target=server_runner.stop_cloud_server_process).start()
+            Process(target=server_runner.stop_cloud_server_process).start()
         elif self.run_as_cloud_server:
             pass
 
@@ -852,7 +853,7 @@ class FedMLServerRunner:
                 server_runner.edge_id = self.edge_id
                 server_runner.run_as_edge_server_and_agent = self.run_as_edge_server_and_agent
                 server_runner.run_status = status
-                multiprocessing.Process(target=server_runner.cleanup_client_with_status).start()
+                Process(target=server_runner.cleanup_client_with_status).start()
             elif self.run_as_cloud_agent:
                 server_runner = FedMLServerRunner(
                     self.args, run_id=run_id, request_json=stop_request_json, agent_config=self.agent_config
@@ -860,7 +861,7 @@ class FedMLServerRunner:
                 server_runner.run_as_cloud_agent = self.run_as_cloud_agent
                 server_runner.edge_id = edge_id
                 server_runner.run_status = status
-                multiprocessing.Process(target=server_runner.cleanup_client_with_status).start()
+                Process(target=server_runner.cleanup_client_with_status).start()
             elif self.run_as_cloud_server:
                 pass
 
