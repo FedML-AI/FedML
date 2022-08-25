@@ -10,7 +10,7 @@ class GKTServerMananger(FedMLCommManager):
 
         self.server_trainer = server_trainer
         self.round_num = args.comm_round
-        self.round_idx = 0
+        self.args.round_idx = 0
 
         self.count = 0
 
@@ -46,11 +46,11 @@ class GKTServerMananger(FedMLCommManager):
         b_all_received = self.server_trainer.check_whether_all_receive()
         logging.info("b_all_received = " + str(b_all_received))
         if b_all_received:
-            self.server_trainer.train(self.round_idx)
+            self.server_trainer.train(self.args.round_idx)
 
             # start the next round
-            self.round_idx += 1
-            if self.round_idx == self.round_num:
+            self.args.round_idx += 1
+            if self.args.round_idx == self.round_num:
                 self.finish()
                 return
 
