@@ -128,9 +128,9 @@ class FedLocalSGDAggregator(object):
             workloads = np.array([ self.train_data_local_num_dict[client_id] for client_id in client_indexes])
             constraints = np.array([1]*self.worker_num)
             memory = np.array([100])
-            my_scheduler = scheduler_c(workloads, constraints, memory,
+            my_scheduler = SeqTrainScheduler(workloads, constraints, memory,
                 fit_funcs, uniform_client=True, uniform_gpu=False)
-            # my_scheduler = scheduler_c(workloads, constraints, memory, self.train_data_local_num_dict,
+            # my_scheduler = SeqTrainScheduler(workloads, constraints, memory, self.train_data_local_num_dict,
             #     fit_funcs, uniform_client=True, uniform_gpu=False)
             y_schedule, output_schedules = my_scheduler.DP_schedule(mode)
             client_schedule = []
