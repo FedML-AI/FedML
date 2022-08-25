@@ -2,7 +2,7 @@ import logging
 import os
 import random
 
-import multiprocess as multiprocessing
+import multiprocessing
 import numpy as np
 import torch
 import wandb
