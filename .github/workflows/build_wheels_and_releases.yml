@@ -229,22 +229,22 @@ jobs:
 #        with:
 #          path: ./python/dist/*.whl
 
-  upload_pypi:
-    needs: [build_wheels]
-    runs-on: [self-hosted]
-    # upload to PyPI on every tag starting with 'v'
-#    if: github.event_name == 'push' && contains(github.event.comment, 'release v')
-    # alternatively, to publish when a GitHub Release is created, use the following rule:
-    # if: github.event_name == 'release' && github.event.action == 'published'
-    steps:
-      - uses: actions/download-artifact@v2
-        with:
-          name: artifact
-          path: dist
-
-      - uses: pypa/gh-action-pypi-publish@v1.4.2
-        with:
-          skip_existing: true
-          user: chaoyanghe
-          password: ${{ secrets.pypi_password }}
-          # To test: repository_url: https://test.pypi.org/legacy/
+#  upload_pypi:
+#    needs: [build_wheels]
+#    runs-on: [self-hosted]
+#    # upload to PyPI on every tag starting with 'v'
+##    if: github.event_name == 'push' && contains(github.event.comment, 'release v')
+#    # alternatively, to publish when a GitHub Release is created, use the following rule:
+#    # if: github.event_name == 'release' && github.event.action == 'published'
+#    steps:
+#      - uses: actions/download-artifact@v2
+#        with:
+#          name: artifact
+#          path: dist
+#
+#      - uses: pypa/gh-action-pypi-publish@v1.4.2
+#        with:
+#          skip_existing: true
+#          user: chaoyanghe
+#          password: ${{ secrets.pypi_password }}
+#          # To test: repository_url: https://test.pypi.org/legacy/
