@@ -25,7 +25,7 @@ class FedSegTrainer(object):
         self.train_local = self.train_data_local_dict[client_index]
         self.local_sample_number = self.train_data_local_num_dict[client_index]
         self.test_local = self.test_data_local_dict[client_index]
-        self.round_idx = 0
+        self.args.round_idx = 0
 
         self.device = device
         self.args = args
