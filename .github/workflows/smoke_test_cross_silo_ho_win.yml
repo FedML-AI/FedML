@@ -6,7 +6,7 @@ name: CROSS-SILO-HO-Win
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   schedule:
-    # Nightly build at 12:12 A.M. 
+    # Nightly build at 12:12 A.M.
     - cron: "12 12 */1 * *"
   push:
     branches: [ master,  test/v0.7.0, dev/v0.7.0 ]
@@ -40,6 +40,7 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+
       - uses: actions/checkout@v3
       - name: pip install -e ./
         run: |
