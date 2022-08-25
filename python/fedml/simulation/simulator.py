@@ -33,19 +33,19 @@ class SimulatorSingleProcess:
         from .sp.fedsgd.fedsgd_api import FedSGDAPI
 
         if args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDAVG:
-            FedAvgAPI(args, device, dataset, model)
+            self.fl_trainer = FedAvgAPI(args, device, dataset, model)
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDOPT:
-            FedOptAPI(args, device, dataset, model)
+            self.fl_trainer = FedOptAPI(args, device, dataset, model)
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDNOVA:
-            FedNovaTrainer(dataset, model, device, args)
+            self.fl_trainer = FedNovaTrainer(dataset, model, device, args)
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_HIERACHICAL_FL:
-            HierachicalTrainer(args, device, dataset, model)
+            self.fl_trainer = HierachicalTrainer(args, device, dataset, model)
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_TURBO_AGGREGATE:
-            TurboAggregateTrainer(dataset, model, device, args)
+            self.fl_trainer = TurboAggregateTrainer(dataset, model, device, args)
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_CLASSICAL_VFL:
-            VflFedAvgAPI(args, device, dataset, model)
+            self.fl_trainer = VflFedAvgAPI(args, device, dataset, model)
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDSGD:
-            FedSGDAPI(args, device, dataset, model)
+            self.fl_trainer = FedSGDAPI(args, device, dataset, model)
 
         # elif args.fl_trainer == FedML_FEDERATED_OPTIMIZER_DECENTRALIZED_FL:
         #     self.fl_trainer = FedML_decentralized_fl()
@@ -53,7 +53,7 @@ class SimulatorSingleProcess:
             raise Exception("Exception")
 
     def run(self):
-        pass
+        self.fl_trainer.train()
 
 
 class SimulatorMPI:
