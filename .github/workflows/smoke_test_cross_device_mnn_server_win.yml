@@ -36,6 +36,9 @@ jobs:
 #            python-version: '3.6'
     runs-on: [self-hosted, runner-windows, devops]
     steps:
+      - name: Support longpaths
+        run: git config --system core.longpaths true
+        
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
