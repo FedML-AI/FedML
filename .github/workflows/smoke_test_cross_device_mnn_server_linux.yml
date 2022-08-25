@@ -47,5 +47,5 @@ jobs:
       - name: test server of cross-device
         run: |
           cd quick_start/beehive
-          timeout 1 bash run_server.sh || code=$?; if [[ $code -ne 124 && $code -ne 0 ]]; then exit $code; fi
+          timeout 60 bash run_server.sh || code=$?; if [[ $code -ne 124 && $code -ne 0 ]]; then exit $code; fi
           
