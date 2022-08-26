@@ -130,7 +130,7 @@ def get_mapping_per_user(fn):
     mapping_table = _read_csv(fn)
     expected_cols = ["user_id", "image_id", "class"]
     if not all(col in mapping_table[0].keys() for col in expected_cols):
-        logging.error("%s has wrong format.", mapping_file)
+        logging.error("%s has wrong format.", mapping_table)
         raise ValueError(
             "The mapping file must contain user_id, image_id and class columns. "
             "The existing columns are %s" % ",".join(mapping_table[0].keys())
