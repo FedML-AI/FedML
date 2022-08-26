@@ -44,8 +44,6 @@ jobs:
         with:
           path: fedml-devops
           clean: true
-      - run: |
-          git config --system core.longpaths true
       - name: pip install -e ./
         run: |
           pip install -e ./
