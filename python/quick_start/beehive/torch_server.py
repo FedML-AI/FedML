@@ -1,3 +1,6 @@
+import os
+from os.path import expanduser
+
 import MNN
 
 import fedml
@@ -12,8 +15,8 @@ if __name__ == "__main__":
     device = fedml.device.get_device(args)
 
     # load data
-    train_dataset = MnistDataset(True)
-    test_dataset = MnistDataset(False)
+    train_dataset = MnistDataset(True, root_path=args.data_cache_dir)
+    test_dataset = MnistDataset(False, root_path=args.data_cache_dir)
     train_dataloader = MNN.data.DataLoader(train_dataset, batch_size=64, shuffle=True)
     test_dataloader = MNN.data.DataLoader(
         test_dataset, batch_size=args.batch_size, shuffle=False
@@ -21,7 +24,7 @@ if __name__ == "__main__":
     class_num = 10
 
     # load model
-    model = fedml.model.create(args, output_dim=class_num)
+    fedml.model.create(args, output_dim=class_num)
 
     # start training
     server = ServerMNN(

@@ -54,7 +54,7 @@ requirements_extra_tf = [
 ]
 
 requirements_extra_jax = [
-    "jax[cuda]",
+    "jax[cpu]",
     "dm-haiku",
     "optax",
     "jaxlib"
