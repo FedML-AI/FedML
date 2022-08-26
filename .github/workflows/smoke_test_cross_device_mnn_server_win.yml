@@ -51,4 +51,4 @@ jobs:
       - name: test server of cross-device
         run: |
           cd quick_start/beehive
-          timeout 60 .\run_server.bat || code=$?; if [[ $code -ne 124 && $code -ne 0 ]]; then exit $code; fi
+          .\run_server.bat
