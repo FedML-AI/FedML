@@ -34,7 +34,8 @@ jobs:
         pip install pylint
     - name: Analysing the code with pylint
       run: |
-        pip install "fedml[MPI]"
+        install-mpi: sudo apt install -y mpich libmpich-dev
+        python -m pip install mpi4py
         pip install "fedml[gRPC]"
         pip install "fedml[tensorflow]"
         pip install "fedml[jax]"

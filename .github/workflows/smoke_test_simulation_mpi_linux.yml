@@ -59,7 +59,6 @@ jobs:
     - name: pip install -e ./
       run: |
         pip install -e ./
-        python -m pip install mpi4py
 
     - name: Test package
       run: |
