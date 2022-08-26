@@ -14,7 +14,7 @@ class FedSegTrainer(object):
         args,
         model_trainer,
     ):
-
+        self.args = args
         self.trainer = model_trainer
 
         self.client_index = client_index
@@ -28,7 +28,6 @@ class FedSegTrainer(object):
         self.args.round_idx = 0
 
         self.device = device
-        self.args = args
 
     def update_model(self, weights):
         self.trainer.set_model_params(weights)
