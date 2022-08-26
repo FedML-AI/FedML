@@ -11,15 +11,7 @@ from ....core.security.fedml_defender import FedMLDefender
 
 
 def FedML_Async_distributed(
-    args,
-    process_id,
-    worker_number,
-    comm,
-    device,
-    dataset,
-    model,
-    model_trainer=None,
-    preprocessed_sampling_lists=None,
+    args, process_id, worker_number, comm, device, dataset, model, model_trainer=None, preprocessed_sampling_lists=None,
 ):
     [
         train_data_num,
@@ -112,9 +104,7 @@ def init_server(
     # start the distributed training
     backend = args.backend
     if preprocessed_sampling_lists is None:
-        server_manager = AsyncFedAVGServerManager(
-            args, aggregator, comm, rank, size, backend
-        )
+        server_manager = AsyncFedAVGServerManager(args, aggregator, comm, rank, size, backend)
     else:
         server_manager = AsyncFedAVGServerManager(
             args,
