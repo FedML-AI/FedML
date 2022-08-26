@@ -1,11 +1,11 @@
 import argparse
-from fedml.core.security.defense.norm_diff_clipping_defense import (
+from ...defense.norm_diff_clipping_defense import (
     NormDiffClippingDefense,
 )
-from fedml.core.security.test.aggregation.aggregation_functions import (
+from ..aggregation.aggregation_functions import (
     AggregationFunction,
 )
-from fedml.core.security.test.utils import (
+from ..utils import (
     create_fake_vectors,
     create_fake_model_list_MNIST,
 )
