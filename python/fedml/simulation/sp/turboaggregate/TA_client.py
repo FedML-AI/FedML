@@ -21,7 +21,7 @@ class TA_Client(Client):
         self.args = args
         self.device = device
 
-        self.criterion = nn.CrossEntropyLoss()
+        self.criterion = nn.CrossEntropyLoss().to(device)
 
         self.isdrop = False
         self.model_trainer = model_trainer

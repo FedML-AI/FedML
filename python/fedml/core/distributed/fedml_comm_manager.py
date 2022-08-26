@@ -75,13 +75,6 @@ class FedMLCommManager(Observer):
             from .communication.mpi.com_manager import MpiCommunicationManager
 
             self.com_manager = MpiCommunicationManager(self.comm, self.rank, self.size)
-        elif self.backend == "MQTT":
-            from .communication.mqtt.mqtt_comm_manager import MqttCommManager
-
-            HOST = "0.0.0.0"
-            # HOST = "broker.emqx.io"
-            PORT = 1883
-            self.com_manager = MqttCommManager(HOST, PORT, client_id=self.rank, client_num=self.size - 1)
         elif self.backend == "MQTT_S3":
             from .communication.mqtt_s3.mqtt_s3_multi_clients_comm_manager import MqttS3MultiClientsCommManager
 

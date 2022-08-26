@@ -16,9 +16,7 @@ class SplitNN_server:
         self.log_step = 50
         self.active_node = 1
         self.train_mode()
-        self.optimizer = optim.SGD(
-            self.model.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4
-        )
+        self.optimizer = optim.SGD(self.model.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4)
         self.criterion = nn.CrossEntropyLoss()
 
     def reset_local_params(self):
@@ -44,7 +42,7 @@ class SplitNN_server:
         self.acts.retain_grad()
         logits = self.model(acts)
         _, predictions = logits.max(1)
-        self.loss = self.criterion(logits, labels)
+        self.loss = self.criterion(logits, labels)  # pylint: disable=E1102
         self.total += labels.size(0)
         self.correct += predictions.eq(labels).sum().item()
         if self.step % self.log_step == 0 and self.phase == "train":
@@ -68,9 +66,7 @@ class SplitNN_server:
         self.val_loss /= self.step
         acc = self.correct / self.total
         logging.info(
-            "phase={} acc={} loss={} epoch={} and step={}".format(
-                self.phase, acc, self.val_loss, self.epoch, self.step
-            )
+            "phase={} acc={} loss={} epoch={} and step={}".format(self.phase, acc, self.val_loss, self.epoch, self.step)
         )
 
         self.epoch += 1
