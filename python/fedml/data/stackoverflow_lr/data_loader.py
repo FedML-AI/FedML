@@ -116,7 +116,7 @@ def load_partition_data_distributed_federated_stackoverflow_lr(
         #              (process_id, local_data_num))
         train_data_global = None
         test_data_global = None
-    output_dim = len(utils.get_tag_dict())
+    output_dim = len(utils.get_tag_dict(data_dir))
     return (
         DEFAULT_TRAIN_CLIENTS_NUM,
         train_data_global,

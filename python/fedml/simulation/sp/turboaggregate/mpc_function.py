@@ -63,8 +63,8 @@ def BGW_encoding(X, N, T, p):
     m = len(X)
     d = len(X[0])
 
-    alpha_s = range(1, N + 1)
-    alpha_s = np.int64(np.mod(alpha_s, p))
+    alpha_s_range = range(1, N + 1)
+    alpha_s = np.array(np.int64(np.mod(alpha_s_range, p)))
     X_BGW = np.zeros((N, m, d), dtype="int64")
     R = np.random.randint(p, size=(T + 1, m, d))
     R[0, :, :] = np.mod(X, p)
@@ -94,8 +94,8 @@ def BGW_decoding(f_eval, worker_idx, p):  # decode the output from T+1 evaluatio
 
     # t0 = time.time()
     max = np.max(worker_idx) + 2
-    alpha_s = range(1, max)
-    alpha_s = np.int64(np.mod(alpha_s, p))
+    alpha_s_range = range(1, max)
+    alpha_s = np.array(np.int64(np.mod(alpha_s_range, p)))
     alpha_s_eval = [alpha_s[i] for i in worker_idx]
     # t1 = time.time()
     # print(alpha_s_eval)
@@ -130,9 +130,7 @@ def LCC_encoding(X, N, K, T, p):
     X_LCC = np.zeros((N, m // K, d), dtype="int64")
     for i in range(N):
         for j in range(K + T):
-            X_LCC[i, :, :] = np.mod(
-                X_LCC[i, :, :] + np.mod(U[i][j] * X_sub[j, :, :], p), p
-            )
+            X_LCC[i, :, :] = np.mod(X_LCC[i, :, :] + np.mod(U[i][j] * X_sub[j, :, :], p), p)
     return X_LCC
 
 
@@ -162,9 +160,7 @@ def LCC_encoding_w_Random(X, R_, N, K, T, p):
     X_LCC = np.zeros((N, m // K, d), dtype="int64")
     for i in range(N):
         for j in range(K + T):
-            X_LCC[i, :, :] = np.mod(
-                X_LCC[i, :, :] + np.mod(U[i][j] * X_sub[j, :, :], p), p
-            )
+            X_LCC[i, :, :] = np.mod(X_LCC[i, :, :] + np.mod(U[i][j] * X_sub[j, :, :], p), p)
     return X_LCC
 
 
@@ -192,9 +188,7 @@ def LCC_encoding_w_Random_partial(X, R_, N, K, T, p, worker_idx):
     X_LCC = np.zeros((N_out, m // K, d), dtype="int64")
     for i in range(N_out):
         for j in range(K + T):
-            X_LCC[i, :, :] = np.mod(
-                X_LCC[i, :, :] + np.mod(U[i][j] * X_sub[j, :, :], p), p
-            )
+            X_LCC[i, :, :] = np.mod(X_LCC[i, :, :] + np.mod(U[i][j] * X_sub[j, :, :], p), p)
     return X_LCC
 
 
@@ -271,11 +265,11 @@ def my_pk_gen(my_sk, p, g):
     if g == 0:
         return my_sk
     else:
-        return np.mod(g**my_sk, p)
+        return np.mod(g ** my_sk, p)
 
 
 def my_key_agreement(my_sk, u_pk, p, g):
     if g == 0:
         return np.mod(my_sk * u_pk, p)
     else:
-        return np.mod(u_pk**my_sk, p)
+        return np.mod(u_pk ** my_sk, p)

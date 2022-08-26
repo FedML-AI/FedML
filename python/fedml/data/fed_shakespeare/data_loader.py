@@ -185,17 +185,3 @@ def load_partition_data_federated_shakespeare(
         VOCAB_LEN,
     )
 
-
-if __name__ == "__main__":
-    # load_partition_data_federated_stackoverflow(None, None, 100, 128)
-    (
-        train_data_num,
-        train_data_global,
-        test_data_global,
-        local_data_num,
-        train_data_local,
-        test_data_local,
-    ) = load_partition_data_distributed_federated_shakespeare(
-        2, None, None, 342477, 128
-    )
-    print(train_data_local, test_data_local)

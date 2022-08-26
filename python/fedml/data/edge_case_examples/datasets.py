@@ -22,14 +22,8 @@ IMG_EXTENSIONS = (
 )
 
 
-def accimage_loader(path):
-    import accimage
-
-    try:
-        return accimage.Image(path)
-    except IOError:
-        # Potentially a decoding problem, fall back to PIL.Image
-        return pil_loader(path)
+def default_loader(path):
+    return pil_loader(path)
 
 
 def pil_loader(path):
@@ -39,24 +33,9 @@ def pil_loader(path):
         return img.convert("RGB")
 
 
-def default_loader(path):
-    from torchvision import get_image_backend
-
-    if get_image_backend() == "accimage":
-        return accimage_loader(path)
-    else:
-        return pil_loader(path)
-
-
 class MNIST_truncated(data.Dataset):
     def __init__(
-        self,
-        root,
-        dataidxs=None,
-        train=True,
-        transform=None,
-        target_transform=None,
-        download=False,
+        self, root, dataidxs=None, train=True, transform=None, target_transform=None, download=False,
     ):
 
         self.root = root
@@ -70,9 +49,7 @@ class MNIST_truncated(data.Dataset):
 
     def __build_truncated_dataset__(self):
 
-        mnist_dataobj = MNIST(
-            self.root, self.train, self.transform, self.target_transform, self.download
-        )
+        mnist_dataobj = MNIST(self.root, self.train, self.transform, self.target_transform, self.download)
 
         if self.train:
             data = mnist_dataobj.train_data
@@ -115,13 +92,7 @@ class MNIST_truncated(data.Dataset):
 
 class EMNIST_truncated(data.Dataset):
     def __init__(
-        self,
-        root,
-        dataidxs=None,
-        train=True,
-        transform=None,
-        target_transform=None,
-        download=False,
+        self, root, dataidxs=None, train=True, transform=None, target_transform=None, download=False,
     ):
 
         self.root = root
@@ -184,12 +155,8 @@ class EMNIST_truncated(data.Dataset):
 
 def get_ardis_dataset():
     # load the data from csv's
-    ardis_images = np.loadtxt(
-        "./../../../data/edge_case_examples/ARDIS/ARDIS_train_2828.csv", dtype="float"
-    )
-    ardis_labels = np.loadtxt(
-        "./../../../data/edge_case_examples/ARDIS/ARDIS_train_labels.csv", dtype="float"
-    )
+    ardis_images = np.loadtxt("./../../../data/edge_case_examples/ARDIS/ARDIS_train_2828.csv", dtype="float")
+    ardis_labels = np.loadtxt("./../../../data/edge_case_examples/ARDIS/ARDIS_train_labels.csv", dtype="float")
 
     #### reshape to be [samples][width][height]
     ardis_images = ardis_images.reshape(ardis_images.shape[0], 28, 28).astype("float32")
@@ -206,9 +173,7 @@ def get_ardis_dataset():
         split="digits",
         train=True,
         download=True,
-        transform=transforms.Compose(
-            [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
-        ),
+        transform=transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]),
     )
 
     ardis_dataset.data = images_seven
@@ -220,14 +185,12 @@ def get_ardis_dataset():
 def get_southwest_dataset(attack_case="normal-case"):
     if attack_case == "normal-case":
         with open(
-            "./../../../data/edge_case_examples/southwest_cifar10/southwest_images_honest_full_normal.pkl",
-            "rb",
+            "./../../../data/edge_case_examples/southwest_cifar10/southwest_images_honest_full_normal.pkl", "rb",
         ) as train_f:
             saved_southwest_dataset_train = pickle.load(train_f)
     elif attack_case == "almost-edge-case":
         with open(
-            "./../../../data/edge_case_examples/southwest_cifar10/southwest_images_honest_almost_edge_case.pkl",
-            "rb",
+            "./../../../data/edge_case_examples/southwest_cifar10/southwest_images_honest_almost_edge_case.pkl", "rb",
         ) as train_f:
             saved_southwest_dataset_train = pickle.load(train_f)
     else:
@@ -274,26 +237,17 @@ class EMNIST_NormalCase_truncated(data.Dataset):
         if poison_type == "ardis":
             self.ardis_dataset_train = ardis_dataset_train
             partition = np.array_split(
-                np.arange(self.ardis_dataset_train.data.shape[0]),
-                int(self._num_users_hold_edge_data),
+                np.arange(self.ardis_dataset_train.data.shape[0]), int(self._num_users_hold_edge_data),
             )
 
             if user_id in np.arange(self._num_users_hold_edge_data):
                 user_partition = partition[user_id]
-                self.saved_ardis_dataset_train = self.ardis_dataset_train.data[
-                    user_partition
-                ]
-                self.saved_ardis_label_train = self.ardis_dataset_train.targets[
-                    user_partition
-                ]
+                self.saved_ardis_dataset_train = self.ardis_dataset_train.data[user_partition]
+                self.saved_ardis_label_train = self.ardis_dataset_train.targets[user_partition]
             else:
                 user_partition = []
-                self.saved_ardis_dataset_train = self.ardis_dataset_train.data[
-                    user_partition
-                ]
-                self.saved_ardis_label_train = self.ardis_dataset_train.targets[
-                    user_partition
-                ]
+                self.saved_ardis_dataset_train = self.ardis_dataset_train.data[user_partition]
+                self.saved_ardis_label_train = self.ardis_dataset_train.targets[user_partition]
         else:
             NotImplementedError("Unsupported poison type for normal case attack ...")
 
@@ -354,13 +308,7 @@ class EMNIST_NormalCase_truncated(data.Dataset):
 
 class CIFAR10_truncated(data.Dataset):
     def __init__(
-        self,
-        root,
-        dataidxs=None,
-        train=True,
-        transform=None,
-        target_transform=None,
-        download=False,
+        self, root, dataidxs=None, train=True, transform=None, target_transform=None, download=False,
     ):
 
         self.root = root
@@ -374,9 +322,7 @@ class CIFAR10_truncated(data.Dataset):
 
     def __build_truncated_dataset__(self):
 
-        cifar_dataobj = CIFAR10(
-            self.root, self.train, self.transform, self.target_transform, self.download
-        )
+        cifar_dataobj = CIFAR10(self.root, self.train, self.transform, self.target_transform, self.download)
 
         if self.train:
             # print("train member of the class: {}".format(self.train))
@@ -445,9 +391,13 @@ class CIFAR10NormalCase_truncated(data.Dataset):
 
         self._DA_ratio = 4  # we hard code this argument for now
         if attack_case == "normal-case":
-            self._num_users_hold_edge_data = 10  # we allow 5% of the users (other than the attacker) to hold the edge data.
+            self._num_users_hold_edge_data = (
+                10  # we allow 5% of the users (other than the attacker) to hold the edge data.
+            )
         elif attack_case == "almost-edge-case":
-            self._num_users_hold_edge_data = 5  # we allow 2.5% of the users (other than the attacker) to hold the edge data.
+            self._num_users_hold_edge_data = (
+                5  # we allow 2.5% of the users (other than the attacker) to hold the edge data.
+            )
         else:
             NotImplementedError("Unsupported attacking case ...")
 
@@ -455,9 +405,7 @@ class CIFAR10NormalCase_truncated(data.Dataset):
 
         if poison_type == "southwest":
             partition = np.array_split(
-                np.arange(
-                    int(self.saved_southwest_dataset_train.shape[0] / self._DA_ratio)
-                ),
+                np.arange(int(self.saved_southwest_dataset_train.shape[0] / self._DA_ratio)),
                 int(self._num_users_hold_edge_data),
             )
 
@@ -470,33 +418,22 @@ class CIFAR10NormalCase_truncated(data.Dataset):
                 mapped_user_partition = []
                 for idx, up in enumerate(bi):
                     mapped_user_partition.extend(
-                        [
-                            prev_user_counter + idx * self._DA_ratio + i
-                            for i in range(self._DA_ratio)
-                        ]
+                        [prev_user_counter + idx * self._DA_ratio + i for i in range(self._DA_ratio)]
                     )
                 prev_user_counter += len(bi) * self._DA_ratio
                 self.__aggregated_mapped_user_partition.append(mapped_user_partition)
 
             if user_id in np.arange(self._num_users_hold_edge_data):
                 user_partition = self.__aggregated_mapped_user_partition[user_id]
-                print(
-                    "######### user_partition: {}, user id: {}".format(
-                        user_partition, user_id
-                    )
-                )
+                print("######### user_partition: {}, user id: {}".format(user_partition, user_id))
 
-                self.saved_southwest_dataset_train = self.saved_southwest_dataset_train[
-                    user_partition, :, :, :
-                ]
+                self.saved_southwest_dataset_train = self.saved_southwest_dataset_train[user_partition, :, :, :]
                 self.saved_southwest_label_train = 0 * np.ones(
                     (self.saved_southwest_dataset_train.shape[0],), dtype=int
                 )
             else:
                 user_partition = []
-                self.saved_southwest_dataset_train = self.saved_southwest_dataset_train[
-                    user_partition, :, :, :
-                ]
+                self.saved_southwest_dataset_train = self.saved_southwest_dataset_train[user_partition, :, :, :]
                 self.saved_southwest_label_train = 0 * np.ones(
                     (self.saved_southwest_dataset_train.shape[0],), dtype=int
                 )
@@ -511,9 +448,7 @@ class CIFAR10NormalCase_truncated(data.Dataset):
 
     def __build_truncated_dataset__(self):
 
-        cifar_dataobj = CIFAR10(
-            self.root, self.train, self.transform, self.target_transform, self.download
-        )
+        cifar_dataobj = CIFAR10(self.root, self.train, self.transform, self.target_transform, self.download)
 
         if self.train:
             data = cifar_dataobj.data
@@ -582,13 +517,7 @@ class CIFAR10_Poisoned(data.Dataset):
         self._clean_indices = clean_indices
         self._poisoned_indices = poisoned_indices
 
-        cifar_dataobj = CIFAR10(
-            self.root,
-            self.train,
-            self.transform_clean,
-            self.target_transform,
-            self.download,
-        )
+        cifar_dataobj = CIFAR10(self.root, self.train, self.transform_clean, self.target_transform, self.download,)
 
         self.data = cifar_dataobj.data
         self.target = np.array(cifar_dataobj.targets)
@@ -649,13 +578,7 @@ class ImageFolderTruncated(DatasetFolder):
     """
 
     def __init__(
-        self,
-        root,
-        dataidxs=None,
-        transform=None,
-        target_transform=None,
-        loader=default_loader,
-        is_valid_file=None,
+        self, root, dataidxs=None, transform=None, target_transform=None, loader=default_loader, is_valid_file=None,
     ):
         super(ImageFolderTruncated, self).__init__(
             root,
