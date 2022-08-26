@@ -72,11 +72,14 @@ def create(args, output_dim):
         model = (gen, disc)
     elif model_name == "lenet" and hasattr(args, "deeplearning_backend") and args.deeplearning_backend == "mnn":
         from .mobile.mnn_lenet import create_mnn_lenet5_model
+        
         create_mnn_lenet5_model(args.global_model_file_path)
+        model = None  # for server MNN, the model is saved as computational graph and then send it to clients.
     elif model_name == "resnet20" and hasattr(args, "deeplearning_backend") and args.deeplearning_backend == "mnn":
         from .mobile.mnn_resnet import create_mnn_resnet20_model
 
         create_mnn_resnet20_model(args.global_model_file_path)
+        model = None  # for server MNN, the model is saved as computational graph and then send it to clients.
     else:
         raise Exception("no such model definition, please check the argument spelling or customize your own model")
     return model
