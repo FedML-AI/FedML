@@ -43,7 +43,7 @@ class MyServerAggregatorTAGPred(ServerAggregator):
                 x = x.to(device)
                 target = target.to(device)
                 pred = model(x)
-                loss = criterion(pred, target)
+                loss = criterion(pred, target)  # pylint: disable=E1102
 
                 predicted = (pred > 0.5).int()
                 correct = predicted.eq(target).sum(axis=-1).eq(target.size(1)).sum()
