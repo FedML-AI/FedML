@@ -1,4 +1,5 @@
 import logging
+import math
 import time
 import warnings
 from collections import defaultdict, OrderedDict
@@ -119,12 +120,12 @@ class Loss:
     def __call__(self, reference, argmin):
         """Return l(x, y)."""
         raise NotImplementedError()
-        return value, name, format
+        # return value, name, format
 
     def metric(self, reference, argmin):
         """The actually sought metric."""
         raise NotImplementedError()
-        return value, name, format
+        # return value, name, format
 
 
 class Classification(Loss):
@@ -512,7 +513,7 @@ def reconstruction_costs(gradients, input_gradient, cost_fn="l2", indices="def",
                 pnorm[0] += trial_gradient[i].pow(2).sum() * weights[i]
                 pnorm[1] += input_gradient[i].pow(2).sum() * weights[i]
         if cost_fn == "sim":
-            costs = 1 + costs / pnorm[0].sqrt() / pnorm[1].sqrt()
+            costs = 1 + costs / math.sqrt(pnorm[0]) / math.sqrt(pnorm[1])
 
         # Accumulate final costs
         total_costs += costs
