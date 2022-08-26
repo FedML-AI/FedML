@@ -1,6 +1,6 @@
 import logging
 
-from .client import Client
+from .client import HFLClient
 from ..fedavg.fedavg_api import FedAvgAPI
 
 
@@ -15,7 +15,7 @@ class Group(FedAvgAPI):
         args,
         device,
         model,
-        model_trainer
+        model_trainer,
     ):
         self.idx = idx
         self.args = args
@@ -23,7 +23,7 @@ class Group(FedAvgAPI):
         self.client_dict = {}
         self.train_data_local_num_dict = train_data_local_num_dict
         for client_idx in total_client_indexes:
-            self.client_dict[client_idx] = Client(
+            self.client_dict[client_idx] = HFLClient(
                 client_idx,
                 train_data_local_dict[client_idx],
                 test_data_local_dict[client_idx],
@@ -31,7 +31,7 @@ class Group(FedAvgAPI):
                 args,
                 device,
                 model,
-                model_trainer
+                model_trainer,
             )
 
     def get_sample_number(self, sampled_client_indexes):
@@ -41,17 +41,11 @@ class Group(FedAvgAPI):
         return self.group_sample_number
 
     def train(self, global_round_idx, w, sampled_client_indexes):
-        sampled_client_list = [
-            self.client_dict[client_idx] for client_idx in sampled_client_indexes
-        ]
+        sampled_client_list = [self.client_dict[client_idx] for client_idx in sampled_client_indexes]
         w_group = w
         w_group_list = []
         for group_round_idx in range(self.args.group_comm_round):
-            logging.info(
-                "Group ID : {} / Group Communication Round : {}".format(
-                    self.idx, group_round_idx
-                )
-            )
+            logging.info("Group ID : {} / Group Communication Round : {}".format(self.idx, group_round_idx))
             w_locals_dict = {}
 
             # train each client

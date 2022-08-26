@@ -12,7 +12,7 @@ class FedSegServerManager(FedMLCommManager):
         self.args = args
         self.aggregator = aggregator
         self.round_num = args.comm_round
-        self.round_idx = 0
+        self.args.round_idx = 0
         logging.info("Initializing Server Manager")
 
     def run(self):
@@ -21,7 +21,7 @@ class FedSegServerManager(FedMLCommManager):
     def send_init_msg(self):
         # sampling clients
         client_indexes = self.aggregator.client_sampling(
-            self.round_idx,
+            self.args.round_idx,
             self.args.client_num_in_total,
             self.args.client_num_per_round,
         )
@@ -54,24 +54,24 @@ class FedSegServerManager(FedMLCommManager):
             sender_id - 1, model_params, local_sample_number
         )
         self.aggregator.add_client_test_result(
-            self.round_idx, sender_id - 1, train_eval_metrics, test_eval_metrics
+            self.args.round_idx, sender_id - 1, train_eval_metrics, test_eval_metrics
         )
 
         b_all_received = self.aggregator.check_whether_all_receive()
 
         if b_all_received:
             global_model_params = self.aggregator.aggregate()
-            self.aggregator.output_global_acc_and_loss(self.round_idx)
+            self.aggregator.output_global_acc_and_loss(self.args.round_idx)
 
             # start the next round
-            self.round_idx += 1
-            if self.round_idx == self.round_num:
+            self.args.round_idx += 1
+            if self.args.round_idx == self.round_num:
                 self.finish()
                 return
 
             # sampling clients
             client_indexes = self.aggregator.client_sampling(
-                self.round_idx,
+                self.args.round_idx,
                 self.args.client_num_in_total,
                 self.args.client_num_per_round,
             )

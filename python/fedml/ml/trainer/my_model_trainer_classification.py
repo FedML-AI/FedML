@@ -19,7 +19,7 @@ class ModelTrainerCLS(ClientTrainer):
         model.train()
 
         # train and update
-        criterion = nn.CrossEntropyLoss().to(device)
+        criterion = nn.CrossEntropyLoss().to(device)  # pylint: disable=E1102
         if args.client_optimizer == "sgd":
             optimizer = torch.optim.SGD(
                 filter(lambda p: p.requires_grad, self.model.parameters()),
@@ -40,7 +40,7 @@ class ModelTrainerCLS(ClientTrainer):
                 x, labels = x.to(device), labels.to(device)
                 model.zero_grad()
                 log_probs = model(x)
-                loss = criterion(log_probs, labels)
+                loss = criterion(log_probs, labels)  # pylint: disable=E1102
                 loss.backward()
 
                 # Uncommet this following line to avoid nan loss
@@ -57,12 +57,82 @@ class ModelTrainerCLS(ClientTrainer):
                 #     )
                 # )
                 batch_loss.append(loss.item())
-            epoch_loss.append(sum(batch_loss) / len(batch_loss))
+            if len(batch_loss) == 0:
+                epoch_loss.append(0.0)
+            else:
+                epoch_loss.append(sum(batch_loss) / len(batch_loss))
             logging.info(
                 "Client Index = {}\tEpoch: {}\tLoss: {:.6f}".format(
                     self.id, epoch, sum(epoch_loss) / len(epoch_loss)
                 )
             )
+
+
+    def train_iterations(self, train_data, device, args):
+        model = self.model
+
+        model.to(device)
+        model.train()
+
+        # train and update
+        criterion = nn.CrossEntropyLoss().to(device)  # pylint: disable=E1102
+        if args.client_optimizer == "sgd":
+            optimizer = torch.optim.SGD(
+                filter(lambda p: p.requires_grad, self.model.parameters()),
+                lr=args.learning_rate,
+            )
+        else:
+            optimizer = torch.optim.Adam(
+                filter(lambda p: p.requires_grad, self.model.parameters()),
+                lr=args.learning_rate,
+                weight_decay=args.weight_decay,
+                amsgrad=True,
+            )
+
+        epoch_loss = []
+
+        current_steps = 0
+        current_epoch = 0
+        while current_steps < args.local_iterations:
+            batch_loss = []
+            for batch_idx, (x, labels) in enumerate(train_data):
+                x, labels = x.to(device), labels.to(device)
+                model.zero_grad()
+                log_probs = model(x)
+                loss = criterion(log_probs, labels)  # pylint: disable=E1102
+                loss.backward()
+
+                # Uncommet this following line to avoid nan loss
+                # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+
+                optimizer.step()
+                # logging.info(
+                #     "Update Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
+                #         epoch,
+                #         (batch_idx + 1) * args.batch_size,
+                #         len(train_data) * args.batch_size,
+                #         100.0 * (batch_idx + 1) / len(train_data),
+                #         loss.item(),
+                #     )
+                # )
+                batch_loss.append(loss.item())
+                current_steps += 1
+                if current_steps == args.local_iterations:
+                    break
+            current_epoch += 1
+            epoch_loss.append(sum(batch_loss) / len(batch_loss))
+            logging.info(
+                "Client Index = {}\tEpoch: {}\tLoss: {:.6f}".format(
+                    self.id, current_epoch, sum(epoch_loss) / len(epoch_loss)
+                )
+            )
+
+
+
+
+
+
+
 
     def test(self, test_data, device, args):
         model = self.model
@@ -79,7 +149,7 @@ class ModelTrainerCLS(ClientTrainer):
                 x = x.to(device)
                 target = target.to(device)
                 pred = model(x)
-                loss = criterion(pred, target)
+                loss = criterion(pred, target)  # pylint: disable=E1102
 
                 _, predicted = torch.max(pred, -1)
                 correct = predicted.eq(target).sum()

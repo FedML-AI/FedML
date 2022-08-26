@@ -19,7 +19,7 @@ class FedAVGClientManager(FedMLCommManager):
         super().__init__(args, comm, rank, size, backend)
         self.trainer = trainer
         self.num_rounds = args.comm_round
-        self.round_idx = 0
+        self.args.round_idx = 0
 
 
     def run(self):
@@ -43,11 +43,11 @@ class FedAVGClientManager(FedMLCommManager):
 
         self.trainer.update_model(global_model_params)
         self.trainer.update_dataset(int(client_index))
-        self.round_idx = 0
+        self.args.round_idx = 0
         self.__train()
 
     def start_training(self):
-        self.round_idx = 0
+        self.args.round_idx = 0
         self.__train()
 
     def handle_message_receive_model_from_server(self, msg_params):
@@ -60,9 +60,9 @@ class FedAVGClientManager(FedMLCommManager):
 
         self.trainer.update_model(model_params)
         self.trainer.update_dataset(int(client_index))
-        self.round_idx += 1
+        self.args.round_idx += 1
         self.__train()
-        if self.round_idx == self.num_rounds - 1:
+        if self.args.round_idx == self.num_rounds - 1:
             # post_complete_message_to_sweep_process(self.args)
             self.finish()
 
@@ -77,6 +77,6 @@ class FedAVGClientManager(FedMLCommManager):
         self.send_message(message)
 
     def __train(self):
-        logging.info("#######training########### round_id = %d" % self.round_idx)
-        weights, local_sample_num = self.trainer.train(self.round_idx)
+        logging.info("#######training########### round_id = %d" % self.args.round_idx)
+        weights, local_sample_num = self.trainer.train(self.args.round_idx)
         self.send_model_to_server(0, weights, local_sample_num)
