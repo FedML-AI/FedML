@@ -24,7 +24,7 @@ train_args:
   client_id_list:
   client_num_in_total: 1000
   client_num_per_round: 2
-  comm_round: 20
+  comm_round: 5
   epochs: 1
   batch_size: 10
   client_optimizer: sgd
@@ -36,7 +36,7 @@ validation_args:
 
 device_args:
   worker_num: 2
-  using_gpu: true
+  using_gpu: false
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_default
 
