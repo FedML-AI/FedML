@@ -14,7 +14,7 @@ class FedSegTrainer(object):
         args,
         model_trainer,
     ):
-
+        self.args = args
         self.trainer = model_trainer
 
         self.client_index = client_index
@@ -28,7 +28,6 @@ class FedSegTrainer(object):
         self.args.round_idx = 0
 
         self.device = device
-        self.args = args
 
     def update_model(self, weights):
         self.trainer.set_model_params(weights)
@@ -52,9 +51,9 @@ class FedSegTrainer(object):
     def test(self):
         train_evaluation_metrics = None
 
-        if self.round_idx and self.round_idx % self.args.evaluation_frequency == 0:
+        if self.args.round_idx and self.args.round_idx % self.args.evaluation_frequency == 0:
             train_evaluation_metrics = self.trainer.test(self.train_local, self.device)
 
         test_evaluation_metrics = self.trainer.test(self.test_local, self.device)
-        self.round_idx += 1
+        self.args.round_idx += 1
         return train_evaluation_metrics, test_evaluation_metrics

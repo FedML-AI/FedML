@@ -1,5 +1,5 @@
-from ...attack.label_flipping_attack import LabelFlippingAttack
-from ...common.attack_defense_data_loader import (
+from fedml.core.security.attack.label_flipping_attack import LabelFlippingAttack
+from fedml.core.security.common.attack_defense_data_loader import (
     AttackDefenseDataLoader,
 )
 from fedml.data.MNIST.data_loader import load_partition_data_mnist
