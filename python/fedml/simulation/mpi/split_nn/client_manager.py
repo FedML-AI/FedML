@@ -73,7 +73,7 @@ class SplitNNClientManager(FedMLCommManager):
         self.trainer.backward_pass(grads)
         if self.trainer.batch_idx == len(self.trainer.trainloader):
             logging.info("Epoch over at node {}".format(self.rank))
-            self.round_idx += 1
+            self.args.round_idx += 1
             self.run_eval()
         else:
             self.run_forward_pass()

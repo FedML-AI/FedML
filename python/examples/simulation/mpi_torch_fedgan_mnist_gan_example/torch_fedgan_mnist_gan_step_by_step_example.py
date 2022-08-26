@@ -1,6 +1,5 @@
 import fedml
 from fedml import FedMLRunner
-from fedml.simulation import SimulatorMPI
 
 if __name__ == "__main__":
     # init FedML framework
