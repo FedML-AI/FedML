@@ -19,7 +19,7 @@ class SplitNN_server:
         self.optimizer = optim.SGD(
             self.model.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4
         )
-        self.criterion = nn.CrossEntropyLoss()
+        self.criterion = nn.CrossEntropyLoss().to(device)
 
     def reset_local_params(self):
         self.total = 0
