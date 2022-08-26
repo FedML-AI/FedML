@@ -1,3 +1,4 @@
+
 from ..constants import (
     FedML_FEDERATED_OPTIMIZER_BASE_FRAMEWORK,
     FedML_FEDERATED_OPTIMIZER_FEDAVG,
@@ -27,7 +28,7 @@ class SimulatorSingleProcess:
         from .sp.fedavg import FedAvgAPI
         from .sp.fednova.fednova_trainer import FedNovaTrainer
         from .sp.fedopt.fedopt_api import FedOptAPI
-        from .sp.hierarchical_fl.trainer import HierachicalTrainer
+        from .sp.hierarchical_fl.trainer import HierarchicalTrainer
         from .sp.turboaggregate.TA_trainer import TurboAggregateTrainer
 
         if args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDAVG:
@@ -37,7 +38,7 @@ class SimulatorSingleProcess:
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDNOVA:
             self.fl_trainer = FedNovaTrainer(dataset, model, device, args)
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_HIERACHICAL_FL:
-            self.fl_trainer = HierachicalTrainer(args, device, dataset, model)
+            self.fl_trainer = HierarchicalTrainer(args, device, dataset, model)
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_TURBO_AGGREGATE:
             self.fl_trainer = TurboAggregateTrainer(dataset, model, device, args)
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_CLASSICAL_VFL:
