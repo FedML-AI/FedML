@@ -4,12 +4,11 @@ from mxnet import np as mx_np
 
 
 class LogisticRegressionModel(nn.Block):
-    def __init__(self, input_dim, out_dim, name=None):
+    def __init__(self, input_dim, out_dim):
         # Run `nn.Block`'s init method
         super().__init__()
         self.output_dim = out_dim
         self.input_dim = input_dim
-        self.name = name
 
         self.layer1 = nn.Dense(out_dim, activation='sigmoid')
         self.layer1.initialize()
