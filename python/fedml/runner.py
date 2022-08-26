@@ -111,7 +111,7 @@ class FedMLRunner:
             from .cross_device import ServerMNN
 
             runner = ServerMNN(
-                args, device, dataset, model, client_trainer, server_aggregator
+                args, device, dataset, model, server_aggregator=server_aggregator
             )
         else:
             raise Exception(

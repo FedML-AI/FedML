@@ -16,7 +16,7 @@ class FedMLCrossSiloServer:
                 test_data_local_dict,
                 class_num,
             ] = dataset
-            self.fl_trainer = server_initializer.init_server(
+            server_initializer.init_server(
                 args,
                 device,
                 args.comm,
@@ -35,7 +35,7 @@ class FedMLCrossSiloServer:
         elif args.federated_optimizer == "LSA":
             from .lightsecagg.lsa_fedml_api import FedML_LSA_Horizontal
 
-            self.fl_trainer = FedML_LSA_Horizontal(
+            FedML_LSA_Horizontal(
                 args,
                 0,
                 args.worker_num,
