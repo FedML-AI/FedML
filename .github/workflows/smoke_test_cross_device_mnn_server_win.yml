@@ -48,6 +48,7 @@ jobs:
       - name: pip install -e ./
         run: |
           pip install -e ./
+          pip install MNN==1.1.6
       - name: test server of cross-device
         run: |
           cd quick_start/beehive
