@@ -2,4 +2,4 @@
 
 # List of members which are set dynamically and missed by Pylint inference
 # system, and so shouldn't trigger E1101 when accessed.
-generated-members=numpy.*, torch.*, Arguments.*, MNN.expr.*, MNN.*, MNN.nn.*, F.*, nn.*, mpi4py.MPI.*, criterion
+generated-members=numpy.*, torch.*, Arguments.*, MNN.expr.*, MNN.*, MNN.nn.*, F.*, nn.*, mpi4py.MPI.*, criterion.*
