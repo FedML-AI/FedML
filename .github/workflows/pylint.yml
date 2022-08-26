@@ -34,4 +34,4 @@ jobs:
         pip install pylint
     - name: Analysing the code with pylint
       run: |
-        pylint --rcfile=.pylintrc --disable=C,R,W ./fedml > pylint_log.txt
+        pylint --rcfile=build_tools/lint/.pylintrc --disable=C,R,W ./fedml
