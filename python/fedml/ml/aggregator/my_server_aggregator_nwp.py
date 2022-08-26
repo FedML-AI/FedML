@@ -30,7 +30,7 @@ class MyServerAggregatorNWP(ServerAggregator):
                 x = x.to(device)
                 target = target.to(device)
                 pred = model(x)
-                loss = criterion(pred, target)
+                loss = criterion(pred, target)  # pylint: disable=E1102
 
                 _, predicted = torch.max(pred, 1)
                 target_pos = ~(target == 0)

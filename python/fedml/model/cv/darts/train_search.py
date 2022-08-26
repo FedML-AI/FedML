@@ -381,7 +381,7 @@ def train(epoch, train_queue, valid_queue, model, architect, criterion, optimize
 
         optimizer.zero_grad()
         logits = model(input)
-        loss = criterion(logits, target)
+        loss = criterion(logits, target)  # pylint: disable=E1102
 
         loss.backward()
         parameters = (
@@ -417,7 +417,7 @@ def infer(valid_queue, model, criterion):
         target = target.cuda()
 
         logits = model(input)
-        loss = criterion(logits, target)
+        loss = criterion(logits, target)  # pylint: disable=E1102
 
         prec1, prec5 = utils.accuracy(logits, target, topk=(1, 5))
         n = input.size(0)
