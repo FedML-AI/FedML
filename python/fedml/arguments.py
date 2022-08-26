@@ -146,7 +146,7 @@ class Arguments:
             else:
                 pass
             
-        if hasattr(self, "training_type") and training_type is None:
+        if hasattr(self, "training_type"):
             training_type = self.training_type
 
         if training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO:
