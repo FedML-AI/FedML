@@ -144,7 +144,7 @@ class LR_Scheduler(object):
         elif self.mode == "step":
             lr = self.lr * (0.1 ** (epoch // self.lr_step))
         else:
-            raise NotImplemented
+            raise NotImplementedError
         # warm up lr schedule
         if self.warmup_iters > 0 and T < self.warmup_iters:
             lr = lr * 1.0 * T / self.warmup_iters
