@@ -67,8 +67,8 @@ def test__defense_soteria_dlg():
             num_class=100,
             model=LeNet(),
             defense_data=local_data,
-            attack_method="dlg",
-            defense_method=med,
+            # attack_method="dlg",
+            # defense_method=med,
         )
         ori_grad, def_grad = defense.defend(local_w, global_w=None, refs=local_gradient)
         logging.info(
