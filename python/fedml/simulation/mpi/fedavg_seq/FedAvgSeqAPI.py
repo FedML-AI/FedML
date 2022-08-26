@@ -1,4 +1,4 @@
-bfrom .FedAVGAggregator import FedAVGAggregator
+from .FedAVGAggregator import FedAVGAggregator
 from .FedAVGTrainer import FedAVGTrainer
 from .FedAvgClientManager import FedAVGClientManager
 from .FedAvgServerManager import FedAVGServerManager
