@@ -149,7 +149,7 @@ def get_torch_device(args, using_gpu, device_id, device_type):
 
         if torch.cuda.is_available() and device_type == MLEngineBackend.ml_device_type_gpu:
             device = torch.device(f"cuda:{gpu_id}")
-            torch.cuda.set_device(gpu_id)
+            torch.cuda.set_device(int(gpu_id))
         elif device_type == MLEngineBackend.ml_device_type_mps:
             # https://pytorch.org/docs/master/notes/mps.html
             device = torch.device(MLEngineBackend.ml_device_type_mps)
