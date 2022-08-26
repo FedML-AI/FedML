@@ -76,7 +76,7 @@ def create(args, output_dim):
     elif model_name == "resnet20" and hasattr(args, "deeplearning_backend") and args.deeplearning_backend == "mnn":
         from .mobile.mnn_resnet import create_mnn_resnet20_model
 
-        model = create_mnn_resnet20_model(args.global_model_file_path)
+        create_mnn_resnet20_model(args.global_model_file_path)
     else:
         raise Exception("no such model definition, please check the argument spelling or customize your own model")
     return model
