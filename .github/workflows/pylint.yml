@@ -21,14 +21,14 @@ jobs:
       matrix:
         python-version: ["3.8"]
         mpi: [mpich]
-        include:
-        - os: ubuntu-latest
-          mpi: mpich
-          install-mpi: sudo apt install -y mpich libmpich-dev
+#        include:
+#        - os: ubuntu-latest
+#          mpi: mpich
+#          install-mpi: sudo apt install -y mpich libmpich-dev
     steps:
     - uses: actions/checkout@v3
-    - name: Install MPI
-      run: ${{ matrix.install-mpi }}
+#    - name: Install MPI
+#      run: ${{ matrix.install-mpi }}
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v3
       with:
