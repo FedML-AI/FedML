@@ -52,7 +52,7 @@ def init_server(args, device, comm, rank, size, model, model_trainer):
     logging.info("Initializing Server")
 
     if model_trainer is None:
-        model_trainer = MyModelTrainer(model)
+        model_trainer = MyModelTrainer(model, args)
     model_trainer.set_id(-1)
 
     # aggregator
