@@ -34,4 +34,9 @@ jobs:
         pip install pylint
     - name: Analysing the code with pylint
       run: |
+        pip install "fedml[MPI]"
+        pip install "fedml[gRPC]"
+        pip install "fedml[tensorflow]"
+        pip install "fedml[jax]"
+        pip install "fedml[mxnet]"
         pylint --rcfile=build_tools/lint/.pylintrc --disable=C,R,W ./fedml
