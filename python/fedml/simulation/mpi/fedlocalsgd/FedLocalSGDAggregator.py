@@ -5,11 +5,15 @@ import time
 
 import numpy as np
 import torch
+import wandb
 
 from .optrepo import OptRepo
 from .utils import transform_list_to_tensor
 from ....utils.compression import compressors
 from ....utils.model_utils import average_named_params, get_average_weight
+
+from ....core.schedule.seq_train_scheduler import SeqTrainScheduler
+from ....core.schedule.runtime_estimate import t_sample_fit
 
 
 class FedLocalSGDAggregator(object):
@@ -93,10 +97,50 @@ class FedLocalSGDAggregator(object):
         return True
 
 
+    def workload_estimate(self, client_indexes, mode="simulate"):
+        if mode == "simulate":
+            client_samples = [
+                self.train_data_local_num_dict[client_index]
+                for client_index in client_indexes
+            ]
+            workload = client_samples
+        elif mode == "real":
+            raise NotImplementedError
+        else:
+            raise NotImplementedError
+        return workload
+
+    def memory_estimate(self, client_indexes, mode="simulate"):
+        if mode == "simulate":
+            memory = np.ones(self.worker_num)
+        elif mode == "real":
+            raise NotImplementedError
+        else:
+            raise NotImplementedError
+        return memory
+
+    def resource_estimate(self, mode="simulate"):
+        if mode == "simulate":
+            resource = np.ones(self.worker_num)
+        elif mode == "real":
+            raise NotImplementedError
+        else:
+            raise NotImplementedError
+        return resource
+
     def record_client_runtime(self, worker_id, client_runtimes):
         for client_id, runtime in client_runtimes.items():
             self.runtime_history[worker_id][client_id].append(runtime)
-
+        if hasattr(self.args, "runtime_est_mode"):
+            if self.args.runtime_est_mode == 'EMA':
+                for client_id, runtime in client_runtimes.items():
+                    if self.runtime_avg[worker_id][client_id] is None:
+                        self.runtime_avg[worker_id][client_id] = runtime
+                    else:
+                        self.runtime_avg[worker_id][client_id] += self.runtime_avg[worker_id][client_id]/2 + runtime/2
+            elif self.args.runtime_est_mode == 'time_window':
+                for client_id, runtime in client_runtimes.items():
+                    self.runtime_history[worker_id][client_id] = self.runtime_history[worker_id][client_id][-3:]
 
 
     def generate_client_schedule(self, round_idx, client_indexes):
@@ -105,12 +149,22 @@ class FedLocalSGDAggregator(object):
         #     self.runtime_history[i] = {}
         #     for j in range(self.args.client_num_in_total):
         #         self.runtime_history[i][j] = []
-
+        previous_time = time.time()
         if hasattr(self.args, "simulation_schedule") and round_idx > 5:
             # Need some rounds to record some information. 
             simulation_schedule = self.args.simulation_schedule
+            if hasattr(self.args, "runtime_est_mode"):
+                if self.args.runtime_est_mode == 'EMA':
+                    runtime_to_fit = self.runtime_avg
+                elif self.args.runtime_est_mode == 'time_window':
+                    runtime_to_fit = self.runtime_history
+                else:
+                    raise NotImplementedError
+            else:
+                runtime_to_fit = self.runtime_history
+
             fit_params, fit_funcs, fit_errors = t_sample_fit(
-                self.worker_num, self.args.client_num_in_total, self.runtime_history, 
+                self.worker_num, self.args.client_num_in_total, runtime_to_fit, 
                 self.train_data_local_num_dict, uniform_client=True, uniform_gpu=False)
             logging.info(f"fit_params: {fit_params}")
             logging.info(f"fit_errors: {fit_errors}")
@@ -136,9 +190,11 @@ class FedLocalSGDAggregator(object):
             client_schedule = []
             for indexes in y_schedule:
                 client_schedule.append(client_indexes[indexes])
-            logging.info(f"Schedules: {client_schedule}")
         else:
             client_schedule = np.array_split(client_indexes, self.worker_num)
+        if self.args.enable_wandb:
+            wandb.log({"RunTimeSchedule": time.time() - previous_time, "round": round_idx})
+        logging.info(f"Schedules: {client_schedule}")
         return client_schedule
 
 

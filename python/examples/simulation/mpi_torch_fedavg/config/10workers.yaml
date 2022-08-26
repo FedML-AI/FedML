@@ -53,7 +53,7 @@ comm_args:
 
 tracking_args:
   log_file_dir: ./log
-  enable_wandb: True
+  enable_wandb: False
   wandb_entity: automl
   wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
   wandb_project: bench_optim
@@ -61,6 +61,8 @@ tracking_args:
   run_name: fedml_optim_bench
   wandb_only_server: True
   using_mlops: False
+  simulation_schedule: "LinearFit-DP"
+  runtime_est_mode: "time_window" # EMA
 
 attack_args:
   enable_attack: false
