@@ -6,7 +6,7 @@ from numbers import Real
 
 import numpy as np
 
-from fedml.core.dp.common.utils import check_params
+from ..common.utils import check_params
 
 
 class Exponential:
