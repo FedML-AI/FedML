@@ -56,7 +56,7 @@ class LeNet(nn.Module):
         return out, feature
 
 
-def test__defense_soteria_dlg():
+def test_defense_soteria_dlg():
     # local_gradient -> which could be inferred via w = w - eta * g
     local_gradient = create_fake_gradient_Cifar100()
     print(f"local = {local_gradient}")
@@ -76,4 +76,4 @@ def test__defense_soteria_dlg():
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    test__defense_soteria_dlg()
+    test_defense_soteria_dlg()
