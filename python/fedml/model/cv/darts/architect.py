@@ -35,7 +35,7 @@ class Architect(object):
     # https://www.youtube.com/watch?v=k8fTYJPd3_I
     def _compute_unrolled_model(self, input, target, eta, network_optimizer):
         logits = self.model(input)
-        loss = self.criterion(logits, target)
+        loss = self.criterion(logits, target)   # pylint: disable=E1102
 
         theta = _concat(self.model.parameters()).data
         try:
@@ -95,7 +95,7 @@ class Architect(object):
 
         # grads_alpha_with_train_dataset
         logits = self.model(input_train)
-        loss_train = self.criterion(logits, target_train)
+        loss_train = self.criterion(logits, target_train)  # pylint: disable=E1102
 
         arch_parameters = self.model.arch_parameters()
         grads_alpha_with_train_dataset = torch.autograd.grad(
@@ -106,7 +106,7 @@ class Architect(object):
 
         # grads_alpha_with_val_dataset
         logits = self.model(input_valid)
-        loss_val = self.criterion(logits, target_valid)
+        loss_val = self.criterion(logits, target_valid)  # pylint: disable=E1102
 
         arch_parameters = self.model.arch_parameters()
         grads_alpha_with_val_dataset = torch.autograd.grad(loss_val, arch_parameters)
@@ -147,7 +147,7 @@ class Architect(object):
 
         # grads_alpha_with_train_dataset
         logits = self.model(input_train)
-        loss_train = self.criterion(logits, target_train)
+        loss_train = self.criterion(logits, target_train)  # pylint: disable=E1102
 
         arch_parameters = (
             self.model.module.arch_parameters()
@@ -178,7 +178,7 @@ class Architect(object):
 
         # grads_alpha_with_train_dataset
         logits = self.model(input_train)
-        loss_train = self.criterion(logits, target_train)
+        loss_train = self.criterion(logits, target_train)  # pylint: disable=E1102
 
         arch_parameters = (
             self.model.module.arch_parameters()
@@ -191,7 +191,7 @@ class Architect(object):
 
         # grads_alpha_with_val_dataset
         logits = self.model(input_valid)
-        loss_val = self.criterion(logits, target_valid)
+        loss_val = self.criterion(logits, target_valid)  # pylint: disable=E1102
 
         arch_parameters = (
             self.model.module.arch_parameters()
@@ -222,13 +222,13 @@ class Architect(object):
     def step_AOS(self, input_train, target_train, input_valid, target_valid):
         self.optimizer.zero_grad()
         output_search = self.model(input_valid)
-        arch_loss = self.criterion(output_search, target_valid)
+        arch_loss = self.criterion(output_search, target_valid)  # pylint: disable=E1102
         arch_loss.backward()
         self.optimizer.step()
 
     def _backward_step(self, input_valid, target_valid):
         logits = self.model(input_valid)
-        loss = self.criterion(logits, target_valid)
+        loss = self.criterion(logits, target_valid)  # pylint: disable=E1102
 
         loss.backward()
 
@@ -248,7 +248,7 @@ class Architect(object):
         )
 
         logits = unrolled_model(input_valid)
-        unrolled_loss = self.criterion(logits, target_valid)
+        unrolled_loss = self.criterion(logits, target_valid)  # pylint: disable=E1102
         unrolled_loss.backward()  # w, alpha
 
         # the first term of equation (7)
@@ -323,7 +323,7 @@ class Architect(object):
 
         # get alpha gradient based on w+ in training dataset
         logits = self.model(input)
-        loss = self.criterion(logits, target)
+        loss = self.criterion(logits, target)  # pylint: disable=E1102
 
         arch_parameters = (
             self.model.module.arch_parameters()
@@ -342,7 +342,7 @@ class Architect(object):
 
         # get alpha gradient based on w- in training dataset
         logits = self.model(input)
-        loss = self.criterion(logits, target)
+        loss = self.criterion(logits, target)  # pylint: disable=E1102
 
         arch_parameters = (
             self.model.module.arch_parameters()
@@ -385,7 +385,7 @@ class Architect(object):
 
         """(7)"""
         logits_val = unrolled_model(input_valid)
-        valid_loss = self.criterion(logits_val, target_valid)
+        valid_loss = self.criterion(logits_val, target_valid)  # pylint: disable=E1102
         valid_loss.backward()  # w, alpha
 
         # the 1st term of equation (7)
@@ -414,7 +414,7 @@ class Architect(object):
         unrolled_model.zero_grad()
 
         logits_train = unrolled_model(input_train)
-        train_loss = self.criterion(logits_train, target_train)
+        train_loss = self.criterion(logits_train, target_train)  # pylint: disable=E1102
         train_loss.backward()  # w, alpha
 
         # the 1st term of equation (8)
@@ -476,7 +476,7 @@ class Architect(object):
 
         """(7)"""
         logits_val = unrolled_model(input_valid)
-        valid_loss = self.criterion(logits_val, target_valid)
+        valid_loss = self.criterion(logits_val, target_valid)  # pylint: disable=E1102
         valid_loss.backward()  # w, alpha
 
         # the 1st term of equation (7)
@@ -505,7 +505,7 @@ class Architect(object):
         unrolled_model.zero_grad()
 
         logits_train = unrolled_model(input_train)
-        train_loss = self.criterion(logits_train, target_train)
+        train_loss = self.criterion(logits_train, target_train)  # pylint: disable=E1102
         train_loss.backward()  # w, alpha
 
         # the 1st term of equation (8)

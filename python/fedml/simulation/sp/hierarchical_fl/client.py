@@ -42,7 +42,7 @@ class Client(Client):
                 x, labels = x.to(self.device), labels.to(self.device)
                 self.model.zero_grad()
                 log_probs = self.model(x)
-                loss = self.criterion(log_probs, labels)
+                loss = self.criterion(log_probs, labels)  # pylint: disable=E1102
                 loss.backward()
                 optimizer.step()
             global_epoch = (

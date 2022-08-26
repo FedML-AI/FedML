@@ -44,7 +44,7 @@ class SplitNN_server:
         self.acts.retain_grad()
         logits = self.model(acts)
         _, predictions = logits.max(1)
-        self.loss = self.criterion(logits, labels)
+        self.loss = self.criterion(logits, labels)  # pylint: disable=E1102
         self.total += labels.size(0)
         self.correct += predictions.eq(labels).sum().item()
         if self.step % self.log_step == 0 and self.phase == "train":

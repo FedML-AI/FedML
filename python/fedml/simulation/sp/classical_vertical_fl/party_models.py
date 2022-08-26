@@ -61,7 +61,7 @@ class VFLGuestModel(object):
         U = torch.tensor(U, requires_grad=True).float()
         y = torch.tensor(y)
         y = y.type_as(U)
-        class_loss = self.classifier_criterion(U, y)
+        class_loss = self.classifier_criterion(U, y)  # pylint: disable=E1102
         grads = torch.autograd.grad(outputs=class_loss, inputs=U)
         self.top_grads = grads[0].numpy()
         self.loss = class_loss.item()
