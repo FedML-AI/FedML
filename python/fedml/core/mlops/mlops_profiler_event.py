@@ -49,12 +49,12 @@ class MLOpsProfilerEvent:
                 self.edge_id = 0
 
     @classmethod
-    def enable_sys_perf_profiling(cls):
-        cls._sys_perf_profiling = True
+    def enable_wandb_tracking(cls):
+        cls._enable_wandb = True
 
     @classmethod
-    def open_wandb(cls):
-        cls._enable_wandb = True
+    def enable_sys_perf_profiling(cls):
+        cls._sys_perf_profiling = True
 
     @classmethod
     def log_to_wandb(cls, metric):
