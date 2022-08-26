@@ -14,7 +14,7 @@ import torch.utils
 import torchvision.datasets as dset
 import wandb
 
-import utils
+from . import utils
 from .architect import Architect
 from .model_search import Network
 
@@ -235,7 +235,9 @@ def main():
         optimizer, float(args.epochs), eta_min=args.learning_rate_min
     )
 
-    architect = Architect(model, criterion, args)
+    device = torch.device(f"cuda:{args.gpu}")
+    torch.cuda.set_device(args.gpu)
+    architect = Architect(model, criterion, args, device)
 
     best_accuracy = 0
     best_accuracy_different_cnn_counts = dict()
