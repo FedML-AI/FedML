@@ -18,8 +18,8 @@ data_args:
 model_args:
   model: "lenet"
   deeplearning_backend: "mnn"
-  model_file_cache_folder: "./model_file_cache" # will be filled by the server automatically
-  global_model_file_path: "./model_file_cache/global_model.mnn"
+  model_file_cache_folder: "model_file_cache" # will be filled by the server automatically
+  global_model_file_path: "model_file_cache/global_model.mnn"
 
 train_args:
   federated_optimizer: "FedAvg"
