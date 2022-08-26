@@ -3,12 +3,14 @@ ref: Zhu, Ligeng, Zhijian Liu, and Song Han. "Deep leakage from gradients." Adva
 """
 import argparse
 
-import torch
 
-from ...attack.dlg_attack import DLGAttack
-from ...common.attack_defense_data_loader import AttackDefenseDataLoader
-from ...common.net import LeNet
-from ...common.utils import cross_entropy_for_onehot, label_to_onehot
+from fedml.core.security.attack.dlg_attack import DLGAttack
+from fedml.core.security.common.net import LeNet
+from fedml.core.security.common.utils import cross_entropy_for_onehot, label_to_onehot
+from fedml.core.security.common.attack_defense_data_loader import (
+    AttackDefenseDataLoader,
+)
+import torch
 
 
 def add_args():
