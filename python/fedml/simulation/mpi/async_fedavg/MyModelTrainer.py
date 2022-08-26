@@ -37,7 +37,7 @@ class MyModelTrainer(ClientTrainer):
                 x, labels = x.to(device), labels.to(device)
                 optimizer.zero_grad()
                 log_probs = model(x)
-                loss = criterion(log_probs, labels)
+                loss = criterion(log_probs, labels)  # pylint: disable=E1102
                 loss.backward()
                 optimizer.step()
                 batch_loss.append(loss.item())
@@ -69,7 +69,7 @@ class MyModelTrainer(ClientTrainer):
                 x = x.to(device)
                 target = target.to(device)
                 pred = model(x)
-                loss = criterion(pred, target)
+                loss = criterion(pred, target)  # pylint: disable=E1102
                 if args.dataset == "stackoverflow_lr":
                     predicted = (pred > 0.5).int()
                     correct = predicted.eq(target).sum(axis=-1).eq(target.size(1)).sum()
