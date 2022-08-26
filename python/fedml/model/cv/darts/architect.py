@@ -27,6 +27,8 @@ class Architect(object):
 
         self.device = device
 
+        self.is_multi_gpu = False
+
     # Momentum: https://blog.paperspace.com/intro-to-optimization-momentum-rmsprop-adam/
     # V_j = coefficient_momentum * V_j - learning_rate * gradient
     # W_j = V_j + W_jx  x
