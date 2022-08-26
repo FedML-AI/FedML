@@ -22,8 +22,8 @@ brew install android-platform-tools
 
 [https://github.com/FedML-AI/FedML/tree/master/python/quick_start/beehive](https://github.com/FedML-AI/FedML/tree/master/python/quick_start/beehive)
 
-5. For local debugging of cross-device server, please try 
-
+5. For local debugging of cross-device server, please try
+(Cross device server on Windows is not working because MNN lib can't work on Windows correctly, so you should run cross-device server on linux or other OS in which MNN lib can be working correctly)
 ```
 sh run_server.sh
 ```
