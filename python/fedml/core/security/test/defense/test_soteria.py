@@ -11,8 +11,8 @@ added by Kai, 07/10/2022
 # from security.defense.soteria_defense import SoteriaDefense
 # from security.test.utils import create_fake_gradient_Cifar100, create_fake_model_Cifar100, create_fake_data_Cifar100
 
-from fedml.core.security.defense.soteria_defense import SoteriaDefense
-from fedml.core.security.test.utils import (
+from ...defense.soteria_defense import SoteriaDefense
+from ...test.utils import (
     create_fake_gradient_Cifar100,
     create_fake_model_Cifar100,
     create_fake_data_Cifar100,
