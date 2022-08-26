@@ -119,7 +119,9 @@ def create_fake_input(
         return (ground_truth, labels), input_parameters
 
 
-def test__attack_invertgradient_untrained_oneimage(config):
+def test__attack_invertgradient_untrained_oneimage():
+    dataset = construct_dataloaders()
+    config = config_untrained
     model = torchvision.models.resnet18(pretrained=False)
     model.eval()
     refs, local_w = create_fake_input(0, 1, dataset, model, Classification(), False)
@@ -129,7 +131,9 @@ def test__attack_invertgradient_untrained_oneimage(config):
     attack.attack_model(local_w=local_w, global_w=None, refs=refs)
 
 
-def test__attack_invertgradient_trained_oneimage(config):
+def test__attack_invertgradient_trained_oneimage():
+    dataset = construct_dataloaders()
+    config = config_trained
     model = torchvision.models.resnet18(pretrained=True)
     model.eval()
     refs, local_w = create_fake_input(0, 1, dataset, model, Classification(), False)
@@ -138,7 +142,9 @@ def test__attack_invertgradient_trained_oneimage(config):
     attack.attack_model(local_w=local_w, global_w=None, refs=refs)
 
 
-def test__attack_invertgradient_untrained_multiimage(config):
+def test__attack_invertgradient_untrained_multiimage():
+    dataset = construct_dataloaders()
+    config = config_untrained
     model = torchvision.models.resnet18(pretrained=False)
     model.eval()
     refs, local_w = create_fake_input(0, 10, dataset, model, Classification(), False)
@@ -147,7 +153,9 @@ def test__attack_invertgradient_untrained_multiimage(config):
     attack.attack_model(local_w=local_w, global_w=None, refs=refs)
 
 
-def test__attack_invertweight_untrained_oneimage(config):
+def test__attack_invertweight_untrained_oneimage():
+    dataset = construct_dataloaders()
+    config = config_untrained_weight
     model = torchvision.models.resnet18(pretrained=False)
     model.eval()
     refs, local_w = create_fake_input(0, 1, dataset, model, Classification(), True)
@@ -158,7 +166,7 @@ def test__attack_invertweight_untrained_oneimage(config):
 
 if __name__ == "__main__":
     dataset = construct_dataloaders()
-    test__attack_invertgradient_untrained_oneimage(config_untrained)
-    test__attack_invertgradient_trained_oneimage(config_trained)
-    test__attack_invertgradient_untrained_multiimage(config_untrained)
-    test__attack_invertweight_untrained_oneimage(config_untrained_weight)
+    test__attack_invertgradient_untrained_oneimage()
+    test__attack_invertgradient_trained_oneimage()
+    test__attack_invertgradient_untrained_multiimage()
+    test__attack_invertweight_untrained_oneimage()

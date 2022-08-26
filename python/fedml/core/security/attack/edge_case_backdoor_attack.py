@@ -63,4 +63,4 @@ class EdgeCaseBackdoorAttack:
             else:
                 backdoored_dataset.append(train_data_local_dict[client_idx])
         log_client_data_statistics(self.poisoned_client_list, backdoored_dataset)
-        return backdoor_dataset
+        return backdoored_dataset
