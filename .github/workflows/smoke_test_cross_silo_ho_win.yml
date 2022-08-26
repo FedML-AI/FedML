@@ -59,15 +59,15 @@ jobs:
       - name: client 1 - cross-silo - ho
         run: |
           cd quick_start/octopus
-          run_id=${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
-          echo run_id
-          .\run_client.bat 1 $run_id
+          set run_id=${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
+          echo %run_id%
+          .\run_client.bat 1 %run_id%
         if:   ${{ matrix.client-index == '1' }}
 
       - name: client 2 - cross-silo - ho
         run: |
           cd quick_start/octopus
-          run_id=${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
-          echo run_id
-          .\run_client.bat 2 $run_id
+          set run_id=${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
+          echo %run_id%
+          .\run_client.bat 2 %run_id%
         if: ${{ matrix.client-index == '2' }}
