@@ -3,22 +3,18 @@ ref: Zhu, Ligeng, Zhijian Liu, and Song Han. "Deep leakage from gradients." Adva
 """
 import argparse
 
+import torch
+
 from ...attack.dlg_attack import DLGAttack
+from ...common.attack_defense_data_loader import AttackDefenseDataLoader
 from ...common.net import LeNet
 from ...common.utils import cross_entropy_for_onehot, label_to_onehot
-from ...common.attack_defense_data_loader import (
-    AttackDefenseDataLoader,
-)
-import torch
+
 
 def add_args():
     parser = argparse.ArgumentParser(description="FedML")
     parser.add_argument(
-        "--yaml_config_file",
-        "--cf",
-        help="yaml configuration file",
-        type=str,
-        default="",
+        "--yaml_config_file", "--cf", help="yaml configuration file", type=str, default="",
     )
 
     # default arguments
@@ -27,6 +23,7 @@ def add_args():
 
     args, unknown = parser.parse_known_args()
     return args
+
 
 def test__attack_dlg():
     dataset = AttackDefenseDataLoader.load_cifar10_data(client_num=3, batch_size=32)
@@ -43,9 +40,7 @@ def test__attack_dlg():
 
     # compute original gradient (simulation, thie operation should be implemeted locally in the real application)
     gt_label = torch.Tensor([label]).long()
-    gt_label = gt_label.view(
-        1,
-    )
+    gt_label = gt_label.view(1,)
     gt_onehot_label = label_to_onehot(gt_label, num_class)
     img = img.view(1, *img.size()).requires_grad_()
     out = net(img)
