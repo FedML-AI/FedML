@@ -6,11 +6,12 @@ import torch.nn as nn
 from ..fedavg.client import Client
 
 
-class Client(Client):
-    def __init__(
-        self, client_idx, local_training_data, local_test_data, local_sample_number, args, device, model, model_trainer
-    ):
+class HFLClient(Client):
+    def __init__(self, client_idx, local_training_data, local_test_data, local_sample_number, args, device, model,
+                 model_trainer):
 
+        super().__init__(client_idx, local_training_data, local_test_data, local_sample_number, args, device,
+                         model_trainer)
         self.client_idx = client_idx
         self.local_training_data = local_training_data
         self.local_test_data = local_test_data

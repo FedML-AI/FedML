@@ -1,6 +1,6 @@
 import argparse
 from fedml.core.security.defense.foolsgold_defense import FoolsGoldDefense
-from tests.security.aggregation.aggregation_functions import AggregationFunction
+from ..aggregation.aggregation_functions import AggregationFunction
 from ..utils import create_fake_model_list, create_fake_model_list_MNIST
 
 

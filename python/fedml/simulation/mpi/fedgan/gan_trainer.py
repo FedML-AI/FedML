@@ -4,14 +4,14 @@ import numpy as np
 import torch
 from torch import nn
 
-from ...core.alg_frame.client_trainer import ClientTrainer
+from ....core.alg_frame.client_trainer import ClientTrainer
 
 
-class FedGANTrainer(ClientTrainer):
+class GANTrainer(ClientTrainer):
     def __init__(self, netd, netg):
         self.netg = netg
         self.netd = netd
-        super(FedGANTrainer, self).__init__(model=None, args=None)
+        super(GANTrainer, self).__init__(model=None, args=None)
 
     def get_model_params(self):
         weights_d = self.netd.cpu().state_dict()
@@ -94,8 +94,3 @@ class FedGANTrainer(ClientTrainer):
 
     def test(self, test_data, device, args):
         pass
-
-    def test_on_the_server(
-            self, train_data_local_dict, test_data_local_dict, device, args=None
-    ) -> bool:
-        return False

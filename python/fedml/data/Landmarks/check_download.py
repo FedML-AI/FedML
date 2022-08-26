@@ -1,4 +1,4 @@
-from data_loader import load_partition_data_landmarks
+from .data_loader import load_partition_data_landmarks
 
 """
     You can run with python check_download.py to check if you have all 
