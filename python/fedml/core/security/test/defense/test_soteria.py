@@ -58,21 +58,24 @@ class LeNet(nn.Module):
 def test__defense_soteria_dlg():
     # local_gradient -> which could be inferred via w = w - eta * g
     local_gradient = create_fake_gradient_Cifar100()
+    print(f"local = {local_gradient}")
     local_w = create_fake_model_Cifar100()
     local_data = create_fake_data_Cifar100()
     defense_methods = ["soteria"]
     # defense_methods = ["soteria", "model compression", "differential privacy"]
+
+    # todo: fix format of local_w
     for med in defense_methods:
         defense = SoteriaDefense(
             num_class=100,
             model=LeNet(),
             defense_data=local_data,
-            attack_method="dlg",
-            defense_method=med,
         )
-        ori_grad, def_grad = defense.defend(local_w, global_w=None, refs=local_gradient)
+        def_grad = defense.run(raw_client_grad_list=local_w,
+            base_aggregation_func=None,
+            extra_auxiliary_info=local_gradient)
         logging.info(
-            f"method = {med}, _original_gradient = {ori_grad}, _after_defend_gradient = {def_grad}"
+            f"method = {med}, grad = {def_grad}"
         )
 
 
