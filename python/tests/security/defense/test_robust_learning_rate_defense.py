@@ -1,6 +1,5 @@
 import argparse
-
-from ...defense.robust_learning_rate_defense import (
+from fedml.core.security.defense.robust_learning_rate_defense import (
     RobustLearningRateDefense,
 )
 from ..utils import create_fake_model_list_MNIST

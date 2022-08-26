@@ -1,7 +1,6 @@
 import argparse
-
 import numpy as np
-from ...defense.bulyan_defense import BulyanDefense
+from fedml.core.security.defense.bulyan_defense import BulyanDefense
 from ..aggregation.aggregation_functions import (
     AggregationFunction,
 )
