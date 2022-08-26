@@ -38,7 +38,9 @@ requirements = [
     "multiprocess",
     "smart-open==5.2.1",
     "nvidia-ml-py3",
-    "matplotlib"
+    "matplotlib",
+    "dill",
+    "pandas",
 ]
 
 requirements_extra_mpi = [
@@ -48,14 +50,27 @@ requirements_extra_mpi = [
 requirements_extra_tf = [
     "tensorflow",
     "tensorflow_datasets",
+    "tensorflow_federated",
 ]
+
+requirements_extra_jax = [
+    "jax[cuda]",
+    "dm-haiku",
+    "optax",
+    "jaxlib"
+]
+
+requirements_extra_mxnet = [
+    "mxnet"
+]
+
 
 if platform.machine() == "x86_64":
     requirements.append("MNN==1.1.6")
 
 setup(
     name="fedml",
-    version="0.7.290",
+    version="0.7.298",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
@@ -110,6 +125,8 @@ setup(
         "MPI": requirements_extra_mpi,
         "gRPC": "grpcio",
         "tensorflow": requirements_extra_tf,
+        "jax": requirements_extra_jax,
+        "mxnet": requirements_extra_mxnet,
     },
     package_data={"": ["py.typed"]},
     license="Apache 2.0",

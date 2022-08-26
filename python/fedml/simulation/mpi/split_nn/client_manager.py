@@ -16,7 +16,7 @@ class SplitNNClientManager(FedMLCommManager):
         )
         self.trainer = trainer
         self.trainer.train_mode()
-        self.round_idx = 0
+        self.args.round_idx = 0
 
     def run(self):
         if self.trainer.rank == 1:
@@ -51,9 +51,9 @@ class SplitNNClientManager(FedMLCommManager):
         for i in range(len(self.trainer.testloader)):
             self.run_forward_pass()
         self.send_validation_over_to_server(self.trainer.SERVER_RANK)
-        self.round_idx += 1
+        self.args.round_idx += 1
         if (
-            self.round_idx == self.trainer.MAX_EPOCH_PER_NODE
+            self.args.round_idx == self.trainer.MAX_EPOCH_PER_NODE
             and self.trainer.rank == self.trainer.MAX_RANK
         ):
             self.send_finish_to_server(self.trainer.SERVER_RANK)
@@ -65,7 +65,7 @@ class SplitNNClientManager(FedMLCommManager):
             )
             self.send_semaphore_to_client(self.trainer.node_right)
 
-        if self.round_idx == self.trainer.MAX_EPOCH_PER_NODE:
+        if self.args.round_idx == self.trainer.MAX_EPOCH_PER_NODE:
             self.finish()
 
     def handle_message_gradients(self, msg_params):
@@ -73,7 +73,7 @@ class SplitNNClientManager(FedMLCommManager):
         self.trainer.backward_pass(grads)
         if self.trainer.batch_idx == len(self.trainer.trainloader):
             logging.info("Epoch over at node {}".format(self.rank))
-            self.round_idx += 1
+            self.args.round_idx += 1
             self.run_eval()
         else:
             self.run_forward_pass()

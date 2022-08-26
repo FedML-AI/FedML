@@ -60,7 +60,7 @@ class ClientDSGD(object):
         train_x = torch.from_numpy(self.streaming_data[iteration_id]["x"])
         train_y = torch.FloatTensor([self.streaming_data[iteration_id]["y"]])
         outputs = self.model(train_x)
-        loss = self.criterion(outputs, train_y)
+        loss = self.criterion(outputs, train_y)  # pylint: disable=E1102
         loss.backward()
         self.optimizer.step()
         self.loss_in_each_iteration.append(loss)
@@ -76,7 +76,7 @@ class ClientDSGD(object):
         train_y = torch.FloatTensor([self.streaming_data[iteration_id]["y"]])
         outputs = self.model(train_x)
         # print(train_y)
-        loss = self.criterion(outputs, train_y)
+        loss = self.criterion(outputs, train_y)  # pylint: disable=E1102
         grads_z = torch.autograd.grad(loss, self.model.parameters())
 
         for x_paras, g_z in zip(list(self.model_x.parameters()), grads_z):

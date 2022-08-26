@@ -1,5 +1,3 @@
-import logging
-
 import numpy as np
 import torch.utils.data as data
 from PIL import Image
@@ -18,14 +16,8 @@ IMG_EXTENSIONS = (
 )
 
 
-def accimage_loader(path):
-    import accimage
-
-    try:
-        return accimage.Image(path)
-    except IOError:
-        # Potentially a decoding problem, fall back to PIL.Image
-        return pil_loader(path)
+def default_loader(path):
+    return pil_loader(path)
 
 
 def pil_loader(path):
@@ -35,24 +27,9 @@ def pil_loader(path):
         return img.convert("RGB")
 
 
-def default_loader(path):
-    from torchvision import get_image_backend
-
-    if get_image_backend() == "accimage":
-        return accimage_loader(path)
-    else:
-        return pil_loader(path)
-
-
 class CIFAR100_truncated(data.Dataset):
     def __init__(
-        self,
-        root,
-        dataidxs=None,
-        train=True,
-        transform=None,
-        target_transform=None,
-        download=False,
+        self, root, dataidxs=None, train=True, transform=None, target_transform=None, download=False,
     ):
 
         self.root = root
@@ -66,9 +43,7 @@ class CIFAR100_truncated(data.Dataset):
 
     def __build_truncated_dataset__(self):
 
-        cifar_dataobj = CIFAR100(
-            self.root, self.train, self.transform, self.target_transform, self.download
-        )
+        cifar_dataobj = CIFAR100(self.root, self.train, self.transform, self.target_transform, self.download)
 
         if self.train:
             # print("train member of the class: {}".format(self.train))

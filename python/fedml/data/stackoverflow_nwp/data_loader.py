@@ -1,6 +1,6 @@
 import logging
 import os
-import pickle
+import dill as pickle
 
 import torch.utils.data as data
 import tqdm
@@ -192,7 +192,7 @@ def load_partition_data_federated_stackoverflow_nwp(
             cache_data["train_data_local_dict"] = train_data_local_dict
             cache_data["test_data_local_dict"] = test_data_local_dict
             cache_data["VOCAB_LEN"] = VOCAB_LEN
-            cache_data = pickle.dump(cache_data, cache_file)
+            pickle.dump(cache_data, cache_file)
 
     return (
         DEFAULT_TRAIN_CLIENTS_NUM,
@@ -205,19 +205,3 @@ def load_partition_data_federated_stackoverflow_nwp(
         test_data_local_dict,
         VOCAB_LEN,
     )
-
-
-if __name__ == "__main__":
-    # load_partition_data_federated_stackoverflow(None, None, 100, 128)
-    (
-        train_data_num,
-        train_data_global,
-        test_data_global,
-        local_data_num,
-        train_data_local,
-        test_data_local,
-        VOCAB_LEN,
-    ) = load_partition_data_distributed_federated_stackoverflow_nwp(2, None, None, 128)
-    # print(load_partition_data_federated_stackoverflow_nwp(None, None))
-    print(train_data_local, test_data_local)
-    print(VOCAB_LEN)
