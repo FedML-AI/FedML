@@ -1,9 +1,9 @@
-from ...attack.invert_gradient_attack import (
+from fedml.core.security.attack.invert_gradient_attack import (
     InvertAttack,
     Classification,
     loss_steps,
 )
-from ...common.attack_defense_data_loader import (
+from fedml.core.security.common.attack_defense_data_loader import (
     AttackDefenseDataLoader,
 )
 

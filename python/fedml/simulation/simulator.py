@@ -1,3 +1,4 @@
+
 from ..constants import (
     FedML_FEDERATED_OPTIMIZER_BASE_FRAMEWORK,
     FedML_FEDERATED_OPTIMIZER_FEDAVG,
@@ -15,8 +16,6 @@ from ..constants import (
     FedML_FEDERATED_OPTIMIZER_FEDSEG,
     FedML_FEDERATED_OPTIMIZER_HIERACHICAL_FL,
     FedML_FEDERATED_OPTIMIZER_TURBO_AGGREGATE,
-    FedML_FEDERATED_OPTIMIZER_FEDSGD,
-    FedML_FEDERATED_OPTIMIZER_FEDLOCALSGD,
     FedML_FEDERATED_OPTIMIZER_ASYNC_FEDAVG,
 )
 from ..core import ClientTrainer, ServerAggregator
@@ -28,9 +27,8 @@ class SimulatorSingleProcess:
         from .sp.fedavg import FedAvgAPI
         from .sp.fednova.fednova_trainer import FedNovaTrainer
         from .sp.fedopt.fedopt_api import FedOptAPI
-        from .sp.hierarchical_fl.trainer import HierachicalTrainer
+        from .sp.hierarchical_fl.trainer import HierarchicalTrainer
         from .sp.turboaggregate.TA_trainer import TurboAggregateTrainer
-        from .sp.fedsgd.fedsgd_api import FedSGDAPI
 
         if args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDAVG:
             self.fl_trainer = FedAvgAPI(args, device, dataset, model)
@@ -39,13 +37,11 @@ class SimulatorSingleProcess:
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDNOVA:
             self.fl_trainer = FedNovaTrainer(dataset, model, device, args)
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_HIERACHICAL_FL:
-            self.fl_trainer = HierachicalTrainer(args, device, dataset, model)
+            self.fl_trainer = HierarchicalTrainer(args, device, dataset, model)
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_TURBO_AGGREGATE:
             self.fl_trainer = TurboAggregateTrainer(dataset, model, device, args)
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_CLASSICAL_VFL:
             self.fl_trainer = VflFedAvgAPI(args, device, dataset, model)
-        elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDSGD:
-            self.fl_trainer = FedSGDAPI(args, device, dataset, model)
 
         # elif args.fl_trainer == FedML_FEDERATED_OPTIMIZER_DECENTRALIZED_FL:
         #     self.fl_trainer = FedML_decentralized_fl()
@@ -79,7 +75,6 @@ class SimulatorMPI:
         from .mpi.fedavg_seq.FedAvgSeqAPI import FedML_FedAvgSeq_distributed
         from .mpi.async_fedavg.AsyncFedAvgSeqAPI import FedML_Async_distributed
         from .mpi.fednova.FedNovaAPI import FedML_FedNova_distributed
-        from .mpi.fedlocalsgd.FedLocalSGDAPI import FedML_FedLocalSGD_distributed
 
         if args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDAVG:
             FedML_FedAvg_distributed(
@@ -95,18 +90,6 @@ class SimulatorMPI:
             )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDAVG_SEQ:
             FedML_FedAvgSeq_distributed(
-                args,
-                args.process_id,
-                args.worker_num,
-                args.comm,
-                device,
-                dataset,
-                model,
-                client_trainer=client_trainer,
-                server_aggregator=server_aggregator,
-            )
-        elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDLOCALSGD:
-            FedML_FedLocalSGD_distributed(
                 args,
                 args.process_id,
                 args.worker_num,
