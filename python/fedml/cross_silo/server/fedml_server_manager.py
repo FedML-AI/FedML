@@ -4,7 +4,6 @@ import time
 
 from fedml import mlops
 from .message_define import MyMessage
-
 from ...core.distributed.communication.message import Message
 from ...core.distributed.fedml_comm_manager import FedMLCommManager
 from ...core.mlops.mlops_profiler_event import MLOpsProfilerEvent
@@ -32,6 +31,7 @@ class FedMLServerManager(FedMLCommManager):
         self.is_initialized = False
         self.client_id_list_in_this_round = None
         self.data_silo_index_list = None
+
 
     def run(self):
         super().run()

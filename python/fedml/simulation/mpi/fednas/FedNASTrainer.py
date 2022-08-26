@@ -140,7 +140,7 @@ class FedNASTrainer(object):
 
             optimizer.zero_grad()
             logits = model(input)
-            loss = criterion(logits, target)
+            loss = criterion(logits, target)  # pylint: disable=E1102
 
             loss.backward()
             parameters = model.arch_parameters()
@@ -227,9 +227,9 @@ class FedNASTrainer(object):
 
             optimizer.zero_grad()
             logits, logits_aux = model(input)
-            loss = criterion(logits, target)
+            loss = criterion(logits, target)  # pylint: disable=E1102
             if self.args.auxiliary:
-                loss_aux = criterion(logits_aux, target)
+                loss_aux = criterion(logits_aux, target)  # pylint: disable=E1102
                 loss += self.args.auxiliary_weight * loss_aux
             loss.backward()
             parameters = model.parameters()
@@ -259,7 +259,7 @@ class FedNASTrainer(object):
             target = target.to(self.device)
 
             logits = model(input)
-            loss = criterion(logits, target)
+            loss = criterion(logits, target)  # pylint: disable=E1102
 
             prec1, prec5 = utils.accuracy(logits, target, topk=(1, 5))
             n = input.size(0)
@@ -294,7 +294,7 @@ class FedNASTrainer(object):
                 target = target.to(self.device)
 
                 pred = self.model(x)
-                loss = self.criterion(pred, target)
+                loss = self.criterion(pred, target)  # pylint: disable=E1102
                 _, predicted = torch.max(pred, 1)
                 correct = predicted.eq(target).sum()
 

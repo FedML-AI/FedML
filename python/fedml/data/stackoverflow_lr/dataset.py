@@ -25,7 +25,7 @@ class StackOverflowDataset(data.Dataset):
 
         self.h5_path = h5_path
         self.datast = datast
-        self.client_id = self.get_client_id_list()[client_idx]
+        self.client_id = self.get_client_id_list()[client_idx]  # pylint: disable=E1136
         self.input_fn = None
         self.target_fn = None
         if preprocess:

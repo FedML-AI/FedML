@@ -3,14 +3,7 @@ from ..core import ClientTrainer
 
 
 class FedMLCrossSiloClient:
-    def __init__(
-        self,
-        args,
-        device,
-        dataset,
-        model,
-        model_trainer: ClientTrainer = None
-    ):
+    def __init__(self, args, device, dataset, model, model_trainer: ClientTrainer = None):
         if args.federated_optimizer == "FedAvg":
             [
                 train_data_num,
@@ -22,7 +15,7 @@ class FedMLCrossSiloClient:
                 test_data_local_dict,
                 class_num,
             ] = dataset
-            self.fl_trainer = client_initializer.init_client(
+            client_initializer.init_client(
                 args,
                 device,
                 args.comm,
@@ -39,7 +32,7 @@ class FedMLCrossSiloClient:
         elif args.federated_optimizer == "LSA":
             from .lightsecagg.lsa_fedml_api import FedML_LSA_Horizontal
 
-            self.fl_trainer = FedML_LSA_Horizontal(
+            FedML_LSA_Horizontal(
                 args,
                 args.rank,
                 args.worker_num,
