@@ -51,7 +51,7 @@ def get_sys_runner_info():
 
         # Getting loadover15 minutes
         load1, load5, load15 = psutil.getloadavg()
-        cpu_usage = "{:.0f}%".format((load15 / os.cpu_count()) * 100, 4)
+        cpu_usage = "{:.0f}%".format((load15 / os.cpu_count()) * 100)
         available_mem = "{:.1f} G".format(psutil.virtual_memory().available / 1024 / 1024 / 1024)
         total_mem = "{:.1f}G".format(psutil.virtual_memory().total / 1024 / 1024 / 1024)
     except:

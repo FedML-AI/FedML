@@ -1,2 +1,0 @@
-This code is adapted from Multi-Freq-LDPy library (https://github.com/hharcolezi/multi-freq-ldpy): 
-Arcolezi, Héber H., et al. "Multi-Freq-LDPy: Multiple Frequency Estimation Under Local Differential Privacy in Python."

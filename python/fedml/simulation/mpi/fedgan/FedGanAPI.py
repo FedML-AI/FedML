@@ -4,6 +4,7 @@ from .FedGANAggregator import FedGANAggregator
 from .FedGANTrainer import FedGANTrainer
 from .FedGanClientManager import FedGANClientManager
 from .FedGanServerManager import FedGANServerManager
+from .gan_trainer import GANTrainer
 
 
 def FedML_init():
@@ -39,7 +40,7 @@ def FedML_FedGan_distributed(
     netg, netd = model
 
     if model_trainer is None:
-        model_trainer = FedGANTrainer(netd, netg)
+        model_trainer = GANTrainer(netd, netg)
 
     if process_id == 0:
         init_server(
