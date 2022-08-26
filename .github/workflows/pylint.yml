@@ -45,5 +45,4 @@ jobs:
         pip install "fedml[jax]"
         pip install "fedml[mxnet]"
         pip install ptflops
-        pip install shutil
         pylint --rcfile=build_tools/lint/.pylintrc --disable=C,R,W,I ./fedml
