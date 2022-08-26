@@ -11,17 +11,18 @@ added by Kai, 07/10/2022
 # from security.defense.soteria_defense import SoteriaDefense
 # from security.test.utils import create_fake_gradient_Cifar100, create_fake_model_Cifar100, create_fake_data_Cifar100
 
-from fedml.core.security.defense.soteria_defense import SoteriaDefense
-from fedml.core.security.test.utils import (
+import logging
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+from ...defense.soteria_defense import SoteriaDefense
+from ...test.utils import (
     create_fake_gradient_Cifar100,
     create_fake_model_Cifar100,
     create_fake_data_Cifar100,
 )
-
-import torch
-import torch.nn.functional as F
-import torch.nn as nn
-import logging
 
 """
 TODO FIX: load model and the corresponding parameters from FedML system
@@ -66,17 +67,11 @@ def test__defense_soteria_dlg():
 
     # todo: fix format of local_w
     for med in defense_methods:
-        defense = SoteriaDefense(
-            num_class=100,
-            model=LeNet(),
-            defense_data=local_data,
+        defense = SoteriaDefense(num_class=100, model=LeNet(), defense_data=local_data,)
+        def_grad = defense.run(
+            raw_client_grad_list=local_w, base_aggregation_func=None, extra_auxiliary_info=local_gradient
         )
-        def_grad = defense.run(raw_client_grad_list=local_w,
-            base_aggregation_func=None,
-            extra_auxiliary_info=local_gradient)
-        logging.info(
-            f"method = {med}, grad = {def_grad}"
-        )
+        logging.info(f"method = {med}, grad = {def_grad}")
 
 
 if __name__ == "__main__":
