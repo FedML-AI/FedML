@@ -63,8 +63,7 @@ jobs:
 
     - name: Test package
       run: |
-        cd tests/smoke_test/simulation_mpi
-        hostname > mpi_host_file
-        mpiexec -np 5 -hostfile mpi_host_file python main.py --cf fedml_config.yaml
+        cd examples/simulation/mpi_torch_fedavg_mnist_lr_example
+        sh run_custom_data_and_model_example.sh 4
     - name: Uninstall package after testing
       run:  python -m pip uninstall --yes mpi4py
