@@ -49,10 +49,10 @@ def convert_numpy_to_mxnet_data_format(args, batched_x, batched_y):
     from mxnet import np as mx_np
 
     if args.model == "cnn":
-        batched_x = mx_np.array(batched_x)  # CNN_MINST
-        batched_x = mx_np.reshape(batched_x, [-1, 28, 28])
+        batched_x = mx_np.array(batched_x)
+        batched_x = mx_np.reshape(batched_x, [-1, 28, 28])  # pylint: disable=E1101
     else:
-        batched_x = mx_np.array(batched_x)  # LR_MINST or other
+        batched_x = mx_np.array(batched_x)
 
     batched_y = mx_np.array(batched_y)
     return batched_x, batched_y
@@ -103,7 +103,7 @@ def is_mxnet_device_available(args, device_type):
         try:
             import mxnet as mx
 
-            gpus = mx.device.num_gpus()
+            gpus = mx.device.num_gpus() # pylint: disable=E1101
         except Exception as ex:
             return False
 
