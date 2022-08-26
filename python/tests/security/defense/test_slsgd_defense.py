@@ -2,7 +2,7 @@ import argparse
 import random
 from fedml.core.security.common.utils import trimmed_mean
 from fedml.core.security.defense.slsgd_defense import SLSGDDefense
-from ..aggregation.aggregation_functions import AggregationFunction
+from tests.security.aggregation.aggregation_functions import AggregationFunction
 from ..utils import create_fake_model_list
 
 
@@ -45,7 +45,7 @@ def test_defense_option2():
     random.shuffle(model_list)
     val = defense.run(
         model_list,
-        base_aggregation_func=AggregationFunction.FedAVG,
+        base_aggregation_func=AggregationFunction.FedAVG2,
         extra_auxiliary_info=model_list[0][1],
     )
     print(f"len={len(val)}, val={val}")
@@ -67,7 +67,7 @@ def test_robustify_global_model():
         model_list = create_fake_model_list(20)
         aggregated_results = SLSGDDefense(add_args_option2()).run(
             model_list,
-            base_aggregation_func=AggregationFunction.FedAVG,
+            base_aggregation_func=AggregationFunction.FedAVG2,
             extra_auxiliary_info=model_list[0][1],
         )
         print(f"alpha = {alpha}, aggregation = {aggregated_results} ")
