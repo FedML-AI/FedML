@@ -9,7 +9,7 @@ class GuestManager(FedMLCommManager):
 
         self.guest_trainer = guest_trainer
         self.round_num = args.comm_round
-        self.round_idx = 0
+        self.args.round_idx = 0
 
     def run(self):
         for process_id in range(1, self.size):
@@ -33,14 +33,14 @@ class GuestManager(FedMLCommManager):
         b_all_received = self.guest_trainer.check_whether_all_receive()
 
         if b_all_received:
-            host_gradient = self.guest_trainer.train(self.round_idx)
+            host_gradient = self.guest_trainer.train(self.args.round_idx)
 
             for receiver_id in range(1, self.size):
                 self.send_message_to_client(receiver_id, host_gradient)
 
             # start the next round
-            self.round_idx += 1
-            if self.round_idx == self.round_num * self.guest_trainer.get_batch_num():
+            self.args.round_idx += 1
+            if self.args.round_idx == self.round_num * self.guest_trainer.get_batch_num():
                 self.finish()
 
     def send_message_init_config(self, receive_id):

@@ -11,7 +11,7 @@ class BaseCentralManager(FedMLCommManager):
 
         self.aggregator = aggregator
         self.round_num = args.comm_round
-        self.round_idx = 0
+        self.args.round_idx = 0
 
     def run(self):
         for process_id in range(1, self.size):
@@ -34,13 +34,13 @@ class BaseCentralManager(FedMLCommManager):
         logging.info("b_all_received = " + str(b_all_received))
         if b_all_received:
             logging.info(
-                "**********************************ROUND INDEX = " + str(self.round_idx)
+                "**********************************ROUND INDEX = " + str(self.args.round_idx)
             )
             global_result = self.aggregator.aggregate()
 
             # start the next round
-            self.round_idx += 1
-            if self.round_idx == self.round_num:
+            self.args.round_idx += 1
+            if self.args.round_idx == self.round_num:
                 self.finish()
                 return
 
