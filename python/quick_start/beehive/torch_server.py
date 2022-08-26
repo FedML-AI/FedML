@@ -21,7 +21,7 @@ if __name__ == "__main__":
     class_num = 10
 
     # load model
-    model = fedml.model.create(args, output_dim=class_num)
+    fedml.model.create(args, output_dim=class_num)
 
     # start training
     server = ServerMNN(
