@@ -122,7 +122,7 @@ def main():
     logging.info("param size = %fMB", utils.count_parameters_in_MB(model))
     wandb.run.summary["param_size"] = utils.count_parameters_in_MB(model)
 
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss()  # pylint: disable=W0631
     criterion = criterion.cuda()
     optimizer = torch.optim.SGD(
         weight_params,  # model.parameters(),
@@ -197,9 +197,9 @@ def train(train_queue, model, criterion, optimizer):
 
         optimizer.zero_grad()
         logits, logits_aux = model(input)
-        loss = criterion(logits, target)
+        loss = criterion(logits, target)  # pylint: disable=E1102
         if args.auxiliary:
-            loss_aux = criterion(logits_aux, target)
+            loss_aux = criterion(logits_aux, target)  # pylint: disable=E1102
             loss += args.auxiliary_weight * loss_aux
         loss.backward()
         parameters = model.module.parameters() if is_multi_gpu else model.parameters()
@@ -236,7 +236,7 @@ def infer(valid_queue, model, criterion):
             target = target.cuda(non_blocking=True)
 
             logits, _ = model(input)
-            loss = criterion(logits, target)
+            loss = criterion(logits, target)  # pylint: disable=E1102
 
             prec1, prec5 = utils.accuracy(logits, target, topk=(1, 5))
             n = input.size(0)
