@@ -22,7 +22,7 @@ jobs:
     defaults:
       run:
         shell: powershell
-        working-directory: python
+        working-directory: fedml-devops\python
     strategy:
       fail-fast: false
       matrix:
