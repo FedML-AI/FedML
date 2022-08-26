@@ -41,7 +41,7 @@ class MyModelTrainer(ClientTrainer):
                 # logging.info("labels.size = " + str(labels.size()))
                 model.zero_grad()
                 log_probs = model(x)
-                loss = criterion(log_probs, labels)
+                loss = criterion(log_probs, labels)  # pylint: disable=E1102
                 loss.backward()
                 # to avoid nan loss
                 # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 0.5)
@@ -69,7 +69,7 @@ class MyModelTrainer(ClientTrainer):
                 x = x.to(device)
                 target = target.to(device)
                 pred = model(x)
-                loss = criterion(pred, target)
+                loss = criterion(pred, target)  # pylint: disable=E1102
 
                 _, predicted = torch.max(pred, 1)
                 target_pos = ~(target == 0)

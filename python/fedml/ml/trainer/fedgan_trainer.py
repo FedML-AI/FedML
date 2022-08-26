@@ -32,7 +32,7 @@ class FedGANTrainer(ClientTrainer):
         netd.to(device)
         netd.train()
 
-        criterion = nn.BCELoss()
+        criterion = nn.BCELoss()  # pylint: disable=E1102
         optimizer_g = torch.optim.Adam(netg.parameters(), lr=args.lr)
         optimizer_d = torch.optim.Adam(netd.parameters(), lr=args.lr)
 
@@ -51,16 +51,16 @@ class FedGANTrainer(ClientTrainer):
                 real_labels = torch.ones(x.size(0), 1).to(device)
                 fake_labels = torch.zeros(x.size(0), 1).to(device)
                 optimizer_d.zero_grad()
-                d_real_loss = criterion(netd(x), real_labels)
+                d_real_loss = criterion(netd(x), real_labels)  # pylint: disable=E1102
                 noise = torch.randn(x.size(0), 100).to(device)
-                d_fake_loss = criterion(netd(netg(noise)), fake_labels)
+                d_fake_loss = criterion(netd(netg(noise)), fake_labels)  # pylint: disable=E1102
                 d_loss = d_real_loss + d_fake_loss
                 d_loss.backward()
                 optimizer_d.step()
 
                 noise = torch.randn(x.size(0), 100).to(device)
                 optimizer_g.zero_grad()
-                g_loss = criterion(netd(netg(noise)), real_labels)
+                g_loss = criterion(netd(netg(noise)), real_labels)  # pylint: disable=E1102
                 g_loss.backward()
                 optimizer_g.step()
 

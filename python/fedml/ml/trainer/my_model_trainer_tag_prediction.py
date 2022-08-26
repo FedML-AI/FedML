@@ -40,7 +40,7 @@ class ModelTrainerTAGPred(ClientTrainer):
                 # logging.info("labels.size = " + str(labels.size()))
                 model.zero_grad()
                 log_probs = model(x)
-                loss = criterion(log_probs, labels)
+                loss = criterion(log_probs, labels)  # pylint: disable=E1102
                 loss.backward()
 
                 # to avoid nan loss
@@ -82,7 +82,7 @@ class ModelTrainerTAGPred(ClientTrainer):
                 x = x.to(device)
                 target = target.to(device)
                 pred = model(x)
-                loss = criterion(pred, target)
+                loss = criterion(pred, target)  # pylint: disable=E1102
 
                 predicted = (pred > 0.5).int()
                 correct = predicted.eq(target).sum(axis=-1).eq(target.size(1)).sum()
