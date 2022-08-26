@@ -24,7 +24,7 @@ jobs:
         include:
         - os: ubuntu-latest
           mpi: mpich
-          install-mpi: apt install -y mpich libmpich-dev
+          install-mpi: sudo apt install -y mpich libmpich-dev
     steps:
     - uses: actions/checkout@v3
     - name: Install MPI
