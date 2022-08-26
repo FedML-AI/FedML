@@ -1,5 +1,5 @@
 import argparse
-from ...defense.norm_diff_clipping_defense import (
+from fedml.core.security.defense.norm_diff_clipping_defense import (
     NormDiffClippingDefense,
 )
 from ..aggregation.aggregation_functions import (
