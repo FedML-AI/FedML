@@ -130,7 +130,7 @@ def manage_profiling_args(args):
         args.sys_perf_profiling = True
 
     if args.sys_perf_profiling:
-        from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
+        from .core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
         MLOpsProfilerEvent.enable_sys_perf_profiling()
 
@@ -161,9 +161,9 @@ def manage_profiling_args(args):
 
             wandb.init(**wandb_args)
 
-            from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
+            from .core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
-            MLOpsProfilerEvent.open_wandb()
+            MLOpsProfilerEvent.enable_wandb_tracking()
 
 
 def manage_cuda_rpc_args(args):
@@ -186,7 +186,7 @@ def manage_cuda_rpc_args(args):
     # Valudate arguments related to cuda rpc
     if args.enable_cuda_rpc:
         if not hasattr(args, "cuda_rpc_gpu_mapping"):
-            raise "Invalid config. cuda_rpc_gpu_mapping is required when enable_cuda_rpc=True"
+            raise Exception("Invalid config. cuda_rpc_gpu_mapping is required when enable_cuda_rpc=True")
         assert (
             type(args.cuda_rpc_gpu_mapping) is dict
         ), "Invalid cuda_rpc_gpu_mapping type. Expected dict"

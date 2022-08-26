@@ -7,7 +7,16 @@ sys.setrecursionlimit(10000)
 
 
 class SeqTrainScheduler:
-    def __init__(self, workloads, constraints, memory, cost_funcs, uniform_client=True, uniform_gpu=False, prune_equal_sub_solution=True):
+    def __init__(
+        self,
+        workloads,
+        constraints,
+        memory,
+        cost_funcs,
+        uniform_client=True,
+        uniform_gpu=False,
+        prune_equal_sub_solution=True,
+    ):
         self.workloads = workloads
         self.x = np.sort(workloads)[::-1]
         self.x_sorted_index = np.argsort(workloads)[::-1]
@@ -48,7 +57,7 @@ class SeqTrainScheduler:
             costs.append(max(cost_maps[i]))
         costs = np.array(costs)
         # logging.info(f"self.iter_times: {self.iter_times}, cost_maps:{cost_maps} ")
-        # delete other items that are not optimimal sub combinations. 
+        # delete other items that are not optimimal sub combinations.
         if self.prune_equal_sub_solution:
             target_case_index = np.argmin(costs)
             costs = [costs[target_case_index]]
@@ -85,7 +94,7 @@ class SeqTrainScheduler:
             new_maps.append(np.copy(x_map))
             new_maps[i][target_index] = i
             new_costs.append(np.copy(cost_map))
-#             new_costs[i][i] += self.y[i] * self.x[target_index]
+            #             new_costs[i][i] += self.y[i] * self.x[target_index]
             new_costs[i][i] += self.obtain_client_cost(i, client_id)
 
         # Insert all the new maps.
@@ -93,7 +102,7 @@ class SeqTrainScheduler:
             # Check if this case violates the memory constraints.
             max_cost = max(new_costs[i])
             resource_index = np.argmax(new_costs[i])
-#             if max_cost <= self.m[resource_index]:
+            #             if max_cost <= self.m[resource_index]:
             x_maps.append(new_maps[i])
             cost_maps.append(new_costs[i])
         return self.assign_a_workload_serial(x_maps, cost_maps)
@@ -163,9 +172,7 @@ class SeqTrainScheduler:
         if mode == 1:
             resource_maps = []
             resource_maps.append(np.zeros((self.len_y)))
-            x_maps, cost_maps, resource_maps = self.assign_a_workload(
-                x_maps, cost_maps, resource_maps
-            )
+            x_maps, cost_maps, resource_maps = self.assign_a_workload(x_maps, cost_maps, resource_maps)
         else:
             x_maps, cost_maps = self.assign_a_workload_serial(x_maps, cost_maps)
 
@@ -188,8 +195,7 @@ class SeqTrainScheduler:
         # logging.info(f"schedules: {schedules}  len(schedules): {len(schedules)}")
         logging.info(f"self.iter_times: {self.iter_times}")
         logging.info(
-            "The optimal maximum cost: %f, assignment: %s\n"
-            % (costs[target_index], str(x_maps[target_index]))
+            "The optimal maximum cost: %f, assignment: %s\n" % (costs[target_index], str(x_maps[target_index]))
         )
         logging.info(f"target_index: {target_index} cost_map: {cost_maps[target_index]}")
 
@@ -234,18 +240,3 @@ class SeqTrainScheduler:
                 output_schedules.append(schedule)
         return schedules, output_schedules
 
-
-
-if __name__ == "__main__":
-    mode = 0
-    # mode = 1
-    # workloads = np.array([1, 2, 3, 5, 7, 14])
-    # workloads = np.array([1, 2, 3, 5, 7, 14, 20, 30, 45, 70])
-    workloads = np.array([1, 1, 2, 3, 3, 5, 6, 7, 14, 20, 25, 30, 45, 50, 60, 70, 80, 90])
-    # constraints = np.array([1, 5])
-    constraints = np.array([1, 5, 8, 10])
-    memory = np.array([15, 100])
-    my_scheduler = SeqTrainScheduler(workloads, constraints, memory)
-    schedules = my_scheduler.DP_schedule(mode)
-    for i in range(len(schedules)):
-        print("Resource %2d: %s\n" % (i, str(schedules[i])))
