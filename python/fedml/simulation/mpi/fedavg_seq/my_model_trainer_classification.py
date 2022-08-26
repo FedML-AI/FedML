@@ -19,7 +19,7 @@ class MyModelTrainer(ClientTrainer):
         model.train()
 
         # train and update
-        criterion = nn.CrossEntropyLoss().to(device)
+        criterion = nn.CrossEntropyLoss()
         if args.client_optimizer == "sgd":
             optimizer = torch.optim.SGD(
                 filter(lambda p: p.requires_grad, self.model.parameters()),
@@ -73,7 +73,7 @@ class MyModelTrainer(ClientTrainer):
 
         metrics = {"test_correct": 0, "test_loss": 0, "test_total": 0}
 
-        criterion = nn.CrossEntropyLoss().to(device)
+        criterion = nn.CrossEntropyLoss()
 
         with torch.no_grad():
             for batch_idx, (x, target) in enumerate(test_data):
