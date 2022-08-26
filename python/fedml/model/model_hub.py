@@ -72,8 +72,7 @@ def create(args, output_dim):
         model = (gen, disc)
     elif model_name == "lenet" and hasattr(args, "deeplearning_backend") and args.deeplearning_backend == "mnn":
         from .mobile.mnn_lenet import create_mnn_lenet5_model
-
-        model = create_mnn_lenet5_model(args.global_model_file_path)
+        create_mnn_lenet5_model(args.global_model_file_path)
     elif model_name == "resnet20" and hasattr(args, "deeplearning_backend") and args.deeplearning_backend == "mnn":
         from .mobile.mnn_resnet import create_mnn_resnet20_model
 
