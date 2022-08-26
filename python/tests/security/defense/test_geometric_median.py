@@ -1,9 +1,8 @@
 import argparse
-
 import torch
-from ...common.utils import compute_middle_point, compute_geometric_median
-from ...defense.geometric_median_defense import GeometricMedianDefense
-from ...test.utils import create_fake_model_list
+from fedml.core.security.common.utils import compute_middle_point, compute_geometric_median
+from fedml.core.security.defense.geometric_median_defense import GeometricMedianDefense
+from tests.security.utils import create_fake_model_list
 
 
 def add_args():
