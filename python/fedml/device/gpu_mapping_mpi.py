@@ -1,19 +1,19 @@
 import logging
 import socket
 
-import torch
 import yaml
+from ..ml.engine import ml_engine_adapter
 
 
 def mapping_processes_to_gpu_device_from_yaml_file_mpi(
-    process_id, worker_number, gpu_util_file, gpu_util_key
+    process_id, worker_number, gpu_util_file, gpu_util_key, args=None
 ):
     if gpu_util_file is None:
         logging.info(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         logging.info(
             " ################## You do not indicate gpu_util_file, will use CPU training  #################"
         )
-        device = torch.device("cpu")
+        device = ml_engine_adapter.get_device(args, device_type="cpu")
         logging.info(device)
         return device
     else:
@@ -41,21 +41,16 @@ def mapping_processes_to_gpu_device_from_yaml_file_mpi(
             )
             logging.info("i = {}, worker_number = {}".format(i, worker_number))
             assert i == worker_number
-        if torch.cuda.is_available():
-            torch.cuda.set_device(gpu_util_map[process_id][1])
-        device = torch.device(
-            "cuda:" + str(gpu_util_map[process_id][1])
-            if torch.cuda.is_available()
-            else "cpu"
-        )
+
+        args.gpu_id = gpu_util_map[process_id][1]
+        device = ml_engine_adapter.get_device(args, device_id=str(gpu_util_map[process_id][1]), device_type="gpu")
         logging.info("process_id = {}, GPU device = {}".format(process_id, device))
         return device
 
 
-
-def mapping_processes_to_gpu_device_from_gpu_util_parse(process_id, worker_number, gpu_util_parse):
+def mapping_processes_to_gpu_device_from_gpu_util_parse(process_id, worker_number, gpu_util_parse, args=None):
     if gpu_util_parse == None:
-        device = torch.device("cpu")
+        device = ml_engine_adapter.get_device(args, device_type="cpu")
         logging.info(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         logging.info(" ##################  Not Indicate gpu_util_file, using cpu  #################")
         logging.info(device)
@@ -82,7 +77,10 @@ def mapping_processes_to_gpu_device_from_gpu_util_parse(process_id, worker_numbe
             process_id, gpu_util_map[process_id][0], socket.gethostname(), gpu_util_map[process_id][1]))
         assert i == worker_number
 
-        device = torch.device("cuda:" + str(gpu_util_map[process_id][1]) if torch.cuda.is_available() else "cpu")
+        args.gpu_id = gpu_util_map[process_id][1]
+        device = ml_engine_adapter.get_device(args, using_gpu=True,
+                                              device_id=gpu_util_map[process_id][1],
+                                              device_type="gpu")
         logging.info(device)
         return device
 

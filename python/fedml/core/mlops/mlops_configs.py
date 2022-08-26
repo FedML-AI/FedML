@@ -16,7 +16,7 @@ class MLOpsConfigs(Singleton):
     _config_instance = None
 
     def __init__(self):
-        pass
+        self.args = None
 
     @staticmethod
     def get_instance(args):
@@ -57,7 +57,7 @@ class MLOpsConfigs(Singleton):
         return url, cert_path
 
     @staticmethod
-    def get_root_ca_path(self):
+    def get_root_ca_path():
         cur_source_dir = os.path.dirname(__file__)
         cert_path = os.path.join(
             cur_source_dir, "ssl", "open-root-ca.crt"
