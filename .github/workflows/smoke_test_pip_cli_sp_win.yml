@@ -36,6 +36,7 @@ jobs:
 #            python-version: '3.6'
     runs-on: [self-hosted, runner-windows, devops]
     steps:
+      # Support long paths
       - name: Support longpaths
         run: git config --system core.longpaths true
       - uses: actions/setup-python@v4
