@@ -1,13 +1,6 @@
-# import os, sys
-# __file__ = '/Users/kai/Documents/FedML/python/'
-# sys.path.append(__file__)
 from fedml.core.security.attack.backdoor_attack import BackdoorAttack
-from fedml.core.security.test.utils import (
-    create_fake_model_list,
-    create_fake_dataloader,
-)
-
 import logging
+from tests.security.utils import create_fake_model_list, create_fake_dataloader
 
 logging.getLogger().setLevel(logging.INFO)
 

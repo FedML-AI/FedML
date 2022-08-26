@@ -1,6 +1,5 @@
 import torch
 from torch.utils.data import TensorDataset
-
 from fedml.core.security.attack.edge_case_backdoor_attack import EdgeCaseBackdoorAttack
 from fedml.core.security.common.attack_defense_data_loader import (
     AttackDefenseDataLoader,
