@@ -1,9 +1,8 @@
-from ...defense.wbc_defense import WbcDefense
+from fedml.core.security.defense.wbc_defense import WbcDefense
 from ..aggregation.aggregation_functions import (
     AggregationFunction,
 )
 from ..utils import create_fake_model_list
-
 import logging
 
 logging.getLogger().setLevel(logging.INFO)
