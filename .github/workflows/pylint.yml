@@ -16,14 +16,19 @@ jobs:
       run:
         shell: bash
         working-directory: python
-    runs-on: [self-hosted, runner-linux, devops]
+    runs-on: [self-hosted, runner-linux, devops-mpi]
     strategy:
       matrix:
         python-version: ["3.8"]
+        mpi: [mpich]
+        include:
+        - os: ubuntu-latest
+          mpi: mpich
+          install-mpi: apt install -y mpich libmpich-dev
     steps:
     - uses: actions/checkout@v3
-      with:
-        ref: dev/v0.7.0
+    - name: Install MPI
+      run: ${{ matrix.install-mpi }}
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v3
       with:
@@ -34,7 +39,6 @@ jobs:
         pip install pylint
     - name: Analysing the code with pylint
       run: |
-        install-mpi: sudo apt install -y mpich libmpich-dev
         python -m pip install mpi4py
         pip install "fedml[gRPC]"
         pip install "fedml[tensorflow]"
