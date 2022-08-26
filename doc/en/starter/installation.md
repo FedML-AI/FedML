@@ -11,7 +11,16 @@ FedML supports Linux, MacOS, Windows, and Android.
 ```
 pip install fedml
 ```
-(Note: please use python 3.6, 3.7, 3.8, 3.9. We will support 3.10 systematically in the next iteration.)
+
+The default machine learning engine is `PyTorch`. FedML also supports `TensorFlow`, `Jax`, and `MXNet`.
+You can install related engine as follows:
+```
+pip install "fedml[tensorflow]"
+pip install "fedml[jax]"
+pip install "fedml[mxnet]"
+```
+Note that the commands above only install the CPU version. 
+If you need GPU/TPU version, please follow TensorFlow/Jax/MXNet official guidance.
 
 ## Installing FedML with Anaconda
 
