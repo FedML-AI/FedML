@@ -3,8 +3,10 @@ Implementation of the standard exponential mechanism, and its derivative, the hi
 """
 import secrets
 from numbers import Real
+
 import numpy as np
-from fedml.core.dp.common.utils import bernoulli_neg_exp, check_params
+
+from fedml.core.dp.common.utils import check_params
 
 
 class Exponential:
