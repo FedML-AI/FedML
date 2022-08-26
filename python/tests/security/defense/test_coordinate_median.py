@@ -1,8 +1,8 @@
 from fedml.core.security.defense.coordinate_wise_median_defense import (
     CoordinateWiseMedianDefense,
 )
-from tests.security.aggregation.aggregation_functions import AggregationFunction
-from tests.security.utils import create_fake_model_list
+from ..aggregation.aggregation_functions import AggregationFunction
+from ..utils import create_fake_model_list
 
 
 def test_defense():
