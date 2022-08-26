@@ -5,7 +5,7 @@ import random
 import multiprocessing
 import numpy as np
 import torch
-import wandb
+
 
 import fedml
 from .cli.env.collect_env import collect_env
@@ -158,7 +158,8 @@ def manage_profiling_args(args):
                 wandb_args["group"] = "Test1"
                 wandb_args["name"] = f"Client {args.rank}"
                 wandb_args["job_type"] = str(args.rank)
-
+                
+            import wandb
             wandb.init(**wandb_args)
 
             from .core.mlops.mlops_profiler_event import MLOpsProfilerEvent

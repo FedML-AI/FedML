@@ -147,22 +147,3 @@ def preprocess_target(tag, data_dir):
         return np.sum(onehot, axis=0, dtype=np.float32)[:tag_size]
 
     return to_bag_of_words(tag)
-
-
-if __name__ == "__main__":
-    inputs = [
-        "this will output :",
-        "the simplest way i know how to do that is to move the file , delete the file using svn , and then move the file back .",
-    ]
-    processed_inputs = preprocess_inputs(inputs)
-    print(np.shape(processed_inputs))
-    print(processed_inputs)
-
-    targets = [
-        "asp . net|flash|voice-recording",
-        "jquery|google-chrome|greasemonkey|require|userscripts",
-        "sql-server|indexing",
-    ]
-    processed_targets = preprocess_targets(targets)
-    print(np.shape(processed_targets))
-    print(processed_targets)
