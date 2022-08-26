@@ -1,5 +1,5 @@
-from fedml.core.security.attack.label_flipping_attack import LabelFlippingAttack
-from fedml.core.security.common.attack_defense_data_loader import (
+from ...attack.label_flipping_attack import LabelFlippingAttack
+from ...common.attack_defense_data_loader import (
     AttackDefenseDataLoader,
 )
 from fedml.data.MNIST.data_loader import load_partition_data_mnist
@@ -20,7 +20,7 @@ def test_attack_cifar10():
         poisoned_client_num=attack_client_num,
         batch_size=batch_size,
     )
-    label_flipping_attack.attack_on_data_labels(dataset)
+    label_flipping_attack.poison_data(dataset)
 
 
 def test_attack_mnist():
@@ -36,7 +36,7 @@ def test_attack_mnist():
     label_flipping_attack = LabelFlippingAttack(
         [0], [6], client_num, attack_client_num, batch_size
     )
-    label_flipping_attack.attack_on_data_labels(dataset)
+    label_flipping_attack.poison_data(dataset)
 
 
 if __name__ == "__main__":
