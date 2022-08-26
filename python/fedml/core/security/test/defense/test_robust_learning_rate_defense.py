@@ -1,9 +1,9 @@
 import argparse
 
-from fedml.core.security.defense.robust_learning_rate_defense import (
+from ...defense.robust_learning_rate_defense import (
     RobustLearningRateDefense,
 )
-from fedml.core.security.test.utils import create_fake_model_list_MNIST
+from ..utils import create_fake_model_list_MNIST
 
 
 def add_args():
