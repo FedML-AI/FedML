@@ -8,15 +8,13 @@ on:
   schedule:
     # Nightly build at 12:12 A.M.
     - cron: "12 12 */1 * *"
-  push:
-    branches: [ master,  test/v0.7.0 ]
-  pull_request:
-    branches: [ master,  test/v0.7.0 ]
+#  push:
+#    branches: [ master,  test/v0.7.0 ]
+#  pull_request:
+#    branches: [ master,  test/v0.7.0 ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
-
-permissions: write-all
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -29,8 +27,8 @@ jobs:
       fail-fast: false
       matrix:
         os: [ windows-2019 ]
-        arch: [X64, ARM64]
-        python-version: ['3.7', '3.8', '3.9']
+        arch: [X64]
+        python-version: ['3.8']
 #        exclude:
 #          - os: macos-latest
 #            python-version: '3.8'
@@ -58,5 +56,4 @@ jobs:
         run: |
           cd quick_start/parrot
           python torch_fedavg_mnist_lr_one_line_example.py --cf fedml_config.yaml
-          python torch_fedavg_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
           python torch_fedavg_mnist_lr_custum_data_and_model_example.py --cf fedml_config.yaml

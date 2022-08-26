@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: CROSS-DEVICE-MNN, Windows
+name: CROSS-DEVICE-MNN-Windows
 
 # Controls when the workflow will run
 on:
@@ -8,13 +8,14 @@ on:
   schedule:
     # Nightly build at 12:12 A.M.
     - cron: "12 12 */1 * *"
-  push:
-    branches: [ master,  test/v0.7.0 ]
-  pull_request:
-    branches: [ master,  test/v0.7.0 ]
+#  push:
+#    branches: [ master,  test/v0.7.0 ]
+#  pull_request:
+#    branches: [ master,  test/v0.7.0 ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -27,8 +28,8 @@ jobs:
       fail-fast: false
       matrix:
         os: [ windows-2019 ]
-        arch: [X64, ARM64]
-        python-version: ['3.7', '3.8', '3.9']
+        arch: [X64]
+        python-version: ['3.8']
 #        exclude:
 #          - os: macos-latest
 #            python-version: '3.8'
@@ -39,6 +40,7 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+      # https://github.com/actions/checkout/issues/116#issuecomment-644419389
       - uses: actions/checkout@v3
       - name: pip install -e ./
         run: |
@@ -47,4 +49,4 @@ jobs:
       - name: test server of cross-device
         run: |
           cd quick_start/beehive
-          timeout 1 .\run_server.bat || code=$?; if [[ $code -ne 124 && $code -ne 0 ]]; then exit $code; fi
+          timeout 60 .\run_server.bat || code=$?; if [[ $code -ne 124 && $code -ne 0 ]]; then exit $code; fi
