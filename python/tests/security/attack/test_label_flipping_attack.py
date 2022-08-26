@@ -30,8 +30,8 @@ def test_attack_mnist():
     dataset = load_partition_data_mnist(
         None,
         batch_size,
-        train_path="../../../../../data/mnist/MNIST/train",
-        test_path="../../../../../data/mnist/MNIST/test",
+        train_path="../../../data/mnist/MNIST/train",
+        test_path="../../../data/mnist/MNIST/test",
     )
     label_flipping_attack = LabelFlippingAttack(
         [0], [6], client_num, attack_client_num, batch_size
