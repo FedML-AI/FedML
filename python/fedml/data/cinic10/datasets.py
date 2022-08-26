@@ -1,5 +1,3 @@
-import logging
-
 import numpy as np
 from PIL import Image
 from torchvision.datasets import DatasetFolder
@@ -17,30 +15,11 @@ IMG_EXTENSIONS = (
 )
 
 
-def accimage_loader(path):
-    import accimage
-
-    try:
-        return accimage.Image(path)
-    except IOError:
-        # Potentially a decoding problem, fall back to PIL.Image
-        return pil_loader(path)
-
-
 def pil_loader(path):
     # open path as file to avoid ResourceWarning (https://github.com/python-pillow/Pillow/issues/835)
     with open(path, "rb") as f:
         img = Image.open(f)
         return img.convert("RGB")
-
-
-def default_loader(path):
-    from torchvision import get_image_backend
-
-    if get_image_backend() == "accimage":
-        return accimage_loader(path)
-    else:
-        return pil_loader(path)
 
 
 class ImageFolderTruncated(DatasetFolder):
@@ -71,13 +50,7 @@ class ImageFolderTruncated(DatasetFolder):
     """
 
     def __init__(
-        self,
-        root,
-        dataidxs=None,
-        transform=None,
-        target_transform=None,
-        loader=default_loader,
-        is_valid_file=None,
+        self, root, dataidxs=None, transform=None, target_transform=None, loader=default_loader, is_valid_file=None,
     ):
         super(ImageFolderTruncated, self).__init__(
             root,
