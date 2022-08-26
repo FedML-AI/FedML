@@ -44,7 +44,7 @@ jobs:
       - name: pip install -e ./
         run: |
           pip install -e ./
-          python install -e '.[tensorflow]'
+          pip install -e '.[tensorflow]'
 
       - name: server - tensorflow - fedavg
         run: |
