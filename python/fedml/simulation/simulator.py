@@ -16,7 +16,6 @@ from ..constants import (
     FedML_FEDERATED_OPTIMIZER_FEDSEG,
     FedML_FEDERATED_OPTIMIZER_HIERACHICAL_FL,
     FedML_FEDERATED_OPTIMIZER_TURBO_AGGREGATE,
-    FedML_FEDERATED_OPTIMIZER_FEDLOCALSGD,
     FedML_FEDERATED_OPTIMIZER_ASYNC_FEDAVG,
 )
 from ..core import ClientTrainer, ServerAggregator
@@ -76,7 +75,6 @@ class SimulatorMPI:
         from .mpi.fedavg_seq.FedAvgSeqAPI import FedML_FedAvgSeq_distributed
         from .mpi.async_fedavg.AsyncFedAvgSeqAPI import FedML_Async_distributed
         from .mpi.fednova.FedNovaAPI import FedML_FedNova_distributed
-        from .mpi.fedlocalsgd.FedLocalSGDAPI import FedML_FedLocalSGD_distributed
 
         if args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDAVG:
             FedML_FedAvg_distributed(
@@ -92,18 +90,6 @@ class SimulatorMPI:
             )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDAVG_SEQ:
             FedML_FedAvgSeq_distributed(
-                args,
-                args.process_id,
-                args.worker_num,
-                args.comm,
-                device,
-                dataset,
-                model,
-                client_trainer=client_trainer,
-                server_aggregator=server_aggregator,
-            )
-        elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDLOCALSGD:
-            FedML_FedLocalSGD_distributed(
                 args,
                 args.process_id,
                 args.worker_num,
