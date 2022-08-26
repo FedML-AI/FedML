@@ -41,6 +41,11 @@ jobs:
           python-version: ${{ matrix.python-version }}
       # https://github.com/actions/checkout/issues/116#issuecomment-644419389
       - uses: actions/checkout@v3
+        with:
+          path: fedml-devops
+          clean: true
+      - run: |
+          git config --system core.longpaths true
       - name: pip install -e ./
         run: |
           pip install -e ./
