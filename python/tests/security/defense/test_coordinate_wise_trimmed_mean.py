@@ -3,8 +3,8 @@ import argparse
 from fedml.core.security.defense.coordinate_wise_trimmed_mean_defense import (
     CoordinateWiseTrimmedMeanDefense,
 )
-from ...test.aggregation.aggregation_functions import AggregationFunction
-from tests.test.utils import create_fake_model_list
+from ..aggregation.aggregation_functions import AggregationFunction
+from ..utils import create_fake_model_list
 
 
 def add_args():
