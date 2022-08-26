@@ -83,7 +83,7 @@ def init_client(
     logging.info("Initializing Client: {0}".format(client_index))
 
     if model_trainer is None:
-        model_trainer = MyModelTrainer(model)
+        model_trainer = MyModelTrainer(model, args)
     model_trainer.set_id(client_index)
 
     # trainer
