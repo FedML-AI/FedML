@@ -20,7 +20,7 @@ def test_attack_cifar10():
         client_num=client_num,
         poisoned_client_num=attack_client_num,
         backdoor_sample_percentage=0.1,
-        backdoor_dataset=dataset,
+        backdoor_dataset=backdoor_dataset,
         batch_size=batch_size,
     )
     edge_case_backdoor_attack.backdoor_data(dataset)

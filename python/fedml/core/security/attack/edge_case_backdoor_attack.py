@@ -62,12 +62,10 @@ class EdgeCaseBackdoorAttack:
                         self.batch_size * self.backdoor_sample_percentage
                     )
                     backdoor_sample_indices = np.random.choice(
-                        train_data_local_dict[client_idx].shape[0],
+                        len(list(self.backdoor_dataset)),
                         backdoor_sample_num,
                         replace=False,
                     )
-                    # todo: double check - backdoor_data --> train_data_local_dict[client_idx].shape[0]??
-                    # backdoor_sample_indices = np.random.choice(backdoor_data.shape[0], backdoor_sample_num, replace=False)
                     backdoor_data, backdoor_target = self.backdoor_dataset[
                         backdoor_sample_indices
                     ]
