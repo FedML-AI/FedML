@@ -88,10 +88,10 @@ def model_masking(weights_finite, dimensions, local_mask, prime_number):
         # if k== "module.conv1.weight":
         #     logging.info("before mask")
         #     logging.info(weights_finite[k][0])
-        if i == 0:
-            logging.info("%^%^&%^&%^&%^&^&%^&")
-            logging.info("Before masking")
-            logging.info(weights_finite[k][0])
+        # if i == 0:
+        #     logging.info("%^%^&%^&%^&%^&^&%^&")
+        #     logging.info("Before masking")
+        #     logging.info(weights_finite[k][0])
         tmp = weights_finite[k]
         cur_shape = tmp.shape
         d = dimensions[i]
@@ -99,12 +99,12 @@ def model_masking(weights_finite, dimensions, local_mask, prime_number):
         cur_mask = np.reshape(cur_mask, cur_shape)
         weights_finite[k] += cur_mask
         weights_finite[k] = np.mod(weights_finite[k], prime_number)
-        if i == 0:
-            logging.info("Mask")
-            logging.info(cur_mask[0])
-            logging.info("After masking")
-            logging.info(weights_finite[k][0])
-            logging.info("%^%^&%^&%^&%^&^&%^&")
+        # if i == 0:
+        #     logging.info("Mask")
+        #     logging.info(cur_mask[0])
+        #     logging.info("After masking")
+        #     logging.info(weights_finite[k][0])
+        #     logging.info("%^%^&%^&%^&%^&^&%^&")
 
         # if k== "module.conv1.weight":
         #     logging.info("Mask")

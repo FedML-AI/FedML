@@ -110,7 +110,7 @@ class SecAggAggregator(object):
                 # z = np.mod(z - temp, p)
             else:
                 mask = np.zeros(d, dtype="int")
-                SS_input = np.reshape(self.SS_rx[i, active_clients[: T + 1]], (T + 1, 1))
+                SS_input = np.reshape(SS_rx[i, active_clients[: T + 1]], (T + 1, 1))
                 s_sk_dec = BGW_decoding(SS_input, active_clients[: T + 1], p)
                 for j in range(self.targeted_number_active_clients):
                     s_pk_list_ = public_key_list[1, :]
@@ -136,18 +136,19 @@ class SecAggAggregator(object):
         return aggregated_mask
 
     def aggregate_model_reconstruction(
-        self, active_clients_first_round, active_clients_second_round, SS_rx, public_key_list, sample_num
+        self, active_clients_first_round, active_clients_second_round, SS_rx, public_key_list
     ):
         start_time = time.time()
         aggregate_mask = self.aggregate_mask_reconstruction(active_clients_second_round, SS_rx, public_key_list)
         p = self.prime_number
         q_bits = self.precision_parameter
         logging.info("Server starts the reconstruction of aggregate_model")
-        averaged_params = {}
+        # averaged_params = {}
+        averaged_params = self.model_dict[active_clients_first_round[0]]
         pos = 0
 
         for j, k in enumerate(self.model_dict[active_clients_first_round[0]]):
-            averaged_params[k] = 0
+            # averaged_params[k] = 0
             for i, client_idx in enumerate(active_clients_first_round):
                 if not (
                     client_idx in self.flag_client_model_uploaded_dict
@@ -155,19 +156,24 @@ class SecAggAggregator(object):
                 ):
                     continue
                 local_model_params = self.model_dict[client_idx]
-                averaged_params[k] += local_model_params[k]
-                averaged_params[k] = np.mod(averaged_params[k], p)
+                if i == 0:
+                    averaged_params[k] = local_model_params[k]
+                else:
+                    averaged_params[k] += local_model_params[k]
+                # averaged_params[k] = np.mod(averaged_params[k], p)
 
             cur_shape = np.shape(averaged_params[k])
             d = self.dimensions[j]
-            aggregate_mask = aggregate_mask.reshape((aggregate_mask.shape[0], 1))
-            cur_mask = np.array(aggregate_mask[pos : pos + d, :])
+            #aggregate_mask = aggregate_mask.reshape((aggregate_mask.shape[0], 1))
+            logging.info('aggregate_mask shape = {}'.format(np.shape(aggregate_mask)))
+            cur_mask = np.array(aggregate_mask[pos : pos + d])
             cur_mask = np.reshape(cur_mask, cur_shape)
 
             # Cancel out the aggregate-mask to recover the aggregate-model
             averaged_params[k] -= cur_mask
             averaged_params[k] = np.mod(averaged_params[k], p)
             pos += d
+
 
         # Convert the model from finite to real
         logging.info("Server converts the aggregate_model from finite to tensor")
