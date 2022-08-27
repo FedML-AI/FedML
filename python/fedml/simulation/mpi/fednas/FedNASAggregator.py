@@ -195,10 +195,10 @@ class FedNASAggregator(object):
 
                     pred = self.model(x)
                     if self.args.stage == "train":
-                        loss = criterion(pred[0], target)
+                        loss = criterion(pred[0], target)  # pylint: disable=E1102
                         _, predicted = torch.max(pred[0], 1)
                     else:
-                        loss = criterion(pred, target)
+                        loss = criterion(pred, target)  # pylint: disable=E1102
                         _, predicted = torch.max(pred, 1)
                     correct = predicted.eq(target).sum()
 

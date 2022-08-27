@@ -117,7 +117,7 @@ class GuestTrainer(object):
         batch_y = batch_y.type_as(guest_logits)
 
         # calculate the gradient until the logits for hosts
-        class_loss = self.criterion(guest_logits, batch_y)
+        class_loss = self.criterion(guest_logits, batch_y)  # pylint: disable=E1102
         grads = torch.autograd.grad(outputs=class_loss, inputs=guest_logits)
 
         loss = class_loss.item()

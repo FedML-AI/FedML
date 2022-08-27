@@ -2,12 +2,12 @@ import logging
 
 import numpy as np
 
-from .client import Client
+from .client import HFLClient
 from .group import Group
 from ..fedavg.fedavg_api import FedAvgAPI
 
 
-class HierachicalTrainer(FedAvgAPI):
+class HierarchicalTrainer(FedAvgAPI):
     def _setup_clients(
             self,
             train_data_local_num_dict,
@@ -43,8 +43,9 @@ class HierachicalTrainer(FedAvgAPI):
             )
 
         # maintain a dummy client to be used in FedAvgTrainer::local_test_on_all_clients()
+        client_idx = -1
         self.client_list = [
-            Client(
+            HFLClient(
                 client_idx,
                 train_data_local_dict[0],
                 test_data_local_dict[0],

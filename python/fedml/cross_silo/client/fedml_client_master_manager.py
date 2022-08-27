@@ -50,7 +50,8 @@ class ClientMasterManager(FedMLCommManager):
         )
 
         self.register_message_receive_handler(
-            MyMessage.MSG_TYPE_S2C_FINISH, self.handle_message_finish,
+            MyMessage.MSG_TYPE_S2C_FINISH,
+            self.handle_message_finish,
         )
 
     def handle_message_connection_ready(self, msg_params):

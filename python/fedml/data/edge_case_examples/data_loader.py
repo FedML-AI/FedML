@@ -434,7 +434,7 @@ def load_poisoned_dataset(args):
             **kwargs
         )
         targetted_task_test_loader = torch.utils.data.DataLoader(
-            fashion_mnist_test_dataset,
+            emnist_test_dataset,
             batch_size=args.test_batch_size,
             shuffle=False,
             **kwargs
@@ -673,7 +673,7 @@ def load_poisoned_dataset(args):
                     transforms.RandomHorizontalFlip(),
                     transforms.ToTensor(),
                     normalize,
-                    AddGaussianNoise(0.0, 0.05),
+                    AddGaussianNoise(0.0, 0.05), # pylint: disable=E0602
                 ]
             )
             # data prep for test set

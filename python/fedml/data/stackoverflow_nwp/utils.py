@@ -45,13 +45,9 @@ def get_word_dict(data_dir):
 def get_word_list(data_dir):
     global word_list
     if word_list == None:
-        word_dict = get_word_dict()
+        word_dict = get_word_dict(data_dir)
         word_list = list(word_dict.keys())
     return word_list
-
-
-def id_to_word(idx):
-    return get_word_list()[idx]
 
 
 def tokenizer(sentence, data_dir, max_seq_len=20):

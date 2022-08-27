@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing.data import StandardScaler
+from sklearn.preprocessing import StandardScaler
 
 
 def get_top_k_labels(data_dir, top_k=5):

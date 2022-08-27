@@ -5,20 +5,13 @@ from .AsyncFedAvgServerManager import AsyncFedAVGServerManager
 from .my_model_trainer_classification import MyModelTrainer as MyModelTrainerCLS
 from .my_model_trainer_nwp import MyModelTrainer as MyModelTrainerNWP
 from .my_model_trainer_tag_prediction import MyModelTrainer as MyModelTrainerTAG
+from ....core.dp.fed_privacy_mechanism import FedMLDifferentialPrivacy
 from ....core.security.fedml_attacker import FedMLAttacker
 from ....core.security.fedml_defender import FedMLDefender
 
 
 def FedML_Async_distributed(
-    args,
-    process_id,
-    worker_number,
-    comm,
-    device,
-    dataset,
-    model,
-    model_trainer=None,
-    preprocessed_sampling_lists=None,
+    args, process_id, worker_number, comm, device, dataset, model, model_trainer=None, preprocessed_sampling_lists=None,
 ):
     [
         train_data_num,
@@ -33,6 +26,7 @@ def FedML_Async_distributed(
 
     FedMLAttacker.get_instance().init(args)
     FedMLDefender.get_instance().init(args)
+    FedMLDifferentialPrivacy.get_instance().init(args)
 
     if process_id == 0:
         init_server(
@@ -110,9 +104,7 @@ def init_server(
     # start the distributed training
     backend = args.backend
     if preprocessed_sampling_lists is None:
-        server_manager = AsyncFedAVGServerManager(
-            args, aggregator, comm, rank, size, backend
-        )
+        server_manager = AsyncFedAVGServerManager(args, aggregator, comm, rank, size, backend)
     else:
         server_manager = AsyncFedAVGServerManager(
             args,

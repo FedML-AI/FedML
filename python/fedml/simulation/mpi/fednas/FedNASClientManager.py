@@ -12,7 +12,7 @@ class FedNASClientManager(FedMLCommManager):
 
         self.trainer = trainer
         self.num_rounds = args.comm_round
-        self.round_idx = 0
+        self.args.round_idx = 0
 
     def run(self):
         super().run()
@@ -34,7 +34,7 @@ class FedNASClientManager(FedMLCommManager):
         if self.args.stage == "search":
             self.trainer.update_arch(arch_params)
 
-        self.round_idx = 0
+        self.args.round_idx = 0
         # start to train
         self.__train()
 
@@ -48,13 +48,13 @@ class FedNASClientManager(FedMLCommManager):
         if self.args.stage == "search":
             self.trainer.update_arch(arch_params)
 
-        self.round_idx += 1
+        self.args.round_idx += 1
         self.__train()
-        if self.round_idx == self.num_rounds - 1:
+        if self.args.round_idx == self.num_rounds - 1:
             self.finish()
 
     def __train(self):
-        logging.info("#######training########### round_id = %d" % self.round_idx)
+        logging.info("#######training########### round_id = %d" % self.args.round_idx)
         start_time = time.time()
         if self.args.stage == "search":
             (
