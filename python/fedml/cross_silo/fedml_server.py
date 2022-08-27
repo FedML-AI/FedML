@@ -46,6 +46,21 @@ class FedMLCrossSiloServer:
                 model_trainer=None,
                 preprocessed_sampling_lists=None,
             )
+        
+        elif args.federated_optimizer == "SA":
+            from .secagg.sa_fedml_api import FedML_SA_Horizontal
+
+            FedML_SA_Horizontal(
+                args,
+                0,
+                args.worker_num,
+                args.comm,
+                device,
+                dataset,
+                model,
+                model_trainer=None,
+                preprocessed_sampling_lists=None,
+            )
         else:
             raise Exception("Exception")
 
