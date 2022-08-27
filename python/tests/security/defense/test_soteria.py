@@ -5,12 +5,14 @@ added by Kai, 07/10/2022
 """
 
 
-from fedml.core.security.defense.soteria_defense import SoteriaDefense
-import torch
-import torch.nn.functional as F
-import torch.nn as nn
 import logging
-from ..utils import create_fake_gradient_Cifar100, create_fake_model_Cifar100, create_fake_data_Cifar100
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+from fedml.core.security.defense.soteria_defense import SoteriaDefense
+from utils import create_fake_gradient_Cifar100, create_fake_model_Cifar100, create_fake_data_Cifar100
 
 """
 TODO FIX: load model and the corresponding parameters from FedML system

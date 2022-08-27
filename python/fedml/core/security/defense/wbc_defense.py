@@ -23,9 +23,10 @@ Steps:
 
 
 class WbcDefense(BaseDefenseMethod):
-    def __init__(self, client_idx, batch_idx):
-        self.client_idx = client_idx
-        self.batch_idx = batch_idx
+    def __init__(self, args):
+        self.args = args
+        self.client_idx = args.client_idx
+        self.batch_idx = args.batch_idx
         self.old_gradient = {}
 
     def run(
@@ -84,4 +85,4 @@ class WbcDefense(BaseDefenseMethod):
                 param_list.append((models_param[self.client_idx][0], new_model_param))
                 logging.info(f"New. param: {param_list[i]}")
 
-        return base_aggregation_func(param_list)  # avg_params
+        return base_aggregation_func(self.args, param_list)  # avg_params
