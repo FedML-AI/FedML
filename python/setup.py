@@ -60,6 +60,7 @@ requirements_extra_jax = [
     "jaxlib"
 ]
 
+# https://github.com/apache/incubator-mxnet/issues/18329
 requirements_extra_mxnet = [
     "mxnet==2.0.0b1"
 ]
