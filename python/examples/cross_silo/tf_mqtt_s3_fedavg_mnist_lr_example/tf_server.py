@@ -1,9 +1,8 @@
-
 import fedml
 from fedml import FedMLRunner
 from fedml.data.MNIST.data_loader import download_mnist, load_partition_data_mnist
-from tf_model_aggregator import TfServerAggregator
-import tf_model
+from .tf_model_aggregator import TfServerAggregator
+from . import tf_model
 
 
 def load_data(args):
