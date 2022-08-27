@@ -40,13 +40,9 @@ class ClientSlaveManager:
         logging.info("process %d waiting for round number" % dist.get_rank())
         objects = [None, None, None]
         dist.broadcast_object_list(
-            objects,
-            src=src,
-            group=self.trainer_dist_adapter.process_group_manager.get_process_group(),
+            objects, src=src, group=self.trainer_dist_adapter.process_group_manager.get_process_group(),
         )
-        logging.info(
-            "process {} received round_number {}".format(dist.get_rank(), objects[0])
-        )
+        logging.info("process {} received round_number {}".format(dist.get_rank(), objects[0]))
         return objects
 
     def run(self):

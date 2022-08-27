@@ -2,6 +2,7 @@ import logging
 import socket
 
 import yaml
+
 from fedml.constants import FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
 from ..ml.engine import ml_engine_adapter
 
@@ -15,19 +16,11 @@ def mapping_processes_to_gpu_device_from_yaml_file_cross_silo(
         return device
     else:
         if gpu_id is not None:
-            device = mapping_single_process_to_gpu_device_cross_silo(
-                device_type, gpu_id, args=args
-            )
+            device = mapping_single_process_to_gpu_device_cross_silo(device_type, gpu_id, args=args)
         elif gpu_util_file is None:
-            device = mapping_single_process_to_gpu_device_cross_silo(
-                device_type, args=args
-            )
+            device = mapping_single_process_to_gpu_device_cross_silo(device_type, args=args)
         else:
-            unique_gpu = (
-                True
-                if scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
-                else False
-            )
+            unique_gpu = True if scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL else False
 
             with open(gpu_util_file, "r") as f:
                 gpu_util_yaml = yaml.load(f, Loader=yaml.FullLoader)
@@ -41,9 +34,9 @@ def mapping_processes_to_gpu_device_from_yaml_file_cross_silo(
                     for gpu_j, num_process_on_gpu in enumerate(gpus_util_map_host):
                         # validate DDP gpu mapping
                         if unique_gpu and num_process_on_gpu > 1:
-                            raise f(
+                            raise Exception(
                                 "Cannot put {num_process_on_gpu} processes on GPU {gpu_j} of {host}."
-                                "PyTroch DDP supports up to one process on each GPU."
+                                "PyTorch DDP supports up to one process on each GPU."
                             )
                         for _ in range(num_process_on_gpu):
                             gpu_util_map[i] = (host, gpu_j)
@@ -51,35 +44,25 @@ def mapping_processes_to_gpu_device_from_yaml_file_cross_silo(
 
                 logging.info(
                     "Process %d running on host: %s, gethostname: %s, local_gpu_id: %d ..."
-                    % (
-                        process_id,
-                        gpu_util_map[process_id][0],
-                        socket.gethostname(),
-                        gpu_util_map[process_id][1],
-                    )
+                    % (process_id, gpu_util_map[process_id][0], socket.gethostname(), gpu_util_map[process_id][1],)
                 )
                 logging.info("i = {}, worker_number = {}".format(i, worker_number))
-                assert (
-                    i == worker_number
-                ), f"Invalid GPU Number. Expected {worker_number}, Received {i}."
+                assert i == worker_number, f"Invalid GPU Number. Expected {worker_number}, Received {i}."
 
-            device = ml_engine_adapter.get_device(args, using_gpu=True,
-                                                  device_id=str(gpu_util_map[process_id][1]),
-                                                  device_type="gpu")
+            args.using_gpu = True
+            device = ml_engine_adapter.get_device(args, device_id=str(gpu_util_map[process_id][1]), device_type="gpu")
 
-        logging.info(
-            "process_id = {}, GPU device = {}".format(process_id, device)
-        )
+        logging.info("process_id = {}, GPU device = {}".format(process_id, device))
         return device
 
 
-def mapping_single_process_to_gpu_device_cross_silo(
-    device_type, gpu_id=0, args=None
-):
+def mapping_single_process_to_gpu_device_cross_silo(device_type, gpu_id=0, args=None):
     if device_type == "cpu":
-        device = ml_engine_adapter.get_device(args, using_gpu=False, device_id=gpu_id, device_type=device_type)
+        args.using_gpu = False
+        device = ml_engine_adapter.get_device(args, device_id=gpu_id, device_type=device_type)
     else:
-        device = ml_engine_adapter.get_device(args, using_gpu=True, device_id=gpu_id, device_type=device_type)
+        args.using_gpu = True
+        device = ml_engine_adapter.get_device(args, device_id=gpu_id, device_type=device_type)
     return device
 
 

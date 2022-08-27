@@ -11,6 +11,7 @@ class MyMessage(object):
     ==========          model aggregation          =========
     -> 3 (the server send the aggregated model to all clients)
     """
+
     # connection info
     MSG_TYPE_CONNECTION_IS_READY = 0
 
@@ -20,7 +21,7 @@ class MyMessage(object):
     MSG_TYPE_S2C_OTHER_SS_TO_CLIENT = 6
     MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT = 2
     MSG_TYPE_S2C_ACTIVE_CLIENT_LIST = 10
-    MSG_TYPE_S2C_CHECK_CLIENT_STATUS = 8 
+    MSG_TYPE_S2C_CHECK_CLIENT_STATUS = 8
     MSG_TYPE_S2C_FINISH = 12
 
     # client to server
