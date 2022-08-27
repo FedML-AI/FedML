@@ -48,16 +48,9 @@ tracking_args:
 attack_args:
   enable_attack: true
   attack_type: byzantine
-  attack_mode: flip # zero; random
-  byzantine_client_num: 2
+  attack_mode: zero # zero; random
+  byzantine_client_num: 1
 
-
-# example:
-#  norm_diff_clipping: norm_bound: 5.0
-#  slsgd: trim_param_b: 1, alpha: 0.5, option_type: 2
 defense_args:
   enable_defense: false
-  defense_type: slsgd
-  trim_param_b: 1
-  alpha: 0.5
-  option_type: 2
+  defense_type: None

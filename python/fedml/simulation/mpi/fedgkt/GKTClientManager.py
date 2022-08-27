@@ -11,7 +11,7 @@ class GKTClientMananger(FedMLCommManager):
 
         self.trainer = trainer
         self.num_rounds = args.comm_round
-        self.round_idx = 0
+        self.args.round_idx = 0
 
     def run(self):
         super().run()
@@ -27,7 +27,7 @@ class GKTClientMananger(FedMLCommManager):
 
     def handle_message_init(self, msg_params):
         logging.info("handle_message_init. Rank = " + str(self.rank))
-        self.round_idx = 0
+        self.args.round_idx = 0
         self.__train()
 
     def handle_message_receive_logits_from_server(self, msg_params):
@@ -36,9 +36,9 @@ class GKTClientMananger(FedMLCommManager):
         )
         global_logits = msg_params.get(MyMessage.MSG_ARG_KEY_GLOBAL_LOGITS)
         self.trainer.update_large_model_logits(global_logits)
-        self.round_idx += 1
+        self.args.round_idx += 1
         self.__train()
-        if self.round_idx == self.num_rounds - 1:
+        if self.args.round_idx == self.num_rounds - 1:
             self.finish()
 
     def send_model_to_server(
@@ -65,7 +65,7 @@ class GKTClientMananger(FedMLCommManager):
         self.send_message(message)
 
     def __train(self):
-        logging.info("#######training########### round_id = %d" % self.round_idx)
+        logging.info("#######training########### round_id = %d" % self.args.round_idx)
         (
             extracted_feature_dict,
             logits_dict,

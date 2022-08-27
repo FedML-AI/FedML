@@ -29,7 +29,7 @@ class MyModelTrainer(ClientTrainer):
         model.train()
 
         # train and update
-        criterion = nn.CrossEntropyLoss().to(device)
+        criterion = nn.CrossEntropyLoss().to(device)  # pylint: disable=E1102
         if args.client_optimizer == "sgd":
             optimizer = torch.optim.SGD(self.model.parameters(), lr=args.learning_rate)
         else:
@@ -49,7 +49,7 @@ class MyModelTrainer(ClientTrainer):
                 # logging.info("labels.size = " + str(labels.size()))
                 model.zero_grad()
                 log_probs = model(x)
-                loss = criterion(log_probs, labels)
+                loss = criterion(log_probs, labels)  # pylint: disable=E1102
                 loss.backward()
 
                 # to avoid nan loss
@@ -91,16 +91,16 @@ class MyModelTrainer(ClientTrainer):
         https://github.com/google-research/federated/blob/49a43456aa5eaee3e1749855eed89c0087983541/optimization/stackoverflow_lr/federated_stackoverflow_lr.py#L131
         """
         if args.dataset == "stackoverflow_lr":
-            criterion = nn.BCELoss(reduction="sum").to(device)
+            criterion = nn.BCELoss(reduction="sum").to(device)  # pylint: disable=E1102
         else:
-            criterion = nn.CrossEntropyLoss().to(device)
+            criterion = nn.CrossEntropyLoss().to(device)  # pylint: disable=E1102
 
         with torch.no_grad():
             for batch_idx, (x, target) in enumerate(test_data):
                 x = x.to(device)
                 target = target.to(device)
                 pred = model(x)
-                loss = criterion(pred, target)
+                loss = criterion(pred, target)  # pylint: disable=E1102
 
                 if args.dataset == "stackoverflow_lr":
                     predicted = (pred > 0.5).int()

@@ -5,7 +5,10 @@ from .data.noniid_partition import partition_class_samples_with_dirichlet_distri
 from .distributed.fedml_comm_manager import FedMLCommManager
 from .distributed.flow.fedml_executor import FedMLExecutor
 from .distributed.flow.fedml_flow import FedMLAlgorithmFlow
+from .security.fedml_attacker import FedMLAttacker
+from .security.fedml_defender import FedMLDefender
 from ..ml.aggregator.agg_operator import FedMLAggOperator
+from .dp.fed_privacy_mechanism import FedMLDifferentialPrivacy
 
 __all__ = [
     "Params",
@@ -15,5 +18,9 @@ __all__ = [
     "FedMLExecutor",
     "FedMLAlgorithmFlow",
     "FedMLCommManager",
+    "FedMLAttacker",
+    "FedMLDefender",
+    "FedMLDifferentialPrivacy",
     "partition_class_samples_with_dirichlet_distribution",
 ]
+
