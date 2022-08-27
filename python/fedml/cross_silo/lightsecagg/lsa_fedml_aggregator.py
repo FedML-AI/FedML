@@ -108,7 +108,7 @@ class LightSecAggAggregator(object):
         T = self.privacy_guarantee
         p = self.prime_number
         logging.debug("d = {}, N = {}, U = {}, T = {}, p = {}".format(d, N, U, T, p))
-        d = int(np.ceil(float(d)/(U-T))) * (U-T)
+        d = int(np.ceil(float(d) / (U - T))) * (U - T)
 
         alpha_s = np.array(range(N)) + 1
         beta_s = np.array(range(U)) + (N + 1)
@@ -120,24 +120,16 @@ class LightSecAggAggregator(object):
         #     )
         # )
         for i, client_idx in enumerate(active_clients):
-            aggregate_encoded_mask_buffer[i, :] = self.aggregate_encoded_mask_dict[
-                client_idx
-            ]
+            aggregate_encoded_mask_buffer[i, :] = self.aggregate_encoded_mask_dict[client_idx]
         eval_points = alpha_s[active_clients]
-        aggregate_mask = LCC_decoding_with_points(
-            aggregate_encoded_mask_buffer, eval_points, beta_s, p
-        )
-        logging.info(
-            "Server finish the reconstruction of aggregate_mask via LCC decoding"
-        )
+        aggregate_mask = LCC_decoding_with_points(aggregate_encoded_mask_buffer, eval_points, beta_s, p)
+        logging.info("Server finish the reconstruction of aggregate_mask via LCC decoding")
         aggregate_mask = np.reshape(aggregate_mask, (U * (d // (U - T)), 1))
         aggregate_mask = aggregate_mask[0:d]
         # logging.info("aggregated mask = {}".format(aggregate_mask))
         return aggregate_mask
 
-    def aggregate_model_reconstruction(
-        self, active_clients_first_round, active_clients_second_round
-    ):
+    def aggregate_model_reconstruction(self, active_clients_first_round, active_clients_second_round):
         start_time = time.time()
         aggregate_mask = self.aggregate_mask_reconstruction(active_clients_second_round)
         p = self.prime_number
@@ -196,25 +188,18 @@ class LightSecAggAggregator(object):
 
         """
         logging.info(
-            "client_num_in_total = %d, client_num_per_round = %d"
-            % (client_num_in_total, client_num_per_round)
+            "client_num_in_total = %d, client_num_per_round = %d" % (client_num_in_total, client_num_per_round)
         )
         assert client_num_in_total >= client_num_per_round
 
         if client_num_in_total == client_num_per_round:
             return [i for i in range(client_num_per_round)]
         else:
-            np.random.seed(
-                round_idx
-            )  # make sure for each comparison, we are selecting the same clients each round
-            data_silo_index_list = np.random.choice(
-                range(client_num_in_total), client_num_per_round, replace=False
-            )
+            np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round
+            data_silo_index_list = np.random.choice(range(client_num_in_total), client_num_per_round, replace=False)
             return data_silo_index_list
 
-    def client_selection(
-        self, round_idx, client_id_list_in_total, client_num_per_round
-    ):
+    def client_selection(self, round_idx, client_id_list_in_total, client_num_per_round):
         """
         Args:
             round_idx: round index, starting from 0
@@ -228,40 +213,26 @@ class LightSecAggAggregator(object):
         """
         if client_num_per_round == len(client_id_list_in_total):
             return client_id_list_in_total
-        np.random.seed(
-            round_idx
-        )  # make sure for each comparison, we are selecting the same clients each round
-        client_id_list_in_this_round = np.random.choice(
-            client_id_list_in_total, client_num_per_round, replace=False
-        )
+        np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round
+        client_id_list_in_this_round = np.random.choice(client_id_list_in_total, client_num_per_round, replace=False)
         return client_id_list_in_this_round
 
     def client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
         if client_num_in_total == client_num_per_round:
-            client_indexes = [
-                client_index for client_index in range(client_num_in_total)
-            ]
+            client_indexes = [client_index for client_index in range(client_num_in_total)]
         else:
             num_clients = min(client_num_per_round, client_num_in_total)
-            np.random.seed(
-                round_idx
-            )  # make sure for each comparison, we are selecting the same clients each round
-            client_indexes = np.random.choice(
-                range(client_num_in_total), num_clients, replace=False
-            )
+            np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round
+            client_indexes = np.random.choice(range(client_num_in_total), num_clients, replace=False)
         logging.info("client_indexes = %s" % str(client_indexes))
         return client_indexes
 
     def _generate_validation_set(self, num_samples=10000):
         if self.args.dataset.startswith("stackoverflow"):
             test_data_num = len(self.test_global.dataset)
-            sample_indices = random.sample(
-                range(test_data_num), min(num_samples, test_data_num)
-            )
+            sample_indices = random.sample(range(test_data_num), min(num_samples, test_data_num))
             subset = torch.utils.data.Subset(self.test_global.dataset, sample_indices)
-            sample_testset = torch.utils.data.DataLoader(
-                subset, batch_size=self.args.batch_size
-            )
+            sample_testset = torch.utils.data.DataLoader(subset, batch_size=self.args.batch_size)
             return sample_testset
         else:
             return self.test_global
@@ -275,21 +246,14 @@ class LightSecAggAggregator(object):
         # ):
         #     return
 
-        if (
-            round_idx % self.args.frequency_of_the_test == 0
-            or round_idx == self.args.comm_round - 1
-        ):
-            logging.info(
-                "################test_on_server_for_all_clients : {}".format(round_idx)
-            )
+        if round_idx % self.args.frequency_of_the_test == 0 or round_idx == self.args.comm_round - 1:
+            logging.info("################test_on_server_for_all_clients : {}".format(round_idx))
             train_num_samples = []
             train_tot_corrects = []
             train_losses = []
             for client_idx in range(self.args.client_num_in_total):
                 # train data
-                metrics = self.trainer.test(
-                    self.train_data_local_dict[client_idx], self.device, self.args
-                )
+                metrics = self.trainer.test(self.train_data_local_dict[client_idx], self.device, self.args)
                 train_tot_correct, train_num_sample, train_loss = (
                     metrics["test_correct"],
                     metrics["test_total"],

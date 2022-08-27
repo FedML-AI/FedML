@@ -30,34 +30,22 @@ class CrossSiloLauncher:
         # this is only used by the client (DDP or single process), so there is no need to specify the backend.
         args = load_arguments(FEDML_TRAINING_PLATFORM_CROSS_SILO)
         if args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
-            CrossSiloLauncher._run_cross_silo_hierarchical(
-                args, torch_client_filename, inputs
-            )
+            CrossSiloLauncher._run_cross_silo_hierarchical(args, torch_client_filename, inputs)
         elif args.scenario == FEDML_CROSS_SILO_SCENARIO_HORIZONTAL:
-            CrossSiloLauncher._run_cross_silo_horizontal(
-                args, torch_client_filename, inputs
-            )
+            CrossSiloLauncher._run_cross_silo_horizontal(args, torch_client_filename, inputs)
         else:
-            raise Exception(
-                "we do not support {}, check whether this is typo in args.scenario".format(
-                    args.scenario
-                )
-            )
+            raise Exception("we do not support {}, check whether this is typo in args.scenario".format(args.scenario))
 
     @staticmethod
     def _run_cross_silo_horizontal(args, torch_client_filename, inputs):
-        python_path = subprocess.run(
-            ["which", "python"], capture_output=True, text=True
-        ).stdout.strip()
+        python_path = subprocess.run(["which", "python"], capture_output=True, text=True).stdout.strip()
         process_arguments = [python_path, torch_client_filename] + inputs
         subprocess.run(process_arguments)
 
     @staticmethod
     def _run_cross_silo_hierarchical(args, torch_client_filename, inputs):
         def get_torchrun_arguments(node_rank):
-            torchrun_path = subprocess.run(
-                ["which", "torchrun"], capture_output=True, text=True
-            ).stdout.strip()
+            torchrun_path = subprocess.run(["which", "torchrun"], capture_output=True, text=True).stdout.strip()
 
             return [
                 torchrun_path,
@@ -70,12 +58,8 @@ class CrossSiloLauncher:
                 torch_client_filename,
             ] + inputs
 
-        network_interface = (
-            None if not hasattr(args, "network_interface") else args.network_interface
-        )
-        print(
-            f"Using network interface {network_interface} for process group and TRPC communication"
-        )
+        network_interface = None if not hasattr(args, "network_interface") else args.network_interface
+        print(f"Using network interface {network_interface} for process group and TRPC communication")
         env_variables = {
             "OMP_NUM_THREADS": "4",
         }
@@ -96,7 +80,7 @@ class CrossSiloLauncher:
                     gpu_count = torch.cuda.device_count()
                     print(f"Using number of GPUs ({gpu_count}) as number of processeses.")
                     args.n_proc_per_node = gpu_count
-                else: 
+                else:
                     print(f"Using number 1 as number of processeses.")
                     args.n_proc_per_node = 1
 
@@ -111,9 +95,7 @@ class CrossSiloLauncher:
         else:
             print(f"Automatic Client Launcher")
 
-            which_pdsh = subprocess.run(
-                ["which", "pdsh"], capture_output=True, text=True
-            ).stdout.strip()
+            which_pdsh = subprocess.run(["which", "pdsh"], capture_output=True, text=True).stdout.strip()
 
             if not which_pdsh:
                 raise Exception(

@@ -1,3 +1,5 @@
+import logging
+
 import torch
 
 from .torch_process_group_manager import TorchProcessGroupManager
@@ -103,7 +105,7 @@ def is_mxnet_device_available(args, device_type):
         try:
             import mxnet as mx
 
-            gpus = mx.device.num_gpus() # pylint: disable=E1101
+            gpus = mx.device.num_gpus()  # pylint: disable=E1101
         except Exception as ex:
             return False
 
@@ -142,6 +144,9 @@ def is_device_available(args, device_type=MLEngineBackend.ml_device_type_gpu):
 
 
 def get_torch_device(args, using_gpu, device_id, device_type):
+    logging.info(
+        "args = {}, using_gpu = {}, device_id = {}, device_type = {}".format(args, using_gpu, device_id, device_type)
+    )
     if using_gpu:
         gpu_id = args.gpu_id
         if device_id is not None:
@@ -192,9 +197,8 @@ def get_mxnet_device(args, using_gpu, device_id, device_type):
         return mx.cpu()
 
 
-def get_device(args, using_gpu=False, device_id=None, device_type="cpu"):
-    if hasattr(args, "using_gpu") and args.using_gpu:
-        using_gpu = True
+def get_device(args, device_id=None, device_type="cpu"):
+    using_gpu = True if (hasattr(args, "using_gpu") and args.using_gpu is True) else False
 
     if hasattr(args, MLEngineBackend.ml_engine_args_flag):
         if args.ml_engine == MLEngineBackend.ml_engine_backend_tf:
