@@ -191,11 +191,11 @@ class FedMLClientManager(FedMLCommManager):
 
     def _send_others_ss_to_server(self, ss_info):
 
-        for j, k in enumerate(self.finite_w):
-            if j == 0:
-                logging.info("Sent from %d" % (self.rank - 1))
-                logging.info(self.finite_w[k][0])
-                break
+        # for j, k in enumerate(self.finite_w):
+            # if j == 0:
+            #     logging.info("Sent from %d" % (self.rank - 1))
+            #     logging.info(self.finite_w[k][0])
+            #     break
 
         message = Message(
             MyMessage.MSG_TYPE_C2S_SEND_SS_OTHERS_TO_SERVER,
@@ -299,7 +299,6 @@ class FedMLClientManager(FedMLCommManager):
         # logging.info(
         #     "Client %d original weights = %s" % (self.get_sender_id(), weights)
         # )
-
         mlops.event("train", event_started=False, event_value=str(self.round_idx))
 
         # Mask the local model
