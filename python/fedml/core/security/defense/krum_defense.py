@@ -12,6 +12,7 @@ https://arxiv.org/pdf/1703.02757.pdf
 
 class KrumDefense(BaseDefenseMethod):
     def __init__(self, config):
+        self.config = config
         self.k = config.byzantine_client_num  # assume there are k byzantine clients
         if config.multi:
             self.multi = False
@@ -39,7 +40,7 @@ class KrumDefense(BaseDefenseMethod):
 
         grad_list = [raw_client_grad_list[i] for i in index]
         print(f"krum_scores = {krum_score}")
-        return base_aggregation_func(grad_list)  # avg_params
+        return base_aggregation_func(self.config, grad_list)  # avg_params
 
     def _compute_krum_score(self, local_w):
         krum_score = []
