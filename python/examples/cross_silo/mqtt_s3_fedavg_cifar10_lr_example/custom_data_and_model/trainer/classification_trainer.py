@@ -38,7 +38,7 @@ class ClassificationTrainer(ClientTrainer):
                 x, labels = x.to(device), labels.to(device)
                 optimizer.zero_grad()
                 log_probs = model(x)
-                loss = criterion(log_probs, labels)
+                loss = criterion(log_probs, labels)  # pylint: disable=E1102
                 loss.backward()
                 optimizer.step()
                 batch_loss.append(loss.item())
