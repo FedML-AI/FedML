@@ -137,7 +137,6 @@ def disconnect(client: mqtt_client):
 
 
 def data_server_preprocess(args):
-    # args.run_id = 1378
     if args.process_id == 0:
         pass
     else:
@@ -220,7 +219,6 @@ def split_edge_data(args, edge_list=None):
 
 
 def check_rundata(args):
-    # args.run_id = 1378
     # local simulation run
     logging.info("Checking Run Data")
     edge_li = []
@@ -331,7 +329,7 @@ def combine_batches(batches):
 
 
 def load_synthetic_data(args):
-    data_server_preprocess(args)
+    # data_server_preprocess(args)
     dataset_name = args.dataset
     # check if the centralized training is enabled
     centralized = True if (args.client_num_in_total == 1 and args.training_type != "cross_silo") else False
