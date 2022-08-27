@@ -18,9 +18,7 @@ from ...core.mpc.secagg import (
 
 
 class FedMLClientManager(FedMLCommManager):
-    def __init__(
-        self, args, trainer, comm=None, client_rank=0, client_num=0, backend="MPI"
-    ):
+    def __init__(self, args, trainer, comm=None, client_rank=0, client_num=0, backend="MPI"):
         super().__init__(args, comm, client_rank, client_num, backend)
         self.args = args
         self.trainer = trainer
@@ -58,30 +56,23 @@ class FedMLClientManager(FedMLCommManager):
             MyMessage.MSG_TYPE_S2C_CHECK_CLIENT_STATUS, self.handle_message_check_status
         )
 
+        self.register_message_receive_handler(MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.handle_message_init)
+
         self.register_message_receive_handler(
-            MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.handle_message_init
+            MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT, self.handle_message_receive_model_from_server,
         )
 
         self.register_message_receive_handler(
-            MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT,
-            self.handle_message_receive_model_from_server,
+            MyMessage.MSG_TYPE_S2C_OTHER_PK_TO_CLIENT, self.handle_message_receive_pk_others,
         )
-        
-        self.register_message_receive_handler(
-            MyMessage.MSG_TYPE_S2C_OTHER_PK_TO_CLIENT,
-            self.handle_message_receive_pk_others,
-        )
-        
-        self.register_message_receive_handler(
-            MyMessage.MSG_TYPE_S2C_OTHER_SS_TO_CLIENT,
-            self.handle_message_receive_ss_others,
-        )
-        
-        self.register_message_receive_handler(
-            MyMessage.MSG_TYPE_S2C_ACTIVE_CLIENT_LIST,
-            self.handle_message_receive_active_from_server,
-        )       
 
+        self.register_message_receive_handler(
+            MyMessage.MSG_TYPE_S2C_OTHER_SS_TO_CLIENT, self.handle_message_receive_ss_others,
+        )
+
+        self.register_message_receive_handler(
+            MyMessage.MSG_TYPE_S2C_ACTIVE_CLIENT_LIST, self.handle_message_receive_active_from_server,
+        )
 
     def handle_message_connection_ready(self, msg_params):
         if not self.has_sent_online_msg:
@@ -103,7 +94,7 @@ class FedMLClientManager(FedMLCommManager):
         self.report_training_status(MyMessage.MSG_MLOPS_CLIENT_STATUS_TRAINING)
 
         self.dimensions, self.total_dimension = model_dimension(global_model_params)
-        
+
         self.trainer.update_model(global_model_params)
         self.trainer.update_dataset(int(client_index))
         self.round_idx = 0
@@ -126,7 +117,7 @@ class FedMLClientManager(FedMLCommManager):
         if (not self.dimensions) or (not self.total_dimension):
             self.dimensions, self.total_dimension = model_dimension(model_params)
         self.__offline()
-    
+
     def handle_message_receive_pk_others(self, msg_params):
         self.public_key_others = msg_params.get(MyMessage.MSG_TYPE_S2C_OTHER_PK_TO_CLIENT)
         self.public_key_others = np.reshape(self.public_key_others, (self.num_pk_per_user, self.worker_num))
@@ -156,9 +147,7 @@ class FedMLClientManager(FedMLCommManager):
 
     def send_client_status(self, receive_id, status="ONLINE"):
         logging.info("send_client_status")
-        message = Message(
-            MyMessage.MSG_TYPE_C2S_CLIENT_STATUS, self.client_real_id, receive_id
-        )
+        message = Message(MyMessage.MSG_TYPE_C2S_CLIENT_STATUS, self.client_real_id, receive_id)
         sys_name = platform.system()
         if sys_name == "Darwin":
             sys_name = "Mac"
@@ -174,19 +163,14 @@ class FedMLClientManager(FedMLCommManager):
 
     def send_model_to_server(self, receive_id, weights, local_sample_num):
         mlops.event("comm_c2s", event_started=True, event_value=str(self.round_idx))
-        message = Message(
-            MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER,
-            self.get_sender_id(),
-            receive_id,
-        )
+        message = Message(MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER, self.get_sender_id(), receive_id,)
 
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, weights)
         message.add_params(MyMessage.MSG_ARG_KEY_NUM_SAMPLES, local_sample_num)
         self.send_message(message)
 
         mlops.log_client_model_info(
-            self.round_idx + 1,
-            model_url=message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL),
+            self.round_idx + 1, model_url=message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL),
         )
 
     def _send_public_key_to_sever(self, public_key):
@@ -225,7 +209,7 @@ class FedMLClientManager(FedMLCommManager):
 
     def get_model_dimension(self, weights):
         self.dimensions, self.total_dimension = model_dimension(weights)
-        
+
     def mask(self, weights):
         if (not self.dimensions) or (not self.total_dimension):
             self.dimensions, self.total_dimension = self.get_model_dimension(weights)
@@ -249,13 +233,13 @@ class FedMLClientManager(FedMLCommManager):
                 # temp = np.zeros(d,dtype='int')
             elif self.rank > i:
                 np.random.seed(self.s_uv[i - 1])
-               ##################################
-               # Debugging Block Start #
+                ##################################
+                # Debugging Block Start #
                 logging.info("*****************")
                 logging.info(self.s_uv[i - 1])
-                logging.info("{},{}".format(self.rank - 1, i-1))
-               # Debugging Block End #
-               ##################################
+                logging.info("{},{}".format(self.rank - 1, i - 1))
+                # Debugging Block End #
+                ##################################
                 temp = np.random.randint(0, self.prime_number, size=d).astype(int)
                 logging.info("s for %d to %d" % (self.rank, i))
                 logging.info(temp)
@@ -264,13 +248,13 @@ class FedMLClientManager(FedMLCommManager):
                 self.local_mask = np.mod(self.local_mask + temp, self.prime_number)
             else:
                 np.random.seed(self.s_uv[i - 1])
-               ##################################
-               # Debugging Block Start #
+                ##################################
+                # Debugging Block Start #
                 logging.info("*****************")
                 logging.info(self.s_uv[i - 1])
-                logging.info("{},{}".format(self.rank - 1, i-1))
-               # Debugging Block End #
-               ##################################
+                logging.info("{},{}".format(self.rank - 1, i - 1))
+                # Debugging Block End #
+                ##################################
                 temp = -np.random.randint(0, self.prime_number, size=d).astype(int)
                 logging.info("s for %d to %d" % (self.rank, i))
                 logging.info(temp)
@@ -280,7 +264,7 @@ class FedMLClientManager(FedMLCommManager):
         logging.info("Client")
         logging.info(self.rank)
         masked_weights = model_masking(weights_finite, self.dimensions, self.local_mask, self.prime_number)
-        
+
         return masked_weights
 
     def __offline(self):
@@ -288,7 +272,7 @@ class FedMLClientManager(FedMLCommManager):
         self.sk = np.random.randint(0, self.prime_number, size=(2)).astype("int64")
         self.pk = my_pk_gen(self.sk, self.prime_number, 0)
         self.key = np.concatenate((self.pk, self.sk))  # length=4 : c_pk, s_pk, c_sk, s_sk
-        
+
         self._send_public_key_to_sever(self.key[0:2])
 
         self.my_s_sk = self.key[3]
@@ -325,6 +309,6 @@ class FedMLClientManager(FedMLCommManager):
         # )
 
         self.send_model_to_server(0, masked_weights, local_sample_num)
-                
+
     def run(self):
         super().run()
