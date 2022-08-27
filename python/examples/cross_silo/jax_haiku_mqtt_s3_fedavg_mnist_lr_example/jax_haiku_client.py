@@ -1,8 +1,9 @@
 import fedml
+
 from fedml import FedMLRunner
 from fedml.data.MNIST.data_loader import download_mnist, load_partition_data_mnist
-from . import jax_haiku_model
-from .jax_haiku_model_trainer_classification import JaxHaikuModelTrainerCLS
+from jax_haiku_model import create_model
+from jax_haiku_model_trainer_classification import JaxHaikuModelTrainerCLS
 
 
 def load_data(args):
@@ -62,7 +63,7 @@ if __name__ == "__main__":
     dataset, output_dim = load_data(args)
 
     # load model (the size of MNIST image is 28 x 28)
-    model = jax_haiku_model.create_model(28 * 28, output_dim)
+    model = create_model(28 * 28, output_dim)
 
     # create model trainer
     trainer = create_model_trainer(model, args)
