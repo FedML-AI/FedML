@@ -119,7 +119,7 @@ class DefaultServerAggregator(ServerAggregator):
             train_tot_corrects.append(copy.deepcopy(train_tot_correct))
             train_num_samples.append(copy.deepcopy(train_num_sample))
             train_losses.append(copy.deepcopy(train_loss))
-            logging.info("client_idx = {}, metrics = {}".format(client_idx, metrics))
+            logging.info("testing client_idx = {}".format(client_idx))
 
         # test on training dataset
         train_acc = sum(train_tot_corrects) / sum(train_num_samples)
