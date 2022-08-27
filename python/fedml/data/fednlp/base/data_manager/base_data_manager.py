@@ -21,6 +21,8 @@ class BaseDataManager(ABC):
         self.process_id = process_id
         self.num_workers = num_workers
 
+        self.preprocessor = None
+
         # TODO: add type comments for the below vars.
         self.train_dataset = None
         self.test_dataset = None
@@ -120,8 +122,8 @@ class BaseDataManager(ABC):
                         "test"
                     ][()][:cut_off]
                 )
-            train_data = self.read_instance_from_h5(data_file, train_index_list)
-            test_data = self.read_instance_from_h5(data_file, test_index_list)
+            train_data = self.read_instance_from_h5(data_file, train_index_list, "train_data")
+            test_data = self.read_instance_from_h5(data_file, test_index_list, "test_data")
             data_file.close()
             partition_file.close()
             train_examples, train_features, train_dataset = self.preprocessor.transform(
@@ -197,19 +199,7 @@ class BaseDataManager(ABC):
         train_data_local_num_dict = None
         test_data_local_dict = {}
         if state:
-            (
-                train_examples,
-                train_features,
-                train_dataset,
-                test_examples,
-                test_features,
-                test_dataset,
-            ) = res
-            logging.info("test data size " + str(len(test_examples)))
-            if train_dataset is None:
-                train_data_num = 0
-            else:
-                train_data_num = len(train_dataset)
+            pass
         else:
             data_file = h5py.File(self.args.data_file_path, "r", swmr=True)
             partition_file = h5py.File(self.args.partition_file_path, "r", swmr=True)
@@ -234,7 +224,7 @@ class BaseDataManager(ABC):
                 test_index_list.extend(local_test_index_list)
 
             if not test_only:
-                train_data = self.read_instance_from_h5(data_file, train_index_list)
+                train_data = self.read_instance_from_h5(data_file, train_index_list, "train_data")
             if test_cut_off:
                 test_index_list.sort()
             test_index_list = test_index_list[:test_cut_off]
@@ -245,7 +235,7 @@ class BaseDataManager(ABC):
                 + str(test_cut_off)
             )
 
-            test_data = self.read_instance_from_h5(data_file, test_index_list)
+            test_data = self.read_instance_from_h5(data_file, test_index_list, "test_data")
 
             data_file.close()
             partition_file.close()

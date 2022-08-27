@@ -2,6 +2,7 @@ from .FedAVGAggregator import FedAVGAggregator
 from .FedAVGTrainer import FedAVGTrainer
 from .FedAvgClientManager import FedAVGClientManager
 from .FedAvgServerManager import FedAVGServerManager
+from ....core.dp.fed_privacy_mechanism import FedMLDifferentialPrivacy
 from ....core.security.fedml_attacker import FedMLAttacker
 from ....core.security.fedml_defender import FedMLDefender
 from ....ml.aggregator.aggregator_creator import create_server_aggregator
@@ -24,6 +25,7 @@ def FedML_FedAvgSeq_distributed(
 
     FedMLAttacker.get_instance().init(args)
     FedMLDefender.get_instance().init(args)
+    FedMLDifferentialPrivacy.get_instance().init(args)
 
     if process_id == 0:
         init_server(

@@ -6,10 +6,16 @@ lock = threading.Lock()
 
 
 class TRPCCOMMServicer:
-    # com_manager: TRPCCommManager = None
     _instance = None
 
     def __new__(cls, master_address, master_port, client_num, client_id):
+        cls.master_address = None
+        cls.master_port = None
+        cls.client_num = None
+        cls.client_id = None
+        cls.node_type = None
+        cls.message_q = None
+
         if cls._instance is None:
             cls._instance = super(TRPCCOMMServicer, cls).__new__(cls)
             cls._instance.master_address = master_address
@@ -24,17 +30,17 @@ class TRPCCOMMServicer:
             # Put any initialization here.
         return cls._instance
 
-    def receiveMessage(self, clint_id, message):
+    def receiveMessage(self, client_id, message):
         logging.info(
             "client_{} got something from client_{}".format(
                 self.client_id,
-                clint_id,
+                client_id,
             )
         )
         print(
             "client_{} got something from client_{}".format(
                 self.client_id,
-                clint_id,
+                client_id,
             )
         )
         response = "message received"

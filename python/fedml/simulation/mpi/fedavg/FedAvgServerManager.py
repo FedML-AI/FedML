@@ -22,7 +22,7 @@ class FedAVGServerManager(FedMLCommManager):
         self.args = args
         self.aggregator = aggregator
         self.round_num = args.comm_round
-        self.round_idx = 0
+        self.args.round_idx = 0
         self.is_preprocessed = is_preprocessed
         self.preprocessed_client_lists = preprocessed_client_lists
 
@@ -32,7 +32,7 @@ class FedAVGServerManager(FedMLCommManager):
     def send_init_msg(self):
         # sampling clients
         client_indexes = self.aggregator.client_sampling(
-            self.round_idx,
+            self.args.round_idx,
             self.args.client_num_in_total,
             self.args.client_num_per_round,
         )
@@ -62,11 +62,11 @@ class FedAVGServerManager(FedMLCommManager):
         logging.info("b_all_received = " + str(b_all_received))
         if b_all_received:
             global_model_params = self.aggregator.aggregate()
-            self.aggregator.test_on_server_for_all_clients(self.round_idx)
+            self.aggregator.test_on_server_for_all_clients(self.args.round_idx)
 
             # start the next round
-            self.round_idx += 1
-            if self.round_idx == self.round_num:
+            self.args.round_idx += 1
+            if self.args.round_idx == self.round_num:
                 # post_complete_message_to_sweep_process(self.args)
                 self.finish()
                 print("here")
@@ -74,13 +74,13 @@ class FedAVGServerManager(FedMLCommManager):
             if self.is_preprocessed:
                 if self.preprocessed_client_lists is None:
                     # sampling has already been done in data preprocessor
-                    client_indexes = [self.round_idx] * self.args.client_num_per_round
+                    client_indexes = [self.args.round_idx] * self.args.client_num_per_round
                 else:
-                    client_indexes = self.preprocessed_client_lists[self.round_idx]
+                    client_indexes = self.preprocessed_client_lists[self.args.round_idx]
             else:
                 # sampling clients
                 client_indexes = self.aggregator.client_sampling(
-                    self.round_idx,
+                    self.args.round_idx,
                     self.args.client_num_in_total,
                     self.args.client_num_per_round,
                 )

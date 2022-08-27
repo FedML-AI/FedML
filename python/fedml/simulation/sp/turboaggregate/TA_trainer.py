@@ -200,7 +200,7 @@ class TurboAggregateTrainer(object):
                 target = target.to(device)
 
                 pred = model_global(x)
-                loss = criterion(pred, target)
+                loss = criterion(pred, target)  # pylint: disable=E1102
                 _, predicted = torch.max(pred, 1)
                 correct = predicted.eq(target).sum()
 
