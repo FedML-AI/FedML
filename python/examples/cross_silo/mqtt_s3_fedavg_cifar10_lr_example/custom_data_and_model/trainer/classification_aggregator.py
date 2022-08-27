@@ -1,10 +1,8 @@
 import logging
 
-import numpy as np
 import torch
 import torch.nn as nn
 
-import fedml
 from fedml.core import ServerAggregator
 
 
@@ -39,7 +37,7 @@ class ClassificationAggregator(ServerAggregator):
                 x = x.to(device)
                 target = target.to(device)
                 pred = model(x)
-                loss = criterion(pred, target)
+                loss = criterion(pred, target)  # pylint: disable=E1102
                 _, predicted = torch.max(pred, 1)
                 correct = predicted.eq(target).sum()
 
@@ -52,7 +50,5 @@ class ClassificationAggregator(ServerAggregator):
 
         return metrics
 
-    def test_all(
-        self, train_data_local_dict, test_data_local_dict, device, args=None
-    ) -> bool:
+    def test_all(self, train_data_local_dict, test_data_local_dict, device, args=None) -> bool:
         return True

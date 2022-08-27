@@ -1,9 +1,8 @@
-
 import fedml
 from fedml import FedMLRunner
 from fedml.data.MNIST.data_loader import download_mnist, load_partition_data_mnist
-from jax_haiku_model_aggregator import JaxHaikuServerAggregator
-import jax_haiku_model
+from . import jax_haiku_model
+from .jax_haiku_model_aggregator import JaxHaikuServerAggregator
 
 
 def load_data(args):

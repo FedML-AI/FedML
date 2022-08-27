@@ -1,9 +1,8 @@
-
 import fedml
 from fedml import FedMLRunner
 from fedml.data.MNIST.data_loader import download_mnist, load_partition_data_mnist
-from mxnet_model_aggregator import MxServerAggregator
-import mxnet_model
+from . import mxnet_model
+from .mxnet_model_aggregator import MxServerAggregator
 
 
 def load_data(args):

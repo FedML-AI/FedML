@@ -1,9 +1,8 @@
-
 import fedml
 from fedml import FedMLRunner
 from fedml.data.MNIST.data_loader import download_mnist, load_partition_data_mnist
-from tf_model_trainer_classification import TfModelTrainerCLS
-import tf_model
+from . import tf_model
+from .tf_model_trainer_classification import TfModelTrainerCLS
 
 
 def load_data(args):
