@@ -152,6 +152,7 @@ class FedMLServerManager(FedMLCommManager):
         if self.public_keys_received == self.targeted_number_active_clients:
             data = np.reshape(self.public_key_list, self.num_pk_per_user * self.targeted_number_active_clients)
             for i in range(self.targeted_number_active_clients):
+                logging.info("sending data = {}".format(data))
                 self._send_public_key_others_to_user(i + 1, data)
 
     def _handle_message_receive_ss(self, msg_params):
@@ -185,7 +186,7 @@ class FedMLServerManager(FedMLCommManager):
         if b_all_received:
             # Specify the active clients for the first round and inform them
             for receiver_id in range(1, self.size + 1):
-                self.send_message_to_active_client(receiver_id, self.active_clients_first_round)
+                self._send_message_to_active_client(receiver_id, self.active_clients_first_round)
 
     def _handle_message_receive_ss_others_from_client(self, msg_params):
         # Receive the aggregate of encoded masks for active clients
