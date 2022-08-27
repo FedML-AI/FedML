@@ -110,15 +110,17 @@ def _data_transforms_cifar10():
 
 
 
-def load_cifar10_data(datadir, resize=32, augmentation=True, data_efficient_load=False):
+def load_cifar10_data(datadir, process_id, resize=32, augmentation=True, data_efficient_load=False):
     train_transform, test_transform = _data_transforms_cifar10()
+
+    is_download = True if process_id == 0 else False
 
     if data_efficient_load:
         cifar10_train_ds = CIFAR10(datadir, train=True, download=True, transform=train_transform)
         cifar10_test_ds = CIFAR10(datadir, train=False, download=True, transform=test_transform)
     else:
-        cifar10_train_ds = CIFAR10_truncated(datadir, train=True, download=True, transform=train_transform)
-        cifar10_test_ds = CIFAR10_truncated(datadir, train=False, download=True, transform=test_transform)
+        cifar10_train_ds = CIFAR10_truncated(datadir, train=True, download=is_download, transform=train_transform)
+        cifar10_test_ds = CIFAR10_truncated(datadir, train=False, download=is_download, transform=test_transform)
 
     X_train, y_train = cifar10_train_ds.data, cifar10_train_ds.targets
     X_test, y_test = cifar10_test_ds.data, cifar10_test_ds.targets
@@ -127,10 +129,10 @@ def load_cifar10_data(datadir, resize=32, augmentation=True, data_efficient_load
 
 
 
-def partition_data(dataset, datadir, partition, n_nets, alpha):
+def partition_data(dataset, datadir, partition, n_nets, alpha, process_id):
     np.random.seed(10)
     logging.info("*********partition data***************")
-    X_train, y_train, X_test, y_test, cifar10_train_ds, cifar10_test_ds = load_cifar10_data(datadir)
+    X_train, y_train, X_test, y_test, cifar10_train_ds, cifar10_test_ds = load_cifar10_data(datadir, process_id)
     n_train = X_train.shape[0]
     # n_test = X_test.shape[0]
 
@@ -341,6 +343,7 @@ def efficient_load_partition_data_cifar10(
     partition_alpha,
     client_number,
     batch_size,
+    process_id,
     n_proc_in_silo=0,
     data_efficient_load=True,
 ):
@@ -354,7 +357,7 @@ def efficient_load_partition_data_cifar10(
         cifar10_train_ds,
         cifar10_test_ds
     ) = partition_data(
-        dataset, data_dir, partition_method, client_number, partition_alpha
+        dataset, data_dir, partition_method, client_number, partition_alpha, process_id
     )
     class_num = len(np.unique(y_train))
     logging.info("traindata_cls_counts = " + str(traindata_cls_counts))
