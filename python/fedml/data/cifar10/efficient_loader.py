@@ -290,7 +290,7 @@ def load_partition_data_distributed_cifar10(
         cifar10_train_ds,
         cifar10_test_ds
     ) = partition_data(
-        dataset, data_dir, partition_method, client_number, partition_alpha
+        dataset, data_dir, partition_method, client_number, partition_alpha, process_id
     )
     class_num = len(np.unique(y_train))
     logging.info("traindata_cls_counts = " + str(traindata_cls_counts))
