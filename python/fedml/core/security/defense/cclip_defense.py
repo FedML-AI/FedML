@@ -13,6 +13,7 @@ https://arxiv.org/pdf/2006.09365.pdf
 
 class CClipDefense(BaseDefenseMethod):
     def __init__(self, config):
+        self.config = config
         self.tau = config.tau  # clipping raduis
         # element # in each bucket; a grad_list is partitioned into floor(len(grad_list)/bucket_size) buckets
         self.bucket_size = config.bucket_size
@@ -46,7 +47,7 @@ class CClipDefense(BaseDefenseMethod):
             new_grad_list.append((sample_num, tuple))
         print(f"cclip_score = {cclip_score}")
 
-        avg_params = base_aggregation_func(new_grad_list)
+        avg_params = base_aggregation_func(self.config, new_grad_list)
         for k in avg_params.keys():
             avg_params[k] = initial_guess[k] + avg_params[k]
         return avg_params
