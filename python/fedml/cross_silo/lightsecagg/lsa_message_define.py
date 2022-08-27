@@ -11,6 +11,7 @@ class MyMessage(object):
     ==========          model aggregation          =========
     -> 3 (the server send the aggregated model to all clients)
     """
+
     # connection info
     MSG_TYPE_CONNECTION_IS_READY = 0
 
