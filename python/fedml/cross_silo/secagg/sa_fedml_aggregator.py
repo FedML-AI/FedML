@@ -115,9 +115,9 @@ class SecAggAggregator(object):
                 for j in range(self.targeted_number_active_clients):
                     s_pk_list_ = public_key_list[1, :]
                     s_uv_dec = np.mod(s_sk_dec[0][0] * s_pk_list_[j], p)
-                    logging.info("&&&&&&&&&&&&&&&&&&&&&&&")
-                    logging.info(s_uv_dec)
-                    logging.info("{},{}".format(i, j))
+                    # logging.info("&&&&&&&&&&&&&&&&&&&&&&&")
+                    # logging.info(s_uv_dec)
+                    # logging.info("{},{}".format(i, j))
                     if j == i:
                         temp = np.zeros(d, dtype="int")
                     elif j < i:
@@ -160,12 +160,12 @@ class SecAggAggregator(object):
                     averaged_params[k] = local_model_params[k]
                 else:
                     averaged_params[k] += local_model_params[k]
-                # averaged_params[k] = np.mod(averaged_params[k], p)
+                averaged_params[k] = np.mod(averaged_params[k], p)
 
             cur_shape = np.shape(averaged_params[k])
             d = self.dimensions[j]
             #aggregate_mask = aggregate_mask.reshape((aggregate_mask.shape[0], 1))
-            logging.info('aggregate_mask shape = {}'.format(np.shape(aggregate_mask)))
+            # logging.info('aggregate_mask shape = {}'.format(np.shape(aggregate_mask)))
             cur_mask = np.array(aggregate_mask[pos : pos + d])
             cur_mask = np.reshape(cur_mask, cur_shape)
 
@@ -178,7 +178,6 @@ class SecAggAggregator(object):
         # Convert the model from finite to real
         logging.info("Server converts the aggregate_model from finite to tensor")
         averaged_params = transform_finite_to_tensor(averaged_params, p, q_bits)
-
         # do the avg after transform
         for j, k in enumerate(averaged_params):
             w = 1 / len(active_clients_first_round)
