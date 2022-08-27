@@ -298,19 +298,19 @@ class FedMLServerManager(FedMLCommManager):
 
     def _send_public_key_others_to_user(self, receive_id, public_key_other):
         logging.info("Server send_message_to_active_client. receive_id = %d" % receive_id)
-        message = Message(MyMessage.MSG_TYPE_S2C_OTHER_PK_TO_CLIENT, self.server_manager.get_sender_id(), receive_id)
+        message = Message(MyMessage.MSG_TYPE_S2C_OTHER_PK_TO_CLIENT, self.get_sender_id(), receive_id)
         message.add_params(MyMessage.MSG_ARG_KEY_PK_OTHERS, public_key_other)
-        self.server_manager.send_message(message)
+        self.send_message(message)
 
     def _send_ss_others_to_user(self, receive_id, b_ss_others, sk_ss_others):
         logging.info("Server send_message_to_active_client. receive_id = %d" % receive_id)
-        message = Message(MyMessage.MSG_TYPE_S2C_OTHER_SS_TO_CLIENT, self.server_manager.get_sender_id(), receive_id)
+        message = Message(MyMessage.MSG_TYPE_S2C_OTHER_SS_TO_CLIENT, self.get_sender_id(), receive_id)
         message.add_params(MyMessage.MSG_ARG_KEY_B_SS_OTHERS, b_ss_others)
         message.add_params(MyMessage.MSG_ARG_KEY_SK_SS_OTHERS, sk_ss_others)
-        self.server_manager.send_message(message)
+        self.send_message(message)
 
     def _send_message_to_active_client(self, receive_id, active_clients):
         logging.info("Server send_message_to_active_client. receive_id = %d" % receive_id)
-        message = Message(MyMessage.MSG_TYPE_S2C_ACTIVE_CLIENT_LIST, self.server_manager.get_sender_id(), receive_id)
+        message = Message(MyMessage.MSG_TYPE_S2C_ACTIVE_CLIENT_LIST, self.get_sender_id(), receive_id)
         message.add_params(MyMessage.MSG_ARG_KEY_ACTIVE_CLIENTS, active_clients)
-        self.server_manager.send_message(message)
+        self.send_message(message)

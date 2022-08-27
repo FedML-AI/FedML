@@ -37,7 +37,7 @@ class FedMLCrossSiloServer:
 
             FedML_LSA_Horizontal(
                 args,
-                0,
+                args.rank,
                 args.worker_num,
                 args.comm,
                 device,
@@ -52,7 +52,7 @@ class FedMLCrossSiloServer:
 
             FedML_SA_Horizontal(
                 args,
-                0,
+                args.rank,
                 args.worker_num,
                 args.comm,
                 device,

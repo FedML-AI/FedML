@@ -48,7 +48,7 @@ class FedMLCrossSiloClient:
 
             FedML_SA_Horizontal(
                 args,
-                0,
+                args.rank,
                 args.worker_num,
                 args.comm,
                 device,

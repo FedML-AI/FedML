@@ -175,18 +175,18 @@ class FedMLClientManager(FedMLCommManager):
 
     def _send_public_key_to_sever(self, public_key):
         message = Message(
-            MyMessage.MSG_TYPE_C2S_SEND_PK_TO_SERVER, self.client_manager.communication_manager.get_sender_id(), 0
+            MyMessage.MSG_TYPE_C2S_SEND_PK_TO_SERVER, self.get_sender_id(), 0
         )
         message.add_params(MyMessage.MSG_ARG_KEY_PK, public_key)
-        self.client_manager.communication_manager.send_message(message)
+        self.send_message(message)
 
     def _send_secret_share_to_sever(self, b_u_SS, s_sk_SS):
         message = Message(
-            MyMessage.MSG_TYPE_C2S_SEND_SS_TO_SERVER, self.client_manager.communication_manager.get_sender_id(), 0
+            MyMessage.MSG_TYPE_C2S_SEND_SS_TO_SERVER, self.get_sender_id(), 0
         )
         message.add_params(MyMessage.MSG_ARG_KEY_B_SS, b_u_SS)
         message.add_params(MyMessage.MSG_ARG_KEY_SK_SS, s_sk_SS)
-        self.client_manager.communication_manager.send_message(message)
+        self.send_message(message)
 
     def _send_others_ss_to_server(self, ss_info):
 
@@ -198,14 +198,14 @@ class FedMLClientManager(FedMLCommManager):
 
         message = Message(
             MyMessage.MSG_TYPE_C2S_SEND_SS_OTHERS_TO_SERVER,
-            self.client_manager.communication_manager.get_sender_id(),
+            self.get_sender_id(),
             0,
         )
         message.add_params(MyMessage.MSG_ARG_KEY_FINITE_W, self.finite_w)
         message.add_params(MyMessage.MSG_ARG_KEY_INFINITE_W, self.infinite_w)
         message.add_params(MyMessage.MSG_ARG_KEY_MASK, self.local_mask)
         message.add_params(MyMessage.MSG_ARG_KEY_SS_OTHERS, ss_info)
-        self.client_manager.communication_manager.send_message(message)
+        self.send_message(message)
 
     def get_model_dimension(self, weights):
         self.dimensions, self.total_dimension = model_dimension(weights)
@@ -285,7 +285,7 @@ class FedMLClientManager(FedMLCommManager):
 
         self.b_u_SS = self.my_SS[:, 0, 0].astype("int64")
         self.s_sk_SS = self.my_SS[:, 1, 0].astype("int64")
-        logging.info("seed b_u for use in %d", self.client_manager.communication_manager.get_sender_id() - 1)
+        logging.info("seed b_u for use in %d", self.get_sender_id() - 1)
         logging.info(self.b_u)
         logging.info(self.b_u_SS)
         self._send_secret_share_to_sever(self.b_u_SS, self.s_sk_SS)
