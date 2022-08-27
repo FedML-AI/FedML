@@ -25,7 +25,7 @@ class FedMLClientManager(FedMLCommManager):
         self.num_rounds = args.comm_round
         self.round_idx = 0
 
-        self.worker_num = client_num - 1
+        self.worker_num = client_num
         self.dimensions = []
         self.total_dimension = None
 
@@ -119,7 +119,8 @@ class FedMLClientManager(FedMLCommManager):
         self.__offline()
 
     def handle_message_receive_pk_others(self, msg_params):
-        self.public_key_others = msg_params.get(MyMessage.MSG_TYPE_S2C_OTHER_PK_TO_CLIENT)
+        self.public_key_others = msg_params.get(MyMessage.MSG_ARG_KEY_PK_OTHERS)
+        logging.info(" self.public_key_others = {}".format( self.public_key_others))
         self.public_key_others = np.reshape(self.public_key_others, (self.num_pk_per_user, self.worker_num))
 
     def handle_message_receive_ss_others(self, msg_params):
@@ -281,7 +282,7 @@ class FedMLClientManager(FedMLCommManager):
         self.b_u = self.my_c_sk
 
         self.SS_input = np.reshape(np.array([self.my_c_sk, self.my_s_sk]), (2, 1))
-        self.my_SS = BGW_encoding(self.SS_input, self.worker_num, self.T, self.prime_number)
+        self.my_SS = BGW_encoding(self.SS_input, self.worker_num, self.privacy_guarantee, self.prime_number)
 
         self.b_u_SS = self.my_SS[:, 0, 0].astype("int64")
         self.s_sk_SS = self.my_SS[:, 1, 0].astype("int64")
