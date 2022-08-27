@@ -1,9 +1,8 @@
 import json
 import logging
 import platform
-
-import numpy as np
 import copy
+import numpy as np
 
 from fedml import mlops
 from .sa_message_define import MyMessage
@@ -29,25 +28,19 @@ class FedMLClientManager(FedMLCommManager):
         self.round_idx = 0
 
         self.worker_num = client_num - 1
+        self.dimensions = []
+        self.total_dimension = None
 
-        # new added parameters in main file
-        self.sk = None
-        self.pk = None
-        self.key = None
+        # for secagg
+        self.num_pk_per_user = 2
+        self.targeted_number_active_clients = args.worker_num
         self.privacy_guarantee = int(np.floor(args.worker_num / 2))
         self.prime_number = args.prime_number
         self.precision_parameter = args.precision_parameter
-        self.num_pk_per_user = 2
         self.public_key_others = np.empty(self.num_pk_per_user * self.worker_num).astype("int64")
-        # self.rank = rank
-        # self.size = size
-        self.dimensions = None
-        self.total_dimension = None
         self.b_u_SS_others = np.empty((self.worker_num, self.worker_num), dtype="int64")
         self.s_sk_SS_others = np.empty((self.worker_num, self.worker_num), dtype="int64")
-        self.T = self.privacy_guarantee
-        self.train_callback = None
-        
+
         self.client_real_ids = json.loads(args.client_id_list)
         logging.info("self.client_real_ids = {}".format(self.client_real_ids))
         # for the client, len(self.client_real_ids)==1: we only specify its client id in the list, not including others.
@@ -73,21 +66,22 @@ class FedMLClientManager(FedMLCommManager):
             MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT,
             self.handle_message_receive_model_from_server,
         )
-
+        
         self.register_message_receive_handler(
-            MyMessage.MSG_TYPE_S2C_SEND_TO_ACTIVE_CLIENT,
-            self.handle_message_receive_active_from_server,
+            MyMessage.MSG_TYPE_S2C_OTHER_PK_TO_CLIENT,
+            self.handle_message_receive_pk_others,
         )
         
         self.register_message_receive_handler(
-            MyMessage.MSG_TYPE_S2C_SEND_PK_OTHERS_TO_CLIENT,
-            self._handle_receive_public_key_others,
+            MyMessage.MSG_TYPE_S2C_OTHER_SS_TO_CLIENT,
+            self.handle_message_receive_ss_others,
         )
-
+        
         self.register_message_receive_handler(
-            MyMessage.MSG_TYPE_S2C_SEND_SS_OTHERS_TO_CLIENT, 
-            self._handle_receive_ss_others,
-        )
+            MyMessage.MSG_TYPE_S2C_ACTIVE_CLIENT_LIST,
+            self.handle_message_receive_active_from_server,
+        )       
+
 
     def handle_message_connection_ready(self, msg_params):
         if not self.has_sent_online_msg:
@@ -95,38 +89,7 @@ class FedMLClientManager(FedMLCommManager):
             self.send_client_status(0)
 
             mlops.log_sys_perf(self.args)
-            
-    # for secagg
-    def _handle_receive_public_key_others(self, msg_params):
-        self.public_key_others = msg_params.get(MyMessage.MSG_ARG_KEY_PK_OTHERS)
-        self.public_key_others = np.reshape(self.public_key_others, (self.num_pk_per_user, self.worker_num))
-    
-    def _handle_receive_ss_others(self, msg_params):
-        # self.b_u_SS_others = np.empty(self.worker_num, dtype="int64")
-        # self.s_sk_SS_others = np.empty(self.worker_num, dtype="int64")
-        self.s_sk_SS_others = msg_params.get(MyMessage.MSG_ARG_KEY_SK_SS_OTHERS).flatten()
-        self.b_u_SS_others = msg_params.get(MyMessage.MSG_ARG_KEY_B_SS_OTHERS).flatten()
-        self.s_pk_list = self.public_key_others[1, :]
-        self.s_uv = np.mod(self.s_pk_list * self.my_s_sk, self.prime_number)
 
-        self.train_callback(list(range(self.worker_num)))
-    
-    def _handle_message_receive_active_from_server(self, msg_params):
-        sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
-        # Receive the set of active client id in first round
-        active_clients = msg_params.get(MyMessage.MSG_ARG_KEY_ACTIVE_CLIENTS)
-        # 3.1. Send SS
-        active_clients_dict = dict()
-        for client in active_clients:
-            active_clients_dict[client] = True
-        SS_info = np.empty(self.worker_num, dtype="int64")
-        for i in range(self.worker_num):
-            if i in active_clients_dict:
-                SS_info[i] = self.b_u_SS_others[i]
-            else:
-                SS_info[i] = self.s_sk_SS_others[i]
-        self._send_others_ss_to_server(SS_info)
-           
     def handle_message_check_status(self, msg_params):
         self.send_client_status(0)
 
@@ -160,31 +123,36 @@ class FedMLClientManager(FedMLCommManager):
             self.finish()
             return
         self.round_idx += 1
+        if (not self.dimensions) or (not self.total_dimension):
+            self.dimensions, self.total_dimension = model_dimension(model_params)
         self.__offline()
+    
+    def handle_message_receive_pk_others(self, msg_params):
+        self.public_key_others = msg_params.get(MyMessage.MSG_TYPE_S2C_OTHER_PK_TO_CLIENT)
+        self.public_key_others = np.reshape(self.public_key_others, (self.num_pk_per_user, self.worker_num))
+
+    def handle_message_receive_ss_others(self, msg_params):
+        self.s_sk_SS_others = msg_params.get(MyMessage.MSG_ARG_KEY_SK_SS_OTHERS).flatten()
+        self.b_u_SS_others = msg_params.get(MyMessage.MSG_ARG_KEY_B_SS_OTHERS).flatten()
+        self.s_pk_list = self.public_key_others[1, :]
+        self.s_uv = np.mod(self.s_pk_list * self.my_s_sk, self.prime_number)
+        self.__train()
 
     def handle_message_receive_active_from_server(self, msg_params):
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         # Receive the set of active client id in first round
-        active_clients_first_round = msg_params.get(
-            MyMessage.MSG_ARG_KEY_ACTIVE_CLIENTS
-        )
-        logging.info(
-            "Client %d receive active_clients in the first round = %s"
-            % (self.get_sender_id(), active_clients_first_round)
-        )
-
-        # Compute the aggregate of encoded masks for the active clients
-        p = self.prime_number
-        aggregate_encoded_mask = compute_aggregate_encoded_mask(
-            self.encoded_mask_dict, p, active_clients_first_round
-        )
-
-        # Send the aggregate of encoded mask to server
-        self.send_aggregate_encoded_mask_to_server(0, aggregate_encoded_mask)
-
-    def start_training(self):
-        self.round_idx = 0
-        self.__train()
+        active_clients = msg_params.get(MyMessage.MSG_ARG_KEY_ACTIVE_CLIENTS)
+        # 3.1. Send SS
+        active_clients_dict = dict()
+        for client in active_clients:
+            active_clients_dict[client] = True
+        SS_info = np.empty(self.worker_num, dtype="int64")
+        for i in range(self.worker_num):
+            if i in active_clients_dict:
+                SS_info[i] = self.b_u_SS_others[i]
+            else:
+                SS_info[i] = self.s_sk_SS_others[i]
+        self._send_others_ss_to_server(SS_info)
 
     def send_client_status(self, receive_id, status="ONLINE"):
         logging.info("send_client_status")
@@ -221,7 +189,6 @@ class FedMLClientManager(FedMLCommManager):
             model_url=message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL),
         )
 
-    # for secagg
     def _send_public_key_to_sever(self, public_key):
         message = Message(
             MyMessage.MSG_TYPE_C2S_SEND_PK_TO_SERVER, self.client_manager.communication_manager.get_sender_id(), 0
@@ -259,36 +226,7 @@ class FedMLClientManager(FedMLCommManager):
     def get_model_dimension(self, weights):
         self.dimensions, self.total_dimension = model_dimension(weights)
         
-    def init_next_round(self, weights, clients, callback=None):
-        if (not self.dimensions) or (not self.total_dimension):
-            self.dimensions, self.total_dimension = model_dimension(weights)
-        self.train_callback = callback
-        self._offline(clients)
-        
-    def _offline(self):
-        np.random.seed(self.rank)
-        self.sk = np.random.randint(0, self.prime_number, size=(2)).astype("int64")
-        self.pk = my_pk_gen(self.sk, self.prime_number, 0)
-        self.key = np.concatenate((self.pk, self.sk))  # length=4 : c_pk, s_pk, c_sk, s_sk
-        
-        self._send_public_key_to_sever(self.key[0:2])
-
-        self.my_s_sk = self.key[3]
-        self.my_c_sk = self.key[2]
-
-        self.b_u = self.my_c_sk
-
-        self.SS_input = np.reshape(np.array([self.my_c_sk, self.my_s_sk]), (2, 1))
-        self.my_SS = BGW_encoding(self.SS_input, self.worker_num, self.T, self.prime_number)
-
-        self.b_u_SS = self.my_SS[:, 0, 0].astype("int64")
-        self.s_sk_SS = self.my_SS[:, 1, 0].astype("int64")
-        logging.info("seed b_u for use in %d", self.client_manager.communication_manager.get_sender_id() - 1)
-        logging.info(self.b_u)
-        logging.info(self.b_u_SS)
-        self._send_secret_share_to_sever(self.b_u_SS, self.s_sk_SS)
-        
-    def mask(self, weights, callback=None):
+    def mask(self, weights):
         if (not self.dimensions) or (not self.total_dimension):
             self.dimensions, self.total_dimension = self.get_model_dimension(weights)
         q_bits = self.precision_parameter
@@ -298,11 +236,6 @@ class FedMLClientManager(FedMLCommManager):
         weights_finite = transform_tensor_to_finite(weights, self.prime_number, q_bits)
 
         self.finite_w = copy.deepcopy(weights_finite)
-
-        ##################################
-        # Debugging Block Start #
-        # Debugging Block End #
-        ##################################
 
         d = self.total_dimension
         self.local_mask = np.zeros(d, dtype="int")
@@ -347,10 +280,31 @@ class FedMLClientManager(FedMLCommManager):
         logging.info("Client")
         logging.info(self.rank)
         masked_weights = model_masking(weights_finite, self.dimensions, self.local_mask, self.prime_number)
-
-        if callback:
-            callback(masked_weights)
+        
         return masked_weights
+
+    def __offline(self):
+        np.random.seed(self.rank)
+        self.sk = np.random.randint(0, self.prime_number, size=(2)).astype("int64")
+        self.pk = my_pk_gen(self.sk, self.prime_number, 0)
+        self.key = np.concatenate((self.pk, self.sk))  # length=4 : c_pk, s_pk, c_sk, s_sk
+        
+        self._send_public_key_to_sever(self.key[0:2])
+
+        self.my_s_sk = self.key[3]
+        self.my_c_sk = self.key[2]
+
+        self.b_u = self.my_c_sk
+
+        self.SS_input = np.reshape(np.array([self.my_c_sk, self.my_s_sk]), (2, 1))
+        self.my_SS = BGW_encoding(self.SS_input, self.worker_num, self.T, self.prime_number)
+
+        self.b_u_SS = self.my_SS[:, 0, 0].astype("int64")
+        self.s_sk_SS = self.my_SS[:, 1, 0].astype("int64")
+        logging.info("seed b_u for use in %d", self.client_manager.communication_manager.get_sender_id() - 1)
+        logging.info(self.b_u)
+        logging.info(self.b_u_SS)
+        self._send_secret_share_to_sever(self.b_u_SS, self.s_sk_SS)
 
     def __train(self):
         logging.info("#######training########### round_id = %d" % self.round_idx)
@@ -371,6 +325,6 @@ class FedMLClientManager(FedMLCommManager):
         # )
 
         self.send_model_to_server(0, masked_weights, local_sample_num)
-
+                
     def run(self):
         super().run()
