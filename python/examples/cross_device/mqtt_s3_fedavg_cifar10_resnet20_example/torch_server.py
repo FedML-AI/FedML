@@ -2,7 +2,7 @@ import MNN
 
 import fedml
 from fedml.cross_device import ServerMNN
-from my_dataset import Cifar10Dataset
+from .my_dataset import Cifar10Dataset
 
 if __name__ == "__main__":
     # init FedML framework
