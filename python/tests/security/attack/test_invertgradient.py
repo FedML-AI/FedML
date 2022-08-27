@@ -3,9 +3,7 @@ from fedml.core.security.attack.invert_gradient_attack import (
     Classification,
     loss_steps,
 )
-from fedml.core.security.common.attack_defense_data_loader import (
-    AttackDefenseDataLoader,
-)
+from fedml.core.security.common.attack_defense_data_loader import AttackDefenseDataLoader
 
 import torch
 import torchvision
@@ -67,15 +65,11 @@ config_untrained_weight = dict(
 def construct_dataloaders():
     client_num = 3
     batch_size = 32
-    dataset = AttackDefenseDataLoader.load_cifar10_data(
-        client_num=client_num, batch_size=batch_size
-    )
+    dataset = AttackDefenseDataLoader.load_cifar10_data(client_num=client_num, batch_size=batch_size)
     return dataset
 
 
-def create_fake_input(
-    attack_client_idx, num_images, images, model, loss_fn, use_updates
-):
+def create_fake_input(attack_client_idx, num_images, images, model, loss_fn, use_updates):
     img = images[6][attack_client_idx].dataset
 
     if num_images == 1:
@@ -108,12 +102,7 @@ def create_fake_input(
         local_lr = 1e-4
         local_steps = 5
         input_parameters = loss_steps(
-            model,
-            ground_truth,
-            labels,
-            lr=local_lr,
-            local_steps=local_steps,
-            use_updates=use_updates,
+            model, ground_truth, labels, lr=local_lr, local_steps=local_steps, use_updates=use_updates,
         )
         input_parameters = [p.detach() for p in input_parameters]
         return (ground_truth, labels), input_parameters
