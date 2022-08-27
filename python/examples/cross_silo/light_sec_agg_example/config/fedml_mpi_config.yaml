@@ -21,7 +21,6 @@ model_args:
   global_model_file_path: "./model_file_cache/global_model.pt"
 
 train_args:
-  # federated_optimizer: "LSA"
 #  federated_optimizer: "FedAvg"
   federated_optimizer: "LSA"
   client_id_list:
