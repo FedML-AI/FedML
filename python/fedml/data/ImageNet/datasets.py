@@ -62,7 +62,7 @@ def pil_loader(path):
 
 
 def accimage_loader(path):
-    import accimage
+    import accimage  # pylint: disable=E0401
 
     try:
         return accimage.Image(path)
@@ -142,7 +142,7 @@ class ImageNet(data.Dataset):
             raise (
                 RuntimeError(
                     "Found 0 files in subfolders of: " + self.data_dir + "\n"
-                    "Supported extensions are: " + ",".join(extensions)
+                    "Supported extensions are: " + ",".join(IMG_EXTENSIONS)
                 )
             )
         return all_data, data_local_num_dict, net_dataidx_map

@@ -2,10 +2,10 @@ import logging
 import os
 import random
 
-import multiprocess as multiprocessing
+import multiprocessing
 import numpy as np
 import torch
-import wandb
+
 
 import fedml
 from .cli.env.collect_env import collect_env
@@ -21,7 +21,7 @@ from .constants import (
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.7.290"
+__version__ = "0.7.299"
 
 
 def init(args=None):
@@ -106,10 +106,12 @@ def init_simulation_mpi(args):
 
     comm = MPI.COMM_WORLD
     process_id = comm.Get_rank()
-    worker_num = comm.Get_size()
+    world_size = comm.Get_size()
     args.comm = comm
     args.process_id = process_id
-    args.worker_num = worker_num
+    args.worker_num = world_size
+    if process_id == 0:
+        args.role = "server"
     return args
 
 
@@ -128,7 +130,7 @@ def manage_profiling_args(args):
         args.sys_perf_profiling = True
 
     if args.sys_perf_profiling:
-        from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
+        from .core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
         MLOpsProfilerEvent.enable_sys_perf_profiling()
 
@@ -156,12 +158,13 @@ def manage_profiling_args(args):
                 wandb_args["group"] = "Test1"
                 wandb_args["name"] = f"Client {args.rank}"
                 wandb_args["job_type"] = str(args.rank)
-
+                
+            import wandb
             wandb.init(**wandb_args)
 
-            from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
+            from .core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
-            MLOpsProfilerEvent.enable_wandb()
+            MLOpsProfilerEvent.enable_wandb_tracking()
 
 
 def manage_cuda_rpc_args(args):
@@ -184,7 +187,7 @@ def manage_cuda_rpc_args(args):
     # Valudate arguments related to cuda rpc
     if args.enable_cuda_rpc:
         if not hasattr(args, "cuda_rpc_gpu_mapping"):
-            raise "Invalid config. cuda_rpc_gpu_mapping is required when enable_cuda_rpc=True"
+            raise Exception("Invalid config. cuda_rpc_gpu_mapping is required when enable_cuda_rpc=True")
         assert (
             type(args.cuda_rpc_gpu_mapping) is dict
         ), "Invalid cuda_rpc_gpu_mapping type. Expected dict"

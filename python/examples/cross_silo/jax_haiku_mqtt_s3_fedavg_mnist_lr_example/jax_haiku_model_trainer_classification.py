@@ -88,10 +88,8 @@ class JaxHaikuModelTrainerCLS(ClientTrainer):
             loss = 0.0
             for batch_idx, (x, labels) in enumerate(train_data):
                 # Do SGD on a batch of training samples.
-                x = x.numpy()
-                labels = labels.numpy()
-                jax.device_put(x, device)
-                jax.device_put(labels, device)
+                x = jax.device_put(x, device)
+                labels = jax.device_put(labels, device)
 
                 self.training_state = JaxHaikuModelTrainerCLS.update(self.training_state,
                                                                      x, labels)

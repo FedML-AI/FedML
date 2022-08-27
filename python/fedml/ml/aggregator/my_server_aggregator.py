@@ -52,7 +52,7 @@ class MyServerAggregator(ServerAggregator):
                 x = x.to(device)
                 target = target.to(device)
                 pred = model(x)
-                loss = criterion(pred, target)
+                loss = criterion(pred, target)  # pylint: disable=E1102
 
                 if args.dataset == "stackoverflow_lr":
                     predicted = (pred > 0.5).int()
