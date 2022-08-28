@@ -130,10 +130,10 @@ def data_server_preprocess(args):
                     logging.info("Data Server Splitted Dataset Complete")
                     query_data_server(args, int(args.client_id_list[1]))
                     disconnect(client)
-                args.data_cache_dir = os.path.join(args.data_cache_dir, 'run_Id_%s' % args.run_id,
-                                                                         'edgeNums_%s' % (args.client_num_in_total),
-                                                                         args.dataset,
-                                                                         'edgeId_%s' % (int(args.client_id_list[1])))
+                # args.data_cache_dir = os.path.join(args.data_cache_dir, 'run_Id_%s' % args.run_id,
+                #                                                          'edgeNums_%s' % (args.client_num_in_total),
+                #                                                          args.dataset,
+                #                                                          'edgeId_%s' % (int(args.client_id_list[1])))
             # Mlops Run
             else:
                 # check mlops run_status

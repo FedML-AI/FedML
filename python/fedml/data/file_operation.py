@@ -63,8 +63,8 @@ def download_s3_file(edge_id, path_s3, root, path_local):
                 s3.download_fileobj(BUCKET_NAME, path_s3, data)
             file_size = os.path.getsize(path_local)
             logging.info(f'Downloading completed. | size: {round(file_size / 1048576, 2)} MB')
-            # file_extract(root, path_local)
-            # move_file(edge_id, root)
+            file_extract(root, path_local)
+            move_file(edge_id, root)
             break
         except Exception as e:
             logging.error(f'Download zip failed. | Exception: {e}')
