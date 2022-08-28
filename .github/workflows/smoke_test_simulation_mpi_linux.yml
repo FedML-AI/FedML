@@ -92,10 +92,5 @@ jobs:
         cd examples/simulation/mpi_torch_fedgan_mnist_gan_example
         sh run_step_by_step_example.sh 4
 
-#    - name: Test package - FedGKT
-#      run: |
-#        cd examples/simulation/mpi_torch_fedgkt_mnist_lr_example
-#        sh run_step_by_step_example.sh 4
-
     - name: Uninstall package after testing
       run:  python -m pip uninstall --yes mpi4py
