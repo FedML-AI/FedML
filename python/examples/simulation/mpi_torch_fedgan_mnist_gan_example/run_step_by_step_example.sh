@@ -7,6 +7,6 @@ echo $PROCESS_NUM
 
 hostname > mpi_host_file
 
-$(which mpirun) -np $PROCESS_NUM \
+mpirun -np $PROCESS_NUM \
 -hostfile mpi_host_file \
 python torch_fedgan_mnist_gan_step_by_step_example.py --cf config/fedml_config.yaml

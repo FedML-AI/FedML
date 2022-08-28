@@ -25,8 +25,8 @@ train_args:
 #  federated_optimizer: "FedAvg"
   client_id_list:
   client_num_in_total: 1000
-  client_num_per_round: 4
-  comm_round: 50
+  client_num_per_round: 2
+  comm_round: 2 # by default, set it to 2 to save time for GitHub Action test.
   epochs: 1
   batch_size: 10
   client_optimizer: sgd
@@ -45,14 +45,13 @@ secure_aggregation_args:
   precision_parameter: 10
 
 device_args:
-  worker_num: 4
+  worker_num: 2
   using_gpu: false
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_default
 
 comm_args:
-  # backend: "MQTT_S3"
-  backend: "MPI"
+  backend: "MQTT_S3"
   mqtt_config_path: config/mqtt_config.yaml
   s3_config_path: config/s3_config.yaml
 

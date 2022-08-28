@@ -3,7 +3,6 @@ import os
 import shutil
 
 import torch
-import wandb
 from torch import nn, optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
@@ -260,7 +259,12 @@ class GKTServerTrainer(object):
                 #     }
                 # )
 
-                last_path = os.path.join("./checkpoint/last.pth")
+                checkpoint_dir = os.path.join("~/checkpoint")
+                if not os.path.exists(checkpoint_dir):
+                    os.makedirs(checkpoint_dir)
+
+                last_path = os.path.join("~/checkpoint/last.pth")
+
                 # Save latest model weights, optimizer and accuracy
                 torch.save(
                     {
@@ -282,12 +286,12 @@ class GKTServerTrainer(object):
                     test_metrics["epoch"] = round_idx + 1
                     save_dict_to_json(
                         test_metrics,
-                        os.path.join("./checkpoint/", "test_best_metrics.json"),
+                        os.path.join("~/checkpoint/", "test_best_metrics.json"),
                     )
 
                     # Save model and optimizer
                     shutil.copyfile(
-                        last_path, os.path.join("./checkpoint/", "best.pth")
+                        last_path, os.path.join("~/checkpoint/", "best.pth")
                     )
 
     def train_large_model_on_the_server(self):
@@ -375,6 +379,7 @@ class GKTServerTrainer(object):
         accTop5_avg = RunningAverage()
         with torch.no_grad():
             for client_index in self.client_extracted_feauture_dict_test.keys():
+                logging.info("eval_large_model_on_the_server. testing client_index = {}".format(client_index))
                 extracted_feature_dict = self.client_extracted_feauture_dict_test[
                     client_index
                 ]
