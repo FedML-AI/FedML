@@ -20,16 +20,6 @@ class FedMLAttacker:
         self.attacker = None
 
     def init(self, args):
-        if hasattr(args, MLEngineBackend.ml_engine_args_flag) and args.ml_engine in [
-            MLEngineBackend.ml_engine_backend_tf,
-            MLEngineBackend.ml_engine_backend_jax,
-            MLEngineBackend.ml_engine_backend_mxnet,
-        ]:
-            raise ValueError(
-                "attacker not supported for this machine learning engine: %s"
-                % args.ml_engine
-            )
-
         if hasattr(args, "enable_attack") and args.enable_attack:
             logging.info("------init attack..." + args.attack_type.strip())
             self.is_enabled = True
@@ -41,6 +31,19 @@ class FedMLAttacker:
             #     self.attacker = DLGAttack(model=args.model, attack_epoch=args.attack_epoch)
         else:
             self.is_enabled = False
+
+        if self.is_enabled:
+            if hasattr(args, MLEngineBackend.ml_engine_args_flag) and args.ml_engine in [
+                MLEngineBackend.ml_engine_backend_tf,
+                MLEngineBackend.ml_engine_backend_jax,
+                MLEngineBackend.ml_engine_backend_mxnet,
+            ]:
+                logging.info(
+                    "FedMLAttacker is not supported for the machine learning engine: %s. "
+                    "We will support more engines in the future iteration."
+                    % args.ml_engine
+                )
+                self.is_enabled = False
 
     def is_attack_enabled(self):
         return self.is_enabled
