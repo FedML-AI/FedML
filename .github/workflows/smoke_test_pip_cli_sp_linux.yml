@@ -58,3 +58,33 @@ jobs:
           cd quick_start/parrot
           python torch_fedavg_mnist_lr_one_line_example.py --cf fedml_config.yaml
           python torch_fedavg_mnist_lr_custum_data_and_model_example.py --cf fedml_config.yaml
+
+      - name: test sp - sp_decentralized_mnist_lr_example
+        run: |
+          cd examples/simulation/sp_decentralized_mnist_lr_example
+          python torch_fedavg_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
+
+      - name: test sp - sp_fednova_mnist_lr_example
+        run: |
+          cd examples/simulation/sp_fednova_mnist_lr_example
+          python torch_fednova_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
+          
+      - name: test sp - sp_fedopt_mnist_lr_example
+        run: |
+          cd examples/simulation/sp_fedopt_mnist_lr_example
+          python torch_fedopt_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
+
+      - name: test sp - sp_hierarchicalfl_mnist_lr_example
+        run: |
+          cd examples/simulation/sp_hierarchicalfl_mnist_lr_example
+          python torch_hierarchicalfl_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
+
+      - name: test sp - sp_turboaggregate_mnist_lr_example
+        run: |
+          cd examples/simulation/sp_turboaggregate_mnist_lr_example
+          python torch_turboaggregate_mnist_lr_step_by_step_example.py --cf fedml_config.yaml 
+
+      - name: test sp - sp_vertical_mnist_lr_example
+        run: |
+          cd examples/simulation/sp_vertical_mnist_lr_example
+          python torch_vertical_mnist_lr_step_by_step_example.py --cf fedml_config.yaml 

@@ -27,7 +27,7 @@ validation_args:
   frequency_of_the_test: 5
 
 device_args:
-  using_gpu: false
+  using_gpu: true
   gpu_id: 0
 
 comm_args:
