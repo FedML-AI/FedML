@@ -256,10 +256,8 @@ def combine_batches(batches):
 
 
 def load_synthetic_data(args):
-    print("***************")
-    print(args.__dict__)
-    args.run_id = 1378
-    if args.training_type == "cross_silo" and args.run_id > 0:
+    # args.run_id = 1378
+    if args.training_type == "cross_silo" and args.run_id != '0':
         data_server_preprocess(args)
     dataset_name = args.dataset
     # check if the centralized training is enabled
