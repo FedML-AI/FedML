@@ -529,61 +529,65 @@ def load_synthetic_data(args):
 
     else:
         if dataset_name == "cifar10":
-            # data_loader = load_partition_data_cifar10
-            (
-                train_data_num,
-                test_data_num,
-                train_data_global,
-                test_data_global,
-                train_data_local_num_dict,
-                train_data_local_dict,
-                test_data_local_dict,
-                class_num,
-            ) = efficient_load_partition_data_cifar10(
-                args.dataset,
-                args.data_cache_dir,
-                args.partition_method,
-                args.partition_alpha,
-                args.client_num_in_total,
-                args.batch_size,
-                args.process_id,
-            )
+            if hasattr(args, "using_cloud_data") and args.using_cloud_data:
+                (
+                    train_data_num,
+                    test_data_num,
+                    train_data_global,
+                    test_data_global,
+                    train_data_local_num_dict,
+                    train_data_local_dict,
+                    test_data_local_dict,
+                    class_num,
+                ) = efficient_load_partition_data_cifar10(
+                    args.dataset,
+                    args.data_cache_dir,
+                    args.partition_method,
+                    args.partition_alpha,
+                    args.client_num_in_total,
+                    args.batch_size,
+                    args.process_id,
+                )
 
-            if centralized:
-                train_data_local_num_dict = {
-                    0: sum(user_train_data_num for user_train_data_num in train_data_local_num_dict.values())
-                }
-                train_data_local_dict = {
-                    0: [batch for cid in sorted(train_data_local_dict.keys()) for batch in train_data_local_dict[cid]]
-                }
-                test_data_local_dict = {
-                    0: [batch for cid in sorted(test_data_local_dict.keys()) for batch in test_data_local_dict[cid]]
-                }
-                args.client_num_in_total = 1
+                if centralized:
+                    train_data_local_num_dict = {
+                        0: sum(user_train_data_num for user_train_data_num in train_data_local_num_dict.values())
+                    }
+                    train_data_local_dict = {
+                        0: [batch for cid in sorted(train_data_local_dict.keys()) for batch in
+                            train_data_local_dict[cid]]
+                    }
+                    test_data_local_dict = {
+                        0: [batch for cid in sorted(test_data_local_dict.keys()) for batch in test_data_local_dict[cid]]
+                    }
+                    args.client_num_in_total = 1
 
-            if full_batch:
-                train_data_global = combine_batches(train_data_global)
-                test_data_global = combine_batches(test_data_global)
-                train_data_local_dict = {
-                    cid: combine_batches(train_data_local_dict[cid]) for cid in train_data_local_dict.keys()
-                }
-                test_data_local_dict = {
-                    cid: combine_batches(test_data_local_dict[cid]) for cid in test_data_local_dict.keys()
-                }
-                args.batch_size = args_batch_size
+                if full_batch:
+                    train_data_global = combine_batches(train_data_global)
+                    test_data_global = combine_batches(test_data_global)
+                    train_data_local_dict = {
+                        cid: combine_batches(train_data_local_dict[cid]) for cid in train_data_local_dict.keys()
+                    }
+                    test_data_local_dict = {
+                        cid: combine_batches(test_data_local_dict[cid]) for cid in test_data_local_dict.keys()
+                    }
+                    args.batch_size = args_batch_size
 
-            dataset = [
-                train_data_num,
-                test_data_num,
-                train_data_global,
-                test_data_global,
-                train_data_local_num_dict,
-                train_data_local_dict,
-                test_data_local_dict,
-                class_num,
-            ]
+                dataset = [
+                    train_data_num,
+                    test_data_num,
+                    train_data_global,
+                    test_data_global,
+                    train_data_local_num_dict,
+                    train_data_local_dict,
+                    test_data_local_dict,
+                    class_num,
+                ]
 
-            return dataset, class_num
+                return dataset, class_num
+            else:
+                data_loader = load_partition_data_cifar10
+
         elif dataset_name == "cifar100":
             data_loader = load_partition_data_cifar100
         elif dataset_name == "cinic10":
