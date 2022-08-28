@@ -1,21 +1,18 @@
-"""
-ref: Sun, Jingwei, et al. "Provable defense against privacy leakage in federated learning from representation perspective." 
-arXiv preprint arXiv:2012.06043 (2020).
-added by Kai, 07/10/2022
-"""
-
-
 import logging
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
 from fedml.core.security.defense.soteria_defense import SoteriaDefense
 from utils import create_fake_gradient_Cifar100, create_fake_model_Cifar100, create_fake_data_Cifar100
 
 """
 TODO FIX: load model and the corresponding parameters from FedML system
+"""
+
+"""
+ref: Sun, Jingwei, et al. "Provable defense against privacy leakage in federated learning from representation perspective." 
+arXiv preprint arXiv:2012.06043 (2020).
+added by Kai, 07/10/2022
 """
 
 
@@ -65,5 +62,4 @@ def test_defense_soteria_dlg():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
     test_defense_soteria_dlg()
