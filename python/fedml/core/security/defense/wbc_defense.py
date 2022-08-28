@@ -2,7 +2,6 @@ import torch
 from typing import Callable, List, Tuple, Dict, Any
 import numpy as np
 import logging
-
 from .defense_base import BaseDefenseMethod
 from ..common import utils
 
@@ -23,9 +22,10 @@ Steps:
 
 
 class WbcDefense(BaseDefenseMethod):
-    def __init__(self, client_idx, batch_idx):
-        self.client_idx = client_idx
-        self.batch_idx = batch_idx
+    def __init__(self, args):
+        self.args = args
+        self.client_idx = args.client_idx
+        self.batch_idx = args.batch_idx
         self.old_gradient = {}
 
     def run(
@@ -47,8 +47,8 @@ class WbcDefense(BaseDefenseMethod):
         models_param = extra_auxiliary_info
         model_param = models_param[self.client_idx][1]
 
+        new_model_param = {}
         if self.batch_idx != 0:
-            new_model_param = {}
             for (k, v) in model_param.items():
                 if "weight" in k:
                     grad_tensor = (
@@ -84,4 +84,4 @@ class WbcDefense(BaseDefenseMethod):
                 param_list.append((models_param[self.client_idx][0], new_model_param))
                 logging.info(f"New. param: {param_list[i]}")
 
-        return base_aggregation_func(param_list)  # avg_params
+        return base_aggregation_func(self.args, param_list)  # avg_params

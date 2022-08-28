@@ -12,6 +12,7 @@ https://arxiv.org/pdf/1911.07963.pdf
 
 class NormDiffClippingDefense(BaseDefenseMethod):
     def __init__(self, config):
+        self.config = config
         self.norm_bound = config.norm_bound  # for norm diff clipping and weak DP defenses
 
     def run(
@@ -30,7 +31,7 @@ class NormDiffClippingDefense(BaseDefenseMethod):
                 local_w, global_model, clipped_weight_diff
             )
             new_grad_list.append((sample_num, clipped_w))
-        return base_aggregation_func(new_grad_list)  # avg_params
+        return base_aggregation_func(self.config, new_grad_list)  # avg_params
 
     def _get_clipped_norm_diff(self, vec_local_w, vec_global_w):
         vec_diff = vec_local_w - vec_global_w

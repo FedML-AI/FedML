@@ -1,4 +1,6 @@
 import logging
+from typing import List, Tuple, Dict, Any, Callable
+from ..common.ml_engine_backend import MLEngineBackend
 from .defense.RFA_defense import RFA_defense
 from .defense.cclip_defense import CClipDefense
 from .defense.foolsgold_defense import FoolsGoldDefense
@@ -17,9 +19,8 @@ from ...core.security.constants import (
     DEFENSE_CCLIP,
     DEFENSE_WEAK_DP,
     DEFENSE_RFA,
-    DEFENSE_FOOLSGOLD
+    DEFENSE_FOOLSGOLD,
 )
-from typing import List, Tuple, Dict, Any, Callable
 
 
 class FedMLDefender:
@@ -38,6 +39,7 @@ class FedMLDefender:
         self.defender = None
 
     def init(self, args):
+
         if hasattr(args, "enable_defense") and args.enable_defense:
             self.args = args
             logging.info("------init defense..." + args.defense_type)
@@ -59,8 +61,6 @@ class FedMLDefender:
                 self.defender = WeakDPDefense(args)
             elif self.defense_type == DEFENSE_CCLIP:
                 self.defender = CClipDefense(args)
-            # elif self.defense_type == DEFENSE_DP:
-            #     self.defender = DifferentialPrivacy(args)
             elif self.defense_type == DEFENSE_RFA:
                 self.defender = RFA_defense(args)
             elif self.defense_type == DEFENSE_FOOLSGOLD:
@@ -69,6 +69,19 @@ class FedMLDefender:
                 raise Exception("args.defense_type is not defined!")
         else:
             self.is_enabled = False
+
+        if self.is_enabled:
+            if hasattr(args, MLEngineBackend.ml_engine_args_flag) and args.ml_engine in [
+                MLEngineBackend.ml_engine_backend_tf,
+                MLEngineBackend.ml_engine_backend_jax,
+                MLEngineBackend.ml_engine_backend_mxnet,
+            ]:
+                logging.info(
+                    "FedMLDefender is not supported for the machine learning engine: %s. "
+                    "We will support more engines in the future iteration."
+                    % args.ml_engine
+                )
+                self.is_enabled = False
 
     def is_defense_enabled(self):
         return self.is_enabled
@@ -81,9 +94,7 @@ class FedMLDefender:
     ):
         if self.defender is None:
             raise Exception("defender is not initialized!")
-        return self.defender.run(
-            raw_client_grad_list, base_aggregation_func, extra_auxiliary_info
-        )
+        return self.defender.run(raw_client_grad_list, base_aggregation_func, extra_auxiliary_info)
 
     def is_defense_on_aggregation(self):
         return self.is_defense_enabled() and self.defense_type in [DEFENSE_SLSGD]
@@ -92,16 +103,12 @@ class FedMLDefender:
         return self.is_defense_enabled() and self.defense_type in [DEFENSE_SLSGD, DEFENSE_FOOLSGOLD]
 
     def defend_before_aggregation(
-        self,
-        raw_client_grad_list: List[Tuple[float, Dict]],
-        extra_auxiliary_info: Any = None,
+        self, raw_client_grad_list: List[Tuple[float, Dict]], extra_auxiliary_info: Any = None,
     ):
         if self.defender is None:
             raise Exception("defender is not initialized!")
         if self.is_defense_before_aggregation():
-            return self.defender.defend_before_aggregation(
-                raw_client_grad_list, extra_auxiliary_info
-            )
+            return self.defender.defend_before_aggregation(raw_client_grad_list, extra_auxiliary_info)
         return raw_client_grad_list
 
     def defend_on_aggregation(

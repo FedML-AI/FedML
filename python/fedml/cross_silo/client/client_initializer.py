@@ -41,16 +41,10 @@ def init_client(
 
     elif args.scenario == FEDML_CROSS_SILO_SCENARIO_HORIZONTAL:
 
-        client_manager = get_client_manager_master(
-            args, trainer_dist_adapter, comm, client_rank, client_num, backend
-        )
+        client_manager = get_client_manager_master(args, trainer_dist_adapter, comm, client_rank, client_num, backend)
 
     else:
-        raise Exception(
-            "we do not support {}. Please check whether this is typo.".format(
-                args.scenario
-            )
-        )
+        raise Exception("we do not support {}. Please check whether this is typo.".format(args.scenario))
 
     client_manager.run()
 
@@ -79,16 +73,11 @@ def get_trainer_dist_adapter(
     )
 
 
-def get_client_manager_master(
-    args, trainer_dist_adapter, comm, client_rank, client_num, backend
-):
-    return ClientMasterManager(
-        args, trainer_dist_adapter, comm, client_rank, client_num, backend
-    )
+def get_client_manager_master(args, trainer_dist_adapter, comm, client_rank, client_num, backend):
+    return ClientMasterManager(args, trainer_dist_adapter, comm, client_rank, client_num, backend)
 
 
 def get_client_manager_salve(args, trainer_dist_adapter):
     from .fedml_client_slave_manager import ClientSlaveManager
 
     return ClientSlaveManager(args, trainer_dist_adapter)
-
