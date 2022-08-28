@@ -18,7 +18,7 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  cross-silo-horizontal-test:
+  cross-silo-defense-test:
     defaults:
       run:
         shell: bash
