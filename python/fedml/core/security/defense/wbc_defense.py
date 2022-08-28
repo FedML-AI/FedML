@@ -2,7 +2,6 @@ import torch
 from typing import Callable, List, Tuple, Dict, Any
 import numpy as np
 import logging
-
 from .defense_base import BaseDefenseMethod
 from ..common import utils
 
@@ -48,8 +47,8 @@ class WbcDefense(BaseDefenseMethod):
         models_param = extra_auxiliary_info
         model_param = models_param[self.client_idx][1]
 
+        new_model_param = {}
         if self.batch_idx != 0:
-            new_model_param = {}
             for (k, v) in model_param.items():
                 if "weight" in k:
                     grad_tensor = (
