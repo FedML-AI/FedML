@@ -1,7 +1,3 @@
-import gzip
-import os
-import zipfile
-
 import numpy as np
 import torch
 from fedml.data.FederatedEMNIST.data_loader import load_partition_data_federated_emnist
@@ -134,7 +130,7 @@ def data_server_preprocess(args):
                     logging.info("Data Server Splitted Dataset Complete")
                     query_data_server(args, int(args.client_id_list[1]))
                     disconnect(client)
-                args.data_cache_dir = args.data_cache_dir = os.path.join(args.data_cache_dir, 'run_Id_%s' % args.run_id,
+                args.data_cache_dir = os.path.join(args.data_cache_dir, 'run_Id_%s' % args.run_id,
                                                                          'edgeNums_%s' % (args.client_num_in_total),
                                                                          args.dataset,
                                                                          'edgeId_%s' % (int(args.client_id_list[1])))
