@@ -1,8 +1,7 @@
 import argparse
-
 from fedml.core.security.defense.cclip_defense import CClipDefense
-from utils import create_fake_model_list
 from fedml.ml.aggregator.agg_operator import FedMLAggOperator
+from tests.security.defense.utils import create_fake_model_list
 
 
 def add_args():

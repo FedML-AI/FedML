@@ -55,7 +55,7 @@ class CClipDefense(BaseDefenseMethod):
     @staticmethod
     def _compute_an_initial_guess(client_grad_list):
         # randomly select a gradient as the initial guess
-        return client_grad_list[random.randint(0, len(client_grad_list))][1]
+        return client_grad_list[random.randint(0, len(client_grad_list) - 1)][1]
 
     def _compute_cclip_score(self, local_w, refs):
         cclip_score = []
