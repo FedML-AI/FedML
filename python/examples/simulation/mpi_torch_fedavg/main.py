@@ -1,42 +1,20 @@
 import argparse
 import logging
 import os
-import random
-import socket
-import sys
-import yaml
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../../../")))
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../../")))
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../")))
 
 import fedml
-import torch
-import torchvision.models as tormodels
-from fedml.simulation import SimulatorMPI
-
-from fedml.model.cv.resnet_gn import resnet18
-from fedml.model.cv.resnet import resnet20, resnet32, resnet44, resnet56
-
-from fedml.model.cv.resnet_cifar import resnet18_cifar, resnet34_cifar, resnet50_cifar
-
-from fedml.model.cv.resnet_torch import resnet18 as resnet18_torch
-
-from fedml.arguments import Arguments
-
 from fedml import FedMLRunner
-
+from fedml.arguments import Arguments
+from fedml.model.cv.resnet import resnet20
+from fedml.model.cv.resnet_cifar import resnet18_cifar
+from fedml.model.cv.resnet_gn import resnet18
+from fedml.model.cv.resnet_torch import resnet18 as resnet18_torch
 
 
 def add_args():
     parser = argparse.ArgumentParser(description="FedML")
     parser.add_argument(
-        "--yaml_config_file",
-        "--cf",
-        help="yaml configuration file",
-        type=str,
-        default="",
+        "--yaml_config_file", "--cf", help="yaml configuration file", type=str, default="",
     )
 
     # default arguments
@@ -47,7 +25,7 @@ def add_args():
 
     # default arguments
     parser.add_argument("--local_rank", type=int, default=0)
-    
+
     # For hierarchical scenario
     parser.add_argument("--node_rank", type=int, default=0)
 
@@ -62,7 +40,9 @@ def add_args():
     parser.add_argument("--model", type=str, default="resnet18_cifar")
     parser.add_argument("--group_norm_channels", type=int, default=32)
     parser.add_argument("--dataset", type=str, default="fed_cifar100")
-    parser.add_argument("--data_cache_dir", type=str, default="/home/chaoyanghe/zhtang_FedML/python/fedml/data/fed_cifar100/datasets")
+    parser.add_argument(
+        "--data_cache_dir", type=str, default="/home/chaoyanghe/zhtang_FedML/python/fedml/data/fed_cifar100/datasets"
+    )
 
     # Training arguments
     parser.add_argument("--federated_optimizer", type=str, default="FedAvg_seq")
@@ -78,8 +58,7 @@ def add_args():
     parser.add_argument("--server_momentum", type=float, default=0.9)
     # args, unknown = parser.parse_known_args()
 
-    parser.add_argument("--override_cmd_args", action='store_true')
-
+    parser.add_argument("--override_cmd_args", action="store_true")
 
     args = parser.parse_args()
     return args
@@ -87,15 +66,14 @@ def add_args():
 
 def load_arguments(training_type=None, comm_backend=None):
     cmd_args = add_args()
-    logging.info(f"cmd_args: {cmd_args}" )
+    logging.info(f"cmd_args: {cmd_args}")
 
     # Load all arguments from YAML config file
-    args = Arguments(cmd_args, training_type, comm_backend,
-                    override_cmd_args=cmd_args.override_cmd_args)
+    args = Arguments(cmd_args, training_type, comm_backend, override_cmd_args=cmd_args.override_cmd_args)
 
     # if not hasattr(args, "worker_num"):
     #     args.worker_num = args.client_num_per_round
-        
+
     # os.path.expanduser() method in Python is used
     # to expand an initial path component ~( tilde symbol)
     # or ~user in the given path to user’s home directory.
@@ -111,18 +89,21 @@ def load_arguments(training_type=None, comm_backend=None):
     args.rank = int(args.rank)
     return args
 
+
 if __name__ == "__main__":
     # init FedML framework
     args = load_arguments(fedml._global_training_type, fedml._global_comm_backend)
-    logging.info(f"args: {args}" )
+    logging.info(f"args: {args}")
     args = fedml.init(args)
-    logging.info(f"args: {args}" )
+    logging.info(f"args: {args}")
     # args = fedml.init()
 
     # init device
     device = fedml.device.get_device(args)
-    logging.info(f"======================================================== \
-        process_id: {args.process_id}, device: {device} ==============" )
+    logging.info(
+        f"======================================================== \
+        process_id: {args.process_id}, device: {device} =============="
+    )
 
     # load data
     dataset, output_dim = fedml.data.load(args)
@@ -149,8 +130,3 @@ if __name__ == "__main__":
     # start training
     fedml_runner = FedMLRunner(args, device, dataset, model)
     fedml_runner.run()
-    # simulator = SimulatorMPI(args, device, dataset, model)
-    # simulator.run()
-
-
-
