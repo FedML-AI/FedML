@@ -14,8 +14,8 @@ model_args:
 train_args:
   federated_optimizer: "FedGKT"
   client_id_list: "[]"
-  client_num_in_total: 5
-  client_num_per_round: 3
+  client_num_in_total: 10
+  client_num_per_round: 10
   comm_round: 2
   epochs: 1
   batch_size: 100
@@ -42,10 +42,10 @@ validation_args:
   frequency_of_the_test: 5
 
 device_args:
-  worker_num: 5
-  using_gpu: false
+  worker_num: 10
+  using_gpu: true
   gpu_mapping_file: config/gpu_mapping.yaml
-  gpu_mapping_key: mapping_config1_5
+  gpu_mapping_key: mapping_default
   multi_gpu_server: false
 
 comm_args:
