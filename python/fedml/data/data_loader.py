@@ -21,45 +21,29 @@ from .fed_shakespeare.data_loader import load_partition_data_federated_shakespea
 from .file_operation import *
 from .shakespeare.data_loader import load_partition_data_shakespeare
 from .stackoverflow_nwp.data_loader import load_partition_data_federated_stackoverflow_nwp
-
-broker = "mqtt.fedml.ai"
-port = 1883
-username = "admin"
-password = "password"
-# generate client ID with pub prefix randomly
-client_id = f"python-mqtt-{random.randint(0, 1000)}"
-
-_config = Config(retries={"max_attempts": 4, "mode": "standard"})
-CN_REGION_NAME = "us-east-1"
-CN_S3_AKI = "AKIAY7HWPQWRMFNCM6GW"
-CN_S3_SAK = "5QilWTvlC7aX1kEtvrC0T51DiEwscuI+/I5Jhs0u"
-BUCKET_NAME = "fedmls3"
+from ..core.mlops import MLOpsConfigs
 
 
-# s3 client
-s3 = boto3.client(
-    "s3", region_name=CN_REGION_NAME, aws_access_key_id=CN_S3_AKI, aws_secret_access_key=CN_S3_SAK, config=_config
-)
-# s3 resource
-s3_resource = boto3.resource(
-    "s3", region_name=CN_REGION_NAME, config=_config, aws_access_key_id=CN_S3_AKI, aws_secret_access_key=CN_S3_SAK
-)
+import boto3
+from botocore.config import Config
 
 
-def connect_mqtt() -> mqtt_client:
+def connect_mqtt(mqtt_config) -> mqtt_client:
     def on_connect(client, userdata, flags, rc):
         if rc == 0:
             print("Connected to MQTT Host!")
         else:
             print("Failed to connect, return code %d\n", rc)
 
+    # generate client ID with pub prefix randomly
+    client_id = f"python-mqtt-{random.randint(0, 1000)}"
     client = mqtt_client.Client(client_id, clean_session=False)
-    client.username_pw_set(username, password)
-    client.connect(broker, port)
+    client.username_pw_set(mqtt_config["MQTT_USER"], mqtt_config["MQTT_PWD"])
+    client.connect(mqtt_config["BROKER_HOST"], mqtt_config["BROKER_PORT"])
     return client
 
 
-def subscribe(client: mqtt_client, args):
+def subscribe(s3_obj, BUCKET_NAME, client: mqtt_client, args):
     def on_message(client, userdata, msg):
         logging.info(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
         if msg.payload.decode():
@@ -76,6 +60,8 @@ def subscribe(client: mqtt_client, args):
                 )
                 # start download the file
                 download_s3_file(
+                    s3_obj,
+                    BUCKET_NAME,
                     json.loads(msg.payload.decode())["edge_id"],
                     json.loads(msg.payload.decode())["dataset"],
                     os.path.join(
@@ -106,6 +92,8 @@ def subscribe(client: mqtt_client, args):
                 )
                 # start download the file
                 download_s3_file(
+                    s3_obj,
+                    BUCKET_NAME,
                     json.loads(msg.payload.decode())["edge_id"],
                     json.loads(msg.payload.decode())["dataset"],
                     os.path.join(
@@ -136,15 +124,31 @@ def disconnect(client: mqtt_client):
     logging.info(f"Received message, Mqtt stop listen.")
 
 
+def setup_s3_service(s3_config):
+    _config = Config(
+        retries={
+            'max_attempts': 4,
+            'mode': 'standard'
+        }
+    )
+    # s3 client
+    s3 = boto3.client('s3', region_name=s3_config["CN_REGION_NAME"], aws_access_key_id=s3_config["CN_S3_AKI"],
+                      aws_secret_access_key=s3_config["CN_S3_SAK"], config=_config)
+    BUCKET_NAME = s3_config["BUCKET_NAME"]
+    return s3, BUCKET_NAME
+
+
 def data_server_preprocess(args):
-    args.run_id = 1378
+    mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
+    s3_obj, BUCKET_NAME = setup_s3_service(s3_config)
+
     args.synthetic_data_url = ""
     args.private_local_data = ""
     if args.process_id == 0:
         pass
     else:
-        client = connect_mqtt()
-        subscribe(client, args)
+        client = connect_mqtt(mqtt_config)
+        subscribe(s3_obj, BUCKET_NAME, client, args)
         if args.dataset == "cifar10":
             # Mlops Run
             if args.run_id > 0:
@@ -165,7 +169,7 @@ def data_server_preprocess(args):
                         logging.info("Data Server Is Splitting Dataset, Waiting For Mqtt Message")
                     elif split_status == 2:
                         logging.info("Data Server Splitted Dataset Complete")
-                        query_data_server(args, 15 + int(args.client_id_list[1]))
+                        query_data_server(args, 15 + int(args.client_id_list[1]), s3_obj, BUCKET_NAME)
                         disconnect(client)
                 elif len(args.data_cache_dir) != 0:
                     logging.info("No synthetic data url and private local data dir")
@@ -247,7 +251,7 @@ def check_rundata(args):
             print(err)
 
 
-def query_data_server(args, edgeId):
+def query_data_server(args, edgeId, s3_obj, BUCKET_NAME):
     try:
         url = "http://127.0.0.1:5000/get_edge_dataset"
         json_params = {"runId": args.run_id, "edgeId": edgeId}
@@ -276,6 +280,8 @@ def query_data_server(args, edgeId):
                 )
                 # start download the file
                 download_s3_file(
+                    s3_obj,
+                    BUCKET_NAME,
                     edgeId,
                     response.json()["dataset_key"],
                     os.path.join(
@@ -316,7 +322,11 @@ def combine_batches(batches):
 
 
 def load_synthetic_data(args):
-    data_server_preprocess(args)
+    print("***************")
+    print(args.__dict__)
+    args.run_id = 1378
+    if args.training_type == "cross_silo" and args.run_id > 0:
+        data_server_preprocess(args)
     dataset_name = args.dataset
     # check if the centralized training is enabled
     centralized = True if (args.client_num_in_total == 1 and args.training_type != "cross_silo") else False
