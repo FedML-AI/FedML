@@ -36,7 +36,7 @@ jobs:
 #          - os: windows-latest
 #            python-version: '3.6'
     runs-on: [self-hosted, runner-linux, devops]
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/setup-python@v4
         with:
