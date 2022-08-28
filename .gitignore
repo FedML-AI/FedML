@@ -176,3 +176,4 @@ doc/en/_build
 /docker-2/
 /swap/actions-runner/
 *.txt
+python/examples/cross_silo/light_sec_agg_example/mpi_host_file

@@ -1,3 +1,5 @@
+import logging
+
 import torch.optim as optim
 
 
@@ -24,6 +26,7 @@ class SplitNN_client:
         self.device = args["device"]
 
     def forward_pass(self):
+        logging.info("forward_pass")
         inputs, labels = next(self.dataloader)
         inputs, labels = inputs.to(self.device), labels.to(self.device)
         self.optimizer.zero_grad()
@@ -37,13 +40,16 @@ class SplitNN_client:
         return self.acts, labels
 
     def backward_pass(self, grads):
+        logging.info("backward_pass")
         self.acts.backward(grads)
         self.optimizer.step()
 
     def eval_mode(self):
+        logging.info("eval_mode")
         self.dataloader = iter(self.testloader)
         self.model.eval()
 
     def train_mode(self):
+        logging.info("train_mode")
         self.dataloader = iter(self.trainloader)
         self.model.train()

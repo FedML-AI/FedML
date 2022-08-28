@@ -1,10 +1,10 @@
 import argparse
+
 import numpy as np
+
 from fedml.core.security.defense.bulyan_defense import BulyanDefense
-from ..aggregation.aggregation_functions import (
-    AggregationFunction,
-)
-from ..utils import create_fake_model_list
+from fedml.ml.aggregator.agg_operator import FedMLAggOperator
+from utils import create_fake_model_list
 
 
 def add_args():
@@ -18,6 +18,7 @@ def add_args():
     )
 
     # default arguments
+    parser.add_argument("--federated_optimizer", type=str, default="FedAvg")
     parser.add_argument("--byzantine_client_num", type=int, default=1)
     parser.add_argument("--client_num_per_round", type=int, default=8)
 
@@ -29,7 +30,7 @@ def test_defense():
     config = add_args()
     mk = BulyanDefense(config)
     model_list = create_fake_model_list(mk.client_num_per_round)
-    val = mk.run(model_list, AggregationFunction.FedAVG)
+    val = mk.run(model_list, FedMLAggOperator.agg)
     print(f"val={val}")
 
 
