@@ -15,6 +15,7 @@ potential bugs when using memory: when only some of clients participate in compu
 
 class FoolsGoldDefense(BaseDefenseMethod):
     def __init__(self, config):
+        self.config = config
         self.memory = None
         self.use_memory = config.use_memory
 
@@ -27,7 +28,7 @@ class FoolsGoldDefense(BaseDefenseMethod):
         new_grad_list = self.defend_before_aggregation(
             raw_client_grad_list, extra_auxiliary_info
         )
-        return base_aggregation_func(new_grad_list)
+        return base_aggregation_func(self.config, new_grad_list)
 
     def defend_before_aggregation(
         self,

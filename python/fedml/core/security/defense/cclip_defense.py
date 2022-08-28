@@ -1,5 +1,8 @@
 import random
 from typing import Callable, List, Tuple, Dict, Any
+
+import numpy as np
+
 from .defense_base import BaseDefenseMethod
 from ..common import utils
 from ..common.bucket import Bucket
@@ -13,6 +16,7 @@ https://arxiv.org/pdf/2006.09365.pdf
 
 class CClipDefense(BaseDefenseMethod):
     def __init__(self, config):
+        self.config = config
         self.tau = config.tau  # clipping raduis
         # element # in each bucket; a grad_list is partitioned into floor(len(grad_list)/bucket_size) buckets
         self.bucket_size = config.bucket_size
@@ -46,7 +50,7 @@ class CClipDefense(BaseDefenseMethod):
             new_grad_list.append((sample_num, tuple))
         print(f"cclip_score = {cclip_score}")
 
-        avg_params = base_aggregation_func(new_grad_list)
+        avg_params = base_aggregation_func(self.config, new_grad_list)
         for k in avg_params.keys():
             avg_params[k] = initial_guess[k] + avg_params[k]
         return avg_params
@@ -54,7 +58,7 @@ class CClipDefense(BaseDefenseMethod):
     @staticmethod
     def _compute_an_initial_guess(client_grad_list):
         # randomly select a gradient as the initial guess
-        return client_grad_list[random.randint(0, len(client_grad_list))][1]
+        return client_grad_list[np.random.randint(0, len(client_grad_list))][1]
 
     def _compute_cclip_score(self, local_w, refs):
         cclip_score = []

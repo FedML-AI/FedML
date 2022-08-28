@@ -1,0 +1,59 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Security(attack/defense) on Linux
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  schedule:
+    # Nightly build at 12:12 A.M.
+    - cron: "12 12 */1 * *"
+  push:
+    branches: [ master, dev/v0.7.0 ]
+  pull_request:
+    branches: [ master, dev/v0.7.0 ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+permissions: write-all
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  security-attack-defense-tests:
+    defaults:
+      run:
+        shell: bash
+        working-directory: python
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest]
+        arch: [X64]
+        python-version: ['3.8']
+#        exclude:
+#          - os: macos-latest
+#            python-version: '3.8'
+#          - os: windows-latest
+#            python-version: '3.6'
+    runs-on: [self-hosted, runner-linux, devops]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      # https://github.com/actions/checkout/issues/116#issuecomment-644419389
+      - uses: actions/checkout@v3
+      - name: pip install -e ./
+        run: |
+          pip install -e ./
+
+      - name: attack tests
+        run: |
+          cd tests/security
+          sh run_attacker_tests.sh
+
+      - name: defense tests
+        run: |
+          cd tests/security
+          sh run_defender_tests.sh

@@ -15,9 +15,7 @@ from ...core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
 
 class ClientMasterManager(FedMLCommManager):
-    def __init__(
-        self, args, trainer_dist_adapter, comm=None, rank=0, size=0, backend="MPI"
-    ):
+    def __init__(self, args, trainer_dist_adapter, comm=None, rank=0, size=0, backend="MPI"):
         super().__init__(args, comm, rank, size, backend)
         self.trainer_dist_adapter = trainer_dist_adapter
         self.args = args
@@ -41,17 +39,13 @@ class ClientMasterManager(FedMLCommManager):
             MyMessage.MSG_TYPE_S2C_CHECK_CLIENT_STATUS, self.handle_message_check_status
         )
 
+        self.register_message_receive_handler(MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.handle_message_init)
         self.register_message_receive_handler(
-            MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.handle_message_init
-        )
-        self.register_message_receive_handler(
-            MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT,
-            self.handle_message_receive_model_from_server,
+            MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT, self.handle_message_receive_model_from_server,
         )
 
         self.register_message_receive_handler(
-            MyMessage.MSG_TYPE_S2C_FINISH,
-            self.handle_message_finish,
+            MyMessage.MSG_TYPE_S2C_FINISH, self.handle_message_finish,
         )
 
     def handle_message_connection_ready(self, msg_params):
@@ -110,29 +104,20 @@ class ClientMasterManager(FedMLCommManager):
     def send_model_to_server(self, receive_id, weights, local_sample_num):
         tick = time.time()
         mlops.event("comm_c2s", event_started=True, event_value=str(self.round_idx))
-        message = Message(
-            MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER,
-            self.client_real_id,
-            receive_id,
-        )
+        message = Message(MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER, self.client_real_id, receive_id,)
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, weights)
         message.add_params(MyMessage.MSG_ARG_KEY_NUM_SAMPLES, local_sample_num)
         self.send_message(message)
 
-        MLOpsProfilerEvent.log_to_wandb(
-            {"Communication/Send_Total": time.time() - tick}
-        )
+        MLOpsProfilerEvent.log_to_wandb({"Communication/Send_Total": time.time() - tick})
         mlops.log_client_model_info(
-            self.round_idx + 1,
-            model_url=message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL),
+            self.round_idx + 1, model_url=message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL),
         )
 
     def send_client_status(self, receive_id, status="ONLINE"):
         logging.info("send_client_status")
         logging.info("self.client_real_id = {}".format(self.client_real_id))
-        message = Message(
-            MyMessage.MSG_TYPE_C2S_CLIENT_STATUS, self.client_real_id, receive_id
-        )
+        message = Message(MyMessage.MSG_TYPE_C2S_CLIENT_STATUS, self.client_real_id, receive_id)
         sys_name = platform.system()
         if sys_name == "Darwin":
             sys_name = "Mac"
@@ -146,15 +131,11 @@ class ClientMasterManager(FedMLCommManager):
     def report_training_status(self, status):
         mlops.log_training_status(status)
 
-    def sync_process_group(
-        self, round_idx, model_params=None, client_index=None, src=0
-    ):
+    def sync_process_group(self, round_idx, model_params=None, client_index=None, src=0):
         logging.info("sending round number to pg")
         round_number = [round_idx, model_params, client_index]
         dist.broadcast_object_list(
-            round_number,
-            src=src,
-            group=self.trainer_dist_adapter.process_group_manager.get_process_group(),
+            round_number, src=src, group=self.trainer_dist_adapter.process_group_manager.get_process_group(),
         )
         logging.info("round number %d broadcast to process group" % round_number[0])
 
