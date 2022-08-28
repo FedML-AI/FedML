@@ -31,9 +31,9 @@ validation_args:
 device_args:
   worker_num: 4
   using_gpu: true
-  gpu_mapping_file: config/zht_gpu_mapping.yaml
-  gpu_mapping_key: mapping_scigpu11_2
-  gpu_util_parse: "scigpu13:0,0,2,1;scigpu12:0,0,1,1"
+  gpu_mapping_file: config/gpu_mapping.yaml
+  gpu_mapping_key: mapping_default
+  gpu_util_parse: "gpu1:0,0,2,1;gpu2:0,0,1,1"
 
 comm_args:
   backend: "MPI"
