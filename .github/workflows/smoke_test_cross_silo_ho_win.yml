@@ -52,17 +52,17 @@ jobs:
       - name: server - cross-silo - ho
         run: |
           cd quick_start/octopus
-          .\run_server.bat ${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
+          .\run_server.bat ${{ format('{0}{1}{2}{3}', github.job, matrix.os, matrix.arch, matrix.python-version) }}
         if:   ${{ matrix.client-index == '0' }}
 
       - name: client 1 - cross-silo - ho
         run: |
           cd quick_start/octopus
-          .\run_client.bat 1 ${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
+          .\run_client.bat 1 ${{ format('{0}{1}{2}{3}', github.job, matrix.os, matrix.arch, matrix.python-version) }}
         if:   ${{ matrix.client-index == '1' }}
 
       - name: client 2 - cross-silo - ho
         run: |
           cd quick_start/octopus
-          .\run_client.bat 2 ${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
+          .\run_client.bat 2 ${{ format('{0}{1}{2}{3}', github.job, matrix.os, matrix.arch, matrix.python-version) }}
         if: ${{ matrix.client-index == '2' }}
