@@ -37,7 +37,7 @@ class ClientTrainer(ABC):
 
     def on_after_local_training(self, train_data, device, args):
         if FedMLDifferentialPrivacy.get_instance().is_ldp_enabled():
-            logging.info("-----add ldp noise ----")
+            logging.info("-----add local DP noise ----")
             model_params_with_dp_noise = FedMLDifferentialPrivacy.get_instance().add_noise(self.get_model_params())
             self.set_model_params(model_params_with_dp_noise)
             

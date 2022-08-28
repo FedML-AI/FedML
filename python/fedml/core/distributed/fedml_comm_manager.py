@@ -1,7 +1,6 @@
 import logging
 from abc import abstractmethod
 
-
 from .communication.base_com_manager import BaseCommunicationManager
 from .communication.constants import CommunicationConstants
 from .communication.observer import Observer
@@ -36,8 +35,15 @@ class FedMLCommManager(Observer):
             "receive_message. msg_type = %s, sender_id = %d, receiver_id = %d"
             % (str(msg_type), msg_params.get_sender_id(), msg_params.get_receiver_id())
         )
-        handler_callback_func = self.message_handler_dict[msg_type]
-        handler_callback_func(msg_params)
+        try:
+            handler_callback_func = self.message_handler_dict[msg_type]
+            handler_callback_func(msg_params)
+        except KeyError:
+            raise Exception(
+                "KeyError. msg_type = {}. Please check whether you launch the server or client with the correct args.rank".format(
+                    msg_type
+                )
+            )
 
     def send_message(self, message):
         self.com_manager.send_message(message)

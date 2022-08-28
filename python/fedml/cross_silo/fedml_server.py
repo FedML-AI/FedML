@@ -37,7 +37,22 @@ class FedMLCrossSiloServer:
 
             FedML_LSA_Horizontal(
                 args,
-                0,
+                args.rank,
+                args.worker_num,
+                args.comm,
+                device,
+                dataset,
+                model,
+                model_trainer=None,
+                preprocessed_sampling_lists=None,
+            )
+
+        elif args.federated_optimizer == "SA":
+            from .secagg.sa_fedml_api import FedML_SA_Horizontal
+
+            FedML_SA_Horizontal(
+                args,
+                args.rank,
                 args.worker_num,
                 args.comm,
                 device,

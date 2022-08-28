@@ -8,6 +8,6 @@ echo $PROCESS_NUM
 
 hostname > mpi_host_file
 
-$(which mpirun) -np $PROCESS_NUM \
+mpirun -np $PROCESS_NUM \
 -hostfile mpi_host_file \
 python torch_fednas_cifar10_dart_step_by_step_example.py --cf config/train_config.yaml
