@@ -9,8 +9,7 @@ from fedml.data.ImageNet.data_loader import load_partition_data_ImageNet
 from fedml.data.Landmarks.data_loader import load_partition_data_landmarks
 from fedml.data.MNIST.data_loader import load_partition_data_mnist
 from fedml.data.cifar10.data_loader import load_partition_data_cifar10
-# from fedml.data.cifar10.efficient_loader import efficient_load_partition_data_cifar10
-from cifar10.efficient_loader import efficient_load_partition_data_cifar10
+from fedml.data.cifar10.efficient_loader import efficient_load_partition_data_cifar10
 from fedml.data.cifar100.data_loader import load_partition_data_cifar100
 from fedml.data.cinic10.data_loader import load_partition_data_cinic10
 from fedml.data.fed_cifar100.data_loader import load_partition_data_federated_cifar100
@@ -24,17 +23,15 @@ from fedml.data.stackoverflow_lr.data_loader import (
 from fedml.data.stackoverflow_nwp.data_loader import (
     load_partition_data_federated_stackoverflow_nwp,
 )
-from file_operation import *
+from fedml.data.file_operation import *
 
 
-# from .MNIST.data_loader import download_mnist
-# from .edge_case_examples.data_loader import load_poisoned_dataset
+from .MNIST.data_loader import download_mnist
+from .edge_case_examples.data_loader import load_poisoned_dataset
 import logging
 import requests
 from botocore.config import Config
 import boto3
-import tarfile
-import shutil
 import paho.mqtt.client as mqtt_client
 import json
 import random

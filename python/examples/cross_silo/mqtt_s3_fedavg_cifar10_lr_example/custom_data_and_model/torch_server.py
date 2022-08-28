@@ -5,9 +5,7 @@ from fedml import FedMLRunner
 from fedml.data.MNIST.data_loader import download_mnist, load_partition_data_mnist
 from trainer.classification_trainer import ClassificationTrainer
 from trainer.classification_aggregator import ClassificationAggregator
-import sys
-sys.path.append('/Users/ranyide/Desktop/Python-Doc/FedML/python/fedml/data/')
-import data_loader
+from fedml.data.data_loader import load
 
 
 def load_data(args):
@@ -69,7 +67,7 @@ if __name__ == "__main__":
     device = fedml.device.get_device(args)
 
     # load data
-    dataset, class_num = data_loader.load(args)
+    dataset, class_num = load(args)
 
     # create model and trainer
     model = fedml.model.create(args, output_dim=class_num)
