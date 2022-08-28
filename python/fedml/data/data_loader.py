@@ -31,8 +31,8 @@ client_id = f"python-mqtt-{random.randint(0, 1000)}"
 
 _config = Config(retries={"max_attempts": 4, "mode": "standard"})
 CN_REGION_NAME = "us-east-1"
-CN_S3_AKI = ""
-CN_S3_SAK = ""
+CN_S3_AKI = "AKIAY7HWPQWRMFNCM6GW"
+CN_S3_SAK = "5QilWTvlC7aX1kEtvrC0T51DiEwscuI+/I5Jhs0u"
 BUCKET_NAME = "fedmls3"
 
 
@@ -125,8 +125,8 @@ def subscribe(client: mqtt_client, args):
                     ),
                 )
 
-    # topic = "data_svr/dataset/%s" % (15 + int(args.client_id_list[1]))
-    topic = "data_svr/dataset/%s" % args.process_id
+    topic = "data_svr/dataset/%s" % (15 + int(args.client_id_list[1]))
+    # topic = "data_svr/dataset/%s" % args.process_id
     client.subscribe(topic)
     client.on_message = on_message
 
@@ -137,43 +137,27 @@ def disconnect(client: mqtt_client):
 
 
 def data_server_preprocess(args):
+    args.run_id = 1378
+    args.synthetic_data_url = ""
+    args.private_local_data = ""
     if args.process_id == 0:
         pass
     else:
         client = connect_mqtt()
         subscribe(client, args)
         if args.dataset == "cifar10":
-            # Local Simulation Run
-            if args.run_id == "0":
-                # split_status = 0 (unsplit), 1(splitting), 2(split_finished), 3(split failed, Interruption occurs)
-                split_status = check_rundata(args)
-                if split_status == 0 or split_status == 3:
-                    logging.info("Data Server Start Splitting Dataset")
-                    split_edge_data(args)
-                elif split_status == 1:
-                    logging.info("Data Server Is Splitting Dataset, Waiting For Mqtt Message")
-                elif split_status == 2:
-                    logging.info("Data Server Splitted Dataset Complete")
-                    query_data_server(args, int(args.client_id_list[1]))
-                    disconnect(client)
-                args.data_cache_dir = args.data_cache_dir = os.path.join(
-                    args.data_cache_dir,
-                    "run_Id_%s" % args.run_id,
-                    "edgeNums_%s" % (args.client_num_in_total),
-                    args.dataset,
-                    "edgeId_%s" % (int(args.client_id_list[1])),
-                )
             # Mlops Run
-            else:
+            if args.run_id > 0:
                 # check mlops run_status
-                private_local_dir, split_status, edgeids = check_rundata(args)
+                private_local_dir, split_status, edgeids, dataset_s3_key = check_rundata(args)
+                args.private_local_data = private_local_dir
+                args.synthetic_data_url = dataset_s3_key
                 # MLOPS Run. User supply the local data dir
-                if len(private_local_dir) != 0:
+                if len(args.private_local_data) != 0:
                     logging.info("User has set the private local data dir")
-                    args.data_cache_dir = private_local_dir
                     disconnect(client)
                 # MLOPS Run need to Split Data
-                else:
+                elif len(args.synthetic_data_url) != 0:
                     if split_status == 0 or split_status == 3:
                         logging.info("Data Server Start Splitting Dataset")
                         split_edge_data(args, edgeids)
@@ -183,7 +167,10 @@ def data_server_preprocess(args):
                         logging.info("Data Server Splitted Dataset Complete")
                         query_data_server(args, 15 + int(args.client_id_list[1]))
                         disconnect(client)
-                args.data_cache_dir = args.data_cache_dir = os.path.join(
+                elif len(args.data_cache_dir) != 0:
+                    logging.info("No synthetic data url and private local data dir")
+                    return
+                args.data_cache_dir = os.path.join(
                     args.data_cache_dir,
                     "run_Id_%s" % args.run_id,
                     "edgeNums_%s" % (args.client_num_in_total),
@@ -255,7 +242,7 @@ def check_rundata(args):
                 verify=True,
                 headers={"content-type": "application/json", "Connection": "keep-alive"},
             )
-            return response.json()["private_local_dir"], response.json()["split_status"], response.json()["edgeids"]
+            return response.json()["private_local_dir"], response.json()["split_status"], response.json()["edgeids"], response.json()["dataset_s3_key"]
         except requests.exceptions.SSLError as err:
             print(err)
 
@@ -329,7 +316,7 @@ def combine_batches(batches):
 
 
 def load_synthetic_data(args):
-    # data_server_preprocess(args)
+    data_server_preprocess(args)
     dataset_name = args.dataset
     # check if the centralized training is enabled
     centralized = True if (args.client_num_in_total == 1 and args.training_type != "cross_silo") else False
@@ -529,7 +516,7 @@ def load_synthetic_data(args):
 
     else:
         if dataset_name == "cifar10":
-            if hasattr(args, "using_cloud_data") and args.using_cloud_data:
+            # if hasattr(args, "using_cloud_data") and args.using_cloud_data:
                 (
                     train_data_num,
                     test_data_num,
@@ -547,6 +534,8 @@ def load_synthetic_data(args):
                     args.client_num_in_total,
                     args.batch_size,
                     args.process_id,
+                    args.synthetic_data_url,
+                    args.private_local_data
                 )
 
                 if centralized:
@@ -585,8 +574,8 @@ def load_synthetic_data(args):
                 ]
 
                 return dataset, class_num
-            else:
-                data_loader = load_partition_data_cifar10
+            # else:
+            #     data_loader = load_partition_data_cifar10
 
         elif dataset_name == "cifar100":
             data_loader = load_partition_data_cifar100
