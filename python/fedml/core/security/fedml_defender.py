@@ -1,6 +1,6 @@
 import logging
 from typing import List, Tuple, Dict, Any, Callable
-
+from ..common.ml_engine_backend import MLEngineBackend
 from .defense.RFA_defense import RFA_defense
 from .defense.cclip_defense import CClipDefense
 from .defense.foolsgold_defense import FoolsGoldDefense
@@ -9,6 +9,7 @@ from .defense.krum_defense import KrumDefense
 from .defense.robust_learning_rate_defense import RobustLearningRateDefense
 from .defense.slsgd_defense import SLSGDDefense
 from .defense.weak_dp_defense import WeakDPDefense
+from ...core.security.defense.norm_diff_clipping_defense import NormDiffClippingDefense
 from ...core.security.constants import (
     DEFENSE_NORM_DIFF_CLIPPING,
     DEFENSE_ROBUST_LEARNING_RATE,
@@ -20,7 +21,6 @@ from ...core.security.constants import (
     DEFENSE_RFA,
     DEFENSE_FOOLSGOLD,
 )
-from ...core.security.defense.norm_diff_clipping_defense import NormDiffClippingDefense
 
 
 class FedMLDefender:
@@ -39,6 +39,15 @@ class FedMLDefender:
         self.defender = None
 
     def init(self, args):
+        if hasattr(args, MLEngineBackend.ml_engine_args_flag) and args.ml_engine in [
+            MLEngineBackend.ml_engine_backend_tf,
+            MLEngineBackend.ml_engine_backend_jax,
+            MLEngineBackend.ml_engine_backend_mxnet,
+        ]:
+            raise ValueError(
+                "defender not supported for this machine learning engine: %s"
+                % args.ml_engine
+            )
         if hasattr(args, "enable_defense") and args.enable_defense:
             self.args = args
             logging.info("------init defense..." + args.defense_type)

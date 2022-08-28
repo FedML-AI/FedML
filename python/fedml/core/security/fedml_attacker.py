@@ -1,11 +1,10 @@
 from .attack.byzantine_attack import ByzantineAttack
-from .attack.dlg_attack import DLGAttack
-from .constants import ATTACK_METHOD_BYZANTINE_ATTACK, ATTACK_METHOD_DLG
+from .constants import ATTACK_METHOD_BYZANTINE_ATTACK
 import logging
+from ..common.ml_engine_backend import MLEngineBackend
 
 
 class FedMLAttacker:
-
     _attacker_instance = None
 
     @staticmethod
@@ -21,6 +20,16 @@ class FedMLAttacker:
         self.attacker = None
 
     def init(self, args):
+        if hasattr(args, MLEngineBackend.ml_engine_args_flag) and args.ml_engine in [
+            MLEngineBackend.ml_engine_backend_tf,
+            MLEngineBackend.ml_engine_backend_jax,
+            MLEngineBackend.ml_engine_backend_mxnet,
+        ]:
+            raise ValueError(
+                "attacker not supported for this machine learning engine: %s"
+                % args.ml_engine
+            )
+
         if hasattr(args, "enable_attack") and args.enable_attack:
             logging.info("------init attack..." + args.attack_type.strip())
             self.is_enabled = True
@@ -46,7 +55,9 @@ class FedMLAttacker:
         pass
 
     def is_model_attack(self):
-        if self.is_attack_enabled() and self.attack_type in [ATTACK_METHOD_BYZANTINE_ATTACK]:
+        if self.is_attack_enabled() and self.attack_type in [
+            ATTACK_METHOD_BYZANTINE_ATTACK
+        ]:
             return True
         return False
 
