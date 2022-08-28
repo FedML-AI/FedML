@@ -1,5 +1,8 @@
 import logging
 
+import numpy as np
+
+from .common.utils import is_weight_param, vectorize_weight
 from .mechanisms import Laplace, Gaussian
 
 
@@ -19,16 +22,24 @@ class FedMLDifferentialPrivacy:
 
     def init(self, args):
         if hasattr(args, "enable_dp") and args.enable_dp:
-            logging.info(".......init dp......." + args.mechanism_type + "-" + args.dp_type)
+            logging.info(
+                ".......init dp......." + args.mechanism_type + "-" + args.dp_type
+            )
             self.is_dp_enabled = True
             mechanism_type = args.mechanism_type.lower()
             self.dp_type = args.dp_type.lower().strip()
             if self.dp_type not in ["cdp", "ldp"]:
-                raise ValueError("DP type can only be cdp (for central DP) and ldp (for local DP)! ")
+                raise ValueError(
+                    "DP type can only be cdp (for central DP) and ldp (for local DP)! "
+                )
             if mechanism_type == "laplace":
-                self.dp = Laplace(epsilon=args.epsilon, delta=args.delta, sensitivity=args.sensitivity)
+                self.dp = Laplace(
+                    epsilon=args.epsilon, delta=args.delta, sensitivity=args.sensitivity
+                )
             elif mechanism_type == "gaussian":
-                self.dp = Gaussian(epsilon=args.epsilon, delta=args.delta, sensitivity=args.sensitivity)
+                self.dp = Gaussian(
+                    epsilon=args.epsilon, delta=args.delta, sensitivity=args.sensitivity
+                )
             else:
                 raise NotImplementedError("DP mechanism not implemented!")
 
@@ -45,10 +56,24 @@ class FedMLDifferentialPrivacy:
         return self.dp_type
 
     def add_noise(self, grad):
-        new_grad = dict()
-        # print(f"grad={avg_param}")
-        for k in grad.keys():
-            new_grad[k] = self._compute_new_grad(grad[k])
+        noise_list_len = len(vectorize_weight(grad))
+        noise_list = np.zeros(noise_list_len)
+        vec_weight = vectorize_weight(grad)
+        for i in range(noise_list_len):
+            noise_list[i] = self.dp.compute_noise()
+        new_vec_grad = vec_weight + noise_list
+
+        new_grad = {}
+        index_bias = 0
+        print(f"noises in add_noise = {noise_list}")
+        for item_index, (k, v) in enumerate(grad.items()):
+            if is_weight_param(k):
+                new_grad[k] = new_vec_grad[index_bias : index_bias + v.numel()].view(
+                    v.size()
+                )
+                index_bias += v.numel()
+            else:
+                new_grad[k] = v
         return new_grad
 
     def add_a_noise_to_local_data(self, local_data):
@@ -61,9 +86,13 @@ class FedMLDifferentialPrivacy:
             new_data.append(tuple(list))
         return new_data
 
-    def __compute_noise(self, size):
-        return self.dp.compute_noise(size)
+    def add_noise_with_data_distribution(self, grad):
+        new_grad = dict()
+        for k in grad.keys():
+            new_grad[k] = self._compute_new_grad(grad[k])
+        return new_grad
 
     def _compute_new_grad(self, grad):
-        # print(f"grad = {grad}")
-        return self.__compute_noise(grad.shape) + grad
+        noise = self.dp.compute_noise_with_shape(grad.shape)
+        print(f"noise computed with data distribution = {noise}")
+        return noise + grad

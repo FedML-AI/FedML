@@ -4,9 +4,8 @@ The classic Gaussian mechanism in differential privacy, and its derivatives.
 import secrets
 import numpy as np
 import torch
-
 from .base_dp_mechanism import BaseDPMechanism
-from ..common.utils import check_numeric_value, check_params
+from ..common.utils import check_params
 
 
 class Gaussian(BaseDPMechanism):
@@ -46,24 +45,17 @@ class Gaussian(BaseDPMechanism):
             * float(sensitivity)
             / float(epsilon)
         )
-        # self._rng = secrets.SystemRandom()
-
-    def bias(self, value):
-        return 0.0
+        self._rng = secrets.SystemRandom()
 
     def variance(self, value):
         return self._scale**2
 
-    # def randomise(self, value):
-    #     check_numeric_value(value)
-    #     return value + self.compute_a_noise()
+    def compute_noise(self):
+        standard_normal = (
+            self._rng.normalvariate(0, 1) + self._rng.normalvariate(0, 1)
+        ) / np.sqrt(2)
+        return standard_normal * self._scale
 
-    # def compute_a_noise(self):
-    #     standard_normal = (
-    #         self._rng.normalvariate(0, 1) + self._rng.normalvariate(0, 1)
-    #     ) / np.sqrt(2)
-    #     return standard_normal * self._scale
-
-    def compute_noise(self, size):
+    def compute_noise_with_shape(self, size):
         # print(f"scale = {self._scale}")
         return torch.normal(mean=0, std=self._scale, size=size)
