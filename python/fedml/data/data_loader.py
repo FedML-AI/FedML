@@ -31,8 +31,8 @@ client_id = f"python-mqtt-{random.randint(0, 1000)}"
 
 _config = Config(retries={"max_attempts": 4, "mode": "standard"})
 CN_REGION_NAME = "us-east-1"
-CN_S3_AKI = "AKIAY7HWPQWRMFNCM6GW"
-CN_S3_SAK = "5QilWTvlC7aX1kEtvrC0T51DiEwscuI+/I5Jhs0u"
+CN_S3_AKI = ""
+CN_S3_SAK = ""
 BUCKET_NAME = "fedmls3"
 
 
