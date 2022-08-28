@@ -7,13 +7,6 @@ from .server import SplitNN_server
 from .server_manager import SplitNNServerManager
 
 
-def SplitNN_init():
-    comm = MPI.COMM_WORLD
-    process_id = comm.Get_rank()
-    worker_number = comm.Get_size()
-    return comm, process_id, worker_number
-
-
 def SplitNN_distributed(
     process_id, worker_number, device, comm, model, dataset, args,
 ):
