@@ -124,9 +124,9 @@ class JaxHaikuServerAggregator(ServerAggregator):
     def test_all(self, train_data_local_dict, test_data_local_dict, device, args) -> bool:
         train_acc = 0
         train_loss = 0
-        for client_idx in range(self.args.client_num_in_total):
-            # train data
-            metrics = self._test(train_data_local_dict[client_idx], device, args)
+        for client_idx in range(len(test_data_local_dict)):
+            # test data
+            metrics = self._test(test_data_local_dict[client_idx], device, args)
             train_acc, train_num_sample, train_loss = (
                 metrics["test_acc"],
                 metrics["test_total"],
@@ -137,13 +137,13 @@ class JaxHaikuServerAggregator(ServerAggregator):
 
         # test on training dataset
         if self.args.enable_wandb:
-            wandb.log({"Train/Acc": train_acc, "round": args.round_idx})
-            wandb.log({"Train/Loss": train_loss, "round": args.round_idx})
+            wandb.log({"Test/Acc": train_acc, "round": args.round_idx})
+            wandb.log({"Test/Loss": train_loss, "round": args.round_idx})
 
-        mlops.log({"Train/Acc": train_acc, "round": args.round_idx})
-        mlops.log({"Train/Loss": train_loss, "round": args.round_idx})
+        mlops.log({"Test/Acc": train_acc, "round": args.round_idx})
+        mlops.log({"Test/Loss": train_loss, "round": args.round_idx})
 
-        stats = {"training_acc": train_acc, "training_loss": train_loss}
+        stats = {"testing_acc": train_acc, "testing_loss": train_loss}
         logging.info(stats)
 
         return True
