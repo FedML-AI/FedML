@@ -85,7 +85,6 @@ def init(args=None):
 
     manage_profiling_args(args)
 
-    update_run_id(args)
     update_client_id_list(args)
 
     mlops.init(args)
@@ -298,22 +297,6 @@ def update_client_id_list(args):
         print("using_mlops = true")
 
 
-def update_run_id(args):
-    """
-        for different ML frameworks (e.g., TF, PyTorch, Jax, MXNet, etc.), we need to distinguish its run_id to
-        avoid incompatible message across ML frameworks.
-    """
-    if hasattr(args, MLEngineBackend.ml_engine_args_flag):
-        if args.ml_engine == MLEngineBackend.ml_engine_backend_tf:
-            args.run_id += "tf"
-        elif args.ml_engine == MLEngineBackend.ml_engine_backend_jax:
-            args.run_id += "jax"
-        elif args.ml_engine == MLEngineBackend.ml_engine_backend_mxnet:
-            args.run_id += "mxnet"
-        else:
-            args.run_id += "torch"
-    else:
-        args.run_id += "torch"
 
 
 def init_cross_device(args):
