@@ -48,70 +48,37 @@ def subscribe(s3_obj, BUCKET_NAME, client: mqtt_client, args):
         logging.info(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
         if msg.payload.decode():
             disconnect(client)
-            if args.run_id == "0":
-                make_dir(
-                    os.path.join(
-                        args.data_cache_dir,
-                        "run_Id_%s" % args.run_id,
-                        "edgeNums_%s" % (args.client_num_in_total),
-                        args.dataset,
-                        "edgeId_%s" % (args.process_id),
-                    )
+            make_dir(
+                os.path.join(
+                    args.data_cache_dir,
+                    "run_Id_%s" % args.run_id,
+                    "edgeNums_%s" % (args.client_num_in_total),
+                    args.dataset,
+                    "edgeId_%s" % (15 + int(args.client_id_list[1])),
                 )
-                # start download the file
-                download_s3_file(
-                    s3_obj,
-                    BUCKET_NAME,
-                    json.loads(msg.payload.decode())["edge_id"],
-                    json.loads(msg.payload.decode())["dataset"],
-                    os.path.join(
-                        args.data_cache_dir,
-                        "run_Id_%s" % args.run_id,
-                        "edgeNums_%s" % (args.client_num_in_total),
-                        args.dataset,
-                        "edgeId_%s" % (args.process_id),
-                    ),
-                    os.path.join(
-                        args.data_cache_dir,
-                        "run_Id_%s" % args.run_id,
-                        "edgeNums_%s" % (args.client_num_in_total),
-                        args.dataset,
-                        "edgeId_%s" % (args.process_id),
-                        "cifar-10-python.tar.gz",
-                    ),
-                )
-            else:
-                make_dir(
-                    os.path.join(
-                        args.data_cache_dir,
-                        "run_Id_%s" % args.run_id,
-                        "edgeNums_%s" % (args.client_num_in_total),
-                        args.dataset,
-                        "edgeId_%s" % (15 + int(args.client_id_list[1])),
-                    )
-                )
-                # start download the file
-                download_s3_file(
-                    s3_obj,
-                    BUCKET_NAME,
-                    json.loads(msg.payload.decode())["edge_id"],
-                    json.loads(msg.payload.decode())["dataset"],
-                    os.path.join(
-                        args.data_cache_dir,
-                        "run_Id_%s" % args.run_id,
-                        "edgeNums_%s" % (args.client_num_in_total),
-                        args.dataset,
-                        "edgeId_%s" % (15 + int(args.client_id_list[1])),
-                    ),
-                    os.path.join(
-                        args.data_cache_dir,
-                        "run_Id_%s" % args.run_id,
-                        "edgeNums_%s" % (args.client_num_in_total),
-                        args.dataset,
-                        "edgeId_%s" % (15 + int(args.client_id_list[1])),
-                        "cifar-10-python.tar.gz",
-                    ),
-                )
+            )
+            # start download the file
+            download_s3_file(
+                s3_obj,
+                BUCKET_NAME,
+                json.loads(msg.payload.decode())["edge_id"],
+                json.loads(msg.payload.decode())["dataset"],
+                os.path.join(
+                    args.data_cache_dir,
+                    "run_Id_%s" % args.run_id,
+                    "edgeNums_%s" % (args.client_num_in_total),
+                    args.dataset,
+                    "edgeId_%s" % (15 + int(args.client_id_list[1])),
+                ),
+                os.path.join(
+                    args.data_cache_dir,
+                    "run_Id_%s" % args.run_id,
+                    "edgeNums_%s" % (args.client_num_in_total),
+                    args.dataset,
+                    "edgeId_%s" % (15 + int(args.client_id_list[1])),
+                    "cifar-10-python.tar.gz",
+                ),
+            )
 
     topic = "data_svr/dataset/%s" % (15 + int(args.client_id_list[1]))
     # topic = "data_svr/dataset/%s" % args.process_id
@@ -187,19 +154,8 @@ def data_server_preprocess(args):
 def split_edge_data(args, edge_list=None):
     try:
         url = "http://127.0.0.1:5000/split_dataset"
-        if args.run_id == "0":
-            edge_li = []
-            for i in range(1, args.client_num_in_total + 1):
-                edge_li.append(i)
-            json_params = {
-                "runId": args.run_id,
-                "edgeIds": edge_li,
-                "deviceId": args.device_id,
-                "dataset": args.dataset,
-            }
-        else:
-            edge_list = json.loads(edge_list)
-            json_params = {"runId": args.run_id, "edgeIds": edge_list, "dataset": args.dataset}
+        edge_list = json.loads(edge_list)
+        json_params = {"runId": args.run_id, "edgeIds": edge_list, "dataset": args.dataset}
         response = requests.post(
             url, json=json_params, verify=True, headers={"content-type": "application/json", "Connection": "keep-alive"}
         )
@@ -212,43 +168,21 @@ def split_edge_data(args, edge_list=None):
 def check_rundata(args):
     # local simulation run
     logging.info("Checking Run Data")
-    edge_li = []
-    if args.run_id == "0":
-        for i in range(1, args.client_num_in_total + 1):
-            edge_li.append(i)
-        try:
-            url = "http://127.0.0.1:5000/check_rundata"
-            json_params = {
-                "runId": args.run_id,
-                "deviceId": args.device_id,
-                "edgeIds": edge_li,
-                "dataset": args.dataset,
-            }
-            response = requests.post(
-                url,
-                json=json_params,
-                verify=True,
-                headers={"content-type": "application/json", "Connection": "keep-alive"},
-            )
-            return response.json()["split_status"]
-        except requests.exceptions.SSLError as err:
-            print(err)
-    else:
-        # mlops run
-        try:
-            url = "http://127.0.0.1:5000/check_rundata"
-            json_params = {
-                "runId": args.run_id,
-            }
-            response = requests.post(
-                url,
-                json=json_params,
-                verify=True,
-                headers={"content-type": "application/json", "Connection": "keep-alive"},
-            )
-            return response.json()["private_local_dir"], response.json()["split_status"], response.json()["edgeids"], response.json()["dataset_s3_key"]
-        except requests.exceptions.SSLError as err:
-            print(err)
+    # mlops run
+    try:
+        url = "http://127.0.0.1:5000/check_rundata"
+        json_params = {
+            "runId": args.run_id,
+        }
+        response = requests.post(
+            url,
+            json=json_params,
+            verify=True,
+            headers={"content-type": "application/json", "Connection": "keep-alive"},
+        )
+        return response.json()["private_local_dir"], response.json()["split_status"], response.json()["edgeids"], response.json()["dataset_s3_key"]
+    except requests.exceptions.SSLError as err:
+        print(err)
 
 
 def query_data_server(args, edgeId, s3_obj, BUCKET_NAME):
