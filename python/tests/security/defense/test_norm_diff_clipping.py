@@ -1,11 +1,8 @@
 import argparse
-from fedml.core.security.defense.norm_diff_clipping_defense import (
-    NormDiffClippingDefense,
-)
-from ..aggregation.aggregation_functions import (
-    AggregationFunction,
-)
-from ..utils import (
+
+from fedml.core.security.defense.norm_diff_clipping_defense import NormDiffClippingDefense
+from fedml.ml.aggregator.agg_operator import FedMLAggOperator
+from utils import (
     create_fake_vectors,
     create_fake_model_list_MNIST,
 )
@@ -14,13 +11,10 @@ from ..utils import (
 def add_args():
     parser = argparse.ArgumentParser(description="FedML")
     parser.add_argument(
-        "--yaml_config_file",
-        "--cf",
-        help="yaml configuration file",
-        type=str,
-        default="",
+        "--yaml_config_file", "--cf", help="yaml configuration file", type=str, default="",
     )
     # default arguments
+    parser.add_argument("--federated_optimizer", type=str, default="FedAvg")
     parser.add_argument("--norm_bound", type=float, default=5.0)
     args, unknown = parser.parse_known_args()
     return args
@@ -32,7 +26,7 @@ def test_norm_diff_clipping():
     defense = NormDiffClippingDefense(config)
     model_list = create_fake_model_list_MNIST(10)
     print(
-        f"norm diff clipping result = {defense.run(model_list, base_aggregation_func=AggregationFunction.FedAVG, extra_auxiliary_info=model_list[0][1])}"
+        f"norm diff clipping result = {defense.run(model_list, base_aggregation_func=FedMLAggOperator.agg, extra_auxiliary_info=model_list[0][1])}"
     )
 
 

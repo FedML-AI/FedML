@@ -4,6 +4,10 @@
 
 - [mqtt_s3_fedavg_mnist_lr_example](./examples/mqtt_s3_fedavg_mnist_lr_example.md): an example to illustrate running horizontal federated learning in data silos (hospitals, banks, etc.)
 
+- [mqtt_s3_fedavg_mnist_lr_example](./examples/mqtt_s3_fedavg_attack_mnist_lr_example.md): an example to illustrate running attackers on horizontal federated learning
+
+- [mqtt_s3_fedavg_mnist_lr_example](./examples/mqtt_s3_fedavg_defense_mnist_lr_example.md): an example to illustrate running defense methods on horizontal federated learning
+
 ## Hierarchical Federated Learning
 
 - [hierarchical_fedavg_mnist_lr_example](./examples/mqtt_s3_fedavg_hierarchical_mnist_lr_example.md): an example to illustrate running hierarchical federated learning in data silos (hospitals, banks, etc.). 

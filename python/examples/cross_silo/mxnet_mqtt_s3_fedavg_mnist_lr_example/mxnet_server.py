@@ -1,9 +1,8 @@
-
 import fedml
 from fedml import FedMLRunner
 from fedml.data.MNIST.data_loader import download_mnist, load_partition_data_mnist
+from mxnet_model import create_model
 from mxnet_model_aggregator import MxServerAggregator
-import mxnet_model
 
 
 def load_data(args):
@@ -63,7 +62,7 @@ if __name__ == "__main__":
     dataset, output_dim = load_data(args)
 
     # load model (the size of MNIST image is 28 x 28)
-    model = mxnet_model.create_model(28 * 28, output_dim)
+    model = create_model(28 * 28, output_dim)
 
     # create model aggregator
     aggregator = create_model_aggregator(model, args)

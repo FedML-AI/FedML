@@ -27,7 +27,7 @@ def check_params(epsilon, delta, sensitivity):
         raise TypeError("Epsilon and delta must be numeric")
     if epsilon < 0:
         raise ValueError("Epsilon must be non-negative")
-    if delta < 0 or delta > 1:
+    if delta < 0 or float(delta) > 1.0:
         raise ValueError("Delta must be in [0, 1]")
     if epsilon + delta == 0:
         raise ValueError("Epsilon and Delta cannot both be zero")

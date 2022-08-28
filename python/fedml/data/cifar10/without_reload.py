@@ -1,8 +1,5 @@
-import logging
-
 import numpy as np
 import torch.utils.data as data
-from PIL import Image
 from torchvision.datasets import CIFAR10
 
 IMG_EXTENSIONS = (
@@ -17,8 +14,8 @@ IMG_EXTENSIONS = (
     ".webp",
 )
 
+
 class CIFAR10_truncated(data.Dataset):
-    
     def __init__(self, root, dataidxs=None, train=True, transform=None, target_transform=None, download=False):
 
         self.root = root
@@ -77,12 +74,8 @@ class CIFAR10_truncated(data.Dataset):
         return len(self.data)
 
 
-
-
 class CIFAR10_truncated_WO_reload(data.Dataset):
-
-    def __init__(self, root, dataidxs=None, train=True, transform=None, target_transform=None,
-                full_dataset=None):
+    def __init__(self, root, dataidxs=None, train=True, transform=None, target_transform=None, full_dataset=None):
 
         self.root = root
         self.dataidxs = dataidxs
@@ -138,8 +131,3 @@ class CIFAR10_truncated_WO_reload(data.Dataset):
 
     def __len__(self):
         return len(self.data)
-
-
-
-
-

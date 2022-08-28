@@ -17,17 +17,10 @@ class ProcessGroupManager:
         os.environ["WORLD_SIZE"] = str(world_size)
         os.environ["RANK"] = str(rank)
 
-        env_dict = {
-            key: os.environ[key]
-            for key in ("MASTER_ADDR", "MASTER_PORT", "RANK", "WORLD_SIZE",)
-        }
+        env_dict = {key: os.environ[key] for key in ("MASTER_ADDR", "MASTER_PORT", "RANK", "WORLD_SIZE",)}
         logging.info(f"[{os.getpid()}] Initializing process group with: {env_dict}")
 
-        backend = (
-            dist.Backend.NCCL
-            if (only_gpu and torch.cuda.is_available())
-            else dist.Backend.GLOO
-        )
+        backend = dist.Backend.NCCL if (only_gpu and torch.cuda.is_available()) else dist.Backend.GLOO
         logging.info(f"Process group backend: {backend}")
 
         # initialize the process group
