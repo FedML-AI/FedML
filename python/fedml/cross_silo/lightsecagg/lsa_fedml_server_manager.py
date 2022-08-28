@@ -60,9 +60,7 @@ class FedMLServerManager(FedMLCommManager):
         client_idx_in_this_round = 0
         for client_id in self.client_id_list_in_this_round:
             self.send_message_init_config(
-                client_id,
-                global_model_params,
-                self.data_silo_index_list[client_idx_in_this_round],
+                client_id, global_model_params, self.data_silo_index_list[client_idx_in_this_round],
             )
             client_idx_in_this_round += 1
 
@@ -75,23 +73,19 @@ class FedMLServerManager(FedMLCommManager):
         )
 
         self.register_message_receive_handler(
-            MyMessage.MSG_TYPE_C2S_CLIENT_STATUS,
-            self.handle_message_client_status_update,
+            MyMessage.MSG_TYPE_C2S_CLIENT_STATUS, self.handle_message_client_status_update,
         )
 
         self.register_message_receive_handler(
-            MyMessage.MSG_TYPE_C2S_SEND_ENCODED_MASK_TO_SERVER,
-            self.handle_message_receive_encoded_mask_from_client,
+            MyMessage.MSG_TYPE_C2S_SEND_ENCODED_MASK_TO_SERVER, self.handle_message_receive_encoded_mask_from_client,
         )
 
         self.register_message_receive_handler(
-            MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER,
-            self.handle_message_receive_model_from_client,
+            MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER, self.handle_message_receive_model_from_client,
         )
 
         self.register_message_receive_handler(
-            MyMessage.MSG_TYPE_C2S_SEND_MASK_TO_SERVER,
-            self.handle_message_receive_aggregate_encoded_mask_from_client,
+            MyMessage.MSG_TYPE_C2S_SEND_MASK_TO_SERVER, self.handle_message_receive_aggregate_encoded_mask_from_client,
         )
 
     def handle_messag_connection_ready(self, msg_params):
@@ -99,9 +93,7 @@ class FedMLServerManager(FedMLCommManager):
             self.round_idx, self.client_real_ids, self.args.client_num_per_round
         )
         self.data_silo_index_list = self.aggregator.data_silo_selection(
-            self.round_idx,
-            self.args.client_num_in_total,
-            len(self.client_id_list_in_this_round),
+            self.round_idx, self.args.client_num_in_total, len(self.client_id_list_in_this_round),
         )
         if not self.is_initialized:
             mlops.log_round_info(self.round_num, -1)
@@ -128,8 +120,7 @@ class FedMLServerManager(FedMLCommManager):
                 break
 
         logging.info(
-            "sender_id = %d, all_client_is_online = %s"
-            % (msg_params.get_sender_id(), str(all_client_is_online))
+            "sender_id = %d, all_client_is_online = %s" % (msg_params.get_sender_id(), str(all_client_is_online))
         )
 
         if all_client_is_online:
@@ -146,10 +137,7 @@ class FedMLServerManager(FedMLCommManager):
     def handle_message_receive_model_from_client(self, msg_params):
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         mlops.event(
-            "comm_c2s",
-            event_started=False,
-            event_value=str(self.round_idx),
-            event_edge_id=sender_id,
+            "comm_c2s", event_started=False, event_value=str(self.round_idx), event_edge_id=sender_id,
         )
 
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
@@ -165,44 +153,28 @@ class FedMLServerManager(FedMLCommManager):
         if b_all_received:
             # Specify the active clients for the first round and inform them
             for receiver_id in range(1, self.size + 1):
-                self.send_message_to_active_client(
-                    receiver_id, self.active_clients_first_round
-                )
+                self.send_message_to_active_client(receiver_id, self.active_clients_first_round)
 
     def handle_message_receive_aggregate_encoded_mask_from_client(self, msg_params):
         # Receive the aggregate of encoded masks for active clients
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
-        aggregate_encoded_mask = msg_params.get(
-            MyMessage.MSG_ARG_KEY_AGGREGATE_ENCODED_MASK
-        )
-        self.aggregator.add_local_aggregate_encoded_mask(
-            sender_id - 1, aggregate_encoded_mask
-        )
+        aggregate_encoded_mask = msg_params.get(MyMessage.MSG_ARG_KEY_AGGREGATE_ENCODED_MASK)
+        self.aggregator.add_local_aggregate_encoded_mask(sender_id - 1, aggregate_encoded_mask)
         logging.info(
             "Server handle_message_receive_aggregate_mask = %d from_client =  %d"
             % (len(aggregate_encoded_mask), sender_id)
         )
         # Active clients for the second round
         self.active_clients_second_round.append(sender_id - 1)
-        b_all_received = (
-            self.aggregator.check_whether_all_aggregate_encoded_mask_receive()
-        )
-        logging.info(
-            "Server: mask_all_received = "
-            + str(b_all_received)
-            + " in round_idx %d" % self.round_idx
-        )
+        b_all_received = self.aggregator.check_whether_all_aggregate_encoded_mask_receive()
+        logging.info("Server: mask_all_received = " + str(b_all_received) + " in round_idx %d" % self.round_idx)
 
         # TODO: add a timeout step
         # After receiving enough aggregate of encoded masks, server recovers the aggregate-model
         if b_all_received:
+            mlops.event("server.wait", event_started=False, event_value=str(self.round_idx))
             mlops.event(
-                "server.wait", event_started=False, event_value=str(self.round_idx)
-            )
-            mlops.event(
-                "server.agg_and_eval",
-                event_started=True,
-                event_value=str(self.round_idx),
+                "server.agg_and_eval", event_started=True, event_value=str(self.round_idx),
             )
 
             # Secure Model Aggregation
@@ -216,9 +188,7 @@ class FedMLServerManager(FedMLCommManager):
                 logging.info("aggregator.test exception: " + str(e))
 
             mlops.event(
-                "server.agg_and_eval",
-                event_started=False,
-                event_value=str(self.round_idx),
+                "server.agg_and_eval", event_started=False, event_value=str(self.round_idx),
             )
 
             mlops.log_round_info(self.round_num, self.round_idx)
@@ -227,23 +197,17 @@ class FedMLServerManager(FedMLCommManager):
                 self.round_idx, self.client_real_ids, self.args.client_num_per_round
             )
             self.data_silo_index_list = self.aggregator.data_silo_selection(
-                self.round_idx,
-                self.args.client_num_in_total,
-                len(self.client_id_list_in_this_round),
+                self.round_idx, self.args.client_num_in_total, len(self.client_id_list_in_this_round),
             )
 
             client_idx_in_this_round = 0
             for receiver_id in self.client_id_list_in_this_round:
                 self.send_message_sync_model_to_client(
-                    receiver_id,
-                    global_model_params,
-                    self.data_silo_index_list[client_idx_in_this_round],
+                    receiver_id, global_model_params, self.data_silo_index_list[client_idx_in_this_round],
                 )
                 client_idx_in_this_round += 1
 
-            mlops.log_aggregated_model_info(
-                self.round_idx + 1, self.aggregated_model_url
-            )
+            mlops.log_aggregated_model_info(self.round_idx + 1, self.aggregated_model_url)
             self.aggregated_model_url = None
 
             # start the next round
@@ -257,15 +221,11 @@ class FedMLServerManager(FedMLCommManager):
                 self.finish()
             if self.is_preprocessed:
                 mlops.log_training_finished_status()
-                logging.info(
-                    "=============training is finished. Cleanup...============"
-                )
+                logging.info("=============training is finished. Cleanup...============")
                 self.cleanup()
             else:
                 logging.info("waiting for another round...")
-                mlops.event(
-                    "server.wait", event_started=True, event_value=str(self.round_idx)
-                )
+                mlops.event("server.wait", event_started=True, event_value=str(self.round_idx))
 
     def cleanup(self):
 
@@ -279,70 +239,43 @@ class FedMLServerManager(FedMLCommManager):
         self.finish()
 
     def send_message_init_config(self, receive_id, global_model_params, datasilo_index):
-        message = Message(
-            MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id
-        )
+        message = Message(MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id)
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")
         self.send_message(message)
 
     def send_message_encoded_mask_to_client(self, sender_id, receive_id, encoded_mask):
-        message = Message(
-            MyMessage.MSG_TYPE_S2C_ENCODED_MASK_TO_CLIENT,
-            self.get_sender_id(),
-            receive_id,
-        )
+        message = Message(MyMessage.MSG_TYPE_S2C_ENCODED_MASK_TO_CLIENT, self.get_sender_id(), receive_id,)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_ID, sender_id)
         message.add_params(MyMessage.MSG_ARG_KEY_ENCODED_MASK, encoded_mask)
         self.send_message(message)
 
     def send_message_check_client_status(self, receive_id, datasilo_index):
-        message = Message(
-            MyMessage.MSG_TYPE_S2C_CHECK_CLIENT_STATUS, self.get_sender_id(), receive_id
-        )
+        message = Message(MyMessage.MSG_TYPE_S2C_CHECK_CLIENT_STATUS, self.get_sender_id(), receive_id)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
         self.send_message(message)
 
     def send_message_finish(self, receive_id, datasilo_index):
-        message = Message(
-            MyMessage.MSG_TYPE_S2C_FINISH, self.get_sender_id(), receive_id
-        )
+        message = Message(MyMessage.MSG_TYPE_S2C_FINISH, self.get_sender_id(), receive_id)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
         self.send_message(message)
-        logging.info(
-            " ====================send cleanup message to {}====================".format(
-                str(datasilo_index)
-            )
-        )
+        logging.info(" ====================send cleanup message to {}====================".format(str(datasilo_index)))
 
-    def send_message_sync_model_to_client(
-        self, receive_id, global_model_params, client_index
-    ):
+    def send_message_sync_model_to_client(self, receive_id, global_model_params, client_index):
         logging.info("send_message_sync_model_to_client. receive_id = %d" % receive_id)
-        message = Message(
-            MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT,
-            self.get_sender_id(),
-            receive_id,
-        )
+        message = Message(MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT, self.get_sender_id(), receive_id,)
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(client_index))
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")
         self.send_message(message)
 
         mlops.log_aggregated_model_info(
-            self.round_idx + 1,
-            model_url=message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL),
+            self.round_idx + 1, model_url=message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL),
         )
 
     def send_message_to_active_client(self, receive_id, active_clients):
-        logging.info(
-            "Server send_message_to_active_client. receive_id = %d" % receive_id
-        )
-        message = Message(
-            MyMessage.MSG_TYPE_S2C_SEND_TO_ACTIVE_CLIENT,
-            self.get_sender_id(),
-            receive_id,
-        )
+        logging.info("Server send_message_to_active_client. receive_id = %d" % receive_id)
+        message = Message(MyMessage.MSG_TYPE_S2C_SEND_TO_ACTIVE_CLIENT, self.get_sender_id(), receive_id,)
         message.add_params(MyMessage.MSG_ARG_KEY_ACTIVE_CLIENTS, active_clients)
         self.send_message(message)

@@ -3,8 +3,8 @@ import argparse
 from fedml.core.security.defense.coordinate_wise_trimmed_mean_defense import (
     CoordinateWiseTrimmedMeanDefense,
 )
-from ..aggregation.aggregation_functions import AggregationFunction
-from ..utils import create_fake_model_list
+from fedml.ml.aggregator.agg_operator import FedMLAggOperator
+from utils import create_fake_model_list
 
 
 def add_args():
@@ -16,6 +16,7 @@ def add_args():
         type=str,
         default="",
     )
+    parser.add_argument("--federated_optimizer", type=str, default="FedAvg")
     parser.add_argument("--beta", type=float, default=0.2)
     args, unknown = parser.parse_known_args()
     return args
@@ -26,7 +27,7 @@ def test_defense():
     config = add_args()
     defense = CoordinateWiseTrimmedMeanDefense(config)
     result = defense.run(
-        client_grad_list, base_aggregation_func=AggregationFunction.FedAVG
+        client_grad_list, base_aggregation_func=FedMLAggOperator.agg
     )
     print(f"result = {result}")
 

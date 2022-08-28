@@ -12,6 +12,7 @@ model_list has been created
 
 class CoordinateWiseTrimmedMeanDefense(BaseDefenseMethod):
     def __init__(self, config):
+        self.config = config
         self.beta = config.beta  # fraction of trimmed values
 
     def run(
@@ -25,4 +26,4 @@ class CoordinateWiseTrimmedMeanDefense(BaseDefenseMethod):
         client_grad_list = trimmed_mean(
             raw_client_grad_list, int(self.beta * len(raw_client_grad_list))
         )
-        return base_aggregation_func(client_grad_list)
+        return base_aggregation_func(self.config, client_grad_list)

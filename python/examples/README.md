@@ -5,9 +5,9 @@
 2. Support Any Machine Learning Framework: PyTorch, TensorFlow, JAX with Haiku, and MXNet.
 3. Diverse communication backends (MPI, gRPC, PyTorch RPC, MQTT + S3)
 4. Differential Privacy (CDP-central DP; LDP-local DP)
-5. Attacker (API: fedml.core.FedMLAttacker); README: [python/fedml/core/security/readme.md](python/fedml/core/security/readme.md)
-6. Defender (API: fedml.core.FedMLDefender); README: [python/fedml/core/security/readme.md](python/fedml/core/security/readme.md)
-7. Secure Aggregation (multi-party computation): [cross_silo/light_sec_agg_example](cross_silo/light_sec_agg_example) 
+5. Attacker (API: fedml.core.FedMLAttacker); README: [python/fedml/core/security/readme.md](../fedml/core/security/readme.md)
+6. Defender (API: fedml.core.FedMLDefender); README: [python/fedml/core/security/readme.md](../fedml/core/security/readme.md)
+7. Secure Aggregation (multi-party computation): [cross_silo/light_sec_agg_example](./cross_silo/light_sec_agg_example) 
 
 
 

@@ -200,7 +200,7 @@ def load_data(args, dataset_name):
             train_data_local_dict,
             test_data_local_dict,
             class_num,
-        ) = load_partition_data_mnist(args.batch_size)
+        ) = load_partition_data_mnist(args, args.batch_size)
         """
         For shallow NN or linear models, 
         we uniformly sample a fraction of clients each round (as the original FedAvg paper)

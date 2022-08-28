@@ -21,12 +21,12 @@ model_args:
   global_model_file_path: "./model_file_cache/global_model.pt"
 
 train_args:
-  federated_optimizer: "LSA"
 #  federated_optimizer: "FedAvg"
+  federated_optimizer: "SA"
   client_id_list:
   client_num_in_total: 1000
   client_num_per_round: 4
-  comm_round: 50
+  comm_round: 1
   epochs: 1
   batch_size: 10
   client_optimizer: sgd
@@ -46,7 +46,7 @@ secure_aggregation_args:
 
 device_args:
   worker_num: 4
-  using_gpu: true
+  using_gpu: false
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_default
 
