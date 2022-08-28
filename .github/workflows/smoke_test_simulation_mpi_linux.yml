@@ -22,6 +22,7 @@ jobs:
   # https://github.com/mpi4py/mpi4py/actions/runs/34979774/workflow
   mpi_run:
     runs-on: [self-hosted, runner-linux, devops-mpi]
+    timeout-minutes: 10
     defaults:
       run:
         shell: bash
@@ -61,9 +62,40 @@ jobs:
         pip install -e ./
         python -m pip install mpi4py
 
-    - name: Test package
+    - name: Test package - FedAvg
       run: |
         cd examples/simulation/mpi_torch_fedavg_mnist_lr_example
         sh run_custom_data_and_model_example.sh 4
+
+    - name: Test package - Base
+      run: |
+        cd examples/simulation/mpi_base_framework_example
+        sh run.sh 4
+
+    - name: Test package - Decentralized
+      run: |
+        cd examples/simulation/mpi_decentralized_fl_example
+        sh run.sh 4
+
+    - name: Test package - FedOPT
+      run: |
+        cd examples/simulation/mpi_fedopt_datasets_and_models_example
+        sh run_step_by_step_example.sh 4 config/mnist_lr/fedml_config.yaml
+
+    - name: Test package - FedProx
+      run: |
+        cd examples/simulation/mpi_fedprox_datasets_and_models_example
+        sh run_step_by_step_example.sh 4 config/mnist_lr/fedml_config.yaml
+
+    - name: Test package - FedGAN
+      run: |
+        cd examples/simulation/mpi_torch_fedgan_mnist_gan_example
+        sh run_step_by_step_example.sh 4
+
+#    - name: Test package - FedGKT
+#      run: |
+#        cd examples/simulation/mpi_torch_fedgkt_mnist_lr_example
+#        sh run_step_by_step_example.sh 4
+
     - name: Uninstall package after testing
       run:  python -m pip uninstall --yes mpi4py

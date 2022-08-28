@@ -15,6 +15,7 @@ def FedML_init():
     return comm, process_id, worker_number
 
 
+
 def FedML_FedGan_distributed(
         args,
         process_id,
