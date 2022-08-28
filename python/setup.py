@@ -41,6 +41,7 @@ requirements = [
     "matplotlib",
     "dill",
     "pandas",
+    "wandb==0.13.2"
 ]
 
 requirements_extra_mpi = [
@@ -60,8 +61,9 @@ requirements_extra_jax = [
     "jaxlib"
 ]
 
+# https://github.com/apache/incubator-mxnet/issues/18329
 requirements_extra_mxnet = [
-    "mxnet"
+    "mxnet==2.0.0b1"
 ]
 
 
@@ -70,7 +72,7 @@ if platform.machine() == "x86_64":
 
 setup(
     name="fedml",
-    version="0.7.298",
+    version="0.7.300",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "

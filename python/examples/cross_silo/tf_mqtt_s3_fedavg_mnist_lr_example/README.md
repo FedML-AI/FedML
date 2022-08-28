@@ -1,3 +1,8 @@
+## Installation
+For M1 MacBook, please install tensorflow according to the following link:
+https://developer.apple.com/metal/tensorflow-plugin/
+
+
 ## Training Script
 
 Run training and aggregator with tensorflow.

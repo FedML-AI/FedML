@@ -9,6 +9,7 @@ defense @ server, added by Shanshan
 
 class WeakDPDefense(BaseDefenseMethod):
     def __init__(self, config):
+        self.config = config
         self.stddev = config.stddev  # for weak DP defenses
 
     def run(
@@ -21,7 +22,7 @@ class WeakDPDefense(BaseDefenseMethod):
         for (sample_num, local_w) in raw_client_grad_list:
             new_w = self._add_noise(local_w)
             new_grad_list.append((sample_num, new_w))
-        return base_aggregation_func(new_grad_list)  # avg_params
+        return base_aggregation_func(self.config, new_grad_list)  # avg_params
 
     def _add_noise(self, param):
         dp_param = dict()

@@ -1,5 +1,4 @@
 import logging
-import random
 
 import numpy as np
 import torch
@@ -10,11 +9,8 @@ from torchvision.datasets import CIFAR10
 from .without_reload import CIFAR10_truncated, CIFAR10_truncated_WO_reload
 
 
-
 # generate the non-IID distribution for all methods
-def read_data_distribution(
-    filename="./data_preprocessing/non-iid-distribution/CIFAR10/distribution.txt",
-):
+def read_data_distribution(filename="./data_preprocessing/non-iid-distribution/CIFAR10/distribution.txt",):
     distribution = {}
     with open(filename, "r") as data:
         for x in data.readlines():
@@ -25,15 +21,11 @@ def read_data_distribution(
                     distribution[first_level_key] = {}
                 else:
                     second_level_key = int(tmp[0])
-                    distribution[first_level_key][second_level_key] = int(
-                        tmp[1].strip().replace(",", "")
-                    )
+                    distribution[first_level_key][second_level_key] = int(tmp[1].strip().replace(",", ""))
     return distribution
 
 
-def read_net_dataidx_map(
-    filename="./data_preprocessing/non-iid-distribution/CIFAR10/net_dataidx_map.txt",
-):
+def read_net_dataidx_map(filename="./data_preprocessing/non-iid-distribution/CIFAR10/net_dataidx_map.txt",):
     net_dataidx_map = {}
     with open(filename, "r") as data:
         for x in data.readlines():
@@ -97,17 +89,9 @@ def _data_transforms_cifar10():
 
     train_transform.transforms.append(Cutout(16))
 
-    valid_transform = transforms.Compose(
-        [
-            transforms.ToTensor(),
-            transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
-        ]
-    )
+    valid_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(CIFAR_MEAN, CIFAR_STD),])
 
     return train_transform, valid_transform
-
-
-
 
 
 def load_cifar10_data(datadir, resize=32, augmentation=True, data_efficient_load=False):
@@ -124,7 +108,6 @@ def load_cifar10_data(datadir, resize=32, augmentation=True, data_efficient_load
     X_test, y_test = cifar10_test_ds.data, cifar10_test_ds.targets
 
     return (X_train, y_train, X_test, y_test, cifar10_train_ds, cifar10_test_ds)
-
 
 
 def partition_data(dataset, datadir, partition, n_nets, alpha):
@@ -155,18 +138,10 @@ def partition_data(dataset, datadir, partition, n_nets, alpha):
                 np.random.shuffle(idx_k)
                 proportions = np.random.dirichlet(np.repeat(alpha, n_nets))
                 ## Balance
-                proportions = np.array(
-                    [
-                        p * (len(idx_j) < N / n_nets)
-                        for p, idx_j in zip(proportions, idx_batch)
-                    ]
-                )
+                proportions = np.array([p * (len(idx_j) < N / n_nets) for p, idx_j in zip(proportions, idx_batch)])
                 proportions = proportions / proportions.sum()
                 proportions = (np.cumsum(proportions) * len(idx_k)).astype(int)[:-1]
-                idx_batch = [
-                    idx_j + idx.tolist()
-                    for idx_j, idx in zip(idx_batch, np.split(idx_k, proportions))
-                ]
+                idx_batch = [idx_j + idx.tolist() for idx_j, idx in zip(idx_batch, np.split(idx_k, proportions))]
                 min_size = min([len(idx_j) for idx_j in idx_batch])
 
         for j in range(n_nets):
@@ -174,96 +149,83 @@ def partition_data(dataset, datadir, partition, n_nets, alpha):
             net_dataidx_map[j] = idx_batch[j]
 
     elif partition == "hetero-fix":
-        dataidx_map_file_path = (
-            "./data_preprocessing/non-iid-distribution/CIFAR10/net_dataidx_map.txt"
-        )
+        dataidx_map_file_path = "./data_preprocessing/non-iid-distribution/CIFAR10/net_dataidx_map.txt"
         net_dataidx_map = read_net_dataidx_map(dataidx_map_file_path)
 
     if partition == "hetero-fix":
-        distribution_file_path = (
-            "./data_preprocessing/non-iid-distribution/CIFAR10/distribution.txt"
-        )
+        distribution_file_path = "./data_preprocessing/non-iid-distribution/CIFAR10/distribution.txt"
         traindata_cls_counts = read_data_distribution(distribution_file_path)
     else:
         traindata_cls_counts = record_net_data_stats(y_train, net_dataidx_map)
 
-    return X_train, y_train, X_test, y_test, net_dataidx_map, traindata_cls_counts, \
-            cifar10_train_ds, cifar10_test_ds
-
+    return X_train, y_train, X_test, y_test, net_dataidx_map, traindata_cls_counts, cifar10_train_ds, cifar10_test_ds
 
 
 # for centralized training
-def get_dataloader(dataset, datadir, train_bs, test_bs, dataidxs=None,
-                data_efficient_load=False, full_train_dataset=None, full_test_dataset=None):
-    return get_dataloader_CIFAR10(datadir, train_bs, test_bs, dataidxs,
-                data_efficient_load=data_efficient_load,
-                full_train_dataset=full_train_dataset, full_test_dataset=full_test_dataset)
-
-
-# for local devices
-def get_dataloader_test(
-    dataset, datadir, train_bs, test_bs, dataidxs_train, dataidxs_test
+def get_dataloader(
+    dataset,
+    datadir,
+    train_bs,
+    test_bs,
+    dataidxs=None,
+    data_efficient_load=False,
+    full_train_dataset=None,
+    full_test_dataset=None,
 ):
-    return get_dataloader_test_CIFAR10(
-        datadir, train_bs, test_bs, dataidxs_train, dataidxs_test
+    return get_dataloader_CIFAR10(
+        datadir,
+        train_bs,
+        test_bs,
+        dataidxs,
+        data_efficient_load=data_efficient_load,
+        full_train_dataset=full_train_dataset,
+        full_test_dataset=full_test_dataset,
     )
 
 
-def get_dataloader_CIFAR10(datadir, train_bs, test_bs, dataidxs=None,
-                data_efficient_load=False, full_train_dataset=None, full_test_dataset=None):
+# for local devices
+def get_dataloader_test(dataset, datadir, train_bs, test_bs, dataidxs_train, dataidxs_test):
+    return get_dataloader_test_CIFAR10(datadir, train_bs, test_bs, dataidxs_train, dataidxs_test)
+
+
+def get_dataloader_CIFAR10(
+    datadir,
+    train_bs,
+    test_bs,
+    dataidxs=None,
+    data_efficient_load=False,
+    full_train_dataset=None,
+    full_test_dataset=None,
+):
     transform_train, transform_test = _data_transforms_cifar10()
 
     if data_efficient_load:
         dl_obj = CIFAR10_truncated_WO_reload
-        train_ds = dl_obj(datadir, dataidxs=dataidxs, train=True, transform=transform_train,
-                        full_dataset=full_train_dataset)
-        test_ds = dl_obj(datadir, train=False, transform=transform_test,
-                        full_dataset=full_test_dataset)
+        train_ds = dl_obj(
+            datadir, dataidxs=dataidxs, train=True, transform=transform_train, full_dataset=full_train_dataset
+        )
+        test_ds = dl_obj(datadir, train=False, transform=transform_test, full_dataset=full_test_dataset)
     else:
         dl_obj = CIFAR10_truncated
-        train_ds = dl_obj(
-            datadir, dataidxs=dataidxs, train=True, transform=transform_train, download=True
-        )
+        train_ds = dl_obj(datadir, dataidxs=dataidxs, train=True, transform=transform_train, download=True)
         test_ds = dl_obj(datadir, train=False, transform=transform_test, download=True)
 
-    train_dl = data.DataLoader(
-        dataset=train_ds, batch_size=train_bs, shuffle=True, drop_last=True
-    )
-    test_dl = data.DataLoader(
-        dataset=test_ds, batch_size=test_bs, shuffle=False, drop_last=True
-    )
+    train_dl = data.DataLoader(dataset=train_ds, batch_size=train_bs, shuffle=True, drop_last=True)
+    test_dl = data.DataLoader(dataset=test_ds, batch_size=test_bs, shuffle=False, drop_last=True)
 
     return train_dl, test_dl
 
 
-def get_dataloader_test_CIFAR10(
-    datadir, train_bs, test_bs, dataidxs_train=None, dataidxs_test=None
-):
+def get_dataloader_test_CIFAR10(datadir, train_bs, test_bs, dataidxs_train=None, dataidxs_test=None):
     dl_obj = CIFAR10_truncated
 
     transform_train, transform_test = _data_transforms_cifar10()
 
-    train_ds = dl_obj(
-        datadir,
-        dataidxs=dataidxs_train,
-        train=True,
-        transform=transform_train,
-        download=True,
-    )
-    test_ds = dl_obj(
-        datadir,
-        dataidxs=dataidxs_test,
-        train=False,
-        transform=transform_test,
-        download=True,
-    )
+    train_ds = dl_obj(datadir, dataidxs=dataidxs_train, train=True, transform=transform_train, download=True,)
+    test_ds = dl_obj(datadir, dataidxs=dataidxs_test, train=False, transform=transform_test, download=True,)
 
-    train_dl = data.DataLoader(
-        dataset=train_ds, batch_size=train_bs, shuffle=True, drop_last=True
-    )
-    test_dl = data.DataLoader(
-        dataset=test_ds, batch_size=test_bs, shuffle=False, drop_last=True
-    )
+    train_dl = data.DataLoader(dataset=train_ds, batch_size=train_bs, shuffle=True, drop_last=True)
+    test_dl = data.DataLoader(dataset=test_ds, batch_size=test_bs, shuffle=False, drop_last=True)
 
     return train_dl, test_dl
 
@@ -286,10 +248,8 @@ def load_partition_data_distributed_cifar10(
         net_dataidx_map,
         traindata_cls_counts,
         cifar10_train_ds,
-        cifar10_test_ds
-    ) = partition_data(
-        dataset, data_dir, partition_method, client_number, partition_alpha
-    )
+        cifar10_test_ds,
+    ) = partition_data(dataset, data_dir, partition_method, client_number, partition_alpha)
     class_num = len(np.unique(y_train))
     logging.info("traindata_cls_counts = " + str(traindata_cls_counts))
     train_data_num = sum([len(net_dataidx_map[r]) for r in range(client_number)])
@@ -297,8 +257,13 @@ def load_partition_data_distributed_cifar10(
     # get global test data
     if process_id == 0:
         train_data_global, test_data_global = get_dataloader(
-            dataset, data_dir, batch_size, batch_size,
-                data_efficient_load=True, full_train_dataset=cifar10_train_ds, full_test_dataset=cifar10_test_ds
+            dataset,
+            data_dir,
+            batch_size,
+            batch_size,
+            data_efficient_load=True,
+            full_train_dataset=cifar10_train_ds,
+            full_test_dataset=cifar10_test_ds,
         )
         logging.info("train_dl_global number = " + str(len(train_data_global)))
         logging.info("test_dl_global number = " + str(len(test_data_global)))
@@ -309,13 +274,17 @@ def load_partition_data_distributed_cifar10(
         # get local dataset
         dataidxs = net_dataidx_map[process_id - 1]
         local_data_num = len(dataidxs)
-        logging.info(
-            "rank = %d, local_sample_number = %d" % (process_id, local_data_num)
-        )
+        logging.info("rank = %d, local_sample_number = %d" % (process_id, local_data_num))
         # training batch size = 64; algorithms batch size = 32
         train_data_local, test_data_local = get_dataloader(
-            dataset, data_dir, batch_size, batch_size, dataidxs,
-                data_efficient_load=True, full_train_dataset=cifar10_train_ds, full_test_dataset=cifar10_test_ds
+            dataset,
+            data_dir,
+            batch_size,
+            batch_size,
+            dataidxs,
+            data_efficient_load=True,
+            full_train_dataset=cifar10_train_ds,
+            full_test_dataset=cifar10_test_ds,
         )
         logging.info(
             "process_id = %d, batch_num_train_local = %d, batch_num_test_local = %d"
@@ -341,6 +310,7 @@ def efficient_load_partition_data_cifar10(
     partition_alpha,
     client_number,
     batch_size,
+    process_id,
     n_proc_in_silo=0,
     data_efficient_load=True,
 ):
@@ -352,17 +322,20 @@ def efficient_load_partition_data_cifar10(
         net_dataidx_map,
         traindata_cls_counts,
         cifar10_train_ds,
-        cifar10_test_ds
-    ) = partition_data(
-        dataset, data_dir, partition_method, client_number, partition_alpha
-    )
+        cifar10_test_ds,
+    ) = partition_data(dataset, data_dir, partition_method, client_number, partition_alpha, process_id)
     class_num = len(np.unique(y_train))
     logging.info("traindata_cls_counts = " + str(traindata_cls_counts))
     train_data_num = sum([len(net_dataidx_map[r]) for r in range(client_number)])
 
     train_data_global, test_data_global = get_dataloader(
-        dataset, data_dir, batch_size, batch_size,
-                data_efficient_load=True, full_train_dataset=cifar10_train_ds, full_test_dataset=cifar10_test_ds
+        dataset,
+        data_dir,
+        batch_size,
+        batch_size,
+        data_efficient_load=True,
+        full_train_dataset=cifar10_train_ds,
+        full_test_dataset=cifar10_test_ds,
     )
     logging.info("train_dl_global number = " + str(len(train_data_global)))
     logging.info("test_dl_global number = " + str(len(test_data_global)))
@@ -377,14 +350,18 @@ def efficient_load_partition_data_cifar10(
         dataidxs = net_dataidx_map[client_idx]
         local_data_num = len(dataidxs)
         data_local_num_dict[client_idx] = local_data_num
-        logging.info(
-            "client_idx = %d, local_sample_number = %d" % (client_idx, local_data_num)
-        )
+        logging.info("client_idx = %d, local_sample_number = %d" % (client_idx, local_data_num))
 
         # training batch size = 64; algorithms batch size = 32
         train_data_local, test_data_local = get_dataloader(
-            dataset, data_dir, batch_size, batch_size, dataidxs,
-                data_efficient_load=True, full_train_dataset=cifar10_train_ds, full_test_dataset=cifar10_test_ds
+            dataset,
+            data_dir,
+            batch_size,
+            batch_size,
+            dataidxs,
+            data_efficient_load=True,
+            full_train_dataset=cifar10_train_ds,
+            full_test_dataset=cifar10_test_ds,
         )
         logging.info(
             "client_idx = %d, batch_num_train_local = %d, batch_num_test_local = %d"
@@ -402,25 +379,3 @@ def efficient_load_partition_data_cifar10(
         test_data_local_dict,
         class_num,
     )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

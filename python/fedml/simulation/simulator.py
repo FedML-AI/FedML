@@ -148,7 +148,7 @@ class SimulatorMPI:
             FedML_Decentralized_Demo_distributed(args, args.process_id, args.worker_num, args.comm)
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDGAN:
             FedML_FedGan_distributed(
-                args.process_id, args.worker_num, device, args.comm, model, args, dataset,
+                args, args.process_id, args.worker_num, device, args.comm, model, dataset
             )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDGKT:
             FedML_FedGKT_distributed(

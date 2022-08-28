@@ -9,9 +9,9 @@ on:
     # Nightly build at 12:12 A.M.
     - cron: "12 12 */1 * *"
   push:
-    branches: [ master,  test/v0.7.0, dev/v0.7.0 ]
+    branches: [ master, dev/v0.7.0 ]
   pull_request:
-    branches: [ master,  test/v0.7.0, dev/v0.7.0 ]
+    branches: [ master, dev/v0.7.0 ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -37,6 +37,7 @@ jobs:
 #          - os: windows-latest
 #            python-version: '3.6'
     runs-on: [self-hosted, runner-linux, devops]
+    timeout-minutes: 15
     steps:
       - uses: actions/setup-python@v4
         with:
@@ -57,3 +58,33 @@ jobs:
           cd quick_start/parrot
           python torch_fedavg_mnist_lr_one_line_example.py --cf fedml_config.yaml
           python torch_fedavg_mnist_lr_custum_data_and_model_example.py --cf fedml_config.yaml
+
+      - name: test sp - sp_decentralized_mnist_lr_example
+        run: |
+          cd examples/simulation/sp_decentralized_mnist_lr_example
+          python torch_fedavg_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
+
+      - name: test sp - sp_fednova_mnist_lr_example
+        run: |
+          cd examples/simulation/sp_fednova_mnist_lr_example
+          python torch_fednova_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
+          
+      - name: test sp - sp_fedopt_mnist_lr_example
+        run: |
+          cd examples/simulation/sp_fedopt_mnist_lr_example
+          python torch_fedopt_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
+
+      - name: test sp - sp_hierarchicalfl_mnist_lr_example
+        run: |
+          cd examples/simulation/sp_hierarchicalfl_mnist_lr_example
+          python torch_hierarchicalfl_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
+
+      - name: test sp - sp_turboaggregate_mnist_lr_example
+        run: |
+          cd examples/simulation/sp_turboaggregate_mnist_lr_example
+          python torch_turboaggregate_mnist_lr_step_by_step_example.py --cf fedml_config.yaml 
+
+      - name: test sp - sp_vertical_mnist_lr_example
+        run: |
+          cd examples/simulation/sp_vertical_mnist_lr_example
+          python torch_vertical_mnist_lr_step_by_step_example.py --cf fedml_config.yaml 

@@ -19,8 +19,8 @@ pip install "fedml[tensorflow]"
 pip install "fedml[jax]"
 pip install "fedml[mxnet]"
 ```
-Note that the commands above only install the CPU version. 
-If you need GPU/TPU version, please follow TensorFlow/Jax/MXNet official guidance.
+The above commands work properly in Linux environment. 
+For Windows/Mac OS (Intel)/Mac OS (M1), you may need to follow TensorFlow/Jax/MXNet official guidance to fix related installation issues.
 
 ## Installing FedML with Anaconda
 

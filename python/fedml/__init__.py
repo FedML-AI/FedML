@@ -1,11 +1,10 @@
 import logging
+import multiprocessing
 import os
 import random
 
-import multiprocessing
 import numpy as np
 import torch
-
 
 import fedml
 from .cli.env.collect_env import collect_env
@@ -17,11 +16,12 @@ from .constants import (
     FEDML_TRAINING_PLATFORM_CROSS_SILO,
     FEDML_TRAINING_PLATFORM_CROSS_DEVICE,
 )
+from .core.common.ml_engine_backend import MLEngineBackend
 
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.7.298"
+__version__ = "0.7.300"
 
 
 def init(args=None):
@@ -45,7 +45,7 @@ def init(args=None):
     """
     # https://stackoverflow.com/questions/53014306/error-15-initializing-libiomp5-dylib-but-found-libiomp5-dylib-already-initial
     """
-    os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
+    os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
 
     seed = args.random_seed
     random.seed(seed)
@@ -56,18 +56,10 @@ def init(args=None):
 
     mlops.pre_setup(args)
 
-    if (
-        args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
-        and hasattr(args, "backend")
-        and args.backend == "MPI"
-    ):
+    if args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION and hasattr(args, "backend") and args.backend == "MPI":
         args = init_simulation_mpi(args)
 
-    elif (
-        args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
-        and hasattr(args, "backend")
-        and args.backend == "sp"
-    ):
+    elif args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION and hasattr(args, "backend") and args.backend == "sp":
         args = init_simulation_sp(args)
     elif (
         args.training_type == FEDML_TRAINING_PLATFORM_SIMULATION
@@ -158,8 +150,9 @@ def manage_profiling_args(args):
                 wandb_args["group"] = "Test1"
                 wandb_args["name"] = f"Client {args.rank}"
                 wandb_args["job_type"] = str(args.rank)
-                
+
             import wandb
+
             wandb.init(**wandb_args)
 
             from .core.mlops.mlops_profiler_event import MLOpsProfilerEvent
@@ -174,9 +167,7 @@ def manage_cuda_rpc_args(args):
 
     if args.enable_cuda_rpc and args.backend != "TRPC":
         args.enable_cuda_rpc = False
-        print(
-            "Argument enable_cuda_rpc is ignored. Cuda RPC only works with TRPC backend."
-        )
+        print("Argument enable_cuda_rpc is ignored. Cuda RPC only works with TRPC backend.")
 
     # When Cuda RPC is not used, tensors should be moved to cpu before transfer with TRPC
     if (not args.enable_cuda_rpc) and args.backend == "TRPC":
@@ -188,9 +179,7 @@ def manage_cuda_rpc_args(args):
     if args.enable_cuda_rpc:
         if not hasattr(args, "cuda_rpc_gpu_mapping"):
             raise Exception("Invalid config. cuda_rpc_gpu_mapping is required when enable_cuda_rpc=True")
-        assert (
-            type(args.cuda_rpc_gpu_mapping) is dict
-        ), "Invalid cuda_rpc_gpu_mapping type. Expected dict"
+        assert type(args.cuda_rpc_gpu_mapping) is dict, "Invalid cuda_rpc_gpu_mapping type. Expected dict"
         assert (
             len(args.cuda_rpc_gpu_mapping) == args.worker_num + 1
         ), f"Invalid cuda_rpc_gpu_mapping. Expected list of size {args.worker_num + 1}"
@@ -211,9 +200,7 @@ def manage_mpi_args(args):
         if process_id == 0:
             args.role = "server"
         # args.worker_num = worker_num
-        assert (
-            args.worker_num + 1 == world_size
-        ), f"Invalid number of mpi processes. Expected {args.worker_num + 1}"
+        assert args.worker_num + 1 == world_size, f"Invalid number of mpi processes. Expected {args.worker_num + 1}"
     else:
         args.comm = None
 
@@ -281,15 +268,9 @@ def update_client_id_list(args):
         generate args.client_id_list for CLI mode where args.client_id_list is set to None
         In MLOps mode, args.client_id_list will be set to real-time client id list selected by UI (not starting from 1)
     """
-    if not hasattr(args, "using_mlops") or (
-        hasattr(args, "using_mlops") and not args.using_mlops
-    ):
+    if not hasattr(args, "using_mlops") or (hasattr(args, "using_mlops") and not args.using_mlops):
         print("args.client_id_list = {}".format(print(args.client_id_list)))
-        if (
-            args.client_id_list is None
-            or args.client_id_list == "None"
-            or args.client_id_list == "[]"
-        ):
+        if args.client_id_list is None or args.client_id_list == "None" or args.client_id_list == "[]":
             if (
                 args.training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE
                 or args.training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO
@@ -299,21 +280,13 @@ def update_client_id_list(args):
                     for client_idx in range(args.client_num_per_round):
                         client_id_list.append(client_idx + 1)
                     args.client_id_list = str(client_id_list)
-                    print(
-                        "------------------server client_id_list = {}-------------------".format(
-                            args.client_id_list
-                        )
-                    )
+                    print("------------------server client_id_list = {}-------------------".format(args.client_id_list))
                 else:
                     # for the client, we only specify its client id in the list, not including others.
                     client_id_list = []
                     client_id_list.append(args.rank)
                     args.client_id_list = str(client_id_list)
-                    print(
-                        "------------------client client_id_list = {}-------------------".format(
-                            args.client_id_list
-                        )
-                    )
+                    print("------------------client client_id_list = {}-------------------".format(args.client_id_list))
             else:
                 print(
                     "training_type != FEDML_TRAINING_PLATFORM_CROSS_DEVICE and training_type != FEDML_TRAINING_PLATFORM_CROSS_SILO"
@@ -322,6 +295,8 @@ def update_client_id_list(args):
             print("args.client_id_list is not None")
     else:
         print("using_mlops = true")
+
+
 
 
 def init_cross_device(args):
@@ -350,11 +325,12 @@ from .launch_cross_silo_hi import run_hierarchical_cross_silo_client
 
 from .launch_cross_device import run_mnn_server
 
-
+from .core.common.ml_engine_backend import MLEngineBackend
 
 from .runner import FedMLRunner
 
 __all__ = [
+    "MLEngineBackend",
     "device",
     "data",
     "model",
