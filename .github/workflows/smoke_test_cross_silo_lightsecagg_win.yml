@@ -52,17 +52,17 @@ jobs:
       - name: server - cross-silo - ho
         run: |
           cd examples/cross_silo/light_sec_agg_example
-          .\run_server.bat cross-silo-lightsecagg-${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
+          .\run_server.bat cross-silo-lightsecagg-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
         if:   ${{ matrix.client-index == '0' }}
 
       - name: client 1 - cross-silo - ho
         run: |
           cd examples/cross_silo/light_sec_agg_example
-          .\run_client.bat 1 cross-silo-lightsecagg-${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
+          .\run_client.bat 1 cross-silo-lightsecagg-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
         if:   ${{ matrix.client-index == '1' }}
 
       - name: client 2 - cross-silo - lightsecagg
         run: |
           cd examples/cross_silo/light_sec_agg_example
-          .\run_client.bat 2 cross-silo-lightsecagg-${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
+          .\run_client.bat 2 cross-silo-lightsecagg-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
         if: ${{ matrix.client-index == '2' }}
