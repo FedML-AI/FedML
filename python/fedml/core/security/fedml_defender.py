@@ -39,15 +39,7 @@ class FedMLDefender:
         self.defender = None
 
     def init(self, args):
-        if hasattr(args, MLEngineBackend.ml_engine_args_flag) and args.ml_engine in [
-            MLEngineBackend.ml_engine_backend_tf,
-            MLEngineBackend.ml_engine_backend_jax,
-            MLEngineBackend.ml_engine_backend_mxnet,
-        ]:
-            raise ValueError(
-                "defender not supported for this machine learning engine: %s"
-                % args.ml_engine
-            )
+
         if hasattr(args, "enable_defense") and args.enable_defense:
             self.args = args
             logging.info("------init defense..." + args.defense_type)
@@ -77,6 +69,19 @@ class FedMLDefender:
                 raise Exception("args.defense_type is not defined!")
         else:
             self.is_enabled = False
+
+        if self.is_enabled:
+            if hasattr(args, MLEngineBackend.ml_engine_args_flag) and args.ml_engine in [
+                MLEngineBackend.ml_engine_backend_tf,
+                MLEngineBackend.ml_engine_backend_jax,
+                MLEngineBackend.ml_engine_backend_mxnet,
+            ]:
+                logging.info(
+                    "FedMLDefender is not supported for the machine learning engine: %s. "
+                    "We will support more engines in the future iteration."
+                    % args.ml_engine
+                )
+                self.is_enabled = False
 
     def is_defense_enabled(self):
         return self.is_enabled
