@@ -66,7 +66,7 @@ class MqttManager(object):
 
     def send_message(self, topic, message, wait_for_publish=True):
         mqtt_send_start_time = time.time()
-        ret_info = self._client.publish(topic, payload=message, qos=2)
+        ret_info = self._client.publish(topic, payload=message)
         if wait_for_publish:
             try:
                 ret_info.wait_for_publish(1)
