@@ -12,6 +12,7 @@ ADD ./devops/scripts/requirements.txt ./fedml/requirements.txt
 COPY ./python/fedml ./fedml/fedml-pip
 RUN chmod a+x ./fedml/copy-fedml-package.sh
 RUN bash ./fedml/copy-fedml-package.sh
+RUN cd ./fedml/fedml-pip/python;pip install -e ./
 
 RUN chmod a+x ./fedml/runner.sh
 RUN chmod a+x ./fedml/entry-point.sh
