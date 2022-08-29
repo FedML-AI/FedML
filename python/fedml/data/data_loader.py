@@ -137,13 +137,6 @@ def data_server_preprocess(args):
             elif len(args.data_cache_dir) != 0:
                 logging.info("No synthetic data url and private local data dir")
                 return
-            args.data_cache_dir = os.path.join(
-                args.data_cache_dir,
-                "run_Id_%s" % args.run_id,
-                "edgeNums_%s" % (args.client_num_in_total),
-                args.dataset,
-                "edgeId_%s" % args.client_id,
-            )
         client.loop_forever()
 
 
@@ -458,6 +451,14 @@ def load_synthetic_data(args):
                     args.private_local_data = ""
                 else:
                     args.synthetic_data_url = ""
+                if args.process_id != 0:
+                    args.data_cache_dir = os.path.join(
+                        args.data_cache_dir,
+                        "run_Id_%s" % args.run_id,
+                        "edgeNums_%s" % (args.client_num_in_total),
+                        args.dataset,
+                        "edgeId_%s" % args.client_id,
+                    )
                 (
                     train_data_num,
                     test_data_num,
