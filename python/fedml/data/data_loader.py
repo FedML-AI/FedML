@@ -54,7 +54,7 @@ def subscribe(s3_obj, BUCKET_NAME, client: mqtt_client, args):
                     "run_Id_%s" % args.run_id,
                     "edgeNums_%s" % (args.client_num_in_total),
                     args.dataset,
-                    "edgeId_%s" % (15 + int(args.client_id_list[1])),
+                    "edgeId_%s" % args.client_id,
                 )
             )
             # start download the file
@@ -68,20 +68,19 @@ def subscribe(s3_obj, BUCKET_NAME, client: mqtt_client, args):
                     "run_Id_%s" % args.run_id,
                     "edgeNums_%s" % (args.client_num_in_total),
                     args.dataset,
-                    "edgeId_%s" % (15 + int(args.client_id_list[1])),
+                    "edgeId_%s" % args.client_id,
                 ),
                 os.path.join(
                     args.data_cache_dir,
                     "run_Id_%s" % args.run_id,
                     "edgeNums_%s" % (args.client_num_in_total),
                     args.dataset,
-                    "edgeId_%s" % (15 + int(args.client_id_list[1])),
+                    "edgeId_%s" % args.client_id,
                     "cifar-10-python.tar.gz",
                 ),
             )
 
-    topic = "data_svr/dataset/%s" % (15 + int(args.client_id_list[1]))
-    # topic = "data_svr/dataset/%s" % args.process_id
+    topic = "data_svr/dataset/%s" % args.client_id
     client.subscribe(topic)
     client.on_message = on_message
 
@@ -133,7 +132,7 @@ def data_server_preprocess(args):
                     logging.info("Data Server Is Splitting Dataset, Waiting For Mqtt Message")
                 elif split_status == 2:
                     logging.info("Data Server Splitted Dataset Complete")
-                    query_data_server(args, 15 + int(args.client_id_list[1]), s3_obj, BUCKET_NAME)
+                    query_data_server(args, args.client_id, s3_obj, BUCKET_NAME)
                     disconnect(client)
             elif len(args.data_cache_dir) != 0:
                 logging.info("No synthetic data url and private local data dir")
@@ -143,7 +142,7 @@ def data_server_preprocess(args):
                 "run_Id_%s" % args.run_id,
                 "edgeNums_%s" % (args.client_num_in_total),
                 args.dataset,
-                "edgeId_%s" % (15 + int(args.client_id_list[1])),
+                "edgeId_%s" % args.client_id,
             )
         client.loop_forever()
 
