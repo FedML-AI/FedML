@@ -4,9 +4,9 @@
 
 - [mqtt_s3_fedavg_mnist_lr_example](./examples/mqtt_s3_fedavg_mnist_lr_example.md): an example to illustrate running horizontal federated learning in data silos (hospitals, banks, etc.)
 
-- [mqtt_s3_fedavg_mnist_lr_example](./examples/mqtt_s3_fedavg_attack_mnist_lr_example.md): an example to illustrate running attackers on horizontal federated learning
+- [mqtt_s3_fedavg_attack_mnist_lr_example](./examples/mqtt_s3_fedavg_attack_mnist_lr_example.md): an example to illustrate running attackers on horizontal federated learning
 
-- [mqtt_s3_fedavg_mnist_lr_example](./examples/mqtt_s3_fedavg_defense_mnist_lr_example.md): an example to illustrate running defense methods on horizontal federated learning
+- [mqtt_s3_fedavg_defense_mnist_lr_example](./examples/mqtt_s3_fedavg_defense_mnist_lr_example.md): an example to illustrate running defense methods on horizontal federated learning
 
 ## Hierarchical Federated Learning
 
@@ -14,4 +14,5 @@
 As shown in the figure below, here `hierarchical` implies that each FL Client (data silo) has multiple GPUs that can run local distributed training with PyTorch DDP, and the FL server then aggregates globally from the results received from all FL Clients. 
 
 <img src="./../_static/image/cross-silo-hi.png" alt="parrot" style="width:100%;"/>
+
 
