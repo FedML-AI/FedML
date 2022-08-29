@@ -252,7 +252,7 @@ def combine_batches(batches):
 
 
 def load_synthetic_data(args):
-    if args.training_type == "cross_silo" and args.synthetic_data_url.find("https") != -1:
+    if args.training_type == "cross_silo" and hasattr(args, 'synthetic_data_url') and args.synthetic_data_url.find("https") != -1:
         data_server_preprocess(args)
     dataset_name = args.dataset
     # check if the centralized training is enabled
@@ -453,7 +453,11 @@ def load_synthetic_data(args):
 
     else:
         if dataset_name == "cifar10":
-            # if hasattr(args, "using_cloud_data") and args.using_cloud_data:
+            if hasattr(args, "synthetic_data_url") or hasattr(args, "private_local_data"):
+                if hasattr(args, "synthetic_data_url"):
+                    args.private_local_data = ""
+                else:
+                    args.synthetic_data_url = ""
                 (
                     train_data_num,
                     test_data_num,
@@ -511,8 +515,8 @@ def load_synthetic_data(args):
                 ]
 
                 return dataset, class_num
-            # else:
-            #     data_loader = load_partition_data_cifar10
+            else:
+                data_loader = load_partition_data_cifar10
 
         elif dataset_name == "cifar100":
             data_loader = load_partition_data_cifar100
