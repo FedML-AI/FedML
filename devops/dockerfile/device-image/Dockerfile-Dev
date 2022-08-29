@@ -10,10 +10,13 @@ ADD ./devops/scripts/entry-point.sh ./fedml/entry-point.sh
 ADD ./devops/scripts/requirements.txt ./fedml/requirements.txt
 
 COPY ./python ./fedml/fedml-pip
-RUN chmod a+x ./fedml/copy-fedml-package.sh
-RUN bash ./fedml/copy-fedml-package.sh
+#RUN chmod a+x ./fedml/copy-fedml-package.sh
+#RUN bash ./fedml/copy-fedml-package.sh
 WORKDIR ./fedml/fedml-pip/python
 RUN pip install -e ./
+RUN pip install -e '.[tensorflow]'
+RUN pip install -e '.[jax]'
+RUN pip install -e '.[mxnet]'
 
 RUN chmod a+x ./fedml/runner.sh
 RUN chmod a+x ./fedml/entry-point.sh
