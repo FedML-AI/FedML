@@ -109,7 +109,6 @@ def data_server_preprocess(args):
     mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
     s3_obj, BUCKET_NAME = setup_s3_service(s3_config)
 
-    args.synthetic_data_url = ""
     args.private_local_data = ""
     if args.process_id == 0:
         pass
@@ -118,36 +117,34 @@ def data_server_preprocess(args):
         subscribe(s3_obj, BUCKET_NAME, client, args)
         if args.dataset == "cifar10":
             # Mlops Run
-            if args.run_id > 0:
-                # check mlops run_status
-                private_local_dir, split_status, edgeids, dataset_s3_key = check_rundata(args)
-                args.private_local_data = private_local_dir
-                args.synthetic_data_url = dataset_s3_key
-                # MLOPS Run. User supply the local data dir
-                if len(args.private_local_data) != 0:
-                    logging.info("User has set the private local data dir")
+            # check mlops run_status
+            private_local_dir, split_status, edgeids, dataset_s3_key = check_rundata(args)
+            args.private_local_data = private_local_dir
+            # MLOPS Run. User supply the local data dir
+            if len(args.private_local_data) != 0:
+                logging.info("User has set the private local data dir")
+                disconnect(client)
+            # MLOPS Run need to Split Data
+            elif len(args.synthetic_data_url) != 0:
+                if split_status == 0 or split_status == 3:
+                    logging.info("Data Server Start Splitting Dataset")
+                    split_edge_data(args, edgeids)
+                elif split_status == 1:
+                    logging.info("Data Server Is Splitting Dataset, Waiting For Mqtt Message")
+                elif split_status == 2:
+                    logging.info("Data Server Splitted Dataset Complete")
+                    query_data_server(args, 15 + int(args.client_id_list[1]), s3_obj, BUCKET_NAME)
                     disconnect(client)
-                # MLOPS Run need to Split Data
-                elif len(args.synthetic_data_url) != 0:
-                    if split_status == 0 or split_status == 3:
-                        logging.info("Data Server Start Splitting Dataset")
-                        split_edge_data(args, edgeids)
-                    elif split_status == 1:
-                        logging.info("Data Server Is Splitting Dataset, Waiting For Mqtt Message")
-                    elif split_status == 2:
-                        logging.info("Data Server Splitted Dataset Complete")
-                        query_data_server(args, 15 + int(args.client_id_list[1]), s3_obj, BUCKET_NAME)
-                        disconnect(client)
-                elif len(args.data_cache_dir) != 0:
-                    logging.info("No synthetic data url and private local data dir")
-                    return
-                args.data_cache_dir = os.path.join(
-                    args.data_cache_dir,
-                    "run_Id_%s" % args.run_id,
-                    "edgeNums_%s" % (args.client_num_in_total),
-                    args.dataset,
-                    "edgeId_%s" % (15 + int(args.client_id_list[1])),
-                )
+            elif len(args.data_cache_dir) != 0:
+                logging.info("No synthetic data url and private local data dir")
+                return
+            args.data_cache_dir = os.path.join(
+                args.data_cache_dir,
+                "run_Id_%s" % args.run_id,
+                "edgeNums_%s" % (args.client_num_in_total),
+                args.dataset,
+                "edgeId_%s" % (15 + int(args.client_id_list[1])),
+            )
         client.loop_forever()
 
 
@@ -256,8 +253,7 @@ def combine_batches(batches):
 
 
 def load_synthetic_data(args):
-    # args.run_id = 1378
-    if args.training_type == "cross_silo" and args.run_id != '0':
+    if args.training_type == "cross_silo" and args.synthetic_data_url.find("https") != -1:
         data_server_preprocess(args)
     dataset_name = args.dataset
     # check if the centralized training is enabled
