@@ -836,7 +836,7 @@ class FedMLClientRunner:
         mqtt_client_object.subscribe(topic_exit_train_with_exception)
 
         # Broadcast the first active message.
-        self.send_agent_active_msg()
+        # self.send_agent_active_msg()
 
         # Echo results
         click.echo("")
