@@ -789,15 +789,6 @@ class FedMLClientRunner:
     def on_agent_mqtt_connected(self, mqtt_client_object):
         # The MQTT message topic format is as follows: <sender>/<receiver>/<action>
 
-        # Init the mlops metrics object
-        if self.mlops_metrics is None:
-            self.mlops_metrics = MLOpsMetrics()
-            self.mlops_metrics.set_messenger(self.mqtt_mgr)
-            self.mlops_metrics.report_client_training_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
-            MLOpsStatus.get_instance().set_client_agent_status(
-                self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE
-            )
-
         # Setup MQTT message listener for starting training
         topic_start_train = "flserver_agent/" + str(self.edge_id) + "/start_train"
         self.mqtt_mgr.add_message_listener(topic_start_train, self.callback_start_train)
@@ -836,7 +827,7 @@ class FedMLClientRunner:
         mqtt_client_object.subscribe(topic_exit_train_with_exception)
 
         # Broadcast the first active message.
-        self.send_agent_active_msg()
+        # self.send_agent_active_msg()
 
         # Echo results
         click.echo("")
@@ -871,6 +862,12 @@ class FedMLClientRunner:
         self.mqtt_mgr.add_connected_listener(self.on_agent_mqtt_connected)
         self.mqtt_mgr.add_disconnected_listener(self.on_agent_mqtt_disconnected)
         self.mqtt_mgr.connect()
+
+        self.setup_client_mqtt_mgr()
+        self.wait_client_mqtt_connected()
+        self.mlops_metrics.report_client_training_status(self.edge_id,
+                                                         ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
+        self.release_client_mqtt_mgr()
 
     def start_agent_mqtt_loop(self):
         # Start MQTT message loop
