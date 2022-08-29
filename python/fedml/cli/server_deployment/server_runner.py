@@ -1109,7 +1109,7 @@ class FedMLServerRunner:
         mqtt_client_object.subscribe(topic_server_active_msg)
 
         # Broadcast the first active message.
-        self.send_agent_active_msg()
+        # self.send_agent_active_msg()
 
         # Echo results
         click.echo("")
