@@ -145,13 +145,13 @@ pipeline {
 
                 //sh 'docker build -f ./devops/dockerfile/device-image/Dockerfile-Base -t public.ecr.aws/x6k8q1x9/fedml-device-image:base .'
 
-                sh 'docker build -f ./devops/dockerfile/device-image/Dockerfile-Dev -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_DEV .'
+                sh 'docker build --network=host -f ./devops/dockerfile/device-image/Dockerfile-Dev -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_DEV .'
 
-                sh 'docker build -f ./devops/dockerfile/server-agent/Dockerfile-Dev -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_DEV .'
+                sh 'docker build --network=host -f ./devops/dockerfile/server-agent/Dockerfile-Dev -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_DEV .'
 
-                sh 'docker build -f ./devops/dockerfile/client-agent/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_CLIENT_AGENT:$VERSION_DEV --build-arg VERSION=$VERSION_DEV .'
+                sh 'docker build --network=host -f ./devops/dockerfile/client-agent/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_CLIENT_AGENT:$VERSION_DEV --build-arg VERSION=$VERSION_DEV .'
 
-                sh 'docker build -f ./devops/dockerfile/edge-server/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_EDGE_SERVER:$VERSION_DEV --build-arg VERSION=$VERSION_DEV .'
+                sh 'docker build --network=host -f ./devops/dockerfile/edge-server/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_EDGE_SERVER:$VERSION_DEV --build-arg VERSION=$VERSION_DEV .'
             }
           }
         }
