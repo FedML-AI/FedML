@@ -23,7 +23,6 @@ requirements = [
     "PyYAML",
     "h5py",
     "tqdm",
-    "wandb",
     "wget",
     "paho-mqtt",
     "boto3",
