@@ -50,7 +50,6 @@ class AttackDefenseDataLoader:
         """
         Loads DataLoader object from a file if available.
 
-        :param logger: loguru.Logger
         :param filename: string
         """
         print("Loading data loader from file: {}".format(filename))
