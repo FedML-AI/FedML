@@ -10,8 +10,6 @@ ADD ./devops/scripts/requirements.txt ./fedml/requirements.txt
 RUN chmod a+x ./fedml/runner.sh
 RUN echo "Updating..."
 
-RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf
-RUN apt-get update
 RUN pip3 install -r ./fedml/requirements.txt
 
 COPY ./python ./fedml/fedml-pip
