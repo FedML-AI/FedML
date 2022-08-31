@@ -914,6 +914,22 @@ class FedMLServerRunner:
             self.server_active_list[server_id] = status
 
     @staticmethod
+    def process_ota_upgrade_msg():
+        os.system("pip install -U fedml")
+
+    def callback_server_ota_msg(self, topic, payload):
+        request_json = json.loads(payload)
+        cmd = request_json["cmd"]
+
+        if cmd == ServerConstants.FEDML_OTA_CMD_UPGRADE:
+            try:
+                Process(target=FedMLServerRunner.process_ota_upgrade_msg).start()
+            except Exception as e:
+                pass
+        elif cmd == ServerConstants.FEDML_OTA_CMD_RESTART:
+            raise Exception("Restart runner...")
+
+    @staticmethod
     def get_device_id():
         device_file_path = os.path.join(ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
         file_for_device_id = os.path.join(device_file_path, "devices.id")
@@ -1051,17 +1067,6 @@ class FedMLServerRunner:
     def on_agent_mqtt_connected(self, mqtt_client_object):
         # The MQTT message topic format is as follows: <sender>/<receiver>/<action>
 
-        # Init the mlops metrics object
-        if self.mlops_metrics is None:
-            self.mlops_metrics = MLOpsMetrics()
-            self.mlops_metrics.set_messenger(self.mqtt_mgr)
-            self.mlops_metrics.run_id = self.run_id
-            self.mlops_metrics.edge_id = self.edge_id
-            self.mlops_metrics.report_server_training_status(self.edge_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE)
-            MLOpsStatus.get_instance().set_server_agent_status(
-                self.edge_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE
-            )
-
         # Setup MQTT message listener for starting training
         server_agent_id = self.edge_id
         topic_start_train = "mlops/flserver_agent_" + str(server_agent_id) + "/start_train"
@@ -1095,6 +1100,10 @@ class FedMLServerRunner:
         topic_server_active_msg = "/flserver/active"
         self.mqtt_mgr.add_message_listener(topic_server_active_msg, self.callback_server_active_msg)
 
+        # Setup MQTT message listener to OTA messages from the MLOps.
+        topic_ota_msg = "/mlops/flserver_agent_" + str(server_agent_id) + "/ota"
+        self.mqtt_mgr.add_message_listener(topic_ota_msg, self.callback_server_ota_msg)
+
         # Subscribe topics for starting train, stopping train and fetching client status.
         mqtt_client_object.subscribe(topic_start_train)
         mqtt_client_object.subscribe(topic_stop_train)
@@ -1104,6 +1113,7 @@ class FedMLServerRunner:
         mqtt_client_object.subscribe(topic_client_agent_active_msg)
         mqtt_client_object.subscribe(topic_server_last_will_msg)
         mqtt_client_object.subscribe(topic_server_active_msg)
+        mqtt_client_object.subscribe(topic_ota_msg)
 
         # Broadcast the first active message.
         # self.send_agent_active_msg()
@@ -1135,6 +1145,14 @@ class FedMLServerRunner:
         self.mqtt_mgr.add_connected_listener(self.on_agent_mqtt_connected)
         self.mqtt_mgr.add_disconnected_listener(self.on_agent_mqtt_disconnected)
         self.mqtt_mgr.connect()
+
+        self.setup_client_mqtt_mgr()
+        self.wait_client_mqtt_connected()
+        self.mlops_metrics.report_server_training_status(self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE)
+        MLOpsStatus.get_instance().set_server_agent_status(
+            self.edge_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE
+        )
+        self.release_client_mqtt_mgr()
 
     def start_agent_mqtt_loop(self):
         # Start MQTT message loop

@@ -654,6 +654,22 @@ class FedMLClientRunner:
         if edge_id is not None:
             self.client_active_list[edge_id] = status
 
+    @staticmethod
+    def process_ota_upgrade_msg():
+        os.system("pip install -U fedml")
+
+    def callback_client_ota_msg(self, topic, payload):
+        request_json = json.loads(payload)
+        cmd = request_json["cmd"]
+
+        if cmd == ClientConstants.FEDML_OTA_CMD_UPGRADE:
+            try:
+                Process(target=FedMLClientRunner.process_ota_upgrade_msg).start()
+            except Exception as e:
+                pass
+        elif cmd == ClientConstants.FEDML_OTA_CMD_RESTART:
+            raise Exception("Restart runner...")
+
     def save_training_status(self, edge_id, training_status):
         self.current_training_status = training_status
         ClientConstants.save_training_infos(edge_id, training_status)
@@ -816,6 +832,10 @@ class FedMLClientRunner:
         topic_active_msg = "/flclient/active"
         self.mqtt_mgr.add_message_listener(topic_active_msg, self.callback_client_active_msg)
 
+        # Setup MQTT message listener to OTA messages from the MLOps.
+        topic_ota_msg = "/mlops/flclient_agent_" + str(self.edge_id) + "/ota"
+        self.mqtt_mgr.add_message_listener(topic_ota_msg, self.callback_client_ota_msg)
+
         # Subscribe topics for starting train, stopping train and fetching client status.
         mqtt_client_object.subscribe(topic_start_train)
         mqtt_client_object.subscribe(topic_stop_train)
@@ -824,6 +844,7 @@ class FedMLClientRunner:
         mqtt_client_object.subscribe(topic_last_will_msg)
         mqtt_client_object.subscribe(topic_active_msg)
         mqtt_client_object.subscribe(topic_exit_train_with_exception)
+        mqtt_client_object.subscribe(topic_ota_msg)
 
         # Broadcast the first active message.
         # self.send_agent_active_msg()
@@ -866,6 +887,7 @@ class FedMLClientRunner:
         self.wait_client_mqtt_connected()
         self.mlops_metrics.report_client_training_status(self.edge_id,
                                                          ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
+        MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
         self.release_client_mqtt_mgr()
 
     def start_agent_mqtt_loop(self):
