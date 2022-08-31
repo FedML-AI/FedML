@@ -660,11 +660,20 @@ class FedMLClientRunner:
 
     @staticmethod
     def get_device_id():
-        file_for_device_id = os.path.join(ClientConstants.get_data_dir(), ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, "devices.id")
+        device_file_path = os.path.join(ClientConstants.get_data_dir(),
+                                        ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
+        file_for_device_id = os.path.join(device_file_path, "devices.id")
+        if not os.path.exists(device_file_path):
+            os.makedirs(device_file_path)
+        elif os.path.exists(file_for_device_id):
+            with open(file_for_device_id, 'r', encoding='utf-8') as f:
+                device_id_from_file = f.readline()
+                if device_id_from_file is not None and device_id_from_file != "":
+                    return device_id_from_file
 
-        sys_name = platform.system()
-        if sys_name == "Darwin":
-            cmd_get_serial_num = "system_profiler SPHardwareDataType | grep Serial | awk '{gsub(/ /,\"\")}{print}' |awk -F':' '{print $2}'"
+        if platform.system() == "Darwin":
+            cmd_get_serial_num = "system_profiler SPHardwareDataType | grep Serial | awk '{gsub(/ /,\"\")}{print}' " \
+                                 "|awk -F':' '{print $2}' "
             device_id = os.popen(cmd_get_serial_num).read()
             device_id = device_id.replace('\n', '').replace(' ', '')
             if device_id is None or device_id == "":
@@ -695,23 +704,13 @@ class FedMLClientRunner:
                 )
                 device_id = hex(device_id)
 
-        device_file_path = os.path.join(ClientConstants.get_data_dir(), ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
-        if not os.path.exists(device_file_path):
-            os.makedirs(device_file_path)
         if device_id is not None and device_id != "":
             with open(file_for_device_id, 'w', encoding='utf-8') as f:
                 f.write(device_id)
         else:
-            device_id_from_file = None
-            if os.path.exists(file_for_device_id):
-                with open(file_for_device_id, 'r', encoding='utf-8') as f:
-                    device_id_from_file = f.readline()
-            if device_id_from_file is not None and device_id_from_file != "":
-                device_id = device_id_from_file
-            else:
-                device_id = hex(uuid.uuid4())
-                with open(file_for_device_id, 'w', encoding='utf-8') as f:
-                    f.write(device_id)
+            device_id = hex(uuid.uuid4())
+            with open(file_for_device_id, 'w', encoding='utf-8') as f:
+                f.write(device_id)
 
         return device_id
 
@@ -875,3 +874,6 @@ class FedMLClientRunner:
             self.mqtt_mgr.loop_forever()
         except Exception as e:
             pass
+
+
+
