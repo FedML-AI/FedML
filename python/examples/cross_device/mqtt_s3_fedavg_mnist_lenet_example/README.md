@@ -36,7 +36,7 @@ brew install android-platform-tools
 `python/examples/cross_device/mqtt_s3_fedavg_mnist_lr_example/custum_data_and_model/`
    
 ```
-bash run_server.sh
+bash run_server.sh your_run_id
 ```
 
 5. simulate the MLOps start_run message at `test/android_protocol_test/test_protocol.py`. Please run 
