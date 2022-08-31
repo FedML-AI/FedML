@@ -172,7 +172,8 @@ def log(metrics: dict, commit=True):
         #     k = "round_idx_" + k
         MLOpsStore.mlops_log_metrics[k] = v
     MLOpsStore.mlops_log_metrics["run_id"] = str(MLOpsStore.mlops_run_id)
-    MLOpsStore.mlops_log_metrics["timestamp"] = int(time.time_ns()/1000/1000)
+    timestamp = "{.2f}".format(float(time.time_ns()/1000/1000*1.0))
+    MLOpsStore.mlops_log_metrics["timestamp"] = float(timestamp)
     MLOpsStore.mlops_log_metrics_lock.release()
 
     logging.info("log metrics {}".format(json.dumps(MLOpsStore.mlops_log_metrics)))
