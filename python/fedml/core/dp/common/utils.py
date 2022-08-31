@@ -1,6 +1,10 @@
 import secrets
 from numbers import Real, Integral
 
+"""
+Common functions for DP. Some codes refer to diffprivlib: https://github.com/IBM/differential-privacy-library
+"""
+
 
 def check_bounds(lower, upper):
     if not isinstance(lower, Real) or not isinstance(upper, Real):
@@ -22,15 +26,19 @@ def check_integer_value(value):
     return True
 
 
-def check_params(epsilon, delta, sensitivity):
+def check_epsilon_delta(epsilon, delta, allow_zero=False):
     if not isinstance(epsilon, Real) or not isinstance(delta, Real):
         raise TypeError("Epsilon and delta must be numeric")
     if epsilon < 0:
         raise ValueError("Epsilon must be non-negative")
     if delta < 0 or float(delta) > 1.0:
         raise ValueError("Delta must be in [0, 1]")
-    if epsilon + delta == 0:
+    if not allow_zero and epsilon + delta == 0:
         raise ValueError("Epsilon and Delta cannot both be zero")
+
+
+def check_params(epsilon, delta, sensitivity):
+    check_epsilon_delta(epsilon, delta, allow_zero=False)
     if not isinstance(sensitivity, Real):
         raise TypeError("Sensitivity must be numeric")
     if sensitivity < 0:
