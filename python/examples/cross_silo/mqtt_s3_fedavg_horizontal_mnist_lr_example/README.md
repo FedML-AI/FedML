@@ -55,16 +55,16 @@ At the client side, the client ID (a.k.a rank) starts from 1.
 
 At the server side, run the following script:
 ```
-bash run_server.sh
+bash run_server.sh your_run_id
 ```
 
 For Silo/Client 1, run the following script on first node:
 ```
-bash run_client.sh 1
+bash run_client.sh 1 your_run_id
 ```
 For Silo/Client 2, run the following script:
 ```
-bash run_client.sh 2
+bash run_client.sh 2 your_run_id
 ```
 Note: please run the server first.
 Note: 
