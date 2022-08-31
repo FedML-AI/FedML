@@ -155,6 +155,7 @@ class Arguments:
                 and self.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL
             ):
                 # Add extra configs specific to silos or server
+                self.rank = int(self.rank)
                 if self.rank == 0:
                     extra_config_path = self.server_config_path
                 else:
