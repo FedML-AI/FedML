@@ -1,6 +1,7 @@
 
 import argparse
 import os
+import time
 
 from fedml.cli.comm_utils import sys_utils
 from fedml.cli.server_deployment.server_constants import ServerConstants
@@ -46,4 +47,5 @@ if __name__ == "__main__":
             ]
         )
         ret_code, exec_out, exec_err = ServerConstants.get_console_sys_out_pipe_err_results(login_pid)
+        time.sleep(15)
 
