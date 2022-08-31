@@ -34,6 +34,9 @@ class ClientConstants(object):
     LOCAL_RUNNER_INFO_DIR_NAME = 'runner_infos'
     LOCAL_PACKAGE_HOME_DIR_NAME = "fedml_packages"
 
+    FEDML_OTA_CMD_UPGRADE = "upgrade"
+    FEDML_OTA_CMD_RESTART = "restart"
+
     LOGIN_MODE_CLIEN_INDEX = 0
     LOGIN_MODE_EDGE_SIMULATOR_INDEX = 1
     login_role_list = ["client", "edge_simulator"]

@@ -312,11 +312,11 @@ class MLOpsRuntimeLogDaemon:
 
         try:
             if self.args.log_server_url is None or self.args.log_server_url == "":
-                self.log_server_url = "https://open.fedml.ai/fedmlOpsServer/logs/update"
+                self.log_server_url = "https://open.fedml.ai/fedmlLogsServer/logs/update"
             else:
                 self.log_server_url = self.args.log_server_url
         except Exception as e:
-            self.log_server_url = "https://open.fedml.ai/fedmlOpsServer/logs/update"
+            self.log_server_url = "https://open.fedml.ai/fedmlLogsServer/logs/update"
 
         self.log_file_dir = self.args.log_file_dir
         self.log_processor_list = list()

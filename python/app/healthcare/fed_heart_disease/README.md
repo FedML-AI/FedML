@@ -71,10 +71,10 @@ There are only 4 center in this case, so the maximum number of clients is 4.
 If you want to run the edge server and client using MQTT, you need to run the following commands.
 
 ```bash
-bash run_server.sh
+bash run_server.sh your_run_id
 
 # in a new terminal window
-bash run_client.sh [CLIENT_ID]
+bash run_client.sh [CLIENT_ID] your_run_id
 ```
 
 Client ID is the id of the client from 1 to 4.

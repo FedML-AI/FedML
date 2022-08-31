@@ -48,15 +48,15 @@ train_args:
 If you want to run the edge server and client using MQTT, you need to run the following commands.
 
 ```bash
-bash run_server.sh
+bash run_server.sh your_run_id
 
 # in a new terminal window
 
 # run the client 1
-bash run_client.sh 1
+bash run_client.sh 1 your_run_id
 
 # run the client with client_id
-bash run_client.sh [CLIENT_ID]
+bash run_client.sh [CLIENT_ID] your_run_id
 ```
 
 To customize the number of client, you can change the following variables in `config/fedml_config.yaml`:
