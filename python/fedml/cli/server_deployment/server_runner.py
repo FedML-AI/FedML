@@ -914,13 +914,36 @@ class FedMLServerRunner:
             self.server_active_list[server_id] = status
 
     @staticmethod
-    def get_device_id():
-        file_for_device_id = os.path.join(ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
-                                          "devices.id")
+    def process_ota_upgrade_msg():
+        os.system("pip install -U fedml")
 
-        sys_name = platform.system()
-        if sys_name == "Darwin":
-            cmd_get_serial_num = "system_profiler SPHardwareDataType | grep Serial | awk '{gsub(/ /,\"\")}{print}' |awk -F':' '{print $2}'"
+    def callback_server_ota_msg(self, topic, payload):
+        request_json = json.loads(payload)
+        cmd = request_json["cmd"]
+
+        if cmd == ServerConstants.FEDML_OTA_CMD_UPGRADE:
+            try:
+                Process(target=FedMLServerRunner.process_ota_upgrade_msg).start()
+            except Exception as e:
+                pass
+        elif cmd == ServerConstants.FEDML_OTA_CMD_RESTART:
+            raise Exception("Restart runner...")
+
+    @staticmethod
+    def get_device_id():
+        device_file_path = os.path.join(ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
+        file_for_device_id = os.path.join(device_file_path, "devices.id")
+        if not os.path.exists(device_file_path):
+            os.makedirs(device_file_path)
+        elif os.path.exists(file_for_device_id):
+            with open(file_for_device_id, 'r', encoding='utf-8') as f:
+                device_id_from_file = f.readline()
+                if device_id_from_file is not None and device_id_from_file != "":
+                    return device_id_from_file
+
+        if platform.system() == "Darwin":
+            cmd_get_serial_num = "system_profiler SPHardwareDataType | grep Serial | awk '{gsub(/ /,\"\")}{print}' " \
+                                 "|awk -F':' '{print $2}' "
             device_id = os.popen(cmd_get_serial_num).read()
             device_id = device_id.replace('\n', '').replace(' ', '')
             if device_id is None or device_id == "":
@@ -950,23 +973,13 @@ class FedMLServerRunner:
                 )
                 device_id = hex(device_id)
 
-        device_file_path = os.path.join(ServerConstants.get_data_dir(), ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
-        if not os.path.exists(device_file_path):
-            os.makedirs(device_file_path)
         if device_id is not None and device_id != "":
             with open(file_for_device_id, 'w', encoding='utf-8') as f:
                 f.write(device_id)
         else:
-            device_id_from_file = None
-            if os.path.exists(file_for_device_id):
-                with open(file_for_device_id, 'r', encoding='utf-8') as f:
-                    device_id_from_file = f.readline()
-            if device_id_from_file is not None and device_id_from_file != "":
-                device_id = device_id_from_file
-            else:
-                device_id = hex(uuid.uuid4())
-                with open(file_for_device_id, 'w', encoding='utf-8') as f:
-                    f.write(device_id)
+            device_id = hex(uuid.uuid4())
+            with open(file_for_device_id, 'w', encoding='utf-8') as f:
+                f.write(device_id)
 
         return device_id
 
@@ -1054,17 +1067,6 @@ class FedMLServerRunner:
     def on_agent_mqtt_connected(self, mqtt_client_object):
         # The MQTT message topic format is as follows: <sender>/<receiver>/<action>
 
-        # Init the mlops metrics object
-        if self.mlops_metrics is None:
-            self.mlops_metrics = MLOpsMetrics()
-            self.mlops_metrics.set_messenger(self.mqtt_mgr)
-            self.mlops_metrics.run_id = self.run_id
-            self.mlops_metrics.edge_id = self.edge_id
-            self.mlops_metrics.report_server_training_status(self.edge_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE)
-            MLOpsStatus.get_instance().set_server_agent_status(
-                self.edge_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE
-            )
-
         # Setup MQTT message listener for starting training
         server_agent_id = self.edge_id
         topic_start_train = "mlops/flserver_agent_" + str(server_agent_id) + "/start_train"
@@ -1098,6 +1100,10 @@ class FedMLServerRunner:
         topic_server_active_msg = "/flserver/active"
         self.mqtt_mgr.add_message_listener(topic_server_active_msg, self.callback_server_active_msg)
 
+        # Setup MQTT message listener to OTA messages from the MLOps.
+        topic_ota_msg = "/mlops/flserver_agent_" + str(server_agent_id) + "/ota"
+        self.mqtt_mgr.add_message_listener(topic_ota_msg, self.callback_server_ota_msg)
+
         # Subscribe topics for starting train, stopping train and fetching client status.
         mqtt_client_object.subscribe(topic_start_train)
         mqtt_client_object.subscribe(topic_stop_train)
@@ -1107,6 +1113,7 @@ class FedMLServerRunner:
         mqtt_client_object.subscribe(topic_client_agent_active_msg)
         mqtt_client_object.subscribe(topic_server_last_will_msg)
         mqtt_client_object.subscribe(topic_server_active_msg)
+        mqtt_client_object.subscribe(topic_ota_msg)
 
         # Broadcast the first active message.
         # self.send_agent_active_msg()
@@ -1138,6 +1145,14 @@ class FedMLServerRunner:
         self.mqtt_mgr.add_connected_listener(self.on_agent_mqtt_connected)
         self.mqtt_mgr.add_disconnected_listener(self.on_agent_mqtt_disconnected)
         self.mqtt_mgr.connect()
+
+        self.setup_client_mqtt_mgr()
+        self.wait_client_mqtt_connected()
+        self.mlops_metrics.report_server_training_status(self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE)
+        MLOpsStatus.get_instance().set_server_agent_status(
+            self.edge_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE
+        )
+        self.release_client_mqtt_mgr()
 
     def start_agent_mqtt_loop(self):
         # Start MQTT message loop

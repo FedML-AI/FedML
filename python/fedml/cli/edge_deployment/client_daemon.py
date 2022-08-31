@@ -1,6 +1,7 @@
 
 import argparse
 import os
+import time
 
 from fedml.cli.comm_utils import sys_utils
 from fedml.cli.edge_deployment.client_constants import ClientConstants
@@ -43,4 +44,5 @@ if __name__ == "__main__":
             ]
         )
         ret_code, exec_out, exec_err = ClientConstants.get_console_sys_out_pipe_err_results(login_pid)
+        time.sleep(15)
 

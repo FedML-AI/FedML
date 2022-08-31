@@ -248,9 +248,9 @@ def init_cross_silo_hierarchical(args):
         if not hasattr(args, "n_node_in_silo"):
             args.n_node_in_silo = 1
         if not (hasattr(args, "n_proc_per_node") and args.n_proc_per_node):
-            pass
             if args.n_node_in_silo == 1 and torch.cuda.is_available():
                 gpu_count = torch.cuda.device_count()
+                # Checking if launcher is has spawned enoug processes.
                 if gpu_count == args.n_proc_in_silo:
                     print(f"Auto assigning GPU to processes.")
                     args.gpu_id = args.proc_rank_in_silo

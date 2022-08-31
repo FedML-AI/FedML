@@ -148,9 +148,7 @@ def get_torch_device(args, using_gpu, device_id, device_type):
         "args = {}, using_gpu = {}, device_id = {}, device_type = {}".format(args, using_gpu, device_id, device_type)
     )
     if using_gpu:
-        gpu_id = args.gpu_id
-        if device_id is not None:
-            gpu_id = device_id
+        gpu_id = device_id if device_id is not None else 0
 
         if torch.cuda.is_available() and device_type == MLEngineBackend.ml_device_type_gpu:
             device = torch.device(f"cuda:{gpu_id}")
