@@ -1,5 +1,7 @@
 import logging
-from .mechanisms import Laplace, Gaussian
+from fedml.core.dp.budget_accountant import BudgetAccountant
+from fedml.core.dp.common.utils import check_params
+from fedml.core.dp.mechanisms import Laplace, Gaussian
 
 
 class FedMLDifferentialPrivacy:
@@ -22,22 +24,26 @@ class FedMLDifferentialPrivacy:
                 ".......init dp......." + args.mechanism_type + "-" + args.dp_type
             )
             self.is_dp_enabled = True
-            mechanism_type = args.mechanism_type.lower()
+            self.mechanism_type = args.mechanism_type.lower()
             self.dp_type = args.dp_type.lower().strip()
+            check_params(args.epsilon, args.delta, args.sensitivity)
+            self.epsilon = args.epsilon
+            self.delta = args.delta
             if self.dp_type not in ["cdp", "ldp"]:
                 raise ValueError(
                     "DP type can only be cdp (for central DP) and ldp (for local DP)! "
                 )
-            if mechanism_type == "laplace":
+            if self.mechanism_type == "laplace":
                 self.dp = Laplace(
                     epsilon=args.epsilon, delta=args.delta, sensitivity=args.sensitivity
                 )
-            elif mechanism_type == "gaussian":
+            elif self.mechanism_type == "gaussian":
                 self.dp = Gaussian(
                     epsilon=args.epsilon, delta=args.delta, sensitivity=args.sensitivity
                 )
             else:
                 raise NotImplementedError("DP mechanism not implemented!")
+            self.accountant = BudgetAccountant()
 
     def is_enabled(self):
         return self.is_dp_enabled
@@ -55,6 +61,7 @@ class FedMLDifferentialPrivacy:
         new_grad = dict()
         for k in grad.keys():
             new_grad[k] = self._compute_new_grad(grad[k])
+        self.accountant.spend(epsilon=self.epsilon, delta=0)
         return new_grad
 
     def _compute_new_grad(self, grad):

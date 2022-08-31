@@ -6,32 +6,6 @@ import tarfile
 import zipfile
 
 
-import boto3
-from botocore.config import Config
-
-
-
-_config = Config(
-    retries={
-        'max_attempts': 4,
-        'mode': 'standard'
-    }
-)
-
-
-CN_REGION_NAME = "us-east-1"
-CN_S3_AKI = "AKIAY7HWPQWRHEZQDVGS"
-CN_S3_SAK = "chnPTIfUYxLbGCChXqFCTdvcz3AGWqsX3zTeynnL"
-BUCKET_NAME = "fedmls3"
-
-
-# s3 client
-s3 = boto3.client('s3', region_name=CN_REGION_NAME, aws_access_key_id=CN_S3_AKI,
-                  aws_secret_access_key=CN_S3_SAK, config=_config)
-# s3 resource
-s3_resource = boto3.resource('s3', region_name=CN_REGION_NAME, config=_config,
-                             aws_access_key_id=CN_S3_AKI, aws_secret_access_key=CN_S3_SAK)
-
 def make_dir(file_path):
     """
     package tar.gz file
@@ -47,7 +21,7 @@ def make_dir(file_path):
         return False
 
 
-def download_s3_file(edge_id, path_s3, root, path_local):
+def download_s3_file(s3, BUCKET_NAME, edge_id, path_s3, root, path_local):
     """
     download file
     :param path_s3: s3 key
