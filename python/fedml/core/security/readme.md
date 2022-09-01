@@ -13,7 +13,7 @@ https://proceedings.neurips.cc/paper/2019/file/ec1c59141046cd1866bbbcdfb6ae31d4-
 7. EdgeCaseBackdoorAttack: "Attack of the Tails: Yes, You Really Can Backdoor Federated Learning (NeurIPS 2020)" 
 https://proceedings.neurips.cc/paper/2020/file/b8ffa41d4e492f0fad2f13e29e1762eb-Paper.pdf
 
-Todo: 
+**Todo**
 1. "Analyzing Federated Learning through an Adversarial Lens" (ICML 2019) 
 http://proceedings.mlr.press/v97/bhagoji19a/bhagoji19a.pdf
 2. "How To Backdoor Federated Learning" (AISTATS'20) 
@@ -28,7 +28,6 @@ https://proceedings.neurips.cc/paper/2021/file/08040837089cdf46631a10aca5258e16-
 http://proceedings.mlr.press/v139/lam21b/lam21b.pdf
 7. “Model poisoning attacks against distributed machine learning systems” 
 https://www.spiedigitallibrary.org/conference-proceedings-of-spie/11006/110061D/Model-poisoning-attacks-against-distributed-machine-learning-systems/10.1117/12.2520275.full?SSO=1
-
 
 
 
@@ -62,11 +61,7 @@ https://arxiv.org/abs/2110.13864
 
 
 
-
-
-
-
-Todo:
+**Todo**
 1. "Attack-Resistant Federated Learning with Residual-based Reweighting"
 https://arxiv.org/pdf/1912.11464
 2. "CRFL: Certifiably Robust Federated Learning against Backdoor Attacks (ICML 2021)"
