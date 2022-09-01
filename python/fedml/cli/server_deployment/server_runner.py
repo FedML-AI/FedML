@@ -4,7 +4,7 @@ import json
 import logging
 import platform
 
-import multiprocessing
+import multiprocess as multiprocessing
 from multiprocessing import Process
 import os
 import shutil
