@@ -1,5 +1,5 @@
 import logging
-import multiprocessing
+import multiprocess as multiprocessing
 import os
 import random
 
