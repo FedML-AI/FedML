@@ -23,7 +23,7 @@ train_args:
   federated_optimizer: "FedAvg"
   # for CLI running, this can be None; in MLOps deployment, `client_id_list` will be replaced with real-time selected devices
   client_id_list:
-  client_num_in_total: 4
+  client_num_in_total: 1000
   client_num_per_round: 4
   comm_round: 10
   epochs: 1
