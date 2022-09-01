@@ -21,7 +21,7 @@ from .core.common.ml_engine_backend import MLEngineBackend
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.7.301"
+__version__ = "0.7.302"
 
 
 def init(args=None):
