@@ -69,3 +69,19 @@ jobs:
           echo run_id
           bash run_client.sh 2 $run_id
         if: ${{ matrix.client-index == '2' }}
+
+      - name: client 3 - cross-silo - attack
+        run: |
+          cd examples/cross_silo/mqtt_s3_fedavg_attack_mnist_lr_example
+          run_id=cross-silo-attack-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
+          echo run_id
+          bash run_client.sh 3 $run_id
+        if: ${{ matrix.client-index == '3' }}
+
+      - name: client 4 - cross-silo - attack
+        run: |
+          cd examples/cross_silo/mqtt_s3_fedavg_attack_mnist_lr_example
+          run_id=cross-silo-attack-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
+          echo run_id
+          bash run_client.sh 4 $run_id
+        if: ${{ matrix.client-index == '4' }} 
