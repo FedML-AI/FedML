@@ -1,4 +1,4 @@
-**Attack**
+# Attack
 1. ByzantineAttack: (1) zero mode (2) random mode (3) flip mode
 2. DLGAttack: "Deep leakage from gradients." 
 https://proceedings.neurips.cc/paper/2019/file/60a6c4002cc7b29142def8871531281a-Paper.pdf
@@ -32,7 +32,7 @@ https://www.spiedigitallibrary.org/conference-proceedings-of-spie/11006/110061D/
 
 
 
-**Defense**
+# Defense
 1. BulyanDefense: "The Hidden Vulnerability of Distributed Learning in Byzantium. "
 http://proceedings.mlr.press/v80/mhamdi18a/mhamdi18a.pdf
 2. CClipDefense: "Byzantine-Robust Learning on Heterogeneous Datasets via Bucketing"
