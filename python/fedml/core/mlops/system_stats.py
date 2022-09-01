@@ -1,13 +1,13 @@
 import os
 
-import psutil
-import pynvml
-from wandb.sdk.internal.stats import SystemStats
+from wandb.sdk.internal.settings_static import SettingsStatic
+from .stats_impl import WandbSystemStats
 
 
 class SysStats:
     def __init__(self):
-        self.sys_stats_impl = SystemStats(os.getpid(), None)
+        settings = SettingsStatic(d={"_stats_pid": os.getpid()})
+        self.sys_stats_impl = WandbSystemStats(settings=settings, interface=None)
         self.gpu_time_spent_accessing_memory = 0.0
         self.gpu_power_usage = 0.0
         self.gpu_temp = 0.0
@@ -23,6 +23,7 @@ class SysStats:
         self.cpu_utilization = 0.0
 
     def produce_info(self):
+        self.sys_stats_impl.gpu_count = 0
         stats = self.sys_stats_impl.stats()
 
         self.cpu_utilization = stats["cpu"]
