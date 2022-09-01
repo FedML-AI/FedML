@@ -3,7 +3,6 @@ common_args:
   scenario: "horizontal"
   using_mlops: false
   random_seed: 0
-  config_version: release
 
 environment_args:
   bootstrap: config/bootstrap.sh
@@ -23,9 +22,9 @@ train_args:
   federated_optimizer: "FedAvg"
   # for CLI running, this can be None; in MLOps deployment, `client_id_list` will be replaced with real-time selected devices
   client_id_list:
-  client_num_in_total: 4
-  client_num_per_round: 4
-  comm_round: 10
+  client_num_in_total: 1000
+  client_num_per_round: 2
+  comm_round: 50
   epochs: 1
   batch_size: 10
   client_optimizer: sgd
@@ -33,7 +32,7 @@ train_args:
   weight_decay: 0.001
 
 validation_args:
-  frequency_of_the_test: 1
+  frequency_of_the_test: 5
 
 device_args:
   using_gpu: false
@@ -42,9 +41,8 @@ device_args:
 
 comm_args:
   backend: "MQTT_S3"
-  mqtt_config_path:
-  s3_config_path:
-  grpc_ipconfig_path: ./config/grpc_ipconfig.csv
+  mqtt_config_path: config/mqtt_config.yaml
+  s3_config_path: config/s3_config.yaml
 
 tracking_args:
   # the default log path is at ~/fedml-client/fedml/logs/ and ~/fedml-server/fedml/logs/

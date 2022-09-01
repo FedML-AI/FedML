@@ -265,6 +265,8 @@ def log_training_finished_status(run_id=None):
 
     setup_log_mqtt_mgr()
     wait_log_mqtt_connected()
+    MLOpsStore.mlops_metrics.broadcast_client_training_status(MLOpsStore.mlops_edge_id,
+                                                              ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
     MLOpsStore.mlops_metrics.report_client_id_status(MLOpsStore.mlops_run_id,
                                                      MLOpsStore.mlops_edge_id,
                                                      ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
@@ -289,6 +291,8 @@ def log_training_failed_status(run_id=None):
 
     setup_log_mqtt_mgr()
     wait_log_mqtt_connected()
+    MLOpsStore.mlops_metrics.broadcast_client_training_status(MLOpsStore.mlops_edge_id,
+                                                              ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
     MLOpsStore.mlops_metrics.report_client_id_status(MLOpsStore.mlops_run_id,
                                                      MLOpsStore.mlops_edge_id,
                                                      ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
@@ -313,6 +317,8 @@ def log_aggregation_finished_status(run_id=None):
 
     setup_log_mqtt_mgr()
     wait_log_mqtt_connected()
+    MLOpsStore.mlops_metrics.broadcast_server_training_status(MLOpsStore.mlops_run_id,
+                                                              ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED)
     MLOpsStore.mlops_metrics.report_server_id_status(MLOpsStore.mlops_run_id,
                                                      ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED)
     release_log_mqtt_mgr()
@@ -335,6 +341,8 @@ def log_aggregation_failed_status(run_id=None):
 
     setup_log_mqtt_mgr()
     wait_log_mqtt_connected()
+    MLOpsStore.mlops_metrics.broadcast_server_training_status(MLOpsStore.mlops_run_id,
+                                                              ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
     MLOpsStore.mlops_metrics.report_server_id_status(MLOpsStore.mlops_run_id,
                                                      ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
     release_log_mqtt_mgr()
