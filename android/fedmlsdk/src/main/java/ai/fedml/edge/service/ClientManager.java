@@ -43,10 +43,11 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
     private final int mEpochNum;
     private final int mTrainSize;
     private final int mTestSize;
-    private int mServerId = 0;
+    private String mServerId;
 
-    public ClientManager(final long edgeId, final long runId, JSONObject hyperParameters,
+    public ClientManager(final long edgeId, final long runId, final String strServerId, JSONObject hyperParameters,
                          @NonNull final OnTrainProgressListener onTrainProgressListener) {
+
         mEdgeId = edgeId;
         mRunId = runId;
         if (hyperParameters != null) {
@@ -60,8 +61,6 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
             mDataset = dataArgs != null ? dataArgs.optString(DATASET_TYPE, "") : "";
             mTrainSize = dataArgs != null ? dataArgs.optInt(DATA_ARGS_TRAIN_SIZE, 600) : 600;
             mTestSize = dataArgs != null ? dataArgs.optInt(DATA_ARGS_TEST_SIZE, 100) : 100;
-
-            mServerId = trainArgs != null ? trainArgs.optInt(TRAIN_ARGS_SERVER_ID, 10) : 10;
         } else {
             mNumRounds = 0;
             mDataset = "mnist";
@@ -70,8 +69,8 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
             mEpochNum = 10;
             mTrainSize = 600;
             mTestSize = 100;
-            mServerId = 0;
         }
+        mServerId = strServerId;
         LogHelper.d("ClientManager(%d, %d) dataSet=%s, hyperParameters=%s", edgeId, runId, mDataset, hyperParameters);
         mTrainer = new TrainingExecutor(onTrainProgressListener);
         eventLogger = new ProfilerEventLogger(edgeId, runId);
@@ -83,7 +82,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
         registerMessageReceiveHandlers(mServerId);
     }
 
-    public void registerMessageReceiveHandlers(final long serverId) {
+    public void registerMessageReceiveHandlers(final String serverId) {
         final String runTopic = "fedml_" + mRunId + "_" + serverId + "_" + mEdgeId;
         edgeCommunicator.subscribe(runTopic, this);
     }
