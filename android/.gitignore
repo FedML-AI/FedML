@@ -1,6 +1,5 @@
 .gradle
 /.idea
-/gradle
 .cxx
 
 cpp/build/lightsecagg/build_x86_linux
@@ -20,3 +19,4 @@ cpp/build_x86_linux
 
 cpp/build/FedMLTrainer
 secring.gpg
+/build/
