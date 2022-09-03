@@ -144,11 +144,8 @@ Please follow this tutorial (https://doc.fedml.ai/mlops/user_guide.html) to star
 </tr>
 </table>
 
-
-## About Authors
-
-FedML team starts working on Android Platform from year 2009, the beginning of Android Pixel One smartphone (yeah, we are fans of Google Android). 
-We are good at industrial grade Android development. See CTO and Senior Android Engineer's project experience in Android at https://chaoyanghe.com/industrial-experience/.
+## How to Run?
+https://doc.fedml.ai/cross-device/examples/cross_device_android_example.html
 
 
 ## Want More Advanced APIs or Features?
