@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="ai.fedml.edge">
+
+    <application>
+        <meta-data
+            android:name="APP_ID"
+            android:value="${app_id}" />
+        <meta-data
+            android:name="API_KEY"
+            android:value="${api_key}" />
+        <provider
+            android:name=".utils.preference.SharedPreferenceProvider"
+            android:authorities="ai.fedml.preference"
+            android:exported="false"
+            android:process=":edge" />
+
+        <service
+            android:name=".service.EdgeService"
+            android:enabled="true"
+            android:process=":edge" />
+        <service
+            android:name=".service.EdgeService$GrayInnerService"
+            android:enabled="true"
+            android:process=":gray" />
+    </application>
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"
+        tools:ignore="ManifestOrder" />
+</manifest>
