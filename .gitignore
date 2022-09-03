@@ -8,6 +8,9 @@ data/*
 python/tests/smoke_test/data
 python/tests/smoke_test/data/*
 
+android/fedmlsdk/MobileNN/MNN
+android/fedmlsdk/MobileNN/pytorch
+
 *.pyc
 ./*/*.pyc
 ./*/*/*.pyc
