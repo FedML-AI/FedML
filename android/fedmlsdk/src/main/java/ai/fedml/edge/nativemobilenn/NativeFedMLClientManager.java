@@ -8,7 +8,7 @@ public final class NativeFedMLClientManager {
         try {
             System.loadLibrary(name);
         } catch (Throwable ce) {
-            Log.w("NativeFedMLUniTrainer", "load MNNTrain " + name + " GPU so exception=%s", ce);
+            Log.w("NativeFedMLUniTrainer", "load MNNTrain " + name + " GPU so exception.", ce);
         }
     }
 
