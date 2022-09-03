@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-ANDROID_NDK=/Users/leigao/Library/Android/sdk/ndk/24.0.8215888
+# ANDROID_NDK=/Users/leigao/Library/Android/sdk/ndk/24.0.8215888
+ANDROID_NDK=/Users/chaoyanghe/Library/Android/sdk/ndk/24.0.8215888
 
 BUILD_ROOT=`pwd`
 
