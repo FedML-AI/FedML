@@ -40,6 +40,11 @@ if(${MOBILE_BACKEND} MATCHES MNN)
             ${LIB_DIR}/${MOBILE_BACKEND}/${ANDROID_ABI}/libMNNTrain.so
     )
     add_library(MNN_Express SHARED IMPORTED)
+    set_target_properties(
+            MNN_Express
+            PROPERTIES IMPORTED_LOCATION
+            ${LIB_DIR}/${MOBILE_BACKEND}/${ANDROID_ABI}/libMNN_Express.so
+    )
     list(APPEND MNN_LIBS MNN MNNTrain MNN_Express)
 elseif(${MOBILE_BACKEND} MATCHES TORCH)
     message("########################## USING TORCH BACKEND ##########################")
