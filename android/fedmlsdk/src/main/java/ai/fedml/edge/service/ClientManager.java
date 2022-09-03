@@ -84,7 +84,6 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
     }
 
     public void registerMessageReceiveHandlers(final long serverId) {
-        // 1. 要先订阅训练消息
         final String runTopic = "fedml_" + mRunId + "_" + serverId + "_" + mEdgeId;
         edgeCommunicator.subscribe(runTopic, this);
     }
@@ -106,7 +105,6 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
     public void handleMessageInit(JSONObject params) {
         LogHelper.d("handleMessageInit: %s", params.toString());
         if (mEdgeId == 0) {
-            // 未绑定或解绑状态不能启动训练
             return;
         }
         String topic;
@@ -131,7 +129,6 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
     public synchronized void handleMessageReceiveModelFromServer(JSONObject params) {
         LogHelper.d("handleMessageReceiveModelFromServer: %s", params.toString());
         if (mEdgeId == 0) {
-            // 未绑定或解绑状态不能启动训练
             return;
         }
         LogHelper.d("[chaoyang] numRounds = %d, mClientRound = %d", mNumRounds, mClientRound);
@@ -168,18 +165,15 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
         eventLogger.logEventStarted("train", String.valueOf(clientRound));
         final String uuidKey = topic + "-" + UUID.randomUUID().toString().replace("-", "");
         final String trainModelPath = StorageUtils.getModelPath() + File.separator + uuidKey;
-        // 下载参数数据
         LogHelper.d("modelParams（%s）", modelParams);
         LogHelper.d("trainModelPath（%s）", trainModelPath);
         remoteStorage.download(modelParams, new File(trainModelPath), new TransferListener() {
-            // 最多重试3次
             private int reTryCnt = 3;
 
             @Override
             public void onStateChanged(int id, TransferState state) {
                 LogHelper.d("download onStateChanged（%d, %s）", id, state);
                 if (TransferState.COMPLETED == state) {
-                    // 训练流程
                     mReporter.reportTrainingStatus(mEdgeId, KEY_CLIENT_STATUS_TRAINING);
 //                    mReporter.reportSystemMetric(mRunId, mEdgeId); // TODO: @zongchang.jie
                     final TrainingParams params = TrainingParams.builder()
@@ -224,10 +218,8 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
                                   final long trainSamples, final int clientRound) {
         eventLogger.logEventStarted("comm_c2s", String.valueOf(clientRound));
         final String uuidS3Key = trainModelPath.substring(trainModelPath.lastIndexOf(File.separator) + 1);
-        // 上传完成后，回传Model
         LogHelper.d("sendModelToServer uuidS3Key（%s）", uuidS3Key);
         remoteStorage.upload(uuidS3Key, new File(trainModelPath), new TransferListener() {
-            // 最多重试3次
             private int reTryCnt = 3;
 
             @Override

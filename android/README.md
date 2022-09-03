@@ -1,4 +1,4 @@
-# FedML Android SDK
+# FedML Android App and SDK
 
 <table>
 <tr>
@@ -9,7 +9,7 @@
 </table>
 - Android project root path: https://github.com/FedML-AI/FedML/tree/master/android
 
-<img src="./doc/mobile.png" alt="drawing" style="width:680px;"/>
+<img src="./doc/FedML-Android-Arch.jpg" alt="drawing" style="width:680px;"/>
 
 The architecture is divided into three vertical layers and multiple horizontal modules:
 
@@ -25,18 +25,16 @@ https://github.com/FedML-AI/FedML/tree/master/android/fedmlsdk_demo
 
 ### 2. Android SDK layer (Java API + JNI + So library)
 
-https://github.com/FedML-AI/FedMLAndroidSDK
+https://github.com/FedML-AI/FedML/tree/master/android/fedmlsdk
 
 
 ### 3. MobileNN: FedML Mobile Training Engine Layer (C++, MNN, PyTorch, etc.)
 
-https://github.com/FedML-AI/MobileNN
+https://github.com/FedML-AI/FedML/tree/master/android/fedmlsdk/MobileNN
 
 https://github.com/FedML-AI/MNN
 
 https://github.com/FedML-AI/pytorch
-
-At this stage, the app layer is open sourced, the Android SDK is released to the open source community, and the Mobile NN C++ layer is close source.
 
 ## Get Started with FedML Android APP
 [https://doc.fedml.ai/cross-device/examples/cross_device_android_example.html](https://doc.fedml.ai/cross-device/examples/cross_device_android_example.html)

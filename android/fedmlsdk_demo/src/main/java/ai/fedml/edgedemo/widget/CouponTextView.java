@@ -10,11 +10,6 @@ import android.util.AttributeSet;
 import ai.fedml.edgedemo.R;
 import androidx.core.content.ContextCompat;
 
-/**
- * @创建者 xkai
- * @创建时间 2021/12/30 16:57
- * @描述 自定义的凹凸布局
- */
 public class CouponTextView  extends androidx.appcompat.widget.AppCompatTextView {
 
     private Paint mPaint;

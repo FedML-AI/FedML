@@ -69,13 +69,10 @@ public final class ClientAgentManager implements MessageDefine {
      */
     public void registerMessageReceiveHandlers(final long edgeId) {
         mReporter.reportTrainingStatus(edgeId, KEY_CLIENT_STATUS_IDLE);
-        // 接受到训练开始的信息
         final String startTrainTopic = "flserver_agent/" + edgeId + "/start_train";
         edgeCommunicator.subscribe(startTrainTopic, (OnTrainStartListener) this::handleTrainStart);
-        // 停止训练消息监听
         final String stopTrainTopic = "flserver_agent/" + edgeId + "/stop_train";
         edgeCommunicator.subscribe(stopTrainTopic, (OnTrainStopListener) this::handleTrainStop);
-        // listen to message from MLOps
         final String MLOpsQueryStatusTopic = "/mlops/report_device_status";
         edgeCommunicator.subscribe(MLOpsQueryStatusTopic, (OnMLOpsMsgListener) this::handleMLOpsMsg);
     }
@@ -83,7 +80,6 @@ public final class ClientAgentManager implements MessageDefine {
     private void handleTrainStart(JSONObject msgParams) {
         LogHelper.d("onStartTrain: %s", msgParams.toString());
         if (mEdgeId == 0) {
-            // 未绑定或解绑状态不能启动训练
             return;
         }
         //TODO: authentic

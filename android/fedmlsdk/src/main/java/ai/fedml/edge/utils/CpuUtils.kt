@@ -24,9 +24,6 @@ object CpuUtil {
         }
     }
 
-    /**
-     * 安卓8.0以上版本获取cpu使用率
-     */
     private fun getCpuUsageForHigherVersion(): Float {
 
         var process: Process? = null

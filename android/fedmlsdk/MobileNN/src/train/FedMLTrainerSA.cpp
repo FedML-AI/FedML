@@ -77,13 +77,10 @@ std::string FedMLTrainerSA::train() {
     // convert to trainable module
     std::shared_ptr <Module> model(NN::extract(inputs, outputs, true));
 
-    // 配置训练框架参数
     auto exe = Executor::getGlobalExecutor();
     BackendConfig config;
-    // 使用CPU，4线程
     exe->setGlobalExecutorConfig(MNN_FORWARD_CPU, config, 4);
 
-    // SGD求解器并设置参数
     std::shared_ptr <SGD> sgd(new SGD(model));
     sgd->setMomentum(0.9f);
     sgd->setWeightDecay(0.0005f);
@@ -94,7 +91,6 @@ std::string FedMLTrainerSA::train() {
         printf("Training Stop By User.");
         return nullptr;
     }
-    // 创建数据集和DataLoader
     DatasetPtr dataset;
     DatasetPtr testDataset;
     VARP forwardInput;
@@ -154,7 +150,6 @@ std::string FedMLTrainerSA::train() {
         exe->resetProfile();
         {
             dataLoader->reset();
-            // 训练阶段需设置isTraining Flag为true
             model->setIsTraining(true);
             int lastIndex = 0;
             int moveBatchSize = 0;
@@ -163,7 +158,6 @@ std::string FedMLTrainerSA::train() {
                     printf("Training Stop By User.\n");
                     return nullptr;
                 }
-                // 获得一个batch的数据，包括数据及其label
                 auto trainData = dataLoader->next();
                 auto example = trainData[0];
                 auto cast = _Cast<float>(example.first[0]);
@@ -173,19 +167,14 @@ std::string FedMLTrainerSA::train() {
                 auto newTarget = _OneHot(_Cast<int32_t>(example.second[0]), _Scalar<int>(10),
                                          _Scalar<float>(1.0f),
                                          _Scalar<float>(0.0f));
-                // 前向计算
                 auto predict = model->forward(example.first[0]);
-                // 计算loss
                 auto loss = _CrossEntropy(predict, newTarget);
                 auto lossvalue = loss->readMap<float>();
                 tmp_loss = *lossvalue;
-                // 回调
                 m_loss_callback(epoch, tmp_loss);
                 curLoss = tmp_loss;
-                // 进度计算
                 progress = 20.0 + 70.0 * ((epoch * iterations) + i) / (epochNum * iterations);
                 m_progress_callback(progress);
-                // 调整学习率
                 // float rate = LrScheduler::inv(0.01, (int) (epoch * iterations + i), 0.0001, 0.75);
                 auto rate = (float) learningRate;
                 sgd->setLearningRate(rate);
@@ -194,15 +183,12 @@ std::string FedMLTrainerSA::train() {
                            dataLoader->size(), loss->readMap<float>()[0], rate, (i - lastIndex));
                     lastIndex = i;
                 }
-                // 根据loss反向计算，并更新网络参数
                 sgd->step(loss);
             }
         }
 
-        // 测试模型
         int correct = 0;
         testDataLoader->reset();
-        // 测试时，需设置标志位
         model->setIsTraining(false);
         int moveBatchSize = 0;
         // start testing
@@ -226,7 +212,6 @@ std::string FedMLTrainerSA::train() {
             correct += accu->readMap<int32_t>()[0];
         }
 
-        // 计算准确率
         auto accu = (float) correct / (float) testSamples;
         printf("epoch: %d  accuracy: %f\n", epoch, accu);
         m_accuracy_callback(epoch, accu);
@@ -246,7 +231,6 @@ std::string FedMLTrainerSA::train() {
 //    Transformer::turnModelToInfer()->onExecute({inputPredict});
     // progress = 95;
     // onTrainProgressCallback(env, listener, onProgressMethodID, progress);
-    // 保存输出节点，会连同结构参数一并存储下来
     if (bRunStopFlag) {
         printf("Training Stop By User.\n");
         return nullptr;
