@@ -36,6 +36,7 @@ validation_args:
   frequency_of_the_test: 1
 
 device_args:
+  worker_num: 4
   using_gpu: false
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_default
