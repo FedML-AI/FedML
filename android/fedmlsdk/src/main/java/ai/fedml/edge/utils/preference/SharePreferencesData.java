@@ -7,24 +7,12 @@ import ai.fedml.edge.service.ContextHolder;
 
 public class SharePreferencesData {
 
-    /**
-     * 表_用户信息
-     */
     private static final String SP_USERINFO = "fedml_Info";
 
-    /**
-     * key_用户id
-     */
     private static final String KEY_ACCOUNT_ID = "key_account_id";
 
-    /**
-     * key_用户绑定设备后生成的id
-     */
     private static final String KEY_BINDING_ID = "key_binding_id";
 
-    /**
-     * key_设置保存路径
-     */
     private static final String KEY_SET_PRIVATE_PATH = "private_path";
 
     private static final String KEY_HYPER_PARAMETERS = "hyper_parameters";

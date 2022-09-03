@@ -63,7 +63,6 @@ public class RemoteStorage {
         Region region = Region.getRegion(REGION_NAME);
         AWSCredentials credentials = new BasicAWSCredentials(ACCESS_KEY, SECRET_KEY);
         S3ClientOptions clientOptions = S3ClientOptions.builder()
-                // TODO: 需要确定是否开启加速，该项功能收费
                 .setAccelerateModeEnabled(false).build();
         s3 = new AmazonS3Client(credentials, region);
         s3.setS3ClientOptions(clientOptions);

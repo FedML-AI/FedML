@@ -16,9 +16,6 @@ import ai.fedml.edge.utils.LogHelper;
 
 public class TokenChecker implements MessageDefine {
     private final String mEdgeId;
-    /**
-     * 设置token缓存
-     */
     private final LoadingCache<String, String> tokenCache =
             CacheBuilder.newBuilder().maximumSize(2).build(new CacheLoader<String, String>() {
                 @Override

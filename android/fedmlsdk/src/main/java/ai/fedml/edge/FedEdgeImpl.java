@@ -39,7 +39,6 @@ class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
         @Override
         public void onServiceDisconnected(ComponentName name) {
             mServiceMessenger = null;
-            //TODO:需要实现尝试重连
             bindService();
         }
     };
@@ -78,7 +77,6 @@ class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
 
     public void init(Context appContext) {
         ContextHolder.initialize(appContext);
-        // 判断进程名，保证只有主进程运行
         final String processName = DeviceUtils.getProcessName();
         Log.i(TAG, "init " + processName);
         if (!TextUtils.isEmpty(processName) && appContext.getPackageName().equals(processName)) {
@@ -142,7 +140,6 @@ class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
 
     private void bindService() {
         Context appContext = ContextHolder.getAppContext();
-        // 在这里进行主进程初始化逻辑操作
         Intent intent = new Intent(appContext, EdgeService.class);
         appContext.bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
     }
@@ -151,7 +148,6 @@ class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
         Message message = Message.obtain();
         message.what = action;
         message.setData(bundle);
-        // 传递服务端回复客户端时需要使用的Messenger
         message.replyTo = mClientMessenger;
         try {
             mServiceMessenger.send(message);

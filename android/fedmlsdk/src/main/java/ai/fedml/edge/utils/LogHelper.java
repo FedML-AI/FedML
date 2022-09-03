@@ -17,7 +17,7 @@ import ai.fedml.edge.utils.preference.SharePreferencesData;
 public class LogHelper {
     private static final String TAG = "FedML-Mobile-Client";
     private static final int LOG_LINE_NUMBER = 100;
-    // debug包不需要做限制
+
     private static final boolean DEBUG = true;
     private static final Map<Integer, String> LEVEL_MAP = ImmutableMap.of(Log.VERBOSE, "VERBOSE", Log.DEBUG, "DEBUG",
             Log.INFO, "INFO", Log.WARN, "WARN", Log.ERROR, "ERROR");
