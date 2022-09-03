@@ -69,7 +69,6 @@ public class EdgeService extends Service implements EdgeMessageDefine {
     };
 
     private Messenger mClientMessenger;
-    // 将Messenger和Handler关联起来
     private final Handler serviceHandler = new Handler(Looper.getMainLooper()) {
 
         @Override
@@ -145,9 +144,6 @@ public class EdgeService extends Service implements EdgeMessageDefine {
         }
     }
 
-    /**
-     * 给 API >= 18 的平台上用的灰色保活手段
-     */
     public static class GrayInnerService extends Service {
 
         @Override

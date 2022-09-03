@@ -61,12 +61,10 @@ public class EdgeCommunicator implements MqttCallbackExtended {
         connOpts.setUserName(mqttConfig.getUser());
         connOpts.setPassword(mqttConfig.getPassword().toCharArray());
         connOpts.setCustomWebSocketHeaders(CONN_PROPERTIES);
-        // 不清除session，当重连后可以接收之前订阅主题的消息,当客户端上线后会接受到它离线的这段时间的消息
         connOpts.setCleanSession(true);
         connOpts.setConnectionTimeout(10);
         connOpts.setKeepAliveInterval(mqttConfig.getKeepAlive());
         connOpts.setAutomaticReconnect(true);
-        // 遗言消息
         String edge_id = SharePreferencesData.getBindingId();
         connOpts.setWill(MessageDefine.MQTT_LAST_WILL_TOPIC,
                 // {"ID": "EDGE_ID", "status": "OFFLINE"}

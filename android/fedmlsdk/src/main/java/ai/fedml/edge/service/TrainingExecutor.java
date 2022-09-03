@@ -66,9 +66,9 @@ public class TrainingExecutor implements MessageDefine {
         final int epochNum = params.getEpochNum();
         final int trainSize = params.getTrainSize();
         final int testSize = params.getTestSize();
-        // 清除掉正常run的训练
+
         mBgHandler.removeCallbacks(currentRunnable);
-        // 训练流程
+
         currentRunnable = () -> {
             mNativeFedMLClientManager = new NativeFedMLClientManager();
 
@@ -110,7 +110,6 @@ public class TrainingExecutor implements MessageDefine {
 
     public void resetTrain(final long runId, final int clientRunIndex) {
         runStateMap.put(runId + "_" + clientRunIndex, false);
-        // 清除掉正常run的训练
         mBgHandler.removeCallbacks(currentRunnable);
         if (mNativeFedMLClientManager != null){
             mNativeFedMLClientManager = null;

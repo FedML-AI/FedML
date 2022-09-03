@@ -31,3 +31,9 @@ sh build_x86_linux.sh
 3. To run `demo.out` on your linux/macOS machine, first download MNIST dataset from [Google Drive](https://drive.google.com/drive/folders/1IB1-NJgzHSEb7ucgJzM2Gj8QzxpYAjGy?usp=sharing), and run `./demo.out /path/to/data/mnist_data`. 
 To run `demo.out` on your android device, adb push mnist_data to your android device under `/data/local/tmp` before running `./test_arm_android_64.sh`. 
 
+## Dependency
+MNN: 
+https://github.com/FedML-AI/MNN.git
+
+pytorch: 
+https://github.com/FedML-AI/pytorch.git
