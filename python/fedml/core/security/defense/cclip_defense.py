@@ -1,8 +1,5 @@
-import random
 from typing import Callable, List, Tuple, Dict, Any
-
 import numpy as np
-
 from .defense_base import BaseDefenseMethod
 from ..common import utils
 from ..common.bucket import Bucket
