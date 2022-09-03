@@ -171,7 +171,7 @@ def init_yolo(args, device="cpu"):
         else:
             model = YOLOv7(args.yolo_cfg, ch=3, nc=nc).to(device)  # create
 
-    print(model)
+    # print(model)
 
     dataset = load_partition_data_coco(args, hyp, model)
     [
