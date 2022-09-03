@@ -44,6 +44,7 @@ If it works correctly, it means you have successfully connected your laptop to y
 You can download the required data and transfer it to the specified directory of the device with the following command:
 
 ```shell
+# under `FedML/android/data` folder
 bash prepare.sh
 ```
 
@@ -120,7 +121,7 @@ On the Android side, you will see training status as follows if every step works
 check `android/fedmlsdk_demo/build.gradle` as an example:
 
 ```groovy
-    implementation 'ai.fedml:fedml-edge-android:1.0.0-SNAPSHOT'
+    implementation 'ai.fedml:fedml-edge-android:1.1.0-SNAPSHOT'
 ```
 
 3. add FedML account id to meta-data in AndroidManifest.xml
