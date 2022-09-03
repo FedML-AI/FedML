@@ -71,11 +71,9 @@
                 android:orientation="vertical"
                 android:layout_marginTop="10dp"
                 android:paddingHorizontal="10dp">
-                <!--  自定义的凹凸布局,预览看不出效果，运行到手机上才能看到效果-->
                 <ai.fedml.edgedemo.widget.CouponTextView
                     android:layout_width="match_parent"
                     android:layout_height="30dp" />
-                <!-- 个人信息 -->
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -151,7 +149,6 @@
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
-                <!-- 超参数 -->
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
