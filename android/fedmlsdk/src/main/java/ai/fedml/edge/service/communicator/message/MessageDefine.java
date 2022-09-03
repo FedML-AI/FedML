@@ -97,7 +97,7 @@ public interface MessageDefine {
     String DATASET_TYPE = "dataset";
     String TRAIN_ARGS_BATCH_SIZE = "batch_size";
     String TRAIN_ARGS_LR = "learning_rate";
-    String TRAIN_ARGS_SERVER_ID = "server_id";
+    String TRAIN_SERVER_ID = "server_id";
     String TRAIN_ARGS_EPOCH_NUM = "epochs";
     String DATA_ARGS_TRAIN_SIZE = "train_size";
     String DATA_ARGS_TEST_SIZE = "test_size";
