@@ -22,7 +22,7 @@ android {
             cmake {
                 cppFlags '-fuse-ld=lld'
                 abiFilters 'arm64-v8a'
-                arguments '-DANDROID_STL=c++_shared', '-DMOBILE_BACKEND=MNN'
+                arguments '-DANDROID_STL=c++_shared', '-DCMAKE_BUILD_TYPE=Release', '-DMOBILE_BACKEND=MNN'
             }
         }
         ndk {
@@ -108,7 +108,7 @@ afterEvaluate {
 
                 pom {
                     name = 'fedml-edge-android'
-                    description = 'A FedML edge kit for Android'
+                    description = 'A FedML Edge SDK for Android'
                     url = 'https://fedml.ai/'
                     packaging = 'aar'
                     properties = [
