@@ -52,8 +52,7 @@ android {
 }
 
 dependencies {
-//    implementation project(':fedmlsdk')
-    implementation 'ai.fedml:fedml-edge-android:1.1.0-SNAPSHOT'
+    implementation project(':fedmlsdk')
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
