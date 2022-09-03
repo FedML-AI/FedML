@@ -1,10 +1,10 @@
 common_args:
   training_type: "simulation"
   random_seed: 0
-  config_version: "dev"
-  mlops_api_key: c9356b9c4ce44363bb66366b210201
-  mlops_project_name: alex-test-prj
-  mlops_run_name: fedml_torch_fedavg_mnist_lr_2
+  config_version: "release"
+  mlops_api_key: f5b88f5dca344e6faf17809139b89c48
+  mlops_project_name: sp_fedavg_test
+  mlops_run_name: fedml_torch_fedavg_mnist_lr_mlsys
 
 data_args:
   dataset: "mnist"
