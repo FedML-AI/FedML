@@ -1,6 +1,7 @@
 package ai.fedml.edge.service;
 
 import android.content.Context;
+import android.text.TextUtils;
 
 import ai.fedml.edge.OnTrainProgressListener;
 import ai.fedml.edge.OnTrainingStatusListener;
@@ -23,7 +24,7 @@ class FedEdgeTrainImpl implements FedEdgeTrainApi {
         Initializer.getInstance().initial(() -> {
             LogHelper.d("Initializer initial finished");
             mClientAgent = new ClientAgentManager(onTrainingStatusListener, onTrainProgressListener);
-            if (!isBound) {
+            if (!isBound && !TextUtils.isEmpty(mBindEdgeId)) {
                 mClientAgent.bindCommunicator(mBindEdgeId);
             }
         });

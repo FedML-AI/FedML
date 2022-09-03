@@ -6,14 +6,21 @@ set(MOBILENN_DIR ${CMAKE_SOURCE_DIR}/../../../MobileNN)
 set(MNN_DIR ${CMAKE_SOURCE_DIR}/../../../MobileNN/MNN)
 set(TORCH_DIR ${CMAKE_SOURCE_DIR}/../../../MobileNN/pytorch)
 
+# MobileNN headers
+include_directories(${MOBILENN_DIR}/includes/train)
+include_directories(${MOBILENN_DIR}/includes)
+# SDK JNI headers
+include_directories(${CMAKE_SOURCE_DIR}/includes)
+# other denpendencies
+find_library(log-lib log)
+find_library(jnigraphics-lib jnigraphics)
+
 if(${MOBILE_BACKEND} MATCHES MNN)
     message("########################## USING MNN BACKEND ##########################")
     add_definitions(-DUSE_MNN_BACKEND)
     add_definitions(-DMNN_USE_LOGCAT)
     # MNN add-on headers
     include_directories(${MOBILENN_DIR}/includes/MNN)
-    # MNN add-on cpp
-    file(GLOB_RECURSE MNN_SRCS ${MOBILENN_DIR}/src/MNN/*.cpp)
 
     # MNN source header
     include_directories(${MNN_DIR}/include)
@@ -45,7 +52,21 @@ if(${MOBILE_BACKEND} MATCHES MNN)
             PROPERTIES IMPORTED_LOCATION
             ${LIB_DIR}/${MOBILE_BACKEND}/${ANDROID_ABI}/libMNN_Express.so
     )
+
+    # MNN add-on cpp
+    file(GLOB_RECURSE MNN_SRCS
+            *.cpp
+            ${MOBILENN_DIR}/src/MNN/*.cpp
+            ${MOBILENN_DIR}/src/train/FedMLBaseTrainer.cpp
+            ${MOBILENN_DIR}/src/train/FedMLTrainer.cpp
+            ${MOBILENN_DIR}/src/FedMLClientManager.cpp
+            ${MOBILENN_DIR}/src/train/FedMLMNNTrainer.cpp)
+
+    # MobileNN library
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${LIB_DIR}/${MOBILE_BACKEND}/${ANDROID_ABI}")
+    add_library(MobileNN SHARED ${MNN_SRCS})
     list(APPEND MNN_LIBS MNN MNNTrain MNN_Express)
+    target_link_libraries(MobileNN ${MNN_LIBS} ${log-lib} ${jnigraphics-lib})
 elseif(${MOBILE_BACKEND} MATCHES TORCH)
     message("########################## USING TORCH BACKEND ##########################")
 #    set(CMAKE_CXX_STANDARD 14)
@@ -60,8 +81,6 @@ elseif(${MOBILE_BACKEND} MATCHES TORCH)
 
     # torch add-on headers
     include_directories(${MOBILENN_DIR}/includes/torch)
-    # torch add-on cpp
-    file(GLOB_RECURSE TORCH_SRCS ${MOBILENN_DIR}/src/torch/*.cpp)
     # torch source headers
     include_directories(${TORCH_DIR}/build_android/install/include)
     include_directories(${TORCH_DIR}/build_android/install/include/torch/csrc/api/include)
@@ -92,35 +111,18 @@ elseif(${MOBILE_BACKEND} MATCHES TORCH)
             PROPERTIES IMPORTED_LOCATION
             ${LIB_DIR}/${MOBILE_BACKEND}/${ANDROID_ABI}/libtorch.so
     )
+
+    # torch add-on cpp
+    file(GLOB_RECURSE TORCH_SRCS
+            *.cpp
+            ${MOBILENN_DIR}/src/torch/*.cpp
+            ${MOBILENN_DIR}/src/train/FedMLBaseTrainer.cpp
+            ${MOBILENN_DIR}/src/train/FedMLTrainer.cpp
+            ${MOBILENN_DIR}/src/FedMLClientManager.cpp
+            ${MOBILENN_DIR}/src/train/FedMLTorchTrainer.cpp)
     list(APPEND TORCH_LIBS c10 torch_cpu torch_global_deps torch)
+    # MobileNN library
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${LIB_DIR}/${MOBILE_BACKEND}/${ANDROID_ABI}")
+    add_library(MobileNN SHARED ${TORCH_SRCS})
+    target_link_libraries(MobileNN ${TORCH_LIBS} ${log-lib} ${jnigraphics-lib})
 endif()
-
-# MobileNN headers
-include_directories(${MOBILENN_DIR}/includes/train)
-include_directories(${MOBILENN_DIR}/includes)
-# MobileNN source cpp
-file(GLOB_RECURSE MOBILENN_SRCS
-        ${MOBILENN_DIR}/src/train/FedMLBaseTrainer.cpp
-        ${MOBILENN_DIR}/src/train/FedMLTrainer.cpp
-        ${MOBILENN_DIR}/src/FedMLClientManager.cpp)
-if(${MOBILE_BACKEND} MATCHES MNN)
-    file(GLOB_RECURSE MOBILENN_SRCS
-        ${MOBILENN_DIR}/src/train/FedMLMNNTrainer.cpp)
-elseif(${MOBILE_BACKEND} MATCHES TORCH)
-    file(GLOB_RECURSE MOBILENN_SRCS
-        ${MOBILENN_DIR}/src/train/FedMLTorchTrainer.cpp)
-endif()
-
-# SDK JNI headers
-include_directories(${CMAKE_SOURCE_DIR}/includes)
-# SDK JNI source cpp
-file(GLOB_RECURSE MOBILENN_SRCS ${CMAKE_SOURCE_DIR}/*.cpp)
-
-# MobileNN library
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${LIB_DIR}/${MOBILE_BACKEND}/${ANDROID_ABI}")
-add_library(MobileNN SHARED ${MOBILENN_SRCS} ${MNN_SRCS} ${TROCH_SRCS})
-
-# other denpendencies
-find_library(log-lib log)
-find_library(jnigraphics-lib jnigraphics)
-target_link_libraries(MobileNN ${MNN_LIBS} ${TORCH_LIBS} ${log-lib} ${jnigraphics-lib})
