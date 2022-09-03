@@ -94,7 +94,7 @@ public final class ClientAgentManager implements MessageDefine {
         long runId = msgParams.optLong("runId", 0);
 
         JSONObject hyperParameters = null;
-        final String strServerId = msgParams.optString(TRAIN_ARGS_SERVER_ID);
+        final String strServerId = msgParams.optString(TRAIN_SERVER_ID);
         JSONObject runConfigJson = msgParams.optJSONObject(RUN_CONFIG);
         if (runConfigJson != null) {
             hyperParameters = runConfigJson.optJSONObject(HYPER_PARAMETERS_CONFIG);
