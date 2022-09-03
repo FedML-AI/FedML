@@ -94,6 +94,7 @@ public final class ClientAgentManager implements MessageDefine {
         long runId = msgParams.optLong("runId", 0);
 
         JSONObject hyperParameters = null;
+        final String strServerId = msgParams.optString(TRAIN_ARGS_SERVER_ID);
         JSONObject runConfigJson = msgParams.optJSONObject(RUN_CONFIG);
         if (runConfigJson != null) {
             hyperParameters = runConfigJson.optJSONObject(HYPER_PARAMETERS_CONFIG);
@@ -106,7 +107,7 @@ public final class ClientAgentManager implements MessageDefine {
             onTrainingStatusListener.onStatusChanged(KEY_CLIENT_STATUS_INITIALIZING);
         }
         // Launch Training Client
-        mClientManager = new ClientManager(mEdgeId, runId, hyperParameters, onTrainProgressListener);
+        mClientManager = new ClientManager(mEdgeId, runId, strServerId, hyperParameters, onTrainProgressListener);
     }
 
     private void handleTrainStop(JSONObject msgParams) {
@@ -117,8 +118,10 @@ public final class ClientAgentManager implements MessageDefine {
         mReporter.reportTrainingStatus(mEdgeId, KEY_CLIENT_STATUS_IDLE);
 
         // Stop Training Client
-        mClientManager.stopTrain();
-        mClientManager = null;
+        if (mClientManager != null) {
+            mClientManager.stopTrain();
+            mClientManager = null;
+        }
     }
 
     private void handleMLOpsMsg(JSONObject msgParams) {

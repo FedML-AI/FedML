@@ -42,7 +42,7 @@ public final class RequestManager {
 
     private static Retrofit retrofit() {
         if (retrofit == null) {
-            HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor().setLevel(Level.BODY);
+            HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor().setLevel(Level.NONE);
 
             OkHttpClient okHttpClient = new OkHttpClient.Builder()
                     .writeTimeout(30_1000, TimeUnit.MILLISECONDS)
