@@ -108,7 +108,7 @@ afterEvaluate {
 
                 pom {
                     name = 'fedml-edge-android'
-                    description = 'A FedML edge kit for Android'
+                    description = 'A FedML Edge SDK for Android'
                     url = 'https://fedml.ai/'
                     packaging = 'aar'
                     properties = [
