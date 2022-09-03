@@ -1,6 +1,5 @@
 import logging
 from fedml.core.dp.budget_accountant import BudgetAccountant
-from fedml.core.dp.common.utils import check_params
 from fedml.core.dp.mechanisms import Laplace, Gaussian
 
 
@@ -14,9 +13,11 @@ class FedMLDifferentialPrivacy:
         return FedMLDifferentialPrivacy._dp_instance
 
     def __init__(self):
+        self.epsilon = None
         self.is_dp_enabled = False
         self.dp_type = None
         self.dp = None
+        self.enable_accountant = False
 
     def init(self, args):
         if hasattr(args, "enable_dp") and args.enable_dp:
@@ -26,9 +27,10 @@ class FedMLDifferentialPrivacy:
             self.is_dp_enabled = True
             self.mechanism_type = args.mechanism_type.lower()
             self.dp_type = args.dp_type.lower().strip()
-            check_params(args.epsilon, args.delta, args.sensitivity)
-            self.epsilon = args.epsilon
-            self.delta = args.delta
+
+            if hasattr(args, "accountant_type") and args.accountant_type in ["adding"]:
+                self.enable_accountant = True
+                self.epsilon = args.epsilon
             if self.dp_type not in ["cdp", "ldp"]:
                 raise ValueError(
                     "DP type can only be cdp (for central DP) and ldp (for local DP)! "
@@ -38,9 +40,7 @@ class FedMLDifferentialPrivacy:
                     epsilon=args.epsilon, delta=args.delta, sensitivity=args.sensitivity
                 )
             elif self.mechanism_type == "gaussian":
-                self.dp = Gaussian(
-                    epsilon=args.epsilon, delta=args.delta, sensitivity=args.sensitivity
-                )
+                self.dp = Gaussian(args)
             else:
                 raise NotImplementedError("DP mechanism not implemented!")
             self.accountant = BudgetAccountant()
@@ -61,7 +61,8 @@ class FedMLDifferentialPrivacy:
         new_grad = dict()
         for k in grad.keys():
             new_grad[k] = self._compute_new_grad(grad[k])
-        self.accountant.spend(epsilon=self.epsilon, delta=0)
+        if self.enable_accountant:
+            self.accountant.spend(epsilon=self.epsilon, delta=0)
         return new_grad
 
     def _compute_new_grad(self, grad):
