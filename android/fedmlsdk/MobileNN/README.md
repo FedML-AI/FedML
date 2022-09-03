@@ -31,13 +31,3 @@ sh build_x86_linux.sh
 3. To run `demo.out` on your linux/macOS machine, first download MNIST dataset from [Google Drive](https://drive.google.com/drive/folders/1IB1-NJgzHSEb7ucgJzM2Gj8QzxpYAjGy?usp=sharing), and run `./demo.out /path/to/data/mnist_data`. 
 To run `demo.out` on your android device, adb push mnist_data to your android device under `/data/local/tmp` before running `./test_arm_android_64.sh`. 
 
-
-# git submodule
-```
-# add git submodule
-git submodule add https://github.com/FedML-AI/MNN.git MNN
-
-# git update submodule
-git submodule update --init --recursive
-```
-for more `git submodule` related commands, please refer to https://devconnected.com/how-to-add-and-update-git-submodules/

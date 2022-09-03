@@ -1,6 +1,0 @@
-[submodule "MNN"]
-	path = MNN
-	url = https://github.com/FedML-AI/MNN.git
-[submodule "pytorch"]
-	path = pytorch
-	url = https://github.com/FedML-AI/pytorch.git
