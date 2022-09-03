@@ -140,6 +140,7 @@ public class MetricsReporter implements MessageDefine {
     }
 
     private void notifyClientStatus(final int status) {
+        LogHelper.d("notifyClientStatus [%d]", status);
         mClientStatus = status;
         if (mOnTrainingStatusListener != null) {
             mOnTrainingStatusListener.onStatusChanged(status);
