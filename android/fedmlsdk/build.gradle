@@ -20,9 +20,9 @@ android {
         testFunctionalTest true
         externalNativeBuild {
             cmake {
-                cppFlags '-fuse-ld=lld', '-DANDROID_STL=c++_static', '-DMOBILE_BACKEND=MNN'
+                cppFlags '-fuse-ld=lld'
                 abiFilters 'arm64-v8a'
-                arguments "-DANDROID_STL=c++_shared"
+                arguments '-DANDROID_STL=c++_shared', '-DMOBILE_BACKEND=MNN'
             }
         }
         ndk {
@@ -53,6 +53,7 @@ android {
             path "src/main/jni/CMakeLists.txt"
         }
     }
+
     testOptions {
         unitTests {
             returnDefaultValues true
@@ -88,7 +89,6 @@ dependencies {
 //    annotationProcessor 'androidx.room:room-compiler:2.4.0'
 //    testImplementation 'androidx.room:room-testing:2.4.0'
     implementation 'com.google.guava:guava:31.1-android'
-    implementation 'com.tencent:mmkv:1.2.13'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
