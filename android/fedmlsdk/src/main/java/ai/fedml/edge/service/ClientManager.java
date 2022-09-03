@@ -43,13 +43,18 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
     private final int mEpochNum;
     private final int mTrainSize;
     private final int mTestSize;
-    private String mServerId;
+    private final OnTrainProgressListener mOnTrainProgressListener;
+
+    private interface OnUploadedListener {
+        void onUploaded();
+    }
 
     public ClientManager(final long edgeId, final long runId, final String strServerId, JSONObject hyperParameters,
                          @NonNull final OnTrainProgressListener onTrainProgressListener) {
 
         mEdgeId = edgeId;
         mRunId = runId;
+        mOnTrainProgressListener = onTrainProgressListener;
         if (hyperParameters != null) {
             JSONObject trainArgs = hyperParameters.optJSONObject(TRAIN_ARGS);
             mNumRounds = trainArgs != null ? trainArgs.optInt(COMM_ROUND, 0) : 0;
@@ -70,7 +75,6 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
             mTrainSize = 600;
             mTestSize = 100;
         }
-        mServerId = strServerId;
         LogHelper.d("ClientManager(%d, %d) dataSet=%s, hyperParameters=%s", edgeId, runId, mDataset, hyperParameters);
         mTrainer = new TrainingExecutor(onTrainProgressListener);
         eventLogger = new ProfilerEventLogger(edgeId, runId);
@@ -79,7 +83,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
         remoteStorage = RemoteStorage.getInstance();
         mRuntimeLogger = new RuntimeLogger(edgeId, runId);
         mRuntimeLogger.initial();
-        registerMessageReceiveHandlers(mServerId);
+        registerMessageReceiveHandlers(strServerId);
     }
 
     public void registerMessageReceiveHandlers(final String serverId) {
@@ -87,7 +91,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
         edgeCommunicator.subscribe(runTopic, this);
     }
 
-    private void send_init_online_msg(JSONObject params){
+    private void send_init_online_msg(JSONObject params) {
         LogHelper.d("handle_message_check_status: %s", params.toString());
         // report MLOps that edge is OnLine now.
         mReporter.reportEdgeOnLine(mRunId, mEdgeId);
@@ -182,7 +186,9 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
                             .listener((modelPath, edgeId, clientIdx, trainSamples) -> {
                                         eventLogger.logEventEnd("train", String.valueOf(clientRound));
                                         LogHelper.d("training is complete and start to sendModelToServer()");
-                                        sendModelToServer(modelPath, edgeId, clientIdx, trainSamples, clientRound);
+                                        sendModelToServer(modelPath, edgeId, clientIdx, trainSamples, clientRound,
+                                                () -> mOnTrainProgressListener.onProgressChanged(clientRound, 100.0f)
+                                        );
                                     }
                             ).build();
                     mTrainer.training(params);
@@ -212,9 +218,10 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
      * @param clientIdx      client index
      * @param trainSamples   train sample
      * @param clientRound    client Round
+     * @param listener       OnUploadedListener
      */
     public void sendModelToServer(@NonNull final String trainModelPath, final long edgeId, final int clientIdx,
-                                  final long trainSamples, final int clientRound) {
+                                  final long trainSamples, final int clientRound, @NonNull final OnUploadedListener listener) {
         eventLogger.logEventStarted("comm_c2s", String.valueOf(clientRound));
         final String uuidS3Key = trainModelPath.substring(trainModelPath.lastIndexOf(File.separator) + 1);
         LogHelper.d("sendModelToServer uuidS3Key（%s）", uuidS3Key);
@@ -226,6 +233,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
                 LogHelper.d("upload onStateChanged（%d, %s）", id, state);
                 if (state == TransferState.COMPLETED) {
                     sendModelMessage();
+                    listener.onUploaded();
                 } else if (TransferState.FAILED == state && reTryCnt > 0) {
                     remoteStorage.upload(uuidS3Key, new File(trainModelPath), this);
                     reTryCnt--;
@@ -256,7 +264,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
         });
     }
 
-    public void stopTrain(){
+    public void stopTrain() {
         mTrainer.stopTrain();
     }
 
