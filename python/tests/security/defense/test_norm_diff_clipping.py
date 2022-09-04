@@ -1,17 +1,19 @@
 import argparse
-
-from fedml.core.security.defense.norm_diff_clipping_defense import NormDiffClippingDefense
-from fedml.ml.aggregator.agg_operator import FedMLAggOperator
-from utils import (
-    create_fake_vectors,
-    create_fake_model_list_MNIST,
+from fedml.core.security.defense.norm_diff_clipping_defense import (
+    NormDiffClippingDefense,
 )
+from fedml.ml.aggregator.agg_operator import FedMLAggOperator
+from .utils import create_fake_vectors, create_fake_model_list_MNIST
 
 
 def add_args():
     parser = argparse.ArgumentParser(description="FedML")
     parser.add_argument(
-        "--yaml_config_file", "--cf", help="yaml configuration file", type=str, default="",
+        "--yaml_config_file",
+        "--cf",
+        help="yaml configuration file",
+        type=str,
+        default="",
     )
     # default arguments
     parser.add_argument("--federated_optimizer", type=str, default="FedAvg")
