@@ -19,20 +19,20 @@ Android Client (App) and SDK: [https://github.com/FedML-AI/FedML/tree/master/and
 
 
 
-- App: https://github.com/FedML-AI/FedML/tree/master/android/app
+- App: [https://github.com/FedML-AI/FedML/tree/master/android/app](https://github.com/FedML-AI/FedML/tree/master/android/app)
 
 
-- fedmlsdk_demo: https://github.com/FedML-AI/FedML/tree/master/android/fedmlsdk_demo
+- fedmlsdk_demo: [https://github.com/FedML-AI/FedML/tree/master/android/fedmlsdk_demo](https://github.com/FedML-AI/FedML/tree/master/android/app)
 
 
 - Android SDK layer (Java API + JNI + So library):
-https://github.com/FedML-AI/FedML/tree/master/android/fedmlsdk
+[https://github.com/FedML-AI/FedML/tree/master/android/fedmlsdk](https://github.com/FedML-AI/FedML/tree/master/android/fedmlsdk)
 
 
 - MobileNN: FedML Mobile Training Engine Layer (C++, MNN, PyTorch, etc.): \
-https://github.com/FedML-AI/FedML/tree/master/android/fedmlsdk/MobileNN \
-https://github.com/FedML-AI/MNN \
-https://github.com/FedML-AI/pytorch 
+[https://github.com/FedML-AI/FedML/tree/master/android/fedmlsdk/MobileNN](https://github.com/FedML-AI/FedML/tree/master/android/fedmlsdk/MobileNN) \
+[https://github.com/FedML-AI/MNN](https://github.com/FedML-AI/MNN) \
+[https://github.com/FedML-AI/pytorch](https://github.com/FedML-AI/pytorch)
 
 Python Server: [https://github.com/FedML-AI/FedML/tree/master/python/quick_start/beehive](https://github.com/FedML-AI/FedML/tree/master/python/quick_start/beehive)
 
@@ -46,18 +46,18 @@ Next show you the step-by-step user experiment of using FedML Beehive.
 ## 1. Setup Environment and Run Android App or Android Demo
 
 ### 1.1 Android Installation
-- Step 1: Install Android Studio - https://developer.android.com/studio/install
+- Step 1: Install Android Studio - [https://developer.android.com/studio/install](https://developer.android.com/studio/install)
 
 
 - Step 2: Setup Android SDK \
-https://developer.android.com/about/versions/12/setup-sdk
-https://developer.android.com/studio/releases/platforms (we are using API 32 starting from August 2022)
+[https://developer.android.com/about/versions/12/setup-sdk](https://developer.android.com/about/versions/12/setup-sdk)
+[https://developer.android.com/studio/releases/platforms](https://developer.android.com/studio/releases/platforms) (we are using API 32 starting from August 2022)
 
 
 - Step 3: Setup Android NDK and CMake - https://developer.android.com/studio/projects/install-ndk
 
 ### 1.2 Compile and Build
-- Clone customized MNN library (https://github.com/FedML-AI/MNN) into `FedML/android/fedmlsdk/MobileNN/MNN` (shown as below)
+- Clone customized MNN library ([https://github.com/FedML-AI/MNN](https://github.com/FedML-AI/MNN)) into `FedML/android/fedmlsdk/MobileNN/MNN` (shown as below)
 
 <img src="./../../_static/image/MNN_clone_on_MobileNN_folder.png" alt="drawing" style="width:400px;"/>
 
@@ -74,7 +74,7 @@ https://developer.android.com/studio/releases/platforms (we are using API 32 sta
 This section guides you through 1) installing Android Apk, 2) binding your Android smartphone devices to FedML MLOps Platform, and 3) set the data path for training.
 
 ### 2.1 Connect Android App with FedML MLOps Platform
-After installing FedML Android App (https://github.com/FedML-AI/FedML/tree/master/android/app), please go to the MLOps platform (https://open.fedml.ai) - Beehive and switch to the `Edge Devices` page, you can see a list of **My Edge Devices** at the bottom, as well as a QR code and **Account ID:XXX** at the top right.
+After installing FedML Android App ([https://github.com/FedML-AI/FedML/tree/master/android/app](https://github.com/FedML-AI/FedML/tree/master/android/app)), please go to the MLOps platform ([https://open.fedml.ai](https://open.fedml.ai)) - Beehive and switch to the `Edge Devices` page, you can see a list of **My Edge Devices** at the bottom, as well as a QR code and **Account ID:XXX** at the top right.
 
 <img src="./../../_static/image/beehive-device.png" alt="image-20220427204703095" style="zoom:67%;" />
 
@@ -124,7 +124,7 @@ To set data path on your device, click the top green bar. Set it as the path to 
 
 #### 3. **Deploy FL Server**
 
-- Create an account at FedML MLOps Platform (https://open.fedml.ai)
+- Create an account at FedML MLOps Platform ([https://open.fedml.ai](https://open.fedml.ai))
 
 - Build Python Server Package and Upload to FedML MLOps Platform ("Create Application")
 
@@ -137,7 +137,7 @@ You can find the package under `mlops` folder.
 <img src="./../../_static/image/android-pkg-uploading.png" />
 
 
-- Launch the training by using FedML MLOps (https://open.fedml.ai)
+- Launch the training by using FedML MLOps ([https://open.fedml.ai](https://open.fedml.ai))
 
 Steps at MLOps: create group -> create project -> create run -> select application (the one we uploaded server package for Android) -> start run
 
@@ -236,6 +236,6 @@ import ai.fedml.edge.request.RequestManager;
 ## Need More Help?
 Join the Community:
 
-Slack: https://join.slack.com/t/fedml/shared_invite/zt-havwx1ee-a1xfOUrATNfc9DFqU~r34w
+Slack: [https://join.slack.com/t/fedml/shared_invite/zt-havwx1ee-a1xfOUrATNfc9DFqU~r34w](https://join.slack.com/t/fedml/shared_invite/zt-havwx1ee-a1xfOUrATNfc9DFqU~r34w)
 
-Discord: https://discord.gg/9xkW8ae6RV
+Discord: [https://discord.gg/9xkW8ae6RV](https://discord.gg/9xkW8ae6RV)
