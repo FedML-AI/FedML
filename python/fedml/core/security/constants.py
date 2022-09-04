@@ -8,6 +8,7 @@ DEFENSE_WEAK_DP = "weak_dp"
 DEFENSE_DP = "dp"
 DEFENSE_RFA = "rfa"
 DEFENSE_FOOLSGOLD = "foolsgold"
+DEFENSE_CRFL = "crfl"
 
 ATTACK_METHOD_BYZANTINE_ATTACK = "byzantine"
 ATTACK_METHOD_DLG = "dlg"

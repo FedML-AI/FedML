@@ -1,9 +1,7 @@
 import argparse
-
 from fedml.core.security.defense.foolsgold_defense import FoolsGoldDefense
 from fedml.ml.aggregator.agg_operator import FedMLAggOperator
-from utils import create_fake_model_list_MNIST
-from utils import create_fake_model_list
+from .utils import create_fake_model_list_MNIST, create_fake_model_list
 
 
 def add_args(use_memory):
