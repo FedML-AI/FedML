@@ -1,10 +1,8 @@
 import argparse
-
 import numpy as np
-
 from fedml.core.security.defense.bulyan_defense import BulyanDefense
 from fedml.ml.aggregator.agg_operator import FedMLAggOperator
-from utils import create_fake_model_list
+from .utils import create_fake_model_list
 
 
 def add_args():

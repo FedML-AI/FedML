@@ -63,6 +63,21 @@ def create_fake_model_list(active_worker_num):
     return model_list
 
 
+def create_fake_model_list(active_worker_num):
+    a_local_w = dict()
+    a_local_w["linear.weight"] = torch.FloatTensor(
+        [[0.1, 0.2, 0.2, 0.1], [0.15, 0.12, 0.02, 0.2], [0.3, 0.01, 0.21, 0.11]]
+    )
+    a_local_w["linear.bias"] = torch.FloatTensor([0.01, 0.19, 0.21])
+    model_list = []
+    for i in range(active_worker_num):
+        local_w = dict()
+        local_w["linear.weight"] = (i+1) * a_local_w["linear.weight"]
+        local_w["linear.bias"] = (i+1) * a_local_w["linear.bias"]
+        model_list.append((i + 10, local_w))  # add a random sample num
+    return model_list
+
+
 def create_fake_model_list_MNIST(active_worker_num):
     a_local_w = dict()
     a_local_w["linear.weight"] = torch.FloatTensor(

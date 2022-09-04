@@ -4,7 +4,7 @@ import random
 from fedml.core.security.common.utils import trimmed_mean
 from fedml.core.security.defense.slsgd_defense import SLSGDDefense
 from fedml.ml.aggregator.agg_operator import FedMLAggOperator
-from utils import create_fake_model_list
+from .utils import create_fake_model_list
 
 
 def add_args_option2():

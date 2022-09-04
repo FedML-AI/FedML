@@ -1,5 +1,5 @@
 from fedml.core.security.defense.coordinate_wise_median_defense import CoordinateWiseMedianDefense
-from utils import create_fake_model_list
+from .utils import create_fake_model_list
 
 
 def test_defense():
