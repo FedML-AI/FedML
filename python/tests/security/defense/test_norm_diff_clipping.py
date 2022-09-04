@@ -3,7 +3,7 @@ from fedml.core.security.defense.norm_diff_clipping_defense import (
     NormDiffClippingDefense,
 )
 from fedml.ml.aggregator.agg_operator import FedMLAggOperator
-from .utils import create_fake_vectors, create_fake_model_list_MNIST
+from utils import create_fake_vectors, create_fake_model_list_MNIST
 
 
 def add_args():

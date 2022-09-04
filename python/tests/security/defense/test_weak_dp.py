@@ -2,7 +2,7 @@ import argparse
 
 from fedml.core.security.defense.weak_dp_defense import WeakDPDefense
 from fedml.ml.aggregator.agg_operator import FedMLAggOperator
-from .utils import create_fake_model_list_MNIST
+from utils import create_fake_model_list_MNIST
 
 
 def add_args():

@@ -1,6 +1,6 @@
 from fedml.core.security.attack.backdoor_attack import BackdoorAttack
 import logging
-from .utils import create_fake_model_list, create_fake_dataloader
+from utils import create_fake_model_list, create_fake_dataloader
 
 logging.getLogger().setLevel(logging.INFO)
 
