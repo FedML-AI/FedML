@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from fedml.core.security.defense.soteria_defense import SoteriaDefense
-from .utils import create_fake_gradient_Cifar100, create_fake_model_Cifar100, create_fake_data_Cifar100
+from utils import create_fake_gradient_Cifar100, create_fake_model_Cifar100, create_fake_data_Cifar100
 
 """
 TODO FIX: load model and the corresponding parameters from FedML system
