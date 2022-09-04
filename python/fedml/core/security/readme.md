@@ -57,22 +57,22 @@ https://www.usenix.org/system/files/raid20-fung.pdf
 12. CoordinateWiseMedianDefense: "Byzantine-Robust Distributed Learning: Towards Optimal Statistical Rates"
 http://proceedings.mlr.press/v80/yin18a/yin18a.pdf
 13. WbcDefense: "Enhancing Robustness against Model Poisoning Attacks in Federated Learning from a Client Perspective" 
-https://arxiv.org/abs/2110.13864 
+https://arxiv.org/abs/2110.13864
+14. CRFLDefense: "CRFL: Certifiably Robust Federated Learning against Backdoor Attacks (ICML 2021)"
+http://proceedings.mlr.press/v139/xie21a/xie21a.pdf
 
 
 
 **Todo**
 1. "Attack-Resistant Federated Learning with Residual-based Reweighting"
 https://arxiv.org/pdf/1912.11464
-2. "CRFL: Certifiably Robust Federated Learning against Backdoor Attacks (ICML 2021)"
-http://proceedings.mlr.press/v139/xie21a/xie21a.pdf
-3. (DiverseFL) "Byzantine-Resilient Federated Learning with Heterogeneous Data Distribution"
+2. (DiverseFL) "Byzantine-Resilient Federated Learning with Heterogeneous Data Distribution"
 https://arxiv.org/abs/2010.07541v3
-4. "FLTrust: Byzantine-robust Federated Learning via Trust Bootstrapping". NDSS 2021
+3. "FLTrust: Byzantine-robust Federated Learning via Trust Bootstrapping". NDSS 2021
 https://www.ndss-symposium.org/ndss-paper/fltrust-byzantine-robust-federated-learning-via-trust-bootstrapping/
-5. "DETOX: A Redundancy-based Framework for Faster and More Robust Gradient Aggregation"
+4. "DETOX: A Redundancy-based Framework for Faster and More Robust Gradient Aggregation"
 https://arxiv.org/abs/1907.12205
-6. "RSA: Byzantine-Robust Stochastic Aggregation Methods for Distributed Learning from Heterogeneous Datasets"
+5. "RSA: Byzantine-Robust Stochastic Aggregation Methods for Distributed Learning from Heterogeneous Datasets"
 https://ojs.aaai.org/index.php/AAAI/article/view/3968
-7. "Byzantine-robust learning on heterogeneous datasets via resampling"
+6. "Byzantine-robust learning on heterogeneous datasets via resampling"
 https://openreview.net/pdf?id=7JSTDTZtn7-
