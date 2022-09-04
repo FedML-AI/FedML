@@ -2,7 +2,7 @@ import argparse
 import logging
 
 from fedml.core.security.defense.wbc_defense import WbcDefense
-from .utils import create_fake_model_list
+from utils import create_fake_model_list
 from fedml.ml.aggregator.agg_operator import FedMLAggOperator
 
 def add_args():

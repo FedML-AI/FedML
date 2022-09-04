@@ -1,6 +1,6 @@
 import argparse
 from fedml.core.security.attack.byzantine_attack import ByzantineAttack
-from .utils import create_fake_model_list
+from utils import create_fake_model_list
 
 
 def add_args(byzantine_client_num, attack_mode):
