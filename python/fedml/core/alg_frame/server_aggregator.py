@@ -57,6 +57,8 @@ class ServerAggregator(ABC):
         if FedMLDifferentialPrivacy.get_instance().is_cdp_enabled():
             logging.info("-----add central DP noise ----")
             aggregated_model_or_grad = FedMLDifferentialPrivacy.get_instance().add_noise(aggregated_model_or_grad)
+        if FedMLDefender.get_instance().is_defense_enabled():
+            aggregated_model_or_grad = FedMLDefender.get_instance().defend_after_aggregation(aggregated_model_or_grad)
         return aggregated_model_or_grad
 
     @abstractmethod
