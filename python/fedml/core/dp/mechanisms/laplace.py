@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 from .base_dp_mechanism import BaseDPMechanism
+from ..common.utils import check_params
 
 
 class Laplace(BaseDPMechanism):
@@ -9,6 +10,7 @@ class Laplace(BaseDPMechanism):
     """
 
     def __init__(self, *, epsilon, delta=0.0, sensitivity):
+        check_params(epsilon, delta, sensitivity)
         self.scale = float(sensitivity) / (float(epsilon) - np.log(1 - float(delta)))
 
     def compute_noise(self, size):
