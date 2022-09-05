@@ -280,7 +280,7 @@ Please check out [the full publication list](./../resources/papers.md) for detai
 
 Our WeChat group has 200+ members. Please add the following account and ask for an invitation to join. 
 
-<img src="./../_static/image/chaoyang-wechat.png" alt="drawing" style="width:200px;"/>
+<img src="./../_static/image/wechat.jpeg" alt="drawing" style="width:200px;"/>
 
 ### FAQ
 
