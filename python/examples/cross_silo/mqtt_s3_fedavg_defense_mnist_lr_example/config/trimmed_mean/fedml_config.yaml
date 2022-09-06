@@ -25,7 +25,7 @@ train_args:
   client_id_list:
   # for FoolsGold Defense, if use_memory is true, then client_num_in_total should be equal to client_number_per_round
   client_num_in_total: 1000
-  client_num_per_round: 10
+  client_num_per_round: 4
   comm_round: 10
   epochs: 1
   batch_size: 10
@@ -61,6 +61,5 @@ attack_args:
 
 defense_args:
   enable_defense: true
-  defense_type: multikrum
-  byzantine_client_num: 1
-  krum_param_m: 2
+  defense_type: trimmed_mean
+  beta: 0.25
