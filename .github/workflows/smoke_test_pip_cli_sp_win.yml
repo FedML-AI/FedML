@@ -36,6 +36,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: cleanup running processes
+        continue-on-error: true
         run: |
           taskkill /im python.exe /f
       - uses: actions/setup-python@v4
