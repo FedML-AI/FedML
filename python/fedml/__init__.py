@@ -23,7 +23,7 @@ from .core.common.ml_engine_backend import MLEngineBackend
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.7.311"
+__version__ = "0.7.312"
 
 
 def init(args=None):
@@ -97,12 +97,20 @@ def init(args=None):
 
 
 def print_args(args):
-    args_copy = deepcopy(args)
+    mqtt_config_path = None
+    s3_config_path = None
+    args_copy = args
     if hasattr(args_copy, "mqtt_config_path"):
+        mqtt_config_path = args_copy.mqtt_config_path
         args_copy.mqtt_config_path = ""
     if hasattr(args_copy, "s3_config_path"):
+        s3_config_path = args_copy.s3_config_path
         args_copy.s3_config_path = ""
     logging.info("==== args = {}".format(vars(args_copy)))
+    if hasattr(args_copy, "mqtt_config_path"):
+        args_copy.mqtt_config_path = mqtt_config_path
+    if hasattr(args_copy, "s3_config_path"):
+        args_copy.s3_config_path = s3_config_path
 
 
 def init_simulation_mpi(args):
