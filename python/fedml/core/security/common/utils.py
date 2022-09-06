@@ -22,13 +22,15 @@ def is_weight_param(k):
 def compute_euclidean_distance(v1, v2):
     return (v1 - v2).norm()
 
+
 def compute_model_norm(model):
     return vectorize_weight(model).norm()
 
+
 def compute_middle_point(alphas, model_list):
     """
-        alphas: weights of model_dict
-        model_dict: a model submitted by a user
+    alphas: weights of model_dict
+    model_dict: a model submitted by a user
     """
     sum_batch = torch.zeros(model_list[0].shape)
     for a, a_batch_w in zip(alphas, model_list):
@@ -79,7 +81,6 @@ def compute_geometric_median(weights, client_grads):
         if abs(prev_obj_val - val) < ftol * val:
             break
     return middle_point
-
 
 
 def get_total_sample_num(model_list):
@@ -161,6 +162,7 @@ def log_client_data_statistics(poisoned_client_ids, train_data_local_dict):
 def cross_entropy_for_onehot(pred, target):
     return torch.mean(torch.sum(-target * F.log_softmax(pred, dim=-1), 1))
 
+
 def label_to_onehot(target, num_classes=100):
     target = torch.unsqueeze(target, 1)
     onehot_target = torch.zeros(target.size(0), num_classes, device=target.device)
@@ -168,21 +170,20 @@ def label_to_onehot(target, num_classes=100):
     return onehot_target
 
 
-
 def trimmed_mean(model_list, trimmed_num):
-    model_list2 = []
+    temp_model_list = []
     for i in range(0, len(model_list)):
-        local_sample_number, local_model_params = model_list[i]
-        model_list2.append(
+        local_sample_num, client_grad = model_list[i]
+        temp_model_list.append(
             (
-                local_sample_number,
-                local_model_params,
-                compute_a_score(local_sample_number),
+                local_sample_num,
+                client_grad,
+                compute_a_score(local_sample_num),
             )
         )
-    model_list2.sort(key=lambda grad: grad[2])  # sort by coordinate-wise scores
-    model_list2 = model_list2[trimmed_num : len(model_list) - trimmed_num]
-    model_list = [(t[0], t[1]) for t in model_list2]
+    temp_model_list.sort(key=lambda grad: grad[2])  # sort by coordinate-wise scores
+    temp_model_list = temp_model_list[trimmed_num: len(model_list) - trimmed_num]
+    model_list = [(t[0], t[1]) for t in temp_model_list]
     return model_list
 
 
