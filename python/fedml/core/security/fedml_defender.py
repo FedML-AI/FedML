@@ -1,8 +1,8 @@
 import logging
 from typing import List, Tuple, Dict, Any, Callable
+from .defense.RFA_defense import RFADefense
 from .defense.crfl_defense import CRFLDefense
 from ..common.ml_engine_backend import MLEngineBackend
-from .defense.RFA_defense import RFA_defense
 from .defense.cclip_defense import CClipDefense
 from .defense.foolsgold_defense import FoolsGoldDefense
 from .defense.geometric_median_defense import GeometricMedianDefense
@@ -64,7 +64,7 @@ class FedMLDefender:
             elif self.defense_type == DEFENSE_CCLIP:
                 self.defender = CClipDefense(args)
             elif self.defense_type == DEFENSE_RFA:
-                self.defender = RFA_defense(args)
+                self.defender = RFADefense(args)
             elif self.defense_type == DEFENSE_FOOLSGOLD:
                 self.defender = FoolsGoldDefense(args)
             elif self.defense_type == DEFENSE_CRFL:
@@ -109,6 +109,7 @@ class FedMLDefender:
         return self.is_defense_enabled() and self.defense_type in [
             DEFENSE_SLSGD,
             DEFENSE_CRFL,
+            DEFENSE_RFA
         ]
 
     def is_defense_before_aggregation(self):
