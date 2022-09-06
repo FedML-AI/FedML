@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import logging
-from ...core.dp.fed_privacy_mechanism import FedMLDifferentialPrivacy
+from ...core.dp.dp_mechanism import FedMLDifferentialPrivacy
 
 
 class ClientTrainer(ABC):
