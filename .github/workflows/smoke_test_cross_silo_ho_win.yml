@@ -39,7 +39,7 @@ jobs:
       - name: cleanup running processes
         continue-on-error: true
         run: |
-          taskkill /im python.exe /f
+          wmic.exe /interactive:off process where "name='python.exe'" call terminate
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
