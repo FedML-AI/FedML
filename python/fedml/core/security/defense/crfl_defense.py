@@ -55,13 +55,11 @@ class CRFLDefense(BaseDefenseMethod):
             dataseet == LOAN: dynamic_thres = epoch * 0.025 + 2
             datset == EMNIST: dynamic_thres = epoch * 0.25 + 4
         """
-        print(f"avg params = {avg_params}")
         dynamic_threshold = self.epoch * 0.1 + 2
         if self.clip_threshold is None or self.clip_threshold > dynamic_threshold:
             self.clip_threshold = dynamic_threshold
         self.epoch += 1
 
-        print(f"self.clip_threshold={self.clip_threshold}")
         new_model = self.clip_weight_norm(avg_params, self.clip_threshold)
         # the output model is new model; later the algo adds dp noise to the global model
         return new_model
