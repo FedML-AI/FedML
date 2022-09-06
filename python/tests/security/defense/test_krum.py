@@ -1,7 +1,5 @@
 import argparse
-
 from fedml.core.security.defense.krum_defense import KrumDefense
-from fedml.ml.aggregator.agg_operator import FedMLAggOperator
 from utils import create_fake_model_list
 
 
@@ -10,7 +8,6 @@ def add_args_krum():
     parser.add_argument(
         "--yaml_config_file", "--cf", help="yaml configuration file", type=str, default="",
     )
-    # default arguments
     parser.add_argument("--federated_optimizer", type=str, default="FedAvg")
     parser.add_argument("--byzantine_client_num", type=int, default=2)
     parser.add_argument("--multi", type=bool, default=False)
@@ -23,7 +20,6 @@ def add_args_multi_krum():
     parser.add_argument(
         "--yaml_config_file", "--cf", help="yaml configuration file", type=str, default="",
     )
-    # default arguments
     parser.add_argument("--federated_optimizer", type=str, default="FedAvg")
     parser.add_argument("--byzantine_client_num", type=int, default=2)
     parser.add_argument("--multi", type=bool, default=True)
@@ -32,10 +28,10 @@ def add_args_multi_krum():
 
 
 def test_defense_Krum():
-    model_list = create_fake_model_list(20)
+    model_list = create_fake_model_list(10)
     print(f"test krum")
     krum = KrumDefense(add_args_krum())
-    filtered_model_list = krum.run(model_list, base_aggregation_func=FedMLAggOperator.agg)
+    filtered_model_list = krum.defend_before_aggregation(model_list)
     print(f"filtered_model_list={filtered_model_list}")
 
 
@@ -43,7 +39,7 @@ def test_defense_multi_Krum():
     model_list = create_fake_model_list(20)
     print(f"test multi-krum")
     krum = KrumDefense(add_args_multi_krum())
-    filtered_model_list = krum.run(model_list, base_aggregation_func=FedMLAggOperator.agg)
+    filtered_model_list = krum.defend_before_aggregation(model_list)
     print(f"filtered_model_list={filtered_model_list}")
 
 
