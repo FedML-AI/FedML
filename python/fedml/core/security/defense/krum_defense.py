@@ -35,7 +35,7 @@ class KrumDefense(BaseDefenseMethod):
     ):
         num_client = len(raw_client_grad_list)
         # in the Krum paper, it says 2 * byzantine_client_num + 2 < client #
-        if 2 * self.byzantine_client_num + 2 >= num_client - self.krum_param_m:
+        if not 2 * self.byzantine_client_num + 2 <= num_client - self.krum_param_m:
             raise ValueError(
                 "byzantine_client_num conflicts with requirements in Krum: 2 * byzantine_client_num + 2 < client number - krum_param_m"
             )
