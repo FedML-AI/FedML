@@ -1,0 +1,158 @@
+plugins {
+    id 'com.android.library'
+    id 'kotlin-android'
+    id 'maven-publish'
+    id 'signing'
+}
+
+android {
+    compileSdkVersion 32
+    buildToolsVersion "32.0.0"
+    ndkVersion '24.0.8215888'
+
+    defaultConfig {
+        minSdkVersion 21
+        targetSdkVersion 32
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles "consumer-rules.pro"
+        multiDexEnabled true
+        testFunctionalTest true
+        externalNativeBuild {
+            cmake {
+                cppFlags '-fuse-ld=lld'
+                abiFilters 'arm64-v8a'
+                arguments '-DANDROID_STL=c++_shared', '-DCMAKE_BUILD_TYPE=Release', '-DMOBILE_BACKEND=MNN'
+            }
+        }
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
+    }
+
+    buildTypes {
+        release {
+            manifestPlaceholders app_id: 1234567, api_key: 12345667
+            buildConfigField("String", "MLOPS_SVR", "\"https://open.fedml.ai\"")
+            buildConfigField("int", "MOBILENN_BACKEND", "1")
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            manifestPlaceholders app_id: 1234567, api_key: 12345667
+            buildConfigField("String", "MLOPS_SVR", "\"https://open-dev.fedml.ai\"")
+            buildConfigField("int", "MOBILENN_BACKEND", "1")
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    externalNativeBuild {
+        cmake {
+            path "src/main/jni/CMakeLists.txt"
+        }
+    }
+
+    testOptions {
+        unitTests {
+            returnDefaultValues true
+            all {
+                // Sets JVM argument(s) for the test JVM(s).
+                jvmArgs '-XX:MaxPermSize=256m'
+
+                // You can also check the task name to apply options to only the tests you specify.
+                if (it.name == 'testDebugUnitTest') {
+                    systemProperty 'debug', 'true'
+                }
+            }
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.4.2'
+    implementation 'com.google.android.material:material:1.6.1'
+    implementation 'com.google.code.gson:gson:2.9.0'
+    implementation "com.squareup.retrofit2:retrofit:2.9.0"
+    implementation "com.squareup.retrofit2:converter-gson:2.9.0"
+    implementation 'com.squareup.okhttp3:okhttp:5.0.0-alpha.7'
+    implementation 'com.squareup.okio:okio:3.1.0'
+    implementation 'com.squareup.okhttp3:logging-interceptor:5.0.0-alpha.7'
+    implementation "org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5"
+    implementation 'com.amazonaws:aws-android-sdk-s3:2.45.0'
+    implementation 'javax.annotation:javax.annotation-api:1.3.2'
+    // noinspection AnnotationProcessorOnCompilePath
+    annotationProcessor 'org.projectlombok:lombok:1.18.24'
+    compileOnly 'org.projectlombok:lombok:1.18.24'
+//    implementation 'androidx.room:room-runtime:2.4.0'
+//    annotationProcessor 'androidx.room:room-compiler:2.4.0'
+//    testImplementation 'androidx.room:room-testing:2.4.0'
+    implementation 'com.google.guava:guava:31.1-android'
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.3'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                // Applies the component for the release build variant.
+                from components.release
+
+                // You can then customize attributes of the publication as shown below.
+                groupId = 'ai.fedml'
+                artifactId = 'fedml-edge-android'
+                version = VERSION_NAME
+
+                pom {
+                    name = 'fedml-edge-android'
+                    description = 'A FedML Edge SDK for Android'
+                    url = 'https://fedml.ai/'
+                    packaging = 'aar'
+                    properties = [
+                            myProp          : "value",
+                            "prop.with.dots": "anotherValue"
+                    ]
+                    licenses {
+                        license {
+                            name = 'The Apache Software License, Version 2.0'
+                            url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        }
+                    }
+                    developers {
+                        developer {
+                            id = 'FedML'
+                            name = 'FedML Inc'
+                            email = 'www.fedml.ai@gmail.com'
+                            url = 'https://fedml.ai/'
+                        }
+                    }
+                    scm {
+                        connection = 'scm:git@github.com:FedML-AI/FedML-Android.git'
+                        developerConnection = 'scm:git@github.com:FedML-AI/FedML-Android.git'
+                        url = 'https://github.com/FedML-AI/FedML-Android'
+                    }
+                }
+            }
+        }
+        repositories {
+            maven {
+                def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+                def snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+                url = VERSION_NAME.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+
+                credentials(PasswordCredentials) {
+                    username = NEXUS_USERNAME
+                    password = NEXUS_PASSWORD
+                }
+            }
+        }
+    }
+
+    signing {
+        sign publishing.publications.release
+    }
+}
+

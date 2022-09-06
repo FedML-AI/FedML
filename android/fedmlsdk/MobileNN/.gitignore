@@ -1,0 +1,16 @@
+.idea
+.cxx
+
+build/FedMLTrainer/build_x86_linux
+build/FedMLTrainer/build_arm_android_64
+
+build/lightsecagg/build_x86_linux
+build/lightsecagg/build_arm_android_64
+
+build/train/build_x86_linux
+build/train/build_arm_android_64
+.DS_Store
+/build/MNN/build_x86_linux/
+/build/MNN/build_arm_android_64/
+/build/torch/build_x86_linux/
+/build/torch/build_arm_android_64/
