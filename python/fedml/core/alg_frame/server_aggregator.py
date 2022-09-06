@@ -2,7 +2,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import List, Tuple, Dict
 
-from ..dp.fed_privacy_mechanism import FedMLDifferentialPrivacy
+from ..dp.dp_mechanism import FedMLDifferentialPrivacy
 from ..security.fedml_attacker import FedMLAttacker
 from ..security.fedml_defender import FedMLDefender
 from ...ml.aggregator.agg_operator import FedMLAggOperator
