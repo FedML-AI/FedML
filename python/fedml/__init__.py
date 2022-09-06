@@ -1,4 +1,6 @@
 import logging
+from copy import deepcopy
+
 import multiprocess as multiprocessing
 import os
 import random
@@ -89,8 +91,18 @@ def init(args=None):
 
     mlops.init(args)
 
-    logging.info("==== args = {}".format(vars(args)))
+    print_args(args)
+
     return args
+
+
+def print_args(args):
+    args_copy = deepcopy(args)
+    if hasattr(args_copy, "mqtt_config_path"):
+        args_copy.mqtt_config_path = ""
+    if hasattr(args_copy, "s3_config_path"):
+        args_copy.s3_config_path = ""
+    logging.info("==== args = {}".format(vars(args_copy)))
 
 
 def init_simulation_mpi(args):
