@@ -336,7 +336,7 @@ Please check [this publication list](./doc/en/resources/papers.md) for details.
 
 Our WeChat group exceeds 200 members, please add the following account and ask him to invite you to join. 
 
-<img src="./doc/en/_static/image/chaoyang-wechat.png" alt="drawing" style="width:200px;"/>
+<img src="./doc/en/_static/image/wechat.jpeg" alt="drawing" style="width:200px;"/>
 
 
 # Contributing 
