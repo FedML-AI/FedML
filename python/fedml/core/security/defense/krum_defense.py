@@ -4,9 +4,11 @@ from .defense_base import BaseDefenseMethod
 from ..common import utils
 
 """
-defense @ server, added by Xiaoyang, 07/09/2022
+defense @ server, added by Xiaoyang, Chulin, 07/09/2022
 "Machine Learning with Adversaries: Byzantine Tolerant Gradient Descent"
 https://arxiv.org/pdf/1703.02757.pdf
+"Distributed momentum for byzantine-resilient stochastic gradient descent"
+https://infoscience.epfl.ch/record/287261
 """
 
 
@@ -29,9 +31,9 @@ class KrumDefense(BaseDefenseMethod):
         pass
 
     def defend_before_aggregation(
-            self,
-            raw_client_grad_list: List[Tuple[float, Dict]],
-            extra_auxiliary_info: Any = None,
+        self,
+        raw_client_grad_list: List[Tuple[float, Dict]],
+        extra_auxiliary_info: Any = None,
     ):
         num_client = len(raw_client_grad_list)
         # in the Krum paper, it says 2 * byzantine_client_num + 2 < client #
@@ -42,10 +44,13 @@ class KrumDefense(BaseDefenseMethod):
 
         vec_local_w = [
             utils.vectorize_weight(raw_client_grad_list[i][1])
-            for i in range(0, num_client)]
+            for i in range(0, num_client)
+        ]
         krum_scores = self._compute_krum_score(vec_local_w)
-        score_index = torch.argsort(torch.Tensor(krum_scores)).tolist()  # indices; ascending
-        score_index = score_index[0:self.krum_param_m]
+        score_index = torch.argsort(
+            torch.Tensor(krum_scores)
+        ).tolist()  # indices; ascending
+        score_index = score_index[0 : self.krum_param_m]
         return [raw_client_grad_list[i] for i in score_index]
 
     def _compute_krum_score(self, vec_grad_list):
@@ -55,8 +60,12 @@ class KrumDefense(BaseDefenseMethod):
             dists = []
             for j in range(0, num_client):
                 if i != j:
-                    dists.append(utils.compute_euclidean_distance(vec_grad_list[i], vec_grad_list[j]).item())
+                    dists.append(
+                        utils.compute_euclidean_distance(
+                            vec_grad_list[i], vec_grad_list[j]
+                        ).item()
+                    )
             dists.sort()  # ascending
-            score = dists[0:num_client - self.byzantine_client_num - 2]
+            score = dists[0 : num_client - self.byzantine_client_num - 2]
             krum_scores.append(sum(score))
         return krum_scores
