@@ -8,7 +8,7 @@ import retrofit2.http.Headers;
 import retrofit2.http.POST;
 
 public interface LogService {
-    @POST("/fedmlOpsServer/logs/update")
+    @POST("/fedmlLogsServer/logs/update")
     @Headers("Content-Type: application/json;charset=UTF-8")
     Call<BaseResponse> logUpload(@Body LogUploadReq req);
 }
