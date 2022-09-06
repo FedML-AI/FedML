@@ -22,6 +22,7 @@ from ...core.security.constants import (
     DEFENSE_RFA,
     DEFENSE_FOOLSGOLD,
     DEFENSE_CRFL,
+    DEFENSE_MULTIKRUM
 )
 
 
@@ -41,7 +42,6 @@ class FedMLDefender:
         self.defender = None
 
     def init(self, args):
-
         if hasattr(args, "enable_defense") and args.enable_defense:
             self.args = args
             logging.info("------init defense..." + args.defense_type)
@@ -53,7 +53,7 @@ class FedMLDefender:
                 self.defender = NormDiffClippingDefense(args)
             elif self.defense_type == DEFENSE_ROBUST_LEARNING_RATE:
                 self.defender = RobustLearningRateDefense(args)
-            elif self.defense_type == DEFENSE_KRUM:
+            elif self.defense_type == DEFENSE_KRUM or self.defense_type == DEFENSE_MULTIKRUM:
                 self.defender = KrumDefense(args)
             elif self.defense_type == DEFENSE_SLSGD:
                 self.defender = SLSGDDefense(args)
@@ -115,6 +115,8 @@ class FedMLDefender:
         return self.is_defense_enabled() and self.defense_type in [
             DEFENSE_SLSGD,
             DEFENSE_FOOLSGOLD,
+            DEFENSE_KRUM,
+            DEFENSE_MULTIKRUM
         ]
 
     def is_defense_after_aggregation(self):
