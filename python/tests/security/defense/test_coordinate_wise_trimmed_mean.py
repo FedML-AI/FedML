@@ -1,9 +1,7 @@
 import argparse
-
 from fedml.core.security.defense.coordinate_wise_trimmed_mean_defense import (
     CoordinateWiseTrimmedMeanDefense,
 )
-from fedml.ml.aggregator.agg_operator import FedMLAggOperator
 from utils import create_fake_model_list
 
 
@@ -23,13 +21,12 @@ def add_args():
 
 
 def test_defense():
-    client_grad_list = create_fake_model_list(20)
-    config = add_args()
-    defense = CoordinateWiseTrimmedMeanDefense(config)
-    result = defense.run(
-        client_grad_list, base_aggregation_func=FedMLAggOperator.agg
-    )
-    print(f"result = {result}")
+    print("-------------CoordinateWiseTrimmedMeanDefense-------------")
+    client_grad_list = create_fake_model_list(5)
+    print(f"client_grad_list={client_grad_list}")
+    defense = CoordinateWiseTrimmedMeanDefense(add_args())
+    grads = defense.defend_before_aggregation(client_grad_list)
+    print(f"grads = {grads}")
 
 
 if __name__ == "__main__":

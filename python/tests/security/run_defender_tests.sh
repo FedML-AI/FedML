@@ -14,5 +14,7 @@ python test_slsgd_defense.py
 #python test_soteria.py
 python test_wbc.py
 python test_weak_dp.py
+python test_crfl.py
+python test_rfa.py
 
 cd ..
