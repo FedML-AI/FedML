@@ -1,6 +1,7 @@
 import logging
 from typing import List, Tuple, Dict, Any, Callable
 from .defense.RFA_defense import RFADefense
+from .defense.coordinate_wise_trimmed_mean_defense import CoordinateWiseTrimmedMeanDefense
 from .defense.crfl_defense import CRFLDefense
 from ..common.ml_engine_backend import MLEngineBackend
 from .defense.cclip_defense import CClipDefense
@@ -22,7 +23,8 @@ from ...core.security.constants import (
     DEFENSE_RFA,
     DEFENSE_FOOLSGOLD,
     DEFENSE_CRFL,
-    DEFENSE_MULTIKRUM
+    DEFENSE_MULTIKRUM,
+    DEFENSE_TRIMMED_MEAN,
 )
 
 
@@ -53,7 +55,7 @@ class FedMLDefender:
                 self.defender = NormDiffClippingDefense(args)
             elif self.defense_type == DEFENSE_ROBUST_LEARNING_RATE:
                 self.defender = RobustLearningRateDefense(args)
-            elif self.defense_type == DEFENSE_KRUM or self.defense_type == DEFENSE_MULTIKRUM:
+            elif self.defense_type in [DEFENSE_KRUM, DEFENSE_MULTIKRUM]:
                 self.defender = KrumDefense(args)
             elif self.defense_type == DEFENSE_SLSGD:
                 self.defender = SLSGDDefense(args)
@@ -69,6 +71,8 @@ class FedMLDefender:
                 self.defender = FoolsGoldDefense(args)
             elif self.defense_type == DEFENSE_CRFL:
                 self.defender = CRFLDefense(args)
+            elif self.defense_type == DEFENSE_TRIMMED_MEAN:
+                self.defender = CoordinateWiseTrimmedMeanDefense(args)
             else:
                 raise Exception("args.defense_type is not defined!")
         else:
@@ -109,7 +113,7 @@ class FedMLDefender:
         return self.is_defense_enabled() and self.defense_type in [
             DEFENSE_SLSGD,
             DEFENSE_CRFL,
-            DEFENSE_RFA
+            DEFENSE_RFA,
         ]
 
     def is_defense_before_aggregation(self):
@@ -117,7 +121,8 @@ class FedMLDefender:
             DEFENSE_SLSGD,
             DEFENSE_FOOLSGOLD,
             DEFENSE_KRUM,
-            DEFENSE_MULTIKRUM
+            DEFENSE_MULTIKRUM,
+            DEFENSE_TRIMMED_MEAN
         ]
 
     def is_defense_after_aggregation(self):
