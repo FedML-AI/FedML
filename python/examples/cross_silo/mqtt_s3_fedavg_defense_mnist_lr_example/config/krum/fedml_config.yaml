@@ -62,5 +62,4 @@ attack_args:
 defense_args:
   enable_defense: true
   defense_type: krum
-  federated_optimizer: FedAvg
   byzantine_client_num: 1
