@@ -1,6 +1,6 @@
 import argparse
 from fedml.core.security.defense.krum_defense import KrumDefense
-from .utils import create_fake_model_list
+from utils import create_fake_model_list
 
 
 def add_args_krum(isMultiKrum):
