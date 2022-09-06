@@ -1,5 +1,5 @@
 import logging
-from fedml.core.dp.budget_accountant import BudgetAccountant
+from fedml.core.dp.budget_accountant.naive_budget_accountant import BudgetAccountant
 from fedml.core.dp.mechanisms import Laplace, Gaussian
 
 
