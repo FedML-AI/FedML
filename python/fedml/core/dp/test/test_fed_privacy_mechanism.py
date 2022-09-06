@@ -1,6 +1,6 @@
 import argparse
 import torch
-from ..fed_privacy_mechanism import FedMLDifferentialPrivacy
+from ..dp_mechanism import FedMLDifferentialPrivacy
 
 a_local_w = dict()
 a_local_w["linear.weight"] = torch.FloatTensor(

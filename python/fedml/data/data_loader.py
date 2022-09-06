@@ -245,7 +245,7 @@ def combine_batches(batches):
 
 
 def load_synthetic_data(args):
-    if args.training_type == "cross_silo" and hasattr(args, 'synthetic_data_url') and args.synthetic_data_url.find("https") != -1:
+    if args.training_type == "cross_silo" and args.dataset == "cifar10" and hasattr(args, 'synthetic_data_url') and args.synthetic_data_url.find("https") != -1:
         data_server_preprocess(args)
     dataset_name = args.dataset
     # check if the centralized training is enabled
