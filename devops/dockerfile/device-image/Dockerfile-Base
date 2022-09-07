@@ -23,6 +23,7 @@ RUN apt-get update
 RUN apt-get update
 RUN apt-get -y install gettext-base
 RUN apt-get -y install unar wget
+RUN apt-get -y install libquadmath0
 
 RUN chmod a+x ./fedml/setup-conda-env.sh
 RUN bash ./fedml/setup-conda-env.sh ${IS_BUILDING_GPU_IMAGE}

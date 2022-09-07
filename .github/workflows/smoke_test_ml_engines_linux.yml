@@ -48,7 +48,7 @@ jobs:
       - name: server - tensorflow - fedavg
         run: |
           cd examples/cross_silo/tf_mqtt_s3_fedavg_mnist_lr_example
-          run_id=tf-ml-engine-${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
+          run_id=tf-ml-engine-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
           echo ${run_id}
           bash run_server.sh $run_id
         if:   ${{ matrix.client-index == '0' }}
@@ -56,16 +56,16 @@ jobs:
       - name: client 1 - tensorflow - fedavg
         run: |
           cd examples/cross_silo/tf_mqtt_s3_fedavg_mnist_lr_example
-          run_id=tf-ml-engine-${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
-          echo run_id
+          run_id=tf-ml-engine-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
+          echo ${run_id}
           bash run_client.sh 1 $run_id
         if:   ${{ matrix.client-index == '1' }}
 
       - name: client 2 - tensorflow - fedavg
         run: |
           cd examples/cross_silo/tf_mqtt_s3_fedavg_mnist_lr_example
-          run_id=tf-ml-engine-${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
-          echo run_id
+          run_id=tf-ml-engine-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
+          echo ${run_id}
           bash run_client.sh 2 $run_id
         if: ${{ matrix.client-index == '2' }}
 
@@ -110,7 +110,7 @@ jobs:
         run: |
           cd examples/cross_silo/jax_haiku_mqtt_s3_fedavg_mnist_lr_example
           run_id=jax-ml-engine-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
-          echo run_id
+          echo ${run_id}
           bash run_client.sh 1 $run_id
         if: ${{ matrix.client-index == '1' }}
 
@@ -118,7 +118,7 @@ jobs:
         run: |
           cd examples/cross_silo/jax_haiku_mqtt_s3_fedavg_mnist_lr_example
           run_id=jax-ml-engine-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
-          echo run_id
+          echo ${run_id}
           bash run_client.sh 2 $run_id
         if: ${{ matrix.client-index == '2' }}
 
@@ -140,6 +140,7 @@ jobs:
     #          - os: windows-latest
     #            python-version: '3.6'
     runs-on: [ self-hosted, runner-linux, devops ]
+    timeout-minutes: 15
     steps:
       - uses: actions/setup-python@v4
         with:
@@ -152,24 +153,27 @@ jobs:
 
       - name: server - mxnet - fedavg
         run: |
+          sudo apt-get install libquadmath0
           cd examples/cross_silo/mxnet_mqtt_s3_fedavg_mnist_lr_example
-          run_id=mxnet-ml-engine-${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
+          run_id=mxnet-ml-engine-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
           echo ${run_id}
           bash run_server.sh $run_id
         if: ${{ matrix.client-index == '0' }}
 
       - name: client 1 - mxnet - fedavg
         run: |
+          sudo apt-get install libquadmath0
           cd examples/cross_silo/mxnet_mqtt_s3_fedavg_mnist_lr_example
-          run_id=mxnet-ml-engine-${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
-          echo run_id
+          run_id=mxnet-ml-engine-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
+          echo ${run_id}
           bash run_client.sh 1 $run_id
         if: ${{ matrix.client-index == '1' }}
 
       - name: client 2 - mxnet - fedavg
         run: |
+          sudo apt-get install libquadmath0
           cd examples/cross_silo/mxnet_mqtt_s3_fedavg_mnist_lr_example
-          run_id=mxnet-ml-engine-${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
-          echo run_id
+          run_id=mxnet-ml-engine-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
+          echo ${run_id}
           bash run_client.sh 2 $run_id
         if: ${{ matrix.client-index == '2' }}
