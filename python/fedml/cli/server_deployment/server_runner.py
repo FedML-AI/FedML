@@ -573,7 +573,8 @@ class FedMLServerRunner:
         self.start_cloud_server(packages_config)
 
     def start_cloud_server(self, packages_config):
-        self.cloud_server_name = FedMLServerRunner.FEDML_CLOUD_SERVER_PREFIX + str(self.run_id)
+        server_id = self.request_json["server_id"]
+        self.cloud_server_name = FedMLServerRunner.FEDML_CLOUD_SERVER_PREFIX + str(self.run_id) + "-" + str(server_id)
         self.server_docker_image = (
                 self.agent_config["docker_config"]["registry_server"]
                 + self.agent_config["docker_config"]["registry_dir"]
@@ -656,7 +657,8 @@ class FedMLServerRunner:
         self.stop_run()
 
     def stop_cloud_server(self):
-        self.cloud_server_name = FedMLServerRunner.FEDML_CLOUD_SERVER_PREFIX + str(self.run_id)
+        self.cloud_server_name = FedMLServerRunner.FEDML_CLOUD_SERVER_PREFIX + str(self.run_id) \
+                                 + "-" + str(self.edge_id)
         self.server_docker_image = (
                 self.agent_config["docker_config"]["registry_server"]
                 + self.agent_config["docker_config"]["registry_dir"]
@@ -798,6 +800,7 @@ class FedMLServerRunner:
         request_json = json.loads(payload)
         run_id = request_json["runId"]
         edge_id_list = request_json["edgeids"]
+        server_id = request_json["serverId"]
 
         logging.info("Stopping run...")
         logging.info("Stop run with multiprocessing.")
@@ -816,7 +819,7 @@ class FedMLServerRunner:
         elif self.run_as_cloud_agent:
             server_runner = FedMLServerRunner(
                 self.args, run_id=run_id, request_json=stop_request_json, agent_config=self.agent_config,
-                edge_id=self.edge_id
+                edge_id=server_id
             )
             server_runner.run_as_cloud_agent = self.run_as_cloud_agent
             Process(target=server_runner.stop_cloud_server_process).start()
