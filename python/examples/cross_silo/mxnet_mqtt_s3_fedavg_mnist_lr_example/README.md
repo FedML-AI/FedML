@@ -31,3 +31,10 @@ FedML MLOps provides:
 - visualizing system performance (including profiling flow chart)
 - distributed logging
 - model serving
+
+## Notes:
+If you meet the following issue on Ubuntu Linux when run this example:
+libquadmath.so.0: cannot open shared object file: No such file or directory
+
+you should install the libquadmath0 package by the following command:
+sudo apt-get install libquadmath0
