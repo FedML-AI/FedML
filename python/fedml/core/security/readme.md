@@ -28,6 +28,8 @@ https://proceedings.neurips.cc/paper/2021/file/08040837089cdf46631a10aca5258e16-
 http://proceedings.mlr.press/v139/lam21b/lam21b.pdf
 7. “Model poisoning attacks against distributed machine learning systems” 
 https://www.spiedigitallibrary.org/conference-proceedings-of-spie/11006/110061D/Model-poisoning-attacks-against-distributed-machine-learning-systems/10.1117/12.2520275.full?SSO=1
+8. The Limitations of Federated Learning in Sybil Settings
+9. The Hidden Vulnerability of Distributed Learning in Byzantium
 
 
 
