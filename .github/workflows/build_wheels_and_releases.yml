@@ -126,9 +126,9 @@ jobs:
           ls dist/*.whl
 
       - name: Store artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          path: dist/fedml-0.7.315-py2.py3-none-any.whl
+          path: python/dist/fedml-0.7.315-py2.py3-none-any.whl
 
   # Build the source distribution under Linux
   build_sdist:
