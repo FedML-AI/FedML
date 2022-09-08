@@ -1,7 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
 from typing import List, Tuple, Dict
-
 from ..dp.dp_mechanism import FedMLDifferentialPrivacy
 from ..security.fedml_attacker import FedMLAttacker
 from ..security.fedml_defender import FedMLDefender
@@ -35,7 +34,7 @@ class ServerAggregator(ABC):
     ) -> List[Tuple[float, Dict]]:
         if FedMLAttacker.get_instance().is_model_attack():
             raw_client_model_or_grad_list = FedMLAttacker.get_instance().attack_model(
-                local_w=raw_client_model_or_grad_list, global_w=self.get_model_params(), refs=None,
+                raw_client_grad_list=raw_client_model_or_grad_list, extra_auxiliary_info=None,
             )
         if FedMLDefender.get_instance().is_defense_enabled():
             raw_client_model_or_grad_list = FedMLDefender.get_instance().defend_before_aggregation(
