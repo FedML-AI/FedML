@@ -1,6 +1,6 @@
 import functools
 import random
-
+from typing import List, Tuple, Dict, Any
 import numpy as np
 import torch
 from torch.utils.data import TensorDataset, DataLoader
@@ -11,7 +11,6 @@ from .attack_base import BaseAttackMethod
 ref: Baruch, Gilad, Moran Baruch, and Yoav Goldberg. 
 "A little is enough: Circumventing defenses for distributed learning." Advances in Neural Information Processing Systems 32 (2019).
 
-attack @ client
 overview: the attacker can find the set of parameters within the same range (via maximizing standard deviations /sigma of params) that will
           introduce a backdoor to the sysetm with only a minimal impact on accuracy for the original task. 
 
@@ -51,17 +50,18 @@ class BackdoorAttack(BaseAttackMethod):
         else:
             pass
 
-    def attack_model(self, model_list, global_w, refs=None):
+    def attack_model(self, raw_client_grad_list: List[Tuple[float, Dict]],
+        extra_auxiliary_info: Any = None):
         # the local_w comes from local training (regular)
-        backdoor_idxs = self._get_malicious_client_idx(len(model_list))
-        (num0, averaged_params) = model_list[0]
+        backdoor_idxs = self._get_malicious_client_idx(len(raw_client_grad_list))
+        (num0, averaged_params) = raw_client_grad_list[0]
 
         # fake grad
         # refs/or other variable here should be gradient that makes the training agrees on the correct gradient
         # (in maliciuos clients), which limits the change that can be applied.
         grads = []
         for i in backdoor_idxs:
-            (_, param) = model_list[i]
+            (_, param) = raw_client_grad_list[i]
             # grad = np.concatenate([param.grad.data.cpu().numpy().flatten() for param in model.parameters()]) // for real net
             grad = np.concatenate([param[p_name].numpy().flatten() * 0.5 for p_name in param])
             grads.append(grad)

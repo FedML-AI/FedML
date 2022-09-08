@@ -5,7 +5,7 @@ import warnings
 from collections import defaultdict, OrderedDict
 from copy import deepcopy
 from functools import partial
-
+from typing import Dict, Any
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -47,15 +47,15 @@ class InvertAttack(BaseAttackMethod):
         self.ds = torch.as_tensor(cifar10_std)[:, None, None]
         self.num_images = num_images  # = batch_size in local training
 
-    def attack_model(self, local_w, global_w, refs=None):
-        self.ground_truth = refs[0][0]
-        self.labels = refs[0][1]
+    def reconstruct_data(self, a_gradient: dict, extra_auxiliary_info: Any = None):
+        self.ground_truth = extra_auxiliary_info[0][0]
+        self.labels = extra_auxiliary_info[0][1]
 
         if not self.use_updates:
             rec_machine = GradientReconstructor(
-                self.model, (self.dm, self.ds), config=refs[1], num_images=self.num_images,
+                self.model, (self.dm, self.ds), config=extra_auxiliary_info[1], num_images=self.num_images,
             )
-            self.input_gradient = local_w
+            self.input_gradient = a_gradient
             output, stats = rec_machine.reconstruct(self.input_gradient, self.labels, self.img_shape)
         else:
             rec_machine = FedAvgReconstructor(
@@ -63,10 +63,10 @@ class InvertAttack(BaseAttackMethod):
                 (self.dm, self.ds),
                 # self.local_steps,
                 # self.local_lr,
-                config=refs[1],
+                config=extra_auxiliary_info[1],
                 use_updates=self.use_updates,
             )
-            self.input_parameters = local_w
+            self.input_parameters = a_gradient
             output, stats = rec_machine.reconstruct(self.input_parameters, self.labels, self.img_shape)
 
         test_mse = (output.detach() - self.ground_truth).pow(2).mean()
