@@ -99,10 +99,10 @@ jobs:
 
     steps:
       - name: Checkout fedml
-        uses: actions/checkout@v3
+        uses: actions/checkout@v1
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v2
         with:
           python-version: '3.9'
       
