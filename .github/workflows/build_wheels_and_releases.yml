@@ -27,10 +27,10 @@ jobs:
       matrix:
         include:
           # Window 64 bit
-          - os: windows-2019
-            python: 38
-            bitness: 64
-            platform_id: win_amd64
+#          - os: windows-2019
+#            python: 38
+#            bitness: 64
+#            platform_id: win_amd64
 #          - os: windows-latest
 #            python: 39
 #            bitness: 64
@@ -163,22 +163,26 @@ jobs:
         with:
           path: python/dist/*.tar.gz
 
-#  upload_pypi:
-#    needs: [ build_wheels ]
-#    runs-on: [ self-hosted, devops, runner-linux ]
-#    # upload to PyPI on every tag starting with 'v'
-#    #    if: github.event_name == 'push' && contains(github.event.comment, 'release v')
-#    # alternatively, to publish when a GitHub Release is created, use the following rule:
-#    # if: github.event_name == 'release' && github.event.action == 'published'
-#    steps:
-#      - uses: actions/download-artifact@v2
-#        with:
-#          name: artifact
-#          path: dist
-#
-#      - uses: pypa/gh-action-pypi-publish@v1.4.2
-#        with:
-#          skip_existing: true
-#          user: alexliang
-#          password: ${{ secrets.pypi_password }}
-#          # To test: repository_url: https://test.pypi.org/legacy/
+  upload_pypi:
+    needs: [ build_sdist ]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: python
+    # upload to PyPI on every tag starting with 'v'
+    #    if: github.event_name == 'push' && contains(github.event.comment, 'release v')
+    # alternatively, to publish when a GitHub Release is created, use the following rule:
+    # if: github.event_name == 'release' && github.event.action == 'published'
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: artifact
+          path: python/dist
+
+      - uses: pypa/gh-action-pypi-publish@v1.4.2
+        with:
+          skip_existing: true
+          user: alexliang
+          password: ${{ secrets.PYPI_PASSWORD }}
+          # To test: repository_url: https://test.pypi.org/legacy/
