@@ -95,10 +95,10 @@ jobs:
 
     steps:
       - name: Checkout fedml
-        uses: actions/checkout@v1
+        uses: actions/checkout@v3
 
       - name: Setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: '3.9'
       
@@ -124,7 +124,8 @@ jobs:
       - name: Store artifacts
         uses: actions/upload-artifact@v2
         with:
-          path: dist/*.whl
+          name: dist
+          path: dist
 
   # Build the source distribution under Linux
   build_sdist:
@@ -157,7 +158,8 @@ jobs:
       - name: Store artifacts
         uses: actions/upload-artifact@v2
         with:
-          path: dist/*.tar.gz
+          name: dist
+          path: dist
 
 #  upload_pypi:
 #    needs: [ build_wheels ]
