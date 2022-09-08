@@ -1,3 +1,4 @@
+import json
 import logging
 from abc import abstractmethod
 
@@ -75,6 +76,22 @@ class FedMLCommManager(Observer):
         elif self.backend == "TRPC":
             self.com_manager.stop_receive_message()
 
+    def get_training_mqtt_s3_config(self):
+        mqtt_config = None
+        s3_config = None
+        if hasattr(self.args, "training_mqtt_config") and self.args.training_mqtt_config != "":
+            mqtt_config = self.args.training_mqtt_config
+        if hasattr(self.args, "training_s3_config") and self.args.training_s3_config != "":
+            s3_config = self.args.training_s3_config
+        if mqtt_config is None or s3_config is None:
+            mqtt_config_from_cloud, s3_config_from_cloud = MLOpsConfigs.get_instance(self.args).fetch_configs()
+            if mqtt_config is None:
+                mqtt_config = mqtt_config_from_cloud
+            if s3_config is None:
+                s3_config = s3_config_from_cloud
+
+        return mqtt_config, s3_config
+
     def _init_manager(self):
 
         if self.backend == "MPI":
@@ -84,12 +101,11 @@ class FedMLCommManager(Observer):
         elif self.backend == "MQTT_S3":
             from .communication.mqtt_s3.mqtt_s3_multi_clients_comm_manager import MqttS3MultiClientsCommManager
 
-            mqtt_config, s3_config = MLOpsConfigs.get_instance(self.args).fetch_configs()
-            self.args.mqtt_config_path = mqtt_config
-            self.args.s3_config_path = s3_config
+            mqtt_config, s3_config = self.get_training_mqtt_s3_config()
+
             self.com_manager = MqttS3MultiClientsCommManager(
-                self.args.mqtt_config_path,
-                self.args.s3_config_path,
+                mqtt_config,
+                s3_config,
                 topic=str(self.args.run_id),
                 client_rank=self.rank,
                 client_num=self.size,
@@ -99,12 +115,11 @@ class FedMLCommManager(Observer):
         elif self.backend == "MQTT_S3_MNN":
             from .communication.mqtt_s3_mnn.mqtt_s3_comm_manager import MqttS3MNNCommManager
 
-            mqtt_config, s3_config = MLOpsConfigs.get_instance(self.args).fetch_configs()
-            self.args.mqtt_config_path = mqtt_config
-            self.args.s3_config_path = s3_config
+            mqtt_config, s3_config = self.get_training_mqtt_s3_config()
+
             self.com_manager = MqttS3MNNCommManager(
-                self.args.mqtt_config_path,
-                self.args.s3_config_path,
+                mqtt_config,
+                s3_config,
                 topic=str(self.args.run_id),
                 client_id=self.rank,
                 client_num=self.size,
