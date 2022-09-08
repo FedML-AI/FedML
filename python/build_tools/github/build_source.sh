@@ -17,7 +17,7 @@ python -m pip install twine
 
 cd FedML/python
 
-python setup.py sdist
+python setup.py sdist bdist_wheel
 
 # Check whether the source distribution will render correctly
 twine check dist/*.tar.gz
