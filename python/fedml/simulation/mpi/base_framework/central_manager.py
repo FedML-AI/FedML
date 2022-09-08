@@ -40,7 +40,7 @@ class BaseCentralManager(FedMLCommManager):
 
             # start the next round
             self.args.round_idx += 1
-            if self.round_idx == self.round_num:
+            if self.args.round_idx == self.round_num:
                 self.finish()
                 return
 

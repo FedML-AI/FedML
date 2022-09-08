@@ -11,13 +11,7 @@ from ...core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
 class FedMLServerManager(FedMLCommManager):
     def __init__(
-        self,
-        args,
-        aggregator,
-        comm=None,
-        client_rank=0,
-        client_num=0,
-        backend="MQTT_S3",
+        self, args, aggregator, comm=None, client_rank=0, client_num=0, backend="MQTT_S3",
     ):
         super().__init__(args, comm, client_rank, client_num, backend)
         self.args = args
@@ -32,7 +26,6 @@ class FedMLServerManager(FedMLCommManager):
         self.client_id_list_in_this_round = None
         self.data_silo_index_list = None
 
-
     def run(self):
         super().run()
 
@@ -42,9 +35,7 @@ class FedMLServerManager(FedMLCommManager):
         client_idx_in_this_round = 0
         for client_id in self.client_id_list_in_this_round:
             self.send_message_init_config(
-                client_id,
-                global_model_params,
-                self.data_silo_index_list[client_idx_in_this_round],
+                client_id, global_model_params, self.data_silo_index_list[client_idx_in_this_round],
             )
             client_idx_in_this_round += 1
 
@@ -57,13 +48,11 @@ class FedMLServerManager(FedMLCommManager):
         )
 
         self.register_message_receive_handler(
-            MyMessage.MSG_TYPE_C2S_CLIENT_STATUS,
-            self.handle_message_client_status_update,
+            MyMessage.MSG_TYPE_C2S_CLIENT_STATUS, self.handle_message_client_status_update,
         )
 
         self.register_message_receive_handler(
-            MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER,
-            self.handle_message_receive_model_from_client,
+            MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER, self.handle_message_receive_model_from_client,
         )
 
     def handle_messag_connection_ready(self, msg_params):
@@ -71,9 +60,7 @@ class FedMLServerManager(FedMLCommManager):
             self.args.round_idx, self.client_real_ids, self.args.client_num_per_round
         )
         self.data_silo_index_list = self.aggregator.data_silo_selection(
-            self.args.round_idx,
-            self.args.client_num_in_total,
-            len(self.client_id_list_in_this_round),
+            self.args.round_idx, self.args.client_num_in_total, len(self.client_id_list_in_this_round),
         )
         if not self.is_initialized:
             mlops.log_round_info(self.round_num, -1)
@@ -95,9 +82,7 @@ class FedMLServerManager(FedMLCommManager):
         if client_status == "ONLINE":
             self.client_online_mapping[str(msg_params.get_sender_id())] = True
 
-            logging.info(
-                "self.client_online_mapping = {}".format(self.client_online_mapping)
-            )
+            logging.info("self.client_online_mapping = {}".format(self.client_online_mapping))
 
         mlops.log_aggregation_status(MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING)
 
@@ -108,8 +93,7 @@ class FedMLServerManager(FedMLCommManager):
                 break
 
         logging.info(
-            "sender_id = %d, all_client_is_online = %s"
-            % (msg_params.get_sender_id(), str(all_client_is_online))
+            "sender_id = %d, all_client_is_online = %s" % (msg_params.get_sender_id(), str(all_client_is_online))
         )
 
         if all_client_is_online:
@@ -120,10 +104,7 @@ class FedMLServerManager(FedMLCommManager):
     def handle_message_receive_model_from_client(self, msg_params):
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         mlops.event(
-            "comm_c2s",
-            event_started=False,
-            event_value=str(self.args.round_idx),
-            event_edge_id=sender_id,
+            "comm_c2s", event_started=False, event_value=str(self.args.round_idx), event_edge_id=sender_id,
         )
 
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
@@ -142,19 +123,13 @@ class FedMLServerManager(FedMLCommManager):
             #     self.mlops_event.log_event_started(
             #         "server.agg_and_eval", event_value=str(self.args.round_idx)
             #     )
+            mlops.event("server.wait", event_started=False, event_value=str(self.args.round_idx))
             mlops.event(
-                "server.wait", event_started=False, event_value=str(self.args.round_idx)
-            )
-            mlops.event(
-                "server.agg_and_eval",
-                event_started=True,
-                event_value=str(self.args.round_idx),
+                "server.agg_and_eval", event_started=True, event_value=str(self.args.round_idx),
             )
             tick = time.time()
             global_model_params = self.aggregator.aggregate()
-            MLOpsProfilerEvent.log_to_wandb(
-                {"AggregationTime": time.time() - tick, "round": self.args.round_idx}
-            )
+            MLOpsProfilerEvent.log_to_wandb({"AggregationTime": time.time() - tick, "round": self.args.round_idx})
 
             self.aggregator.test_on_server_for_all_clients(self.args.round_idx)
 
@@ -167,9 +142,7 @@ class FedMLServerManager(FedMLCommManager):
                 self.args.round_idx, self.client_real_ids, self.args.client_num_per_round
             )
             self.data_silo_index_list = self.aggregator.data_silo_selection(
-                self.args.round_idx,
-                self.args.client_num_in_total,
-                len(self.client_id_list_in_this_round),
+                self.args.round_idx, self.args.client_num_in_total, len(self.client_id_list_in_this_round),
             )
 
             if self.args.round_idx == 0:
@@ -178,32 +151,22 @@ class FedMLServerManager(FedMLCommManager):
             client_idx_in_this_round = 0
             for receiver_id in self.client_id_list_in_this_round:
                 self.send_message_sync_model_to_client(
-                    receiver_id,
-                    global_model_params,
-                    self.data_silo_index_list[client_idx_in_this_round],
+                    receiver_id, global_model_params, self.data_silo_index_list[client_idx_in_this_round],
                 )
                 client_idx_in_this_round += 1
 
             self.args.round_idx += 1
             if self.args.round_idx == self.round_num:
                 mlops.log_aggregation_finished_status()
-                logging.info(
-                    "=============training is finished. Cleanup...============"
-                )
+                logging.info("=============training is finished. Cleanup...============")
                 self.cleanup()
             else:
-                logging.info(
-                    "\n\n==========start {}-th round training===========\n".format(
-                        self.args.round_idx
-                    )
-                )
+                logging.info("\n\n==========start {}-th round training===========\n".format(self.args.round_idx))
                 # if hasattr(self.args, "using_mlops") and self.args.using_mlops:
                 #     self.mlops_event.log_event_started(
                 #         "server.wait", event_value=str(self.args.round_idx)
                 #     )
-                mlops.event(
-                    "server.wait", event_started=True, event_value=str(self.args.round_idx)
-                )
+                mlops.event("server.wait", event_started=True, event_value=str(self.args.round_idx))
 
     def cleanup(self):
 
@@ -218,56 +181,35 @@ class FedMLServerManager(FedMLCommManager):
 
     def send_message_init_config(self, receive_id, global_model_params, datasilo_index):
         tick = time.time()
-        message = Message(
-            MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id
-        )
+        message = Message(MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id)
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")
         self.send_message(message)
-        MLOpsProfilerEvent.log_to_wandb(
-            {"Communiaction/Send_Total": time.time() - tick}
-        )
+        MLOpsProfilerEvent.log_to_wandb({"Communiaction/Send_Total": time.time() - tick})
 
     def send_message_check_client_status(self, receive_id, datasilo_index):
-        message = Message(
-            MyMessage.MSG_TYPE_S2C_CHECK_CLIENT_STATUS, self.get_sender_id(), receive_id
-        )
+        message = Message(MyMessage.MSG_TYPE_S2C_CHECK_CLIENT_STATUS, self.get_sender_id(), receive_id)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
         self.send_message(message)
 
     def send_message_finish(self, receive_id, datasilo_index):
-        message = Message(
-            MyMessage.MSG_TYPE_S2C_FINISH, self.get_sender_id(), receive_id
-        )
+        message = Message(MyMessage.MSG_TYPE_S2C_FINISH, self.get_sender_id(), receive_id)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
         self.send_message(message)
-        logging.info(
-            " ====================send cleanup message to {}====================".format(
-                str(datasilo_index)
-            )
-        )
+        logging.info(" ====================send cleanup message to {}====================".format(str(datasilo_index)))
 
-    def send_message_sync_model_to_client(
-        self, receive_id, global_model_params, client_index
-    ):
+    def send_message_sync_model_to_client(self, receive_id, global_model_params, client_index):
         tick = time.time()
         logging.info("send_message_sync_model_to_client. receive_id = %d" % receive_id)
-        message = Message(
-            MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT,
-            self.get_sender_id(),
-            receive_id,
-        )
+        message = Message(MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT, self.get_sender_id(), receive_id,)
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(client_index))
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")
         self.send_message(message)
 
-        MLOpsProfilerEvent.log_to_wandb(
-            {"Communiaction/Send_Total": time.time() - tick}
-        )
+        MLOpsProfilerEvent.log_to_wandb({"Communiaction/Send_Total": time.time() - tick})
 
         mlops.log_aggregated_model_info(
-            self.args.round_idx + 1,
-            model_url=message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL),
+            self.args.round_idx + 1, model_url=message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL),
         )

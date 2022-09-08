@@ -8,10 +8,10 @@ on:
   schedule:
     # Nightly build at 12:12 A.M.
     - cron: "12 12 */1 * *"
-#  push:
-#    branches: [ master, test/v0.7.0 ]
-#  pull_request:
-#    branches: [ master, test/v0.7.0 ]
+  push:
+    branches: [ master, test/v0.7.0, dev/v0.7.0 ]
+  pull_request:
+    branches: [ master, test/v0.7.0, dev/v0.7.0 ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -22,7 +22,7 @@ jobs:
     defaults:
       run:
         shell: powershell
-        working-directory: python
+        working-directory: fedml-devops\python
     strategy:
       fail-fast: false
       matrix:
@@ -40,8 +40,10 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-
       - uses: actions/checkout@v3
+        with:
+          path: fedml-devops
+          clean: true
       - name: pip install -e ./
         run: |
           pip install -e ./
@@ -49,23 +51,17 @@ jobs:
       - name: server - cross-silo - ho
         run: |
           cd quick_start/octopus
-          run_id=${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
-          echo ${run_id}
-          .\run_server.bat $run_id
+          .\run_server.bat ${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
         if:   ${{ matrix.client-index == '0' }}
 
       - name: client 1 - cross-silo - ho
         run: |
           cd quick_start/octopus
-          run_id=${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
-          echo run_id
-          .\run_client.bat 1 $run_id
+          .\run_client.bat 1 ${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
         if:   ${{ matrix.client-index == '1' }}
 
       - name: client 2 - cross-silo - ho
         run: |
           cd quick_start/octopus
-          run_id=${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
-          echo run_id
-          .\run_client.bat 2 $run_id
+          .\run_client.bat 2 ${{ format('{0}{1}{2}', matrix.os, matrix.arch, matrix.python-version) }}
         if: ${{ matrix.client-index == '2' }}

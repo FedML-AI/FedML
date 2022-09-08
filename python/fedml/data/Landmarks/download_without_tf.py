@@ -16,7 +16,7 @@ from typing import Dict
 from typing import List
 from typing import Set
 
-from utils import get_file
+from .utils import get_file
 
 FED_GLD_SPLIT_FILE_BUNDLE = "landmarks-user-160k"
 FED_GLD_SPLIT_FILE_DOWNLOAD_URL = (
@@ -70,7 +70,7 @@ def _listener_process(queue: multiprocessing.Queue, log_file: str):
             if record is None:
                 break
             logger = logging.getLogger(record.name)
-            logging.handle(record)
+            logger.handle(record)
         except Exception:  # pylint: disable=broad-except
             print("Something went wrong:", file=sys.stderr)
             traceback.print_exc(file=sys.stderr)
@@ -204,7 +204,7 @@ def load_data(
     listener.start()
     logger = logging.getLogger(LOGGER)
     qh = logging.handlers.QueueHandler(q)
-    logging.addHandler(qh)
+    logger.addHandler(qh)
     logging.info("Start to load data.")
     logging.info("Loading from cache failed, start to download the data.")
 

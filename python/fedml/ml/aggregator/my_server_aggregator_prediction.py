@@ -43,7 +43,7 @@ class MyServerAggregatorTAGPred(ServerAggregator):
                 x = x.to(device)
                 target = target.to(device)
                 pred = model(x)
-                loss = criterion(pred, target)
+                loss = criterion(pred, target)  # pylint: disable=E1102
 
                 predicted = (pred > 0.5).int()
                 correct = predicted.eq(target).sum(axis=-1).eq(target.size(1)).sum()
@@ -103,7 +103,7 @@ class MyServerAggregatorTAGPred(ServerAggregator):
             train_tot_corrects.append(copy.deepcopy(train_tot_correct))
             train_num_samples.append(copy.deepcopy(train_num_sample))
             train_losses.append(copy.deepcopy(train_loss))
-            logging.info("client_idx = {}, metrics = {}".format(client_idx, metrics))
+            logging.info("testing client_idx = {}".format(client_idx))
 
         # test on training dataset
         train_acc = sum(train_tot_corrects) / sum(train_num_samples)
