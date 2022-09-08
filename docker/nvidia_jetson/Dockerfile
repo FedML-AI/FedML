@@ -16,4 +16,4 @@ RUN pip3 install h5py==2.10.0
 
 RUN ln -nsf /usr/bin/python3 /usr/bin/python
 RUN ln -nsf /usr/bin/pip3 /usr/bin/pip
-RUN pip3 install fedml==0.7.95
+RUN pip3 install --upgrade fedml
