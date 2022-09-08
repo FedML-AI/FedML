@@ -27,8 +27,11 @@ sudo ./svc.sh status
 
 
 # Install GitHub runner in Windows from AWS:
-You may connect to AWS Windows server by RDP client from MAC AppStore based on the url:  https://docs.microsoft.com/en-us/windows-server/remote/remote-desktop-services/clients/remote-desktop-mac
+1. You may connect to AWS Windows server by RDP client from MAC AppStore based on the url:  https://docs.microsoft.com/en-us/windows-server/remote/remote-desktop-services/clients/remote-desktop-mac
 
 host: ec2-184-169-242-201.us-west-1.compute.amazonaws.com
 
-install runner based on the following url: https://github.com/FedML-AI/FedML/settings/actions/runners/new?arch=x64&os=win
+2. Enabling Windows Long Path on Windows based on the following url:
+   https://www.microfocus.com/documentation/filr/filr-4/filr-desktop/t47bx2ogpfz7.html
+
+3. install runner based on the following url: https://github.com/FedML-AI/FedML/settings/actions/runners/new?arch=x64&os=win
