@@ -15,7 +15,6 @@ jobs:
   # Build the wheels for Linux, Windows and macOS for Python 3.8 and newer
   build_wheels:
     name: Build wheel for cp${{ matrix.python }}-${{ matrix.platform_id }}-${{ matrix.manylinux_image }}
-    working-directory: ./python
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -104,6 +103,7 @@ jobs:
           python-version: '3.9'
       
       - name: Build and test wheels
+        working-directory: ./python
         env:
           CIBW_BUILD: cp${{ matrix.python }}-${{ matrix.platform_id }}
           CIBW_ARCHS: all
