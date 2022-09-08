@@ -16,6 +16,10 @@ jobs:
   build_wheels:
     name: Build wheel for cp${{ matrix.python }}-${{ matrix.platform_id }}-${{ matrix.manylinux_image }}
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: python
 
     strategy:
       # Ensure that a wheel builder finishes even if another fails
@@ -103,7 +107,6 @@ jobs:
           python-version: '3.9'
       
       - name: Build and test wheels
-        working-directory: ./python
         env:
           CIBW_BUILD: cp${{ matrix.python }}-${{ matrix.platform_id }}
           CIBW_ARCHS: all
@@ -131,7 +134,7 @@ jobs:
   build_sdist:
     name: Source distribution
     needs: [ build_wheels ]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     defaults:
       run:
         shell: bash
