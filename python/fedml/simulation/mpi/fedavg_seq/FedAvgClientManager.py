@@ -79,6 +79,12 @@ class FedAVGClientManager(FedMLCommManager):
     def __train(self, global_model_params, client_indexes, average_weight_dict):
         logging.info("#######training########### round_id = %d" % self.round_idx)
 
+        if hasattr(self.args, "simulation_gpu_hetero"):
+            # runtime_speed_ratio
+            # runtime_speed_ratio * t_train - t_train
+            # time.sleep(runtime_speed_ratio * t_train - t_train)
+            simulation_gpu_hetero = self.args.simulation_gpu_hetero
+            runtime_speed_ratio = self.args.gpu_hetero_ratio * self.worker_id / self.args.worker_num
         local_agg_model_params = {}
         client_runtime_info = {}
         for client_index in client_indexes:
@@ -91,7 +97,9 @@ class FedAVGClientManager(FedMLCommManager):
             self.trainer.update_dataset(int(client_index))
             weights, local_sample_num = self.trainer.train(self.round_idx)
             self.add_client_model(local_agg_model_params, weights, weight=average_weight_dict[client_index])
-
+            if hasattr(self.args, "simulation_gpu_hetero"):
+                t_train = time.time() - start_time
+                time.sleep(runtime_speed_ratio * t_train)
             end_time = time.time()
             client_runtime = end_time - start_time
             client_runtime_info[client_index] = client_runtime

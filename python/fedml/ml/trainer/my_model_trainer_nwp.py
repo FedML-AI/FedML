@@ -1,3 +1,6 @@
+import time
+import logging
+
 import torch
 from torch import nn
 
@@ -31,22 +34,31 @@ class ModelTrainerNWP(ClientTrainer):
                 weight_decay=args.weight_decay,
                 amsgrad=True,
             )
-
+ 
         epoch_loss = []
         for epoch in range(args.epochs):
+            # begin_time = time.time()
+            # current_time = time.time()
             batch_loss = []
             for batch_idx, (x, labels) in enumerate(train_data):
                 x, labels = x.to(device), labels.to(device)
+
+                # logging.info(f"data loading time: {time.time() - current_time}")
+                # current_time = time.time()
                 # logging.info("x.size = " + str(x.size()))
                 # logging.info("labels.size = " + str(labels.size()))
                 model.zero_grad()
                 log_probs = model(x)
                 loss = criterion(log_probs, labels)
+                # logging.info(f"forward time: {time.time() - begin_time}")
+                # current_time = time.time()
                 loss.backward()
                 # to avoid nan loss
                 # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 0.5)
 
                 optimizer.step()
+                # logging.info(f"backward and update time: {time.time() - begin_time}")
+                # current_time = time.time()
                 # logging.info('Update Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 #     epoch, (batch_idx + 1) * self.args.batch_size, len(self.local_training_data) * self.args.batch_size,
                 #            100. * (batch_idx + 1) / len(self.local_training_data), loss.item()))
