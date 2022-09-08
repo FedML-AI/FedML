@@ -127,8 +127,7 @@ jobs:
       - name: Store artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: dist
-          path: dist
+          path: dist/*.whl
 
   # Build the source distribution under Linux
   build_sdist:
@@ -161,8 +160,7 @@ jobs:
       - name: Store artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: dist
-          path: dist
+          path: dist/*.tar.gz
 
 #  upload_pypi:
 #    needs: [ build_wheels ]
