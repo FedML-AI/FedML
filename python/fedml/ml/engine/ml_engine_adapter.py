@@ -1,3 +1,5 @@
+import logging
+
 import torch
 
 from .torch_process_group_manager import TorchProcessGroupManager
@@ -49,10 +51,10 @@ def convert_numpy_to_mxnet_data_format(args, batched_x, batched_y):
     from mxnet import np as mx_np
 
     if args.model == "cnn":
-        batched_x = mx_np.array(batched_x)  # CNN_MINST
-        batched_x = mx_np.reshape(batched_x, [-1, 28, 28])
+        batched_x = mx_np.array(batched_x)
+        batched_x = mx_np.reshape(batched_x, [-1, 28, 28])  # pylint: disable=E1101
     else:
-        batched_x = mx_np.array(batched_x)  # LR_MINST or other
+        batched_x = mx_np.array(batched_x)
 
     batched_y = mx_np.array(batched_y)
     return batched_x, batched_y
@@ -103,7 +105,7 @@ def is_mxnet_device_available(args, device_type):
         try:
             import mxnet as mx
 
-            gpus = mx.device.num_gpus()
+            gpus = mx.device.num_gpus()  # pylint: disable=E1101
         except Exception as ex:
             return False
 
@@ -142,6 +144,9 @@ def is_device_available(args, device_type=MLEngineBackend.ml_device_type_gpu):
 
 
 def get_torch_device(args, using_gpu, device_id, device_type):
+    logging.info(
+        "args = {}, using_gpu = {}, device_id = {}, device_type = {}".format(args, using_gpu, device_id, device_type)
+    )
     if using_gpu:
         gpu_id = args.gpu_id
         if device_id is not None:
@@ -149,7 +154,7 @@ def get_torch_device(args, using_gpu, device_id, device_type):
 
         if torch.cuda.is_available() and device_type == MLEngineBackend.ml_device_type_gpu:
             device = torch.device(f"cuda:{gpu_id}")
-            torch.cuda.set_device(gpu_id)
+            torch.cuda.set_device(int(gpu_id))
         elif device_type == MLEngineBackend.ml_device_type_mps:
             # https://pytorch.org/docs/master/notes/mps.html
             device = torch.device(MLEngineBackend.ml_device_type_mps)
@@ -192,9 +197,8 @@ def get_mxnet_device(args, using_gpu, device_id, device_type):
         return mx.cpu()
 
 
-def get_device(args, using_gpu=False, device_id=None, device_type="cpu"):
-    if hasattr(args, "using_gpu") and args.using_gpu:
-        using_gpu = True
+def get_device(args, device_id=None, device_type="cpu"):
+    using_gpu = True if (hasattr(args, "using_gpu") and args.using_gpu is True) else False
 
     if hasattr(args, MLEngineBackend.ml_engine_args_flag):
         if args.ml_engine == MLEngineBackend.ml_engine_backend_tf:
@@ -313,128 +317,3 @@ def model_ddp(args, model_obj, device):
 
     return process_group_manager, model
 
-
-def torch_aggregator(args, raw_grad_list, training_num):
-    (num0, avg_params) = raw_grad_list[0]
-
-    if args.federated_optimizer == "FedAvg":
-        for k in avg_params.keys():
-            for i in range(0, len(raw_grad_list)):
-                local_sample_number, local_model_params = raw_grad_list[i]
-                w = local_sample_number / training_num
-                if i == 0:
-                    avg_params[k] = local_model_params[k] * w
-                else:
-                    avg_params[k] += local_model_params[k] * w
-    elif args.federated_optimizer == "FedAvg_seq":
-        for k in avg_params.keys():
-            for i in range(0, len(raw_grad_list)):
-                local_sample_number, local_model_params = raw_grad_list[i]
-                if i == 0:
-                    avg_params[k] = local_model_params[k]
-                else:
-                    avg_params[k] += local_model_params[k]
-    elif args.federated_optimizer == "FedOpt":
-        pass
-
-    return avg_params
-
-
-def tf_aggregator(args, raw_grad_list, training_num):
-    (num0, avg_params) = raw_grad_list[0]
-
-    if args.federated_optimizer == "FedAvg":
-        for k in range(0, len(avg_params)):
-            for i in range(0, len(raw_grad_list)):
-                local_sample_number, local_model_params = raw_grad_list[i]
-                w = local_sample_number / training_num
-                if i == 0:
-                    avg_params[k] = local_model_params[k] * w
-                else:
-                    avg_params[k] += local_model_params[k] * w
-    elif args.federated_optimizer == "FedAvg_seq":
-        for k in range(0, len(avg_params)):
-            for i in range(0, len(raw_grad_list)):
-                local_sample_number, local_model_params = raw_grad_list[i]
-                if i == 0:
-                    avg_params[k] = local_model_params[k]
-                else:
-                    avg_params[k] += local_model_params[k]
-    elif args.federated_optimizer == "FedOpt":
-        pass
-
-    return avg_params
-
-
-def jax_aggregator(args, raw_grad_list, training_num):
-    (num0, avg_params) = raw_grad_list[0]
-
-    if args.federated_optimizer == "FedAvg":
-        for k in avg_params.keys():
-            for i in range(0, len(raw_grad_list)):
-                local_sample_number, local_model_params = raw_grad_list[i]
-                w = local_sample_number / training_num
-                if i == 0:
-                    avg_params[k]["w"] = local_model_params[k]["w"] * w
-                    avg_params[k]["b"] = local_model_params[k]["b"] * w
-                else:
-                    avg_params[k]["w"] += local_model_params[k]["w"] * w
-                    avg_params[k]["b"] += local_model_params[k]["b"] * w
-    elif args.federated_optimizer == "FedAvg_seq":
-        for k in avg_params.keys():
-            for i in range(0, len(raw_grad_list)):
-                local_sample_number, local_model_params = raw_grad_list[i]
-                if i == 0:
-                    avg_params[k]["b"] = local_model_params[k]["b"]
-                    avg_params[k]["w"] = local_model_params[k]["w"]
-                else:
-                    avg_params[k]["b"] += local_model_params[k]["b"]
-                    avg_params[k]["w"] += local_model_params[k]["w"]
-    elif args.federated_optimizer == "FedOpt":
-        pass
-
-    return avg_params
-
-
-def mxnet_aggregator(args, raw_grad_list, training_num):
-    (num0, avg_params) = raw_grad_list[0]
-
-    if args.federated_optimizer == "FedAvg":
-        for k in avg_params.keys():
-            for i in range(0, len(raw_grad_list)):
-                local_sample_number, local_model_params = raw_grad_list[i]
-                w = local_sample_number / training_num
-                if i == 0:
-                    for j in range(0, len(avg_params[k])):
-                        avg_params[k][j] = local_model_params[k][j] * w
-                else:
-                    for j in range(0, len(avg_params[k])):
-                        avg_params[k][j] += local_model_params[k][j] * w
-    elif args.federated_optimizer == "FedAvg_seq":
-        for k in avg_params.keys():
-            for i in range(0, len(raw_grad_list)):
-                local_sample_number, local_model_params = raw_grad_list[i]
-                if i == 0:
-                    for j in range(0, len(avg_params[k])):
-                        avg_params[k][j] = local_model_params[k][j]
-                else:
-                    for j in range(0, len(avg_params[k])):
-                        avg_params[k][j] += local_model_params[k][j]
-    elif args.federated_optimizer == "FedOpt":
-        pass
-
-    return avg_params
-
-
-def model_aggregator(args, raw_grad_list, training_num):
-    if hasattr(args, MLEngineBackend.ml_engine_args_flag):
-        if args.ml_engine == MLEngineBackend.ml_engine_backend_tf:
-            return tf_aggregator(args, raw_grad_list, training_num)
-        elif args.ml_engine == MLEngineBackend.ml_engine_backend_jax:
-            return jax_aggregator(args, raw_grad_list, training_num)
-        elif args.ml_engine == MLEngineBackend.ml_engine_backend_mxnet:
-            return mxnet_aggregator(args, raw_grad_list, training_num)
-        else:
-            return torch_aggregator(args, raw_grad_list, training_num)
-    else:
-        return torch_aggregator(args, raw_grad_list, training_num)

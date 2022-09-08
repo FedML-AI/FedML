@@ -34,7 +34,7 @@ class CentralizedTrainer(object):
 
         self.model = model
         self.model.to(self.device)
-        self.criterion = nn.CrossEntropyLoss().to(device)
+        self.criterion = nn.CrossEntropyLoss().to(device)  # pylint: disable=E1102
         if self.args.client_optimizer == "sgd":
             self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.args.lr)
         else:
@@ -59,7 +59,7 @@ class CentralizedTrainer(object):
             x, labels = x.to(self.device), labels.to(self.device)
             self.optimizer.zero_grad()
             log_probs = self.model(x)
-            loss = self.criterion(log_probs, labels)
+            loss = self.criterion(log_probs, labels)  # pylint: disable=E1102
             loss.backward()
             self.optimizer.step()
             logging.info(
@@ -95,7 +95,7 @@ class CentralizedTrainer(object):
                 x = x.to(self.device)
                 target = target.to(self.device)
                 pred = self.model(x)
-                loss = self.criterion(pred, target)
+                loss = self.criterion(pred, target)  # pylint: disable=E1102
 
                 if self.args.dataset == "stackoverflow_lr":
                     predicted = (pred > 0.5).int()

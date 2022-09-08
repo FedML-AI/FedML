@@ -3,10 +3,13 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+import shutil
 import sys
 import tarfile
 import time
 import zipfile
+from urllib.error import HTTPError, URLError
+from urllib.request import urlopen
 
 import numpy as np
 import six

@@ -100,7 +100,7 @@ class Client:
                 net = net.to(self.device)
                 net.zero_grad()
                 log_probs = net(x)
-                loss = self.criterion(log_probs, labels)
+                loss = self.criterion(log_probs, labels)  # pylint: disable=E1102
                 loss.backward()
 
                 # to avoid nan loss
@@ -138,7 +138,7 @@ class Client:
                 x = x.to(self.device)
                 target = target.to(self.device)
                 pred = model_global(x)
-                loss = self.criterion(pred, target)
+                loss = self.criterion(pred, target)  # pylint: disable=E1102
 
                 if self.args.dataset == "stackoverflow_lr":
                     predicted = (pred > 0.5).int()

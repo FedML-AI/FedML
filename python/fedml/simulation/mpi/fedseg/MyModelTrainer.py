@@ -80,7 +80,7 @@ class MyModelTrainer(ClientTrainer):
                 scheduler(optimizer, batch_idx, epoch)
                 optimizer.zero_grad()
                 log_probs = model(x)
-                loss = criterion(log_probs, labels).to(device)
+                loss = criterion(log_probs, labels).to(device)  # pylint: disable=E1102
                 loss.backward()
                 optimizer.step()
                 batch_loss.append(loss.item())
@@ -120,7 +120,7 @@ class MyModelTrainer(ClientTrainer):
                 x, target = batch["image"], batch["label"]
                 x, target = x.to(device), target.to(device)
                 output = model(x)
-                loss = criterion(output, target).to(device)
+                loss = criterion(output, target).to(device)  # pylint: disable=E1102
                 test_loss += loss.item()
                 test_total += target.size(0)
                 pred = output.cpu().numpy()
