@@ -25,7 +25,6 @@ jobs:
       # Ensure that a wheel builder finishes even if another fails
       fail-fast: false
       matrix:
-        python-version: ['3.8']
         include:
           # Window 64 bit
           - os: windows-2019
@@ -102,9 +101,10 @@ jobs:
       - name: Checkout fedml
         uses: actions/checkout@v3
 
-      - uses: actions/setup-python@v4
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: '3.9'
       
       - name: Build and test wheels
         env:
