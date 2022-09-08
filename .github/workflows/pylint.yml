@@ -44,4 +44,8 @@ jobs:
         pip install "fedml[tensorflow]"
         pip install "fedml[jax]"
         pip install "fedml[mxnet]"
-        pylint --rcfile=build_tools/lint/.pylintrc --disable=C,R,W ./fedml
+        pip install tensorflow_federated
+        pip install mxnet
+        pip install jax
+        pip install ptflops
+        pylint --rcfile=build_tools/lint/.pylintrc --disable=C,R,W,I ./

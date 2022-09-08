@@ -1,6 +1,8 @@
 import secrets
 from numbers import Real, Integral
 
+import torch
+
 
 def check_bounds(lower, upper):
     if not isinstance(lower, Real) or not isinstance(upper, Real):
@@ -27,7 +29,7 @@ def check_params(epsilon, delta, sensitivity):
         raise TypeError("Epsilon and delta must be numeric")
     if epsilon < 0:
         raise ValueError("Epsilon must be non-negative")
-    if delta < 0 or delta > 1:
+    if delta < 0 or float(delta) > 1.0:
         raise ValueError("Delta must be in [0, 1]")
     if epsilon + delta == 0:
         raise ValueError("Epsilon and Delta cannot both be zero")
@@ -35,6 +37,22 @@ def check_params(epsilon, delta, sensitivity):
         raise TypeError("Sensitivity must be numeric")
     if sensitivity < 0:
         raise ValueError("Sensitivity must be non-negative")
+
+
+def vectorize_weight(state_dict):
+    weight_list = []
+    for (k, v) in state_dict.items():
+        if is_weight_param(k):
+            weight_list.append(v.flatten())
+    return torch.cat(weight_list)
+
+
+def is_weight_param(k):
+    return (
+            "running_mean" not in k
+            and "running_var" not in k
+            and "num_batches_tracked" not in k
+    )
 
 
 def bernoulli_neg_exp(gamma, rng=None):

@@ -1,17 +1,15 @@
-
-from mxnet.gluon import nn
 from mxnet import np as mx_np
+from mxnet.gluon import nn
 
 
 class LogisticRegressionModel(nn.Block):
-    def __init__(self, input_dim, out_dim, name=None):
+    def __init__(self, input_dim, out_dim):
         # Run `nn.Block`'s init method
         super().__init__()
         self.output_dim = out_dim
         self.input_dim = input_dim
-        self.name = name
 
-        self.layer1 = nn.Dense(out_dim, activation='sigmoid')
+        self.layer1 = nn.Dense(out_dim, activation="sigmoid")
         self.layer1.initialize()
 
     def forward(self, x):
@@ -45,9 +43,6 @@ class LogisticRegressionModel(nn.Block):
         for key, value in params:
             data = mx_np.array(value)
             self.layer1.collect_params()[key].set_data(data)
-
-    def get_config(self):
-        return {"output_dim": self.output_dim, "name": self.name}
 
 
 def create_model(input_dim, out_dim):

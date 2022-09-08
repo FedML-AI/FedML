@@ -687,7 +687,7 @@ class InceptionScore(torch.nn.Module):
         scores = []
         for batch in range(batches):
             input = self.preprocessing(image_batch[batch * self.batch_size : (batch + 1) * self.batch_size])
-            scores.append(self.model(input))
+            scores.append(self.model(input))  # pylint: disable=E1102
         prob_yx = torch.nn.functional.softmax(torch.cat(scores, 0), dim=1)
         entropy = torch.where(prob_yx > 0, -prob_yx * prob_yx.log(), torch.zeros_like(prob_yx))
         return entropy.sum()
