@@ -15,7 +15,7 @@ jobs:
   # Build the wheels for Linux, Windows and macOS for Python 3.8 and newer
   build_wheels:
     name: Build wheel for cp${{ matrix.python }}-${{ matrix.platform_id }}-${{ matrix.manylinux_image }}
-    runs-on: [ self-hosted, devops, runner-linux ]
+    runs-on: ${{ matrix.os }}
     defaults:
       run:
         shell: bash
@@ -128,7 +128,7 @@ jobs:
   build_sdist:
     name: Source distribution
     needs: [ build_wheels ]
-    runs-on: [ self-hosted, devops, runner-linux ]
+    runs-on: ${{ matrix.os }}
     defaults:
       run:
         shell: bash
