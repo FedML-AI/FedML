@@ -12,6 +12,7 @@ ls
 python -m venv build_env
 source build_env/bin/activate
 
+python -m pip install -U wheel setuptools
 python -m pip install numpy scipy cython
 python -m pip install twine
 
