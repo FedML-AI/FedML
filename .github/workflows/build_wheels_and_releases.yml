@@ -164,6 +164,7 @@ jobs:
           path: python/dist/*.tar.gz
 
   upload_pypi:
+    name: Upload pypi
     needs: [ build_sdist ]
     runs-on: ubuntu-latest
     defaults:
@@ -184,6 +185,6 @@ jobs:
         with:
           skip_existing: true
           packages_dir: python/dist
-          user: alexliang
+          user: ${{ secrets.PYPI_USER_NAME }}
           password: ${{ secrets.PYPI_PASSWORD }}
           # To test: repository_url: https://test.pypi.org/legacy/
