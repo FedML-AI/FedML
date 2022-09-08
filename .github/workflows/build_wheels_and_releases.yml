@@ -183,6 +183,7 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@v1.4.2
         with:
           skip_existing: true
+          packages_dir: python/dist
           user: alexliang
           password: ${{ secrets.PYPI_PASSWORD }}
           # To test: repository_url: https://test.pypi.org/legacy/
