@@ -130,6 +130,7 @@ jobs:
   # Build the source distribution under Linux
   build_sdist:
     name: Source distribution
+    needs: [ build_wheels ]
     runs-on: [ self-hosted, devops, runner-linux ]
     defaults:
       run:
