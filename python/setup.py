@@ -5,18 +5,22 @@ import platform
 from setuptools import setup, find_packages
 
 
-try:
-    from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
-
-
-    class bdist_wheel(_bdist_wheel):
-        def finalize_options(self):
-            _bdist_wheel.finalize_options(self)
-            self.root_is_pure = False
-
-
-except ImportError:
-    bdist_wheel = None
+from wheel.bdist_wheel import bdist_wheel
+#
+# try:
+#     from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
+#
+#
+#     class bdist_wheel(_bdist_wheel):
+#         def finalize_options(self):
+#             self.root_is_pure = False
+#             self.universal = True
+#             _bdist_wheel.finalize_options(self)
+#
+#
+#
+# except ImportError:
+#     bdist_wheel = None
 
 requirements = [
     "numpy",
@@ -71,7 +75,7 @@ if platform.machine() == "x86_64":
 
 setup(
     name="fedml",
-    version="0.7.315",
+    version="0.7.316",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
@@ -137,4 +141,5 @@ setup(
         ]
     },
     cmdclass={"bdist_wheel": bdist_wheel},
+    options={"bdist_wheel": {"universal": True}}
 )
