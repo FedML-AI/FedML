@@ -15,7 +15,6 @@ class ClientTrainer(ABC):
         self.model = model
         self.id = 0
         self.args = args
-        FedMLDifferentialPrivacy.get_instance().init(args)
 
     def set_id(self, trainer_id):
         self.id = trainer_id
