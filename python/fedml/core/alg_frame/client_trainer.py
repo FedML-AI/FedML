@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import logging
-from ...core.dp.dp_mechanism import FedMLDifferentialPrivacy
+from ...core.dp.fedml_differential_privacy import FedMLDifferentialPrivacy
 
 
 class ClientTrainer(ABC):
@@ -36,9 +36,9 @@ class ClientTrainer(ABC):
         pass
 
     def on_after_local_training(self, train_data, device, args):
-        if FedMLDifferentialPrivacy.get_instance().is_ldp_enabled():
+        if FedMLDifferentialPrivacy.get_instance().is_local_dp_enabled():
             logging.info("-----add local DP noise ----")
-            model_params_with_dp_noise = FedMLDifferentialPrivacy.get_instance().add_noise(self.get_model_params())
+            model_params_with_dp_noise = FedMLDifferentialPrivacy.get_instance().add_local_noise(self.get_model_params())
             self.set_model_params(model_params_with_dp_noise)
             
     def test(self, test_data, device, args):
