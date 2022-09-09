@@ -1,5 +1,5 @@
 import logging
-from fedml import MLEngineBackend
+from ..common.ml_engine_backend import MLEngineBackend
 from fedml.core.dp.common.constants import DP_NAIVE_LDP, DP_NAIVE_CDP, NBAFL_DP
 from fedml.core.dp.solutions.NbAFL import NbAFL
 from fedml.core.dp.solutions.naive_cdp import NaiveGlobalDP
@@ -31,14 +31,16 @@ class FedMLDifferentialPrivacy:
             self.dp_solution_type = args.dp_solution_type.strip()
             logging.info("self.dp_solution = {}".format(self.dp_solution_type))
 
+            print(f"dp_solution_type={self.dp_solution_type}")
+
             if self.dp_solution_type == DP_NAIVE_LDP:
                 self.dp_solution = NaiveLocalDP(args)
             elif self.dp_solution_type == DP_NAIVE_CDP:
                 self.dp_solution = NaiveGlobalDP(args)
-            if self.dp_solution == NBAFL_DP:
+            if self.dp_solution_type == NBAFL_DP:
                 self.dp_solution = NbAFL(args)
             else:
-                raise Exception("dp solution is not defined!")
+                raise Exception("dp solution is not defined")
 
         if hasattr(args, MLEngineBackend.ml_engine_args_flag) and args.ml_engine in [
             MLEngineBackend.ml_engine_backend_tf,
