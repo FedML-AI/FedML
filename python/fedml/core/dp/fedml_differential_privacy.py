@@ -57,10 +57,10 @@ class FedMLDifferentialPrivacy:
         return self.is_enabled
 
     def is_local_dp_enabled(self):
-        return self.dp_solution.is_local_dp
+        return self.dp_solution.is_local_dp()
 
     def is_global_dp_enabled(self):
-        return self.dp_solution.is_global_dp
+        return self.dp_solution.is_global_dp()
 
     def is_to_modify_before_adding_local_noise(self):
         return self.is_dp_enabled() and self.dp_solution_type in []
