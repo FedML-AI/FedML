@@ -20,6 +20,7 @@ model_args:
 
 train_args:
   federated_optimizer: "FedAvg"
+  # for CLI running, this can be None; in MLOps deployment, `client_id_list` will be replaced with real-time selected devices
   client_id_list:
   client_num_in_total: 1000
   client_num_per_round: 2
@@ -34,7 +35,6 @@ validation_args:
   frequency_of_the_test: 5
 
 device_args:
-  worker_num: 2
   using_gpu: false
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_default
@@ -51,12 +51,10 @@ tracking_args:
   wandb_project: fedml
   wandb_name: fedml_torch_fedavg_mnist_lr
 
-
-
 # example:
 dp_args:
   enable_dp: true
-  dp_type: ldp # cdp or ldp
+  dp_solution_type: naive_cdp
   epsilon: 0.5
   delta: 0.1
   sensitivity: 1
