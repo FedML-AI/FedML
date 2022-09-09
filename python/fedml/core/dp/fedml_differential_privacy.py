@@ -16,6 +16,7 @@ class FedMLDifferentialPrivacy:
         return FedMLDifferentialPrivacy._dp_instance
 
     def __init__(self):
+        self.dp_solution_type = None
         self.dp_solution = None
         self.is_enabled = False
 
