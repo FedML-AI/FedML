@@ -37,7 +37,7 @@ class FedMLDifferentialPrivacy:
                 self.dp_solution = NaiveLocalDP(args)
             elif self.dp_solution_type == DP_NAIVE_CDP:
                 self.dp_solution = NaiveGlobalDP(args)
-            if self.dp_solution_type == NBAFL_DP:
+            elif self.dp_solution_type == NBAFL_DP:
                 self.dp_solution = NbAFL(args)
             else:
                 raise Exception("dp solution is not defined")
