@@ -53,10 +53,10 @@ class FedMLDifferentialPrivacy:
     def is_dp_enabled(self):
         return self.is_enabled
 
-    def is_local_dp(self):
+    def is_local_dp_enabled(self):
         return self.dp_solution.is_local_dp
 
-    def is_global_dp(self):
+    def is_global_dp_enabled(self):
         return self.dp_solution.is_global_dp
 
     def is_to_modify_before_adding_local_noise(self):
@@ -102,4 +102,4 @@ class FedMLDifferentialPrivacy:
     def add_global_noise(self, global_model: dict):
         if self.dp_solution is None:
             raise Exception("dp solution is not initialized!")
-        return self.dp_solution.add_global_dp(global_model)
+        return self.dp_solution.add_global_noise(global_model)
