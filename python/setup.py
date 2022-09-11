@@ -5,9 +5,8 @@ import platform
 from setuptools import setup, find_packages
 
 
-from wheel.bdist_wheel import bdist_wheel
-#
-# try:
+try:
+     from wheel.bdist_wheel import bdist_wheel
 #     from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
 #
 #
@@ -19,8 +18,8 @@ from wheel.bdist_wheel import bdist_wheel
 #
 #
 #
-# except ImportError:
-#     bdist_wheel = None
+except ImportError:
+    bdist_wheel = None
 
 requirements = [
     "numpy",
