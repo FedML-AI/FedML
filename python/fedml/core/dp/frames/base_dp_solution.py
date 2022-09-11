@@ -2,7 +2,7 @@ from abc import ABC
 from fedml.core.dp.mechanisms.dp_mechanism import DPMechanism
 
 
-class BaseDPSolution(ABC):
+class BaseDPFrame(ABC):
     def __init__(self, args=None):
         self.cdp = None
         self.ldp = None
