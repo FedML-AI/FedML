@@ -5,9 +5,8 @@ import platform
 from setuptools import setup, find_packages
 
 
-from wheel.bdist_wheel import bdist_wheel
-#
-# try:
+try:
+     from wheel.bdist_wheel import bdist_wheel
 #     from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
 #
 #
@@ -19,8 +18,8 @@ from wheel.bdist_wheel import bdist_wheel
 #
 #
 #
-# except ImportError:
-#     bdist_wheel = None
+except ImportError:
+    bdist_wheel = None
 
 requirements = [
     "numpy",
@@ -75,7 +74,7 @@ if platform.machine() == "x86_64":
 
 setup(
     name="fedml",
-    version="0.7.316",
+    version="0.7.317",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
