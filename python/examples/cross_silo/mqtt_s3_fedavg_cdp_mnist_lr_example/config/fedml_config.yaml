@@ -54,7 +54,7 @@ tracking_args:
 # example:
 dp_args:
   enable_dp: true
-  dp_solution_type: naive_ldp
+  dp_solution_type: cdp
   epsilon: 0.5
   delta: 0.1
   sensitivity: 1
