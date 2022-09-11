@@ -24,7 +24,7 @@ train_args:
   client_id_list:
   client_num_in_total: 1000
   client_num_per_round: 2
-  comm_round: 50
+  comm_round: 5 # we use 5 for quick sanity check. please modify a reasonable value
   epochs: 1
   batch_size: 10
   client_optimizer: sgd
@@ -54,7 +54,7 @@ tracking_args:
 # example:
 dp_args:
   enable_dp: true
-  dp_type: cdp # cdp or ldp
+  dp_solution_type: cdp
   epsilon: 0.5
   delta: 0.1
   sensitivity: 1
