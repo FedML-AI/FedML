@@ -25,7 +25,6 @@ class DPMechanism:
 
     def _compute_new_grad(self, grad):
         noise = self.dp.compute_noise(grad.shape)
-        print(f"noise computed with data distribution = {noise}")
         return noise + grad
 
     # def add_noise(self, grad):
