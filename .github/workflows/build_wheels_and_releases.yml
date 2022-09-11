@@ -24,43 +24,43 @@ jobs:
       matrix:
         include:
           # Window 64 bit
-          - os: runner-windows
+          - os: windows-2019
             python: 38
             bitness: 64
             platform_id: win_amd64
-          - os: runner-windows
+          - os: windows-latest
             python: 39
             bitness: 64
             platform_id: win_amd64
-          - os: runner-windows
+          - os: windows-latest
             python: 310
             bitness: 64
             platform_id: win_amd64
 
           # Window 32 bit
-          - os: runner-windows
+          - os: windows-latest
             python: 38
             bitness: 32
             platform_id: win32
-          - os: runner-windows
+          - os: windows-latest
             python: 39
             bitness: 32
             platform_id: win32
 
           # Linux 64 bit manylinux2014
-          - os: runner-linux
+          - os: ubuntu-latest
             python: 38
             bitness: 64
             platform_id: manylinux_x86_64
             manylinux_image: manylinux2014
-          - os: runner-linux
+          - os: ubuntu-latest
             python: 39
             bitness: 64
             platform_id: manylinux_x86_64
             manylinux_image: manylinux2014
 
           # NumPy on Python 3.10 only supports 64bit and is only available with manylinux2014
-          - os: runner-linux
+          - os: ubuntu-latest
             python: 310
             bitness: 64
             platform_id: manylinux_x86_64
@@ -100,8 +100,8 @@ jobs:
 
       - name: Setup Python
         uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python }}
+        #with:
+        #  python-version: '3.9'
       
       - name: Build and test wheels
         env:
@@ -120,6 +120,7 @@ jobs:
         run: |
           python -m pip install -U wheel setuptools
           python setup.py sdist bdist_wheel
+          pwd
           ls dist/*.whl
           ls dist/*.tar.gz
 
