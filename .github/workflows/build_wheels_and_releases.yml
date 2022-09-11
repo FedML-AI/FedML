@@ -170,10 +170,6 @@ jobs:
     name: Upload pypi
     needs: [ build_wheels ]
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
-        working-directory: python
     # upload to PyPI on every tag starting with 'v'
     #    if: github.event_name == 'push' && contains(github.event.comment, 'release v')
     # alternatively, to publish when a GitHub Release is created, use the following rule:
