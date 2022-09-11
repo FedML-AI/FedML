@@ -69,13 +69,14 @@ http://proceedings.mlr.press/v139/xie21a/xie21a.pdf
 **Todo**
 1. "Attack-Resistant Federated Learning with Residual-based Reweighting"
 https://arxiv.org/pdf/1912.11464
-2. (DiverseFL) "Byzantine-Resilient Federated Learning with Heterogeneous Data Distribution"
-https://arxiv.org/abs/2010.07541v3
-3. "FLTrust: Byzantine-robust Federated Learning via Trust Bootstrapping". NDSS 2021
+
+
+**Maybe to implement in the future...**
+1. "RSA: Byzantine-Robust Stochastic Aggregation Methods for Distributed Learning from Heterogeneous Datasets"
+https://ojs.aaai.org/index.php/AAAI/article/view/3968
+2. "FLTrust: Byzantine-robust Federated Learning via Trust Bootstrapping". NDSS 2021
 https://www.ndss-symposium.org/ndss-paper/fltrust-byzantine-robust-federated-learning-via-trust-bootstrapping/
+3. (DiverseFL) "Byzantine-Resilient Federated Learning with Heterogeneous Data Distribution"
+https://arxiv.org/abs/2010.07541v3
 4. "DETOX: A Redundancy-based Framework for Faster and More Robust Gradient Aggregation"
 https://arxiv.org/abs/1907.12205
-5. "RSA: Byzantine-Robust Stochastic Aggregation Methods for Distributed Learning from Heterogeneous Datasets"
-https://ojs.aaai.org/index.php/AAAI/article/view/3968
-6. "Byzantine-robust learning on heterogeneous datasets via resampling"
-https://openreview.net/pdf?id=7JSTDTZtn7-
