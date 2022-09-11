@@ -3,6 +3,7 @@ import torch
 import torch.nn.functional as F
 from .attack_base import BaseAttackMethod
 from ..common.utils import cross_entropy_for_onehot
+from typing import Any
 
 logging.getLogger().setLevel(logging.INFO)
 
@@ -22,8 +23,8 @@ class DLGAttack(BaseAttackMethod):
         self.model = model
         self.attack_epoch = attack_epoch  # todo: discuss with chaoyang
 
-    def reconstruct(self, local_w, global_w, refs=None):
-        self.data_size, self.attack_label, self.num_class = refs
+    def reconstruct_data(self, a_gradient, extra_auxiliary_info: Any = None):
+        self.data_size, self.attack_label, self.num_class = extra_auxiliary_info
         # generate dummy data and label
         dummy_data = torch.randn(self.data_size).requires_grad_(True)
         dummy_label = torch.randn([1, self.num_class]).requires_grad_(True)
@@ -31,7 +32,7 @@ class DLGAttack(BaseAttackMethod):
         logging.info("Dummy label is %s." % torch.argmax(dummy_label, dim=-1).item())
 
         optimizer = torch.optim.LBFGS([dummy_data, dummy_label])
-        original_dy_dx = local_w
+        original_dy_dx = extra_auxiliary_info
 
         # begin attack!
         for iters in range(self.attack_epoch):
@@ -49,6 +50,8 @@ class DLGAttack(BaseAttackMethod):
                 grad_diff = 0
                 grad_count = 0
                 for gx, gy in zip(dummy_dy_dx, original_dy_dx):  # TODO: fix the variablas here
+                    print(f"gx = {gx}")
+                    print(f"gy = {gy}")
                     grad_diff += ((gx - gy) ** 2).sum()
                     grad_count += gx.nelement()
                 # grad_diff = grad_diff / grad_count * 1000

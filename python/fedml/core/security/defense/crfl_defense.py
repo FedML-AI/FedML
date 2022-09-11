@@ -69,7 +69,7 @@ class CRFLDefense(BaseDefenseMethod):
         # add dp noise to the real model and sent the permuted model to clients; how to get the last iteration?
         new_global_model = dict()
         for k in global_model.keys():
-            new_global_model[k] = global_model[k] + Gaussian.add_noise_using_sigma(self.sigma, global_model[k].shape)
+            new_global_model[k] = global_model[k] + Gaussian.compute_noise_using_sigma(self.sigma, global_model[k].shape)
         return new_global_model
 
     @staticmethod

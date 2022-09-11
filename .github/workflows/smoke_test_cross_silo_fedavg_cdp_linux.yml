@@ -16,7 +16,7 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  cross-silo-dp-test:
+  cross-silo-cdp-test:
     defaults:
       run:
         shell: bash
@@ -46,7 +46,7 @@ jobs:
 
       - name: server - cross-silo - cdp
         run: |
-          cd examples/cross_silo/mqtt_s3_fedavg_central_dp_mnist_lr_example
+          cd examples/cross_silo/mqtt_s3_fedavg_cdp_mnist_lr_example
           run_id=cross-silo-ho-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
           echo ${run_id}
           bash run_server.sh $run_id
@@ -54,7 +54,7 @@ jobs:
 
       - name: client 1 - cross-silo - cdp
         run: |
-          cd examples/cross_silo/mqtt_s3_fedavg_central_dp_mnist_lr_example
+          cd examples/cross_silo/mqtt_s3_fedavg_cdp_mnist_lr_example
           run_id=cross-silo-ho-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
           echo ${run_id}
           bash run_client.sh 1 $run_id
@@ -62,7 +62,7 @@ jobs:
 
       - name: client 2 - cross-silo - cdp
         run: |
-          cd examples/cross_silo/mqtt_s3_fedavg_central_dp_mnist_lr_example
+          cd examples/cross_silo/mqtt_s3_fedavg_cdp_mnist_lr_example
           run_id=cross-silo-ho-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
           echo ${run_id}
           bash run_client.sh 2 $run_id

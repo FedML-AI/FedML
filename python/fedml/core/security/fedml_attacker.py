@@ -2,6 +2,7 @@ from .attack.byzantine_attack import ByzantineAttack
 from .constants import ATTACK_METHOD_BYZANTINE_ATTACK
 import logging
 from ..common.ml_engine_backend import MLEngineBackend
+from typing import List, Tuple, Dict, Any
 
 
 class FedMLAttacker:
@@ -51,12 +52,6 @@ class FedMLAttacker:
     def get_attack_types(self):
         return self.attack_type
 
-    def is_server_attack(self, attack_type):
-        pass
-
-    def is_client_attack(self, attack_type):
-        pass
-
     def is_model_attack(self):
         if self.is_attack_enabled() and self.attack_type in [
             ATTACK_METHOD_BYZANTINE_ATTACK
@@ -64,17 +59,27 @@ class FedMLAttacker:
             return True
         return False
 
-    def attack_model(self, local_w, global_w, refs=None):
+    def is_poison_data_attack(self):
+        if self.is_attack_enabled() and self.attack_type in []:
+            return True
+        return False
+
+    def is_reconstruct_data_attack(self):
+        if self.is_attack_enabled() and self.attack_type in []:
+            return True
+        return False
+
+    def attack_model(self, raw_client_grad_list: List[Tuple[float, Dict]], extra_auxiliary_info: Any = None):
         if self.attacker is None:
             raise Exception("attacker is not initialized!")
-        return self.attacker.attack_model(local_w, global_w, refs)
+        return self.attacker.attack_model(raw_client_grad_list, extra_auxiliary_info)
 
     def poison_data(self, dataset):
         if self.attacker is None:
             raise Exception("attacker is not initialized!")
         return self.attacker.poison_data(dataset)
 
-    def reconstruct(self, local_w, global_w, refs=None):
+    def reconstruct_data(self, a_gradient: dict, extra_auxiliary_info: Any = None):
         if self.attacker is None:
             raise Exception("attacker is not initialized!")
-        return self.attacker.reconstruct(local_w, global_w, refs=None)
+        return self.attacker.reconstruct_data(a_gradient, extra_auxiliary_info=extra_auxiliary_info)
