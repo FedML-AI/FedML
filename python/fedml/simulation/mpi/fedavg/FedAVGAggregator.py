@@ -76,7 +76,7 @@ class FedAVGAggregator(object):
         logging.info("len of self.model_dict[idx] = " + str(len(self.model_dict)))
 
         if FedMLAttacker.get_instance().is_model_attack():
-            model_list = FedMLAttacker.get_instance().attack_model(local_w=model_list, global_w=self.get_global_model_params(), refs=None)
+            model_list = FedMLAttacker.get_instance().attack_model(raw_client_grad_list=model_list, extra_auxiliary_info=None)
 
         if FedMLDefender.get_instance().is_defense_enabled():
             # todo: update extra_auxiliary_info according to defense type

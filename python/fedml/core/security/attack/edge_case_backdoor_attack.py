@@ -33,7 +33,7 @@ class EdgeCaseBackdoorAttack:
         self.poisoned_client_list = []
         self.batch_size = batch_size
 
-    def backdoor_data(self, dataset):
+    def poison_data(self, dataset):
         [
             train_data_num,
             test_data_num,
