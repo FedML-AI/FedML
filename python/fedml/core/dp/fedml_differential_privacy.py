@@ -1,9 +1,9 @@
 import logging
 from ..common.ml_engine_backend import MLEngineBackend
 from fedml.core.dp.common.constants import DP_LDP, DP_CDP, NBAFL_DP
-from fedml.core.dp.solutions.NbAFL_cdp_ldp import NbAFL
-from fedml.core.dp.solutions.cdp import GlobalDP
-from fedml.core.dp.solutions.ldp import LocalDP
+from fedml.core.dp.frames.NbAFL_cdp_ldp import NbAFL
+from fedml.core.dp.frames.cdp import GlobalDP
+from fedml.core.dp.frames.ldp import LocalDP
 
 
 class FedMLDifferentialPrivacy:
