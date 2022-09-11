@@ -1,5 +1,5 @@
 import numpy as np
-
+from typing import Dict, Any
 from .attack_base import BaseAttackMethod
 from ..common import utils
 
@@ -25,14 +25,15 @@ class RevealingLabelsFromGradientsAttack(BaseAttackMethod):
         self.batch_size = batch_size
         self.model_type = model_type
 
-    def reconstruct(self, local_w, global_w, refs=None):
-        vec_local_weight = utils.vectorize_weight(local_w)
+    def reconstruct_data(self, a_gradient: dict, extra_auxiliary_info: Any = None):
+        vec_local_weight = utils.vectorize_weight(a_gradient)
         print(vec_local_weight)
 
-        gt_labels = set(refs.tolist())
-        for item_index, (k, v) in enumerate(local_w.items()):
+        gt_labels = set(extra_auxiliary_info.tolist())
+        # for item_index, (k, v) in enumerate(local_w.items()):
+        for k in a_gradient.keys():
             if utils.is_weight_param(k):
-                self._attack_on_gradients(gt_labels, v)
+                self._attack_on_gradients(gt_labels, a_gradient[k])
         return
 
     def _attack_on_gradients(self, gt_labels, v):
