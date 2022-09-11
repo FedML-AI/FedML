@@ -32,16 +32,16 @@ def test_get_malicious_client_idx():
 def test__attack_zero_mode():
     local_w = create_fake_model_list(10)
     attack = ByzantineAttack(add_args(byzantine_client_num=2, attack_mode="zero"))
-    print(attack.attack_model(local_w, global_w=None))
+    print(attack.attack_model(local_w))
 
 
 def test__attack_random_mode():
     local_w = create_fake_model_list(10)
     attack = ByzantineAttack(add_args(byzantine_client_num=2, attack_mode="random"))
-    print(attack.attack_model(local_w, global_w=None))
+    print(attack.attack_model(local_w))
 
 
 def test__attack_flip_mode():
     local_w = create_fake_model_list(10)
     attack = ByzantineAttack(add_args(byzantine_client_num=2, attack_mode="flip"))
-    print(attack.attack_model(local_w, global_w=local_w[0][1]))
+    print(attack.attack_model(local_w, extra_auxiliary_info=local_w[0][1]))

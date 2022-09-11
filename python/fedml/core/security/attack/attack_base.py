@@ -1,15 +1,16 @@
-from abc import ABC, abstractmethod
-from typing import Dict
+from abc import ABC
+from typing import List, Tuple, Dict, Any
 
 
 class BaseAttackMethod(ABC):
     def attack_model(
-        self, model_list: Dict, global_weights: Dict, refs=None
+        self, raw_client_grad_list: List[Tuple[float, Dict]],
+        extra_auxiliary_info: Any = None,
     ) -> (Dict, Dict):
         pass
 
     def poison_data(self, dataset):
         pass
 
-    def reconstruct(self, local_w, global_w, refs=None):
+    def reconstruct_data(self, a_gradient, extra_auxiliary_info: Any = None):
         pass

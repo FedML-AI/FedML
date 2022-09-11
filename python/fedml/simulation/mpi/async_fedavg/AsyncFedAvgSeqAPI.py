@@ -2,7 +2,7 @@ from .AsyncFedAVGAggregator import AsyncFedAVGAggregator
 from .AsyncFedAVGTrainer import AsyncFedAVGTrainer
 from .AsyncFedAvgClientManager import AsyncFedAVGClientManager
 from .AsyncFedAvgServerManager import AsyncFedAVGServerManager
-from ....core.dp.dp_mechanism import FedMLDifferentialPrivacy
+from ....core.dp.fedml_differential_privacy import FedMLDifferentialPrivacy
 from ....core.security.fedml_attacker import FedMLAttacker
 from ....core.security.fedml_defender import FedMLDefender
 from ....ml.trainer.trainer_creator import create_model_trainer
