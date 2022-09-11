@@ -117,7 +117,7 @@ def test__attack_invertgradient_untrained_oneimage():
     refs = (refs, config)
     attack = InvertAttack(model=model, attack_client_idx=0)
     # this is a reconstruction attack, I think there should be a new abstract method (e.g. recon_data)rather than attack_model or poison_data
-    attack.attack_model(local_w=local_w, global_w=None, refs=refs)
+    attack.attack_model(raw_client_grad_list=local_w, extra_auxiliary_info=refs)
 
 
 def test__attack_invertgradient_trained_oneimage():
@@ -128,7 +128,7 @@ def test__attack_invertgradient_trained_oneimage():
     refs, local_w = create_fake_input(0, 1, dataset, model, Classification(), False)
     refs = (refs, config)
     attack = InvertAttack(model=model, attack_client_idx=0, trained_model=True)
-    attack.attack_model(local_w=local_w, global_w=None, refs=refs)
+    attack.attack_model(raw_client_grad_list=local_w, extra_auxiliary_info=refs)
 
 
 def test__attack_invertgradient_untrained_multiimage():
@@ -139,7 +139,7 @@ def test__attack_invertgradient_untrained_multiimage():
     refs, local_w = create_fake_input(0, 10, dataset, model, Classification(), False)
     refs = (refs, config)
     attack = InvertAttack(model=model, attack_client_idx=0, num_images=10)
-    attack.attack_model(local_w=local_w, global_w=None, refs=refs)
+    attack.attack_model(raw_client_grad_list=local_w, extra_auxiliary_info=refs)
 
 
 def test__attack_invertweight_untrained_oneimage():
@@ -150,7 +150,7 @@ def test__attack_invertweight_untrained_oneimage():
     refs, local_w = create_fake_input(0, 1, dataset, model, Classification(), True)
     refs = (refs, config)
     attack = InvertAttack(model=model, attack_client_idx=0, use_updates=True)
-    attack.attack_model(local_w=local_w, global_w=None, refs=refs)
+    attack.attack_model(raw_client_grad_list=local_w, extra_auxiliary_info=refs)
 
 
 if __name__ == "__main__":

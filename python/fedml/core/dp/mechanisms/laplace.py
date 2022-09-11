@@ -9,7 +9,7 @@ class Laplace(BaseDPMechanism):
     The classical Laplace mechanism in differential privacy.
     """
 
-    def __init__(self, *, epsilon, delta=0.0, sensitivity):
+    def __init__(self, epsilon, delta=0.0, sensitivity=1):
         check_params(epsilon, delta, sensitivity)
         self.scale = float(sensitivity) / (float(epsilon) - np.log(1 - float(delta)))
 
