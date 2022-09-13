@@ -1,8 +1,8 @@
 from fedml.core.dp.mechanisms.dp_mechanism import DPMechanism
-from fedml.core.dp.solutions.base_dp_solution import BaseDPSolution
+from fedml.core.dp.frames.base_dp_solution import BaseDPFrame
 
 
-class GlobalDP(BaseDPSolution):
+class GlobalDP(BaseDPFrame):
     def __init__(self, args):
         super().__init__(args)
         self.set_cdp(
