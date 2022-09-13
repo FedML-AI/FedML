@@ -24,7 +24,7 @@ train_args:
   # for CLI running, this can be None; in MLOps deployment, `client_id_list` will be replaced with real-time selected devices
   client_id_list:
   client_num_in_total: 1000
-  client_num_per_round: 4
+  client_num_per_round: 10
   comm_round: 10
   epochs: 1
   batch_size: 10
@@ -36,10 +36,10 @@ validation_args:
   frequency_of_the_test: 1
 
 device_args:
-  worker_num: 4
+  worker_num: 10
   using_gpu: false
   gpu_mapping_file: config/gpu_mapping.yaml
-  gpu_mapping_key: mapping_default
+  gpu_mapping_key: mapping_config3_11
 
 comm_args:
   backend: "MQTT_S3"
