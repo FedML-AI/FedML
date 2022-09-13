@@ -1,9 +1,10 @@
 import logging
+
+from .frames.NbAFL import NbAFL_DP
 from ..common.ml_engine_backend import MLEngineBackend
 from fedml.core.dp.common.constants import DP_LDP, DP_CDP, NBAFL_DP
-from fedml.core.dp.solutions.NbAFL_cdp_ldp import NbAFL
-from fedml.core.dp.solutions.cdp import GlobalDP
-from fedml.core.dp.solutions.ldp import LocalDP
+from fedml.core.dp.frames.cdp import GlobalDP
+from fedml.core.dp.frames.ldp import LocalDP
 
 
 class FedMLDifferentialPrivacy:
@@ -41,7 +42,7 @@ class FedMLDifferentialPrivacy:
             elif self.dp_solution_type == DP_CDP:
                 self.dp_solution = GlobalDP(args)
             elif self.dp_solution_type == NBAFL_DP:
-                self.dp_solution = NbAFL(args)
+                self.dp_solution = NbAFL_DP(args)
             else:
                 raise Exception("dp solution is not defined")
 
