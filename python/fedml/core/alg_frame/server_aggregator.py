@@ -63,7 +63,7 @@ class ServerAggregator(ABC):
             aggregated_model_or_grad = FedMLDefender.get_instance().defend_after_aggregation(aggregated_model_or_grad)
 
         # self.contribution_assessor_mgr.run(
-        #     aggregated_model_or_grad, aggregated_model_or_grad, self.get_model_params(), acc_on_aggregated_model, val_dataloader
+        #     aggregated_model_or_grad, aggregated_model_or_grad, self.get_model_params(), acc_on_aggregated_model, validation_data, self.test
         # )
         return aggregated_model_or_grad
 

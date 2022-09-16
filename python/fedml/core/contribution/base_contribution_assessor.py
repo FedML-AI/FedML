@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any
+from typing import Callable, List, Dict, Any
 
 
 class BaseContributionAssessor(ABC):
+
     @abstractmethod
     def run(
         self,
@@ -11,6 +12,8 @@ class BaseContributionAssessor(ABC):
         model_aggregated: Dict,
         model_last_round: Dict,
         acc_on_aggregated_model: float,
-        val_dataset: Any,
+        val_dataloader: Any,
+        validation_func: Callable[[Dict, Any, Any], float],
+        device,
     ) -> List[float]:
         pass
