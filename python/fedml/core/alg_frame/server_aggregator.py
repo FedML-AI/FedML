@@ -1,6 +1,8 @@
 import logging
 from abc import ABC, abstractmethod
 from typing import List, Tuple, Dict
+
+from ..contribution.contribution_assessor_manager import ContributionAssessorManager
 from ..dp.fedml_differential_privacy import FedMLDifferentialPrivacy
 from ..security.fedml_attacker import FedMLAttacker
 from ..security.fedml_defender import FedMLDefender
@@ -17,6 +19,7 @@ class ServerAggregator(ABC):
         FedMLAttacker.get_instance().init(args)
         FedMLDefender.get_instance().init(args)
         FedMLDifferentialPrivacy.get_instance().init(args)
+        self.contribution_assessor_mgr = ContributionAssessorManager(args)
 
     def set_id(self, aggregator_id):
         self.id = aggregator_id
@@ -58,6 +61,10 @@ class ServerAggregator(ABC):
             aggregated_model_or_grad = FedMLDifferentialPrivacy.get_instance().add_global_noise(aggregated_model_or_grad)
         if FedMLDefender.get_instance().is_defense_enabled():
             aggregated_model_or_grad = FedMLDefender.get_instance().defend_after_aggregation(aggregated_model_or_grad)
+
+        # self.contribution_assessor_mgr.run(
+        #     aggregated_model_or_grad, aggregated_model_or_grad, self.get_model_params(), acc_on_aggregated_model, val_dataloader
+        # )
         return aggregated_model_or_grad
 
     @abstractmethod
