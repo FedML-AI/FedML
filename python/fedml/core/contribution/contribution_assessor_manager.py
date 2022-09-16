@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Callable
 
 from .leave_one_out import LeaveOneOut
 
@@ -26,6 +26,8 @@ class ContributionAssessorManager:
         model_last_round: Dict,
         acc_on_aggregated_model: float,
         val_dataloader: Any,
+        validation_func: Callable[[Dict, Any, Any], float],
+        device,
     ) -> List[float]:
         if self.assessor is None:
             return None
@@ -37,6 +39,8 @@ class ContributionAssessorManager:
             model_last_round,
             acc_on_aggregated_model,
             val_dataloader,
+            validation_func,
+            device,
         )
         logging.info("ContributionAssessorManager.run() contribution_vector = {}".format(contribution_vector))
         return contribution_vector
