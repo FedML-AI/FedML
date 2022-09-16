@@ -9,6 +9,7 @@ from .security.fedml_attacker import FedMLAttacker
 from .security.fedml_defender import FedMLDefender
 from ..ml.aggregator.agg_operator import FedMLAggOperator
 from .dp.fedml_differential_privacy import FedMLDifferentialPrivacy
+from .contribution.contribution_assessor_manager import ContributionAssessorManager
 
 __all__ = [
     "Params",
@@ -21,6 +22,7 @@ __all__ = [
     "FedMLAttacker",
     "FedMLDefender",
     "FedMLDifferentialPrivacy",
+    "ContributionAssessorManager",
     "partition_class_samples_with_dirichlet_distribution",
 ]
 
