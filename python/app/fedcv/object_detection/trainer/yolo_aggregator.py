@@ -236,4 +236,13 @@ class YOLOAggregator(ServerAggregator):
     def test_all(
         self, train_data_local_dict, test_data_local_dict, device, args=None
     ) -> bool:
+        if args.round_idx is not None:
+            self.round_idx = args.round_idx
+            logging.info(f"round_idx: {self.round_idx}")
+            if (self.round_idx + 1) % self.args.server_checkpoint_interval == 0:
+                logging.info(f"Saving model at round {self.round_idx}")
+                torch.save(
+                    self.model,
+                    self.args.save_dir / "weights" / f"model_{self.round_idx}.pt",
+                )
         return True
