@@ -56,6 +56,17 @@ def init_yolo(args, device="cpu"):
         Path(args.project) / args.name, exist_ok=args.exist_ok
     )  # increment run
 
+    # add checkpoint interval
+    logging.info("add checkpoint interval")
+    args.checkpoint_interval = (
+        50 if args.checkpoint_interval is None else args.checkpoint_interval
+    )
+    args.server_checkpoint_interval = (
+        5
+        if args.server_checkpoint_interval is None
+        else args.server_checkpoint_interval
+    )
+
     # Hyperparameters
     with open(args.yolo_hyp) as f:
         hyp = yaml.load(f, Loader=yaml.FullLoader)  # load hyps
@@ -83,6 +94,12 @@ def init_yolo(args, device="cpu"):
     last = wdir / "last.pt"
     best = wdir / "best.pt"
     results_file = save_dir / "results.txt"
+
+    # add file handler
+    logging.info("add file handler")
+    fh = logging.FileHandler(os.path.join(args.save_dir, f"log_{args.process_id}.txt"))
+    fh.setLevel(logging.INFO)
+    logging.getLogger().addHandler(fh)
 
     args.last, args.best, args.results_file = last, best, results_file
 
