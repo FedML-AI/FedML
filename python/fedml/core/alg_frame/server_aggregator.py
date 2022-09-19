@@ -37,11 +37,13 @@ class ServerAggregator(ABC):
     ) -> List[Tuple[float, Dict]]:
         if FedMLAttacker.get_instance().is_model_attack():
             raw_client_model_or_grad_list = FedMLAttacker.get_instance().attack_model(
-                raw_client_grad_list=raw_client_model_or_grad_list, extra_auxiliary_info=None,
+                raw_client_grad_list=raw_client_model_or_grad_list,
+                extra_auxiliary_info=None,
             )
         if FedMLDefender.get_instance().is_defense_enabled():
             raw_client_model_or_grad_list = FedMLDefender.get_instance().defend_before_aggregation(
-                raw_client_grad_list=raw_client_model_or_grad_list, extra_auxiliary_info=self.get_model_params(),
+                raw_client_grad_list=raw_client_model_or_grad_list,
+                extra_auxiliary_info=self.get_model_params(),
             )
 
         return raw_client_model_or_grad_list
@@ -58,13 +60,20 @@ class ServerAggregator(ABC):
     def on_after_aggregation(self, aggregated_model_or_grad: Dict) -> Dict:
         if FedMLDifferentialPrivacy.get_instance().is_global_dp_enabled():
             logging.info("-----add central DP noise ----")
-            aggregated_model_or_grad = FedMLDifferentialPrivacy.get_instance().add_global_noise(aggregated_model_or_grad)
+            aggregated_model_or_grad = FedMLDifferentialPrivacy.get_instance().add_global_noise(
+                aggregated_model_or_grad
+            )
         if FedMLDefender.get_instance().is_defense_enabled():
             aggregated_model_or_grad = FedMLDefender.get_instance().defend_after_aggregation(aggregated_model_or_grad)
 
-        # self.contribution_assessor_mgr.run(
-        #     aggregated_model_or_grad, aggregated_model_or_grad, self.get_model_params(), acc_on_aggregated_model, validation_data, self.test
-        # )
+        self.contribution_assessor_mgr.run(
+            aggregated_model_or_grad,
+            aggregated_model_or_grad,
+            self.get_model_params(),
+            acc_on_aggregated_model,
+            validation_data,
+            self.test,
+        )
         return aggregated_model_or_grad
 
     @abstractmethod

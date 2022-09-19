@@ -24,6 +24,6 @@ class LeaveOneOut(BaseContributionAssessor):
             # assuming same number of samples in each client
             model_aggregated_wo_client = np.sum(i for i in model_list_from_client_update if i != client) / (num_client_for_this_round-1)
             acc_wo_client = validation_func(model_aggregated_wo_client, val_dataloader, device)
-            contributions[client] = acc_wo_client-acc_on_aggregated_model
+            contributions[client] = acc_on_aggregated_model-acc_wo_client
         logging.info("contributions = {}".format(contributions))
         return contributions

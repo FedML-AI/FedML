@@ -29,9 +29,6 @@ class ContributionAssessorManager:
         validation_func: Callable[[Dict, Any, Any], float],
         device,
     ) -> List[float]:
-        if self.assessor is None:
-            return None
-
         contribution_vector = self.assessor.run(
             self.client_num_per_round,
             model_list_from_client_update,
