@@ -27,7 +27,7 @@ jobs:
         os: [ ubuntu-latest]
         arch: [X64]
         python-version: ['3.8']
-        client-index: ['0', '1', '2', '3', '4', '5', '6']
+        client-index: ['0', '1', '2', '3', '4']
 #        exclude:
 #          - os: macos-latest
 #            python-version: '3.8'
@@ -83,19 +83,3 @@ jobs:
           echo ${run_id}
           bash run_client.sh 4 $run_id
         if: ${{ matrix.client-index == '4' }}
-        
-      - name: client 5 - cross-silo - defense
-        run: |
-          cd examples/cross_silo/mqtt_s3_fedavg_defense_mnist_lr_example
-          run_id=cross-silo-defense-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
-          echo ${run_id}
-          bash run_client.sh 5 $run_id
-        if:   ${{ matrix.client-index == '5' }}
-      
-      - name: client 6 - cross-silo - defense
-        run: |
-          cd examples/cross_silo/mqtt_s3_fedavg_defense_mnist_lr_example
-          run_id=cross-silo-defense-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
-          echo ${run_id}
-          bash run_client.sh 6 $run_id
-        if:   ${{ matrix.client-index == '6' }}
