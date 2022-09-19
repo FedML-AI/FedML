@@ -41,7 +41,8 @@ requirements = [
     "matplotlib",
     "dill",
     "pandas",
-    "wandb==0.13.2"
+    "wandb==0.13.2",
+    "eciespy"
 ]
 
 requirements_extra_mpi = [
