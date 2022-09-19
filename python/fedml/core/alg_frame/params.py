@@ -20,7 +20,7 @@ class Params(object):
 
     def get(self, name: str):
         if not hasattr(self, name):
-            raise ValueError(f"Attribute not found: {name}")
+            return None
         return getattr(self, name)
 
     def keys(self):
