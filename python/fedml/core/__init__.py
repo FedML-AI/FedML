@@ -10,6 +10,7 @@ from .security.fedml_defender import FedMLDefender
 from ..ml.aggregator.agg_operator import FedMLAggOperator
 from .dp.fedml_differential_privacy import FedMLDifferentialPrivacy
 from .contribution.contribution_assessor_manager import ContributionAssessorManager
+from .alg_frame.context import Context
 
 __all__ = [
     "Params",
@@ -24,5 +25,6 @@ __all__ = [
     "FedMLDifferentialPrivacy",
     "ContributionAssessorManager",
     "partition_class_samples_with_dirichlet_distribution",
+    "Context"
 ]
 
