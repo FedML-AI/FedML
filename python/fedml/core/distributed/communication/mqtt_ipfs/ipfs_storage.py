@@ -1,8 +1,10 @@
-
+import os
 import time
 import pickle
 
 from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
+from . import ipfs_crypto
+from .....core.alg_frame.context import Context
 
 import httpx
 
@@ -17,6 +19,10 @@ class IpfsStorage:
     def write_model(self, model):
         pickle_dump_start_time = time.time()
         model_pkl = pickle.dumps(model)
+        secret_key = Context().get("ipfs_secret_key")
+        if secret_key is not None and secret_key != "":
+            secret_key = bytes(secret_key, 'UTF-8')
+            model_pkl = ipfs_crypto.encrypt(secret_key, model_pkl)
         MLOpsProfilerEvent.log_to_wandb(
             {"PickleDumpsTime": time.time() - pickle_dump_start_time}
         )
@@ -30,6 +36,10 @@ class IpfsStorage:
     def read_model(self, message_key):
         message_handler_start_time = time.time()
         model_pkl, _ = self.storage_ipfs_download_file(message_key)
+        secret_key = Context().get("ipfs_secret_key")
+        if secret_key is not None and secret_key != "":
+            secret_key = bytes(secret_key, 'UTF-8')
+            model_pkl = ipfs_crypto.decrypt(secret_key, model_pkl)
         MLOpsProfilerEvent.log_to_wandb(
             {"Comm/recieve_delay_s3": time.time() - message_handler_start_time}
         )
