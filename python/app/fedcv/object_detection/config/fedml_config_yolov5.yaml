@@ -6,7 +6,7 @@ common_args:
   config_version: release
   name: "exp" # yolo
   project: "runs/train" # yolo
-  exist_ok: false # yolo
+  exist_ok: true # yolo
 
 environment_args:
   bootstrap: config/bootstrap.sh
@@ -41,9 +41,11 @@ train_args:
   client_optimizer: adam
   lr: 0.01
   weight_decay: 0.001
+  checkpoint_interval: 5
+  server_checkpoint_interval: 5
 
 validation_args:
-  frequency_of_the_test: 1
+  frequency_of_the_test: 5
 
 device_args:
   worker_num: 2
