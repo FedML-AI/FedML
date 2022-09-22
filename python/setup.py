@@ -41,7 +41,8 @@ requirements = [
     "matplotlib",
     "dill",
     "pandas",
-    "wandb==0.13.2"
+    "wandb==0.13.2",
+    "eciespy"
 ]
 
 requirements_extra_mpi = [
@@ -72,7 +73,7 @@ if platform.machine() == "x86_64":
 
 setup(
     name="fedml",
-    version="0.7.319",
+    version="0.7.320",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "

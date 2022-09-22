@@ -1,5 +1,11 @@
 ## Training Script
 
+Your should install mxnet lib by the following command:
+1) On Linux and MacOS x86 platform:
+   pip install fedml[mxnet]
+2) On Windows and Mac M1 platform, you should build mxnet lib from source:
+   [https://mxnet.apache.org/get_started/build_from_source](https://mxnet.apache.org/get_started/build_from_source)
+
 Run training and aggregator with MXNet framework.
 
 At the client side, the client ID (a.k.a rank) starts from 1.
