@@ -23,9 +23,8 @@ train_args:
   federated_optimizer: "FedAvg"
   # for CLI running, this can be None; in MLOps deployment, `client_id_list` will be replaced with real-time selected devices
   client_id_list:
-  # for FoolsGold Defense, if use_memory is true, then client_num_in_total should be equal to client_number_per_round
   client_num_in_total: 1000
-  client_num_per_round: 6
+  client_num_per_round: 4
   comm_round: 10
   epochs: 1
   batch_size: 10
@@ -37,10 +36,9 @@ validation_args:
   frequency_of_the_test: 1
 
 device_args:
-  worker_num: 6
   using_gpu: false
   gpu_mapping_file: config/gpu_mapping.yaml
-  gpu_mapping_key: mapping_config3_11
+  gpu_mapping_key: mapping_default
 
 comm_args:
   backend: "MQTT_S3"
@@ -55,11 +53,5 @@ tracking_args:
   wandb_project: fedml
   wandb_name: fedml_torch_fedavg_mnist_lr
 
-attack_args:
-  enable_attack: false
-  attack_type: None
-
-defense_args:
-  enable_defense: true
-  defense_type: krum
-  byzantine_client_num: 1
+contribution_args:
+  contribution_alg: LOO # LOO; GTG-Sharply Value, etc
