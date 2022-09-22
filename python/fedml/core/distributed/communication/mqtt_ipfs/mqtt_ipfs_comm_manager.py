@@ -10,18 +10,19 @@ import yaml
 
 from ..constants import CommunicationConstants
 from ..mqtt.mqtt_manager import MqttManager
-from ..s3.remote_storage import S3Storage
+from .ipfs_storage import IpfsStorage
 from ..base_com_manager import BaseCommunicationManager
 from ..message import Message
 from ..observer import Observer
+from .....core.alg_frame.context import Context
 import time
 
 
-class MqttS3MultiClientsCommManager(BaseCommunicationManager):
+class MqttIpfsCommManager(BaseCommunicationManager):
     def __init__(
         self,
         config_path,
-        s3_config_path,
+        ipfs_config_path,
         topic="fedml",
         client_rank=0,
         client_num=0,
@@ -39,11 +40,11 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         self.client_id_list = json.loads(client_objects_str)
 
         self._topic = "fedml_" + str(topic) + "_"
-        self.s3_storage = S3Storage(s3_config_path)
+        self.ipfs_storage = IpfsStorage(ipfs_config_path)
         self.client_real_ids = []
         if args.client_id_list is not None:
             logging.info(
-                "MqttS3CommManager args client_id_list: " + str(args.client_id_list)
+                "MqttIpfsCommManager args client_id_list: " + str(args.client_id_list)
             )
             self.client_real_ids = json.loads(args.client_id_list)
 
@@ -79,7 +80,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         else:
             self._client_id = client_rank
         self.client_num = client_num
-        logging.info("mqtt_s3.init: client_num = %d" % client_num)
+        logging.info("mqtt_ipfs.init: client_num = %d" % client_num)
 
         self.set_config_from_file(config_path)
         self.set_config_from_objects(config_path)
@@ -138,10 +139,10 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                 result, mid = mqtt_client_object.subscribe(real_topic, 0)
 
                 # logging.info(
-                #     "mqtt_s3.on_connect: subscribes real_topic = %s, mid = %s, result = %s"
+                #     "mqtt_ipfs.on_connect: subscribes real_topic = %s, mid = %s, result = %s"
                 #     % (real_topic, mid, str(result))
                 # )
-            # logging.info("mqtt_s3.on_connect: server subscribes")
+            # logging.info("mqtt_ipfs.on_connect: server subscribes")
             self._notify_connection_ready()
         else:
             # client
@@ -151,7 +152,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
             self._notify_connection_ready()
 
             # logging.info(
-            #     "mqtt_s3.on_connect: client subscribes real_topic = %s, mid = %s, result = %s"
+            #     "mqtt_ipfs.on_connect: client subscribes real_topic = %s, mid = %s, result = %s"
             #     % (real_topic, mid, str(result))
             # )
         self.is_connected = True
@@ -175,7 +176,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         msg_params = Message()
         msg_params.init_from_json_object(msg_obj)
         msg_type = msg_params.get_type()
-        logging.info("mqtt_s3.notify: msg type = %s" % msg_type)
+        logging.info("mqtt_ipfs.notify: msg type = %s" % msg_type)
         for observer in self._observers:
             observer.receive_message(msg_type, msg_params)
 
@@ -184,24 +185,26 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         payload_obj = json.loads(json_payload)
         sender_id = payload_obj.get(Message.MSG_ARG_KEY_SENDER, "")
         receiver_id = payload_obj.get(Message.MSG_ARG_KEY_RECEIVER, "")
-        s3_key_str = payload_obj.get(Message.MSG_ARG_KEY_MODEL_PARAMS, "")
-        s3_key_str = str(s3_key_str).strip(" ")
+        ipfs_key_str = payload_obj.get(Message.MSG_ARG_KEY_MODEL_PARAMS, "")
+        ipfs_key_str = str(ipfs_key_str).strip(" ")
 
-        if s3_key_str != "":
+        if ipfs_key_str != "":
             logging.info(
-                "mqtt_s3.on_message: use s3 pack, s3 message key %s" % s3_key_str
+                "mqtt_ipfs.on_message: use ipfs pack, ipfs message key %s" % ipfs_key_str
             )
 
-            model_params = self.s3_storage.read_model(s3_key_str)
+            model_params = self.ipfs_storage.read_model(ipfs_key_str)
+            Context().add("received_model_cid", ipfs_key_str)
+            logging.info("Received model cid {}".format(Context().get("received_model_cid")))
 
             logging.info(
-                "mqtt_s3.on_message: model params length %d" % len(model_params)
+                "mqtt_ipfs.on_message: model params length %d" % len(model_params)
             )
 
-            # replace the S3 object key with raw model params
+            # replace the IPFS object key with raw model params
             payload_obj[Message.MSG_ARG_KEY_MODEL_PARAMS] = model_params
         else:
-            logging.info("mqtt_s3.on_message: not use s3 pack")
+            logging.info("mqtt_ipfs.on_message: not use ipfs pack")
 
         self._notify(payload_obj)
 
@@ -209,7 +212,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         try:
             self._on_message_impl(msg)
         except Exception as e:
-            logging.error("mqtt_s3.on_message exception: {}".format(traceback.format_exc()))
+            logging.error("mqtt_ipfs.on_message exception: {}".format(traceback.format_exc()))
 
     def send_message(self, msg: Message):
         """
@@ -227,19 +230,20 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         if self.client_id == 0:
             # topic = "fedml" + "_" + "run_id" + "_0" + "_" + "client_id"
             topic = self._topic + str(self.server_id) + "_" + str(receiver_id)
-            logging.info("mqtt_s3.send_message: msg topic = %s" % str(topic))
+            logging.info("mqtt_ipfs.send_message: msg topic = %s" % str(topic))
 
             payload = msg.get_params()
             model_params_obj = payload.get(Message.MSG_ARG_KEY_MODEL_PARAMS, "")
-            message_key = topic + "_" + str(uuid.uuid4())
             if model_params_obj != "":
-                # S3
+                # IPFS
+                logging.info("mqtt_ipfs.send_message: to python client.")
+                message_key = model_url = self.ipfs_storage.write_model(model_params_obj)
+                Context().add("sent_model_cid", model_url)
+                logging.info("Sent model cid {}".format(Context().get("sent_model_cid")))
                 logging.info(
-                    "mqtt_s3.send_message: S3+MQTT msg sent, s3 message key = %s"
+                    "mqtt_ipfs.send_message: IPFS+MQTT msg sent, ipfs message key = %s"
                     % message_key
                 )
-                logging.info("mqtt_s3.send_message: to python client.")
-                model_url = self.s3_storage.write_model(message_key, model_params_obj)
                 model_params_key_url = {
                     "key": message_key,
                     "url": model_url,
@@ -252,23 +256,24 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                 self.mqtt_mgr.send_message(topic, json.dumps(payload))
             else:
                 # pure MQTT
-                logging.info("mqtt_s3.send_message: MQTT msg sent")
+                logging.info("mqtt_ipfs.send_message: MQTT msg sent")
                 self.mqtt_mgr.send_message(topic, json.dumps(payload))
 
         else:
             # client
             topic = self._topic + str(msg.get_sender_id())
-            message_key = topic + "_" + str(uuid.uuid4())
 
             payload = msg.get_params()
             model_params_obj = payload.get(Message.MSG_ARG_KEY_MODEL_PARAMS, "")
             if model_params_obj != "":
-                # S3
+                # IPFS
+                message_key = model_url = self.ipfs_storage.write_model(model_params_obj)
+                Context().add("sent_model_cid", model_url)
+                logging.info("Sent model cid {}".format(Context().get("sent_model_cid")))
                 logging.info(
-                    "mqtt_s3.send_message: S3+MQTT msg sent, message_key = %s"
+                    "mqtt_ipfs.send_message: IPFS+MQTT msg sent, message_key = %s"
                     % message_key
                 )
-                model_url = self.s3_storage.write_model(message_key, model_params_obj)
                 model_params_key_url = {
                     "key": message_key,
                     "url": model_url,
@@ -280,7 +285,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                 ]
                 self.mqtt_mgr.send_message(topic, json.dumps(payload))
             else:
-                logging.info("mqtt_s3.send_message: MQTT msg sent")
+                logging.info("mqtt_ipfs.send_message: MQTT msg sent")
                 self.mqtt_mgr.send_message(topic, json.dumps(payload))
 
     def send_message_json(self, topic_name, json_message):
@@ -293,7 +298,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         MLOpsProfilerEvent.log_to_wandb({"TotalTime": time.time() - start_listening_time})
 
     def stop_receive_message(self):
-        logging.info("mqtt_s3.stop_receive_message: stopping...")
+        logging.info("mqtt_ipfs.stop_receive_message: stopping...")
         self.mqtt_mgr.loop_stop()
         self.mqtt_mgr.disconnect()
 
@@ -351,3 +356,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
 
     def get_client_list_status(self):
         return self.client_active_list
+
+
+if __name__ == "__main__":
+    pass

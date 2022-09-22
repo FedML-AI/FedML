@@ -254,6 +254,8 @@ class FedMLServerRunner:
         if env_args is not None:
             bootstrap_script_file = env_args.get("bootstrap", None)
             bootstrap_script_file = str(bootstrap_script_file).replace('\\', os.sep).replace('/', os.sep)
+            if platform.system() == 'Windows':
+                bootstrap_script_file = bootstrap_script_file.replace('.sh', '.bat')
             if bootstrap_script_file is not None:
                 bootstrap_script_dir = os.path.join(base_dir, "fedml", os.path.dirname(bootstrap_script_file))
                 bootstrap_script_path = os.path.join(
