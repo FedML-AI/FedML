@@ -68,10 +68,6 @@ For Silo/Client 2, run the following script:
 ```
 bash run_client.sh 2
 ```
-Note: please run the server first.
-Note: 
-
-
 
 `config/fedml_config.yaml` is shown below.
 

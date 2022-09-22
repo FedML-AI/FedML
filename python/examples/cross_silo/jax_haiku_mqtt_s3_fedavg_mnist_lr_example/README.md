@@ -1,5 +1,12 @@
 ## Training Script
 
+Your should install jax lib by the following command:
+1) On Linux and MacOS platform:
+  pip install fedml[jax]
+2) On Windows platform:
+  pip install jaxlib -f https://whls.blob.core.windows.net/unstable/index.html --use-deprecated legacy-resolver
+  pip install fedml[jax]
+
 Run training and aggregator with JAX at haiku framework.
 
 At the client side, the client ID (a.k.a rank) starts from 1.

@@ -234,6 +234,8 @@ class FedMLClientRunner:
             fedml_conf_object["comm_args"]["local_server"] = self.args.local_server
         bootstrap_script_file = fedml_conf_object["environment_args"]["bootstrap"]
         bootstrap_script_file = str(bootstrap_script_file).replace('\\', os.sep).replace('/', os.sep)
+        if platform.system() == 'Windows':
+            bootstrap_script_file = bootstrap_script_file.replace('.sh', '.bat')
         bootstrap_script_dir = os.path.join(base_dir, "fedml", os.path.dirname(bootstrap_script_file))
         bootstrap_script_path = os.path.join(
             bootstrap_script_dir, bootstrap_script_dir, os.path.basename(bootstrap_script_file)
