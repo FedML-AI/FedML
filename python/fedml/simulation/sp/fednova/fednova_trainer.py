@@ -153,11 +153,11 @@ class FedNovaTrainer(object):
                     buf = self.global_momentum_buffer[k] = torch.clone(
                         cum_grad[k]
                     ).detach()
-                    buf.div_(self.args.lr)
+                    buf.div_(self.args.learning_rate)
                 else:
                     buf = self.global_momentum_buffer[k]
-                    buf.mul_(self.args.gmf).add_(1 / self.args.lr, cum_grad[k])
-                params[k].sub_(self.args.lr, buf)
+                    buf.mul_(self.args.gmf).add_(1 / self.args.learning_rate, cum_grad[k])
+                params[k].sub_(self.args.learning_rate, buf)
             else:
                 params[k].sub_(cum_grad[k])
 
