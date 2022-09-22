@@ -73,7 +73,7 @@ if platform.machine() == "x86_64":
 
 setup(
     name="fedml",
-    version="0.7.321",
+    version="0.7.323",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
