@@ -276,6 +276,7 @@ class FedMLServerRunner:
                     os.chmod(bootstrap_script_path, bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
                     bootstrap_scripts = "cd {}; ./{}".format(bootstrap_script_dir,
                                                              os.path.basename(bootstrap_script_file))
+                    bootstrap_scripts = str(bootstrap_scripts).replace('\\', os.sep).replace('/', os.sep)
                     logging.info("Bootstrap scripts are being executed...")
                     process = ServerConstants.exec_console_with_script(bootstrap_scripts,
                                                                        should_capture_stdout_err=True)
