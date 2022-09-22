@@ -8,3 +8,4 @@ runs
 mlops
 data/coco128/images/
 data/coco128/labels/
+config/exp*
