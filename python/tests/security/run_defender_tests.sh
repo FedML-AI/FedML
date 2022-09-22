@@ -16,5 +16,6 @@ python test_wbc.py
 python test_weak_dp.py
 python test_crfl.py
 python test_rfa.py
+python test_residual_based_reweighting.py
 
 cd ..
