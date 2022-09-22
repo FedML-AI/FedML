@@ -219,12 +219,12 @@ class ClientConstants(object):
     def exec_console_with_script(script_path, should_capture_stdout_err=False):
         if should_capture_stdout_err:
             if platform.system() == 'Windows':
-                script_process = subprocess.Popen([script_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                script_process = subprocess.Popen(script_path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             else:
                 script_process = subprocess.Popen(['sh', '-c', script_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         else:
             if platform.system() == 'Windows':
-                script_process = subprocess.Popen([script_path], stdout=sys.stdout, stderr=subprocess.PIPE)
+                script_process = subprocess.Popen(script_path, stdout=sys.stdout, stderr=subprocess.PIPE)
             else:
                 script_process = subprocess.Popen(['sh', '-c', script_path], stdout=sys.stdout, stderr=subprocess.PIPE)
         return script_process
