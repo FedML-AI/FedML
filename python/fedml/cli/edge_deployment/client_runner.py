@@ -253,7 +253,8 @@ class FedMLClientRunner:
                 if os.path.exists(bootstrap_script_path):
                     bootstrap_stat = os.stat(bootstrap_script_path)
                     if platform.system() == 'Windows':
-                        bootstrap_scripts = "{}".format(bootstrap_script_dir, bootstrap_script_path)
+                        os.chmod(bootstrap_script_path, bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+                        bootstrap_scripts = "{}".format(bootstrap_script_path)
                     else:
                         os.chmod(bootstrap_script_path, bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
                         bootstrap_scripts = "cd {}; ./{}".format(bootstrap_script_dir, os.path.basename(bootstrap_script_file))
