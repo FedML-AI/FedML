@@ -17,7 +17,6 @@ class FoolsGoldDefense(BaseDefenseMethod):
     def __init__(self, config):
         self.config = config
         self.memory = None
-        self.use_memory = config.use_memory
 
     def run(
         self,
@@ -37,16 +36,12 @@ class FoolsGoldDefense(BaseDefenseMethod):
         importance_feature_list = self._get_importance_feature(raw_client_grad_list)
         print(len(importance_feature_list))
 
-        if self.use_memory:
-            if self.memory is None:
-                self.memory = importance_feature_list
-            else:  # memory: potential bugs: grads in different iterations may be from different clients
-                for i in range(client_num):
-                    self.memory[i] += importance_feature_list[i]
-            alphas = self.fools_gold_score(self.memory)  # Use FG
-        else:
-            grads = [grad for (_, grad) in raw_client_grad_list]
-            alphas = self.fools_gold_score(grads)  # Use FG
+        if self.memory is None:
+            self.memory = importance_feature_list
+        else:  # memory: potential bugs: grads in different iterations may be from different clients
+            for i in range(client_num):
+                self.memory[i] += importance_feature_list[i]
+        alphas = self.fools_gold_score(self.memory)  # Use FG
 
         print("alphas = {}".format(alphas))
         assert len(alphas) == len(
@@ -78,7 +73,7 @@ class FoolsGoldDefense(BaseDefenseMethod):
                 if maxcs[i] < maxcs[j]:
                     cs[i][j] = cs[i][j] * maxcs[i] / maxcs[j]
         alpha = 1 - (np.max(cs, axis=1))
-        alpha[alpha >= 1.0] = 1.0
+        alpha[alpha > 1.0] = 1.0
         alpha[alpha <= 0.0] = 1e-15
 
         # Rescale so that max value is alpha
