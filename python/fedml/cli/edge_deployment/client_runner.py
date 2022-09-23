@@ -264,13 +264,15 @@ class FedMLClientRunner:
                     ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(process)
                     if out is not None:
                         out_str = out.decode(encoding="utf-8")
-                        if str(out_str).find(FedMLClientRunner.FEDML_BOOTSTRAP_RUN_OK) == -1:
+                        if str(out_str).find(FedMLClientRunner.FEDML_BOOTSTRAP_RUN_OK) == -1 \
+                                and str(out_str).lstrip(' ').rstrip(' ') != '':
                             logging.error("{}".format(out_str))
                         else:
                             logging.info("{}".format(out_str))
                     if err is not None:
                         err_str = err.decode(encoding="utf-8")
-                        if str(err_str).find(FedMLClientRunner.FEDML_BOOTSTRAP_RUN_OK) == -1:
+                        if str(err_str).find(FedMLClientRunner.FEDML_BOOTSTRAP_RUN_OK) == -1 \
+                                and str(err_str).lstrip(' ').rstrip(' ') != '':
                             logging.error("{}".format(err_str))
                         else:
                             logging.info("{}".format(err_str))
