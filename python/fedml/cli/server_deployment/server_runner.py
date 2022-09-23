@@ -273,22 +273,28 @@ class FedMLServerRunner:
             if bootstrap_script_path is not None:
                 if os.path.exists(bootstrap_script_path):
                     bootstrap_stat = os.stat(bootstrap_script_path)
-                    os.chmod(bootstrap_script_path, bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-                    bootstrap_scripts = "cd {}; ./{}".format(bootstrap_script_dir,
-                                                             os.path.basename(bootstrap_script_file))
+                    if platform.system() == 'Windows':
+                        os.chmod(bootstrap_script_path, bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+                        bootstrap_scripts = "{}".format(bootstrap_script_path)
+                    else:
+                        os.chmod(bootstrap_script_path, bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+                        bootstrap_scripts = "cd {}; ./{}".format(bootstrap_script_dir, os.path.basename(bootstrap_script_file))
+                    bootstrap_scripts = str(bootstrap_scripts).replace('\\', os.sep).replace('/', os.sep)
                     logging.info("Bootstrap scripts are being executed...")
                     process = ServerConstants.exec_console_with_script(bootstrap_scripts,
                                                                        should_capture_stdout_err=True)
                     ret_code, out, err = ServerConstants.get_console_pipe_out_err_results(process)
                     if out is not None:
                         out_str = out.decode(encoding="utf-8")
-                        if str(out_str).find(FedMLServerRunner.FEDML_BOOTSTRAP_RUN_OK) == -1:
+                        if str(out_str).find(FedMLServerRunner.FEDML_BOOTSTRAP_RUN_OK) == -1 \
+                                and str(out_str).lstrip(' ').rstrip(' ') != '':
                             logging.error("{}".format(out_str))
                         else:
                             logging.info("{}".format(out_str))
                     if err is not None:
                         err_str = err.decode(encoding="utf-8")
-                        if str(err_str).find(FedMLServerRunner.FEDML_BOOTSTRAP_RUN_OK) == -1:
+                        if str(err_str).find(FedMLServerRunner.FEDML_BOOTSTRAP_RUN_OK) == -1 \
+                                and str(err_str).lstrip(' ').rstrip(' ') != '':
                             logging.error("{}".format(err_str))
                         else:
                             logging.info("{}".format(err_str))
