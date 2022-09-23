@@ -1,10 +1,9 @@
-import numpy as np
-from .defense_base import BaseDefenseMethod
 from typing import Callable, List, Tuple, Dict, Any
-from ..common import utils
-from scipy import spatial
-import sklearn.metrics.pairwise as smp
 
+import numpy as np
+from scipy import spatial
+
+from .defense_base import BaseDefenseMethod
 
 """
 The Limitations of Federated Learning in Sybil Settings.
@@ -26,9 +25,7 @@ class FoolsGoldDefense(BaseDefenseMethod):
         base_aggregation_func: Callable = None,
         extra_auxiliary_info: Any = None,
     ):
-        new_grad_list = self.defend_before_aggregation(
-            raw_client_grad_list, extra_auxiliary_info
-        )
+        new_grad_list = self.defend_before_aggregation(raw_client_grad_list, extra_auxiliary_info)
         return base_aggregation_func(self.config, new_grad_list)
 
     def defend_before_aggregation(
@@ -54,9 +51,7 @@ class FoolsGoldDefense(BaseDefenseMethod):
         print("alphas = {}".format(alphas))
         assert len(alphas) == len(
             raw_client_grad_list
-        ), "len of wv {} is not consistent with len of client_grads {}".format(
-            len(alphas), len(raw_client_grad_list)
-        )
+        ), "len of wv {} is not consistent with len of client_grads {}".format(len(alphas), len(raw_client_grad_list))
         new_grad_list = []
         client_num = len(raw_client_grad_list)
         for i in range(client_num):
@@ -71,16 +66,10 @@ class FoolsGoldDefense(BaseDefenseMethod):
         cs = np.zeros((n_clients, n_clients))
         for i in range(n_clients):
             for j in range(n_clients):
-                print("cosine start")
-                cs[i][j] = 1 - spatial.distance.cosine(
-                    feature_vec_list[i], feature_vec_list[j]
-                )
-                print("cosine end. cs[{}][{}] = {}".format(i, j, cs[i][j]))
+                cs[i][j] = 1 - spatial.distance.cosine(feature_vec_list[i], feature_vec_list[j])
         cs -= np.eye(n_clients)
         # cs = smp.cosine_similarity(feature_vec_list) - np.eye(n_clients)
-        print("cs = {}".format(cs))
         maxcs = np.max(cs, axis=1)
-        print("maxcs = {}".format(maxcs))
         # pardoning
         for i in range(n_clients):
             for j in range(n_clients):
@@ -88,26 +77,21 @@ class FoolsGoldDefense(BaseDefenseMethod):
                     continue
                 if maxcs[i] < maxcs[j]:
                     cs[i][j] = cs[i][j] * maxcs[i] / maxcs[j]
-        print("cs = {}".format(cs))
         alpha = 1 - (np.max(cs, axis=1))
-        print("alpha = {}".format(alpha))
         alpha[alpha >= 1.0] = 1.0
         alpha[alpha <= 0.0] = 1e-15
-        print("alpha (after) = {}".format(alpha))
 
         # Rescale so that max value is alpha
         print(np.max(alpha))
         alpha = alpha / np.max(alpha)
-        print("alpha_xxx = {}".format(alpha))
         alpha[(alpha == 1.0)] = 0.999999
 
         # Logit function
-        alpha = (np.log(alpha / (1 - alpha)) + 0.5)
-        # for i in range(len(alpha)):
-        #     if alpha[i] != 0:
-        #         alpha[i] = np.log(alpha[i] / (1 - alpha[i])) + 0.5
+        alpha = np.log(alpha / (1 - alpha)) + 0.5
         alpha[(np.isinf(alpha) + alpha > 1)] = 1
         alpha[(alpha < 0)] = 0
+
+        print("alpha = {}".format(alpha))
 
         return alpha
 
@@ -123,9 +107,5 @@ class FoolsGoldDefense(BaseDefenseMethod):
             print(importance_feature)
             feature_len = np.array(importance_feature.data.detach().numpy().shape).prod()
             feature_vector = np.reshape(importance_feature.cpu().data.detach().numpy(), feature_len)
-            if idx == 1 or idx == 2:
-                print("feature_vector = {}".format(feature_vector))
-                feature_vector = feature_vector*(100000)
-                print("feature_vector (after) = {}".format(feature_vector))
             ret_feature_vector_list.append(feature_vector)
         return ret_feature_vector_list
