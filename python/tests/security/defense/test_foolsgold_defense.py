@@ -6,7 +6,7 @@ from fedml.core.security.defense.foolsgold_defense import FoolsGoldDefense
 from fedml.ml.aggregator.agg_operator import FedMLAggOperator
 
 
-def add_args(use_memory):
+def add_args():
     parser = argparse.ArgumentParser(description="FedML")
     parser.add_argument(
         "--yaml_config_file",
@@ -16,13 +16,12 @@ def add_args(use_memory):
         default="",
     )
     parser.add_argument("--federated_optimizer", type=str, default="FedAvg")
-    parser.add_argument("--use_memory", type=bool, default=use_memory)
     args, unknown = parser.parse_known_args()
     return args
 
 
 def test_defense():
-    config = add_args(use_memory=True)
+    config = add_args()
     model = torch.hub.load("pytorch/vision:v0.10.0", "vgg11", pretrained=True).state_dict()
     model_list = [(100, model) for i in range(6)]
 
