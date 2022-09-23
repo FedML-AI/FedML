@@ -24,7 +24,7 @@ def add_args(use_memory):
 def test_defense():
     config = add_args(use_memory=True)
     model = torch.hub.load("pytorch/vision:v0.10.0", "vgg11", pretrained=True).state_dict()
-    model_list = [(100, model) for i in range(6)]
+    model_list = [(100, model) for i in range(4)]
 
     print(f"model_list len = {len(model_list)}")
     defense = FoolsGoldDefense(config)
