@@ -1,13 +1,16 @@
+import logging
+
 import fedml
 from fedml import FedMLRunner
-from fedml.model.cv.resnet56.resnet_pretrained import resnet56_pretrained
+from fedml.model.cv.resnet import resnet56
 
 
 def create_model():
     # please download the pre-trained weight file from
     # https://github.com/chenyaofo/pytorch-cifar-models/releases/download/resnet/cifar10_resnet44-2a3cabcb.pt
-    pre_trained_model_path = "./resnet56_on_cifar10.pt"
-    model = resnet56_pretrained(10, pretrained=True, path=pre_trained_model_path)
+    pre_trained_model_path = "./config/resnet56_on_cifar10.pth"
+    model = resnet56(10, pretrained=True, path=pre_trained_model_path)
+    logging.info("load pretrained model successfully")
     return model
 
 
