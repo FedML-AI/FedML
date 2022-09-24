@@ -19,7 +19,7 @@ def test__backdoor():
     attack = BackdoorAttack(
         backdoor_client_num=2, client_num=10, num_std=1.5, dataset=dataset
     )
-    print(attack.attack_model(model_list, global_w=None))
+    print(attack.attack_model(raw_client_grad_list=model_list))
 
 
 if __name__ == "__main__":
