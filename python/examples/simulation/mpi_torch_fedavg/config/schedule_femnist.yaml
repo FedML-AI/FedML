@@ -18,7 +18,7 @@ train_args:
   client_id_list: "[]"
   client_num_in_total: 3400
   client_num_per_round: 100
-  comm_round: 500
+  comm_round: 1000
   epochs: 10
   batch_size: 20
   client_optimizer: sgd
@@ -54,9 +54,11 @@ tracking_args:
   wandb_only_server: True
   using_mlops: False
   simulation_schedule: "LinearFit-DP"
-  runtime_est_mode: "time_window" # EMA
-  # simulation_gpu_hetero: "ratio"
-  # gpu_hetero_ratio: 1.0
+  # runtime_est_mode: "time_window" # EMA
+  simulation_gpu_hetero: "ratio"
+  gpu_hetero_ratio: 1.0
+  # simulation_environment_hetero: "cos"
+  # environment_hetero_ratio: 1.0
 
 attack_args:
   enable_attack: false
