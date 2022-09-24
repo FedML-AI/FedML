@@ -1,6 +1,11 @@
 import argparse
 import logging
 import os
+import sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../")))
 
 import fedml
 from fedml import FedMLRunner
@@ -9,6 +14,23 @@ from fedml.model.cv.resnet import resnet20
 from fedml.model.cv.resnet_cifar import resnet18_cifar
 from fedml.model.cv.resnet_gn import resnet18
 from fedml.model.cv.resnet_torch import resnet18 as resnet18_torch
+from fedml.model.cv.cnn import Cifar10FLNet
+
+
+
+
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    # if v.lower() in ('yes', 'true', 't', 'y', '1'):
+    if isinstance(v, str) and v.lower() in ('true', 'True'):
+        return True
+    elif isinstance(v, str) and v.lower() in ('false', 'False'):
+        return False
+    else:
+        return v
+        # raise argparse.ArgumentTypeError('Boolean value expected.')
+
 
 
 def add_args():
@@ -53,15 +75,28 @@ def add_args():
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--client_optimizer", type=str, default="sgd")
     parser.add_argument("--learning_rate", type=float, default=0.3)
+    parser.add_argument("--weight_decay", type=float, default=0.001)
+    parser.add_argument("--batch_size", type=int, default=20)
     parser.add_argument("--momentum", type=float, default=0.0)
     parser.add_argument("--server_optimizer", type=str, default="sgd")
     parser.add_argument("--server_lr", type=float, default=1.0)
     parser.add_argument("--server_momentum", type=float, default=0.9)
     # args, unknown = parser.parse_known_args()
 
+    parser.add_argument("--mimelite", type=str, default="False")
+
+    #
+    parser.add_argument("--feddyn_alpha", type=float, default=0.01)
+
+    parser.add_argument("--initialize_all_clients", type=str, default="False")
+    parser.add_argument("--cache_client_status", type=str, default="False")
     parser.add_argument("--override_cmd_args", action="store_true")
 
     args = parser.parse_args()
+
+    for key in args.__dict__.keys():
+        args.__dict__[key] = str2bool(args.__dict__[key])
+
     return args
 
 
@@ -103,7 +138,7 @@ if __name__ == "__main__":
     device = fedml.device.get_device(args)
     logging.info(
         f"======================================================== \
-        process_id: {args.process_id}, device: {device} =============="
+        device: {device} =============="
     )
 
     # load data
@@ -125,6 +160,9 @@ if __name__ == "__main__":
     elif args.model == "resnet18_cifar":
         logging.info("ResNet18_GN")
         model = resnet18_cifar(group_norm=args.group_norm_channels, num_classes=output_dim)
+    elif args.model == "cifar10cnn":
+        logging.info("cifar10cnn")
+        model = Cifar10FLNet()
     else:
         model = fedml.model.create(args, output_dim)
 
