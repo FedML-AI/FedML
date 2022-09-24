@@ -42,11 +42,6 @@ class BudgetAccountant:
     spent_budget : list of tuples of the form (epsilon, delta)
         The list of privacy spends recorded by the accountant.  Can be used in the initialisation of a new accountant.
 
-    composition_way : str
-        Sequential Composition:'Sequential';Advanced Composition'Advanced';
-
-    mechanism_type :
-        "laplace"/"gaussian"
 
     References
     ----------
