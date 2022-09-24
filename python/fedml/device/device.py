@@ -139,7 +139,8 @@ def get_device(args):
 
         return device
     elif args.training_type == "cross_device":
-        device = ml_engine_adapter.get_device(args)
+        device_type = get_device_type(args)
+        device = ml_engine_adapter.get_device(args, device_type=device_type)
         logging.info("device = {}".format(device))
         return device
     else:
