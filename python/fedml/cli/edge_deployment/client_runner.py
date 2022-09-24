@@ -234,6 +234,8 @@ class FedMLClientRunner:
             fedml_conf_object["comm_args"]["local_server"] = self.args.local_server
         bootstrap_script_file = fedml_conf_object["environment_args"]["bootstrap"]
         bootstrap_script_file = str(bootstrap_script_file).replace('\\', os.sep).replace('/', os.sep)
+        if platform.system() == 'Windows':
+            bootstrap_script_file = bootstrap_script_file.replace('.sh', '.bat')
         bootstrap_script_dir = os.path.join(base_dir, "fedml", os.path.dirname(bootstrap_script_file))
         bootstrap_script_path = os.path.join(
             bootstrap_script_dir, bootstrap_script_dir, os.path.basename(bootstrap_script_file)
@@ -250,20 +252,27 @@ class FedMLClientRunner:
             if bootstrap_script_path is not None:
                 if os.path.exists(bootstrap_script_path):
                     bootstrap_stat = os.stat(bootstrap_script_path)
-                    os.chmod(bootstrap_script_path, bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-                    bootstrap_scripts = "cd {}; ./{}".format(bootstrap_script_dir, os.path.basename(bootstrap_script_file))
+                    if platform.system() == 'Windows':
+                        os.chmod(bootstrap_script_path, bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+                        bootstrap_scripts = "{}".format(bootstrap_script_path)
+                    else:
+                        os.chmod(bootstrap_script_path, bootstrap_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+                        bootstrap_scripts = "cd {}; ./{}".format(bootstrap_script_dir, os.path.basename(bootstrap_script_file))
+                    bootstrap_scripts = str(bootstrap_scripts).replace('\\', os.sep).replace('/', os.sep)
                     logging.info("Bootstrap scripts are being executed...")
                     process = ClientConstants.exec_console_with_script(bootstrap_scripts, should_capture_stdout_err=True)
                     ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(process)
                     if out is not None:
                         out_str = out.decode(encoding="utf-8")
-                        if str(out_str).find(FedMLClientRunner.FEDML_BOOTSTRAP_RUN_OK) == -1:
+                        if str(out_str).find(FedMLClientRunner.FEDML_BOOTSTRAP_RUN_OK) == -1 \
+                                and str(out_str).lstrip(' ').rstrip(' ') != '':
                             logging.error("{}".format(out_str))
                         else:
                             logging.info("{}".format(out_str))
                     if err is not None:
                         err_str = err.decode(encoding="utf-8")
-                        if str(err_str).find(FedMLClientRunner.FEDML_BOOTSTRAP_RUN_OK) == -1:
+                        if str(err_str).find(FedMLClientRunner.FEDML_BOOTSTRAP_RUN_OK) == -1 \
+                                and str(err_str).lstrip(' ').rstrip(' ') != '':
                             logging.error("{}".format(err_str))
                         else:
                             logging.info("{}".format(err_str))
