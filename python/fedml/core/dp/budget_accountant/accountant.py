@@ -188,6 +188,11 @@ def advanced_composition(
       None when the total_delta is less than 1 - (1 - delta)^num_queries, for
       which no guarantee of (total_epsilon, total_delta)-DP is possible for any
       value of total_epsilon.
+
+    ..
+        The calculation follows Theorem 3.3 of
+          [KOV17] Kairouz, Peter, Sewoong Oh, and Pramod Viswanath. "The composition theorem for differential privacy."
+        IEEE Transactions on Information Theory 63.6 (2017): 4037-4049.https://arxiv.org/pdf/1311.0776.pdf
     """
     epsilon = privacy_parameters.epsilon
     delta = privacy_parameters.delta
