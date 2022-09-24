@@ -62,8 +62,8 @@ tracking_args:
   run_name: fedml_schedule_bench
   wandb_only_server: True
   using_mlops: False
-  # simulation_schedule: "LinearFit-DP"
-  # runtime_est_mode: "time_window" # EMA
+  simulation_schedule: "LinearFit-DP"
+  runtime_est_mode: "time_window" # EMA
   # simulation_gpu_hetero: "ratio"
   # gpu_hetero_ratio: 1.0
 
