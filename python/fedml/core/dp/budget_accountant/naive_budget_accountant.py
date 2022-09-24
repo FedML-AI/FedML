@@ -42,6 +42,12 @@ class BudgetAccountant:
     spent_budget : list of tuples of the form (epsilon, delta)
         The list of privacy spends recorded by the accountant.  Can be used in the initialisation of a new accountant.
 
+    composition_way : str
+        Sequential Composition:'Sequential';Advanced Composition'Advanced';
+
+    mechanism_type :
+        "laplace"/"gaussian"
+
     References
     ----------
     .. [KOV17] Kairouz, Peter, Sewoong Oh, and Pramod Viswanath. "The composition theorem for differential privacy."
@@ -133,7 +139,7 @@ class BudgetAccountant:
     def delta(self):
         """Delta privacy ceiling of the accountant.
         """
-        return self.__delta
+        return self.__del
 
     def total(self, spent_budget=None, slack=None):
         """Returns the total current privacy spend.
