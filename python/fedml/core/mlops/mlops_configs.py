@@ -101,6 +101,34 @@ class MLOpsConfigs(Singleton):
             raise Exception("failed to fetch device configurations!")
         return mqtt_config, s3_config
 
+    def fetch_ipfs_configs(self):
+        url, cert_path = self.get_request_params()
+        json_params = {"config_name": ["mqtt_config", "ipfs_config"]}
+
+        if cert_path is not None:
+            try:
+                requests.session().verify = cert_path
+                response = requests.post(
+                    url, json=json_params, verify=True, headers={"content-type": "application/json", "Connection": "close"}
+                )
+            except requests.exceptions.SSLError as err:
+                MLOpsConfigs.install_root_ca_file()
+                response = requests.post(
+                    url, json=json_params, verify=True, headers={"content-type": "application/json", "Connection": "close"}
+                )
+        else:
+            response = requests.post(
+                url, json=json_params, headers={"content-type": "application/json", "Connection": "close"}
+            )
+
+        status_code = response.json().get("code")
+        if status_code == "SUCCESS":
+            mqtt_config = response.json().get("data").get("mqtt_config")
+            ipfs_config = response.json().get("data").get("ipfs_config")
+        else:
+            raise Exception("failed to fetch device configurations!")
+        return mqtt_config, ipfs_config
+
     def fetch_all_configs(self):
         url, cert_path = self.get_request_params()
         json_params = {"config_name": ["mqtt_config", "s3_config", "ml_ops_config", "docker_config"]}

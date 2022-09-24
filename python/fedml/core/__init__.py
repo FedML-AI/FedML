@@ -8,7 +8,9 @@ from .distributed.flow.fedml_flow import FedMLAlgorithmFlow
 from .security.fedml_attacker import FedMLAttacker
 from .security.fedml_defender import FedMLDefender
 from ..ml.aggregator.agg_operator import FedMLAggOperator
-from .dp.dp_mechanism import FedMLDifferentialPrivacy
+from .dp.fedml_differential_privacy import FedMLDifferentialPrivacy
+from .contribution.contribution_assessor_manager import ContributionAssessorManager
+from .alg_frame.context import Context
 
 __all__ = [
     "Params",
@@ -21,6 +23,8 @@ __all__ = [
     "FedMLAttacker",
     "FedMLDefender",
     "FedMLDifferentialPrivacy",
+    "ContributionAssessorManager",
     "partition_class_samples_with_dirichlet_distribution",
+    "Context"
 ]
 
