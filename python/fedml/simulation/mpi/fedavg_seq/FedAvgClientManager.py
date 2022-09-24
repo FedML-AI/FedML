@@ -1,5 +1,6 @@
 import logging
 import time
+from math import cos
 
 from .message_define import MyMessage
 from .utils import transform_list_to_tensor
@@ -85,6 +86,18 @@ class FedAVGClientManager(FedMLCommManager):
             # time.sleep(runtime_speed_ratio * t_train - t_train)
             simulation_gpu_hetero = self.args.simulation_gpu_hetero
             runtime_speed_ratio = self.args.gpu_hetero_ratio * self.worker_id / self.args.worker_num
+
+        if hasattr(self.args, "simulation_environment_hetero"):
+            # runtime_speed_ratio
+            # runtime_speed_ratio * t_train - t_train
+            # time.sleep(runtime_speed_ratio * t_train - t_train)
+            if self.args.simulation_environment_hetero == "cos":
+                runtime_speed_ratio = self.args.environment_hetero_ratio * \
+                    (1 + cos(self.round_idx / self.num_rounds*3.1415926 + self.worker_id))
+            else:
+                raise NotImplementedError
+
+
         local_agg_model_params = {}
         client_runtime_info = {}
         for client_index in client_indexes:
