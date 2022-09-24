@@ -82,7 +82,7 @@ class Client:
         init_params = copy.deepcopy(net.state_dict())
         optimizer = FedNova(
             net.parameters(),
-            lr=self.args.lr,
+            lr=self.args.learning_rate,
             gmf=self.args.gmf,
             mu=self.args.mu,
             ratio=ratio,
