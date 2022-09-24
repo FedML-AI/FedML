@@ -41,7 +41,7 @@ def get_device_type(args):
 
 def get_device(args):
     if args.training_type == "simulation" and args.backend == "sp":
-        device = ml_engine_adapter.get_device(args)
+        device = ml_engine_adapter.get_device(args, args.gpu_id, args.device_type)
         logging.info("device = {}".format(device))
         return device
     elif args.training_type == "simulation" and args.backend == "MPI":
