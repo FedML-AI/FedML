@@ -314,7 +314,7 @@ def efficient_load_partition_data_cifar10(
     partition_alpha,
     client_number,
     batch_size,
-    process_id,
+    process_id=0,
     synthetic_data_url="",
     private_local_data="",
     n_proc_in_silo=0,
