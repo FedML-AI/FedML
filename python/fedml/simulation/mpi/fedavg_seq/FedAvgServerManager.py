@@ -74,7 +74,13 @@ class FedAVGServerManager(FedMLCommManager):
                 self.previous_time = time.time()
 
             global_model_params = self.aggregator.aggregate()
+            current_time = time.time()
             self.aggregator.test_on_server_for_all_clients(self.args.round_idx)
+            if self.args.enable_wandb:
+                wandb.log({"TestTimeOneRound": time.time() - current_time, "round": self.args.round_idx})
+
+            # Exclude the time of Testing 
+            self.previous_time = time.time()
 
             # start the next round
             self.args.round_idx += 1
