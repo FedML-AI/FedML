@@ -73,7 +73,7 @@ class FedOptAPI(object):
         sample_indices = random.sample(range(test_data_num), min(num_samples, test_data_num))
         subset = torch.utils.data.Subset(self.test_global.dataset, sample_indices)
         sample_testset = torch.utils.data.DataLoader(subset, batch_size=self.args.batch_size)
-        self.val_global = sample_testset
+        self.val_global = sample/home/chaoyanghe/zhtang_FedML/python/fedml/simulation/sp/fedopt/__pycache___testset
 
     def _instanciate_opt(self):
         self.opt = OptRepo.name2cls(self.args.server_optimizer)(

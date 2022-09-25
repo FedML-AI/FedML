@@ -5,6 +5,7 @@ from ..constants import (
     FedML_FEDERATED_OPTIMIZER_FEDOPT,
     FedML_FEDERATED_OPTIMIZER_FEDOPT_SEQ,
     FedML_FEDERATED_OPTIMIZER_FEDNOVA,
+    FedML_FEDERATED_OPTIMIZER_FEDDYN,
     FedML_FEDERATED_OPTIMIZER_FEDPROX,
     FedML_FEDERATED_OPTIMIZER_CLASSICAL_VFL,
     FedML_FEDERATED_OPTIMIZER_SPLIT_NN,
@@ -13,6 +14,8 @@ from ..constants import (
     FedML_FEDERATED_OPTIMIZER_FEDAVG_SEQ,
     FedML_FEDERATED_OPTIMIZER_FEDGKT,
     FedML_FEDERATED_OPTIMIZER_FEDNAS,
+    FedML_FEDERATED_OPTIMIZER_SCAFFOLD,
+    FedML_FEDERATED_OPTIMIZER_MIME,
     FedML_FEDERATED_OPTIMIZER_FEDSEG,
     FedML_FEDERATED_OPTIMIZER_HIERACHICAL_FL,
     FedML_FEDERATED_OPTIMIZER_TURBO_AGGREGATE,
@@ -25,7 +28,11 @@ class SimulatorSingleProcess:
     def __init__(self, args, device, dataset, model, client_trainer=None, server_aggregator=None):
         from .sp.classical_vertical_fl.vfl_api import VflFedAvgAPI
         from .sp.fedavg import FedAvgAPI
+        from .sp.fedprox.fedprox_trainer import FedProxTrainer
         from .sp.fednova.fednova_trainer import FedNovaTrainer
+        from .sp.feddyn.feddyn_trainer import FedDynTrainer
+        from .sp.scaffold.scaffold_trainer import ScaffoldTrainer
+        from .sp.mime.mime_trainer import MimeTrainer
         from .sp.fedopt.fedopt_api import FedOptAPI
         from .sp.hierarchical_fl.trainer import HierarchicalTrainer
         from .sp.turboaggregate.TA_trainer import TurboAggregateTrainer
@@ -36,6 +43,14 @@ class SimulatorSingleProcess:
             self.fl_trainer = FedOptAPI(args, device, dataset, model)
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDNOVA:
             self.fl_trainer = FedNovaTrainer(dataset, model, device, args)
+        elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDDYN:
+            self.fl_trainer = FedDynTrainer(dataset, model, device, args)
+        elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDPROX:
+            self.fl_trainer = FedProxTrainer(dataset, model, device, args)
+        elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_SCAFFOLD:
+            self.fl_trainer = ScaffoldTrainer(dataset, model, device, args)
+        elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_MIME:
+            self.fl_trainer = MimeTrainer(dataset, model, device, args)
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_HIERACHICAL_FL:
             self.fl_trainer = HierarchicalTrainer(args, device, dataset, model)
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_TURBO_AGGREGATE:
