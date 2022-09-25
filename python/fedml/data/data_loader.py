@@ -517,7 +517,8 @@ def load_synthetic_data(args):
 
                 return dataset, class_num
             else:
-                data_loader = load_partition_data_cifar10
+                # data_loader = load_partition_data_cifar10
+                data_loader = efficient_load_partition_data_cifar10
 
         elif dataset_name == "cifar100":
             data_loader = load_partition_data_cifar100
