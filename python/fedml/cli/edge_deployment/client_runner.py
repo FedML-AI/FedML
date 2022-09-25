@@ -384,6 +384,32 @@ class FedMLClientRunner:
 
         self.release_client_mqtt_mgr()
 
+    def stop_run_with_killed_status(self):
+        self.setup_client_mqtt_mgr()
+
+        self.wait_client_mqtt_connected()
+
+        logging.info("Stop run successfully.")
+
+        # Stop log processor for current run
+        MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(self.run_id, self.edge_id)
+
+        time.sleep(2)
+
+        # Notify MLOps with the stopping message
+        self.mlops_metrics.report_client_training_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_STOPPING)
+
+        self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED)
+
+        time.sleep(1)
+
+        try:
+            ClientConstants.cleanup_learning_process()
+        except Exception as e:
+            pass
+
+        self.release_client_mqtt_mgr()
+
     def exit_run_with_exception(self):
         self.setup_client_mqtt_mgr()
 
@@ -586,7 +612,7 @@ class FedMLClientRunner:
             self.args, edge_id=self.edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id
         )
         try:
-            Process(target=client_runner.stop_run).start()
+            Process(target=client_runner.stop_run_with_killed_status).start()
         except Exception as e:
             pass
 
