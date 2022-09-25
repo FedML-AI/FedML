@@ -9,6 +9,7 @@ DEFENSE_DP = "dp"
 DEFENSE_RFA = "rfa"
 DEFENSE_FOOLSGOLD = "foolsgold"
 DEFENSE_CRFL = "crfl"
+DEFENSE_THREESIGMA = "3sigma"
 DEFENSE_MULTIKRUM = "multikrum"
 DEFENSE_TRIMMED_MEAN = "trimmed_mean"
 
