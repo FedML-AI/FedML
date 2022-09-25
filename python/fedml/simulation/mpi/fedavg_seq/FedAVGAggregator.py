@@ -146,6 +146,11 @@ class FedAVGAggregator(object):
             fit_params, fit_funcs, fit_errors = t_sample_fit(
                 self.worker_num, self.args.client_num_in_total, runtime_to_fit, 
                 self.train_data_local_num_dict, uniform_client=True, uniform_gpu=False)
+
+            if self.args.enable_wandb:
+                wandb.log({"Time_Fit_workload": time.time() - previous_time, "round": round_idx})
+                current_time = time.time()
+
             logging.info(f"fit_params: {fit_params}")
             logging.info(f"fit_errors: {fit_errors}")
             avg_fit_error = 0.0
@@ -170,6 +175,10 @@ class FedAVGAggregator(object):
             client_schedule = []
             for indexes in y_schedule:
                 client_schedule.append(client_indexes[indexes])
+
+            if self.args.enable_wandb:
+                wandb.log({"Time_Schedule": time.time() - current_time, "round": round_idx})
+                current_time = time.time()
         else:
             client_schedule = np.array_split(client_indexes, self.worker_num)
         if self.args.enable_wandb:
@@ -264,6 +273,8 @@ class FedAVGAggregator(object):
             round_idx % self.args.frequency_of_the_test == 0
             or round_idx == self.args.comm_round - 1
         ):
+            if round_idx == 0:
+                return None
             logging.info(
                 "################test_on_server_for_all_clients : {}".format(round_idx)
             )
