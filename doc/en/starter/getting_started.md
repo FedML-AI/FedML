@@ -105,7 +105,7 @@ In this example, the FL Client APIs are as follows:
 
 ```Python
 import fedml
-from fedml.cross_silo import Client
+from fedml import FedMLRunner
 
 if __name__ == "__main__":
     args = fedml.init()
@@ -120,8 +120,7 @@ if __name__ == "__main__":
     model = fedml.model.create(args, output_dim)
 
     # start training
-    client = Client(args, device, dataset, model)
-    client.run()
+    FedMLRunner(args, device, dataset, model).run()
 
 ```
 
