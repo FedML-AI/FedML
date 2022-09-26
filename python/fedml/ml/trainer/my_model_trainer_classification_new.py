@@ -4,6 +4,8 @@ from torch import nn
 from ...core.alg_frame.client_trainer import ClientTrainer
 import logging
 
+from .operator_creator import create_trainer_operator
+
 
 class ModelTrainerCLS(ClientTrainer):
     def get_model_params(self):
@@ -12,26 +14,17 @@ class ModelTrainerCLS(ClientTrainer):
     def set_model_params(self, model_parameters):
         self.model.load_state_dict(model_parameters)
 
-    def train(self, train_data, device, args):
+    def train(self, train_data, device, args, params_to_operator):
         model = self.model
+
+        client_operator = self.create_trainer_operator(args)
 
         model.to(device)
         model.train()
+        client_operator.preprocess(args, model, train_data, device, params_to_operator)
 
         # train and update
         criterion = nn.CrossEntropyLoss().to(device)  # pylint: disable=E1102
-        if args.client_optimizer == "sgd":
-            optimizer = torch.optim.SGD(
-                filter(lambda p: p.requires_grad, self.model.parameters()),
-                lr=args.learning_rate,
-            )
-        else:
-            optimizer = torch.optim.Adam(
-                filter(lambda p: p.requires_grad, self.model.parameters()),
-                lr=args.learning_rate,
-                weight_decay=args.weight_decay,
-                amsgrad=True,
-            )
 
         epoch_loss = []
         for epoch in range(args.epochs):
@@ -41,12 +34,8 @@ class ModelTrainerCLS(ClientTrainer):
                 model.zero_grad()
                 log_probs = model(x)
                 loss = criterion(log_probs, labels)  # pylint: disable=E1102
-                loss.backward()
-
-                # Uncommet this following line to avoid nan loss
-                # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
-
-                optimizer.step()
+                client_operator.backward(args, model, train_data, device, loss, params_to_operator)
+                client_operator.update(args, model, train_data, device, params_to_operator)
                 # logging.info(
                 #     "Update Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
                 #         epoch,
@@ -66,6 +55,8 @@ class ModelTrainerCLS(ClientTrainer):
                     self.id, epoch, sum(epoch_loss) / len(epoch_loss)
                 )
             )
+        params_to_agg = client_operator.update(args, model, train_data, device, params_to_operator)
+        return sum(epoch_loss) / len(epoch_loss), params_to_agg
 
 
     def train_iterations(self, train_data, device, args):
