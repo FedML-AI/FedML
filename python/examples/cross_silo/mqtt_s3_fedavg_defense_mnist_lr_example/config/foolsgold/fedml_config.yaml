@@ -60,5 +60,4 @@ attack_args:
 # for FoolsGold Defense, if use_memory is true, then client_num_in_total should be equal to client_number_per_round
 defense_args:
   enable_defense: true
-  defense_type: foolsgold  # 3sigma; foolsgold
-  use_memory: true
+  defense_type: foolsgold
