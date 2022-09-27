@@ -162,9 +162,9 @@ class ThreeSigmaDefense(BaseDefenseMethod):
 
             # Get last key-value tuple
             (weight_name, importance_feature) = list(grads.items())[-2]
-            print(importance_feature)
+            # print(importance_feature)
             feature_len = np.array(
-                importance_feature.data.detach().numpy().shape
+                importance_feature.cpu().data.detach().numpy().shape
             ).prod()
             feature_vector = np.reshape(
                 importance_feature.cpu().data.detach().numpy(), feature_len
@@ -195,14 +195,14 @@ class ThreeSigmaDefense(BaseDefenseMethod):
         alpha[alpha <= 0.0] = 1e-15
 
         # Rescale so that max value is alpha
-        print(np.max(alpha))
+         # print(np.max(alpha))
         alpha = alpha / np.max(alpha)
         alpha[(alpha == 1.0)] = 0.999999
 
         # Logit function
         alpha = np.log(alpha / (1 - alpha)) + 0.5
-        alpha[(np.isinf(alpha) + alpha > 1)] = 1
-        alpha[(alpha < 0)] = 0
+        # alpha[(np.isinf(alpha) + alpha > 1)] = 1
+        # alpha[(alpha < 0)] = 0
 
         print("alpha = {}".format(alpha))
 
