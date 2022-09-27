@@ -201,8 +201,8 @@ class ThreeSigmaDefense(BaseDefenseMethod):
 
         # Logit function
         alpha = np.log(alpha / (1 - alpha)) + 0.5
-        alpha[(np.isinf(alpha) + alpha > 1)] = 1
-        alpha[(alpha < 0)] = 0
+        # alpha[(np.isinf(alpha) + alpha > 1)] = 1
+        # alpha[(alpha < 0)] = 0
 
         print("alpha = {}".format(alpha))
 
