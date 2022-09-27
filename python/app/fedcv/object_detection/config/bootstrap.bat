@@ -6,6 +6,7 @@
 pip install opencv-python-headless pandas matplotlib seaborn addict
 set DATA_PATH=%userprofile%\fedcv_data
 if exist %DATA_PATH% (echo Exist %DATA_PATH%) else mkdir %DATA_PATH%
+.\..\data\coco128\download_coco128.bat
 
 
 :: ### don't modify this part ###
