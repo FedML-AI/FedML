@@ -15,6 +15,7 @@ potential bugs when using memory: when only some of clients participate in compu
 
 class FoolsGoldDefense(BaseDefenseMethod):
     def __init__(self, config):
+        super().__init__(config)
         self.config = config
         self.memory = None
 
@@ -100,7 +101,7 @@ class FoolsGoldDefense(BaseDefenseMethod):
             # Get last key-value tuple
             (weight_name, importance_feature) = list(grads.items())[-2]
             print(importance_feature)
-            feature_len = np.array(importance_feature.data.detach().numpy().shape).prod()
+            feature_len = np.array(importance_feature.cpu().data.detach().numpy().shape).prod()
             feature_vector = np.reshape(importance_feature.cpu().data.detach().numpy(), feature_len)
             ret_feature_vector_list.append(feature_vector)
         return ret_feature_vector_list

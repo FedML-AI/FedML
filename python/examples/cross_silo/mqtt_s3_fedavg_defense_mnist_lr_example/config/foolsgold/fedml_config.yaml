@@ -11,11 +11,11 @@ environment_args:
 data_args:
   dataset: "cifar10"
   data_cache_dir: ~/fedml_data
-  partition_method: "hetero"
+  partition_method: "homo"
   partition_alpha: 0.5
 
 model_args:
-  model: "lr"
+  model: "resnet56"
   model_file_cache_folder: "./model_file_cache" # will be filled by the server automatically
   global_model_file_path: "./model_file_cache/global_model.pt"
 
@@ -24,8 +24,8 @@ train_args:
   # for CLI running, this can be None; in MLOps deployment, `client_id_list` will be replaced with real-time selected devices
   client_id_list:
   # for FoolsGold Defense, if use_memory is true, then client_num_in_total should be equal to client_number_per_round
-  client_num_in_total: 1000
-  client_num_per_round: 2
+  client_num_in_total: 8
+  client_num_per_round: 8
   comm_round: 10
   epochs: 1
   batch_size: 10
@@ -37,16 +37,13 @@ validation_args:
   frequency_of_the_test: 1
 
 device_args:
-  worker_num: 2
-  using_gpu: false
-  gpu_mapping_file: config/gpu_mapping.yaml
-  gpu_mapping_key: mapping_config3_11
+  worker_num: 8
+  using_gpu: true
+  gpu_mapping_file: config/foolsgold/gpu_mapping.yaml
+  gpu_mapping_key: mapping_default
 
 comm_args:
-  backend: "MQTT_S3"
-  mqtt_config_path:
-  s3_config_path:
-  grpc_ipconfig_path: ./config/grpc_ipconfig.csv
+  backend: "MPI"
 
 tracking_args:
   # the default log path is at ~/fedml-client/fedml/logs/ and ~/fedml-server/fedml/logs/
@@ -63,5 +60,5 @@ attack_args:
 # for FoolsGold Defense, if use_memory is true, then client_num_in_total should be equal to client_number_per_round
 defense_args:
   enable_defense: true
-  defense_type: foolsgold
+  defense_type: foolsgold  # 3sigma; foolsgold
   use_memory: true
