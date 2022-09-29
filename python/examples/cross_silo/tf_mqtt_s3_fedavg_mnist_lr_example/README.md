@@ -2,6 +2,8 @@
 For M1 MacBook, please install tensorflow according to the following link:
 https://developer.apple.com/metal/tensorflow-plugin/
 
+For other platforms, you should install tensorflow lib by the following command:
+pip install fedml[tensorflow]
 
 ## Training Script
 
