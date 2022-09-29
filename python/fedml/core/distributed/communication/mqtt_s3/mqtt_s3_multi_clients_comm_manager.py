@@ -4,7 +4,7 @@ import logging
 import traceback
 import uuid
 from typing import List
-from  fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
+from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 import paho.mqtt.client as mqtt
 import yaml
 
