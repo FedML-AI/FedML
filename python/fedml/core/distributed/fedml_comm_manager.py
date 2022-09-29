@@ -1,5 +1,6 @@
 import json
 import logging
+import grpc
 from abc import abstractmethod
 
 from .communication.base_com_manager import BaseCommunicationManager
@@ -128,12 +129,27 @@ class FedMLCommManager(Observer):
 
         elif self.backend == "GRPC":
             from .communication.grpc.grpc_comm_manager import GRPCCommManager
+            from .communication.grpc.grpc_secure_comm_manager import GRPCSecureCommManager
 
             HOST = "0.0.0.0"
             PORT = CommunicationConstants.GRPC_BASE_PORT + self.rank
-            self.com_manager = GRPCCommManager(
-                HOST, PORT, ip_config_path=self.args.grpc_ipconfig_path, client_id=self.rank, client_num=self.size,
-            )
+            if self.args.grpc_certificate != "" and self.args.grpc_private_key != "":
+                private_key = open(self.args.grpc_private_key, 'rb').read()
+                certificate = open(self.args.grpc_certificate, 'rb').read()
+                credentials = grpc.ssl_server_credentials([(
+                    private_key,
+                    certificate
+                )])
+                ca_certificate = open(self.args.grpc_trusted_ca, 'rb').read()
+                ca_credentials = grpc.ssl_channel_credentials(ca_certificate)
+                self.com_manager = GRPCSecureCommManager(
+                    HOST, PORT, credentials, ca_credentials,
+                    ip_config_path=self.args.grpc_ipconfig_path, client_id=self.rank, client_num=self.size
+                )
+            else:
+                self.com_manager = GRPCCommManager(
+                    HOST, PORT, ip_config_path=self.args.grpc_ipconfig_path, client_id=self.rank, client_num=self.size,
+                )
         elif self.backend == "TRPC":
             from .communication.trpc.trpc_comm_manager import TRPCCommManager
 
