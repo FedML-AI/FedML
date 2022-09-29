@@ -42,9 +42,9 @@ device_args:
 comm_args:
   backend: "GRPC"
   grpc_ipconfig_path: config/grpc_ipconfig.csv
-  grpc_trusted_ca: config/ca.pem
-  grpc_certificate: config/certificate.pem
-  grpc_private_key: config/key.pem
+  grpc_trusted_ca: config/ca-cert.pem
+  grpc_certificate: config/server-cert.pem
+  grpc_private_key: config/server-key.pem
   
 tracking_args:
   # the default log path is at ~/fedml-client/fedml/logs/ and ~/fedml-server/fedml/logs/

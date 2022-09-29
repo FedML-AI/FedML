@@ -37,6 +37,11 @@ Example is provided at:
 At the client side, the client ID (a.k.a rank) starts from 1.
 Please also modify config/fedml_config.yaml, changing the `worker_num` the as the number of clients you plan to run.
 
+You should also generate the certificates and keys for the nodes. You could do so by running the following script:
+```
+bash generate_certs.sh
+```
+
 At the server side, run the following script:
 ```
 bash run_server.sh your_run_id
