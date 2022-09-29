@@ -2,7 +2,8 @@ import random
 import numpy as np
 import torch
 from .attack_base import BaseAttackMethod
-from ..common.utils import is_weight_param, get_total_sample_num
+from ..common.utils import is_weight_param
+from typing import List, Tuple, Dict, Any
 
 """
 attack @ server, added by Shanshan, 07/04/2022
@@ -14,15 +15,16 @@ class ByzantineAttack(BaseAttackMethod):
         self.byzantine_client_num = args.byzantine_client_num
         self.attack_mode = args.attack_mode  # random: randomly generate a weight; zero: set the weight to 0
 
-    def attack_model(self, model_list, global_w, refs=None):
-        if len(model_list) < self.byzantine_client_num:
-            self.byzantine_client_num = len(model_list)
+    def attack_model(self, raw_client_grad_list: List[Tuple[float, Dict]],
+        extra_auxiliary_info: Any = None):
+        if len(raw_client_grad_list) < self.byzantine_client_num:
+            self.byzantine_client_num = len(raw_client_grad_list)
         if self.attack_mode == "zero":
-            byzantine_local_w = self._attack_zero_mode(model_list)
+            byzantine_local_w = self._attack_zero_mode(raw_client_grad_list)
         elif self.attack_mode == "random":
-            byzantine_local_w = self._attack_random_mode(model_list)
+            byzantine_local_w = self._attack_random_mode(raw_client_grad_list)
         elif self.attack_mode == "flip":
-            byzantine_local_w = self._attack_flip_mode(model_list, global_w)
+            byzantine_local_w = self._attack_flip_mode(raw_client_grad_list, extra_auxiliary_info) # extra_auxiliary_info: global model
         else:
             raise NotImplementedError("Method not implemented!")
         return byzantine_local_w
