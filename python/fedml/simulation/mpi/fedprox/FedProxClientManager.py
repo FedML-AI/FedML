@@ -29,7 +29,6 @@ class FedProxClientManager(FedMLCommManager):
         global_model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
 
-        # if self.args.is_mobile == 1:
         global_model_params = transform_list_to_tensor(global_model_params)
 
         self.trainer.update_model(global_model_params)
@@ -47,9 +46,6 @@ class FedProxClientManager(FedMLCommManager):
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
 
         model_params = transform_list_to_tensor(model_params)
-
-        # if self.args.is_mobile == 1:
-        # model_params = transform_list_to_tensor(model_params)
 
         self.trainer.update_model(model_params)
         self.trainer.update_dataset(int(client_index))
