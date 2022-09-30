@@ -64,9 +64,6 @@ class FedNovaTrainer(object):
             ratio=self.local_sample_number / self.total_train_num)
         # weights = self.trainer.get_model_params()
 
-        # transform Tensor to list
-        if self.args.is_mobile == 1:
-            weights = transform_tensor_to_list(weights)
         # return weights, self.local_sample_number
         return avg_loss, norm_grad, tau_eff
 

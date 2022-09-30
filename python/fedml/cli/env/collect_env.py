@@ -64,5 +64,17 @@ def collect_env():
             )
         )
         nvidia_smi.nvmlShutdown()
+
+        import torch
+
+        torch_is_available = torch.cuda.is_available()
+        print("torch_is_available = {}".format(torch_is_available))
+
+        device_count = torch.cuda.device_count()
+        print("device_count = {}".format(device_count))
+
+        device_name = torch.cuda.get_device_name(0)
+        print("device_name = {}".format(device_name))
+
     except:
         print("No GPU devices")

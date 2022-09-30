@@ -42,8 +42,6 @@ class AsyncFedAVGClientManager(FedMLCommManager):
         global_model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
 
-        if self.args.is_mobile == 1:
-            global_model_params = transform_list_to_tensor(global_model_params)
         self.round_idx = 0
         self.__train(global_model_params, client_index)
 
@@ -55,9 +53,6 @@ class AsyncFedAVGClientManager(FedMLCommManager):
         logging.info("handle_message_receive_model_from_server.")
         global_model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
-
-        if self.args.is_mobile == 1:
-            model_params = transform_list_to_tensor(global_model_params)
 
         self.round_idx += 1
         self.__train(global_model_params, client_index)
