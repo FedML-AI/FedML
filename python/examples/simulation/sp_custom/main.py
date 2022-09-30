@@ -16,8 +16,7 @@ from fedml.model.cv.resnet_gn import resnet18
 from fedml.model.cv.resnet_torch import resnet18 as resnet18_torch
 from fedml.model.cv.cnn import Cifar10FLNet
 
-
-
+from fedml.simulation.sp.sp_all.sp_api import SPAPI
 
 def str2bool(v):
     if isinstance(v, bool):
@@ -167,5 +166,10 @@ if __name__ == "__main__":
         model = fedml.model.create(args, output_dim)
 
     # start training
-    fedml_runner = FedMLRunner(args, device, dataset, model)
-    fedml_runner.run()
+    # fedml_runner = FedMLRunner(args, device, dataset, model)
+    # fedml_runner.run()
+
+
+    fl_trainer = SPAPI(args, device, dataset, model)
+    fl_trainer.train()
+

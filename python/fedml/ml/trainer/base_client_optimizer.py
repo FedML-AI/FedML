@@ -8,7 +8,7 @@ from ...core.common.ml_engine_backend import MLEngineBackend
 
 
 
-class ClientOperator(ABC):
+class ClientOptimizer(ABC):
     """Abstract base class for federated learning trainer.
     1. The goal of this abstract class is to be compatible to
     any deep learning frameworks such as PyTorch, TensorFlow, Keras, MXNET, etc.
@@ -19,7 +19,7 @@ class ClientOperator(ABC):
         self.args = args
 
     @abstractmethod
-    def preprocess(self, args, client_id, model, train_data, device, params_to_operator) -> (model, Dict):
+    def preprocess(self, args, client_id, model, train_data, device, params_to_client_optimizer):
         """
         1. Return params_to_update for update usage.
         2. pass model, train_data here, in case the algorithm need some preprocessing
@@ -27,21 +27,21 @@ class ClientOperator(ABC):
         pass
 
     @abstractmethod
-    def backward(self, args, client_id, model, train_data, device, loss, params_to_operator):
+    def backward(self, args, client_id, model, train_data, device, loss, params_to_client_optimizer):
         """
         """
         pass
 
 
     @abstractmethod
-    def update(self, args, client_id, model, train_data, device, params_to_operator) -> Dict:
+    def update(self, args, client_id, model, train_data, device, params_to_client_optimizer) -> Dict:
         """
         """
         pass
 
 
     @abstractmethod
-    def end_local_training(self, args, client_id, model, train_data, device, params_to_operator) -> Dict:
+    def end_local_training(self, args, client_id, model, train_data, device, params_to_client_optimizer) -> Dict:
         """
         1. Return params_to_agg for special aggregator need.
         """

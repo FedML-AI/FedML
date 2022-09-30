@@ -4,7 +4,7 @@ from torch import nn
 from ...core.alg_frame.client_trainer import ClientTrainer
 import logging
 
-from .operator_creator import create_trainer_operator
+from .client_optimizer_creator import create_client_optimizer
 
 
 class ModelTrainerCLS(ClientTrainer):
@@ -14,14 +14,18 @@ class ModelTrainerCLS(ClientTrainer):
     def set_model_params(self, model_parameters):
         self.model.load_state_dict(model_parameters)
 
-    def train(self, train_data, device, args, params_to_operator):
+    def set_client_index(self, client_index):
+        self.client_index = client_index
+
+    def train(self, train_data, device, args, params_to_client_optimizer):
         model = self.model
 
-        client_operator = self.create_trainer_operator(args)
+        client_optimizer = create_client_optimizer(args)
 
         model.to(device)
         model.train()
-        client_operator.preprocess(args, model, train_data, device, params_to_operator)
+        # client_optimizer.
+        client_optimizer.preprocess(args, self.client_index, model, train_data, device, params_to_client_optimizer)
 
         # train and update
         criterion = nn.CrossEntropyLoss().to(device)  # pylint: disable=E1102
@@ -34,8 +38,8 @@ class ModelTrainerCLS(ClientTrainer):
                 model.zero_grad()
                 log_probs = model(x)
                 loss = criterion(log_probs, labels)  # pylint: disable=E1102
-                client_operator.backward(args, model, train_data, device, loss, params_to_operator)
-                client_operator.update(args, model, train_data, device, params_to_operator)
+                client_optimizer.backward(args, self.client_index, model, train_data, device, loss, params_to_client_optimizer)
+                client_optimizer.update(args, self.client_index, model, train_data, device, params_to_client_optimizer)
                 # logging.info(
                 #     "Update Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
                 #         epoch,
@@ -55,8 +59,8 @@ class ModelTrainerCLS(ClientTrainer):
                     self.id, epoch, sum(epoch_loss) / len(epoch_loss)
                 )
             )
-        params_to_agg = client_operator.update(args, model, train_data, device, params_to_operator)
-        return sum(epoch_loss) / len(epoch_loss), params_to_agg
+        params_to_server_optimizer = client_optimizer.end_local_training(args, self.client_index, model, train_data, device, params_to_client_optimizer)
+        return sum(epoch_loss) / len(epoch_loss), params_to_server_optimizer
 
 
     def train_iterations(self, train_data, device, args):
