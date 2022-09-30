@@ -38,7 +38,7 @@ class ServerAggregator(ABC):
         if FedMLAttacker.get_instance().is_model_attack():
             raw_client_model_or_grad_list = FedMLAttacker.get_instance().attack_model(
                 raw_client_grad_list=raw_client_model_or_grad_list,
-                extra_auxiliary_info=None,
+                extra_auxiliary_info=self.get_model_params(),
             )
         if FedMLDefender.get_instance().is_defense_enabled():
             raw_client_model_or_grad_list = FedMLDefender.get_instance().defend_before_aggregation(

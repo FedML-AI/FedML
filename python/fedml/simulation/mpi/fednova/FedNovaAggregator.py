@@ -172,9 +172,6 @@ class FedNovaAggregator(object):
         training_num = 0
 
         for idx in range(self.worker_num):
-            if self.args.is_mobile == 1:
-                self.result_dict[idx] = transform_list_to_tensor(self.result_dict[idx])
-
             if len(self.result_dict[idx]) > 0:
                 # some workers may not have parameters
                 # for client_index, client_result in self.result_dict[idx].items():
