@@ -15,6 +15,7 @@ potential bugs when using memory: when only some of clients participate in compu
 
 class FoolsGoldDefense(BaseDefenseMethod):
     def __init__(self, config):
+        super().__init__(config)
         self.config = config
         self.memory = None
 
