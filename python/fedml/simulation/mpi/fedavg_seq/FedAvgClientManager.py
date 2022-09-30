@@ -35,8 +35,6 @@ class FedAVGClientManager(FedMLCommManager):
         client_schedule = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_SCHEDULE)
         client_indexes = client_schedule[self.worker_id]
 
-        if self.args.is_mobile == 1:
-            global_model_params = transform_list_to_tensor(global_model_params)
         self.round_idx = 0
         self.__train(global_model_params, client_indexes, average_weight_dict)
 
@@ -52,9 +50,6 @@ class FedAVGClientManager(FedMLCommManager):
         average_weight_dict = msg_params.get(MyMessage.MSG_ARG_KEY_AVG_WEIGHTS)
         client_schedule = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_SCHEDULE)
         client_indexes = client_schedule[self.worker_id]
-
-        if self.args.is_mobile == 1:
-            model_params = transform_list_to_tensor(global_model_params)
 
         self.round_idx += 1
         self.__train(global_model_params, client_indexes, average_weight_dict)
