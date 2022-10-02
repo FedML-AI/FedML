@@ -47,6 +47,7 @@ class FedMLTrainer(object):
             self.train_local = self.train_data_local_dict[client_index]
         self.local_sample_number = self.train_data_local_num_dict[client_index]
         self.test_local = self.test_data_local_dict[client_index]
+        self.trainer.update_dataset(self.train_local, self.test_local, self.local_sample_number)
 
     def train(self, round_idx=None):
         self.args.round_idx = round_idx
