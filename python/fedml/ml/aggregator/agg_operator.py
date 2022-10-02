@@ -15,15 +15,22 @@ class FedMLAggOperator:
         avg_params = model_aggregator(args, raw_grad_list, training_num)
         return avg_params
 
+    @staticmethod
+    def agg_with_weight(args, params_list: List[Tuple[float, Dict]], training_num, op=None) -> Dict:
+        avg_params = model_aggregator(args, params_list, training_num, op)
 
-def torch_aggregator(args, raw_grad_list, training_num):
 
-    if hasattr(args, "agg_operator"):
-        pass
+def torch_aggregator(args, raw_grad_list, training_num, op=None):
+
+    if op is None:
+        if hasattr(args, "agg_operator"):
+            op = "weighted_avg"
+        else:
+            op = args.agg_operator
     else:
-       args.agg_operator = "weighted_avg"
+        op = op
 
-    if args.agg_operator == "weighted_avg":
+    if op == "weighted_avg":
         (num0, avg_params) = raw_grad_list[0]
         for k in avg_params.keys():
             for i in range(0, len(raw_grad_list)):
@@ -33,7 +40,7 @@ def torch_aggregator(args, raw_grad_list, training_num):
                     avg_params[k] = local_model_params[k] * w
                 else:
                     avg_params[k] += local_model_params[k] * w
-    elif args.agg_operator == "avg":
+    elif op == "avg":
         (num0, avg_params) = raw_grad_list[0]
         w = 1 / len(raw_grad_list)
         for k in avg_params.keys():
@@ -43,7 +50,7 @@ def torch_aggregator(args, raw_grad_list, training_num):
                     avg_params[k] = local_model_params[k] * w
                 else:
                     avg_params[k] += local_model_params[k] * w
-    elif args.agg_operator == "sum":
+    elif op == "sum":
         (num0, avg_params) = raw_grad_list[0]
         for k in avg_params.keys():
             for i in range(0, len(raw_grad_list)):
@@ -55,7 +62,7 @@ def torch_aggregator(args, raw_grad_list, training_num):
     return avg_params
 
 
-def tf_aggregator(args, raw_grad_list, training_num):
+def tf_aggregator(args, raw_grad_list, training_num, op=None):
     (num0, avg_params) = raw_grad_list[0]
 
     if args.federated_optimizer == "FedAvg":
@@ -81,7 +88,7 @@ def tf_aggregator(args, raw_grad_list, training_num):
     return avg_params
 
 
-def jax_aggregator(args, raw_grad_list, training_num):
+def jax_aggregator(args, raw_grad_list, training_num, op=None):
     (num0, avg_params) = raw_grad_list[0]
 
     if args.federated_optimizer == "FedAvg":
@@ -111,7 +118,7 @@ def jax_aggregator(args, raw_grad_list, training_num):
     return avg_params
 
 
-def mxnet_aggregator(args, raw_grad_list, training_num):
+def mxnet_aggregator(args, raw_grad_list, training_num, op=None):
     (num0, avg_params) = raw_grad_list[0]
 
     if args.federated_optimizer == "FedAvg":
@@ -141,7 +148,7 @@ def mxnet_aggregator(args, raw_grad_list, training_num):
     return avg_params
 
 
-def model_aggregator(args, raw_grad_list, training_num):
+def model_aggregator(args, raw_grad_list, training_num, op=None):
     if hasattr(args, MLEngineBackend.ml_engine_args_flag):
         if args.ml_engine == MLEngineBackend.ml_engine_backend_tf:
             return tf_aggregator(args, raw_grad_list, training_num)

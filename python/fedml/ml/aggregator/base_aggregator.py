@@ -114,7 +114,7 @@ class BaseServerAggregator(ServerAggregator):
             raw_client_model_or_grad_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
         raw_client_model_or_grad_list = self.on_before_aggregation(raw_client_model_or_grad_list)
 
-        self.server_optimizer.before_agg()
+        self.server_optimizer.before_agg(self.sample_num_dict)
         if FedMLDefender.get_instance().is_defense_enabled():
             new_global_params = FedMLDefender.get_instance().defend_on_aggregation(
                 raw_client_grad_list=raw_client_model_or_grad_list,
