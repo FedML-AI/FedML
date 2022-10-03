@@ -43,7 +43,7 @@ device_args:
   gpu_mapping_key: mapping_default
 
 comm_args:
-  backend: "MPI"
+  backend: "MQTT_S3"
 
 tracking_args:
   # the default log path is at ~/fedml-client/fedml/logs/ and ~/fedml-server/fedml/logs/
