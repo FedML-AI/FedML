@@ -3,6 +3,7 @@ import logging
 import time
 
 from fedml import mlops
+
 from .message_define import MyMessage
 from ...core.distributed.communication.message import Message
 from ...core.distributed.fedml_comm_manager import FedMLCommManager
@@ -11,7 +12,7 @@ from ...core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
 class FedMLServerManager(FedMLCommManager):
     def __init__(
-        self, args, aggregator, comm=None, client_rank=0, client_num=0, backend="MQTT_S3",
+            self, args, aggregator, comm=None, client_rank=0, client_num=0, backend="MQTT_S3",
     ):
         super().__init__(args, comm, client_rank, client_num, backend)
         self.args = args
@@ -143,9 +144,15 @@ class FedMLServerManager(FedMLCommManager):
 
             client_idx_in_this_round = 0
             for receiver_id in self.client_id_list_in_this_round:
-                self.send_message_sync_model_to_client(
-                    receiver_id, global_model_params, self.data_silo_index_list[client_idx_in_this_round],
-                )
+                client_index = self.data_silo_index_list[client_idx_in_this_round]
+                if type(global_model_params) is dict:
+                    self.send_message_sync_model_to_client(
+                        receiver_id, global_model_params[client_index], client_index,
+                    )
+                else:
+                    self.send_message_sync_model_to_client(
+                        receiver_id, global_model_params, client_index,
+                    )
                 client_idx_in_this_round += 1
 
             self.args.round_idx += 1
@@ -191,7 +198,7 @@ class FedMLServerManager(FedMLCommManager):
     def send_message_sync_model_to_client(self, receive_id, global_model_params, client_index):
         tick = time.time()
         logging.info("send_message_sync_model_to_client. receive_id = %d" % receive_id)
-        message = Message(MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT, self.get_sender_id(), receive_id,)
+        message = Message(MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT, self.get_sender_id(), receive_id, )
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(client_index))
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")
