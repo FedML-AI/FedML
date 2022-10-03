@@ -35,6 +35,7 @@ class FedMLTrainer(object):
 
         self.device = device
         self.args = args
+        self.args.device = device
 
     def update_model(self, weights):
         self.trainer.set_model_params(weights)
