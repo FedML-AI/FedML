@@ -116,13 +116,6 @@ class FedMLServerManager(FedMLCommManager):
         b_all_received = self.aggregator.check_whether_all_receive()
         logging.info("b_all_received = " + str(b_all_received))
         if b_all_received:
-            # if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-            #     self.mlops_event.log_event_ended(
-            #         "server.wait", event_value=str(self.args.round_idx)
-            #     )
-            #     self.mlops_event.log_event_started(
-            #         "server.agg_and_eval", event_value=str(self.args.round_idx)
-            #     )
             mlops.event("server.wait", event_started=False, event_value=str(self.args.round_idx))
             mlops.event(
                 "server.agg_and_eval", event_started=True, event_value=str(self.args.round_idx),
@@ -162,10 +155,6 @@ class FedMLServerManager(FedMLCommManager):
                 self.cleanup()
             else:
                 logging.info("\n\n==========start {}-th round training===========\n".format(self.args.round_idx))
-                # if hasattr(self.args, "using_mlops") and self.args.using_mlops:
-                #     self.mlops_event.log_event_started(
-                #         "server.wait", event_value=str(self.args.round_idx)
-                #     )
                 mlops.event("server.wait", event_started=True, event_value=str(self.args.round_idx))
 
     def cleanup(self):
