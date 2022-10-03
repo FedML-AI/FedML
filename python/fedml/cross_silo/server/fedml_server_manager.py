@@ -44,7 +44,7 @@ class FedMLServerManager(FedMLCommManager):
     def register_message_receive_handlers(self):
         logging.info("register_message_receive_handlers------")
         self.register_message_receive_handler(
-            MyMessage.MSG_TYPE_CONNECTION_IS_READY, self.handle_messag_connection_ready
+            MyMessage.MSG_TYPE_CONNECTION_IS_READY, self.handle_message_connection_ready
         )
 
         self.register_message_receive_handler(
@@ -55,7 +55,7 @@ class FedMLServerManager(FedMLCommManager):
             MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER, self.handle_message_receive_model_from_client,
         )
 
-    def handle_messag_connection_ready(self, msg_params):
+    def handle_message_connection_ready(self, msg_params):
         self.client_id_list_in_this_round = self.aggregator.client_selection(
             self.args.round_idx, self.client_real_ids, self.args.client_num_per_round
         )
