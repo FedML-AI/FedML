@@ -338,24 +338,19 @@ class MLOpsRuntimeLogDaemon:
         if process is not None:
             process.start()
 
-            print("start log processor, run id {}, edge id {}".format(log_processor.run_id, log_processor.device_id))
             try:
                 self.log_processor_list.index(log_processor)
             except ValueError as ex:
-                print("add log processor")
                 self.log_processor_list.append(log_processor)
 
     def stop_log_processor(self, log_run_id, log_device_id):
-        print("stop log processor, run id {}, edge id {}".format(log_run_id, log_device_id))
         for log_processor in self.log_processor_list:
             if str(log_processor.run_id) == str(log_run_id) and str(log_processor.device_id) == str(log_device_id):
-                print("real stop log processor, run id {}, edge id {}".format(log_processor.run_id, log_processor.device_id))
                 log_processor.set_log_reporting_status(False)
                 break
 
     def stop_all_log_processor(self):
         for log_processor in self.log_processor_list:
-            print("stop log processor, run id {}, edge id {}".format(log_processor.run_id, log_processor.device_id))
             log_processor.set_log_reporting_status(False)
 
 
