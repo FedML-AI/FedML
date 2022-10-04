@@ -88,7 +88,8 @@ class ClientMasterManager(FedMLCommManager):
 
         self.trainer_dist_adapter.update_model(model_params)
         self.trainer_dist_adapter.update_dataset(int(client_index))
-        if self.round_idx == self.num_rounds - 1:
+        logging.info("current roundx {}, num rounds {}".format(self.round_idx, self.num_rounds))
+        if self.round_idx == self.num_rounds:
             mlops.log_training_finished_status()
             return
         self.round_idx += 1
@@ -100,6 +101,7 @@ class ClientMasterManager(FedMLCommManager):
 
     def cleanup(self):
         self.finish()
+        mlops.log_training_finished_status()
 
     def send_model_to_server(self, receive_id, weights, local_sample_num):
         tick = time.time()

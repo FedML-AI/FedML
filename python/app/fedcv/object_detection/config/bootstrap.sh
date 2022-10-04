@@ -1,5 +1,6 @@
+#!/bin/bash
 ### don't modify this part ###
-set -x
+# set -x
 ##############################
 
 
