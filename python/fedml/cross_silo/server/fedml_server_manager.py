@@ -157,11 +157,10 @@ class FedMLServerManager(FedMLCommManager):
 
             self.args.round_idx += 1
             if self.args.round_idx == self.round_num:
-                mlops.log_aggregation_finished_status()
                 logging.info("=============training is finished. Cleanup...============")
                 self.cleanup()
             else:
-                logging.info("\n\n==========start {}-th round training===========\n".format(self.args.round_idx))
+                logging.info("\n\n==========end {}-th round training===========\n".format(self.args.round_idx))
                 # if hasattr(self.args, "using_mlops") and self.args.using_mlops:
                 #     self.mlops_event.log_event_started(
                 #         "server.wait", event_value=str(self.args.round_idx)
@@ -169,7 +168,6 @@ class FedMLServerManager(FedMLCommManager):
                 mlops.event("server.wait", event_started=True, event_value=str(self.args.round_idx))
 
     def cleanup(self):
-
         client_idx_in_this_round = 0
         for client_id in self.client_id_list_in_this_round:
             self.send_message_finish(
@@ -178,6 +176,7 @@ class FedMLServerManager(FedMLCommManager):
             client_idx_in_this_round += 1
         time.sleep(3)
         self.finish()
+        mlops.log_aggregation_finished_status()
 
     def send_message_init_config(self, receive_id, global_model_params, datasilo_index):
         tick = time.time()
@@ -197,6 +196,7 @@ class FedMLServerManager(FedMLCommManager):
         message = Message(MyMessage.MSG_TYPE_S2C_FINISH, self.get_sender_id(), receive_id)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
         self.send_message(message)
+        logging.info("finish from send id {} to receive id {}.".format(message.get_sender_id(), message.get_receiver_id()))
         logging.info(" ====================send cleanup message to {}====================".format(str(datasilo_index)))
 
     def send_message_sync_model_to_client(self, receive_id, global_model_params, client_index):
