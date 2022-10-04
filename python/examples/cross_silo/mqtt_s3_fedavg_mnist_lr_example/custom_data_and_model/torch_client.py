@@ -2,7 +2,9 @@ import torch
 
 import fedml
 from fedml import FedMLRunner
+import fedml
 from fedml.data.MNIST.data_loader import download_mnist, load_partition_data_mnist
+from fedml.core.alg_frame.context import Context
 
 
 def load_data(args):
@@ -57,6 +59,8 @@ class LogisticRegression(torch.nn.Module):
 
 
 if __name__ == "__main__":
+    Context().add("ipfs_secret_key", "12345678123456781234567812345678")
+
     # init FedML framework
     args = fedml.init()
 
