@@ -199,7 +199,7 @@ class ServerConstants(object):
         if platform.system() == 'Windows':
             script_process = subprocess.Popen(script_path, stdout=stdout_flag, stderr=stderr_flag)
         else:
-            script_process = subprocess.Popen(['sh', '-c', script_path], stdout=stdout_flag, stderr=stderr_flag)
+            script_process = subprocess.Popen(['bash', '-c', script_path], stdout=stdout_flag, stderr=stderr_flag)
 
         return script_process
 
