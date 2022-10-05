@@ -2,20 +2,21 @@ import math
 import numpy as np
 from .defense_base import BaseDefenseMethod
 from typing import Callable, List, Tuple, Dict, Any
-from scipy import spatial
 from ..common.bucket import Bucket
-from ..common.utils import compute_geometric_median, compute_euclidean_distance
+from ..common.utils import compute_euclidean_distance, compute_middle_point
 import torch
 
 
-class ThreeSigmaGeoMedianDefense(BaseDefenseMethod):
+class ThreeSigmaKrumDefense(BaseDefenseMethod):
     def __init__(self, config):
         self.memory = None
         self.iteration_num = 1
         self.score_list = []
-        self.geo_median = None
+        self.median = None
 
-        if hasattr(config, "bucketing_batch_size") and isinstance(config.bucketing_batch_size, int):
+        if hasattr(config, "bucketing_batch_size") and isinstance(
+            config.bucketing_batch_size, int
+        ):
             self.bucketing_batch_size = config.bucketing_batch_size
         else:
             self.bucketing_batch_size = 1
@@ -32,10 +33,14 @@ class ThreeSigmaGeoMedianDefense(BaseDefenseMethod):
         self.lower_bound = 0
         self.bound_param = 1  # values outside mu +- sigma are outliers
 
-        if hasattr(config, "to_keep_higher_scores") and isinstance(config.to_keep_higher_scores, bool):
+        if hasattr(config, "to_keep_higher_scores") and isinstance(
+            config.to_keep_higher_scores, bool
+        ):
             self.to_keep_higher_scores = config.to_keep_higher_scores
         else:
-            self.to_keep_higher_scores = False  # true or false, depending on the score algo
+            self.to_keep_higher_scores = (
+                False  # true or false, depending on the score algo
+            )
         self.score_function = "l2"
 
     def run(
@@ -56,7 +61,6 @@ class ThreeSigmaGeoMedianDefense(BaseDefenseMethod):
         raw_client_grad_list: List[Tuple[float, Dict]],
         extra_auxiliary_info: Any = None,
     ):
-        # grad_list = [grad for (_, grad) in raw_client_grad_list]
         client_scores = self.compute_client_scores(raw_client_grad_list)
         print(f"client scores = {client_scores}")
         if self.iteration_num < self.pretraining_round_number:
@@ -83,22 +87,6 @@ class ThreeSigmaGeoMedianDefense(BaseDefenseMethod):
         )
         return batch_grad_list
 
-    # def defend_on_aggregation(
-    #     self,
-    #     raw_client_grad_list: List[Tuple[float, Dict]],
-    #     base_aggregation_func: Callable = None,
-    #     extra_auxiliary_info: Any = None,
-    # ):  # raw_client_grad_list: batch_grad_list
-    #     # ----------- geometric median part, or just use base_aggregation_func -------------
-    #     # todo: why geometric median? what about other approaches?
-    #     (num0, avg_params) = raw_client_grad_list[0]
-    #     alphas = {alpha for (alpha, params) in raw_client_grad_list}
-    #     alphas = {alpha / sum(alphas, 0.0) for alpha in alphas}
-    #     for k in avg_params.keys():
-    #         batch_grads = [params[k] for (alpha, params) in raw_client_grad_list]
-    #         avg_params[k] = compute_geometric_median(alphas, batch_grads)
-    #     return avg_params
-
     def compute_gaussian_distribution(self):
         n = len(self.score_list)
         mu = sum(list(self.score_list)) / n
@@ -112,29 +100,50 @@ class ThreeSigmaGeoMedianDefense(BaseDefenseMethod):
 
     def compute_client_scores(self, raw_client_grad_list):
         importance_feature_list = self._get_importance_feature(raw_client_grad_list)
-        if self.score_function == "foolsgold":
-            if self.memory is None:
-                self.memory = importance_feature_list
-            else:  # memory: potential bugs: grads in different iterations may be from different clients
-                for i in range(len(raw_client_grad_list)):
-                    self.memory[i] += importance_feature_list[i]
-            return self.fools_gold_score(self.memory)
         if self.score_function == "l2":
-            if self.geo_median is None:
+            if self.median is None:
                 # (num0, avg_params) = raw_client_grad_list[0]
                 # alphas = {alpha for (alpha, params) in raw_client_grad_list}
                 # alphas = {alpha / sum(alphas, 0.0) for alpha in alphas}
-                alphas = [1/len(raw_client_grad_list)] * len(raw_client_grad_list)
-                self.geo_median = compute_geometric_median(alphas, importance_feature_list)
+                krum_scores = self._compute_krum_score(importance_feature_list)
+
+                score_index = torch.argsort(
+                    torch.Tensor(krum_scores)
+                ).tolist()  # indices; ascending
+                score_index = score_index[0 : math.floor(len(raw_client_grad_list) / 2)]
+                alphas = [1 / len(raw_client_grad_list)] * len(raw_client_grad_list)
+                honest_importance_feature_list = [
+                    importance_feature_list[i] for i in score_index
+                ]
+                self.median = compute_middle_point(
+                    alphas, honest_importance_feature_list
+                )
             return self.l2_scores(importance_feature_list)
 
     def l2_scores(self, importance_feature_list):
         scores = []
         for feature in importance_feature_list:
-            score = compute_euclidean_distance(torch.Tensor(feature), self.geo_median)
+            score = compute_euclidean_distance(torch.Tensor(feature), self.median)
             scores.append(score)
         return scores
 
+    def _compute_krum_score(self, vec_grad_list):
+        krum_scores = []
+        num_client = len(vec_grad_list)
+        for i in range(0, num_client):
+            dists = []
+            for j in range(0, num_client):
+                if i != j:
+                    dists.append(
+                        compute_euclidean_distance(
+                            torch.Tensor(vec_grad_list[i]),
+                            torch.Tensor(vec_grad_list[j]),
+                        ).item()
+                    )
+            dists.sort()  # ascending
+            score = dists[0 : math.floor(num_client / 2)]
+            krum_scores.append(sum(score))
+        return krum_scores
 
     def _get_importance_feature(self, raw_client_grad_list):
         # print(f"raw_client_grad_list = {raw_client_grad_list}")
@@ -155,39 +164,3 @@ class ThreeSigmaGeoMedianDefense(BaseDefenseMethod):
             )
             ret_feature_vector_list.append(feature_vector)
         return ret_feature_vector_list
-
-    @staticmethod
-    def fools_gold_score(feature_vec_list):
-        n_clients = len(feature_vec_list)
-        cs = np.zeros((n_clients, n_clients))
-        for i in range(n_clients):
-            for j in range(n_clients):
-                cs[i][j] = 1 - spatial.distance.cosine(
-                    feature_vec_list[i], feature_vec_list[j]
-                )
-        cs -= np.eye(n_clients)
-        maxcs = np.max(cs, axis=1)
-        # pardoning
-        for i in range(n_clients):
-            for j in range(n_clients):
-                if i == j:
-                    continue
-                if maxcs[i] < maxcs[j]:
-                    cs[i][j] = cs[i][j] * maxcs[i] / maxcs[j]
-        alpha = 1 - (np.max(cs, axis=1))
-        alpha[alpha > 1.0] = 1.0
-        alpha[alpha <= 0.0] = 1e-15
-
-        # Rescale so that max value is alpha
-         # print(np.max(alpha))
-        alpha = alpha / np.max(alpha)
-        alpha[(alpha == 1.0)] = 0.999999
-
-        # Logit function
-        alpha = np.log(alpha / (1 - alpha)) + 0.5
-        # alpha[(np.isinf(alpha) + alpha > 1)] = 1
-        # alpha[(alpha < 0)] = 0
-
-        print("alpha = {}".format(alpha))
-
-        return alpha
