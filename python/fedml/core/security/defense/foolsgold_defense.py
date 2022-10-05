@@ -1,8 +1,6 @@
 from typing import Callable, List, Tuple, Dict, Any
-
 import numpy as np
 from scipy import spatial
-
 from .defense_base import BaseDefenseMethod
 
 """
@@ -35,7 +33,7 @@ class FoolsGoldDefense(BaseDefenseMethod):
     ):
         client_num = len(raw_client_grad_list)
         importance_feature_list = self._get_importance_feature(raw_client_grad_list)
-        print(len(importance_feature_list))
+        # print(len(importance_feature_list))
 
         if self.memory is None:
             self.memory = importance_feature_list
@@ -78,7 +76,7 @@ class FoolsGoldDefense(BaseDefenseMethod):
         alpha[alpha <= 0.0] = 1e-15
 
         # Rescale so that max value is alpha
-        print(np.max(alpha))
+        # print(np.max(alpha))
         alpha = alpha / np.max(alpha)
         alpha[(alpha == 1.0)] = 0.999999
 
@@ -86,8 +84,6 @@ class FoolsGoldDefense(BaseDefenseMethod):
         alpha = np.log(alpha / (1 - alpha)) + 0.5
         alpha[(np.isinf(alpha) + alpha > 1)] = 1
         alpha[(alpha < 0)] = 0
-
-        print("alpha = {}".format(alpha))
 
         return alpha
 
@@ -100,7 +96,7 @@ class FoolsGoldDefense(BaseDefenseMethod):
 
             # Get last key-value tuple
             (weight_name, importance_feature) = list(grads.items())[-2]
-            print(importance_feature)
+            # print(importance_feature)
             feature_len = np.array(importance_feature.cpu().data.detach().numpy().shape).prod()
             feature_vector = np.reshape(importance_feature.cpu().data.detach().numpy(), feature_len)
             ret_feature_vector_list.append(feature_vector)

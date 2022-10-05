@@ -1,4 +1,4 @@
-#!/bin/bash
+
 
 #echo "bootstrap out"
 #mkdir -p ~/fednlp_data
