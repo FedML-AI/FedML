@@ -5,8 +5,10 @@ from .utils import transform_tensor_to_list
 from ....core.distributed.fedml_comm_manager import FedMLCommManager
 from ....core.distributed.communication.message import Message
 
+from fedml.ml.ml_message import MLMessage
 
-class FedAVGServerManager(FedMLCommManager):
+
+class ServerManager(FedMLCommManager):
     def __init__(
         self,
         args,
@@ -38,6 +40,10 @@ class FedAVGServerManager(FedMLCommManager):
         )
         # global_model_params = self.aggregator.get_global_model_params()
         server_result = self.aggregator.get_init_server_result()
+        server_result[MLMessage.SAMPLE_NUM_DICT] = dict([
+            (client_index, self.train_data_local_num_dict[client_index]) for client_index in client_indexes
+        ])
+
         for process_id in range(1, self.size):
             self.send_message_init_config(
                 process_id, server_result, client_indexes[process_id - 1]
@@ -85,11 +91,12 @@ class FedAVGServerManager(FedMLCommManager):
                     self.args.client_num_in_total,
                     self.args.client_num_per_round,
                 )
+            server_result[MLMessage.SAMPLE_NUM_DICT] = dict([
+                (client_index, self.train_data_local_num_dict[client_index]) for client_index in client_indexes
+            ])
 
             print("indexes of clients: " + str(client_indexes))
             print("size = %d" % self.size)
-            # if self.args.is_mobile == 1:
-            #     global_model_params = transform_tensor_to_list(global_model_params)
 
             for receiver_id in range(1, self.size):
                 self.send_message_sync_model_to_client(

@@ -34,13 +34,7 @@ class FLTrainer(object):
     def update_trainer(self, client_index, server_result):
         self.trainer.set_id(client_index)
         self.trainer.set_client_index(client_index)
-        weights = server_result[MLMessage.MODEL_PARAMS]
-        if self.args.is_mobile == 1:
-            model_params = transform_list_to_tensor(model_params)
-
-        self.trainer.set_model_params(weights)
-        self.params_to_client_optimizer = server_result[MLMessage.PARAMS_TO_CLIENT_OPTIMIZER]
-        # self.trainer.set_params_to_client_optimizer(params_to_client_optimizer)
+        self.trainer.set_server_result(server_result)
 
 
     def update_dataset(self, client_index):
@@ -52,19 +46,8 @@ class FLTrainer(object):
     def train(self, round_idx=None):
         self.args.round_idx = round_idx
         # self.trainer.train(self.train_local, self.device, self.args)
-        local_loss, params_to_server_optimizer = \
-            self.trainer.train(self.train_local, self.device, self.args, 
-                self.params_to_client_optimizer)
-
-        weights = self.trainer.get_model_params()
-
-        # transform Tensor to list
-        if self.args.is_mobile == 1:
-            weights = transform_tensor_to_list(weights)
-
-        client_result = {}
-        client_result[MLMessage.MODEL_PARAMS] = weights
-        client_result[MLMessage.PARAMS_TO_SERVER_OPTIMIZER] = params_to_server_optimizer
+        local_loss, client_result = \
+            self.trainer.train(self.train_local, self.device, self.args)
 
         # return weights, self.local_sample_number
         return client_result, self.local_sample_number

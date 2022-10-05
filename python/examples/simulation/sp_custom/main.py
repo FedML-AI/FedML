@@ -18,6 +18,8 @@ from fedml.model.cv.cnn import Cifar10FLNet
 
 from fedml.simulation.sp.sp_all.sp_api import SPAPI
 
+from fedml.ml.trainer.local_cache import FedMLLocalCache
+
 def str2bool(v):
     if isinstance(v, bool):
         return v
@@ -74,7 +76,7 @@ def add_args():
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--client_optimizer", type=str, default="sgd")
     parser.add_argument("--learning_rate", type=float, default=0.3)
-    parser.add_argument("--weight_decay", type=float, default=0.001)
+    parser.add_argument("--weight_decay", type=float, default=0.0001)
     parser.add_argument("--batch_size", type=int, default=20)
     parser.add_argument("--momentum", type=float, default=0.0)
     parser.add_argument("--server_optimizer", type=str, default="sgd")
@@ -169,7 +171,7 @@ if __name__ == "__main__":
     # fedml_runner = FedMLRunner(args, device, dataset, model)
     # fedml_runner.run()
 
-
+    FedMLLocalCache.init(args, root=args.local_cache_root)
     fl_trainer = SPAPI(args, device, dataset, model)
     fl_trainer.train()
 

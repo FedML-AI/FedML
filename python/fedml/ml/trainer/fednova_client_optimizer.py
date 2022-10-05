@@ -8,7 +8,10 @@ from torch import nn
 from torch.optim.optimizer import Optimizer, required
 
 from ...core.common.ml_engine_backend import MLEngineBackend
-from .base_client_optimizer import ClientOperator
+from .base_client_optimizer import ClientOptimizer
+
+
+from fedml.ml.ml_message import MLMessage
 
 
 
@@ -177,20 +180,29 @@ class FedNova(Optimizer):
         return loss
 
 
-class FedNovaClientOperator(ClientOperator):
+class FedNovaClientOptimizer(ClientOptimizer):
 
-    def preprocess(self, args, client_index, model, train_data, device, params_to_operator) -> (model, Dict):
+
+    def preprocess(self, args, client_index, model, train_data, device, server_result, criterion):
         """
         1. Return params_to_update for update usage.
         2. pass model, train_data here, in case the algorithm need some preprocessing
         """
 
+        params_to_client_optimizer = server_result[MLMessage.PARAMS_TO_CLIENT_OPTIMIZER]
+        sample_num_dict = server_result[MLMessage.SAMPLE_NUM_DICT]
+        round_sample_num = sum(list(sample_num_dict.values()))
+
+        ratio = torch.FloatTensor(
+                [sample_num_dict[client_index] / round_sample_num]
+            ).to(device)
+
         self.optimizer = FedNova(
-            filter(lambda p: p.requires_grad, self.model.parameters()),
+            filter(lambda p: p.requires_grad, model.parameters()),
             lr=self.args.learning_rate,
             gmf=self.args.gmf,
             mu=self.args.mu,
-            ratio=params_to_operator["ratio"],
+            ratio=ratio,
             momentum=self.args.momentum,
             dampening=self.args.dampening,
             weight_decay=self.args.weight_decay,
@@ -199,12 +211,13 @@ class FedNovaClientOperator(ClientOperator):
         self.init_params = deepcopy(model.state_dict())
         return model
 
-    def backward(self, args, client_index, client_id, model, train_data, device, loss, params_to_operator):
+    def backward(self, args, client_index, model, x, labels, criterion, device, loss):
         """
         """
         loss.backward()
+        return loss
 
-    def update(self, args, client_index, model, train_data, device, params_to_operator) -> Dict:
+    def update(self, args, client_index, model, x, labels, criterion, device):
         """
         """
         # torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -212,16 +225,16 @@ class FedNovaClientOperator(ClientOperator):
         self.optimizer.step()
 
 
-    def end_local_training(self, args, client_index, model, train_data, device, params_to_operator) -> Dict:
+    def end_local_training(self, args, client_index, model, train_data, device) -> Dict:
         """
-        1. Return params_to_agg for special aggregator need.
+        1. Return weights_or_grads, params_to_server_optimizer for special server optimizer need.
         """
         norm_grad = self.get_local_norm_grad(self.optimizer, model.state_dict(), self.init_params)
         tau_eff = self.get_local_tau_eff(self.optimizer)
-        params_to_agg = {}
-        params_to_agg["norm_grad"] = norm_grad
-        params_to_agg["tau_eff"] = tau_eff
-        return params_to_agg
+        params_to_server_optimizer = {}
+        params_to_server_optimizer["tau_eff"] = tau_eff
+        return norm_grad, params_to_server_optimizer
+
 
 
 

@@ -1,3 +1,5 @@
+import os
+import numpy as np
 import logging
 from copy import deepcopy
 
@@ -248,6 +250,17 @@ def check_device(data_src, device=None):
         return data_src
 
 
+
+def clip_norm(tensors, device, max_norm=1.0, norm_type=2.):
+    total_norm = torch.norm(torch.stack(
+        [torch.norm(p.detach(), norm_type).to(device) for p in tensors]), norm_type)
+    clip_coef = max_norm / (total_norm + 1e-6)
+    clip_coef_clamped = torch.clamp(clip_coef, max=1.0)
+    for p in tensors:
+        p.mul_(clip_coef_clamped.to(p.device))
+    return total_norm
+
+
 """Dif Utils"""
 
 
@@ -270,3 +283,33 @@ def get_name_params_difference(named_parameters1, named_parameters2):
     for key in common_names:
         named_diff_parameters[key] = get_diff_weights(named_parameters1[key], named_parameters2[key])
     return named_diff_parameters
+
+
+
+
+
+"""List tensor """
+
+def transform_list_to_tensor(model_params_list):
+    for k in model_params_list.keys():
+        model_params_list[k] = torch.from_numpy(
+            np.asarray(model_params_list[k])
+        ).float()
+    return model_params_list
+
+
+def transform_tensor_to_list(model_params):
+    for k in model_params.keys():
+        model_params[k] = model_params[k].detach().numpy().tolist()
+    return model_params
+
+
+def post_complete_message_to_sweep_process(args):
+    pipe_path = "./tmp/fedml"
+    os.system("mkdir ./tmp/; touch ./tmp/fedml")
+    if not os.path.exists(pipe_path):
+        os.mkfifo(pipe_path)
+    pipe_fd = os.open(pipe_path, os.O_WRONLY)
+
+    with os.fdopen(pipe_fd, "w") as pipe:
+        pipe.write("training is finished! \n%s\n" % (str(args)))

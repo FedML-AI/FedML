@@ -6,7 +6,7 @@ from ....core.distributed.fedml_comm_manager import FedMLCommManager
 from ....core.distributed.communication.message import Message
 
 
-class FedAVGClientManager(FedMLCommManager):
+class ClientManager(FedMLCommManager):
     def __init__(
         self,
         args,
@@ -39,10 +39,6 @@ class FedAVGClientManager(FedMLCommManager):
         server_result = msg_params.get(MyMessage.MSG_ARG_KEY_SERVER_RESULT)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
 
-        # if self.args.is_mobile == 1:
-        #     global_model_params = transform_list_to_tensor(global_model_params)
-
-        # self.trainer.update_model(global_model_params)
         self.trainer.update_trainer(int(client_index), server_result)
         self.trainer.update_dataset(int(client_index))
         self.args.round_idx = 0
@@ -58,10 +54,6 @@ class FedAVGClientManager(FedMLCommManager):
         server_result = msg_params.get(MyMessage.MSG_ARG_KEY_SERVER_RESULT)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
 
-        # if self.args.is_mobile == 1:
-        #     model_params = transform_list_to_tensor(model_params)
-
-        # self.trainer.update_model(model_params)
         self.trainer.update_trainer(int(client_index), server_result)
         self.trainer.update_dataset(int(client_index))
         self.args.round_idx += 1

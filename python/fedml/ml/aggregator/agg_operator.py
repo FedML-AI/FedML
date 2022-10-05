@@ -6,27 +6,28 @@ from ...core.common.ml_engine_backend import MLEngineBackend
 
 class FedMLAggOperator:
     @staticmethod
-    def agg(args, raw_grad_list: List[Tuple[float, Dict]]) -> Dict:
+    def agg(args, raw_grad_list: List[Tuple[float, Dict]], op=None) -> Dict:
         training_num = 0
         for i in range(len(raw_grad_list)):
             local_sample_num, local_model_params = raw_grad_list[i]
             training_num += local_sample_num
 
-        avg_params = model_aggregator(args, raw_grad_list, training_num)
+        avg_params = model_aggregator(args, raw_grad_list, training_num, op)
         return avg_params
 
     @staticmethod
     def agg_with_weight(args, params_list: List[Tuple[float, Dict]], training_num, op=None) -> Dict:
         avg_params = model_aggregator(args, params_list, training_num, op)
+        return avg_params
 
 
 def torch_aggregator(args, raw_grad_list, training_num, op=None):
 
     if op is None:
         if hasattr(args, "agg_operator"):
-            op = "weighted_avg"
-        else:
             op = args.agg_operator
+        else:
+            op = "weighted_avg"
     else:
         op = op
 
@@ -157,6 +158,6 @@ def model_aggregator(args, raw_grad_list, training_num, op=None):
         elif args.ml_engine == MLEngineBackend.ml_engine_backend_mxnet:
             return mxnet_aggregator(args, raw_grad_list, training_num)
         else:
-            return torch_aggregator(args, raw_grad_list, training_num)
+            return torch_aggregator(args, raw_grad_list, training_num, op)
     else:
-        return torch_aggregator(args, raw_grad_list, training_num)
+        return torch_aggregator(args, raw_grad_list, training_num, op)

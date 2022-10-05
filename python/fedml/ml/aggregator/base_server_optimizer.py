@@ -16,8 +16,12 @@ class ServerOptimizer(ABC):
     3. This class is an operator which can caches states across rounds. 
     Because the server consistently exists.
     """
-    def __init__(self, args):
+    def __init__(self, args, worker_num=None):
         self.args = args
+        if worker_num is None:
+            self.worker_num = args.client_num_per_round
+        else:
+            self.worker_num = worker_num
         self.initialize_params_dict()
 
     def initialize_params_dict(self):
@@ -52,14 +56,18 @@ class ServerOptimizer(ABC):
     def sync_agg_params(self, sample_num_dict, key_op_list):
         # for i in range(len(sample_num_dict)):
         training_num = 0
-        for client_index in self.client_index_list:
+        # for client_index in self.client_index_list:
+        for client_index in range(self.worker_num):
             local_sample_num = sample_num_dict[client_index]
             training_num += local_sample_num
 
         agg_params_dict = {}
         for key, op, in key_op_list:
             params_list = []
-            for client_index in self.client_index_list:
+            # for client_index in self.client_index_list:
+            #     params_list.append((sample_num_dict[client_index], 
+            #         self.params_to_server_optimizer_dict[client_index][key]))
+            for client_index in range(self.worker_num):
                 params_list.append((sample_num_dict[client_index], 
                     self.params_to_server_optimizer_dict[client_index][key]))
 

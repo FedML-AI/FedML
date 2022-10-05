@@ -8,7 +8,7 @@ from ...core.common.ml_engine_backend import MLEngineBackend
 from .agg_operator import FedMLAggOperator
 from .base_server_optimizer import ServerOptimizer
 
-class ScaffoldServerOptimizer(ServerOptimizer):
+class FedNovaServerOptimizer(ServerOptimizer):
     """Abstract base class for federated learning trainer.
     1. The goal of this abstract class is to be compatible to
     any deep learning frameworks such as PyTorch, TensorFlow, Keras, MXNET, etc.
@@ -21,13 +21,7 @@ class ScaffoldServerOptimizer(ServerOptimizer):
 
 
     def initialize(self, args, model):
-        # self.c_model_global = copy.deepcopy(model).cpu()        
-        # for name, params in self.c_model_global.named_parameters():
-        #     params.data = params.data*0
         self.model = model
-        self.c_model_global = {}
-        for name, params in model.named_parameters():
-            self.c_model_global[name] = copy.deepcopy(params.data*0)
 
 
     def get_init_params(self) -> Dict:
@@ -35,35 +29,36 @@ class ScaffoldServerOptimizer(ServerOptimizer):
         1. Return init params_to_client_optimizer for special aggregator need.
         """
         params_to_client_optimizer = dict()
-        params_to_client_optimizer["c_model_global"] = self.c_model_global
         return params_to_client_optimizer
 
     def agg(self, args, raw_client_model_or_grad_list):
         """
         Use this function to obtain the final global model.
         """
-        total_weights_delta = FedMLAggOperator.agg(self.args, raw_client_model_or_grad_list)
+        # Replace the weight of average.
+        for idx in range(len(raw_client_model_or_grad_list)):
+            raw_client_model_or_grad_list[idx] = \
+                (self.params_to_server_optimizer_dict[idx]["tau_eff"], raw_client_model_or_grad_list[idx][1])
+
+        avg_grads = FedMLAggOperator.agg(self.args, raw_client_model_or_grad_list)
         w_global = self.model.state_dict()
-        for key in w_global.keys():
-            w_global[key] += total_weights_delta[key] * self.args.server_lr
-        # self.model.load_state_dict(w_global)
+        for k in w_global.keys():
+            if self.args.gmf != 0:
+                if k not in self.global_momentum_buffer:
+                    buf = self.global_momentum_buffer[k] = torch.clone(
+                        avg_grads[k]).detach()
+                    buf.div_(self.args.learning_rate)
+                else:
+                    buf = self.global_momentum_buffer[k]
+                    buf.mul_(self.args.gmf).add_(1 / self.args.learning_rate, avg_grads[k])
+                w_global[k].sub_(self.args.learning_rate, buf)
+            else:
+                w_global[k].sub_(avg_grads[k])
         return w_global
 
 
     def before_agg(self, sample_num_dict):
-        key_op_list = [("c_delta_para", "avg")]
-        agg_params_dict = self.sync_agg_params(sample_num_dict, key_op_list)
-        total_c_delta_para = agg_params_dict["c_delta_para"]
-
-        # c_global_para = self.c_model_global.state_dict()
-        for key in self.c_model_global.keys():
-            if self.c_model_global[key].type() == 'torch.LongTensor':
-                self.c_model_global[key] += total_c_delta_para[key].type(torch.LongTensor)
-            elif self.c_model_global[key].type() == 'torch.cuda.LongTensor':
-                self.c_model_global[key] += total_c_delta_para[key].type(torch.cuda.LongTensor)
-            else:
-                self.c_model_global[key] += total_c_delta_para[key]
-
+        pass
 
 
     def end_agg(self) -> Dict:
@@ -73,7 +68,6 @@ class ScaffoldServerOptimizer(ServerOptimizer):
         """
         self.initialize_params_dict()
         params_to_client_optimizer = dict()
-        params_to_client_optimizer["c_model_global"] = self.c_model_global
         return params_to_client_optimizer
 
 

@@ -1,7 +1,7 @@
 from .FedAVGAggregator import FedAVGAggregator
-from .FedAVGTrainer import FedAVGTrainer
-from .FedAvgClientManager import FedAVGClientManager
-from .FedAvgServerManager import FedAVGServerManager
+from .FLTrainer import FLTrainer
+from .ClientManager import ClientManager
+from .ServerManager import ServerManager
 from ....core import ClientTrainer, ServerAggregator
 from ....core.dp.fedml_differential_privacy import FedMLDifferentialPrivacy
 from ....core.security.fedml_attacker import FedMLAttacker
@@ -10,7 +10,8 @@ from ....ml.aggregator.aggregator_creator import create_server_aggregator
 from ....ml.trainer.trainer_creator import create_model_trainer
 from .default_aggregator import DefaultServerAggregator
 
-def FedML_FedAvg_distributed(
+
+def FedML_distributed(
     args,
     process_id,
     worker_number,
@@ -83,24 +84,13 @@ def init_server(
     train_data_local_num_dict,
     server_aggregator
 ):
-    if server_aggregator is None:
-        server_aggregator = create_server_aggregator(model, args)
-    server_aggregator.set_id(-1)
+    # if server_aggregator is None:
+    #     server_aggregator = create_server_aggregator(model, args)
+    # server_aggregator.set_id(-1)
 
     # aggregator
     worker_num = size - 1
-    # aggregator = FedAVGAggregator(
-    #     train_data_global,
-    #     test_data_global,
-    #     train_data_num,
-    #     train_data_local_dict,
-    #     test_data_local_dict,
-    #     train_data_local_num_dict,
-    #     worker_num,
-    #     device,
-    #     args,
-    #     server_aggregator,
-    # )
+
     aggregator = DefaultServerAggregator(
         train_data_global,
         test_data_global,
@@ -116,7 +106,7 @@ def init_server(
 
     # start the distributed training
     backend = args.backend
-    server_manager = FedAVGServerManager(args, aggregator, comm, rank, size, backend)
+    server_manager = ServerManager(args, aggregator, comm, rank, size, backend)
     server_manager.send_init_msg()
     server_manager.run()
 
@@ -139,7 +129,7 @@ def init_client(
         model_trainer = create_model_trainer(model, args)
     model_trainer.set_id(client_index)
     backend = args.backend
-    trainer = FedAVGTrainer(
+    trainer = FLTrainer(
         client_index,
         train_data_local_dict,
         train_data_local_num_dict,
@@ -149,5 +139,5 @@ def init_client(
         args,
         model_trainer,
     )
-    client_manager = FedAVGClientManager(args, trainer, comm, process_id, size, backend)
+    client_manager = ClientManager(args, trainer, comm, process_id, size, backend)
     client_manager.run()

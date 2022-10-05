@@ -11,7 +11,7 @@ from .base_client_optimizer import ClientOptimizer
 
 class FedAvgClientOptimizer(ClientOptimizer):
 
-    def preprocess(self, args, client_index, model, train_data, device, params_to_client_optimizer):
+    def preprocess(self, args, client_index, model, train_data, device, server_result, criterion):
         """
         1. Return params_to_update for update usage.
         2. pass model, train_data here, in case the algorithm need some preprocessing
@@ -31,12 +31,13 @@ class FedAvgClientOptimizer(ClientOptimizer):
             )
         return model
 
-    def backward(self, args, client_index, model, train_data, device, loss, params_to_client_optimizer):
+    def backward(self, args, client_index, model, x, labels, criterion, device, loss):
         """
         """
         loss.backward()
+        return loss
 
-    def update(self, args, client_index, model, train_data, device, params_to_client_optimizer) -> Dict:
+    def update(self, args, client_index, model, x, labels, criterion, device) -> Dict:
         """
         """
         # torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -44,11 +45,11 @@ class FedAvgClientOptimizer(ClientOptimizer):
         self.optimizer.step()
 
 
-    def end_local_training(self, args, client_index, model, train_data, device, params_to_client_optimizer) -> Dict:
+    def end_local_training(self, args, client_index, model, train_data, device) -> Dict:
         """
-        1. Return params_to_agg for special aggregator need.
+        1. Return weights_or_grads, params_to_server_optimizer for special server optimizer need.
         """
-        return None
+        return model.cpu().state_dict(), {}
 
 
 

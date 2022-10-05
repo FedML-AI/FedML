@@ -13,6 +13,9 @@ from fedml.ml.trainer.my_model_trainer_classification_new import ModelTrainerCLS
 from fedml.simulation.mpi.mpi.FLTrainer import FLTrainer
 from fedml.simulation.mpi.mpi.default_aggregator import DefaultServerAggregator
 
+from fedml.ml.ml_message import MLMessage
+
+
 
 class SPAPI(object):
     def __init__(self, args, device, dataset, model):
@@ -84,26 +87,26 @@ class SPAPI(object):
         mlops.log_aggregation_status(mlops.ServerConstants.MSG_MLOPS_SERVER_STATUS_RUNNING)
         mlops.log_round_info(self.args.comm_round, -1)
         for round_idx in range(self.args.comm_round):
-
             logging.info("################Communication round : {}".format(round_idx))
-            server_result = self.aggregator.get_init_server_result()
-
-            server_result = copy.deepcopy(server_result)
             """
             for scalability: following the original FedAvg algorithm, we uniformly sample a fraction of clients in each round.
             Instead of changing the 'Client' instances, our implementation keeps the 'Client' instances and then updates their local dataset 
             """
+            # server_result = copy.deepcopy(server_result)
             client_indexes = self.aggregator.client_sampling(
                 round_idx,
                 self.args.client_num_in_total,
                 self.args.client_num_per_round,
             )
+            server_result[MLMessage.SAMPLE_NUM_DICT] = dict([
+                (client_index, self.train_data_local_num_dict[client_index]) for client_index in client_indexes
+            ])
             logging.info("client_indexes = " + str(client_indexes))
 
             for idx, client in enumerate(self.client_list):
                 # update dataset
                 client_idx = client_indexes[idx]
-                client.update_trainer(client_idx, server_result)
+                client.update_trainer(client_idx, copy.deepcopy(server_result))
                 client.update_dataset(client_idx)
                 # train on new dataset
                 mlops.event("train", event_started=True, event_value="{}_{}".format(str(round_idx), str(idx)))
@@ -111,7 +114,7 @@ class SPAPI(object):
                 mlops.event("train", event_started=False, event_value="{}_{}".format(str(round_idx), str(idx)))
                 # self.logging.info("local weights = " + str(w))
                 # w_locals.append((client.get_sample_number(), copy.deepcopy(client_result)))
-                self.aggregator.add_local_trained_result(idx, client_result, local_sample_num)
+                self.aggregator.add_local_trained_result(idx, copy.deepcopy(client_result), local_sample_num)
 
             # update global weights
             mlops.event("agg", event_started=True, event_value=str(round_idx))

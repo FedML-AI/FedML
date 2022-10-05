@@ -14,10 +14,7 @@ from fedml.arguments import Arguments
 
 from fedml import FedMLRunner
 
-from fedml.data.reddit.data_loader import load_partition_data_reddit
 
-from reddit_trainer import RedditTrainer
-from reddit_aggregator import RedditAggregator
 
 
 
@@ -117,7 +114,7 @@ if __name__ == "__main__":
 
     # load data
     if args.dataset == "reddit":
-
+        from fedml.data.reddit.data_loader import load_partition_data_reddit
         dataset = load_partition_data_reddit(
             args,
             args.dataset,
@@ -159,20 +156,25 @@ if __name__ == "__main__":
         model = fedml.model.create(args, output_dim)
 
 
-    if args.dataset == "reddit":
-        from reddit_trainer import RedditTrainer
-        from reddit_aggregator import RedditAggregator
-        client_trainer = RedditTrainer(model, args)
-        server_aggregator = RedditAggregator(model, args)
-        fedml_runner = FedMLRunner(args, device, dataset, model,
-            client_trainer=client_trainer, server_aggregator=server_aggregator)
-        fedml_runner.run()
-    else:
-        # start training
-        fedml_runner = FedMLRunner(args, device, dataset, model)
-        fedml_runner.run()
-        # simulator = SimulatorMPI(args, device, dataset, model)
-        # simulator.run()
+    # if args.dataset == "reddit":
+    #     from reddit_trainer import RedditTrainer
+    #     from reddit_aggregator import RedditAggregator
+    #     client_trainer = RedditTrainer(model, args)
+    #     server_aggregator = RedditAggregator(model, args)
+    #     fedml_runner = FedMLRunner(args, device, dataset, model,
+    #         client_trainer=client_trainer, server_aggregator=server_aggregator)
+    #     fedml_runner.run()
+    # else:
+    #     # start training
+    #     fedml_runner = FedMLRunner(args, device, dataset, model)
+    #     fedml_runner.run()
+    #     # simulator = SimulatorMPI(args, device, dataset, model)
+    #     # simulator.run()
+
+    from fedml.simulation.mpi.mpi.DistributedAPI import FedML_distributed
+    FedML_distributed(args, args.process_id, args.worker_number, args.comm,
+                      device, dataset, model)
+
 
 
 
