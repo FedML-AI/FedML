@@ -2,6 +2,7 @@ import torch
 
 import fedml
 from fedml import FedMLRunner
+import fedml
 from fedml.data.MNIST.data_loader import download_mnist, load_partition_data_mnist
 
 
