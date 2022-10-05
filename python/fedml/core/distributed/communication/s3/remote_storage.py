@@ -2,11 +2,13 @@ import logging
 import os
 import pickle
 import time
+import torch.nn as nn
 
 import boto3
 import yaml
 
 from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
+from utils import load_params_from_tf
 
 # for multi-processing, we need to create a global variable for AWS S3 client:
 # https://www.pythonforthelab.com/blog/differences-between-multiprocessing-windows-and-linux/
@@ -65,6 +67,24 @@ class S3Storage:
         message_handler_start_time = time.time()
         obj = aws_s3_client.get_object(Bucket=self.bucket_name, Key=message_key)
         model_pkl = obj["Body"].read()
+        MLOpsProfilerEvent.log_to_wandb(
+            {"Comm/recieve_delay_s3": time.time() - message_handler_start_time}
+        )
+        unpickle_start_time = time.time()
+        model = pickle.loads(model_pkl)
+        MLOpsProfilerEvent.log_to_wandb(
+            {"UnpickleTime": time.time() - unpickle_start_time}
+        )
+        return model
+    
+    # TODO: added python torch model to align the Tensorflow paramters from browser
+    def read_model_web(self, message_key, py_model:nn.Module):
+        global aws_s3_client
+        message_handler_start_time = time.time()
+        obj = aws_s3_client.get_object(Bucket=self.bucket_name, Key=message_key)
+        model_json = obj["Body"].read()
+        model_pkl = load_params_from_tf(py_model, model_json).state_dict()
+
         MLOpsProfilerEvent.log_to_wandb(
             {"Comm/recieve_delay_s3": time.time() - message_handler_start_time}
         )
