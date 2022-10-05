@@ -4,24 +4,24 @@ import time
 
 import numpy as np
 import torch
-
 from fedml import mlops
+
 from ...ml.engine import ml_engine_adapter
 
 
 class FedMLAggregator(object):
     def __init__(
-        self,
-        train_global,
-        test_global,
-        all_train_data_num,
-        train_data_local_dict,
-        test_data_local_dict,
-        train_data_local_num_dict,
-        client_num,
-        device,
-        args,
-        server_aggregator,
+            self,
+            train_global,
+            test_global,
+            all_train_data_num,
+            train_data_local_dict,
+            test_data_local_dict,
+            train_data_local_num_dict,
+            client_num,
+            device,
+            args,
+            server_aggregator,
     ):
         self.aggregator = server_aggregator
 
@@ -37,6 +37,7 @@ class FedMLAggregator(object):
 
         self.client_num = client_num
         self.device = device
+        self.args.device = device
         logging.info("self.device = {}".format(self.device))
         self.model_dict = dict()
         self.sample_num_dict = dict()
@@ -53,7 +54,9 @@ class FedMLAggregator(object):
     def add_local_trained_result(self, index, model_params, sample_num):
         logging.info("add_model. index = %d" % index)
 
-        model_params = ml_engine_adapter.model_params_to_device(self.args, model_params, self.device)
+        # for dictionary model_params, we let the user level code to control the device
+        if type(model_params) is not dict:
+            model_params = ml_engine_adapter.model_params_to_device(self.args, model_params, self.device)
 
         self.model_dict[index] = model_params
         self.sample_num_dict[index] = sample_num
@@ -76,7 +79,12 @@ class FedMLAggregator(object):
             model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
         model_list = self.aggregator.on_before_aggregation(model_list)
         averaged_params = self.aggregator.aggregate(model_list)
-        averaged_params = self.aggregator.on_after_aggregation(averaged_params)
+
+        if type(averaged_params) is dict:
+            for client_index in range(len(averaged_params)):
+                averaged_params[client_index] = self.aggregator.on_after_aggregation(averaged_params[client_index])
+        else:
+            averaged_params = self.aggregator.on_after_aggregation(averaged_params)
 
         self.set_global_model_params(averaged_params)
 
