@@ -44,10 +44,9 @@ class SPAPI(object):
 
         logging.info("model = {}".format(model))
         # self.model_trainer = create_model_trainer(model, args)
-        self.model_trainer = ModelTrainerCLS(model, args)
         self.model = model
         self.worker_num = args.client_num_per_round
-        logging.info("self.model_trainer = {}".format(self.model_trainer))
+        # logging.info("self.model_trainer = {}".format(self.model_trainer))
 
         self._setup_clients()
         self.aggregator = DefaultServerAggregator(
@@ -74,14 +73,13 @@ class SPAPI(object):
                 self.train_data_num_in_total,
                 self.device,
                 self.args,
-                self.model_trainer,
+                ModelTrainerCLS(copy.deepcopy(self.model), self.args)
+                # copy.deepcopy(self.model_trainer),
             )
             self.client_list.append(c)
         logging.info("############setup_clients (END)#############")
 
     def train(self):
-        logging.info("self.model_trainer = {}".format(self.model_trainer))
-        # w_global = self.model_trainer.get_model_params()
         server_result = self.aggregator.get_init_server_result()
         mlops.log_training_status(mlops.ClientConstants.MSG_MLOPS_CLIENT_STATUS_TRAINING)
         mlops.log_aggregation_status(mlops.ServerConstants.MSG_MLOPS_SERVER_STATUS_RUNNING)

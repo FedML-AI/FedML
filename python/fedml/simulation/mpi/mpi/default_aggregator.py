@@ -98,7 +98,10 @@ class DefaultServerAggregator(BaseServerAggregator):
                     metrics["test_total"] += target.size(0)
                 elif len(target.size()) == 2:  # for tasks of next word prediction
                     metrics["test_total"] += target.size(0) * target.size(1)
+
+        model.to("cpu")
         return metrics
+
 
 
     def test_on_server_for_all_clients(self, round_idx):

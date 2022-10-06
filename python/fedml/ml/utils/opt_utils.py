@@ -1,4 +1,5 @@
 import logging
+import copy
 
 import torch
 
@@ -63,16 +64,18 @@ class OptimizerLoader():
     def get_grad(self):
         grad = {}
         for name, parameter in self.model.named_parameters():
-            grad[name] = parameter.grad
+            grad[name] = parameter.grad.data
         return grad
 
     def set_grad(self, grad, device="cpu"):
         for name, parameter in self.model.named_parameters():
+            if parameter.grad is None:
+                parameter.grad = copy.deepcopy(parameter.data*0)
             # logging.info(f"parameter.grad: {type(parameter.grad)}, grad[name]: {type(grad[name])} ")
             # logging.info(f"parameter.grad.shape: {parameter.grad.shape}, grad[name].shape: {grad[name].shape} ")
             # logging.info(f"parameter.grad: {parameter.grad.dtype}, grad[name]: {grad[name].dtype} ")
             # logging.info(f"parameter.grad.device: {parameter.grad.device}, grad[name].device: {grad[name].device} ")
-            parameter.grad = grad[name].to(device)
+            parameter.grad.data = grad[name].to(device)
         return grad
 
     def zero_grad(self):

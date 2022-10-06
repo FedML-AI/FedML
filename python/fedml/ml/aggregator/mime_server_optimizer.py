@@ -31,7 +31,6 @@ class MimeServerOptimizer(ServerOptimizer):
             for key, params in model.state_dict().items()
         }
         self.opt = OptRepo.name2cls(self.args.server_optimizer)(
-            # self.model_global.parameters(), lr=self.args.server_lr
             model.parameters(),
             lr=self.args.server_lr,
             momentum=self.args.server_momentum, # for fedavgm
@@ -39,6 +38,7 @@ class MimeServerOptimizer(ServerOptimizer):
             # eps = 1e-3 for adaptive optimizer
         )
         self.model = model
+        self.opt.zero_grad()
         self.opt_loader = OptimizerLoader(model, self.opt)
         self.named_states = self.opt_loader.get_opt_state()
 
@@ -57,7 +57,6 @@ class MimeServerOptimizer(ServerOptimizer):
         Use this function to obtain the final global model.
         """
         w_global = FedMLAggOperator.agg(self.args, raw_client_model_or_grad_list)
-        self.grad_global = FedMLAggOperator.agg(self.args, raw_client_model_or_grad_list, op="weighted_avg")
         self.opt_loader.set_grad(copy.deepcopy(self.grad_global))
         self.model.load_state_dict(w_global)
         self.named_states = self.opt_loader.update_opt_state(update_model=True)
@@ -68,7 +67,9 @@ class MimeServerOptimizer(ServerOptimizer):
 
 
     def before_agg(self, sample_num_dict):
-        pass
+        key_op_list = [("local_grad", "weighted_avg")]
+        agg_params_dict = self.sync_agg_params(sample_num_dict, key_op_list)
+        self.grad_global = agg_params_dict["local_grad"]
 
 
     def end_agg(self) -> Dict:
