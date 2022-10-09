@@ -5,8 +5,8 @@ import typing
 from scipy import special
 
 from fedml.core.dp.budget_accountant import common
-from fedml.core.dp.budget_accountant import privacy_loss_distribution
-from fedml.core.dp.budget_accountant import privacy_loss_mechanism
+from fedml.core.dp.budget_accountant.pld import privacy_loss_distribution
+from fedml.core.dp.budget_accountant.pld import privacy_loss_mechanism
 
 
 def get_smallest_parameter(

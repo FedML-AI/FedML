@@ -42,7 +42,7 @@ https://arxiv.org/pdf/2006.09365.pdf
 3. GeometricMedianDefense: "Distributed statistical machine learning in adversarial settings: Byzantine gradient descent. "
 https://dl.acm.org/doi/pdf/10.1145/3154503
 4. (NeurIPS 2017) KrumDefense: "Machine Learning with Adversaries: Byzantine Tolerant Gradient Descent"
-https://arxiv.org/pdf/1703.02757.pdf
+https://papers.nips.cc/paper/2017/file/f4b9ec30ad9f68f89b29639786cb62ef-Paper.pdf
 5. (ICLR 2021) MultiKrumDefense: "Distributed momentum for byzantine-resilient stochastic gradient descent"
 https://infoscience.epfl.ch/record/287261
 6. NormDiffClippingDefense: "Can You Really Backdoor Federated Learning?" 
