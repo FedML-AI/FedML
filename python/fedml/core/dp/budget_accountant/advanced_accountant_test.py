@@ -3,7 +3,7 @@
 import unittest
 from absl.testing import parameterized
 
-from fedml.core.dp.budget_accountant import accountant
+from fedml.core.dp.budget_accountant import advanced_accountant
 from fedml.core.dp.budget_accountant import common
 
 
@@ -48,7 +48,7 @@ class AccountantTest(parameterized.TestCase):
             epsilon, delta)
         self.assertAlmostEqual(
             expected_parameter,
-            accountant.get_smallest_laplace_noise(
+            advanced_accountant.get_smallest_laplace_noise(
                 privacy_parameters, num_queries, sensitivity=sensitivity),
             delta=0.1)
 
@@ -84,7 +84,7 @@ class AccountantTest(parameterized.TestCase):
             epsilon, delta)
         self.assertAlmostEqual(
             expected_parameter,
-            accountant.get_smallest_discrete_laplace_noise(
+            advanced_accountant.get_smallest_discrete_laplace_noise(
                 privacy_parameters, num_queries, sensitivity=sensitivity),
             delta=1e-3)
 
@@ -111,7 +111,7 @@ class AccountantTest(parameterized.TestCase):
             epsilon, delta)
         self.assertAlmostEqual(
             expected_std,
-            accountant.get_smallest_gaussian_noise(
+            advanced_accountant.get_smallest_gaussian_noise(
                 privacy_parameters, num_queries, sensitivity=sensitivity))
 
     @parameterized.named_parameters(
@@ -159,7 +159,7 @@ class AccountantTest(parameterized.TestCase):
                                   expected_total_epsilon):
         privacy_parameters = common.DifferentialPrivacyParameters(
             epsilon, delta)
-        total_epsilon = accountant.advanced_composition(privacy_parameters,
+        total_epsilon = advanced_accountant.advanced_composition(privacy_parameters,
                                                         num_queries, total_delta)
         if expected_total_epsilon is None:
             self.assertIsNone(total_epsilon)
@@ -211,7 +211,7 @@ class AccountantTest(parameterized.TestCase):
             self, total_epsilon, total_delta, num_queries, delta, expected_epsilon):
         total_privacy_parameters = common.DifferentialPrivacyParameters(
             total_epsilon, total_delta)
-        epsilon = accountant.get_smallest_epsilon_from_advanced_composition(
+        epsilon = advanced_accountant.get_smallest_epsilon_from_advanced_composition(
             total_privacy_parameters, num_queries, delta)
         if expected_epsilon is None:
             self.assertIsNone(epsilon)
