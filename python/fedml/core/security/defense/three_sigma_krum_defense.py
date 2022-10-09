@@ -138,7 +138,7 @@ class ThreeSigmaKrumDefense(BaseDefenseMethod):
                         compute_euclidean_distance(
                             torch.Tensor(vec_grad_list[i]),
                             torch.Tensor(vec_grad_list[j]),
-                        ).item()
+                        ).item() ** 2
                     )
             dists.sort()  # ascending
             score = dists[0 : math.floor(num_client / 2)]
