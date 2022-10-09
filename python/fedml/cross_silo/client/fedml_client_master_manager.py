@@ -89,7 +89,7 @@ class ClientMasterManager(FedMLCommManager):
         self.trainer_dist_adapter.update_dataset(int(client_index))
         logging.info("current roundx {}, num rounds {}".format(self.round_idx, self.num_rounds))
         self.trainer_dist_adapter.update_model(model_params)
-        if self.round_idx == self.num_rounds:
+        if self.round_idx == self.num_rounds-1:
             mlops.log_training_finished_status()
             return
         self.round_idx += 1
