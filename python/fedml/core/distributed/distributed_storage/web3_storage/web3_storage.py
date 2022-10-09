@@ -3,17 +3,17 @@ import time
 import pickle
 
 from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
-from . import ipfs_crypto
+from ...crypto import crypto_api
 from .....core.alg_frame.context import Context
 
 import httpx
 
 
-class IpfsStorage:
+class Web3Storage:
     def __init__(
             self, ipfs_config):
         self.ipfs_config = ipfs_config
-        self.ipfs_upload_uri = ipfs_config.get("upload_uri", "https://api.web3.storage/upload2")
+        self.ipfs_upload_uri = ipfs_config.get("upload_uri", "https://api.web3.storage/upload")
         self.ipfs_download_uri = ipfs_config.get("download_uri", "ipfs.w3s.link2")
 
     def write_model(self, model):
@@ -22,7 +22,7 @@ class IpfsStorage:
         secret_key = Context().get("ipfs_secret_key")
         if secret_key is not None and secret_key != "":
             secret_key = bytes(secret_key, 'UTF-8')
-            model_pkl = ipfs_crypto.encrypt(secret_key, model_pkl)
+            model_pkl = crypto_api.encrypt(secret_key, model_pkl)
         MLOpsProfilerEvent.log_to_wandb(
             {"PickleDumpsTime": time.time() - pickle_dump_start_time}
         )
@@ -39,7 +39,7 @@ class IpfsStorage:
         secret_key = Context().get("ipfs_secret_key")
         if secret_key is not None and secret_key != "":
             secret_key = bytes(secret_key, 'UTF-8')
-            model_pkl = ipfs_crypto.decrypt(secret_key, model_pkl)
+            model_pkl = crypto_api.decrypt(secret_key, model_pkl)
         MLOpsProfilerEvent.log_to_wandb(
             {"Comm/recieve_delay_s3": time.time() - message_handler_start_time}
         )
