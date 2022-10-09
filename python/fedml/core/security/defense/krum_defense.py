@@ -63,7 +63,7 @@ class KrumDefense(BaseDefenseMethod):
                     dists.append(
                         utils.compute_euclidean_distance(
                             vec_grad_list[i], vec_grad_list[j]
-                        ).item()
+                        ).item() ** 2
                     )
             dists.sort()  # ascending
             score = dists[0 : num_client - self.byzantine_client_num - 2]
