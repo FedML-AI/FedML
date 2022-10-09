@@ -42,7 +42,8 @@ requirements = [
     "dill",
     "pandas",
     "wandb==0.13.2",
-    "eciespy"
+    "eciespy",
+    "PyNaCl"
 ]
 
 requirements_extra_mpi = [
