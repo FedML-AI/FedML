@@ -69,12 +69,12 @@ requirements_extra_mxnet = [
 ]
 
 
-if platform.machine() == "x86_64":
-    requirements.append("MNN==1.1.6")
+# if platform.machine() == "x86_64":
+#    requirements.append("MNN==1.1.6")
 
 setup(
     name="fedml",
-    version="0.7.335",
+    version="0.7.336",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
