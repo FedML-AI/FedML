@@ -69,8 +69,8 @@ requirements_extra_mxnet = [
 ]
 
 
-if platform.machine() == "x86_64":
-    requirements.append("MNN==1.1.6")
+# if platform.machine() == "x86_64":
+#    requirements.append("MNN==1.1.6")
 
 setup(
     name="fedml",
