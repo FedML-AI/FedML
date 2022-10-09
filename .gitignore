@@ -179,3 +179,14 @@ doc/en/_build
 /swap/actions-runner/
 *.txt
 python/examples/cross_silo/light_sec_agg_example/mpi_host_file
+/python/examples/cross_silo/mqtt_thetastore_fedavg_mnist_lr_example/custom_data_and_model/mlops/dist-packages/
+/python/examples/cross_silo/mqtt_web3storage_fedavg_mnist_lr_example/custom_data_and_model/mlops/dist-packages/
+/python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/custom_data_and_model/mlops/dist-packages/
+/python/quick_start/parrot/fedml_data/
+/python/tests/smoke_test/simulation_sp/mnist/__MACOSX/MNIST/
+/python/tests/smoke_test/simulation_sp/mnist/MNIST/
+/swap/
+/.github/workflows/build_wheels_and_releases副本.yml
+/devops/dockerfile/device-image/Dockerfile-Local
+/FedML-dev-v0.7.0.iml
+/python/fedml/cli/debug-cli.py
