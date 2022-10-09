@@ -10,7 +10,7 @@ import yaml
 
 from ..constants import CommunicationConstants
 from ..mqtt.mqtt_manager import MqttManager
-from .ipfs_storage import IpfsStorage
+from ...distributed_storage.theta_storage.theta_storage import ThetaStorage
 from ..base_com_manager import BaseCommunicationManager
 from ..message import Message
 from ..observer import Observer
@@ -18,11 +18,11 @@ from .....core.alg_frame.context import Context
 import time
 
 
-class MqttIpfsCommManager(BaseCommunicationManager):
+class MqttThetastoreCommManager(BaseCommunicationManager):
     def __init__(
         self,
         config_path,
-        ipfs_config_path,
+        thetastore_config_path,
         topic="fedml",
         client_rank=0,
         client_num=0,
@@ -40,11 +40,11 @@ class MqttIpfsCommManager(BaseCommunicationManager):
         self.client_id_list = json.loads(client_objects_str)
 
         self._topic = "fedml_" + str(topic) + "_"
-        self.ipfs_storage = IpfsStorage(ipfs_config_path)
+        self.theta_storage = ThetaStorage(thetastore_config_path)
         self.client_real_ids = []
         if args.client_id_list is not None:
             logging.info(
-                "MqttIpfsCommManager args client_id_list: " + str(args.client_id_list)
+                "MqttThetastoreCommManager args client_id_list: " + str(args.client_id_list)
             )
             self.client_real_ids = json.loads(args.client_id_list)
 
@@ -80,7 +80,7 @@ class MqttIpfsCommManager(BaseCommunicationManager):
         else:
             self._client_id = client_rank
         self.client_num = client_num
-        logging.info("mqtt_ipfs.init: client_num = %d" % client_num)
+        logging.info("mqtt_thetastore.init: client_num = %d" % client_num)
 
         self.set_config_from_file(config_path)
         self.set_config_from_objects(config_path)
@@ -139,10 +139,10 @@ class MqttIpfsCommManager(BaseCommunicationManager):
                 result, mid = mqtt_client_object.subscribe(real_topic, 0)
 
                 # logging.info(
-                #     "mqtt_ipfs.on_connect: subscribes real_topic = %s, mid = %s, result = %s"
+                #     "mqtt_thetastore.on_connect: subscribes real_topic = %s, mid = %s, result = %s"
                 #     % (real_topic, mid, str(result))
                 # )
-            # logging.info("mqtt_ipfs.on_connect: server subscribes")
+            # logging.info("mqtt_thetastore.on_connect: server subscribes")
             self._notify_connection_ready()
         else:
             # client
@@ -152,7 +152,7 @@ class MqttIpfsCommManager(BaseCommunicationManager):
             self._notify_connection_ready()
 
             # logging.info(
-            #     "mqtt_ipfs.on_connect: client subscribes real_topic = %s, mid = %s, result = %s"
+            #     "mqtt_thetastore.on_connect: client subscribes real_topic = %s, mid = %s, result = %s"
             #     % (real_topic, mid, str(result))
             # )
         self.is_connected = True
@@ -176,7 +176,7 @@ class MqttIpfsCommManager(BaseCommunicationManager):
         msg_params = Message()
         msg_params.init_from_json_object(msg_obj)
         msg_type = msg_params.get_type()
-        logging.info("mqtt_ipfs.notify: msg type = %s" % msg_type)
+        logging.info("mqtt_thetastore.notify: msg type = %s" % msg_type)
         for observer in self._observers:
             observer.receive_message(msg_type, msg_params)
 
@@ -185,26 +185,26 @@ class MqttIpfsCommManager(BaseCommunicationManager):
         payload_obj = json.loads(json_payload)
         sender_id = payload_obj.get(Message.MSG_ARG_KEY_SENDER, "")
         receiver_id = payload_obj.get(Message.MSG_ARG_KEY_RECEIVER, "")
-        ipfs_key_str = payload_obj.get(Message.MSG_ARG_KEY_MODEL_PARAMS, "")
-        ipfs_key_str = str(ipfs_key_str).strip(" ")
+        thetastore_key_str = payload_obj.get(Message.MSG_ARG_KEY_MODEL_PARAMS, "")
+        thetastore_key_str = str(thetastore_key_str).strip(" ")
 
-        if ipfs_key_str != "":
+        if thetastore_key_str != "":
             logging.info(
-                "mqtt_ipfs.on_message: use ipfs pack, ipfs message key %s" % ipfs_key_str
+                "mqtt_thetastore.on_message: use thetastore pack, thetastore message key %s" % thetastore_key_str
             )
 
-            model_params = self.ipfs_storage.read_model(ipfs_key_str)
-            Context().add("received_model_cid", ipfs_key_str)
+            model_params = self.theta_storage.read_model(thetastore_key_str)
+            Context().add("received_model_cid", thetastore_key_str)
             logging.info("Received model cid {}".format(Context().get("received_model_cid")))
 
             logging.info(
-                "mqtt_ipfs.on_message: model params length %d" % len(model_params)
+                "mqtt_thetastore.on_message: model params length %d" % len(model_params)
             )
 
-            # replace the IPFS object key with raw model params
+            # replace the thetastore object key with raw model params
             payload_obj[Message.MSG_ARG_KEY_MODEL_PARAMS] = model_params
         else:
-            logging.info("mqtt_ipfs.on_message: not use ipfs pack")
+            logging.info("mqtt_thetastore.on_message: not use thetastore pack")
 
         self._notify(payload_obj)
 
@@ -212,7 +212,7 @@ class MqttIpfsCommManager(BaseCommunicationManager):
         try:
             self._on_message_impl(msg)
         except Exception as e:
-            logging.error("mqtt_ipfs.on_message exception: {}".format(traceback.format_exc()))
+            logging.error("mqtt_thetastore.on_message exception: {}".format(traceback.format_exc()))
 
     def send_message(self, msg: Message):
         """
@@ -230,18 +230,18 @@ class MqttIpfsCommManager(BaseCommunicationManager):
         if self.client_id == 0:
             # topic = "fedml" + "_" + "run_id" + "_0" + "_" + "client_id"
             topic = self._topic + str(self.server_id) + "_" + str(receiver_id)
-            logging.info("mqtt_ipfs.send_message: msg topic = %s" % str(topic))
+            logging.info("mqtt_thetastore.send_message: msg topic = %s" % str(topic))
 
             payload = msg.get_params()
             model_params_obj = payload.get(Message.MSG_ARG_KEY_MODEL_PARAMS, "")
             if model_params_obj != "":
-                # IPFS
-                logging.info("mqtt_ipfs.send_message: to python client.")
-                message_key = model_url = self.ipfs_storage.write_model(model_params_obj)
+                # thetastore
+                logging.info("mqtt_thetastore.send_message: to python client.")
+                message_key = model_url = self.theta_storage.write_model(model_params_obj)
                 Context().add("sent_model_cid", model_url)
                 logging.info("Sent model cid {}".format(Context().get("sent_model_cid")))
                 logging.info(
-                    "mqtt_ipfs.send_message: IPFS+MQTT msg sent, ipfs message key = %s"
+                    "mqtt_thetastore.send_message: thetastore+MQTT msg sent, thetastore message key = %s"
                     % message_key
                 )
                 model_params_key_url = {
@@ -256,7 +256,7 @@ class MqttIpfsCommManager(BaseCommunicationManager):
                 self.mqtt_mgr.send_message(topic, json.dumps(payload))
             else:
                 # pure MQTT
-                logging.info("mqtt_ipfs.send_message: MQTT msg sent")
+                logging.info("mqtt_thetastore.send_message: MQTT msg sent")
                 self.mqtt_mgr.send_message(topic, json.dumps(payload))
 
         else:
@@ -266,12 +266,12 @@ class MqttIpfsCommManager(BaseCommunicationManager):
             payload = msg.get_params()
             model_params_obj = payload.get(Message.MSG_ARG_KEY_MODEL_PARAMS, "")
             if model_params_obj != "":
-                # IPFS
-                message_key = model_url = self.ipfs_storage.write_model(model_params_obj)
+                # thetastore
+                message_key = model_url = self.theta_storage.write_model(model_params_obj)
                 Context().add("sent_model_cid", model_url)
                 logging.info("Sent model cid {}".format(Context().get("sent_model_cid")))
                 logging.info(
-                    "mqtt_ipfs.send_message: IPFS+MQTT msg sent, message_key = %s"
+                    "mqtt_thetastore.send_message: thetastore+MQTT msg sent, message_key = %s"
                     % message_key
                 )
                 model_params_key_url = {
@@ -285,7 +285,7 @@ class MqttIpfsCommManager(BaseCommunicationManager):
                 ]
                 self.mqtt_mgr.send_message(topic, json.dumps(payload))
             else:
-                logging.info("mqtt_ipfs.send_message: MQTT msg sent")
+                logging.info("mqtt_thetastore.send_message: MQTT msg sent")
                 self.mqtt_mgr.send_message(topic, json.dumps(payload))
 
     def send_message_json(self, topic_name, json_message):
@@ -298,7 +298,7 @@ class MqttIpfsCommManager(BaseCommunicationManager):
         MLOpsProfilerEvent.log_to_wandb({"TotalTime": time.time() - start_listening_time})
 
     def stop_receive_message(self):
-        logging.info("mqtt_ipfs.stop_receive_message: stopping...")
+        logging.info("mqtt_thetastore.stop_receive_message: stopping...")
         self.mqtt_mgr.loop_stop()
         self.mqtt_mgr.disconnect()
 
