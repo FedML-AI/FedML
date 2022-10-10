@@ -15,7 +15,7 @@ from ..base_com_manager import BaseCommunicationManager
 from ..message import Message
 from ..observer import Observer
 import time
-
+from fedml.core.distributed.communication.s3.utils import LogisticRegression
 
 class MqttS3MultiClientsCommManager(BaseCommunicationManager):
     def __init__(
@@ -186,6 +186,8 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         receiver_id = payload_obj.get(Message.MSG_ARG_KEY_RECEIVER, "")
         s3_key_str = payload_obj.get(Message.MSG_ARG_KEY_MODEL_PARAMS, "")
         s3_key_str = str(s3_key_str).strip(" ")
+        # device = payload_obj.get(Message.MSG_ARG_KEY_CLIENT_OS)
+        device = 'web'
 
         if s3_key_str != "":
             logging.info(
@@ -195,7 +197,14 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                 "mqtt_s3.on_message: use s3 pack, s3 message key %s" % s3_key_str
             )
 
-            model_params = self.s3_storage.read_model(s3_key_str)
+            # init model structure from client
+            py_model = LogisticRegression(28*28,1)
+
+            # read model from client
+            if device == 'web':
+                model_params = self.s3_storage.read_model_web(s3_key_str, py_model)
+            else:
+                model_params = self.s3_storage.read_model(s3_key_str)
 
             logging.info(
                 "mqtt_s3.on_message: model params length %d" % len(model_params)
@@ -210,7 +219,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
 
     def _on_message(self, msg):
         try:
-            self._on_message_impl(msg)
+                self._on_message_impl(msg)
         except Exception as e:
             logging.error("mqtt_s3.on_message exception: {}".format(traceback.format_exc()))
 
@@ -236,6 +245,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
             model_params_obj = payload.get(Message.MSG_ARG_KEY_MODEL_PARAMS, "")
             logging.info("model_params_obj content = %s" % model_params_obj)
             message_key = topic + "_" + str(uuid.uuid4())
+            # message_key_web = topic + "_" + str(uuid.uuid4())         
             if model_params_obj != "":
                 # S3
                 logging.info(
@@ -243,7 +253,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                     % message_key
                 )
                 logging.info("mqtt_s3.send_message: to python client.")
-                model_url = self.s3_storage.write_model(message_key, model_params_obj)
+                model_url = self.s3_storage.write_model(message_key, model_params_obj, device='web')
                 model_params_key_url = {
                     "key": message_key,
                     "url": model_url,
@@ -253,6 +263,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                 payload[Message.MSG_ARG_KEY_MODEL_PARAMS_URL] = model_params_key_url[
                     "url"
                 ]
+                # logging.info(f"===============Payload to Json============\n{payload}")
                 self.mqtt_mgr.send_message(topic, json.dumps(payload))
             else:
                 # pure MQTT
