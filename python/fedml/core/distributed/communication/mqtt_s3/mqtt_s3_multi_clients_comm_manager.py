@@ -189,6 +189,9 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
 
         if s3_key_str != "":
             logging.info(
+                "!!!!!!!!!!!!@@@@@@@@@@@@!!!!!!!!!!!!!!!"
+            )
+            logging.info(
                 "mqtt_s3.on_message: use s3 pack, s3 message key %s" % s3_key_str
             )
 
@@ -228,9 +231,10 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
             # topic = "fedml" + "_" + "run_id" + "_0" + "_" + "client_id"
             topic = self._topic + str(self.server_id) + "_" + str(receiver_id)
             logging.info("mqtt_s3.send_message: msg topic = %s" % str(topic))
-
+            logging.info("mqtt_s3.check_msg: msg = %s" % msg.__dict__)
             payload = msg.get_params()
             model_params_obj = payload.get(Message.MSG_ARG_KEY_MODEL_PARAMS, "")
+            logging.info("model_params_obj content = %s" % model_params_obj)
             message_key = topic + "_" + str(uuid.uuid4())
             if model_params_obj != "":
                 # S3
@@ -278,6 +282,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                 payload[Message.MSG_ARG_KEY_MODEL_PARAMS_URL] = model_params_key_url[
                     "url"
                 ]
+                logging.info('client_topic ', topic)
                 self.mqtt_mgr.send_message(topic, json.dumps(payload))
             else:
                 logging.info("mqtt_s3.send_message: MQTT msg sent")

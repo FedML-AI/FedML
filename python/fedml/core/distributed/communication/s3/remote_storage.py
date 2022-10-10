@@ -46,6 +46,7 @@ class S3Storage:
         MLOpsProfilerEvent.log_to_wandb(
             {"PickleDumpsTime": time.time() - pickle_dump_start_time}
         )
+        logging.info(f'send_ message key: {message_key}')
         s3_upload_start_time = time.time()
         aws_s3_client.put_object(
             Body=model_pkl, Bucket=self.bucket_name, Key=message_key, ACL="public-read",
@@ -63,7 +64,9 @@ class S3Storage:
     def read_model(self, message_key):
         global aws_s3_client
         message_handler_start_time = time.time()
+        logging.info(f'receive_ message key: {message_key}')
         obj = aws_s3_client.get_object(Bucket=self.bucket_name, Key=message_key)
+        logging.info(f'receive_ obj: {obj}')
         model_pkl = obj["Body"].read()
         MLOpsProfilerEvent.log_to_wandb(
             {"Comm/recieve_delay_s3": time.time() - message_handler_start_time}
