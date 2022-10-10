@@ -45,6 +45,8 @@ class S3Storage:
     def write_model(self, message_key, model, device):
         global aws_s3_client
         pickle_dump_start_time = time.time()
+        logging.info("S3 write model receive device = %s" % device)
+        logging.info("S3 write model receive model = %s" % model)
 
         if device == 'web':
             # for javascript clients
@@ -56,7 +58,7 @@ class S3Storage:
             model_pkl = pickle.dumps(model)
             model_to_send = model_pkl
 
-        logging.info(f"============model_json in remote_storage write_model===========:\n{model_json}")
+        # logging.info(f"============model_json in remote_storage write_model===========:\n{model_json}")
         # logging.info(f"============model in remote_storage===========:\n{model}")
         MLOpsProfilerEvent.log_to_wandb(
             {"PickleDumpsTime": time.time() - pickle_dump_start_time}
@@ -97,6 +99,7 @@ class S3Storage:
     def read_model_web(self, message_key, py_model:nn.Module):
         global aws_s3_client
         message_handler_start_time = time.time()
+        logging.info(f"============obj in remote_storage read_model_web message_key===========:\n{message_key}")
         obj = aws_s3_client.get_object(Bucket=self.bucket_name, Key=message_key)
         logging.info(f"============obj in remote_storage read_model_web===========:\n{obj}")
         model_json = obj["Body"].read()

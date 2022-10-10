@@ -185,23 +185,26 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         sender_id = payload_obj.get(Message.MSG_ARG_KEY_SENDER, "")
         receiver_id = payload_obj.get(Message.MSG_ARG_KEY_RECEIVER, "")
         s3_key_str = payload_obj.get(Message.MSG_ARG_KEY_MODEL_PARAMS, "")
+        logging.info(
+            "mqtt_s3.on_message: payload object %s" % payload_obj
+        )
+        device = payload_obj.get("client_os")
         s3_key_str = str(s3_key_str).strip(" ")
-        # device = payload_obj.get(Message.MSG_ARG_KEY_CLIENT_OS)
-        device = 'web'
 
         if s3_key_str != "":
-            logging.info(
-                "!!!!!!!!!!!!@@@@@@@@@@@@!!!!!!!!!!!!!!!"
-            )
             logging.info(
                 "mqtt_s3.on_message: use s3 pack, s3 message key %s" % s3_key_str
             )
 
-            # init model structure from client
-            py_model = LogisticRegression(28*28,1)
+            logging.info(
+                "mqtt_s3.on_message: device type %s" % device
+            )
 
             # read model from client
             if device == 'web':
+                # init model structure from client
+                py_model = LogisticRegression(28 * 28, 10)
+
                 model_params = self.s3_storage.read_model_web(s3_key_str, py_model)
             else:
                 model_params = self.s3_storage.read_model(s3_key_str)
