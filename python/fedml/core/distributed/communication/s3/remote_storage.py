@@ -8,7 +8,8 @@ import boto3
 import yaml
 
 from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
-from utils import load_params_from_tf
+from fedml.core.distributed.communication.s3.utils import load_params_from_tf
+from fedml.core.distributed.communication.s3.utils import process_state_dict
 
 # for multi-processing, we need to create a global variable for AWS S3 client:
 # https://www.pythonforthelab.com/blog/differences-between-multiprocessing-windows-and-linux/
@@ -40,17 +41,29 @@ class S3Storage:
             aws_access_key_id=self.cn_s3_aki,
             aws_secret_access_key=self.cn_s3_sak,
         )
-
-    def write_model(self, message_key, model):
+    # TODO: add a device indicator
+    def write_model(self, message_key, model, device):
         global aws_s3_client
         pickle_dump_start_time = time.time()
-        model_pkl = pickle.dumps(model)
+
+        if device == 'web':
+            # for javascript clients
+            state_dict = model # type: OrderedDict
+            model_json = process_state_dict(state_dict)
+            model_to_send = model_json
+        else:
+            # for python clients
+            model_pkl = pickle.dumps(model)
+            model_to_send = model_pkl
+
+        logging.info(f"============model_json in remote_storage write_model===========:\n{model_json}")
+        # logging.info(f"============model in remote_storage===========:\n{model}")
         MLOpsProfilerEvent.log_to_wandb(
             {"PickleDumpsTime": time.time() - pickle_dump_start_time}
         )
         s3_upload_start_time = time.time()
         aws_s3_client.put_object(
-            Body=model_pkl, Bucket=self.bucket_name, Key=message_key, ACL="public-read",
+            Body=model_to_send, Bucket=self.bucket_name, Key=message_key, ACL="public-read",
         )
         MLOpsProfilerEvent.log_to_wandb(
             {"Comm/send_delay": time.time() - s3_upload_start_time}
@@ -82,14 +95,20 @@ class S3Storage:
         global aws_s3_client
         message_handler_start_time = time.time()
         obj = aws_s3_client.get_object(Bucket=self.bucket_name, Key=message_key)
+        logging.info(f"============obj in remote_storage read_model_web===========:\n{obj}")
         model_json = obj["Body"].read()
-        model_pkl = load_params_from_tf(py_model, model_json).state_dict()
+        logging.info(f"============model_json in remote_storage read_model_web===========:\ncontent:{model_json};\tType:{type(model_json)};\tLen:{len(model_json)}")
+        if type(model_json) == list:
+            model = load_params_from_tf(py_model, model_json)
+        else:
+            model = py_model.state_dict()
+        logging.info(f"============updated model in remote_storage read_model_web===========:\n{model}")
 
         MLOpsProfilerEvent.log_to_wandb(
             {"Comm/recieve_delay_s3": time.time() - message_handler_start_time}
         )
         unpickle_start_time = time.time()
-        model = pickle.loads(model_pkl)
+        # model = pickle.loads(model_pkl)
         MLOpsProfilerEvent.log_to_wandb(
             {"UnpickleTime": time.time() - unpickle_start_time}
         )

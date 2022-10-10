@@ -44,3 +44,11 @@ def process_state_dict(state_dict):
     for key, value in state_dict.items():
         lr_py[key] = value.cpu().detach().numpy().tolist()
     return lr_py
+
+class LogisticRegression(torch.nn.Module):
+     def __init__(self, input_dim, output_dim):
+         super(LogisticRegression, self).__init__()
+         self.linear = torch.nn.Linear(input_dim, output_dim)
+     def forward(self, x):
+         outputs = torch.sigmoid(self.linear(x))
+         return outputs
