@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import pickle
@@ -45,14 +46,13 @@ class S3Storage:
     def write_model(self, message_key, model, device):
         global aws_s3_client
         pickle_dump_start_time = time.time()
-        logging.info("S3 write model receive device = %s" % device)
-        logging.info("S3 write model receive model = %s" % model)
+        # device = "cross_silo"
 
         if device == 'web':
             # for javascript clients
             state_dict = model # type: OrderedDict
             model_json = process_state_dict(state_dict)
-            model_to_send = model_json
+            model_to_send = json.dumps(model_json)
         else:
             # for python clients
             model_pkl = pickle.dumps(model)
@@ -99,16 +99,12 @@ class S3Storage:
     def read_model_web(self, message_key, py_model:nn.Module):
         global aws_s3_client
         message_handler_start_time = time.time()
-        logging.info(f"============obj in remote_storage read_model_web message_key===========:\n{message_key}")
         obj = aws_s3_client.get_object(Bucket=self.bucket_name, Key=message_key)
-        logging.info(f"============obj in remote_storage read_model_web===========:\n{obj}")
         model_json = obj["Body"].read()
-        logging.info(f"============model_json in remote_storage read_model_web===========:\ncontent:{model_json};\tType:{type(model_json)};\tLen:{len(model_json)}")
         if type(model_json) == list:
             model = load_params_from_tf(py_model, model_json)
         else:
             model = py_model.state_dict()
-        logging.info(f"============updated model in remote_storage read_model_web===========:\n{model}")
 
         MLOpsProfilerEvent.log_to_wandb(
             {"Comm/recieve_delay_s3": time.time() - message_handler_start_time}

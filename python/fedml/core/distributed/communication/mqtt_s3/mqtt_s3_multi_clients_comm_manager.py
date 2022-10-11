@@ -243,10 +243,8 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
             # topic = "fedml" + "_" + "run_id" + "_0" + "_" + "client_id"
             topic = self._topic + str(self.server_id) + "_" + str(receiver_id)
             logging.info("mqtt_s3.send_message: msg topic = %s" % str(topic))
-            logging.info("mqtt_s3.check_msg: msg = %s" % msg.__dict__)
             payload = msg.get_params()
             model_params_obj = payload.get(Message.MSG_ARG_KEY_MODEL_PARAMS, "")
-            logging.info("model_params_obj content = %s" % model_params_obj)
             message_key = topic + "_" + str(uuid.uuid4())
             # message_key_web = topic + "_" + str(uuid.uuid4())         
             if model_params_obj != "":

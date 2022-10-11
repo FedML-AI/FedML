@@ -32,8 +32,6 @@ class FedMLServerManager(FedMLCommManager):
     def send_init_msg(self):
         global_model_params = self.aggregator.get_global_model_params()
 
-        logging.info("send_init_msg global_model_params = %s" % global_model_params)
-
         client_idx_in_this_round = 0
         for client_id in self.client_id_list_in_this_round:
             self.send_message_init_config(
@@ -183,7 +181,7 @@ class FedMLServerManager(FedMLCommManager):
 
     def send_message_init_config(self, receive_id, global_model_params, datasilo_index):
         tick = time.time()
-        global_model_params = ""
+        # global_model_params = ""
         message = Message(MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id)
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
