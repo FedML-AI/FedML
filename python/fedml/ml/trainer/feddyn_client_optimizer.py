@@ -8,7 +8,7 @@ from ...core.common.ml_engine_backend import MLEngineBackend
 from .base_client_optimizer import ClientOptimizer
 
 from fedml.utils.model_utils import check_device
-
+from fedml.utils.model_utils import named_params_to
 
 from fedml.ml.ml_message import MLMessage
 
@@ -32,11 +32,7 @@ class FedDynClientOptimizer(ClientOptimizer):
 
 
     def preprocess(self, args, client_index, model, train_data, device, server_result, criterion):
-        """
-        1. Return params_to_update for update usage.
-        2. pass model, train_data here, in case the algorithm need some preprocessing
-        """
-        params_to_client_optimizer = server_result[MLMessage.PARAMS_TO_CLIENT_OPTIMIZER]
+        # params_to_client_optimizer = server_result[MLMessage.PARAMS_TO_CLIENT_OPTIMIZER]
         if args.client_optimizer == "sgd":
             self.optimizer = torch.optim.SGD(
                 filter(lambda p: p.requires_grad, model.parameters()),
@@ -53,9 +49,10 @@ class FedDynClientOptimizer(ClientOptimizer):
         if "old_grad" not in self.client_status:
             self.old_grad = {}
             for name, params in model.named_parameters():
-                self.old_grad[name] = params.data*0
+                self.old_grad[name] = (params.data*0).cpu()
         else:
             self.old_grad = self.client_status["old_grad"]
+        self.old_grad = named_params_to(self.old_grad, device)
         self.global_model_params = copy.deepcopy(model.state_dict())
         self.iteration_cnt = 0
         return model
@@ -71,7 +68,8 @@ class FedDynClientOptimizer(ClientOptimizer):
             # lin_penalty += torch.sum(param.data * old_grad[name])
             lin_penalty += (self.args.feddyn_alpha / 2) * torch.sum(param.data * self.old_grad[name]) 
             # Quadratic Penalty
-            norm_penalty += (self.args.feddyn_alpha / 2) * torch.norm((param.data - self.global_model_params[name].data.to(device)))**2
+            # norm_penalty += (self.args.feddyn_alpha / 2) * torch.norm((param.data - self.global_model_params[name].data.to(device)))**2
+            norm_penalty += (self.args.feddyn_alpha / 2) * torch.norm((param.data - self.global_model_params[name].data))**2
         loss = loss - lin_penalty + norm_penalty
         self.optimizer.zero_grad()
 
@@ -87,15 +85,18 @@ class FedDynClientOptimizer(ClientOptimizer):
 
 
     def end_local_training(self, args, client_index, model, train_data, device) -> Dict:
-        """
-        1. Return weights_or_grads, params_to_server_optimizer for special server optimizer need.
-        """
 
         for name, param in model.named_parameters():
             self.old_grad[name] = (self.old_grad[name] - self.args.feddyn_alpha * (
-                param.data - self.global_model_params[name])).to(device)
+                param.data - self.global_model_params[name]))
 
-        return model.cpu().state_dict(), {}
+        self.old_grad = named_params_to(self.old_grad, "cpu")
+
+        other_result = dict()
+        other_result[MLMessage.MODEL_PARAMS] = model.cpu().state_dict()
+        return other_result
+
+        # return model.cpu().state_dict(), {}
 
 
 

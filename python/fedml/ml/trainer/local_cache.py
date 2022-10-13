@@ -5,7 +5,7 @@ import logging
 import datetime
 
 import pickle
-
+import shutil
 
 
 def pickle_save(data_obj, file_path):
@@ -32,7 +32,7 @@ class FedMLLocalCache:
     cache_dir = "fedml_client_caches"
 
     @classmethod
-    def init(cls, args, root):
+    def init(cls, args, root, path=None):
         # path = os.path.join(root, FedMLLocalCache.cache_dir)
         # if os.path.exists(path):
         #     os.makedirs(path)
@@ -41,12 +41,16 @@ class FedMLLocalCache:
         str_time = theTime.strftime(TIMEFORMAT) + theTime.strftime('%f')[:2]
         # print(theTime)
         # print(str_time)
-        cls.path = Path(root) / FedMLLocalCache.cache_dir / f"fedml_{str_time}"
+        if path is not None:
+            cls.path = Path(path)
+        else:
+            cls.path = Path(root) / FedMLLocalCache.cache_dir / f"fedml_{str_time}"
         if not cls.path.exists():
             cls.path.mkdir(parents=True)
         # else:
         #     # Clear the cache of last training.
         #     cls.path.unlink()
+
 
     # @classmethod
     # def save(cls, args, root, client_index, key, value):
@@ -66,18 +70,28 @@ class FedMLLocalCache:
     @classmethod
     def save(cls, args, client_index, save_obj):
         file_path = cls.path / f"{FedMLLocalCache.cache_name}_{client_index}"
-        logging.info(f"save obj, file_path: {file_path}")
+        logging.debug(f"save obj, file_path: {file_path}")
         pickle_save(save_obj, file_path)
 
     @classmethod
     def load(cls, args, client_index):
         file_path = cls.path / f"{FedMLLocalCache.cache_name}_{client_index}"
-        logging.info(f"load obj, file_path: {file_path}")
+        logging.debug(f"load obj, file_path: {file_path}")
         # with open(file_path, 'rb') as f:
         #     loaded_obj = pickle.load(f)
         loaded_obj = pickle_load(file_path)
         return loaded_obj
 
+    @classmethod
+    def finalize(cls, args):
+        if hasattr(args, "delete_cache") and args.delete_cache:
+            assert cls.cache_dir in str(cls.path)
+            logging.info(f"REMOVE {cls.path} !!!!!!!!!!")
+            # cls.path.remdir()
+            shutil.rmtree(str(cls.path))
+            # os.removedirs(str(cls.path))
+        else:
+            logging.info(f"{cls.path} exists, Please remember to release the disk memory.")
 
     # @classmethod
     # def get_file_name(cls, args, root, client_index):
@@ -86,11 +100,6 @@ class FedMLLocalCache:
     #     file_name = os.path.join(dir_name, FedMLLocalCache.cache_name + f"_{client_index}")
     #     file_name = file_name + ".pt"
     #     return dir_name, file_name
-
-
-    @classmethod
-    def finalize(cls):
-        pass
 
 
 

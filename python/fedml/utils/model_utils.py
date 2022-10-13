@@ -69,6 +69,14 @@ def move_to_gpu(model, optimizer, device):
     return model
 
 
+
+def named_params_to(named_params, device="cpu"):
+    for name in named_params.keys():
+        named_params[name] = named_params[name].to(device)
+    return named_params
+
+
+
 """ get weights or grads """
 
 

@@ -5,6 +5,8 @@ from .utils import transform_list_to_tensor
 from ....core.distributed.fedml_comm_manager import FedMLCommManager
 from ....core.distributed.communication.message import Message
 
+from fedml.ml.trainer.local_cache import FedMLLocalCache
+
 
 class ClientManager(FedMLCommManager):
     def __init__(
@@ -36,6 +38,9 @@ class ClientManager(FedMLCommManager):
 
     def handle_message_init(self, msg_params):
         # global_model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
+        local_cache_path = msg_params.get(MyMessage.MSG_ARG_KEY_LOCAL_CACHE_PATH)
+        FedMLLocalCache.init(self.args, root=self.args.local_cache_root, path=local_cache_path)
+
         server_result = msg_params.get(MyMessage.MSG_ARG_KEY_SERVER_RESULT)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
 
@@ -60,7 +65,8 @@ class ClientManager(FedMLCommManager):
         self.__train()
         if self.args.round_idx == self.num_rounds - 1:
             # post_complete_message_to_sweep_process(self.args)
-            self.finish()
+            # self.finish()
+            pass
 
     def send_model_to_server(self, receive_id, client_result, local_sample_num):
         message = Message(

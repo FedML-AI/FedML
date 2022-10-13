@@ -7,15 +7,12 @@ from ...core.common.ml_engine_backend import MLEngineBackend
 from .base_client_optimizer import ClientOptimizer
 
 
+from fedml.ml.ml_message import MLMessage
 
 
 class FedAvgClientOptimizer(ClientOptimizer):
 
     def preprocess(self, args, client_index, model, train_data, device, server_result, criterion):
-        """
-        1. Return params_to_update for update usage.
-        2. pass model, train_data here, in case the algorithm need some preprocessing
-        """
         if args.client_optimizer == "sgd":
             self.optimizer = torch.optim.SGD(
                 filter(lambda p: p.requires_grad, model.parameters()),
@@ -46,10 +43,11 @@ class FedAvgClientOptimizer(ClientOptimizer):
 
 
     def end_local_training(self, args, client_index, model, train_data, device) -> Dict:
-        """
-        1. Return weights_or_grads, params_to_server_optimizer for special server optimizer need.
-        """
-        return model.cpu().state_dict(), {}
+        other_result = dict()
+        other_result[MLMessage.MODEL_PARAMS] = model.cpu().state_dict()
+        return other_result
+
+        # return model.cpu().state_dict(), {}
 
 
 

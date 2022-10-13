@@ -184,12 +184,6 @@ class FedNovaClientOptimizer(ClientOptimizer):
 
 
     def preprocess(self, args, client_index, model, train_data, device, server_result, criterion):
-        """
-        1. Return params_to_update for update usage.
-        2. pass model, train_data here, in case the algorithm need some preprocessing
-        """
-
-        params_to_client_optimizer = server_result[MLMessage.PARAMS_TO_CLIENT_OPTIMIZER]
         sample_num_dict = server_result[MLMessage.SAMPLE_NUM_DICT]
         round_sample_num = sum(list(sample_num_dict.values()))
 
@@ -231,11 +225,13 @@ class FedNovaClientOptimizer(ClientOptimizer):
         """
         norm_grad = self.get_local_norm_grad(self.optimizer, model.state_dict(), self.init_params)
         tau_eff = self.get_local_tau_eff(self.optimizer)
-        params_to_server_optimizer = {}
-        params_to_server_optimizer["tau_eff"] = tau_eff
-        return norm_grad, params_to_server_optimizer
-
-
+        # params_to_server_optimizer = {}
+        # params_to_server_optimizer["tau_eff"] = tau_eff
+        # return norm_grad, params_to_server_optimizer
+        other_result = dict()
+        other_result[MLMessage.MODEL_PARAMS] = norm_grad
+        other_result["tau_eff"] = tau_eff
+        return other_result
 
 
     def get_local_norm_grad(self, opt, cur_params, init_params, weight=0):
@@ -246,7 +242,7 @@ class FedNovaClientOptimizer(ClientOptimizer):
             scale = 1.0 / opt.local_normalizing_vec
             cum_grad = init_params[k] - cur_params[k]
             cum_grad.mul_(weight * scale)
-            grad_dict[k] = cum_grad
+            grad_dict[k] = cum_grad.cpu()
         return grad_dict
 
     def get_local_tau_eff(self, opt):

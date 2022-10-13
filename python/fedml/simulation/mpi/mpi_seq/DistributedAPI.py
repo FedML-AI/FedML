@@ -10,7 +10,7 @@ from ....ml.trainer.trainer_creator import create_model_trainer
 from .default_aggregator import DefaultServerAggregator
 
 
-def FedML_distributed(
+def FedML_distributed_seq(
     args,
     process_id,
     worker_number,

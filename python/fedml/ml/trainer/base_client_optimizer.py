@@ -55,9 +55,8 @@ class ClientOptimizer(ABC):
 
     def end_local_training(self, args, client_index, model, train_data, device):
         """
-        1. Return weights_or_grads, params_to_server_optimizer for special server optimizer need.
+        1. Return other_result .
         """
-        pass
 
 
 

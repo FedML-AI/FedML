@@ -1,6 +1,10 @@
 import argparse
 import logging
-import os
+import os, sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../")))
+
 
 import fedml
 from fedml import FedMLRunner
@@ -15,6 +19,25 @@ from fedml.arguments import Arguments
 from fedml import FedMLRunner
 
 
+import fedml.simulation.mpi.fedavg as fedavg
+# print(f"fedavg.__file__: {fedavg.__file__}")
+
+import fedml.simulation.mpi.mpi
+from fedml.simulation.mpi.mpi.DistributedAPI import FedML_distributed
+from fedml.simulation.mpi.mpi_seq.DistributedAPI import FedML_distributed_seq
+
+
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    # if v.lower() in ('yes', 'true', 't', 'y', '1'):
+    if isinstance(v, str) and v.lower() in ('true', 'True'):
+        return True
+    elif isinstance(v, str) and v.lower() in ('false', 'False'):
+        return False
+    else:
+        return v
+        # raise argparse.ArgumentTypeError('Boolean value expected.')
 
 
 
@@ -59,15 +82,27 @@ def add_args():
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--client_optimizer", type=str, default="sgd")
     parser.add_argument("--learning_rate", type=float, default=0.3)
+    parser.add_argument("--weight_decay", type=float, default=0.0001)
+    parser.add_argument("--batch_size", type=int, default=20)
     parser.add_argument("--momentum", type=float, default=0.0)
     parser.add_argument("--server_optimizer", type=str, default="sgd")
     parser.add_argument("--server_lr", type=float, default=1.0)
     parser.add_argument("--server_momentum", type=float, default=0.9)
     # args, unknown = parser.parse_known_args()
 
+    parser.add_argument("--mimelite", type=str, default="False")
+
+    #
+    parser.add_argument("--feddyn_alpha", type=float, default=0.01)
+
+    parser.add_argument("--initialize_all_clients", type=str, default="False")
+    parser.add_argument("--cache_client_status", type=str, default="False")
     parser.add_argument("--override_cmd_args", action="store_true")
 
     args = parser.parse_args()
+
+    for key in args.__dict__.keys():
+        args.__dict__[key] = str2bool(args.__dict__[key])
     return args
 
 
@@ -171,9 +206,16 @@ if __name__ == "__main__":
     #     # simulator = SimulatorMPI(args, device, dataset, model)
     #     # simulator.run()
 
+
     from fedml.simulation.mpi.mpi.DistributedAPI import FedML_distributed
-    FedML_distributed(args, args.process_id, args.worker_number, args.comm,
-                      device, dataset, model)
+    
+    if hasattr(args, "hierarchical_agg") and args.hierarchical_agg:
+        FedML_distributed_seq(args, args.process_id, args.worker_num, args.comm,
+                        device, dataset, model)
+    else:
+        FedML_distributed(args, args.process_id, args.worker_num, args.comm,
+                        device, dataset, model)
+        
 
 
 

@@ -31,12 +31,7 @@ class ScaffoldClientOptimizer(ClientOptimizer):
 
 
     def preprocess(self, args, client_index, model, train_data, device, server_result, criterion):
-        """
-        1. Return params_to_update for update usage.
-        2. pass model, train_data here, in case the algorithm need some preprocessing
-        """
-
-        params_to_client_optimizer = server_result[MLMessage.PARAMS_TO_CLIENT_OPTIMIZER]
+        # params_to_client_optimizer = server_result[MLMessage.PARAMS_TO_CLIENT_OPTIMIZER]
         if args.client_optimizer == "sgd":
             self.optimizer = torch.optim.SGD(
                 filter(lambda p: p.requires_grad, model.parameters()),
@@ -56,7 +51,7 @@ class ScaffoldClientOptimizer(ClientOptimizer):
                 self.c_model_local[name] = (params.data*0).cpu()
         else:
             self.c_model_local = self.client_status["c_model_local"]
-        self.c_model_global = params_to_client_optimizer["c_model_global"]
+        self.c_model_global = server_result["c_model_global"]
         self.w_global = copy.deepcopy(model.state_dict())
         self.iteration_cnt = 0
         return model
@@ -83,16 +78,11 @@ class ScaffoldClientOptimizer(ClientOptimizer):
 
 
     def end_local_training(self, args, client_index, model, train_data, device) -> Dict:
-        """
-        1. Return weights_or_grads, params_to_server_optimizer for special server optimizer need.
-        """
         c_delta_para = {}
         global_model_para = self.w_global
         net_para = model.cpu().state_dict()
         weights_delta = {}
         c_new_para = {}
-
-        # self.c_model_local
 
         for key in net_para:
             c_new_para[key] = self.c_model_local[key].cpu() - self.c_model_global[key].cpu() + \
@@ -100,9 +90,16 @@ class ScaffoldClientOptimizer(ClientOptimizer):
             c_delta_para[key] = c_new_para[key] - self.c_model_local[key].cpu()
             weights_delta[key] = net_para[key] - global_model_para[key].cpu()
 
-        params_to_server_optimizer = {}
-        params_to_server_optimizer["c_delta_para"] = c_delta_para
-        return weights_delta, params_to_server_optimizer
+        self.c_model_local = c_new_para
+        other_result = dict()
+        # other_result[MLMessage.MODEL_PARAMS] = model.cpu().state_dict()
+        other_result[MLMessage.MODEL_PARAMS] = weights_delta
+        other_result["c_delta_para"] = c_delta_para
+        return other_result
+
+        # params_to_server_optimizer = {}
+        # params_to_server_optimizer["c_delta_para"] = c_delta_para
+        # return weights_delta, params_to_server_optimizer
 
 
 

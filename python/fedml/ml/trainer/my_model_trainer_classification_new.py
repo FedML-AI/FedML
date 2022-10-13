@@ -108,15 +108,13 @@ class ModelTrainerCLS(ClientTrainer):
                     self.id, epoch, sum(epoch_loss) / len(epoch_loss)
                 )
             )
-        weights_or_grads, params_to_server_optimizer = client_optimizer.end_local_training(args, self.client_index, model, train_data, device)
-
+        client_result = {}
+        # weights_or_grads, params_to_server_optimizer = client_optimizer.end_local_training(args, self.client_index, model, train_data, device)
+        other_result = client_optimizer.end_local_training(args, self.client_index, model, train_data, device)
+        client_result.update(other_result)
         # transform Tensor to list
         if self.args.is_mobile == 1:
-            weights_or_grads = transform_tensor_to_list(weights_or_grads)
-
-        client_result = {}
-        client_result[MLMessage.MODEL_PARAMS] = weights_or_grads
-        client_result[MLMessage.PARAMS_TO_SERVER_OPTIMIZER] = params_to_server_optimizer
+            client_result[MLMessage.MODEL_PARAMS] = transform_tensor_to_list(client_result[MLMessage.MODEL_PARAMS])
 
         new_client_status = {"default": 0}
         new_client_status = client_optimizer.add_status(new_client_status)

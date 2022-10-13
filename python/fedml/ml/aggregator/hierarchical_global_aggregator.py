@@ -24,7 +24,7 @@ from ...core.schedule.seq_train_scheduler import SeqTrainScheduler
 from ...core.schedule.runtime_estimate import t_sample_fit
 
 
-class BaseServerAggregator(ServerAggregator):
+class HierarchicalGlobalAggregator(ServerAggregator):
     """Abstract base class for federated learning trainer."""
 
     def __init__(self, model, args, device, worker_num=None):
@@ -34,16 +34,16 @@ class BaseServerAggregator(ServerAggregator):
         self.server_optimizer = create_server_optimizer(args)
         self.server_optimizer.initialize(args, model)
 
-        # self.worker_num = args.client_num_in_total
         if worker_num is None:
             self.worker_num = args.client_num_per_round
         else:
             self.worker_num = worker_num
 
+        self.client_num_in_total = self.args.client_num_in_total
+
         self.device = device
-        self.model_dict = dict()
-        self.sample_num_dict = dict()
-        self.client_result_dict = dict()
+        self.reset_client_result_dict()
+
         self.flag_client_model_uploaded_dict = dict()
         for idx in range(self.worker_num):
             self.flag_client_model_uploaded_dict[idx] = False
@@ -56,6 +56,14 @@ class BaseServerAggregator(ServerAggregator):
             for j in range(self.args.client_num_in_total):
                 self.runtime_history[i][j] = []
                 self.runtime_avg[i][j] = None
+
+
+    def reset_client_result_dict(self):
+        self.model_dict = dict()            # max length: client_num_in_total
+        self.sample_num_dict = dict()       # max length: client_num_in_total
+        self.client_result_dict = dict()    # max length: client_num_in_total
+        self.worker_result_dict = dict()    # max length: worker_num
+
 
     def set_id(self, aggregator_id):
         self.id = aggregator_id
@@ -201,40 +209,30 @@ class BaseServerAggregator(ServerAggregator):
         return client_schedule
 
 
-    def aggregate_seq(self, index, client_result, sample_num, training_num_in_round):
-        logging.info("add_model. index = %d" % index)
+    def global_aggregate_seq(self, worker_index, local_agg_client_result, local_sample_num_dict):
+        # logging.info("recevice worker result index = %d" % worker_index)
         start_time = time.time()
+        # local_collect_result: parameters that cannot be locally aggregated.
+        local_collect_result = local_agg_client_result[MLMessage.LOCAL_COLLECT_RESULT]
+        # local_collect_result: parameters that are locally aggregated.
+        local_agg_result = local_agg_client_result[MLMessage.LOCAL_AGG_RESULT]
+        for client_index, client_result in local_collect_result.items():
+            # self.server_optimizer.agg_seq(self.args, None, local_collect_result, sample_num, training_num_in_round)
+            self.sample_num_dict[int(client_index)] = local_sample_num_dict[int(client_index)]
+            self.client_result_dict[int(client_index)] = client_result
 
-        self.sample_num_dict[index] = sample_num
-        self.flag_client_model_uploaded_dict[index] = True
-        self.server_optimizer.agg_seq(self.args, index, client_result, sample_num, training_num_in_round)
+        self.server_optimizer.global_agg_seq(self.args, local_agg_result)
+        self.flag_client_model_uploaded_dict[worker_index] = True
         end_time = time.time()
-        logging.info("aggregate time cost: %d" % (end_time - start_time))
+        # logging.info("aggregate time cost: %d" % (end_time - start_time))
 
 
-    def end_aggregate_seq(self):
-        new_global_params = self.server_optimizer.end_agg_seq(self.args)
-        server_result = {}
-        if self.args.is_mobile == 1:
-            new_global_params = transform_tensor_to_list(new_global_params)
-        server_result[MLMessage.MODEL_PARAMS] = new_global_params
-        # server_result[MLMessage.PARAMS_TO_CLIENT_OPTIMIZER] = params_to_client_optimizer
-        other_result = self.server_optimizer.end_agg()
-        server_result.update(other_result)
-        return server_result
-
-
-    def add_local_trained_result(self, index, client_result, sample_num):
-        logging.info("add_model. index = %d" % index)
-        self.model_dict[index] = client_result[MLMessage.MODEL_PARAMS]
-        self.client_result_dict[index] = client_result
-        self.sample_num_dict[index] = sample_num
-        self.flag_client_model_uploaded_dict[index] = True
-        # self.__add_params_to_server_optimizer(index, client_result[MLMessage.PARAMS_TO_SERVER_OPTIMIZER])
-
-
-    # def __add_params_to_server_optimizer(self, index, params_to_server_optimizer):
-    #     self.server_optimizer.add_params_to_server_optimizer(index, params_to_server_optimizer)
+    # def add_local_trained_result(self, index, client_result, sample_num):
+    #     logging.info("add_model. index = %d" % index)
+    #     self.model_dict[index] = client_result[MLMessage.MODEL_PARAMS]
+    #     self.client_result_dict[index] = client_result
+    #     self.sample_num_dict[index] = sample_num
+    #     self.flag_client_model_uploaded_dict[index] = True
 
 
     def on_before_aggregation(
@@ -285,9 +283,9 @@ class BaseServerAggregator(ServerAggregator):
         start_time = time.time()
 
         raw_client_model_or_grad_list = []
-        for idx in range(self.worker_num):
-            raw_client_model_or_grad_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
-        raw_client_model_or_grad_list = self.on_before_aggregation(raw_client_model_or_grad_list)
+        # for idx in range(self.worker_num):
+        #     raw_client_model_or_grad_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
+        # raw_client_model_or_grad_list = self.on_before_aggregation(raw_client_model_or_grad_list)
 
         self.server_optimizer.before_agg(self.client_result_dict, self.sample_num_dict)
         if FedMLDefender.get_instance().is_defense_enabled():

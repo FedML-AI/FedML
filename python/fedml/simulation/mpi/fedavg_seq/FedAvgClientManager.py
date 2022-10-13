@@ -116,7 +116,7 @@ class FedAVGClientManager(FedMLCommManager):
             end_time = time.time()
             client_runtime = end_time - start_time
             client_runtime_info[client_index] = client_runtime
-            logging.info(
+            logging.info( 
                 "#######training########### End Simulating client_index = %d, consuming time: %f"
                 % (client_index, client_runtime)
             )

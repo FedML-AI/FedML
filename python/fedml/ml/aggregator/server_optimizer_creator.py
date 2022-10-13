@@ -14,6 +14,7 @@ def create_server_optimizer(args):
     elif args.federated_optimizer == "FedProx":
         server_optimizer = FedProxServerOptimizer(args)
     elif args.federated_optimizer == "FedOpt":
+        from .fedopt_server_optimizer import FedOptServerOptimizer
         server_optimizer = FedOptServerOptimizer(args)
     elif args.federated_optimizer == "FedNova":
         server_optimizer = FedNovaServerOptimizer(args)

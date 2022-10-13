@@ -39,12 +39,8 @@ class MimeClientOptimizer(ClientOptimizer):
 
 
     def preprocess(self, args, client_index, model, train_data, device, server_result, criterion):
-        """
-        1. Return params_to_update for update usage.
-        2. pass model, train_data here, in case the algorithm need some preprocessing
-        """
         self.client_index = client_index
-        params_to_client_optimizer = server_result[MLMessage.PARAMS_TO_CLIENT_OPTIMIZER]
+        # params_to_client_optimizer = server_result[MLMessage.PARAMS_TO_CLIENT_OPTIMIZER]
         if args.client_optimizer == "sgd":
             optimizer = torch.optim.SGD(
                 filter(lambda p: p.requires_grad, model.parameters()),
@@ -62,8 +58,8 @@ class MimeClientOptimizer(ClientOptimizer):
         self.optimizer = optimizer
         self.opt_loader = OptimizerLoader(model, self.optimizer)
 
-        self.grad_global = params_to_client_optimizer["grad_global"]
-        self.global_named_states = params_to_client_optimizer["global_named_states"]
+        self.grad_global = server_result["grad_global"]
+        self.global_named_states = server_result["global_named_states"]
         self.criterion = criterion
 
         self.init_model = copy.deepcopy(model)
@@ -102,16 +98,16 @@ class MimeClientOptimizer(ClientOptimizer):
 
 
     def end_local_training(self, args, client_index, model, train_data, device) -> Dict:
-        """
-        1. Return weights_or_grads, params_to_server_optimizer for special server optimizer need.
-        """
         local_grad = self.accumulate_data_grad(train_data, model, device, args)
 
         clip_norm(list(local_grad.values()), device, max_norm=1.0, norm_type=2.)
-
-        params_to_server_optimizer = {}
-        params_to_server_optimizer["local_grad"] = local_grad
-        return model.cpu().state_dict(), params_to_server_optimizer
+        # params_to_server_optimizer = {}
+        # params_to_server_optimizer["local_grad"] = local_grad
+        # return model.cpu().state_dict(), params_to_server_optimizer
+        other_result = dict()
+        other_result[MLMessage.MODEL_PARAMS] = model.cpu().state_dict()
+        other_result["local_grad"] = local_grad
+        return other_result
 
 
 
