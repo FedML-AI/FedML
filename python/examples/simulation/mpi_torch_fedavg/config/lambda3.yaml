@@ -8,9 +8,11 @@ data_args:
   # partition_method: "hetero"
   # partition_alpha: 0.1
   dataset: "cifar10"
+  # data_cache_dir: "/home/chaoyanghe/FedML/data/cifar10"
   data_cache_dir: "/home/chaoyanghe/FedML/data/cifar10"
   partition_method: "hetero"
   partition_alpha: 0.1
+  net_dataidx_map_file: null
 
 
 model_args:
@@ -81,7 +83,7 @@ cache_args:
   # client_cache: "stateful"  #  localhost
   local_cache: False  # Some algorithms need to cache status, including SCAFFOLD, Feddyn 
   client_cache: "localhost"  #  localhost
-  local_cache_root: "/home/chaoyanghe/zhtang_FedML/python/examples/simulation/mpi_torch_fedavg"
+  local_cache_root: "/home/comp/20481896/zhtang_FedML/python/examples/simulation/mpi_torch_fedavg"
   delete_cache: True      # Set true to delete local cache after training
 
 
