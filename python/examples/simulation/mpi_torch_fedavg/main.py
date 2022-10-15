@@ -11,7 +11,7 @@ from fedml import FedMLRunner
 from fedml.arguments import Arguments
 from fedml.model.cv.resnet import resnet20
 from fedml.model.cv.resnet_cifar import resnet18_cifar
-from fedml.model.cv.resnet_gn import resnet18
+from fedml.model.cv.resnet_gn import resnet18, resnet50
 from fedml.model.cv.resnet_torch import resnet18 as resnet18_torch
 
 from fedml.arguments import Arguments
@@ -72,6 +72,9 @@ def add_args():
     parser.add_argument("--dataset", type=str, default="fed_cifar100")
     parser.add_argument(
         "--data_cache_dir", type=str, default="/home/chaoyanghe/zhtang_FedML/python/fedml/data/fed_cifar100/datasets"
+    )
+    parser.add_argument(
+        "--net_dataidx_map_file", type=str, default=None
     )
 
     # Training arguments
@@ -173,6 +176,9 @@ if __name__ == "__main__":
     if args.model == "resnet18":
         logging.info("ResNet18_GN")
         model = resnet18(group_norm=args.group_norm_channels, num_classes=output_dim)
+    elif args.model == "resnet50":
+        logging.info("ResNet50_GN")
+        model = resnet50(group_norm=args.group_norm_channels, num_classes=output_dim)
     elif args.model == "resnet20":
         model = resnet20(class_num=output_dim)
     elif args.model == "resnet18_torch":
