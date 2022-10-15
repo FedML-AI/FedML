@@ -65,7 +65,7 @@ class ClientManager(FedMLCommManager):
         # self.__train()
 
     def handle_message_receive_model_from_server(self, msg_params):
-        logging.info("handle_message_receive_model_from_server.")
+        # logging.info("handle_message_receive_model_from_server.")
         # model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         server_result = msg_params.get(MyMessage.MSG_ARG_KEY_SERVER_RESULT)
         # client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
@@ -91,25 +91,23 @@ class ClientManager(FedMLCommManager):
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_RUNTIME_INFO, client_runtime_info)
         self.send_message(message)
 
-
-
     def __train(self, server_result, client_indexes):
-        logging.info("#######training########### round_id = %d" % self.args.round_idx)
+        logging.info(f"#######training########### worker:{self.worker_id} round_id = {self.args.round_idx}")
 
-        if hasattr(self.args, "simulation_gpu_hetero"):
+        if hasattr(self.args, "simulation_gpu_hetero") and self.args.simulation_gpu_hetero:
             # runtime_speed_ratio
             # runtime_speed_ratio * t_train - t_train
             # time.sleep(runtime_speed_ratio * t_train - t_train)
             simulation_gpu_hetero = self.args.simulation_gpu_hetero
-            runtime_speed_ratio = self.args.gpu_hetero_ratio * self.worker_id / self.args.worker_num
+            runtime_speed_ratio_gpu = self.args.gpu_hetero_ratio * self.worker_id / self.args.worker_num
 
-        if hasattr(self.args, "simulation_environment_hetero"):
+        if hasattr(self.args, "simulation_environment_hetero") and self.args.simulation_environment_hetero:
             # runtime_speed_ratio
             # runtime_speed_ratio * t_train - t_train
             # time.sleep(runtime_speed_ratio * t_train - t_train)
             if self.args.simulation_environment_hetero == "cos":
-                runtime_speed_ratio = self.args.environment_hetero_ratio * \
-                    (1 + cos(self.round_idx / self.num_rounds*3.1415926 + self.worker_id))
+                runtime_speed_ratio_env = self.args.environment_hetero_ratio * \
+                    (1 + cos(self.args.round_idx / self.num_rounds*3.1415926 + self.worker_id))
             else:
                 raise NotImplementedError
 
@@ -120,10 +118,10 @@ class ClientManager(FedMLCommManager):
         client_runtime_info = {}
         self.hierarchical_aggregator.reset()
         for client_index in client_indexes:
-            logging.info(
-                "#######training########### Simulating client_index = %d"
-                % (client_index)
-            )
+            # logging.info(
+            #     "#######training########### Simulating client_index = %d"
+            #     % (client_index)
+            # )
             start_time = time.time()
 
             self.trainer.update_trainer(int(client_index), server_result)
@@ -134,18 +132,27 @@ class ClientManager(FedMLCommManager):
             self.hierarchical_aggregator.local_aggregate_seq(client_index, client_result, local_sample_num, training_num_in_round)
             local_sample_num_dict[client_index] = local_sample_num
 
-            if hasattr(self.args, "simulation_gpu_hetero"):
+            if hasattr(self.args, "simulation_gpu_hetero") and self.args.simulation_gpu_hetero:
                 t_train = time.time() - start_time
-                time.sleep(runtime_speed_ratio * t_train)
+                logging.info(f"Simulating simulation_gpu_hetero:{runtime_speed_ratio_gpu}, sleep time: {t_train}")
+                time.sleep(runtime_speed_ratio_gpu * t_train)
+
+            if hasattr(self.args, "simulation_environment_hetero") and self.args.simulation_environment_hetero:
+                t_train = time.time() - start_time
+                logging.info(f"Simulating simulation_environment_hetero:{runtime_speed_ratio_env}, sleep time: {t_train}")
+                time.sleep(runtime_speed_ratio_env * t_train)
+
             end_time = time.time()
             client_runtime = end_time - start_time
             client_runtime_info[client_index] = client_runtime
-            logging.info(
-                "#######training########### End Simulating client_index = %d, consuming time: %f"
-                % (client_index, client_runtime)
-            )
-
-        local_agg_client_result = self.hierarchical_aggregator.end_local_aggregate_seq()
+            # logging.info(
+            #     "#######training########### End Simulating client_index = %d, consuming time: %f"
+            #     % (client_index, client_runtime)
+            # )
+        if len(client_indexes) == 0:
+            local_agg_client_result = {}
+        else:
+            local_agg_client_result = self.hierarchical_aggregator.end_local_aggregate_seq()
         self.send_local_agg_result_to_server(0, local_agg_client_result,
                 local_sample_num_dict, client_runtime_info)
 

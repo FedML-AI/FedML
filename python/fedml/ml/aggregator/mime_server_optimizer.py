@@ -54,7 +54,7 @@ class MimeServerOptimizer(ServerOptimizer):
     def global_agg_seq(self, args, client_result):
         """ Used in hiearchical and sequentially aggregation. """
         key_op_weight_list = [(MLMessage.MODEL_PARAMS, "weighted_avg", client_result[MLMessage.MODEL_PARAMS]["agg_weight"]),
-                              ("local_grad", "weighted_avg", client_result[MLMessage.MODEL_PARAMS]["agg_weight"])]
+                              ("local_grad", "weighted_avg", client_result["local_grad"]["agg_weight"])]
         self.global_seq_agg_params(client_result, key_op_weight_list)
         return key_op_weight_list
 

@@ -133,17 +133,19 @@ class HierarchicalGlobalAggregator(ServerAggregator):
     def record_client_runtime(self, worker_id, client_runtimes):
         for client_id, runtime in client_runtimes.items():
             self.runtime_history[worker_id][client_id].append(runtime)
-        if hasattr(self.args, "runtime_est_mode"):
-            if self.args.runtime_est_mode == 'EMA':
-                for client_id, runtime in client_runtimes.items():
-                    if self.runtime_avg[worker_id][client_id] is None:
-                        self.runtime_avg[worker_id][client_id] = runtime
-                    else:
-                        self.runtime_avg[worker_id][client_id] += self.runtime_avg[worker_id][client_id]/2 + runtime/2
-            elif self.args.runtime_est_mode == 'time_window':
-                for client_id, runtime in client_runtimes.items():
-                    self.runtime_history[worker_id][client_id] = self.runtime_history[worker_id][client_id][-3:]
-
+        if self.args.runtime_est_mode == 'EMA':
+            for client_id, runtime in client_runtimes.items():
+                if self.runtime_avg[worker_id][client_id] is None:
+                    self.runtime_avg[worker_id][client_id] = runtime
+                else:
+                    self.runtime_avg[worker_id][client_id] += self.runtime_avg[worker_id][client_id]/2 + runtime/2
+        elif self.args.runtime_est_mode == 'time_window':
+            for client_id, runtime in client_runtimes.items():
+                self.runtime_history[worker_id][client_id] = self.runtime_history[worker_id][client_id][-3:]
+        elif self.args.runtime_est_mode == 'history':
+            pass
+        else:
+            raise NotImplementedError
 
     def generate_client_schedule(self, round_idx, client_indexes):
         # self.runtime_history = {}
@@ -151,29 +153,37 @@ class HierarchicalGlobalAggregator(ServerAggregator):
         #     self.runtime_history[i] = {}
         #     for j in range(self.args.client_num_in_total):
         #         self.runtime_history[i][j] = []
+        things_to_wandb = {}
         previous_time = time.time()
-        if hasattr(self.args, "simulation_schedule") and round_idx > 5:
+        if hasattr(self.args, "simulation_schedule")  and self.args.simulation_schedule is not None \
+            and round_idx > 5:
+            # and round_idx > 5:
             # Need some rounds to record some information. 
             simulation_schedule = self.args.simulation_schedule
-            if hasattr(self.args, "runtime_est_mode"):
-                if self.args.runtime_est_mode == 'EMA':
-                    runtime_to_fit = self.runtime_avg
-                elif self.args.runtime_est_mode == 'time_window':
-                    runtime_to_fit = self.runtime_history
-                else:
-                    raise NotImplementedError
-            else:
+            if self.args.runtime_est_mode == 'EMA':
+                runtime_to_fit = self.runtime_avg
+            elif self.args.runtime_est_mode == 'time_window':
                 runtime_to_fit = self.runtime_history
+            elif self.args.runtime_est_mode == 'history':
+                runtime_to_fit = self.runtime_history
+            else:
+                raise NotImplementedError
 
             fit_params, fit_funcs, fit_errors = t_sample_fit(
                 self.worker_num, self.args.client_num_in_total, runtime_to_fit, 
                 self.train_data_local_num_dict, uniform_client=True, uniform_gpu=False)
 
             if self.args.enable_wandb:
-                wandb.log({"Time_Fit_workload": time.time() - previous_time, "round": round_idx})
+                # wandb.log({"Time_Fit_workload": time.time() - previous_time, "round": round_idx})
+                things_to_wandb["Time_Fit_workload"] = time.time() - previous_time
                 current_time = time.time()
 
             logging.info(f"fit_params: {fit_params}")
+            if hasattr(self.args, "tracking_runtime") and self.args.tracking_runtime and self.args.enable_wandb:
+                for worker_id, fit_param in fit_params.items():
+                    things_to_wandb[f"Runtime_fit_param_w{worker_id}_k"] = fit_param[0][0]
+                    things_to_wandb[f"Runtime_fit_param_w{worker_id}_b"] = fit_param[0][1]
+
             logging.info(f"fit_errors: {fit_errors}")
             avg_fit_error = 0.0
             sum_times = 0
@@ -183,7 +193,8 @@ class HierarchicalGlobalAggregator(ServerAggregator):
                     sum_times += 1
             avg_fit_error /= sum_times
             if self.args.enable_wandb:
-                wandb.log({"RunTimeEstimateError": avg_fit_error, "round": round_idx})
+                # wandb.log({"RunTimeEstimateError": avg_fit_error, "round": round_idx})
+                things_to_wandb["RunTimeEstimateError"] = avg_fit_error
 
             mode = 0
             workloads = np.array([ self.train_data_local_num_dict[client_id] for client_id in client_indexes])
@@ -199,12 +210,18 @@ class HierarchicalGlobalAggregator(ServerAggregator):
                 client_schedule.append(client_indexes[indexes])
 
             if self.args.enable_wandb:
-                wandb.log({"Time_Schedule": time.time() - current_time, "round": round_idx})
+                # wandb.log({"Time_Schedule": time.time() - current_time, "round": round_idx})
+                things_to_wandb["Time_Schedule"] = time.time() - current_time
                 current_time = time.time()
         else:
             client_schedule = np.array_split(client_indexes, self.worker_num)
         if self.args.enable_wandb:
-            wandb.log({"RunTimeSchedule": time.time() - previous_time, "round": round_idx})
+            # wandb.log({"RunTimeSchedule": time.time() - previous_time, "round": round_idx})
+            things_to_wandb["RunTimeSchedule"] = time.time() - previous_time
+
+        if self.args.enable_wandb:
+            things_to_wandb["round"] = round_idx
+            wandb.log(things_to_wandb)
         logging.info(f"Schedules: {client_schedule}")
         return client_schedule
 
@@ -212,16 +229,16 @@ class HierarchicalGlobalAggregator(ServerAggregator):
     def global_aggregate_seq(self, worker_index, local_agg_client_result, local_sample_num_dict):
         # logging.info("recevice worker result index = %d" % worker_index)
         start_time = time.time()
-        # local_collect_result: parameters that cannot be locally aggregated.
-        local_collect_result = local_agg_client_result[MLMessage.LOCAL_COLLECT_RESULT]
-        # local_collect_result: parameters that are locally aggregated.
-        local_agg_result = local_agg_client_result[MLMessage.LOCAL_AGG_RESULT]
-        for client_index, client_result in local_collect_result.items():
-            # self.server_optimizer.agg_seq(self.args, None, local_collect_result, sample_num, training_num_in_round)
-            self.sample_num_dict[int(client_index)] = local_sample_num_dict[int(client_index)]
-            self.client_result_dict[int(client_index)] = client_result
-
-        self.server_optimizer.global_agg_seq(self.args, local_agg_result)
+        if MLMessage.LOCAL_COLLECT_RESULT in local_agg_client_result:
+            # local_collect_result: parameters that cannot be locally aggregated.
+            local_collect_result = local_agg_client_result[MLMessage.LOCAL_COLLECT_RESULT]
+            for client_index, client_result in local_collect_result.items():
+                self.sample_num_dict[int(client_index)] = local_sample_num_dict[int(client_index)]
+                self.client_result_dict[int(client_index)] = client_result
+        if MLMessage.LOCAL_AGG_RESULT in local_agg_client_result:
+            # local_collect_result: parameters that are locally aggregated.
+            local_agg_result = local_agg_client_result[MLMessage.LOCAL_AGG_RESULT]
+            self.server_optimizer.global_agg_seq(self.args, local_agg_result)
         self.flag_client_model_uploaded_dict[worker_index] = True
         end_time = time.time()
         # logging.info("aggregate time cost: %d" % (end_time - start_time))

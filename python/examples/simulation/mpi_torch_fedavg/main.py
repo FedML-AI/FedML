@@ -95,12 +95,30 @@ def add_args():
 
     parser.add_argument("--mimelite", type=str, default="False")
 
+    parser.add_argument("--frequency_of_the_test", type=int, default=10)
+
     #
     parser.add_argument("--feddyn_alpha", type=float, default=0.01)
 
-    parser.add_argument("--initialize_all_clients", type=str, default="False")
-    parser.add_argument("--cache_client_status", type=str, default="False")
+    parser.add_argument("--aggregate_seq", type=str, default="False")
+    parser.add_argument("--hierarchical_agg", type=str, default="False")
+
     parser.add_argument("--override_cmd_args", action="store_true")
+    parser.add_argument("--tag", type=str, default="debug")
+    parser.add_argument("--exp_name", type=str, default="ready")
+    parser.add_argument("--device_tag", type=str, default="lambda3")
+
+
+    parser.add_argument("--local_cache", type=str, default="False")
+    parser.add_argument("--simulation_schedule", type=str, default=None)
+    parser.add_argument("--runtime_est_mode", type=str, default="history")
+
+    parser.add_argument("--simulation_gpu_hetero", type=str, default=None)
+    parser.add_argument("--gpu_hetero_ratio", type=float, default=1.0)
+    parser.add_argument("--simulation_environment_hetero", type=str, default=None)
+    parser.add_argument("--environment_hetero_ratio", type=float, default=1.0)
+
+    parser.add_argument("--tracking_runtime", type=str, default="False")
 
     args = parser.parse_args()
 
@@ -184,7 +202,7 @@ if __name__ == "__main__":
     elif args.model == "resnet18_torch":
         model = resnet18_torch(num_classes=output_dim, in_channels=in_channels)
     elif args.model == "resnet18_cifar":
-        logging.info("ResNet18_GN")
+        logging.info("resnet18_cifar")
         model = resnet18_cifar(group_norm=args.group_norm_channels, num_classes=output_dim)
     elif args.model == "albert-base-v2":
         from transformers import (AdamW, AlbertTokenizer, AutoConfig,
