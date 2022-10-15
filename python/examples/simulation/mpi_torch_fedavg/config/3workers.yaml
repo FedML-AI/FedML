@@ -8,9 +8,11 @@ data_args:
   # partition_method: "hetero"
   # partition_alpha: 0.1
   dataset: "cifar10"
+  # data_cache_dir: "/home/chaoyanghe/FedML/data/cifar10"
   data_cache_dir: "/home/chaoyanghe/FedML/data/cifar10"
   partition_method: "hetero"
   partition_alpha: 0.1
+  net_dataidx_map_file: null
 
 
 model_args:
@@ -80,15 +82,15 @@ comm_args:
 cache_args:
   # client_cache: "stateful"  #  localhost
   client_cache: "localhost"  #  localhost
-  local_cache_root: "/home/chaoyanghe/zhtang_FedML/python/examples/simulation/mpi_torch_fedavg"
+  local_cache_root: "/home/comp/20481896/zhtang_FedML/python/examples/simulation/mpi_torch_fedavg"
   delete_cache: True      # Set true to delete local cache after training
 
 
 
 tracking_args:
   log_file_dir: ./log
-  # enable_wandb: False
-  enable_wandb: True
+  enable_wandb: False
+  # enable_wandb: True
   wandb_entity: automl
   wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
   wandb_project: bench_optim

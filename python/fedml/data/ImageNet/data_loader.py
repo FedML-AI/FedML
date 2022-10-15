@@ -5,12 +5,18 @@ import torch
 import torch.utils.data as data
 import torchvision.transforms as transforms
 from torch.utils.data.distributed import DistributedSampler
-
+import pickle
 
 from .datasets import ImageNet
 from .datasets import ImageNet_truncated
 from .datasets_hdf5 import ImageNet_hdf5
 from .datasets_hdf5 import ImageNet_truncated_hdf5
+
+# from datasets import ImageNet
+# from datasets import ImageNet_truncated
+# from datasets_hdf5 import ImageNet_hdf5
+# from datasets_hdf5 import ImageNet_truncated_hdf5
+
 
 
 class Cutout(object):
@@ -45,7 +51,7 @@ def _data_transforms_ImageNet():
     image_size = 224
     train_transform = transforms.Compose(
         [
-            # transforms.ToPILImage(),
+            transforms.ToPILImage(),
             transforms.RandomResizedCrop(image_size),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
@@ -57,6 +63,7 @@ def _data_transforms_ImageNet():
 
     valid_transform = transforms.Compose(
         [
+            transforms.ToPILImage(),
             transforms.CenterCrop(224),
             transforms.ToTensor(),
             transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
@@ -80,13 +87,80 @@ def get_dataloader_test(
     )
 
 
+
+
+def partition_data(y_train, datadir, partition, n_nets, num_classes, alpha):
+    np.random.seed(10)
+    logging.info("*********partition data***************")
+    # X_train, y_train, X_test, y_test = load_cifar10_data(datadir)
+    # n_train = X_train.shape[0]
+    # n_test = X_test.shape[0]
+    n_train = y_train.shape[0]
+
+
+    iters = 0
+    if partition == "homo":
+        total_num = n_train
+        idxs = np.random.permutation(total_num)
+        batch_idxs = np.array_split(idxs, n_nets)
+        net_dataidx_map = {i: batch_idxs[i] for i in range(n_nets)}
+
+    elif partition == "hetero":
+        min_size = 0
+        K = num_classes
+        N = y_train.shape[0]
+        logging.info("N = " + str(N))
+        net_dataidx_map = {}
+
+        while min_size < 10:
+            idx_batch = [[] for _ in range(n_nets)]
+            # for each class in the dataset
+            for k in range(K):
+                idx_k = np.where(y_train == k)[0]
+                np.random.shuffle(idx_k)
+                proportions = np.random.dirichlet(np.repeat(alpha, n_nets))
+                ## Balance
+                proportions = np.array(
+                    [
+                        p * (len(idx_j) < N / n_nets)
+                        for p, idx_j in zip(proportions, idx_batch)
+                    ]
+                )
+                proportions = proportions / proportions.sum()
+                proportions = (np.cumsum(proportions) * len(idx_k)).astype(int)[:-1]
+                idx_batch = [
+                    idx_j + idx.tolist()
+                    for idx_j, idx in zip(idx_batch, np.split(idx_k, proportions))
+                ]
+                min_size = min([len(idx_j) for idx_j in idx_batch])
+                iters += 1
+                # print(f"iters: {iters}, ")
+
+        for j in range(n_nets):
+            np.random.shuffle(idx_batch[j])
+            net_dataidx_map[j] = idx_batch[j]
+
+    traindata_cls_counts = record_net_data_stats(y_train, net_dataidx_map)
+
+    return net_dataidx_map, traindata_cls_counts
+
+
+def record_net_data_stats(y_train, net_dataidx_map):
+    net_cls_counts = {}
+
+    for net_i, dataidx in net_dataidx_map.items():
+        unq, unq_cnt = np.unique(y_train[dataidx], return_counts=True)
+        tmp = {unq[i]: unq_cnt[i] for i in range(len(unq))}
+        net_cls_counts[net_i] = tmp
+    logging.debug("Data statistics: %s" % str(net_cls_counts))
+    return net_cls_counts
+
 def get_dataloader_ImageNet_truncated(
     imagenet_dataset_train,
     imagenet_dataset_test,
     train_bs,
     test_bs,
     dataidxs=None,
-    net_dataidx_map=None,
 ):
     """
     imagenet_dataset_train, imagenet_dataset_test should be ImageNet or ImageNet_hdf5
@@ -98,23 +172,13 @@ def get_dataloader_ImageNet_truncated(
     else:
         raise NotImplementedError()
 
-    transform_train, transform_test = _data_transforms_ImageNet()
-
     train_ds = dl_obj(
         imagenet_dataset_train,
         dataidxs,
-        net_dataidx_map,
-        train=True,
-        transform=transform_train,
-        download=False,
     )
     test_ds = dl_obj(
         imagenet_dataset_test,
         dataidxs=None,
-        net_dataidx_map=None,
-        train=False,
-        transform=transform_test,
-        download=False,
     )
 
     train_dl = data.DataLoader(
@@ -144,13 +208,12 @@ def get_dataloader_ImageNet(datadir, train_bs, test_bs, dataidxs=None):
 
     train_ds = dl_obj(
         datadir,
-        dataidxs=dataidxs,
         train=True,
         transform=transform_train,
         download=False,
     )
     test_ds = dl_obj(
-        datadir, dataidxs=None, train=False, transform=transform_test, download=False
+        datadir, train=False, transform=transform_test, download=False
     )
 
     train_dl = data.DataLoader(
@@ -182,14 +245,12 @@ def get_dataloader_test_ImageNet(
 
     train_ds = dl_obj(
         datadir,
-        dataidxs=dataidxs_train,
         train=True,
         transform=transform_train,
         download=True,
     )
     test_ds = dl_obj(
         datadir,
-        dataidxs=dataidxs_test,
         train=False,
         transform=transform_test,
         download=True,
@@ -229,19 +290,19 @@ def distributed_centralized_ImageNet_loader(
     transform_train, transform_test = _data_transforms_ImageNet()
     if dataset == "ILSVRC2012":
         train_dataset = ImageNet(
-            data_dir=data_dir, dataidxs=None, train=True, transform=transform_train
+            data_dir=data_dir, train=True, transform=transform_train
         )
 
         test_dataset = ImageNet(
-            data_dir=data_dir, dataidxs=None, train=False, transform=transform_test
+            data_dir=data_dir, train=False, transform=transform_test
         )
     elif dataset == "ILSVRC2012_hdf5":
         train_dataset = ImageNet_hdf5(
-            data_dir=data_dir, dataidxs=None, train=True, transform=transform_train
+            data_dir=data_dir, train=True, transform=transform_train
         )
 
         test_dataset = ImageNet_hdf5(
-            data_dir=data_dir, dataidxs=None, train=False, transform=transform_test
+            data_dir=data_dir, train=False, transform=transform_test
         )
 
     train_sam = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank)
@@ -270,6 +331,33 @@ def distributed_centralized_ImageNet_loader(
     return train_data_num, test_data_num, train_dl, test_dl, None, None, None, class_num
 
 
+def save_net_dataidx_map(
+    dataset,
+    data_dir,
+    partition_method=None,
+    partition_alpha=None,
+    client_number=100,
+    batch_size=10,
+    net_dataidx_map_file=None,
+):
+    transform_train, transform_test = _data_transforms_ImageNet()
+
+    if dataset == "ILSVRC2012":
+        train_dataset = ImageNet(data_dir=data_dir, train=True, transform=transform_train)
+        test_dataset = ImageNet(data_dir=data_dir, train=False, transform=transform_test)
+    elif dataset == "ILSVRC2012_hdf5":
+        train_dataset = ImageNet_hdf5(data_dir=data_dir, train=True, transform=transform_train)
+        test_dataset = ImageNet_hdf5(data_dir=data_dir, train=False, transform=transform_test)
+
+    class_num = 1000
+
+    net_dataidx_map, traindata_cls_counts = partition_data(
+                    train_dataset.targets, data_dir, partition_method, client_number, class_num, partition_alpha)
+    with open(net_dataidx_map_file, 'wb') as f:
+        # Pickle the 'data' dictionary using the highest protocol available.
+        pickle.dump(net_dataidx_map, f)
+
+
 def load_partition_data_ImageNet(
     dataset,
     data_dir,
@@ -277,28 +365,37 @@ def load_partition_data_ImageNet(
     partition_alpha=None,
     client_number=100,
     batch_size=10,
+    net_dataidx_map_file=None,
 ):
+    transform_train, transform_test = _data_transforms_ImageNet()
 
     if dataset == "ILSVRC2012":
-        train_dataset = ImageNet(data_dir=data_dir, dataidxs=None, train=True)
-
-        test_dataset = ImageNet(data_dir=data_dir, dataidxs=None, train=False)
+        train_dataset = ImageNet(data_dir=data_dir, train=True, transform=transform_train)
+        test_dataset = ImageNet(data_dir=data_dir, train=False, transform=transform_test)
     elif dataset == "ILSVRC2012_hdf5":
-        train_dataset = ImageNet_hdf5(data_dir=data_dir, dataidxs=None, train=True)
-
-        test_dataset = ImageNet_hdf5(data_dir=data_dir, dataidxs=None, train=False)
-
-    net_dataidx_map = train_dataset.get_net_dataidx_map()
+        train_dataset = ImageNet_hdf5(data_dir=data_dir, train=True, transform=transform_train)
+        test_dataset = ImageNet_hdf5(data_dir=data_dir, train=False, transform=transform_test)
 
     class_num = 1000
 
-    # logging.info("traindata_cls_counts = " + str(traindata_cls_counts))
-    # train_data_num = sum([len(net_dataidx_map[r]) for r in range(client_number)])
-    train_data_num = len(train_dataset)
-    test_data_num = len(test_dataset)
-    class_num_dict = train_dataset.get_data_local_num_dict()
+    if net_dataidx_map_file is None:
+        net_dataidx_map, traindata_cls_counts = partition_data(
+                        train_dataset.targets, data_dir, partition_method, client_number, class_num, partition_alpha)
+    else:
+        with open(net_dataidx_map_file, 'rb') as f:
+            net_dataidx_map = pickle.load(f)
 
-    # train_data_global, test_data_global = get_dataloader(dataset, data_dir, batch_size, batch_size)
+
+    # print(net_dataidx_map)
+
+    # logging.info("traindata_cls_counts = " + str(traindata_cls_counts))
+    train_data_num = sum([len(net_dataidx_map[r]) for r in range(client_number)])
+    # print(f"train_data_num: {train_data_num}")
+    # print(f"len(train_dataset.targets): {len(train_dataset.targets)}")
+    train_data_num = len(train_dataset)
+    # print(f"train_data_num: {train_data_num}")
+    test_data_num = len(test_dataset)
+    # class_num_dict = train_dataset.get_data_local_num_dict()
 
     train_data_global, test_data_global = get_dataloader_ImageNet_truncated(
         train_dataset,
@@ -306,7 +403,6 @@ def load_partition_data_ImageNet(
         train_bs=batch_size,
         test_bs=batch_size,
         dataidxs=None,
-        net_dataidx_map=None,
     )
 
     logging.info("train_dl_global number = " + str(len(train_data_global)))
@@ -318,35 +414,31 @@ def load_partition_data_ImageNet(
     test_data_local_dict = dict()
 
     for client_idx in range(client_number):
-        if client_number == 1000:
-            dataidxs = client_idx
-            data_local_num_dict = class_num_dict
-        elif client_number == 100:
-            dataidxs = [client_idx * 10 + i for i in range(10)]
-            data_local_num_dict[client_idx] = sum(
-                class_num_dict[client_idx + i] for i in range(10)
-            )
-        else:
-            raise NotImplementedError("Not support other client_number for now!")
+        # if client_number == 1000:
+        #     dataidxs = client_idx
+        #     data_local_num_dict = class_num_dict
+        # elif client_number == 100:
+        #     dataidxs = [client_idx * 10 + i for i in range(10)]
+        #     data_local_num_dict[client_idx] = sum(
+        #         class_num_dict[client_idx + i] for i in range(10)
+        #     )
+        # else:
+        #     raise NotImplementedError("Not support other client_number for now!")
 
-        local_data_num = data_local_num_dict[client_idx]
-
-        # logging.info("client_idx = %d, local_sample_number = %d" % (client_idx, local_data_num))
-
-        # training batch size = 64; algorithms batch size = 32
-        # train_data_local, test_data_local = get_dataloader(dataset, data_dir, batch_size, batch_size,
-        #                                          dataidxs)
+        dataidxs = net_dataidx_map[client_idx]
         train_data_local, test_data_local = get_dataloader_ImageNet_truncated(
             train_dataset,
             test_dataset,
             train_bs=batch_size,
             test_bs=batch_size,
             dataidxs=dataidxs,
-            net_dataidx_map=net_dataidx_map,
         )
+        local_data_num = len(dataidxs)
+        data_local_num_dict[client_idx] = local_data_num
 
-        # logging.info("client_idx = %d, batch_num_train_local = %d, batch_num_test_local = %d" % (
-        # client_idx, len(train_data_local), len(test_data_local)))
+
+        logging.info("client_idx = %d, batch_num_train_local = %d, batch_num_test_local = %d" % (
+            client_idx, len(train_data_local), len(test_data_local)))
         train_data_local_dict[client_idx] = train_data_local
         test_data_local_dict[client_idx] = test_data_local
 
@@ -364,48 +456,70 @@ def load_partition_data_ImageNet(
 
 
 if __name__ == "__main__":
+    partition_alpha = 0.1
+    client_number = 1000
     # data_dir = '/home/datasets/imagenet/ILSVRC2012_dataset'
     data_dir = "/home/datasets/imagenet/imagenet_hdf5/imagenet-shuffled.hdf5"
+    net_dataidx_map_file = f"imagenet_hdf5_c{client_number}_n1000_alpha{partition_alpha}.pth"
 
-    client_number = 100
-    (
-        train_data_num,
-        test_data_num,
-        train_data_global,
-        test_data_global,
-        data_local_num_dict,
-        train_data_local_dict,
-        test_data_local_dict,
-        class_num,
-    ) = load_partition_data_ImageNet(
-        None,
+    save_net_dataidx_map(
+        "ILSVRC2012_hdf5",
         data_dir,
-        partition_method=None,
-        partition_alpha=None,
+        partition_method="hetero",
+        partition_alpha=partition_alpha,
         client_number=client_number,
         batch_size=10,
+        net_dataidx_map_file=net_dataidx_map_file
     )
 
-    print(train_data_num, test_data_num, class_num)
-    print(data_local_num_dict)
 
-    print(train_data_num, test_data_num, class_num)
-    print(data_local_num_dict)
+    # (
+    #     train_data_num,
+    #     test_data_num,
+    #     train_data_global,
+    #     test_data_global,
+    #     data_local_num_dict,
+    #     train_data_local_dict,
+    #     test_data_local_dict,
+    #     class_num,
+    # ) = load_partition_data_ImageNet(
+    #     "ILSVRC2012_hdf5",
+    #     data_dir,
+    #     partition_method="hetero",
+    #     partition_alpha=partition_alpha,
+    #     client_number=client_number,
+    #     batch_size=10,
+    #     net_dataidx_map_file=net_dataidx_map_file
+    # )
 
-    i = 0
-    for data, label in train_data_global:
-        print(data)
-        print(label)
-        i += 1
-        if i > 5:
-            break
-    print("=============================\n")
+    # print(train_data_num, test_data_num, class_num)
+    # print(data_local_num_dict)
 
-    for client_idx in range(client_number):
-        i = 0
-        for data, label in train_data_local_dict[client_idx]:
-            print(data)
-            print(label)
-            i += 1
-            if i > 5:
-                break
+
+
+    # i = 0
+    # for data, label in train_data_global:
+    #     print(data)
+    #     print(label)
+    #     i += 1
+    #     if i > 5:
+    #         break
+    # print("=============================\n")
+
+    # i = 0
+    # for data, label in test_data_global:
+    #     print(data)
+    #     print(label)
+    #     i += 1
+    #     if i > 5:
+    #         break
+    # print("=============================\n")
+
+    # for client_idx in range(client_number):
+    #     i = 0
+    #     for data, label in train_data_local_dict[client_idx]:
+    #         print(data)
+    #         print(label)
+    #         i += 1
+    #         if i > 5:
+    #             break
