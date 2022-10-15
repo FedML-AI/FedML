@@ -173,10 +173,12 @@ def manage_profiling_args(args):
 
             import wandb
 
+            if hasattr(args, "wandb_offline") and args.wandb_offline:
+                os.environ['WANDB_MODE'] = 'offline'
+            if hasattr(args, "wandb_console") and not args.wandb_console:
+                os.environ['WANDB_CONSOLE'] = 'off'
             wandb.init(**wandb_args)
-
             from .core.mlops.mlops_profiler_event import MLOpsProfilerEvent
-
             MLOpsProfilerEvent.enable_wandb_tracking()
 
 

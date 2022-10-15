@@ -1,4 +1,6 @@
 import logging
+import time
+from math import cos
 
 from .message_define import MyMessage
 from .utils import transform_list_to_tensor
@@ -22,6 +24,7 @@ class ClientManager(FedMLCommManager):
         self.trainer = trainer
         self.num_rounds = args.comm_round
         self.args.round_idx = 0
+        self.worker_id = self.rank - 1
 
 
     def run(self):
@@ -81,6 +84,34 @@ class ClientManager(FedMLCommManager):
 
     def __train(self):
         logging.info("#######training########### round_id = %d" % self.args.round_idx)
+        if hasattr(self.args, "simulation_gpu_hetero") and self.args.simulation_gpu_hetero:
+            # runtime_speed_ratio
+            # runtime_speed_ratio * t_train - t_train
+            # time.sleep(runtime_speed_ratio * t_train - t_train)
+            simulation_gpu_hetero = self.args.simulation_gpu_hetero
+            runtime_speed_ratio_gpu = self.args.gpu_hetero_ratio * self.worker_id / self.args.worker_num
+
+        if hasattr(self.args, "simulation_environment_hetero"):
+            # runtime_speed_ratio
+            # runtime_speed_ratio * t_train - t_train
+            # time.sleep(runtime_speed_ratio * t_train - t_train)
+            if self.args.simulation_environment_hetero == "cos":
+                runtime_speed_ratio_env = self.args.environment_hetero_ratio * \
+                    (1 + cos(self.args.round_idx / self.num_rounds*3.1415926 + self.worker_id))
+            else:
+                raise NotImplementedError
+
+        start_time = time.time()
         # weights, local_sample_num = self.trainer.train(self.args.round_idx)
         client_result, local_sample_num = self.trainer.train(self.args.round_idx)
+        if hasattr(self.args, "simulation_gpu_hetero") and self.args.simulation_gpu_hetero:
+            t_train = time.time() - start_time
+            logging.info(f"Simulating simulation_gpu_hetero:{runtime_speed_ratio_gpu}, sleep time: {t_train}")
+            time.sleep(runtime_speed_ratio_gpu * t_train)
+
+        if hasattr(self.args, "simulation_environment_hetero") and self.args.simulation_environment_hetero:
+            t_train = time.time() - start_time
+            logging.info(f"Simulating simulation_environment_hetero:{runtime_speed_ratio_env}, sleep time: {t_train}")
+            time.sleep(runtime_speed_ratio_env * t_train)
+
         self.send_model_to_server(0, client_result, local_sample_num)

@@ -41,7 +41,7 @@ class ScaffoldServerOptimizer(ServerOptimizer):
     def global_agg_seq(self, args, client_result):
         """ Used in hiearchical and sequentially aggregation. """
         key_op_weight_list = [(MLMessage.MODEL_PARAMS, "weighted_avg", client_result[MLMessage.MODEL_PARAMS]["agg_weight"]),
-                              ("c_delta_para", "avg", client_result[MLMessage.MODEL_PARAMS]["agg_weight"])]
+                              ("c_delta_para", "avg", client_result["c_delta_para"]["agg_weight"])]
         self.global_seq_agg_params(client_result, key_op_weight_list)
         return key_op_weight_list
 
@@ -51,7 +51,7 @@ class ScaffoldServerOptimizer(ServerOptimizer):
         Use this function to obtain the final global model.
         """
         key_op_weight_list = [(MLMessage.MODEL_PARAMS, "weighted_avg", sample_num/training_num_in_round),
-                              ("c_delta_para", "avg", sample_num/training_num_in_round)]
+                              ("c_delta_para", "avg", 1.0)]
         self.seq_agg_params(client_result, key_op_weight_list)
         return key_op_weight_list
 

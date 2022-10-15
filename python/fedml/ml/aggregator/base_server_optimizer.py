@@ -64,7 +64,7 @@ class ServerOptimizer(ABC):
                 self.agg_params_dict[key] = {}
                 self.agg_params_dict[key]["agg_weight"] = 0.0
                 self.agg_params_dict[key]["agg_params"] = None
-            logging.info(f"global seq agg: key: {key}, op: {op}, weight: {weight}")
+            logging.debug(f"global seq agg: key: {key}, op: {op}, weight: {weight}")
             self.agg_params_dict[key]["agg_weight"], self.agg_params_dict[key]["agg_params"] = FedMLAggOperator.agg_seq(
                 self.args, agg_params=self.agg_params_dict[key]["agg_params"], new_params=client_result[key]["agg_params"],
                 agg_weight=self.agg_params_dict[key]["agg_weight"], avg_weight=weight, op=op)
@@ -76,7 +76,7 @@ class ServerOptimizer(ABC):
                 self.agg_params_dict[key] = {}
                 self.agg_params_dict[key]["agg_weight"] = 0.0
                 self.agg_params_dict[key]["agg_params"] = None
-            logging.info(f"local seq agg: key: {key}, op: {op}, weight: {weight}")
+            logging.debug(f"local seq agg: key: {key}, op: {op}, weight: {weight}")
             self.agg_params_dict[key]["agg_weight"], self.agg_params_dict[key]["agg_params"] = FedMLAggOperator.agg_seq(
                 self.args, agg_params=self.agg_params_dict[key]["agg_params"], new_params=client_result[key],
                 agg_weight=self.agg_params_dict[key]["agg_weight"], avg_weight=weight, op=op)
@@ -84,7 +84,7 @@ class ServerOptimizer(ABC):
 
     def end_seq_agg_params(self, args, key_op_list):
         for key, op in key_op_list:
-            logging.info(f"End seq aggregating, Weight is :  {self.agg_params_dict[key]['agg_weight']}")
+            logging.debug(f"End seq aggregating, Weight is :  {self.agg_params_dict[key]['agg_weight']}")
             self.agg_params_dict[key]["agg_params"] = FedMLAggOperator.end_agg_seq(
                 args, self.agg_params_dict[key]["agg_params"], self.agg_params_dict[key]["agg_weight"], op=op)
         agg_params_dict = copy.deepcopy(self.agg_params_dict)

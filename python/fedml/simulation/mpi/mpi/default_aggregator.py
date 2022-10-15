@@ -112,6 +112,8 @@ class DefaultServerAggregator(BaseServerAggregator):
             # )
             if round_idx == self.args.comm_round - 1:
                 self.test(self.test_global, self.device, self.args)
+            elif round_idx == 0:
+                return
             else:
                 self.test(self.val_global, self.device, self.args)
             return

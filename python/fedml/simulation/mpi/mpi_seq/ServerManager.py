@@ -1,4 +1,7 @@
 import logging
+import time
+
+import wandb
 
 from .message_define import MyMessage
 from .utils import transform_tensor_to_list
@@ -36,6 +39,7 @@ class ServerManager(FedMLCommManager):
 
     def send_init_msg(self):
         # sampling clients
+        self.previous_time = time.time()
         client_indexes = self.aggregator.client_sampling(
             self.args.round_idx,
             self.args.client_num_in_total,
@@ -71,6 +75,13 @@ class ServerManager(FedMLCommManager):
         local_agg_client_result = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_RESULT)
         local_sample_num_dict = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
         client_runtime_info = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_RUNTIME_INFO)
+
+        if hasattr(self.args, "tracking_runtime") and self.args.tracking_runtime and self.args.enable_wandb:
+            runtime_to_wandb = {}
+            for client_id, runtime in client_runtime_info.items():
+                runtime_to_wandb[f"Runtime_w{sender_id - 1}_c{client_id}_n{local_sample_num_dict[client_id]}"] = runtime
+            wandb.log(runtime_to_wandb)
+
         self.aggregator.record_client_runtime(sender_id - 1, client_runtime_info)
         assert hasattr(self.args, "aggregate_seq") and self.args.aggregate_seq
         self.aggregator.global_aggregate_seq(sender_id - 1, local_agg_client_result, local_sample_num_dict)
@@ -81,8 +92,18 @@ class ServerManager(FedMLCommManager):
         b_all_received = self.aggregator.check_whether_all_receive()
         logging.info("b_all_received = " + str(b_all_received))
         if b_all_received:
+            if self.args.enable_wandb:
+                wandb.log({"RunTimeOneRound": time.time() - self.previous_time, "round": self.args.round_idx})
+                # things_to_wandb["RunTimeOneRound"] = time.time() - self.previous_time
+                self.previous_time = time.time()
             server_result = self.aggregator.aggregate()
+            current_time = time.time()
             self.aggregator.test_on_server_for_all_clients(self.args.round_idx)
+            if self.args.enable_wandb:
+                wandb.log({"TestTimeOneRound": time.time() - current_time, "round": self.args.round_idx})
+                # things_to_wandb["TestTimeOneRound"] = time.time() - self.previous_time
+
+            self.previous_time = time.time()
 
             # start the next round
             self.args.round_idx += 1

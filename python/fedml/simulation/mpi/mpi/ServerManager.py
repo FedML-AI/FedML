@@ -1,4 +1,7 @@
 import logging
+import time
+
+import wandb
 
 from .message_define import MyMessage
 from .utils import transform_tensor_to_list
@@ -30,12 +33,17 @@ class ServerManager(FedMLCommManager):
         self.preprocessed_client_lists = preprocessed_client_lists
         FedMLLocalCache.init(args, root=args.local_cache_root)
         self.local_cache_path = FedMLLocalCache.path
+        if not self.args.client_num_per_round == (size - 1):
+            logging.info(f"ERROR: client_num_per_round {self.args.client_num_per_round} is \
+                not equal to number of workers {size - 1}, Please set them equal, or use mpi seq mode")
+            self.finish()
 
     def run(self):
         super().run()
 
     def send_init_msg(self):
         # sampling clients
+        self.previous_time = time.time()
         client_indexes = self.aggregator.client_sampling(
             self.args.round_idx,
             self.args.client_num_in_total,
@@ -71,9 +79,17 @@ class ServerManager(FedMLCommManager):
         b_all_received = self.aggregator.check_whether_all_receive()
         logging.info("b_all_received = " + str(b_all_received))
         if b_all_received:
+            if self.args.enable_wandb:
+                wandb.log({"RunTimeOneRound": time.time() - self.previous_time, "round": self.args.round_idx})
+                self.previous_time = time.time()
             # global_model_params = self.aggregator.aggregate()
             server_result = self.aggregator.aggregate()
+            current_time = time.time()
             self.aggregator.test_on_server_for_all_clients(self.args.round_idx)
+            if self.args.enable_wandb:
+                wandb.log({"TestTimeOneRound": time.time() - current_time, "round": self.args.round_idx})
+
+            self.previous_time = time.time()
 
             # start the next round
             self.args.round_idx += 1

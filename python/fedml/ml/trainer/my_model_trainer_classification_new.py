@@ -37,29 +37,36 @@ class ModelTrainerCLS(ClientTrainer):
         self.server_result = server_result
 
     def load_client_status(self):
-        if self.args.client_cache == "stateful":
-            """
-            In this mode, ClientTrainer is stateful during the whole training process.
-            """
-            client_status = self.client_status
-        elif self.args.client_cache == "localhost":
-            client_status = FedMLLocalCache.load(self.args, self.client_index)
+        if self.args.local_cache:
+            if self.args.client_cache == "stateful":
+                """
+                In this mode, ClientTrainer is stateful during the whole training process.
+                """
+                client_status = self.client_status
+            elif self.args.client_cache == "localhost":
+                client_status = FedMLLocalCache.load(self.args, self.client_index)
+            else:
+                raise NotImplementedError
         else:
-            raise NotImplementedError
+            client_status = {}
         return client_status
 
+
     def save_client_status(self, client_status={}):
-        if client_status is None or len(client_status) == 0:
-            return
-        if self.args.client_cache == "stateful":
-            """
-            In this mode, ClientTrainer is stateful during the whole training process.
-            """
-            self.client_status = client_status
-        elif self.args.client_cache == "localhost":
-            FedMLLocalCache.save(self.args, self.client_index, client_status)
+        if self.args.local_cache:
+            if client_status is None or len(client_status) == 0:
+                return
+            if self.args.client_cache == "stateful":
+                """
+                In this mode, ClientTrainer is stateful during the whole training process.
+                """
+                self.client_status = client_status
+            elif self.args.client_cache == "localhost":
+                FedMLLocalCache.save(self.args, self.client_index, client_status)
+            else:
+                raise NotImplementedError
         else:
-            raise NotImplementedError
+            pass
 
 
     def train(self, train_data, device, args):
