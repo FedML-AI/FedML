@@ -297,7 +297,7 @@ def update_client_id_list(args):
             ):
                 if args.rank == 0:
                     client_id_list = []
-                    for client_idx in range(args.client_num_per_round):
+                    for client_idx in range(args.client_num_in_total):
                         client_id_list.append(client_idx + 1)
                     args.client_id_list = str(client_id_list)
                     print("------------------server client_id_list = {}-------------------".format(args.client_id_list))
