@@ -5,6 +5,7 @@ from .defense.coordinate_wise_trimmed_mean_defense import CoordinateWiseTrimmedM
 from .defense.crfl_defense import CRFLDefense
 from .defense.three_sigma_defense import ThreeSigmaDefense
 from .defense.three_sigma_geomedian_defense import ThreeSigmaGeoMedianDefense
+from .defense.three_sigma_krum_defense import ThreeSigmaKrumDefense
 from ..common.ml_engine_backend import MLEngineBackend
 from .defense.cclip_defense import CClipDefense
 from .defense.foolsgold_defense import FoolsGoldDefense
@@ -29,6 +30,7 @@ from ...core.security.constants import (
     DEFENSE_MULTIKRUM,
     DEFENSE_TRIMMED_MEAN,
     DEFENSE_THREESIGMA_GEOMEDIAN,
+    DEFENSE_THREESIGMA_KRUM,
 )
 
 
@@ -77,6 +79,8 @@ class FedMLDefender:
                 self.defender = ThreeSigmaDefense(args)
             elif self.defense_type == DEFENSE_THREESIGMA_GEOMEDIAN:
                 self.defender = ThreeSigmaGeoMedianDefense(args)
+            elif self.defense_type == DEFENSE_THREESIGMA_KRUM:
+                self.defender = ThreeSigmaKrumDefense(args)
             elif self.defense_type == DEFENSE_CRFL:
                 self.defender = CRFLDefense(args)
             elif self.defense_type == DEFENSE_TRIMMED_MEAN:
@@ -130,6 +134,7 @@ class FedMLDefender:
             DEFENSE_FOOLSGOLD,
             DEFENSE_THREESIGMA,
             DEFENSE_THREESIGMA_GEOMEDIAN,
+            DEFENSE_THREESIGMA_KRUM,
             DEFENSE_KRUM,
             DEFENSE_MULTIKRUM,
             DEFENSE_TRIMMED_MEAN
