@@ -56,7 +56,7 @@ class ByzantineAttack(BaseAttackMethod):
                 local_sample_number, local_model_params = model_list[i]
                 for k in local_model_params.keys():
                     if is_weight_param(k):
-                        local_model_params[k] = torch.from_numpy(np.random.random_sample(size=local_model_params[k].size())).float().to(self.device)
+                        local_model_params[k] = torch.from_numpy(2*np.random.random_sample(size=local_model_params[k].size())-1).float().to(self.device)
                 new_model_list.append((local_sample_number, local_model_params))
         return new_model_list
 
