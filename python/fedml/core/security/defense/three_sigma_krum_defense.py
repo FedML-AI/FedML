@@ -2,7 +2,6 @@ import math
 import numpy as np
 from .defense_base import BaseDefenseMethod
 from typing import Callable, List, Tuple, Dict, Any
-from ..common.bucket import Bucket
 from ..common.utils import compute_euclidean_distance, compute_middle_point
 import torch
 
@@ -14,12 +13,6 @@ class ThreeSigmaKrumDefense(BaseDefenseMethod):
         self.score_list = []
         self.median = None
 
-        if hasattr(config, "bucketing_batch_size") and isinstance(
-            config.bucketing_batch_size, int
-        ):
-            self.bucketing_batch_size = config.bucketing_batch_size
-        else:
-            self.bucketing_batch_size = 1
         if hasattr(config, "pretraining_round_num") and isinstance(
             config.pretraining_round_num, int
         ):
@@ -78,14 +71,10 @@ class ThreeSigmaKrumDefense(BaseDefenseMethod):
             if (
                 not self.to_keep_higher_scores and client_scores[i] > self.upper_bound
             ) or (self.to_keep_higher_scores and client_scores[i] < self.lower_bound):
-                # here we do not remove the score in self.score_list to avoid mis-deleting
-                # due to severe non-iid among clients
+                # we do not remove the score in self.score_list to avoid mis-deleting due to severe non-iid among clients
                 raw_client_grad_list.pop(i)
                 print(f"pop -- i = {i}")
-        batch_grad_list = Bucket.bucketization(
-            raw_client_grad_list, self.bucketing_batch_size
-        )
-        return batch_grad_list
+        return raw_client_grad_list
 
     def compute_gaussian_distribution(self):
         n = len(self.score_list)

@@ -16,14 +16,13 @@ attack @client, added by Yuhui, 07/08/2022
 
 class LabelFlippingAttack:
     def __init__(
-        self, original_class_list, target_class_list, client_num, poisoned_client_num, batch_size,
-    ):
-        self.original_class_list = original_class_list
-        self.target_class_list = target_class_list
-        self.client_num = client_num
+        self, args):
+        self.original_class_list = args.original_class_list
+        self.target_class_list = args.target_class_list
+        self.client_num = args.client_num
         self.attack_epoch = 0
-        self.poisoned_client_num = poisoned_client_num
-        self.batch_size = batch_size
+        self.poisoned_client_num = args.poisoned_client_num
+        self.batch_size = args.batch_size
         self.poisoned_client_list = []
 
     def poison_data(self, dataset):
@@ -60,4 +59,5 @@ class LabelFlippingAttack:
             else:
                 poisoned_dataset.append(train_data_local_dict[client_idx])
         log_client_data_statistics(self.poisoned_client_list, poisoned_dataset)
+        self.attack_epoch = self.attack_epoch + 1
         return poisoned_dataset

@@ -3,7 +3,6 @@ import numpy as np
 from .defense_base import BaseDefenseMethod
 from typing import Callable, List, Tuple, Dict, Any
 from scipy import spatial
-from ..common.bucket import Bucket
 from ..common.utils import compute_geometric_median, compute_euclidean_distance
 import torch
 
@@ -15,10 +14,6 @@ class ThreeSigmaGeoMedianDefense(BaseDefenseMethod):
         self.score_list = []
         self.geo_median = None
 
-        if hasattr(config, "bucketing_batch_size") and isinstance(config.bucketing_batch_size, int):
-            self.bucketing_batch_size = config.bucketing_batch_size
-        else:
-            self.bucketing_batch_size = 1
         if hasattr(config, "pretraining_round_num") and isinstance(
             config.pretraining_round_num, int
         ):
@@ -78,26 +73,7 @@ class ThreeSigmaGeoMedianDefense(BaseDefenseMethod):
                 # due to severe non-iid among clients
                 raw_client_grad_list.pop(i)
                 print(f"pop -- i = {i}")
-        batch_grad_list = Bucket.bucketization(
-            raw_client_grad_list, self.bucketing_batch_size
-        )
-        return batch_grad_list
-
-    # def defend_on_aggregation(
-    #     self,
-    #     raw_client_grad_list: List[Tuple[float, Dict]],
-    #     base_aggregation_func: Callable = None,
-    #     extra_auxiliary_info: Any = None,
-    # ):  # raw_client_grad_list: batch_grad_list
-    #     # ----------- geometric median part, or just use base_aggregation_func -------------
-    #     # todo: why geometric median? what about other approaches?
-    #     (num0, avg_params) = raw_client_grad_list[0]
-    #     alphas = {alpha for (alpha, params) in raw_client_grad_list}
-    #     alphas = {alpha / sum(alphas, 0.0) for alpha in alphas}
-    #     for k in avg_params.keys():
-    #         batch_grads = [params[k] for (alpha, params) in raw_client_grad_list]
-    #         avg_params[k] = compute_geometric_median(alphas, batch_grads)
-    #     return avg_params
+        return raw_client_grad_list
 
     def compute_gaussian_distribution(self):
         n = len(self.score_list)
