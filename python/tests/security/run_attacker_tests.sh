@@ -18,3 +18,6 @@ python test_edge_case_backdoor_attack.py
 
 echo "python test_label_flipping_attack.py"
 python test_label_flipping_attack.py
+
+echo "python test_model_replacement_backdoor_attack.py"
+python test_model_replacement_backdoor_attack.py
