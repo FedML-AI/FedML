@@ -18,6 +18,7 @@ DEFENSE_TRIMMED_MEAN = "trimmed_mean"
 ATTACK_METHOD_BYZANTINE_ATTACK = "byzantine"
 ATTACK_METHOD_DLG = "dlg"
 ATTACK_LABEL_FLIPPING = "label_flipping"
+BACKDOOR_ATTACK_MODEL_REPLACEMENT = "model_replacement"
 
 
 """
