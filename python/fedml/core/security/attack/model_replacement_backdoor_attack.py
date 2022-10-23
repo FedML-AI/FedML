@@ -57,11 +57,11 @@ class ModelReplacementBackdoorAttack(BaseAttackMethod):
             gamma = participant_num
         else:
             gamma = self.compute_gamma(global_model, original_client_model)
-        print(f"gamma = {gamma}")
+        # print(f"gamma = {gamma}")
         for k in original_client_model.keys():
             if is_weight_param(k):
                 new_client_model[k] = gamma * (original_client_model[k] - global_model[k]) + global_model[k]
-        raw_client_grad_list.append((num, new_client_model))
+        raw_client_grad_list.insert(malicious_idx, (num, new_client_model))
         self.training_round = self.training_round + 1
         return raw_client_grad_list
 
