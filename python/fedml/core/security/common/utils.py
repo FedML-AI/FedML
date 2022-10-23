@@ -190,3 +190,22 @@ def trimmed_mean(model_list, trimmed_num):
 def compute_a_score(local_sample_number):
     # todo: change to coordinate-wise score
     return local_sample_number
+
+
+def compute_krum_score(vec_grad_list, client_num_after_trim):
+    krum_scores = []
+    num_client = len(vec_grad_list)
+    for i in range(0, num_client):
+        dists = []
+        for j in range(0, num_client):
+            if i != j:
+                dists.append(
+                    compute_euclidean_distance(
+                        torch.Tensor(vec_grad_list[i]),
+                        torch.Tensor(vec_grad_list[j]),
+                    ).item() ** 2
+                )
+        dists.sort()  # ascending
+        score = dists[0:client_num_after_trim]
+        krum_scores.append(sum(score))
+    return krum_scores
