@@ -1,28 +1,29 @@
 
 # https://hub.docker.com/r/nvidia/cuda/tags
 # https://hub.docker.com/r/nvidia/cuda/tags?page=1&name=11.6.0-devel-ubuntu was released at May 6th, 2022
-FROM nvidia/cuda:11.4.0-devel-ubuntu20.04
-ENV OS=ubuntu20.04
+ARG NVIDIA_BASE_IMAGE=nvidia/cuda:11.4.0-devel-ubuntu20.04
+FROM ${NVIDIA_BASE_IMAGE}
+ARG OS=ubuntu20.04
 # ARG OS
 
-ENV DISTRO=ubuntu2004
+ARG DISTRO=ubuntu2004
 # ARG DISTRO
 
-ENV ARCH=x86_64
+ARG ARCH=x86_64
 # ARG ARCH
 
-ENV PYTHON_VERSION=3
+ARG PYTHON_VERSION=3
 # ARG PYTHON_VERSION
 
-ENV PYTORCH_VERSION=1.11.0
+ARG PYTORCH_VERSION=1.11.0
 # ARG PYTORCH_VERSION
 
 
 # https://docs.nvidia.com/deeplearning/nccl/release-notes/rel_2-12-10.html#rel_2-12-10
-ENV NCCL_VERSION=2.11.4
+ARG NCCL_VERSION=2.11.4
 # ARG NCCL_VERSION
 # NCCL 2.12.10 release supports CUDA 10.2, CUDA 11.0, and CUDA 11.6.
-ENV CUDA_VERSION=11.4
+ARG CUDA_VERSION=11.4
 # ARG CUDA_VERSION
 
 
@@ -58,7 +59,7 @@ RUN mkdir -p ${WORKSPACE}
 # Python
 # ***************************************************************************
 ARG DEBIAN_FRONTEND=noninteractive
-RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf
+#RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf
 RUN apt-get clean
 RUN apt-get --allow-downgrades update
 RUN apt-get install -y python3 python3-pip
@@ -127,7 +128,7 @@ git submodule sync && \
 git submodule update --init --recursive --jobs 0 && \
 sudo USE_SYSTEM_NCCL=1 TORCH_CUDA_ARC_LIST="6.0 6.1 7.0 7.5 8.0" CMAKE_CUDA_COMPILER="/usr/local/cuda" python setup.py install
 #RUN rm -rf ${INSTALL_DIR}/pytorch
-RUN pip install torch==1.11.0
+RUN pip install torch==${PYTORCH_VERSION}
 
 RUN python3 -c "import torch; torch.__version__"
 
