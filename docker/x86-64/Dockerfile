@@ -86,7 +86,7 @@ RUN apt-get install -y --no-install-recommends \
 # Git
 # ***************************************************************************
 RUN cd /usr/lib/python3/dist-packages;echo `python3 --version`;cp -f apt_pkg.cpython-36m-x86_64-linux-gnu.so apt_pkg.so
-RUN apt install python-dev python3-dev python${PYTHON_VERSION} -dev -y
+RUN apt install python-dev python3-dev python${PYTHON_VERSION}-dev -y
 RUN apt-get install libgirepository1.0-dev python-cairo libcairo2 libcairo2-dev -y
 RUN python${PYTHON_VERSION}  -m pip install --ignore-installed PyGObject
 RUN add-apt-repository ppa:git-core/ppa -y && \
