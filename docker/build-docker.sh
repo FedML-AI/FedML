@@ -40,7 +40,7 @@ if [ $DOCKER_FILE_PATH == "" ]; then
   exit -1
 fi
 
-if [ $NVIDIA_BASE_IMAGE != "" ]; then
+if [[ $NVIDIA_BASE_IMAGE != "" ]]; then
     docker build -f ./x86-64/Dockerfile \
     --build-arg OS=$OS \
     --build-arg DISTRO=$DISTRO \
