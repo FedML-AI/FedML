@@ -12,6 +12,7 @@ NVIDIA_BASE_IMAGE=""
 if [ $# == 9 ]; then
   NVIDIA_BASE_IMAGE=$9
 fi
+
 if [ $# == 10 ]; then
   PYTORCH_EXTRA_INDEX_URL=$10
 else
@@ -48,7 +49,7 @@ if [ $NVIDIA_BASE_IMAGE != "" ]; then
     --build-arg NCCL_VERSION=$NCCL_VERSION \
     --build-arg CUDA_VERSION=$CUDA_VERSION \
     --build-arg NVIDIA_BASE_IMAGE=$NVIDIA_BASE_IMAGE \
-    --build-arg PYTHON_EXTRA_INDEX_URL=$PYTHON_EXTRA_INDEX_URL \
+    --build-arg PYTORCH_EXTRA_INDEX_URL=$PYTORCH_EXTRA_INDEX_URL \
     --build-arg PYTORCH_GEOMETRIC_URL=$PYTORCH_GEOMETRIC_URL \
     --network=host \
     -t $OUTPUT_IMAGE .
