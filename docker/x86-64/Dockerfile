@@ -126,7 +126,6 @@ apt update && \
 #export NCCL_VERSION_ENV=`echo $NCCL_VERSION | awk -F'-1' '{print $1}'` && \
 export NCCL_VERSION_ENV=$NCCL_VERSION && \
 export CUDA_VERSION_ENV=`echo $CUDA_VERSION | sed 's/\.1//g'` &&  \
-apt install -y --allow-change-held-packages libnccl2=${NCCL_VERSION_ENV}+cuda${CUDA_VERSION_ENV} libnccl-dev=${NCCL_VERSION_ENV}+cuda${CUDA_VERSION_ENV} \
 apt install -y --allow-change-held-packages libnccl2=${NCCL_VERSION_ENV}+cuda${CUDA_VERSION_ENV} libnccl-dev=${NCCL_VERSION_ENV}+cuda${CUDA_VERSION_ENV}
 
 # ***************************************************************************
