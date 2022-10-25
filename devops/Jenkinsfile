@@ -20,6 +20,8 @@ pipeline {
         PRODUCTION_KUBECONFIG_CREDENTIAL_ID = 'fedml-release-kubeconfig'
         PRODUCTION_KUBECONFIG_CREDENTIAL_ID_FOR_DOCS = 'fedml-release-kubeconfig-for-docs'
 
+        DOCKERHUB_CREDENTIAL_ID = 'dockerhub'
+
         REGISTRY_DEV = 'public.ecr.aws'
         REGISTRY_TEST = 'public.ecr.aws'
         HTTPS_REGISTRY_DEV = 'https://public.ecr.aws'
@@ -256,6 +258,11 @@ pipeline {
           }
           steps {
             container('base') {
+              withCredentials([usernamePassword(passwordVariable : 'DOCKERHUB_PASSWORD' ,usernameVariable : 'DOCKERHUB_USERNAME' ,credentialsId : "$DOCKERHUB_CREDENTIAL_ID" ,)]) {
+                sh 'docker login --username $DOCKERHUB_USERNAME --password $DOCKERHUB_PASSWORD'
+                sh './devops/scripts/push-fedml-docker.sh'
+              }
+
               withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_ID' ,usernameVariable : 'AWS_ECR_USERNAME' ,credentialsId : "$AWS_ECR_CREDENTIAL_ID_PRODUCTION" ,)]) {
                  withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_KEY' ,usernameVariable : 'AWS_REGION' ,credentialsId : "$AWS_IAM_CREDENTIAL_ID_PRODUCTION" ,)]) {
                     sh 'curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"'
@@ -265,8 +272,6 @@ pipeline {
                     sh 'docker login --username $AWS_ECR_USERNAME --password $(/usr/local/bin/aws ecr-public get-login-password --region $AWS_REGION) $REGISTRY_PRODUCTION'
                  }
               }
-
-              sh 'docker push  public.ecr.aws/x6k8q1x9/pytorch:1.12.1-cuda11.3-cudnn8-devel'
 
               sh 'docker push  public.ecr.aws/x6k8q1x9/fedml-device-image:base'
               sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_PRODUCTION'
