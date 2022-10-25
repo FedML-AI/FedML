@@ -24,7 +24,7 @@ elif [[  "$ARCH" == "arm64v8_m1" ]]; then
 fi
 
 if [ $DOCKER_FILE_PATH == "" ]; then
-  echo "Please specify correct arch (choices: x86_64 / arm64v8 /arm64v8_m1)"
+  echo "Please specify the properly arch (options: x86_64 / arm64v8 /arm64v8_m1)"
   exit -1
 fi
 

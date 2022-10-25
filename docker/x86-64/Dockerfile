@@ -12,7 +12,7 @@ ARG DISTRO=ubuntu2004
 ARG ARCH=x86_64
 # ARG ARCH
 
-ARG PYTHON_VERSION=3
+ARG PYTHON_VERSION=3.8
 # ARG PYTHON_VERSION
 
 ARG PYTORCH_VERSION=1.11.0
@@ -25,6 +25,9 @@ ARG NCCL_VERSION=2.11.4
 # NCCL 2.12.10 release supports CUDA 10.2, CUDA 11.0, and CUDA 11.6.
 ARG CUDA_VERSION=11.4
 # ARG CUDA_VERSION
+
+ENV NCCL_VERSION_IN=${NCCL_VERSION}
+ENV CUDA_VERSION_IN=${CUDA_VERSION}
 
 
 RUN echo ${NCCL_VERSION}
@@ -62,8 +65,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 #RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf
 RUN apt-get clean
 RUN apt-get --allow-downgrades update
-RUN apt-get install -y python3 python3-pip
-RUN ln -s /usr/bin/python3 /usr/bin/python
+RUN apt-get install -y python${PYTHON_VERSION} python3-pip
+RUN ln -s /usr/bin/python${PYTHON_VERSION} /usr/bin/python
 RUN ln -nsf /usr/bin/pip3 /usr/bin/pip
 
 # ***************************************************************************
@@ -111,10 +114,12 @@ RUN mv /usr/local/mpi/bin/mpirun /usr/local/mpi/bin/mpirun.real && \
 # NCCL
 # ***************************************************************************
 # https://docs.nvidia.com/deeplearning/nccl/install-guide/index.html#downloadnccl
+ENV LIB_NCCL=${NCCL_VERSION_IN}+cuda${CUDA_VERSION_IN}
+ENV LIB_NCCL_DEV=${NCCL_VERSION_IN}+cuda${CUDA_VERSION_IN}
 RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/${DISTRO}/${ARCH}/7fa2af80.pub && \
 add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/${DISTRO}/${ARCH} /" && \
 apt update && \
-apt install -y --allow-change-held-packages libnccl2=${NCCL_VERSION}-1+cuda${CUDA_VERSION} libnccl-dev=${NCCL_VERSION}-1+cuda${CUDA_VERSION}
+apt install -y --allow-change-held-packages libnccl2=${LIB_NCCL} libnccl-dev=${LIB_NCCL_DEV}
 
 # ***************************************************************************
 # PyTorch (install from source)
@@ -126,11 +131,11 @@ git clone https://github.com/pytorch/pytorch.git && \
 cd pytorch && git checkout v${PYTORCH_VERSION} && \
 git submodule sync && \
 git submodule update --init --recursive --jobs 0 && \
-sudo USE_SYSTEM_NCCL=1 TORCH_CUDA_ARC_LIST="6.0 6.1 7.0 7.5 8.0" CMAKE_CUDA_COMPILER="/usr/local/cuda" python setup.py install
+sudo USE_SYSTEM_NCCL=1 TORCH_CUDA_ARC_LIST="6.0 6.1 7.0 7.5 8.0" CMAKE_CUDA_COMPILER="/usr/local/cuda" python${PYTHON_VERSION} setup.py install
 #RUN rm -rf ${INSTALL_DIR}/pytorch
-RUN pip install torch==${PYTORCH_VERSION}
+RUN pip3 install torch==${PYTORCH_VERSION}
 
-RUN python3 -c "import torch; torch.__version__"
+RUN python${PYTHON_VERSION} -c "import torch; torch.__version__"
 
 # ***************************************************************************
 # install torch-geometric (https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html)
@@ -140,7 +145,7 @@ git clone https://github.com/pyg-team/pytorch_geometric.git && \
 cd pytorch_geometric && \
 git submodule sync && \
 git submodule update --init --recursive --jobs 0 && \
-sudo python setup.py install
+sudo python${PYTHON_VERSION} setup.py install
 RUN rm -rf ${INSTALL_DIR}/pytorch_geometric
 
 # ***************************************************************************
@@ -176,10 +181,10 @@ git clone https://github.com/FedML-AI/FedML.git && cd ${INSTALL_DIR}/FedML && gi
 RUN cd ${INSTALL_DIR}/FedML/python && \
 git submodule sync && \
 git submodule update --init --recursive --jobs 0 && \
-sudo python setup.py install
+sudo python${PYTHON_VERSION} setup.py install
 RUN rm -rf ${INSTALL_DIR}/FedML
 
-RUN python -c "import fedml; fedml.__version__"
+RUN python${PYTHON_VERSION} -c "import fedml; fedml.__version__"
 
 # ***************************************************************************
 ## Add fedml user
