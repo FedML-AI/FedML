@@ -185,6 +185,8 @@ pipeline {
               sh 'cp -Rf ./aws/* ./devops/scripts/aws'
               sh 'cd ./devops/scripts/;unzip ./docker.zip;unzip ./kubectl.zip;cd ../../'
 
+              sh './devops/scripts/build-fedml-docker.sh'
+
               sh 'docker build --network=host -f ./devops/dockerfile/device-image/Dockerfile-Base -t public.ecr.aws/x6k8q1x9/fedml-device-image:base .'
 
               sh 'docker build --network=host -f ./devops/dockerfile/device-image/Dockerfile-Release -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_PRODUCTION .'
@@ -263,6 +265,8 @@ pipeline {
                     sh 'docker login --username $AWS_ECR_USERNAME --password $(/usr/local/bin/aws ecr-public get-login-password --region $AWS_REGION) $REGISTRY_PRODUCTION'
                  }
               }
+
+              sh 'docker push  public.ecr.aws/x6k8q1x9/pytorch:1.12.1-cuda11.3-cudnn8-devel'
 
               sh 'docker push  public.ecr.aws/x6k8q1x9/fedml-device-image:base'
               sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DEVICE_IMAGE:$VERSION_PRODUCTION'
