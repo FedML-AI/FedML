@@ -19,6 +19,3 @@ bash build-docker.sh $ARCH $OS $DISTRO $PYTHON_VERSION $PYTORCH_VERSION $NCCL_VE
      $OUTPUT_IMAGE $NVIDIA_BASE_IMAGE $PYTORCH_EXTRA_INDEX_URL $PYTORCH_GEOMETRIC_URL
 
 cd $pwd
-
-docker login --username AWS --password $(aws ecr-public get-login-password --region us-east-1) public.ecr.aws
-docker push ${OUTPUT_IMAGE}
