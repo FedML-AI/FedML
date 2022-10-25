@@ -9,17 +9,17 @@ NCCL_VERSION=$6
 CUDA_VERSION=$7
 OUTPUT_IMAGE=$8
 NVIDIA_BASE_IMAGE=""
-if [ $# == 9 ]; then
+if [ $# -gt 9 ]; then
   NVIDIA_BASE_IMAGE=$9
 fi
 
-if [ $# == 10 ]; then
+if [ $# -gt 10 ]; then
   PYTORCH_EXTRA_INDEX_URL=$10
 else
   PYTORCH_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cu113
 fi
 
-if [ $# == 11 ]; then
+if [ $# -gt 11 ]; then
   PYTORCH_GEOMETRIC_URL=$11
 else
   PYTORCH_GEOMETRIC_URL=https://data.pyg.org/whl/torch-1.12.0+cu113.html
