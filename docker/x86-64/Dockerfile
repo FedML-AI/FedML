@@ -65,8 +65,8 @@ RUN apt-get clean
 RUN apt-get update
 RUN apt install software-properties-common -y;add-apt-repository ppa:deadsnakes/ppa -y
 RUN apt install -y python${PYTHON_VERSION} python3-pip
-RUN ln -s /usr/bin/python${PYTHON_VERSION}  /usr/bin/python
-RUN rm -f /usr/bin/python${PYTHON_VERSION} ;ln -s /usr/bin/python${PYTHON_VERSION}  /usr/bin/python3
+RUN rm -f /usr/bin/python;ln -s /usr/bin/python${PYTHON_VERSION}  /usr/bin/python
+RUN rm -f /usr/bin/python3;ln -s /usr/bin/python${PYTHON_VERSION}  /usr/bin/python3
 RUN ln -nsf /usr/bin/pip3 /usr/bin/pip
 RUN echo `which python3;python3 --version`
 
