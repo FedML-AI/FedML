@@ -105,7 +105,7 @@ In this example, the FL Client APIs are as follows:
 
 ```Python
 import fedml
-from fedml.cross_silo import Client
+from fedml import FedMLRunner
 
 if __name__ == "__main__":
     args = fedml.init()
@@ -120,8 +120,7 @@ if __name__ == "__main__":
     model = fedml.model.create(args, output_dim)
 
     # start training
-    client = Client(args, device, dataset, model)
-    client.run()
+    FedMLRunner(args, device, dataset, model).run()
 
 ```
 
@@ -129,11 +128,16 @@ With these APIs, you only need to tune the hyper-parameters with the configurati
 ```yaml
 common_args:
   training_type: "cross_silo"
+  scenario: "horizontal"
+  using_mlops: false
   random_seed: 0
+
+environment_args:
+  bootstrap: config/bootstrap.sh
 
 data_args:
   dataset: "mnist"
-  data_cache_dir: "./../../../data"
+  data_cache_dir: ~/fedml_data
   partition_method: "hetero"
   partition_alpha: 0.5
 
@@ -144,10 +148,10 @@ model_args:
 
 train_args:
   federated_optimizer: "FedAvg"
-  client_id_list: "[1, 2]"
-  client_num_in_total: 1000
+  client_id_list:
+  client_num_in_total: 1
   client_num_per_round: 2
-  comm_round: 50
+  comm_round: 10
   epochs: 1
   batch_size: 10
   client_optimizer: sgd
@@ -155,7 +159,7 @@ train_args:
   weight_decay: 0.001
 
 validation_args:
-  frequency_of_the_test: 5
+  frequency_of_the_test: 1
 
 device_args:
   worker_num: 2
@@ -167,9 +171,12 @@ comm_args:
   backend: "MQTT_S3"
   mqtt_config_path: config/mqtt_config.yaml
   s3_config_path: config/s3_config.yaml
+  # If you want to use your customized MQTT or s3 server as training backends, you should uncomment and set the following lines.
+  #customized_training_mqtt_config: {'BROKER_HOST': 'your mqtt server address or domain name', 'MQTT_PWD': 'your mqtt password', 'BROKER_PORT': 1883, 'MQTT_KEEPALIVE': 180, 'MQTT_USER': 'your mqtt user'}
+  #customized_training_s3_config: {'CN_S3_SAK': 'your s3 aws_secret_access_key', 'CN_REGION_NAME': 'your s3 region name', 'CN_S3_AKI': 'your s3 aws_access_key_id', 'BUCKET_NAME': 'your s3 bucket name'}
 
 tracking_args:
-  log_file_dir: ./log
+  # the default log path is at ~/fedml-client/fedml/logs/ and ~/fedml-server/fedml/logs/
   enable_wandb: false
 ```
 

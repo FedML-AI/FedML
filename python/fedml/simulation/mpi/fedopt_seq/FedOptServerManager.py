@@ -97,9 +97,6 @@ class FedOptServerManager(FedMLCommManager):
             global_model_params = self.aggregator.get_global_model_params()
 
             print("size = %d" % self.size)
-            if self.args.is_mobile == 1:
-                print("transform_tensor_to_list")
-                global_model_params = transform_tensor_to_list(global_model_params)
 
             for receiver_id in range(1, self.size):
                 self.send_message_sync_model_to_client(

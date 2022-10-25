@@ -59,9 +59,6 @@ For client 2, run the following script:
 ```
 bash run_client.sh 2
 ```
-Note: please run the server first.
-
-
 
 `config/fedml_config.yaml` is shown below.
 
@@ -85,7 +82,7 @@ model_args:
 
 train_args:
   federated_optimizer: "FedAvg"
-  client_id_list: "[1, 2]"
+  client_id_list: 
   client_num_in_total: 1000
   client_num_per_round: 2
   comm_round: 50

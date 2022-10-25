@@ -76,10 +76,6 @@ class FedSegServerManager(FedMLCommManager):
                 self.args.client_num_per_round,
             )
 
-            if self.args.is_mobile == 1:
-
-                global_model_params = transform_tensor_to_list(global_model_params)
-
             for receiver_id in range(1, self.size):
                 self.send_message_sync_model_to_client(
                     receiver_id, global_model_params, client_indexes[receiver_id - 1]

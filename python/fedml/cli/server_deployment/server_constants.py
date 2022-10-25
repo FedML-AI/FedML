@@ -1,6 +1,7 @@
 
 import json
 import os
+import platform
 import signal
 import subprocess
 import sys
@@ -191,27 +192,33 @@ class ServerConstants(object):
             pass
 
     @staticmethod
-    def exec_console_with_script(script_path, should_capture_stdout_err=False):
-        if should_capture_stdout_err:
-            script_process = subprocess.Popen(['sh', '-c', script_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    def exec_console_with_script(script_path, should_capture_stdout=False, should_capture_stderr=False):
+        stdout_flag = subprocess.PIPE if should_capture_stdout else sys.stdout
+        stderr_flag = subprocess.PIPE if should_capture_stderr else sys.stderr
+
+        if platform.system() == 'Windows':
+            script_process = subprocess.Popen(script_path, stdout=stdout_flag, stderr=stderr_flag)
         else:
-            script_process = subprocess.Popen(['sh', '-c', script_path], stdout=sys.stdout, stderr=subprocess.PIPE)
+            script_process = subprocess.Popen(['bash', '-c', script_path], stdout=stdout_flag, stderr=stderr_flag)
+
         return script_process
 
     @staticmethod
-    def exec_console_with_shell(shell, script_path, should_capture_stdout_err=False):
-        if should_capture_stdout_err:
-            script_process = subprocess.Popen([shell, script_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        else:
-            script_process = subprocess.Popen([shell, script_path], stdout=sys.stdout, stderr=subprocess.PIPE)
+    def exec_console_with_shell(shell, script_path, should_capture_stdout=False, should_capture_stderr=False):
+        stdout_flag = subprocess.PIPE if should_capture_stdout else sys.stdout
+        stderr_flag = subprocess.PIPE if should_capture_stderr else sys.stderr
+
+        script_process = subprocess.Popen([shell, script_path], stdout=stdout_flag, stderr=stderr_flag)
+
         return script_process
 
     @staticmethod
-    def exec_console_with_shell_script_list(shell_script_list, should_capture_stdout_err=False):
-        if should_capture_stdout_err:
-            script_process = subprocess.Popen(shell_script_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        else:
-            script_process = subprocess.Popen(shell_script_list, stdout=sys.stdout, stderr=sys.stderr)
+    def exec_console_with_shell_script_list(shell_script_list, should_capture_stdout=False, should_capture_stderr=False):
+        stdout_flag = subprocess.PIPE if should_capture_stdout else sys.stdout
+        stderr_flag = subprocess.PIPE if should_capture_stderr else sys.stderr
+
+        script_process = subprocess.Popen(shell_script_list, stdout=stdout_flag, stderr=stderr_flag)
+
         return script_process
 
     @staticmethod
