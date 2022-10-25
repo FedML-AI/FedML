@@ -4,6 +4,9 @@ import numpy as np
 from abc import ABC, abstractmethod
 from typing import List, Tuple, Dict
 
+import sys
+sys.setrecursionlimit(10000)
+
 import numpy as np
 import torch
 import wandb

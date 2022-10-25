@@ -11,8 +11,10 @@ from fedml import FedMLRunner
 from fedml.arguments import Arguments
 from fedml.model.cv.resnet import resnet20
 from fedml.model.cv.resnet_cifar import resnet18_cifar
-from fedml.model.cv.resnet_gn import resnet18, resnet50
+from fedml.model.cv.resnet_gn import resnet18
+from fedml.model.cv.resnet_torch import resnet50
 from fedml.model.cv.resnet_torch import resnet18 as resnet18_torch
+
 
 from fedml.arguments import Arguments
 
@@ -103,11 +105,14 @@ def add_args():
     parser.add_argument("--aggregate_seq", type=str, default="False")
     parser.add_argument("--hierarchical_agg", type=str, default="False")
 
+
+    parser.add_argument("--wandb_id", type=str, default=None)
     parser.add_argument("--override_cmd_args", action="store_true")
     parser.add_argument("--tag", type=str, default="debug")
     parser.add_argument("--exp_name", type=str, default="ready")
     parser.add_argument("--device_tag", type=str, default="lambda3")
 
+    parser.add_argument("--enable_wandb", type=str, default="True")
 
     parser.add_argument("--local_cache", type=str, default="False")
     parser.add_argument("--simulation_schedule", type=str, default=None)
@@ -160,6 +165,7 @@ if __name__ == "__main__":
     args = fedml.init(args)
     logging.info(f"args: {args}")
     # args = fedml.init()
+    logging.info(f"args.process_id: {args.process_id}, args.worker_num: {args.worker_num}")
 
     # init device
     device = fedml.device.get_device(args)
@@ -196,7 +202,8 @@ if __name__ == "__main__":
         model = resnet18(group_norm=args.group_norm_channels, num_classes=output_dim)
     elif args.model == "resnet50":
         logging.info("ResNet50_GN")
-        model = resnet50(group_norm=args.group_norm_channels, num_classes=output_dim)
+        model = resnet50(num_classes=output_dim, in_channels=in_channels, group_norm=args.group_norm_channels)
+        # model = resnet50(group_norm=args.group_norm_channels, num_classes=output_dim)
     elif args.model == "resnet20":
         model = resnet20(class_num=output_dim)
     elif args.model == "resnet18_torch":

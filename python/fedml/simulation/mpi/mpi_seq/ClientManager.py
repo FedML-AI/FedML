@@ -86,6 +86,7 @@ class ClientManager(FedMLCommManager):
             self.get_sender_id(),
             receive_id,
         )
+        message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, {})
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_RESULT, local_agg_client_result)
         message.add_params(MyMessage.MSG_ARG_KEY_NUM_SAMPLES, local_sample_num_dict)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_RUNTIME_INFO, client_runtime_info)
