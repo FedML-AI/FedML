@@ -12,7 +12,7 @@ ARG DISTRO=ubuntu2004
 ARG ARCH=x86_64
 # ARG ARCH
 
-ARG PYTHON_VERSION=3.8
+ARG PYTHON_VERSION=3.7
 # ARG PYTHON_VERSION
 
 ARG PYTORCH_VERSION=1.11.0
@@ -26,9 +26,8 @@ ARG NCCL_VERSION=2.11.4
 ARG CUDA_VERSION=11.4
 # ARG CUDA_VERSION
 
-ENV NCCL_VERSION_IN=${NCCL_VERSION}
-ENV CUDA_VERSION_IN=${CUDA_VERSION}
-
+ENV NCCL_VERSION_ENV=${NCCL_VERSION}
+ENV CUDA_VERSION_ENV=${CUDA_VERSION}
 
 RUN echo ${NCCL_VERSION}
 RUN echo ${CUDA_VERSION}
@@ -62,12 +61,14 @@ RUN mkdir -p ${WORKSPACE}
 # Python
 # ***************************************************************************
 ARG DEBIAN_FRONTEND=noninteractive
-#RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf
 RUN apt-get clean
-RUN apt-get --allow-downgrades update
-RUN apt-get install -y python${PYTHON_VERSION} python3-pip
-RUN ln -s /usr/bin/python${PYTHON_VERSION} /usr/bin/python
+RUN apt-get update
+RUN apt install software-properties-common -y;add-apt-repository ppa:deadsnakes/ppa -y
+RUN apt install -y python${PYTHON_VERSION} python3-pip
+RUN ln -s /usr/bin/python${PYTHON_VERSION}  /usr/bin/python
+RUN rm -f /usr/bin/python${PYTHON_VERSION} ;ln -s /usr/bin/python${PYTHON_VERSION}  /usr/bin/python3
 RUN ln -nsf /usr/bin/pip3 /usr/bin/pip
+RUN echo `which python3;python3 --version`
 
 # ***************************************************************************
 # Utilities
@@ -84,10 +85,15 @@ RUN apt-get install -y --no-install-recommends \
 # ***************************************************************************
 # Git
 # ***************************************************************************
+RUN cd /usr/lib/python3/dist-packages;echo `python3 --version`;cp -f apt_pkg.cpython-36m-x86_64-linux-gnu.so apt_pkg.so
+RUN apt install python-dev python3-dev python${PYTHON_VERSION} -dev -y
+RUN apt-get install libgirepository1.0-dev python-cairo libcairo2 libcairo2-dev -y
+RUN python${PYTHON_VERSION}  -m pip install --ignore-installed PyGObject
 RUN add-apt-repository ppa:git-core/ppa -y && \
     apt-get install -y git && \
     git --version
 
+RUN echo `which python3;python3 --version`
 # ***************************************************************************
 # OPENMPI
 # ***************************************************************************
@@ -114,39 +120,39 @@ RUN mv /usr/local/mpi/bin/mpirun /usr/local/mpi/bin/mpirun.real && \
 # NCCL
 # ***************************************************************************
 # https://docs.nvidia.com/deeplearning/nccl/install-guide/index.html#downloadnccl
-ENV LIB_NCCL=${NCCL_VERSION_IN}+cuda${CUDA_VERSION_IN}
-ENV LIB_NCCL_DEV=${NCCL_VERSION_IN}+cuda${CUDA_VERSION_IN}
 RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/${DISTRO}/${ARCH}/7fa2af80.pub && \
 add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/${DISTRO}/${ARCH} /" && \
 apt update && \
-apt install -y --allow-change-held-packages libnccl2=${LIB_NCCL} libnccl-dev=${LIB_NCCL_DEV}
+apt install -y --allow-change-held-packages libnccl2=${NCCL_VERSION_ENV}+cuda${CUDA_VERSION_ENV} libnccl-dev=${NCCL_VERSION_ENV}+cuda${CUDA_VERSION_ENV}
 
 # ***************************************************************************
 # PyTorch (install from source)
 # ***************************************************************************
-RUN sudo pip install numpy ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses h5py
+RUN sudo pip3 install --upgrade pip && pip install numpy ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses h5py
 
-RUN cd ${INSTALL_DIR} && \
-git clone https://github.com/pytorch/pytorch.git && \
-cd pytorch && git checkout v${PYTORCH_VERSION} && \
-git submodule sync && \
-git submodule update --init --recursive --jobs 0 && \
-sudo USE_SYSTEM_NCCL=1 TORCH_CUDA_ARC_LIST="6.0 6.1 7.0 7.5 8.0" CMAKE_CUDA_COMPILER="/usr/local/cuda" python${PYTHON_VERSION} setup.py install
+#RUN cd ${INSTALL_DIR} && \
+#git clone https://github.com/pytorch/pytorch.git && \
+#cd pytorch && git checkout v${PYTORCH_VERSION} && \
+#git submodule sync && \
+#git submodule update --init --recursive --jobs 0 && \
+#sudo rm -f /usr/bin/python && sudo ln -s /usr/bin/python${PYTHON_VERSION} /usr/bin/python && sudo USE_SYSTEM_NCCL=1 TORCH_CUDA_ARC_LIST="6.0 6.1 7.0 7.5 8.0" CMAKE_CUDA_COMPILER="/usr/local/cuda" python3.8 setup.py install
 #RUN rm -rf ${INSTALL_DIR}/pytorch
-RUN pip3 install torch==${PYTORCH_VERSION}
+#RUN pip install torch==${PYTORCH_VERSION}
+RUN pip install --upgrade pip && pip install torch==1.12.1 torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu113
 
-RUN python${PYTHON_VERSION} -c "import torch; torch.__version__"
+RUN echo `python3 --version`;python3 -c "import torch; torch.__version__;print('cuda available: {}'.format(torch.cuda.is_available()));"
 
 # ***************************************************************************
 # install torch-geometric (https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html)
 # ***************************************************************************
-RUN cd ${INSTALL_DIR} && \
-git clone https://github.com/pyg-team/pytorch_geometric.git && \
-cd pytorch_geometric && \
-git submodule sync && \
-git submodule update --init --recursive --jobs 0 && \
-sudo python${PYTHON_VERSION} setup.py install
-RUN rm -rf ${INSTALL_DIR}/pytorch_geometric
+#RUN cd ${INSTALL_DIR} && \
+#git clone https://github.com/pyg-team/pytorch_geometric.git && \
+#cd pytorch_geometric && \
+#git submodule sync && \
+#git submodule update --init --recursive --jobs 0 && \
+#sudo python setup.py install
+#RUN rm -rf ${INSTALL_DIR}/pytorch_geometric
+RUN pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.12.0+cu113.html
 
 # ***************************************************************************
 ## install fedml from source
@@ -176,15 +182,17 @@ RUN pip3 install --upgrade requests
 #    imblearn \
 #    tabulate
 
-RUN cd ${INSTALL_DIR} && \
-git clone https://github.com/FedML-AI/FedML.git && cd ${INSTALL_DIR}/FedML && git pull
-RUN cd ${INSTALL_DIR}/FedML/python && \
-git submodule sync && \
-git submodule update --init --recursive --jobs 0 && \
-sudo python${PYTHON_VERSION} setup.py install
-RUN rm -rf ${INSTALL_DIR}/FedML
+#RUN cd ${INSTALL_DIR} && \
+#git clone https://github.com/FedML-AI/FedML.git && cd ${INSTALL_DIR}/FedML && git pull
+#RUN cd ${INSTALL_DIR}/FedML/python && \
+#git submodule sync && \
+#git submodule update --init --recursive --jobs 0 && \
+#sudo python3 setup.py install
+#RUN rm -rf ${INSTALL_DIR}/FedML
 
-RUN python${PYTHON_VERSION} -c "import fedml; fedml.__version__"
+RUN pip uninstall fedml;pip install fedml
+
+RUN python3 -c "import fedml; fedml.__version__"
 
 # ***************************************************************************
 ## Add fedml user
