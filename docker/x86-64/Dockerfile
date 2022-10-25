@@ -21,13 +21,13 @@ ARG PYTORCH_VERSION=1.11.0
 
 # https://docs.nvidia.com/deeplearning/nccl/release-notes/rel_2-12-10.html#rel_2-12-10
 ARG NCCL_VERSION=2.11.4
-# ARG NCCL_VERSION
+
 # NCCL 2.12.10 release supports CUDA 10.2, CUDA 11.0, and CUDA 11.6.
 ARG CUDA_VERSION=11.4
-# ARG CUDA_VERSION
 
-ENV NCCL_VERSION_ENV=${NCCL_VERSION}
-ENV CUDA_VERSION_ENV=${CUDA_VERSION}
+ARG PYTORCH_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cu113
+
+ARG PYTORCH_GEOMETRIC_URL=https://data.pyg.org/whl/torch-1.12.0+cu113.html
 
 RUN echo ${NCCL_VERSION}
 RUN echo ${CUDA_VERSION}
@@ -123,6 +123,10 @@ RUN mv /usr/local/mpi/bin/mpirun /usr/local/mpi/bin/mpirun.real && \
 RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/${DISTRO}/${ARCH}/7fa2af80.pub && \
 add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/${DISTRO}/${ARCH} /" && \
 apt update && \
+#export NCCL_VERSION_ENV=`echo $NCCL_VERSION | awk -F'-1' '{print $1}'` && \
+export NCCL_VERSION_ENV=$NCCL_VERSION && \
+export CUDA_VERSION_ENV=`echo $CUDA_VERSION | sed 's/\.1//g'` &&  \
+apt install -y --allow-change-held-packages libnccl2=${NCCL_VERSION_ENV}+cuda${CUDA_VERSION_ENV} libnccl-dev=${NCCL_VERSION_ENV}+cuda${CUDA_VERSION_ENV} \
 apt install -y --allow-change-held-packages libnccl2=${NCCL_VERSION_ENV}+cuda${CUDA_VERSION_ENV} libnccl-dev=${NCCL_VERSION_ENV}+cuda${CUDA_VERSION_ENV}
 
 # ***************************************************************************
@@ -138,7 +142,7 @@ RUN sudo pip3 install --upgrade pip && pip install numpy ninja pyyaml mkl mkl-in
 #sudo rm -f /usr/bin/python && sudo ln -s /usr/bin/python${PYTHON_VERSION} /usr/bin/python && sudo USE_SYSTEM_NCCL=1 TORCH_CUDA_ARC_LIST="6.0 6.1 7.0 7.5 8.0" CMAKE_CUDA_COMPILER="/usr/local/cuda" python3.8 setup.py install
 #RUN rm -rf ${INSTALL_DIR}/pytorch
 #RUN pip install torch==${PYTORCH_VERSION}
-RUN pip install --upgrade pip && pip install torch==1.12.1 torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu113
+RUN pip install --upgrade pip && pip install torch==${PYTORCH_VERSION} torchvision torchaudio --extra-index-url ${PYTORCH_EXTRA_INDEX_URL}
 
 RUN echo `python3 --version`;python3 -c "import torch; torch.__version__;print('cuda available: {}'.format(torch.cuda.is_available()));"
 
@@ -152,7 +156,7 @@ RUN echo `python3 --version`;python3 -c "import torch; torch.__version__;print('
 #git submodule update --init --recursive --jobs 0 && \
 #sudo python setup.py install
 #RUN rm -rf ${INSTALL_DIR}/pytorch_geometric
-RUN pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.12.0+cu113.html
+RUN pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f ${PYTORCH_GEOMETRIC_URL}
 
 # ***************************************************************************
 ## install fedml from source
