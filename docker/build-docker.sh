@@ -14,13 +14,13 @@ if [ $# -gt 9 ]; then
 fi
 
 if [ $# -gt 10 ]; then
-  PYTORCH_EXTRA_INDEX_URL=$10
+  PYTORCH_EXTRA_INDEX_URL=${10}
 else
   PYTORCH_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cu113
 fi
 
 if [ $# -gt 11 ]; then
-  PYTORCH_GEOMETRIC_URL=$11
+  PYTORCH_GEOMETRIC_URL=${11}
 else
   PYTORCH_GEOMETRIC_URL=https://data.pyg.org/whl/torch-1.12.0+cu113.html
 fi
@@ -29,19 +29,17 @@ fi
 DOCKER_FILE_PATH=""
 if [[ "$ARCH" == "x86_64" ]]; then
   DOCKER_FILE_PATH=./x86-64/Dockerfile
-elif [[  "$ARCH" == "arm64v8" ]]; then
+elif [[  "$ARCH" == "arm64" ]]; then
   DOCKER_FILE_PATH=./arm64v8/Dockerfile
-elif [[  "$ARCH" == "arm64v8_m1" ]]; then
-  DOCKER_FILE_PATH=./arm64v8-apple-m1/Dockerfile
 fi
 
 if [ $DOCKER_FILE_PATH == "" ]; then
-  echo "Please specify the properly arch (options: x86_64 / arm64v8 /arm64v8_m1)"
+  echo "Please specify the properly arch (options: x86_64 / arm64)"
   exit -1
 fi
 
 if [[ $NVIDIA_BASE_IMAGE != "" ]]; then
-    docker build -f ./x86-64/Dockerfile \
+    docker build -f $DOCKER_FILE_PATH \
     --build-arg OS=$OS \
     --build-arg DISTRO=$DISTRO \
     --build-arg PYTHON_VERSION=$PYTHON_VERSION \
@@ -54,7 +52,7 @@ if [[ $NVIDIA_BASE_IMAGE != "" ]]; then
     --network=host \
     -t $OUTPUT_IMAGE .
 else
-    docker build -f ./x86-64/Dockerfile \
+    docker build -f $DOCKER_FILE_PATH \
     --build-arg OS=$OS \
     --build-arg DISTRO=$DISTRO \
     --build-arg PYTHON_VERSION=$PYTHON_VERSION \
