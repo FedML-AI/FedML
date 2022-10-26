@@ -22,29 +22,19 @@ jobs:
         os: [ ubuntu-latest ]
         arch: [ X64 ]
         python-version: ["3.8"]
-        mpi: [mpich]
-#        include:
-#        - os: ubuntu-latest
-#          mpi: mpich
-#          install-mpi: sudo apt install -y mpich libmpich-dev
+        mpi: [ 'openmpi' ]
     steps:
-#    - uses: actions/checkout@v3
-##    - name: Install MPI
-##      run: ${{ matrix.install-mpi }}
-#    - name: Set up Python ${{ matrix.python-version }}
-#      uses: actions/setup-python@v3
-#      with:
-#        python-version: ${{ matrix.python-version }}
     - uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
     - uses: actions/checkout@v3
+    - uses: mpi4py/setup-mpi@v1
+      with:
+        mpi: ${{ matrix.mpi }}
     - name: Analysing the code with pylint
       run: |
-        sudo apt install -y python3-dev
         python3 -m pip install --upgrade pip
         pip install pylint
-        python3 -m pip install mpi4py
         pip install "fedml[gRPC]"
         pip install "fedml[tensorflow]"
         pip install "fedml[jax]"
