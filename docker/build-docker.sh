@@ -31,6 +31,12 @@ if [[ "$ARCH" == "x86_64" ]]; then
   DOCKER_FILE_PATH=./x86-64/Dockerfile
 elif [[  "$ARCH" == "arm64" ]]; then
   DOCKER_FILE_PATH=./arm64v8/Dockerfile
+elif [[  "$ARCH" == "jetson" ]]; then
+  DOCKER_FILE_PATH=./nvidia_jetson/Dockerfile
+elif [[  "$ARCH" == "rpi32" ]]; then
+  DOCKER_FILE_PATH=./rpi/Dockerfile_32bit_armv7
+elif [[  "$ARCH" == "rpi64" ]]; then
+  DOCKER_FILE_PATH=./rpi/Dockerfile_32bit_armv8
 fi
 
 if [ $DOCKER_FILE_PATH == "" ]; then
