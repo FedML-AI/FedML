@@ -22,7 +22,7 @@ jobs:
         os: [ ubuntu-latest ]
         arch: [ X64 ]
         python-version: ["3.8"]
-        mpi: [mpich]
+        #mpi: [mpich]
 #        include:
 #        - os: ubuntu-latest
 #          mpi: mpich
