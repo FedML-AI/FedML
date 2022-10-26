@@ -11,6 +11,7 @@ from fedml.model.cv.mobilenet_v3 import MobileNetV3
 from fedml.model.cv.resnet import resnet56
 from fedml.model.cv.resnet56 import resnet_client, resnet_server
 from fedml.model.cv.resnet_gn import resnet18
+from fedml.model.cv.cnn_web import CNN_WEB
 from fedml.model.linear.lr import LogisticRegression
 from fedml.model.linear.lr_cifar10 import LogisticRegression_Cifar10
 from fedml.model.nlp.rnn import RNN_OriginalFedAvg, RNN_StackOverFlow, RNN_FedShakespeare
@@ -23,6 +24,9 @@ def create(args, output_dim):
     if model_name == "lr" and args.dataset == "mnist":
         logging.info("LogisticRegression + MNIST")
         model = LogisticRegression(28 * 28, output_dim)
+    elif model_name == "cnn_web" and args.dataset == "cifar10":
+        logging.info("CNN_WEB + CIFAR10")
+        model = CNN_WEB()
     elif model_name == "lr" and args.dataset == "cifar10":
         logging.info("LogisticRegression + CIFAR10")
         model = LogisticRegression_Cifar10(32 * 32 * 3, output_dim)
