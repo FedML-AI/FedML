@@ -253,13 +253,13 @@ EXPOSE 22
 ##############################################################################
 # Supervisor container startup
 ##############################################################################
-ADD ./x86-64/supervisord.conf /etc/supervisor/supervisord.conf
-ADD ./x86-64/sync_all_nodes.sh /supervised-scripts/sync_all_nodes.sh
+ADD ./arm64v8/supervisord.conf /etc/supervisor/supervisord.conf
+ADD ./arm64v8/sync_all_nodes.sh /supervised-scripts/sync_all_nodes.sh
 RUN sudo chmod 755 supervised-scripts/sync_all_nodes.sh
 
 ##############################################################################
 # Entry Point Script
 ##############################################################################
-ADD ./x86-64/entry-point.sh /batch-runtime-scripts/entry-point.sh
+ADD ./arm64v8/entry-point.sh /batch-runtime-scripts/entry-point.sh
 RUN sudo chmod 0755 /batch-runtime-scripts/entry-point.sh
 CMD /batch-runtime-scripts/entry-point.sh
