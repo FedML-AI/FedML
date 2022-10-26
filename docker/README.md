@@ -25,12 +25,12 @@ sudo apt-get install qemu binfmt-support qemu-user-static
 # https://docs.nvidia.com/deeplearning/nccl/release-notes/rel_2-12-10.html#rel_2-12-10
 
 ARCH=x86_64
-OS=ubuntu20.04
-DISTRO=ubuntu2004
-PYTHON_VERSION=3
-PYTORCH_VERSION=1.11.0
-NCCL_VERSION=2.11.4
-CUDA_VERSION=11.4
+OS=ubuntu18.04
+DISTRO=ubuntu1804
+PYTHON_VERSION=3.7
+PYTORCH_VERSION=1.12.1
+NCCL_VERSION=2.9.9
+CUDA_VERSION=11.3
 bash build-docker.sh $ARCH $OS $DISTRO $PYTHON_VERSION $PYTORCH_VERSION $NCCL_VERSION $CUDA_VERSION
 ```
 
@@ -38,13 +38,13 @@ bash build-docker.sh $ARCH $OS $DISTRO $PYTHON_VERSION $PYTORCH_VERSION $NCCL_VE
 ```
 # https://docs.nvidia.com/deeplearning/nccl/release-notes/rel_2-12-10.html#rel_2-12-10
 
-ARCH=arm64v8
+ARCH=arm64
 OS=ubuntu20.04
 DISTRO=ubuntu2004
-PYTHON_VERSION=3
-PYTORCH_VERSION=1.11.0
-NCCL_VERSION=2.11.4
-CUDA_VERSION=11.4
+PYTHON_VERSION=3.8
+PYTORCH_VERSION=1.12.1
+NCCL_VERSION=2.9.6
+CUDA_VERSION=11.3
 bash build-docker.sh $ARCH $OS $DISTRO $PYTHON_VERSION $PYTORCH_VERSION $NCCL_VERSION $CUDA_VERSION
 ```
 
@@ -52,7 +52,7 @@ bash build-docker.sh $ARCH $OS $DISTRO $PYTHON_VERSION $PYTORCH_VERSION $NCCL_VE
 
 ```
 # c56e5f90d546 is the docker image ID
-docker tag c56e5f90d546 fedml/fedml:cuda-11.4.0-devel-ubuntu20.04
+docker tag c56e5f90d546 fedml/fedml:latest-torch1.12.1-cuda11.3-cudnn8-devel
 docker login --username fedml
-docker push fedml/fedml:cuda-11.4.0-devel-ubuntu20.04
+docker push fedml/fedml:latest-torch1.12.1-cuda11.3-cudnn8-devel
 ```
