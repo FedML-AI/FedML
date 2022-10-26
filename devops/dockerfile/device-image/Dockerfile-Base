@@ -20,10 +20,13 @@ RUN chmod a+x ./fedml/set-aws-credentials.sh
 RUN ./fedml/setup-aws-cli.sh
 
 RUN apt-get update
-RUN apt-get update
-RUN apt-get -y install gettext-base
-RUN apt-get -y install unar wget
-RUN apt-get -y install libquadmath0
+#RUN apt-get -y install gettext-base
+#RUN apt-get -y install unar wget
+#RUN apt-get -y install libquadmath0
+
+RUN sudo DEBIAN_FRONTEND=noninteractive apt-get install -qq gettext-base < /dev/null > /dev/null
+RUN sudo DEBIAN_FRONTEND=noninteractive apt-get install -qq unar wget < /dev/null > /dev/null
+RUN sudo DEBIAN_FRONTEND=noninteractive apt-get install -qq libquadmath0 < /dev/null > /dev/null
 
 RUN chmod a+x ./fedml/setup-conda-env.sh
 RUN bash ./fedml/setup-conda-env.sh ${IS_BUILDING_GPU_IMAGE}
