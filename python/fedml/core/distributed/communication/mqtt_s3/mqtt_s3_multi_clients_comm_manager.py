@@ -15,7 +15,7 @@ from ..base_com_manager import BaseCommunicationManager
 from ..message import Message
 from ..observer import Observer
 import time
-from fedml.core.distributed.communication.s3.utils import LogisticRegression
+from fedml.core.distributed.communication.s3.utils import LogisticRegression, CNN_WEB
 
 class MqttS3MultiClientsCommManager(BaseCommunicationManager):
     def __init__(
@@ -203,7 +203,8 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
             # read model from client
             if device == 'web':
                 # init model structure from client
-                py_model = LogisticRegression(28 * 28, 10)
+                # py_model = LogisticRegression(28 * 28, 10)
+                py_model = CNN_WEB()
 
                 model_params = self.s3_storage.read_model_web(s3_key_str, py_model)
             else:
