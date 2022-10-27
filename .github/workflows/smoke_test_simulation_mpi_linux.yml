@@ -35,9 +35,9 @@ jobs:
         - os: ubuntu-latest
           mpi: mpich
           install-mpi: sudo apt install -y mpich libmpich-dev
-        - os: ubuntu-latest
-          mpi: openmpi
-          install-mpi: sudo apt install -y openmpi-bin libopenmpi-dev
+#        - os: ubuntu-latest
+#          mpi: openmpi
+#          install-mpi: sudo apt install -y openmpi-bin libopenmpi-dev
     steps:
     - uses: actions/checkout@v3
     - name: Install MPI
