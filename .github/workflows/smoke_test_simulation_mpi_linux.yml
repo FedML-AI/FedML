@@ -60,7 +60,6 @@ jobs:
     - name: pip install -e ./
       run: |
         pip install -e ./
-        python -m pip install mpi4py
 
     - name: Test package - FedAvg
       run: |
@@ -91,6 +90,3 @@ jobs:
       run: |
         cd examples/simulation/mpi_torch_fedgan_mnist_gan_example
         sh run_step_by_step_example.sh 4
-
-    - name: Uninstall package after testing
-      run:  python -m pip uninstall --yes mpi4py
