@@ -27,10 +27,11 @@ jobs:
         working-directory: python
     strategy:
       matrix:
-        python-version: [3.8]
-        mpi: [mpich]
-#        mpi: [mpich, openmpi]
         os: [ ubuntu-latest ]
+        arch: [ X64 ]
+        python-version: [3.8]
+        mpi: [ 'openmpi' ]
+#        mpi: [mpich, openmpi]
 #        include:
 #        - os: ubuntu-latest
 #          mpi: mpich
@@ -39,13 +40,14 @@ jobs:
 #          mpi: openmpi
 #          install-mpi: sudo apt install -y openmpi-bin libopenmpi-dev
     steps:
-    - uses: actions/checkout@v2
-    - name: Install MPI
-      run: ${{ matrix.install-mpi }}
+    - uses: actions/checkout@v3
     - name: Use Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
+    - uses: mpi4py/setup-mpi@v1
+      with:
+        mpi: ${{ matrix.mpi }}
     - name: Install packaging tools
       run:  python -m pip install --upgrade setuptools pip wheel
     - name: Install build dependencies
