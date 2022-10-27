@@ -260,7 +260,7 @@ pipeline {
             container('base') {
               withCredentials([usernamePassword(passwordVariable : 'DOCKERHUB_PASSWORD' ,usernameVariable : 'DOCKERHUB_USERNAME' ,credentialsId : "$DOCKERHUB_CREDENTIAL_ID" ,)]) {
                 sh 'docker login --username $DOCKERHUB_USERNAME --password $DOCKERHUB_PASSWORD'
-                sh './devops/scripts/push-fedml-docker.sh no-pushing-arm'
+                sh './devops/scripts/push-fedml-docker.sh'
               }
 
               withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_ID' ,usernameVariable : 'AWS_ECR_USERNAME' ,credentialsId : "$AWS_ECR_CREDENTIAL_ID_PRODUCTION" ,)]) {
