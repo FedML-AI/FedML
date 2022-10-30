@@ -105,6 +105,11 @@ class DefaultServerAggregator(ServerAggregator):
         logging.info(stats)
 
     def test_all(self, train_data_local_dict, test_data_local_dict, device, args) -> bool:
+        isConvergence = False
+        # threshold to tell whether the training is convergence
+        threshold = 0.000001
+        prev_train_loss = 0
+        current_train_loss = 0
         train_num_samples = []
         train_tot_corrects = []
         train_losses = []
@@ -132,6 +137,13 @@ class DefaultServerAggregator(ServerAggregator):
         mlops.log({"Train/Loss": train_loss, "round": args.round_idx})
 
         stats = {"training_acc": train_acc, "training_loss": train_loss}
+        prev_train_loss = current_train_loss
+        current_train_loss = train_loss
+        if ((current_train_loss - prev_train_loss) <= threshold) :
+            isConvergence = True
+            logging.info("The training is convergence in the round = {}".format(args.round_idx))
+            # logging.info("self.client_real_ids = {}".format(self.client_real_ids))
+        logging.info("The training is convergence delta is = {}".format(current_train_loss - prev_train_loss))
         logging.info(stats)
 
         return True

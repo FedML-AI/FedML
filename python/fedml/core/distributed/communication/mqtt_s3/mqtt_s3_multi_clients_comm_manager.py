@@ -199,12 +199,13 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
             logging.info(
                 "mqtt_s3.on_message: device type %s" % device
             )
+            device = 'cross_silo'
 
             # read model from client
             if device == 'web':
                 # init model structure from client
-                # py_model = LogisticRegression(28 * 28, 10)
-                py_model = CNN_WEB()
+                py_model = LogisticRegression(28 * 28, 10)
+                # py_model = CNN_WEB()
 
                 model_params = self.s3_storage.read_model_web(s3_key_str, py_model)
             else:
