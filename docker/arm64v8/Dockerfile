@@ -30,6 +30,8 @@ ARG PYTORCH_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cu113
 
 ARG PYTORCH_GEOMETRIC_URL=https://data.pyg.org/whl/torch-1.12.0+cu113.html
 
+ARG LIB_NCCL=2.9.6-1+cuda11.3
+
 RUN echo ${NCCL_VERSION}
 RUN echo ${CUDA_VERSION}
 
@@ -125,9 +127,7 @@ RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/
 add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/${DISTRO}/${ARCH} /" && \
 apt update && \
 #export NCCL_VERSION_ENV=`echo $NCCL_VERSION | awk -F'-1' '{print $1}'` && \
-export NCCL_VERSION_ENV=$NCCL_VERSION-1 && \
-export CUDA_VERSION_ENV=`echo $CUDA_VERSION | sed 's/\.1//g'` &&  \
-apt install -y --allow-change-held-packages libnccl2=${NCCL_VERSION_ENV}+cuda${CUDA_VERSION_ENV} libnccl-dev=${NCCL_VERSION_ENV}+cuda${CUDA_VERSION_ENV}
+apt install -y --allow-change-held-packages libnccl2=${LIB_NCCL} libnccl-dev=${LIB_NCCL}
 
 # ***************************************************************************
 # PyTorch (install from source)
