@@ -68,6 +68,8 @@ class ClientDiagnosis(Singleton):
                     return False;
                 time.sleep(1)
 
+            mqtt_mgr.disconnect()
+            mqtt_mgr.loop_stop()
             return True
         except Exception as e:
             print("MQTT connect exception: {}".format(str(e)))
