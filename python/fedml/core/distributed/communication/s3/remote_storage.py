@@ -155,6 +155,35 @@ class S3Storage:
         if retry >= 3:
             logging.error(f"Download zip failed after max retry.")
 
+    def test_s3_base_cmds(self, message_key, message_body):
+        """
+        test_s3_base_cmds
+        :param file_key: s3 message key
+        :param file_key: s3 message body
+        :return:
+        """
+        retry = 0
+        while retry < 3:
+            try:
+                global aws_s3_client
+                message_pkl = pickle.dumps(message_body)
+                aws_s3_client.put_object(
+                    Body=message_pkl, Bucket=self.bucket_name, Key=message_key, ACL="public-read",
+                )
+                obj = aws_s3_client.get_object(Bucket=self.bucket_name, Key=message_key)
+                message_pkl_downloaded = obj["Body"].read()
+                message_downloaded = pickle.loads(message_pkl_downloaded)
+                if str(message_body) == str(message_downloaded):
+                    break
+                retry += 1
+            except Exception as e:
+                raise Exception("S3 base commands test failed at retry count {}, exception: {}".format(str(retry), str(e)))
+                retry += 1
+        if retry >= 3:
+            raise Exception(f"S3 base commands test failed after max retry.")
+
+        return True
+
     def delete_s3_zip(self, path_s3):
         """
         delete s3 object
