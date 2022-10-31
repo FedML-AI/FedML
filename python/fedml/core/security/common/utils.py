@@ -192,7 +192,7 @@ def compute_a_score(local_sample_number):
     return local_sample_number
 
 
-def compute_krum_score(vec_grad_list, client_num_after_trim):
+def compute_krum_score(vec_grad_list, client_num_after_trim, p=2):
     krum_scores = []
     num_client = len(vec_grad_list)
     for i in range(0, num_client):
@@ -203,7 +203,7 @@ def compute_krum_score(vec_grad_list, client_num_after_trim):
                     compute_euclidean_distance(
                         torch.Tensor(vec_grad_list[i]),
                         torch.Tensor(vec_grad_list[j]),
-                    ).item() ** 2
+                    ).item() ** p
                 )
         dists.sort()  # ascending
         score = dists[0:client_num_after_trim]
