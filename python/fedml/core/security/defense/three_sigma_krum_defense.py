@@ -112,7 +112,6 @@ class ThreeSigmaKrumDefense(BaseDefenseMethod):
         for i in range(len(client_scores) - 1, -1, -1):
             if client_scores[i] > self.upper_bound:
                 raw_client_grad_list.pop(i)
-                client_scores.pop(i)
                 print(f"pop -- i = {i}")
         return raw_client_grad_list, client_scores
 
