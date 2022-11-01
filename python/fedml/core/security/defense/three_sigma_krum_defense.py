@@ -13,8 +13,6 @@ import torch
 
 class ThreeSigmaKrumDefense(BaseDefenseMethod):
     def __init__(self, config):
-        self.memory = None
-        self.iteration_num = 0
         self.average = None
         self.upper_bound = 0
         if hasattr(config, "bound_param") and isinstance(config.bound_param, float):
