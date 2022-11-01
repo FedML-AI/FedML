@@ -1,3 +1,4 @@
+import math
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -209,3 +210,13 @@ def compute_krum_score(vec_grad_list, client_num_after_trim, p=2):
         score = dists[0:client_num_after_trim]
         krum_scores.append(sum(score))
     return krum_scores
+
+def compute_gaussian_distribution(score_list):
+    n = len(score_list)
+    mu = sum(list(score_list)) / n
+    temp = 0
+
+    for i in range(len(score_list)):
+        temp = (((score_list[i] - mu) ** 2) / (n - 1)) + temp
+    sigma = math.sqrt(temp)
+    return mu, sigma
