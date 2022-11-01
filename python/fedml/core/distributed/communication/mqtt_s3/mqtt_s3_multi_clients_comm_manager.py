@@ -199,7 +199,6 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
             logging.info(
                 "mqtt_s3.on_message: device type %s" % device
             )
-            device = 'cross_silo'
 
             # read model from client
             if device == 'web':
