@@ -1,4 +1,3 @@
-import math
 import numpy as np
 from scipy import spatial
 from .defense_base import BaseDefenseMethod
@@ -71,6 +70,9 @@ class CrossRoundDefense(BaseDefenseMethod):
             elif i not in self.potentially_poisoned_worker_list:
                 self.client_cache[i] = client_features[i]
         return raw_client_grad_list
+
+    def is_attack_existing(self):
+        return self.potentially_poisoned_worker_list.size() > 0
 
     def compute_client_cosine_scores(self, client_features, global_model_feature):
         client_wise_scores = []
