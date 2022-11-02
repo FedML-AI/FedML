@@ -23,3 +23,9 @@ RUN pip install -U Pillow
 RUN pip install --upgrade torchvision==0.10.0
 
 RUN pip install --upgrade pip && pip install fedml
+
+##############################################################################
+# Add docker location file
+##############################################################################
+ADD ./rpi/docker-location.yml /root/fedml-client/fedml/data/docker-location.yml
+ADD ./rpi/docker-location.yml /root/fedml-server/fedml/data/docker-location.yml
