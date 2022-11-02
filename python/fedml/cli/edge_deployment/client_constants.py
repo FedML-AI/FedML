@@ -197,6 +197,11 @@ class ClientConstants(object):
         return training_info
 
     @staticmethod
+    def get_docker_location_file():
+        dock_loc_path = os.path.join(ClientConstants.get_data_dir(), "docker-location.yml")
+        return dock_loc_path
+
+    @staticmethod
     def generate_yaml_doc(run_config_object, yaml_file):
         try:
             file = open(yaml_file, 'w', encoding='utf-8')
