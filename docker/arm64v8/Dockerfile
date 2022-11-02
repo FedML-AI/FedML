@@ -258,6 +258,12 @@ ADD ./arm64v8/sync_all_nodes.sh /supervised-scripts/sync_all_nodes.sh
 RUN sudo chmod 755 supervised-scripts/sync_all_nodes.sh
 
 ##############################################################################
+# Add docker location file
+##############################################################################
+ADD ./arm64v8/docker-location.yml /home/fedml/fedml-client/fedml/data/docker-location.yml
+ADD ./arm64v8/docker-location.yml /home/fedml/fedml-server/fedml/data/docker-location.yml
+
+##############################################################################
 # Entry Point Script
 ##############################################################################
 ADD ./arm64v8/entry-point.sh /batch-runtime-scripts/entry-point.sh
