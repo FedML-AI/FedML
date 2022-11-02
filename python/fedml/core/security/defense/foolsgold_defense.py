@@ -54,8 +54,8 @@ class FoolsGoldDefense(BaseDefenseMethod):
         return new_grad_list
 
     # Takes in grad, compute similarity, get weightings
-    @staticmethod
-    def fools_gold_score(feature_vec_list):
+    @classmethod
+    def fools_gold_score(cls, feature_vec_list):
         n_clients = len(feature_vec_list)
         cs = np.zeros((n_clients, n_clients))
         for i in range(n_clients):
