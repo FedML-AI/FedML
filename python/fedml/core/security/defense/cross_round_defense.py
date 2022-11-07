@@ -13,13 +13,15 @@ from typing import Callable, List, Tuple, Dict, Any
 # todo: pretraining round?
 class CrossRoundDefense(BaseDefenseMethod):
     def __init__(self, config):
+        self.potentially_poisoned_worker_list = None
         self.lazy_worker_list = None
         self.potential_malicious_client_idxs = []
-        self.upperbound = 0.95  # cosine similarity > upperbound is defined as ``very limited difference''-> lazy worker
-        self.lowerbound = 0.8  # cosine similarity < lowerbound: attack may happen; need further defense
+        # cosine similarity in [0, 2] 0 means 2 vectors are same
+        self.upperbound = 0.3  # cosine similarity > upperbound: attack may happen; need further defense
+        self.lowerbound = 0.0000001  # cosine similarity < lowerbound is defined as ``very limited difference''-> lazy worker
         self.client_cache = None
-        self.pretraining_round = 2
-        self.potentially_poisoned_worker_list = None
+        self.training_round = 1
+        self.is_attack_existing = True  # for the first round, true
 
     def run(
             self,
@@ -39,40 +41,46 @@ class CrossRoundDefense(BaseDefenseMethod):
             raw_client_grad_list: List[Tuple[float, Dict]],
             extra_auxiliary_info: Any = None,
     ):
+        self.is_attack_existing = False
+        client_features = self._get_importance_feature(raw_client_grad_list)
+        if self.training_round == 1:
+            self.training_round += 1
+            self.client_cache = client_features
+            return raw_client_grad_list
         self.lazy_worker_list = []
         self.potentially_poisoned_worker_list = []
         # extra_auxiliary_info: global model
         global_model_feature = self._get_importance_feature_of_a_model(
             extra_auxiliary_info
         )
-        client_features = self._get_importance_feature(raw_client_grad_list)
-        if self.client_cache is None:
-            self.client_cache = client_features
         client_wise_scores, global_wise_scores = self.compute_client_cosine_scores(
             client_features, global_model_feature
         )
+        print(f"client_wise_scores = {client_wise_scores}")
+        print(f"global_wise_scores = {global_wise_scores}")
 
         for i in range(len(client_wise_scores)):
             if (
-                    client_wise_scores[i] > self.upperbound
-                    or global_wise_scores[i] > self.upperbound
+                    client_wise_scores[i] < self.lowerbound
+                    or global_wise_scores[i] < self.lowerbound
             ):
                 self.lazy_worker_list.append(i)  # will be directly kicked out later
             elif (
-                    client_wise_scores[i] < self.lowerbound
-                    or global_wise_scores[i] < self.upperbound
+                    client_wise_scores[i] > self.upperbound
+                    or global_wise_scores[i] > self.upperbound
             ):
+                self.is_attack_existing = True
                 self.potentially_poisoned_worker_list.append(i)
 
         for i in range(len(client_features) - 1, -1, -1):
-            if i in self.lazy_worker_list:
-                raw_client_grad_list.pop(i)
-            elif i not in self.potentially_poisoned_worker_list:
+            # if i in self.lazy_worker_list:
+            #     raw_client_grad_list.pop(i)
+            if i not in self.potentially_poisoned_worker_list:
                 self.client_cache[i] = client_features[i]
+        self.training_round += 1
+        print(f"self.potentially_poisoned_worker_list = {self.potentially_poisoned_worker_list}")
+        print(f"self.lazy_worker_list = {self.lazy_worker_list}")
         return raw_client_grad_list
-
-    def is_attack_existing(self):
-        return self.potentially_poisoned_worker_list.size() > 0
 
     def compute_client_cosine_scores(self, client_features, global_model_feature):
         client_wise_scores = []
