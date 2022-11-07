@@ -1,4 +1,5 @@
 import math
+import random
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -14,9 +15,9 @@ def vectorize_weight(state_dict):
 
 def is_weight_param(k):
     return (
-        "running_mean" not in k
-        and "running_var" not in k
-        and "num_batches_tracked" not in k
+            "running_mean" not in k
+            and "running_var" not in k
+            and "num_batches_tracked" not in k
     )
 
 
@@ -106,7 +107,7 @@ def get_malicious_client_id_list(random_seed, client_num, malicious_client_num):
 
 
 def replace_original_class_with_target_class(
-    data_labels, original_class_list=None, target_class_list=None
+        data_labels, original_class_list=None, target_class_list=None
 ):
     """
     :param targets: Target class IDs
@@ -115,10 +116,10 @@ def replace_original_class_with_target_class(
     """
 
     if (
-        len(original_class_list) == 0
-        or len(target_class_list) == 0
-        or original_class_list is None
-        or target_class_list is None
+            len(original_class_list) == 0
+            or len(target_class_list) == 0
+            or original_class_list is None
+            or target_class_list is None
     ):
         return data_labels
     if len(original_class_list) != len(target_class_list):
@@ -126,7 +127,7 @@ def replace_original_class_with_target_class(
             "the length of the original class list is not equal to the length of the targeted class list"
         )
     if len(set(original_class_list)) < len(
-        original_class_list
+            original_class_list
     ):  # no need to check the targeted classes
         raise ValueError("the original classes can not be same")
 
@@ -211,6 +212,7 @@ def compute_krum_score(vec_grad_list, client_num_after_trim, p=2):
         krum_scores.append(sum(score))
     return krum_scores
 
+
 def compute_gaussian_distribution(score_list):
     n = len(score_list)
     mu = sum(list(score_list)) / n
@@ -220,3 +222,7 @@ def compute_gaussian_distribution(score_list):
         temp = (((score_list[i] - mu) ** 2) / (n - 1)) + temp
     sigma = math.sqrt(temp)
     return mu, sigma
+
+
+def sample_some_clients(client_num, sampled_client_num):
+    return random.sample(range(client_num), sampled_client_num)
