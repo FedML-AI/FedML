@@ -28,6 +28,6 @@ class OutlierDetection(BaseDefenseMethod):
             extra_auxiliary_info: Any = None,
     ):
         client_grad_list = self.cross_round_check.defend_before_aggregation(raw_client_grad_list, extra_auxiliary_info)
-        if self.cross_round_check.is_attack_existing():
-            client_grad_list = self.cross_round_check.defend_before_aggregation(client_grad_list, extra_auxiliary_info)
+        if self.cross_round_check.is_attack_existing:
+            client_grad_list = self.three_sigma_check.defend_before_aggregation(client_grad_list, extra_auxiliary_info)
         return client_grad_list
