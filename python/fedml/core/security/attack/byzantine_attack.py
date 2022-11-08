@@ -1,9 +1,8 @@
-import random
 import fedml
 import numpy as np
 import torch
 from .attack_base import BaseAttackMethod
-from ..common.utils import is_weight_param
+from ..common.utils import is_weight_param, sample_some_clients
 from typing import List, Tuple, Dict, Any
 
 """
@@ -21,7 +20,7 @@ class ByzantineAttack(BaseAttackMethod):
         extra_auxiliary_info: Any = None):
         if len(raw_client_grad_list) < self.byzantine_client_num:
             self.byzantine_client_num = len(raw_client_grad_list)
-        byzantine_idxs = self._get_malicious_client_idx(len(raw_client_grad_list))
+        byzantine_idxs = sample_some_clients(len(raw_client_grad_list), self.byzantine_client_num)
         print(f"byzantine_idxs={byzantine_idxs}")
         if self.attack_mode == "zero":
             byzantine_local_w = self._attack_zero_mode(raw_client_grad_list, byzantine_idxs)
@@ -73,6 +72,3 @@ class ByzantineAttack(BaseAttackMethod):
                         local_model_params[k] = global_model[k] + (global_model[k] - local_model_params[k])
                 new_model_list.append((local_sample_number, local_model_params))
         return new_model_list
-
-    def _get_malicious_client_idx(self, client_num):
-        return random.sample(range(client_num), self.byzantine_client_num)
