@@ -22,6 +22,9 @@ train_args:
   client_optimizer: sgd
   learning_rate: 0.03
   weight_decay: 0.001
+  enable_lr_scheduler: true
+  lr_scheduler: MultiStepLR
+  lr_scheduler_arg: { "milestones": [100, 180], "gamma": 0.1 }
 
 validation_args:
   frequency_of_the_test: 5
