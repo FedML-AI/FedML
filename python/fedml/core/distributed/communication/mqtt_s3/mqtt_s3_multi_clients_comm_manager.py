@@ -41,7 +41,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
             self.isBrowser = args.is_browser
         logging.info(args.__dict__)
         self.dataSetType = args.dataset
-        logging.info("is browser device: ", self.isBrowser)
+        logging.info("is browser device: " + str(self.isBrowser))
         logging.info("origin client object " + str(args.client_id_list))
         logging.info("client object " + client_objects_str)
         self.client_id_list = json.loads(client_objects_str)
@@ -310,6 +310,10 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                 payload[Message.MSG_ARG_KEY_MODEL_PARAMS_URL] = model_params_key_url[
                     "url"
                 ]
+                logging.info(
+                    "mqtt_s3.send_message: client s3, topic = %s"
+                    % topic
+                )
                 self.mqtt_mgr.send_message(topic, json.dumps(payload))
             else:
                 logging.info("mqtt_s3.send_message: MQTT msg sent")
