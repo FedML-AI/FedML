@@ -43,7 +43,7 @@ docker container kill $(docker ps -q)
 echo "start new docker run"
 # https://us-east-1.console.aws.amazon.com/ecr/repositories/private/350694149704/m5deepspeed?region=us-east-1
 
-FEDML_DOCKER_IMAGE=fedml/fedml:cuda-11.4.0-devel-ubuntu20.04
+FEDML_DOCKER_IMAGE=fedml/fedml:latest-torch1.12.1-cuda11.3-cudnn8-devel
 WORKSPACE=/home/chaoyanghe/sourcecode/FedML_startup/FedML
 docker run -t -i -v $WORKSPACE:$WORKSPACE --shm-size=64g --ulimit nofile=65535 --ulimit memlock=-1 --privileged \
 --env FEDML_NODE_INDEX=0 \
