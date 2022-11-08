@@ -37,6 +37,8 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         logging.info("origin client object " + str(args.client_id_list))
         logging.info("client object " + client_objects_str)
         self.client_id_list = json.loads(client_objects_str)
+        self.datasetType = args.dataset
+        logging.info(args.__dict__)
 
         self._topic = "fedml_" + str(topic) + "_"
         self.s3_storage = S3Storage(s3_config_path)
@@ -199,12 +201,14 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
             logging.info(
                 "mqtt_s3.on_message: device type %s" % device
             )
-            device = 'cross_silo'
+            device = 'web'
             # read model from client
             if device == 'web':
                 # init model structure from client
-                py_model = LogisticRegression(28 * 28, 10)
-                # py_model = CNN_WEB()
+                if self.datasetType == 'mnist':
+                    py_model = LogisticRegression(28 * 28, 10)
+                elif self.datasetType == 'cifar10':
+                    py_model = CNN_WEB()
 
                 model_params = self.s3_storage.read_model_web(s3_key_str, py_model)
             else:
@@ -255,7 +259,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                     % message_key
                 )
                 logging.info("mqtt_s3.send_message: to python client.")
-                model_url = self.s3_storage.write_model(message_key, model_params_obj)
+                model_url = self.s3_storage.write_model_web(message_key, model_params_obj)
                 model_params_key_url = {
                     "key": message_key,
                     "url": model_url,
@@ -289,7 +293,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                     "mqtt_s3.send_message: S3+MQTT msg sent, message_key = %s"
                     % message_key
                 )
-                model_url = self.s3_storage.write_model(message_key, model_params_obj)
+                model_url = self.s3_storage.write_model_web(message_key, model_params_obj)
                 model_params_key_url = {
                     "key": message_key,
                     "url": model_url,

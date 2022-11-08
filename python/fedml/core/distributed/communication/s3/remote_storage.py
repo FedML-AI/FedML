@@ -46,17 +46,38 @@ class S3Storage:
     def write_model(self, message_key, model):
         global aws_s3_client
         pickle_dump_start_time = time.time()
-        device = "cross_silo"
 
-        if device == 'web':
-            # for javascript clients
-            state_dict = model # type: OrderedDict
-            model_json = process_state_dict(state_dict)
-            model_to_send = json.dumps(model_json)
-        else:
-            # for python clients
-            model_pkl = pickle.dumps(model)
-            model_to_send = model_pkl
+        # for python clients
+        model_pkl = pickle.dumps(model)
+        model_to_send = model_pkl
+
+        # logging.info(f"============model_json in remote_storage write_model===========:\n{model_json}")
+        # logging.info(f"============model in remote_storage===========:\n{model}")
+        MLOpsProfilerEvent.log_to_wandb(
+            {"PickleDumpsTime": time.time() - pickle_dump_start_time}
+        )
+        logging.info(f'send_ message key: {message_key}')
+        s3_upload_start_time = time.time()
+        aws_s3_client.put_object(
+            Body=model_to_send, Bucket=self.bucket_name, Key=message_key, ACL="public-read",
+        )
+        MLOpsProfilerEvent.log_to_wandb(
+            {"Comm/send_delay": time.time() - s3_upload_start_time}
+        )
+        model_url = aws_s3_client.generate_presigned_url(
+            "get_object",
+            ExpiresIn=60 * 60 * 24 * 5,
+            Params={"Bucket": self.bucket_name, "Key": message_key},
+        )
+        return model_url
+
+    def write_model_web(self, message_key, model):
+        global aws_s3_client
+        pickle_dump_start_time = time.time()
+
+        state_dict = model  # type: OrderedDict
+        model_json = process_state_dict(state_dict)
+        model_to_send = json.dumps(model_json)
 
         # logging.info(f"============model_json in remote_storage write_model===========:\n{model_json}")
         # logging.info(f"============model in remote_storage===========:\n{model}")
