@@ -119,12 +119,12 @@ class ThreeSigmaKrumDefense(BaseDefenseMethod):
         importance_feature_list = self._get_importance_feature(raw_client_grad_list)
         krum_scores = compute_krum_score(
             importance_feature_list,
-            client_num_after_trim=math.floor(len(raw_client_grad_list) / 2),
+            client_num_after_trim=math.ceil(len(raw_client_grad_list) / 2) - 1,
         )
         score_index = torch.argsort(
             torch.Tensor(krum_scores)
         ).tolist()  # indices; ascending
-        score_index = score_index[0 : math.floor(len(raw_client_grad_list) / 2)]
+        score_index = score_index[0: math.ceil(len(raw_client_grad_list) / 2) - 1]
         honest_importance_feature_list = [
             importance_feature_list[i] for i in score_index
         ]
