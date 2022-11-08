@@ -49,7 +49,7 @@ class FedAvgAPI(object):
         self._setup_lr_scheduler()
 
     def _setup_clients(
-            self, train_data_local_num_dict, train_data_local_dict, test_data_local_dict, model_trainer,
+        self, train_data_local_num_dict, train_data_local_dict, test_data_local_dict, model_trainer,
     ):
         logging.info("############setup_clients (START)#############")
         for client_idx in range(self.args.client_num_per_round):
@@ -77,8 +77,7 @@ class FedAvgAPI(object):
             if check_lr_scheduler(self.args.lr_scheduler):
                 dummy_optimizer = torch.optim.SGD([torch.rand(1)], lr=self.args.learning_rate)
                 args = self.args.lr_scheduler_arg
-                lr_scheduler = eval(f"torch.optim.lr_scheduler.{self.args.lr_scheduler}")(optimizer=dummy_optimizer,
-                                                                                          **args)
+                lr_scheduler = eval(f"torch.optim.lr_scheduler.{self.args.lr_scheduler}")(optimizer=dummy_optimizer, **args)
                 self.lr_scheduler = lr_scheduler
             else:
                 raise ValueError()
