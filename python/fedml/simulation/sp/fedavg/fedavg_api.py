@@ -31,6 +31,8 @@ class FedAvgAPI(object):
         self.train_data_num_in_total = train_data_num
         self.test_data_num_in_total = test_data_num
 
+        self.lr_scheduler = None
+
         self.client_list = []
         self.train_data_local_num_dict = train_data_local_num_dict
         self.train_data_local_dict = train_data_local_dict
@@ -44,9 +46,10 @@ class FedAvgAPI(object):
         self._setup_clients(
             train_data_local_num_dict, train_data_local_dict, test_data_local_dict, self.model_trainer,
         )
+        self._setup_lr_scheduler()
 
     def _setup_clients(
-        self, train_data_local_num_dict, train_data_local_dict, test_data_local_dict, model_trainer,
+            self, train_data_local_num_dict, train_data_local_dict, test_data_local_dict, model_trainer,
     ):
         logging.info("############setup_clients (START)#############")
         for client_idx in range(self.args.client_num_per_round):
@@ -61,6 +64,24 @@ class FedAvgAPI(object):
             )
             self.client_list.append(c)
         logging.info("############setup_clients (END)#############")
+
+    def _setup_lr_scheduler(self):
+        def check_lr_scheduler(lr_scheduler_name):
+            for n, value in torch.optim.lr_scheduler.__dict__.items():
+                if isinstance(value, type):
+                    if lr_scheduler_name == n:
+                        return True
+            return False
+
+        if self.args.enable_lr_scheduler:
+            if check_lr_scheduler(self.args.lr_scheduler):
+                dummy_optimizer = torch.optim.SGD([torch.rand(1)], lr=self.args.learning_rate)
+                args = self.args.lr_scheduler_arg
+                lr_scheduler = eval(f"torch.optim.lr_scheduler.{self.args.lr_scheduler}")(optimizer=dummy_optimizer,
+                                                                                          **args)
+                self.lr_scheduler = lr_scheduler
+            else:
+                raise ValueError()
 
     def train(self):
         logging.info("self.model_trainer = {}".format(self.model_trainer))
@@ -118,6 +139,15 @@ class FedAvgAPI(object):
                     self._local_test_on_all_clients(round_idx)
 
             mlops.log_round_info(self.args.comm_round, round_idx)
+
+            if self.args.enable_wandb:
+                wandb.log({"Learning_rate": self.client_list[0].model_trainer.args.learning_rate, "round": round_idx})
+
+            if self.args.enable_lr_scheduler:
+                self.lr_scheduler.step()
+                new_lr = self.lr_scheduler.get_last_lr()[0]
+                for idx, client in enumerate(self.client_list):
+                    client.model_trainer.args.learning_rate = new_lr
 
         mlops.log_training_finished_status()
         mlops.log_aggregation_finished_status()
