@@ -43,10 +43,10 @@ class S3Storage:
             aws_secret_access_key=self.cn_s3_sak,
         )
     # TODO: add a device indicator
-    def write_model(self, message_key, model, device):
+    def write_model(self, message_key, model):
         global aws_s3_client
         pickle_dump_start_time = time.time()
-        # device = "cross_silo"
+        device = "cross_silo"
 
         if device == 'web':
             # for javascript clients

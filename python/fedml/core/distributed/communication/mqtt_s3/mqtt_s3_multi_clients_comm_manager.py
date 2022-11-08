@@ -199,7 +199,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
             logging.info(
                 "mqtt_s3.on_message: device type %s" % device
             )
-
+            device = 'cross_silo'
             # read model from client
             if device == 'web':
                 # init model structure from client
@@ -255,7 +255,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                     % message_key
                 )
                 logging.info("mqtt_s3.send_message: to python client.")
-                model_url = self.s3_storage.write_model(message_key, model_params_obj, device='web')
+                model_url = self.s3_storage.write_model(message_key, model_params_obj)
                 model_params_key_url = {
                     "key": message_key,
                     "url": model_url,
@@ -276,6 +276,10 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
             # client
             topic = self._topic + str(msg.get_sender_id())
             message_key = topic + "_" + str(uuid.uuid4())
+            logging.info(
+                "client_topic = %s"
+                % topic
+            )
 
             payload = msg.get_params()
             model_params_obj = payload.get(Message.MSG_ARG_KEY_MODEL_PARAMS, "")
@@ -295,7 +299,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                 payload[Message.MSG_ARG_KEY_MODEL_PARAMS_URL] = model_params_key_url[
                     "url"
                 ]
-                logging.info('client_topic ', topic)
+                logging.info('client_topic ' + str(topic))
                 self.mqtt_mgr.send_message(topic, json.dumps(payload))
             else:
                 logging.info("mqtt_s3.send_message: MQTT msg sent")
