@@ -1,6 +1,5 @@
 from typing import Callable, List, Tuple, Dict, Any
 import numpy as np
-from scipy import spatial
 from .defense_base import BaseDefenseMethod
 
 """
@@ -56,13 +55,9 @@ class FoolsGoldDefense(BaseDefenseMethod):
     # Takes in grad, compute similarity, get weightings
     @classmethod
     def fools_gold_score(cls, feature_vec_list):
+        import sklearn.metrics.pairwise as smp
         n_clients = len(feature_vec_list)
-        cs = np.zeros((n_clients, n_clients))
-        for i in range(n_clients):
-            for j in range(n_clients):
-                cs[i][j] = 1 - spatial.distance.cosine(feature_vec_list[i], feature_vec_list[j])
-        cs -= np.eye(n_clients)
-        # cs = smp.cosine_similarity(feature_vec_list) - np.eye(n_clients)
+        cs = smp.cosine_similarity(feature_vec_list) - np.eye(n_clients)
         maxcs = np.max(cs, axis=1)
         # pardoning
         for i in range(n_clients):
