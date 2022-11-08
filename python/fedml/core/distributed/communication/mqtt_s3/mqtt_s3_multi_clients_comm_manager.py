@@ -224,6 +224,9 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                 "mqtt_s3.on_message: model params length %d" % len(model_params)
             )
 
+            model_url = payload_obj.get(Message.MSG_ARG_KEY_MODEL_PARAMS_URL, "")
+            logging.info("mqtt_s3.on_message: model url {}".format(model_url))
+
             # replace the S3 object key with raw model params
             payload_obj[Message.MSG_ARG_KEY_MODEL_PARAMS] = model_params
         else:

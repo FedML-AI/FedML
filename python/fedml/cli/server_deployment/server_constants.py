@@ -171,6 +171,11 @@ class ServerConstants(object):
         ServerConstants.generate_yaml_doc(running_info, runner_info_file)
 
     @staticmethod
+    def get_docker_location_file():
+        dock_loc_path = os.path.join(ServerConstants.get_data_dir(), "docker-location.yml")
+        return dock_loc_path
+
+    @staticmethod
     def generate_yaml_doc(run_config_object, yaml_file):
         try:
             file = open(yaml_file, 'w', encoding='utf-8')

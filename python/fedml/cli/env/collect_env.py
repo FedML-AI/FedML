@@ -1,6 +1,7 @@
 import os
 
 import fedml
+from fedml.cli.edge_deployment.client_diagnosis import ClientDiagnosis
 
 
 def collect_env():
@@ -78,3 +79,22 @@ def collect_env():
 
     except:
         print("No GPU devices")
+
+    print("\n======== Network Connection Checking ========")
+    is_open_connected = ClientDiagnosis.check_open_connection()
+    if is_open_connected:
+        print("The connection to https://open.fedml.ai is OK.")
+    else:
+        print("You can not connect to https://open.fedml.ai.")
+
+    is_s3_connected = ClientDiagnosis.check_s3_connection()
+    if is_s3_connected:
+        print("The connection to AWS S3 is OK.")
+    else:
+        print("You can not connect to AWS S3.")
+
+    is_mqtt_connected = ClientDiagnosis.check_mqtt_connection()
+    if is_mqtt_connected:
+        print("The connection to mqtt.fedml.ai (port:1883) is OK.")
+    else:
+        print("You can not connect to mqtt.fedml.ai (port:1883).")

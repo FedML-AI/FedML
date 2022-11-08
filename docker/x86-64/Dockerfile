@@ -1,12 +1,12 @@
 
 # https://hub.docker.com/r/nvidia/cuda/tags
 # https://hub.docker.com/r/nvidia/cuda/tags?page=1&name=11.6.0-devel-ubuntu was released at May 6th, 2022
-ARG NVIDIA_BASE_IMAGE=nvidia/cuda:11.4.0-devel-ubuntu20.04
+ARG NVIDIA_BASE_IMAGE=nvidia/cuda:11.3.1-cudnn8-devel-ubuntu18.04
 FROM ${NVIDIA_BASE_IMAGE}
-ARG OS=ubuntu20.04
+ARG OS=ubuntu18.04
 # ARG OS
 
-ARG DISTRO=ubuntu2004
+ARG DISTRO=ubuntu1804
 # ARG DISTRO
 
 ARG ARCH=x86_64
@@ -15,19 +15,21 @@ ARG ARCH=x86_64
 ARG PYTHON_VERSION=3.7
 # ARG PYTHON_VERSION
 
-ARG PYTORCH_VERSION=1.11.0
+ARG PYTORCH_VERSION=1.12.1
 # ARG PYTORCH_VERSION
 
 
 # https://docs.nvidia.com/deeplearning/nccl/release-notes/rel_2-12-10.html#rel_2-12-10
-ARG NCCL_VERSION=2.11.4
+ARG NCCL_VERSION=2.9.9
 
 # NCCL 2.12.10 release supports CUDA 10.2, CUDA 11.0, and CUDA 11.6.
-ARG CUDA_VERSION=11.4
+ARG CUDA_VERSION=11.3
 
 ARG PYTORCH_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cu113
 
 ARG PYTORCH_GEOMETRIC_URL=https://data.pyg.org/whl/torch-1.12.0+cu113.html
+
+ARG LIB_NCCL="2.9.9-1+cuda11.3"
 
 RUN echo ${NCCL_VERSION}
 RUN echo ${CUDA_VERSION}
@@ -124,9 +126,7 @@ RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/
 add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/${DISTRO}/${ARCH} /" && \
 apt update && \
 #export NCCL_VERSION_ENV=`echo $NCCL_VERSION | awk -F'-1' '{print $1}'` && \
-export NCCL_VERSION_ENV=$NCCL_VERSION && \
-export CUDA_VERSION_ENV=`echo $CUDA_VERSION | sed 's/\.1//g'` &&  \
-apt install -y --allow-change-held-packages libnccl2=${NCCL_VERSION_ENV}+cuda${CUDA_VERSION_ENV} libnccl-dev=${NCCL_VERSION_ENV}+cuda${CUDA_VERSION_ENV}
+apt install -y --allow-change-held-packages libnccl2=${LIB_NCCL} libnccl-dev=${LIB_NCCL}
 
 # ***************************************************************************
 # PyTorch (install from source)
@@ -255,6 +255,11 @@ EXPOSE 22
 ADD ./x86-64/supervisord.conf /etc/supervisor/supervisord.conf
 ADD ./x86-64/sync_all_nodes.sh /supervised-scripts/sync_all_nodes.sh
 RUN sudo chmod 755 supervised-scripts/sync_all_nodes.sh
+
+##############################################################################
+# Add docker location file
+##############################################################################
+ADD ./x86-64/docker-location.yml /home/fedml/fedml-client/fedml/data/docker-location.yml
 
 ##############################################################################
 # Entry Point Script
