@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from ..security.fedml_attacker import FedMLAttacker
 from ..security.fedml_defender import FedMLDefender
 from ...core.dp.fedml_differential_privacy import FedMLDifferentialPrivacy
-
+from ..fhe.fhe_agg import FedMLFHE
 
 class ClientTrainer(ABC):
     """Abstract base class for federated learning trainer.

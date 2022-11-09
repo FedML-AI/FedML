@@ -59,3 +59,10 @@ dp_args:
   delta: 0.1
   sensitivity: 1
   mechanism_type: gaussian
+
+fhe_args:
+  enable_fhe: true
+  scheme: ckks
+  batch_size: 4096
+  scaling_factor: 52
+  file_loc: "resources/cryptoparams/"
