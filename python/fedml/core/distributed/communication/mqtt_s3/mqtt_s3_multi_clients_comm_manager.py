@@ -201,6 +201,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
             logging.info(
                 "mqtt_s3.on_message: device type %s" % device
             )
+            # webjs platform
             device = 'web'
             # read model from client
             if device == 'web':
@@ -259,6 +260,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                     % message_key
                 )
                 logging.info("mqtt_s3.send_message: to python client.")
+                # webjs-platform need a judgement of write_model and write_model_web
                 model_url = self.s3_storage.write_model_web(message_key, model_params_obj)
                 model_params_key_url = {
                     "key": message_key,

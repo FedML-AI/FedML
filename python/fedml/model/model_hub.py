@@ -21,6 +21,7 @@ def create(args, output_dim):
     global model
     model_name = args.model
     logging.info("create_model. model_name = %s, output_dim = %s" % (model_name, output_dim))
+    # webjs-platform
     if model_name == "lr" and args.dataset == "mnist":
         logging.info("LogisticRegression + MNIST")
         model = LogisticRegression(28 * 28, output_dim)

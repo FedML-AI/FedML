@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import pandas as pd
 import torch.nn.functional as F
-
+# The whole file is webjs-platform
 def load_params_from_tf(py_model:nn.Module, tf_model:list):
     """
     Load and update the parameters from tensorflow.js to pytorch nn.Module
