@@ -194,7 +194,7 @@ RUN pip3 install --upgrade requests
 #sudo python3 setup.py install
 #RUN rm -rf ${INSTALL_DIR}/FedML
 
-RUN pip uninstall fedml;pip install fedml
+RUN pip uninstall fedml;pip install -U fedml
 
 RUN python3 -c "import fedml; fedml.__version__"
 

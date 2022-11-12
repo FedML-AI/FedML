@@ -27,11 +27,11 @@ __version__ = "0.7.343"
 
 
 def init(args=None):
-    """Initialize FedML Engine."""
-    collect_env()
-
     if args is None:
         args = load_arguments(fedml._global_training_type, fedml._global_comm_backend)
+
+    """Initialize FedML Engine."""
+    collect_env(args)
 
     fedml._global_training_type = args.training_type
     fedml._global_comm_backend = args.backend
