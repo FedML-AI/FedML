@@ -18,8 +18,9 @@ class ClientDiagnosis(Singleton):
         self.is_mqtt_connected = False
 
     @staticmethod
-    def check_open_connection():
-        args = {"config_version": "release"}
+    def check_open_connection(args=None):
+        if args is None:
+            args = {"config_version": "release"}
         try:
             mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
         except Exception as e:
@@ -28,8 +29,9 @@ class ClientDiagnosis(Singleton):
         return True
 
     @staticmethod
-    def check_s3_connection():
-        args = {"config_version": "release"}
+    def check_s3_connection(args=None):
+        if args is None:
+            args = {"config_version": "release"}
         try:
             mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
             s3_storage = S3Storage(s3_config)
@@ -42,8 +44,9 @@ class ClientDiagnosis(Singleton):
         return False
 
     @staticmethod
-    def check_mqtt_connection():
-        args = {"config_version": "release"}
+    def check_mqtt_connection(args=None):
+        if args is None:
+            args = {"config_version": "release"}
         try:
             mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
             mqtt_mgr = MqttManager(
