@@ -303,11 +303,15 @@ class FedMLServerManager(FedMLCommManager):
             )
 
             client_idx_in_this_round = 0
+            global_model_url = None
+            global_model_key = None
             for receiver_id in client_id_list_in_this_round:
-                self.send_message_sync_model_to_client(
+                global_model_url, global_model_key = self.send_message_sync_model_to_client(
                     receiver_id,
                     self.global_model_file_path,
                     data_silo_index_list[client_idx_in_this_round],
+                    global_model_url,
+                    global_model_key
                 )
                 client_idx_in_this_round += 1
 
@@ -339,7 +343,8 @@ class FedMLServerManager(FedMLCommManager):
         self.send_message(message)
 
     def send_message_sync_model_to_client(
-        self, receive_id, global_model_params, data_silo_index
+        self, receive_id, global_model_params, data_silo_index,
+        global_model_url=None, global_model_key=None
     ):
         logging.info("send_message_sync_model_to_client. receive_id = %d" % receive_id)
         message = Message(
@@ -348,10 +353,19 @@ class FedMLServerManager(FedMLCommManager):
             receive_id,
         )
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
+        if global_model_url is not None:
+            message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL, global_model_url)
+        if global_model_key is not None:
+            message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY, global_model_key)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(data_silo_index))
         self.send_message(message)
 
+        global_model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL, None)
+        global_model_key = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY)
+
         mlops.log_aggregated_model_info(
             self.round_idx + 1,
-            model_url=message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL),
+            model_url=global_model_url,
         )
+
+        return global_model_url, global_model_key
