@@ -1,0 +1,36 @@
+package:
+  name: cmake_example
+  version: 0.0.1
+
+source:
+  path: ..
+
+build:
+  number: 0
+  script: python -m pip install . -vvv
+
+requirements:
+  build:
+    - "{{ compiler('cxx') }}"
+    - cmake
+    - ninja
+
+  host:
+    - python
+    - pip
+
+  run:
+    - python
+
+
+test:
+  imports:
+    - cmake_example
+  source_files:
+    - tests
+  commands:
+    - python tests/test.py
+
+about:
+  summary: A CMake example project built with pybind11.
+  license_file: LICENSE

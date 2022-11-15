@@ -1,0 +1,1 @@
+.. automodule:: cmake_example

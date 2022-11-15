@@ -19,20 +19,20 @@ RUN pip3 install pybind11
 
 RUN pip3 install fedml
 
-WORKDIR /root/fhe-fedml
+WORKDIR /root/FedML/python/fedml/core/fhe/fhe-fed
 RUN git clone https://github.com/weidai11/cryptopp.git
 RUN cd cryptopp && make && make test && make install
 
-WORKDIR /root/fhe-fedml
+WORKDIR /root/FedML/python/fedml/core/fhe/fhe-fed
 RUN git clone -b release-v1.11.2 https://gitlab.com/palisade/palisade-development.git
 RUN mkdir -p /root/fhe-fedml/palisade-development/build
-WORKDIR /root/fhe-fedml/palisade-development/build
+WORKDIR /root/FedML/python/fedml/core/fhe/fhe-fed/palisade-development/build
 RUN cmake .. && make && make install
 
-COPY . /root/fhe-fedml/
-WORKDIR /root/fhe-fedml/fhe-fed/palisade_pybind/SHELFI_FHE/src
+COPY . /root/FedML
+WORKDIR /root/FedML/python/fedml/core/fhe/fhe-fed/palisade_pybind/SHELFI_FHE/src
 RUN pip3 install ../
-WORKDIR /root/fhe-fedml
+WORKDIR /root/FedML
 
 
 

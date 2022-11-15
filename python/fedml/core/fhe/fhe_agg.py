@@ -27,7 +27,7 @@ class FedMLFHE:
     def init(self, args):
         if hasattr(args, "enable_fhe") and args.enable_fhe:
             logging.info(
-                ".......init fhe......."
+                ".......init Fully Homomorphic Encryption......."
             )
             self.is_enabled = True
             # TODO: parse fhe args

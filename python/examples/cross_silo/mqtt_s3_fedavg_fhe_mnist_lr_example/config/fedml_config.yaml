@@ -53,7 +53,7 @@ tracking_args:
 
 # example:
 dp_args:
-  enable_dp: true
+  enable_dp: false
   dp_solution_type: ldp
   epsilon: 0.5
   delta: 0.1

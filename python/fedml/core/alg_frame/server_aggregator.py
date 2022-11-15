@@ -10,6 +10,7 @@ from ...ml.aggregator.agg_operator import FedMLAggOperator
 from ..fhe.fhe_agg import FedMLFHE
 
 
+
 class ServerAggregator(ABC):
     """Abstract base class for federated learning trainer."""
 
@@ -38,8 +39,9 @@ class ServerAggregator(ABC):
         self, raw_client_model_or_grad_list: List[Tuple[float, Dict]]
     ) -> List[Tuple[float, Dict]]:
         if FedMLFHE.get_instance().is_fhe_enabled():
-            logging.info(" ---- encrypting client models ----")
-            enc_raw_client_model_or_grad_list = FedMLFHE.get_instance().fhe_enc('global', raw_client_model_or_grad_list)
+            logging.info(" ---- loading encrypted models ----")
+            #enc_raw_client_model_or_grad_list = FedMLFHE.get_instance().fhe_enc('global', raw_client_model_or_grad_list)
+            enc_raw_client_model_or_grad_list = raw_client_model_or_grad_list
             return enc_raw_client_model_or_grad_list
         else:
             if FedMLAttacker.get_instance().is_model_attack():
@@ -56,8 +58,9 @@ class ServerAggregator(ABC):
 
     def aggregate(self, raw_client_model_or_grad_list: List[Tuple[float, Dict]]) -> Dict:
         if FedMLFHE.get_instance().is_fhe_enabled():
-            logging.info(" ---- aggregating models using fhe-fedavg ----")
-            return FedMLFHE.get_instance().fhe_fedavg(raw_client_model_or_grad_list)
+            logging.info(" ---- aggregating models using Fully Homomorphic Encryption ----")
+            enc_agg_model = FedMLFHE.get_instance().fhe_fedavg(raw_client_model_or_grad_list)
+            return enc_agg_model
         else:
             if FedMLDefender.get_instance().is_defense_enabled():
                 return FedMLDefender.get_instance().defend_on_aggregation(
@@ -65,13 +68,13 @@ class ServerAggregator(ABC):
                     base_aggregation_func=FedMLAggOperator.agg,
                     extra_auxiliary_info=self.get_model_params(),
                 )
-            return FedMLAggOperator.agg(self.args, raw_client_model_or_grad_list)
+            aggregated_model = FedMLAggOperator.agg(self.args, raw_client_model_or_grad_list)
+            return aggregated_model
 
     def on_after_aggregation(self, aggregated_model_or_grad: Dict) -> Dict:
         if FedMLFHE.get_instance().is_fhe_enabled():
-            logging.info(" ---- decrypting encrypted global model ----")
-            template_model_params = self.get_model_params()
-            dec_aggregated_model_or_grad = FedMLFHE.get_instance().fhe_dec(template_model_params, aggregated_model_or_grad)
+            logging.info(" ---- finish aggregating encrypted global model ----")
+            dec_aggregated_model_or_grad = aggregated_model_or_grad
             return dec_aggregated_model_or_grad
         else:
             if FedMLDifferentialPrivacy.get_instance().is_global_dp_enabled():
