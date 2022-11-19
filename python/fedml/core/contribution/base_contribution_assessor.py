@@ -34,10 +34,6 @@ class BaseContributionAssessor(ABC):
         model_S=copy.deepcopy(model_last_round)
         model_S.train()
 
-        #if S==():
-        #    test_acc=self.null_M_acc[t]
-        #    return test_acc
-
         local_weights = {id:local_weights_from_clients[id] for id in S}
         # the second argument below in self.fedavg is the weight of aggregation
         global_weights = self.fedavg(local_weights, {i:fraction[i] for i in S})
