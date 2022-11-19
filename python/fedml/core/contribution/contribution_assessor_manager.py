@@ -8,6 +8,7 @@ class ContributionAssessorManager:
     def __init__(self, args):
         self.args = args
         self.client_num_per_round = args.client_num_per_round
+        # TO DO: we need to add the indices of the participating clients here.
         self.assessor = self._build_assesor()
 
     def _build_assesor(self):
@@ -21,7 +22,8 @@ class ContributionAssessorManager:
 
     def run(
         self,
-        model_list_from_client_update: List[Dict],
+        fraction: Dict,  # this is the weights of the clients in FedAvg
+        local_weights_from_clients: List[Dict],
         model_aggregated: Dict,
         model_last_round: Dict,
         acc_on_aggregated_model: float,
@@ -34,7 +36,9 @@ class ContributionAssessorManager:
 
         contribution_vector = self.assessor.run(
             self.client_num_per_round,
-            model_list_from_client_update,
+            # TO DO: we need to add the indices of the participating clients here.
+            fraction,  # this is the weights of the clients in FedAvg
+            local_weights_from_clients,
             model_aggregated,
             model_last_round,
             acc_on_aggregated_model,
