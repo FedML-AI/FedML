@@ -2,7 +2,8 @@ import logging
 from typing import List, Dict, Any, Callable
 
 from .leave_one_out import LeaveOneOut
-
+from .GTG-Shapley import GTG_Shapley
+from .Exact_SV import Exact_SV
 
 class ContributionAssessorManager:
     def __init__(self, args):
@@ -16,6 +17,10 @@ class ContributionAssessorManager:
             return None
         if self.args.contribution_alg == "LOO":
             assessor = LeaveOneOut()
+        if self.args.contribution_alg == "GTG":
+            assessor = GTG_Shapley()
+        if self.args.contribution_alg == "ExactSV":
+            assessor = Exact_SV()
         else:
             raise Exception("no such algorithm for ContributionAssessor.")
         return assessor

@@ -10,6 +10,15 @@ from .base_contribution_assessor import V_S_t
 
 
 class LeaveOneOut(BaseContributionAssessor):
+    def __init__(self):
+        super().__init__()
+
+        #trunc paras
+        self.round_trunc_threshold=0.01
+
+        self.Contribution_records =[]
+
+
     def run(
         self,
         num_client_for_this_round: int,
@@ -26,9 +35,7 @@ class LeaveOneOut(BaseContributionAssessor):
 
 
         N = num_client_for_this_round
-        # this is a threshold used to
-        round_trunc_threshold = 0.01
-        Contribution_records=[]
+        self.Contribution_records=[]
 
         powerset = list(powersettool(idxs))
 
@@ -45,7 +52,7 @@ class LeaveOneOut(BaseContributionAssessor):
         # if not enough improvement in model this iteration, everyone's contributions are 0
         # truncated design
 
-        if abs(util[S_all]-util[S_0]) <= round_trunc_threshold:
+        if abs(util[S_all]-util[S_0]) <= self.round_trunc_threshold:
             contribution_dict = {id:0 for id in idxs} # TO DO: make this a list too?
             return contribution_dict
 
@@ -89,7 +96,7 @@ class LeaveOneOut(BaseContributionAssessor):
         #marginal_contribution_normalized = [i / max(np.abs(marginal_contribution)) for i in marginal_contribution]
 
         print(marginal_contribution)
-        Contribution_records.append(marginal_contribution)
+        self.Contribution_records.append(marginal_contribution)
 
         shapley_values = (np.cumsum(self.Contribution_records, 0) /
                          np.reshape(np.arange(1, len(self.Contribution_records) + 1), (-1, 1)))[-1:].tolist()[0]
