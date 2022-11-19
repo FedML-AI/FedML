@@ -1,15 +1,29 @@
 import logging
 import numpy as np
 from typing import List, Dict, Callable, Any
-import random
-import math
+
 
 from .base_contribution_assessor import BaseContributionAssessor
 from .base_contribution_assessor import powersettool
 from .base_contribution_assessor import V_S_t
 
 
-class LeaveOneOut(BaseContributionAssessor):
+class GTG_Shapley(BaseContributionAssessor):
+
+    def __init__(self):
+        super().__init__()
+
+        #trunc paras
+        self.eps=0.001
+        self.round_trunc_threshold=0.01
+
+        self.Contribution_records =[]
+
+        #converge paras
+        self.CONVERGE_MIN_K = 3*10
+        self.last_k=10
+        self.CONVERGE_CRITERIA = 0.05
+
     def run(
         self,
         num_client_for_this_round: int,
@@ -24,13 +38,8 @@ class LeaveOneOut(BaseContributionAssessor):
         device,
     ) -> List[float]:
 
-
         N = num_client_for_this_round  # N = len(idxs)
-        # this is a threshold used to
-        round_trunc_threshold = 0.01
-
-        eps = 0.001
-        Contribution_records=[]
+        self.Contribution_records=[]
 
         powerset = list(powersettool(idxs))
 
@@ -47,7 +56,7 @@ class LeaveOneOut(BaseContributionAssessor):
         # if not enough improvement in model this iteration, everyone's contributions are 0
         # truncated design
 
-        if abs(util[S_all]-util[S_0]) <= round_trunc_threshold:
+        if abs(util[S_all]-util[S_0]) <= self.round_trunc_threshold:
             contribution_dict = {id:0 for id in idxs} # TO DO: make this a list too?
             return contribution_dict
 
@@ -68,7 +77,7 @@ class LeaveOneOut(BaseContributionAssessor):
                     C=tuple(np.sort(C,kind='mergesort'))
 
                     #truncation
-                    if abs(util[S_all] - v[j-1])>=eps:
+                    if abs(util[S_all] - v[j-1])>=self.eps:
                         if util.get(C)!= None:
                             v[j]=util[C]
                         else:
