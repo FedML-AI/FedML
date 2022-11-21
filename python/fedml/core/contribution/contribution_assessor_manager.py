@@ -36,9 +36,6 @@ class ContributionAssessorManager:
         validation_func: Callable[[Dict, Any, Any], float],
         device,
     ) -> List[float]:
-        if self.assessor is None:
-            return None
-
         contribution_vector = self.assessor.run(
             self.client_num_per_round,
             # TO DO: we need to add the indices of the participating clients here.

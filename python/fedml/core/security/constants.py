@@ -9,11 +9,17 @@ DEFENSE_DP = "dp"
 DEFENSE_RFA = "rfa"
 DEFENSE_FOOLSGOLD = "foolsgold"
 DEFENSE_CRFL = "crfl"
+DEFENSE_THREESIGMA = "3sigma"
+DEFENSE_THREESIGMA_KRUM = "3sigma_krum"
+DEFENSE_THREESIGMA_GEOMEDIAN = "3sigma_geo"
 DEFENSE_MULTIKRUM = "multikrum"
 DEFENSE_TRIMMED_MEAN = "trimmed_mean"
+ANOMALY_DETECTION = "anomaly_detection"
 
 ATTACK_METHOD_BYZANTINE_ATTACK = "byzantine"
 ATTACK_METHOD_DLG = "dlg"
+ATTACK_LABEL_FLIPPING = "label_flipping"
+BACKDOOR_ATTACK_MODEL_REPLACEMENT = "model_replacement"
 
 
 """

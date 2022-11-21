@@ -303,7 +303,7 @@ def resnet56(class_num, pretrained=False, path=None, **kwargs):
     """
     model = ResNet(Bottleneck, [6, 6, 6], class_num, **kwargs)
     if pretrained:
-        checkpoint = torch.load(path)
+        checkpoint = torch.load(path, map_location=torch.device("cpu"))
         state_dict = checkpoint["state_dict"]
 
         from collections import OrderedDict
