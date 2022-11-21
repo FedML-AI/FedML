@@ -1,12 +1,13 @@
-FROM balenalib/armv7hf-debian-node
+FROM balenalib/raspberrypi3-ubuntu-node
 # https://eide.ai/rpi4/pytorch/2020/06/30/pytorch-raspberry.html
 # https://raspberrypi.stackexchange.com/questions/101215/why-raspberry-pi-4b-claims-that-its-processor-is-armv7l-when-in-official-specif
 
 WORKDIR /home/fedml
 RUN apt-get update
-RUN apt-get install -y gcc python3-dev v4l-utils python3-opencv python3-pip python3-setuptools libffi-dev libssl-dev wget
+RUN apt-get install -y gcc python3-dev v4l-utils python3-opencv python3-pip python3-setuptools libffi-dev libssl-dev
+RUN apt-get install -qq wget < /dev/null > /dev/null
 
-RUN apt-get install -y python3-numpy python3-wheel python3-setuptools python3-future python3-yaml python3-six python3-requests python3-pip python3-pillow
+RUN apt-get install -qq python3-numpy python3-wheel python3-setuptools python3-future python3-yaml python3-six python3-requests python3-pip python3-pillow
 
 
 ENV INSTALL_DIR=/tmp
@@ -33,5 +34,10 @@ RUN cat /etc/os-release
 RUN sudo ln -s /usr/include/locale.h /usr/include/xlocale.h
 #RUN pip3 install h5py==3.1.0
 #RUN apt-get install python-h5py
-RUN pip3 install --upgrade fedml
-#
+RUN pip install --upgrade pip && pip uninstall fedml;pip install -U fedml
+
+##############################################################################
+# Add docker location file
+##############################################################################
+ADD ./rpi/docker-location.yml /root/fedml-client/fedml/data/docker-location.yml
+ADD ./rpi/docker-location.yml /root/fedml-server/fedml/data/docker-location.yml

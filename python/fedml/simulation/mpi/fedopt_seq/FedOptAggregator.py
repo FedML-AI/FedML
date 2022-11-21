@@ -213,8 +213,6 @@ class FedOptAggregator(object):
         training_num = 0
 
         for idx in range(self.worker_num):
-            if self.args.is_mobile == 1:
-                self.model_dict[idx] = transform_list_to_tensor(self.model_dict[idx])
             if len(self.model_dict[idx]) > 0:
                 # some workers may not have parameters 
                 model_list.append(self.model_dict[idx])
