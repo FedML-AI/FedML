@@ -44,6 +44,9 @@ class BaseContributionAssessor(ABC):
 
 # Here fraction is a Dict.
 # self.fraction = {i: len(self.clients[i].idxs)/self.total_data for i in range(1, self.N+1)}
+
+# In GTG-SHapley:local_weights = {id:self.client_mid_weights[t][id] for id in S}, self.client_mid_weights = {}  #dict: [epoch][id]
+
     def fedavg(self, w: dict, fraction: dict):
         counter=0
         for id in w.keys():
