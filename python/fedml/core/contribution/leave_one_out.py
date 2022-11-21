@@ -119,11 +119,3 @@ class LeaveOneOut(BaseContributionAssessor):
         return contributions #[i*0.1 for i in range(num_client_for_this_round)]
     '''
 
-
-
-# tum bunlarin entegrasyonu
-
-#SV dict olayi
-#model dict olayi
-#exact SV icin retrain kismi
-

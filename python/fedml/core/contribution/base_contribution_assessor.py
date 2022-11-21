@@ -62,3 +62,8 @@ class BaseContributionAssessor(ABC):
 
 
 
+# integration
+
+#should we return dict for contributions?
+#is the model dict?
+#we need to have retrain for the exact SV/
