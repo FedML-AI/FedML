@@ -97,7 +97,6 @@ class GTG_Shapley(BaseContributionAssessor):
         shapley_values = (np.cumsum(self.Contribution_records, 0)/
                          np.reshape(np.arange(1, len(self.Contribution_records)+1), (-1,1)))[-1:].tolist()[0]
 
-
         return shapley_values
 
 
