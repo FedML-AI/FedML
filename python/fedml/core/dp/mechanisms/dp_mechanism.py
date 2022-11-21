@@ -1,5 +1,5 @@
 from fedml.core.dp.mechanisms import Gaussian, Laplace
-
+from collections import OrderedDict
 """call dp mechanisms, e.g., Gaussian, Laplace """
 
 
@@ -16,7 +16,7 @@ class DPMechanism:
             raise NotImplementedError("DP mechanism not implemented!")
 
     def add_noise(self, grad):
-        new_grad = dict()
+        new_grad = OrderedDict()
         for k in grad.keys():
             new_grad[k] = self._compute_new_grad(grad[k])
         # if self.enable_accountant:

@@ -1,5 +1,6 @@
 import logging
 import time
+from math import cos
 
 from .message_define import MyMessage
 from .utils import transform_list_to_tensor
@@ -34,8 +35,6 @@ class FedAVGClientManager(FedMLCommManager):
         client_schedule = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_SCHEDULE)
         client_indexes = client_schedule[self.worker_id]
 
-        if self.args.is_mobile == 1:
-            global_model_params = transform_list_to_tensor(global_model_params)
         self.round_idx = 0
         self.__train(global_model_params, client_indexes, average_weight_dict)
 
@@ -51,9 +50,6 @@ class FedAVGClientManager(FedMLCommManager):
         average_weight_dict = msg_params.get(MyMessage.MSG_ARG_KEY_AVG_WEIGHTS)
         client_schedule = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_SCHEDULE)
         client_indexes = client_schedule[self.worker_id]
-
-        if self.args.is_mobile == 1:
-            model_params = transform_list_to_tensor(global_model_params)
 
         self.round_idx += 1
         self.__train(global_model_params, client_indexes, average_weight_dict)
@@ -79,6 +75,24 @@ class FedAVGClientManager(FedMLCommManager):
     def __train(self, global_model_params, client_indexes, average_weight_dict):
         logging.info("#######training########### round_id = %d" % self.round_idx)
 
+        if hasattr(self.args, "simulation_gpu_hetero"):
+            # runtime_speed_ratio
+            # runtime_speed_ratio * t_train - t_train
+            # time.sleep(runtime_speed_ratio * t_train - t_train)
+            simulation_gpu_hetero = self.args.simulation_gpu_hetero
+            runtime_speed_ratio = self.args.gpu_hetero_ratio * self.worker_id / self.args.worker_num
+
+        if hasattr(self.args, "simulation_environment_hetero"):
+            # runtime_speed_ratio
+            # runtime_speed_ratio * t_train - t_train
+            # time.sleep(runtime_speed_ratio * t_train - t_train)
+            if self.args.simulation_environment_hetero == "cos":
+                runtime_speed_ratio = self.args.environment_hetero_ratio * \
+                    (1 + cos(self.round_idx / self.num_rounds*3.1415926 + self.worker_id))
+            else:
+                raise NotImplementedError
+
+
         local_agg_model_params = {}
         client_runtime_info = {}
         for client_index in client_indexes:
@@ -91,7 +105,9 @@ class FedAVGClientManager(FedMLCommManager):
             self.trainer.update_dataset(int(client_index))
             weights, local_sample_num = self.trainer.train(self.round_idx)
             self.add_client_model(local_agg_model_params, weights, weight=average_weight_dict[client_index])
-
+            if hasattr(self.args, "simulation_gpu_hetero"):
+                t_train = time.time() - start_time
+                time.sleep(runtime_speed_ratio * t_train)
             end_time = time.time()
             client_runtime = end_time - start_time
             client_runtime_info[client_index] = client_runtime

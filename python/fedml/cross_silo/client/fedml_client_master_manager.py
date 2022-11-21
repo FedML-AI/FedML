@@ -71,8 +71,8 @@ class ClientMasterManager(FedMLCommManager):
             global_model_params = convert_model_params_to_ddp(global_model_params)
             self.sync_process_group(0, global_model_params, data_silo_index)
 
-        self.trainer_dist_adapter.update_model(global_model_params)
         self.trainer_dist_adapter.update_dataset(int(data_silo_index))
+        self.trainer_dist_adapter.update_model(global_model_params)
         self.round_idx = 0
 
         self.__train()
@@ -86,9 +86,10 @@ class ClientMasterManager(FedMLCommManager):
             model_params = convert_model_params_to_ddp(model_params)
             self.sync_process_group(self.round_idx, model_params, client_index)
 
-        self.trainer_dist_adapter.update_model(model_params)
         self.trainer_dist_adapter.update_dataset(int(client_index))
-        if self.round_idx == self.num_rounds - 1:
+        logging.info("current roundx {}, num rounds {}".format(self.round_idx, self.num_rounds))
+        self.trainer_dist_adapter.update_model(model_params)
+        if self.round_idx == self.num_rounds-1:
             mlops.log_training_finished_status()
             return
         self.round_idx += 1
@@ -100,6 +101,7 @@ class ClientMasterManager(FedMLCommManager):
 
     def cleanup(self):
         self.finish()
+        mlops.log_training_finished_status()
 
     def send_model_to_server(self, receive_id, weights, local_sample_num):
         tick = time.time()
