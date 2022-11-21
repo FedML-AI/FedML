@@ -70,8 +70,6 @@ For client 4, run the following script:
 ```
 bash run_client.sh 4
 ```
-Note: please run the server first.
-
 
 
 `config/fedml_config.yaml` is shown below.

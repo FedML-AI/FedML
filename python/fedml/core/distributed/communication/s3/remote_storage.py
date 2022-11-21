@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import pickle
@@ -5,7 +6,9 @@ import time
 
 import boto3
 import yaml
+from torch import nn
 
+from fedml.core.distributed.communication.s3.utils import load_params_from_tf, process_state_dict
 from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
 # for multi-processing, we need to create a global variable for AWS S3 client:
@@ -46,9 +49,37 @@ class S3Storage:
         MLOpsProfilerEvent.log_to_wandb(
             {"PickleDumpsTime": time.time() - pickle_dump_start_time}
         )
+        # for python clients
+        model_pkl = pickle.dumps(model)
+        model_to_send = model_pkl
         s3_upload_start_time = time.time()
         aws_s3_client.put_object(
-            Body=model_pkl, Bucket=self.bucket_name, Key=message_key, ACL="public-read",
+            Body=model_to_send, Bucket=self.bucket_name, Key=message_key, ACL="public-read",
+        )
+        MLOpsProfilerEvent.log_to_wandb(
+            {"Comm/send_delay": time.time() - s3_upload_start_time}
+        )
+        model_url = aws_s3_client.generate_presigned_url(
+            "get_object",
+            ExpiresIn=60 * 60 * 24 * 5,
+            Params={"Bucket": self.bucket_name, "Key": message_key},
+        )
+        return model_url
+
+    def write_model_web(self, message_key, model):
+        global aws_s3_client
+        pickle_dump_start_time = time.time()
+        model_pkl = pickle.dumps(model)
+        MLOpsProfilerEvent.log_to_wandb(
+            {"PickleDumpsTime": time.time() - pickle_dump_start_time}
+        )
+        # for javascript clients
+        state_dict = model # type: OrderedDict
+        model_json = process_state_dict(state_dict)
+        model_to_send = json.dumps(model_json)
+        s3_upload_start_time = time.time()
+        aws_s3_client.put_object(
+            Body=model_to_send, Bucket=self.bucket_name, Key=message_key, ACL="public-read",
         )
         MLOpsProfilerEvent.log_to_wandb(
             {"Comm/send_delay": time.time() - s3_upload_start_time}
@@ -70,6 +101,27 @@ class S3Storage:
         )
         unpickle_start_time = time.time()
         model = pickle.loads(model_pkl)
+        MLOpsProfilerEvent.log_to_wandb(
+            {"UnpickleTime": time.time() - unpickle_start_time}
+        )
+        return model
+
+    # TODO: added python torch model to align the Tensorflow paramters from browser
+    def read_model_web(self, message_key, py_model: nn.Module):
+        global aws_s3_client
+        message_handler_start_time = time.time()
+        obj = aws_s3_client.get_object(Bucket=self.bucket_name, Key=message_key)
+        model_json = obj["Body"].read()
+        if type(model_json) == list:
+            model = load_params_from_tf(py_model, model_json)
+        else:
+            model = py_model.state_dict()
+
+        MLOpsProfilerEvent.log_to_wandb(
+            {"Comm/recieve_delay_s3": time.time() - message_handler_start_time}
+        )
+        unpickle_start_time = time.time()
+        # model = pickle.loads(model_pkl)
         MLOpsProfilerEvent.log_to_wandb(
             {"UnpickleTime": time.time() - unpickle_start_time}
         )
@@ -154,6 +206,35 @@ class S3Storage:
                 retry += 1
         if retry >= 3:
             logging.error(f"Download zip failed after max retry.")
+
+    def test_s3_base_cmds(self, message_key, message_body):
+        """
+        test_s3_base_cmds
+        :param file_key: s3 message key
+        :param file_key: s3 message body
+        :return:
+        """
+        retry = 0
+        while retry < 3:
+            try:
+                global aws_s3_client
+                message_pkl = pickle.dumps(message_body)
+                aws_s3_client.put_object(
+                    Body=message_pkl, Bucket=self.bucket_name, Key=message_key, ACL="public-read",
+                )
+                obj = aws_s3_client.get_object(Bucket=self.bucket_name, Key=message_key)
+                message_pkl_downloaded = obj["Body"].read()
+                message_downloaded = pickle.loads(message_pkl_downloaded)
+                if str(message_body) == str(message_downloaded):
+                    break
+                retry += 1
+            except Exception as e:
+                raise Exception("S3 base commands test failed at retry count {}, exception: {}".format(str(retry), str(e)))
+                retry += 1
+        if retry >= 3:
+            raise Exception(f"S3 base commands test failed after max retry.")
+
+        return True
 
     def delete_s3_zip(self, path_s3):
         """

@@ -44,8 +44,6 @@ class FedAVGServerManager(FedMLCommManager):
 
         global_model_params = self.aggregator.get_global_model_params()
 
-        if self.args.is_mobile == 1:
-            global_model_params = transform_tensor_to_list(global_model_params)
         for process_id in range(1, self.size):
             self.send_message_init_config(process_id, global_model_params, average_weight_dict, client_schedule)
 
@@ -74,7 +72,13 @@ class FedAVGServerManager(FedMLCommManager):
                 self.previous_time = time.time()
 
             global_model_params = self.aggregator.aggregate()
+            current_time = time.time()
             self.aggregator.test_on_server_for_all_clients(self.args.round_idx)
+            if self.args.enable_wandb:
+                wandb.log({"TestTimeOneRound": time.time() - current_time, "round": self.args.round_idx})
+
+            # Exclude the time of Testing 
+            self.previous_time = time.time()
 
             # start the next round
             self.args.round_idx += 1
@@ -98,13 +102,9 @@ class FedAVGServerManager(FedMLCommManager):
             average_weight_dict = self.aggregator.get_average_weight(client_indexes)
 
             global_model_params = self.aggregator.get_global_model_params()
-            if self.args.is_mobile == 1:
-                global_model_params = transform_tensor_to_list(global_model_params)
 
             print("indexes of clients: " + str(client_indexes))
             print("size = %d" % self.size)
-            if self.args.is_mobile == 1:
-                global_model_params = transform_tensor_to_list(global_model_params)
 
             for receiver_id in range(1, self.size):
                 self.send_message_sync_model_to_client(
