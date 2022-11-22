@@ -17,14 +17,19 @@ class LeaveOneOut(BaseContributionAssessor):
 
         self.Contribution_records = []
 
+        # key is the round_index;
+        # value is the dictionary contribution (key - client_index; value - relative contribution
+        self.shapley_values_by_round = dict()
+        self.SV = {} # dict: {id:SV,...}
+        self.SV_summed = {} # dict: {id: SV_summed_over_all_iter, ...}
+
     def run(
         self,
-        num_client_for_this_round: int,
-        idxs: List,
-        fraction: Dict,  # this is the weights of the clients in FedAvg
+        num_client_for_this_round: int,  # e.g, select 4 from 8
+        client_index_for_this_round: List,  # e.g., 4 selected clients from 8 clients [1, 3, 4, 7]
+        aggregation_func: Callable,
         local_weights_from_clients: List[Dict],
-        model_aggregated: Dict,
-        model_last_round: Dict,
+        acc_on_last_round: float,
         acc_on_aggregated_model: float,
         val_dataloader: Any,
         validation_func: Callable[[Dict, Any, Any], float],
@@ -34,68 +39,59 @@ class LeaveOneOut(BaseContributionAssessor):
         N = num_client_for_this_round
         self.Contribution_records = []
 
-        powerset = list(BaseContributionAssessor.generate_power_set(idxs))
+        powerset = list(BaseContributionAssessor.generate_power_set(client_index_for_this_round))
 
         util = {}
 
         # past iteration's accuracy
-        S_0 = ()
-        util[S_0] = validation_func(model_last_round, val_dataloader, device)
+        s_0 = ()
+        util[s_0] = acc_on_last_round
 
         # updated model's accuracy with all participants in the current iteration
-        S_all = powerset[-1]
-        util[S_all] = acc_on_aggregated_model
+        s_all = powerset[-1]
+        util[s_all] = acc_on_aggregated_model
 
         # if not enough improvement in model this iteration, everyone's contributions are 0
         # truncated design
 
-        if abs(util[S_all] - util[S_0]) <= self.round_trunc_threshold:
-            contribution_dict = {id: 0 for id in idxs}  # TO DO: make this a list too?
+        if abs(util[s_all] - util[s_0]) <= self.round_trunc_threshold:
+            contribution_dict = [0 for id in client_index_for_this_round]
             return contribution_dict
 
         marginal_contribution = [0 for i in range(1, N + 1)]
 
-        for j in range(1, N + 1):
-
-            # the idea is to sample a subset of the users of cardinality logN (N being the number of users in this iteration)
-            # this sample subset would be randomly selected for each client
-            number_user_sampled = round(math.log10(N))  # we do base 10 for now
+        for j in range(N):
+            '''
+            the idea is to sample a subset of the users of cardinality logN 
+            (N being the number of users in this iteration)
+            this sample subset would be randomly selected for each client
+            '''
+            number_user_sampled = round(math.log10(N))
             if number_user_sampled < 1:
                 number_user_sampled = 1
 
-            C_sampled = [j]  # add the user first
-            C_sampled.extend(random.sample([x for x in idxs if x != j], number_user_sampled))
+            C_sampled = [client_index_for_this_round[j]]  # add the user first
+            C_sampled.extend(random.sample([x for x in client_index_for_this_round if x != j], number_user_sampled))
             C_sampled = tuple(np.sort(C_sampled, kind="mergesort"))
             print("the considered scenario (C_sampled) is", C_sampled)
 
-            agg_model_C = self.get_aggregated_model_with_client_subset(
-                model_last_round, local_weights_from_clients, fraction, S=C_sampled
-            )
+            agg_model_C = BaseContributionAssessor.get_aggregated_model_with_client_subset(
+                                self.args, aggregation_func, local_weights_from_clients, C_sampled
+                            )
             util[C_sampled] = validation_func(agg_model_C, val_dataloader, device)
 
             C_removed = [i for i in C_sampled if i != j]
             C_removed = tuple(np.sort(C_removed, kind="mergesort"))
             print("the removed scenario (C_removed) is", C_removed)
 
-            agg_model_C_removed = self.get_aggregated_model_with_client_subset(
-                model_last_round, local_weights_from_clients, fraction, S=C_removed
-            )
+            agg_model_C_removed = BaseContributionAssessor.get_aggregated_model_with_client_subset(
+                                self.args, aggregation_func, local_weights_from_clients, C_removed
+                            )
             util[C_removed] = validation_func(agg_model_C_removed, val_dataloader, device)
 
-            # print('left out user alone has accuracy', V_S_t(t=t, S=tuple(np.sort([j], kind='mergesort'))))
-
             # update SV
-            marginal_contribution[j - 1] = util[C_sampled] - util[C_removed]
-            print(marginal_contribution)
+            marginal_contribution[j] = util[C_sampled] - util[C_removed]
 
-        # These are methods to normalize the marginal contributions of the users.
-
-        # marginal_contribution_normalized = [
-        #    (float(i) - min(marginal_contribution)) / (max(marginal_contribution) - min(marginal_contribution)) for i in
-        #    marginal_contribution]
-        # marginal_contribution_normalized = [i / max(np.abs(marginal_contribution)) for i in marginal_contribution]
-
-        print(marginal_contribution)
         self.Contribution_records.append(marginal_contribution)
 
         shapley_values = (
@@ -103,19 +99,30 @@ class LeaveOneOut(BaseContributionAssessor):
             / np.reshape(np.arange(1, len(self.Contribution_records) + 1), (-1, 1))
         )[-1:].tolist()[0]
 
-        print(shapley_values)
+        i = 0
+        for client_ind in client_index_for_this_round:
+            self.shapley_values_by_round[self.args.round_idx][client_ind] = shapley_values[i]
+            i = i + 1
 
-        return shapley_values  # TO DO: return dict?
+    def get_final_contribution_assignment(self):
+        """
+        return: contribution_assignment
+            (key is client_index; value is the client's relative contribution);
+            the sum of values in the dictionary is equal to 1
+        """
+        for t, shapley_t in self.shapley_values_by_round.items():
+            for id in shapley_t:
+                if self.SV.get(id):
+                    self.SV[id].append(shapley_t[id])
+                else:
+                    self.SV[id] = [shapley_t[id]]
 
-    """
-            # accuracy of the aggregated model
-        acc_on_aggregated_model = validation_func(model_aggregated, val_dataloader, device)
-        contributions = np.zeros(num_client_for_this_round, dtype='f')
-        for client in range(num_client_for_this_round):
-            # assuming same number of samples in each client
-            model_aggregated_wo_client = np.sum(i for i in model_list_from_client_update if i != client) / (num_client_for_this_round-1)
-            acc_wo_client = validation_func(model_aggregated_wo_client, val_dataloader, device)
-            contributions[client] = acc_on_aggregated_model-acc_wo_client
-        logging.info("contributions = {}".format(contributions))
-        return contributions #[i*0.1 for i in range(num_client_for_this_round)]
-    """
+        contribution_assignment = dict()
+        keys = range(1, self.args.client_num_in_total+1)
+        for id in keys:
+            self.SV_summed[id] = np.sum(self.SV[id])
+        total_sv = sum(self.SV_summed.values())
+
+        for id in keys:
+            contribution_assignment[id] = self.SV_summed[id]/total_sv
+        return contribution_assignment
