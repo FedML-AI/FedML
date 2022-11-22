@@ -39,7 +39,6 @@ class ContributionAssessorManager:
         self.assessor.run(
             client_num_per_round,
             client_index_for_this_round,
-            # TO DO: we need to add the indices of the participating clients here.
             aggregation_func,
             local_weights_from_clients,
             acc_on_last_round,
