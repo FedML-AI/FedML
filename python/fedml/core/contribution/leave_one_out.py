@@ -1,23 +1,21 @@
-import logging
-import numpy as np
-from typing import List, Dict, Callable, Any
-import random
 import math
+import random
+from typing import List, Dict, Callable, Any
+
+import numpy as np
 
 from .base_contribution_assessor import BaseContributionAssessor
-from .base_contribution_assessor import powersettool
-from .base_contribution_assessor import V_S_t
 
 
 class LeaveOneOut(BaseContributionAssessor):
-    def __init__(self):
+    def __init__(self, args):
         super().__init__()
+        self.args = args
 
-        #trunc paras
-        self.round_trunc_threshold=0.01
+        # trunc paras
+        self.round_trunc_threshold = 0.01
 
-        self.Contribution_records =[]
-
+        self.Contribution_records = []
 
     def run(
         self,
@@ -33,17 +31,16 @@ class LeaveOneOut(BaseContributionAssessor):
         device,
     ) -> List[float]:
 
-
         N = num_client_for_this_round
-        self.Contribution_records=[]
+        self.Contribution_records = []
 
-        powerset = list(powersettool(idxs))
+        powerset = list(BaseContributionAssessor.generate_power_set(idxs))
 
-        util={}
+        util = {}
 
         # past iteration's accuracy
-        S_0=()
-        util[S_0]=validation_func(model_last_round, val_dataloader, device)
+        S_0 = ()
+        util[S_0] = validation_func(model_last_round, val_dataloader, device)
 
         # updated model's accuracy with all participants in the current iteration
         S_all = powerset[-1]
@@ -52,8 +49,8 @@ class LeaveOneOut(BaseContributionAssessor):
         # if not enough improvement in model this iteration, everyone's contributions are 0
         # truncated design
 
-        if abs(util[S_all]-util[S_0]) <= self.round_trunc_threshold:
-            contribution_dict = {id:0 for id in idxs} # TO DO: make this a list too?
+        if abs(util[S_all] - util[S_0]) <= self.round_trunc_threshold:
+            contribution_dict = {id: 0 for id in idxs}  # TO DO: make this a list too?
             return contribution_dict
 
         marginal_contribution = [0 for i in range(1, N + 1)]
@@ -68,45 +65,49 @@ class LeaveOneOut(BaseContributionAssessor):
 
             C_sampled = [j]  # add the user first
             C_sampled.extend(random.sample([x for x in idxs if x != j], number_user_sampled))
-            C_sampled = tuple(np.sort(C_sampled, kind='mergesort'))
-            print('the considered scenario (C_sampled) is', C_sampled)
+            C_sampled = tuple(np.sort(C_sampled, kind="mergesort"))
+            print("the considered scenario (C_sampled) is", C_sampled)
 
-            agg_model_C = V_S_t(model_last_round, local_weights_from_clients, fraction, S=C_sampled)
+            agg_model_C = self.get_aggregated_model_with_client_subset(
+                model_last_round, local_weights_from_clients, fraction, S=C_sampled
+            )
             util[C_sampled] = validation_func(agg_model_C, val_dataloader, device)
 
             C_removed = [i for i in C_sampled if i != j]
-            C_removed = tuple(np.sort(C_removed, kind='mergesort'))
-            print('the removed scenario (C_removed) is', C_removed)
+            C_removed = tuple(np.sort(C_removed, kind="mergesort"))
+            print("the removed scenario (C_removed) is", C_removed)
 
-            agg_model_C_removed = V_S_t(model_last_round, local_weights_from_clients, fraction, S=C_removed)
+            agg_model_C_removed = self.get_aggregated_model_with_client_subset(
+                model_last_round, local_weights_from_clients, fraction, S=C_removed
+            )
             util[C_removed] = validation_func(agg_model_C_removed, val_dataloader, device)
 
-            #print('left out user alone has accuracy', V_S_t(t=t, S=tuple(np.sort([j], kind='mergesort'))))
+            # print('left out user alone has accuracy', V_S_t(t=t, S=tuple(np.sort([j], kind='mergesort'))))
 
             # update SV
-            marginal_contribution[j-1] = util[C_sampled] - util[C_removed]
+            marginal_contribution[j - 1] = util[C_sampled] - util[C_removed]
             print(marginal_contribution)
-
 
         # These are methods to normalize the marginal contributions of the users.
 
-        #marginal_contribution_normalized = [
+        # marginal_contribution_normalized = [
         #    (float(i) - min(marginal_contribution)) / (max(marginal_contribution) - min(marginal_contribution)) for i in
         #    marginal_contribution]
-        #marginal_contribution_normalized = [i / max(np.abs(marginal_contribution)) for i in marginal_contribution]
+        # marginal_contribution_normalized = [i / max(np.abs(marginal_contribution)) for i in marginal_contribution]
 
         print(marginal_contribution)
         self.Contribution_records.append(marginal_contribution)
 
-        shapley_values = (np.cumsum(self.Contribution_records, 0) /
-                         np.reshape(np.arange(1, len(self.Contribution_records) + 1), (-1, 1)))[-1:].tolist()[0]
+        shapley_values = (
+            np.cumsum(self.Contribution_records, 0)
+            / np.reshape(np.arange(1, len(self.Contribution_records) + 1), (-1, 1))
+        )[-1:].tolist()[0]
 
         print(shapley_values)
 
-        return shapley_values # TO DO: return dict?
+        return shapley_values  # TO DO: return dict?
 
-
-    '''
+    """
             # accuracy of the aggregated model
         acc_on_aggregated_model = validation_func(model_aggregated, val_dataloader, device)
         contributions = np.zeros(num_client_for_this_round, dtype='f')
@@ -117,5 +118,4 @@ class LeaveOneOut(BaseContributionAssessor):
             contributions[client] = acc_on_aggregated_model-acc_wo_client
         logging.info("contributions = {}".format(contributions))
         return contributions #[i*0.1 for i in range(num_client_for_this_round)]
-    '''
-
+    """
