@@ -47,4 +47,6 @@ class ContributionAssessorManager:
             validation_func,
             device,
         )
-        logging.info("ContributionAssessorManager.run() contribution_vector = {}".format(contribution_vector))
+
+    def get_final_contribution_assignment(self):
+        return self.assessor.get_final_contribution_assignment()
