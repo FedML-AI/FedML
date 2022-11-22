@@ -16,15 +16,15 @@ class BaseContributionAssessor(ABC):
     def run(
         self,
         num_client_for_this_round: int,
-        idxs: List,  # this is the indices of the participating users in that iteration
+        client_index_for_this_round: List,  # this is the indices of the participating users in that iteration
         fraction: Dict,  # this is the weights of the clients in FedAvg
         local_weights_from_clients: List[Dict],  # TO DO dict: [id]
-        model_last_round: Dict,
+        acc_on_last_round: float,
         acc_on_aggregated_model: float,
         val_dataloader: Any,
         validation_func: Callable[[Dict, Any, Any], float],
         device,
-    ) -> List[float]:
+    ):  # -> List[float]:
         pass
 
     @abstractmethod

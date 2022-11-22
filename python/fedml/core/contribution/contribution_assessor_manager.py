@@ -9,7 +9,6 @@ from .naive_shapley_value import NaiveShapleyValue
 class ContributionAssessorManager:
     def __init__(self, args):
         self.args = args
-        # TO DO: we need to add the indices of the participating clients here.
         self.assessor = self._build_assesor()
 
     def _build_assesor(self):

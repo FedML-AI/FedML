@@ -104,7 +104,6 @@ class GTGShapleyValue(BaseContributionAssessor):
             / np.reshape(np.arange(1, len(self.Contribution_records) + 1), (-1, 1))
         )[-1:].tolist()[0]
 
-        # TODO: upgrade self.shapley_values_by_round
         i = 0
         for client_ind in client_index_for_this_round:
             self.shapley_values_by_round[self.args.round_idx][client_ind] = shapley_values[i]
@@ -115,30 +114,27 @@ class GTGShapleyValue(BaseContributionAssessor):
     #self.args.client_num_in_total
     #self.args.client_id_list_in_this_round
 
-    def get_final_result(self):
-        for t, shapley_t in self.shapley_values_by_round.items():
-            for id in shapley_t:
-                if self.SV.get(id):
-                    self.SV[id].append(shapley_t[id])
-                else:
-                    self.SV[id] = [shapley_t[id]]
-        return self.SV  # dict: {id:SV,...}
-
     def get_final_contribution_assignment(self):
         """
         return: contribution_assignment
             (key is client_index; value is the client's relative contribution);
             the sum of values in the dictionary is equal to 1
         """
+        for t, shapley_t in self.shapley_values_by_round.items():
+            for id in shapley_t:
+                if self.SV.get(id):
+                    self.SV[id].append(shapley_t[id])
+                else:
+                    self.SV[id] = [shapley_t[id]]
+
         contribution_assignment = dict()
         keys = range(1, self.args.client_num_in_total+1)
         for id in keys:
             self.SV_summed[id] = np.sum(self.SV[id])
-        total_SV = sum(self.SV_summed.values())
+        total_sv = sum(self.SV_summed.values())
 
         for id in keys:
-            contribution_assignment[id] = self.SV_summed[id]/total_SV
-        # TODO: use self.shapley_values_by_round to calculate the final contribution assignment
+            contribution_assignment[id] = self.SV_summed[id]/total_sv
         return contribution_assignment
 
     def is_not_converged(self, k):
