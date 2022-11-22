@@ -1,14 +1,14 @@
 import logging
 from typing import List, Dict, Any, Callable
 
+from .gtg_shapley_value import GTGShapleyValue
 from .leave_one_out import LeaveOneOut
-from .GTG-Shapley import GTG_Shapley
-from .Exact_SV import Exact_SV
+from .naive_shapley_value import NaiveShapleyValue
+
 
 class ContributionAssessorManager:
     def __init__(self, args):
         self.args = args
-        self.client_num_per_round = args.client_num_per_round
         # TO DO: we need to add the indices of the participating clients here.
         self.assessor = self._build_assesor()
 
@@ -16,37 +16,37 @@ class ContributionAssessorManager:
         if not hasattr(self.args, "contribution_alg"):
             return None
         if self.args.contribution_alg == "LOO":
-            assessor = LeaveOneOut()
-        if self.args.contribution_alg == "GTG":
-            assessor = GTG_Shapley()
-        if self.args.contribution_alg == "ExactSV":
-            assessor = Exact_SV()
+            assessor = LeaveOneOut(self.args)
+        elif self.args.contribution_alg == "GTG":
+            assessor = GTGShapleyValue(self.args)
+        elif self.args.contribution_alg == "NaiveSV":
+            assessor = NaiveShapleyValue(self.args)
         else:
             raise Exception("no such algorithm for ContributionAssessor.")
         return assessor
 
     def run(
         self,
-        fraction: Dict,  # this is the weights of the clients in FedAvg
+        client_num_per_round,
+        client_index_for_this_round,
+        aggregation_func: Callable,
         local_weights_from_clients: List[Dict],
-        model_aggregated: Dict,
-        model_last_round: Dict,
+        acc_on_last_round: float,
         acc_on_aggregated_model: float,
         val_dataloader: Any,
         validation_func: Callable[[Dict, Any, Any], float],
         device,
-    ) -> List[float]:
-        contribution_vector = self.assessor.run(
-            self.client_num_per_round,
+    ):
+        self.assessor.run(
+            client_num_per_round,
+            client_index_for_this_round,
             # TO DO: we need to add the indices of the participating clients here.
-            fraction,  # this is the weights of the clients in FedAvg
+            aggregation_func,
             local_weights_from_clients,
-            model_aggregated,
-            model_last_round,
+            acc_on_last_round,
             acc_on_aggregated_model,
             val_dataloader,
             validation_func,
             device,
         )
         logging.info("ContributionAssessorManager.run() contribution_vector = {}".format(contribution_vector))
-        return contribution_vector
