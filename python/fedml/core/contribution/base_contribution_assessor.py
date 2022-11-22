@@ -10,14 +10,13 @@ from typing import Callable, List, Dict, Any
 # we need to have retrain for the exact SV/
 """
 
-
 class BaseContributionAssessor(ABC):
     @abstractmethod
     def run(
         self,
         num_client_for_this_round: int,
         client_index_for_this_round: List,  # this is the indices of the participating users in that iteration
-        fraction: Dict,  # this is the weights of the clients in FedAvg
+        aggregation_func: Callable,
         local_weights_from_clients: List[Dict],  # TO DO dict: [id]
         acc_on_last_round: float,
         acc_on_aggregated_model: float,
