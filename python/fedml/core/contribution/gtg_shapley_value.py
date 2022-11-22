@@ -25,6 +25,8 @@ class GTGShapleyValue(BaseContributionAssessor):
         # key is the round_index;
         # value is the dictionary contribution (key - client_index; value - relative contribution
         self.shapley_values_by_round = dict()
+        self.SV = {} # dict: {id:SV,...}
+        self.SV_summed = {} # dict: {id: SV_summed_over_all_iter, ...}
 
     def run(
         self,
@@ -103,6 +105,41 @@ class GTGShapleyValue(BaseContributionAssessor):
         )[-1:].tolist()[0]
 
         # TODO: upgrade self.shapley_values_by_round
+        i = 0
+        for client_ind in client_index_for_this_round:
+            self.shapley_values_by_round[self.args.round_idx][client_ind] = shapley_values[i]
+            i = i+1
+
+
+
+    #self.args.client_num_in_total
+    #self.args.client_id_list_in_this_round
+
+    def get_final_result(self):
+        for t, shapley_t in self.shapley_values_by_round.items():
+            for id in shapley_t:
+                if self.SV.get(id):
+                    self.SV[id].append(shapley_t[id])
+                else:
+                    self.SV[id] = [shapley_t[id]]
+        return self.SV  # dict: {id:SV,...}
+
+    def get_final_contribution_assignment(self):
+        """
+        return: contribution_assignment
+            (key is client_index; value is the client's relative contribution);
+            the sum of values in the dictionary is equal to 1
+        """
+        contribution_assignment = dict()
+        keys = range(1, self.args.client_num_in_total+1)
+        for id in keys:
+            self.SV_summed[id] = np.sum(self.SV[id])
+        total_SV = sum(self.SV_summed.values())
+
+        for id in keys:
+            contribution_assignment[id] = self.SV_summed[id]/total_SV
+        # TODO: use self.shapley_values_by_round to calculate the final contribution assignment
+        return contribution_assignment
 
     def is_not_converged(self, k):
 
@@ -118,13 +155,3 @@ class GTGShapleyValue(BaseContributionAssessor):
             return True
         return False
 
-    def get_final_contribution_assignment(self):
-        """
-        return: contribution_assignment
-            (key is client_index; value is the client's relative contribution);
-            the sum of values in the dictionary is equal to 1
-        """
-        contribution_assignment = dict()
-
-        # TODO: use self.shapley_values_by_round to calculate the final contribution assignment
-        return contribution_assignment
