@@ -18,8 +18,8 @@ class ContributionAssessorManager:
             assessor = LeaveOneOut(self.args)
         elif self.args.contribution_alg == "GTG":
             assessor = GTGShapleyValue(self.args)
-        elif self.args.contribution_alg == "NaiveSV":
-            assessor = NaiveShapleyValue(self.args)
+        elif self.args.contribution_alg == "MR":
+            assessor = MRShapleyValue(self.args)
         else:
             raise Exception("no such algorithm for ContributionAssessor.")
         return assessor
