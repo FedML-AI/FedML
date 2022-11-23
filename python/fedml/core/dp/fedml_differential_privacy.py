@@ -1,10 +1,12 @@
 import logging
+from collections import OrderedDict
 
-from .frames.NbAFL import NbAFL_DP
-from ..common.ml_engine_backend import MLEngineBackend
 from fedml.core.dp.common.constants import DP_LDP, DP_CDP, NBAFL_DP
 from fedml.core.dp.frames.cdp import GlobalDP
 from fedml.core.dp.frames.ldp import LocalDP
+
+from .frames.NbAFL import NbAFL_DP
+from ..common.ml_engine_backend import MLEngineBackend
 
 
 class FedMLDifferentialPrivacy:
@@ -23,12 +25,7 @@ class FedMLDifferentialPrivacy:
 
     def init(self, args):
         if hasattr(args, "enable_dp") and args.enable_dp:
-            logging.info(
-                ".......init dp......."
-                + args.dp_solution_type
-                + "-"
-                + args.dp_solution_type
-            )
+            logging.info(".......init dp......." + args.dp_solution_type + "-" + args.dp_solution_type)
             self.is_enabled = True
             # if hasattr(args, "accountant_type") and args.accountant_type in ["adding"]:
             #     self.enable_accountant = True
@@ -66,12 +63,12 @@ class FedMLDifferentialPrivacy:
     def is_global_dp_enabled(self):
         return self.is_enabled and self.dp_solution_type in [DP_CDP]
 
-    def add_local_noise(self, local_grad: dict):
+    def add_local_noise(self, local_grad: OrderedDict):
         if self.dp_solution is None:
             raise Exception("dp solution is not initialized!")
         return self.dp_solution.add_local_noise(local_grad)
 
-    def add_global_noise(self, global_model: dict):
+    def add_global_noise(self, global_model: OrderedDict):
         if self.dp_solution is None:
             raise Exception("dp solution is not initialized!")
         return self.dp_solution.add_global_noise(global_model)
