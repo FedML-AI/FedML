@@ -3,7 +3,6 @@ from typing import List, Dict, Any, Callable
 
 from .gtg_shapley_value import GTGShapleyValue
 from .leave_one_out import LeaveOneOut
-from .naive_shapley_value import NaiveShapleyValue
 
 
 class ContributionAssessorManager:
