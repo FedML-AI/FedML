@@ -184,6 +184,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
 
             # replace the S3 object key with raw model params
             payload_obj[Message.MSG_ARG_KEY_MODEL_PARAMS] = model_params
+            payload_obj[Message.MSG_ARG_KEY_MODEL_PARAMS_KEY] = s3_key_str
         else:
             logging.info("mqtt_s3.on_message: not use s3 pack")
 
@@ -216,15 +217,19 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
 
             payload = msg.get_params()
             model_params_obj = payload.get(Message.MSG_ARG_KEY_MODEL_PARAMS, "")
-            message_key = topic + "_" + str(uuid.uuid4())
+            model_url = payload.get(Message.MSG_ARG_KEY_MODEL_PARAMS_URL, "")
+            model_key = payload.get(Message.MSG_ARG_KEY_MODEL_PARAMS_KEY, "")
             if model_params_obj != "":
                 # S3
+                if model_key == "":
+                    model_key = topic + "_" + str(uuid.uuid4())
+                    self.s3_storage.upload_model_file(model_key, model_params_obj)
                 logging.info(
                     "mqtt_s3.send_message: S3+MQTT msg sent, s3 message key = %s"
-                    % message_key
+                    % model_key
                 )
-                self.s3_storage.upload_model_file(message_key, model_params_obj)
-                payload[Message.MSG_ARG_KEY_MODEL_PARAMS] = message_key
+                payload[Message.MSG_ARG_KEY_MODEL_PARAMS] = model_key
+                payload[Message.MSG_ARG_KEY_MODEL_PARAMS_KEY] = model_key
                 self.mqtt_mgr.send_message(topic, json.dumps(payload))
             else:
                 # pure MQTT

@@ -16,6 +16,7 @@ class Message(object):
 
     MSG_ARG_KEY_MODEL_PARAMS = "model_params"
     MSG_ARG_KEY_MODEL_PARAMS_URL = "model_params_url"
+    MSG_ARG_KEY_MODEL_PARAMS_KEY = "model_params_key"
 
     def __init__(self, type="default", sender_id=0, receiver_id=0):
         self.type = str(type)
