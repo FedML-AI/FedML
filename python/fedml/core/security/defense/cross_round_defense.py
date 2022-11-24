@@ -60,12 +60,13 @@ class CrossRoundDefense(BaseDefenseMethod):
         print(f"global_wise_scores = {global_wise_scores}")
 
         for i in range(len(client_wise_scores)):
+            # if (
+            #         client_wise_scores[i] < self.lowerbound
+            #         or global_wise_scores[i] < self.lowerbound
+            # ):
+            #     self.lazy_worker_list.append(i)  # will be directly kicked out later
+            # el
             if (
-                    client_wise_scores[i] < self.lowerbound
-                    or global_wise_scores[i] < self.lowerbound
-            ):
-                self.lazy_worker_list.append(i)  # will be directly kicked out later
-            elif (
                     client_wise_scores[i] > self.upperbound
                     or global_wise_scores[i] > self.upperbound
             ):
