@@ -1,9 +1,9 @@
 import logging
 from abc import ABC, abstractmethod
 from typing import List, Tuple, Dict
-
 from ..contribution.contribution_assessor_manager import ContributionAssessorManager
 from ..dp.fedml_differential_privacy import FedMLDifferentialPrivacy
+from ..security.constants import ANOMALY_DETECTION
 from ..security.fedml_attacker import FedMLAttacker
 from ..security.fedml_defender import FedMLDefender
 from ...ml.aggregator.agg_operator import FedMLAggOperator
@@ -20,6 +20,7 @@ class ServerAggregator(ABC):
         FedMLDefender.get_instance().init(args)
         FedMLDifferentialPrivacy.get_instance().init(args)
         self.contribution_assessor_mgr = ContributionAssessorManager(args)
+
 
     def set_id(self, aggregator_id):
         self.id = aggregator_id
@@ -45,6 +46,9 @@ class ServerAggregator(ABC):
                 raw_client_grad_list=raw_client_model_or_grad_list,
                 extra_auxiliary_info=self.get_model_params(),
             )
+            if FedMLDefender.get_instance().defense_type == ANOMALY_DETECTION:
+                malicious_client_idxs = FedMLDefender.get_instance().defender.get_malicious_client_idxs()
+
 
         return raw_client_model_or_grad_list
 

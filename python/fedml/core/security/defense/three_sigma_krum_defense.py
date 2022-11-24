@@ -15,6 +15,7 @@ class ThreeSigmaKrumDefense(BaseDefenseMethod):
     def __init__(self, config):
         self.average = None
         self.upper_bound = 0
+        self.malicious_client_idxs = []
         if hasattr(config, "bound_param") and isinstance(config.bound_param, float):
             self.bound_param = config.bound_param
         else:
@@ -109,11 +110,16 @@ class ThreeSigmaKrumDefense(BaseDefenseMethod):
     def kick_out_poisoned_local_models(self, client_scores, raw_client_grad_list):
         print(f"upper bound = {self.upper_bound}")
         # traverse the score list in a reversed order
+        self.malicious_client_idxs = []
         for i in range(len(client_scores) - 1, -1, -1):
             if client_scores[i] > self.upper_bound:
                 raw_client_grad_list.pop(i)
+                self.malicious_client_idxs.append(i)
                 print(f"pop -- i = {i}")
         return raw_client_grad_list, client_scores
+
+    def get_malicious_client_idxs(self):
+        return self.malicious_client_idxs
 
     def compute_avg_with_krum(self, raw_client_grad_list):
         importance_feature_list = self._get_importance_feature(raw_client_grad_list)
