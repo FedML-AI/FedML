@@ -1,7 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
 from typing import List, Tuple, Dict
-
 from ..contribution.contribution_assessor_manager import ContributionAssessorManager
 from ..dp.fedml_differential_privacy import FedMLDifferentialPrivacy
 from ..security.constants import ANOMALY_DETECTION
