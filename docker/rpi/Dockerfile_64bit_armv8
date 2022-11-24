@@ -24,6 +24,7 @@ RUN pip install --upgrade torchvision==0.10.0
 
 RUN pip install --upgrade pip && pip install -U fedml
 
+
 ##############################################################################
 # Add docker location file
 ##############################################################################

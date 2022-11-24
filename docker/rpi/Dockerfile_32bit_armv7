@@ -36,6 +36,7 @@ RUN sudo ln -s /usr/include/locale.h /usr/include/xlocale.h
 #RUN apt-get install python-h5py
 RUN pip install --upgrade pip && pip install -U fedml
 
+
 ##############################################################################
 # Add docker location file
 ##############################################################################
