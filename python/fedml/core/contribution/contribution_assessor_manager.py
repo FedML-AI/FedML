@@ -9,10 +9,11 @@ from .mr_shapley_value import MRShapleyValue
 class ContributionAssessorManager:
     def __init__(self, args):
         self.args = args
-        self.assessor = self._build_assesor()
+        self.assessor = self._build_assessor()
 
-    def _build_assesor(self):
+    def _build_assessor(self):
         if not hasattr(self.args, "contribution_alg"):
+            logging.info("contribution_alg is not set, assessor is None")
             return None
         if self.args.contribution_alg == "LOO":
             assessor = LeaveOneOut(self.args)
@@ -21,8 +22,12 @@ class ContributionAssessorManager:
         elif self.args.contribution_alg == "MR":
             assessor = MRShapleyValue(self.args)
         else:
-            raise Exception("no such algorithm for ContributionAssessor.")
+            logging.info("no such contribution_alg, assessor is None")
+            assessor = None
         return assessor
+
+    def get_assessor(self):
+        return self.assessor
 
     def run(
         self,
@@ -36,6 +41,9 @@ class ContributionAssessorManager:
         validation_func: Callable[[Dict, Any, Any], float],
         device,
     ):
+        if self.assessor is None:
+            return
+
         self.assessor.run(
             client_num_per_round,
             client_index_for_this_round,
