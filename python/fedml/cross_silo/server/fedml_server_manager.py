@@ -124,6 +124,14 @@ class FedMLServerManager(FedMLCommManager):
             )
             tick = time.time()
             global_model_params, model_list, model_list_idxes = self.aggregator.aggregate()
+
+            logging.info("self.client_id_list_in_this_round = {}".format(self.client_id_list_in_this_round))
+            new_client_id_list_in_this_round = []
+            for client_idx in model_list_idxes:
+                new_client_id_list_in_this_round.append(self.client_id_list_in_this_round[client_idx])
+            logging.info("new_client_id_list_in_this_round = {}".format(new_client_id_list_in_this_round))
+            Context().add(Context.KEY_CLIENT_ID_LIST_IN_THIS_ROUND, new_client_id_list_in_this_round)
+
             MLOpsProfilerEvent.log_to_wandb({"AggregationTime": time.time() - tick, "round": self.args.round_idx})
 
             self.aggregator.test_on_server_for_all_clients(self.args.round_idx)
