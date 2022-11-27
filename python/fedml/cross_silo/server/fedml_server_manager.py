@@ -5,6 +5,7 @@ import time
 from fedml import mlops
 
 from .message_define import MyMessage
+from ...core import Context
 from ...core.distributed.communication.message import Message
 from ...core.distributed.fedml_comm_manager import FedMLCommManager
 from ...core.mlops.mlops_profiler_event import MLOpsProfilerEvent
@@ -122,10 +123,20 @@ class FedMLServerManager(FedMLCommManager):
                 "server.agg_and_eval", event_started=True, event_value=str(self.args.round_idx),
             )
             tick = time.time()
-            global_model_params = self.aggregator.aggregate()
+            global_model_params, model_list, model_list_idxes = self.aggregator.aggregate()
+
+            logging.info("self.client_id_list_in_this_round = {}".format(self.client_id_list_in_this_round))
+            new_client_id_list_in_this_round = []
+            for client_idx in model_list_idxes:
+                new_client_id_list_in_this_round.append(self.client_id_list_in_this_round[client_idx])
+            logging.info("new_client_id_list_in_this_round = {}".format(new_client_id_list_in_this_round))
+            Context().add(Context.KEY_CLIENT_ID_LIST_IN_THIS_ROUND, new_client_id_list_in_this_round)
+
             MLOpsProfilerEvent.log_to_wandb({"AggregationTime": time.time() - tick, "round": self.args.round_idx})
 
             self.aggregator.test_on_server_for_all_clients(self.args.round_idx)
+
+            self.aggregator.assess_contribution()
 
             mlops.event("server.agg_and_eval", event_started=False, event_value=str(self.args.round_idx))
 
@@ -138,6 +149,7 @@ class FedMLServerManager(FedMLCommManager):
             self.data_silo_index_list = self.aggregator.data_silo_selection(
                 self.args.round_idx, self.args.client_num_in_total, len(self.client_id_list_in_this_round),
             )
+            Context().add(Context.KEY_CLIENT_ID_LIST_IN_THIS_ROUND, self.client_id_list_in_this_round)
 
             if self.args.round_idx == 0:
                 MLOpsProfilerEvent.log_to_wandb({"BenchmarkStart": time.time()})
