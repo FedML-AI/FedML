@@ -21,7 +21,7 @@ except ImportError:
 
 requirements = [
     "numpy",
-    "PyYAML>=5.3.1",
+    "PyYAML",
     "h5py",
     "tqdm",
     "wget",
@@ -75,7 +75,7 @@ requirements_extra_mxnet = [
 
 setup(
     name="fedml",
-    version="0.7.348",
+    version="0.7.349",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
