@@ -39,7 +39,7 @@ class GTGShapleyValue(BaseContributionAssessor):
         val_dataloader: Any,
         validation_func: Callable[[Dict, Any, Any], float],
         device,
-    ) -> List[float]:
+    ):
         # set the model first and then evaluate
         # (metric1, metric2, metric3, metric4) = validation_func(self.test_global, device, self.args)
 
