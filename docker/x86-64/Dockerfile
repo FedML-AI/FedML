@@ -131,7 +131,7 @@ apt install -y --allow-change-held-packages libnccl2=${LIB_NCCL} libnccl-dev=${L
 # ***************************************************************************
 # PyTorch (install from source)
 # ***************************************************************************
-RUN sudo pip3 install --upgrade pip && pip install numpy ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses h5py
+RUN sudo pip3 install --upgrade pip && pip3 install numpy ninja pyyaml>=5.3.1 mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses h5py
 
 #RUN cd ${INSTALL_DIR} && \
 #git clone https://github.com/pytorch/pytorch.git && \
