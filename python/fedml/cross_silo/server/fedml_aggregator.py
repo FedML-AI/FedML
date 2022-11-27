@@ -177,14 +177,17 @@ class FedMLAggregator(object):
             if b_test_all:
                 return
 
-            metric_results_in_the_last_round = Context().get(Context.KEY_METRICS_ON_AGGREGATED_MODEL)
-            Context().add(Context.KEY_METRICS_ON_LAST_ROUND, metric_results_in_the_last_round)
             if round_idx == self.args.comm_round - 1:
                 # we allow to return four metrics, such as accuracy, AUC, loss, etc.
                 metric_result_in_current_round = self.aggregator.test(self.test_global, self.device, self.args)
             else:
                 metric_result_in_current_round = self.aggregator.test(self.val_global, self.device, self.args)
+            metric_results_in_the_last_round = Context().get(Context.KEY_METRICS_ON_AGGREGATED_MODEL)
             Context().add(Context.KEY_METRICS_ON_AGGREGATED_MODEL, metric_result_in_current_round)
+            if metric_results_in_the_last_round is not None:
+                Context().add(Context.KEY_METRICS_ON_LAST_ROUND, metric_results_in_the_last_round)
+            else:
+                Context().add(Context.KEY_METRICS_ON_LAST_ROUND, metric_result_in_current_round)
 
         else:
             mlops.log({"round_idx": round_idx})
