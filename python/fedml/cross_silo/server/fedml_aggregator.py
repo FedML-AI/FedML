@@ -168,27 +168,27 @@ class FedMLAggregator(object):
     def test_on_server_for_all_clients(self, round_idx):
         if round_idx % self.args.frequency_of_the_test == 0 or round_idx == self.args.comm_round - 1:
             logging.info("################test_on_server_for_all_clients : {}".format(round_idx))
-            b_test_all = self.aggregator.test_all(
+            self.aggregator.test_all(
                 self.train_data_local_dict,
                 self.test_data_local_dict,
                 self.device,
                 self.args,
             )
-            if b_test_all:
-                return
 
             if round_idx == self.args.comm_round - 1:
                 # we allow to return four metrics, such as accuracy, AUC, loss, etc.
                 metric_result_in_current_round = self.aggregator.test(self.test_global, self.device, self.args)
             else:
                 metric_result_in_current_round = self.aggregator.test(self.val_global, self.device, self.args)
+            logging.info("metric_result_in_current_round = {}".format(metric_result_in_current_round))
             metric_results_in_the_last_round = Context().get(Context.KEY_METRICS_ON_AGGREGATED_MODEL)
             Context().add(Context.KEY_METRICS_ON_AGGREGATED_MODEL, metric_result_in_current_round)
             if metric_results_in_the_last_round is not None:
                 Context().add(Context.KEY_METRICS_ON_LAST_ROUND, metric_results_in_the_last_round)
             else:
                 Context().add(Context.KEY_METRICS_ON_LAST_ROUND, metric_result_in_current_round)
-
+            key_metrics_on_last_round = Context().get(Context.KEY_METRICS_ON_LAST_ROUND)
+            logging.info("key_metrics_on_last_round = {}".format(key_metrics_on_last_round))
         else:
             mlops.log({"round_idx": round_idx})
 
