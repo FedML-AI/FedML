@@ -1,9 +1,9 @@
 from typing import List, Dict, Callable, Any
 
 import numpy as np
+from scipy.special import comb
 
 from .base_contribution_assessor import BaseContributionAssessor
-from scipy.special import comb
 
 
 class MRShapleyValue(BaseContributionAssessor):
@@ -18,7 +18,6 @@ class MRShapleyValue(BaseContributionAssessor):
 
         self.Contribution_records = []
 
-
         # key is the round_index;
         # value is the dictionary contribution (key - client_index; value - relative contribution
         self.shapley_values_by_round = dict()
@@ -26,24 +25,23 @@ class MRShapleyValue(BaseContributionAssessor):
         self.SV_summed = {}  # dict: {id: SV_summed_over_all_iter, ...}
 
     def run(
-        self,
-        num_client_for_this_round: int,  # e.g, select 4 from 8
-        client_index_for_this_round: List,  # e.g., 4 selected clients from 8 clients [1, 3, 4, 7]
-        aggregation_func: Callable,
-        local_weights_from_clients: List[Dict],
-        acc_on_last_round: float,
-        acc_on_aggregated_model: float,
-        val_dataloader: Any,
-        validation_func: Callable[[Dict, Any, Any], float],
-        device,
-    ) -> List[float]:
+            self,
+            num_client_for_this_round: int,  # e.g, select 4 from 8
+            client_index_for_this_round: List,  # e.g., 4 selected clients from 8 clients [1, 3, 4, 7]
+            aggregation_func: Callable,
+            local_weights_from_clients: List[Dict],
+            acc_on_last_round: float,
+            acc_on_aggregated_model: float,
+            val_dataloader: Any,
+            validation_func: Callable[[Dict, Any, Any], float],
+            device,
+    ):
         # set the model first and then evaluate
         # (metric1, metric2, metric3, metric4) = validation_func(self.test_global, device, self.args)
 
+        util = {}
 
-        util={}
-
-        powerset=list(BaseContributionAssessor.generate_power_set(client_index_for_this_round))
+        powerset = list(BaseContributionAssessor.generate_power_set(client_index_for_this_round))
 
         for S in powerset:
             agg_model_with_subset_S = BaseContributionAssessor.get_aggregated_model_with_client_subset(
@@ -53,15 +51,14 @@ class MRShapleyValue(BaseContributionAssessor):
 
         self.shapley_values_by_round[self.args.round_idx] = self.shapley_value(util, client_index_for_this_round)
 
-
     def shapley_value(self, utility, idxs):
         N = len(idxs)
-        sv_dict={id:0 for id in idxs}
+        sv_dict = {id: 0 for id in idxs}
         for S in utility.keys():
-            if S !=():
+            if S != ():
                 for id in S:
-                    marginal_contribution=utility[S]-utility[tuple(i for i in S if i!=id)]
-                    sv_dict[id] += marginal_contribution /((comb(N-1,len(S)-1))*N)
+                    marginal_contribution = utility[S] - utility[tuple(i for i in S if i != id)]
+                    sv_dict[id] += marginal_contribution / ((comb(N - 1, len(S) - 1)) * N)
         return sv_dict
 
     def get_final_contribution_assignment(self):

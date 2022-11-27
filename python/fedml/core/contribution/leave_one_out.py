@@ -34,7 +34,7 @@ class LeaveOneOut(BaseContributionAssessor):
         val_dataloader: Any,
         validation_func: Callable[[Dict, Any, Any], float],
         device,
-    ) -> List[float]:
+    ):
 
         N = num_client_for_this_round
         self.Contribution_records = []
