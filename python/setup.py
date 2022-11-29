@@ -42,7 +42,9 @@ requirements = [
     "dill",
     "pandas",
     "wandb==0.13.2",
-    "eciespy"
+    "eciespy",
+    "PyNaCl",
+    "httpx"
 ]
 
 requirements_extra_mpi = [
@@ -68,12 +70,12 @@ requirements_extra_mxnet = [
 ]
 
 
-if platform.machine() == "x86_64":
-    requirements.append("MNN==1.1.6")
+# if platform.machine() == "x86_64":
+#    requirements.append("MNN==1.1.6")
 
 setup(
     name="fedml",
-    version="0.7.328",
+    version="0.7.350",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "

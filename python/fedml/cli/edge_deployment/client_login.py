@@ -6,6 +6,7 @@ import os
 import platform
 import subprocess
 import time
+from os.path import expanduser
 
 import click
 from fedml.cli.comm_utils import sys_utils
@@ -80,11 +81,19 @@ def __login_as_client(args, userid, version):
         click.echo("Please check whether your network is normal!")
         return
 
+    # Judge whether running from fedml docker hub
+    is_from_fedml_docker_hub = False
+    dock_loc_file = ClientConstants.get_docker_location_file()
+    if os.path.exists(dock_loc_file):
+        is_from_fedml_docker_hub = True
+
     # Build unique device id
     if is_from_docker:
         unique_device_id = args.current_device_id + "@" + args.os_name + ".Docker.Edge.Device"
     else:
         unique_device_id = args.current_device_id + "@" + args.os_name + ".Edge.Device"
+    if is_from_fedml_docker_hub:
+        unique_device_id = args.current_device_id + "@" + args.os_name + ".DockerHub.Edge.Device"
 
     # Bind account id to the MLOps platform.
     register_try_count = 0

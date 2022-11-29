@@ -54,7 +54,7 @@ class ThreeSigmaDefense(BaseDefenseMethod):
         ):
             self.pretraining_round_number = config.pretraining_round_num
         else:
-            self.pretraining_round_number = 5
+            self.pretraining_round_number = 2
         # ----------------- params for normal distribution ----------------- #
         self.mu = 0
         self.sigma = 0

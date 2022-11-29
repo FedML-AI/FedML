@@ -148,5 +148,11 @@ logs from edge server with docker mode:
 fedml logs --docker --docker-rank 1
 ```
 
+## 6. Diagnosis
+Diagnosis for connection to https://open.fedml.ai, AWS S3 and MQTT (mqtt.fedml.ai:1883)
+```
+fedml diagnosis --open --s3 --mqtt
+```
+
 You can also refer to a sanity check test example here:
 [https://github.com/FedML-AI/FedML/blob/master/test/fedml_user_code/cli/build.sh](https://github.com/FedML-AI/FedML/blob/master/test/fedml_user_code/cli/build.sh)
