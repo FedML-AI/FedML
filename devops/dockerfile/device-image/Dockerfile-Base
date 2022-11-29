@@ -1,7 +1,7 @@
 ARG VERSION=base
 ARG IS_BUILDING_GPU_IMAGE=0
 #ARG BASE_IMAGE=continuumio/miniconda3:4.7.12
-ARG BASE_IMAGE=fedml/fedml:cuda-11.4.0-devel-ubuntu20.04
+ARG BASE_IMAGE=fedml/fedml:latest-torch1.12.1-cuda11.3-cudnn8-devel
 FROM ${BASE_IMAGE}
 
 ADD ./devops/scripts/aws ./fedml/aws
@@ -20,10 +20,13 @@ RUN chmod a+x ./fedml/set-aws-credentials.sh
 RUN ./fedml/setup-aws-cli.sh
 
 RUN apt-get update
-RUN apt-get update
-RUN apt-get -y install gettext-base
-RUN apt-get -y install unar wget
-RUN apt-get -y install libquadmath0
+#RUN apt-get -y install gettext-base
+#RUN apt-get -y install unar wget
+#RUN apt-get -y install libquadmath0
+
+RUN sudo DEBIAN_FRONTEND=noninteractive apt-get install -qq gettext-base < /dev/null > /dev/null
+RUN sudo DEBIAN_FRONTEND=noninteractive apt-get install -qq unar wget < /dev/null > /dev/null
+RUN sudo DEBIAN_FRONTEND=noninteractive apt-get install -qq libquadmath0 < /dev/null > /dev/null
 
 RUN chmod a+x ./fedml/setup-conda-env.sh
 RUN bash ./fedml/setup-conda-env.sh ${IS_BUILDING_GPU_IMAGE}
