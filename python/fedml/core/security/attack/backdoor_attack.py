@@ -12,7 +12,7 @@ ref: Baruch, Gilad, Moran Baruch, and Yoav Goldberg.
 "A little is enough: Circumventing defenses for distributed learning." Advances in Neural Information Processing Systems 32 (2019).
 
 overview: the attacker can find the set of parameters within the same range (via maximizing standard deviations /sigma of params) that will
-          introduce a backdoor to the sysetm with only a minimal impact on accuracy for the original task. 
+          introduce a backdoor to the system with only a minimal impact on accuracy for the original task. 
 
 Steps:
 (1) Calculate mean and standard deviations of each dimension of parameters of corrupted workers.

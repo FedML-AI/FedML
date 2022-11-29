@@ -349,6 +349,10 @@ class MLOpsRuntimeLogDaemon:
                 log_processor.set_log_reporting_status(False)
                 break
 
+    def stop_all_log_processor(self):
+        for log_processor in self.log_processor_list:
+            log_processor.set_log_reporting_status(False)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)

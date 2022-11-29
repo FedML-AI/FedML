@@ -18,6 +18,7 @@ from ..cli.edge_deployment.docker_login import logs_with_docker_mode
 from ..cli.server_deployment.docker_login import login_with_server_docker_mode
 from ..cli.server_deployment.docker_login import logout_with_server_docker_mode
 from ..cli.server_deployment.docker_login import logs_with_server_docker_mode
+from ..cli.edge_deployment.client_diagnosis import ClientDiagnosis
 from ..cli.comm_utils import sys_utils
 
 
@@ -551,6 +552,66 @@ def build_mlops_package(
 
     return 0
 
+
+@cli.command("diagnosis", help="Diagnosis for open.fedml.ai, AWS S3 service and MQTT service")
+@click.option(
+    "--open", "-o", default=None, is_flag=True, help="check the connection to open.fedml.ai.",
+)
+@click.option(
+    "--s3", "-s", default=None, is_flag=True, help="check the connection to AWS S3 server.",
+)
+@click.option(
+    "--mqtt", "-m", default=None, is_flag=True, help="check the connection to mqtt.fedml.ai (1883).",
+)
+@click.option(
+    "--mqtt_daemon", "-d", default=None, is_flag=False, help="check the connection to mqtt.fedml.ai (1883) with loop mode.",
+)
+@click.option(
+    "--mqtt_s3_backend", "-ms", default=None, is_flag=False, help="check the connection to mqtt.fedml.ai (1883) with loop mode.",
+)
+def mlops_diagnosis(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend):
+    check_open = open
+    check_s3 = s3
+    check_mqtt = mqtt
+    check_mqtt_daemon = mqtt_daemon
+    check_mqtt_s3_backend = mqtt_s3_backend
+    if open is None and s3 is None and mqtt is None:
+        check_open = True
+        check_s3 = True
+        check_mqtt = True
+
+    if mqtt_daemon is None:
+        check_mqtt_daemon = False
+
+    if mqtt_s3_backend is None:
+        check_mqtt_s3_backend = False
+
+    if check_open:
+        is_open_connected = ClientDiagnosis.check_open_connection()
+        if is_open_connected:
+            click.echo("The connection to https://open.fedml.ai is OK.")
+        else:
+            click.echo("You can not connect to https://open.fedml.ai.")
+
+    if check_s3:
+        is_s3_connected = ClientDiagnosis.check_s3_connection()
+        if is_s3_connected:
+            click.echo("The connection to AWS S3 is OK.")
+        else:
+            click.echo("You can not connect to AWS S3.")
+
+    if check_mqtt:
+        is_mqtt_connected = ClientDiagnosis.check_mqtt_connection()
+        if is_mqtt_connected:
+            click.echo("The connection to mqtt.fedml.ai (port:1883) is OK.")
+        else:
+            click.echo("You can not connect to mqtt.fedml.ai (port:1883).")
+
+    if check_mqtt_daemon:
+        ClientDiagnosis.check_mqtt_connection_with_daemon_mode()
+
+    if check_mqtt_s3_backend:
+        ClientDiagnosis.check_mqtt_s3_communication_backend()
 
 @cli.command(
     "env",

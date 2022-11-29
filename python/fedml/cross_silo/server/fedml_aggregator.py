@@ -6,6 +6,7 @@ import numpy as np
 import torch
 
 from fedml import mlops
+from ...core import Context
 from ...ml.engine import ml_engine_adapter
 
 
@@ -31,12 +32,15 @@ class FedMLAggregator(object):
         self.val_global = self._generate_validation_set()
         self.all_train_data_num = all_train_data_num
 
+        Context().add(Context.KEY_TEST_DATA, self.val_global)
+
         self.train_data_local_dict = train_data_local_dict
         self.test_data_local_dict = test_data_local_dict
         self.train_data_local_num_dict = train_data_local_num_dict
 
         self.client_num = client_num
         self.device = device
+        self.args.device = device
         logging.info("self.device = {}".format(self.device))
         self.model_dict = dict()
         self.sample_num_dict = dict()
@@ -53,7 +57,9 @@ class FedMLAggregator(object):
     def add_local_trained_result(self, index, model_params, sample_num):
         logging.info("add_model. index = %d" % index)
 
-        model_params = ml_engine_adapter.model_params_to_device(self.args, model_params, self.device)
+        # for dictionary model_params, we let the user level code to control the device
+        if type(model_params) is not dict:
+            model_params = ml_engine_adapter.model_params_to_device(self.args, model_params, self.device)
 
         self.model_dict[index] = model_params
         self.sample_num_dict[index] = sample_num
@@ -74,15 +80,26 @@ class FedMLAggregator(object):
         model_list = []
         for idx in range(self.client_num):
             model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
-        model_list = self.aggregator.on_before_aggregation(model_list)
+        # model_list is the list after outlier removal
+        model_list, model_list_idxes = self.aggregator.on_before_aggregation(model_list)
+        Context().add(Context.KEY_CLIENT_MODEL_LIST, model_list)
+
         averaged_params = self.aggregator.aggregate(model_list)
-        averaged_params = self.aggregator.on_after_aggregation(averaged_params)
+
+        if type(averaged_params) is dict:
+            for client_index in range(len(averaged_params)):
+                averaged_params[client_index] = self.aggregator.on_after_aggregation(averaged_params[client_index])
+        else:
+            averaged_params = self.aggregator.on_after_aggregation(averaged_params)
 
         self.set_global_model_params(averaged_params)
 
         end_time = time.time()
         logging.info("aggregate time cost: %d" % (end_time - start_time))
-        return averaged_params
+        return averaged_params, model_list, model_list_idxes
+
+    def assess_contribution(self):
+        self.aggregator.assess_contribution()
 
     def data_silo_selection(self, round_idx, client_num_in_total, client_num_per_round):
         """
@@ -152,12 +169,26 @@ class FedMLAggregator(object):
         if round_idx % self.args.frequency_of_the_test == 0 or round_idx == self.args.comm_round - 1:
             logging.info("################test_on_server_for_all_clients : {}".format(round_idx))
             self.aggregator.test_all(
-                self.train_data_local_dict, self.test_data_local_dict, self.device, self.args,
+                self.train_data_local_dict,
+                self.test_data_local_dict,
+                self.device,
+                self.args,
             )
+
             if round_idx == self.args.comm_round - 1:
-                self.aggregator.test(self.test_global, self.device, self.args)
+                # we allow to return four metrics, such as accuracy, AUC, loss, etc.
+                metric_result_in_current_round = self.aggregator.test(self.test_global, self.device, self.args)
             else:
-                self.aggregator.test(self.val_global, self.device, self.args)
-            return
+                metric_result_in_current_round = self.aggregator.test(self.val_global, self.device, self.args)
+            logging.info("metric_result_in_current_round = {}".format(metric_result_in_current_round))
+            metric_results_in_the_last_round = Context().get(Context.KEY_METRICS_ON_AGGREGATED_MODEL)
+            Context().add(Context.KEY_METRICS_ON_AGGREGATED_MODEL, metric_result_in_current_round)
+            if metric_results_in_the_last_round is not None:
+                Context().add(Context.KEY_METRICS_ON_LAST_ROUND, metric_results_in_the_last_round)
+            else:
+                Context().add(Context.KEY_METRICS_ON_LAST_ROUND, metric_result_in_current_round)
+            key_metrics_on_last_round = Context().get(Context.KEY_METRICS_ON_LAST_ROUND)
+            logging.info("key_metrics_on_last_round = {}".format(key_metrics_on_last_round))
         else:
             mlops.log({"round_idx": round_idx})
+

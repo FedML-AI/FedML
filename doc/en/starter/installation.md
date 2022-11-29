@@ -79,7 +79,7 @@ Please refer to the following commands and remember to change `WORKSPACE` to you
 
 **(1) Pull the Docker image and prepare the docker environment**
 ```
-FEDML_DOCKER_IMAGE=fedml/fedml:cuda-11.4.0-devel-ubuntu20.04
+FEDML_DOCKER_IMAGE=fedml/fedml:latest-torch1.12.1-cuda11.3-cudnn8-devel
 docker pull FEDML_DOCKER_IMAGE
 
 # if you want to use GPUs in your host OS, please follow this link: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker
@@ -92,7 +92,7 @@ sudo chmod 777 /var/run/docker.sock
 **(2) Run Docker with interactive mode**
 
 ```
-FEDML_DOCKER_IMAGE=fedml/fedml:cuda-11.4.0-devel-ubuntu20.04
+FEDML_DOCKER_IMAGE=fedml/fedml:latest-torch1.12.1-cuda11.3-cudnn8-devel
 WORKSPACE=/home/chaoyanghe/sourcecode/FedML_startup/FedML
 
 docker run -t -i -v $WORKSPACE:$WORKSPACE --shm-size=64g --ulimit nofile=65535 --ulimit memlock=-1 --privileged \

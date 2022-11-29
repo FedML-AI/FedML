@@ -3,8 +3,10 @@ from typing import List, Tuple, Dict, Any, Callable
 from .defense.RFA_defense import RFADefense
 from .defense.coordinate_wise_trimmed_mean_defense import CoordinateWiseTrimmedMeanDefense
 from .defense.crfl_defense import CRFLDefense
+from .defense.outlier_detection import OutlierDetection
 from .defense.three_sigma_defense import ThreeSigmaDefense
 from .defense.three_sigma_geomedian_defense import ThreeSigmaGeoMedianDefense
+from .defense.three_sigma_krum_defense import ThreeSigmaKrumDefense
 from ..common.ml_engine_backend import MLEngineBackend
 from .defense.cclip_defense import CClipDefense
 from .defense.foolsgold_defense import FoolsGoldDefense
@@ -29,6 +31,7 @@ from ...core.security.constants import (
     DEFENSE_MULTIKRUM,
     DEFENSE_TRIMMED_MEAN,
     DEFENSE_THREESIGMA_GEOMEDIAN,
+    DEFENSE_THREESIGMA_KRUM, ANOMALY_DETECTION,
 )
 
 
@@ -77,10 +80,14 @@ class FedMLDefender:
                 self.defender = ThreeSigmaDefense(args)
             elif self.defense_type == DEFENSE_THREESIGMA_GEOMEDIAN:
                 self.defender = ThreeSigmaGeoMedianDefense(args)
+            elif self.defense_type == DEFENSE_THREESIGMA_KRUM:
+                self.defender = ThreeSigmaKrumDefense(args)
             elif self.defense_type == DEFENSE_CRFL:
                 self.defender = CRFLDefense(args)
             elif self.defense_type == DEFENSE_TRIMMED_MEAN:
                 self.defender = CoordinateWiseTrimmedMeanDefense(args)
+            elif self.defense_type == ANOMALY_DETECTION:
+                self.defender = OutlierDetection(args)
             else:
                 raise Exception("args.defense_type is not defined!")
         else:
@@ -130,9 +137,11 @@ class FedMLDefender:
             DEFENSE_FOOLSGOLD,
             DEFENSE_THREESIGMA,
             DEFENSE_THREESIGMA_GEOMEDIAN,
+            DEFENSE_THREESIGMA_KRUM,
             DEFENSE_KRUM,
             DEFENSE_MULTIKRUM,
-            DEFENSE_TRIMMED_MEAN
+            DEFENSE_TRIMMED_MEAN,
+            ANOMALY_DETECTION
         ]
 
     def is_defense_after_aggregation(self):
@@ -171,3 +180,6 @@ class FedMLDefender:
         if self.is_defense_after_aggregation():
             return self.defender.defend_after_aggregation(global_model)
         return global_model
+
+    def get_malicious_client_idxs(self):
+        return self.defender.get_malicious_client_idxs()

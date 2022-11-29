@@ -12,22 +12,22 @@ https://proceedings.neurips.cc/paper/2021/file/0d924f0e6b3fd0d91074c22727a53966-
 https://proceedings.neurips.cc/paper/2019/file/ec1c59141046cd1866bbbcdfb6ae31d4-Paper.pdf
 7. (NeurIPS 2020) EdgeCaseBackdoorAttack: "Attack of the Tails: Yes, You Really Can Backdoor Federated Learning" 
 https://proceedings.neurips.cc/paper/2020/file/b8ffa41d4e492f0fad2f13e29e1762eb-Paper.pdf
+8. (PMLR'20) ModelReplacementBackdoorAttack: "How To Backdoor Federated Learning" 
+http://proceedings.mlr.press/v108/bagdasaryan20a/bagdasaryan20a.pdf
 
 **Todo**
 1. (ICML 2019) "Analyzing Federated Learning through an Adversarial Lens" 
 http://proceedings.mlr.press/v97/bhagoji19a/bhagoji19a.pdf
-2. (AISTATS'20) "How To Backdoor Federated Learning" 
-http://proceedings.mlr.press/v108/bagdasaryan20a/bagdasaryan20a.pdf
-3. (ICLR 2020) "DBA: Distributed Backdoor Attacks against Federated Learning" 
+2. (ICLR 2020) "DBA: Distributed Backdoor Attacks against Federated Learning" 
 https://openreview.net/pdf?id=rkgyS0VFvr
-4. (USENIX 2020) "Local Model Poisoning Attacks to Byzantine-Robust Federated Learning" 
+3. (USENIX 2020) "Local Model Poisoning Attacks to Byzantine-Robust Federated Learning" 
 https://www.usenix.org/system/files/sec20summer_fang_prepub.pdf
-5. (ICML 2021) Gradient Disaggregation: Breaking Privacy in Federated Learning by Reconstructing the User Participant Matrix. 
+4. (ICML 2021) Gradient Disaggregation: Breaking Privacy in Federated Learning by Reconstructing the User Participant Matrix. 
 http://proceedings.mlr.press/v139/lam21b/lam21b.pdf
-6. “Model poisoning attacks against distributed machine learning systems” 
+5. “Model poisoning attacks against distributed machine learning systems” 
 https://www.spiedigitallibrary.org/conference-proceedings-of-spie/11006/110061D/Model-poisoning-attacks-against-distributed-machine-learning-systems/10.1117/12.2520275.full?SSO=1
-7. The Limitations of Federated Learning in Sybil Settings
-8. The Hidden Vulnerability of Distributed Learning in Byzantium
+6. The Limitations of Federated Learning in Sybil Settings
+7. The Hidden Vulnerability of Distributed Learning in Byzantium
 
 **Maybe implementing in the future...**
 1. (Vertical FL) "CAFE: Catastrophic Data Leakage in Vertical Federated Learning" (NeurIPS 2021)
@@ -42,7 +42,7 @@ https://arxiv.org/pdf/2006.09365.pdf
 3. GeometricMedianDefense: "Distributed statistical machine learning in adversarial settings: Byzantine gradient descent. "
 https://dl.acm.org/doi/pdf/10.1145/3154503
 4. (NeurIPS 2017) KrumDefense: "Machine Learning with Adversaries: Byzantine Tolerant Gradient Descent"
-https://arxiv.org/pdf/1703.02757.pdf
+https://papers.nips.cc/paper/2017/file/f4b9ec30ad9f68f89b29639786cb62ef-Paper.pdf
 5. (ICLR 2021) MultiKrumDefense: "Distributed momentum for byzantine-resilient stochastic gradient descent"
 https://infoscience.epfl.ch/record/287261
 6. NormDiffClippingDefense: "Can You Really Backdoor Federated Learning?" 

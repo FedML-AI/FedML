@@ -92,21 +92,37 @@ class FedMLCommManager(Observer):
 
         return mqtt_config, s3_config
 
-    def get_training_mqtt_ipfs_config(self):
+    def get_training_mqtt_web3_config(self):
         mqtt_config = None
-        ipfs_config = None
+        web3_config = None
         if hasattr(self.args, "customized_training_mqtt_config") and self.args.customized_training_mqtt_config != "":
             mqtt_config = self.args.customized_training_mqtt_config
-        if hasattr(self.args, "customized_training_ipfs_config") and self.args.customized_training_ipfs_config != "":
-            ipfs_config = self.args.customized_training_ipfs_config
-        if mqtt_config is None or ipfs_config is None:
-            mqtt_config_from_cloud, ipfs_config_from_cloud = MLOpsConfigs.get_instance(self.args).fetch_ipfs_configs()
+        if hasattr(self.args, "customized_training_web3_config") and self.args.customized_training_web3_config != "":
+            web3_config = self.args.customized_training_web3_config
+        if mqtt_config is None or web3_config is None:
+            mqtt_config_from_cloud, web3_config_from_cloud = MLOpsConfigs.get_instance(self.args).fetch_web3_configs()
             if mqtt_config is None:
                 mqtt_config = mqtt_config_from_cloud
-            if ipfs_config is None:
-                ipfs_config = s3_config_from_cloud
+            if web3_config is None:
+                web3_config = web3_config_from_cloud
 
-        return mqtt_config, ipfs_config
+        return mqtt_config, web3_config
+
+    def get_training_mqtt_thetastore_config(self):
+        mqtt_config = None
+        thetastore_config = None
+        if hasattr(self.args, "customized_training_mqtt_config") and self.args.customized_training_mqtt_config != "":
+            mqtt_config = self.args.customized_training_mqtt_config
+        if hasattr(self.args, "customized_training_thetastore_config") and self.args.customized_training_thetastore_config != "":
+            thetastore_config = self.args.customized_training_thetastore_config
+        if mqtt_config is None or thetastore_config is None:
+            mqtt_config_from_cloud, thetastore_config_from_cloud = MLOpsConfigs.get_instance(self.args).fetch_thetastore_configs()
+            if mqtt_config is None:
+                mqtt_config = mqtt_config_from_cloud
+            if thetastore_config is None:
+                thetastore_config = thetastore_config_from_cloud
+
+        return mqtt_config, thetastore_config
 
     def _init_manager(self):
 
@@ -140,14 +156,27 @@ class FedMLCommManager(Observer):
                 client_num=self.size,
                 args=self.args,
             )
-        elif self.backend == "MQTT_IPFS":
-            from .communication.mqtt_ipfs.mqtt_ipfs_comm_manager import MqttIpfsCommManager
+        elif self.backend == "MQTT_WEB3":
+            from .communication.mqtt_web3.mqtt_web3_comm_manager import MqttWeb3CommManager
 
-            mqtt_config, ipfs_config = self.get_training_mqtt_ipfs_config()
+            mqtt_config, web3_config = self.get_training_mqtt_web3_config()
 
-            self.com_manager = MqttIpfsCommManager(
+            self.com_manager = MqttWeb3CommManager(
                 mqtt_config,
-                ipfs_config,
+                web3_config,
+                topic=str(self.args.run_id),
+                client_rank=self.rank,
+                client_num=self.size,
+                args=self.args,
+            )
+        elif self.backend == "MQTT_THETASTORE":
+            from .communication.mqtt_thetastore import MqttThetastoreCommManager
+
+            mqtt_config, thetastore_config = self.get_training_mqtt_thetastore_config()
+
+            self.com_manager = MqttThetastoreCommManager(
+                mqtt_config,
+                thetastore_config,
                 topic=str(self.args.run_id),
                 client_rank=self.rank,
                 client_num=self.size,

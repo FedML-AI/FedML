@@ -1,5 +1,7 @@
 from .attack.byzantine_attack import ByzantineAttack
-from .constants import ATTACK_METHOD_BYZANTINE_ATTACK
+from .attack.label_flipping_attack import LabelFlippingAttack
+from .attack.model_replacement_backdoor_attack import ModelReplacementBackdoorAttack
+from .constants import ATTACK_METHOD_BYZANTINE_ATTACK, ATTACK_LABEL_FLIPPING, BACKDOOR_ATTACK_MODEL_REPLACEMENT
 import logging
 from ..common.ml_engine_backend import MLEngineBackend
 from typing import List, Tuple, Dict, Any
@@ -28,6 +30,10 @@ class FedMLAttacker:
             self.attacker = None
             if self.attack_type == ATTACK_METHOD_BYZANTINE_ATTACK:
                 self.attacker = ByzantineAttack(args)
+            # elif self.attack_type == ATTACK_LABEL_FLIPPING:
+            #     self.attacker = LabelFlippingAttack(args)
+            elif self.attack_type == BACKDOOR_ATTACK_MODEL_REPLACEMENT:
+                self.attacker = ModelReplacementBackdoorAttack(args)
             # elif self.attack_type == ATTACK_METHOD_DLG:
             #     self.attacker = DLGAttack(model=args.model, attack_epoch=args.attack_epoch)
         else:
@@ -54,7 +60,7 @@ class FedMLAttacker:
 
     def is_model_attack(self):
         if self.is_attack_enabled() and self.attack_type in [
-            ATTACK_METHOD_BYZANTINE_ATTACK
+            ATTACK_METHOD_BYZANTINE_ATTACK, BACKDOOR_ATTACK_MODEL_REPLACEMENT
         ]:
             return True
         return False
