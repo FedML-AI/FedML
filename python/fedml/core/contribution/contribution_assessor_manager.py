@@ -57,4 +57,6 @@ class ContributionAssessorManager:
         )
 
     def get_final_contribution_assignment(self):
+        if self.assessor is None:
+            return None
         return self.assessor.get_final_contribution_assignment()
