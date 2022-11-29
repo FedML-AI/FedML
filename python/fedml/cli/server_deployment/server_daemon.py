@@ -47,5 +47,5 @@ if __name__ == "__main__":
             ]
         )
         ret_code, exec_out, exec_err = ServerConstants.get_console_sys_out_pipe_err_results(login_pid)
-        time.sleep(15)
+        time.sleep(3)
 

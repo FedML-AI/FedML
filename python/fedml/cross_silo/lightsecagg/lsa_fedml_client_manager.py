@@ -94,8 +94,8 @@ class FedMLClientManager(FedMLCommManager):
 
         self.dimensions, self.total_dimension = model_dimension(global_model_params)
 
-        self.trainer.update_model(global_model_params)
         self.trainer.update_dataset(int(client_index))
+        self.trainer.update_model(global_model_params)
         self.round_idx = 0
         self.__offline()
 
@@ -118,8 +118,8 @@ class FedMLClientManager(FedMLCommManager):
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
 
-        self.trainer.update_model(model_params)
         self.trainer.update_dataset(int(client_index))
+        self.trainer.update_model(model_params)
 
         if self.round_idx == self.num_rounds - 1:
             mlops.log_training_finished_status()
