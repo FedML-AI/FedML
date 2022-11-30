@@ -80,7 +80,7 @@ class MqttManager(object):
     def loop_forever(self):
         self._client.loop_forever(retry_first_connection=True)
 
-    def send_message(self, topic, message, wait_for_publish=True):
+    def send_message(self, topic, message, wait_for_publish=False):
         # if self._client.is_connected() is False:
         #     return False
 
