@@ -88,7 +88,7 @@ class MqttManager(object):
         ret_info = self._client.publish(topic, payload=message, qos=2)
         if wait_for_publish:
             try:
-                ret_info.wait_for_publish(3)
+                ret_info.wait_for_publish(1)
             except Exception as e:
                 pass
         MLOpsProfilerEvent.log_to_wandb({"Comm/send_delay_mqtt": time.time() - mqtt_send_start_time})
@@ -103,7 +103,7 @@ class MqttManager(object):
         ret_info = self._client.publish(topic, payload=message, qos=2)
         if wait_for_publish:
             try:
-                ret_info.wait_for_publish(3)
+                ret_info.wait_for_publish(1)
             except Exception as e:
                 pass
 
