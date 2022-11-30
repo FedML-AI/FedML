@@ -1,3 +1,4 @@
+import logging
 import math
 import numpy as np
 from scipy import spatial
@@ -113,13 +114,13 @@ class ThreeSigmaKrumDefense(BaseDefenseMethod):
         print(f"upper bound = {self.upper_bound}")
         # traverse the score list in a reversed order
         self.malicious_client_idxs = []
-        print(f"potential_malicious_client_idxs = {self.potential_malicious_client_idxs}")
+        logging.info(f"potential_malicious_client_idxs = {self.potential_malicious_client_idxs}")
         for i in range(len(client_scores) - 1, -1, -1):
             if client_scores[i] > self.upper_bound:
                 if self.potential_malicious_client_idxs is None or i in self.potential_malicious_client_idxs:
                     raw_client_grad_list.pop(i)
                     self.malicious_client_idxs.append(i)
-                    print(f"kick out -- {i}")
+                    logging.info(f"kick out -- {i}")
         return raw_client_grad_list, client_scores
 
     def get_malicious_client_idxs(self):
