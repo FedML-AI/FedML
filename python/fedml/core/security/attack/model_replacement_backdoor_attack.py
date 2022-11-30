@@ -1,3 +1,4 @@
+import logging
 import random
 from .attack_base import BaseAttackMethod
 from ..common.utils import is_weight_param, vectorize_weight, compute_euclidean_distance
@@ -49,7 +50,7 @@ class ModelReplacementBackdoorAttack(BaseAttackMethod):
         else:
             malicious_idx = self.malicious_client_id
         global_model = extra_auxiliary_info
-        print(f"malicious_idx={malicious_idx}")
+        logging.info(f"malicious_idx={malicious_idx}")
         (num, original_client_model) = raw_client_grad_list[malicious_idx]
         raw_client_grad_list.pop(malicious_idx)
         new_client_model = dict()
