@@ -1,7 +1,8 @@
-import logging
 import random
 import fedml
 import torch
+import logging
+from collections import OrderedDict
 from .attack_base import BaseAttackMethod
 from ..common.utils import is_weight_param, vectorize_weight, compute_euclidean_distance
 from typing import List, Tuple, Dict, Any
@@ -52,7 +53,9 @@ class ModelReplacementBackdoorAttack(BaseAttackMethod):
             malicious_idx = random.randrange(participant_num)  # randomly select a client as a malicious client
         else:
             malicious_idx = self.malicious_client_id
-        global_model = extra_auxiliary_info
+        global_model = OrderedDict()
+        for k in extra_auxiliary_info.keys():
+            global_model[k] = extra_auxiliary_info[k].to(self.device)
         logging.info(f"malicious_idx={malicious_idx}")
         (num, original_client_model) = raw_client_grad_list[malicious_idx]
         raw_client_grad_list.pop(malicious_idx)
