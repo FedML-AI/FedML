@@ -2,6 +2,7 @@ import numpy as np
 from scipy import spatial
 from .defense_base import BaseDefenseMethod
 from typing import Callable, List, Tuple, Dict, Any
+from collections import OrderedDict
 
 
 # check whether attack happens
@@ -13,11 +14,10 @@ from typing import Callable, List, Tuple, Dict, Any
 # todo: pretraining round?
 class CrossRoundDefense(BaseDefenseMethod):
     def __init__(self, config):
-        self.potentially_poisoned_worker_list = None
+        self.potentially_poisoned_worker_list = []
         self.lazy_worker_list = None
-        self.potential_malicious_client_idxs = []
         # cosine similarity in [0, 2] 0 means 2 vectors are same
-        self.upperbound = 0.3  # cosine similarity > upperbound: attack may happen; need further defense
+        self.upperbound = 0.31  # cosine similarity > upperbound: attack may happen; need further defense
         self.lowerbound = 0.0000001  # cosine similarity < lowerbound is defined as ``very limited difference''-> lazy worker
         self.client_cache = None
         self.training_round = 1
@@ -29,16 +29,11 @@ class CrossRoundDefense(BaseDefenseMethod):
             base_aggregation_func: Callable = None,
             extra_auxiliary_info: Any = None,
     ):
-        grad_list = self.defend_before_aggregation(
-            raw_client_grad_list, extra_auxiliary_info
-        )
-        return self.defend_on_aggregation(
-            grad_list, base_aggregation_func, extra_auxiliary_info
-        )
+        pass
 
     def defend_before_aggregation(
             self,
-            raw_client_grad_list: List[Tuple[float, Dict]],
+            raw_client_grad_list: List[Tuple[float, OrderedDict]],
             extra_auxiliary_info: Any = None,
     ):
         self.is_attack_existing = False
@@ -82,6 +77,9 @@ class CrossRoundDefense(BaseDefenseMethod):
         print(f"self.potentially_poisoned_worker_list = {self.potentially_poisoned_worker_list}")
         print(f"self.lazy_worker_list = {self.lazy_worker_list}")
         return raw_client_grad_list
+
+    def get_potential_poisoned_clients(self):
+        return self.potentially_poisoned_worker_list
 
     def compute_client_cosine_scores(self, client_features, global_model_feature):
         client_wise_scores = []
