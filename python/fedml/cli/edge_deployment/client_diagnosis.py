@@ -240,14 +240,14 @@ class ClientDiagnosis(Singleton):
 
     def send_test_mqtt_s3_backend_server_msg(self):
         while True:
-            time.sleep(3)
+            time.sleep(2)
             message = Message(1, 0, 1)
             ret = self.test_mqtt_s3_com_manager_server.send_message(message)
             print("send server mqtt+s3 msg and return: {}".format(str(ret)))
 
     def send_test_mqtt_s3_backend_client_msg(self):
         while True:
-            time.sleep(3)
+            time.sleep(2)
             message = Message(2, 1, 0)
             ret = self.test_mqtt_s3_com_manager_client.send_message(message)
             print("send client mqtt+s3 msg and return: {}".format(str(ret)))
