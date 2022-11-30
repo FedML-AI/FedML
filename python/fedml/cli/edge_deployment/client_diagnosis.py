@@ -1,13 +1,17 @@
 import argparse
 import json
 import time
+import traceback
 import uuid
+import multiprocess as multiprocessing
 from threading import Thread
 
-from ...core.distributed.communication.mqtt_s3 import MqttS3MultiClientsCommManager
-from ...core.mlops.mlops_configs import MLOpsConfigs
-from ...core.distributed.communication.s3.remote_storage import S3Storage
-from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
+from fedml.core.distributed.communication.constants import CommunicationConstants
+from fedml.core.distributed.communication.mqtt_s3 import MqttS3MultiClientsCommManager
+from fedml.core.distributed.communication.message import Message
+from fedml.core.mlops.mlops_configs import MLOpsConfigs
+from fedml.core.distributed.communication.s3.remote_storage import S3Storage
+from fedml.core.distributed.communication.mqtt.mqtt_manager import MqttManager
 
 
 class Singleton(object):
@@ -23,6 +27,10 @@ class ClientDiagnosis(Singleton):
         self.is_mqtt_connected = False
         self.mqtt_mgr = None
         self.test_mqtt_msg_process = None
+        self.test_mqtt_s3_backend_server_process = None
+        self.test_mqtt_s3_backend_client_process = None
+        self.test_mqtt_s3_com_manager_client = None
+        self.test_mqtt_s3_com_manager_server = None
 
     @staticmethod
     def check_open_connection(args=None):
@@ -88,7 +96,42 @@ class ClientDiagnosis(Singleton):
         return False
 
     @staticmethod
-    def check_mqtt_s3_communication_backend(args=None):
+    def check_mqtt_s3_communication_backend_server(run_id, args=None):
+        if args is None:
+            parser = argparse.ArgumentParser(description="FedML")
+            parser.add_argument("--config_version", type=str, default="release")
+            parser.add_argument("--client_id_list", type=str, default="[1]")
+            parser.add_argument("--dataset", type=str, default="default")
+            parser.add_argument("--rank", type=int, default=0)
+            args, unknown = parser.parse_known_args()
+        try:
+            diagnosis = ClientDiagnosis()
+
+            mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
+            comm_server = MqttS3MultiClientsCommManager(
+                mqtt_config,
+                s3_config,
+                topic="fedml-diagnosis-id-" + str(run_id),
+                client_rank=0,
+                client_num=1,
+                args=args,
+            )
+            diagnosis.test_mqtt_s3_com_manager_server = comm_server
+            comm_server.add_observer(diagnosis)
+
+            if diagnosis.test_mqtt_s3_backend_server_process is None:
+                diagnosis.test_mqtt_s3_backend_server_process = Thread(target=diagnosis.send_test_mqtt_s3_backend_server_msg)
+                diagnosis.test_mqtt_s3_backend_server_process.start()
+            comm_server.mqtt_mgr.loop_forever()
+            return True
+        except Exception as e:
+            print("mqtt_s3_communication_backend_server connect exception: {}".format(str(e)))
+            return False
+
+        return False
+
+    @staticmethod
+    def check_mqtt_s3_communication_backend_client(run_id, args=None):
         if args is None:
             parser = argparse.ArgumentParser(description="FedML")
             parser.add_argument("--config_version", type=str, default="release")
@@ -97,34 +140,30 @@ class ClientDiagnosis(Singleton):
             parser.add_argument("--rank", type=int, default=1)
             args, unknown = parser.parse_known_args()
         try:
+            diagnosis = ClientDiagnosis()
+
             mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
-            com_manager = MqttS3MultiClientsCommManager(
+            comm_client = MqttS3MultiClientsCommManager(
                 mqtt_config,
                 s3_config,
-                topic="fedml-diagnosis-id-" + str(uuid.uuid4()),
+                topic="fedml-diagnosis-id-" + str(run_id),
                 client_rank=1,
                 client_num=1,
                 args=args,
             )
-            diagnosis = ClientDiagnosis()
-            diagnosis.is_mqtt_connected = False
-            com_manager.add_observer(diagnosis)
+            comm_client.add_observer(diagnosis)
+            diagnosis.test_mqtt_s3_com_manager_client = comm_client
 
-            # if self.test_mqtt_msg_process is None:
-            #     self.test_mqtt_msg_process = Thread(target=self.send_test_mqtt_msg)
-            #     self.test_mqtt_msg_process.start()
+            if diagnosis.test_mqtt_s3_backend_client_process is None:
+                diagnosis.test_mqtt_s3_backend_client_process = Thread(
+                    target=diagnosis.send_test_mqtt_s3_backend_client_msg)
+                diagnosis.test_mqtt_s3_backend_client_process.start()
 
-            # count = 0
-            # while count < 15:
-            #     com_manager.send_message_json("/fedml/" + com_manager.topic + "/check_mqtt_s3", '{"id":1}')
-            #     count += 1
-            #     time.sleep(1)
-
-            com_manager.run_loop_forever()
+            comm_client.mqtt_mgr.loop_forever()
 
             return True
         except Exception as e:
-            print("mqtt_s3_communication_backend connect exception: {}".format(str(e)))
+            print("mqtt_s3_communication_backend_client connect exception: {}".format(str(e)))
             return False
 
         return False
@@ -140,7 +179,7 @@ class ClientDiagnosis(Singleton):
                 mqtt_config["BROKER_PORT"],
                 mqtt_config["MQTT_USER"],
                 mqtt_config["MQTT_PWD"],
-                mqtt_config["MQTT_KEEPALIVE"],
+                10, #mqtt_config["MQTT_KEEPALIVE"],
                 "fedml-diagnosis-id-" + str(uuid.uuid4())
             )
             diagnosis = ClientDiagnosis()
@@ -195,13 +234,35 @@ class ClientDiagnosis(Singleton):
             topic_test_mqtt_msg = "fedml/" + str(self.mqtt_mgr._client_id) + "/test_mqtt_msg"
             test_mqtt_msg_payload = {"id": self.mqtt_mgr._client_id, "msg": topic_test_mqtt_msg}
 
-            self.mqtt_mgr.send_message(topic_test_mqtt_msg, json.dumps(test_mqtt_msg_payload))
-            time.sleep(60*4)
+            ret = self.mqtt_mgr.send_message(topic_test_mqtt_msg, json.dumps(test_mqtt_msg_payload))
+            print("send ret {}".format(str(ret)))
+            time.sleep(3)
+
+    def send_test_mqtt_s3_backend_server_msg(self):
+        while True:
+            time.sleep(3)
+            message = Message(1, 0, 1)
+            ret = self.test_mqtt_s3_com_manager_server.send_message(message)
+            print("send server mqtt+s3 msg and return: {}".format(str(ret)))
+
+    def send_test_mqtt_s3_backend_client_msg(self):
+        while True:
+            time.sleep(3)
+            message = Message(2, 1, 0)
+            ret = self.test_mqtt_s3_com_manager_client.send_message(message)
+            print("send client mqtt+s3 msg and return: {}".format(str(ret)))
 
     def receive_message(self, msg_type, msg_params) -> None:
         print("fedml diagnosis received msg type {}, msg_params {}".format(msg_type, msg_params))
 
 
 if __name__ == "__main__":
-    pass
-
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("--type", "-t", help="Diagnosis as client or server")
+    parser.add_argument("--run_id", "-r", help="run id for client and server")
+    args = parser.parse_args()
+    diagnosis = ClientDiagnosis()
+    if args.type == 'client':
+        diagnosis.check_mqtt_s3_communication_backend_client(args.run_id)
+    else:
+        diagnosis.check_mqtt_s3_communication_backend_server(args.run_id)

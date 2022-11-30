@@ -10,6 +10,8 @@ from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 class MqttManager(object):
     def __init__(self, host, port, user, pwd, keepalive_time,
                  client_id, last_will_topic=None, last_will_msg=None):
+        self._client = None
+        self.mqtt_connection_id = None
         self._host = host
         self._port = port
         self.keepalive_time = keepalive_time
@@ -20,19 +22,12 @@ class MqttManager(object):
         self._subscribed_listeners = list()
         self._published_listeners = list()
         self._passthrough_listeners = list()
-
-        self.mqtt_connection_id = mqtt.base62(uuid.uuid4().int, padding=22)
-        self._client = mqtt.Client(client_id=self.mqtt_connection_id, clean_session=True)
-        self._client.on_connect = self.on_connect
-        self._client.on_publish = self.on_publish
-        self._client.on_disconnect = self.on_disconnect
-        self._client.on_message = self.on_message
-        self._client.on_subscribe = self._on_subscribe
-        self._client.disable_logger()
-        self._client.username_pw_set(user, pwd)
-
         self.last_will_topic = last_will_topic
         self.last_will_msg = last_will_msg
+
+        self.user = user
+        self.pwd = pwd
+        self.init_connect()
 
     def __del__(self):
         self._client.loop_stop()
@@ -42,6 +37,20 @@ class MqttManager(object):
         self._subscribed_listeners.clear()
         self._published_listeners.clear()
         self._passthrough_listeners.clear()
+        self.mqtt_connection_id = None
+        self._client = None
+
+    def init_connect(self):
+        self.mqtt_connection_id = mqtt.base62(uuid.uuid4().int, padding=22)
+        self._client = mqtt.Client(client_id=self.mqtt_connection_id, clean_session=False)
+        self._client.on_connect = self.on_connect
+        self._client.on_publish = self.on_publish
+        self._client.on_disconnect = self.on_disconnect
+        self._client.on_message = self.on_message
+        self._client.on_subscribe = self._on_subscribe
+        #self._client.on_log = self._on_log
+        self._client.disable_logger()
+        self._client.username_pw_set(self.user, self.pwd)
 
     def connect(self):
         if self.last_will_topic is not None:
@@ -51,6 +60,13 @@ class MqttManager(object):
                                   payload=self.last_will_msg,
                                   qos=2, retain=True)
         self._client.connect(self._host, self._port, self.keepalive_time)
+
+    def reconnect(self):
+        try:
+            self.init_connect()
+            self._client.reconnect()
+        except Exception as e:
+            pass
 
     def disconnect(self):
         self._client.disconnect()
@@ -65,8 +81,11 @@ class MqttManager(object):
         self._client.loop_forever(retry_first_connection=True)
 
     def send_message(self, topic, message, wait_for_publish=True):
+        # if self._client.is_connected() is False:
+        #     return False
+
         mqtt_send_start_time = time.time()
-        ret_info = self._client.publish(topic, payload=message)
+        ret_info = self._client.publish(topic, payload=message, qos=2)
         if wait_for_publish:
             try:
                 ret_info.wait_for_publish(3)
@@ -81,7 +100,7 @@ class MqttManager(object):
             return False
 
     def send_message_json(self, topic, message, wait_for_publish=True):
-        ret_info = self._client.publish(topic, payload=message)
+        ret_info = self._client.publish(topic, payload=message, qos=2)
         if wait_for_publish:
             try:
                 ret_info.wait_for_publish(3)
@@ -103,7 +122,7 @@ class MqttManager(object):
 
     def subscribe_will_set_msg(self, client):
         self.add_message_listener(self.last_will_topic, self.callback_will_set_msg)
-        client.subscribe(self.last_will_topic)
+        client.subscribe(self.last_will_topic, qos=2)
 
     def callback_will_set_msg(self, topic, payload):
         logging.info(f"MQTT client will be disconnected, id: {self._client_id}, topic: {topic}, payload: {payload}")
@@ -127,6 +146,9 @@ class MqttManager(object):
 
     def _on_subscribe(self, client, userdata, mid, granted_qos):
         self.callback_subscribed_listener(client)
+
+    def _on_log(self, client, userdata, level, buf):
+        logging.info("mqtt log {}".format(buf))
 
     def add_message_listener(self, topic, listener):
         self._listeners[topic] = listener
@@ -204,6 +226,6 @@ class MqttManager(object):
                 listener(client)
 
     def subscribe_msg(self, topic):
-        self._client.subscribe(topic)
+        self._client.subscribe(topic, qos=2)
 
 
