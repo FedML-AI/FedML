@@ -5,7 +5,6 @@ from typing import List, Tuple, Dict
 from .. import Context
 from ..contribution.contribution_assessor_manager import ContributionAssessorManager
 from ..dp.fedml_differential_privacy import FedMLDifferentialPrivacy
-from ..security.constants import ANOMALY_DETECTION
 from ..security.fedml_attacker import FedMLAttacker
 from ..security.fedml_defender import FedMLDefender
 from ...ml.aggregator.agg_operator import FedMLAggOperator
