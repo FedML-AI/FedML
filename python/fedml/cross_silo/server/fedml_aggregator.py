@@ -99,7 +99,9 @@ class FedMLAggregator(object):
         return averaged_params, model_list, model_list_idxes
 
     def assess_contribution(self):
-        self.aggregator.assess_contribution()
+        if hasattr(self.args, "enable_contribution") and \
+                self.args.enable_contribution is not None and self.args.enable_contribution:
+            self.aggregator.assess_contribution()
 
     def data_silo_selection(self, round_idx, client_num_in_total, client_num_per_round):
         """
