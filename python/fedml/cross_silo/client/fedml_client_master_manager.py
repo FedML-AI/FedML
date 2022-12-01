@@ -77,9 +77,6 @@ class ClientMasterManager(FedMLCommManager):
 
         self.__train()
         self.round_idx += 1
-        if self.round_idx == self.num_rounds:
-            mlops.log_training_finished_status()
-            return
 
     def handle_message_receive_model_from_server(self, msg_params):
         logging.info("handle_message_receive_model_from_server.")
@@ -93,11 +90,9 @@ class ClientMasterManager(FedMLCommManager):
         self.trainer_dist_adapter.update_dataset(int(client_index))
         logging.info("current roundx {}, num rounds {}".format(self.round_idx, self.num_rounds))
         self.trainer_dist_adapter.update_model(model_params)
-        self.__train()
-        self.round_idx += 1
-        if self.round_idx == self.num_rounds:
-            mlops.log_training_finished_status()
-            return
+        if self.round_idx < self.num_rounds:
+            self.__train()
+            self.round_idx += 1
 
     def handle_message_finish(self, msg_params):
         logging.info(" ====================cleanup ====================")
