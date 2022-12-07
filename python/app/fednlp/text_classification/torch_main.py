@@ -1,17 +1,17 @@
 import logging
 
-from transformers import (
-    BertConfig,
-    DistilBertConfig,
-)
-
 import fedml
 from data.data_loader import load
 from fedml import FedMLRunner
 from model.bert_model import BertForSequenceClassification
 from model.distilbert_model import DistilBertForSequenceClassification
-from trainer.classification_trainer import MyModelTrainer as MyCLSTrainer
 from trainer.classification_aggregator import ClassificationAggregator
+from trainer.classification_trainer import MyModelTrainer as MyCLSTrainer
+from transformers import (
+    BertConfig,
+    DistilBertConfig,
+)
+
 
 def create_model(args, output_dim=1):
     model_name = args.model
@@ -36,6 +36,18 @@ def create_model(args, output_dim=1):
     config = config_class.from_pretrained(args.model, **model_args)
     model = model_class.from_pretrained(args.model, config=config)
     trainer = MyCLSTrainer(model, args)
+
+    # calculate the model size
+    param_size = 0
+    for param in model.parameters():
+        param_size += param.nelement() * param.element_size()
+    buffer_size = 0
+    for buffer in model.buffers():
+        buffer_size += buffer.nelement() * buffer.element_size()
+
+    size_all_mb = (param_size + buffer_size) / 1024 ** 2
+    logging.info('model size: {:.3f}MB'.format(size_all_mb))
+
     return model, trainer
 
 
