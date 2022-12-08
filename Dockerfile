@@ -33,6 +33,7 @@ COPY . /root/FedML
 WORKDIR /root/FedML/python/fedml/core/fhe/fhe-fed/palisade_pybind/SHELFI_FHE/src
 RUN pip3 install ../
 WORKDIR /root/FedML
+RUN cd python && pip install -e ./
 
 
 

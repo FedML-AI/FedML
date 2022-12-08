@@ -1,12 +1,36 @@
 ## Training Script
 FHE-based FedAvg: using CKKS scheme from PALISADE library. Implementation can be found under `python/fedml/core/fhe`.
 
-To run: 
+## Setup
 
-Please modify config/fedml_config.yaml, changing the `client_num_in_total` the as the number of clients you plan to run.
+Use the Dockerfile under the root dir: to install (1) PAlISADE FHE library and (2) fhe-fedavg as a python module
+ ```
+ sudo docker build -t fhe-fedml:v1 .
+ sudo docker run -it fhe-fedml:v1 /bin/bash
+ ```
 
-Note: please run the server first.
 
+
+## After installation
+(Optional) Please modify config/fedml_config.yaml, changing the `client_num_in_total` the as the number of clients (currently 2) you plan to run.
+
+Above docker run already gives us a server.
+
+To run clients, first get the docker <containerID>:
+
+```
+sudo docker ps
+```
+then spawn clients at will:
+```
+sudo docker exec -it <containerID> /bin/bash
+```
+go to the example for all terminals (including the server):
+```
+cd python/examples/cross_silo/mqtt_s3_fedavg_fhe_mnist_lr_example
+```
+
+Note: please run the server first!
 
 At the server side, run the following script:
 ```
@@ -23,6 +47,9 @@ At Client 2, run the following script:
 bash run_client.sh 2 your_run_id
 ```
 
+## Key Management
+
+Current implementation saves cryptocontext and keys in the local folder. To deploy the system, a key authority is needed to generate and distribute both cryptocontext and keys. Cryptocontext will be sent to both clients and the server. Keys will be sent to only clients. 
 
 ## A Better User-experience with FedML MLOps (open.fedml.ai)
 To reduce the difficulty and complexity of these CLI commands. We recommend you to use our MLOps (open.fedml.ai).
@@ -35,3 +62,6 @@ FedML MLOps provides:
 - visualizing system performance (including profiling flow chart)
 - distributed logging
 - model serving
+
+## Acknowledgement
+Our FHE functionality adopts some part of the work from https://github.com/tanmayghai18/he-encryption-shelfi
