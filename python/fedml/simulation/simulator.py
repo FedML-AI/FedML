@@ -1,3 +1,4 @@
+import logging
 
 from ..constants import (
     FedML_FEDERATED_OPTIMIZER_BASE_FRAMEWORK,
@@ -37,7 +38,12 @@ class SimulatorSingleProcess:
         from .sp.hierarchical_fl.trainer import HierarchicalTrainer
         from .sp.turboaggregate.TA_trainer import TurboAggregateTrainer
 
-        if args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDAVG:
+        if client_trainer is not None:
+            self.fl_trainer = client_trainer
+            if args.federated_optimizer:
+                logging.warning("client_trainer and federated_optimizer should not be set at the same time. The "
+                                "client_trainer will be used.")
+        elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDAVG:
             self.fl_trainer = FedAvgAPI(args, device, dataset, model)
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDOPT:
             self.fl_trainer = FedOptAPI(args, device, dataset, model)
@@ -61,7 +67,7 @@ class SimulatorSingleProcess:
         # elif args.fl_trainer == FedML_FEDERATED_OPTIMIZER_DECENTRALIZED_FL:
         #     self.fl_trainer = FedML_decentralized_fl()
         else:
-            raise Exception("Exception")
+            raise Exception("Unknown trainer in config file")
 
     def run(self):
         self.fl_trainer.train()

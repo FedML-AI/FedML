@@ -6,6 +6,18 @@ import logging
 
 
 class ModelTrainerCLS(ClientTrainer):
+    def __init__(self, model, args, criteria=nn.CrossEntropyLoss()):
+        """
+
+        Parameters
+        ----------
+        model: a PyTorch model
+        args: args parsed from the command line specified config file
+        criteria: a PyTorch loss function, e.g., nn.CrossEntropyLoss() (default), or nn.BCELoss() if the task is binary classification.
+        """
+        super().__init__(model, args)
+        self.criteria = criteria
+
     def get_model_params(self):
         return self.model.cpu().state_dict()
 
@@ -19,19 +31,23 @@ class ModelTrainerCLS(ClientTrainer):
         model.train()
 
         # train and update
-        criterion = nn.CrossEntropyLoss().to(device)  # pylint: disable=E1102
+        criterion = self.criteria.to(device)  # pylint: disable=E1102
         if args.client_optimizer == "sgd":
             optimizer = torch.optim.SGD(
                 filter(lambda p: p.requires_grad, self.model.parameters()),
                 lr=args.learning_rate,
             )
-        else:
+        elif args.client_optimizer == "adam" or not args.client_optimizer :
             optimizer = torch.optim.Adam(
                 filter(lambda p: p.requires_grad, self.model.parameters()),
                 lr=args.learning_rate,
                 weight_decay=args.weight_decay,
                 amsgrad=True,
             )
+            if not args.client_optimizer:
+                logging.warning("Default client optimizer is Adam when not specified")
+        else:
+            raise ValueError("Unknown client optimizer. Supported: sgd, adam (default)")
 
         epoch_loss = []
         for epoch in range(args.epochs):
