@@ -4,7 +4,7 @@ import abc
 import enum
 
 from fedml.core.dp.budget_accountant import dp_event
-from fedml.core.dp.budget_accountant import dp_event_builder
+from fedml.core.dp.budget_accountant.dp_event_builder import DpEventBuilder
 
 
 class NeighboringRelation(enum.Enum):
@@ -25,7 +25,7 @@ class PrivacyAccountant(metaclass=abc.ABCMeta):
 
     def __init__(self, neighboring_relation: NeighboringRelation):
         self._neighboring_relation = neighboring_relation
-        self._ledger = dp_event_builder.DpEventBuilder()
+        self._ledger = DpEventBuilder()
 
     @property
     def neighboring_relation(self) -> NeighboringRelation:

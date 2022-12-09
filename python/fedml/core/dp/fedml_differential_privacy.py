@@ -5,6 +5,7 @@ from ..common.ml_engine_backend import MLEngineBackend
 from fedml.core.dp.common.constants import DP_LDP, DP_CDP, NBAFL_DP
 from fedml.core.dp.frames.cdp import GlobalDP
 from fedml.core.dp.frames.ldp import LocalDP
+from fedml.core.dp.budget_accountant.dp_accountant import LDPAccountant, CDPAccountant
 
 
 class FedMLDifferentialPrivacy:
@@ -19,9 +20,13 @@ class FedMLDifferentialPrivacy:
     def __init__(self):
         self.dp_solution_type = None
         self.dp_solution = None
+        self.dp_accountant = None
         self.is_enabled = False
+        self.privacy_engine = None
+        self.current_round = 0
 
     def init(self, args):
+        import pdb
         if hasattr(args, "enable_dp") and args.enable_dp:
             logging.info(
                 ".......init dp......."
@@ -39,12 +44,20 @@ class FedMLDifferentialPrivacy:
 
             if self.dp_solution_type == DP_LDP:
                 self.dp_solution = LocalDP(args)
+                self.dp_accountant = LDPAccountant(args)
+                # total_epsilon = self.dp_accountant.compute_total_epsilon(args)
+                # logging.info('LDP total epsilon={}'.format(total_epsilon))
             elif self.dp_solution_type == DP_CDP:
                 self.dp_solution = GlobalDP(args)
+                self.dp_accountant = CDPAccountant(args)
+                # total_epsilon = self.dp_accountant.compute_total_epsilon(args)
+                # logging.info('CDP total epsilon={}'.format(total_epsilon))
             elif self.dp_solution_type == NBAFL_DP:
                 self.dp_solution = NbAFL_DP(args)
             else:
                 raise Exception("dp solution is not defined")
+
+            return args
 
         if hasattr(args, MLEngineBackend.ml_engine_args_flag) and args.ml_engine in [
             MLEngineBackend.ml_engine_backend_tf,
@@ -71,7 +84,13 @@ class FedMLDifferentialPrivacy:
             raise Exception("dp solution is not initialized!")
         return self.dp_solution.add_local_noise(local_grad)
 
-    def add_global_noise(self, global_model: dict):
+    def add_global_noise(self, w_locals: dict, qw):
         if self.dp_solution is None:
             raise Exception("dp solution is not initialized!")
-        return self.dp_solution.add_global_noise(global_model)
+        return self.dp_solution.add_global_noise(w_locals, qw)
+
+    def clip_local_update(self, update, clipping_norm):
+        return self.dp_solution.clip_local_update(update, clipping_norm)
+
+    def compute_current_epsilon(self, cur_round):
+        return self.dp_accountant.compute_current_epsilon(cur_round)
