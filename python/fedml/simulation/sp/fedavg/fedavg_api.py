@@ -8,6 +8,7 @@ import wandb
 
 from fedml import mlops
 from fedml.ml.trainer.trainer_creator import create_model_trainer
+from ....core.dp.fedml_differential_privacy import FedMLDifferentialPrivacy
 from .client import Client
 
 
@@ -25,6 +26,9 @@ class FedAvgAPI(object):
             test_data_local_dict,
             class_num,
         ] = dataset
+
+        FedMLDifferentialPrivacy.get_instance().init(args)
+
         self.train_global = train_data_global
         self.test_global = test_data_global
         self.val_global = None
@@ -45,8 +49,11 @@ class FedAvgAPI(object):
             train_data_local_num_dict, train_data_local_dict, test_data_local_dict, self.model_trainer,
         )
 
+        # if FedMLDifferentialPrivacy.get_instance().is_local_dp_enabled():
+        #     self.client_epsilon = {}
+
     def _setup_clients(
-        self, train_data_local_num_dict, train_data_local_dict, test_data_local_dict, model_trainer,
+            self, train_data_local_num_dict, train_data_local_dict, test_data_local_dict, model_trainer,
     ):
         logging.info("############setup_clients (START)#############")
         for client_idx in range(self.args.client_num_per_round):
@@ -59,7 +66,12 @@ class FedAvgAPI(object):
                 self.device,
                 model_trainer,
             )
+
             self.client_list.append(c)
+
+            # if FedMLDifferentialPrivacy.get_instance().is_local_dp_enabled():
+            #     self.client_epsilon[client_idx] = 0
+            #     self.dp_accountant = FedMLDifferentialPrivacy.get_instance().dp_accountant
         logging.info("############setup_clients (END)#############")
 
     def train(self):
@@ -96,13 +108,38 @@ class FedAvgAPI(object):
                 # train on new dataset
                 mlops.event("train", event_started=True, event_value="{}_{}".format(str(round_idx), str(idx)))
                 w = client.train(copy.deepcopy(w_global))
+
                 mlops.event("train", event_started=False, event_value="{}_{}".format(str(round_idx), str(idx)))
                 # self.logging.info("local weights = " + str(w))
                 w_locals.append((client.get_sample_number(), copy.deepcopy(w)))
 
-            # update global weights
-            mlops.event("agg", event_started=True, event_value=str(round_idx))
-            w_global = self._aggregate(w_locals)
+            if FedMLDifferentialPrivacy.get_instance().is_global_dp_enabled():
+                w_locals_update = []
+                update = {}
+                for idx in range(len(w_locals)):
+                    (sample_num, local_params) = w_locals[idx]
+                    for k in w_global.keys():
+                        update[k] = local_params[k] - w_global[k]
+                    w_locals_update.append((w_locals[idx][0], copy.deepcopy(update)))
+
+                qw = self.train_data_num_in_total * (self.args.client_num_per_round / self.args.client_num_in_total)
+                weighted_deltas = self._aggregate(w_locals_update)
+                for k in weighted_deltas.keys():
+                    weighted_deltas[k] = weighted_deltas[k] / qw
+                # update global weights
+                logging.info("-----add central DP noise ----")
+                w_global = FedMLDifferentialPrivacy.get_instance().add_global_noise(
+                    w_global, qw
+                )
+                for k in w_global.keys():
+                    w_global[k] = w_global[k] + weighted_deltas[k]
+                epsilon = FedMLDifferentialPrivacy.get_instance().compute_current_epsilon(round_idx + 1)
+                logging.info("the privacy cost up to this round is {}".format(epsilon))
+            else:
+                # update global weights
+                mlops.event("agg", event_started=True, event_value=str(round_idx))
+                w_global = self._aggregate(w_locals)
+
             self.model_trainer.set_model_params(w_global)
             mlops.event("agg", event_started=False, event_value=str(round_idx))
 
