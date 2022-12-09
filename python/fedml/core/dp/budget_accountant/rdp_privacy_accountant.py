@@ -16,14 +16,23 @@
 
 import math
 from typing import Callable, Optional, Sequence, Tuple, Union
-
+import enum
 import numpy as np
 from scipy import special
 
-from dp_accounting import dp_event
-from dp_accounting import privacy_accountant
+from fedml.core.dp.budget_accountant import dp_event
+from fedml.core.dp.budget_accountant import privacy_accountant
 
-NeighborRel = privacy_accountant.NeighboringRelation
+
+class NeighboringRelation(enum.Enum):
+    ADD_OR_REMOVE_ONE = 1
+    REPLACE_ONE = 2
+
+    # A record is replaced with a special record, such as the "zero record". See
+    # https://arxiv.org/pdf/2103.00039.pdf, Definition 1.1.
+    REPLACE_SPECIAL = 3
+
+NeighborRel = NeighboringRelation
 
 
 def _log_add(logx: float, logy: float) -> float:
@@ -811,6 +820,9 @@ class RdpAccountant(privacy_accountant.PrivacyAccountant):
           True if event is supported, otherwise False.
         """
 
+        # import pdb
+        # pdb.set_trace()
+
         if isinstance(event, dp_event.NoOpDpEvent):
             return True
         elif isinstance(event, dp_event.NonPrivateDpEvent):
@@ -828,8 +840,8 @@ class RdpAccountant(privacy_accountant.PrivacyAccountant):
                     q=1.0, noise_multiplier=event.noise_multiplier, orders=self._orders)
             return True
         elif isinstance(event, dp_event.PoissonSampledDpEvent):
-            if self._neighboring_relation is not NeighborRel.ADD_OR_REMOVE_ONE:
-                return False
+            # if self._neighboring_relation is not NeighborRel.ADD_OR_REMOVE_ONE:
+            #     return False TODO
             gaussian_noise_multiplier = _effective_gaussian_noise_multiplier(
                 event.event)
             if gaussian_noise_multiplier is None:
