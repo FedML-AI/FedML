@@ -18,8 +18,8 @@ model_args:
 train_args:
   federated_optimizer: "FedAvg"
   client_id_list: "[]"
-  client_num_in_total: 1
-  client_num_per_round: 1
+  client_num_in_total: 10
+  client_num_per_round: 5
   comm_round: 10
   epochs: 1
   batch_size: 10
@@ -46,3 +46,14 @@ tracking_args:
   wandb_project: simulation
   run_name: fedml_torch_fedavg_mnist_lr
   using_mlops: false
+
+dp_args:
+  enable_dp: true
+  stop_training_at_epsilon: false
+  dp_solution_type: cdp # cdp or ldp
+  epsilon: 0.5
+  delta: 0.1
+  sensitivity: 1
+  mechanism_type: gaussian
+  noise_multiplier: 10.0
+  clipping_norm: 0.04 # float('inf') or None to deactivate
