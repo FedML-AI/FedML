@@ -1,9 +1,9 @@
 import json
 import logging
+import time
 import uuid
 
 import paho.mqtt.client as mqtt
-import time
 from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
 
@@ -22,13 +22,13 @@ class MqttManager(object):
         self._passthrough_listeners = list()
 
         self.mqtt_connection_id = mqtt.base62(uuid.uuid4().int, padding=22)
-        self._client = mqtt.Client(client_id=self.mqtt_connection_id, clean_session=True)
+        self._client = mqtt.Client(client_id=self.mqtt_connection_id, clean_session=False)
         self._client.on_connect = self.on_connect
         self._client.on_publish = self.on_publish
         self._client.on_disconnect = self.on_disconnect
         self._client.on_message = self.on_message
         self._client.on_subscribe = self._on_subscribe
-        self._client.disable_logger()
+        self._client.on_log = self._log_callback
         self._client.username_pw_set(user, pwd)
 
         self.last_will_topic = last_will_topic
@@ -50,7 +50,12 @@ class MqttManager(object):
             self._client.will_set(self.last_will_topic,
                                   payload=self.last_will_msg,
                                   qos=2, retain=True)
-        self._client.connect(self._host, self._port, self.keepalive_time)
+        logging.info("connect. _host = {}, _port = {}, keepalive = {}".format(self._host, self._port,
+                                                                              self.keepalive_time))
+        self._client.connect(self._host, self._port, keepalive=self.keepalive_time)
+
+    def _log_callback(self, client, userdata, level, buf):
+        logging.info("client = {}, userdata = {}, level = {}, buf = {}".format(client, userdata, level, buf))
 
     def disconnect(self):
         self._client.disconnect()
@@ -69,8 +74,11 @@ class MqttManager(object):
         ret_info = self._client.publish(topic, payload=message)
         if wait_for_publish:
             try:
+                logging.info("send_message. WAIT")
                 ret_info.wait_for_publish(1)
+                logging.info("send_message. END")
             except Exception as e:
+                logging.info("send_message. topic = {}, message = {}".format(topic, message))
                 pass
         MLOpsProfilerEvent.log_to_wandb({"Comm/send_delay_mqtt": time.time() - mqtt_send_start_time})
 
@@ -78,12 +86,16 @@ class MqttManager(object):
         ret_info = self._client.publish(topic, payload=message)
         if wait_for_publish:
             try:
+                logging.info("send_message. WAIT")
                 ret_info.wait_for_publish(1)
+                logging.info("send_message. END")
             except Exception as e:
+                logging.info("send_message. topic = {}, message = {}".format(topic, message))
                 pass
 
     def on_connect(self, client, userdata, flags, rc):
         # Callback connected listeners
+        logging.info("client = {}, userdata = {}, flags = {}, rc = {}".format(client, userdata, flags, rc))
         self.callback_connected_listener(client)
 
     def is_connected(self):
@@ -193,5 +205,3 @@ class MqttManager(object):
 
     def subscribe_msg(self, topic):
         self._client.subscribe(topic)
-
-
