@@ -44,7 +44,8 @@ requirements = [
     "wandb==0.13.2",
     "eciespy",
     "PyNaCl",
-    "httpx"
+    "httpx",
+    "attrs"
 ]
 
 requirements_extra_mpi = [
