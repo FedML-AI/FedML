@@ -41,7 +41,10 @@ def get_device_type(args):
 
 def get_device(args):
     if args.training_type == "simulation" and args.backend == "sp":
-        device = ml_engine_adapter.get_device(args, args.gpu_id, args.device_type)
+        if not hasattr(args, "gpu_id"):
+            args.gpu_id = 0
+        device_type = get_device_type(args)
+        device = ml_engine_adapter.get_device(args, args.gpu_id, device_type)
         logging.info("device = {}".format(device))
         return device
     elif args.training_type == "simulation" and args.backend == "MPI":
@@ -101,7 +104,7 @@ def get_device(args):
             gpu_mapping_key = (
                 args.gpu_mapping_key if hasattr(args, "gpu_mapping_key") else None
             )
-            gpu_id = None  # no no need to set gpu_id
+            gpu_id = args.gpu_id  # no no need to set gpu_id
         else:
             gpu_mapping_file = None
             gpu_mapping_key = None
@@ -139,7 +142,8 @@ def get_device(args):
 
         return device
     elif args.training_type == "cross_device":
-        device = ml_engine_adapter.get_device(args)
+        device_type = get_device_type(args)
+        device = ml_engine_adapter.get_device(args, device_type=device_type)
         logging.info("device = {}".format(device))
         return device
     else:

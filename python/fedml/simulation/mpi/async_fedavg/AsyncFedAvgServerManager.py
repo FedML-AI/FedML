@@ -47,8 +47,6 @@ class AsyncFedAVGServerManager(FedMLCommManager):
             range(self.args.client_num_in_total), num_clients, replace=False
         )
         global_model_params = self.aggregator.get_global_model_params()
-        if self.args.is_mobile == 1:
-            global_model_params = transform_tensor_to_list(global_model_params)
         for process_id in range(1, self.size):
             self.send_message_init_config(
                 process_id, global_model_params, client_indexes[process_id - 1]
@@ -96,13 +94,9 @@ class AsyncFedAVGServerManager(FedMLCommManager):
             )
 
         global_model_params = self.aggregator.get_global_model_params()
-        if self.args.is_mobile == 1:
-            global_model_params = transform_tensor_to_list(global_model_params)
 
         print("indexes of clients: " + str(client_indexes))
         print("size = %d" % self.size)
-        if self.args.is_mobile == 1:
-            global_model_params = transform_tensor_to_list(global_model_params)
 
         self.send_message_sync_model_to_client(
             sender_id, global_model_params, 

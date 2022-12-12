@@ -63,7 +63,7 @@ class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
             } else if (MSG_TRAIN_ACCURACY == msg.what) {
                 Bundle bundle = msg.getData();
                 if (onTrainProgressListener != null && bundle != null) {
-                    onTrainProgressListener.onEpochLoss(msg.arg1, msg.arg2,
+                    onTrainProgressListener.onEpochAccuracy(msg.arg1, msg.arg2,
                             bundle.getFloat(TRAIN_ACCURACY, 0));
                 }
             }

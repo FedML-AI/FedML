@@ -1,9 +1,10 @@
 import os
 
 import fedml
+from fedml.cli.edge_deployment.client_diagnosis import ClientDiagnosis
 
 
-def collect_env():
+def collect_env(args=None):
     print("\n======== FedML (https://fedml.ai) ========")
     print("FedML version: " + str(fedml.__version__))
     print("Execution path:" + str(os.path.abspath(fedml.__file__)))
@@ -64,5 +65,36 @@ def collect_env():
             )
         )
         nvidia_smi.nvmlShutdown()
+
+        import torch
+
+        torch_is_available = torch.cuda.is_available()
+        print("torch_is_available = {}".format(torch_is_available))
+
+        device_count = torch.cuda.device_count()
+        print("device_count = {}".format(device_count))
+
+        device_name = torch.cuda.get_device_name(0)
+        print("device_name = {}".format(device_name))
+
     except:
         print("No GPU devices")
+
+    print("\n======== Network Connection Checking ========")
+    is_open_connected = ClientDiagnosis.check_open_connection(args)
+    if is_open_connected:
+        print("The connection to https://open{}.fedml.ai is OK.".format("-dev" if args is not None and hasattr(args, "config_version") and args.config_version == "dev" else ""))
+    else:
+        print("You can not connect to https://open{}.fedml.ai.".format("-dev" if args is not None and hasattr(args, "config_version") and args.config_version == "dev" else ""))
+
+    is_s3_connected = ClientDiagnosis.check_s3_connection(args)
+    if is_s3_connected:
+        print("The connection to AWS S3 is OK.")
+    else:
+        print("You can not connect to AWS S3.")
+
+    is_mqtt_connected = ClientDiagnosis.check_mqtt_connection(args)
+    if is_mqtt_connected:
+        print("The connection to mqtt{}.fedml.ai (port:1883) is OK.".format("-dev" if args is not None and hasattr(args, "config_version") and args.config_version == "dev" else ""))
+    else:
+        print("You can not connect to mqtt{}.fedml.ai (port:1883).".format("-dev" if args is not None and hasattr(args, "config_version") and args.config_version == "dev" else ""))

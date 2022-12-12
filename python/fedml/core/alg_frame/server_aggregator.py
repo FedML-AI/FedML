@@ -1,7 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import List, Tuple, Dict
-
+from typing import List, Tuple
+from collections import OrderedDict
 from ..contribution.contribution_assessor_manager import ContributionAssessorManager
 from ..dp.fedml_differential_privacy import FedMLDifferentialPrivacy
 from ..security.fedml_attacker import FedMLAttacker
@@ -33,12 +33,12 @@ class ServerAggregator(ABC):
         pass
 
     def on_before_aggregation(
-        self, raw_client_model_or_grad_list: List[Tuple[float, Dict]]
-    ) -> List[Tuple[float, Dict]]:
+        self, raw_client_model_or_grad_list: List[Tuple[float, OrderedDict]]
+    ) -> List[Tuple[float, OrderedDict]]:
         if FedMLAttacker.get_instance().is_model_attack():
             raw_client_model_or_grad_list = FedMLAttacker.get_instance().attack_model(
                 raw_client_grad_list=raw_client_model_or_grad_list,
-                extra_auxiliary_info=None,
+                extra_auxiliary_info=self.get_model_params(),
             )
         if FedMLDefender.get_instance().is_defense_enabled():
             raw_client_model_or_grad_list = FedMLDefender.get_instance().defend_before_aggregation(
@@ -48,7 +48,7 @@ class ServerAggregator(ABC):
 
         return raw_client_model_or_grad_list
 
-    def aggregate(self, raw_client_model_or_grad_list: List[Tuple[float, Dict]]) -> Dict:
+    def aggregate(self, raw_client_model_or_grad_list: List[Tuple[float, OrderedDict]]) -> OrderedDict:
         if FedMLDefender.get_instance().is_defense_enabled():
             return FedMLDefender.get_instance().defend_on_aggregation(
                 raw_client_grad_list=raw_client_model_or_grad_list,
@@ -57,12 +57,13 @@ class ServerAggregator(ABC):
             )
         return FedMLAggOperator.agg(self.args, raw_client_model_or_grad_list)
 
-    def on_after_aggregation(self, aggregated_model_or_grad: Dict) -> Dict:
+    def on_after_aggregation(self, aggregated_model_or_grad: OrderedDict) -> OrderedDict:
         if FedMLDifferentialPrivacy.get_instance().is_global_dp_enabled():
             logging.info("-----add central DP noise ----")
             aggregated_model_or_grad = FedMLDifferentialPrivacy.get_instance().add_global_noise(
                 aggregated_model_or_grad
             )
+            logging.info("-----aaaaaaaaaaaaaaaaaaaaaa ----")
         if FedMLDefender.get_instance().is_defense_enabled():
             aggregated_model_or_grad = FedMLDefender.get_instance().defend_after_aggregation(aggregated_model_or_grad)
 

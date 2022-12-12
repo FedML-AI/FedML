@@ -1,17 +1,17 @@
 import logging
 
-from transformers import (
-    BertConfig,
-    DistilBertConfig,
-)
-
 import fedml
 from data.data_loader import load
 from fedml import FedMLRunner
 from model.bert_model import BertForSequenceClassification
 from model.distilbert_model import DistilBertForSequenceClassification
-from trainer.classification_trainer import MyModelTrainer as MyCLSTrainer
 from trainer.classification_aggregator import ClassificationAggregator
+from trainer.classification_trainer import MyModelTrainer as MyCLSTrainer
+from transformers import (
+    BertConfig,
+    DistilBertConfig,
+)
+
 
 def create_model(args, output_dim=1):
     model_name = args.model

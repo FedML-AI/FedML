@@ -204,9 +204,6 @@ class FedAVGAggregator(object):
         training_num = 0
 
         for idx in range(self.worker_num):
-            if self.args.is_mobile == 1:
-                self.model_dict[idx] = transform_list_to_tensor(self.model_dict[idx])
-
             # added for attack & defense; enable multiple defenses
             # if FedMLDefender.get_instance().is_defense_enabled():
             #     self.model_dict[idx] = FedMLDefender.get_instance().defend(

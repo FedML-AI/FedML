@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 import platform
 import time
 
@@ -63,11 +64,20 @@ def __login_as_edge_server_and_agent(args, userid, version):
         click.echo("Please check whether your network is normal!")
         return
 
+    # Judge whether running from fedml docker hub
+    is_from_fedml_docker_hub = False
+    dock_loc_file = ServerConstants.get_docker_location_file()
+    if os.path.exists(dock_loc_file):
+        is_from_fedml_docker_hub = True
+
     # Build unique device id
     if is_from_docker:
         unique_device_id = args.current_device_id + "@" + args.os_name + ".Docker.Edge.Server"
     else:
         unique_device_id = args.current_device_id + "@" + args.os_name + ".Edge.Server"
+
+    if is_from_fedml_docker_hub:
+        unique_device_id = args.current_device_id + "@" + args.os_name + ".DockerHub.Edge.Server"
 
     # Bind account id to the MLOps platform.
     register_try_count = 0

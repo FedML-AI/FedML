@@ -1,8 +1,5 @@
 from typing import Callable, List, Tuple, Dict, Any
-
 import numpy as np
-from scipy import spatial
-
 from .defense_base import BaseDefenseMethod
 
 """
@@ -15,6 +12,7 @@ potential bugs when using memory: when only some of clients participate in compu
 
 class FoolsGoldDefense(BaseDefenseMethod):
     def __init__(self, config):
+        super().__init__(config)
         self.config = config
         self.memory = None
 
@@ -34,7 +32,7 @@ class FoolsGoldDefense(BaseDefenseMethod):
     ):
         client_num = len(raw_client_grad_list)
         importance_feature_list = self._get_importance_feature(raw_client_grad_list)
-        print(len(importance_feature_list))
+        # print(len(importance_feature_list))
 
         if self.memory is None:
             self.memory = importance_feature_list
@@ -55,15 +53,11 @@ class FoolsGoldDefense(BaseDefenseMethod):
         return new_grad_list
 
     # Takes in grad, compute similarity, get weightings
-    @staticmethod
-    def fools_gold_score(feature_vec_list):
+    @classmethod
+    def fools_gold_score(cls, feature_vec_list):
+        import sklearn.metrics.pairwise as smp
         n_clients = len(feature_vec_list)
-        cs = np.zeros((n_clients, n_clients))
-        for i in range(n_clients):
-            for j in range(n_clients):
-                cs[i][j] = 1 - spatial.distance.cosine(feature_vec_list[i], feature_vec_list[j])
-        cs -= np.eye(n_clients)
-        # cs = smp.cosine_similarity(feature_vec_list) - np.eye(n_clients)
+        cs = smp.cosine_similarity(feature_vec_list) - np.eye(n_clients)
         maxcs = np.max(cs, axis=1)
         # pardoning
         for i in range(n_clients):
@@ -77,7 +71,7 @@ class FoolsGoldDefense(BaseDefenseMethod):
         alpha[alpha <= 0.0] = 1e-15
 
         # Rescale so that max value is alpha
-        print(np.max(alpha))
+        # print(np.max(alpha))
         alpha = alpha / np.max(alpha)
         alpha[(alpha == 1.0)] = 0.999999
 
@@ -85,8 +79,6 @@ class FoolsGoldDefense(BaseDefenseMethod):
         alpha = np.log(alpha / (1 - alpha)) + 0.5
         alpha[(np.isinf(alpha) + alpha > 1)] = 1
         alpha[(alpha < 0)] = 0
-
-        print("alpha = {}".format(alpha))
 
         return alpha
 
@@ -99,8 +91,8 @@ class FoolsGoldDefense(BaseDefenseMethod):
 
             # Get last key-value tuple
             (weight_name, importance_feature) = list(grads.items())[-2]
-            print(importance_feature)
-            feature_len = np.array(importance_feature.data.detach().numpy().shape).prod()
+            # print(importance_feature)
+            feature_len = np.array(importance_feature.cpu().data.detach().numpy().shape).prod()
             feature_vector = np.reshape(importance_feature.cpu().data.detach().numpy(), feature_len)
             ret_feature_vector_list.append(feature_vector)
         return ret_feature_vector_list

@@ -1,8 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
 
-from ..security.fedml_attacker import FedMLAttacker
-from ..security.fedml_defender import FedMLDefender
 from ...core.dp.fedml_differential_privacy import FedMLDifferentialPrivacy
 
 
@@ -18,10 +16,18 @@ class ClientTrainer(ABC):
         self.model = model
         self.id = 0
         self.args = args
+        self.local_train_dataset = None
+        self.local_test_dataset = None
+        self.local_sample_number = 0
         FedMLDifferentialPrivacy.get_instance().init(args)
 
     def set_id(self, trainer_id):
         self.id = trainer_id
+
+    def update_dataset(self, local_train_dataset, local_test_dataset, local_sample_number):
+        self.local_train_dataset = local_train_dataset
+        self.local_test_dataset = local_test_dataset
+        self.local_sample_number = local_sample_number
 
     @abstractmethod
     def get_model_params(self):

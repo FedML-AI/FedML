@@ -3,12 +3,12 @@
 ## Run FedML with Docker (Recommended)
 - Pull FedML RPI docker image
 ```
-docker pull fedml/fedml:raspberrypi4-64-py37
+docker pull fedml/fedml:latest-raspberrypi4-64-py37
 ```
 
 - Run Docker with "fedml login"
 ```
-docker run -t -i fedml/fedml:raspberrypi4-64-py37 /bin/bash
+docker run -t -i fedml/fedml:latest-raspberrypi4-64-py37 /bin/bash
 
 root@8bc0de2ce0e0:/usr/src/app# fedml login 299
 
