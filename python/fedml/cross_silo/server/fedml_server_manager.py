@@ -33,10 +33,14 @@ class FedMLServerManager(FedMLCommManager):
     def send_init_msg(self):
         global_model_params = self.aggregator.get_global_model_params()
 
+        global_model_url = None
+        global_model_key = None
+
         client_idx_in_this_round = 0
         for client_id in self.client_id_list_in_this_round:
-            self.send_message_init_config(
+            global_model_url, global_model_key = self.send_message_init_config(
                 client_id, global_model_params, self.data_silo_index_list[client_idx_in_this_round],
+                global_model_url, global_model_key
             )
             client_idx_in_this_round += 1
 
@@ -176,14 +180,22 @@ class FedMLServerManager(FedMLCommManager):
         self.finish()
         mlops.log_aggregation_finished_status()
 
-    def send_message_init_config(self, receive_id, global_model_params, datasilo_index):
+    def send_message_init_config(self, receive_id, global_model_params, datasilo_index,
+                                 global_model_url=None, global_model_key=None):
         tick = time.time()
         message = Message(MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id)
+        if global_model_url is not None:
+            message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL, global_model_url)
+        if global_model_key is not None:
+            message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY, global_model_key)
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")
         self.send_message(message)
+        global_model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
+        global_model_key = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY)
         MLOpsProfilerEvent.log_to_wandb({"Communiaction/Send_Total": time.time() - tick})
+        return global_model_url, global_model_key
 
     def send_message_check_client_status(self, receive_id, datasilo_index):
         message = Message(MyMessage.MSG_TYPE_S2C_CHECK_CLIENT_STATUS, self.get_sender_id(), receive_id)
@@ -194,7 +206,8 @@ class FedMLServerManager(FedMLCommManager):
         message = Message(MyMessage.MSG_TYPE_S2C_FINISH, self.get_sender_id(), receive_id)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
         self.send_message(message)
-        logging.info("finish from send id {} to receive id {}.".format(message.get_sender_id(), message.get_receiver_id()))
+        logging.info(
+            "finish from send id {} to receive id {}.".format(message.get_sender_id(), message.get_receiver_id()))
         logging.info(" ====================send cleanup message to {}====================".format(str(datasilo_index)))
 
     def send_message_sync_model_to_client(self, receive_id, global_model_params, client_index,
@@ -221,4 +234,3 @@ class FedMLServerManager(FedMLCommManager):
         )
 
         return global_model_url, global_model_key
-
