@@ -20,8 +20,7 @@ class BaseDPFrame(ABC):
     def add_local_noise(self, local_grad: OrderedDict):
         return self.ldp.add_noise(grad=local_grad)
 
-    def add_global_noise(self, w_locals, qw):
-        return self.cdp.add_noise(w_locals, qw)
+    def add_global_noise(self, global_model: OrderedDict):
+        return self.cdp.add_noise(grad=global_model)
 
-    def clip_local_update(self, update, clipping_norm):
-        return self.cdp.clip_local_update(update, clipping_norm)
+
