@@ -24,8 +24,6 @@ class ModelTrainerCLS(ClientTrainer):
         model.to(device)
         model.train()
 
-        global_model_params = copy.deepcopy(self.model.cpu().state_dict())
-
         # train and update
         criterion = nn.CrossEntropyLoss().to(device)  # pylint: disable=E1102
         if args.client_optimizer == "sgd":
@@ -53,25 +51,6 @@ class ModelTrainerCLS(ClientTrainer):
                 loss = criterion(log_probs, labels)  # pylint: disable=E1102
                 loss.backward()
                 optimizer.step()
-
-                # logging.info('loss=%s'%str(loss.item()))
-                # import pdb
-                # pdb.set_trace()
-                # logging.info("client_indexes = %s" % str(client_indexes))
-
-                if FedMLDifferentialPrivacy.get_instance().is_global_dp_enabled():
-                    client_model_params = copy.deepcopy(model.cpu().state_dict())
-                    delta = {}
-                    for k in global_model_params.keys():
-                        delta[k] = client_model_params[k] - global_model_params[k]
-                        # logging.info('local update clipping')
-                    delta = FedMLDifferentialPrivacy.get_instance().clip_local_update(delta, args.clipping_norm)
-                    for k in global_model_params.keys():
-                        client_model_params[k] = global_model_params[k] + delta[k]
-                    # self.set_model_params(client_model_params)
-                    # model = self.model
-                    for param in model.parameters():
-                        param.requires_grad = True
 
                 # Uncommet this following line to avoid nan loss
                 # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
