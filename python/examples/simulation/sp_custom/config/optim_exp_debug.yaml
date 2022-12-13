@@ -64,7 +64,10 @@ comm_args:
   backend: "sp"
   is_mobile: 0
 
-
+cache_args:
+  # client_cache: "stateful"  #  localhost
+  client_cache: "localhost"  #  localhost
+  local_cache_root: "/home/chaoyanghe/zhtang_FedML/python/examples/simulation/sp_custom"
 
 tracking_args:
   # the default log path is at ~/fedml-client/fedml/logs/ and ~/fedml-server/fedml/logs/

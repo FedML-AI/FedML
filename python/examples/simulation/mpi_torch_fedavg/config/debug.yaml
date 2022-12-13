@@ -13,6 +13,7 @@ model_args:
 
 train_args:
   federated_optimizer: "FedAvg_seq"
+  agg_operator: "weighted_avg"
   client_id_list: "[]"
   client_num_in_total: 500
   client_num_per_round: 10

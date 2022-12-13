@@ -23,7 +23,7 @@ train_args:
   batch_size: 20
   client_optimizer: sgd
   learning_rate: 0.05
-  momentum: 0.9
+  momentum: 0.0
   weight_decay: 0.0005
   lr_schedule: None
 

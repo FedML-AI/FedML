@@ -33,6 +33,16 @@ wandb
 ./*/*/*/*/wandb
 ./*/*/*/*/*/wandb
 
+**/fedml_client_caches
+**/FedML_Client_Caches
+
+# ./*/fedml_client_caches
+# ./*/*/fedml_client_caches
+# ./*/*/*/fedml_client_caches
+# ./*/*/*/*/fedml_client_caches
+# ./*/*/*/*/*/fedml_client_caches
+
+
 python/build
 python/dist
 python/FedML.egg-info

@@ -372,7 +372,7 @@ def load_synthetic_data(args):
         ) = load_partition_data_federated_stackoverflow_nwp(args.dataset, args.data_cache_dir)
         args.client_num_in_total = client_num
 
-    elif dataset_name == "ILSVRC2012":
+    elif dataset_name == "ILSVRC2012" or dataset_name == "ILSVRC2012_hdf5":
         logging.info("load_data. dataset_name = %s" % dataset_name)
         (
             train_data_num,
@@ -386,10 +386,11 @@ def load_synthetic_data(args):
         ) = load_partition_data_ImageNet(
             dataset=dataset_name,
             data_dir=args.data_cache_dir,
-            partition_method=None,
-            partition_alpha=None,
+            partition_method=args.partition_method,
+            partition_alpha=args.partition_alpha,
             client_number=args.client_num_in_total,
             batch_size=args.batch_size,
+            net_dataidx_map_file=args.net_dataidx_map_file,
         )
 
     elif dataset_name == "gld23k":

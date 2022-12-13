@@ -108,6 +108,7 @@ class ClientMasterManager(FedMLCommManager):
         mlops.event("comm_c2s", event_started=True, event_value=str(self.round_idx))
         message = Message(MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER, self.client_real_id, receive_id,)
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, weights)
+        # message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, client_result)
         message.add_params(MyMessage.MSG_ARG_KEY_NUM_SAMPLES, local_sample_num)
         self.send_message(message)
 

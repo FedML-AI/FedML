@@ -3,10 +3,15 @@ common_args:
   random_seed: 0
 
 data_args:
-  dataset: "fed_cifar100"
-  data_cache_dir: "/home/chaoyanghe/zhtang_FedML/python/fedml/data/fed_cifar100/datasets"
+  # dataset: "fed_cifar100"
+  # data_cache_dir: "/home/chaoyanghe/zhtang_FedML/python/fedml/data/fed_cifar100/datasets"
+  # partition_method: "hetero"
+  # partition_alpha: 0.1
+  dataset: "cifar10"
+  data_cache_dir: "/home/chaoyanghe/FedML/data/cifar10"
   partition_method: "hetero"
   partition_alpha: 0.1
+
 
 model_args:
   model: "resnet18"
@@ -16,9 +21,11 @@ train_args:
   # federated_optimizer: "FedAvg_seq"
   federated_optimizer: "FedOpt"
   client_id_list: "[]"
-  client_num_in_total: 500
-  client_num_per_round: 10
-  comm_round: 4000
+  # client_num_in_total: 500
+  # client_num_per_round: 10
+  client_num_in_total: 10
+  client_num_per_round: 5
+  comm_round: 500
   epochs: 1
   batch_size: 20
   client_optimizer: sgd
@@ -37,18 +44,27 @@ train_args:
   server_momentum: 0.9
 
 validation_args:
-  frequency_of_the_test: 100
+  frequency_of_the_test: 10
 
 device_args:
   worker_num: 10
   using_gpu: True
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_default
-  gpu_util_parse: "localhost:0,2,2,2,2,1,1,1"
+  # gpu_util_parse: "localhost:0,2,2,2,2,1,1,1"
+  gpu_util_parse: "localhost:0,0,0,0,2,3,3,3"
 
 comm_args:
   backend: "MPI"
   is_mobile: 0
+
+
+cache_args:
+  # client_cache: "stateful"  #  localhost
+  client_cache: "localhost"  #  localhost
+  local_cache_root: "/home/chaoyanghe/zhtang_FedML/python/examples/simulation/sp_custom"
+
+
 
 
 tracking_args:

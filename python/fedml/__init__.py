@@ -123,6 +123,7 @@ def init_simulation_mpi(args):
     args.process_id = process_id
     args.rank = process_id
     args.worker_num = world_size
+    # logging.info(f"args.process_id: {args.process_id}, world_size: {world_size}")
     if process_id == 0:
         args.role = "server"
     else:
@@ -164,6 +165,8 @@ def manage_profiling_args(args):
                     "project": args.wandb_project,
                     "config": args,
                 }
+            if hasattr(args, "wandb_id") and args.wandb_id is not None:
+                wandb_args["id"] = args.wandb_id
 
             if hasattr(args, "run_name"):
                 wandb_args["name"] = args.run_name
@@ -176,10 +179,12 @@ def manage_profiling_args(args):
 
             import wandb
 
+            if hasattr(args, "wandb_offline") and args.wandb_offline:
+                os.environ['WANDB_MODE'] = 'offline'
+            if hasattr(args, "wandb_console") and not args.wandb_console:
+                os.environ['WANDB_CONSOLE'] = 'off'
             wandb.init(**wandb_args)
-
             from .core.mlops.mlops_profiler_event import MLOpsProfilerEvent
-
             MLOpsProfilerEvent.enable_wandb_tracking()
 
 
