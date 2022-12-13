@@ -42,12 +42,25 @@ class FedMLTrainer(object):
 
     def update_dataset(self, client_index):
         self.client_index = client_index
-        if self.args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
-            self.train_local = self.train_data_local_dict[client_index][self.args.proc_rank_in_silo]
+
+        if self.train_data_local_dict is not None:
+            if self.args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
+                self.train_local = self.train_data_local_dict[client_index][self.args.proc_rank_in_silo]
+            else:
+                self.train_local = self.train_data_local_dict[client_index]
         else:
-            self.train_local = self.train_data_local_dict[client_index]
-        self.local_sample_number = self.train_data_local_num_dict[client_index]
-        self.test_local = self.test_data_local_dict[client_index]
+            self.train_local = None
+
+        if self.train_data_local_num_dict is not None:
+            self.local_sample_number = self.train_data_local_num_dict[client_index]
+        else:
+            self.local_sample_number = 0
+
+        if self.test_data_local_dict is not None:
+            self.test_local = self.test_data_local_dict[client_index]
+        else:
+            self.test_local = None
+
         self.trainer.update_dataset(self.train_local, self.test_local, self.local_sample_number)
 
     def train(self, round_idx=None):

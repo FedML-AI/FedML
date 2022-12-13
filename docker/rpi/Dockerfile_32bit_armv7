@@ -34,12 +34,10 @@ RUN cat /etc/os-release
 RUN sudo ln -s /usr/include/locale.h /usr/include/xlocale.h
 #RUN pip3 install h5py==3.1.0
 #RUN apt-get install python-h5py
-RUN pip install --upgrade pip && pip install -U fedml
-
+RUN pip install --upgrade pip && pip uninstall fedml;pip install -U fedml
 
 ##############################################################################
 # Add docker location file
 ##############################################################################
 ADD ./rpi/docker-location.yml /root/fedml-client/fedml/data/docker-location.yml
 ADD ./rpi/docker-location.yml /root/fedml-server/fedml/data/docker-location.yml
-
