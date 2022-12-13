@@ -10,6 +10,7 @@ from .local_cache import FedMLLocalCache
 from fedml.ml.ml_message import MLMessage
 from fedml.utils.model_utils import transform_tensor_to_list, transform_list_to_tensor
 
+from fedml.ml.core.compression.MLcompression import FedMLCompression
 
 
 class ModelTrainerCLS(ClientTrainer):
@@ -81,6 +82,7 @@ class ModelTrainerCLS(ClientTrainer):
         criterion = nn.CrossEntropyLoss().to(device)  # pylint: disable=E1102
 
         client_status = self.load_client_status()
+        FedMLCompression.get_instance().load_status(args, client_status)
         client_optimizer.load_status(args, client_status)
         client_optimizer.preprocess(args, self.client_index, model, train_data, device, self.server_result, criterion)
 

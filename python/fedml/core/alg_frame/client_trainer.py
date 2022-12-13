@@ -2,6 +2,7 @@ import logging
 from abc import ABC, abstractmethod
 
 from ...core.dp.fedml_differential_privacy import FedMLDifferentialPrivacy
+from ...core.compression.MLcompression import FedMLCompression
 
 
 class ClientTrainer(ABC):

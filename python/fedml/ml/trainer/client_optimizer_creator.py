@@ -1,11 +1,11 @@
 from .fedavg_client_optimizer import FedAvgClientOptimizer
 from .fedprox_client_optimizer import FedProxClientOptimizer
-# from .fedopt_client_optimizer import FedOptClientOptimizer
+from .fedopt_client_optimizer import FedOptClientOptimizer
 from .fednova_client_optimizer import FedNovaClientOptimizer
 from .feddyn_client_optimizer import FedDynClientOptimizer
 from .scaffold_client_optimizer import ScaffoldClientOptimizer
 from .mime_client_optimizer import MimeClientOptimizer
-
+from .fedsgd_client_optimizer import FedSGDClientOptimizer
 
 
 def create_client_optimizer(args):
@@ -23,6 +23,8 @@ def create_client_optimizer(args):
         client_optimizer = ScaffoldClientOptimizer(args)
     elif args.federated_optimizer == "Mime":
         client_optimizer = MimeClientOptimizer(args)
+    elif args.federated_optimizer == "FedSGD":
+        client_optimizer = FedSGDClientOptimizer(args)
     else:  # default model trainer is for classification problem
         raise NotImplementedError
     return client_optimizer

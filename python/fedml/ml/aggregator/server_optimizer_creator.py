@@ -1,11 +1,11 @@
 from .fedavg_server_optimizer import FedAvgServerOptimizer
 from .fedprox_server_optimizer import FedProxServerOptimizer
-# from .fedopt_server_optimizer import FedOptServerOptimizer
+from .fedopt_server_optimizer import FedOptServerOptimizer
 from .fednova_server_optimizer import FedNovaServerOptimizer
 from .feddyn_server_optimizer import FedDynServerOptimizer
 from .scaffold_server_optimizer import ScaffoldServerOptimizer
 from .mime_server_optimizer import MimeServerOptimizer
-
+from .fedsgd_server_optimizer import FedSGDServerOptimizer
 
 
 def create_server_optimizer(args):
@@ -14,7 +14,6 @@ def create_server_optimizer(args):
     elif args.federated_optimizer == "FedProx":
         server_optimizer = FedProxServerOptimizer(args)
     elif args.federated_optimizer == "FedOpt":
-        from .fedopt_server_optimizer import FedOptServerOptimizer
         server_optimizer = FedOptServerOptimizer(args)
     elif args.federated_optimizer == "FedNova":
         server_optimizer = FedNovaServerOptimizer(args)
@@ -24,6 +23,8 @@ def create_server_optimizer(args):
         server_optimizer = ScaffoldServerOptimizer(args)
     elif args.federated_optimizer == "Mime":
         server_optimizer = MimeServerOptimizer(args)
+    elif args.federated_optimizer == "FedSGD":
+        server_optimizer = FedSGDServerOptimizer(args)
     else:  # default model trainer is for classification problem
         raise NotImplementedError
     return server_optimizer
