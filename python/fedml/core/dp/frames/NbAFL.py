@@ -1,7 +1,7 @@
 from collections import OrderedDict
 
-import numpy as np
 import torch
+import numpy as np
 from fedml.core.dp.frames.base_dp_solution import BaseDPFrame
 from fedml.core.dp.mechanisms import Gaussian
 from fedml.core.dp.mechanisms.dp_mechanism import DPMechanism
@@ -34,26 +34,22 @@ class NbAFL_DP(BaseDPFrame):
     def add_local_noise(self, local_grad: OrderedDict):
         for k in local_grad.keys():
             # Clip weight
-            local_grad[k] = local_grad[k] / torch.max(
-                torch.ones(size=local_grad[k].shape), torch.abs(local_grad[k]) / self.w_clip
-            )
+            local_grad[k] = local_grad[k] / torch.max(torch.ones(size=local_grad[k].shape),
+                                            torch.abs(local_grad[k]) / self.w_clip)
         return super().add_local_noise(local_grad=local_grad)
 
     def add_global_noise(self, global_model: OrderedDict):
         for k in global_model.keys():
             # Clip weight
-            global_model[k] = global_model[k] / torch.max(
-                torch.ones(size=global_model[k].shape), torch.abs(global_model[k]) / self.w_clip
-            )
+            global_model[k] = global_model[k] / torch.max(torch.ones(size=global_model[k].shape),
+                                            torch.abs(global_model[k]) / self.w_clip)
         # Inject noise
         if self.total_round_num > np.sqrt(self.client_num) * self.sample_client_num:
-            scale_d = (
-                2
-                * self.w_clip
-                * self.nbafl_constant
-                * np.sqrt(np.power(self.total_round_num, 2) - np.power(self.sample_client_num, 2) * self.client_num)
-                / (self.sample_client_num * self.client_num * self.nbafl_epsilon)
-            )
+            scale_d = 2 * self.w_clip * self.nbafl_constant * np.sqrt(np.power(self.total_round_num, 2) -
+                np.power(self.sample_client_num, 2) * self.client_num) / (self.sample_client_num * self.client_num * self.nbafl_epsilon)
             for k in global_model.keys():
                 global_model[k] = Gaussian.compute_noise_using_sigma(scale_d, global_model[k].shape)
         return global_model
+
+
+

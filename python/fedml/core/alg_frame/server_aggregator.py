@@ -1,8 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import List, Tuple, Dict
-
-from .. import Context
+from typing import List, Tuple
+from collections import OrderedDict
 from ..contribution.contribution_assessor_manager import ContributionAssessorManager
 from ..dp.fedml_differential_privacy import FedMLDifferentialPrivacy
 from ..security.fedml_attacker import FedMLAttacker
@@ -21,9 +20,6 @@ class ServerAggregator(ABC):
         FedMLDefender.get_instance().init(args)
         FedMLDifferentialPrivacy.get_instance().init(args)
         self.contribution_assessor_mgr = ContributionAssessorManager(args)
-        self.final_contribution_assigment_dict = dict()
-
-        self.eval_data = None
 
     def set_id(self, aggregator_id):
         self.id = aggregator_id
@@ -37,24 +33,22 @@ class ServerAggregator(ABC):
         pass
 
     def on_before_aggregation(
-        self, raw_client_model_or_grad_list: List[Tuple[float, Dict]]
-    ):
+        self, raw_client_model_or_grad_list: List[Tuple[float, OrderedDict]]
+    ) -> List[Tuple[float, OrderedDict]]:
         if FedMLAttacker.get_instance().is_model_attack():
             raw_client_model_or_grad_list = FedMLAttacker.get_instance().attack_model(
                 raw_client_grad_list=raw_client_model_or_grad_list,
                 extra_auxiliary_info=self.get_model_params(),
             )
-        client_idxs = [i for i in range(len(raw_client_model_or_grad_list))]
         if FedMLDefender.get_instance().is_defense_enabled():
             raw_client_model_or_grad_list = FedMLDefender.get_instance().defend_before_aggregation(
                 raw_client_grad_list=raw_client_model_or_grad_list,
                 extra_auxiliary_info=self.get_model_params(),
             )
-            client_idxs = FedMLDefender.get_instance().get_malicious_client_idxs()
 
-        return raw_client_model_or_grad_list, client_idxs
+        return raw_client_model_or_grad_list
 
-    def aggregate(self, raw_client_model_or_grad_list: List[Tuple[float, Dict]]):
+    def aggregate(self, raw_client_model_or_grad_list: List[Tuple[float, OrderedDict]]) -> OrderedDict:
         if FedMLDefender.get_instance().is_defense_enabled():
             return FedMLDefender.get_instance().defend_on_aggregation(
                 raw_client_grad_list=raw_client_model_or_grad_list,
@@ -63,46 +57,17 @@ class ServerAggregator(ABC):
             )
         return FedMLAggOperator.agg(self.args, raw_client_model_or_grad_list)
 
-    def on_after_aggregation(self, aggregated_model_or_grad: Dict) -> Dict:
+    def on_after_aggregation(self, aggregated_model_or_grad: OrderedDict) -> OrderedDict:
         if FedMLDifferentialPrivacy.get_instance().is_global_dp_enabled():
             logging.info("-----add central DP noise ----")
             aggregated_model_or_grad = FedMLDifferentialPrivacy.get_instance().add_global_noise(
                 aggregated_model_or_grad
             )
+            logging.info("-----aaaaaaaaaaaaaaaaaaaaaa ----")
         if FedMLDefender.get_instance().is_defense_enabled():
             aggregated_model_or_grad = FedMLDefender.get_instance().defend_after_aggregation(aggregated_model_or_grad)
+
         return aggregated_model_or_grad
-
-    def assess_contribution(self):
-        if self.contribution_assessor_mgr is None:
-            return
-        # TODO: start to run contribution assessment in an independent python process
-        client_num_per_round = len(Context().get(Context.KEY_CLIENT_ID_LIST_IN_THIS_ROUND))
-        client_index_for_this_round = Context().get(Context.KEY_CLIENT_ID_LIST_IN_THIS_ROUND)
-        local_weights_from_clients = Context().get(Context.KEY_CLIENT_MODEL_LIST)
-
-        metric_results_in_the_last_round = Context().get(Context.KEY_METRICS_ON_LAST_ROUND)
-        (acc_on_last_round, _, _, _) = metric_results_in_the_last_round
-        metric_results_on_aggregated_model = Context().get(Context.KEY_METRICS_ON_AGGREGATED_MODEL)
-        (acc_on_aggregated_model, _, _, _) = metric_results_on_aggregated_model
-        test_data = Context().get(Context.KEY_TEST_DATA)
-        validation_func = self.test
-        self.contribution_assessor_mgr.run(
-            client_num_per_round,
-            client_index_for_this_round,
-            FedMLAggOperator.agg,
-            local_weights_from_clients,
-            acc_on_last_round,
-            acc_on_aggregated_model,
-            test_data,
-            validation_func,
-            self.args.device,
-        )
-
-        if self.args.round_idx == self.args.comm_round - 1:
-            self.final_contribution_assigment_dict = self.contribution_assessor_mgr.get_final_contribution_assignment()
-            logging.info(
-                "self.final_contribution_assigment_dict = {}".format(self.final_contribution_assigment_dict))
 
     @abstractmethod
     def test(self, test_data, device, args):

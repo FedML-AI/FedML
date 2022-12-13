@@ -2,12 +2,14 @@ from abc import ABC
 from collections import OrderedDict
 
 from fedml.core.dp.mechanisms.dp_mechanism import DPMechanism
+import torch
 
 
 class BaseDPFrame(ABC):
     def __init__(self, args=None):
         self.cdp = None
         self.ldp = None
+        self.args = args
 
     def set_cdp(self, dp_mechanism: DPMechanism):
         self.cdp = dp_mechanism
@@ -20,3 +22,5 @@ class BaseDPFrame(ABC):
 
     def add_global_noise(self, global_model: OrderedDict):
         return self.cdp.add_noise(grad=global_model)
+
+

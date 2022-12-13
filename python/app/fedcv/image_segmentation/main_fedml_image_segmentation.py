@@ -21,5 +21,6 @@ if __name__ == "__main__":
     aggregator = SegmentationAggregator(model=model, args=args)
 
     # start training
+    # start training
     fedml_runner = FedMLRunner(args, device, dataset, model, trainer, aggregator)
     fedml_runner.run()

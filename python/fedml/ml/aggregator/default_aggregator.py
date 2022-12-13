@@ -104,8 +104,6 @@ class DefaultServerAggregator(ServerAggregator):
         stats = {"test_acc": test_acc, "test_loss": test_loss}
         logging.info(stats)
 
-        return (test_acc, test_loss, None, None)
-
     def test_all(self, train_data_local_dict, test_data_local_dict, device, args) -> bool:
         train_num_samples = []
         train_tot_corrects = []

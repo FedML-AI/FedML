@@ -2,7 +2,13 @@ import torch
 from torch import nn
 
 from ...core.alg_frame.client_trainer import ClientTrainer
+from ...core.dp.fedml_differential_privacy import FedMLDifferentialPrivacy
 import logging
+import copy
+import logging
+
+
+# from functorch import grad_and_value, make_functional, vmap
 
 
 class ModelTrainerCLS(ClientTrainer):
@@ -36,6 +42,7 @@ class ModelTrainerCLS(ClientTrainer):
         epoch_loss = []
         for epoch in range(args.epochs):
             batch_loss = []
+
             for batch_idx, (x, labels) in enumerate(train_data):
                 x, labels = x.to(device), labels.to(device)
                 model.zero_grad()
@@ -43,11 +50,11 @@ class ModelTrainerCLS(ClientTrainer):
                 labels = labels.long()
                 loss = criterion(log_probs, labels)  # pylint: disable=E1102
                 loss.backward()
+                optimizer.step()
 
                 # Uncommet this following line to avoid nan loss
                 # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
 
-                optimizer.step()
                 # logging.info(
                 #     "Update Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
                 #         epoch,
@@ -57,6 +64,7 @@ class ModelTrainerCLS(ClientTrainer):
                 #         loss.item(),
                 #     )
                 # )
+
                 batch_loss.append(loss.item())
             if len(batch_loss) == 0:
                 epoch_loss.append(0.0)

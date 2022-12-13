@@ -25,6 +25,7 @@ class FedAvgAPI(object):
             test_data_local_dict,
             class_num,
         ] = dataset
+
         self.train_global = train_data_global
         self.test_global = test_data_global
         self.val_global = None
@@ -45,8 +46,11 @@ class FedAvgAPI(object):
             train_data_local_num_dict, train_data_local_dict, test_data_local_dict, self.model_trainer,
         )
 
+        # if FedMLDifferentialPrivacy.get_instance().is_local_dp_enabled():
+        #     self.client_epsilon = {}
+
     def _setup_clients(
-        self, train_data_local_num_dict, train_data_local_dict, test_data_local_dict, model_trainer,
+            self, train_data_local_num_dict, train_data_local_dict, test_data_local_dict, model_trainer,
     ):
         logging.info("############setup_clients (START)#############")
         for client_idx in range(self.args.client_num_per_round):
@@ -59,7 +63,9 @@ class FedAvgAPI(object):
                 self.device,
                 model_trainer,
             )
+
             self.client_list.append(c)
+
         logging.info("############setup_clients (END)#############")
 
     def train(self):
@@ -96,13 +102,16 @@ class FedAvgAPI(object):
                 # train on new dataset
                 mlops.event("train", event_started=True, event_value="{}_{}".format(str(round_idx), str(idx)))
                 w = client.train(copy.deepcopy(w_global))
+
                 mlops.event("train", event_started=False, event_value="{}_{}".format(str(round_idx), str(idx)))
                 # self.logging.info("local weights = " + str(w))
                 w_locals.append((client.get_sample_number(), copy.deepcopy(w)))
 
+
             # update global weights
             mlops.event("agg", event_started=True, event_value=str(round_idx))
             w_global = self._aggregate(w_locals)
+
             self.model_trainer.set_model_params(w_global)
             mlops.event("agg", event_started=False, event_value=str(round_idx))
 
