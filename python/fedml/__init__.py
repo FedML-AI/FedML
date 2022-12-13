@@ -121,9 +121,12 @@ def init_simulation_mpi(args):
     world_size = comm.Get_size()
     args.comm = comm
     args.process_id = process_id
+    args.rank = process_id
     args.worker_num = world_size
     if process_id == 0:
         args.role = "server"
+    else:
+        args.role = "client"
     return args
 
 
@@ -219,11 +222,12 @@ def manage_mpi_args(args):
         args.rank = process_id
         if process_id == 0:
             args.role = "server"
+        else:
+            args.role = "client"
         # args.worker_num = worker_num
         assert args.worker_num + 1 == world_size, f"Invalid number of mpi processes. Expected {args.worker_num + 1}"
     else:
         args.comm = None
-
 
 def init_cross_silo_horizontal(args):
     args.n_proc_in_silo = 1
