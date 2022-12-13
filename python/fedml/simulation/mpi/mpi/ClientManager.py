@@ -44,7 +44,8 @@ class ClientManager(FedMLCommManager):
         local_cache_path = msg_params.get(MyMessage.MSG_ARG_KEY_LOCAL_CACHE_PATH)
         FedMLLocalCache.init(self.args, root=self.args.local_cache_root, path=local_cache_path)
 
-        server_result = msg_params.get(MyMessage.MSG_ARG_KEY_SERVER_RESULT)
+        # server_result = msg_params.get(MyMessage.MSG_ARG_KEY_SERVER_RESULT)
+        server_result = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
 
         self.trainer.update_trainer(int(client_index), server_result)
@@ -59,7 +60,7 @@ class ClientManager(FedMLCommManager):
     def handle_message_receive_model_from_server(self, msg_params):
         logging.info("handle_message_receive_model_from_server.")
         # model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
-        server_result = msg_params.get(MyMessage.MSG_ARG_KEY_SERVER_RESULT)
+        server_result = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
 
         self.trainer.update_trainer(int(client_index), server_result)
@@ -77,8 +78,8 @@ class ClientManager(FedMLCommManager):
             self.get_sender_id(),
             receive_id,
         )
-        # message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, weights)
-        message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_RESULT, client_result)
+        # message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_RESULT, client_result)
+        message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, client_result)
         message.add_params(MyMessage.MSG_ARG_KEY_NUM_SAMPLES, local_sample_num)
         self.send_message(message)
 
@@ -91,7 +92,7 @@ class ClientManager(FedMLCommManager):
             simulation_gpu_hetero = self.args.simulation_gpu_hetero
             runtime_speed_ratio_gpu = self.args.gpu_hetero_ratio * self.worker_id / self.args.worker_num
 
-        if hasattr(self.args, "simulation_environment_hetero"):
+        if hasattr(self.args, "simulation_environment_hetero") and self.args.simulation_environment_hetero:
             # runtime_speed_ratio
             # runtime_speed_ratio * t_train - t_train
             # time.sleep(runtime_speed_ratio * t_train - t_train)

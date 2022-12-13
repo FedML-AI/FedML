@@ -8,15 +8,13 @@ from fedml.ml.ml_message import MLMessage
 from fedml.core.alg_frame.params import Params
 
 
-from .message_define import MyMessage
-from .utils import transform_list_to_tensor
-from ....core.distributed.fedml_comm_manager import FedMLCommManager
-from ....core.distributed.communication.message import Message
-
+from ..message_define import MyMessage
+from fedml.core.distributed.fedml_comm_manager import FedMLCommManager
+from fedml.core.distributed.communication.message import Message
 from fedml.ml.trainer.local_cache import FedMLLocalCache
 
 
-class ClientManager(FedMLCommManager):
+class SeqClientManager(FedMLCommManager):
     def __init__(
         self,
         args,

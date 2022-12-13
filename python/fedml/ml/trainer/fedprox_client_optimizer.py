@@ -16,20 +16,8 @@ from fedml.ml.ml_message import MLMessage
 class FedProxClientOptimizer(ClientOptimizer):
 
 
-    def preprocess(self, args, client_index, model, train_data, device, server_result, criterion):
-        if args.client_optimizer == "sgd":
-            self.optimizer = torch.optim.SGD(
-                filter(lambda p: p.requires_grad, model.parameters()),
-                lr=args.learning_rate,
-                weight_decay=args.weight_decay,
-            )
-        else:
-            self.optimizer = torch.optim.Adam(
-                filter(lambda p: p.requires_grad, model.parameters()),
-                lr=args.learning_rate,
-                weight_decay=args.weight_decay,
-                amsgrad=True,
-            )
+    def preprocess(self, args, client_index, model, train_data, device, model_optimizer, criterion):
+        self.model_optimizer = model_optimizer
         self.global_model_params = deepcopy(model.state_dict())
         return model
 
@@ -48,7 +36,7 @@ class FedProxClientOptimizer(ClientOptimizer):
         """
         # torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
 
-        self.optimizer.step()
+        self.model_optimizer.step()
 
     def end_local_training(self, args, client_index, model, train_data, device) -> Dict:
         # return model.cpu().state_dict(), {}

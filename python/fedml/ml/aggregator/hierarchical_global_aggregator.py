@@ -247,12 +247,12 @@ class HierarchicalGlobalAggregator(ServerAggregator):
         # logging.info("aggregate time cost: %d" % (end_time - start_time))
 
 
-    # def add_local_trained_result(self, index, client_result, sample_num):
-    #     logging.info("add_model. index = %d" % index)
-    #     self.model_dict[index] = client_result[MLMessage.MODEL_PARAMS]
-    #     self.client_result_dict[index] = client_result
-    #     self.sample_num_dict[index] = sample_num
-    #     self.flag_client_model_uploaded_dict[index] = True
+    def add_local_trained_result(self, index, client_result, sample_num):
+        logging.info("add_model. index = %d" % index)
+        self.model_dict[index] = client_result[MLMessage.MODEL_PARAMS]
+        self.client_result_dict[index] = client_result
+        self.sample_num_dict[index] = sample_num
+        self.flag_client_model_uploaded_dict[index] = True
 
 
     def on_before_aggregation(
@@ -299,23 +299,26 @@ class HierarchicalGlobalAggregator(ServerAggregator):
         return training_num, average_weight_dict
 
 
-    def aggregate(self) -> Dict:
+    def aggregate(self):
         start_time = time.time()
 
-        raw_client_model_or_grad_list = []
-        # for idx in range(self.worker_num):
-        #     raw_client_model_or_grad_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
-        # raw_client_model_or_grad_list = self.on_before_aggregation(raw_client_model_or_grad_list)
-
-        self.server_optimizer.before_agg(self.client_result_dict, self.sample_num_dict)
-        if FedMLDefender.get_instance().is_defense_enabled():
-            new_global_params = FedMLDefender.get_instance().defend_on_aggregation(
-                raw_client_grad_list=raw_client_model_or_grad_list,
-                base_aggregation_func=self.server_optimizer.agg,
-                extra_auxiliary_info=self.get_model_params(),
-            )
+        if hasattr(self.args, "hierarchical_agg") and self.args.hierarchical_agg:
+            new_global_params = self.server_optimizer.agg(self.args, [])
         else:
-            new_global_params = self.server_optimizer.agg(self.args, raw_client_model_or_grad_list)
+            raw_client_model_or_grad_list = []
+            for idx in range(self.worker_num):
+                raw_client_model_or_grad_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
+            raw_client_model_or_grad_list = self.on_before_aggregation(raw_client_model_or_grad_list)
+
+            self.server_optimizer.before_agg(self.client_result_dict, self.sample_num_dict)
+            if FedMLDefender.get_instance().is_defense_enabled():
+                new_global_params = FedMLDefender.get_instance().defend_on_aggregation(
+                    raw_client_grad_list=raw_client_model_or_grad_list,
+                    base_aggregation_func=self.server_optimizer.agg,
+                    extra_auxiliary_info=self.get_model_params(),
+                )
+            else:
+                new_global_params = self.server_optimizer.agg(self.args, raw_client_model_or_grad_list)
 
         new_global_params = self.on_after_aggregation(new_global_params)
 

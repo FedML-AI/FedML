@@ -3,16 +3,15 @@ import time
 
 import wandb
 
-from .message_define import MyMessage
-from .utils import transform_tensor_to_list
-from ....core.distributed.fedml_comm_manager import FedMLCommManager
-from ....core.distributed.communication.message import Message
+from ..message_define import MyMessage
+from fedml.core.distributed.fedml_comm_manager import FedMLCommManager
+from fedml.core.distributed.communication.message import Message
 
 from fedml.ml.ml_message import MLMessage
 from fedml.ml.trainer.local_cache import FedMLLocalCache
 
 
-class ServerManager(FedMLCommManager):
+class SeqServerManager(FedMLCommManager):
     def __init__(
         self,
         args,

@@ -7,7 +7,7 @@ from fedml.core.alg_frame.params import Params
 from fedml.ml.trainer.client_optimizer_creator import create_client_optimizer
 from fedml.ml.trainer.local_cache import FedMLLocalCache
 
-from fedml.ml.core.compression.MLcompression import FedMLCompression
+from fedml.core.compression.fedml_compression import FedMLCompression
 
 
 
@@ -96,6 +96,7 @@ class FLTrainer(object):
         FedMLCompression.get_instance().load_status(self.args, client_status)
         client_optimizer = create_client_optimizer(self.args)
         client_optimizer.load_status(self.args, client_status)
+        client_optimizer.set_server_result(self.server_result)
 
         kwargs = {}
         kwargs["client_optimizer"] = client_optimizer
@@ -104,7 +105,7 @@ class FLTrainer(object):
         client_result = Params()
         # weights_or_grads, params_to_server_optimizer = client_optimizer.end_local_training(args, self.client_index, model, train_data, device)
         other_result = client_optimizer.end_local_training(self.args, self.client_index,
-                                                        self.trainer.model, self.train_local, self.args.device)
+                                                        self.trainer.model, self.train_local, self.device)
         client_result.add_dict(other_result)
         new_client_status = {"default": 0}
         new_client_status = client_optimizer.add_status(new_client_status)

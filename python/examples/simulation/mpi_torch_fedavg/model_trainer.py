@@ -19,12 +19,12 @@ class ModelTrainerCLS(ClientTrainer):
 
 
     def train(self, train_data, device, args, **kwargs):
-        model = self.model
+        # model = self.model
 
         client_optimizer = kwargs["client_optimizer"]
 
-        model.to(device)
-        model.train()
+        self.model.to(device)
+        self.model.train()
         # client_optimizer.
         if args.client_optimizer == "sgd":
             optimizer = torch.optim.SGD(
@@ -40,21 +40,23 @@ class ModelTrainerCLS(ClientTrainer):
             )
         criterion = nn.CrossEntropyLoss().to(device)  # pylint: disable=E1102
         client_optimizer.preprocess(self.args, self.client_index,
-                                    self.trainer.model, self.train_local,
-                                    self.device, self.server_result,
-                                    optimizer, criterion)
+                                    self.model, train_data,
+                                    device, optimizer, criterion)
 
         # train and update
         epoch_loss = []
         for epoch in range(args.epochs):
             batch_loss = []
             for batch_idx, (x, labels) in enumerate(train_data):
+                if batch_idx > 2:
+                    break
+
                 x, labels = x.to(device), labels.to(device)
-                model.zero_grad()
-                log_probs = model(x)
+                self.model.zero_grad()
+                log_probs = self.model(x)
                 loss = criterion(log_probs, labels)  # pylint: disable=E1102
-                loss = client_optimizer.backward(args, self.client_index, model, x, labels, criterion, device, loss)
-                client_optimizer.update(args, self.client_index, model, x, labels, criterion, device)
+                loss = client_optimizer.backward(args, self.client_index, self.model, x, labels, criterion, device, loss)
+                client_optimizer.update(args, self.client_index, self.model, x, labels, criterion, device)
                 # logging.info(
                 #     "Update Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
                 #         epoch,

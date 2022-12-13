@@ -38,14 +38,14 @@ class MimeClientOptimizer(ClientOptimizer):
 
 
 
-    def preprocess(self, args, client_index, model, train_data, device, server_result, model_optimizer, criterion):
+    def preprocess(self, args, client_index, model, train_data, device, model_optimizer, criterion):
         self.client_index = client_index
         self.model_optimizer = model_optimizer
         self.criterion = criterion
         self.opt_loader = OptimizerLoader(model, self.model_optimizer)
 
-        self.grad_global = server_result["grad_global"]
-        self.global_named_states = server_result["global_named_states"]
+        self.grad_global = self.server_result["grad_global"]
+        self.global_named_states = self.server_result["global_named_states"]
         self.criterion = criterion
 
         self.init_model = copy.deepcopy(model)

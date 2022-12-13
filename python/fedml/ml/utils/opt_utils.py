@@ -90,7 +90,22 @@ class OptimizerLoader():
         return self.get_opt_state()
 
 
+    def set_model_global_grads(self, new_state):
+        new_model = copy.deepcopy(self.model)
+        new_model.load_state_dict(new_state)
+        with torch.no_grad():
+            for parameter, new_parameter in zip(self.model.parameters(), new_model.parameters()):
+                parameter.grad = parameter.data - new_parameter.data
+                # because we go to the opposite direction of the gradient
+        model_state_dict = self.model.state_dict()
+        new_model_state_dict = new_model.state_dict()
 
+        # Replace parameters that need to conduct gradient descent updates.
+        for k in dict(self.model.named_parameters()).keys():
+            new_model_state_dict[k] = model_state_dict[k]
+        # self.trainer.model.load_state_dict(new_model_state_dict)
+        # self.set_global_model_params(new_model_state_dict)
+        self.model.load_state_dict(new_model_state_dict)
 
 
 

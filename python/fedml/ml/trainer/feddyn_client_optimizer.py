@@ -31,8 +31,7 @@ class FedDynClientOptimizer(ClientOptimizer):
         return client_status
 
 
-    def preprocess(self, args, client_index, model, train_data, device, server_result, model_optimizer, criterion):
-        # params_to_client_optimizer = server_result[MLMessage.PARAMS_TO_CLIENT_OPTIMIZER]
+    def preprocess(self, args, client_index, model, train_data, device, model_optimizer, criterion):
         self.model_optimizer = model_optimizer
         self.criterion = criterion
         if "old_grad" not in self.client_status:

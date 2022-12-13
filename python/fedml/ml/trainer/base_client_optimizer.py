@@ -31,13 +31,21 @@ class ClientOptimizer(ABC):
         """
         return client_status
 
+    def set_server_result(self, server_result):
+        self.server_result = server_result
+
     @abstractmethod
-    def preprocess(self, args, client_index, model, train_data, device, server_result, optimizer, criterion):
+    def preprocess(self, args, client_index, model, train_data, device, optimizer, criterion):
         """
         1. Return params_to_update for update usage.
         2. pass model, train_data here, in case the algorithm need some preprocessing
         """
         pass
+
+    # def wrap_optimizer(self, optimizer, criterion):
+    #     self.model_optimizer = optimizer
+    #     self.criterion = criterion
+
 
     @abstractmethod
     def backward(self, args, client_index, model, x, labels, criterion, device, loss):

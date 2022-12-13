@@ -26,7 +26,7 @@ class FedSGDClientOptimizer(ClientOptimizer):
         return client_status
 
 
-    def preprocess(self, args, client_index, model, train_data, device, server_result, model_optimizer, criterion):
+    def preprocess(self, args, client_index, model, train_data, device, model_optimizer, criterion):
         return model
 
 

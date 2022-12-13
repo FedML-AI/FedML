@@ -12,7 +12,7 @@ from fedml.ml.ml_message import MLMessage
 
 class FedAvgClientOptimizer(ClientOptimizer):
 
-    def preprocess(self, args, client_index, model, train_data, device, server_result, model_optimizer, criterion):
+    def preprocess(self, args, client_index, model, train_data, device, model_optimizer, criterion):
         self.model_optimizer = model_optimizer
         return model
 

@@ -36,4 +36,9 @@ class Params(object):
         for key, value in new_values.items():
             self.add(key, value)
 
+    def __getitem__(self, name: str):
+        return getattr(self, name)
+
+    def pop(self, name):
+        self.__dict__.pop(name)
 

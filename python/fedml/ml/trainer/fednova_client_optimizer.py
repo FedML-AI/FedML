@@ -183,8 +183,8 @@ class FedNova(Optimizer):
 class FedNovaClientOptimizer(ClientOptimizer):
 
 
-    def preprocess(self, args, client_index, model, train_data, device, server_result, model_optimizer, criterion):
-        sample_num_dict = server_result[MLMessage.SAMPLE_NUM_DICT]
+    def preprocess(self, args, client_index, model, train_data, device, model_optimizer, criterion):
+        sample_num_dict = self.server_result[MLMessage.SAMPLE_NUM_DICT]
         round_sample_num = sum(list(sample_num_dict.values()))
 
         ratio = torch.FloatTensor(
@@ -240,7 +240,13 @@ class FedNovaClientOptimizer(ClientOptimizer):
         grad_dict = {}
         for k in cur_params.keys():
             scale = 1.0 / opt.local_normalizing_vec
+            # if len(init_params[k]) == 0 and cur_params[k] == 0:
+            #     logging.info(f"init_params[k].shape {init_params[k].shape} - cur_params[k].shape:{cur_params[k].shape}")
+            #     continue
             cum_grad = init_params[k] - cur_params[k]
+            # if len(cum_grad.shape) == 0 :
+            #     logging.info(f"init_params[k].shape {init_params[k].shape} - cur_params[k].shape:{cur_params[k].shape}")
+            #     continue
             cum_grad.mul_(weight * scale)
             grad_dict[k] = cum_grad.cpu()
         return grad_dict

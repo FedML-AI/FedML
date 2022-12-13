@@ -18,6 +18,7 @@ model_args:
   model: "resnet18"
   group_norm_channels: 32
 
+
 train_args:
   # federated_optimizer: "FedAvg_seq"
   # federated_optimizer: "FedOpt"

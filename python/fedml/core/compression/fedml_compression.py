@@ -43,8 +43,9 @@ class FedMLCompression:
             logging.info(f".......init compresser.......{args.compression} - \
                 compression_sparse_ratio: {args.compression_sparse_ratio}, \
                 compression_quantize_level: {args.compression_quantize_level}")
-        self.compressor = create_compressor(model.state_dict())
-
+            self.compressor = create_compressor(args, model.state_dict())
+        else:
+            self.compressor = None
 
 
     def compress(self):

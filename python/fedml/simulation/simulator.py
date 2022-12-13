@@ -130,7 +130,7 @@ class SimulatorMPI:
             )
         elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDSEG:
             pass
-        elif args.fl_trainer == FedML_FEDERATED_OPTIMIZER_FEDGAN:
+        elif args.federated_optimizer == FedML_FEDERATED_OPTIMIZER_FEDGAN:
             FedML_FedGan_distributed(args, args.process_id, args.worker_num, device, args.comm, model, dataset)
         else:
             FedML_distributed(

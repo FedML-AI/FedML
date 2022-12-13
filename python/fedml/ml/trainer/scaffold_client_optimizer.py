@@ -30,8 +30,7 @@ class ScaffoldClientOptimizer(ClientOptimizer):
         return client_status
 
 
-    def preprocess(self, args, client_index, model, train_data, device, server_result, model_optimizer, criterion):
-        # params_to_client_optimizer = server_result[MLMessage.PARAMS_TO_CLIENT_OPTIMIZER]
+    def preprocess(self, args, client_index, model, train_data, device, model_optimizer, criterion):
         self.model_optimizer = model_optimizer
         self.criterion = criterion
 
@@ -41,7 +40,7 @@ class ScaffoldClientOptimizer(ClientOptimizer):
                 self.c_model_local[name] = (params.data*0).cpu()
         else:
             self.c_model_local = self.client_status["c_model_local"]
-        self.c_model_global = server_result["c_model_global"]
+        self.c_model_global = self.server_result["c_model_global"]
         self.w_global = copy.deepcopy(model.state_dict())
         self.iteration_cnt = 0
         return model

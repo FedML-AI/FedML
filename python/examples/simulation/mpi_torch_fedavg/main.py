@@ -28,8 +28,9 @@ import fedml.simulation.mpi.mpi
 from fedml.simulation.mpi.mpi.DistributedAPI import FedML_distributed
 from fedml.simulation.mpi.mpi_seq.DistributedAPI import FedML_distributed_seq
 
-from .model_trainer import ModelTrainerCLS
-from .aggregator import DefaultServerAggregator
+from model_trainer import ModelTrainerCLS
+from aggregator import DefaultServerAggregator
+
 
 def str2bool(v):
     if isinstance(v, bool):
@@ -251,6 +252,7 @@ if __name__ == "__main__":
         class_num,
     ] = dataset
     client_trainer = ModelTrainerCLS(model, args)
+    logging.info(f"Server: 1, Workers: {args.worker_num-1}")
     server_aggregator = DefaultServerAggregator(
         train_data_global,
         test_data_global,
@@ -258,7 +260,7 @@ if __name__ == "__main__":
         train_data_local_dict,
         test_data_local_dict,
         train_data_local_num_dict,
-        args.worker_num,
+        args.worker_num - 1,
         device,
         args,
         model)

@@ -8,6 +8,79 @@ import torch.nn as nn
 
 """ model util """
 
+def build_param_groups(named_parameters, named_modules, layers_depth):
+    param_groups = []
+
+    for name, param in named_parameters.items():
+        module_name = '.'.join(name.split('.')[:-1])
+        logging.info(f"In build_param_groups, module_name: {module_name} ")
+        if module_name in named_modules:
+            pass
+            param_groups.append({'params': param, "param_name": name, "layer_name": module_name, "depth": layers_depth[module_name]})
+        else:
+            logging.info(f"In build_param_groups, name:{name}, module_name: {module_name} ")
+            # raise NotImplementedError
+        # param_groups.append({'params': model.classifier.parameters(), 'lr': 1e-3})
+
+    return param_groups
+
+
+def build_layer_params(named_parameters, named_modules, param_types=["Conv2d","Linear","BatchNorm2d","GroupNorm2d"]):
+    # param_groups = []
+    layer_params = {}
+    layers_depth = {}
+    current_depth = 0
+
+    for name, param in named_parameters.items():
+        module_name = '.'.join(name.split('.')[:-1])
+        if (len(param_types) > 0 and type(named_modules[module_name]).__name__ in param_types) or \
+            len(param_types) == 0:
+            if name.split('.')[-1] == "num_batches_tracked":
+                # logging.info(f"In build_layer_params, NOT add module_name: {module_name} param name:{name} ")
+                continue
+            else:
+                # logging.info(f"In build_layer_params, add module_name: {module_name} param name:{name} ")
+                pass
+            if module_name not in layer_params:
+                layer_params[module_name] = []
+                current_depth += 1
+            if module_name not in layers_depth:
+                layers_depth[module_name] = current_depth
+            layer_params[module_name].append({'params': param, "param_name": name, "layer_name": module_name, "depth": layers_depth[module_name]})
+        else:
+            # pass
+            logging.info(f"In build_layer_params, NOT add name:{name}, module_name: {module_name} ")
+            # raise NotImplementedError
+        # param_groups.append({'params': model.classifier.parameters(), 'lr': 1e-3})
+
+    return layer_params
+
+
+
+def scan_model_with_depth(model, param_types=[]):
+    
+    named_parameters = dict(model.named_parameters())
+    named_modules = dict(model.named_modules())
+
+    layers_depth = {}
+    current_depth = 0
+
+    for name, param in named_parameters.items():
+        module_name = '.'.join(name.split('.')[:-1])
+        if (len(param_types) > 0 and type(named_modules[module_name]).__name__ in param_types) or \
+            len(param_types) == 0:
+            if module_name not in layers_depth:
+                current_depth += 1
+                layers_depth[module_name] = current_depth
+        else:
+            pass
+        # params_group.append({'params': model.classifier.parameters(), 'lr': 1e-3})
+        # params_group.append({'params': param, "layer_name": "module_name", "depth": layers_depth[module_name]})
+
+    return named_parameters, named_modules, layers_depth
+
+
+
 
 def get_weights(state):
     """
@@ -77,7 +150,39 @@ def named_params_to(named_params, device="cpu"):
 
 
 
+
+
 """ get weights or grads """
+def check_grad(model, train_data, criterion, device, args):
+    model.to(device)
+    model.train()
+
+    criterion = nn.CrossEntropyLoss().to(device)
+    criterion = criterion.to(device)
+
+    accumulation_steps = len(train_data)
+    batch_loss = []
+    iteration = 0
+    model.zero_grad()
+    for batch_idx, (x, labels) in enumerate(train_data):
+        x, labels = x.to(device), labels.to(device)
+        log_probs = model(x)
+        loss = criterion(log_probs, labels)
+        loss = loss / accumulation_steps
+        loss.backward()
+
+        batch_loss.append(loss.item())
+        iteration += 1
+    # logging.info(
+    #     "Client Index = {} Accumulating Grades \t Round: {}\tLoss: {:.6f}".format(
+    #         client_index, args.round_idx, epoch_loss
+    #     )
+    # )
+    epoch_loss = sum(batch_loss)
+    named_grads = get_named_data(model, mode='GRAD', use_cuda=False)
+
+    return epoch_loss, named_grads
+
 
 
 def get_named_data(model, mode="MODEL", use_cuda=True):
@@ -153,6 +258,18 @@ def get_all_bn_params(model, use_cuda=True):
             bn_params = get_bn_params(module_name, module, use_cuda=use_cuda)
             all_bn_params.update(bn_params)
     return all_bn_params
+
+
+def set_model_bn_params(model, all_bn_params):
+    for module_name, module in model.named_modules():
+        if type(module) is nn.BatchNorm2d:
+            # logging.info(f"module_name:{module_name}, params.norm: {module.weight.data.norm()}")
+            module.weight.data = all_bn_params[module_name+".weight"] 
+            module.bias.data = all_bn_params[module_name+".bias"] 
+            module.running_mean = all_bn_params[module_name+".running_mean"] 
+            module.running_var = all_bn_params[module_name+".running_var"] 
+            module.num_batches_tracked = all_bn_params[module_name+".num_batches_tracked"] 
+
 
 
 def check_bn_status(bn_module):
