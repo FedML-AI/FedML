@@ -22,8 +22,7 @@ RUN pip install -U Pillow
 # https://discuss.pytorch.org/t/failed-to-load-image-python-extension-could-not-find-module/140278/13
 RUN pip install --upgrade torchvision==0.10.0
 
-RUN pip install --upgrade pip && pip install -U fedml
-
+RUN pip install --upgrade pip && pip uninstall fedml;pip install -U fedml
 
 ##############################################################################
 # Add docker location file

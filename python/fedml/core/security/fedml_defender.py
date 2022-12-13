@@ -180,6 +180,3 @@ class FedMLDefender:
         if self.is_defense_after_aggregation():
             return self.defender.defend_after_aggregation(global_model)
         return global_model
-
-    def get_malicious_client_idxs(self):
-        return self.defender.get_malicious_client_idxs()

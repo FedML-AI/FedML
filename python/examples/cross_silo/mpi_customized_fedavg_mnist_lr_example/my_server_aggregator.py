@@ -22,10 +22,10 @@ class MyServerAggregator(ServerAggregator):
 
     def on_before_aggregation(
         self, raw_client_model_or_grad_list: List[Tuple[float, Dict]]
-    ):
+    ) -> List[Tuple[float, Dict]]:
+        #
         logging.info("do decoding here for raw_client_model_or_grad_list")
-        client_idxs = [i for i in range(len(raw_client_model_or_grad_list))]
-        return raw_client_model_or_grad_list, client_idxs
+        return raw_client_model_or_grad_list
 
     def test(self, test_data, device, args):
         model = self.model

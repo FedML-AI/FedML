@@ -40,7 +40,7 @@ def get_parameter_number(net):
     return {"Total": total_num, "Trainable": trainable_num}
 
 
-def freeze_model_parameters(model, freeze_layers):
+def freeze_model_parameters(model, freeze_layers=''):
     modules = list()
     logging.info("freeze layers: %s" % str(freeze_layers))
     for layer_idx in freeze_layers:
