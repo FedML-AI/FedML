@@ -38,26 +38,24 @@ class FedMLCompression:
         return client_status
 
 
-
-
-
-    def init(self, model, args):
+    def init(self, args, model):
         if check_args_compress(args):
             logging.info(f".......init compresser.......{args.compression} - \
                 compression_sparse_ratio: {args.compression_sparse_ratio}, \
                 compression_quantize_level: {args.compression_quantize_level}")
-
-
         self.compressor = create_compressor(model.state_dict())
 
 
 
     def compress(self):
-
+        pass
+        # self.compressor
 
 
 
     def decompress(self):
+        pass
+        # self.compressor
 
 
 

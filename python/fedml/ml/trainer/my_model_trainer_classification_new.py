@@ -25,32 +25,32 @@ class ModelTrainerCLS(ClientTrainer):
     def set_model_params(self, model_parameters):
         self.model.load_state_dict(model_parameters)
 
-    def set_client_index(self, client_index):
-        self.client_index = client_index
+    # def set_client_index(self, client_index):
+    #     self.client_index = client_index
 
-    def set_server_result(self, server_result):
-        weights = server_result[MLMessage.MODEL_PARAMS]
-        if self.args.is_mobile == 1:
-            weights = transform_list_to_tensor(weights)
+    # def set_server_result(self, server_result):
+    #     weights = server_result[MLMessage.MODEL_PARAMS]
+    #     if self.args.is_mobile == 1:
+    #         weights = transform_list_to_tensor(weights)
 
-        self.set_model_params(weights)
-        # self.params_to_client_optimizer = server_result[MLMessage.PARAMS_TO_CLIENT_OPTIMIZER]
-        self.server_result = server_result
+    #     self.set_model_params(weights)
+    #     # self.params_to_client_optimizer = server_result[MLMessage.PARAMS_TO_CLIENT_OPTIMIZER]
+    #     self.server_result = server_result
 
-    def load_client_status(self):
-        if self.args.local_cache:
-            if self.args.client_cache == "stateful":
-                """
-                In this mode, ClientTrainer is stateful during the whole training process.
-                """
-                client_status = self.client_status
-            elif self.args.client_cache == "localhost":
-                client_status = FedMLLocalCache.load(self.args, self.client_index)
-            else:
-                raise NotImplementedError
-        else:
-            client_status = {}
-        return client_status
+    # def load_client_status(self):
+    #     if self.args.local_cache:
+    #         if self.args.client_cache == "stateful":
+    #             """
+    #             In this mode, ClientTrainer is stateful during the whole training process.
+    #             """
+    #             client_status = self.client_status
+    #         elif self.args.client_cache == "localhost":
+    #             client_status = FedMLLocalCache.load(self.args, self.client_index)
+    #         else:
+    #             raise NotImplementedError
+    #     else:
+    #         client_status = {}
+    #     return client_status
 
 
     def save_client_status(self, client_status={}):
@@ -70,22 +70,31 @@ class ModelTrainerCLS(ClientTrainer):
             pass
 
 
-    def train(self, train_data, device, args):
+    def train(self, train_data, device, args, **kwargs):
         model = self.model
 
-        client_optimizer = create_client_optimizer(args)
+        client_optimizer = kwargs["client_optimizer"]
 
         model.to(device)
         model.train()
         # client_optimizer.
-
+        if args.client_optimizer == "sgd":
+            optimizer = torch.optim.SGD(
+                filter(lambda p: p.requires_grad, self.model.parameters()),
+                lr=args.learning_rate,
+            )
+        else:
+            optimizer = torch.optim.Adam(
+                filter(lambda p: p.requires_grad, self.model.parameters()),
+                lr=args.learning_rate,
+                weight_decay=args.weight_decay,
+                amsgrad=True,
+            )
         criterion = nn.CrossEntropyLoss().to(device)  # pylint: disable=E1102
-
-        client_status = self.load_client_status()
-        FedMLCompression.get_instance().load_status(args, client_status)
-        client_optimizer.load_status(args, client_status)
-        client_optimizer.preprocess(args, self.client_index, model, train_data, device, self.server_result, criterion)
-
+        client_optimizer.preprocess(self.args, self.client_index,
+                                    self.trainer.model, self.train_local,
+                                    self.device, self.server_result,
+                                    optimizer, criterion)
 
         # train and update
         epoch_loss = []
@@ -117,19 +126,8 @@ class ModelTrainerCLS(ClientTrainer):
                     self.id, epoch, sum(epoch_loss) / len(epoch_loss)
                 )
             )
-        client_result = {}
-        # weights_or_grads, params_to_server_optimizer = client_optimizer.end_local_training(args, self.client_index, model, train_data, device)
-        other_result = client_optimizer.end_local_training(args, self.client_index, model, train_data, device)
-        client_result.update(other_result)
-        # transform Tensor to list
-        if self.args.is_mobile == 1:
-            client_result[MLMessage.MODEL_PARAMS] = transform_tensor_to_list(client_result[MLMessage.MODEL_PARAMS])
+        local_loss = sum(epoch_loss) / len(epoch_loss)
 
-        new_client_status = {"default": 0}
-        new_client_status = client_optimizer.add_status(new_client_status)
-        self.save_client_status(new_client_status)
-
-        return sum(epoch_loss) / len(epoch_loss), client_result
 
 
     def train_iterations(self, train_data, device, args):

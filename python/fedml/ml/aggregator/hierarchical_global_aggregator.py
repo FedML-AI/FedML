@@ -22,6 +22,7 @@ from ...core.alg_frame.server_aggregator import ServerAggregator
 
 
 from fedml.utils.model_utils import transform_tensor_to_list, transform_list_to_tensor
+from fedml.core.alg_frame.params import Params
 
 from ...core.schedule.seq_train_scheduler import SeqTrainScheduler
 from ...core.schedule.runtime_estimate import t_sample_fit
@@ -72,14 +73,12 @@ class HierarchicalGlobalAggregator(ServerAggregator):
         self.id = aggregator_id
 
     def get_init_server_result(self):
-        server_result = {}
+        # server_result = {}
+        server_result = Params()
         global_model_params = self.get_model_params()
-        if self.args.is_mobile == 1:
-            global_model_params = transform_tensor_to_list(global_model_params)
-        server_result[MLMessage.MODEL_PARAMS] = global_model_params
-        # server_result[MLMessage.PARAMS_TO_CLIENT_OPTIMIZER] = self.server_optimizer.get_init_params()
+        server_result.add(MLMessage.MODEL_PARAMS, global_model_params)
         other_result = self.server_optimizer.get_init_params()
-        server_result.update(other_result)
+        server_result.add_dict(other_result)
         # logging.info(f"server_result: {server_result}")
         return server_result
 
@@ -232,15 +231,16 @@ class HierarchicalGlobalAggregator(ServerAggregator):
     def global_aggregate_seq(self, worker_index, local_agg_client_result, local_sample_num_dict):
         # logging.info("recevice worker result index = %d" % worker_index)
         start_time = time.time()
-        if MLMessage.LOCAL_COLLECT_RESULT in local_agg_client_result:
+        if local_agg_client_result.has(MLMessage.LOCAL_COLLECT_RESULT):
             # local_collect_result: parameters that cannot be locally aggregated.
-            local_collect_result = local_agg_client_result[MLMessage.LOCAL_COLLECT_RESULT]
+            local_collect_result = local_agg_client_result.get(MLMessage.LOCAL_COLLECT_RESULT)
             for client_index, client_result in local_collect_result.items():
                 self.sample_num_dict[int(client_index)] = local_sample_num_dict[int(client_index)]
                 self.client_result_dict[int(client_index)] = client_result
-        if MLMessage.LOCAL_AGG_RESULT in local_agg_client_result:
+
+        if local_agg_client_result.has(MLMessage.LOCAL_AGG_RESULT):
             # local_collect_result: parameters that are locally aggregated.
-            local_agg_result = local_agg_client_result[MLMessage.LOCAL_AGG_RESULT]
+            local_agg_result = local_agg_client_result.get(MLMessage.LOCAL_AGG_RESULT)
             self.server_optimizer.global_agg_seq(self.args, local_agg_result)
         self.flag_client_model_uploaded_dict[worker_index] = True
         end_time = time.time()
@@ -320,13 +320,10 @@ class HierarchicalGlobalAggregator(ServerAggregator):
         new_global_params = self.on_after_aggregation(new_global_params)
 
         self.set_model_params(new_global_params)
-        # params_to_client_optimizer = self.server_optimizer.end_agg()
-        server_result = {}
-        if self.args.is_mobile == 1:
-            new_global_params = transform_tensor_to_list(new_global_params)
-        server_result[MLMessage.MODEL_PARAMS] = new_global_params
+        server_result = Params()
+        server_result.add(MLMessage.MODEL_PARAMS, new_global_params)
         other_result = self.server_optimizer.end_agg()
-        server_result.update(other_result)
+        server_result.add_dict(other_result)
         end_time = time.time()
         logging.info("aggregate time cost: %d" % (end_time - start_time))
 

@@ -51,9 +51,9 @@ class ServerManager(FedMLCommManager):
         )
         # global_model_params = self.aggregator.get_global_model_params()
         server_result = self.aggregator.get_init_server_result()
-        server_result[MLMessage.SAMPLE_NUM_DICT] = dict([
+        server_result.add(MLMessage.SAMPLE_NUM_DICT, dict([
             (client_index, self.aggregator.train_data_local_num_dict[client_index]) for client_index in client_indexes
-        ])
+        ]))
         logging.info(f"client_indexes = {client_indexes}")
 
         for process_id in range(1, self.size):
@@ -70,7 +70,8 @@ class ServerManager(FedMLCommManager):
     def handle_message_receive_model_from_client(self, msg_params):
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         # model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
-        client_result = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_RESULT)
+        # client_result = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_RESULT)
+        client_result = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         local_sample_number = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
 
         self.aggregator.add_local_trained_result(
@@ -112,9 +113,9 @@ class ServerManager(FedMLCommManager):
                     self.args.client_num_in_total,
                     self.args.client_num_per_round,
                 )
-            server_result[MLMessage.SAMPLE_NUM_DICT] = dict([
+            server_result.add(MLMessage.SAMPLE_NUM_DICT, dict([
                 (client_index, self.aggregator.train_data_local_num_dict[client_index]) for client_index in client_indexes
-            ])
+            ]))
 
             print("indexes of clients: " + str(client_indexes))
             print("size = %d" % self.size)
@@ -128,9 +129,9 @@ class ServerManager(FedMLCommManager):
         message = Message(
             MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id
         )
-        # message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         message.add_params(MyMessage.MSG_ARG_KEY_LOCAL_CACHE_PATH, str(self.local_cache_path))
-        message.add_params(MyMessage.MSG_ARG_KEY_SERVER_RESULT, server_result)
+        # message.add_params(MyMessage.MSG_ARG_KEY_SERVER_RESULT, server_result)
+        message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, server_result)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(client_index))
         self.send_message(message)
 
@@ -143,7 +144,7 @@ class ServerManager(FedMLCommManager):
             self.get_sender_id(),
             receive_id,
         )
-        # message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
-        message.add_params(MyMessage.MSG_ARG_KEY_SERVER_RESULT, server_result)
+        # message.add_params(MyMessage.MSG_ARG_KEY_SERVER_RESULT, server_result)
+        message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, server_result)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(client_index))
         self.send_message(message)

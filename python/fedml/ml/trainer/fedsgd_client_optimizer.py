@@ -20,33 +20,13 @@ class FedSGDClientOptimizer(ClientOptimizer):
         Load status of client optimizer.
         """
         self.client_status = client_status
-        if MLcompression.check_args_compress(args) and self.compressor.stateful:
-            assert args.local_cache
-            self.compressor.load_status(args, self.client_status)
 
 
     def add_status(self, client_status):
-        if MLcompression.check_args_compress(self.args) and self.compressor.stateful:
-            assert self.args.local_cache
-            self.compressor.add_status(client_status)
         return client_status
 
 
-    def preprocess(self, args, client_index, model, train_data, device, server_result, criterion):
-        # Not need to create optimizer. This may consume lot of time, as the local iter = 1.
-        # if args.client_optimizer == "sgd":
-        #     self.optimizer = torch.optim.SGD(
-        #         filter(lambda p: p.requires_grad, model.parameters()),
-        #         lr=args.learning_rate,
-        #         weight_decay=args.weight_decay,
-        #     )
-        # else:
-        #     self.optimizer = torch.optim.Adam(
-        #         filter(lambda p: p.requires_grad, model.parameters()),
-        #         lr=args.learning_rate,
-        #         weight_decay=args.weight_decay,
-        #         amsgrad=True,
-        #     )
+    def preprocess(self, args, client_index, model, train_data, device, server_result, model_optimizer, criterion):
         return model
 
 

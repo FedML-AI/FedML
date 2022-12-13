@@ -30,21 +30,11 @@ class ScaffoldClientOptimizer(ClientOptimizer):
         return client_status
 
 
-    def preprocess(self, args, client_index, model, train_data, device, server_result, criterion):
+    def preprocess(self, args, client_index, model, train_data, device, server_result, model_optimizer, criterion):
         # params_to_client_optimizer = server_result[MLMessage.PARAMS_TO_CLIENT_OPTIMIZER]
-        if args.client_optimizer == "sgd":
-            self.optimizer = torch.optim.SGD(
-                filter(lambda p: p.requires_grad, model.parameters()),
-                lr=args.learning_rate,
-                weight_decay=args.weight_decay,
-            )
-        else:
-            self.optimizer = torch.optim.Adam(
-                filter(lambda p: p.requires_grad, model.parameters()),
-                lr=args.learning_rate,
-                weight_decay=args.weight_decay,
-                amsgrad=True,
-            )
+        self.model_optimizer = model_optimizer
+        self.criterion = criterion
+
         if "c_model_local" not in self.client_status:
             self.c_model_local = {}
             for name, params in model.named_parameters():
@@ -68,7 +58,7 @@ class ScaffoldClientOptimizer(ClientOptimizer):
         """
         # torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         self.iteration_cnt += 1
-        self.optimizer.step()
+        self.model_optimizer.step()
         current_lr = self.args.learning_rate
         for name, param in model.named_parameters():
             # logging.debug(f"c_model_global[name].device : {c_model_global[name].device}, \

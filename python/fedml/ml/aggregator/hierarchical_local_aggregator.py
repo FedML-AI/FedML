@@ -19,6 +19,7 @@ from ...core.alg_frame.server_aggregator import ServerAggregator
 
 
 from fedml.utils.model_utils import transform_tensor_to_list, transform_list_to_tensor
+from fedml.core.alg_frame.params import Params
 
 from ...core.schedule.seq_train_scheduler import SeqTrainScheduler
 from ...core.schedule.runtime_estimate import t_sample_fit
@@ -58,11 +59,14 @@ class HierarchicalLocalAggregator(object):
 
 
     def end_local_aggregate_seq(self):
-        local_agg_client_result = {}
+        # local_agg_client_result = {}
+        local_agg_client_result = Params()
         local_agg_params_dict = self.server_optimizer.end_agg_seq(self.args)
         # local_client_result.update(local_agg_params_dict)
-        local_agg_client_result[MLMessage.LOCAL_AGG_RESULT] = local_agg_params_dict
-        local_agg_client_result[MLMessage.LOCAL_COLLECT_RESULT] = self.client_result_dict
+        # local_agg_client_result[MLMessage.LOCAL_AGG_RESULT] = local_agg_params_dict
+        # local_agg_client_result[MLMessage.LOCAL_COLLECT_RESULT] = self.client_result_dict
+        local_agg_client_result.add(MLMessage.LOCAL_AGG_RESULT, local_agg_params_dict)
+        local_agg_client_result.add(MLMessage.LOCAL_COLLECT_RESULT, self.client_result_dict)
         return local_agg_client_result
         # return agg_params_dict
 

@@ -28,6 +28,8 @@ import fedml.simulation.mpi.mpi
 from fedml.simulation.mpi.mpi.DistributedAPI import FedML_distributed
 from fedml.simulation.mpi.mpi_seq.DistributedAPI import FedML_distributed_seq
 
+from .model_trainer import ModelTrainerCLS
+from .aggregator import DefaultServerAggregator
 
 def str2bool(v):
     if isinstance(v, bool):
@@ -238,15 +240,44 @@ if __name__ == "__main__":
     #     # simulator.run()
 
 
-    from fedml.simulation.mpi.mpi.DistributedAPI import FedML_distributed
-    
-    if hasattr(args, "hierarchical_agg") and args.hierarchical_agg:
-        FedML_distributed_seq(args, args.process_id, args.worker_num, args.comm,
-                        device, dataset, model)
-    else:
-        FedML_distributed(args, args.process_id, args.worker_num, args.comm,
-                        device, dataset, model)
-        
+    [
+        train_data_num,
+        test_data_num,
+        train_data_global,
+        test_data_global,
+        train_data_local_num_dict,
+        train_data_local_dict,
+        test_data_local_dict,
+        class_num,
+    ] = dataset
+    client_trainer = ModelTrainerCLS(model, args)
+    server_aggregator = DefaultServerAggregator(
+        train_data_global,
+        test_data_global,
+        train_data_num,
+        train_data_local_dict,
+        test_data_local_dict,
+        train_data_local_num_dict,
+        args.worker_num,
+        device,
+        args,
+        model)
+
+    fedml_runner = FedMLRunner(args, device, dataset, model,
+                client_trainer=client_trainer, server_aggregator=server_aggregator)
+    fedml_runner.run()
+    # simulator = SimulatorMPI(args, device, dataset, model)
+    # simulator.run()
+
+
+
+    # if hasattr(args, "hierarchical_agg") and args.hierarchical_agg:
+    #     FedML_distributed_seq(args, args.process_id, args.worker_num, args.comm,
+    #                     device, dataset, model)
+    # else:
+    #     FedML_distributed(args, args.process_id, args.worker_num, args.comm,
+    #                     device, dataset, model)
+
 
 
 

@@ -28,3 +28,12 @@ class Params(object):
 
     def values(self):
         return self.__dict__.values()
+
+    def has(self, name: str):
+        return hasattr(self, name)
+
+    def add_dict(self, new_values):
+        for key, value in new_values.items():
+            self.add(key, value)
+
+

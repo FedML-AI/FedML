@@ -183,7 +183,7 @@ class FedNova(Optimizer):
 class FedNovaClientOptimizer(ClientOptimizer):
 
 
-    def preprocess(self, args, client_index, model, train_data, device, server_result, criterion):
+    def preprocess(self, args, client_index, model, train_data, device, server_result, model_optimizer, criterion):
         sample_num_dict = server_result[MLMessage.SAMPLE_NUM_DICT]
         round_sample_num = sum(list(sample_num_dict.values()))
 

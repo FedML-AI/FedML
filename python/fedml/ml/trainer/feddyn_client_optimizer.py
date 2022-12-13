@@ -31,21 +31,10 @@ class FedDynClientOptimizer(ClientOptimizer):
         return client_status
 
 
-    def preprocess(self, args, client_index, model, train_data, device, server_result, criterion):
+    def preprocess(self, args, client_index, model, train_data, device, server_result, model_optimizer, criterion):
         # params_to_client_optimizer = server_result[MLMessage.PARAMS_TO_CLIENT_OPTIMIZER]
-        if args.client_optimizer == "sgd":
-            self.optimizer = torch.optim.SGD(
-                filter(lambda p: p.requires_grad, model.parameters()),
-                lr=args.learning_rate,
-                weight_decay=args.weight_decay,
-            )
-        else:
-            self.optimizer = torch.optim.Adam(
-                filter(lambda p: p.requires_grad, model.parameters()),
-                lr=args.learning_rate,
-                weight_decay=args.weight_decay,
-                amsgrad=True,
-            )
+        self.model_optimizer = model_optimizer
+        self.criterion = criterion
         if "old_grad" not in self.client_status:
             self.old_grad = {}
             for name, params in model.named_parameters():
@@ -71,7 +60,7 @@ class FedDynClientOptimizer(ClientOptimizer):
             # norm_penalty += (self.args.feddyn_alpha / 2) * torch.norm((param.data - self.global_model_params[name].data.to(device)))**2
             norm_penalty += (self.args.feddyn_alpha / 2) * torch.norm((param.data - self.global_model_params[name].data))**2
         loss = loss - lin_penalty + norm_penalty
-        self.optimizer.zero_grad()
+        self.model_optimizer.zero_grad()
 
         loss.backward()
         return loss
@@ -81,7 +70,7 @@ class FedDynClientOptimizer(ClientOptimizer):
         """
         """
         # torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-        self.optimizer.step()
+        self.model_optimizer.step()
 
 
     def end_local_training(self, args, client_index, model, train_data, device) -> Dict:

@@ -38,25 +38,11 @@ class MimeClientOptimizer(ClientOptimizer):
 
 
 
-    def preprocess(self, args, client_index, model, train_data, device, server_result, criterion):
+    def preprocess(self, args, client_index, model, train_data, device, server_result, model_optimizer, criterion):
         self.client_index = client_index
-        # params_to_client_optimizer = server_result[MLMessage.PARAMS_TO_CLIENT_OPTIMIZER]
-        if args.client_optimizer == "sgd":
-            optimizer = torch.optim.SGD(
-                filter(lambda p: p.requires_grad, model.parameters()),
-                lr=args.learning_rate,
-                weight_decay=args.weight_decay,
-                momentum=args.momentum,
-            )
-        else:
-            optimizer = torch.optim.Adam(
-                filter(lambda p: p.requires_grad, model.parameters()),
-                lr=args.learning_rate,
-                weight_decay=args.weight_decay,
-                amsgrad=True,
-            )
-        self.optimizer = optimizer
-        self.opt_loader = OptimizerLoader(model, self.optimizer)
+        self.model_optimizer = model_optimizer
+        self.criterion = criterion
+        self.opt_loader = OptimizerLoader(model, self.model_optimizer)
 
         self.grad_global = server_result["grad_global"]
         self.global_named_states = server_result["global_named_states"]
@@ -94,7 +80,7 @@ class MimeClientOptimizer(ClientOptimizer):
                 parameter.grad = parameter.grad - init_grad[name] + self.grad_global[name].to(device)
 
         self.opt_loader.set_opt_state(copy.deepcopy(self.global_named_states), device)
-        self.optimizer.step()
+        self.model_optimizer.step()
 
 
     def end_local_training(self, args, client_index, model, train_data, device) -> Dict:

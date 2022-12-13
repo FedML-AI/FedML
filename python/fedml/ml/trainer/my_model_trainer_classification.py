@@ -30,6 +30,7 @@ class ModelTrainerCLS(ClientTrainer):
             optimizer = torch.optim.SGD(
                 filter(lambda p: p.requires_grad, self.model.parameters()),
                 lr=args.learning_rate,
+                weight_decay=args.weight_decay,
             )
         else:
             optimizer = torch.optim.Adam(

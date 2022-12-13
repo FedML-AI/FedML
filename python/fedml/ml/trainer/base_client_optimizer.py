@@ -32,7 +32,7 @@ class ClientOptimizer(ABC):
         return client_status
 
     @abstractmethod
-    def preprocess(self, args, client_index, model, train_data, device, server_result, criterion):
+    def preprocess(self, args, client_index, model, train_data, device, server_result, optimizer, criterion):
         """
         1. Return params_to_update for update usage.
         2. pass model, train_data here, in case the algorithm need some preprocessing
