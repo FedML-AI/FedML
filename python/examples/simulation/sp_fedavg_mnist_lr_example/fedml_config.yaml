@@ -8,7 +8,7 @@ common_args:
 
 data_args:
   dataset: "mnist"
-  data_cache_dir: ~/fedml_data
+  data_cache_dir: ../../data
   partition_method: "hetero"
   partition_alpha: 0.5
 
@@ -31,18 +31,18 @@ validation_args:
   frequency_of_the_test: 1
 
 device_args:
-  using_gpu: true
+  using_gpu: false
   gpu_id: 0
 
 comm_args:
   backend: "sp"
 
 tracking_args:
-  enable_tracking: true
+  enable_tracking: false
   # the default log path is at ~/fedml-client/fedml/logs/ and ~/fedml-server/fedml/logs/
   enable_wandb: false
   wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
   wandb_entity: fedml-ai
   wandb_project: simulation
   run_name: fedml_torch_fedavg_mnist_lr
-  using_mlops: true
+  using_mlops: false

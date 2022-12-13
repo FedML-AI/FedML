@@ -3,7 +3,7 @@
 push_arm_arch_images=$1
 
 export FEDML_VERSION=`cat python/setup.py |grep version= |awk -F'=' '{print $2}' |awk -F',' '{print $1}'|awk -F'"' '{print $2}'`
-if [[ $push_arm_arch_images == "" ]]; then
+if [[ $push_arm_arch_images = "" ]]; then
   docker push fedml/fedml:latest-torch1.12.1-cuda11.3-cudnn8-devel
   docker push fedml/fedml:${FEDML_VERSION}-torch1.12.1-cuda11.3-cudnn8-devel
 fi
