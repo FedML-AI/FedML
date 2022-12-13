@@ -6,6 +6,6 @@ echo $PROCESS_NUM
 
 hostname > mpi_host_file
 
-$(which mpirun) -np $PROCESS_NUM \
+mpirun -np $PROCESS_NUM \
 -hostfile mpi_host_file \
 python torch_main.py --cf config/simulation/fedml_config.yaml
