@@ -136,7 +136,7 @@ class MqttWeb3CommManager(BaseCommunicationManager):
             # logging.info("self.client_real_ids = {}".format(self.client_real_ids))
             for client_rank in range(0, self.client_num):
                 real_topic = self._topic + str(self.client_real_ids[client_rank])
-                result, mid = mqtt_client_object.subscribe(real_topic, qos=2)
+                result, mid = mqtt_client_object.subscribe(real_topic, 0)
 
                 # logging.info(
                 #     "mqtt_web3.on_connect: subscribes real_topic = %s, mid = %s, result = %s"
@@ -147,7 +147,7 @@ class MqttWeb3CommManager(BaseCommunicationManager):
         else:
             # client
             real_topic = self._topic + str(self.server_id) + "_" + str(self.client_real_ids[0])
-            result, mid = mqtt_client_object.subscribe(real_topic, qos=2)
+            result, mid = mqtt_client_object.subscribe(real_topic, 0)
 
             self._notify_connection_ready()
 

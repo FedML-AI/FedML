@@ -1129,15 +1129,15 @@ class FedMLServerRunner:
         self.mqtt_mgr.add_message_listener(topic_ota_msg, self.callback_server_ota_msg)
 
         # Subscribe topics for starting train, stopping train and fetching client status.
-        mqtt_client_object.subscribe(topic_start_train, qos=2)
-        mqtt_client_object.subscribe(topic_stop_train, qos=2)
-        mqtt_client_object.subscribe(topic_server_status, qos=2)
-        mqtt_client_object.subscribe(topic_report_status, qos=2)
-        mqtt_client_object.subscribe(topic_client_agent_last_will_msg, qos=2)
-        mqtt_client_object.subscribe(topic_client_agent_active_msg, qos=2)
-        mqtt_client_object.subscribe(topic_server_last_will_msg, qos=2)
-        mqtt_client_object.subscribe(topic_server_active_msg, qos=2)
-        mqtt_client_object.subscribe(topic_ota_msg, qos=2)
+        mqtt_client_object.subscribe(topic_start_train)
+        mqtt_client_object.subscribe(topic_stop_train)
+        mqtt_client_object.subscribe(topic_server_status)
+        mqtt_client_object.subscribe(topic_report_status)
+        mqtt_client_object.subscribe(topic_client_agent_last_will_msg)
+        mqtt_client_object.subscribe(topic_client_agent_active_msg)
+        mqtt_client_object.subscribe(topic_server_last_will_msg)
+        mqtt_client_object.subscribe(topic_server_active_msg)
+        mqtt_client_object.subscribe(topic_ota_msg)
 
         # Broadcast the first active message.
         # self.send_agent_active_msg()

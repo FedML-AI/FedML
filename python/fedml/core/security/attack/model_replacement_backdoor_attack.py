@@ -1,8 +1,4 @@
 import random
-import fedml
-import torch
-import logging
-from collections import OrderedDict
 from .attack_base import BaseAttackMethod
 from ..common.utils import is_weight_param, vectorize_weight, compute_euclidean_distance
 from typing import List, Tuple, Dict, Any
@@ -39,7 +35,6 @@ class ModelReplacementBackdoorAttack(BaseAttackMethod):
         else:
             self.scale_factor_S = None
         self.training_round = 1
-        self.device = fedml.device.get_device(args)
 
     def attack_model(
             self,
@@ -53,20 +48,20 @@ class ModelReplacementBackdoorAttack(BaseAttackMethod):
             malicious_idx = random.randrange(participant_num)  # randomly select a client as a malicious client
         else:
             malicious_idx = self.malicious_client_id
-        global_model = OrderedDict()
-        for k in extra_auxiliary_info.keys():
-            global_model[k] = extra_auxiliary_info[k].to(self.device)
-        logging.info(f"malicious_idx={malicious_idx}")
+        global_model = extra_auxiliary_info
+        print(f"malicious_idx={malicious_idx}")
         (num, original_client_model) = raw_client_grad_list[malicious_idx]
         raw_client_grad_list.pop(malicious_idx)
+        new_client_model = dict()
         if self.scale_factor_S is None:
             gamma = participant_num
         else:
             gamma = self.compute_gamma(global_model, original_client_model)
+        # print(f"gamma = {gamma}")
         for k in original_client_model.keys():
             if is_weight_param(k):
-                original_client_model[k] = torch.tensor(gamma * (original_client_model[k] - global_model[k]) + global_model[k]).float().to(self.device)
-        raw_client_grad_list.insert(malicious_idx, (num, original_client_model))
+                new_client_model[k] = gamma * (original_client_model[k] - global_model[k]) + global_model[k]
+        raw_client_grad_list.insert(malicious_idx, (num, new_client_model))
         self.training_round = self.training_round + 1
         return raw_client_grad_list
 

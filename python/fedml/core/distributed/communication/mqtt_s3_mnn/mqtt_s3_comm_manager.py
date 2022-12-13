@@ -86,16 +86,10 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
             self.top_active_msg = CommunicationConstants.SERVER_TOP_ACTIVE_MSG
             self.topic_last_will_msg = CommunicationConstants.SERVER_TOP_LAST_WILL_MSG
         self.last_will_msg = json.dumps({"ID": self.edge_id, "status": CommunicationConstants.MSG_CLIENT_STATUS_OFFLINE})
-        self.mqtt_mgr = MqttManager(
-            config_path["BROKER_HOST"],
-            config_path["BROKER_PORT"],
-            config_path["MQTT_USER"],
-            config_path["MQTT_PWD"],
-            config_path["MQTT_KEEPALIVE"],
-            self._client_id,
-            last_will_topic=self.topic_last_will_msg,
-            last_will_msg=self.last_will_msg
-        )
+        self.mqtt_mgr = MqttManager(self.broker_host, self.broker_port, self.mqtt_user, self.mqtt_pwd,
+                                    self.keepalive_time,
+                                    self._client_id, self.topic_last_will_msg,
+                                    self.last_will_msg)
         self.mqtt_mgr.add_connected_listener(self.on_connected)
         self.mqtt_mgr.add_disconnected_listener(self.on_disconnected)
         self.mqtt_mgr.connect()
@@ -135,7 +129,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
 
             for client_ID in range(1, self.client_num + 1):
                 real_topic = self._topic + str(self.client_real_ids[client_ID - 1])
-                result, mid = mqtt_client_object.subscribe(real_topic, qos=2)
+                result, mid = mqtt_client_object.subscribe(real_topic, 0)
 
                 logging.info(
                     "mqtt_s3.on_connect: server subscribes real_topic = %s, mid = %s, result = %s"
@@ -146,7 +140,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
         else:
             # client
             real_topic = self._topic + str(self.server_id) + "_" + str(self.client_real_ids[0])
-            result, mid = mqtt_client_object.subscribe(real_topic, qos=2)
+            result, mid = mqtt_client_object.subscribe(real_topic, 0)
 
             logging.info(
                 "mqtt_s3.on_connect: client subscribes real_topic = %s, mid = %s, result = %s"

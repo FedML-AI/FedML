@@ -1,6 +1,12 @@
 from fedml.core.dp.mechanisms import Gaussian, Laplace
+import torch
+from typing import Union, Iterable
+
 from collections import OrderedDict
+
 """call dp mechanisms, e.g., Gaussian, Laplace """
+
+_tensor_or_tensors = Union[torch.Tensor, Iterable[torch.Tensor]]
 
 
 class DPMechanism:
@@ -16,37 +22,14 @@ class DPMechanism:
             raise NotImplementedError("DP mechanism not implemented!")
 
     def add_noise(self, grad):
-        new_grad = OrderedDict()
+        new_grad = dict()
         for k in grad.keys():
             new_grad[k] = self._compute_new_grad(grad[k])
-        # if self.enable_accountant:
-        #     self.accountant.spend(epsilon=self.epsilon, delta=0)
         return new_grad
 
     def _compute_new_grad(self, grad):
         noise = self.dp.compute_noise(grad.shape)
         return noise + grad
-
-    # def add_noise(self, grad):
-    #     noise_list_len = len(vectorize_weight(grad))
-    #     noise_list = np.zeros(noise_list_len)
-    #     vec_weight = vectorize_weight(grad)
-    #     for i in range(noise_list_len):
-    #         noise_list[i] = self.dp.compute_noise()
-    #     new_vec_grad = vec_weight + noise_list
-    #
-    #     new_grad = {}
-    #     index_bias = 0
-    #     print(f"noises in add_noise = {noise_list}")
-    #     for item_index, (k, v) in enumerate(grad.items()):
-    #         if is_weight_param(k):
-    #             new_grad[k] = new_vec_grad[index_bias : index_bias + v.numel()].view(
-    #                 v.size()
-    #             )
-    #             index_bias += v.numel()
-    #         else:
-    #             new_grad[k] = v
-    #     return new_grad
 
     def add_a_noise_to_local_data(self, local_data):
         new_data = []
@@ -57,3 +40,7 @@ class DPMechanism:
                 list.append(y)
             new_data.append(tuple(list))
         return new_data
+
+
+
+
