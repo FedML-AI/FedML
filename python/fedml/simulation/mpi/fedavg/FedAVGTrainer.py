@@ -32,9 +32,21 @@ class FedAVGTrainer(object):
 
     def update_dataset(self, client_index):
         self.client_index = client_index
-        self.train_local = self.train_data_local_dict[client_index]
-        self.local_sample_number = self.train_data_local_num_dict[client_index]
-        self.test_local = self.test_data_local_dict[client_index]
+
+        if self.train_data_local_dict is not None:
+            self.train_local = self.train_data_local_dict[client_index]
+        else:
+            self.train_local = None
+
+        if self.train_data_local_num_dict is not None:
+            self.local_sample_number = self.train_data_local_num_dict[client_index]
+        else:
+            self.local_sample_number = 0
+
+        if self.test_data_local_dict is not None:
+            self.test_local = self.test_data_local_dict[client_index]
+        else:
+            self.test_local = None
 
     def train(self, round_idx=None):
         self.args.round_idx = round_idx
