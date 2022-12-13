@@ -11,6 +11,6 @@ echo $PROCESS_NUM
 echo $PROCESS_NUM
 echo $MPI_HOST
 
-$(which mpirun) -np $PROCESS_NUM \
+mpirun -np $PROCESS_NUM \
 -host $MPI_HOST \
 python torch_fedavg.py --cf config/fedml_config.yaml
