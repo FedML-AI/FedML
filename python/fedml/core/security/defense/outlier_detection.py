@@ -31,6 +31,3 @@ class OutlierDetection(BaseDefenseMethod):
         if self.cross_round_check.is_attack_existing:
             client_grad_list = self.three_sigma_check.defend_before_aggregation(client_grad_list, extra_auxiliary_info)
         return client_grad_list
-
-    def get_malicious_client_idxs(self):
-        return self.three_sigma_check.get_malicious_client_idxs()

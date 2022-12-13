@@ -6,6 +6,6 @@
 
 - Examples of FedML Android: [FedML/android](../android)
 
-- Advanced Applications developed on FedML: [https://github.com/FedML-AI/FedML/tree/master/python/app](https://github.com/FedML-AI/FedML/tree/master/python/app) 
+- Adavanced Applications developed on FedML: [https://github.com/FedML-AI/FedML/tree/master/python/app](https://github.com/FedML-AI/FedML/tree/master/python/app) 
 
 - User Guide for MLOps: [https://doc.fedml.ai/mlops/user_guide.html](https://doc.fedml.ai/mlops/user_guide.html)

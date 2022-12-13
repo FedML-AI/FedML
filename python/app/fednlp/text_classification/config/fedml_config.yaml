@@ -18,9 +18,9 @@ data_args:
   model_file_cache_folder: "/home/ubuntu/FedML/python/app/model_cache_dir/global_model.pt"
 
 model_args:
-  model_type: "bert"
+  model_type: "distilbert" # bert; distilbert
   model_class: "transformer"
-  model: "bert-base-uncased"
+  model: "distilbert-base-uncased" # bert-base-uncased; distilbert-base-uncased;
   do_lower_case: true
   formulation: "classification"
 
@@ -31,7 +31,7 @@ train_args:
   federated_optimizer: "FedAvg"
   client_id_list:
   client_num_in_total: 100
-  client_num_per_round: 1
+  client_num_per_round: 2
   comm_round: 50
   epochs: 10
   batch_size: 32
@@ -60,10 +60,8 @@ validation_args:
   frequency_of_the_test: 5
 
 device_args:
-  worker_num: 1
-  using_gpu: false
-  gpu_mapping_file: config/simulation/gpu_mapping.yaml
-  gpu_mapping_key: mapping_fednlp_sp
+  worker_num: 2
+  using_gpu: true
 
 comm_args:
   backend: "MQTT_S3"
@@ -72,8 +70,10 @@ comm_args:
 
 
 tracking_args:
-  # the default log path is at ~/fedml-client/fedml/logs/ and ~/fedml-server/fedml/logs/
-  enable_wandb: false
-  wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
-  wandb_project: fedml
+  # When running on MLOps platform(open.fedml.ai), the default log path is at ~/fedml-client/fedml/logs/ and ~/fedml-server/fedml/logs/
+  enable_wandb: true
+  wandb_entity: fedml-team
+  wandb_only_server: true
+  wandb_key: 404bae40078b1624faed523c4e9d25b40590e537
+  wandb_project: fednlp
   wandb_name: fedml_torch_fedavg_mnist_lr

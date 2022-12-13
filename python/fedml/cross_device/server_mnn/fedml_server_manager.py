@@ -360,7 +360,7 @@ class FedMLServerManager(FedMLCommManager):
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(data_silo_index))
         self.send_message(message)
 
-        global_model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
+        global_model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL, None)
         global_model_key = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY)
 
         mlops.log_aggregated_model_info(

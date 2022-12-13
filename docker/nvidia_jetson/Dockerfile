@@ -22,4 +22,4 @@ ADD ./nvidia_jetson/docker-location.yml /root/fedml-server/fedml/data/docker-loc
 
 RUN ln -nsf /usr/bin/python3 /usr/bin/python
 RUN ln -nsf /usr/bin/pip3 /usr/bin/pip
-RUN pip install --upgrade pip && pip install -U fedml
+RUN pip install --upgrade pip && pip uninstall fedml;pip install -U fedml
