@@ -228,4 +228,3 @@ class MqttManager(object):
     def subscribe_msg(self, topic):
         self._client.subscribe(topic, qos=2)
 
-

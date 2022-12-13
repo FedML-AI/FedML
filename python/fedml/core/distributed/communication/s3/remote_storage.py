@@ -1,3 +1,4 @@
+import io
 import json
 import logging
 import os
@@ -5,15 +6,15 @@ import pickle
 import time
 
 import boto3
-import yaml
-from torch import nn
-
-from fedml.core.distributed.communication.s3.utils import load_params_from_tf, process_state_dict
-from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
-
 # for multi-processing, we need to create a global variable for AWS S3 client:
 # https://www.pythonforthelab.com/blog/differences-between-multiprocessing-windows-and-linux/
 # https://stackoverflow.com/questions/72313845/multiprocessing-picklingerror-cant-pickle-class-botocore-client-s3-attr
+import tqdm
+import yaml
+from fedml.core.distributed.communication.s3.utils import load_params_from_tf, process_state_dict
+from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
+from torch import nn
+
 aws_s3_client = None
 aws_s3_resource = None
 
@@ -45,17 +46,20 @@ class S3Storage:
     def write_model(self, message_key, model):
         global aws_s3_client
         pickle_dump_start_time = time.time()
-        model_pkl = pickle.dumps(model)
         MLOpsProfilerEvent.log_to_wandb(
             {"PickleDumpsTime": time.time() - pickle_dump_start_time}
         )
         # for python clients
         model_pkl = pickle.dumps(model)
-        model_to_send = model_pkl
+        model_to_send = model_pkl  # bytes object
         s3_upload_start_time = time.time()
-        aws_s3_client.put_object(
-            Body=model_to_send, Bucket=self.bucket_name, Key=message_key, ACL="public-read",
-        )
+
+        file_size = len(model_to_send)
+        with tqdm.tqdm(total=file_size, unit="B", unit_scale=True, desc="Uploading Model to AWS S3") as pbar:
+            aws_s3_client.upload_fileobj(
+                Fileobj=io.BytesIO(model_to_send), Bucket=self.bucket_name, Key=message_key,
+                Callback=lambda bytes_transferred: pbar.update(bytes_transferred),
+            )
         MLOpsProfilerEvent.log_to_wandb(
             {"Comm/send_delay": time.time() - s3_upload_start_time}
         )
@@ -69,12 +73,11 @@ class S3Storage:
     def write_model_web(self, message_key, model):
         global aws_s3_client
         pickle_dump_start_time = time.time()
-        model_pkl = pickle.dumps(model)
         MLOpsProfilerEvent.log_to_wandb(
             {"PickleDumpsTime": time.time() - pickle_dump_start_time}
         )
         # for javascript clients
-        state_dict = model # type: OrderedDict
+        state_dict = model  # type: OrderedDict
         model_json = process_state_dict(state_dict)
         model_to_send = json.dumps(model_json)
         s3_upload_start_time = time.time()
@@ -94,19 +97,33 @@ class S3Storage:
     def read_model(self, message_key):
         global aws_s3_client
         message_handler_start_time = time.time()
-        obj = aws_s3_client.get_object(Bucket=self.bucket_name, Key=message_key)
-        model_pkl = obj["Body"].read()
+
+        kwargs = {"Bucket": self.bucket_name, "Key": message_key}
+        object_size = aws_s3_client.head_object(**kwargs)["ContentLength"]
+        temp_base_file_path = './cache/S3_DOWNLOADED_MODEL' + "_P" + str(os.getpid())
+        if not os.path.exists(temp_base_file_path):
+            os.makedirs(temp_base_file_path)
+        temp_file_path = temp_base_file_path + "/" + str(message_key)
+        logging.info("temp_file_path = {}".format(temp_file_path))
+        with tqdm.tqdm(total=object_size, unit="B", unit_scale=True, desc="Downloading Model to AWS S3") as pbar:
+            with open(temp_file_path, 'wb') as f:
+                aws_s3_client.download_fileobj(Bucket=self.bucket_name, Key=message_key, Fileobj=f,
+                                                     Callback=lambda bytes_transferred: pbar.update(bytes_transferred), )
         MLOpsProfilerEvent.log_to_wandb(
             {"Comm/recieve_delay_s3": time.time() - message_handler_start_time}
         )
+
         unpickle_start_time = time.time()
-        model = pickle.loads(model_pkl)
+        with open(temp_file_path, 'rb') as model_pkl_file:
+            model = pickle.load(model_pkl_file)
+        os.remove(temp_file_path)
+        os.rmdir(temp_base_file_path)
         MLOpsProfilerEvent.log_to_wandb(
             {"UnpickleTime": time.time() - unpickle_start_time}
         )
         return model
 
-    # TODO: added python torch model to align the Tensorflow paramters from browser
+    # TODO: added python torch model to align the Tensorflow parameters from browser
     def read_model_web(self, message_key, py_model: nn.Module):
         global aws_s3_client
         message_handler_start_time = time.time()
@@ -229,7 +246,8 @@ class S3Storage:
                     break
                 retry += 1
             except Exception as e:
-                raise Exception("S3 base commands test failed at retry count {}, exception: {}".format(str(retry), str(e)))
+                raise Exception(
+                    "S3 base commands test failed at retry count {}, exception: {}".format(str(retry), str(e)))
                 retry += 1
         if retry >= 3:
             raise Exception(f"S3 base commands test failed after max retry.")
