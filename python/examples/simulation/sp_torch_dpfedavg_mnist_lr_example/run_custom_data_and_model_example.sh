@@ -9,4 +9,4 @@ hostname > mpi_host_file
 
 mpirun -np $PROCESS_NUM \
 -hostfile mpi_host_file \
-python torch_mpi.py --cf config/crfl/fedml_config.yaml
+python torch_fedavg_defense_mnist_lr_custum_data_and_model_example.py --cf config/fedml_config.yaml

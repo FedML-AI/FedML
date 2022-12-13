@@ -32,10 +32,14 @@ class FedMLCommManager(Observer):
         return self.rank
 
     def receive_message(self, msg_type, msg_params) -> None:
-        logging.info(
-            "receive_message. msg_type = %s, sender_id = %d, receiver_id = %d"
-            % (str(msg_type), msg_params.get_sender_id(), msg_params.get_receiver_id())
-        )
+
+        if msg_params.get_sender_id() == msg_params.get_receiver_id():
+            logging.info("communication backend is alive (loop_forever, sender 0 to receiver 0)")
+        else:
+            logging.info(
+                "receive_message. msg_type = %s, sender_id = %d, receiver_id = %d"
+                % (str(msg_type), msg_params.get_sender_id(), msg_params.get_receiver_id())
+            )
         try:
             handler_callback_func = self.message_handler_dict[msg_type]
             handler_callback_func(msg_params)

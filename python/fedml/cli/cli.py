@@ -563,28 +563,14 @@ def build_mlops_package(
 @click.option(
     "--mqtt", "-m", default=None, is_flag=True, help="check the connection to mqtt.fedml.ai (1883).",
 )
-@click.option(
-    "--mqtt_daemon", "-d", default=None, is_flag=False, help="check the connection to mqtt.fedml.ai (1883) with loop mode.",
-)
-@click.option(
-    "--mqtt_s3_backend", "-ms", default=None, is_flag=False, help="check the connection to mqtt.fedml.ai (1883) with loop mode.",
-)
-def mlops_diagnosis(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend):
+def mlops_diagnosis(open, s3, mqtt):
     check_open = open
     check_s3 = s3
     check_mqtt = mqtt
-    check_mqtt_daemon = mqtt_daemon
-    check_mqtt_s3_backend = mqtt_s3_backend
     if open is None and s3 is None and mqtt is None:
         check_open = True
         check_s3 = True
         check_mqtt = True
-
-    if mqtt_daemon is None:
-        check_mqtt_daemon = False
-
-    if mqtt_s3_backend is None:
-        check_mqtt_s3_backend = False
 
     if check_open:
         is_open_connected = ClientDiagnosis.check_open_connection()
@@ -607,11 +593,6 @@ def mlops_diagnosis(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend):
         else:
             click.echo("You can not connect to mqtt.fedml.ai (port:1883).")
 
-    if check_mqtt_daemon:
-        ClientDiagnosis.check_mqtt_connection_with_daemon_mode()
-
-    if check_mqtt_s3_backend:
-        ClientDiagnosis.check_mqtt_s3_communication_backend()
 
 @cli.command(
     "env",
