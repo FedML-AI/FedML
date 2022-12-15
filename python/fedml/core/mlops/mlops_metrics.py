@@ -312,14 +312,13 @@ class MLOpsMetrics(Singleton):
         sys_metrics.sys_stats_process.start()
 
     def report_sys_performances(self):
-        self.set_messenger(None, self.args)
         mqtt_mgr = MqttManager(
             self.args.mqtt_config_path["BROKER_HOST"],
             self.args.mqtt_config_path["BROKER_PORT"],
             self.args.mqtt_config_path["MQTT_USER"],
             self.args.mqtt_config_path["MQTT_PWD"],
             180,
-            "FedML_Metrics_SysPerf_{}_{}".format(str(self.args.device_id), str(self.edge_id))
+            "MLOpsMetrics" + str(uuid.uuid4()),
         )
 
         self.set_messenger(mqtt_mgr, self.args)
@@ -336,8 +335,6 @@ class MLOpsMetrics(Singleton):
             time.sleep(10)
 
         logging.info("System metrics process is about to exit.")
-        mqtt_mgr.loop_stop()
-        mqtt_mgr.disconnect()
 
 
 if __name__ == "__main__":

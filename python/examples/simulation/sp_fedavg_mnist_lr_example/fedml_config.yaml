@@ -31,14 +31,14 @@ validation_args:
   frequency_of_the_test: 1
 
 device_args:
-  using_gpu: false
+  using_gpu: true
   gpu_id: 0
 
 comm_args:
   backend: "sp"
 
 tracking_args:
-  enable_tracking: false
+  enable_tracking: true
   # When running on MLOps platform(open.fedml.ai), the default log path is at ~/fedml-client/fedml/logs/ and ~/fedml-server/fedml/logs/
   enable_wandb: false
   wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
