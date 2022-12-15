@@ -118,6 +118,27 @@ class MLOpsRuntimeLog:
             self.logger.addHandler(file_handle)
         logging.root = self.logger
 
+        import sys
+
+        class GlobalLogger(object):
+            def __init__(self, filename='default.log', stream=sys.stdout, format_str=""):
+                self.terminal = stream
+                self.log = open(filename, 'a')
+                self.format_str = format_str
+                if self.log is not None:
+                    print("open log file")
+
+            def write(self, message):
+                self.terminal.write("{}{}".format(format_str, message))
+                self.log.write("{}{}".format(format_str, message))
+
+            def flush(self):
+                pass
+
+        #sys.stdout = GlobalLogger(log_file_path, sys.stdout)
+        #sys.stderr = GlobalLogger(log_file_path, sys.stderr)
+        #print("Make `print` output to log files.", file=GlobalLogger(log_file_path, sys.stdout).log)
+
     @staticmethod
     def build_log_file_path(in_args):
         if in_args.rank == 0:
