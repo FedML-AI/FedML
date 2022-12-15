@@ -592,38 +592,53 @@ def setup_log_mqtt_mgr():
         MLOpsStore.mlops_log_agent_config["mqtt_config"]["MQTT_USER"],
         MLOpsStore.mlops_log_agent_config["mqtt_config"]["MQTT_PWD"],
         MLOpsStore.mlops_log_agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
-        "Simulation_Link_" + str(uuid.uuid4()),
+        "FedML_MLOps_Metrics_" + MLOpsStore.mlops_args.device_id + "_" + str(MLOpsStore.mlops_edge_id)
     )
     MLOpsStore.mlops_log_mqtt_mgr.add_connected_listener(on_log_mqtt_connected)
     MLOpsStore.mlops_log_mqtt_mgr.add_disconnected_listener(on_log_mqtt_disconnected)
     MLOpsStore.mlops_log_mqtt_mgr.connect()
     MLOpsStore.mlops_log_mqtt_mgr.loop_start()
 
+    if MLOpsStore.mlops_metrics is None:
+        MLOpsStore.mlops_metrics = MLOpsMetrics()
+        MLOpsStore.mlops_metrics.set_messenger(MLOpsStore.mlops_log_mqtt_mgr, MLOpsStore.mlops_args)
 
-def release_log_mqtt_mgr():
-    return
-    # if MLOpsStore.mlops_log_mqtt_mgr is not None:
-    #     MLOpsStore.mlops_log_mqtt_mgr.disconnect()
-    #     MLOpsStore.mlops_log_mqtt_mgr.loop_stop()
-    #
-    # MLOpsStore.mlops_log_mqtt_lock.acquire()
-    # if MLOpsStore.mlops_log_mqtt_mgr is not None:
-    #     MLOpsStore.mlops_log_mqtt_is_connected = False
-    # MLOpsStore.mlops_log_mqtt_lock.release()
+    MLOpsStore.mlops_metrics.run_id = MLOpsStore.mlops_run_id
+    MLOpsStore.mlops_metrics.edge_id = MLOpsStore.mlops_edge_id
+
+    if MLOpsStore.mlops_event is None:
+        MLOpsStore.mlops_event = MLOpsProfilerEvent(MLOpsStore.mlops_args)
+        MLOpsStore.mlops_event.set_messenger(MLOpsStore.mlops_log_mqtt_mgr, MLOpsStore.mlops_args)
+
+    MLOpsStore.mlops_event.run_id = MLOpsStore.mlops_run_id
+    MLOpsStore.mlops_event.edge_id = MLOpsStore.mlops_edge_id
+
+
+def release_log_mqtt_mgr(real_release=False):
+    if real_release:
+        if MLOpsStore.mlops_log_mqtt_mgr is not None:
+            MLOpsStore.mlops_log_mqtt_mgr.disconnect()
+            MLOpsStore.mlops_log_mqtt_mgr.loop_stop()
+
+        MLOpsStore.mlops_log_mqtt_lock.acquire()
+        if MLOpsStore.mlops_log_mqtt_mgr is not None:
+            MLOpsStore.mlops_log_mqtt_is_connected = False
+        MLOpsStore.mlops_log_mqtt_lock.release()
 
 
 def wait_log_mqtt_connected():
-    while True:
-        MLOpsStore.mlops_log_mqtt_lock.acquire()
-        if MLOpsStore.mlops_log_mqtt_is_connected is True \
-                and MLOpsStore.mlops_metrics is not None:
-            MLOpsStore.mlops_metrics.set_messenger(MLOpsStore.mlops_log_mqtt_mgr, MLOpsStore.mlops_args)
-            if MLOpsStore.mlops_event is not None:
-                MLOpsStore.mlops_event.set_messenger(MLOpsStore.mlops_log_mqtt_mgr, MLOpsStore.mlops_args)
-            MLOpsStore.mlops_log_mqtt_lock.release()
-            break
-        MLOpsStore.mlops_log_mqtt_lock.release()
-        time.sleep(0.01)
+    pass
+    # while True:
+    #     MLOpsStore.mlops_log_mqtt_lock.acquire()
+    #     if MLOpsStore.mlops_log_mqtt_is_connected is True \
+    #             and MLOpsStore.mlops_metrics is not None:
+    #         MLOpsStore.mlops_metrics.set_messenger(MLOpsStore.mlops_log_mqtt_mgr, MLOpsStore.mlops_args)
+    #         if MLOpsStore.mlops_event is not None:
+    #             MLOpsStore.mlops_event.set_messenger(MLOpsStore.mlops_log_mqtt_mgr, MLOpsStore.mlops_args)
+    #         MLOpsStore.mlops_log_mqtt_lock.release()
+    #         break
+    #     MLOpsStore.mlops_log_mqtt_lock.release()
+    #     time.sleep(0.01)
 
 
 def init_logs(args, edge_id):

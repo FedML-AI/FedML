@@ -76,6 +76,7 @@ class ClientMasterManager(FedMLCommManager):
         self.round_idx = 0
 
         self.__train()
+        self.round_idx += 1
 
     def handle_message_receive_model_from_server(self, msg_params):
         logging.info("handle_message_receive_model_from_server.")
@@ -87,13 +88,11 @@ class ClientMasterManager(FedMLCommManager):
             self.sync_process_group(self.round_idx, model_params, client_index)
 
         self.trainer_dist_adapter.update_dataset(int(client_index))
-        logging.info("current roundx {}, num rounds {}".format(self.round_idx, self.num_rounds))
+        logging.info("current round index {}, total rounds {}".format(self.round_idx, self.num_rounds))
         self.trainer_dist_adapter.update_model(model_params)
-        if self.round_idx == self.num_rounds-1:
-            mlops.log_training_finished_status()
-            return
-        self.round_idx += 1
-        self.__train()
+        if self.round_idx < self.num_rounds:
+            self.__train()
+            self.round_idx += 1
 
     def handle_message_finish(self, msg_params):
         logging.info(" ====================cleanup ====================")
@@ -113,8 +112,8 @@ class ClientMasterManager(FedMLCommManager):
 
         MLOpsProfilerEvent.log_to_wandb({"Communication/Send_Total": time.time() - tick})
         mlops.log_client_model_info(
-            self.round_idx + 1, model_url=message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL),
-        )
+            self.round_idx+1, model_url=message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL),
+            )
 
     def send_client_status(self, receive_id, status="ONLINE"):
         logging.info("send_client_status")
