@@ -15,10 +15,3 @@ class Laplace(BaseDPMechanism):
 
     def compute_noise(self, size):
         return torch.tensor(np.random.laplace(loc=0.0, scale=self.scale, size=size))
-
-    # def clip_gradients(self, grad): # Laplace: 1 norm
-    #     new_grad = dict()
-    #     for k in grad.keys():
-    #         new_grad[k] = max(1, grad[k].norm(1)) / self.clipping
-    #     return new_grad
-
