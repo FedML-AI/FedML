@@ -56,6 +56,3 @@ class BaseDefenseMethod(ABC):
             Note: the data type of the return variable should be the same as the input
         """
         pass
-
-    def get_malicious_client_idxs(self):
-        return []
