@@ -442,13 +442,6 @@ class FedMLServerRunner:
             self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED
         )
 
-        try:
-            self.mlops_metrics.set_sys_reporting_status(False)
-        except Exception as ex:
-            pass
-
-        time.sleep(1)
-
         ServerConstants.cleanup_learning_process()
 
         try:
@@ -472,13 +465,6 @@ class FedMLServerRunner:
         logging.info("Cleanup run successfully when starting failed.")
 
         self.mlops_metrics.broadcast_server_training_status(self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
-
-        try:
-            self.mlops_metrics.set_sys_reporting_status(False)
-        except Exception as ex:
-            pass
-
-        time.sleep(1)
 
         ServerConstants.cleanup_learning_process()
 
@@ -742,9 +728,6 @@ class FedMLServerRunner:
         # logging.info("on_client_mqtt_connected: {}.".format(self.client_mqtt_is_connected))
 
     def setup_client_mqtt_mgr(self):
-        if self.client_mqtt_mgr is not None:
-            return
-
         if self.client_mqtt_lock is None:
             self.client_mqtt_lock = threading.Lock()
         if self.client_mqtt_mgr is not None:
@@ -767,45 +750,36 @@ class FedMLServerRunner:
             self.agent_config["mqtt_config"]["MQTT_USER"],
             self.agent_config["mqtt_config"]["MQTT_PWD"],
             self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
-            "FedML_ServerAgent_Metrics_{}_{}".format(self.args.current_device_id, str(os.getpid()))
+            "ServerAgent_Comm_Server" + str(uuid.uuid4()),
         )
         self.client_mqtt_mgr.add_connected_listener(self.on_client_mqtt_connected)
         self.client_mqtt_mgr.add_disconnected_listener(self.on_client_mqtt_disconnected)
         self.client_mqtt_mgr.connect()
         self.client_mqtt_mgr.loop_start()
 
-        if self.mlops_metrics is None:
-            self.mlops_metrics = MLOpsMetrics()
-        self.mlops_metrics.set_messenger(self.client_mqtt_mgr)
-        self.mlops_metrics.run_id = self.run_id
-        self.mlops_metrics.edge_id = self.edge_id
-        self.mlops_metrics.server_agent_id = self.server_agent_id
+    def release_client_mqtt_mgr(self):
+        if self.client_mqtt_mgr is not None:
+            self.client_mqtt_mgr.disconnect()
+            self.client_mqtt_mgr.loop_stop()
 
-    def release_client_mqtt_mgr(self, real_release=False):
-        if real_release:
-            if self.client_mqtt_mgr is not None:
-                self.client_mqtt_mgr.disconnect()
-                self.client_mqtt_mgr.loop_stop()
-
-            self.client_mqtt_lock.acquire()
-            if self.client_mqtt_mgr is not None:
-                self.client_mqtt_is_connected = False
-                self.client_mqtt_mgr = None
-            self.client_mqtt_lock.release()
+        self.client_mqtt_lock.acquire()
+        if self.client_mqtt_mgr is not None:
+            self.client_mqtt_is_connected = False
+            self.client_mqtt_mgr = None
+        self.client_mqtt_lock.release()
 
     def wait_client_mqtt_connected(self):
-        pass
-        # while True:
-        #     self.client_mqtt_lock.acquire()
-        #     if self.client_mqtt_is_connected is True:
-        #         self.mlops_metrics.set_messenger(self.client_mqtt_mgr)
-        #         self.mlops_metrics.run_id = self.run_id
-        #         self.mlops_metrics.edge_id = self.edge_id
-        #         self.mlops_metrics.server_agent_id = self.server_agent_id
-        #         self.client_mqtt_lock.release()
-        #         break
-        #     self.client_mqtt_lock.release()
-        #     time.sleep(0.1)
+        while True:
+            self.client_mqtt_lock.acquire()
+            if self.client_mqtt_is_connected is True:
+                self.mlops_metrics.set_messenger(self.client_mqtt_mgr)
+                self.mlops_metrics.run_id = self.run_id
+                self.mlops_metrics.edge_id = self.edge_id
+                self.mlops_metrics.server_agent_id = self.server_agent_id
+                self.client_mqtt_lock.release()
+                break
+            self.client_mqtt_lock.release()
+            time.sleep(0.1)
 
     def send_training_stop_request_to_edges(self, edge_id_list, payload):
         self.wait_client_mqtt_connected()
@@ -1186,7 +1160,7 @@ class FedMLServerRunner:
             service_config["mqtt_config"]["MQTT_USER"],
             service_config["mqtt_config"]["MQTT_PWD"],
             service_config["mqtt_config"]["MQTT_KEEPALIVE"],
-            "FedML_ServerAgent_Daemon_" + self.args.current_device_id,
+            self.edge_id,
             "/flserver_agent/last_will_msg",
             json.dumps({"ID": self.edge_id, "status": ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE}),
         )

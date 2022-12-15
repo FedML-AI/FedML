@@ -5,6 +5,7 @@ import traceback
 import uuid
 from typing import List
 from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
+import paho.mqtt.client as mqtt
 import yaml
 
 from fedml.model.linear.lr import LogisticRegression
@@ -81,7 +82,10 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
 
         self._observers: List[Observer] = []
 
-        self._client_id = "FedML_CS_{}_{}".format(str(args.run_id), str(self.edge_id))
+        if client_rank is None:
+            self._client_id = mqtt.base62(uuid.uuid4().int, padding=22)
+        else:
+            self._client_id = client_rank
         self.client_num = client_num
         logging.info("mqtt_s3.init: client_num = %d" % client_num)
 
@@ -132,7 +136,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         self.mqtt_mgr.add_message_passthrough_listener(self._on_message)
 
         # Subscribe one topic
-        if self.args.rank == 0:
+        if self.client_id == 0:
             # server
             self.subscribe_client_status_message()
 
@@ -251,7 +255,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         """
         sender_id = msg.get_sender_id()
         receiver_id = msg.get_receiver_id()
-        if self.args.rank == 0:
+        if self.client_id == 0:
             # topic = "fedml" + "_" + "run_id" + "_0" + "_" + "client_id"
             topic = self._topic + str(self.server_id) + "_" + str(receiver_id)
             logging.info("mqtt_s3.send_message: msg topic = %s" % str(topic))
