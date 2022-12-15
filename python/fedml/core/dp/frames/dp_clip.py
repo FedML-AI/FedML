@@ -34,7 +34,7 @@ class DP_Clip(BaseDPFrame):
         return torch.normal(mean=0, std=self._scale, size=size)
 
     def add_noise(self, w_global, qw):
-        new_params = dict()
+        new_params = OrderedDict()
         for k in w_global.keys():
             new_params[k] = self.compute_noise(w_global[k].shape, qw) + w_global[k]
         return new_params

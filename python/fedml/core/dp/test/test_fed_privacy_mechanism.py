@@ -1,8 +1,11 @@
 import argparse
+from collections import OrderedDict
+
 import torch
+
 from ..fedml_differential_privacy import FedMLDifferentialPrivacy
 
-a_local_w = dict()
+a_local_w = OrderedDict()
 a_local_w["linear.weight"] = torch.FloatTensor(
     [[0.1, 0.2, 0.2, 0.1], [0.15, 0.12, 0.02, 0.2], [0.3, 0.01, 0.21, 0.11]]
 )
