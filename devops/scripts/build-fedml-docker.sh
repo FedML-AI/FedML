@@ -4,7 +4,7 @@ build_arm_arch_images=$1
 
 export FEDML_VERSION=`cat python/setup.py |grep version= |awk -F'=' '{print $2}' |awk -F',' '{print $1}'|awk -F'"' '{print $2}'`
 
-if [[ $build_arm_arch_images == "" ]]; then
+if [[ $build_arm_arch_images = "" ]]; then
   # Build X86_64 docker
   ARCH="x86_64"
   OS="ubuntu18.04"

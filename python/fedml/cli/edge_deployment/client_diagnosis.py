@@ -70,7 +70,7 @@ class ClientDiagnosis(Singleton):
                 mqtt_config["MQTT_USER"],
                 mqtt_config["MQTT_PWD"],
                 mqtt_config["MQTT_KEEPALIVE"],
-                "fedml-diagnosis-id"
+                "FedML_Diagnosis_Normal_" + str(uuid.uuid4())
             )
             diagnosis = ClientDiagnosis()
             diagnosis.is_mqtt_connected = False
@@ -146,7 +146,7 @@ class ClientDiagnosis(Singleton):
             comm_client = MqttS3MultiClientsCommManager(
                 mqtt_config,
                 s3_config,
-                topic="fedml-diagnosis-id-" + str(run_id),
+                topic="FedML_Diagnosis_CS_" + str(run_id),
                 client_rank=1,
                 client_num=1,
                 args=args,
@@ -180,7 +180,7 @@ class ClientDiagnosis(Singleton):
                 mqtt_config["MQTT_USER"],
                 mqtt_config["MQTT_PWD"],
                 10, #mqtt_config["MQTT_KEEPALIVE"],
-                "fedml-diagnosis-id-" + str(uuid.uuid4())
+                "FedML_Diagnosis_Daemon_" + str(uuid.uuid4())
             )
             diagnosis = ClientDiagnosis()
             mqtt_mgr.add_connected_listener(diagnosis.on_test_mqtt_connected)
