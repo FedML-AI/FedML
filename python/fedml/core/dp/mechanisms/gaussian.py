@@ -32,9 +32,3 @@ class Gaussian(BaseDPMechanism):
 
     def compute_noise(self, size):
         return torch.normal(mean=0, std=self._scale, size=size)
-
-    # def clip_gradients(self, grad): # Gaussian: 2 norm
-    #     new_grad = dict()
-    #     for k in grad.keys():
-    #         new_grad[k] = max(1, grad[k].norm(2)) / self.clipping
-    #     return new_grad
