@@ -44,7 +44,8 @@ requirements = [
     "wandb==0.13.2",
     "eciespy",
     "PyNaCl",
-    "httpx"
+    "httpx",
+    "attrs"
 ]
 
 requirements_extra_mpi = [
@@ -75,7 +76,7 @@ requirements_extra_mxnet = [
 
 setup(
     name="fedml",
-    version="0.7.355",
+    version="0.7.361",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "

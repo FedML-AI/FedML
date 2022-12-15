@@ -104,7 +104,7 @@ def get_device(args):
             gpu_mapping_key = (
                 args.gpu_mapping_key if hasattr(args, "gpu_mapping_key") else None
             )
-            gpu_id = None  # no no need to set gpu_id
+            gpu_id = args.gpu_id if hasattr(args, "gpu_id") else None  # no no need to set gpu_id
         else:
             gpu_mapping_file = None
             gpu_mapping_key = None

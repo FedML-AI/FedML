@@ -228,7 +228,7 @@ Now you are ready to start the training. Enjoy! We provide the following experim
 - distributed logging
 ![image](../_static/image/MLOps_experimental_tracking_logging.png)
 
-   Also, you may review your edge client logs via the command 'fedml logs' in your edge client device, and you may review your edge server logs via the command 'fedml logs -s' in your edge server device.
+
 
 
 More advanced features will be supported soon. We appreciate your valuable feedback.
