@@ -178,23 +178,6 @@ def cleanup_all_fedml_client_learning_processes():
             pass
 
 
-def cleanup_all_fedml_client_diagnosis_processes():
-    # Cleanup all fedml client learning processes.
-    for process in psutil.process_iter():
-        try:
-            pinfo = process.as_dict(attrs=["pid", "name", "cmdline"])
-            found_client_diagnosis_process = False
-            for cmd in pinfo["cmdline"]:
-                if str(cmd).find("client_diagnosis") != -1:
-                    found_client_diagnosis_process = True
-
-            if found_client_diagnosis_process:
-                click.echo("find client diagnosis process at {}.".format(process.pid))
-                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
-        except Exception as e:
-            pass
-
-
 def cleanup_all_fedml_client_login_processes(login_program):
     # Cleanup all fedml client login processes.
     for process in psutil.process_iter():
