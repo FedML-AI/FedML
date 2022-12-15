@@ -25,7 +25,6 @@ class MyMessage(object):
     MSG_ARG_KEY_NUM_SAMPLES = "num_samples"
     MSG_ARG_KEY_MODEL_PARAMS = "model_params"
     MSG_ARG_KEY_MODEL_PARAMS_URL = "model_params_url"
-    MSG_ARG_KEY_MODEL_PARAMS_KEY = "model_params_key"
     MSG_ARG_KEY_CLIENT_INDEX = "client_idx"
 
     MSG_ARG_KEY_TRAIN_CORRECT = "train_correct"
