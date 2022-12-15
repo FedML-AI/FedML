@@ -22,7 +22,7 @@ class DPMechanism:
             raise NotImplementedError("DP mechanism not implemented!")
 
     def add_noise(self, grad):
-        new_grad = dict()
+        new_grad = OrderedDict()
         for k in grad.keys():
             new_grad[k] = self._compute_new_grad(grad[k])
         return new_grad
