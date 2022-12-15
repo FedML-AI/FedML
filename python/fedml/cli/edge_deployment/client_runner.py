@@ -511,6 +511,9 @@ class FedMLClientRunner:
         self.client_mqtt_lock.release()
 
     def setup_client_mqtt_mgr(self):
+        if self.client_mqtt_mgr is not None:
+            return
+
         if self.client_mqtt_lock is None:
             self.client_mqtt_lock = threading.Lock()
         if self.client_mqtt_mgr is not None:
@@ -527,7 +530,7 @@ class FedMLClientRunner:
             self.agent_config["mqtt_config"]["MQTT_USER"],
             self.agent_config["mqtt_config"]["MQTT_PWD"],
             self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
-            "ClientAgent_Comm_Client" + str(uuid.uuid4()),
+            "FedML_ClientAgent_Metrics_{}_{}".format(self.args.current_device_id, str(os.getpid()))
         )
 
         self.client_mqtt_mgr.add_connected_listener(self.on_client_mqtt_connected)
@@ -535,25 +538,32 @@ class FedMLClientRunner:
         self.client_mqtt_mgr.connect()
         self.client_mqtt_mgr.loop_start()
 
-    def release_client_mqtt_mgr(self):
-        if self.client_mqtt_mgr is not None:
-            self.client_mqtt_mgr.disconnect()
-            self.client_mqtt_mgr.loop_stop()
+        if self.mlops_metrics is None:
+            self.mlops_metrics = MLOpsMetrics()
+        self.mlops_metrics.set_messenger(self.client_mqtt_mgr)
+        self.mlops_metrics.run_id = self.run_id
 
-        self.client_mqtt_lock.acquire()
-        if self.client_mqtt_mgr is not None:
-            self.client_mqtt_is_connected = False
-            self.client_mqtt_mgr = None
-        self.client_mqtt_lock.release()
+    def release_client_mqtt_mgr(self, real_release=False):
+        if real_release:
+            if self.client_mqtt_mgr is not None:
+                self.client_mqtt_mgr.disconnect()
+                self.client_mqtt_mgr.loop_stop()
+
+            self.client_mqtt_lock.acquire()
+            if self.client_mqtt_mgr is not None:
+                self.client_mqtt_is_connected = False
+                self.client_mqtt_mgr = None
+            self.client_mqtt_lock.release()
 
     def wait_client_mqtt_connected(self):
-        while True:
-            self.client_mqtt_lock.acquire()
-            if self.client_mqtt_is_connected is True:
-                self.client_mqtt_lock.release()
-                break
-            self.client_mqtt_lock.release()
-            time.sleep(1)
+        pass
+        # while True:
+        #     self.client_mqtt_lock.acquire()
+        #     if self.client_mqtt_is_connected is True:
+        #         self.client_mqtt_lock.release()
+        #         break
+        #     self.client_mqtt_lock.release()
+        #     time.sleep(1)
 
     def callback_start_train(self, topic, payload):
         # get training params
@@ -869,14 +879,14 @@ class FedMLClientRunner:
         self.mqtt_mgr.add_message_listener(topic_ota_msg, self.callback_client_ota_msg)
 
         # Subscribe topics for starting train, stopping train and fetching client status.
-        mqtt_client_object.subscribe(topic_start_train)
-        mqtt_client_object.subscribe(topic_stop_train)
-        mqtt_client_object.subscribe(topic_client_status)
-        mqtt_client_object.subscribe(topic_report_status)
-        mqtt_client_object.subscribe(topic_last_will_msg)
-        mqtt_client_object.subscribe(topic_active_msg)
-        mqtt_client_object.subscribe(topic_exit_train_with_exception)
-        mqtt_client_object.subscribe(topic_ota_msg)
+        mqtt_client_object.subscribe(topic_start_train, qos=2)
+        mqtt_client_object.subscribe(topic_stop_train, qos=2)
+        mqtt_client_object.subscribe(topic_client_status, qos=2)
+        mqtt_client_object.subscribe(topic_report_status, qos=2)
+        mqtt_client_object.subscribe(topic_last_will_msg, qos=2)
+        mqtt_client_object.subscribe(topic_active_msg, qos=2)
+        mqtt_client_object.subscribe(topic_exit_train_with_exception, qos=2)
+        mqtt_client_object.subscribe(topic_ota_msg, qos=2)
 
         # Broadcast the first active message.
         # self.send_agent_active_msg()
@@ -904,10 +914,10 @@ class FedMLClientRunner:
             service_config["mqtt_config"]["MQTT_USER"],
             service_config["mqtt_config"]["MQTT_PWD"],
             service_config["mqtt_config"]["MQTT_KEEPALIVE"],
-            self.edge_id,
+            "FedML_ClientAgent_Daemon_" + self.args.current_device_id,
             "/flclient_agent/last_will_msg",
             json.dumps({"ID": self.edge_id, "status": ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE}),
-        )
+            )
         self.agent_config = service_config
 
         # Setup MQTT connected listener
