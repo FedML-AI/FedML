@@ -34,7 +34,7 @@ class MLOpsRuntimeLog:
         logging.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
 
         if MLOpsRuntimeLog._log_sdk_instance is not None and \
-            hasattr(MLOpsRuntimeLog._log_sdk_instance, "args") and \
+                hasattr(MLOpsRuntimeLog._log_sdk_instance, "args") and \
                 hasattr(MLOpsRuntimeLog._log_sdk_instance.args, "rank"):
             if MLOpsRuntimeLog._log_sdk_instance.args.rank == 0:
                 mlops.log_aggregation_failed_status()
@@ -117,6 +117,27 @@ class MLOpsRuntimeLog:
             file_handle.setLevel(logging.INFO)
             self.logger.addHandler(file_handle)
         logging.root = self.logger
+
+        import sys
+
+        class GlobalLogger(object):
+            def __init__(self, filename='default.log', stream=sys.stdout, format_str=""):
+                self.terminal = stream
+                self.log = open(filename, 'a')
+                self.format_str = format_str
+                if self.log is not None:
+                    print("open log file")
+
+            def write(self, message):
+                self.terminal.write("{}{}".format(format_str, message))
+                self.log.write("{}{}".format(format_str, message))
+
+            def flush(self):
+                pass
+
+        #sys.stdout = GlobalLogger(log_file_path, sys.stdout)
+        #sys.stderr = GlobalLogger(log_file_path, sys.stderr)
+        #print("Make `print` output to log files.", file=GlobalLogger(log_file_path, sys.stdout).log)
 
     @staticmethod
     def build_log_file_path(in_args):

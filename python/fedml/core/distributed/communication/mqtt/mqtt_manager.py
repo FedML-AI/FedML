@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import uuid
 
 import paho.mqtt.client as mqtt
@@ -41,7 +42,7 @@ class MqttManager(object):
         self._client = None
 
     def init_connect(self):
-        self.mqtt_connection_id = mqtt.base62(uuid.uuid4().int, padding=22)
+        self.mqtt_connection_id = "{}_{}".format(self._client_id, str(mqtt.base62(uuid.uuid4().int, padding=22)))
         self._client = mqtt.Client(client_id=self.mqtt_connection_id, clean_session=False)
         self._client.on_connect = self.on_connect
         self._client.on_publish = self.on_publish
@@ -58,7 +59,7 @@ class MqttManager(object):
                 self.last_will_msg = json.dumps({"ID": f"{self._client_id}", "status": "OFFLINE"})
             self._client.will_set(self.last_will_topic,
                                   payload=self.last_will_msg,
-                                  qos=2, retain=True)
+                                  qos=0, retain=True)
         self._client.connect(self._host, self._port, self.keepalive_time)
 
     def reconnect(self):
@@ -227,4 +228,5 @@ class MqttManager(object):
 
     def subscribe_msg(self, topic):
         self._client.subscribe(topic, qos=2)
+
 
