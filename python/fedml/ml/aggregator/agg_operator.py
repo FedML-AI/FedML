@@ -1,12 +1,13 @@
 import logging
-from typing import List, Tuple, Dict
+from collections import OrderedDict
+from typing import List, Tuple
 
 from ...core.common.ml_engine_backend import MLEngineBackend
 
 
 class FedMLAggOperator:
     @staticmethod
-    def agg(args, raw_grad_list: List[Tuple[float, Dict]]) -> Dict:
+    def agg(args, raw_grad_list: List[Tuple[float, OrderedDict]]) -> OrderedDict:
         training_num = 0
         if args.federated_optimizer == "SCAFFOLD":
             for i in range(len(raw_grad_list)):

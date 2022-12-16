@@ -1,9 +1,8 @@
-from typing import Callable, List, Tuple, Dict, Any
-
+from typing import Callable, List, Tuple, Any
 import numpy as np
 from .defense_base import BaseDefenseMethod
 from ..common.utils import vectorize_weight, is_weight_param
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 import torch
 
 """
@@ -34,10 +33,10 @@ class BulyanDefense(BaseDefenseMethod):
 
     def run(
         self,
-        raw_client_grad_list: List[Tuple[float, Dict]],
+        raw_client_grad_list: List[Tuple[float, OrderedDict]],
         base_aggregation_func: Callable = None,
         extra_auxiliary_info: Any = None,
-    ) -> Dict:
+    ) -> OrderedDict:
         # note: raw_client_grad_list is a list, each item is (sample_num, gradients).
         num_clients = len(raw_client_grad_list)
         (num0, localw0) = raw_client_grad_list[0]
