@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import torch
 from .defense_base import BaseDefenseMethod
 from ..common import utils
@@ -17,7 +18,7 @@ class NormDiffClippingDefense(BaseDefenseMethod):
 
     def run(
         self,
-        raw_client_grad_list: List[Tuple[float, Dict]],
+        raw_client_grad_list: List[Tuple[float, OrderedDict]],
         base_aggregation_func: Callable = None,
         extra_auxiliary_info: Any = None,
     ):
