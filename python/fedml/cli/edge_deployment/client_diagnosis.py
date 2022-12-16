@@ -1,17 +1,14 @@
 import argparse
 import json
 import time
-import traceback
 import uuid
-import multiprocess as multiprocessing
 from threading import Thread
 
-from fedml.core.distributed.communication.constants import CommunicationConstants
-from fedml.core.distributed.communication.mqtt_s3 import MqttS3MultiClientsCommManager
 from fedml.core.distributed.communication.message import Message
-from fedml.core.mlops.mlops_configs import MLOpsConfigs
-from fedml.core.distributed.communication.s3.remote_storage import S3Storage
 from fedml.core.distributed.communication.mqtt.mqtt_manager import MqttManager
+from fedml.core.distributed.communication.mqtt_s3 import MqttS3MultiClientsCommManager
+from fedml.core.distributed.communication.s3.remote_storage import S3Storage
+from fedml.core.mlops.mlops_configs import MLOpsConfigs
 
 
 class Singleton(object):
@@ -93,8 +90,6 @@ class ClientDiagnosis(Singleton):
             print("MQTT connect exception: {}".format(str(e)))
             return False
 
-        return False
-
     @staticmethod
     def check_mqtt_s3_communication_backend_server(run_id, args=None):
         if args is None:
@@ -120,15 +115,14 @@ class ClientDiagnosis(Singleton):
             comm_server.add_observer(diagnosis)
 
             if diagnosis.test_mqtt_s3_backend_server_process is None:
-                diagnosis.test_mqtt_s3_backend_server_process = Thread(target=diagnosis.send_test_mqtt_s3_backend_server_msg)
+                diagnosis.test_mqtt_s3_backend_server_process = Thread(
+                    target=diagnosis.send_test_mqtt_s3_backend_server_msg)
                 diagnosis.test_mqtt_s3_backend_server_process.start()
             comm_server.mqtt_mgr.loop_forever()
             return True
         except Exception as e:
             print("mqtt_s3_communication_backend_server connect exception: {}".format(str(e)))
             return False
-
-        return False
 
     @staticmethod
     def check_mqtt_s3_communication_backend_client(run_id, args=None):
@@ -166,8 +160,6 @@ class ClientDiagnosis(Singleton):
             print("mqtt_s3_communication_backend_client connect exception: {}".format(str(e)))
             return False
 
-        return False
-
     @staticmethod
     def check_mqtt_connection_with_daemon_mode(args=None):
         if args is None:
@@ -179,7 +171,7 @@ class ClientDiagnosis(Singleton):
                 mqtt_config["BROKER_PORT"],
                 mqtt_config["MQTT_USER"],
                 mqtt_config["MQTT_PWD"],
-                10, #mqtt_config["MQTT_KEEPALIVE"],
+                10,  # mqtt_config["MQTT_KEEPALIVE"],
                 "FedML_Diagnosis_Daemon_" + str(uuid.uuid4())
             )
             diagnosis = ClientDiagnosis()
