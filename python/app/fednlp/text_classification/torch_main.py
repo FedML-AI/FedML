@@ -36,6 +36,18 @@ def create_model(args, output_dim=1):
     config = config_class.from_pretrained(args.model, **model_args)
     model = model_class.from_pretrained(args.model, config=config)
     trainer = MyCLSTrainer(model, args)
+
+    # calculate the model size
+    param_size = 0
+    for param in model.parameters():
+        param_size += param.nelement() * param.element_size()
+    buffer_size = 0
+    for buffer in model.buffers():
+        buffer_size += buffer.nelement() * buffer.element_size()
+
+    size_all_mb = (param_size + buffer_size) / 1024 ** 2
+    logging.info('model size: {:.3f}MB'.format(size_all_mb))
+
     return model, trainer
 
 
