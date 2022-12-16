@@ -13,21 +13,17 @@ jobs:
       run:
         shell: bash
         working-directory: python
-    runs-on: [self-hosted, runner-linux, devops-mpi]
+    runs-on: [self-hosted, runner-linux, devops]
     strategy:
       matrix:
         os: [ ubuntu-latest ]
         arch: [ X64 ]
         python-version: ["3.8"]
-        mpi: [ 'openmpi' ]
     steps:
     - uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
     - uses: actions/checkout@v3
-    - uses: mpi4py/setup-mpi@v1
-      with:
-        mpi: ${{ matrix.mpi }}
     - name: Analysing the code with pylint
       run: |
         python3 -m pip install --upgrade pip
