@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from typing import Callable, List, Tuple, Dict, Any
 from .defense_base import BaseDefenseMethod
 from ..common.utils import trimmed_mean
@@ -14,17 +15,10 @@ class CoordinateWiseTrimmedMeanDefense(BaseDefenseMethod):
     def __init__(self, config):
         self.beta = config.beta  # fraction of trimmed values; total trimmed values: client_num * beta * 2
 
-    def run(
-        self,
-        raw_client_grad_list: List[Tuple[float, Dict]],
-        base_aggregation_func: Callable = None,
-        extra_auxiliary_info: Any = None,
-    ) -> Dict:
-        pass
 
     def defend_before_aggregation(
         self,
-        raw_client_grad_list: List[Tuple[float, Dict]],
+        raw_client_grad_list: List[Tuple[float, OrderedDict]],
         extra_auxiliary_info: Any = None,
     ):
         if self.beta > 1 / 2 or self.beta < 0:

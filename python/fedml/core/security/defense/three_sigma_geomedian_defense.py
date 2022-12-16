@@ -1,4 +1,5 @@
 import math
+from collections import OrderedDict
 import numpy as np
 from .defense_base import BaseDefenseMethod
 from typing import Callable, List, Tuple, Dict, Any
@@ -33,22 +34,9 @@ class ThreeSigmaGeoMedianDefense(BaseDefenseMethod):
             self.to_keep_higher_scores = False  # true or false, depending on the score algo
         self.score_function = "l2"
 
-    def run(
-        self,
-        raw_client_grad_list: List[Tuple[float, Dict]],
-        base_aggregation_func: Callable = None,
-        extra_auxiliary_info: Any = None,
-    ):
-        grad_list = self.defend_before_aggregation(
-            raw_client_grad_list, extra_auxiliary_info
-        )
-        return self.defend_on_aggregation(
-            grad_list, base_aggregation_func, extra_auxiliary_info
-        )
-
     def defend_before_aggregation(
         self,
-        raw_client_grad_list: List[Tuple[float, Dict]],
+        raw_client_grad_list: List[Tuple[float, OrderedDict]],
         extra_auxiliary_info: Any = None,
     ):
         # grad_list = [grad for (_, grad) in raw_client_grad_list]
