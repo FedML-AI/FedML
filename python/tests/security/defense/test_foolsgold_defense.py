@@ -1,9 +1,6 @@
 import argparse
-
 import torch
-
 from fedml.core.security.defense.foolsgold_defense import FoolsGoldDefense
-from fedml.ml.aggregator.agg_operator import FedMLAggOperator
 
 
 def add_args():
@@ -27,7 +24,7 @@ def test_defense():
 
     print(f"model_list len = {len(model_list)}")
     defense = FoolsGoldDefense(config)
-    aggr_result = defense.run(model_list, base_aggregation_func=FedMLAggOperator.agg)
+    aggr_result = defense.defend_before_aggregation(model_list)
     # print(f"result = {aggr_result}")
 
 
