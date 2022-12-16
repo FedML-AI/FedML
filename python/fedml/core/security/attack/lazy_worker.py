@@ -1,4 +1,6 @@
 import random
+from collections import OrderedDict
+
 import fedml
 import numpy as np
 from typing import Callable
@@ -34,7 +36,7 @@ class LazyWorkerAttack(BaseAttackMethod):
 
     def attack_model(
         self,
-        raw_client_grad_list: List[Tuple[float, Dict]],
+        raw_client_grad_list: List[Tuple[float, OrderedDict]],
         extra_auxiliary_info: Any = None,
     ):
         if self.round == 1:

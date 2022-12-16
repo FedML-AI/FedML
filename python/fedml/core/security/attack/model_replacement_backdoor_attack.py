@@ -43,7 +43,7 @@ class ModelReplacementBackdoorAttack(BaseAttackMethod):
 
     def attack_model(
             self,
-            raw_client_grad_list: List[Tuple[float, Dict]],
+            raw_client_grad_list: List[Tuple[float, OrderedDict]],
             extra_auxiliary_info: Any = None,
     ):
         participant_num = len(raw_client_grad_list)

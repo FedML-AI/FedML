@@ -1,5 +1,6 @@
 import logging
-from typing import List, Tuple, Dict, Any, Callable
+from collections import OrderedDict
+from typing import List, Tuple, Any, Callable
 from .defense.RFA_defense import RFADefense
 from .defense.coordinate_wise_trimmed_mean_defense import CoordinateWiseTrimmedMeanDefense
 from .defense.crfl_defense import CRFLDefense
@@ -114,7 +115,7 @@ class FedMLDefender:
 
     def defend(
         self,
-        raw_client_grad_list: List[Tuple[float, Dict]],
+        raw_client_grad_list: List[Tuple[float, OrderedDict]],
         base_aggregation_func: Callable = None,
         extra_auxiliary_info: Any = None,
     ):
@@ -149,7 +150,7 @@ class FedMLDefender:
 
     def defend_before_aggregation(
         self,
-        raw_client_grad_list: List[Tuple[float, Dict]],
+        raw_client_grad_list: List[Tuple[float, OrderedDict]],
         extra_auxiliary_info: Any = None,
     ):
         if self.defender is None:
@@ -162,7 +163,7 @@ class FedMLDefender:
 
     def defend_on_aggregation(
         self,
-        raw_client_grad_list: List[Tuple[float, Dict]],
+        raw_client_grad_list: List[Tuple[float, OrderedDict]],
         base_aggregation_func: Callable = None,
         extra_auxiliary_info: Any = None,
     ):
