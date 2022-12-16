@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from typing import List, Tuple, Dict
 import torch
 from ..common.utils import get_total_sample_num
@@ -29,7 +30,7 @@ class RobustLearningRateDefense(BaseDefenseMethod):
 
     def run(
             self,
-            raw_client_grad_list: List[Tuple[float, Dict]],
+            raw_client_grad_list: List[Tuple[float, OrderedDict]],
             base_aggregation_func: Callable = None,
             extra_auxiliary_info: Any = None,
     ):

@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 import torch
 from typing import Callable, List, Tuple, Dict, Any
 from .defense_base import BaseDefenseMethod
@@ -16,7 +18,7 @@ class CoordinateWiseMedianDefense(BaseDefenseMethod):
 
     def run(
         self,
-        raw_client_grad_list: List[Tuple[float, Dict]],
+        raw_client_grad_list: List[Tuple[float, OrderedDict]],
         base_aggregation_func: Callable = None,
         extra_auxiliary_info: Any = None,
     ) -> Dict:

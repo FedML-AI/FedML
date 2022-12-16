@@ -1,6 +1,7 @@
 import argparse
 import json
 import time
+import traceback
 import uuid
 from threading import Thread
 
@@ -36,6 +37,7 @@ class ClientDiagnosis(Singleton):
         try:
             mqtt_config, s3_config = MLOpsConfigs.get_instance(args).fetch_configs()
         except Exception as e:
+            traceback.print_exc(e)
             return False
 
         return True
@@ -51,6 +53,7 @@ class ClientDiagnosis(Singleton):
             if download_ret:
                 return True
         except Exception as e:
+            traceback.print_exc(e)
             return False
 
         return False
@@ -79,7 +82,7 @@ class ClientDiagnosis(Singleton):
             count = 0
             while not diagnosis.is_mqtt_connected:
                 count += 1
-                if count >= 15:
+                if count > 15:
                     return False
                 time.sleep(1)
 
@@ -88,6 +91,7 @@ class ClientDiagnosis(Singleton):
             return True
         except Exception as e:
             print("MQTT connect exception: {}".format(str(e)))
+            traceback.print_exc(e)
             return False
 
     @staticmethod
@@ -99,6 +103,7 @@ class ClientDiagnosis(Singleton):
             parser.add_argument("--dataset", type=str, default="default")
             parser.add_argument("--rank", type=int, default=0)
             args, unknown = parser.parse_known_args()
+            setattr(args, "run_id", run_id)
         try:
             diagnosis = ClientDiagnosis()
 
@@ -106,7 +111,7 @@ class ClientDiagnosis(Singleton):
             comm_server = MqttS3MultiClientsCommManager(
                 mqtt_config,
                 s3_config,
-                topic="fedml-diagnosis-id-" + str(run_id),
+                topic="FedML_Diagnosis_CS_" + str(run_id),
                 client_rank=0,
                 client_num=1,
                 args=args,
@@ -122,6 +127,7 @@ class ClientDiagnosis(Singleton):
             return True
         except Exception as e:
             print("mqtt_s3_communication_backend_server connect exception: {}".format(str(e)))
+            traceback.print_exc(e)
             return False
 
     @staticmethod
@@ -133,6 +139,7 @@ class ClientDiagnosis(Singleton):
             parser.add_argument("--dataset", type=str, default="default")
             parser.add_argument("--rank", type=int, default=1)
             args, unknown = parser.parse_known_args()
+            setattr(args, "run_id", run_id)
         try:
             diagnosis = ClientDiagnosis()
 
@@ -158,6 +165,7 @@ class ClientDiagnosis(Singleton):
             return True
         except Exception as e:
             print("mqtt_s3_communication_backend_client connect exception: {}".format(str(e)))
+            traceback.print_exc(e)
             return False
 
     @staticmethod
@@ -184,6 +192,7 @@ class ClientDiagnosis(Singleton):
             mqtt_mgr.loop_forever()
         except Exception as e:
             print("MQTT connect exception: {}".format(str(e)))
+            traceback.print_exc(e)
             return False
 
         return False
@@ -235,14 +244,14 @@ class ClientDiagnosis(Singleton):
             time.sleep(2)
             message = Message(1, 0, 1)
             ret = self.test_mqtt_s3_com_manager_server.send_message(message)
-            print("send server mqtt+s3 msg and return: {}".format(str(ret)))
+            print("server is sending messages to client...")
 
     def send_test_mqtt_s3_backend_client_msg(self):
         while True:
             time.sleep(2)
             message = Message(2, 1, 0)
             ret = self.test_mqtt_s3_com_manager_client.send_message(message)
-            print("send client mqtt+s3 msg and return: {}".format(str(ret)))
+            print("client is sending messages to server...")
 
     def receive_message(self, msg_type, msg_params) -> None:
         print("fedml diagnosis received msg type {}, msg_params {}".format(msg_type, msg_params))
@@ -250,8 +259,8 @@ class ClientDiagnosis(Singleton):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--type", "-t", help="Diagnosis as client or server")
-    parser.add_argument("--run_id", "-r", help="run id for client and server")
+    parser.add_argument("--type", "-t", type=str, help="Diagnosis as client or server")
+    parser.add_argument("--run_id", "-r", type=str, help="run id for client and server")
     args = parser.parse_args()
     diagnosis = ClientDiagnosis()
     if args.type == 'client':
