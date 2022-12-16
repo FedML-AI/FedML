@@ -270,7 +270,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         except Exception as e:
             logging.error("mqtt_s3.on_message exception: {}".format(traceback.format_exc()))
 
-    def send_message(self, msg: Message, wait_for_publish=True, not_cache=False):
+    def send_message(self, msg: Message, wait_for_publish=False, not_cache=False):
         """
         [server]
         sending message topic (publish): fedml_runid_serverID_clientID
