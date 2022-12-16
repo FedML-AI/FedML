@@ -30,11 +30,11 @@ environment_args:
 train_args:
   federated_optimizer: "FedAvg"
   client_id_list:
-  client_num_in_total: 100
+  client_num_in_total: 10
   client_num_per_round: 2
-  comm_round: 50
-  epochs: 10
-  batch_size: 32
+  comm_round: 3
+  epochs: 1
+  batch_size: 16
   eval_batch_size: 8
   max_seq_length: 128
   fp16: false
