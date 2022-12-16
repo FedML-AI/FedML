@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import torch
 import numpy as np
 from .defense_base import BaseDefenseMethod
@@ -41,7 +42,7 @@ class SoteriaDefense(BaseDefenseMethod):
     # def defend(self, local_w, global_w, refs=None):
     def run(
             self,
-            raw_client_grad_list: List[Tuple[float, Dict]],
+            raw_client_grad_list: List[Tuple[float, OrderedDict]],
             base_aggregation_func: Callable = None,
             extra_auxiliary_info: Any = None,
     ) -> Dict:

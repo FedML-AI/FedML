@@ -1,4 +1,5 @@
 import math
+from collections import OrderedDict
 import numpy as np
 import torch
 from .defense_base import BaseDefenseMethod
@@ -25,24 +26,16 @@ class ResidualBasedReweightingDefense(BaseDefenseMethod):
             self.thresh = 0.1
         self.mode = config.mode
 
-    def run(
-        self,
-        raw_client_grad_list: List[Tuple[float, Dict]],
-        base_aggregation_func: Callable = None,
-        extra_auxiliary_info: Any = None,
-    ) -> Dict:
-        pass
-
     def defend_before_aggregation(
         self,
-        raw_client_grad_list: List[Tuple[float, Dict]],
+        raw_client_grad_list: List[Tuple[float, OrderedDict]],
         extra_auxiliary_info: Any = None,
     ):
         return self.IRLS_other_split_restricted(raw_client_grad_list)
 
     def defend_on_aggregation(
         self,
-        raw_client_grad_list: List[Tuple[float, Dict]],
+        raw_client_grad_list: List[Tuple[float, OrderedDict]],
         base_aggregation_func: Callable = None,
         extra_auxiliary_info: Any = None,
     ):

@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from typing import Callable, List, Tuple, Dict, Any
 import numpy as np
 from .defense_base import BaseDefenseMethod
@@ -16,18 +17,9 @@ class FoolsGoldDefense(BaseDefenseMethod):
         self.config = config
         self.memory = None
 
-    def run(
-        self,
-        raw_client_grad_list: List[Tuple[float, Dict]],
-        base_aggregation_func: Callable = None,
-        extra_auxiliary_info: Any = None,
-    ):
-        new_grad_list = self.defend_before_aggregation(raw_client_grad_list, extra_auxiliary_info)
-        return base_aggregation_func(self.config, new_grad_list)
-
     def defend_before_aggregation(
         self,
-        raw_client_grad_list: List[Tuple[float, Dict]],
+        raw_client_grad_list: List[Tuple[float, OrderedDict]],
         extra_auxiliary_info: Any = None,
     ):
         client_num = len(raw_client_grad_list)

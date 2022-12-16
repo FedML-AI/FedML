@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from typing import Callable, List, Tuple, Dict, Any
 from ..common.utils import compute_geometric_median
 from ...security.defense.defense_base import BaseDefenseMethod
@@ -14,17 +15,9 @@ class RFADefense(BaseDefenseMethod):
     def __init__(self, config):
         pass
 
-    def run(
-        self,
-        raw_client_grad_list: List[Tuple[float, Dict]],
-        base_aggregation_func: Callable = None,
-        extra_auxiliary_info: Any = None,
-    ):
-        pass
-
     def defend_on_aggregation(
             self,
-            raw_client_grad_list: List[Tuple[float, Dict]],
+            raw_client_grad_list: List[Tuple[float, OrderedDict]],
             base_aggregation_func: Callable = None,
             extra_auxiliary_info: Any = None,
     ):
