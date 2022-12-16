@@ -159,26 +159,26 @@ class FedMLServerManager(FedMLCommManager):
             if self.args.round_idx == 0:
                 MLOpsProfilerEvent.log_to_wandb({"BenchmarkStart": time.time()})
 
-            client_idx_in_this_round = 0
-            global_model_url = None
-            global_model_key = None
-            for receiver_id in self.client_id_list_in_this_round:
-                client_index = self.data_silo_index_list[client_idx_in_this_round]
-                if type(global_model_params) is dict:
-                    global_model_url, global_model_key = self.send_message_sync_model_to_client(
-                        receiver_id, global_model_params[client_index], client_index, global_model_url, global_model_key
-                    )
-                else:
-                    global_model_url, global_model_key = self.send_message_sync_model_to_client(
-                        receiver_id, global_model_params, client_index, global_model_url, global_model_key
-                    )
-                client_idx_in_this_round += 1
-
             self.args.round_idx += 1
             if self.args.round_idx == self.round_num:
                 logging.info("=============training is finished. Cleanup...============")
                 self.cleanup()
             else:
+                client_idx_in_this_round = 0
+                global_model_url = None
+                global_model_key = None
+                for receiver_id in self.client_id_list_in_this_round:
+                    client_index = self.data_silo_index_list[client_idx_in_this_round]
+                    if type(global_model_params) is dict:
+                        global_model_url, global_model_key = self.send_message_sync_model_to_client(
+                            receiver_id, global_model_params[client_index], client_index, global_model_url,
+                            global_model_key
+                        )
+                    else:
+                        global_model_url, global_model_key = self.send_message_sync_model_to_client(
+                            receiver_id, global_model_params, client_index, global_model_url, global_model_key
+                        )
+                    client_idx_in_this_round += 1
                 logging.info("\n\n==========end {}-th round training===========\n".format(self.args.round_idx))
                 mlops.event("server.wait", event_started=True, event_value=str(self.args.round_idx))
 
