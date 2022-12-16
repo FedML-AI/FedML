@@ -1,4 +1,5 @@
 import math
+from collections import OrderedDict
 from typing import Callable, List, Tuple, Dict, Any
 
 from ..common.bucket import Bucket
@@ -32,7 +33,7 @@ class GeometricMedianDefense(BaseDefenseMethod):
 
     def run(
         self,
-        raw_client_grad_list: List[Tuple[float, Dict]],
+        raw_client_grad_list: List[Tuple[float, OrderedDict]],
         base_aggregation_func: Callable = None,
         extra_auxiliary_info: Any = None,
     ):
