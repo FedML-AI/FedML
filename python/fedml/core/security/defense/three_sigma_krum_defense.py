@@ -1,9 +1,10 @@
 import logging
 import math
+from collections import OrderedDict
 import numpy as np
 from scipy import spatial
 from .defense_base import BaseDefenseMethod
-from typing import Callable, List, Tuple, Dict, Any
+from typing import List, Tuple, Dict, Any
 from ..common.utils import (
     compute_euclidean_distance,
     compute_middle_point,
@@ -24,23 +25,10 @@ class ThreeSigmaKrumDefense(BaseDefenseMethod):
         else:
             self.bound_param = 1
 
-    def run(
-        self,
-        raw_client_grad_list: List[Tuple[float, Dict]],
-        base_aggregation_func: Callable = None,
-        extra_auxiliary_info: Any = None,
-    ):
-        grad_list = self.defend_before_aggregation(
-            raw_client_grad_list, extra_auxiliary_info
-        )
-        return self.defend_on_aggregation(
-            grad_list, base_aggregation_func, extra_auxiliary_info
-        )
-
     ###################### version 3: re-compute gaussian distribution each round
     def defend_before_aggregation(
         self,
-        raw_client_grad_list: List[Tuple[float, Dict]],
+        raw_client_grad_list: List[Tuple[float, OrderedDict]],
         extra_auxiliary_info: Any = None,
     ):
         if self.average is None:
@@ -64,7 +52,7 @@ class ThreeSigmaKrumDefense(BaseDefenseMethod):
     ##################### version 2: remove poisoned model scores in score list
     # def defend_before_aggregation(
     #     self,
-    #     raw_client_grad_list: List[Tuple[float, Dict]],
+    #     raw_client_grad_list: List[Tuple[float, OrderedDict]],
     #     extra_auxiliary_info: Any = None,
     # ):
     #     if self.median is None:
@@ -89,7 +77,7 @@ class ThreeSigmaKrumDefense(BaseDefenseMethod):
     ###################### version 1: do not remove poisoned model scores in score list
     # def defend_before_aggregation(
     #     self,
-    #     raw_client_grad_list: List[Tuple[float, Dict]],
+    #     raw_client_grad_list: List[Tuple[float, OrderedDict]],
     #     extra_auxiliary_info: Any = None,
     # ):
     #     if self.median is None:

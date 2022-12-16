@@ -1,4 +1,5 @@
 import logging
+from collections import OrderedDict
 from typing import List, Tuple, Dict
 
 import torch
@@ -21,7 +22,7 @@ class MyServerAggregator(ServerAggregator):
         self.model.load_state_dict(model_parameters)
 
     def on_before_aggregation(
-        self, raw_client_model_or_grad_list: List[Tuple[float, Dict]]
+        self, raw_client_model_or_grad_list: List[Tuple[float, OrderedDict]]
     ):
         logging.info("do decoding here for raw_client_model_or_grad_list")
         client_idxs = [i for i in range(len(raw_client_model_or_grad_list))]
