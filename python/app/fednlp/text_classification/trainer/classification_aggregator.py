@@ -3,8 +3,7 @@ import logging
 import numpy as np
 import torch
 import wandb
-from sklearn.metrics import confusion_matrix
-
+from fedml import mlops
 from fedml.core import ServerAggregator
 
 
@@ -54,17 +53,24 @@ class ClassificationAggregator(ServerAggregator):
         self, train_data_local_dict, test_data_local_dict, device, args=None
     ) -> bool:
         logging.info("----------test_on_the_server--------")
-        accuracy_list, metric_list = [], []
+        accuracy_list, loss_list, metric_list = [], [], []
         for client_idx in test_data_local_dict.keys():
             test_data = test_data_local_dict[client_idx]
             metrics = self._test(test_data, device, args)
             metric_list.append(metrics)
             accuracy_list.append(metrics["test_correct"] / metrics["test_total"])
+            loss_list.append(metrics["test_loss"] / metrics["test_total"])
             logging.info(
                 "Client {}, Test accuracy = {}".format(
                     client_idx, metrics["test_correct"] / metrics["test_total"]
                 )
             )
         avg_accuracy = np.mean(np.array(accuracy_list))
+        avg_loss = np.mean(np.array(loss_list))
         logging.info("Test Accuracy = {}".format(avg_accuracy))
+        if self.args.enable_wandb:
+            wandb.log({"Test/Acc": avg_accuracy, "round": self.args.round_idx})
+            wandb.log({"Test/Loss": avg_loss, "round": self.args.round_idx})
+        mlops.log({"Test/Acc": avg_accuracy, "round": self.args.round_idx})
+        mlops.log({"Test/Loss": avg_loss, "round": self.args.round_idx})
         return True
