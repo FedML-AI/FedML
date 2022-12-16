@@ -23,14 +23,6 @@ class CrossRoundDefense(BaseDefenseMethod):
         self.training_round = 1
         self.is_attack_existing = True  # for the first round, true
 
-    def run(
-            self,
-            raw_client_grad_list: List[Tuple[float, Dict]],
-            base_aggregation_func: Callable = None,
-            extra_auxiliary_info: Any = None,
-    ):
-        pass
-
     def defend_before_aggregation(
             self,
             raw_client_grad_list: List[Tuple[float, OrderedDict]],

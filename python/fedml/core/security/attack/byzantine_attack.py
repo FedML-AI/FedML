@@ -1,9 +1,11 @@
+from collections import OrderedDict
+
 import fedml
 import numpy as np
 import torch
 from .attack_base import BaseAttackMethod
 from ..common.utils import is_weight_param, sample_some_clients
-from typing import List, Tuple, Dict, Any
+from typing import List, Tuple, Any
 
 """
 attack @ server, added by Shanshan, 07/04/2022
@@ -16,7 +18,7 @@ class ByzantineAttack(BaseAttackMethod):
         self.attack_mode = args.attack_mode  # random: randomly generate a weight; zero: set the weight to 0
         self.device = fedml.device.get_device(args)
 
-    def attack_model(self, raw_client_grad_list: List[Tuple[float, Dict]],
+    def attack_model(self, raw_client_grad_list: List[Tuple[float, OrderedDict]],
         extra_auxiliary_info: Any = None):
         if len(raw_client_grad_list) < self.byzantine_client_num:
             self.byzantine_client_num = len(raw_client_grad_list)

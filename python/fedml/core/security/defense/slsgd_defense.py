@@ -1,4 +1,5 @@
 import math
+from collections import OrderedDict
 from typing import Callable, List, Tuple, Dict, Any
 from ..common.utils import trimmed_mean
 from ..defense.defense_base import BaseDefenseMethod
@@ -34,25 +35,9 @@ class SLSGDDefense(BaseDefenseMethod):
         self.option_type = config.option_type
         self.config = config
 
-    def run(
-        self,
-        raw_client_grad_list: List[Tuple[float, Dict]],
-        base_aggregation_func: Callable = None,
-        extra_auxiliary_info: Any = None,
-    ):
-        model_list = self.defend_before_aggregation(
-            raw_client_grad_list=raw_client_grad_list,
-            extra_auxiliary_info=extra_auxiliary_info,
-        )
-        return self.defend_on_aggregation(
-            raw_client_grad_list=model_list,
-            base_aggregation_func=base_aggregation_func,
-            extra_auxiliary_info=extra_auxiliary_info,
-        )
-
     def defend_before_aggregation(
         self,
-        raw_client_grad_list: List[Tuple[float, Dict]],
+        raw_client_grad_list: List[Tuple[float, OrderedDict]],
         extra_auxiliary_info: Any = None,
     ):
         if self.b > math.ceil(len(raw_client_grad_list) / 2) - 1 or self.b < 0:
@@ -71,7 +56,7 @@ class SLSGDDefense(BaseDefenseMethod):
 
     def defend_on_aggregation(
         self,
-        raw_client_grad_list: List[Tuple[float, Dict]],
+        raw_client_grad_list: List[Tuple[float, OrderedDict]],
         base_aggregation_func: Callable = None,
         extra_auxiliary_info: Any = None,
     ):
