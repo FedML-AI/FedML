@@ -1,5 +1,6 @@
 import functools
 import random
+from collections import OrderedDict
 from typing import List, Tuple, Dict, Any
 import numpy as np
 import torch
@@ -50,7 +51,7 @@ class BackdoorAttack(BaseAttackMethod):
         else:
             pass
 
-    def attack_model(self, raw_client_grad_list: List[Tuple[float, Dict]],
+    def attack_model(self, raw_client_grad_list: List[Tuple[float, OrderedDict]],
         extra_auxiliary_info: Any = None):
         # the local_w comes from local training (regular)
         backdoor_idxs = self._get_malicious_client_idx(len(raw_client_grad_list))
