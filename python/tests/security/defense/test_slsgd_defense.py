@@ -38,8 +38,9 @@ def test_defense_option2():
     defense = SLSGDDefense(add_args_option2())
     model_list = create_fake_model_list(20)
     random.shuffle(model_list)
-    val = defense.run(model_list, base_aggregation_func=FedMLAggOperator.agg, extra_auxiliary_info=model_list[0][1],)
+    val = defense.defend_before_aggregation(model_list, extra_auxiliary_info=model_list[0][1],)
     print(f"len={len(val)}, val={val}")
+    val = defense.defend_on_aggregation(val, base_aggregation_func=FedMLAggOperator.agg, extra_auxiliary_info=model_list[0][1])
 
 
 def test__sort_and_trim():
@@ -52,12 +53,12 @@ def test__sort_and_trim():
 
 
 def test_robustify_global_model():
-    for alpha in [0, 0.5, 1]:
-        model_list = create_fake_model_list(20)
-        aggregated_results = SLSGDDefense(add_args_option2()).run(
-            model_list, base_aggregation_func=FedMLAggOperator.agg, extra_auxiliary_info=model_list[0][1],
-        )
-        print(f"alpha = {alpha}, aggregation = {aggregated_results} ")
+    model_list = create_fake_model_list(20)
+    defense = SLSGDDefense(add_args_option2())
+    val = defense.defend_before_aggregation(model_list, extra_auxiliary_info=model_list[0][1], )
+    print(f"len={len(val)}, val={val}")
+    val = defense.defend_on_aggregation(val, base_aggregation_func=FedMLAggOperator.agg,
+                                        extra_auxiliary_info=model_list[0][1])
 
 
 if __name__ == "__main__":
