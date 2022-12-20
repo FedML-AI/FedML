@@ -9,11 +9,15 @@ from .base_client_optimizer import ClientOptimizer
 
 from fedml.ml.ml_message import MLMessage
 
+from fedml.utils.model_utils import set_model_bn_params
+
 
 class FedOptClientOptimizer(ClientOptimizer):
 
     def preprocess(self, args, client_index, model, train_data, device, model_optimizer, criterion):
         self.model_optimizer = model_optimizer
+        server_weights = self.server_result.get(MLMessage.MODEL_PARAMS)
+        model.load_state_dict(server_weights)
         return model
 
     def backward(self, args, client_index, model, x, labels, criterion, device, loss):

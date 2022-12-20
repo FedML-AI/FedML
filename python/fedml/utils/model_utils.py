@@ -389,24 +389,77 @@ def clip_norm(tensors, device, max_norm=1.0, norm_type=2.):
 """Dif Utils"""
 
 
-def get_diff_weights(weights1, weights2):
+def get_diff_weights(weights1, weights2, detach=False):
     """ Produce a direction from 'weights1' to 'weights2'."""
     if isinstance(weights1, list) and isinstance(weights2, list):
-        return [w2 - w1 for (w1, w2) in zip(weights1, weights2)]
+        if detach:
+            return [(w2 - w1).detach() for (w1, w2) in zip(weights1, weights2)]
+        else:
+            return [w2 - w1 for (w1, w2) in zip(weights1, weights2)]
     elif isinstance(weights1, torch.Tensor) and isinstance(weights2, torch.Tensor):
-        return weights2 - weights1
+        if detach:
+            return (weights2 - weights1).detach()
+        else:
+            return weights2 - weights1
     else:
         raise NotImplementedError
 
 
-def get_name_params_difference(named_parameters1, named_parameters2):
+def get_name_params_difference(named_parameters1, named_parameters2, detach=False):
     """
         return named_parameters2 - named_parameters1
     """
     common_names = list(set(named_parameters1.keys()).intersection(set(named_parameters2.keys())))
     named_diff_parameters = {}
     for key in common_names:
-        named_diff_parameters[key] = get_diff_weights(named_parameters1[key], named_parameters2[key])
+        named_diff_parameters[key] = get_diff_weights(named_parameters1[key], named_parameters2[key], detach)
+    return named_diff_parameters
+
+
+def get_model_name_params_difference(model1, model2, detach=False):
+    """
+        return named_parameters2 - named_parameters1
+    """
+    named_diff_parameters = {}
+    model2_state_dict = model2.state_dict()
+    for name, param in model1.named_parameters():
+        named_diff_parameters[name] = get_diff_weights(param, model2_state_dict[name], detach)
+    return named_diff_parameters
+
+
+def add_weights(weights1, weights2, detach=False):
+    """ add 'weights1' and 'weights2'."""
+    if isinstance(weights1, list) and isinstance(weights2, list):
+        if detach:
+            return [(w2 + w1).detach() for (w1, w2) in zip(weights1, weights2)]
+        else:
+            return [w2 + w1 for (w1, w2) in zip(weights1, weights2)]
+    elif isinstance(weights1, torch.Tensor) and isinstance(weights2, torch.Tensor):
+        if detach:
+            return (weights2 + weights1).detach()
+        else:
+            return weights2 + weights1
+    else:
+        raise NotImplementedError
+
+
+def add_name_params_difference(named_parameters1, named_parameters2, detach=False):
+    common_names = list(set(named_parameters1.keys()).intersection(set(named_parameters2.keys())))
+    named_diff_parameters = {}
+    for key in common_names:
+        named_diff_parameters[key] = get_diff_weights(named_parameters1[key], named_parameters2[key], detach)
+    return named_diff_parameters
+
+
+
+def add_model_name_params_difference(model1, model2, detach=False):
+    """
+        return named_parameters2 - named_parameters1
+    """
+    named_diff_parameters = {}
+    model2_state_dict = model2.state_dict()
+    for name, param in model1.named_parameters():
+        named_diff_parameters[name] = get_diff_weights(param, model2_state_dict[name], detach)
     return named_diff_parameters
 
 

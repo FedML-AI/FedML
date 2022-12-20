@@ -33,6 +33,8 @@ class ScaffoldClientOptimizer(ClientOptimizer):
     def preprocess(self, args, client_index, model, train_data, device, model_optimizer, criterion):
         self.model_optimizer = model_optimizer
         self.criterion = criterion
+        server_weights = self.server_result.get(MLMessage.MODEL_PARAMS)
+        model.load_state_dict(server_weights)
 
         if "c_model_local" not in self.client_status:
             self.c_model_local = {}

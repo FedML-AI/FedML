@@ -105,6 +105,20 @@ def add_args():
     #
     parser.add_argument("--feddyn_alpha", type=float, default=0.01)
 
+    parser.add_argument("--feddlc_download_dense", type=str, default="False")
+
+    parser.add_argument("--compression", type=str, default="no")
+    parser.add_argument("--compression_sigma_scale", type=int, default=3)
+    parser.add_argument("--compression_sparse_ratio", type=float, default=0.01)
+    parser.add_argument("--compression_quantize_level", type=int, default=8)
+    parser.add_argument("--compression_is_biased", type=str, default="False")
+
+    parser.add_argument("--down_compression", type=str, default="no")
+    parser.add_argument("--down_compression_sigma_scale", type=int, default=3)
+    parser.add_argument("--down_compression_sparse_ratio", type=float, default=0.1)
+    parser.add_argument("--down_compression_quantize_level", type=int, default=8)
+    parser.add_argument("--down_compression_is_biased", type=str, default="False")
+
     parser.add_argument("--aggregate_seq", type=str, default="False")
     parser.add_argument("--hierarchical_agg", type=str, default="False")
 

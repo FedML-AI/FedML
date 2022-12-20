@@ -39,7 +39,7 @@ class ModelTrainerCLS(ClientTrainer):
                 amsgrad=True,
             )
         criterion = nn.CrossEntropyLoss().to(device)  # pylint: disable=E1102
-        client_optimizer.preprocess(self.args, self.client_index,
+        client_optimizer.preprocess(args, self.client_index,
                                     self.model, train_data,
                                     device, optimizer, criterion)
 
@@ -48,8 +48,8 @@ class ModelTrainerCLS(ClientTrainer):
         for epoch in range(args.epochs):
             batch_loss = []
             for batch_idx, (x, labels) in enumerate(train_data):
-                if batch_idx > 2:
-                    break
+                # if batch_idx > 2:
+                #     break
 
                 x, labels = x.to(device), labels.to(device)
                 self.model.zero_grad()

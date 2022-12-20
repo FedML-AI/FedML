@@ -7,6 +7,7 @@ from fedml.core.alg_frame.params import Params
 from fedml.ml.trainer.client_optimizer_creator import create_client_optimizer
 from fedml.ml.trainer.local_cache import FedMLLocalCache
 
+from fedml.core.compression import MLcompression
 from fedml.core.compression.fedml_compression import FedMLCompression
 
 
@@ -46,9 +47,20 @@ class FLTrainer(object):
         # self.trainer.set_server_result(server_result)
         self.trainer.set_id(client_index)
         self.trainer.client_index = client_index
-        weights = server_result.get(MLMessage.MODEL_PARAMS)
-        self.trainer.set_model_params(weights)
         self.server_result = server_result
+        if MLcompression.check_args_compress(self.args, "download"):
+            if hasattr(self.args, "hierarchical_agg") and self.args.hierarchical_agg:
+                # decompress by the executor for each pseudo client, for saving computing time.
+                pass
+            else:
+                self.server_result.add(MLMessage.MODEL_PARAMS, FedMLCompression.get_instance("download").decompress_named_parameters(
+                    self.server_result[MLMessage.MODEL_PARAMS], self.server_result[MLMessage.MODEL_INDEXES],
+                    self.args
+                ))
+                # clear compressed indexes for saving comm and storage costs in simulation
+                self.server_result.pop(MLMessage.MODEL_INDEXES)
+        # weights = server_result.get(MLMessage.MODEL_PARAMS)
+        # self.trainer.set_model_params(weights)
 
 
     def update_dataset(self, client_index):
@@ -93,7 +105,8 @@ class FLTrainer(object):
         self.args.round_idx = round_idx
 
         client_status = self.load_client_status()
-        FedMLCompression.get_instance().load_status(self.args, client_status)
+        if MLcompression.check_args_compress(self.args):
+            FedMLCompression.get_instance().load_status(self.args, client_status)
         client_optimizer = create_client_optimizer(self.args)
         client_optimizer.load_status(self.args, client_status)
         client_optimizer.set_server_result(self.server_result)
@@ -107,6 +120,13 @@ class FLTrainer(object):
         other_result = client_optimizer.end_local_training(self.args, self.client_index,
                                                         self.trainer.model, self.train_local, self.device)
         client_result.add_dict(other_result)
+        if MLcompression.check_args_compress(self.args):
+            compressed_named_parameters, params_indexes = \
+                FedMLCompression.get_instance().compress_named_parameters(
+                    client_result[MLMessage.MODEL_PARAMS], self.args)
+            client_result.add(MLMessage.MODEL_PARAMS, compressed_named_parameters)
+            client_result.add(MLMessage.MODEL_INDEXES, params_indexes)
+
         new_client_status = {"default": 0}
         new_client_status = client_optimizer.add_status(new_client_status)
         self.save_client_status(new_client_status)

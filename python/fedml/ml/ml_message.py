@@ -9,6 +9,7 @@ class MLMessage(object):
     """
     MODEL_PARAMS = "model_params"
     GRAD_PARAMS = "grad_params"
+    MODEL_INDEXES = "model_indexes"
     # PARAMS_TO_SERVER_OPTIMIZER = "params_to_server_optimizer"
     # PARAMS_TO_CLIENT_OPTIMIZER = "params_to_client_optimizer"
 

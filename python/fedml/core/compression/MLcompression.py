@@ -25,15 +25,26 @@ QUANTIZATIONS = [QUANTIZE, QSGD]
 STATEFUL_COMPRESSORS = [EFTOPK, EFRANDOMK, DGCSAMPLING]
 
 
-def check_args_compress(args):
-    compress = getattr(args, "compression", None) is not None \
-            and getattr(args, "compression", None) != "no"
+def check_args_compress(args, direction="upload"):
+    if direction == "upload":
+        compress = getattr(args, "compression", None) is not None \
+                and getattr(args, "compression", None) != "no"
+    elif direction == "download":
+        compress = getattr(args, "down_compression", None) is not None \
+                and getattr(args, "down_compression", None) != "no"
+    else:
+        raise NotImplementedError
     return compress
 
 
 
-def check_compress_stateful(args):
-    compress = getattr(args, "compression", None)
+def check_compress_stateful(args, direction="upload"):
+    if direction == "upload":
+        compress = getattr(args, "compression", None)
+    elif direction == "download":
+        compress = getattr(args, "down_compression", None)
+    else:
+        raise NotImplementedError
     return compress in STATEFUL_COMPRESSORS
 
 
@@ -69,7 +80,7 @@ class TopKCompressor():
         self.stateful = False
 
 
-    def compress_named_parameters(self, named_parameters, args):
+    def compress_named_parameters(self, named_parameters, args, direction="upload"):
         # compressed_named_parameters, params_indexes = \
         #     compress_named_parameters(named_parameters, self.compressor, self.args.compression,
         #         sigma_scale=self.args.compression_sigma_scale, sparse_ratio=self.args.compression_sparse_ratio,
@@ -77,6 +88,19 @@ class TopKCompressor():
         compressed_named_parameters = {}
         params_indexes = {}
         compression_name = getattr(args, "compression", "no")
+        if direction == "upload":
+            sigma_scale = args.compression_sigma_scale,
+            ratio = args.compression_sparse_ratio
+            quantize_level = args.compression_quantize_level,
+            is_biased = args.compression_is_biased
+        elif direction == "download":
+            sigma_scale = args.down_compression_sigma_scale,
+            ratio = args.down_compression_sparse_ratio
+            quantize_level = args.down_compression_quantize_level,
+            is_biased = args.down_compression_is_biased
+        else:
+            raise NotImplementedError
+
         if compression_name in SPARSIFICATIONS:
             for key in list(named_parameters.keys()):
                 logging.debug("named_parameters[key].shape: {}, named_parameters[key].numel(): {}".format(
@@ -85,7 +109,7 @@ class TopKCompressor():
                 _, params_indexes[key], compressed_named_parameters[key] = \
                     self.compress(
                         self.flatten(named_parameters[key]), name=key,
-                        sigma_scale=args.compression_sigma_scale, ratio=args.compression_sparse_ratio
+                        sigma_scale=sigma_scale, ratio=ratio
                     )
         elif compression_name in QUANTIZATIONS:
             for key in list(named_parameters.keys()):
@@ -94,7 +118,7 @@ class TopKCompressor():
                 ))
                 compressed_named_parameters[key] = \
                     self.compress(named_parameters[key], name=key,
-                        quantize_level=args.compression_quantize_level, is_biased=args.compression_is_biased
+                        quantize_level=quantize_level, is_biased=is_biased
                     )
         else:
             raise NotImplementedError
@@ -557,9 +581,21 @@ compressors = {
 
 
 
-def create_compressor(args, model_params):
-    if check_args_compress(args):
-        compressor =  compressors[args.compression]()
+def create_compressor(args, model_params, direction="upload"):
+    if check_args_compress(args, direction):
+        if direction == "upload":
+            compressor =  compressors[args.compression]()
+            logging.info(f".......init compresser.......{args.compression} - \
+                compression_sparse_ratio: {args.compression_sparse_ratio}, \
+                compression_quantize_level: {args.compression_quantize_level}")
+        elif direction == "download":
+            compressor =  compressors[args.down_compression]()
+            logging.info(f".......init down_compresser.......{args.down_compression} - \
+                down_compression_sparse_ratio: {args.down_compression_sparse_ratio}, \
+                down_compression_quantize_level: {args.down_compression_quantize_level}")
+        else:
+            raise NotImplementedError
+
         for k in model_params.keys():
             compressor.update_shapes_dict(model_params[k], k)
     else:

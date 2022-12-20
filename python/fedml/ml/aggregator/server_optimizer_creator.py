@@ -6,7 +6,7 @@ from .feddyn_server_optimizer import FedDynServerOptimizer
 from .scaffold_server_optimizer import ScaffoldServerOptimizer
 from .mime_server_optimizer import MimeServerOptimizer
 from .fedsgd_server_optimizer import FedSGDServerOptimizer
-
+from .feddlc_server_optimizer import FedDLCServerOptimizer
 
 def create_server_optimizer(args):
     if args.federated_optimizer in ["FedAvg", "FedAvg_seq"]:
@@ -25,6 +25,8 @@ def create_server_optimizer(args):
         server_optimizer = MimeServerOptimizer(args)
     elif args.federated_optimizer == "FedSGD":
         server_optimizer = FedSGDServerOptimizer(args)
+    elif args.federated_optimizer == "FedDLC":
+        server_optimizer = FedDLCServerOptimizer(args)
     else:  # default model trainer is for classification problem
         raise NotImplementedError
     return server_optimizer

@@ -11,7 +11,7 @@ from fedml.ml.ml_message import MLMessage
 
 from fedml.utils.model_utils import get_all_bn_params, get_named_data
 
-from fedml.core.compression import MLcompression
+# from fedml.core.compression import MLcompression
 
 
 class FedSGDClientOptimizer(ClientOptimizer):
@@ -27,6 +27,8 @@ class FedSGDClientOptimizer(ClientOptimizer):
 
 
     def preprocess(self, args, client_index, model, train_data, device, model_optimizer, criterion):
+        server_weights = self.server_result.get(MLMessage.MODEL_PARAMS)
+        model.load_state_dict(server_weights)
         return model
 
 
@@ -47,14 +49,7 @@ class FedSGDClientOptimizer(ClientOptimizer):
     def end_local_training(self, args, client_index, model, train_data, device):
         other_result = dict()
         named_grads = get_named_data(model, mode='GRAD', use_cuda=False)
-        # if MLcompression.check_args_compress(args):
-        #     compressed_named_parameters, params_indexes = \
-        #         self.compressor.compress_named_parameters(named_grads, self.args)
-        #     other_result[MLMessage.MODEL_PARAMS] = compressed_named_parameters
-        #     other_result[MLMessage.MODEL_INDEXES] = params_indexes
-        # else:
-        #     other_result[MLMessage.MODEL_PARAMS] = named_grads
-
+        other_result[MLMessage.MODEL_PARAMS] = named_grads
         bn_params = get_all_bn_params(model)
         other_result["bn_params"] = bn_params
         return other_result

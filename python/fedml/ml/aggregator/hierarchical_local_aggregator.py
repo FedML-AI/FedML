@@ -20,6 +20,9 @@ from ...core.alg_frame.server_aggregator import ServerAggregator
 
 from fedml.utils.model_utils import transform_tensor_to_list, transform_list_to_tensor
 from fedml.core.alg_frame.params import Params
+from fedml.core.compression import MLcompression
+from fedml.core.compression.fedml_compression import FedMLCompression
+
 
 from ...core.schedule.seq_train_scheduler import SeqTrainScheduler
 from ...core.schedule.runtime_estimate import t_sample_fit
@@ -49,6 +52,14 @@ class HierarchicalLocalAggregator(object):
 
 
     def local_aggregate_seq(self, index, client_result, sample_num, training_num_in_round):
+        if MLcompression.check_args_compress(self.args):
+            client_result.add(MLMessage.MODEL_PARAMS, FedMLCompression.get_instance().decompress_named_parameters(
+                client_result[MLMessage.MODEL_PARAMS], client_result[MLMessage.MODEL_INDEXES],
+                self.args
+            ))
+            # clear compressed indexes for saving comm and storage costs in simulation
+            client_result.pop(MLMessage.MODEL_INDEXES)
+
         key_op_weight_list = self.server_optimizer.agg_seq(self.args, index, client_result, sample_num, training_num_in_round)
         for key, op, weight in key_op_weight_list:
             """Delete params that are locally aggregated"""

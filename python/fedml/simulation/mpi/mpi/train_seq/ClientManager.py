@@ -1,6 +1,7 @@
 import logging
 import time
 from math import cos
+from copy import deepcopy
 
 from fedml.ml.aggregator.server_optimizer_creator import create_server_optimizer
 from fedml.ml.aggregator.hierarchical_local_aggregator import HierarchicalLocalAggregator
@@ -12,6 +13,9 @@ from ..message_define import MyMessage
 from fedml.core.distributed.fedml_comm_manager import FedMLCommManager
 from fedml.core.distributed.communication.message import Message
 from fedml.ml.trainer.local_cache import FedMLLocalCache
+
+from fedml.core.compression import MLcompression
+from fedml.core.compression.fedml_compression import FedMLCompression
 
 
 class SeqClientManager(FedMLCommManager):
@@ -118,6 +122,13 @@ class SeqClientManager(FedMLCommManager):
         # sample_num_dict = server_result[MLMessage.SAMPLE_NUM_DICT]
         training_num_in_round = server_result.get(MLMessage.TRAINING_NUM_IN_ROUND)
         sample_num_dict = server_result.get(MLMessage.SAMPLE_NUM_DICT)
+        if MLcompression.check_args_compress(self.args, "download") and (self.args.round_idx > 0):
+            server_result.add(MLMessage.MODEL_PARAMS, FedMLCompression.get_instance("download").decompress_named_parameters(
+                server_result[MLMessage.MODEL_PARAMS], server_result[MLMessage.MODEL_INDEXES],
+                self.args
+            ))
+            # clear compressed indexes for saving comm and storage costs in simulation
+            server_result.pop(MLMessage.MODEL_INDEXES)
 
         # local_agg_client_result = {}
 
@@ -131,12 +142,14 @@ class SeqClientManager(FedMLCommManager):
             # )
             start_time = time.time()
 
+            # self.trainer.update_trainer(int(client_index), deepcopy(server_result))
             self.trainer.update_trainer(int(client_index), server_result)
             self.trainer.update_dataset(int(client_index))
-            self.args.round_idx += 1
             # weights, local_sample_num = self.trainer.train(self.args.round_idx)
             client_result, local_sample_num = self.trainer.train(self.args.round_idx)
+            # self.hierarchical_aggregator.local_aggregate_seq(client_index, deepcopy(client_result), local_sample_num, training_num_in_round)
             self.hierarchical_aggregator.local_aggregate_seq(client_index, client_result, local_sample_num, training_num_in_round)
+            # self.hierarchical_aggregator.local_aggregate_seq(client_index, client_result, local_sample_num, training_num_in_round)
             local_sample_num_dict[client_index] = local_sample_num
 
             if hasattr(self.args, "simulation_gpu_hetero") and self.args.simulation_gpu_hetero:
@@ -160,6 +173,7 @@ class SeqClientManager(FedMLCommManager):
             local_agg_client_result = Params()
         else:
             local_agg_client_result = self.hierarchical_aggregator.end_local_aggregate_seq()
+        self.args.round_idx += 1
         self.send_local_agg_result_to_server(0, local_agg_client_result,
                 local_sample_num_dict, client_runtime_info)
 

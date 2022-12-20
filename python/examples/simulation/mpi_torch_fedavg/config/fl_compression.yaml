@@ -51,6 +51,9 @@ fednova_args:
 feddyn_args:
   feddyn_alpha: 1.0
 
+feddlc_args:
+  feddlc_download_dense: False
+
 
 validation_args:
   frequency_of_the_test: 5
@@ -77,11 +80,11 @@ cache_args:
 
 tracking_args:
   # the default log path is at ~/fedml-client/fedml/logs/ and ~/fedml-server/fedml/logs/
-  enable_wandb: false
+  enable_wandb: False
   wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
   wandb_project: fedml
-  wandb_name: fedml_torch_fedavg_mnist_lr
-  run_name: fedml_schedule_bench
+  wandb_name: fl-compression
+  run_name: fl-compression
   wandb_only_server: True
   using_mlops: False
   simulation_schedule: "LinearFit-DP"
@@ -97,12 +100,12 @@ tracking_args:
 
 
 compression_args:
-  compression: "no"   # Note that not all optimizers support compression.
+  compression: "eftopk"   # Note that not all optimizers support compression.
   compression_sigma_scale: 3
   compression_sparse_ratio: 0.1
   compression_quantize_level: 8
   compression_is_biased: True
-  down_compression: "no"
+  down_compression: "topk"
   down_compression_sigma_scale: 3
   down_compression_sparse_ratio: 0.1
   down_compression_quantize_level: 8

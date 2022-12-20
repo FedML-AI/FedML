@@ -20,6 +20,8 @@ from ...core.alg_frame.server_aggregator import ServerAggregator
 
 from fedml.utils.model_utils import transform_tensor_to_list, transform_list_to_tensor
 from fedml.core.alg_frame.params import Params
+from fedml.core.compression import MLcompression
+from fedml.core.compression.fedml_compression import FedMLCompression
 
 from ...core.schedule.seq_train_scheduler import SeqTrainScheduler
 from ...core.schedule.runtime_estimate import t_sample_fit
@@ -216,6 +218,13 @@ class BaseServerAggregator(ServerAggregator):
         if self.args.is_mobile == 1:
             new_global_params = transform_tensor_to_list(new_global_params)
         server_result[MLMessage.MODEL_PARAMS] = new_global_params
+        if MLcompression.check_args_compress(self.args):
+            compressed_named_parameters, params_indexes = \
+                FedMLCompression.get_instance("download").compress_named_parameters(
+                    server_result[MLMessage.MODEL_PARAMS], self.args)
+            server_result[MLMessage.MODEL_PARAMS] = compressed_named_parameters
+            server_result[MLMessage.MODEL_INDEXES] = params_indexes
+
         # server_result[MLMessage.PARAMS_TO_CLIENT_OPTIMIZER] = params_to_client_optimizer
         other_result = self.server_optimizer.end_agg()
         server_result.update(other_result)
@@ -224,6 +233,14 @@ class BaseServerAggregator(ServerAggregator):
 
     def add_local_trained_result(self, index, client_result, sample_num):
         logging.info("add_model. index = %d" % index)
+        if MLcompression.check_args_compress(self.args):
+            client_result[MLMessage.MODEL_PARAMS] = FedMLCompression.get_instance().decompress_named_parameters(
+                client_result[MLMessage.MODEL_PARAMS], client_result[MLMessage.MODEL_INDEXES],
+                self.args
+            )
+            # clear compressed indexes for saving comm and storage costs in simulation
+            client_result.pop(MLMessage.MODEL_INDEXES)
+
         self.model_dict[index] = client_result[MLMessage.MODEL_PARAMS]
         self.client_result_dict[index] = client_result
         self.sample_num_dict[index] = sample_num
@@ -299,9 +316,16 @@ class BaseServerAggregator(ServerAggregator):
 
         new_global_params = self.on_after_aggregation(new_global_params)
 
-        self.set_model_params(new_global_params)
+        # self.set_model_params(new_global_params)
         server_result = Params()
         server_result.add(MLMessage.MODEL_PARAMS, new_global_params)
+        if MLcompression.check_args_compress(self.args):
+            compressed_named_parameters, params_indexes = \
+                FedMLCompression.get_instance("download").compress_named_parameters(
+                    server_result[MLMessage.MODEL_PARAMS], self.args)
+            server_result[MLMessage.MODEL_PARAMS] = compressed_named_parameters
+            server_result[MLMessage.MODEL_INDEXES] = params_indexes
+
         other_result = self.server_optimizer.end_agg()
         server_result.add_dict(other_result)
         end_time = time.time()
@@ -313,9 +337,9 @@ class BaseServerAggregator(ServerAggregator):
 
     def client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
         if client_num_in_total == client_num_per_round:
-            client_indexes = [
+            client_indexes = np.array([
                 client_index for client_index in range(client_num_in_total)
-            ]
+            ])
         else:
             num_clients = min(client_num_per_round, client_num_in_total)
             np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round

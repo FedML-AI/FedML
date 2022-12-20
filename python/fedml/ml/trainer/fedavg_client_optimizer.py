@@ -14,6 +14,8 @@ class FedAvgClientOptimizer(ClientOptimizer):
 
     def preprocess(self, args, client_index, model, train_data, device, model_optimizer, criterion):
         self.model_optimizer = model_optimizer
+        server_weights = self.server_result.get(MLMessage.MODEL_PARAMS)
+        model.load_state_dict(server_weights)
         return model
 
     def backward(self, args, client_index, model, x, labels, criterion, device, loss):

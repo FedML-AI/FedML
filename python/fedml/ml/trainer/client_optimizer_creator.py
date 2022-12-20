@@ -6,6 +6,7 @@ from .feddyn_client_optimizer import FedDynClientOptimizer
 from .scaffold_client_optimizer import ScaffoldClientOptimizer
 from .mime_client_optimizer import MimeClientOptimizer
 from .fedsgd_client_optimizer import FedSGDClientOptimizer
+from .feddlc_client_optimizer import FedDLCClientOptimizer
 
 
 def create_client_optimizer(args):
@@ -25,6 +26,8 @@ def create_client_optimizer(args):
         client_optimizer = MimeClientOptimizer(args)
     elif args.federated_optimizer == "FedSGD":
         client_optimizer = FedSGDClientOptimizer(args)
+    elif args.federated_optimizer == "FedDLC":
+        client_optimizer = FedDLCClientOptimizer(args)
     else:  # default model trainer is for classification problem
         raise NotImplementedError
     return client_optimizer

@@ -18,7 +18,9 @@ class FedProxClientOptimizer(ClientOptimizer):
 
     def preprocess(self, args, client_index, model, train_data, device, model_optimizer, criterion):
         self.model_optimizer = model_optimizer
-        self.global_model_params = deepcopy(model.state_dict())
+        server_weights = self.server_result.get(MLMessage.MODEL_PARAMS)
+        model.load_state_dict(server_weights)
+        self.global_model_params = deepcopy(server_weights)
         return model
 
 

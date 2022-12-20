@@ -14,6 +14,7 @@ from ....ml.trainer.trainer_creator import create_model_trainer
 from .default_aggregator import DefaultServerAggregator
 
 from ....core.compression.fedml_compression import FedMLCompression
+from ....core.compression import MLcompression
 
 
 def FedML_distributed(
@@ -41,7 +42,8 @@ def FedML_distributed(
     FedMLAttacker.get_instance().init(args)
     FedMLDefender.get_instance().init(args)
     FedMLDifferentialPrivacy.get_instance().init(args)
-    FedMLCompression.get_instance().init(args, model)
+    FedMLCompression.get_instance("upload").init(args, model)
+    FedMLCompression.get_instance("download").init(args, model)
 
     if process_id == 0:
         init_server(

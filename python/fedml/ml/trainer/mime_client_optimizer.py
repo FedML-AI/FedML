@@ -44,9 +44,11 @@ class MimeClientOptimizer(ClientOptimizer):
         self.criterion = criterion
         self.opt_loader = OptimizerLoader(model, self.model_optimizer)
 
-        self.grad_global = self.server_result["grad_global"]
-        self.global_named_states = self.server_result["global_named_states"]
+        self.grad_global = self.server_result.get("grad_global")
+        self.global_named_states = self.server_result.get("global_named_states")
         self.criterion = criterion
+        server_weights = self.server_result.get(MLMessage.MODEL_PARAMS)
+        model.load_state_dict(server_weights)
 
         self.init_model = copy.deepcopy(model)
         if not self.args.mimelite:

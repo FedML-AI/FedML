@@ -186,6 +186,8 @@ class FedNovaClientOptimizer(ClientOptimizer):
     def preprocess(self, args, client_index, model, train_data, device, model_optimizer, criterion):
         sample_num_dict = self.server_result[MLMessage.SAMPLE_NUM_DICT]
         round_sample_num = sum(list(sample_num_dict.values()))
+        server_weights = self.server_result.get(MLMessage.MODEL_PARAMS)
+        model.load_state_dict(server_weights)
 
         ratio = torch.FloatTensor(
                 [sample_num_dict[client_index] / round_sample_num]
