@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 from mxnet import np as mx_np
 from mxnet.gluon import nn
 
@@ -16,7 +18,7 @@ class LogisticRegressionModel(nn.Block):
         return self.layer1(x)
 
     def get_params(self):
-        param = dict()
+        param = OrderedDict()
         param["weight"] = list()
         for model_val in self.layer1.collect_params(".*weight").values():
             model_data = model_val.data()
