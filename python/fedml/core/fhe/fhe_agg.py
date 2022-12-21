@@ -30,7 +30,7 @@ class FedMLFHE:
                 ".......init Fully Homomorphic Encryption......."
             )
             self.is_enabled = True
-            # TODO: parse fhe args
+            # TODO: parse fhe args if more decentralized
             self.fhe_helper = fhe_core.CKKS('ckks', 4096,  52, 'resources/cryptoparams/')
             self.fhe_helper.loadCryptoParams()
             

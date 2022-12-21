@@ -40,7 +40,6 @@ class ServerAggregator(ABC):
     ) -> List[Tuple[float, Dict]]:
         if FedMLFHE.get_instance().is_fhe_enabled():
             logging.info(" ---- loading encrypted models ----")
-            #enc_raw_client_model_or_grad_list = FedMLFHE.get_instance().fhe_enc('global', raw_client_model_or_grad_list)
             enc_raw_client_model_or_grad_list = raw_client_model_or_grad_list
             return enc_raw_client_model_or_grad_list
         else:
