@@ -149,7 +149,6 @@ class SeqClientManager(FedMLCommManager):
             client_result, local_sample_num = self.trainer.train(self.args.round_idx)
             # self.hierarchical_aggregator.local_aggregate_seq(client_index, deepcopy(client_result), local_sample_num, training_num_in_round)
             self.hierarchical_aggregator.local_aggregate_seq(client_index, client_result, local_sample_num, training_num_in_round)
-            # self.hierarchical_aggregator.local_aggregate_seq(client_index, client_result, local_sample_num, training_num_in_round)
             local_sample_num_dict[client_index] = local_sample_num
 
             if hasattr(self.args, "simulation_gpu_hetero") and self.args.simulation_gpu_hetero:

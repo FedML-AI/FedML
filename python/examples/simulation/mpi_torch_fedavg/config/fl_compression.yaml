@@ -82,7 +82,8 @@ tracking_args:
   # the default log path is at ~/fedml-client/fedml/logs/ and ~/fedml-server/fedml/logs/
   enable_wandb: False
   wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
-  wandb_project: fedml
+  wandb_entity: coolzhtang
+  wandb_project: fl-compression
   wandb_name: fl-compression
   run_name: fl-compression
   wandb_only_server: True

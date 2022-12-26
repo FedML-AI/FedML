@@ -143,7 +143,7 @@ class CNN_DropOut(torch.nn.Module):
 
 
 class Cifar10FLNet(nn.Module):
-    def __init__(self):
+    def __init__(self, output_dim):
         super(Cifar10FLNet, self).__init__()
         self.conv1 = nn.Conv2d(3, 64, 5, 1, 2)
         self.pool1 = nn.MaxPool2d(3, 2, 1)
@@ -151,7 +151,7 @@ class Cifar10FLNet(nn.Module):
         self.pool2 = nn.MaxPool2d(3, 2, 1)
         self.fc1 = nn.Linear(4096, 384)
         self.fc2 = nn.Linear(384, 192)
-        self.fc3 = nn.Linear(192, 10)
+        self.fc3 = nn.Linear(192, output_dim)
         self.name = 'cifar10flnet'
 
     def forward(self, x):

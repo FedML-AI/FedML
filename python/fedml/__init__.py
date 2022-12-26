@@ -162,8 +162,8 @@ def manage_profiling_args(args):
                     "project": args.wandb_project,
                     "config": args,
                 }
-            if hasattr(args, "wandb_id") and args.wandb_id is not None:
-                wandb_args["id"] = args.wandb_id
+            # if hasattr(args, "wandb_id") and args.wandb_id is not None:
+            #     wandb_args["id"] = args.wandb_id
 
             if hasattr(args, "run_name"):
                 wandb_args["name"] = args.run_name

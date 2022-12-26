@@ -96,12 +96,14 @@ class FedDLCServerOptimizer(ServerOptimizer):
         set_model_bn_params(self.model, bn_params)
         self.opt_loader.zero_grad()
         w_global = self.model.cpu().state_dict()
+        # logging.info(f"server: w_global['fc1.weights'][:3,:3,:3]: {w_global['fc1.weight'][:3,:3]}")
+
         if args.feddlc_download_dense:
             return w_global
         else:
             with torch.no_grad():
-                pseudo_grad = get_name_params_difference(prev_model, w_global)
-            return pseudo_grad
+                model_update = get_name_params_difference(prev_model, w_global)
+            return model_update
 
 
     def before_agg(self, client_result_dict, sample_num_dict):

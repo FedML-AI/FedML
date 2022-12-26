@@ -29,13 +29,29 @@ class FedDLCClientOptimizer(ClientOptimizer):
             model.load_state_dict(server_weights)
         else:
             server_update = named_params_to(self.server_result.get(MLMessage.MODEL_PARAMS), device)
+            if hasattr(self.args, "hierarchical_agg") and self.args.hierarchical_agg:
+                """
+                Use the pseudo grad from the server need to cache the local model.
+                Directly cache here for saving memory.
+                """
+                if "cache_client_model" not in self.server_result:
+                    weights = model.state_dict()
+                    self.server_result.add("cache_client_model", deepcopy(weights))
+                else:
+                    weights = deepcopy(self.server_result["cache_client_model"])
+            else:
+                weights = model.state_dict()
+
             with torch.no_grad():
-                for name, param in model.named_parameters():
+                for key in weights.keys():
                     # logging.info(f"param.data.device:{param.data.device}, server_update[name].device: {server_update[name].device}")
-                    param.data = add_weights(param.data, server_update[name])
+                    weights[key] = add_weights(weights[key], server_update[key])
                     # logging.info(f"server_update[name].norm():{server_update[name].norm()}")
-            bn_params = self.server_result.get("bn_params")
-            set_model_bn_params(model, bn_params)
+            # bn_params = self.server_result.get("bn_params")
+            # set_model_bn_params(model, bn_params)
+            model.load_state_dict(weights)
+            # logging.info(f"client: weights)['fc1'][:3,:3,:3]: {weights['fc1.weight'][:3,:3]}")
+
         self.prev_model = deepcopy(model)
         return model
 

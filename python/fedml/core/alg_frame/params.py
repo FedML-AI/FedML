@@ -32,6 +32,9 @@ class Params(object):
     def has(self, name: str):
         return hasattr(self, name)
 
+    def __contains__(self, name: str):
+        return name in self.__dict__
+
     def add_dict(self, new_values):
         for key, value in new_values.items():
             self.add(key, value)
