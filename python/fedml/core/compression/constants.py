@@ -7,6 +7,5 @@ EFRANDOMK = "randomkec"
 DGCSAMPLING = "dgcsampling"
 QUANTIZE = "quantize"
 QSGD = "qsgd"
-
-
+ATOMO = "atomo"
 

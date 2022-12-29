@@ -12,7 +12,7 @@ from . import utils
 
 
 from fedml.core.compression.constants import (
-    NO_COMPRESS, TOPK, EFTOPK, GAUSSIAN, RANDOMK, EFRANDOMK, DGCSAMPLING, QUANTIZE, QSGD)
+   NO_COMPRESS, TOPK, EFTOPK, GAUSSIAN, RANDOMK, EFRANDOMK, DGCSAMPLING, QUANTIZE, QSGD, ATOMO, POWERSGD)
 
 
 # SPARSIFICATIONS = ["topk", "eftopk", "gaussian", "randomk", "randomkec", "dgcsampling"]
@@ -22,6 +22,7 @@ from fedml.core.compression.constants import (
 
 SPARSIFICATIONS = [TOPK, EFTOPK, GAUSSIAN, RANDOMK, EFRANDOMK, DGCSAMPLING]
 QUANTIZATIONS = [QUANTIZE, QSGD]
+LOWRANK = [ATOMO]
 STATEFUL_COMPRESSORS = [EFTOPK, EFRANDOMK, DGCSAMPLING]
 
 
@@ -57,7 +58,51 @@ class NoneCompressor():
 
     def decompress(self, tensor, ctc):
         z = tensor 
-        return z 
+        return z
+
+
+class TensorBuffer():
+    """
+    Packs multiple tensors into one flat buffer for efficient
+    intra-worker communication.
+    """
+    def __init__(self, tensors):
+        indices = [0]
+        for tensor in tensors:
+            new_end = indices[-1] + tensor.nelement()
+            indices.append(new_end)
+
+        self._start_idx = indices[:-1]
+        self._end_idx = indices[1:]
+        self._tensors = tensors
+
+        self.buffer = torch.cat([t.view(-1) for t in tensors]) # copies
+    
+    def __getitem__(self, index):
+        return self.buffer[self._start_idx[index] : self._end_idx[index]].view(*self._tensors[index].shape)
+
+    def __len__(self):
+        return len(self._tensors)
+
+    def pack(self, tensors=None):
+        # Optional. init already does this.
+        if tensors is None:
+            tensors = self._tensors
+        for tensor, entry in zip(tensors, self):
+            entry[:] = tensor
+
+    def unpack(self, tensors):
+        for tensor, entry in zip(tensors, self):
+            tensor[:] = entry
+
+    def nelement(self):
+        return self.buffer.nelement()
+
+    def element_size(self):
+        return self.buffer.element_size()
+
+    def bits(self):
+        return 8 * self.nelement() * self.element_size()
 
 
 class TopKCompressor():
@@ -93,11 +138,13 @@ class TopKCompressor():
             ratio = args.compression_sparse_ratio
             quantize_level = args.compression_quantize_level,
             is_biased = args.compression_is_biased
+            factorization_rank = args.factorization_rank
         elif direction == "download":
             sigma_scale = args.down_compression_sigma_scale,
             ratio = args.down_compression_sparse_ratio
             quantize_level = args.down_compression_quantize_level,
             is_biased = args.down_compression_is_biased
+            factorization_rank = args.factorization_rank
         else:
             raise NotImplementedError
 
@@ -119,6 +166,15 @@ class TopKCompressor():
                 compressed_named_parameters[key] = \
                     self.compress(named_parameters[key], name=key,
                         quantize_level=quantize_level, is_biased=is_biased
+                    )
+        elif compression_name in LOWRANK:
+            for key in list(named_parameters.keys()):
+                logging.debug("named_parameters[key].shape: {}, named_parameters[key].numel(): {}".format(
+                    named_parameters[key].shape, named_parameters[key].numel()
+                ))
+                compressed_named_parameters[key] = \
+                    self.compress(named_parameters[key], name=key,
+                        factorization_rank=factorization_rank
                     )
         else:
             raise NotImplementedError
@@ -551,6 +607,98 @@ class QSGDCompressor(TopKCompressor):
         self.shapes[name] = tensor.shape
 
 
+
+class ATOMOCompressor(TopKCompressor):
+    """
+    ATOMO: Communication-efficient Learning via Atomic Sparsification NeurIPS 2018.
+    """
+    def __init__(self):
+        self.name = 'atomo'
+
+    def reshape_to_2d(self, tensor):
+        # slightly from the Atomo paper's reshaping strategy
+        return tensor.view(self.ori_tensor_size[0], -1)
+        # original Atomo paper's samping strategy
+        # if tensor.ndimension() == 1:
+        #     return tensor.view(tensor.shape[0] // 2, -1)
+        # elif all([s == 1 for s in tensor.shape[2:]]):
+        #     return tensor.squeeze()
+        # else:
+        #     return tensor.view((tensor.shape[0] * tensor.shape[1]) // 2, -1)
+
+    def sample_svd(self, s, factorization_rank=0):
+        if s[0] < 1e-6:
+            return [0], np.array([1.0])
+        probs = s / s[0] if factorization_rank == 0 else factorization_rank * s / s.sum()
+        for i, p in enumerate(probs):
+            if p > 1:
+                probs[i]=1
+        sampled_idx = []
+        sample_probs = []
+        for i, p in enumerate(probs):
+            #if np.random.rand() < p:
+            # random sampling from bernulli distribution
+            if np.random.binomial(1, p):
+                sampled_idx += [i]
+                sample_probs += [p]
+        rank_hat = len(sampled_idx)
+        if rank_hat == 0:  # or (rank != 0 and np.abs(rank_hat - rank) >= 3):
+            return _sample_svd(s, factorization_rank=factorization_rank)
+        return np.array(sampled_idx, dtype=int), np.array(sample_probs)
+
+    def svd(self, matrix):
+        # return torch.svd(matrix)  # 1-worker batch.reduce time: 0.76103s
+        # return self.svd_with_numpy(matrix)  # 1-worker batch.reduce time: > 2s
+        return self.svd_on_cpu(matrix)  # 1-worker batch.reduce time: 0.31790s
+
+    def svd_on_cpu(self, matrix):
+        u, s, v = torch.svd(matrix.to('cpu'))
+        u = u.to(self.device)
+        v = v.to(self.device)
+        s = s.to(self.device)
+        return u, s, v
+
+    def svd_with_numpy(self, matrix):
+        u, s, vT = np.linalg.svd(matrix.cpu().numpy())
+        u = torch.from_numpy(u).to(self.device)
+        s = torch.from_numpy(s).to(self.device)
+        v = torch.from_numpy(vT.transpose()).to(self.device)
+        return u, s, v
+
+    def compress(self, tensor, name=None, factorization_rank=4):
+        """
+        Factorize gradients
+        :param tensor: torch.Tensor
+        :param factorization_rank: int
+        """
+        self.device = tensor.device
+        self.ori_tensor_size = tensor.size()
+
+        if len(self.ori_tensor_size) == 4:
+            matrix = self.reshape_to_2d(tensor)
+        elif len(self.ori_tensor_size) == 2:
+            matrix = tensor.clone()
+        else:
+            raise NotImplementedError("Unsupported tensor dim ...")
+        print("** matrix size: {}".format(matrix.size()))
+        u, s, v = self.svd(matrix)
+        i, probs = self.sample_svd(s, factorization_rank)
+        u = u[:, i]
+        s = s[i] / probs
+        v = v[:, i]
+        compressed = {"u":u, "s":s, "v":v}
+        return compressed
+
+    def decompress(self, compressed):
+        """
+        Factorized gradients
+        :param compressed: Dict
+        """
+        u, s, v = compressed["u"], compressed["s"], compressed["v"]
+        decompressed = torch.einsum('md, d, nd -> mn', u, s, v)
+        return decompressed.view(self.ori_tensor_size)
+
+
 compressors = {
     NO_COMPRESS: NoneCompressor,
     None: NoneCompressor,
@@ -561,8 +709,11 @@ compressors = {
     EFRANDOMK: RandomKECCompressor, #RandomK with error-feedback
     DGCSAMPLING: DGCSamplingCompressor, #DGC (doubling sampling) with error-feedback
 
+
     QUANTIZE: QuantizationCompressor, # Naive Quantization Compressor
     QSGD: QSGDCompressor, # QSGD Quantization Compressor
+
+    ATOMO: ATOMOCompressor
 }
 
 # compressors = {
@@ -616,6 +767,21 @@ if __name__ == '__main__':
     print('decompressed shape: ', decompressed_tensor.shape)
     diff = (decompressed_tensor - z).norm()
     print('difff norm: ', diff)
+
+    compressor_str = 'atomo'
+    compressor = compressors[compressor_str]()
+    z = torch.rand(128, 256, 3, 3)
+    for fr in (4, 8, 16, 32, 64, 128):
+        compressed = compressor.compress(z, factorization_rank=fr)
+        print("SVD Rank: {}, u shape: {}, s shape: {}, v shape: {}".format(
+                                                            fr,
+                                                            compressed["u"].size(),
+                                                            compressed["s"].size(),
+                                                            compressed["v"].size()))
+        decompressed_tensor = compressor.decompress(compressed)
+        print("decompressed tensor size: {}".format(decompressed_tensor.size()))
+        diff = (decompressed_tensor - z).norm()
+        print('SVD Rank: {}, difff norm: {}\n'.format(fr, diff))
 
 
 
