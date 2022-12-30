@@ -203,10 +203,6 @@ class FedMLServerRunner:
             should_capture_stderr=True
         )
         ServerConstants.save_learning_process(process.pid)
-        ret_code, out, err = ServerConstants.get_console_pipe_out_err_results(process)
-        if ret_code != 0 and err is not None:
-            logging.error("Exception when executing server program: {}".format(err.decode(encoding="utf-8")))
-            self.stop_run_when_starting_failed()
 
         # start inference monitor server
         python_program = get_python_program()
@@ -227,9 +223,9 @@ class FedMLServerRunner:
             should_capture_stderr=True
         )
         ServerConstants.save_learning_process(self.monitor_process.pid)
-
         self.release_client_mqtt_mgr()
-
+        ret_code, out, err = ServerConstants.get_console_pipe_out_err_results(process)
+    
         while True:
             time.sleep(1)
 
