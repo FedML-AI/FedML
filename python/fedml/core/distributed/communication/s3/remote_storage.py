@@ -108,7 +108,7 @@ class S3Storage:
         with tqdm.tqdm(total=object_size, unit="B", unit_scale=True, desc="Downloading Model to AWS S3") as pbar:
             with open(temp_file_path, 'wb') as f:
                 aws_s3_client.download_fileobj(Bucket=self.bucket_name, Key=message_key, Fileobj=f,
-                                                     Callback=lambda bytes_transferred: pbar.update(bytes_transferred), )
+                                               Callback=lambda bytes_transferred: pbar.update(bytes_transferred), )
         MLOpsProfilerEvent.log_to_wandb(
             {"Comm/recieve_delay_s3": time.time() - message_handler_start_time}
         )
@@ -217,6 +217,69 @@ class S3Storage:
                 logging.info(
                     f"Downloading completed. | size: {round(file_size / 1048576, 2)} MB"
                 )
+                break
+            except Exception as e:
+                logging.error(f"Download zip failed. | Exception: {e}")
+                retry += 1
+        if retry >= 3:
+            logging.error(f"Download zip failed after max retry.")
+
+    def upload_file_with_progress(self, src_local_path, dest_s3_path):
+        """
+        upload file
+        :param src_local_path:
+        :param dest_s3_path:
+        :return:
+        """
+        file_uploaded_url = ""
+        try:
+            with open(src_local_path, "rb") as f:
+                global aws_s3_client
+                old_file_position = f.tell()
+                f.seek(0, os.SEEK_END)
+                file_size = f.tell()
+                f.seek(old_file_position, os.SEEK_SET)
+                with tqdm.tqdm(total=file_size, unit="B", unit_scale=True, desc="Uploading Model to AWS S3") as pbar:
+                    aws_s3_client.upload_fileobj(
+                        f, self.bucket_name, dest_s3_path, ExtraArgs={"ACL": "public-read"},
+                        Callback=lambda bytes_transferred: pbar.update(bytes_transferred),
+                    )
+
+                file_uploaded_url = aws_s3_client.generate_presigned_url(
+                    "get_object",
+                    ExpiresIn=60 * 60 * 24 * 365,
+                    Params={"Bucket": self.bucket_name, "Key": dest_s3_path},
+                )
+        except Exception as e:
+            logging.error(
+                f"Upload data failed. | src: {src_local_path} | dest: {dest_s3_path} | Exception: {e}"
+            )
+            return file_uploaded_url
+        logging.info(
+            f"Uploading file successful. | src: {src_local_path} | dest: {dest_s3_path}"
+        )
+        return file_uploaded_url
+
+    def download_file_with_progress(self, path_s3, path_local):
+        """
+        download file
+        :param path_s3: s3 key
+        :param path_local: local path
+        :return:
+        """
+        retry = 0
+        while retry < 3:
+            logging.info(
+                f"Start downloading files. | path_s3: {path_s3} | path_local: {path_local}"
+            )
+            try:
+                global aws_s3_client
+                kwargs = {"Bucket": self.bucket_name, "Key": path_s3}
+                object_size = aws_s3_client.head_object(**kwargs)["ContentLength"]
+                with tqdm.tqdm(total=object_size, unit="B", unit_scale=True, desc="Downloading Model to AWS S3") as pbar:
+                    with open(path_local, 'wb') as f:
+                        aws_s3_client.download_fileobj(Bucket=self.bucket_name, Key=path_s3, Fileobj=f,
+                                                       Callback=lambda bytes_transferred: pbar.update(bytes_transferred), )
                 break
             except Exception as e:
                 logging.error(f"Download zip failed. | Exception: {e}")
