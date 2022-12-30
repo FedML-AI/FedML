@@ -1,0 +1,8 @@
+model_args:
+  model_name: "lr-test-model"
+  epochs: 1
+  batch_size: 10
+  client_optimizer: sgd
+  learning_rate: 0.03
+  weight_decay: 0.001
+  using_gpu: false
