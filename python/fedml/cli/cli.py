@@ -7,19 +7,37 @@ import click
 
 import fedml
 
-from ..cli.edge_deployment.client_constants import ClientConstants
-from ..cli.server_deployment.server_constants import ServerConstants
-from ..cli.edge_deployment.client_login import logout as client_logout
-from ..cli.env.collect_env import collect_env
-from ..cli.server_deployment.server_login import logout as server_logout
-from ..cli.edge_deployment.docker_login import login_with_docker_mode
-from ..cli.edge_deployment.docker_login import logout_with_docker_mode
-from ..cli.edge_deployment.docker_login import logs_with_docker_mode
-from ..cli.server_deployment.docker_login import login_with_server_docker_mode
-from ..cli.server_deployment.docker_login import logout_with_server_docker_mode
-from ..cli.server_deployment.docker_login import logs_with_server_docker_mode
-from ..cli.edge_deployment.client_diagnosis import ClientDiagnosis
-from ..cli.comm_utils import sys_utils
+# from ..cli.edge_deployment.client_constants import ClientConstants
+# from ..cli.server_deployment.server_constants import ServerConstants
+# from ..cli.edge_deployment.client_login import logout as client_logout
+# from ..cli.env.collect_env import collect_env
+# from ..cli.server_deployment.server_login import logout as server_logout
+# from ..cli.edge_deployment.docker_login import login_with_docker_mode
+# from ..cli.edge_deployment.docker_login import logout_with_docker_mode
+# from ..cli.edge_deployment.docker_login import logs_with_docker_mode
+# from ..cli.server_deployment.docker_login import login_with_server_docker_mode
+# from ..cli.server_deployment.docker_login import logout_with_server_docker_mode
+# from ..cli.server_deployment.docker_login import logs_with_server_docker_mode
+# from ..cli.edge_deployment.client_diagnosis import ClientDiagnosis
+# from ..cli.comm_utils import sys_utils
+# from .model_deployment import device_login_entry
+# from .model_deployment.device_model_cards import FedMLModelCards
+
+from fedml.cli.edge_deployment.client_constants import ClientConstants
+from fedml.cli.server_deployment.server_constants import ServerConstants
+from fedml.cli.edge_deployment.client_login import logout as client_logout
+from fedml.cli.env.collect_env import collect_env
+from fedml.cli.server_deployment.server_login import logout as server_logout
+from fedml.cli.edge_deployment.docker_login import login_with_docker_mode
+from fedml.cli.edge_deployment.docker_login import logout_with_docker_mode
+from fedml.cli.edge_deployment.docker_login import logs_with_docker_mode
+from fedml.cli.server_deployment.docker_login import login_with_server_docker_mode
+from fedml.cli.server_deployment.docker_login import logout_with_server_docker_mode
+from fedml.cli.server_deployment.docker_login import logs_with_server_docker_mode
+from fedml.cli.edge_deployment.client_diagnosis import ClientDiagnosis
+from fedml.cli.comm_utils import sys_utils
+from fedml.cli.model_deployment import device_login_entry
+from fedml.cli.model_deployment.device_model_cards import FedMLModelCards
 
 
 FEDML_MLOPS_BUILD_PRE_IGNORE_LIST = 'dist-packages,client-package.zip,server-package.zip,__pycache__,*.pyc,*.git'
@@ -155,7 +173,7 @@ def display_server_logs():
     "--docker-rank", "-dr", default="1", help="docker client rank index (from 1 to n).",
 )
 def mlops_login(
-    userid, version, client, server, local_server, role, runner_cmd, device_id, os_name, docker, docker_rank
+        userid, version, client, server, local_server, role, runner_cmd, device_id, os_name, docker, docker_rank
 ):
     account_id = userid[0]
     platform_url = "open.fedml.ai"
@@ -412,7 +430,7 @@ def mlops_build(type, source_folder, entry_point, config_folder, dest_folder, ig
             "Now you may use "
             + os.path.join(dest_folder, "dist-packages", "client-package.zip")
             + " to start your federated "
-            "learning run."
+              "learning run."
         )
     elif type == "server":
         result = build_mlops_package(
@@ -434,7 +452,7 @@ def mlops_build(type, source_folder, entry_point, config_folder, dest_folder, ig
             "Now you may use "
             + os.path.join(dest_folder, "dist-packages", "server-package.zip")
             + " to start your federated "
-            "learning run."
+              "learning run."
         )
 
 
@@ -577,7 +595,6 @@ def build_mlops_package(
     "--mqtt_s3_backend_run_id", "-rid", type=str, default="fedml_diag_9988", help="mqtt+s3 run id.",
 )
 def mlops_diagnosis(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend_server, mqtt_s3_backend_client, mqtt_s3_backend_run_id):
-
     check_open = open
     check_s3 = s3
     check_mqtt = mqtt
@@ -600,7 +617,6 @@ def mlops_diagnosis(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend_server, mqtt_s3
 
     if mqtt_s3_backend_client is None:
         check_mqtt_s3_backend_client = False
-
 
     if check_open:
         is_open_connected = ClientDiagnosis.check_open_connection()
@@ -631,13 +647,13 @@ def mlops_diagnosis(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend_server, mqtt_s3
         pip_source_dir = os.path.dirname(__file__)
         server_diagnosis_cmd = os.path.join(pip_source_dir, "edge_deployment", "client_diagnosis.py")
         backend_server_process = subprocess.Popen([
-                sys_utils.get_python_program(),
-                server_diagnosis_cmd,
-                "-t",
-                "server",
-                "-r",
-                run_id
-            ]
+            sys_utils.get_python_program(),
+            server_diagnosis_cmd,
+            "-t",
+            "server",
+            "-r",
+            run_id
+        ]
         ).pid
 
     if check_mqtt_s3_backend_client:
@@ -656,7 +672,7 @@ def mlops_diagnosis(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend_server, mqtt_s3
 @cli.command(
     "env",
     help="collect the environment information to help debugging, including OS, Hardware Architecture, "
-    "Python version, etc.",
+         "Python version, etc.",
 )
 def env():
     collect_env()
@@ -672,6 +688,296 @@ def launch(arguments):
 
     from fedml.cross_silo.client.client_launcher import CrossSiloLauncher
     CrossSiloLauncher.launch_dist_trainers(arguments[0], list(arguments[1:]))
+
+
+@cli.group("model")
+def model():
+    """
+    Deploy and infer models.
+    """
+    pass
+
+
+@model.group("device")
+def device():
+    """
+    Manage computing device.
+    """
+    pass
+
+
+@device.command("login", help="Login as model device agent(MDA) on the ModelOps platform (model.fedml.ai).")
+@click.argument("userid", nargs=-1)
+@click.option(
+    "--cloud", "-c", default=None, is_flag=True, help="login as fedml cloud device.",
+)
+@click.option(
+    "--on_premise", "-p", default=None, is_flag=True, help="login as on-premise device.",
+)
+@click.option(
+    "--master", "-m", default=None, is_flag=True, help="login as master device in the federated inference cluster.",
+)
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help="login to which version of ModelOps platform. It should be dev, test or release",
+)
+@click.option(
+    "--local_server",
+    "-ls",
+    type=str,
+    default="127.0.0.1",
+    help="local server address.",
+)
+@click.option(
+    "--runner_cmd",
+    "-rc",
+    type=str,
+    default="{}",
+    help="runner commands (options: request json for starting deployment, stopping deployment).",
+)
+@click.option(
+    "--device_id", "-id", type=str, default="0", help="device id.",
+)
+@click.option(
+    "--os_name", "-os", type=str, default="", help="os name.",
+)
+@click.option(
+    "--docker", "-d", default=None, is_flag=True, help="login with docker mode at the model device agent.",
+)
+@click.option(
+    "--docker-rank", "-dr", default="1", help="docker client rank index (from 1 to n).",
+)
+def login_as_model_device_agent(
+        userid, cloud, on_premise, master, version, local_server, runner_cmd, device_id, os_name, docker, docker_rank
+):
+    device_login_entry.login_as_model_device_agent(userid, cloud, on_premise, master, version, local_server, runner_cmd, device_id, os_name, docker, docker_rank)
+
+
+@device.command("logout", help="Logout from the ModelOps platform (model.fedml.ai)")
+@click.option(
+    "--client", "-c", default=None, is_flag=True, help="logout from the model edge device.",
+)
+@click.option(
+    "--server", "-s", default=None, is_flag=True, help="logout from the model on-premise device.",
+)
+@click.option(
+    "--docker", "-d", default=None, is_flag=True, help="logout from docker mode at the model device agent.",
+)
+@click.option(
+    "--docker-rank", "-dr", default=None, help="docker client rank index (from 1 to n).",
+)
+def logout_from_model_ops(client, server, docker, docker_rank):
+    device_login_entry.logout_from_model_ops(client, server, docker, docker_rank)
+
+
+@model.command("create", help="Create local model repository.")
+@click.option(
+    "--name", "-n", type=str, help="model name.",
+)
+def create_model(name):
+    if FedMLModelCards.get_instance().create_model(name):
+        click.echo("Create model {} successfully.".format(name))
+    else:
+        click.echo("Failed to create model {}.".format(name))
+
+
+@model.command("delete", help="Delete local model repository.")
+@click.option(
+    "--name", "-n", type=str, help="model name.",
+)
+def delete_model(name):
+    if FedMLModelCards.get_instance().delete_model(name):
+        click.echo("Delete model {} successfully.".format(name))
+    else:
+        click.echo("Failed to delete model {}.".format(name))
+
+
+@model.command("add", help="Add file to local model repository.")
+@click.option(
+    "--name", "-n", type=str, help="model name.",
+)
+@click.option(
+    "--meta", "-m", type=str, is_flag=True, default="", help="meta information for specific model.",
+)
+@click.option(
+    "--path", "-p", type=str, help="path for specific model.",
+)
+def add_model_files(name, meta, path):
+    if FedMLModelCards.get_instance().add_model_files(name, meta, path):
+        click.echo("Add file to model {} successfully.".format(name))
+    else:
+        click.echo("Failed to add file to model {}.".format(name))
+
+
+@model.command("remove", help="Remove file from local model repository.")
+@click.option(
+    "--name", "-n", type=str, help="model name.",
+)
+@click.option(
+    "--file", "-f", type=str, help="file name for specific model.",
+)
+def remove_model_files(name, file):
+    if FedMLModelCards.get_instance().remove_model_files(name, file):
+        click.echo("Remove file from model {} successfully.".format(name))
+    else:
+        click.echo("Failed to remove file from model {}.".format(name))
+
+
+@model.command("list", help="List model in the local model repository.")
+@click.option(
+    "--name", "-n", type=str, help="model name.",
+)
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help="interact with which version of ModelOps platform. It should be dev, test or release",
+)
+def list_models(name, version):
+    FedMLModelCards.get_instance().set_config_version(version)
+    models = FedMLModelCards.get_instance().list_models(name)
+    if len(models) <= 0:
+        click.echo("Model list is empty.")
+    else:
+        for model_item in models:
+            click.echo(model_item)
+        click.echo("List model {} successfully.".format(name))
+
+
+@model.command("package", help="Build local model repository as zip model package.")
+@click.option(
+    "--name", "-n", type=str, help="model name.",
+)
+def package_model(name):
+    model_zip = FedMLModelCards.get_instance().build_model(name)
+    if model_zip != "":
+        click.echo("Build model package {} successfully".format(name))
+        click.echo("The local package is located at {}.".format(model_zip))
+    else:
+        click.echo("Failed to build model {}.".format(name))
+
+
+@model.command("push", help="Push local model repository to ModelOps(model.fedml.ai).")
+@click.option(
+    "--name", "-n", type=str, help="model name.",
+)
+@click.option(
+    "--user", "-u", type=str, help="user id or api key.",
+)
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help="interact with which version of ModelOps platform. It should be dev, test or release",
+)
+def push_model(name, user, version):
+    FedMLModelCards.get_instance().set_config_version(version)
+    model_storage_url, model_zip = FedMLModelCards.get_instance().push_model(name, user)
+    if model_storage_url != "":
+        click.echo("Push model {} successfully".format(name))
+        click.echo("The remote model storage is located at {}".format(model_storage_url))
+        click.echo("The local model package is locate at .".format(model_zip))
+    else:
+        click.echo("Failed to push model {}.".format(name))
+
+
+@model.command("pull", help="Pull remote model(ModelOps) to local model repository.")
+@click.option(
+    "--name", "-n", type=str, help="model name.",
+)
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help="interact with which version of ModelOps platform. It should be dev, test or release",
+)
+def pull_model(name, version):
+    FedMLModelCards.get_instance().set_config_version(version)
+    if FedMLModelCards.get_instance().pull_model(name):
+        click.echo("Pull model {} successfully.".format(name))
+    else:
+        click.echo("Failed to pull model {}.".format(name))
+
+
+@model.command("deploy",
+               help="Deploy specific model to ModelOps platform(model.fedml.ai) or just for local debugging deployment.")
+@click.option(
+    "--name", "-n", type=str, help="model name.",
+)
+@click.option(
+    "--device_type", "-dt", type=str, help="device type(md.on_premise_device or md.fedml_cloud_device).",
+)
+@click.option(
+    "--devices", "-d", type=str, help="device list, format: [1,2,3]. The first id is master device.",
+)
+@click.option(
+    "--user", "-u", type=str, help="user id or api key.",
+)
+@click.option(
+    "--params", "-p", type=str, default="", help="serving parameters.",
+)
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help="interact with which version of ModelOps platform. It should be dev, test or release",
+)
+@click.option(
+    "--use_local_deployment", "-ld", default=None, is_flag=True,
+    help="deploy local model repository by sending MQTT message(just use for debugging).",
+)
+def deploy_model(name, device_type, devices, user, params, version, use_local_deployment):
+    FedMLModelCards.get_instance().set_config_version(version)
+    if FedMLModelCards.get_instance().deploy_model(name, device_type, devices, user, params, use_local_deployment):
+        click.echo("Deploy model {} successfully.".format(name))
+    else:
+        click.echo("Failed to deploy model {}.".format(name))
+
+
+@model.group("inference")
+def inference():
+    """
+    Inference models.
+    """
+    pass
+
+
+@inference.command("query", help="Query inference parameters for specific model from ModelOps platform(model.fedml.ai).")
+@click.option(
+    "--name", "-n", type=str, help="model name.",
+)
+def query_model_infer(name):
+    inference_output_url, model_metadata, model_config = FedMLModelCards.get_instance().query_model(name)
+    if inference_output_url != "":
+        click.echo("Query model {} successfully.".format(name))
+        click.echo("infer url: {}.".format(inference_output_url))
+        click.echo("model metadata: {}.".format(model_metadata))
+        click.echo("model config: {}.".format(model_config))
+    else:
+        click.echo("Failed to query model {}.".format(name))
+
+
+@inference.command("run", help="Run inference action for specific model from ModelOps platform(model.fedml.ai).")
+@click.option(
+    "--name", "-n", type=str, help="model name.",
+)
+@click.option(
+    "--data", "-d", type=str, help="input data for model inference.",
+)
+def run_model_infer(name, data):
+    infer_out_json = FedMLModelCards.get_instance().inference_model(name, data)
+    if infer_out_json != "":
+        click.echo("Inference model {} successfully.".format(name))
+        click.echo("Result: {}.".format(infer_out_json))
+    else:
+        click.echo("Failed to inference model {}.".format(name))
 
 
 if __name__ == "__main__":

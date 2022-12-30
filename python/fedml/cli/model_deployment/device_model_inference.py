@@ -1,0 +1,96 @@
+import time
+from urllib.parse import urlparse
+
+from fastapi import FastAPI, Request
+from fedml.cli.model_deployment.device_model_deployment import run_http_inference_with_lib_http_api
+from fedml.cli.model_deployment.device_client_constants import ClientConstants
+from fedml.cli.model_deployment.device_server_constants import ServerConstants
+from fedml.cli.model_deployment.device_server_runner import FedMLServerRunner
+from fedml.cli.model_deployment.device_model_monitor import FedMLModelMetrics
+from fedml.cli.model_deployment.device_model_cache import FedMLModelCache
+
+import os
+from pydantic import BaseSettings
+
+
+class Settings(BaseSettings):
+    end_point_id: str
+    model_id: str
+    model_name: str
+    model_infer_url: str
+
+
+settings = Settings()
+api = FastAPI()
+
+
+@api.get('/')
+def root():
+    return {'message': 'FedML Federated Inference Service!'}
+
+
+@api.post('/predict')
+async def predict(request: Request):
+    # Get json data
+    input_json = await request.json()
+    print("Inference json: {}".format(input_json))
+
+    infer_end_point_id = settings.end_point_id
+    print(f"Current end point id {infer_end_point_id}.")
+
+    model_metrics = FedMLModelMetrics(infer_end_point_id, settings.model_id,
+                                      settings.model_name, settings.model_infer_url)
+    model_metrics.set_start_time()
+
+    # Found idle inference device
+    idle_device, model_id, model_name, inference_host, inference_output_url = \
+        found_idle_inference_device(infer_end_point_id)
+
+    # Send inference request to idle device
+    inference_response = {}
+    if inference_output_url != "":
+        inference_response = send_inference_request(idle_device, model_name, inference_host,
+                                                    inference_output_url, input_json, input_json)
+
+    model_metrics.calc_metrics(model_id, model_name, infer_end_point_id, inference_output_url)
+
+    return inference_response
+
+
+def found_idle_inference_device(end_point_id):
+    idle_device = ""
+    model_name = ""
+    model_id = ""
+    inference_host = ""
+    inference_output_url = ""
+    inference_port = ServerConstants.INFERENCE_HTTP_PORT
+    # Found idle device (TODO: optimize the algorithm to search best device for inference)
+    payload = FedMLModelCache.get_instance().get_idle_device(end_point_id)
+    if payload != {}:
+        print("found idle deployment result {}".format(payload))
+        deployment_result = payload
+        model_name = deployment_result["model_name"]
+        model_id = deployment_result["model_id"]
+        inference_output_url = deployment_result["model_url"]
+        inference_port = deployment_result["port"]
+        url_parsed = urlparse(inference_output_url)
+        inference_host = url_parsed.hostname
+
+    return idle_device, model_id, model_name, inference_host, inference_output_url
+
+
+def send_inference_request(device, model_name, inference_host, inference_url, json_req, bin_data=None):
+    inference_response = run_http_inference_with_lib_http_api(model_name,
+                                                              ClientConstants.INFERENCE_HTTP_PORT, 1, bin_data,
+                                                              inference_host)
+    return inference_response
+
+
+def run_inference(json_req, bin_data=None, host="localhost"):
+    model_name = json_req["model_name"]
+    infer_data = json_req["infer_data"]
+    predication_result = run_http_inference_with_lib_http_api(model_name,
+                                                              ClientConstants.INFERENCE_HTTP_PORT, 1, infer_data,
+                                                              host)
+    return predication_result
+
