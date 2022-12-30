@@ -81,7 +81,7 @@ class FedMLModelCache(object):
         for status_item in status_list:
             device_id, status_payload = self.get_status_item_info(status_item)
             model_status = status_payload["model_status"]
-            if model_status == ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED:
+            if model_status == ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
                 idle_device_id = device_id
                 break
 
