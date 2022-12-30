@@ -459,8 +459,6 @@ class FedMLModelCards(Singleton):
         print("Message payload: {}".format(payload))
 
 
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--cf", "-c", help="config file")
