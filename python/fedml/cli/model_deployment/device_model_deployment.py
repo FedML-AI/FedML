@@ -40,12 +40,11 @@ def start_deployment(model_storage_local_path, inference_model_dir_name, inferen
         os.system(sudo_prefix + "systemctl restart docker")
 
     convert_model_cmd = "{}docker run -it --rm {} -v {}:/project {} " \
-                        "bash -c \"cd /project && convert_model -m /project/{} " \
+                        "bash -c \"cd /project && convert_model -m /project " \
                         "--backend {} --seq-len 16 128 128\"".format(sudo_prefix,
                                                                      gpu_attach_cmd,
                                                                      model_storage_local_path,
                                                                      inference_convertor_image,
-                                                                     inference_model_dir_name,
                                                                      inference_engine)
     logging.info("Convert the model to ONNX format: {}".format(convert_model_cmd))
     convert_process = ClientConstants.exec_console_with_script(convert_model_cmd, should_capture_stdout=True,

@@ -174,6 +174,7 @@ class FedMLModelCards(Singleton):
             return "", ""
 
         model_storage_url = self.push_model_to_s3(model_name, model_zip_path, user_id)
+        print("Model storage url: {}".format(model_storage_url))
         if not no_uploading_modelops:
             if model_storage_url != "":
                 upload_result = self.upload_model_api(model_name, model_storage_url, user_id)
