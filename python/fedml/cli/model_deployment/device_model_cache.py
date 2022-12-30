@@ -81,7 +81,7 @@ class FedMLModelCache(object):
         for status_item in status_list:
             device_id, status_payload = self.get_status_item_info(status_item)
             model_status = status_payload["model_status"]
-            if model_status == ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
+            if model_status == ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED:
                 idle_device_id = device_id
                 break
 
@@ -100,9 +100,11 @@ class FedMLModelCache(object):
         return "{}{}".format(FedMLModelCache.FEDML_MODEL_DEPLOYMENT_STATUS_TAG, end_point_id)
 
     def set_monitor_metrics(self, end_point_id, total_latency, avg_latency,
-                            total_request_num, current_qps, timestamp):
+                            total_request_num, current_qps,
+                            avg_qps, timestamp):
         metrics_dict = {"total_latency": total_latency, "avg_latency": avg_latency,
-                        "total_request_num": total_request_num, "current_qps": current_qps, "timestamp": timestamp}
+                        "total_request_num": total_request_num, "current_qps": current_qps,
+                        "avg_qps": avg_qps, "timestamp": timestamp}
         self.redis_connection.rpush(self.get_monitor_metrics_key(end_point_id), json.dumps(metrics_dict))
 
     def get_latest_monitor_metrics(self, end_point_id):
@@ -124,8 +126,9 @@ class FedMLModelCache(object):
         avg_latency = metrics_item_json["avg_latency"]
         total_request_num = metrics_item_json["total_request_num"]
         current_qps = metrics_item_json["current_qps"]
+        avg_qps = metrics_item_json["avg_qps"]
         timestamp = metrics_item_json["timestamp"]
-        return total_latency, avg_latency, total_request_num, current_qps, timestamp
+        return total_latency, avg_latency, total_request_num, current_qps, avg_qps, timestamp
 
     def get_monitor_metrics_key(self, end_point_id):
         return "{}{}".format(FedMLModelCache.FEDML_MODEL_DEPLOYMENT_MONITOR_TAG, end_point_id)
