@@ -22,6 +22,7 @@ from os import listdir
 
 import click
 import requests
+
 from ...core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 
 from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
@@ -34,7 +35,7 @@ from ...core.mlops.mlops_metrics import MLOpsMetrics
 from ...core.mlops.mlops_configs import MLOpsConfigs
 from ...core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 from ...core.mlops.mlops_status import MLOpsStatus
-from ..comm_utils.sys_utils import get_sys_runner_info
+from ..comm_utils.sys_utils import get_sys_runner_info, get_python_program
 from .device_model_cache import FedMLModelCache
 
 
@@ -202,20 +203,19 @@ class FedMLServerRunner:
             should_capture_stderr=True
         )
         ServerConstants.save_learning_process(process.pid)
+        ret_code, out, err = ServerConstants.get_console_pipe_out_err_results(process)
+        if ret_code != 0 and err is not None:
+            logging.error("Exception when executing server program: {}".format(err.decode(encoding="utf-8")))
+            self.stop_run_when_starting_failed()
 
         # start inference monitor server
-        python_program = "python"
-        python_version_str = os.popen("python --version").read()
-        if python_version_str.find("Python 3.") == -1:
-            python_version_str = os.popen("python3 --version").read()
-            if python_version_str.find("Python 3.") != -1:
-                python_program = "python3"
+        python_program = get_python_program()
         self.monitor_process = ServerConstants.exec_console_with_shell_script_list(
             [
                 python_program,
                 "device_model_monitor.py",
                 "-ep",
-                self.run_id,
+                str(self.run_id),
                 "-mi",
                 str(model_id),
                 "-mn",
@@ -229,10 +229,6 @@ class FedMLServerRunner:
         ServerConstants.save_learning_process(self.monitor_process.pid)
 
         self.release_client_mqtt_mgr()
-        ret_code, out, err = ServerConstants.get_console_pipe_out_err_results(process)
-        if ret_code != 0 and err is not None:
-            logging.error("Exception when executing server program: {}".format(err.decode(encoding="utf-8")))
-            self.stop_run_when_starting_failed()
 
         while True:
             time.sleep(1)
