@@ -225,7 +225,7 @@ class FedMLServerRunner:
         ServerConstants.save_learning_process(self.monitor_process.pid)
         self.release_client_mqtt_mgr()
         ret_code, out, err = ServerConstants.get_console_pipe_out_err_results(process)
-    
+
         while True:
             time.sleep(1)
 
