@@ -47,13 +47,14 @@ def start_deployment(model_storage_local_path, inference_model_dir_name, inferen
                                                                      inference_convertor_image,
                                                                      inference_engine)
     logging.info("Convert the model to ONNX format: {}".format(convert_model_cmd))
-    convert_process = ClientConstants.exec_console_with_script(convert_model_cmd, should_capture_stdout=True,
-                                                               should_capture_stderr=True)
-    ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(convert_process)
-    if out is not None:
-        out_str = out.decode(encoding="utf-8")
-    if err is not None:
-        err_str = err.decode(encoding="utf-8")
+    os.system(convert_model_cmd)
+    # convert_process = ClientConstants.exec_console_with_script(convert_model_cmd, should_capture_stdout=True,
+    #                                                            should_capture_stderr=True)
+    # ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(convert_process)
+    # if out is not None:
+    #     out_str = out.decode(encoding="utf-8")
+    # if err is not None:
+    #     err_str = err.decode(encoding="utf-8")
 
     triton_server_cmd = "{}docker run -it {} -p{}:8000 " \
                         "-p{}:8001 -p{}:8002 " \
@@ -69,20 +70,25 @@ def start_deployment(model_storage_local_path, inference_model_dir_name, inferen
                                                               model_storage_local_path,
                                                               inference_server_image)
     logging.info("Run triton inference server: {}".format(triton_server_cmd))
-    triton_process = ClientConstants.exec_console_with_script(triton_server_cmd,
-                                                              should_capture_stdout=True,
-                                                              should_capture_stderr=True)
-    ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(triton_process)
-    if out is not None:
-        out_str = out.decode(encoding="utf-8")
-        if str(out_str).find(ClientConstants.INFERENCE_SERVER_STARTED_TAG) != -1:
-            inference_output_url, model_version, model_metadata, model_config = \
-                get_model_info(inference_model_dir_name, inference_http_port)
-            logging.info("Deploy model successfully, inference url: {}, model metadata: {}, model config: {}".format(
-                inference_output_url, model_metadata, model_config))
-    elif err is not None:
-        err_str = err.decode(encoding="utf-8")
-        logging.error("Deploy model failed: {}".format(err_str))
+    os.system(triton_server_cmd)
+    inference_output_url, model_version, model_metadata, model_config = \
+        get_model_info(inference_model_dir_name, inference_http_port)
+    logging.info("Deploy model successfully, inference url: {}, model metadata: {}, model config: {}".format(
+        inference_output_url, model_metadata, model_config))
+    # triton_process = ClientConstants.exec_console_with_script(triton_server_cmd,
+    #                                                           should_capture_stdout=True,
+    #                                                           should_capture_stderr=True)
+    # ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(triton_process)
+    # if out is not None:
+    #     out_str = out.decode(encoding="utf-8")
+    #     if str(out_str).find(ClientConstants.INFERENCE_SERVER_STARTED_TAG) != -1:
+    #         inference_output_url, model_version, model_metadata, model_config = \
+    #             get_model_info(inference_model_dir_name, inference_http_port)
+    #         logging.info("Deploy model successfully, inference url: {}, model metadata: {}, model config: {}".format(
+    #             inference_output_url, model_metadata, model_config))
+    # elif err is not None:
+    #     err_str = err.decode(encoding="utf-8")
+    #     logging.error("Deploy model failed: {}".format(err_str))
 
     return inference_output_url, model_version, model_metadata, model_config
 
