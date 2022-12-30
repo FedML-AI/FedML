@@ -33,7 +33,7 @@ from ...core.mlops.mlops_metrics import MLOpsMetrics
 from ...core.mlops.mlops_configs import MLOpsConfigs
 from ...core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 from ...core.mlops.mlops_status import MLOpsStatus
-from ..comm_utils.sys_utils import get_sys_runner_info
+from ..comm_utils.sys_utils import get_sys_runner_info,get_python_program
 
 
 class FedMLServerRunner:
@@ -347,13 +347,7 @@ class FedMLServerRunner:
         ServerConstants.cleanup_learning_process()
         os.chdir(os.path.join(unzip_package_path, "fedml"))
 
-        python_program = "python"
-        python_version_str = os.popen("python --version").read()
-        if python_version_str.find("Python 3.") == -1:
-            python_version_str = os.popen("python3 --version").read()
-            if python_version_str.find("Python 3.") != -1:
-                python_program = "python3"
-
+        python_program = get_python_program()
         process = ServerConstants.exec_console_with_shell_script_list(
             [
                 python_program,

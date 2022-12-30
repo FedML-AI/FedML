@@ -27,18 +27,20 @@ class FedMLModelMetrics:
         total_latency, avg_latency, total_request_num, current_qps, timestamp = 0, 0, 0, 0, 0
         metrics_item = FedMLModelCache.get_instance().get_latest_monitor_metrics(end_point_id)
         if metrics_item is not None:
-            total_latency, avg_latency, total_request_num, current_qps, timestamp = \
+            total_latency, avg_latency, total_request_num, current_qps, avg_qps, timestamp = \
                 FedMLModelCache.get_instance().get_metrics_item_info(metrics_item)
         cost_time = (time.time_ns() - self.start_time) / self.ns_per_ms
         total_latency += cost_time
         total_request_num += 1
         current_qps = 1 / (cost_time / self.ms_per_sec)
         current_qps = format(current_qps, '.0f')
+        avg_qps = total_request_num / (total_latency / self.ms_per_sec)
+        avg_qps = format(avg_qps, '.0f')
         avg_latency = format(total_latency / total_request_num / self.ms_per_sec, '.6f')
 
         FedMLModelCache.get_instance().set_monitor_metrics(end_point_id, total_latency, avg_latency,
                                                            total_request_num, current_qps,
-                                                           int(format(time.time(), '.0f')))
+                                                           avg_qps, int(format(time.time(), '.0f')))
 
     def start_monitoring_metrics_center(self):
         self.build_metrics_report_channel()
@@ -72,7 +74,7 @@ class FedMLModelMetrics:
                                                                                           index)
         if metrics_item is None:
             return index
-        total_latency, avg_latency, total_request_num, current_qps, timestamp = \
+        total_latency, avg_latency, total_request_num, current_qps, avg_qps, timestamp = \
             FedMLModelCache.get_instance().get_metrics_item_info(metrics_item)
         deployment_monitoring_topic = "/model_ops/model_device/return_inference_monitoring/{}".format(
             self.current_end_point_id)
@@ -81,7 +83,7 @@ class FedMLModelMetrics:
                                          "model_url": self.current_infer_url,
                                          "end_point_id": self.current_end_point_id,
                                          "latency": float(avg_latency),
-                                         "qps": int(current_qps),
+                                         "qps": int(avg_qps),
                                          "total_request_num": int(total_request_num),
                                          "timestamp": timestamp}
 
