@@ -138,7 +138,7 @@ def log_deployment_result(cmd_container_name, cmd_type, cmd_process_id, inferenc
             os.system("sudo docker logs {}".format(convert_model_container_name))
 
         time.sleep(5)
-        print("logging process id...".format(str(cmd_process_id)))
+        print("logging process id... {}".format(str(cmd_process_id)))
 
         if should_exit_logs(cmd_type, cmd_process_id, inference_model_name, inference_engine, inference_http_port):
             break
