@@ -128,6 +128,9 @@ def log_deployment_result(cmd_container_name, cmd_type, cmd_process_id, inferenc
         if out is not None:
             out_str = out.decode(encoding="utf-8")
             added_logs = str(out_str).replace(last_out_logs, "")
+            print("Current out {}".format(out_str))
+            print("Last out {}".format(last_out_logs))
+            print("Add out logs {}".format(added_logs))
             if len(added_logs) > 0:
                 logging.info("{}".format(added_logs))
                 print(added_logs)
@@ -135,12 +138,16 @@ def log_deployment_result(cmd_container_name, cmd_type, cmd_process_id, inferenc
         elif err is not None:
             err_str = err.decode(encoding="utf-8")
             added_logs = str(err_str).replace(last_err_logs, "")
+            print("Current err {}".format(err_str))
+            print("Last err {}".format(last_err_logs))
+            print("Add err logs {}".format(added_logs))
             if len(added_logs) > 0:
                 logging.info("{}".format(added_logs))
                 print(added_logs)
             last_err_logs = err_str
 
         time.sleep(5)
+        print("logging...")
 
         if should_exit_logs(cmd_type, cmd_process_id, inference_model_name, inference_engine, inference_http_port):
             break
