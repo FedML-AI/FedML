@@ -19,11 +19,6 @@ def start_deployment(model_storage_local_path, inference_model_name, inference_e
                      inference_http_port, inference_grpc_port, inference_metric_port,
                      inference_use_gpu, inference_memory_size,
                      inference_convertor_image, inference_server_image):
-    inference_output_url = ""
-    model_metadata = {}
-    model_config = {}
-    model_version = ClientConstants.INFERENCE_MODEL_VERSION
-
     logging.info("Model deployment is starting...")
 
     gpu_attach_cmd = ""
@@ -61,7 +56,7 @@ def start_deployment(model_storage_local_path, inference_model_name, inference_e
     log_deployment_result(convert_model_container_name, CMD_TYPE_CONVERT_MODEL, convert_process.pid,
                           inference_model_name, inference_engine, inference_http_port)
 
-    triton_server_container_name = "convert_model_container"
+    triton_server_container_name = "triton_server_container"
     triton_server_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} -it {} -p{}:8000 " \
                         "-p{}:8001 -p{}:8002 " \
                         "--shm-size {} " \
@@ -104,10 +99,10 @@ def should_exit_logs(cmd_type, cmd_process_id, model_name, inference_engine, inf
                 get_model_info(model_name, inference_engine, inference_port)
             logging.info("Log test for deploying model successfully, inference url: {}, "
                          "model metadata: {}, model config: {}".format(
-                inference_output_url, model_metadata, model_config))
+                          inference_output_url, model_metadata, model_config))
             print("Log test for deploying model successfully, inference url: {}, "
                   "model metadata: {}, model config: {}".format(
-                inference_output_url, model_metadata, model_config))
+                   inference_output_url, model_metadata, model_config))
             if inference_output_url != "":
                 return True
         except Exception as e:
@@ -298,15 +293,16 @@ if __name__ == "__main__":
     args.user = args.user
 
     pip_source_dir = os.path.dirname(__file__)
-    inference_output_url, model_version, model_metadata, model_config = start_deployment(args.model_storage_local_path,
-                                                                                         args.inference_model_name,
-                                                                                         args.inference_engine,
-                                                                                         args.inference_http_port,
-                                                                                         args.inference_grpc_port,
-                                                                                         args.inference_metric_port,
-                                                                                         args.inference_use_gpu,
-                                                                                         args.inference_memory_size,
-                                                                                         args.inference_convertor_image,
-                                                                                         args.inference_server_image)
+    __inference_output_url, __model_version, __model_metadata, __model_config = start_deployment(
+        args.model_storage_local_path,
+        args.inference_model_name,
+        args.inference_engine,
+        args.inference_http_port,
+        args.inference_grpc_port,
+        args.inference_metric_port,
+        args.inference_use_gpu,
+        args.inference_memory_size,
+        args.inference_convertor_image,
+        args.inference_server_image)
     print("Model deployment results, url: {}, model metadata: {}, model config: {}".format(
-        inference_output_url, model_metadata, model_config))
+        __inference_output_url, __model_metadata, __model_config))
