@@ -4,7 +4,7 @@ import os
 import platform
 import time
 
-import psutil
+import numpy as np
 import requests
 import tritonclient.http as http_client
 
@@ -116,7 +116,7 @@ def should_exit_logs(cmd_type, cmd_process_id, model_name, inference_engine, inf
                 get_model_info(model_name, inference_engine, inference_port)
             logging.info("Log test for deploying model successfully, inference url: {}, "
                          "model metadata: {}, model config: {}".format(
-                inference_output_url, model_metadata, model_config))
+                          inference_output_url, model_metadata, model_config))
             if inference_output_url != "":
                 return True
         except Exception as e:
@@ -152,7 +152,7 @@ def log_deployment_result(cmd_container_name, cmd_type, cmd_process_id, inferenc
                 logging.info("{}".format(added_logs))
             last_err_logs = err_str
 
-        time.sleep(5)
+        time.sleep(3)
 
         if should_exit_logs(cmd_type, cmd_process_id, inference_model_name, inference_engine, inference_http_port):
             break
@@ -185,11 +185,11 @@ def get_model_info(model_name, inference_engine, inference_http_port, infer_host
         infer_url_host = infer_host
     else:
         infer_url_host = local_ip
-    inference_output_url = "{}:{}/{}/models/{}/versions/{}/infer".format(infer_url_host,
-                                                                         inference_http_port,
-                                                                         ClientConstants.INFERENCE_INFERENCE_SERVER_VERSION,
-                                                                         inference_model_name,
-                                                                         model_version)
+    inference_output_url = "http://{}:{}/{}/models/{}/versions/{}/infer".format(infer_url_host,
+                                                                                inference_http_port,
+                                                                                ClientConstants.INFERENCE_INFERENCE_SERVER_VERSION,
+                                                                                inference_model_name,
+                                                                                model_version)
 
     return inference_output_url, model_version, model_metadata, model_config
 
@@ -213,14 +213,18 @@ def run_http_inference_with_lib_http_api(model_name, inference_http_port, batch_
     model_metadata = triton_client.get_model_metadata(model_name=inference_model_name, model_version=model_version)
     model_config = triton_client.get_model_config(model_name=inference_model_name, model_version=model_version)
 
-    inference_output_sample = {}
+    print("model metadata {}".format(model_metadata))
+    inference_response_list = list()
     inference_input_list = model_metadata["inputs"]
     infer_item_count = 0
     inference_query_list = []
+
+    input_data_np = np.asarray(inference_input_data_list * batch_size, dtype=object)
+
     for infer_input_item in inference_input_list:
         query_item = http_client.InferInput(name=infer_input_item["name"],
-                                            shape=(batch_size,), datatype=infer_input_item["data_type"])
-        query_item.set_data_from_numpy(inference_input_data_list[infer_item_count])
+                                            shape=(batch_size,), datatype=infer_input_item["datatype"])
+        query_item.set_data_from_numpy(input_data_np)
         inference_query_list.append(query_item)
         infer_item_count += 1
 
@@ -238,9 +242,13 @@ def run_http_inference_with_lib_http_api(model_name, inference_http_port, batch_
     )
 
     for infer_output_item in inference_output_list:
-        inference_output_sample[infer_output_item["name"]] = response.as_numpy(infer_output_item["name"])
+        response_item = response.get_output(infer_output_item["name"])
+        inference_response_list.append(response_item)
+        print("response item {}".format(response_item))
 
-    return inference_output_sample
+    inference_response_dict = {"outputs": inference_response_list}
+    print("return {}".format(inference_response_dict))
+    return inference_response_dict
 
 
 def run_http_inference_with_raw_http_request(self, inference_input_json, inference_input_data_list):
