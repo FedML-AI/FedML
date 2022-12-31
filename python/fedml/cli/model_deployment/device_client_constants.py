@@ -149,6 +149,18 @@ class ClientConstants(object):
         return ip
 
     @staticmethod
+    def network_port_is_opened(port):
+        import socket
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            s.connect(('localhost', int(port)))
+            s.settimeout(1)
+            s.shutdown(2)
+            return True
+        except:
+            return False
+
+    @staticmethod
     def unzip_file(zip_file, unzip_file_path):
         result = False
         if zipfile.is_zipfile(zip_file):
