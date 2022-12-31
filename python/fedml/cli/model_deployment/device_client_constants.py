@@ -149,6 +149,28 @@ class ClientConstants(object):
         return ip
 
     @staticmethod
+    def check_network_port_is_opened(port):
+        import socket
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            s.connect(('localhost', int(port)))
+            s.settimeout(1)
+            s.shutdown(2)
+            return True
+        except:
+            return False
+
+    @staticmethod
+    def check_process_is_running(process_id):
+        for proc in psutil.process_iter():
+            try:
+                if process_id == proc.pid:
+                    return True
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                pass
+        return False
+
+    @staticmethod
     def unzip_file(zip_file, unzip_file_path):
         result = False
         if zipfile.is_zipfile(zip_file):
@@ -310,14 +332,20 @@ class ClientConstants(object):
             pass
 
     @staticmethod
-    def exec_console_with_script(script_path, should_capture_stdout=False, should_capture_stderr=False):
+    def exec_console_with_script(script_path, should_capture_stdout=False, should_capture_stderr=False, no_sys_out_err=False):
         stdout_flag = subprocess.PIPE if should_capture_stdout else sys.stdout
         stderr_flag = subprocess.PIPE if should_capture_stderr else sys.stderr
 
         if platform.system() == 'Windows':
-            script_process = subprocess.Popen(script_path, stdout=stdout_flag, stderr=stderr_flag)
+            if no_sys_out_err:
+                script_process = subprocess.Popen(script_path)
+            else:
+                script_process = subprocess.Popen(script_path, stdout=stdout_flag, stderr=stderr_flag)
         else:
-            script_process = subprocess.Popen(['bash', '-c', script_path], stdout=stdout_flag, stderr=stderr_flag)
+            if no_sys_out_err:
+                script_process = subprocess.Popen(['bash', '-c', script_path])
+            else:
+                script_process = subprocess.Popen(['bash', '-c', script_path], stdout=stdout_flag, stderr=stderr_flag)
 
         return script_process
 
