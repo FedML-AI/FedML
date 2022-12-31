@@ -22,7 +22,7 @@ from ...cli.comm_utils import sys_utils
 
 
 def login_as_model_device_agent(
-    userid, cloud, on_premise, master, version, local_server, runner_cmd, device_id, os_name, docker, docker_rank
+    userid, cloud, on_premise, master, infer_host, version, local_server, runner_cmd, device_id, os_name, docker, docker_rank
 ):
     account_id = userid[0]
     platform_url = "open.fedml.ai"
@@ -91,7 +91,9 @@ def login_as_model_device_agent(
                 "-id",
                 device_id,
                 "-os",
-                os_name
+                os_name,
+                "-ih",
+                infer_host
             ]
         ).pid
         sys_utils.save_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,

@@ -69,7 +69,7 @@ class FedMLClientRunner:
 
         self.mlops_metrics = None
         self.client_active_list = dict()
-        # logging.info("Current directory of client agent: " + self.cur_dir)
+        self.infer_host = "127.0.0.1"
 
     def unzip_file(self, zip_file, unzip_file_path):
         result = False
@@ -178,7 +178,8 @@ class FedMLClientRunner:
             ClientConstants.INFERENCE_METRIC_PORT,
             use_gpu, memory_size,
             ClientConstants.INFERENCE_CONVERTOR_IMAGE,
-            ClientConstants.INFERENCE_SERVER_IMAGE)
+            ClientConstants.INFERENCE_SERVER_IMAGE,
+            self.infer_host)
         if inference_output_url == "":
             self.setup_client_mqtt_mgr()
             self.wait_client_mqtt_connected()
@@ -472,6 +473,7 @@ class FedMLClientRunner:
         client_runner = FedMLClientRunner(
             self.args, edge_id=self.edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id
         )
+        client_runner.infer_host = self.infer_host
         self.process = Process(target=client_runner.run)
         #client_runner.run()
         self.process.start()
