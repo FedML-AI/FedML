@@ -43,13 +43,13 @@ def start_deployment(model_storage_local_path, inference_model_name, inference_e
     convert_model_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} --rm {} -v {}:/project {} " \
                         "bash -c \"cd /project && convert_model -m /project --name {} " \
                         "--backend {} --seq-len 16 128 128\"; exit".format(sudo_prefix, convert_model_container_name,
-                                                                     sudo_prefix, convert_model_container_name,
-                                                                     sudo_prefix, convert_model_container_name,
-                                                                     gpu_attach_cmd,
-                                                                     model_storage_local_path,
-                                                                     inference_convertor_image,
-                                                                     inference_model_name,
-                                                                     inference_engine)
+                                                                           sudo_prefix, convert_model_container_name,
+                                                                           sudo_prefix, convert_model_container_name,
+                                                                           gpu_attach_cmd,
+                                                                           model_storage_local_path,
+                                                                           inference_convertor_image,
+                                                                           inference_model_name,
+                                                                           inference_engine)
     logging.info("Convert the model to ONNX format: {}".format(convert_model_cmd))
     convert_process = ClientConstants.exec_console_with_script(convert_model_cmd,
                                                                should_capture_stdout=False,
@@ -88,9 +88,23 @@ def start_deployment(model_storage_local_path, inference_model_name, inference_e
 
 
 def should_exit_logs(cmd_type, cmd_process_id, model_name, inference_engine, inference_port):
+    sudo_prefix = "sudo "
+    sys_name = platform.system()
+    if sys_name == "Darwin":
+        sudo_prefix = ""
+
     if cmd_type == CMD_TYPE_CONVERT_MODEL:
-        if ClientConstants.check_process_is_running(cmd_process_id):
-            return False
+        docker_ps_cmd = "{}docker ps -a;exit".format(sudo_prefix, convert_model_container_name)
+        docker_ps_process = ClientConstants.exec_console_with_script(docker_ps_cmd,
+                                                                     should_capture_stdout=True,
+                                                                     should_capture_stderr=True)
+        ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(docker_ps_process)
+        if out is not None:
+            out_str = out.decode(encoding="utf-8")
+            if str(out_str).find(convert_model_container_name) == -1:
+                return True
+            else:
+                return False
         else:
             return True
     elif cmd_type == CMD_TYPE_RUN_TRITON_SERVER:
@@ -99,7 +113,7 @@ def should_exit_logs(cmd_type, cmd_process_id, model_name, inference_engine, inf
                 get_model_info(model_name, inference_engine, inference_port)
             logging.info("Log test for deploying model successfully, inference url: {}, "
                          "model metadata: {}, model config: {}".format(
-                          inference_output_url, model_metadata, model_config))
+                inference_output_url, model_metadata, model_config))
             if inference_output_url != "":
                 return True
         except Exception as e:
@@ -134,8 +148,6 @@ def log_deployment_result(cmd_container_name, cmd_type, cmd_process_id, inferenc
             if len(added_logs) > 0:
                 logging.info("{}".format(added_logs))
             last_err_logs = err_str
-        else:
-            os.system("sudo docker logs {}".format(convert_model_container_name))
 
         time.sleep(5)
         print("logging process id... {}".format(str(cmd_process_id)))
