@@ -149,7 +149,7 @@ class ClientConstants(object):
         return ip
 
     @staticmethod
-    def network_port_is_opened(port):
+    def check_network_port_is_opened(port):
         import socket
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
@@ -159,6 +159,16 @@ class ClientConstants(object):
             return True
         except:
             return False
+
+    @staticmethod
+    def check_process_is_running(process_id):
+        for proc in psutil.process_iter():
+            try:
+                if process_id == proc.pid:
+                    return True
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                pass
+        return False
 
     @staticmethod
     def unzip_file(zip_file, unzip_file_path):

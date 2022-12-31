@@ -89,7 +89,7 @@ def start_deployment(model_storage_local_path, inference_model_name, inference_e
 
 def should_exit_logs(cmd_type, cmd_process_id, model_name, inference_engine, inference_port):
     if cmd_type == CMD_TYPE_CONVERT_MODEL:
-        if psutil.pid_exists(cmd_process_id):
+        if ClientConstants.check_process_is_running(cmd_process_id):
             return False
         else:
             return True
