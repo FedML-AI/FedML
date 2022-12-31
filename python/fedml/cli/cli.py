@@ -718,6 +718,10 @@ def device():
     "--master", "-m", default=None, is_flag=True, help="login as master device in the federated inference cluster.",
 )
 @click.option(
+    "--infer_host", "-ih", default=None, is_flag=True,
+    help="used this ip address or domain name as inference host.",
+)
+@click.option(
     "--version",
     "-v",
     type=str,
@@ -751,9 +755,9 @@ def device():
     "--docker-rank", "-dr", default="1", help="docker client rank index (from 1 to n).",
 )
 def login_as_model_device_agent(
-        userid, cloud, on_premise, master, version, local_server, runner_cmd, device_id, os_name, docker, docker_rank
+        userid, cloud, on_premise, master, infer_host, version, local_server, runner_cmd, device_id, os_name, docker, docker_rank
 ):
-    device_login_entry.login_as_model_device_agent(userid, cloud, on_premise, master, version, local_server, runner_cmd, device_id, os_name, docker, docker_rank)
+    device_login_entry.login_as_model_device_agent(userid, cloud, on_premise, master, infer_host, version, local_server, runner_cmd, device_id, os_name, docker, docker_rank)
 
 
 @device.command("logout", help="Logout from the ModelOps platform (model.fedml.ai)")

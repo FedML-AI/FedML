@@ -332,14 +332,20 @@ class ClientConstants(object):
             pass
 
     @staticmethod
-    def exec_console_with_script(script_path, should_capture_stdout=False, should_capture_stderr=False):
+    def exec_console_with_script(script_path, should_capture_stdout=False, should_capture_stderr=False, no_sys_out_err=False):
         stdout_flag = subprocess.PIPE if should_capture_stdout else sys.stdout
         stderr_flag = subprocess.PIPE if should_capture_stderr else sys.stderr
 
         if platform.system() == 'Windows':
-            script_process = subprocess.Popen(script_path, stdout=stdout_flag, stderr=stderr_flag)
+            if no_sys_out_err:
+                script_process = subprocess.Popen(script_path)
+            else:
+                script_process = subprocess.Popen(script_path, stdout=stdout_flag, stderr=stderr_flag)
         else:
-            script_process = subprocess.Popen(['bash', '-c', script_path], stdout=stdout_flag, stderr=stderr_flag)
+            if no_sys_out_err:
+                script_process = subprocess.Popen(['bash', '-c', script_path])
+            else:
+                script_process = subprocess.Popen(['bash', '-c', script_path], stdout=stdout_flag, stderr=stderr_flag)
 
         return script_process
 
