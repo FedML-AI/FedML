@@ -131,12 +131,14 @@ def log_deployment_result(cmd_container_name, cmd_type, cmd_process_id, inferenc
             if len(added_logs) > 0:
                 logging.info("{}".format(added_logs))
                 print(added_logs)
+            last_out_logs = out_str
         elif err is not None:
             err_str = err.decode(encoding="utf-8")
             added_logs = str(err_str).replace(last_err_logs, "")
             if len(added_logs) > 0:
                 logging.info("{}".format(added_logs))
                 print(added_logs)
+            last_out_logs = err_str
 
         time.sleep(5)
 
