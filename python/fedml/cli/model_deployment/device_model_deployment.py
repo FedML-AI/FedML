@@ -42,7 +42,7 @@ def start_deployment(model_storage_local_path, inference_model_name, inference_e
 
     convert_model_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} --rm {} -v {}:/project {} " \
                         "bash -c \"cd /project && convert_model -m /project --name {} " \
-                        "--backend {} --seq-len 16 128 128\"".format(sudo_prefix, convert_model_container_name,
+                        "--backend {} --seq-len 16 128 128\"; exit".format(sudo_prefix, convert_model_container_name,
                                                                      sudo_prefix, convert_model_container_name,
                                                                      sudo_prefix, convert_model_container_name,
                                                                      gpu_attach_cmd,
