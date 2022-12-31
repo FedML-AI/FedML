@@ -185,10 +185,11 @@ def get_model_info(model_name, inference_engine, inference_http_port, infer_host
         infer_url_host = infer_host
     else:
         infer_url_host = local_ip
-    inference_output_url = "{}/{}/models/{}/versions/{}/infer".format(infer_url_host,
-                                                                      ClientConstants.INFERENCE_INFERENCE_SERVER_VERSION,
-                                                                      inference_model_name,
-                                                                      model_version)
+    inference_output_url = "{}:{}/{}/models/{}/versions/{}/infer".format(infer_url_host,
+                                                                         inference_http_port,
+                                                                         ClientConstants.INFERENCE_INFERENCE_SERVER_VERSION,
+                                                                         inference_model_name,
+                                                                         model_version)
 
     return inference_output_url, model_version, model_metadata, model_config
 
