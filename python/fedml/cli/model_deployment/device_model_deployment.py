@@ -51,8 +51,8 @@ def start_deployment(model_storage_local_path, inference_model_name, inference_e
                                                                      inference_engine)
     logging.info("Convert the model to ONNX format: {}".format(convert_model_cmd))
     convert_process = ClientConstants.exec_console_with_script(convert_model_cmd,
-                                                               should_capture_stdout=True,
-                                                               should_capture_stderr=True)
+                                                               should_capture_stdout=False,
+                                                               should_capture_stderr=False)
     log_deployment_result(convert_model_container_name, CMD_TYPE_CONVERT_MODEL, convert_process.pid,
                           inference_model_name, inference_engine, inference_http_port)
 
@@ -74,8 +74,8 @@ def start_deployment(model_storage_local_path, inference_model_name, inference_e
                                                               inference_server_image)
     logging.info("Run triton inference server: {}".format(triton_server_cmd))
     triton_server_process = ClientConstants.exec_console_with_script(triton_server_cmd,
-                                                                     should_capture_stdout=True,
-                                                                     should_capture_stderr=True)
+                                                                     should_capture_stdout=False,
+                                                                     should_capture_stderr=False)
     log_deployment_result(triton_server_container_name, CMD_TYPE_RUN_TRITON_SERVER, triton_server_process.pid,
                           inference_model_name, inference_engine, inference_http_port)
 
