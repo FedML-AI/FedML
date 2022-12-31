@@ -2,10 +2,10 @@ import time
 from urllib.parse import urlparse
 
 from fastapi import FastAPI, Request
-from fedml.cli.model_deployment.device_model_deployment import run_http_inference_with_lib_http_api
+from fedml.cli.model_deployment.device_model_deployment import run_http_inference_with_lib_http_api, \
+    run_http_inference_with_raw_http_request
 from fedml.cli.model_deployment.device_client_constants import ClientConstants
 from fedml.cli.model_deployment.device_server_constants import ServerConstants
-from fedml.cli.model_deployment.device_server_runner import FedMLServerRunner
 from fedml.cli.model_deployment.device_model_monitor import FedMLModelMetrics
 from fedml.cli.model_deployment.device_model_cache import FedMLModelCache
 
@@ -49,8 +49,11 @@ async def predict(request: Request):
     # Send inference request to idle device
     inference_response = {}
     if inference_output_url != "":
+        input_data = input_json.get("data", "SampleData")
+        input_data_list = list()
+        input_data_list.append(str(input_data))
         inference_response = send_inference_request(idle_device, model_name, inference_host,
-                                                    inference_output_url, input_json, input_json)
+                                                    inference_output_url, input_json, input_data_list)
 
     model_metrics.calc_metrics(model_id, model_name, infer_end_point_id, inference_output_url)
 
@@ -79,9 +82,11 @@ def found_idle_inference_device(end_point_id):
     return idle_device, model_id, model_name, inference_host, inference_output_url
 
 
-def send_inference_request(device, model_name, inference_host, inference_url, json_req, bin_data=None):
+def send_inference_request(device, model_name, inference_host, inference_url, json_req, input_data_list=None):
     inference_response = run_http_inference_with_lib_http_api(model_name,
-                                                              ClientConstants.INFERENCE_HTTP_PORT, 1, bin_data,
+                                                              ClientConstants.INFERENCE_HTTP_PORT,
+                                                              1,
+                                                              input_data_list,
                                                               inference_host)
     return inference_response
 
