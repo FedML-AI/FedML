@@ -473,6 +473,7 @@ class FedMLClientRunner:
         client_runner = FedMLClientRunner(
             self.args, edge_id=self.edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id
         )
+        client_runner.infer_host = self.infer_host
         self.process = Process(target=client_runner.run)
         #client_runner.run()
         self.process.start()

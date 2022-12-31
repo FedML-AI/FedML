@@ -159,11 +159,8 @@ def log_deployment_result(cmd_container_name, cmd_type, cmd_process_id, inferenc
 
 
 def get_model_info(model_name, inference_engine, inference_http_port, infer_host=None):
-    if infer_host is not None and infer_host != "127.0.0.1":
-        infer_url_host = infer_host
-    else:
-        infer_url_host = ClientConstants.get_local_ip()
-    local_infer_url = "{}:{}".format(infer_url_host, inference_http_port)
+    local_ip = ClientConstants.get_local_ip()
+    local_infer_url = "{}:{}".format(local_ip, inference_http_port)
     model_version = ""
     inference_model_name = "{}_{}_inference".format(model_name, inference_engine)
     triton_client = http_client.InferenceServerClient(url=local_infer_url, verbose=False)
@@ -184,7 +181,11 @@ def get_model_info(model_name, inference_engine, inference_http_port, infer_host
     else:
         model_version = ClientConstants.INFERENCE_MODEL_VERSION
 
-    inference_output_url = "{}/{}/models/{}/versions/{}/infer".format(local_infer_url,
+    if infer_host is not None and infer_host != "127.0.0.1":
+        infer_url_host = infer_host
+    else:
+        infer_url_host = local_ip
+    inference_output_url = "{}/{}/models/{}/versions/{}/infer".format(infer_url_host,
                                                                       ClientConstants.INFERENCE_INFERENCE_SERVER_VERSION,
                                                                       inference_model_name,
                                                                       model_version)
