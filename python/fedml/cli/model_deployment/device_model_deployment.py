@@ -127,13 +127,13 @@ def log_deployment_result(cmd_container_name, cmd_type, cmd_process_id, inferenc
         ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(logs_process)
         if out is not None:
             out_str = out.decode(encoding="utf-8")
-            added_logs = str(out_str).replace(last_out_logs)
+            added_logs = str(out_str).replace(last_out_logs, "")
             if len(added_logs) > 0:
                 logging.info("{}".format(added_logs))
                 print(added_logs)
         elif err is not None:
             err_str = err.decode(encoding="utf-8")
-            added_logs = str(err_str).replace(last_err_logs)
+            added_logs = str(err_str).replace(last_err_logs, "")
             if len(added_logs) > 0:
                 logging.info("{}".format(added_logs))
                 print(added_logs)
