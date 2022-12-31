@@ -13,6 +13,8 @@ from fedml.cli.model_deployment.device_client_constants import ClientConstants
 
 CMD_TYPE_CONVERT_MODEL = "convert_model"
 CMD_TYPE_RUN_TRITON_SERVER = "run_triton_server"
+convert_model_container_name = "convert_model_container"
+triton_server_container_name = "triton_server_container"
 
 
 def start_deployment(model_storage_local_path, inference_model_name, inference_engine,
@@ -38,7 +40,6 @@ def start_deployment(model_storage_local_path, inference_model_name, inference_e
         os.system(sudo_prefix + "apt-get install -y nvidia-docker2")
         os.system(sudo_prefix + "systemctl restart docker")
 
-    convert_model_container_name = "convert_model_container"
     convert_model_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} --rm {} -v {}:/project {} " \
                         "bash -c \"cd /project && convert_model -m /project --name {} " \
                         "--backend {} --seq-len 16 128 128\"".format(sudo_prefix, convert_model_container_name,
@@ -56,7 +57,6 @@ def start_deployment(model_storage_local_path, inference_model_name, inference_e
     log_deployment_result(convert_model_container_name, CMD_TYPE_CONVERT_MODEL, convert_process.pid,
                           inference_model_name, inference_engine, inference_http_port)
 
-    triton_server_container_name = "triton_server_container"
     triton_server_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} {} -p{}:8000 " \
                         "-p{}:8001 -p{}:8002 " \
                         "--shm-size {} " \
@@ -100,9 +100,6 @@ def should_exit_logs(cmd_type, cmd_process_id, model_name, inference_engine, inf
             logging.info("Log test for deploying model successfully, inference url: {}, "
                          "model metadata: {}, model config: {}".format(
                           inference_output_url, model_metadata, model_config))
-            print("Log test for deploying model successfully, inference url: {}, "
-                  "model metadata: {}, model config: {}".format(
-                   inference_output_url, model_metadata, model_config))
             if inference_output_url != "":
                 return True
         except Exception as e:
@@ -128,26 +125,20 @@ def log_deployment_result(cmd_container_name, cmd_type, cmd_process_id, inferenc
         if out is not None:
             out_str = out.decode(encoding="utf-8")
             added_logs = str(out_str).replace(last_out_logs, "")
-            print("Current out {}".format(out_str))
-            print("Last out {}".format(last_out_logs))
-            print("Add out logs {}".format(added_logs))
             if len(added_logs) > 0:
                 logging.info("{}".format(added_logs))
-                print(added_logs)
             last_out_logs = out_str
         elif err is not None:
             err_str = err.decode(encoding="utf-8")
             added_logs = str(err_str).replace(last_err_logs, "")
-            print("Current err {}".format(err_str))
-            print("Last err {}".format(last_err_logs))
-            print("Add err logs {}".format(added_logs))
             if len(added_logs) > 0:
                 logging.info("{}".format(added_logs))
-                print(added_logs)
             last_err_logs = err_str
+        else:
+            os.system("sudo docker logs {}".format(convert_model_container_name))
 
         time.sleep(5)
-        print("logging process id...".format(cmd_process_id))
+        print("logging process id...".format(str(cmd_process_id)))
 
         if should_exit_logs(cmd_type, cmd_process_id, inference_model_name, inference_engine, inference_http_port):
             break
