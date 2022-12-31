@@ -20,7 +20,8 @@ triton_server_container_name = "triton_server_container"
 def start_deployment(model_storage_local_path, inference_model_name, inference_engine,
                      inference_http_port, inference_grpc_port, inference_metric_port,
                      inference_use_gpu, inference_memory_size,
-                     inference_convertor_image, inference_server_image):
+                     inference_convertor_image, inference_server_image,
+                     infer_host):
     logging.info("Model deployment is starting...")
 
     gpu_attach_cmd = ""
@@ -53,7 +54,8 @@ def start_deployment(model_storage_local_path, inference_model_name, inference_e
     logging.info("Convert the model to ONNX format: {}".format(convert_model_cmd))
     convert_process = ClientConstants.exec_console_with_script(convert_model_cmd,
                                                                should_capture_stdout=False,
-                                                               should_capture_stderr=False)
+                                                               should_capture_stderr=False,
+                                                               no_sys_out_err=True)
     log_deployment_result(convert_model_container_name, CMD_TYPE_CONVERT_MODEL, convert_process.pid,
                           inference_model_name, inference_engine, inference_http_port)
 
@@ -75,12 +77,13 @@ def start_deployment(model_storage_local_path, inference_model_name, inference_e
     logging.info("Run triton inference server: {}".format(triton_server_cmd))
     triton_server_process = ClientConstants.exec_console_with_script(triton_server_cmd,
                                                                      should_capture_stdout=False,
-                                                                     should_capture_stderr=False)
+                                                                     should_capture_stderr=False,
+                                                                     no_sys_out_err=True)
     log_deployment_result(triton_server_container_name, CMD_TYPE_RUN_TRITON_SERVER, triton_server_process.pid,
                           inference_model_name, inference_engine, inference_http_port)
 
     inference_output_url, model_version, model_metadata, model_config = \
-        get_model_info(inference_model_name, inference_engine, inference_http_port)
+        get_model_info(inference_model_name, inference_engine, inference_http_port, infer_host)
     logging.info("Deploy model successfully, inference url: {}, model metadata: {}, model config: {}".format(
         inference_output_url, model_metadata, model_config))
 
@@ -150,15 +153,17 @@ def log_deployment_result(cmd_container_name, cmd_type, cmd_process_id, inferenc
             last_err_logs = err_str
 
         time.sleep(5)
-        print("logging process id... {}".format(str(cmd_process_id)))
 
         if should_exit_logs(cmd_type, cmd_process_id, inference_model_name, inference_engine, inference_http_port):
             break
 
 
-def get_model_info(model_name, inference_engine, inference_http_port):
-    ip = ClientConstants.get_local_ip()
-    local_infer_url = "{}:{}".format(ip, inference_http_port)
+def get_model_info(model_name, inference_engine, inference_http_port, infer_host=None):
+    if infer_host is not None and infer_host != "127.0.0.1":
+        infer_url_host = infer_host
+    else:
+        infer_url_host = ClientConstants.get_local_ip()
+    local_infer_url = "{}:{}".format(infer_url_host, inference_http_port)
     model_version = ""
     inference_model_name = "{}_{}_inference".format(model_name, inference_engine)
     triton_client = http_client.InferenceServerClient(url=local_infer_url, verbose=False)

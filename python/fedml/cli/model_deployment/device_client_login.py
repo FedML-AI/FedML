@@ -138,6 +138,7 @@ def __login_as_client(args, userid, version):
     ClientConstants.save_runner_infos(args.current_device_id + "." + args.os_name, edge_id, run_id=0)
 
     # Setup MQTT connection for communication with the FedML server.
+    runner.infer_host = args.infer_host
     runner.setup_agent_mqtt_connection(service_config)
 
     # Start mqtt looper
@@ -161,6 +162,7 @@ if __name__ == "__main__":
     parser.add_argument("--role", "-r", type=str, default="md.on_premise_device")
     parser.add_argument("--device_id", "-id", type=str, default="0")
     parser.add_argument("--os_name", "-os", type=str, default="")
+    parser.add_argument("--infer_host", "-ih", type=str, default="127.0.0.1")
     args = parser.parse_args()
     args.user = args.user
     if args.type == 'login':
