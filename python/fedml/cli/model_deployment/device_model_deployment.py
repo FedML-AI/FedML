@@ -147,7 +147,7 @@ def log_deployment_result(cmd_container_name, cmd_type, cmd_process_id, inferenc
             last_err_logs = err_str
 
         time.sleep(5)
-        print("logging...")
+        print("logging process id...".format(cmd_process_id))
 
         if should_exit_logs(cmd_type, cmd_process_id, inference_model_name, inference_engine, inference_http_port):
             break
