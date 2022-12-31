@@ -138,7 +138,7 @@ def log_deployment_result(cmd_container_name, cmd_type, cmd_process_id, inferenc
             if len(added_logs) > 0:
                 logging.info("{}".format(added_logs))
                 print(added_logs)
-            last_out_logs = err_str
+            last_err_logs = err_str
 
         time.sleep(5)
 
