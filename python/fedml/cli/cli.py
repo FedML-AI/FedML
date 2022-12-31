@@ -718,7 +718,7 @@ def device():
     "--master", "-m", default=None, is_flag=True, help="login as master device in the federated inference cluster.",
 )
 @click.option(
-    "--infer_host", "-ih", default=None, is_flag=True,
+    "--infer_host", "-ih", type=str, default="127.0.0.1",
     help="used this ip address or domain name as inference host.",
 )
 @click.option(
