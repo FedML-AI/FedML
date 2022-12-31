@@ -39,7 +39,7 @@ def start_deployment(model_storage_local_path, inference_model_name, inference_e
         os.system(sudo_prefix + "systemctl restart docker")
 
     convert_model_container_name = "convert_model_container"
-    convert_model_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} -it --rm {} -v {}:/project {} " \
+    convert_model_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} --rm {} -v {}:/project {} " \
                         "bash -c \"cd /project && convert_model -m /project --name {} " \
                         "--backend {} --seq-len 16 128 128\"".format(sudo_prefix, convert_model_container_name,
                                                                      sudo_prefix, convert_model_container_name,
@@ -57,7 +57,7 @@ def start_deployment(model_storage_local_path, inference_model_name, inference_e
                           inference_model_name, inference_engine, inference_http_port)
 
     triton_server_container_name = "triton_server_container"
-    triton_server_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} -it {} -p{}:8000 " \
+    triton_server_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} {} -p{}:8000 " \
                         "-p{}:8001 -p{}:8002 " \
                         "--shm-size {} " \
                         "-v {}/triton_models:/models {} " \
