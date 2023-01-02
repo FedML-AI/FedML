@@ -200,7 +200,7 @@ class FedMLServerRunner:
                 self.run_id, model_id, model_name, "",
                 str(ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)),
             should_capture_stdout=False,
-            should_capture_stderr=True
+            should_capture_stderr=False
         )
         ServerConstants.save_learning_process(process.pid)
 
@@ -220,7 +220,7 @@ class FedMLServerRunner:
                 "model_inference_url"
             ],
             should_capture_stdout=False,
-            should_capture_stderr=True
+            should_capture_stderr=False
         )
         ServerConstants.save_learning_process(self.monitor_process.pid)
         self.release_client_mqtt_mgr()
