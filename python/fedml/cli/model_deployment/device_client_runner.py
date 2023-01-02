@@ -198,10 +198,7 @@ class FedMLClientRunner:
             self.send_deployment_results(self.edge_id, model_id, model_name, inference_output_url, model_version,
                                          ClientConstants.INFERENCE_HTTP_PORT, inference_engine,
                                          model_metadata, model_config)
-            self.setup_client_mqtt_mgr()
-            self.wait_client_mqtt_connected()
-            self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
-            self.release_client_mqtt_mgr()
+            self.broadcast_client_training_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
 
     def send_deployment_results(self, device_id, model_id, model_name, model_inference_url,
                                 model_version, inference_port, inference_engine,
@@ -226,6 +223,19 @@ class FedMLClientRunner:
         self.setup_client_mqtt_mgr()
         self.wait_client_mqtt_connected()
         self.client_mqtt_mgr.send_message_json(deployment_status_topic, json.dumps(deployment_status_payload))
+        self.release_client_mqtt_mgr()
+
+    def broadcast_client_training_status(self, edge_id, status):
+        run_id = 0
+        if self.run_id is not None:
+            run_id = self.run_id
+        topic_name = "fl_client/mlops/status"
+        msg = {"edge_id": edge_id, "run_id": run_id, "status": status}
+        message_json = json.dumps(msg)
+        logging.info("report_client_training_status. message_json = %s" % message_json)
+        self.setup_client_mqtt_mgr()
+        self.wait_client_mqtt_connected()
+        self.client_mqtt_mgr.send_message_json(topic_name, message_json)
         self.release_client_mqtt_mgr()
 
     def reset_devices_status(self, edge_id, status):
