@@ -206,10 +206,12 @@ class FedMLServerRunner:
 
         # start inference monitor server
         python_program = get_python_program()
+        pip_source_dir = os.path.dirname(__file__)
+        monitor_file = os.path.join(pip_source_dir, "device_model_monitor.py")
         self.monitor_process = ServerConstants.exec_console_with_shell_script_list(
             [
                 python_program,
-                "device_model_monitor.py",
+                monitor_file,
                 "-ep",
                 str(self.run_id),
                 "-mi",
