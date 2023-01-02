@@ -39,6 +39,7 @@ async def predict(request: Request):
     in_model_name = input_json.get("model_name", None)
     in_model_version = input_json.get("model_version", None)
     if in_end_point_id is None or in_end_point_id != "":
+        print("use presetting")
         in_end_point_id = settings.end_point_id
         in_model_id = settings.model_id
         in_model_name = settings.model_name
