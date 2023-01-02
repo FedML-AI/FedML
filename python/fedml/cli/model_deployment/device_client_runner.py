@@ -162,7 +162,7 @@ class FedMLClientRunner:
         self.wait_client_mqtt_connected()
 
         self.mlops_metrics.report_client_training_status(self.edge_id,
-                                                         ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING)
+                                                         ClientConstants.MSG_MLOPS_CLIENT_STATUS_RUNNING)
         self.send_deployment_status(self.edge_id, model_name, model_id, "",
                                     ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_INITIALIZING)
 
@@ -183,8 +183,8 @@ class FedMLClientRunner:
         if inference_output_url == "":
             self.setup_client_mqtt_mgr()
             self.wait_client_mqtt_connected()
-            self.mlops_metrics.report_client_id_status(run_id, self.edge_id,
-                                                       ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+            self.mlops_metrics.report_client_training_status(self.edge_id,
+                                                             ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
             self.send_deployment_status(self.edge_id, model_id, model_name, inference_output_url,
                                         ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
             self.send_deployment_results(self.edge_id, model_id, model_name, inference_output_url, model_version,
@@ -192,13 +192,17 @@ class FedMLClientRunner:
                                          model_metadata, model_config)
             self.release_client_mqtt_mgr()
         else:
+            self.setup_client_mqtt_mgr()
+            self.wait_client_mqtt_connected()
+            self.mlops_metrics.report_client_training_status(self.edge_id,
+                                                             ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
             self.send_deployment_status(self.edge_id, model_id, model_name, inference_output_url,
                                         ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED)
             self.send_deployment_results(self.edge_id, model_id, model_name, inference_output_url, model_version,
                                          ClientConstants.INFERENCE_HTTP_PORT, inference_engine,
                                          model_metadata, model_config)
-            self.mlops_metrics.report_client_id_status(run_id, self.edge_id,
-                                                       ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
+
+            self.release_client_mqtt_mgr()
 
     def send_deployment_results(self, device_id, model_id, model_name, model_inference_url,
                                 model_version, inference_port, inference_engine,
