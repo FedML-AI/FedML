@@ -184,14 +184,13 @@ class FedMLServerRunner:
         self.release_client_mqtt_mgr()
 
         # report server running status
-        self.mlops_metrics.report_server_training_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING)
+        self.mlops_metrics.report_server_training_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_RUNNING)
         self.send_deployment_status(self.run_id, model_name, "",
                                     ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_INITIALIZING)
 
         # update local config with real time parameters from server and dynamically replace variables value
         logging.info("Download and unzip model to local...")
         unzip_package_path, fedml_config_object = self.update_local_fedml_config(run_id, model_config)
-        ServerConstants.cleanup_learning_process()
 
         # start unified inference server
         process = ServerConstants.exec_console_with_script(
@@ -226,6 +225,7 @@ class FedMLServerRunner:
         )
         ServerConstants.save_learning_process(self.monitor_process.pid)
         self.release_client_mqtt_mgr()
+        self.mlops_metrics.report_server_training_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED)
         ret_code, out, err = ServerConstants.get_console_pipe_out_err_results(process)
 
         while True:
@@ -252,8 +252,6 @@ class FedMLServerRunner:
         self.mlops_metrics.report_server_training_status(self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED)
 
         time.sleep(1)
-
-        ServerConstants.cleanup_learning_process()
 
         try:
             local_package_path = ServerConstants.get_package_download_dir()
@@ -304,8 +302,6 @@ class FedMLServerRunner:
 
         time.sleep(1)
 
-        ServerConstants.cleanup_learning_process()
-
         try:
             local_package_path = ServerConstants.get_package_download_dir()
             for package_file in listdir(local_package_path):
@@ -334,8 +330,6 @@ class FedMLServerRunner:
             pass
 
         time.sleep(1)
-
-        ServerConstants.cleanup_learning_process()
 
         try:
             local_package_path = ServerConstants.get_package_download_dir()
