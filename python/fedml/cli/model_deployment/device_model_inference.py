@@ -73,6 +73,7 @@ def found_idle_inference_device(end_point_id, in_model_id):
     idle_device = ""
     model_name = ""
     inference_host = ""
+    model_id = in_model_id
     inference_output_url = ""
     inference_port = ServerConstants.INFERENCE_HTTP_PORT
     # Found idle device (TODO: optimize the algorithm to search best device for inference)
