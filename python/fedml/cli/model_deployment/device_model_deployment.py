@@ -79,7 +79,11 @@ def start_deployment(end_point_id, model_id,
     converted_model_path = os.path.join(model_storage_local_path, FEDML_CONVERTED_MODEL_DIR_NAME)
     model_file_list = os.listdir(converted_model_path)
     for model_file in model_file_list:
-        shutil.copyfile(os.path.join(converted_model_path, model_file), os.path.join(model_serving_dir, model_file))
+        src_model_file = os.path.join(converted_model_path, model_file)
+        if os.path.isdir(src_model_file):
+            shutil.copytree(src_model_file, model_serving_dir, dirs_exist_ok=True)
+        else:
+            shutil.copyfile(src_model_file, os.path.join(model_serving_dir, model_file))
 
     # Run triton server
     triton_server_is_running = True
