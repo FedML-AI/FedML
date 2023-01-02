@@ -75,20 +75,22 @@ class FedMLModelCache(object):
         result_payload = result_item_json["result"]
         return device_id, result_payload
 
-    def get_idle_device(self, end_point_id):
+    def get_idle_device(self, end_point_id, in_model_id):
         idle_device_id = ""
         status_list = self.get_deployment_status_list(end_point_id)
         for status_item in status_list:
             device_id, status_payload = self.get_status_item_info(status_item)
             model_status = status_payload["model_status"]
-            if model_status == ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
+            model_id = status_payload["model_id"]
+            if model_id == in_model_id and model_status == ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
                 idle_device_id = device_id
                 break
 
         result_list = self.get_deployment_result_list(end_point_id)
         for result_item in result_list:
             device_id, result_payload = self.get_result_item_info(result_item)
-            if device_id == idle_device_id:
+            model_id = result_payload["model_id"]
+            if device_id == idle_device_id and model_id == in_model_id:
                 return result_payload
 
         return {}
