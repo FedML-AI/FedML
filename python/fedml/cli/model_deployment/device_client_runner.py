@@ -200,9 +200,7 @@ class FedMLClientRunner:
                                          model_metadata, model_config)
             self.setup_client_mqtt_mgr()
             self.wait_client_mqtt_connected()
-            self.mlops_metrics.run_id = self.run_id
-            self.mlops_metrics.broadcast_client_training_status(self.edge_id,
-                                                                ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
+            self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
             self.release_client_mqtt_mgr()
 
     def send_deployment_results(self, device_id, model_id, model_name, model_inference_url,
