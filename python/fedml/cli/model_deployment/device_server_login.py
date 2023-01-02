@@ -330,6 +330,15 @@ def init_logs(edge_id):
 
 
 def login(args):
+    # Install redis server
+    sys_name = platform.system()
+    if sys_name == "Linux":
+        os.system("curl -fsSL https://packages.redis.io/gpg | sudo gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg")
+        os.system("echo \"deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main\" | sudo tee /etc/apt/sources.list.d/redis.list")
+        os.system("sudo apt-get update")
+        os.system("sudo apt-get install redis")
+        os.system("nohup redis-server &")
+
     if args.role == ServerConstants.login_role_list[ServerConstants.LOGIN_MODE_ON_PREMISE_MASTER_INDEX]:
         __login_as_edge_server_and_agent(args, args.user, args.version)
     elif args.role == ServerConstants.login_role_list[ServerConstants.LOGIN_MODE_FEDML_CLOUD_MASTER_INDEX]:
