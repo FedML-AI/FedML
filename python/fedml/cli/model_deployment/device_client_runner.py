@@ -198,6 +198,7 @@ class FedMLClientRunner:
             self.send_deployment_results(self.edge_id, model_id, model_name, inference_output_url, model_version,
                                          ClientConstants.INFERENCE_HTTP_PORT, inference_engine,
                                          model_metadata, model_config)
+            time.sleep(1)
             self.broadcast_client_training_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
 
     def send_deployment_results(self, device_id, model_id, model_name, model_inference_url,
