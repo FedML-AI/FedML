@@ -171,6 +171,7 @@ class FedMLClientRunner:
         unzip_package_path, fedml_config_object = self.update_local_fedml_config(run_id, model_config)
 
         inference_output_url, model_version, model_metadata, model_config = start_deployment(
+            inference_end_point_id, model_id,
             unzip_package_path, model_name, inference_engine,
             ClientConstants.INFERENCE_HTTP_PORT,
             ClientConstants.INFERENCE_GRPC_PORT,
