@@ -50,7 +50,6 @@ def start_deployment(end_point_id, model_id,
     ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(running_process)
     if out is not None:
         out_str = out.decode(encoding="utf-8")
-        print("find triton server {}".format(out_str))
         if str(out_str) != "":
             triton_server_is_running = True
 
