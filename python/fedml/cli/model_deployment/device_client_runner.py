@@ -183,8 +183,8 @@ class FedMLClientRunner:
         if inference_output_url == "":
             self.setup_client_mqtt_mgr()
             self.wait_client_mqtt_connected()
-            self.mlops_metrics.report_client_training_status(self.edge_id,
-                                                             ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+            self.mlops_metrics.broadcast_client_training_status(self.edge_id,
+                                                                ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
             self.send_deployment_status(self.edge_id, model_id, model_name, inference_output_url,
                                         ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
             self.send_deployment_results(self.edge_id, model_id, model_name, inference_output_url, model_version,
@@ -194,8 +194,8 @@ class FedMLClientRunner:
         else:
             self.setup_client_mqtt_mgr()
             self.wait_client_mqtt_connected()
-            self.mlops_metrics.report_client_training_status(self.edge_id,
-                                                             ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
+            self.mlops_metrics.broadcast_client_training_status(self.edge_id,
+                                                                ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
             self.send_deployment_status(self.edge_id, model_id, model_name, inference_output_url,
                                         ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED)
             self.send_deployment_results(self.edge_id, model_id, model_name, inference_output_url, model_version,
@@ -458,7 +458,7 @@ class FedMLClientRunner:
         )
         client_runner.infer_host = self.infer_host
         self.process = Process(target=client_runner.run)
-        #client_runner.run()
+        # client_runner.run()
         self.process.start()
         ClientConstants.save_run_process(self.process.pid)
 
