@@ -226,7 +226,7 @@ class FedMLServerRunner:
         )
         ServerConstants.save_learning_process(self.monitor_process.pid)
         self.release_client_mqtt_mgr()
-        self.mlops_metrics.report_server_training_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED)
+        self.mlops_metrics.broadcast_server_training_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED)
         ret_code, out, err = ServerConstants.get_console_pipe_out_err_results(process)
 
         while True:
