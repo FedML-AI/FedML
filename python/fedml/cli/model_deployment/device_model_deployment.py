@@ -39,17 +39,35 @@ def start_deployment(end_point_id, model_id,
     if sys_name == "Darwin":
         sudo_prefix = ""
         gpu_attach_cmd = ""
+
+    # Check whether triton server is running.
+    triton_server_is_running = True
+    triton_server_container_name = "{}".format(FEDML_TRITON_SERVER_CONTAINER_NAME_PREFIX)
+    check_triton_server_running_cmds = "{}docker ps".format(sudo_prefix)
+    running_process = ClientConstants.exec_console_with_script(check_triton_server_running_cmds,
+                                                               should_capture_stdout=True,
+                                                               should_capture_stderr=True)
+    ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(running_process)
+    if out is not None:
+        out_str = out.decode(encoding="utf-8")
+        print("find triton server {}".format(out_str))
+        if str(out_str).find(triton_server_container_name) == -1:
+            triton_server_is_running = False
+    if err is not None:
+        triton_server_is_running = False
+
     if sys_name == "Linux":
-        os.system(sudo_prefix + "apt-get update")
-        os.system(sudo_prefix + "apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin")
-        os.system("distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
-      && sudo rm -f /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg;curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
-      && curl -s -L https://nvidia.github.io/libnvidia-container/experimental/$distribution/libnvidia-container.list | \
-         sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
-         sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list")
-        os.system(sudo_prefix + "apt-get update")
-        os.system(sudo_prefix + "apt-get install -y nvidia-docker2")
-        os.system(sudo_prefix + "systemctl restart docker")
+        if not triton_server_is_running:
+            os.system(sudo_prefix + "apt-get update")
+            os.system(sudo_prefix + "apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin")
+            os.system("distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
+          && sudo rm -f /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg;curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
+          && curl -s -L https://nvidia.github.io/libnvidia-container/experimental/$distribution/libnvidia-container.list | \
+             sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+             sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list")
+            os.system(sudo_prefix + "apt-get update")
+            os.system(sudo_prefix + "apt-get install -y nvidia-docker2")
+            os.system(sudo_prefix + "systemctl restart docker")
 
     convert_model_container_name = "{}_{}_{}".format(FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX,
                                                      str(end_point_id),
@@ -90,21 +108,6 @@ def start_deployment(end_point_id, model_id,
                 shutil.copyfile(src_model_file, dst_model_file)
 
     # Run triton server
-    triton_server_is_running = True
-    triton_server_container_name = "{}".format(FEDML_TRITON_SERVER_CONTAINER_NAME_PREFIX)
-    check_triton_server_running_cmds = "{}docker ps".format(sudo_prefix)
-    running_process = ClientConstants.exec_console_with_script(check_triton_server_running_cmds,
-                                                               should_capture_stdout=True,
-                                                               should_capture_stderr=True)
-    ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(running_process)
-    if out is not None:
-        out_str = out.decode(encoding="utf-8")
-        print("find triton server {}".format(out_str))
-        if str(out_str).find(triton_server_container_name) == -1:
-            triton_server_is_running = False
-    if err is not None:
-        triton_server_is_running = False
-
     if not triton_server_is_running:
         triton_server_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} {} -p{}:8000 " \
                             "-p{}:8001 -p{}:8002 " \
