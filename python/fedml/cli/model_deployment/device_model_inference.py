@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     end_point_id: str
     model_id: str
     model_name: str
+    model_version: str
     model_infer_url: str
 
 
@@ -29,7 +30,10 @@ def root():
     return {'message': 'FedML Federated Inference Service!'}
 
 
-@api.post('/predict')
+@api.post('/api/v1/predict/end_point_{}/model_id_{}/model_name_{}/model_version_{}'.format(settings.end_point_id,
+                                                                                           settings.model_id,
+                                                                                           settings.model_name,
+                                                                                           settings.model_version))
 async def predict(request: Request):
     # Get json data
     input_json = await request.json()
@@ -98,4 +102,3 @@ def run_inference(json_req, bin_data=None, host="localhost"):
                                                               ClientConstants.INFERENCE_HTTP_PORT, 1, infer_data,
                                                               host)
     return predication_result
-
