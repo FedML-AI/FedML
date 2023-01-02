@@ -201,6 +201,9 @@ class FedMLClientRunner:
             time.sleep(1)
             self.broadcast_client_training_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
 
+        while True:
+            time.sleep(1)
+
     def send_deployment_results(self, device_id, model_id, model_name, model_inference_url,
                                 model_version, inference_port, inference_engine,
                                 model_metadata, model_config):
