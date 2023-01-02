@@ -350,7 +350,7 @@ class FedMLServerRunner:
         end_point_id = payload_json["end_point_id"]
         model_id = payload_json["model_id"]
         model_name = payload_json["model_name"]
-        model_version = payload_json["version"]
+        model_version = "v1"
         FedMLModelCache.get_instance().set_deployment_result(end_point_id, device_id, payload_json)
 
         # When all deployments are finished
