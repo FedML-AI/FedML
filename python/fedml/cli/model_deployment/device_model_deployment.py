@@ -17,6 +17,7 @@ CMD_TYPE_RUN_TRITON_SERVER = "run_triton_server"
 FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX = "fedml_convert_model_container"
 FEDML_TRITON_SERVER_CONTAINER_NAME_PREFIX = "fedml_triton_server_container"
 FEDML_CONVERTED_MODEL_DIR_NAME = "triton_models"
+FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL = 3
 
 
 def start_deployment(end_point_id, model_id,
@@ -107,7 +108,7 @@ def start_deployment(end_point_id, model_id,
                             "--shm-size {} " \
                             "-v {}:/models {} " \
                             "bash -c \"pip install transformers && tritonserver " \
-                            "--model-control-mode=poll --repository-poll-secs=3" \
+                            "--model-control-mode=poll --repository-poll-secs={} " \
                             "--model-repository=/models\" ".format(sudo_prefix, triton_server_container_name,
                                                                    sudo_prefix, triton_server_container_name,
                                                                    sudo_prefix, triton_server_container_name,
@@ -117,7 +118,8 @@ def start_deployment(end_point_id, model_id,
                                                                    inference_metric_port,
                                                                    inference_memory_size,
                                                                    model_serving_dir,
-                                                                   inference_server_image)
+                                                                   inference_server_image,
+                                                                   FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL)
         logging.info("Run triton inference server: {}".format(triton_server_cmd))
         triton_server_process = ClientConstants.exec_console_with_script(triton_server_cmd,
                                                                          should_capture_stdout=False,
