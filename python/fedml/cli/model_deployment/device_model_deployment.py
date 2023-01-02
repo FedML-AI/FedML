@@ -13,11 +13,12 @@ from fedml.cli.model_deployment.device_client_constants import ClientConstants
 
 CMD_TYPE_CONVERT_MODEL = "convert_model"
 CMD_TYPE_RUN_TRITON_SERVER = "run_triton_server"
-convert_model_container_name = "convert_model_container"
-triton_server_container_name = "triton_server_container"
+FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX = "fedml_convert_model_container"
+FEDML_TRITON_SERVER_CONTAINER_NAME_PREFIX = "fedml_triton_server_container"
 
 
-def start_deployment(model_storage_local_path, inference_model_name, inference_engine,
+def start_deployment(end_point_id, model_id,
+                     model_storage_local_path, inference_model_name, inference_engine,
                      inference_http_port, inference_grpc_port, inference_metric_port,
                      inference_use_gpu, inference_memory_size,
                      inference_convertor_image, inference_server_image,
@@ -47,6 +48,9 @@ def start_deployment(model_storage_local_path, inference_model_name, inference_e
         os.system(sudo_prefix + "apt-get install -y nvidia-docker2")
         os.system(sudo_prefix + "systemctl restart docker")
 
+    convert_model_container_name = "{}_{}_{}".format(FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX,
+                                                     str(end_point_id),
+                                                     str(model_id))
     convert_model_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} --rm {} -v {}:/project {} " \
                         "bash -c \"cd /project && convert_model -m /project --name {} " \
                         "--backend {} --seq-len 16 128 128\"; exit".format(sudo_prefix, convert_model_container_name,
@@ -62,9 +66,13 @@ def start_deployment(model_storage_local_path, inference_model_name, inference_e
                                                                should_capture_stdout=False,
                                                                should_capture_stderr=False,
                                                                no_sys_out_err=True)
-    log_deployment_result(convert_model_container_name, CMD_TYPE_CONVERT_MODEL, convert_process.pid,
+    log_deployment_result(end_point_id, model_id, convert_model_container_name,
+                          CMD_TYPE_CONVERT_MODEL, convert_process.pid,
                           inference_model_name, inference_engine, inference_http_port)
 
+    triton_server_container_name = "{}_{}_{}".format(FEDML_TRITON_SERVER_CONTAINER_NAME_PREFIX,
+                                                     str(end_point_id),
+                                                     str(model_id))
     triton_server_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} {} -p{}:8000 " \
                         "-p{}:8001 -p{}:8002 " \
                         "--shm-size {} " \
@@ -85,7 +93,8 @@ def start_deployment(model_storage_local_path, inference_model_name, inference_e
                                                                      should_capture_stdout=False,
                                                                      should_capture_stderr=False,
                                                                      no_sys_out_err=True)
-    log_deployment_result(triton_server_container_name, CMD_TYPE_RUN_TRITON_SERVER, triton_server_process.pid,
+    log_deployment_result(end_point_id, model_id, triton_server_container_name,
+                          CMD_TYPE_RUN_TRITON_SERVER, triton_server_process.pid,
                           inference_model_name, inference_engine, inference_http_port)
 
     inference_output_url, model_version, model_metadata, model_config = \
@@ -96,13 +105,16 @@ def start_deployment(model_storage_local_path, inference_model_name, inference_e
     return inference_output_url, model_version, model_metadata, model_config
 
 
-def should_exit_logs(cmd_type, cmd_process_id, model_name, inference_engine, inference_port):
+def should_exit_logs(end_point_id, model_id, cmd_type, cmd_process_id, model_name, inference_engine, inference_port):
     sudo_prefix = "sudo "
     sys_name = platform.system()
     if sys_name == "Darwin":
         sudo_prefix = ""
 
     if cmd_type == CMD_TYPE_CONVERT_MODEL:
+        convert_model_container_name = "{}_{}_{}".format(FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX,
+                                                         str(end_point_id),
+                                                         str(model_id))
         docker_ps_cmd = "{}docker ps -a;exit".format(sudo_prefix, convert_model_container_name)
         docker_ps_process = ClientConstants.exec_console_with_script(docker_ps_cmd,
                                                                      should_capture_stdout=True,
@@ -130,7 +142,8 @@ def should_exit_logs(cmd_type, cmd_process_id, model_name, inference_engine, inf
         return False
 
 
-def log_deployment_result(cmd_container_name, cmd_type, cmd_process_id, inference_model_name, inference_engine,
+def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
+                          cmd_process_id, inference_model_name, inference_engine,
                           inference_http_port):
     sudo_prefix = "sudo "
     sys_name = platform.system()
@@ -160,7 +173,8 @@ def log_deployment_result(cmd_container_name, cmd_type, cmd_process_id, inferenc
 
         time.sleep(3)
 
-        if should_exit_logs(cmd_type, cmd_process_id, inference_model_name, inference_engine, inference_http_port):
+        if should_exit_logs(end_point_id, model_id, cmd_type, cmd_process_id,
+                            inference_model_name, inference_engine, inference_http_port):
             break
 
 
