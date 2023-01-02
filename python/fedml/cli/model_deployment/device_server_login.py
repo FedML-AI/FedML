@@ -333,7 +333,7 @@ def login(args):
     # Install redis server
     sys_name = platform.system()
     if sys_name == "Linux":
-        os.system("curl -fsSL https://packages.redis.io/gpg | sudo gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg")
+        os.system("sudo rm -f /usr/share/keyrings/redis-archive-keyring.gpg;curl -fsSL https://packages.redis.io/gpg | sudo gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg")
         os.system("echo \"deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main\" | sudo tee /etc/apt/sources.list.d/redis.list")
         os.system("sudo apt-get update")
         os.system("sudo apt-get install redis")
