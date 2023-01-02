@@ -81,11 +81,13 @@ def start_deployment(end_point_id, model_id,
     model_file_list = os.listdir(converted_model_path)
     for model_file in model_file_list:
         src_model_file = os.path.join(converted_model_path, model_file)
+        dst_model_file = os.path.join(model_serving_dir, model_file)
         if os.path.isdir(src_model_file):
-            shutil.copytree(src_model_file, os.path.join(model_serving_dir, model_file),
-                            copy_function=shutil.copy)
+            shutil.rmtree(dst_model_file, ignore_errors=True)
+            shutil.copytree(src_model_file, dst_model_file, copy_function=shutil.copy)
         else:
-            shutil.copyfile(src_model_file, os.path.join(model_serving_dir, model_file))
+            os.remove(dst_model_file)
+            shutil.copyfile(src_model_file, dst_model_file)
 
     # Run triton server
     triton_server_is_running = True
