@@ -30,7 +30,7 @@ def root():
     return {'message': 'FedML Federated Inference Service!'}
 
 
-@api.post('/api/v1/predict/end_point_{}/model_id_{}/model_name_{}/model_version_{}'.format(settings.end_point_id,
+@api.post('/api/v1/end_point_{}/model_id_{}/model_name_{}/model_version_{}/predict'.format(settings.end_point_id,
                                                                                            settings.model_id,
                                                                                            settings.model_name,
                                                                                            settings.model_version))
