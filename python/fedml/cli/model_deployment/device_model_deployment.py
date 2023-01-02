@@ -2,6 +2,7 @@ import argparse
 import logging
 import os
 import platform
+import shutil
 import time
 
 import numpy as np
@@ -15,6 +16,7 @@ CMD_TYPE_CONVERT_MODEL = "convert_model"
 CMD_TYPE_RUN_TRITON_SERVER = "run_triton_server"
 FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX = "fedml_convert_model_container"
 FEDML_TRITON_SERVER_CONTAINER_NAME_PREFIX = "fedml_triton_server_container"
+FEDML_CONVERTED_MODEL_DIR_NAME = "triton_models"
 
 
 def start_deployment(end_point_id, model_id,
@@ -70,32 +72,53 @@ def start_deployment(end_point_id, model_id,
                           CMD_TYPE_CONVERT_MODEL, convert_process.pid,
                           inference_model_name, inference_engine, inference_http_port)
 
-    triton_server_container_name = "{}_{}_{}".format(FEDML_TRITON_SERVER_CONTAINER_NAME_PREFIX,
-                                                     str(end_point_id),
-                                                     str(model_id))
-    triton_server_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} {} -p{}:8000 " \
-                        "-p{}:8001 -p{}:8002 " \
-                        "--shm-size {} " \
-                        "-v {}/triton_models:/models {} " \
-                        "bash -c \"pip install transformers && tritonserver " \
-                        "--model-repository=/models\"".format(sudo_prefix, triton_server_container_name,
-                                                              sudo_prefix, triton_server_container_name,
-                                                              sudo_prefix, triton_server_container_name,
-                                                              gpu_attach_cmd,
-                                                              inference_http_port,
-                                                              inference_grpc_port,
-                                                              inference_metric_port,
-                                                              inference_memory_size,
-                                                              model_storage_local_path,
-                                                              inference_server_image)
-    logging.info("Run triton inference server: {}".format(triton_server_cmd))
-    triton_server_process = ClientConstants.exec_console_with_script(triton_server_cmd,
-                                                                     should_capture_stdout=False,
-                                                                     should_capture_stderr=False,
-                                                                     no_sys_out_err=True)
-    log_deployment_result(end_point_id, model_id, triton_server_container_name,
-                          CMD_TYPE_RUN_TRITON_SERVER, triton_server_process.pid,
-                          inference_model_name, inference_engine, inference_http_port)
+    # Move converted model to serving dir for inference
+    model_serving_dir = ClientConstants.get_model_serving_dir()
+    converted_model_path = os.path.join(model_storage_local_path, FEDML_CONVERTED_MODEL_DIR_NAME)
+    model_file_list = os.listdir(converted_model_path)
+    for model_file in model_file_list:
+        shutil.move(os.path.join(converted_model_path, model_file), model_serving_dir)
+
+    # Run triton server
+    triton_server_is_running = True
+    triton_server_container_name = "{}".format(FEDML_TRITON_SERVER_CONTAINER_NAME_PREFIX)
+    check_triton_server_running_cmds = "{}docker ps".format(sudo_prefix)
+    running_process = ClientConstants.exec_console_with_script(check_triton_server_running_cmds,
+                                                               should_capture_stdout=True,
+                                                               should_capture_stderr=True)
+    ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(running_process)
+    if out is not None:
+        out_str = out.decode(encoding="utf-8")
+        if str(out_str).find(triton_server_container_name) == -1:
+            triton_server_is_running = False
+    if err is not None:
+        triton_server_is_running = False
+
+    if not triton_server_is_running:
+        triton_server_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} {} -p{}:8000 " \
+                            "-p{}:8001 -p{}:8002 " \
+                            "--shm-size {} " \
+                            "-v {}:/models {} " \
+                            "bash -c \"pip install transformers && tritonserver " \
+                            "--model-control-mode=poll --repository-poll-secs=3" \
+                            "--model-repository=/models\" ".format(sudo_prefix, triton_server_container_name,
+                                                                   sudo_prefix, triton_server_container_name,
+                                                                   sudo_prefix, triton_server_container_name,
+                                                                   gpu_attach_cmd,
+                                                                   inference_http_port,
+                                                                   inference_grpc_port,
+                                                                   inference_metric_port,
+                                                                   inference_memory_size,
+                                                                   model_serving_dir,
+                                                                   inference_server_image)
+        logging.info("Run triton inference server: {}".format(triton_server_cmd))
+        triton_server_process = ClientConstants.exec_console_with_script(triton_server_cmd,
+                                                                         should_capture_stdout=False,
+                                                                         should_capture_stderr=False,
+                                                                         no_sys_out_err=True)
+        log_deployment_result(end_point_id, model_id, triton_server_container_name,
+                              CMD_TYPE_RUN_TRITON_SERVER, triton_server_process.pid,
+                              inference_model_name, inference_engine, inference_http_port)
 
     inference_output_url, model_version, model_metadata, model_config = \
         get_model_info(inference_model_name, inference_engine, inference_http_port, infer_host)
@@ -134,7 +157,7 @@ def should_exit_logs(end_point_id, model_id, cmd_type, cmd_process_id, model_nam
                 get_model_info(model_name, inference_engine, inference_port)
             logging.info("Log test for deploying model successfully, inference url: {}, "
                          "model metadata: {}, model config: {}".format(
-                          inference_output_url, model_metadata, model_config))
+                inference_output_url, model_metadata, model_config))
             if inference_output_url != "":
                 return True
         except Exception as e:
@@ -319,37 +342,43 @@ def run_http_inference_with_raw_http_request(self, inference_input_json, inferen
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--cf", "-c", help="config file")
-    parser.add_argument("--role", "-r", type=str, default="client", help="role")
-    parser.add_argument("--model_storage_local_path", "-url", type=str, default="/home/ubuntu",
-                        help="model storage local path")
-    parser.add_argument("--inference_model_name", "-n", type=str, default="fedml-model",
-                        help="inference model name")
-    parser.add_argument("--inference_engine", "-engine", type=str, default="ONNX", help="inference engine")
-    parser.add_argument("--inference_http_port", "-http", type=int, default=8000, help="inference http port")
-    parser.add_argument("--inference_grpc_port", "-gprc", type=int, default=8001, help="inference grpc port")
-    parser.add_argument("--inference_metric_port", "-metric", type=int, default=8002, help="inference metric port")
-    parser.add_argument("--inference_use_gpu", "-gpu", type=str, default="gpu", help="inference use gpu")
-    parser.add_argument("--inference_memory_size", "-mem", type=str, default="256m", help="inference memory size")
-    parser.add_argument("--inference_convertor_image", "-convertor", type=str,
-                        default=ClientConstants.INFERENCE_CONVERTOR_IMAGE, help="inference convertor image")
-    parser.add_argument("--inference_server_image", "-server", type=str,
-                        default=ClientConstants.INFERENCE_SERVER_IMAGE, help="inference server image")
-    args = parser.parse_args()
-    args.user = args.user
+    # model_serving_dir = ClientConstants.get_model_serving_dir()
+    src_converted_model = "/Users/alexliang/fedml-client/fedml/model_packages"
+    file_list = os.listdir(src_converted_model)
+    for file in file_list:
+        shutil.move(os.path.join(src_converted_model, file), "/Users/alexliang/fedml-client/fedml/test")
 
-    pip_source_dir = os.path.dirname(__file__)
-    __inference_output_url, __model_version, __model_metadata, __model_config = start_deployment(
-        args.model_storage_local_path,
-        args.inference_model_name,
-        args.inference_engine,
-        args.inference_http_port,
-        args.inference_grpc_port,
-        args.inference_metric_port,
-        args.inference_use_gpu,
-        args.inference_memory_size,
-        args.inference_convertor_image,
-        args.inference_server_image)
-    print("Model deployment results, url: {}, model metadata: {}, model config: {}".format(
-        __inference_output_url, __model_metadata, __model_config))
+    # parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    # parser.add_argument("--cf", "-c", help="config file")
+    # parser.add_argument("--role", "-r", type=str, default="client", help="role")
+    # parser.add_argument("--model_storage_local_path", "-url", type=str, default="/home/ubuntu",
+    #                     help="model storage local path")
+    # parser.add_argument("--inference_model_name", "-n", type=str, default="fedml-model",
+    #                     help="inference model name")
+    # parser.add_argument("--inference_engine", "-engine", type=str, default="ONNX", help="inference engine")
+    # parser.add_argument("--inference_http_port", "-http", type=int, default=8000, help="inference http port")
+    # parser.add_argument("--inference_grpc_port", "-gprc", type=int, default=8001, help="inference grpc port")
+    # parser.add_argument("--inference_metric_port", "-metric", type=int, default=8002, help="inference metric port")
+    # parser.add_argument("--inference_use_gpu", "-gpu", type=str, default="gpu", help="inference use gpu")
+    # parser.add_argument("--inference_memory_size", "-mem", type=str, default="256m", help="inference memory size")
+    # parser.add_argument("--inference_convertor_image", "-convertor", type=str,
+    #                     default=ClientConstants.INFERENCE_CONVERTOR_IMAGE, help="inference convertor image")
+    # parser.add_argument("--inference_server_image", "-server", type=str,
+    #                     default=ClientConstants.INFERENCE_SERVER_IMAGE, help="inference server image")
+    # args = parser.parse_args()
+    # args.user = args.user
+    #
+    # pip_source_dir = os.path.dirname(__file__)
+    # __inference_output_url, __model_version, __model_metadata, __model_config = start_deployment(
+    #     args.model_storage_local_path,
+    #     args.inference_model_name,
+    #     args.inference_engine,
+    #     args.inference_http_port,
+    #     args.inference_grpc_port,
+    #     args.inference_metric_port,
+    #     args.inference_use_gpu,
+    #     args.inference_memory_size,
+    #     args.inference_convertor_image,
+    #     args.inference_server_image)
+    # print("Model deployment results, url: {}, model metadata: {}, model config: {}".format(
+    #     __inference_output_url, __model_metadata, __model_config))
