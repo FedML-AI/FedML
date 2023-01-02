@@ -164,6 +164,7 @@ class FedMLServerRunner:
         inference_end_point_id = run_id
         use_gpu = "gpu"  # TODO: Get GPU from device infos
         memory_size = "256m"  # TODO: Get Memory size for each instance
+        model_version = "v1"
 
         logging.info("Model deployment request: {}".format(self.request_json))
 
@@ -184,20 +185,19 @@ class FedMLServerRunner:
         self.release_client_mqtt_mgr()
 
         # report server running status
-        self.mlops_metrics.report_server_training_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING)
+        self.mlops_metrics.report_server_training_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_RUNNING)
         self.send_deployment_status(self.run_id, model_name, "",
                                     ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_INITIALIZING)
 
         # update local config with real time parameters from server and dynamically replace variables value
         logging.info("Download and unzip model to local...")
         unzip_package_path, fedml_config_object = self.update_local_fedml_config(run_id, model_config)
-        ServerConstants.cleanup_learning_process()
 
         # start unified inference server
         process = ServerConstants.exec_console_with_script(
-            "END_POINT_ID=\"{}\" MODEL_ID=\"{}\" MODEL_NAME=\"{}\" MODEL_INFER_URL=\"{}\" "
-            "uvicorn device_model_inference:api --host 0.0.0.0 --port {} --reload".format(
-                self.run_id, model_id, model_name, "",
+            "END_POINT_ID=\"{}\" MODEL_ID=\"{}\" MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" "
+            "uvicorn fedml.cli.model_deployment.device_model_inference:api --host 0.0.0.0 --port {} --reload".format(
+                str(self.run_id), str(model_id), model_name, model_version, "",
                 str(ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)),
             should_capture_stdout=False,
             should_capture_stderr=False
@@ -206,10 +206,12 @@ class FedMLServerRunner:
 
         # start inference monitor server
         python_program = get_python_program()
+        pip_source_dir = os.path.dirname(__file__)
+        monitor_file = os.path.join(pip_source_dir, "device_model_monitor.py")
         self.monitor_process = ServerConstants.exec_console_with_shell_script_list(
             [
                 python_program,
-                "device_model_monitor.py",
+                monitor_file,
                 "-ep",
                 str(self.run_id),
                 "-mi",
@@ -224,6 +226,7 @@ class FedMLServerRunner:
         )
         ServerConstants.save_learning_process(self.monitor_process.pid)
         self.release_client_mqtt_mgr()
+        self.mlops_metrics.broadcast_server_training_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED)
         ret_code, out, err = ServerConstants.get_console_pipe_out_err_results(process)
 
         while True:
@@ -250,8 +253,6 @@ class FedMLServerRunner:
         self.mlops_metrics.report_server_training_status(self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED)
 
         time.sleep(1)
-
-        ServerConstants.cleanup_learning_process()
 
         try:
             local_package_path = ServerConstants.get_package_download_dir()
@@ -302,8 +303,6 @@ class FedMLServerRunner:
 
         time.sleep(1)
 
-        ServerConstants.cleanup_learning_process()
-
         try:
             local_package_path = ServerConstants.get_package_download_dir()
             for package_file in listdir(local_package_path):
@@ -333,8 +332,6 @@ class FedMLServerRunner:
 
         time.sleep(1)
 
-        ServerConstants.cleanup_learning_process()
-
         try:
             local_package_path = ServerConstants.get_package_download_dir()
             for package_file in listdir(local_package_path):
@@ -351,6 +348,9 @@ class FedMLServerRunner:
         device_id = topic_splits[-1]
         payload_json = json.loads(payload)
         end_point_id = payload_json["end_point_id"]
+        model_id = payload_json["model_id"]
+        model_name = payload_json["model_name"]
+        model_version = "v1"
         FedMLModelCache.get_instance().set_deployment_result(end_point_id, device_id, payload_json)
 
         # When all deployments are finished
@@ -359,7 +359,13 @@ class FedMLServerRunner:
             # 1. We should generate one unified inference api
             ip = ServerConstants.get_local_ip()
             model_inference_port = ServerConstants.MODEL_INFERENCE_DEFAULT_PORT
-            model_inference_url = "http://{}:{}/predict".format(ip, str(model_inference_port))
+            # model_inference_url = "http://{}:{}/api/v1/end_point_{}/model_id_{}" \
+            #                       "/model_name_{}/model_version_{}/predict".format(ip, str(model_inference_port),
+            #                                                                        end_point_id,
+            #                                                                        model_id,
+            #                                                                        model_name,
+            #                                                                        model_version)
+            model_inference_url = "http://{}:{}/api/v1/predict".format(ip, model_inference_port)
 
             # Send stage: MODEL_DEPLOYMENT_STAGE5 = "StartInferenceIngress"
             model_name = payload_json["model_name"]

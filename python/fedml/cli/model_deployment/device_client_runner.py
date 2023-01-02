@@ -162,16 +162,16 @@ class FedMLClientRunner:
         self.wait_client_mqtt_connected()
 
         self.mlops_metrics.report_client_training_status(self.edge_id,
-                                                         ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING)
+                                                         ClientConstants.MSG_MLOPS_CLIENT_STATUS_RUNNING)
         self.send_deployment_status(self.edge_id, model_name, model_id, "",
                                     ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_INITIALIZING)
 
         # update local config with real time parameters from server and dynamically replace variables value
         logging.info("Download and unzip model to local...")
         unzip_package_path, fedml_config_object = self.update_local_fedml_config(run_id, model_config)
-        ClientConstants.cleanup_learning_process()
 
         inference_output_url, model_version, model_metadata, model_config = start_deployment(
+            inference_end_point_id, model_id,
             unzip_package_path, model_name, inference_engine,
             ClientConstants.INFERENCE_HTTP_PORT,
             ClientConstants.INFERENCE_GRPC_PORT,
@@ -181,15 +181,16 @@ class FedMLClientRunner:
             ClientConstants.INFERENCE_SERVER_IMAGE,
             self.infer_host)
         if inference_output_url == "":
-            self.setup_client_mqtt_mgr()
-            self.wait_client_mqtt_connected()
-            self.mlops_metrics.report_client_id_status(run_id, self.edge_id,
-                                                       ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
             self.send_deployment_status(self.edge_id, model_id, model_name, inference_output_url,
                                         ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
             self.send_deployment_results(self.edge_id, model_id, model_name, inference_output_url, model_version,
                                          ClientConstants.INFERENCE_HTTP_PORT, inference_engine,
                                          model_metadata, model_config)
+            self.setup_client_mqtt_mgr()
+            self.wait_client_mqtt_connected()
+            self.mlops_metrics.run_id = self.run_id
+            self.mlops_metrics.broadcast_client_training_status(self.edge_id,
+                                                                ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
             self.release_client_mqtt_mgr()
         else:
             self.send_deployment_status(self.edge_id, model_id, model_name, inference_output_url,
@@ -197,8 +198,11 @@ class FedMLClientRunner:
             self.send_deployment_results(self.edge_id, model_id, model_name, inference_output_url, model_version,
                                          ClientConstants.INFERENCE_HTTP_PORT, inference_engine,
                                          model_metadata, model_config)
-            self.mlops_metrics.report_client_id_status(run_id, self.edge_id,
-                                                       ClientConstants.MSG_MLOPS_CLIENT_STATUS_RUNNING)
+            time.sleep(1)
+            self.broadcast_client_training_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
+
+        while True:
+            time.sleep(1)
 
     def send_deployment_results(self, device_id, model_id, model_name, model_inference_url,
                                 model_version, inference_port, inference_engine,
@@ -225,6 +229,19 @@ class FedMLClientRunner:
         self.client_mqtt_mgr.send_message_json(deployment_status_topic, json.dumps(deployment_status_payload))
         self.release_client_mqtt_mgr()
 
+    def broadcast_client_training_status(self, edge_id, status):
+        run_id = 0
+        if self.run_id is not None:
+            run_id = self.run_id
+        topic_name = "fl_client/mlops/status"
+        msg = {"edge_id": edge_id, "run_id": run_id, "status": status}
+        message_json = json.dumps(msg)
+        logging.info("report_client_training_status. message_json = %s" % message_json)
+        self.setup_client_mqtt_mgr()
+        self.wait_client_mqtt_connected()
+        self.client_mqtt_mgr.send_message_json(topic_name, message_json)
+        self.release_client_mqtt_mgr()
+
     def reset_devices_status(self, edge_id, status):
         self.mlops_metrics.run_id = self.run_id
         self.mlops_metrics.edge_id = edge_id
@@ -244,11 +261,6 @@ class FedMLClientRunner:
 
         time.sleep(1)
 
-        try:
-            ClientConstants.cleanup_learning_process()
-        except Exception as e:
-            pass
-
         self.release_client_mqtt_mgr()
 
     def stop_run_with_killed_status(self):
@@ -265,11 +277,6 @@ class FedMLClientRunner:
 
         time.sleep(1)
 
-        try:
-            ClientConstants.cleanup_learning_process()
-        except Exception as e:
-            pass
-
         self.release_client_mqtt_mgr()
 
     def exit_run_with_exception(self):
@@ -279,7 +286,6 @@ class FedMLClientRunner:
 
         logging.info("Exit run successfully.")
 
-        ClientConstants.cleanup_learning_process()
         ClientConstants.cleanup_run_process()
 
         # Notify MLOps with the stopping message
@@ -308,11 +314,6 @@ class FedMLClientRunner:
 
         time.sleep(1)
 
-        try:
-            ClientConstants.cleanup_learning_process()
-        except Exception as e:
-            pass
-
         self.release_client_mqtt_mgr()
 
     def cleanup_run_when_finished(self):
@@ -332,11 +333,6 @@ class FedMLClientRunner:
             pass
 
         time.sleep(1)
-
-        try:
-            ClientConstants.cleanup_learning_process()
-        except Exception as e:
-            pass
 
         self.release_client_mqtt_mgr()
 
@@ -475,7 +471,7 @@ class FedMLClientRunner:
         )
         client_runner.infer_host = self.infer_host
         self.process = Process(target=client_runner.run)
-        #client_runner.run()
+        # client_runner.run()
         self.process.start()
         ClientConstants.save_run_process(self.process.pid)
 
