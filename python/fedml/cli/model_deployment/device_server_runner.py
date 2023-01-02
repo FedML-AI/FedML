@@ -197,7 +197,7 @@ class FedMLServerRunner:
         process = ServerConstants.exec_console_with_script(
             "END_POINT_ID=\"{}\" MODEL_ID=\"{}\" MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" "
             "uvicorn fedml.cli.model_deployment.device_model_inference:api --host 0.0.0.0 --port {} --reload".format(
-                self.run_id, model_id, model_name, model_version, "",
+                str(self.run_id), str(model_id), model_name, model_version, "",
                 str(ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)),
             should_capture_stdout=False,
             should_capture_stderr=False
