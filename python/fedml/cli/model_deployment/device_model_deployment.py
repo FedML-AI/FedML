@@ -344,43 +344,37 @@ def run_http_inference_with_raw_http_request(self, inference_input_json, inferen
 
 
 if __name__ == "__main__":
-    # model_serving_dir = ClientConstants.get_model_serving_dir()
-    src_converted_model = "/Users/alexliang/fedml-client/fedml/model_packages"
-    file_list = os.listdir(src_converted_model)
-    for file in file_list:
-        shutil.move(os.path.join(src_converted_model, file), "/Users/alexliang/fedml-client/fedml/test")
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("--cf", "-c", help="config file")
+    parser.add_argument("--role", "-r", type=str, default="client", help="role")
+    parser.add_argument("--model_storage_local_path", "-url", type=str, default="/home/ubuntu",
+                        help="model storage local path")
+    parser.add_argument("--inference_model_name", "-n", type=str, default="fedml-model",
+                        help="inference model name")
+    parser.add_argument("--inference_engine", "-engine", type=str, default="ONNX", help="inference engine")
+    parser.add_argument("--inference_http_port", "-http", type=int, default=8000, help="inference http port")
+    parser.add_argument("--inference_grpc_port", "-gprc", type=int, default=8001, help="inference grpc port")
+    parser.add_argument("--inference_metric_port", "-metric", type=int, default=8002, help="inference metric port")
+    parser.add_argument("--inference_use_gpu", "-gpu", type=str, default="gpu", help="inference use gpu")
+    parser.add_argument("--inference_memory_size", "-mem", type=str, default="256m", help="inference memory size")
+    parser.add_argument("--inference_convertor_image", "-convertor", type=str,
+                        default=ClientConstants.INFERENCE_CONVERTOR_IMAGE, help="inference convertor image")
+    parser.add_argument("--inference_server_image", "-server", type=str,
+                        default=ClientConstants.INFERENCE_SERVER_IMAGE, help="inference server image")
+    args = parser.parse_args()
+    args.user = args.user
 
-    # parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    # parser.add_argument("--cf", "-c", help="config file")
-    # parser.add_argument("--role", "-r", type=str, default="client", help="role")
-    # parser.add_argument("--model_storage_local_path", "-url", type=str, default="/home/ubuntu",
-    #                     help="model storage local path")
-    # parser.add_argument("--inference_model_name", "-n", type=str, default="fedml-model",
-    #                     help="inference model name")
-    # parser.add_argument("--inference_engine", "-engine", type=str, default="ONNX", help="inference engine")
-    # parser.add_argument("--inference_http_port", "-http", type=int, default=8000, help="inference http port")
-    # parser.add_argument("--inference_grpc_port", "-gprc", type=int, default=8001, help="inference grpc port")
-    # parser.add_argument("--inference_metric_port", "-metric", type=int, default=8002, help="inference metric port")
-    # parser.add_argument("--inference_use_gpu", "-gpu", type=str, default="gpu", help="inference use gpu")
-    # parser.add_argument("--inference_memory_size", "-mem", type=str, default="256m", help="inference memory size")
-    # parser.add_argument("--inference_convertor_image", "-convertor", type=str,
-    #                     default=ClientConstants.INFERENCE_CONVERTOR_IMAGE, help="inference convertor image")
-    # parser.add_argument("--inference_server_image", "-server", type=str,
-    #                     default=ClientConstants.INFERENCE_SERVER_IMAGE, help="inference server image")
-    # args = parser.parse_args()
-    # args.user = args.user
-    #
-    # pip_source_dir = os.path.dirname(__file__)
-    # __inference_output_url, __model_version, __model_metadata, __model_config = start_deployment(
-    #     args.model_storage_local_path,
-    #     args.inference_model_name,
-    #     args.inference_engine,
-    #     args.inference_http_port,
-    #     args.inference_grpc_port,
-    #     args.inference_metric_port,
-    #     args.inference_use_gpu,
-    #     args.inference_memory_size,
-    #     args.inference_convertor_image,
-    #     args.inference_server_image)
-    # print("Model deployment results, url: {}, model metadata: {}, model config: {}".format(
-    #     __inference_output_url, __model_metadata, __model_config))
+    pip_source_dir = os.path.dirname(__file__)
+    __inference_output_url, __model_version, __model_metadata, __model_config = start_deployment(
+        args.model_storage_local_path,
+        args.inference_model_name,
+        args.inference_engine,
+        args.inference_http_port,
+        args.inference_grpc_port,
+        args.inference_metric_port,
+        args.inference_use_gpu,
+        args.inference_memory_size,
+        args.inference_convertor_image,
+        args.inference_server_image)
+    print("Model deployment results, url: {}, model metadata: {}, model config: {}".format(
+        __inference_output_url, __model_metadata, __model_config))
