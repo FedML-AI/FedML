@@ -120,6 +120,11 @@ class ClientConstants(object):
         return model_packages_dir
 
     @staticmethod
+    def get_model_serving_dir():
+        model_file_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "models_serving")
+        return model_file_dir
+
+    @staticmethod
     def get_model_ops_list_url(model_name, page_num, page_size, config_version="release"):
         model_ops_url = "{}/api/v1/model/list?modelName={}&pageNum={}&pageSize={}".format(
             ClientConstants.get_model_ops_url(config_version), model_name, page_num, page_size)

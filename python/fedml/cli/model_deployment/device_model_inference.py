@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     end_point_id: str
     model_id: str
     model_name: str
+    model_version: str
     model_infer_url: str
 
 
@@ -29,22 +30,30 @@ def root():
     return {'message': 'FedML Federated Inference Service!'}
 
 
-@api.post('/predict')
+@api.post('/api/v1/predict')
 async def predict(request: Request):
     # Get json data
     input_json = await request.json()
+    in_end_point_id = input_json.get("end_point_id", None)
+    in_model_id = input_json.get("model_id", None)
+    in_model_name = input_json.get("model_name", None)
+    in_model_version = input_json.get("model_version", None)
+    if in_end_point_id is None or in_end_point_id == "":
+        in_end_point_id = settings.end_point_id
+        in_model_id = settings.model_id
+        in_model_name = settings.model_name
+        in_model_version = settings.model_version
+
     print("Inference json: {}".format(input_json))
+    print(f"Current end point id {in_end_point_id}.")
 
-    infer_end_point_id = settings.end_point_id
-    print(f"Current end point id {infer_end_point_id}.")
-
-    model_metrics = FedMLModelMetrics(infer_end_point_id, settings.model_id,
-                                      settings.model_name, settings.model_infer_url)
+    model_metrics = FedMLModelMetrics(in_end_point_id, in_model_id,
+                                      in_model_name, settings.model_infer_url)
     model_metrics.set_start_time()
 
     # Found idle inference device
     idle_device, model_id, model_name, inference_host, inference_output_url = \
-        found_idle_inference_device(infer_end_point_id)
+        found_idle_inference_device(in_end_point_id, in_model_id)
 
     # Send inference request to idle device
     inference_response = {}
@@ -55,20 +64,20 @@ async def predict(request: Request):
         inference_response = send_inference_request(idle_device, model_name, inference_host,
                                                     inference_output_url, input_json, input_data_list)
 
-    model_metrics.calc_metrics(model_id, model_name, infer_end_point_id, inference_output_url)
+    model_metrics.calc_metrics(model_id, model_name, in_end_point_id, inference_output_url)
 
     return inference_response
 
 
-def found_idle_inference_device(end_point_id):
+def found_idle_inference_device(end_point_id, in_model_id):
     idle_device = ""
     model_name = ""
-    model_id = ""
     inference_host = ""
+    model_id = in_model_id
     inference_output_url = ""
     inference_port = ServerConstants.INFERENCE_HTTP_PORT
     # Found idle device (TODO: optimize the algorithm to search best device for inference)
-    payload = FedMLModelCache.get_instance().get_idle_device(end_point_id)
+    payload = FedMLModelCache.get_instance().get_idle_device(end_point_id, in_model_id)
     if payload != {}:
         print("found idle deployment result {}".format(payload))
         deployment_result = payload
@@ -98,4 +107,3 @@ def run_inference(json_req, bin_data=None, host="localhost"):
                                                               ClientConstants.INFERENCE_HTTP_PORT, 1, infer_data,
                                                               host)
     return predication_result
-
