@@ -169,7 +169,6 @@ class FedMLClientRunner:
         # update local config with real time parameters from server and dynamically replace variables value
         logging.info("Download and unzip model to local...")
         unzip_package_path, fedml_config_object = self.update_local_fedml_config(run_id, model_config)
-        ClientConstants.cleanup_learning_process()
 
         inference_output_url, model_version, model_metadata, model_config = start_deployment(
             unzip_package_path, model_name, inference_engine,
@@ -198,7 +197,7 @@ class FedMLClientRunner:
                                          ClientConstants.INFERENCE_HTTP_PORT, inference_engine,
                                          model_metadata, model_config)
             self.mlops_metrics.report_client_id_status(run_id, self.edge_id,
-                                                       ClientConstants.MSG_MLOPS_CLIENT_STATUS_RUNNING)
+                                                       ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
 
     def send_deployment_results(self, device_id, model_id, model_name, model_inference_url,
                                 model_version, inference_port, inference_engine,
@@ -244,11 +243,6 @@ class FedMLClientRunner:
 
         time.sleep(1)
 
-        try:
-            ClientConstants.cleanup_learning_process()
-        except Exception as e:
-            pass
-
         self.release_client_mqtt_mgr()
 
     def stop_run_with_killed_status(self):
@@ -265,11 +259,6 @@ class FedMLClientRunner:
 
         time.sleep(1)
 
-        try:
-            ClientConstants.cleanup_learning_process()
-        except Exception as e:
-            pass
-
         self.release_client_mqtt_mgr()
 
     def exit_run_with_exception(self):
@@ -279,7 +268,6 @@ class FedMLClientRunner:
 
         logging.info("Exit run successfully.")
 
-        ClientConstants.cleanup_learning_process()
         ClientConstants.cleanup_run_process()
 
         # Notify MLOps with the stopping message
@@ -308,11 +296,6 @@ class FedMLClientRunner:
 
         time.sleep(1)
 
-        try:
-            ClientConstants.cleanup_learning_process()
-        except Exception as e:
-            pass
-
         self.release_client_mqtt_mgr()
 
     def cleanup_run_when_finished(self):
@@ -332,11 +315,6 @@ class FedMLClientRunner:
             pass
 
         time.sleep(1)
-
-        try:
-            ClientConstants.cleanup_learning_process()
-        except Exception as e:
-            pass
 
         self.release_client_mqtt_mgr()
 
