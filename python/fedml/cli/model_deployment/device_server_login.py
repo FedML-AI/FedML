@@ -336,8 +336,7 @@ def login(args):
         os.system("sudo rm -f /usr/share/keyrings/redis-archive-keyring.gpg;curl -fsSL https://packages.redis.io/gpg | sudo gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg")
         os.system("echo \"deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main\" | sudo tee /etc/apt/sources.list.d/redis.list")
         os.system("sudo apt-get update")
-        os.system("sudo apt-get install -y redis")
-        os.system("nohup redis-server &")
+        os.system("sudo service redis-server stop;sudo apt-get install -y redis && nohup redis-server&")
 
     if args.role == ServerConstants.login_role_list[ServerConstants.LOGIN_MODE_ON_PREMISE_MASTER_INDEX]:
         __login_as_edge_server_and_agent(args, args.user, args.version)
