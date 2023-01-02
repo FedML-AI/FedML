@@ -359,8 +359,8 @@ class FedMLServerRunner:
             # 1. We should generate one unified inference api
             ip = ServerConstants.get_local_ip()
             model_inference_port = ServerConstants.MODEL_INFERENCE_DEFAULT_PORT
-            model_inference_url = "http://{}:{}/api/v1/predict/end_point_{}/model_id_{}" \
-                                  "/model_name_{}/model_version_{}".format(ip, str(model_inference_port),
+            model_inference_url = "http://{}:{}/api/v1/end_point_{}/model_id_{}" \
+                                  "/model_name_{}/model_version_{}/predict".format(ip, str(model_inference_port),
                                                                            end_point_id,
                                                                            model_id,
                                                                            model_name,
