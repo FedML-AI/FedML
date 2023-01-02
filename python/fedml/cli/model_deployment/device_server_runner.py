@@ -164,6 +164,7 @@ class FedMLServerRunner:
         inference_end_point_id = run_id
         use_gpu = "gpu"  # TODO: Get GPU from device infos
         memory_size = "256m"  # TODO: Get Memory size for each instance
+        model_version = "v1"
 
         logging.info("Model deployment request: {}".format(self.request_json))
 
@@ -194,9 +195,9 @@ class FedMLServerRunner:
 
         # start unified inference server
         process = ServerConstants.exec_console_with_script(
-            "END_POINT_ID=\"{}\" MODEL_ID=\"{}\" MODEL_NAME=\"{}\" MODEL_INFER_URL=\"{}\" "
+            "END_POINT_ID=\"{}\" MODEL_ID=\"{}\" MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" "
             "uvicorn fedml.cli.model_deployment.device_model_inference:api --host 0.0.0.0 --port {} --reload".format(
-                self.run_id, model_id, model_name, "",
+                self.run_id, model_id, model_name, model_version, "",
                 str(ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)),
             should_capture_stdout=False,
             should_capture_stderr=False
@@ -347,6 +348,9 @@ class FedMLServerRunner:
         device_id = topic_splits[-1]
         payload_json = json.loads(payload)
         end_point_id = payload_json["end_point_id"]
+        model_id = payload_json["model_id"]
+        model_name = payload_json["model_name"]
+        model_version = payload_json["version"]
         FedMLModelCache.get_instance().set_deployment_result(end_point_id, device_id, payload_json)
 
         # When all deployments are finished
@@ -355,7 +359,12 @@ class FedMLServerRunner:
             # 1. We should generate one unified inference api
             ip = ServerConstants.get_local_ip()
             model_inference_port = ServerConstants.MODEL_INFERENCE_DEFAULT_PORT
-            model_inference_url = "http://{}:{}/predict".format(ip, str(model_inference_port))
+            model_inference_url = "http://{}:{}/api/v1/predict/end_point_{}/model_id_{}" \
+                                  "/model_name_{}/model_version_{}".format(ip, str(model_inference_port),
+                                                                           end_point_id,
+                                                                           model_id,
+                                                                           model_name,
+                                                                           model_version)
 
             # Send stage: MODEL_DEPLOYMENT_STAGE5 = "StartInferenceIngress"
             model_name = payload_json["model_name"]
