@@ -2,6 +2,7 @@ import argparse
 import logging
 import os
 import platform
+import shutil
 import time
 
 import numpy as np
@@ -13,11 +14,14 @@ from fedml.cli.model_deployment.device_client_constants import ClientConstants
 
 CMD_TYPE_CONVERT_MODEL = "convert_model"
 CMD_TYPE_RUN_TRITON_SERVER = "run_triton_server"
-convert_model_container_name = "convert_model_container"
-triton_server_container_name = "triton_server_container"
+FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX = "fedml_convert_model_container"
+FEDML_TRITON_SERVER_CONTAINER_NAME_PREFIX = "fedml_triton_server_container"
+FEDML_CONVERTED_MODEL_DIR_NAME = "triton_models"
+FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL = 3
 
 
-def start_deployment(model_storage_local_path, inference_model_name, inference_engine,
+def start_deployment(end_point_id, model_id,
+                     model_storage_local_path, inference_model_name, inference_engine,
                      inference_http_port, inference_grpc_port, inference_metric_port,
                      inference_use_gpu, inference_memory_size,
                      inference_convertor_image, inference_server_image,
@@ -35,18 +39,36 @@ def start_deployment(model_storage_local_path, inference_model_name, inference_e
     if sys_name == "Darwin":
         sudo_prefix = ""
         gpu_attach_cmd = ""
-    if sys_name == "Linux":
-        os.system(sudo_prefix + "apt-get update")
-        os.system(sudo_prefix + "apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin")
-        os.system("distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
-      && curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
-      && curl -s -L https://nvidia.github.io/libnvidia-container/experimental/$distribution/libnvidia-container.list | \
-         sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
-         sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list")
-        os.system(sudo_prefix + "apt-get update")
-        os.system(sudo_prefix + "apt-get install -y nvidia-docker2")
-        os.system(sudo_prefix + "systemctl restart docker")
 
+    # Check whether triton server is running.
+    triton_server_is_running = False
+    triton_server_container_name = "{}".format(FEDML_TRITON_SERVER_CONTAINER_NAME_PREFIX)
+    check_triton_server_running_cmds = "{}docker ps |grep {}".format(sudo_prefix, triton_server_container_name)
+    running_process = ClientConstants.exec_console_with_script(check_triton_server_running_cmds,
+                                                               should_capture_stdout=True,
+                                                               should_capture_stderr=True)
+    ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(running_process)
+    if out is not None:
+        out_str = out.decode(encoding="utf-8")
+        if str(out_str) != "":
+            triton_server_is_running = True
+
+    if sys_name == "Linux":
+        if not triton_server_is_running:
+            os.system(sudo_prefix + "apt-get update")
+            os.system(sudo_prefix + "apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin")
+            os.system("distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
+          && sudo rm -f /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg;curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
+          && curl -s -L https://nvidia.github.io/libnvidia-container/experimental/$distribution/libnvidia-container.list | \
+             sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+             sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list")
+            os.system(sudo_prefix + "apt-get update")
+            os.system(sudo_prefix + "apt-get install -y nvidia-docker2")
+            os.system(sudo_prefix + "systemctl restart docker")
+
+    convert_model_container_name = "{}_{}_{}".format(FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX,
+                                                     str(end_point_id),
+                                                     str(model_id))
     convert_model_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} --rm {} -v {}:/project {} " \
                         "bash -c \"cd /project && convert_model -m /project --name {} " \
                         "--backend {} --seq-len 16 128 128\"; exit".format(sudo_prefix, convert_model_container_name,
@@ -62,31 +84,53 @@ def start_deployment(model_storage_local_path, inference_model_name, inference_e
                                                                should_capture_stdout=False,
                                                                should_capture_stderr=False,
                                                                no_sys_out_err=True)
-    log_deployment_result(convert_model_container_name, CMD_TYPE_CONVERT_MODEL, convert_process.pid,
+    log_deployment_result(end_point_id, model_id, convert_model_container_name,
+                          CMD_TYPE_CONVERT_MODEL, convert_process.pid,
                           inference_model_name, inference_engine, inference_http_port)
 
-    triton_server_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} {} -p{}:8000 " \
-                        "-p{}:8001 -p{}:8002 " \
-                        "--shm-size {} " \
-                        "-v {}/triton_models:/models {} " \
-                        "bash -c \"pip install transformers && tritonserver " \
-                        "--model-repository=/models\"".format(sudo_prefix, triton_server_container_name,
-                                                              sudo_prefix, triton_server_container_name,
-                                                              sudo_prefix, triton_server_container_name,
-                                                              gpu_attach_cmd,
-                                                              inference_http_port,
-                                                              inference_grpc_port,
-                                                              inference_metric_port,
-                                                              inference_memory_size,
-                                                              model_storage_local_path,
-                                                              inference_server_image)
-    logging.info("Run triton inference server: {}".format(triton_server_cmd))
-    triton_server_process = ClientConstants.exec_console_with_script(triton_server_cmd,
-                                                                     should_capture_stdout=False,
-                                                                     should_capture_stderr=False,
-                                                                     no_sys_out_err=True)
-    log_deployment_result(triton_server_container_name, CMD_TYPE_RUN_TRITON_SERVER, triton_server_process.pid,
-                          inference_model_name, inference_engine, inference_http_port)
+    # Move converted model to serving dir for inference
+    model_serving_dir = ClientConstants.get_model_serving_dir()
+    if not os.path.exists(model_serving_dir):
+        os.makedirs(model_serving_dir)
+    converted_model_path = os.path.join(model_storage_local_path, FEDML_CONVERTED_MODEL_DIR_NAME)
+    model_file_list = os.listdir(converted_model_path)
+    for model_file in model_file_list:
+        src_model_file = os.path.join(converted_model_path, model_file)
+        dst_model_file = os.path.join(model_serving_dir, model_file)
+        if os.path.isdir(src_model_file):
+            if not os.path.exists(dst_model_file):
+                shutil.copytree(src_model_file, dst_model_file, copy_function=shutil.copy)
+        else:
+            if not os.path.exists(dst_model_file):
+                shutil.copyfile(src_model_file, dst_model_file)
+
+    # Run triton server
+    if not triton_server_is_running:
+        triton_server_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} {} -p{}:8000 " \
+                            "-p{}:8001 -p{}:8002 " \
+                            "--shm-size {} " \
+                            "-v {}:/models {} " \
+                            "bash -c \"pip install transformers && tritonserver " \
+                            "--model-control-mode=poll --repository-poll-secs={} " \
+                            "--model-repository=/models\" ".format(sudo_prefix, triton_server_container_name,
+                                                                   sudo_prefix, triton_server_container_name,
+                                                                   sudo_prefix, triton_server_container_name,
+                                                                   gpu_attach_cmd,
+                                                                   inference_http_port,
+                                                                   inference_grpc_port,
+                                                                   inference_metric_port,
+                                                                   inference_memory_size,
+                                                                   model_serving_dir,
+                                                                   inference_server_image,
+                                                                   FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL)
+        logging.info("Run triton inference server: {}".format(triton_server_cmd))
+        triton_server_process = ClientConstants.exec_console_with_script(triton_server_cmd,
+                                                                         should_capture_stdout=False,
+                                                                         should_capture_stderr=False,
+                                                                         no_sys_out_err=True)
+        log_deployment_result(end_point_id, model_id, triton_server_container_name,
+                              CMD_TYPE_RUN_TRITON_SERVER, triton_server_process.pid,
+                              inference_model_name, inference_engine, inference_http_port)
 
     inference_output_url, model_version, model_metadata, model_config = \
         get_model_info(inference_model_name, inference_engine, inference_http_port, infer_host)
@@ -96,13 +140,16 @@ def start_deployment(model_storage_local_path, inference_model_name, inference_e
     return inference_output_url, model_version, model_metadata, model_config
 
 
-def should_exit_logs(cmd_type, cmd_process_id, model_name, inference_engine, inference_port):
+def should_exit_logs(end_point_id, model_id, cmd_type, cmd_process_id, model_name, inference_engine, inference_port):
     sudo_prefix = "sudo "
     sys_name = platform.system()
     if sys_name == "Darwin":
         sudo_prefix = ""
 
     if cmd_type == CMD_TYPE_CONVERT_MODEL:
+        convert_model_container_name = "{}_{}_{}".format(FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX,
+                                                         str(end_point_id),
+                                                         str(model_id))
         docker_ps_cmd = "{}docker ps -a;exit".format(sudo_prefix, convert_model_container_name)
         docker_ps_process = ClientConstants.exec_console_with_script(docker_ps_cmd,
                                                                      should_capture_stdout=True,
@@ -122,7 +169,7 @@ def should_exit_logs(cmd_type, cmd_process_id, model_name, inference_engine, inf
                 get_model_info(model_name, inference_engine, inference_port)
             logging.info("Log test for deploying model successfully, inference url: {}, "
                          "model metadata: {}, model config: {}".format(
-                          inference_output_url, model_metadata, model_config))
+                inference_output_url, model_metadata, model_config))
             if inference_output_url != "":
                 return True
         except Exception as e:
@@ -130,7 +177,8 @@ def should_exit_logs(cmd_type, cmd_process_id, model_name, inference_engine, inf
         return False
 
 
-def log_deployment_result(cmd_container_name, cmd_type, cmd_process_id, inference_model_name, inference_engine,
+def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
+                          cmd_process_id, inference_model_name, inference_engine,
                           inference_http_port):
     sudo_prefix = "sudo "
     sys_name = platform.system()
@@ -160,7 +208,8 @@ def log_deployment_result(cmd_container_name, cmd_type, cmd_process_id, inferenc
 
         time.sleep(3)
 
-        if should_exit_logs(cmd_type, cmd_process_id, inference_model_name, inference_engine, inference_http_port):
+        if should_exit_logs(end_point_id, model_id, cmd_type, cmd_process_id,
+                            inference_model_name, inference_engine, inference_http_port):
             break
 
 
