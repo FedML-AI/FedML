@@ -41,9 +41,9 @@ def start_deployment(end_point_id, model_id,
         gpu_attach_cmd = ""
 
     # Check whether triton server is running.
-    triton_server_is_running = True
+    triton_server_is_running = False
     triton_server_container_name = "{}".format(FEDML_TRITON_SERVER_CONTAINER_NAME_PREFIX)
-    check_triton_server_running_cmds = "{}docker ps".format(sudo_prefix)
+    check_triton_server_running_cmds = "{}docker ps |grep {}".format(sudo_prefix, triton_server_container_name)
     running_process = ClientConstants.exec_console_with_script(check_triton_server_running_cmds,
                                                                should_capture_stdout=True,
                                                                should_capture_stderr=True)
@@ -51,10 +51,8 @@ def start_deployment(end_point_id, model_id,
     if out is not None:
         out_str = out.decode(encoding="utf-8")
         print("find triton server {}".format(out_str))
-        if str(out_str).find(triton_server_container_name) == -1:
-            triton_server_is_running = False
-    if err is not None:
-        triton_server_is_running = False
+        if str(out_str) != "":
+            triton_server_is_running = True
 
     if sys_name == "Linux":
         if not triton_server_is_running:
