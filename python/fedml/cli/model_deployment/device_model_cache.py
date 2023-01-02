@@ -82,7 +82,6 @@ class FedMLModelCache(object):
             device_id, status_payload = self.get_status_item_info(status_item)
             model_status = status_payload["model_status"]
             model_id = status_payload["model_id"]
-            print("1. search model id {}, in {}, dev id {}, model status {}".format(model_id, in_model_id, device_id, model_status))
             if model_id == in_model_id and model_status == ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
                 idle_device_id = device_id
                 break
@@ -91,7 +90,6 @@ class FedMLModelCache(object):
         for result_item in result_list:
             device_id, result_payload = self.get_result_item_info(result_item)
             model_id = result_payload["model_id"]
-            print("2. search model id {}, in {}, device_id {}".format(model_id, in_model_id, device_id))
             if device_id == idle_device_id and model_id == in_model_id:
                 return result_payload
 
