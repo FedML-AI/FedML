@@ -113,6 +113,7 @@ def __login_as_edge_server_and_agent(args, userid, version):
     setattr(args, "server_id", edge_id)
     runner.args = args
     runner.edge_id = edge_id
+    runner.infer_host = args.infer_host
     init_logs(edge_id)
 
     # Log arguments and binding results.
@@ -208,6 +209,7 @@ def __login_as_cloud_agent(args, userid, version):
     setattr(args, "server_id", edge_id)
     runner.args = args
     runner.edge_id = edge_id
+    runner.infer_host = args.infer_host
     init_logs(edge_id)
     logging.info("args {}".format(args))
 
@@ -303,6 +305,7 @@ def __login_as_cloud_server(args, userid, version):
     setattr(args, "server_id", edge_id)
     runner.args = args
     runner.edge_id = edge_id
+    runner.infer_host = args.infer_host
     init_logs(edge_id)
 
     # Log arguments and binding results.
@@ -363,6 +366,7 @@ if __name__ == "__main__":
     parser.add_argument("--runner_cmd", "-rc", type=str, default="{}")
     parser.add_argument("--device_id", "-id", type=str, default="0")
     parser.add_argument("--os_name", "-os", type=str, default="")
+    parser.add_argument("--infer_host", "-ih", type=str, default="127.0.0.1")
 
     args = parser.parse_args()
     args.user = args.user

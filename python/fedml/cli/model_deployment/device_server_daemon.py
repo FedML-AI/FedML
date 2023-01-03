@@ -18,6 +18,7 @@ if __name__ == "__main__":
     parser.add_argument("--runner_cmd", "-rc", type=str, default="{}")
     parser.add_argument("--device_id", "-id", type=str, default="0")
     parser.add_argument("--os_name", "-os", type=str, default="")
+    parser.add_argument("--infer_host", "-ih", type=str, default="127.0.0.1")
     args = parser.parse_args()
     args.user = args.user
 
@@ -43,7 +44,9 @@ if __name__ == "__main__":
                 "-id",
                 args.device_id,
                 "-os",
-                args.os_name
+                args.os_name,
+                "-ih",
+                args.infer_host
             ]
         )
         ret_code, exec_out, exec_err = ServerConstants.get_console_sys_out_pipe_err_results(login_pid)
