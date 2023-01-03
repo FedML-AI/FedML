@@ -89,6 +89,7 @@ class FedMLServerRunner:
         self.client_agent_active_list = dict()
         self.server_active_list = dict()
         self.run_status = None
+        self.infer_host = "127.0.0.1"
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
         pass
@@ -365,6 +366,8 @@ class FedMLServerRunner:
             #                                                                        model_id,
             #                                                                        model_name,
             #                                                                        model_version)
+            if self.infer_host is not None and self.infer_host != "127.0.0.1" and self.infer_host != "localhost":
+                ip = self.infer_host
             model_inference_url = "http://{}:{}/api/v1/predict".format(ip, model_inference_port)
 
             # Send stage: MODEL_DEPLOYMENT_STAGE5 = "StartInferenceIngress"
