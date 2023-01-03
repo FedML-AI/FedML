@@ -2,10 +2,10 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-from . import grpc_comm_manager_stream_pb2 as grpc__comm__manager__stream__pb2
+from . import grpc_stream_comm_manager_pb2 as grpc__stream__comm__manager__pb2
 
 
-class GRPCCommManagerStreamStub(object):
+class GRPCStreamCommManagerStub(object):
     """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
@@ -15,18 +15,18 @@ class GRPCCommManagerStreamStub(object):
             channel: A grpc.Channel.
         """
         self.Connect = channel.unary_stream(
-                '/GRPCCommManagerStream/Connect',
-                request_serializer=grpc__comm__manager__stream__pb2.ConnectRequest.SerializeToString,
-                response_deserializer=grpc__comm__manager__stream__pb2.CommRequest.FromString,
+                '/GRPCStreamCommManager/Connect',
+                request_serializer=grpc__stream__comm__manager__pb2.ConnectRequest.SerializeToString,
+                response_deserializer=grpc__stream__comm__manager__pb2.CommRequest.FromString,
                 )
         self.SendToServer = channel.unary_unary(
-                '/GRPCCommManagerStream/SendToServer',
-                request_serializer=grpc__comm__manager__stream__pb2.CommRequest.SerializeToString,
-                response_deserializer=grpc__comm__manager__stream__pb2.Empty.FromString,
+                '/GRPCStreamCommManager/SendToServer',
+                request_serializer=grpc__stream__comm__manager__pb2.CommRequest.SerializeToString,
+                response_deserializer=grpc__stream__comm__manager__pb2.Empty.FromString,
                 )
 
 
-class GRPCCommManagerStreamServicer(object):
+class GRPCStreamCommManagerServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def Connect(self, request, context):
@@ -42,26 +42,26 @@ class GRPCCommManagerStreamServicer(object):
         raise NotImplementedError('Method not implemented!')
 
 
-def add_GRPCCommManagerStreamServicer_to_server(servicer, server):
+def add_GRPCStreamCommManagerServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'Connect': grpc.unary_stream_rpc_method_handler(
                     servicer.Connect,
-                    request_deserializer=grpc__comm__manager__stream__pb2.ConnectRequest.FromString,
-                    response_serializer=grpc__comm__manager__stream__pb2.CommRequest.SerializeToString,
+                    request_deserializer=grpc__stream__comm__manager__pb2.ConnectRequest.FromString,
+                    response_serializer=grpc__stream__comm__manager__pb2.CommRequest.SerializeToString,
             ),
             'SendToServer': grpc.unary_unary_rpc_method_handler(
                     servicer.SendToServer,
-                    request_deserializer=grpc__comm__manager__stream__pb2.CommRequest.FromString,
-                    response_serializer=grpc__comm__manager__stream__pb2.Empty.SerializeToString,
+                    request_deserializer=grpc__stream__comm__manager__pb2.CommRequest.FromString,
+                    response_serializer=grpc__stream__comm__manager__pb2.Empty.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'GRPCCommManagerStream', rpc_method_handlers)
+            'GRPCStreamCommManager', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
  # This class is part of an EXPERIMENTAL API.
-class GRPCCommManagerStream(object):
+class GRPCStreamCommManager(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
@@ -75,9 +75,9 @@ class GRPCCommManagerStream(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_stream(request, target, '/GRPCCommManagerStream/Connect',
-            grpc__comm__manager__stream__pb2.ConnectRequest.SerializeToString,
-            grpc__comm__manager__stream__pb2.CommRequest.FromString,
+        return grpc.experimental.unary_stream(request, target, '/GRPCStreamCommManager/Connect',
+            grpc__stream__comm__manager__pb2.ConnectRequest.SerializeToString,
+            grpc__stream__comm__manager__pb2.CommRequest.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -92,8 +92,8 @@ class GRPCCommManagerStream(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/GRPCCommManagerStream/SendToServer',
-            grpc__comm__manager__stream__pb2.CommRequest.SerializeToString,
-            grpc__comm__manager__stream__pb2.Empty.FromString,
+        return grpc.experimental.unary_unary(request, target, '/GRPCStreamCommManager/SendToServer',
+            grpc__stream__comm__manager__pb2.CommRequest.SerializeToString,
+            grpc__stream__comm__manager__pb2.Empty.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
