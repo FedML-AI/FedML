@@ -9,14 +9,14 @@ from fedml.core.distributed.communication.mqtt.mqtt_manager import MqttManager
 
 
 class FedMLModelMetrics:
-    def __init__(self, end_point_id, model_id, model_name, infer_url):
+    def __init__(self, end_point_id, model_id, model_name, infer_url, version="release"):
+        self.config_version = version
         self.current_end_point_id = end_point_id
-        self.current_model_id = model_id,
+        self.current_model_id = model_id
         self.current_model_name = model_name
         self.current_infer_url = infer_url
         self.start_time = time.time_ns()
         self.monitor_mqtt_mgr = None
-        self.config_version = "dev"
         self.ms_per_sec = 1000
         self.ns_per_ms = 1000 * 1000
 
@@ -76,8 +76,8 @@ class FedMLModelMetrics:
             return index
         total_latency, avg_latency, total_request_num, current_qps, avg_qps, timestamp = \
             FedMLModelCache.get_instance().get_metrics_item_info(metrics_item)
-        deployment_monitoring_topic = "/model_ops/model_device/return_inference_monitoring/{}".format(
-            self.current_end_point_id)
+        deployment_monitoring_topic_prefix = "/model_ops/model_device/return_inference_monitoring"
+        deployment_monitoring_topic = "{}/{}".format(deployment_monitoring_topic_prefix, self.current_end_point_id)
         deployment_monitoring_payload = {"model_name": self.current_model_name,
                                          "model_id": self.current_model_id,
                                          "model_url": self.current_infer_url,
@@ -87,7 +87,8 @@ class FedMLModelMetrics:
                                          "total_request_num": int(total_request_num),
                                          "timestamp": timestamp}
 
-        self.monitor_mqtt_mgr.send_message_json(deployment_monitoring_topic,
+        self.monitor_mqtt_mgr.send_message_json(deployment_monitoring_topic, json.dumps(deployment_monitoring_payload))
+        self.monitor_mqtt_mgr.send_message_json(deployment_monitoring_topic_prefix,
                                                 json.dumps(deployment_monitoring_payload))
         return inc_index
 
@@ -100,12 +101,14 @@ class FedMLModelMetrics:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("--version", "-v", type=str, default="release", help="version")
     parser.add_argument("--end_point_id", "-ep", help="end point id")
     parser.add_argument("--model_id", "-mi", type=str, help='model id')
     parser.add_argument("--model_name", "-mn", type=str, help="model name")
     parser.add_argument("--infer_url", "-iu", type=str, help="inference url")
     args = parser.parse_args()
 
-    monitor_center = FedMLModelMetrics(args.end_point_id, args.model_id, args.model_name, args.infer_url)
+    monitor_center = FedMLModelMetrics(args.end_point_id, args.model_id, args.model_name, args.infer_url,
+                                       version=args.version)
     monitor_center.start_monitoring_metrics_center()
 
