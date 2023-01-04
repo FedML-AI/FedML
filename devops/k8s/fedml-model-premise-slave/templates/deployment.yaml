@@ -49,9 +49,11 @@ spec:
           volumeMounts:
             - name: home-dir
               mountPath: {{ .Values.volume.clientHomeDirMountPath }}
-      {{- with .Values.nodeSelector }}
+            - name: docker-sock
+              mountPath: /var/run/docker.sock
+      {{- if .Values.nodeSelector }}
       nodeSelector:
-        {{- toYaml . | nindent 8 }}
+        {{- .Values.nodeSelector | toYaml | nindent 8 }}
       {{- end }}
       {{- with .Values.affinity }}
       affinity:
@@ -66,3 +68,6 @@ spec:
           hostPath:
             type: DirectoryOrCreate
             path: {{ .Values.volume.clientHomeDirHostPath }}
+        - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock

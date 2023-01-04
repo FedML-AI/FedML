@@ -20,6 +20,6 @@ RUN pip3 install -e '.[mxnet]'
 
 WORKDIR /fedml
 
-ENV ACCOUNT_ID=0 FEDML_VERSION=${VERSION} SERVER_DEVICE_ID=0 SERVER_OS_NAME=linux
+ENV ACCOUNT_ID=0 FEDML_VERSION=${VERSION} SERVER_DEVICE_ID=0 SERVER_OS_NAME=linux INFER_HOST="127.0.0.1"
 
-CMD fedml model device login ${ACCOUNT_ID} -v ${FEDML_VERSION} -p -m  -id ${SERVER_DEVICE_ID} -os ${SERVER_OS_NAME};./runner.sh
+CMD fedml model device login ${ACCOUNT_ID} -v ${FEDML_VERSION} -p -m -ih ${INFER_HOST} -id ${SERVER_DEVICE_ID} -os ${SERVER_OS_NAME};./runner.sh

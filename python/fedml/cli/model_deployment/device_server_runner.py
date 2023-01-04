@@ -478,7 +478,7 @@ class FedMLServerRunner:
         topic: /model_ops/model_device/start_deployment/model-agent-device-id
         payload: {"model_name": "image-model", "model_storage_url":"s3-url", "instance_scale_min":1, "instance_scale_max":3, "inference_engine":"onnx (or tensorrt)"}
         """
-        print("callback_start_deployment {}".format(payload))
+        logging.info("callback_start_deployment {}".format(payload))
         # get training params
         if self.run_as_cloud_server:
             message_bytes = payload.encode("ascii")
