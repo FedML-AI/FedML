@@ -371,7 +371,10 @@ class FedMLServerRunner:
             #                                                                        model_version)
             if self.infer_host is not None and self.infer_host != "127.0.0.1" and self.infer_host != "localhost":
                 ip = self.infer_host
-            model_inference_url = "http://{}:{}/api/v1/predict".format(ip, model_inference_port)
+            if ip.startswith("http://") or ip.startswith("https://"):
+                model_inference_url = "{}/api/v1/predict".format(ip)
+            else:
+                model_inference_url = "http://{}:{}/api/v1/predict".format(ip, model_inference_port)
 
             # Send stage: MODEL_DEPLOYMENT_STAGE5 = "StartInferenceIngress"
             model_name = payload_json["model_name"]
