@@ -47,7 +47,7 @@ class ServerConstants(object):
     MODEL_DEPLOYMENT_STAGE1 = {"index": 1, "text": "ReceivedRequest"}
     MODEL_DEPLOYMENT_STAGE2 = {"index": 2, "text": "Initializing"}
     MODEL_DEPLOYMENT_STAGE3 = {"index": 3, "text": "StartRunner"}
-    MODEL_DEPLOYMENT_STAGE4 = {"index": 4, "text": "ForwardRequest2Slave"}
+    MODEL_DEPLOYMENT_STAGE4 = {"index": 4, "text": "ForwardRequestToSlave"}
     MODEL_DEPLOYMENT_STAGE5 = {"index": 5, "text": "StartInferenceIngress"}
 
     LOGIN_MODE_ON_PREMISE_MASTER_INDEX = 0
