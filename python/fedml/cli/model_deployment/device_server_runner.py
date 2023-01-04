@@ -513,7 +513,7 @@ class FedMLServerRunner:
                                     "",
                                     ServerConstants.MODEL_DEPLOYMENT_STAGE1["index"],
                                     ServerConstants.MODEL_DEPLOYMENT_STAGE1["text"],
-                                    "received payload: {}".format(payload))
+                                    "Received request for end point {}".format(run_id))
 
         # Send stage: MODEL_DEPLOYMENT_STAGE2 = "Initializing"
         self.send_deployment_stages(self.run_id, model_name, model_id,
@@ -644,7 +644,8 @@ class FedMLServerRunner:
                                 model_metadata, model_config, input_json, output_json):
         deployment_results_topic_prefix = "/model_ops/model_device/return_deployment_result"
         deployment_results_topic = "{}/{}".format(deployment_results_topic_prefix, end_point_id)
-        deployment_results_payload = {"model_name": model_name, "model_url": model_inference_url,
+        deployment_results_payload = {"end_point_id": end_point_id,
+                                      "model_name": model_name, "model_url": model_inference_url,
                                       "version": model_version, "port": inference_port,
                                       "inference_engine": inference_engine,
                                       "model_metadata": model_metadata,
