@@ -89,6 +89,7 @@ class FedMLServerRunner:
         self.client_agent_active_list = dict()
         self.server_active_list = dict()
         self.run_status = None
+        self.infer_host = "127.0.0.1"
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
         pass
@@ -196,8 +197,9 @@ class FedMLServerRunner:
         # start unified inference server
         process = ServerConstants.exec_console_with_script(
             "END_POINT_ID=\"{}\" MODEL_ID=\"{}\" MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" "
+            " VERSION=\"{}\" "
             "uvicorn fedml.cli.model_deployment.device_model_inference:api --host 0.0.0.0 --port {} --reload".format(
-                str(self.run_id), str(model_id), model_name, model_version, "",
+                str(self.run_id), str(model_id), model_name, model_version, "", self.args.version,
                 str(ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)),
             should_capture_stdout=False,
             should_capture_stderr=False
@@ -212,6 +214,8 @@ class FedMLServerRunner:
             [
                 python_program,
                 monitor_file,
+                "-v",
+                self.args.version,
                 "-ep",
                 str(self.run_id),
                 "-mi",
@@ -219,7 +223,7 @@ class FedMLServerRunner:
                 "-mn",
                 model_name,
                 "-iu",
-                "model_inference_url"
+                "infer_url"
             ],
             should_capture_stdout=False,
             should_capture_stderr=False
@@ -365,6 +369,8 @@ class FedMLServerRunner:
             #                                                                        model_id,
             #                                                                        model_name,
             #                                                                        model_version)
+            if self.infer_host is not None and self.infer_host != "127.0.0.1" and self.infer_host != "localhost":
+                ip = self.infer_host
             model_inference_url = "http://{}:{}/api/v1/predict".format(ip, model_inference_port)
 
             # Send stage: MODEL_DEPLOYMENT_STAGE5 = "StartInferenceIngress"
@@ -379,6 +385,13 @@ class FedMLServerRunner:
             # 2. We should send to MBE(ModelOps Backend)
             payload_json["model_url"] = model_inference_url
             payload_json["port"] = model_inference_port
+            payload_json["input_json"] = {"end_point_id": self.run_id,
+                                          "model_id": model_id,
+                                          "model_name": model_name,
+                                          "model_version": model_version,
+                                          "data": "This is our test data. Please fill in here with your real data."}
+            model_metadata = payload_json["model_metadata"]
+            payload_json["output_json"] = {"outputs": model_metadata["outputs"]}
             FedMLModelCache.get_instance().set_deployment_result(end_point_id, self.edge_id, payload_json)
             self.send_deployment_results_with_payload(self.run_id, payload_json)
 
@@ -503,7 +516,7 @@ class FedMLServerRunner:
                                     "",
                                     ServerConstants.MODEL_DEPLOYMENT_STAGE1["index"],
                                     ServerConstants.MODEL_DEPLOYMENT_STAGE1["text"],
-                                    "received payload: {}".format(payload))
+                                    "Received request for end point {}".format(run_id))
 
         # Send stage: MODEL_DEPLOYMENT_STAGE2 = "Initializing"
         self.send_deployment_stages(self.run_id, model_name, model_id,
@@ -533,6 +546,7 @@ class FedMLServerRunner:
             )
             server_runner.run_as_edge_server_and_agent = self.run_as_edge_server_and_agent
             server_runner.edge_id = self.edge_id
+            server_runner.infer_host = self.infer_host
             # server_runner.run()
             server_process = Process(target=server_runner.run)
             server_process.start()
@@ -555,6 +569,7 @@ class FedMLServerRunner:
                 self.args, run_id=run_id, request_json=request_json, agent_config=self.agent_config
             )
             server_runner.run_as_cloud_agent = self.run_as_cloud_agent
+            server_runner.infer_host = self.infer_host
             server_process = Process(target=server_runner.start_cloud_server_process)
             server_process.start()
             ServerConstants.save_run_process(server_process.pid)
@@ -623,34 +638,45 @@ class FedMLServerRunner:
                                      payload["version"], payload["port"],
                                      payload["inference_engine"],
                                      payload["model_metadata"],
-                                     payload["model_config"], )
+                                     payload["model_config"],
+                                     payload["input_json"],
+                                     payload["output_json"])
 
     def send_deployment_results(self, end_point_id, model_name, model_inference_url,
                                 model_version, inference_port, inference_engine,
-                                model_metadata, model_config):
-        deployment_results_topic = "/model_ops/model_device/return_deployment_result/{}".format(end_point_id)
-        deployment_results_payload = {"model_name": model_name, "model_url": model_inference_url,
+                                model_metadata, model_config, input_json, output_json):
+        deployment_results_topic_prefix = "/model_ops/model_device/return_deployment_result"
+        deployment_results_topic = "{}/{}".format(deployment_results_topic_prefix, end_point_id)
+        deployment_results_payload = {"end_point_id": end_point_id,
+                                      "model_name": model_name, "model_url": model_inference_url,
                                       "version": model_version, "port": inference_port,
                                       "inference_engine": inference_engine,
                                       "model_metadata": model_metadata,
-                                      "model_config": model_config}
+                                      "model_config": model_config,
+                                      "input_json": input_json,
+                                      "output_json": output_json}
         self.setup_client_mqtt_mgr()
         self.wait_client_mqtt_connected()
         self.client_mqtt_mgr.send_message_json(deployment_results_topic, json.dumps(deployment_results_payload))
+        self.client_mqtt_mgr.send_message_json(deployment_results_topic_prefix, json.dumps(deployment_results_payload))
         self.release_client_mqtt_mgr()
 
     def send_deployment_status(self, end_point_id, model_name, model_inference_url, model_status):
-        deployment_status_topic = "/model_ops/model_device/return_deployment_status/{}".format(end_point_id)
-        deployment_status_payload = {"model_name": model_name, "model_url": model_inference_url,
+        deployment_status_topic_prefix = "/model_ops/model_device/return_deployment_status"
+        deployment_status_topic = "{}/{}".format(deployment_status_topic_prefix, end_point_id)
+        deployment_status_payload = {"end_point_id": end_point_id, "model_name": model_name,
+                                     "model_url": model_inference_url,
                                      "model_status": model_status}
         self.setup_client_mqtt_mgr()
         self.wait_client_mqtt_connected()
         self.client_mqtt_mgr.send_message_json(deployment_status_topic, json.dumps(deployment_status_payload))
+        self.client_mqtt_mgr.send_message_json(deployment_status_topic_prefix, json.dumps(deployment_status_payload))
         self.release_client_mqtt_mgr()
 
     def send_deployment_stages(self, end_point_id, model_name, model_id, model_inference_url,
                                model_stages_index, model_stages_title, model_stage_detail):
-        deployment_stages_topic = "/model_ops/model_device/return_deployment_stages/{}".format(end_point_id)
+        deployment_stages_topic_prefix = "/model_ops/model_device/return_deployment_stages"
+        deployment_stages_topic = "{}/{}".format(deployment_stages_topic_prefix, end_point_id)
         deployment_stages_payload = {"model_name": model_name,
                                      "model_id": model_id,
                                      "model_url": model_inference_url,
@@ -662,6 +688,7 @@ class FedMLServerRunner:
         self.setup_client_mqtt_mgr()
         self.wait_client_mqtt_connected()
         self.client_mqtt_mgr.send_message_json(deployment_stages_topic, json.dumps(deployment_stages_payload))
+        self.client_mqtt_mgr.send_message_json(deployment_stages_topic_prefix, json.dumps(deployment_stages_payload))
         self.release_client_mqtt_mgr()
 
     def start_cloud_server_process(self):

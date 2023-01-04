@@ -375,7 +375,7 @@ class FedMLModelCards(Singleton):
                                     "model_config": {"model_name": model_name, "model_id": str(model_id),
                                                      "model_storage_url": model_storage_url,
                                                      "instance_scale_min": 1, "instance_scale_max": 3,
-                                                     "inference_engine": "ONNX"},
+                                                     "inference_engine": ClientConstants.INFERENCE_ENGINE_TYPE_ONNX},
                                     "parameters": {}}
 
         self.local_deployment_end_point_id = end_point_id
