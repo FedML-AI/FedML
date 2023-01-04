@@ -635,18 +635,22 @@ class FedMLServerRunner:
                                      payload["version"], payload["port"],
                                      payload["inference_engine"],
                                      payload["model_metadata"],
-                                     payload["model_config"], )
+                                     payload["model_config"],
+                                     payload["input_json"],
+                                     payload["output_json"])
 
     def send_deployment_results(self, end_point_id, model_name, model_inference_url,
                                 model_version, inference_port, inference_engine,
-                                model_metadata, model_config):
+                                model_metadata, model_config, input_json, output_json):
         deployment_results_topic_prefix = "/model_ops/model_device/return_deployment_result"
         deployment_results_topic = "{}/{}".format(deployment_results_topic_prefix, end_point_id)
         deployment_results_payload = {"model_name": model_name, "model_url": model_inference_url,
                                       "version": model_version, "port": inference_port,
                                       "inference_engine": inference_engine,
                                       "model_metadata": model_metadata,
-                                      "model_config": model_config}
+                                      "model_config": model_config,
+                                      "input_json": input_json,
+                                      "output_json": output_json}
         self.setup_client_mqtt_mgr()
         self.wait_client_mqtt_connected()
         self.client_mqtt_mgr.send_message_json(deployment_results_topic, json.dumps(deployment_results_payload))
