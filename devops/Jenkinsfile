@@ -43,6 +43,7 @@ pipeline {
         VERSION_PRODUCTION = 'release'
         BRANCH_PRODUCTION = 'master'
 
+        FEDML_HELM_CHARTS_BASE_DIR=./devops/k8s
         FEDML_MODEL_OPS_ACCOUNT_ID = 240
         FEDML_MODEL_OPS_VERSION_DEV = "dev"
         FEDML_MODEL_OPS_VERSION_TEST = "test"
@@ -333,7 +334,7 @@ pipeline {
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_DEV --replicas=0 deployment/$DEPLOY_NAME_2'
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_DEV --replicas=1 deployment/$DEPLOY_NAME_2'
 
-                    sh './devops/scripts/install-model-premise.sh $FEDML_MODEL_PREMISE_MASTER_PACKAGE $FEDML_MODEL_OPS_VERSION_DEV $DEPLOY_NAMESPACE $FEDML_MODEL_OPS_ACCOUNT_ID'
+                    sh './devops/scripts/install-model-premise.sh $FEDML_HELM_CHARTS_BASE_DIR $FEDML_MODEL_PREMISE_MASTER_PACKAGE $FEDML_MODEL_OPS_VERSION_DEV $DEPLOY_NAMESPACE_DEV $FEDML_MODEL_OPS_ACCOUNT_ID'
                 }
              }
           }
@@ -353,7 +354,7 @@ pipeline {
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_TEST --replicas=0 deployment/$DEPLOY_NAME'
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_TEST --replicas=1 deployment/$DEPLOY_NAME'
 
-                    sh './devops/scripts/install-model-premise.sh $FEDML_MODEL_PREMISE_MASTER_PACKAGE $FEDML_MODEL_OPS_VERSION_TEST $DEPLOY_NAMESPACE $FEDML_MODEL_OPS_ACCOUNT_ID'
+                    sh './devops/scripts/install-model-premise.sh $FEDML_HELM_CHARTS_BASE_DIR $FEDML_MODEL_PREMISE_MASTER_PACKAGE $FEDML_MODEL_OPS_VERSION_TEST $DEPLOY_NAMESPACE_TEST $FEDML_MODEL_OPS_ACCOUNT_ID'
                 }
              }
           }
@@ -379,7 +380,7 @@ pipeline {
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DEPLOY_NAME_3'
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION  --replicas=1 deployment/$DEPLOY_NAME_3'
 
-                    sh './devops/scripts/install-model-premise.sh $FEDML_MODEL_PREMISE_MASTER_PACKAGE $FEDML_MODEL_OPS_VERSION_PRODUCTION $DEPLOY_NAMESPACE $FEDML_MODEL_OPS_ACCOUNT_ID'
+                    sh './devops/scripts/install-model-premise.sh $FEDML_HELM_CHARTS_BASE_DIR $FEDML_MODEL_PREMISE_MASTER_PACKAGE $FEDML_MODEL_OPS_VERSION_PRODUCTION $DEPLOY_NAMESPACE_PRODUCTION $FEDML_MODEL_OPS_ACCOUNT_ID'
                 }
 
                 withCredentials([
