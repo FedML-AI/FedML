@@ -135,7 +135,9 @@ def login_as_model_device_agent(
                 "-id",
                 device_id,
                 "-os",
-                os_name
+                os_name,
+                "-ih",
+                infer_host
             ]
         ).pid
         sys_utils.save_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME,
