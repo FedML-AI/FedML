@@ -640,7 +640,8 @@ class FedMLServerRunner:
     def send_deployment_results(self, end_point_id, model_name, model_inference_url,
                                 model_version, inference_port, inference_engine,
                                 model_metadata, model_config):
-        deployment_results_topic = "/model_ops/model_device/return_deployment_result/{}".format(end_point_id)
+        deployment_results_topic_prefix = "/model_ops/model_device/return_deployment_result"
+        deployment_results_topic = "{}/{}".format(deployment_results_topic_prefix, end_point_id)
         deployment_results_payload = {"model_name": model_name, "model_url": model_inference_url,
                                       "version": model_version, "port": inference_port,
                                       "inference_engine": inference_engine,
@@ -649,21 +650,25 @@ class FedMLServerRunner:
         self.setup_client_mqtt_mgr()
         self.wait_client_mqtt_connected()
         self.client_mqtt_mgr.send_message_json(deployment_results_topic, json.dumps(deployment_results_payload))
+        self.client_mqtt_mgr.send_message_json(deployment_results_topic_prefix, json.dumps(deployment_results_payload))
         self.release_client_mqtt_mgr()
 
     def send_deployment_status(self, end_point_id, model_name, model_inference_url, model_status):
-        deployment_status_topic = "/model_ops/model_device/return_deployment_status/{}".format(end_point_id)
+        deployment_status_topic_prefix = "/model_ops/model_device/return_deployment_status"
+        deployment_status_topic = "{}/{}".format(deployment_status_topic_prefix, end_point_id)
         deployment_status_payload = {"end_point_id": end_point_id, "model_name": model_name,
                                      "model_url": model_inference_url,
                                      "model_status": model_status}
         self.setup_client_mqtt_mgr()
         self.wait_client_mqtt_connected()
         self.client_mqtt_mgr.send_message_json(deployment_status_topic, json.dumps(deployment_status_payload))
+        self.client_mqtt_mgr.send_message_json(deployment_status_topic_prefix, json.dumps(deployment_status_payload))
         self.release_client_mqtt_mgr()
 
     def send_deployment_stages(self, end_point_id, model_name, model_id, model_inference_url,
                                model_stages_index, model_stages_title, model_stage_detail):
-        deployment_stages_topic = "/model_ops/model_device/return_deployment_stages/{}".format(end_point_id)
+        deployment_stages_topic_prefix = "/model_ops/model_device/return_deployment_stages"
+        deployment_stages_topic = "{}/{}".format(deployment_stages_topic_prefix, end_point_id)
         deployment_stages_payload = {"model_name": model_name,
                                      "model_id": model_id,
                                      "model_url": model_inference_url,
@@ -675,6 +680,7 @@ class FedMLServerRunner:
         self.setup_client_mqtt_mgr()
         self.wait_client_mqtt_connected()
         self.client_mqtt_mgr.send_message_json(deployment_stages_topic, json.dumps(deployment_stages_payload))
+        self.client_mqtt_mgr.send_message_json(deployment_stages_topic_prefix, json.dumps(deployment_stages_payload))
         self.release_client_mqtt_mgr()
 
     def start_cloud_server_process(self):
