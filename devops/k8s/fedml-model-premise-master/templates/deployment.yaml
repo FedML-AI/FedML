@@ -40,6 +40,8 @@ spec:
             value: "{{ .Values.env.fedmlVersion }}"
           - name: SERVER_OS_NAME
             value: "{{ .Values.env.fedmlServerOsName }}"
+          - name: INFER_HOST
+            value: "{{ .Values.env.fedmlInferIngress }}"
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
