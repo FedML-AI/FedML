@@ -76,8 +76,8 @@ class FedMLModelMetrics:
             return index
         total_latency, avg_latency, total_request_num, current_qps, avg_qps, timestamp = \
             FedMLModelCache.get_instance().get_metrics_item_info(metrics_item)
-        deployment_monitoring_topic = "/model_ops/model_device/return_inference_monitoring/{}".format(
-            self.current_end_point_id)
+        deployment_monitoring_topic_prefix = "/model_ops/model_device/return_inference_monitoring"
+        deployment_monitoring_topic = "{}/{}".format(deployment_monitoring_topic_prefix, self.current_end_point_id)
         deployment_monitoring_payload = {"model_name": self.current_model_name,
                                          "model_id": self.current_model_id,
                                          "model_url": self.current_infer_url,
@@ -87,7 +87,8 @@ class FedMLModelMetrics:
                                          "total_request_num": int(total_request_num),
                                          "timestamp": timestamp}
 
-        self.monitor_mqtt_mgr.send_message_json(deployment_monitoring_topic,
+        self.monitor_mqtt_mgr.send_message_json(deployment_monitoring_topic, json.dumps(deployment_monitoring_payload))
+        self.monitor_mqtt_mgr.send_message_json(deployment_monitoring_topic_prefix,
                                                 json.dumps(deployment_monitoring_payload))
         return inc_index
 
