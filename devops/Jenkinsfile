@@ -43,7 +43,7 @@ pipeline {
         VERSION_PRODUCTION = 'release'
         BRANCH_PRODUCTION = 'master'
 
-        FEDML_HELM_CHARTS_BASE_DIR=./devops/k8s
+        FEDML_HELM_CHARTS_BASE_DIR="./devops/k8s"
         FEDML_MODEL_OPS_ACCOUNT_ID = 240
         FEDML_MODEL_OPS_VERSION_DEV = "dev"
         FEDML_MODEL_OPS_VERSION_TEST = "test"
