@@ -197,8 +197,9 @@ class FedMLServerRunner:
         # start unified inference server
         process = ServerConstants.exec_console_with_script(
             "END_POINT_ID=\"{}\" MODEL_ID=\"{}\" MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" "
+            " VERSION=\"{}\" "
             "uvicorn fedml.cli.model_deployment.device_model_inference:api --host 0.0.0.0 --port {} --reload".format(
-                str(self.run_id), str(model_id), model_name, model_version, "",
+                str(self.run_id), str(model_id), model_name, model_version, "", self.args.version,
                 str(ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)),
             should_capture_stdout=False,
             should_capture_stderr=False
@@ -213,6 +214,8 @@ class FedMLServerRunner:
             [
                 python_program,
                 monitor_file,
+                "-v",
+                self.args.version,
                 "-ep",
                 str(self.run_id),
                 "-mi",
@@ -220,7 +223,7 @@ class FedMLServerRunner:
                 "-mn",
                 model_name,
                 "-iu",
-                "model_inference_url"
+                "infer_url"
             ],
             should_capture_stdout=False,
             should_capture_stderr=False
