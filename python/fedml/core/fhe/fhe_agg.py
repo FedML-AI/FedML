@@ -3,6 +3,7 @@ import torch
 import copy
 from collections import OrderedDict
 import numpy as np
+import os
 
 import logging
 from ..common.ml_engine_backend import MLEngineBackend
@@ -31,7 +32,9 @@ class FedMLFHE:
             )
             self.is_enabled = True
             # TODO: parse fhe args if more decentralized
-            self.fhe_helper = fhe_core.CKKS('ckks', 4096,  52, 'resources/cryptoparams/')
+            script_path = os.getcwd()
+            # TODO: edit file path
+            self.fhe_helper = fhe_core.CKKS('ckks', 4096,  52, script_path+'/resources/cryptoparams/')
             self.fhe_helper.loadCryptoParams()
             
         if hasattr(args, MLEngineBackend.ml_engine_args_flag) and args.ml_engine in [

@@ -50,12 +50,13 @@ class ClientTrainer(ABC):
         self.enc_model_params = enc_model_parameters
 
     def on_before_local_training(self, train_data, device, args):
-        if self.rid != 0:
-            # get encrypted global params, and decrypt then set params
-            logging.info(" ---- decrypting aggregated model ----")
-            dec_aggregated_model = FedMLFHE.get_instance().fhe_dec(self.template_model_params, self.get_enc_model_params())
-            self.set_model_params(dec_aggregated_model)
-        self.rid += 1
+        if FedMLFHE.get_instance().is_fhe_enabled():
+            if self.rid != 0:
+                # get encrypted global params, and decrypt then set params
+                logging.info(" ---- decrypting aggregated model ----")
+                dec_aggregated_model = FedMLFHE.get_instance().fhe_dec(self.template_model_params, self.get_enc_model_params())
+                self.set_model_params(dec_aggregated_model)
+            self.rid += 1
 
     @abstractmethod
     def train(self, train_data, device, args):
