@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     model_name: str
     model_version: str
     model_infer_url: str
+    version: str
 
 
 settings = Settings()
@@ -48,7 +49,8 @@ async def predict(request: Request):
     print(f"Current end point id {in_end_point_id}.")
 
     model_metrics = FedMLModelMetrics(in_end_point_id, in_model_id,
-                                      in_model_name, settings.model_infer_url)
+                                      in_model_name, settings.model_infer_url,
+                                      version=settings.version)
     model_metrics.set_start_time()
 
     # Found idle inference device
