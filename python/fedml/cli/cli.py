@@ -765,7 +765,8 @@ def login_as_model_device_agent(
         runner_cmd, device_id, os_name, docker, docker_rank, redis_addr, redis_port
 ):
     device_login_entry.login_as_model_device_agent(userid, cloud, on_premise, master, infer_host, version, local_server,
-                                                   runner_cmd, device_id, os_name, docker, docker_rank, redis_addr)
+                                                   runner_cmd, device_id, os_name, docker, docker_rank,
+                                                   redis_addr, redis_port)
 
 
 @device.command("logout", help="Logout from the ModelOps platform (model.fedml.ai)")
