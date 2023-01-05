@@ -319,7 +319,7 @@ class MLOpsMetrics(Singleton):
             self.args.mqtt_config_path["MQTT_USER"],
             self.args.mqtt_config_path["MQTT_PWD"],
             180,
-            "FedML_Metrics_SysPerf_{}_{}".format(str(self.args.device_id), str(self.edge_id))
+            "FedML_Metrics_SysPerf_{}_{}_{}".format(str(self.args.device_id), str(self.edge_id), str(uuid.uuid4()))
         )
 
         self.set_messenger(mqtt_mgr, self.args)
