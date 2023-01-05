@@ -227,7 +227,7 @@ class FedMLServerRunner:
                 "-mn",
                 model_name,
                 "-iu",
-                "infer_url"
+                "infer_url",
                 "-ra",
                 self.redis_addr,
                 "-rp",
@@ -463,7 +463,7 @@ class FedMLServerRunner:
             # send start deployment request to each model device
             topic_start_deployment = "/model_ops/model_device/start_deployment/{}".format(str(edge_id))
             logging.info("start_deployment: send topic " + topic_start_deployment + " to client...")
-            self.client_mqtt_mgr.send_message(topic_start_deployment, json.dumps(self.request_json))
+            self.client_mqtt_mgr.send_message_json(topic_start_deployment, json.dumps(self.request_json))
 
     def callback_client_status_msg(self, topic=None, payload=None):
         payload_json = json.loads(payload)
@@ -700,7 +700,7 @@ class FedMLServerRunner:
                                      "model_stage_detail": model_stage_detail,
                                      "timestamp": int(format(time.time(), '.0f'))}
         logging.info("-----Stages{}:{}-----".format(model_stages_index, model_stages_title))
-        logging.info("-----Stages{}:{}.....".format(model_stage_detail))
+        logging.info("-----Stages{}:{}.....".format(model_stages_index, model_stage_detail))
         self.setup_client_mqtt_mgr()
         self.wait_client_mqtt_connected()
         self.client_mqtt_mgr.send_message_json(deployment_stages_topic, json.dumps(deployment_stages_payload))
@@ -937,14 +937,14 @@ class FedMLServerRunner:
         for edge_id in edge_id_list:
             topic_stop_deployment = "/model_ops/model_device/stop_deployment/{}".format(str(self.edge_id))
             logging.info("stop_deployment: send topic " + topic_stop_deployment)
-            self.client_mqtt_mgr.send_message(topic_stop_deployment, payload)
+            self.client_mqtt_mgr.send_message_json(topic_stop_deployment, payload)
 
     def send_exit_train_with_exception_request_to_edges(self, edge_id_list, payload):
         self.wait_client_mqtt_connected()
         for edge_id in edge_id_list:
             topic_exit_train = "flserver_agent/" + str(edge_id) + "/exit_train_with_exception"
             logging.info("exit_train_with_exception: send topic " + topic_exit_train)
-            self.client_mqtt_mgr.send_message(topic_exit_train, payload)
+            self.client_mqtt_mgr.send_message_json(topic_exit_train, payload)
 
     def callback_runner_id_status(self, topic, payload):
         logging.info("callback_runner_id_status: topic = %s, payload = %s" % (topic, payload))
