@@ -114,6 +114,8 @@ def __login_as_edge_server_and_agent(args, userid, version):
     runner.args = args
     runner.edge_id = edge_id
     runner.infer_host = args.infer_host
+    runner.redis_addr = args.redis_addr
+    runner.redis_port = args.redis_port
     init_logs(edge_id)
 
     # Log arguments and binding results.
@@ -210,6 +212,8 @@ def __login_as_cloud_agent(args, userid, version):
     runner.args = args
     runner.edge_id = edge_id
     runner.infer_host = args.infer_host
+    runner.redis_addr = args.redis_addr
+    runner.redis_port = args.redis_port
     init_logs(edge_id)
     logging.info("args {}".format(args))
 
@@ -306,6 +310,8 @@ def __login_as_cloud_server(args, userid, version):
     runner.args = args
     runner.edge_id = edge_id
     runner.infer_host = args.infer_host
+    runner.redis_addr = args.redis_addr
+    runner.redis_port = args.redis_port
     init_logs(edge_id)
 
     # Log arguments and binding results.
@@ -334,12 +340,13 @@ def init_logs(edge_id):
 
 def login(args):
     # Install redis server
-    sys_name = platform.system()
-    if sys_name == "Linux":
-        os.system("sudo rm -f /usr/share/keyrings/redis-archive-keyring.gpg;curl -fsSL https://packages.redis.io/gpg | sudo gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg")
-        os.system("echo \"deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main\" | sudo tee /etc/apt/sources.list.d/redis.list")
-        os.system("sudo apt-get update")
-        os.system("sudo service redis-server stop;sudo apt-get install -y redis && nohup redis-server&")
+    if not hasattr(args, "redis_addr") or args.redis_addr is None or args.redis_addr == "local":
+        sys_name = platform.system()
+        if sys_name == "Linux":
+            os.system("sudo rm -f /usr/share/keyrings/redis-archive-keyring.gpg;curl -fsSL https://packages.redis.io/gpg | sudo gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg")
+            os.system("echo \"deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main\" | sudo tee /etc/apt/sources.list.d/redis.list")
+            os.system("sudo apt-get update")
+            os.system("sudo service redis-server stop;sudo apt-get install -y redis && nohup redis-server&")
 
     if args.role == ServerConstants.login_role_list[ServerConstants.LOGIN_MODE_ON_PREMISE_MASTER_INDEX]:
         __login_as_edge_server_and_agent(args, args.user, args.version)
@@ -367,6 +374,8 @@ if __name__ == "__main__":
     parser.add_argument("--device_id", "-id", type=str, default="0")
     parser.add_argument("--os_name", "-os", type=str, default="")
     parser.add_argument("--infer_host", "-ih", type=str, default="127.0.0.1")
+    parser.add_argument("--redis_addr", "-ra", type=str, default="local")
+    parser.add_argument("--redis_port", "-rp", type=str, default="6379")
 
     args = parser.parse_args()
     args.user = args.user

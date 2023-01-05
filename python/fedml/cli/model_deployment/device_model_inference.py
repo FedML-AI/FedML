@@ -14,6 +14,8 @@ from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
+    redis_addr: str
+    redis_port: str
     end_point_id: str
     model_id: str
     model_name: str
@@ -79,7 +81,8 @@ def found_idle_inference_device(end_point_id, in_model_id):
     inference_output_url = ""
     inference_port = ServerConstants.INFERENCE_HTTP_PORT
     # Found idle device (TODO: optimize the algorithm to search best device for inference)
-    payload = FedMLModelCache.get_instance().get_idle_device(end_point_id, in_model_id)
+    payload = FedMLModelCache.get_instance(settings.redis_addr, settings.redis_port).get_idle_device(end_point_id,
+                                                                                                     in_model_id)
     if payload != {}:
         print("found idle deployment result {}".format(payload))
         deployment_result = payload
