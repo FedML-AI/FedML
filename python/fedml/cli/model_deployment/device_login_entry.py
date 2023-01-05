@@ -22,7 +22,8 @@ from ...cli.comm_utils import sys_utils
 
 
 def login_as_model_device_agent(
-    userid, cloud, on_premise, master, infer_host, version, local_server, runner_cmd, device_id, os_name, docker, docker_rank
+    userid, cloud, on_premise, master, infer_host, version, local_server,
+    runner_cmd, device_id, os_name, docker, docker_rank, redis_addr, redis_port
 ):
     account_id = userid[0]
     platform_url = "open.fedml.ai"
@@ -137,17 +138,21 @@ def login_as_model_device_agent(
                 "-os",
                 os_name,
                 "-ih",
-                infer_host
+                infer_host,
+                "-ra",
+                redis_addr,
+                "-rp",
+                redis_port
             ]
         ).pid
         sys_utils.save_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME,
                                      ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
 
 
-def logout_from_model_ops(client, server, docker, docker_rank):
-    is_client = client
-    is_server = server
-    if client is None and server is None:
+def logout_from_model_ops(slave, master, docker, docker_rank):
+    is_client = slave
+    is_server = master
+    if slave is None and master is None:
         is_client = True
 
     is_docker = docker
@@ -161,7 +166,7 @@ def logout_from_model_ops(client, server, docker, docker_rank):
         client_logout()
         sys_utils.cleanup_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
         sys_utils.cleanup_all_fedml_client_learning_processes()
-        sys_utils.cleanup_all_fedml_client_login_processes("client_login.py")
+        sys_utils.cleanup_all_fedml_client_login_processes("device_client_login.py")
 
     if is_server is True:
         if is_docker:
@@ -170,7 +175,7 @@ def logout_from_model_ops(client, server, docker, docker_rank):
         server_logout()
         sys_utils.cleanup_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
         sys_utils.cleanup_all_fedml_server_learning_processes()
-        sys_utils.cleanup_all_fedml_server_login_processes("server_login.py")
+        sys_utils.cleanup_all_fedml_server_login_processes("device_server_login.py")
 
 
 if __name__ == "__main__":

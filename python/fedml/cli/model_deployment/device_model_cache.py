@@ -20,12 +20,22 @@ class FedMLModelCache(object):
         return cls._instance
 
     def init(self):
-        self.redis_pool = redis.ConnectionPool(host='localhost', port=6379, decode_responses=True)
+        self.redis_pool = None
+        self.redis_connection = None
+
+    def setup_redis_connection(self, redis_addr, redis_port):
+        self.redis_pool = redis.ConnectionPool(host=redis_addr, port=int(redis_port), decode_responses=True)
         self.redis_connection = redis.Redis(connection_pool=self.redis_pool)
 
     @staticmethod
-    def get_instance():
-        return FedMLModelCache()
+    def get_instance(redis_addr="local", redis_port=6379):
+        instance = FedMLModelCache()
+        if instance.redis_pool is None:
+            if redis_addr is None or redis_addr == "local":
+                instance.setup_redis_connection("localhost", redis_port)
+            else:
+                instance.setup_redis_connection(redis_addr, redis_port)
+        return instance
 
     def set_deployment_result(self, end_point_id, device_id, deployment_result):
         result_dict = {"cache_device_id": device_id, "result": deployment_result}
