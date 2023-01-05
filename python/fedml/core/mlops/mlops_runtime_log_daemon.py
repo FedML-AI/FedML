@@ -50,6 +50,12 @@ class MLOpsRuntimeLogProcessor:
                                           + str(self.device_id)
                                           + "-upload.log")
         self.run_list = list()
+        self.log_source = None
+
+    def set_log_source(self, source):
+        self.log_source = source
+        if source is not None:
+            self.log_source = str(self.log_source).replace(' ', '')
 
     @staticmethod
     def build_log_file_path(in_args):
@@ -130,8 +136,10 @@ class MLOpsRuntimeLogProcessor:
                 "create_time": time.time(),
                 "update_time": time.time(),
                 "created_by": str(device_id),
-                "updated_by": str(device_id),
+                "updated_by": str(device_id)
             }
+            if self.log_source is not None and self.log_source != "":
+                log_upload_request["source"] = self.log_source
 
             log_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
 
@@ -325,14 +333,19 @@ class MLOpsRuntimeLogDaemon:
     def get_instance(args):
         if MLOpsRuntimeLogDaemon._log_sdk_instance is None:
             MLOpsRuntimeLogDaemon._log_sdk_instance = MLOpsRuntimeLogDaemon(args)
+            MLOpsRuntimeLogDaemon._log_sdk_instance.log_source = None
 
         return MLOpsRuntimeLogDaemon._log_sdk_instance
+
+    def set_log_source(self, source):
+        self.log_source = source
 
     def start_log_processor(self, log_run_id, log_device_id):
         log_processor = MLOpsRuntimeLogProcessor(self.args.using_mlops, log_run_id,
                                                  log_device_id, self.log_file_dir,
                                                  self.log_server_url,
                                                  in_args=self.args)
+        log_processor.set_log_source(self.log_source)
         process = multiprocessing.Process(target=log_processor.log_process)
         #process = threading.Thread(target=log_processor.log_process)
         if process is not None:
