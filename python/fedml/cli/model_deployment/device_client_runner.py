@@ -456,6 +456,8 @@ class FedMLClientRunner:
         # Start log processor for current run
         run_id = inference_end_point_id
         self.args.run_id = run_id
+        MLOpsRuntimeLogDaemon.get_instance(self.args).set_log_source(
+            ClientConstants.FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT)
         MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
 
         # Subscribe server status message.
@@ -801,6 +803,8 @@ class FedMLClientRunner:
         )
         self.agent_config = service_config
 
+        MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
+
         # Setup MQTT connected listener
         self.mqtt_mgr.add_connected_listener(self.on_agent_mqtt_connected)
         self.mqtt_mgr.add_disconnected_listener(self.on_agent_mqtt_disconnected)
@@ -811,9 +815,10 @@ class FedMLClientRunner:
         self.mlops_metrics.report_client_training_status(self.edge_id,
                                                          ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
         MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
+        self.mlops_metrics.set_sys_reporting_status(enable=True, is_client=True)
+        setattr(self.args, "mqtt_config_path", service_config["mqtt_config"])
+        self.mlops_metrics.report_sys_perf(self.args)
         self.release_client_mqtt_mgr()
-
-        MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
 
     def start_agent_mqtt_loop(self):
         # Start MQTT message loop
