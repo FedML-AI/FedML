@@ -52,6 +52,7 @@ async def predict(request: Request):
 
     model_metrics = FedMLModelMetrics(in_end_point_id, in_model_id,
                                       in_model_name, settings.model_infer_url,
+                                      settings.redis_addr, settings.redis_port,
                                       version=settings.version)
     model_metrics.set_start_time()
 
