@@ -44,6 +44,8 @@ class ServerConstants(object):
     INFERENCE_METRIC_PORT = 8002
     MODEL_INFERENCE_DEFAULT_PORT = 5001
 
+    FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT = "MODEL_END_POINT"
+
     MODEL_DEPLOYMENT_STAGE1 = {"index": 1, "text": "ReceivedRequest"}
     MODEL_DEPLOYMENT_STAGE2 = {"index": 2, "text": "Initializing"}
     MODEL_DEPLOYMENT_STAGE3 = {"index": 3, "text": "StartRunner"}
