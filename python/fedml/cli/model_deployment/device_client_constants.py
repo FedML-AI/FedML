@@ -42,6 +42,8 @@ class ClientConstants(object):
     INFERENCE_GRPC_PORT = 8001
     INFERENCE_METRIC_PORT = 8002
 
+    FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT = "MODEL_END_POINT"
+
     INFERENCE_CONVERTOR_IMAGE = "ghcr.io/els-rd/transformer-deploy:0.4.0"
     INFERENCE_SERVER_IMAGE = "nvcr.io/nvidia/tritonserver:22.01-py3"
 
