@@ -754,18 +754,27 @@ def device():
 @click.option(
     "--docker-rank", "-dr", default="1", help="docker client rank index (from 1 to n).",
 )
+@click.option(
+    "--redis_addr", "-ra", default="local", help="redis addr for caching inference information in the master device.",
+)
+@click.option(
+    "--redis_port", "-rp", default="6379", help="redis port for caching inference information in the master device.",
+)
 def login_as_model_device_agent(
-        userid, cloud, on_premise, master, infer_host, version, local_server, runner_cmd, device_id, os_name, docker, docker_rank
+        userid, cloud, on_premise, master, infer_host, version, local_server,
+        runner_cmd, device_id, os_name, docker, docker_rank, redis_addr, redis_port
 ):
-    device_login_entry.login_as_model_device_agent(userid, cloud, on_premise, master, infer_host, version, local_server, runner_cmd, device_id, os_name, docker, docker_rank)
+    device_login_entry.login_as_model_device_agent(userid, cloud, on_premise, master, infer_host, version, local_server,
+                                                   runner_cmd, device_id, os_name, docker, docker_rank,
+                                                   redis_addr, redis_port)
 
 
 @device.command("logout", help="Logout from the ModelOps platform (model.fedml.ai)")
 @click.option(
-    "--client", "-c", default=None, is_flag=True, help="logout from the model edge device.",
+    "--slave", "-sl", default=None, is_flag=True, help="logout from slave device.",
 )
 @click.option(
-    "--server", "-s", default=None, is_flag=True, help="logout from the model on-premise device.",
+    "--master", "-ma", default=None, is_flag=True, help="logout from master device.",
 )
 @click.option(
     "--docker", "-d", default=None, is_flag=True, help="logout from docker mode at the model device agent.",
@@ -773,8 +782,8 @@ def login_as_model_device_agent(
 @click.option(
     "--docker-rank", "-dr", default=None, help="docker client rank index (from 1 to n).",
 )
-def logout_from_model_ops(client, server, docker, docker_rank):
-    device_login_entry.logout_from_model_ops(client, server, docker, docker_rank)
+def logout_from_model_ops(slave, master, docker, docker_rank):
+    device_login_entry.logout_from_model_ops(slave, master, docker, docker_rank)
 
 
 @model.command("create", help="Create local model repository.")
