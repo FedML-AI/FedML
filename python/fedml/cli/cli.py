@@ -813,13 +813,10 @@ def delete_model(name):
     "--name", "-n", type=str, help="model name.",
 )
 @click.option(
-    "--meta", "-m", type=str, is_flag=True, default="", help="meta information for specific model.",
-)
-@click.option(
     "--path", "-p", type=str, help="path for specific model.",
 )
 def add_model_files(name, meta, path):
-    if FedMLModelCards.get_instance().add_model_files(name, meta, path):
+    if FedMLModelCards.get_instance().add_model_files(name, path):
         click.echo("Add file to model {} successfully.".format(name))
     else:
         click.echo("Failed to add file to model {}.".format(name))
@@ -871,14 +868,19 @@ def list_models(name):
     help="interact with which version of ModelOps platform. It should be dev, test or release",
 )
 def list_remote_models(name, user, api_key, version):
+    if user is None or api_key is None:
+        click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
+        return
     FedMLModelCards.get_instance().set_config_version(version)
     model_query_result = FedMLModelCards.get_instance().list_models(name, user, api_key)
-    if len(model_query_result.model_list) <= 0:
+    if model_query_result is None or model_query_result.model_list is None or len(model_query_result.model_list) <= 0:
         click.echo("Model list is empty.")
     else:
-        click.echo("Found the following models:")
+        click.echo("Found {} models:".format(len(model_query_result.model_list)))
+        index = 1
         for model_item in model_query_result.model_list:
-            model_item.show()
+            model_item.show("{}. ".format(index))
+            index += 1
         click.echo("List model {} successfully.".format(name))
 
 
@@ -913,6 +915,9 @@ def package_model(name):
     help="interact with which version of ModelOps platform. It should be dev, test or release",
 )
 def push_model(name, user, api_key, version):
+    if user is None or api_key is None:
+        click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
+        return
     FedMLModelCards.get_instance().set_config_version(version)
     model_storage_url, model_zip = FedMLModelCards.get_instance().push_model(name, user, api_key)
     if model_storage_url != "":
@@ -941,6 +946,9 @@ def push_model(name, user, api_key, version):
     help="interact with which version of ModelOps platform. It should be dev, test or release",
 )
 def pull_model(name, user, api_key, version):
+    if user is None or api_key is None:
+        click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
+        return
     FedMLModelCards.get_instance().set_config_version(version)
     if FedMLModelCards.get_instance().pull_model(name, user, api_key):
         click.echo("Pull model {} successfully.".format(name))
@@ -980,6 +988,9 @@ def pull_model(name, user, api_key, version):
     help="deploy local model repository by sending MQTT message(just use for debugging).",
 )
 def deploy_model(name, device_type, devices, user, api_key, params, version, use_local_deployment):
+    if user is None or api_key is None:
+        click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
+        return
     FedMLModelCards.get_instance().set_config_version(version)
     if FedMLModelCards.get_instance().deploy_model(name, device_type, devices, user, api_key,
                                                    params, use_local_deployment):
