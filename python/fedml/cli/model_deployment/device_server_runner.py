@@ -366,7 +366,9 @@ class FedMLServerRunner:
 
         # When all deployments are finished
         edge_id_list = self.request_json["device_ids"]
-        if len(edge_id_list) - 1 == FedMLModelCache.get_instance(self.redis_addr, self.redis_port).get_deployment_result_list_size(end_point_id):
+        if len(edge_id_list) - 1 == \
+                FedMLModelCache.get_instance(self.redis_addr, self.redis_port).get_deployment_result_list_size(
+                    end_point_id):
             # 1. We should generate one unified inference api
             ip = ServerConstants.get_local_ip()
             model_inference_port = ServerConstants.MODEL_INFERENCE_DEFAULT_PORT
@@ -415,7 +417,8 @@ class FedMLServerRunner:
 
         # When all deployments are finished
         edge_id_list = self.request_json["device_ids"]
-        status_list = FedMLModelCache.get_instance(self.redis_addr, self.redis_port).get_deployment_status_list(end_point_id)
+        status_list = FedMLModelCache.get_instance(self.redis_addr, self.redis_port).get_deployment_status_list(
+            end_point_id)
         if len(edge_id_list) - 1 == len(status_list):
             all_slave_dev_deployment_succeeded = True
             all_slave_dev_deployment_failed = True

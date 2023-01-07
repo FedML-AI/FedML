@@ -99,7 +99,8 @@ def start_deployment(end_point_id, model_id,
         dst_model_file = os.path.join(model_serving_dir, model_file)
         if os.path.isdir(src_model_file):
             if not os.path.exists(dst_model_file):
-                shutil.copytree(src_model_file, dst_model_file, copy_function=shutil.copy)
+                shutil.copytree(src_model_file, dst_model_file, copy_function=shutil.copy,
+                                ignore_dangling_symlinks=True, dirs_exist_ok=True)
         else:
             if not os.path.exists(dst_model_file):
                 shutil.copyfile(src_model_file, dst_model_file)
