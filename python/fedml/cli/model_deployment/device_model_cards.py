@@ -49,7 +49,7 @@ class FedMLModelCards(Singleton):
             return False
         return True
 
-    def add_model_files(self, model_name, meta_info, file_path):
+    def add_model_files(self, model_name, file_path):
         model_dir = os.path.join(ClientConstants.get_model_dir(), model_name)
         if not os.path.exists(model_dir):
             self.create_model(model_name)
