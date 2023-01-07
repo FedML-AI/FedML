@@ -35,9 +35,11 @@ class FedMLModelObject(object):
         self.file_name = model_json["fileName"]
         self.is_init = model_json["isInit"]
 
-    def show(self):
-        print("model name: {}, model id: {}, model version: {}, model url: {}".format(
-            self.model_name, self.id, self.model_version, self.model_url))
+    def show(self, prefix=""):
+        print("{}model name: {}, model id: {}, model version: {}, model url: {}".format(prefix,
+                                                                                        self.model_name, self.id,
+                                                                                        self.model_version,
+                                                                                        self.model_url))
 
 
 class FedMLModelList(object):
@@ -51,4 +53,3 @@ class FedMLModelList(object):
         for model_obj_json in model_list_data:
             model_obj = FedMLModelObject(model_obj_json)
             self.model_list.append(model_obj)
-
