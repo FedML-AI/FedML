@@ -36,7 +36,7 @@ class FedMLModelObject(object):
         self.is_init = model_json["isInit"]
 
     def show(self):
-        print("model name {}, model id {}, model version {}, model url {}".format(
+        print("model name: {}, model id: {}, model version: {}, model url: {}".format(
             self.model_name, self.id, self.model_version, self.model_url))
 
 
