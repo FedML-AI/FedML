@@ -4,6 +4,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import urllib
 import zipfile
 from os.path import expanduser
 
@@ -127,14 +128,13 @@ class ClientConstants(object):
         return model_file_dir
 
     @staticmethod
-    def get_model_ops_list_url(model_name, page_num, page_size, config_version="release"):
-        model_ops_url = "{}/api/v1/model/list?modelName={}&pageNum={}&pageSize={}".format(
-            ClientConstants.get_model_ops_url(config_version), model_name, page_num, page_size)
+    def get_model_ops_list_url(config_version="release"):
+        model_ops_url = "{}/api/v1/model/listFromCli".format(ClientConstants.get_model_ops_url(config_version))
         return model_ops_url
 
     @staticmethod
     def get_model_ops_upload_url(config_version="release"):
-        model_ops_url = "{}/api/v1/model/create".format(ClientConstants.get_model_ops_url(config_version))
+        model_ops_url = "{}/api/v1/model/createFromCli".format(ClientConstants.get_model_ops_url(config_version))
         return model_ops_url
 
     @staticmethod
@@ -143,7 +143,7 @@ class ClientConstants(object):
 
     @staticmethod
     def get_model_ops_deployment_url(config_version="release"):
-        model_ops_url = "{}/api/v1/endpoint/create".format(ClientConstants.get_model_ops_url(config_version))
+        model_ops_url = "{}/api/v1/endpoint/createFromCli".format(ClientConstants.get_model_ops_url(config_version))
         return model_ops_url
 
     @staticmethod
@@ -186,6 +186,20 @@ class ClientConstants(object):
                 result = True
 
         return result
+
+    @staticmethod
+    def retrieve_and_unzip_package(package_url, package_name, local_package_file, unzip_package_path):
+        if not os.path.exists(local_package_file):
+            urllib.request.urlretrieve(package_url, local_package_file)
+        try:
+            shutil.rmtree(
+                os.path.join(unzip_package_path, package_name), ignore_errors=True
+            )
+        except Exception as e:
+            pass
+        ClientConstants.unzip_file(local_package_file, unzip_package_path)
+        unzip_package_path = os.path.join(unzip_package_path, package_name)
+        return unzip_package_path
 
     @staticmethod
     def cleanup_run_process():
