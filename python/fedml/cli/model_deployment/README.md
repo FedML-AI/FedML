@@ -1,9 +1,15 @@
 ## 1 Device Login:
-Login as fedml cloud device: 
-```fedml model device login $user_id_or_api_key -c```
+Login as fedml cloud master device: 
+```fedml model device login $user_id_or_api_key --cloud -m```
 
-Login as on premise device: 
-```fedml model device login $user_id_or_api_key -p```
+Login as fedml cloud slave device:
+```fedml model device login $user_id_or_api_key --cloud```
+
+Login as on premise master device: 
+```fedml model device login $user_id_or_api_key -premise -m```
+
+Login as on premise slave device:
+```fedml model device login $user_id_or_api_key -premise```
 
 
 ## 2. Model Card:

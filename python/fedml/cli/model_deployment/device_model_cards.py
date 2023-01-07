@@ -15,6 +15,7 @@ from ...core.common.singleton import Singleton
 from .modelops_configs import ModelOpsConfigs
 from .device_model_deployment import get_model_info, run_http_inference_with_lib_http_api
 from .device_server_constants import ServerConstants
+from .device_model_object import FedMLModelList, FedMLModelObject
 
 
 class FedMLModelCards(Singleton):
@@ -56,11 +57,40 @@ class FedMLModelCards(Singleton):
         if not os.path.exists(model_dir):
             return False
 
-        src_file_name = os.path.basename(file_path)
-        dst_file = os.path.join(model_dir, src_file_name)
-        shutil.copyfile(file_path, dst_file)
-        if not os.path.exists(dst_file):
-            return False
+        if os.path.isdir(file_path):
+            file_ignore = "__pycache__,*.pyc,*.git"
+            file_ignore_list = tuple(file_ignore.split(','))
+            file_list = os.listdir(file_path)
+            for file_item in file_list:
+                file_full_path = os.path.join(file_path, file_item)
+                if os.path.isdir(file_full_path):
+                    dst_dir = os.path.join(model_dir, file_item)
+                    shutil.copytree(file_full_path, dst_dir,
+                                    copy_function=shutil.copy,
+                                    ignore_dangling_symlinks=True,
+                                    ignore=shutil.ignore_patterns(*file_ignore_list),
+                                    dirs_exist_ok=True)
+                    if not os.path.exists(dst_dir):
+                        print("Directory {} can't be added into the model.".format(file_full_path))
+                        return False
+                else:
+                    file_ignore = "__pycache__,.pyc,.git"
+                    src_file_name = os.path.basename(file_full_path)
+                    _, src_file_extension = os.path.splitext(file_full_path)
+                    dst_file = os.path.join(model_dir, src_file_name)
+                    try:
+                        file_ignore.split(',').index(src_file_extension)
+                    except ValueError as e:
+                        shutil.copyfile(file_full_path, dst_file)
+                        if not os.path.exists(dst_file):
+                            print("File {} can't be added into the model.".format(file_full_path))
+                            return False
+        else:
+            src_file_name = os.path.basename(file_path)
+            dst_file = os.path.join(model_dir, src_file_name)
+            shutil.copyfile(file_path, dst_file)
+            if not os.path.exists(dst_file):
+                return False
 
         return True
 
@@ -76,18 +106,21 @@ class FedMLModelCards(Singleton):
 
         return True
 
-    def list_models(self, model_name):
-        model_home_dir = ClientConstants.get_model_dir()
-        if not os.path.exists(model_home_dir):
-            return []
+    def list_models(self, model_name, user_id=None, user_api_key=None):
+        if user_id is None:
+            model_home_dir = ClientConstants.get_model_dir()
+            if not os.path.exists(model_home_dir):
+                return []
 
-        models = os.listdir(model_home_dir)
-        if model_name == "*":
-            return models
+            models = os.listdir(model_home_dir)
+            if model_name == "*":
+                return models
+            else:
+                for model in models:
+                    if model == model_name:
+                        return [model]
         else:
-            for model in models:
-                if model == model_name:
-                    return [model]
+            return self.list_model_api(model_name, user_id, user_api_key)
 
         return []
 
@@ -133,7 +166,7 @@ class FedMLModelCards(Singleton):
 
         return model_zip_path
 
-    def push_model(self, model_name, user_id, no_uploading_modelops=False):
+    def push_model(self, model_name, user_id, user_api_key, no_uploading_modelops=False):
         model_dir = os.path.join(ClientConstants.get_model_dir(), model_name)
         if not os.path.exists(model_dir):
             return "", ""
@@ -177,38 +210,47 @@ class FedMLModelCards(Singleton):
         print("Model storage url: {}".format(model_storage_url))
         if not no_uploading_modelops:
             if model_storage_url != "":
-                upload_result = self.upload_model_api(model_name, model_storage_url, user_id)
-                if upload_result != {}:
+                upload_result = self.upload_model_api(model_name, model_storage_url, user_id, user_api_key)
+                if upload_result is not None:
                     return model_storage_url, model_zip_path
                 else:
                     return "", model_zip_path
 
         return model_storage_url, model_zip_path
 
-    def pull_model(self, model_name):
-        model_list_json = self.list_model_api(model_name)
-        if model_list_json is not None and model_list_json != "":
-            model_storage_url = model_list_json.get("model_url", "")
-            if model_storage_url != "":
-                local_model_package = self.pull_model_from_s3(model_storage_url, model_name)
-                if local_model_package != "":
-                    model_dir = os.path.join(ClientConstants.get_model_dir(), model_name)
-                    ClientConstants.unzip_file(local_model_package, model_dir)
-                    if os.path.exists(model_dir):
-                        return True
+    def pull_model(self, model_name, user_id, user_api_key):
+        model_query_result = self.list_model_api(model_name, user_id, user_api_key)
+        if model_query_result is None:
+            return False
 
-        return False
+        result = True
+        for model in model_query_result.model_list:
+            model_storage_url = model.model_url
+            query_model_name = model.model_name
+            if query_model_name != model_name:
+                continue
+            if model_storage_url is None or model_storage_url == "":
+                continue
+            local_model_package = self.pull_model_from_s3(model_storage_url, model_name)
+            if local_model_package == "":
+                result = False
+                print("Failed to pull model name {}".format(query_model_name))
 
-    def deploy_model(self, model_name, device_type, devices, user_id, params, use_local_deployment):
+        return result
+
+    def deploy_model(self, model_name, device_type, devices, user_id, user_api_key, params, use_local_deployment):
         if use_local_deployment is None:
             use_local_deployment = False
         if not use_local_deployment:
-            model_info = self.list_model_api(model_name)
-            if model_info != {}:
-                model_id = model_info["id"]
-                model_version = model_info["model_version"]
-                deployment_result = self.deploy_model_api(model_id, model_name, model_version, device_type, devices, user_id)
-                if deployment_result != {}:
+            model_query_result = self.list_model_api(model_name, user_id, user_api_key)
+            if model_query_result is None:
+                return False
+            for model in model_query_result.model_list:
+                model_id = model.id
+                model_version = model.model_version
+                deployment_result = self.deploy_model_api(model_id, model_name, model_version, device_type,
+                                                          devices, user_id, user_api_key)
+                if deployment_result is not None:
                     return True
         else:
             model_id = uuid.uuid4()
@@ -228,34 +270,45 @@ class FedMLModelCards(Singleton):
                                                     1,
                                                     input_data)
 
-    def list_model_api(self, model_name):
-        model_list_json = {}
-        model_ops_url = ClientConstants.get_model_ops_list_url(model_name, 1, 10000, self.config_version)
+    def list_model_api(self, model_name, user_id, user_api_key):
+        model_list_result = None
+        model_ops_url = ClientConstants.get_model_ops_list_url(self.config_version)
+        model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+        model_list_json = {
+            "model_name": model_name,
+            "page_num": 1,
+            "page_size": 100,
+            "user_id": str(user_id),
+            "user_api_key": user_api_key
+        }
         args = {"config_version": self.config_version}
         _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params(self.config_version)
         if cert_path is not None:
             try:
                 requests.session().verify = cert_path
-                response = requests.get(
-                    model_ops_url, verify=True
+                response = requests.post(
+                    model_ops_url, verify=True, headers=model_api_headers, json=model_list_json
                 )
             except requests.exceptions.SSLError as err:
                 ModelOpsConfigs.install_root_ca_file()
-                response = requests.get(
-                    model_ops_url, verify=True
+                response = requests.post(
+                    model_ops_url, verify=True, headers=model_api_headers, json=model_list_json
                 )
         else:
-            response = requests.get(model_ops_url)
+            response = requests.post(model_ops_url, headers=model_api_headers, json=model_list_json)
         if response.status_code != 200:
             pass
         else:
             resp_data = response.json()
-            model_list_json = resp_data
+            if resp_data["code"] == "FAILURE":
+                print("Error: {}.".format(resp_data["message"]))
+                return None
+            model_list_result = FedMLModelList(resp_data["data"])
 
-        return model_list_json
+        return model_list_result
 
-    def upload_model_api(self, model_name, model_storage_url, user_id):
-        model_upload_result = {}
+    def upload_model_api(self, model_name, model_storage_url, user_id, user_api_key):
+        model_upload_result = None
         model_ops_url = ClientConstants.get_model_ops_upload_url(self.config_version)
         model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
         model_upload_json = {
@@ -265,7 +318,9 @@ class FedMLModelCards(Singleton):
             "modelUrl": model_storage_url,
             "owner": user_id,
             "parameters": {},
-            "updateBy": user_id
+            "updateBy": user_id,
+            "userId": str(user_id),
+            "apiKey": user_api_key
         }
         args = {"config_version": self.config_version}
         _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params(self.config_version)
@@ -286,6 +341,9 @@ class FedMLModelCards(Singleton):
             pass
         else:
             resp_data = response.json()
+            if resp_data["code"] == "FAILURE":
+                print("Error: {}.".format(resp_data["message"]))
+                return None
             model_upload_result = resp_data
 
         return model_upload_result
@@ -304,22 +362,28 @@ class FedMLModelCards(Singleton):
         s3_storage = S3Storage(s3_config)
         local_model_package = os.path.join(ClientConstants.get_model_package_dir(), model_name)
         local_model_package = "{}.zip".format(local_model_package)
-        s3_storage.download_file_with_progress(model_storage_url, local_model_package)
+        print("Pulling......")
+        ClientConstants.retrieve_and_unzip_package(model_storage_url,
+                                                   model_name,
+                                                   local_model_package,
+                                                   ClientConstants.get_model_dir())
         if os.path.exists(local_model_package):
             return local_model_package
 
         return ""
 
-    def deploy_model_api(self, model_id, model_name, model_version, device_type, devices, user_id):
-        model_deployment_result = {}
+    def deploy_model_api(self, model_id, model_name, model_version, device_type, devices, user_id, user_api_key):
+        model_deployment_result = None
         model_ops_url = ClientConstants.get_model_ops_deployment_url(self.config_version)
         model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
         model_deployment_json = {
             "edgeId": devices,
-            "endpointName": "model_name_{}@model_id_{}@{}".format(model_name, model_id, str(uuid.uuid4())),
+            "endpointName": "ModelName-{}@ModelId-{}@{}".format(model_name, model_id, str(uuid.uuid4())),
             "modelId": model_id,
             "modelVersion": model_version,
-            "resourceType": device_type
+            "resourceType": device_type,
+            "userId": str(user_id),
+            "apiKey": user_api_key
         }
         args = {"config_version": self.config_version}
         _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params(self.config_version)
@@ -340,6 +404,9 @@ class FedMLModelCards(Singleton):
             pass
         else:
             resp_data = response.json()
+            if resp_data["code"] == "FAILURE":
+                print("Error: {}.".format(resp_data["message"]))
+                return None
             model_deployment_result = resp_data
 
         return model_deployment_result
