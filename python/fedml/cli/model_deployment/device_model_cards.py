@@ -256,7 +256,7 @@ class FedMLModelCards(Singleton):
             model_id = uuid.uuid4()
             end_point_id = uuid.uuid4()
             end_point_token = "FedMLEndPointToken@{}".format(str(uuid.uuid4()))
-            self.send_start_deployment_msg(user_id, end_point_id, end_point_token,
+            self.send_start_deployment_msg(user_id, user_api_key, end_point_id, end_point_token,
                                            devices, model_name, model_id)
 
         return False
@@ -411,7 +411,7 @@ class FedMLModelCards(Singleton):
 
         return model_deployment_result
 
-    def send_start_deployment_msg(self, user_id, end_point_id, end_point_token,
+    def send_start_deployment_msg(self, user_id, user_api_key, end_point_id, end_point_token,
                                   devices, model_name, model_id):
         ServerConstants.get_local_ip()
         device_id_list = json.loads(devices)
@@ -430,7 +430,7 @@ class FedMLModelCards(Singleton):
                                 "os_type": "MacOS", "id": device_id, "ip": "0.0.0.0",
                                 "memory": "64G", "cpu": "2.7", "gpu": "AppleM1", "extra_infos": {}})
 
-        model_storage_url, _ = self.push_model(model_name, user_id, no_uploading_modelops=True)
+        model_storage_url, _ = self.push_model(model_name, user_id, user_api_key, no_uploading_modelops=True)
 
         master_device_id = device_id_list[0]
         topic_start_deployment = "/model_ops/model_device/start_deployment/{}".format(str(master_device_id))
@@ -440,6 +440,7 @@ class FedMLModelCards(Singleton):
                                     "device_ids": device_id_list,
                                     "device_objs": device_objs,
                                     "model_config": {"model_name": model_name, "model_id": str(model_id),
+                                                     "model_version": "v0-Fri Jan 06 06:36:44 GMT 2023",
                                                      "model_storage_url": model_storage_url,
                                                      "instance_scale_min": 1, "instance_scale_max": 3,
                                                      "inference_engine": ClientConstants.INFERENCE_ENGINE_TYPE_ONNX},

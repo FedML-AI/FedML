@@ -1265,7 +1265,7 @@ class FedMLServerRunner:
 
         # Setup MQTT message listener for activating deployment
         topic_activate_deployment = "/model_ops/model_device/activate_deployment/{}".format(str(self.edge_id))
-        self.mqtt_mgr.add_message_listener(topic_activate_deployment, self.callback_activate_deployment())
+        self.mqtt_mgr.add_message_listener(topic_activate_deployment, self.callback_activate_deployment)
 
         # Setup MQTT message listener for deactivating deployment
         topic_deactivate_deployment = "/model_ops/model_device/deactivate_deployment/{}".format(str(self.edge_id))
