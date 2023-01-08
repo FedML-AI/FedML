@@ -390,8 +390,6 @@ class FedMLServerRunner:
                 model_inference_url = "http://{}:{}/api/v1/predict".format(ip, model_inference_port)
 
             # Send stage: MODEL_DEPLOYMENT_STAGE5 = "StartInferenceIngress"
-            model_name = payload_json["model_name"]
-            model_id = payload_json["model_id"]
             self.send_deployment_stages(self.run_id, model_name, model_id,
                                         model_inference_url,
                                         ServerConstants.MODEL_DEPLOYMENT_STAGE5["index"],
@@ -401,11 +399,9 @@ class FedMLServerRunner:
             # 2. We should send to MBE(ModelOps Backend)
             payload_json["model_url"] = model_inference_url
             payload_json["port"] = model_inference_port
-            running_model_name = ClientConstants.get_running_model_name(
-                end_point_id, model_id, model_name, model_version)
             payload_json["input_json"] = {"end_point_id": self.run_id,
                                           "model_id": model_id,
-                                          "model_name": running_model_name,
+                                          "model_name": model_name,
                                           "model_version": model_version,
                                           "data": "This is our test data. Please fill in here with your real data."}
             model_metadata = payload_json["model_metadata"]
