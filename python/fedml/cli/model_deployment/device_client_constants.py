@@ -139,12 +139,33 @@ class ClientConstants(object):
 
     @staticmethod
     def get_model_ops_url(config_version="release"):
-        return "https://model-{}.fedml.ai/fedmlModelServer".format("" if config_version == "release" else config_version)
+        return "https://model{}.fedml.ai/fedmlModelServer".format(
+            "" if config_version == "release" else "-" + config_version)
 
     @staticmethod
     def get_model_ops_deployment_url(config_version="release"):
         model_ops_url = "{}/api/v1/endpoint/createFromCli".format(ClientConstants.get_model_ops_url(config_version))
         return model_ops_url
+
+    @staticmethod
+    def get_running_model_name(end_point_id, model_id, model_name, model_version):
+        running_model_name = "{}_{}_{}_{}".format(end_point_id, model_id, model_name, model_version)
+        running_model_name = running_model_name.replace(' ', '-')
+        running_model_name = running_model_name.replace(':', '-')
+        return running_model_name
+
+    @staticmethod
+    def remove_deployment(end_point_id, model_id, model_name, model_version):
+        running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id, model_name, model_version)
+        model_serving_dir = ClientConstants.get_model_serving_dir()
+        if not os.path.exists(model_serving_dir):
+            return False
+        model_file_path = os.path.join(model_serving_dir, running_model_name)
+        shutil.rmtree(model_file_path, ignore_errors=True)
+        if os.path.exists(model_file_path):
+            return False
+
+        return True
 
     @staticmethod
     def get_local_ip():

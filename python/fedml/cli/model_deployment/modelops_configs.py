@@ -56,9 +56,7 @@ class ModelOpsConfigs(Singleton):
     @staticmethod
     def get_root_ca_path():
         cur_source_dir = os.path.dirname(__file__)
-        cert_path = os.path.join(
-            cur_source_dir, "ssl", "open-root-ca.crt"
-        )
+        cert_path = os.path.join(cur_source_dir, "..", "..", "core", "mlops", "ssl", "open-root-ca.crt")
         return cert_path
 
     @staticmethod

@@ -146,6 +146,7 @@ class FedMLClientRunner:
         model_config = self.request_json["model_config"]
         model_name = model_config["model_name"]
         model_id = model_config["model_id"]
+        model_version = model_config["model_version"]
         model_storage_url = model_config["model_storage_url"]
         scale_min = model_config["instance_scale_min"]
         scale_max = model_config["instance_scale_max"]
@@ -170,8 +171,8 @@ class FedMLClientRunner:
         logging.info("Download and unzip model to local...")
         unzip_package_path, fedml_config_object = self.update_local_fedml_config(run_id, model_config)
 
-        inference_output_url, model_version, model_metadata, model_config = start_deployment(
-            inference_end_point_id, model_id,
+        inference_output_url, inference_model_version, model_metadata, model_config = start_deployment(
+            inference_end_point_id, model_id, model_version,
             unzip_package_path, model_name, inference_engine,
             ClientConstants.INFERENCE_HTTP_PORT,
             ClientConstants.INFERENCE_GRPC_PORT,
@@ -183,9 +184,9 @@ class FedMLClientRunner:
         if inference_output_url == "":
             self.send_deployment_status(self.edge_id, model_id, model_name, inference_output_url,
                                         ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
-            self.send_deployment_results(self.edge_id, model_id, model_name, inference_output_url, model_version,
-                                         ClientConstants.INFERENCE_HTTP_PORT, inference_engine,
-                                         model_metadata, model_config)
+            self.send_deployment_results(self.edge_id, model_id, model_name, inference_output_url,
+                                         inference_model_version, ClientConstants.INFERENCE_HTTP_PORT,
+                                         inference_engine, model_metadata, model_config)
             self.setup_client_mqtt_mgr()
             self.wait_client_mqtt_connected()
             self.mlops_metrics.run_id = self.run_id
@@ -195,9 +196,9 @@ class FedMLClientRunner:
         else:
             self.send_deployment_status(self.edge_id, model_id, model_name, inference_output_url,
                                         ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED)
-            self.send_deployment_results(self.edge_id, model_id, model_name, inference_output_url, model_version,
-                                         ClientConstants.INFERENCE_HTTP_PORT, inference_engine,
-                                         model_metadata, model_config)
+            self.send_deployment_results(self.edge_id, model_id, model_name, inference_output_url,
+                                         inference_model_version, ClientConstants.INFERENCE_HTTP_PORT,
+                                         inference_engine, model_metadata, model_config)
             time.sleep(1)
             self.broadcast_client_training_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
 

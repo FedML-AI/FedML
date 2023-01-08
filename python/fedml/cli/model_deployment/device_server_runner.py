@@ -37,6 +37,7 @@ from ...core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 from ...core.mlops.mlops_status import MLOpsStatus
 from ..comm_utils.sys_utils import get_sys_runner_info, get_python_program
 from .device_model_cache import FedMLModelCache
+from .device_model_msg_object import FedMLModelMsgObject
 
 
 class FedMLServerRunner:
@@ -525,11 +526,13 @@ class FedMLServerRunner:
         self.running_request_json[str(run_id)] = request_json
 
         # Send stage: MODEL_DEPLOYMENT_STAGE1 = "Received"
+        time.sleep(2)
         self.send_deployment_stages(self.run_id, model_name, model_id,
                                     "",
                                     ServerConstants.MODEL_DEPLOYMENT_STAGE1["index"],
                                     ServerConstants.MODEL_DEPLOYMENT_STAGE1["text"],
                                     "Received request for end point {}".format(run_id))
+        time.sleep(1)
 
         # Send stage: MODEL_DEPLOYMENT_STAGE2 = "Initializing"
         self.send_deployment_stages(self.run_id, model_name, model_id,
@@ -539,6 +542,7 @@ class FedMLServerRunner:
                                     ServerConstants.MODEL_DEPLOYMENT_STAGE2["text"])
 
         ServerConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, self.edge_id, run_id=run_id)
+        time.sleep(1)
 
         # Start server with multi-processing mode
         if not self.run_as_cloud_server:
@@ -655,6 +659,48 @@ class FedMLServerRunner:
 
         if self.running_request_json.get(str(run_id), None) is not None:
             self.running_request_json.pop(str(run_id))
+
+    def callback_activate_deployment(self, topic, payload):
+        logging.info("callback_activate_deployment: topic = %s, payload = %s" % (topic, payload))
+
+        # Parse payload as the model message object.
+        model_msg_object = FedMLModelMsgObject(topic, payload)
+
+        # If the previous deployment did not complete successfully, we need to restart the deployment.
+        prev_status = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
+            get_end_point_status(model_msg_object.inference_end_point_id)
+        if not prev_status:
+            prev_deployment_result = FedMLModelCache.get_instance(self.redis_addr, self.redis_port).\
+                get_idle_device(model_msg_object.inference_end_point_id, model_msg_object.model_id)
+            if prev_deployment_result is None:
+                self.callback_start_deployment(topic, payload)
+
+        # Set end point as activated status
+        FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
+            set_end_point_status(model_msg_object.inference_end_point_id, True)
+
+    def callback_deactivate_deployment(self, topic, payload):
+        logging.info("callback_deactivate_deployment: topic = %s, payload = %s" % (topic, payload))
+
+        # Parse payload as the model message object.
+        model_msg_object = FedMLModelMsgObject(topic, payload)
+
+        # Set end point as deactivated status
+        FedMLModelCache.get_instance(self.redis_addr, self.redis_port).\
+            set_end_point_status(model_msg_object.inference_end_point_id, False)
+
+    def callback_delete_deployment(self, topic, payload):
+        logging.info("callback_delete_deployment: topic = %s, payload = %s" % (topic, payload))
+
+        # Parse payload as the model message object.
+        model_msg_object = FedMLModelMsgObject(topic, payload)
+
+        # Set end point as deactivated status
+        FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
+            set_end_point_status(model_msg_object.inference_end_point_id, False)
+
+        ClientConstants.remove_deployment(model_msg_object.inference_end_point_id, model_msg_object.model_id,
+                                          model_msg_object.model_name, model_msg_object.model_version)
 
     def send_deployment_results_with_payload(self, end_point_id, payload):
         self.send_deployment_results(end_point_id, payload["model_name"], payload["model_url"],
@@ -1217,6 +1263,18 @@ class FedMLServerRunner:
         topic_stop_deployment = "/model_ops/model_device/stop_deployment/{}".format(str(self.edge_id))
         self.mqtt_mgr.add_message_listener(topic_stop_deployment, self.callback_stop_deployment)
 
+        # Setup MQTT message listener for activating deployment
+        topic_activate_deployment = "/model_ops/model_device/activate_deployment/{}".format(str(self.edge_id))
+        self.mqtt_mgr.add_message_listener(topic_activate_deployment, self.callback_activate_deployment())
+
+        # Setup MQTT message listener for deactivating deployment
+        topic_deactivate_deployment = "/model_ops/model_device/deactivate_deployment/{}".format(str(self.edge_id))
+        self.mqtt_mgr.add_message_listener(topic_deactivate_deployment, self.callback_deactivate_deployment)
+
+        # Setup MQTT message listener for delete deployment
+        topic_delete_deployment = "/model_ops/model_device/delete_deployment/{}".format(str(self.edge_id))
+        self.mqtt_mgr.add_message_listener(topic_delete_deployment, self.callback_delete_deployment)
+
         # Setup MQTT message listener for server status switching
         topic_server_status = "fl_server/flserver_agent_" + str(server_agent_id) + "/status"
         self.mqtt_mgr.add_message_listener(topic_server_status, self.callback_runner_id_status)
@@ -1248,6 +1306,9 @@ class FedMLServerRunner:
         # Subscribe topics for starting train, stopping train and fetching client status.
         mqtt_client_object.subscribe(topic_start_deployment, qos=2)
         mqtt_client_object.subscribe(topic_stop_deployment, qos=2)
+        mqtt_client_object.subscribe(topic_activate_deployment, qos=2)
+        mqtt_client_object.subscribe(topic_deactivate_deployment, qos=2)
+        mqtt_client_object.subscribe(topic_delete_deployment, qos=2)
         mqtt_client_object.subscribe(topic_server_status, qos=2)
         mqtt_client_object.subscribe(topic_report_status, qos=2)
         mqtt_client_object.subscribe(topic_client_agent_last_will_msg, qos=2)

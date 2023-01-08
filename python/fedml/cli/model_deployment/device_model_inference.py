@@ -84,7 +84,7 @@ def found_idle_inference_device(end_point_id, in_model_id):
     # Found idle device (TODO: optimize the algorithm to search best device for inference)
     payload = FedMLModelCache.get_instance(settings.redis_addr, settings.redis_port).get_idle_device(end_point_id,
                                                                                                      in_model_id)
-    if payload != {}:
+    if payload is not None:
         print("found idle deployment result {}".format(payload))
         deployment_result = payload
         model_name = deployment_result["model_name"]
