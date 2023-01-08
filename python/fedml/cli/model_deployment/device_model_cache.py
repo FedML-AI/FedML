@@ -8,8 +8,8 @@ class FedMLModelCache(object):
     FEDML_MODEL_DEPLOYMENT_RESULT_TAG = "FEDML_MODEL_DEPLOYMENT_RESULT-"
     FEDML_MODEL_DEPLOYMENT_STATUS_TAG = "FEDML_MODEL_DEPLOYMENT_STATUS-"
     FEDML_MODEL_DEPLOYMENT_MONITOR_TAG = "FEDML_MODEL_DEPLOYMENT_MONITOR-"
+    FEDML_MODEL_END_POINT_STATUS_TAG = "FEDML_MODEL_END_POINT_STATUS-"
     FEDML_KEY_COUNT_PER_SCAN = 1000
-    FEDML_ALL_DEVICE_ID_TAG = "fedml-all-devices"
 
     def __init__(self):
         pass
@@ -98,8 +98,6 @@ class FedMLModelCache(object):
         idle_device_list = list()
         for status_item in status_list:
             device_id, status_payload = self.get_status_item_info(status_item)
-            if str(device_id) == FedMLModelCache.FEDML_ALL_DEVICE_ID_TAG:
-                continue
             model_status = status_payload["model_status"]
             model_id = status_payload["model_id"]
             if model_id == in_model_id and model_status == ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
@@ -122,25 +120,25 @@ class FedMLModelCache(object):
         return None
 
     def set_end_point_status(self, end_point_id, activate_status):
-        end_point_status_dict = {"end_point_status": activate_status}
-        self.set_deployment_status(end_point_id, FedMLModelCache.FEDML_ALL_DEVICE_ID_TAG, end_point_status_dict)
+        status = 1 if activate_status else 0
+        self.redis_connection.set(self.get_end_point_status_key(end_point_id), status)
 
     def get_end_point_status(self, end_point_id):
-        end_point_activated = False
-        status_list = self.get_deployment_status_list(end_point_id)
-        for status_item in status_list:
-            device_id, status_payload = self.get_status_item_info(status_item)
-            if str(device_id) == FedMLModelCache.FEDML_ALL_DEVICE_ID_TAG:
-                end_point_activated = status_payload["end_point_status"]
-                break
+        if not self.redis_connection.exists(self.get_end_point_status_key(end_point_id)):
+            return False
 
-        return end_point_activated
+        status_int = self.redis_connection.get(self.get_end_point_status_key(end_point_id))
+        status = True if status_int == 1 else False
+        return status
 
     def get_deployment_result_key(self, end_point_id):
         return "{}{}".format(FedMLModelCache.FEDML_MODEL_DEPLOYMENT_RESULT_TAG, end_point_id)
 
     def get_deployment_status_key(self, end_point_id):
         return "{}{}".format(FedMLModelCache.FEDML_MODEL_DEPLOYMENT_STATUS_TAG, end_point_id)
+
+    def get_end_point_status_key(self, end_point_id):
+        return "{}{}".format(FedMLModelCache.FEDML_MODEL_END_POINT_STATUS_TAG, end_point_id)
 
     def set_monitor_metrics(self, end_point_id, total_latency, avg_latency,
                             total_request_num, current_qps,
