@@ -69,6 +69,13 @@ class ClientConstants(object):
     MODEL_REQUIRED_MODEL_BIN_FILE = "fedml_model.bin"
     MODEL_REQUIRED_MODEL_README_FILE = "README.md"
 
+    CMD_TYPE_CONVERT_MODEL = "convert_model"
+    CMD_TYPE_RUN_TRITON_SERVER = "run_triton_server"
+    FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX = "fedml_convert_model_container"
+    FEDML_TRITON_SERVER_CONTAINER_NAME_PREFIX = "fedml_triton_server_container"
+    FEDML_CONVERTED_MODEL_DIR_NAME = "triton_models"
+    FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL = 3
+
     MODEL_INFERENCE_DEFAULT_PORT = 5001
 
     FEDML_OTA_CMD_UPGRADE = "upgrade"
@@ -158,7 +165,8 @@ class ClientConstants(object):
     @staticmethod
     def remove_deployment(end_point_id, model_id, model_name, model_version):
         running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id, model_name, model_version)
-        model_dir = ClientConstants.get_model_dir()
+        model_dir = os.path.join(ClientConstants.get_model_dir(), model_name,
+                                 ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME)
         model_dir_list = os.listdir(model_dir)
         for dir_item in model_dir_list:
             if not dir_item.startswith(running_model_name):
