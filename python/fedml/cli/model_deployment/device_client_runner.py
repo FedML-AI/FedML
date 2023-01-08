@@ -224,6 +224,7 @@ class FedMLClientRunner:
     def send_deployment_status(self, device_id, model_id, model_name, model_inference_url, model_status):
         deployment_status_topic = "/model_ops/model_device/return_deployment_status/{}".format(device_id)
         deployment_status_payload = {"end_point_id": self.run_id, "model_id": model_id,
+                                     "device_id": device_id,
                                      "model_name": model_name, "model_url": model_inference_url,
                                      "model_status": model_status}
         self.setup_client_mqtt_mgr()
