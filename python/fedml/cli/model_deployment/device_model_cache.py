@@ -8,6 +8,7 @@ class FedMLModelCache(object):
     FEDML_MODEL_DEPLOYMENT_RESULT_TAG = "FEDML_MODEL_DEPLOYMENT_RESULT-"
     FEDML_MODEL_DEPLOYMENT_STATUS_TAG = "FEDML_MODEL_DEPLOYMENT_STATUS-"
     FEDML_MODEL_DEPLOYMENT_MONITOR_TAG = "FEDML_MODEL_DEPLOYMENT_MONITOR-"
+    FEDML_MODEL_END_POINT_ACTIVATION_TAG = "FEDML_MODEL_END_POINT_ACTIVATION-"
     FEDML_MODEL_END_POINT_STATUS_TAG = "FEDML_MODEL_END_POINT_STATUS-"
     FEDML_KEY_COUNT_PER_SCAN = 1000
 
@@ -90,7 +91,7 @@ class FedMLModelCache(object):
     def get_idle_device(self, end_point_id, in_model_id, check_end_point_status=True):
         # Check whether the end point is activated.
         if check_end_point_status:
-            end_point_activated = self.get_end_point_status(end_point_id)
+            end_point_activated = self.get_end_point_activation(end_point_id)
             if not end_point_activated:
                 return None
 
@@ -120,12 +121,22 @@ class FedMLModelCache(object):
 
         return None
 
-    def set_end_point_status(self, end_point_id, activate_status):
-        status = 1 if activate_status else 0
+    def set_end_point_status(self, end_point_id, status):
         self.redis_connection.set(self.get_end_point_status_key(end_point_id), status)
 
     def get_end_point_status(self, end_point_id):
         if not self.redis_connection.exists(self.get_end_point_status_key(end_point_id)):
+            return False
+
+        status = self.redis_connection.get(self.get_end_point_status_key(end_point_id))
+        return status
+
+    def set_end_point_activation(self, end_point_id, activate_status):
+        status = 1 if activate_status else 0
+        self.redis_connection.set(self.get_end_point_activation_key(end_point_id), status)
+
+    def get_end_point_activation(self, end_point_id):
+        if not self.redis_connection.exists(self.get_end_point_activation_key(end_point_id)):
             return False
 
         status_int = self.redis_connection.get(self.get_end_point_status_key(end_point_id))
@@ -140,6 +151,9 @@ class FedMLModelCache(object):
 
     def get_end_point_status_key(self, end_point_id):
         return "{}{}".format(FedMLModelCache.FEDML_MODEL_END_POINT_STATUS_TAG, end_point_id)
+
+    def get_end_point_activation_key(self, end_point_id):
+        return "{}{}".format(FedMLModelCache.FEDML_MODEL_END_POINT_ACTIVATION_TAG, end_point_id)
 
     def set_monitor_metrics(self, end_point_id, total_latency, avg_latency,
                             total_request_num, current_qps,
