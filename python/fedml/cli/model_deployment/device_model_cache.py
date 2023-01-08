@@ -1,5 +1,6 @@
 import json
 import redis
+from random import shuffle
 from fedml.cli.model_deployment.device_server_constants import ServerConstants
 
 
@@ -8,6 +9,7 @@ class FedMLModelCache(object):
     FEDML_MODEL_DEPLOYMENT_STATUS_TAG = "FEDML_MODEL_DEPLOYMENT_STATUS-"
     FEDML_MODEL_DEPLOYMENT_MONITOR_TAG = "FEDML_MODEL_DEPLOYMENT_MONITOR-"
     FEDML_KEY_COUNT_PER_SCAN = 1000
+    FEDML_ALL_DEVICE_ID_TAG = "fedml-all-devices"
 
     def __init__(self):
         pass
@@ -86,16 +88,28 @@ class FedMLModelCache(object):
         return device_id, result_payload
 
     def get_idle_device(self, end_point_id, in_model_id):
-        idle_device_id = ""
+        # Check whether the end point is activated.
+        end_point_activated = self.get_end_point_status(end_point_id)
+        if not end_point_activated:
+            return None
+
+        # Find all deployed devices
         status_list = self.get_deployment_status_list(end_point_id)
+        idle_device_list = list()
         for status_item in status_list:
             device_id, status_payload = self.get_status_item_info(status_item)
             model_status = status_payload["model_status"]
             model_id = status_payload["model_id"]
             if model_id == in_model_id and model_status == ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
-                idle_device_id = device_id
-                break
+                idle_device_list.append(device_id)
 
+        # Randomly shuffle the list of deployed devices and get the first one as the target idle device.
+        if len(idle_device_list) <= 0:
+            return None
+        shuffle(idle_device_list)
+        idle_device_id = idle_device_list[0]
+
+        # Find deployment result from the target idle device.
         result_list = self.get_deployment_result_list(end_point_id)
         for result_item in result_list:
             device_id, result_payload = self.get_result_item_info(result_item)
@@ -103,7 +117,22 @@ class FedMLModelCache(object):
             if device_id == idle_device_id and model_id == in_model_id:
                 return result_payload
 
-        return {}
+        return None
+
+    def set_end_point_status(self, end_point_id, activate_status):
+        end_point_status_dict = {"end_point_status": activate_status}
+        self.set_deployment_status(end_point_id, FedMLModelCache.FEDML_ALL_DEVICE_ID_TAG, end_point_status_dict)
+
+    def get_end_point_status(self, end_point_id):
+        end_point_activated = False
+        status_list = self.get_deployment_status_list(end_point_id)
+        for status_item in status_list:
+            device_id, status_payload = self.get_status_item_info(status_item)
+            if str(device_id) == FedMLModelCache.FEDML_ALL_DEVICE_ID_TAG:
+                end_point_activated = status_payload["end_point_status"]
+                break
+
+        return end_point_activated
 
     def get_deployment_result_key(self, end_point_id):
         return "{}{}".format(FedMLModelCache.FEDML_MODEL_DEPLOYMENT_RESULT_TAG, end_point_id)

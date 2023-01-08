@@ -20,7 +20,7 @@ FEDML_CONVERTED_MODEL_DIR_NAME = "triton_models"
 FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL = 3
 
 
-def start_deployment(end_point_id, model_id,
+def start_deployment(end_point_id, model_id, model_version,
                      model_storage_local_path, inference_model_name, inference_engine,
                      inference_http_port, inference_grpc_port, inference_metric_port,
                      inference_use_gpu, inference_memory_size,
@@ -69,6 +69,7 @@ def start_deployment(end_point_id, model_id,
     convert_model_container_name = "{}_{}_{}".format(FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX,
                                                      str(end_point_id),
                                                      str(model_id))
+    running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id, inference_model_name, model_version)
     convert_model_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} --rm {} -v {}:/project {} " \
                         "bash -c \"cd /project && convert_model -m /project --name {} " \
                         "--backend {} --seq-len 16 128 128\"; exit".format(sudo_prefix, convert_model_container_name,
@@ -77,7 +78,7 @@ def start_deployment(end_point_id, model_id,
                                                                            gpu_attach_cmd,
                                                                            model_storage_local_path,
                                                                            inference_convertor_image,
-                                                                           inference_model_name,
+                                                                           running_model_name,
                                                                            inference_engine)
     logging.info("Convert the model to ONNX format: {}".format(convert_model_cmd))
     convert_process = ClientConstants.exec_console_with_script(convert_model_cmd,
@@ -133,8 +134,8 @@ def start_deployment(end_point_id, model_id,
                               CMD_TYPE_RUN_TRITON_SERVER, triton_server_process.pid,
                               inference_model_name, inference_engine, inference_http_port)
 
-    inference_output_url, model_version, model_metadata, model_config = \
-        get_model_info(inference_model_name, inference_engine, inference_http_port, infer_host)
+    inference_output_url, running_model_version, model_metadata, model_config = \
+        get_model_info(running_model_name, inference_engine, inference_http_port, infer_host)
     logging.info("Deploy model successfully, inference url: {}, model metadata: {}, model config: {}".format(
         inference_output_url, model_metadata, model_config))
 
