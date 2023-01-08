@@ -712,7 +712,7 @@ class FedMLServerRunner:
 
     def send_deployment_results_with_payload(self, end_point_id, payload):
         self.send_deployment_results(end_point_id, payload["model_name"], payload["model_url"],
-                                     payload["version"], payload["port"],
+                                     payload["model_version"], payload["port"],
                                      payload["inference_engine"],
                                      payload["model_metadata"],
                                      payload["model_config"],
