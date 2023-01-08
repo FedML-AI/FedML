@@ -129,7 +129,7 @@ class FedMLModelCache(object):
             return False
 
         status_int = self.redis_connection.get(self.get_end_point_status_key(end_point_id))
-        status = True if status_int == 1 else False
+        status = True if int(status_int) == 1 else False
         return status
 
     def get_deployment_result_key(self, end_point_id):
