@@ -198,13 +198,15 @@ class FedMLServerRunner:
         unzip_package_path, fedml_config_object = self.update_local_fedml_config(run_id, model_config)
 
         # start unified inference server
+        running_model_name = ClientConstants.get_running_model_name(run_id, model_id,
+                                                                    model_name, model_version)
         process = ServerConstants.exec_console_with_script(
             "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" END_POINT_ID=\"{}\" MODEL_ID=\"{}\" "
             "MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" VERSION=\"{}\" "
             "uvicorn fedml.cli.model_deployment.device_model_inference:api --host 0.0.0.0 --port {} --reload".format(
                 self.redis_addr, self.redis_port,
                 str(self.run_id), str(model_id),
-                model_name, model_version, "", self.args.version,
+                running_model_name, model_version, "", self.args.version,
                 str(ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)),
             should_capture_stdout=False,
             should_capture_stderr=False
@@ -226,7 +228,7 @@ class FedMLServerRunner:
                 "-mi",
                 str(model_id),
                 "-mn",
-                model_name,
+                running_model_name,
                 "-iu",
                 "infer_url",
                 "-ra",
@@ -362,8 +364,9 @@ class FedMLServerRunner:
         end_point_id = payload_json["end_point_id"]
         model_id = payload_json["model_id"]
         model_name = payload_json["model_name"]
-        model_version = "v1"
-        FedMLModelCache.get_instance(self.redis_addr, self.redis_port).set_deployment_result(end_point_id, device_id, payload_json)
+        model_version = payload_json["model_version"]
+        FedMLModelCache.get_instance(self.redis_addr, self.redis_port).\
+            set_deployment_result(end_point_id, device_id, payload_json)
 
         # When all deployments are finished
         edge_id_list = self.request_json["device_ids"]
@@ -398,9 +401,11 @@ class FedMLServerRunner:
             # 2. We should send to MBE(ModelOps Backend)
             payload_json["model_url"] = model_inference_url
             payload_json["port"] = model_inference_port
+            running_model_name = ClientConstants.get_running_model_name(
+                end_point_id, model_id, model_name, model_version)
             payload_json["input_json"] = {"end_point_id": self.run_id,
                                           "model_id": model_id,
-                                          "model_name": model_name,
+                                          "model_name": running_model_name,
                                           "model_version": model_version,
                                           "data": "This is our test data. Please fill in here with your real data."}
             model_metadata = payload_json["model_metadata"]
