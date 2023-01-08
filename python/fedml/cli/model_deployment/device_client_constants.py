@@ -1,3 +1,4 @@
+import logging
 import os
 import platform
 import shutil
@@ -162,6 +163,7 @@ class ClientConstants(object):
         for dir_item in model_dir_list:
             if not dir_item.startswith(running_model_name):
                 continue
+            logging.info("remove model file {}.".format(dir_item))
             model_file_path = os.path.join(model_dir, dir_item)
             shutil.rmtree(model_file_path, ignore_errors=True)
             os.system("sudo rm -Rf {}".format(model_file_path))
@@ -173,6 +175,7 @@ class ClientConstants(object):
         for dir_item in serving_dir_list:
             if not dir_item.startswith(running_model_name):
                 continue
+            logging.info("remove model serving file {}.".format(dir_item))
             model_file_path = os.path.join(model_serving_dir, dir_item)
             shutil.rmtree(model_file_path, ignore_errors=True)
             os.system("sudo rm -Rf {}".format(model_file_path))

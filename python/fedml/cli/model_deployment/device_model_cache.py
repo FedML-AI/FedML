@@ -87,11 +87,12 @@ class FedMLModelCache(object):
         result_payload = result_item_json["result"]
         return device_id, result_payload
 
-    def get_idle_device(self, end_point_id, in_model_id):
+    def get_idle_device(self, end_point_id, in_model_id, check_end_point_status=True):
         # Check whether the end point is activated.
-        end_point_activated = self.get_end_point_status(end_point_id)
-        if not end_point_activated:
-            return None
+        if check_end_point_status:
+            end_point_activated = self.get_end_point_status(end_point_id)
+            if not end_point_activated:
+                return None
 
         # Find all deployed devices
         status_list = self.get_deployment_status_list(end_point_id)
