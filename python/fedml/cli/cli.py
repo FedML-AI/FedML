@@ -771,10 +771,10 @@ def login_as_model_device_agent(
 
 @device.command("logout", help="Logout from the ModelOps platform (model.fedml.ai)")
 @click.option(
-    "--slave", "-sl", default=None, is_flag=True, help="logout from slave device.",
+    "--slave", "-s", default=None, is_flag=True, help="logout from slave device.",
 )
 @click.option(
-    "--master", "-ma", default=None, is_flag=True, help="logout from master device.",
+    "--master", "-m", default=None, is_flag=True, help="logout from master device.",
 )
 @click.option(
     "--docker", "-d", default=None, is_flag=True, help="logout from docker mode at the model device agent.",
