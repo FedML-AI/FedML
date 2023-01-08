@@ -69,7 +69,9 @@ def start_deployment(end_point_id, model_id, model_version,
     convert_model_container_name = "{}_{}_{}".format(FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX,
                                                      str(end_point_id),
                                                      str(model_id))
-    running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id, inference_model_name, model_version)
+    running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id,
+                                                                inference_model_name,
+                                                                model_version)
     convert_model_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} --rm {} -v {}:/project {} " \
                         "bash -c \"cd /project && convert_model -m /project --name {} " \
                         "--backend {} --seq-len 16 128 128\"; exit".format(sudo_prefix, convert_model_container_name,

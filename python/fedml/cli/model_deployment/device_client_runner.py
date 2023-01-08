@@ -181,10 +181,12 @@ class FedMLClientRunner:
             ClientConstants.INFERENCE_CONVERTOR_IMAGE,
             ClientConstants.INFERENCE_SERVER_IMAGE,
             self.infer_host)
+        running_model_name = ClientConstants.get_running_model_name(inference_end_point_id, model_id,
+                                                                    model_name, model_version)
         if inference_output_url == "":
-            self.send_deployment_status(self.edge_id, model_id, model_name, inference_output_url,
+            self.send_deployment_status(self.edge_id, model_id, running_model_name, inference_output_url,
                                         ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
-            self.send_deployment_results(self.edge_id, model_id, model_name, inference_output_url,
+            self.send_deployment_results(self.edge_id, model_id, running_model_name, inference_output_url,
                                          inference_model_version, ClientConstants.INFERENCE_HTTP_PORT,
                                          inference_engine, model_metadata, model_config)
             self.setup_client_mqtt_mgr()
@@ -194,9 +196,9 @@ class FedMLClientRunner:
                                                                 ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
             self.release_client_mqtt_mgr()
         else:
-            self.send_deployment_status(self.edge_id, model_id, model_name, inference_output_url,
+            self.send_deployment_status(self.edge_id, model_id, running_model_name, inference_output_url,
                                         ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED)
-            self.send_deployment_results(self.edge_id, model_id, model_name, inference_output_url,
+            self.send_deployment_results(self.edge_id, model_id, running_model_name, inference_output_url,
                                          inference_model_version, ClientConstants.INFERENCE_HTTP_PORT,
                                          inference_engine, model_metadata, model_config)
             time.sleep(1)
@@ -211,7 +213,7 @@ class FedMLClientRunner:
         deployment_results_topic = "/model_ops/model_device/return_deployment_result/{}".format(device_id)
         deployment_results_payload = {"end_point_id": self.run_id, "model_id": model_id,
                                       "model_name": model_name, "model_url": model_inference_url,
-                                      "version": model_version, "port": inference_port,
+                                      "model_version": model_version, "port": inference_port,
                                       "inference_engine": inference_engine,
                                       "model_metadata": model_metadata,
                                       "model_config": model_config}
