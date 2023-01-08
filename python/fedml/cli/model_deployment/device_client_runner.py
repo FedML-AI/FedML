@@ -153,7 +153,7 @@ class FedMLClientRunner:
         inference_engine = model_config["inference_engine"]
         inference_end_point_id = run_id
         use_gpu = "gpu"  # TODO: Get GPU from device infos
-        memory_size = "256m"  # TODO: Get Memory size for each instance
+        memory_size = "4096m"  # TODO: Get Memory size for each instance
 
         logging.info("Model deployment request: {}".format(self.request_json))
 
