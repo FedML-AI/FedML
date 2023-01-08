@@ -100,6 +100,7 @@ class FedMLModelCache(object):
             device_id, status_payload = self.get_status_item_info(status_item)
             if str(device_id) == FedMLModelCache.FEDML_ALL_DEVICE_ID_TAG:
                 continue
+            model_status = status_payload["model_status"]
             model_id = status_payload["model_id"]
             if model_id == in_model_id and model_status == ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
                 idle_device_list.append(device_id)
