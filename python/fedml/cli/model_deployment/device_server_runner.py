@@ -405,7 +405,10 @@ class FedMLServerRunner:
                                           "data": "This is our test data. Please fill in here with your real data."}
             model_metadata = payload_json["model_metadata"]
             payload_json["output_json"] = {"outputs": model_metadata["outputs"]}
-            FedMLModelCache.get_instance(self.redis_addr, self.redis_port).set_deployment_result(end_point_id, self.edge_id, payload_json)
+            FedMLModelCache.get_instance(self.redis_addr, self.redis_port).\
+                set_deployment_result(end_point_id, self.edge_id, payload_json)
+            FedMLModelCache.get_instance(self.redis_addr, self.redis_port).\
+                set_end_point_status(end_point_id, True)
             self.send_deployment_results_with_payload(self.run_id, payload_json)
 
     def callback_deployment_status_message(self, topic=None, payload=None):
