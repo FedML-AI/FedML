@@ -675,13 +675,26 @@ class FedMLServerRunner:
             get_end_point_status(model_msg_object.inference_end_point_id)
         if not prev_status:
             prev_deployment_result = FedMLModelCache.get_instance(self.redis_addr, self.redis_port).\
-                get_idle_device(model_msg_object.inference_end_point_id, model_msg_object.model_id)
+                get_idle_device(model_msg_object.inference_end_point_id, model_msg_object.model_id,
+                                check_end_point_status=False)
             if prev_deployment_result is None:
                 self.callback_start_deployment(topic, payload)
+                return
 
         # Set end point as activated status
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             set_end_point_status(model_msg_object.inference_end_point_id, True)
+
+        # Send deployment status to the ModelOps backend
+        status_list = FedMLModelCache.get_instance(self.redis_addr, self.redis_port).\
+            get_deployment_status_list(model_msg_object.inference_end_point_id)
+        for status_item in status_list:
+            device_id, status_payload = FedMLModelCache.get_instance(self.redis_addr, self.redis_port).\
+                get_status_item_info(status_item)
+            if device_id == model_msg_object.inference_end_point_id:
+                model_status = status_payload["model_status"]
+                self.send_deployment_status(model_msg_object.inference_end_point_id,
+                                            model_msg_object.model_name, "", model_status)
 
     def callback_deactivate_deployment(self, topic, payload):
         logging.info("callback_deactivate_deployment: topic = %s, payload = %s" % (topic, payload))
