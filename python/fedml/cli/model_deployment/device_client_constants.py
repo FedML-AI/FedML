@@ -149,7 +149,7 @@ class ClientConstants(object):
 
     @staticmethod
     def get_running_model_name(end_point_id, model_id, model_name, model_version):
-        running_model_name = "{}_{}_{}_{}".format(end_point_id, model_id, model_name, model_version)
+        running_model_name = "model_{}_{}_{}_{}".format(end_point_id, model_id, model_name, model_version)
         running_model_name = running_model_name.replace(' ', '-')
         running_model_name = running_model_name.replace(':', '-')
         return running_model_name
@@ -157,13 +157,25 @@ class ClientConstants(object):
     @staticmethod
     def remove_deployment(end_point_id, model_id, model_name, model_version):
         running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id, model_name, model_version)
+        model_dir = ClientConstants.get_model_dir()
+        model_dir_list = os.listdir(model_dir)
+        for dir_item in model_dir_list:
+            if not dir_item.startswith(running_model_name):
+                continue
+            model_file_path = os.path.join(model_dir, dir_item)
+            shutil.rmtree(model_file_path, ignore_errors=True)
+            os.system("sudo rm -Rf {}".format(model_file_path))
+
         model_serving_dir = ClientConstants.get_model_serving_dir()
         if not os.path.exists(model_serving_dir):
             return False
-        model_file_path = os.path.join(model_serving_dir, running_model_name)
-        shutil.rmtree(model_file_path, ignore_errors=True)
-        if os.path.exists(model_file_path):
-            return False
+        serving_dir_list = os.listdir(model_serving_dir)
+        for dir_item in serving_dir_list:
+            if not dir_item.startswith(running_model_name):
+                continue
+            model_file_path = os.path.join(model_serving_dir, dir_item)
+            shutil.rmtree(model_file_path, ignore_errors=True)
+            os.system("sudo rm -Rf {}".format(model_file_path))
 
         return True
 
