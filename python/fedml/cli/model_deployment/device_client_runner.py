@@ -171,18 +171,17 @@ class FedMLClientRunner:
         logging.info("Download and unzip model to local...")
         unzip_package_path, fedml_config_object = self.update_local_fedml_config(run_id, model_config)
 
-        inference_output_url, inference_model_version, model_metadata, model_config = start_deployment(
-            inference_end_point_id, model_id, model_version,
-            unzip_package_path, model_name, inference_engine,
-            ClientConstants.INFERENCE_HTTP_PORT,
-            ClientConstants.INFERENCE_GRPC_PORT,
-            ClientConstants.INFERENCE_METRIC_PORT,
-            use_gpu, memory_size,
-            ClientConstants.INFERENCE_CONVERTOR_IMAGE,
-            ClientConstants.INFERENCE_SERVER_IMAGE,
-            self.infer_host)
-        running_model_name = ClientConstants.get_running_model_name(inference_end_point_id, model_id,
-                                                                    model_name, model_version)
+        running_model_name, inference_output_url, inference_model_version, model_metadata, model_config = \
+            start_deployment(
+                inference_end_point_id, model_id, model_version,
+                unzip_package_path, model_name, inference_engine,
+                ClientConstants.INFERENCE_HTTP_PORT,
+                ClientConstants.INFERENCE_GRPC_PORT,
+                ClientConstants.INFERENCE_METRIC_PORT,
+                use_gpu, memory_size,
+                ClientConstants.INFERENCE_CONVERTOR_IMAGE,
+                ClientConstants.INFERENCE_SERVER_IMAGE,
+                self.infer_host)
         if inference_output_url == "":
             self.send_deployment_status(self.edge_id, model_id, running_model_name, inference_output_url,
                                         ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
