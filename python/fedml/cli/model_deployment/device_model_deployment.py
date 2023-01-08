@@ -12,13 +12,6 @@ import tritonclient.http as http_client
 from fedml.cli.model_deployment.modelops_configs import ModelOpsConfigs
 from fedml.cli.model_deployment.device_client_constants import ClientConstants
 
-CMD_TYPE_CONVERT_MODEL = "convert_model"
-CMD_TYPE_RUN_TRITON_SERVER = "run_triton_server"
-FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX = "fedml_convert_model_container"
-FEDML_TRITON_SERVER_CONTAINER_NAME_PREFIX = "fedml_triton_server_container"
-FEDML_CONVERTED_MODEL_DIR_NAME = "triton_models"
-FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL = 3
-
 
 def start_deployment(end_point_id, model_id, model_version,
                      model_storage_local_path, inference_model_name, inference_engine,
@@ -42,7 +35,7 @@ def start_deployment(end_point_id, model_id, model_version,
 
     # Check whether triton server is running.
     triton_server_is_running = False
-    triton_server_container_name = "{}".format(FEDML_TRITON_SERVER_CONTAINER_NAME_PREFIX)
+    triton_server_container_name = "{}".format(ClientConstants.FEDML_TRITON_SERVER_CONTAINER_NAME_PREFIX)
     check_triton_server_running_cmds = "{}docker ps |grep {}".format(sudo_prefix, triton_server_container_name)
     running_process = ClientConstants.exec_console_with_script(check_triton_server_running_cmds,
                                                                should_capture_stdout=True,
@@ -66,7 +59,7 @@ def start_deployment(end_point_id, model_id, model_version,
             os.system(sudo_prefix + "apt-get install -y nvidia-docker2")
             os.system(sudo_prefix + "systemctl restart docker")
 
-    convert_model_container_name = "{}_{}_{}".format(FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX,
+    convert_model_container_name = "{}_{}_{}".format(ClientConstants.FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX,
                                                      str(end_point_id),
                                                      str(model_id))
     running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id,
@@ -88,14 +81,14 @@ def start_deployment(end_point_id, model_id, model_version,
                                                                should_capture_stderr=False,
                                                                no_sys_out_err=True)
     log_deployment_result(end_point_id, model_id, convert_model_container_name,
-                          CMD_TYPE_CONVERT_MODEL, convert_process.pid,
+                          ClientConstants.CMD_TYPE_CONVERT_MODEL, convert_process.pid,
                           running_model_name, inference_engine, inference_http_port)
 
     # Move converted model to serving dir for inference
     model_serving_dir = ClientConstants.get_model_serving_dir()
     if not os.path.exists(model_serving_dir):
         os.makedirs(model_serving_dir)
-    converted_model_path = os.path.join(model_storage_local_path, FEDML_CONVERTED_MODEL_DIR_NAME)
+    converted_model_path = os.path.join(model_storage_local_path, ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME)
     model_file_list = os.listdir(converted_model_path)
     for model_file in model_file_list:
         src_model_file = os.path.join(converted_model_path, model_file)
@@ -126,14 +119,14 @@ def start_deployment(end_point_id, model_id, model_version,
                                                                    inference_memory_size,
                                                                    model_serving_dir,
                                                                    inference_server_image,
-                                                                   FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL)
+                                                                   ClientConstants.FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL)
         logging.info("Run triton inference server: {}".format(triton_server_cmd))
         triton_server_process = ClientConstants.exec_console_with_script(triton_server_cmd,
                                                                          should_capture_stdout=False,
                                                                          should_capture_stderr=False,
                                                                          no_sys_out_err=True)
         log_deployment_result(end_point_id, model_id, triton_server_container_name,
-                              CMD_TYPE_RUN_TRITON_SERVER, triton_server_process.pid,
+                              ClientConstants.CMD_TYPE_RUN_TRITON_SERVER, triton_server_process.pid,
                               running_model_name, inference_engine, inference_http_port)
 
     inference_output_url, running_model_version, model_metadata, model_config = \
@@ -150,8 +143,8 @@ def should_exit_logs(end_point_id, model_id, cmd_type, cmd_process_id, model_nam
     if sys_name == "Darwin":
         sudo_prefix = ""
 
-    if cmd_type == CMD_TYPE_CONVERT_MODEL:
-        convert_model_container_name = "{}_{}_{}".format(FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX,
+    if cmd_type == ClientConstants.CMD_TYPE_CONVERT_MODEL:
+        convert_model_container_name = "{}_{}_{}".format(ClientConstants.FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX,
                                                          str(end_point_id),
                                                          str(model_id))
         docker_ps_cmd = "{}docker ps -a;exit".format(sudo_prefix, convert_model_container_name)
@@ -167,7 +160,7 @@ def should_exit_logs(end_point_id, model_id, cmd_type, cmd_process_id, model_nam
                 return False
         else:
             return True
-    elif cmd_type == CMD_TYPE_RUN_TRITON_SERVER:
+    elif cmd_type == ClientConstants.CMD_TYPE_RUN_TRITON_SERVER:
         try:
             inference_output_url, model_version, model_metadata, model_config = \
                 get_model_info(model_name, inference_engine, inference_port)
