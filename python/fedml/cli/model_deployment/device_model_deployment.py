@@ -89,7 +89,7 @@ def start_deployment(end_point_id, model_id, model_version,
                                                                no_sys_out_err=True)
     log_deployment_result(end_point_id, model_id, convert_model_container_name,
                           CMD_TYPE_CONVERT_MODEL, convert_process.pid,
-                          inference_model_name, inference_engine, inference_http_port)
+                          running_model_name, inference_engine, inference_http_port)
 
     # Move converted model to serving dir for inference
     model_serving_dir = ClientConstants.get_model_serving_dir()
@@ -134,7 +134,7 @@ def start_deployment(end_point_id, model_id, model_version,
                                                                          no_sys_out_err=True)
         log_deployment_result(end_point_id, model_id, triton_server_container_name,
                               CMD_TYPE_RUN_TRITON_SERVER, triton_server_process.pid,
-                              inference_model_name, inference_engine, inference_http_port)
+                              running_model_name, inference_engine, inference_http_port)
 
     inference_output_url, running_model_version, model_metadata, model_config = \
         get_model_info(running_model_name, inference_engine, inference_http_port, infer_host)
