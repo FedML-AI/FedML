@@ -141,7 +141,7 @@ def start_deployment(end_point_id, model_id, model_version,
     logging.info("Deploy model successfully, inference url: {}, model metadata: {}, model config: {}".format(
         inference_output_url, model_metadata, model_config))
 
-    return inference_output_url, model_version, model_metadata, model_config
+    return running_model_name, inference_output_url, model_version, model_metadata, model_config
 
 
 def should_exit_logs(end_point_id, model_id, cmd_type, cmd_process_id, model_name, inference_engine, inference_port):
@@ -379,16 +379,17 @@ if __name__ == "__main__":
     args.user = args.user
 
     pip_source_dir = os.path.dirname(__file__)
-    __inference_output_url, __model_version, __model_metadata, __model_config = start_deployment(
-        args.model_storage_local_path,
-        args.inference_model_name,
-        args.inference_engine,
-        args.inference_http_port,
-        args.inference_grpc_port,
-        args.inference_metric_port,
-        args.inference_use_gpu,
-        args.inference_memory_size,
-        args.inference_convertor_image,
-        args.inference_server_image)
-    print("Model deployment results, url: {}, model metadata: {}, model config: {}".format(
-        __inference_output_url, __model_metadata, __model_config))
+    __running_model_name, __inference_output_url, __model_version, __model_metadata, __model_config = \
+        start_deployment(
+            args.model_storage_local_path,
+            args.inference_model_name,
+            args.inference_engine,
+            args.inference_http_port,
+            args.inference_grpc_port,
+            args.inference_metric_port,
+            args.inference_use_gpu,
+            args.inference_memory_size,
+            args.inference_convertor_image,
+            args.inference_server_image)
+    print("Model deployment results, running model name: {}, url: {}, model metadata: {}, model config: {}".format(
+        __running_model_name, __inference_output_url, __model_metadata, __model_config))
