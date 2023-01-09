@@ -1,5 +1,6 @@
 ARG VERSION=dev
 ARG BASE_IMAGE=public.ecr.aws/x6k8q1x9/fedml-device-image:base
+ARG FEDML_PIP_HOME=/usr/local/lib/python3.7/dist-packages/fedml
 FROM ${BASE_IMAGE}
 
 ADD ./devops/scripts/runner.sh ./fedml/runner.sh
@@ -12,7 +13,7 @@ RUN echo "Updating..."
 RUN pip3 install -r ./fedml/requirements.txt
 
 COPY ./python ./fedml/fedml-pip
-COPY ./python/fedml /usr/local/lib/python3.7/dist-packages/fedml
+COPY ./python/fedml ${FEDML_PIP_HOME}
 WORKDIR ./fedml/fedml-pip
 RUN pip3 install -e ./
 
