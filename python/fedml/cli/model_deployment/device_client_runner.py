@@ -17,6 +17,8 @@ import zipfile
 
 import click
 import requests
+from fedml.cli.model_deployment.device_model_msg_object import FedMLModelMsgObject
+
 from ...core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 
 from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
@@ -502,6 +504,15 @@ class FedMLClientRunner:
         # Stop log processor for current run
         MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
 
+    def callback_delete_deployment(self, topic, payload):
+        logging.info("callback_delete_deployment: topic = %s, payload = %s" % (topic, payload))
+
+        # Parse payload as the model message object.
+        model_msg_object = FedMLModelMsgObject(topic, payload)
+
+        ClientConstants.remove_deployment(model_msg_object.inference_end_point_id, model_msg_object.model_id,
+                                          model_msg_object.model_name, model_msg_object.model_version)
+
     def callback_exit_train_with_exception(self, topic, payload):
         logging.info("callback_exit_train_with_exception: topic = %s, payload = %s" % (topic, payload))
 
@@ -740,6 +751,10 @@ class FedMLClientRunner:
         topic_stop_deployment = "/model_ops/model_device/stop_deployment/{}".format(str(self.edge_id))
         self.mqtt_mgr.add_message_listener(topic_stop_deployment, self.callback_stop_deployment)
 
+        # Setup MQTT message listener for delete deployment
+        topic_delete_deployment = "/model_ops/model_device/delete_deployment/{}".format(str(self.edge_id))
+        self.mqtt_mgr.add_message_listener(topic_delete_deployment, self.callback_delete_deployment)
+
         # Setup MQTT message listener for running failed
         topic_exit_train_with_exception = "flserver_agent/" + str(self.edge_id) + "/exit_train_with_exception"
         self.mqtt_mgr.add_message_listener(topic_exit_train_with_exception, self.callback_exit_train_with_exception)
@@ -767,6 +782,7 @@ class FedMLClientRunner:
         # Subscribe topics for starting deployment, stopping deployment and fetching client status.
         mqtt_client_object.subscribe(topic_start_deployment, qos=2)
         mqtt_client_object.subscribe(topic_stop_deployment, qos=2)
+        mqtt_client_object.subscribe(topic_delete_deployment, qos=2)
         mqtt_client_object.subscribe(topic_client_status, qos=2)
         mqtt_client_object.subscribe(topic_report_status, qos=2)
         mqtt_client_object.subscribe(topic_last_will_msg, qos=2)
@@ -822,6 +838,10 @@ class FedMLClientRunner:
         setattr(self.args, "mqtt_config_path", service_config["mqtt_config"])
         self.mlops_metrics.report_sys_perf(self.args)
         self.release_client_mqtt_mgr()
+
+        # Pull inference server image
+        cmd_pulling_inference_image = "docker pull {}".format(ClientConstants.INFERENCE_SERVER_IMAGE)
+        ServerConstants.exec_console_with_script(cmd_pulling_inference_image)
 
     def start_agent_mqtt_loop(self):
         # Start MQTT message loop

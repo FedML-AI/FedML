@@ -40,6 +40,9 @@ class ClientConstants(object):
     LOCAL_RUNNER_INFO_DIR_NAME = 'runner_infos'
     LOCAL_PACKAGE_HOME_DIR_NAME = "fedml_packages"
 
+    K8S_DEPLOYMENT_MASTER_HOST_HOME_DIR = "/home/fedml-server"
+    K8S_DEPLOYMENT_SLAVE_HOST_HOME_DIR = "/home/fedml-client"
+
     INFERENCE_HTTP_PORT = 8000
     INFERENCE_GRPC_PORT = 8001
     INFERENCE_METRIC_PORT = 8002
@@ -75,6 +78,9 @@ class ClientConstants(object):
     FEDML_TRITON_SERVER_CONTAINER_NAME_PREFIX = "fedml_triton_server_container"
     FEDML_CONVERTED_MODEL_DIR_NAME = "triton_models"
     FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL = 3
+
+    FEDML_RUNNING_SOURCE_ENV_NAME = "FEDML_RUNNING_SOURCE"
+    FEDML_RUNNING_SOURCE_ENV_VALUE_K8S = "k8s"
 
     MODEL_INFERENCE_DEFAULT_PORT = 5001
 
@@ -129,6 +135,27 @@ class ClientConstants(object):
     def get_model_package_dir():
         model_packages_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "model_packages")
         return model_packages_dir
+
+    @staticmethod
+    def get_k8s_master_host_dir(current_dir):
+        home_dir = expanduser("~")
+        if str(current_dir).startswith(home_dir):
+            return str(current_dir).replace(home_dir, ClientConstants.K8S_DEPLOYMENT_MASTER_HOST_HOME_DIR)
+        return current_dir
+
+    @staticmethod
+    def get_k8s_slave_host_dir(current_dir):
+        home_dir = expanduser("~")
+        if str(current_dir).startswith(home_dir):
+            return str(current_dir).replace(home_dir, ClientConstants.K8S_DEPLOYMENT_SLAVE_HOST_HOME_DIR)
+        return current_dir
+
+    @staticmethod
+    def is_running_on_k8s():
+        running_source = os.getenv(ClientConstants.FEDML_RUNNING_SOURCE_ENV_NAME, default=None)
+        if running_source is not None and running_source == ClientConstants.FEDML_RUNNING_SOURCE_ENV_VALUE_K8S:
+            return True
+        return False
 
     @staticmethod
     def get_model_serving_dir():

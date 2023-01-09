@@ -403,6 +403,7 @@ class FedMLServerRunner:
                                           "model_id": model_id,
                                           "model_name": model_name,
                                           "model_version": model_version,
+                                          "token": str(uuid.uuid4()),
                                           "data": "This is our test data. Please fill in here with your real data."}
             model_metadata = payload_json["model_metadata"]
             payload_json["output_json"] = {"outputs": model_metadata["outputs"]}
@@ -483,6 +484,20 @@ class FedMLServerRunner:
             logging.info("start_deployment: send topic " + topic_start_deployment + " to client...")
             self.client_mqtt_mgr.send_message_json(topic_start_deployment, json.dumps(self.request_json))
 
+    def send_deployment_delete_request_to_edges(self):
+        self.wait_client_mqtt_connected()
+
+        run_id = self.request_json["run_id"]
+        edge_id_list = self.request_json["device_ids"]
+        logging.info("Edge ids: " + str(edge_id_list))
+        for edge_id in edge_id_list:
+            if edge_id == self.edge_id:
+                continue
+            # send delete deployment request to each model device
+            topic_delete_deployment = "/model_ops/model_device/delete_deployment/{}".format(str(edge_id))
+            logging.info("delete_deployment: send topic " + topic_delete_deployment + " to client...")
+            self.client_mqtt_mgr.send_message_json(topic_delete_deployment, json.dumps(self.request_json))
+
     def callback_client_status_msg(self, topic=None, payload=None):
         payload_json = json.loads(payload)
         run_id = payload_json["run_id"]
@@ -538,6 +553,11 @@ class FedMLServerRunner:
         request_json["run_id"] = run_id
         self.request_json = request_json
         self.running_request_json[str(run_id)] = request_json
+
+        FedMLModelCache.get_instance(self.redis_addr, self.redis_port).\
+            set_end_point_device_info(run_id, json.dumps(device_objs))
+        FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
+            set_end_point_token(run_id, token)
 
         # Send stage: MODEL_DEPLOYMENT_STAGE1 = "Received"
         time.sleep(2)
@@ -720,8 +740,10 @@ class FedMLServerRunner:
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             set_end_point_activation(model_msg_object.inference_end_point_id, False)
 
-        ClientConstants.remove_deployment(model_msg_object.inference_end_point_id, model_msg_object.model_id,
-                                          model_msg_object.model_name, model_msg_object.model_version)
+        self.setup_client_mqtt_mgr()
+        self.wait_client_mqtt_connected()
+        self.send_deployment_delete_request_to_edges(topic, payload)
+        self.release_client_mqtt_mgr()
 
     def send_deployment_results_with_payload(self, end_point_id, payload):
         self.send_deployment_results(end_point_id, payload["model_name"], payload["model_url"],

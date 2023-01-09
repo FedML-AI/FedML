@@ -38,19 +38,19 @@ securityContext: {}
 
 service:
   type: ClusterIP
-  port: 5001
+  port: 19999
 
 ingress:
-  enabled: true
+  enabled: false
   className: ""
   annotations: {}
     # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
+  # kubernetes.io/tls-acme: "true"
   hosts:
-    - host: model.fedml.ai
+    - host: chart-example.local
       paths:
-        - path: /fedmlModelServing
-          pathType: Prefix
+        - path: /
+          pathType: ImplementationSpecific
   tls: []
   #  - secretName: chart-example-tls
   #    hosts:
@@ -75,7 +75,8 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 
-nodeSelector: {}
+nodeSelector:
+  fedml-master-node: "true"
 
 tolerations: []
 
@@ -85,7 +86,8 @@ env:
   fedmlAccountId: "1420"
   fedmlVersion: "release"
   fedmlServerOsName: "Linux"
-  fedmlInferIngress: "127.0.0.1"
+  fedmlInferIngress: "https://model.fedml.ai/inference"
+  fedmlRunningSource: "k8s"
 
 volume:
   serverHomeDirHostPath: "/home/fedml-server"
