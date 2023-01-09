@@ -28,19 +28,24 @@ class FedMLModelCache(object):
         self.redis_pool = None
         self.redis_connection = None
 
-    def setup_redis_connection(self, redis_addr, redis_port):
-        self.redis_pool = redis.ConnectionPool(host=redis_addr, port=int(redis_port), decode_responses=True)
+    def setup_redis_connection(self, redis_addr, redis_port, redis_password="fedml_default"):
+        if redis_password is None or redis_password == "" or redis_password == "fedml_default":
+            self.redis_pool = redis.ConnectionPool(host=redis_addr, port=int(redis_port), decode_responses=True)
+        else:
+            self.redis_pool = redis.ConnectionPool(host=redis_addr, port=int(redis_port),
+                                                   password=redis_password, decode_responses=True)
         self.redis_connection = redis.Redis(connection_pool=self.redis_pool)
+
+    def set_redis_params(self, redis_addr="local", redis_port=6379, redis_password="fedml_default"):
+        if self.redis_pool is None:
+            if redis_addr is None or redis_addr == "local":
+                self.setup_redis_connection("localhost", redis_port, redis_password)
+            else:
+                self.setup_redis_connection(redis_addr, redis_port, redis_password)
 
     @staticmethod
     def get_instance(redis_addr="local", redis_port=6379):
-        instance = FedMLModelCache()
-        if instance.redis_pool is None:
-            if redis_addr is None or redis_addr == "local":
-                instance.setup_redis_connection("localhost", redis_port)
-            else:
-                instance.setup_redis_connection(redis_addr, redis_port)
-        return instance
+        return FedMLModelCache()
 
     def set_deployment_result(self, end_point_id, device_id, deployment_result):
         result_dict = {"cache_device_id": device_id, "result": deployment_result}
