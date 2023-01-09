@@ -61,7 +61,7 @@ async def predict(request: Request):
 
     # Authenticate request token
     has_requested_inference = False
-    if auth_request_token(in_end_point_token):
+    if auth_request_token(in_end_point_id, in_end_point_token):
         # Found idle inference device
         idle_device, model_id, model_name, inference_host, inference_output_url = \
             found_idle_inference_device(in_end_point_id, in_model_id)
