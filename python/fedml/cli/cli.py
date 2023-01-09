@@ -760,13 +760,17 @@ def device():
 @click.option(
     "--redis_port", "-rp", default="6379", help="redis port for caching inference information in the master device.",
 )
+@click.option(
+    "--redis_password", "-rpw", default="fedml_default",
+    help="redis password for caching inference information in the master device.",
+)
 def login_as_model_device_agent(
         userid, cloud, on_premise, master, infer_host, version, local_server,
-        runner_cmd, device_id, os_name, docker, docker_rank, redis_addr, redis_port
+        runner_cmd, device_id, os_name, docker, docker_rank, redis_addr, redis_port, redis_password
 ):
     device_login_entry.login_as_model_device_agent(userid, cloud, on_premise, master, infer_host, version, local_server,
                                                    runner_cmd, device_id, os_name, docker, docker_rank,
-                                                   redis_addr, redis_port)
+                                                   redis_addr, redis_port, redis_password)
 
 
 @device.command("logout", help="Logout from the ModelOps platform (model.fedml.ai)")
