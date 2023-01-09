@@ -38,10 +38,10 @@ securityContext: {}
 
 service:
   type: ClusterIP
-  port: 6379
+  port: 20000
 
 ingress:
-  enabled: true
+  enabled: false
   className: ""
   annotations:
     kubernetes.io/ingress.class: nginx
@@ -106,7 +106,7 @@ volume:
 inferenceGateway:
   deployment:
     name: fedml-model-inference-gateway
-    replicaCount: 3
+    replicaCount: 1
     image:
       repository: public.ecr.aws/x6k8q1x9/fedml-inference-ingress
       pullPolicy: Always
@@ -115,7 +115,7 @@ inferenceGateway:
     env:
       fedmlRedisAddr: "model-master.fedml.ai"
       fedmlRedisPort: 6379
-      fedmlRedisPassword: "fedml_default"
+      fedmlRedisPassword: "fedml_redis_2030"
       fedmlEndPointId: "0"
       fedmlModelId: "0"
       fedmlModelName: "default"
