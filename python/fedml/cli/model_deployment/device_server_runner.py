@@ -93,6 +93,7 @@ class FedMLServerRunner:
         self.infer_host = "127.0.0.1"
         self.redis_addr = "local"
         self.redis_port = "6379"
+        self.redis_password = "fedml_default"
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
         pass
@@ -201,10 +202,11 @@ class FedMLServerRunner:
         running_model_name = ClientConstants.get_running_model_name(run_id, model_id,
                                                                     model_name, model_version)
         process = ServerConstants.exec_console_with_script(
-            "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" END_POINT_ID=\"{}\" MODEL_ID=\"{}\" "
+            "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
+            "END_POINT_ID=\"{}\" MODEL_ID=\"{}\" "
             "MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" VERSION=\"{}\" "
             "uvicorn fedml.cli.model_deployment.device_model_inference:api --host 0.0.0.0 --port {} --reload".format(
-                self.redis_addr, self.redis_port,
+                self.redis_addr, self.redis_port, self.redis_password,
                 str(self.run_id), str(model_id),
                 running_model_name, model_version, "", self.args.version,
                 str(ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)),
@@ -234,7 +236,9 @@ class FedMLServerRunner:
                 "-ra",
                 self.redis_addr,
                 "-rp",
-                self.redis_port
+                self.redis_port,
+                "-rpw",
+                self.redis_password
             ],
             should_capture_stdout=False,
             should_capture_stderr=False
@@ -365,6 +369,7 @@ class FedMLServerRunner:
         model_id = payload_json["model_id"]
         model_name = payload_json["model_name"]
         model_version = payload_json["model_version"]
+        FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port).\
             set_deployment_result(end_point_id, device_id, payload_json)
 
@@ -419,6 +424,7 @@ class FedMLServerRunner:
         device_id = topic_splits[-1]
         payload_json = json.loads(payload)
         end_point_id = payload_json["end_point_id"]
+        FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port).set_deployment_status(end_point_id, device_id, payload_json)
 
         # When all deployments are finished
@@ -554,6 +560,7 @@ class FedMLServerRunner:
         self.request_json = request_json
         self.running_request_json[str(run_id)] = request_json
 
+        FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port).\
             set_end_point_device_info(run_id, json.dumps(device_objs))
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
@@ -701,6 +708,7 @@ class FedMLServerRunner:
         model_msg_object = FedMLModelMsgObject(topic, payload)
 
         # If the previous deployment did not complete successfully, we need to restart the deployment.
+        FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         prev_status = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             get_end_point_status(model_msg_object.inference_end_point_id)
         if prev_status != ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
@@ -727,6 +735,7 @@ class FedMLServerRunner:
         model_msg_object = FedMLModelMsgObject(topic, payload)
 
         # Set end point as deactivated status
+        FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port).\
             set_end_point_activation(model_msg_object.inference_end_point_id, False)
 
@@ -737,6 +746,7 @@ class FedMLServerRunner:
         model_msg_object = FedMLModelMsgObject(topic, payload)
 
         # Set end point as deactivated status
+        FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             set_end_point_activation(model_msg_object.inference_end_point_id, False)
 
