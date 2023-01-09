@@ -60,6 +60,7 @@ async def predict(request: Request):
     model_metrics.set_start_time()
 
     # Authenticate request token
+    inference_response = {}
     has_requested_inference = False
     if auth_request_token(in_end_point_id, in_end_point_token):
         # Found idle inference device
@@ -67,7 +68,6 @@ async def predict(request: Request):
             found_idle_inference_device(in_end_point_id, in_model_id)
 
         # Send inference request to idle device
-        inference_response = {}
         if inference_output_url != "":
             input_data = input_json.get("data", "SampleData")
             input_data_list = list()
@@ -75,6 +75,9 @@ async def predict(request: Request):
             inference_response = send_inference_request(idle_device, model_name, inference_host,
                                                         inference_output_url, input_json, input_data_list)
             has_requested_inference = True
+    else:
+        inference_response = {"error": True, "message": "token is not valid."}
+        return inference_response
 
     if not has_requested_inference:
         return inference_response
