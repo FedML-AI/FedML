@@ -1,3 +1,4 @@
+{{- $curNameSpace := .Release.Namespace -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -45,7 +46,7 @@ spec:
           - name: FEDML_RUNNING_SOURCE
             value: "k8s"
           - name: FEDML_REDIS_ADDR
-            value: "{{ .Values.inferenceGateway.deployment.env.fedmlRedisAddr }}"
+            value: "fedml-redis.{{ $curNameSpace }}.svc.cluster.local"
           - name: FEDML_REDIS_PORT
             value: "{{ .Values.inferenceGateway.deployment.env.fedmlRedisPort }}"
           - name: FEDML_REDIS_PASSWORD
@@ -117,7 +118,7 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
             - name: FEDML_REDIS_ADDR
-              value: "{{ .Values.inferenceGateway.deployment.env.fedmlRedisAddr }}"
+              value: "fedml-redis.{{ $curNameSpace }}.svc.cluster.local"
             - name: FEDML_REDIS_PORT
               value: "{{ .Values.inferenceGateway.deployment.env.fedmlRedisPort }}"
             - name: FEDML_REDIS_PASSWORD
