@@ -97,7 +97,7 @@ env:
   fedmlAccountId: "1420"
   fedmlVersion: "release"
   fedmlServerOsName: "Linux"
-  fedmlInferIngress: "127.0.0.1"
+  fedml: "127.0.0.1"
   fedmlRunningSource: "k8s"
 
 volume:
