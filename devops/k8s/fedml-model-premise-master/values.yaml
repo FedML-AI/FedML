@@ -59,7 +59,7 @@ ingress:
     nginx.ingress.kubernetes.io/ssl-redirect: 'true'
     # kubernetes.io/tls-acme: "true"
   hosts:
-    - host: model-master.fedml.ai
+    - host: model.fedml.ai
       paths:
         - path: /
           pathType: Prefix
@@ -133,7 +133,7 @@ inferenceGateway:
     port: 5001
   ingress:
     enabled: true
-    name: fedml-model-inference-ingress
+    name: fedml-model-inference-gateway
     className: ""
     annotations:
       kubernetes.io/ingress.class: nginx
@@ -149,11 +149,12 @@ inferenceGateway:
       nginx.ingress.kubernetes.io/proxy-read-timeout: '6000'
       nginx.ingress.kubernetes.io/proxy-send-timeout: '6000'
       nginx.ingress.kubernetes.io/ssl-redirect: 'true'
+      nginx.ingress.kubernetes.io/rewrite-target: /api/$2
       # kubernetes.io/tls-acme: "true"
     hosts:
       - host: model.fedml.ai
         paths:
-          - path: /inference
+          - path: /inference/api(/|$)(.*)
             pathType: Prefix
     tls: [ ]
     #  - secretName: chart-example-tls
