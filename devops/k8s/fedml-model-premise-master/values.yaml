@@ -98,8 +98,6 @@ env:
   fedmlAccountId: "1420"
   fedmlVersion: "release"
   fedmlServerOsName: "Linux"
-  fedmlInferIngress: "https://model.fedml.ai/inference"
-  fedmlRunningSource: "k8s"
 
 volume:
   serverHomeDirHostPath: "/home/fedml-server"
@@ -123,7 +121,6 @@ inferenceGateway:
       fedmlModelName: "default"
       fedmlModelVersion: "v1"
       fedmlInferUrl: "default"
-      fedmlConfigVersion: "release"
       fedmlInferPort: 5001
       fedmlRunningSource: "k8s"
   nodeSelector:
@@ -149,13 +146,9 @@ inferenceGateway:
       nginx.ingress.kubernetes.io/proxy-read-timeout: '6000'
       nginx.ingress.kubernetes.io/proxy-send-timeout: '6000'
       nginx.ingress.kubernetes.io/ssl-redirect: 'true'
-      nginx.ingress.kubernetes.io/rewrite-target: /api/$2
       # kubernetes.io/tls-acme: "true"
-    hosts:
-      - host: model.fedml.ai
-        paths:
-          - path: /inference/api(/|$)(.*)
-            pathType: Prefix
+    host: model.fedml.ai
+    protocol: https #http
     tls: [ ]
     #  - secretName: chart-example-tls
     #    hosts:

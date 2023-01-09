@@ -78,6 +78,7 @@ metadata:
   {{- with .Values.inferenceGateway.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
+    nginx.ingress.kubernetes.io/rewrite-target: /api/$2
   {{- end }}
 spec:
   {{- if and .Values.inferenceGateway.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
@@ -94,14 +95,12 @@ spec:
     {{- end }}
   {{- end }}
   rules:
-    {{- range .Values.inferenceGateway.ingress.hosts }}
-    - host: {{ .host | quote }}
+    - host: {{ .Values.inferenceGateway.ingress.host }}
       http:
         paths:
-          {{- range .paths }}
-          - path: {{ .path }}
-            {{- if and .pathType (semverCompare ">=1.18-0" $.Capabilities.KubeVersion.GitVersion) }}
-            pathType: {{ .pathType }}
+          - path: /inference/api(/|$)(.*)
+            {{- if semverCompare ">=1.18-0" $.Capabilities.KubeVersion.GitVersion }}
+            pathType: Prefix
             {{- end }}
             backend:
               {{- if semverCompare ">=1.19-0" $.Capabilities.KubeVersion.GitVersion }}
@@ -113,6 +112,4 @@ spec:
               serviceName: {{ $fullName }}
               servicePort: {{ $svcPort }}
               {{- end }}
-          {{- end }}
-    {{- end }}
   {{- end }}
