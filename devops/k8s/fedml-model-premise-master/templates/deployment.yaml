@@ -44,6 +44,10 @@ spec:
             value: "{{ .Values.env.fedmlInferIngress }}"
           - name: FEDML_RUNNING_SOURCE
             value: "{{ .Values.env.fedmlRunningSource }}"
+          - name: FEDML_REDIS_ADDR
+            value: "{{ .Values.inferenceGateway.deployment.env.fedmlRedisAddr }}"
+          - name: FEDML_REDIS_PORT
+            value: "{{ .Values.inferenceGateway.deployment.env.fedmlRedisPort }}"
           ports:
             - name: master-port
               containerPort: {{ .Values.service.port }}
