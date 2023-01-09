@@ -1,6 +1,6 @@
 ARG VERSION=dev
 ARG IS_BUILDING_GPU_IMAGE=0
-ARG BASE_IMAGE=public.ecr.aws/x6k8q1x9/fedml-device-image:base
+ARG BASE_IMAGE=nvcr.io/nvidia/tritonserver:22.01-py3
 FROM ${BASE_IMAGE}
 
 ADD ./devops/scripts/runner.sh ./fedml/runner.sh
