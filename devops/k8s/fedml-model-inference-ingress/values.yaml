@@ -5,7 +5,7 @@
 replicaCount: 1
 
 image:
-  repository: public.ecr.aws/x6k8q1x9/fedml-model-inference-ingress:latest
+  repository: public.ecr.aws/x6k8q1x9/fedml-inference-ingress:latest
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
