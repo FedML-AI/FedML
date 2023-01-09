@@ -15,9 +15,6 @@ COPY ./python ./fedml/fedml-pip
 COPY ./python/fedml /usr/local/lib/python3.7/dist-packages/fedml
 WORKDIR ./fedml/fedml-pip
 RUN pip3 install -e ./
-RUN pip3 install -e '.[tensorflow]'
-RUN pip3 install -e '.[jax]'
-RUN pip3 install -e '.[mxnet]'
 
 RUN rm -f /usr/share/keyrings/redis-archive-keyring.gpg;curl -fsSL https://packages.redis.io/gpg | sudo gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg; \
     echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/redis.list;  \
