@@ -25,4 +25,4 @@ WORKDIR /fedml
 
 ENV ACCOUNT_ID=0 FEDML_VERSION=${VERSION} CLIENT_DEVICE_ID=0 CLIENT_OS_NAME=linux
 
-CMD fedml model device login ${ACCOUNT_ID} -v ${FEDML_VERSION} -p -id ${CLIENT_DEVICE_ID} -os ${CLIENT_OS_NAME}; ./runner.sh
+CMD pip install fedml;fedml model device login ${ACCOUNT_ID} -v ${FEDML_VERSION} -p -id ${CLIENT_DEVICE_ID} -os ${CLIENT_OS_NAME}; ./runner.sh
