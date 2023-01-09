@@ -41,9 +41,9 @@ spec:
           - name: SERVER_OS_NAME
             value: "{{ .Values.env.fedmlServerOsName }}"
           - name: INFER_HOST
-            value: "{{ .Values.env.fedmlInferIngress }}"
+            value: "{{ .Values.inferenceGateway.ingress.protocol }}://{{ .Values.inferenceGateway.ingress.host }}/inference"
           - name: FEDML_RUNNING_SOURCE
-            value: "{{ .Values.env.fedmlRunningSource }}"
+            value: "k8s"
           - name: FEDML_REDIS_ADDR
             value: "{{ .Values.inferenceGateway.deployment.env.fedmlRedisAddr }}"
           - name: FEDML_REDIS_PORT
@@ -133,11 +133,11 @@ spec:
             - name: FEDML_INFER_URL
               value: "{{ .Values.inferenceGateway.deployment.env.fedmlInferUrl }}"
             - name: FEDML_CONFIG_VERSION
-              value: "{{ .Values.inferenceGateway.deployment.env.fedmlConfigVersion }}"
+              value: "{{ .Values.env.fedmlVersion }}"
             - name: FEDML_INFER_PORT
               value: "{{ .Values.inferenceGateway.deployment.env.fedmlInferPort }}"
             - name: FEDML_RUNNING_SOURCE
-              value: "{{ .Values.inferenceGateway.deployment.env.fedmlRunningSource }}"
+              value: "k8s"
           ports:
             - name: gateway-port
               containerPort: {{ .Values.inferenceGateway.service.port }}
