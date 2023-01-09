@@ -11,10 +11,10 @@ ADD ./devops/scripts/requirements.txt ./fedml/requirements.txt
 RUN chmod a+x ./fedml/runner.sh
 RUN echo "Updating..."
 
-RUN pip3 install -r ./fedml/requirements.txt
+#RUN pip3 install -r ./fedml/requirements.txt
 
 RUN python3 -m pip install --upgrade pip
-RUN pip3 install fedml
+RUN pip install fedml
 
 COPY ./python ./fedml/fedml-pip
 COPY ./python/fedml ${FEDML_PIP_HOME}
