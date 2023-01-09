@@ -13,7 +13,7 @@ RUN echo "Updating..."
 
 RUN pip3 install -r ./fedml/requirements.txt
 
-
+RUN python3 -m pip install --upgrade pip
 RUN pip3 install --upgrade fedml
 
 COPY ./python ./fedml/fedml-pip
