@@ -11,7 +11,6 @@ RUN echo "Updating..."
 
 RUN pip3 install -r ./fedml/requirements.txt
 
-RUN cp pip show fedml |grep Location: |awk -F':' '{print $2}'
 COPY ./python ./fedml/fedml-pip
 COPY ./python/fedml /usr/local/lib/python3.7/dist-packages/fedml
 WORKDIR ./fedml/fedml-pip
