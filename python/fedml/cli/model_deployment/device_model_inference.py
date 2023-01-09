@@ -16,6 +16,7 @@ from pydantic import BaseSettings
 class Settings(BaseSettings):
     redis_addr: str
     redis_port: str
+    redis_password: str
     end_point_id: str
     model_id: str
     model_name: str
@@ -54,7 +55,7 @@ async def predict(request: Request):
     # Start timing for model metrics
     model_metrics = FedMLModelMetrics(in_end_point_id, in_model_id,
                                       in_model_name, settings.model_infer_url,
-                                      settings.redis_addr, settings.redis_port,
+                                      settings.redis_addr, settings.redis_port, settings.redis_password,
                                       version=settings.version)
     model_metrics.set_start_time()
 
@@ -92,6 +93,7 @@ def found_idle_inference_device(end_point_id, in_model_id):
     inference_output_url = ""
     inference_port = ServerConstants.INFERENCE_HTTP_PORT
     # Found idle device (TODO: optimize the algorithm to search best device for inference)
+    FedMLModelCache.get_instance().set_redis_params(settings.redis_addr, settings.redis_port, settings.redis_password)
     payload = FedMLModelCache.get_instance(settings.redis_addr, settings.redis_port).get_idle_device(end_point_id,
                                                                                                      in_model_id)
     if payload is not None:
@@ -129,6 +131,7 @@ def auth_request_token(end_point_id, token):
     if token is None:
         return False
 
+    FedMLModelCache.get_instance().set_redis_params(settings.redis_addr, settings.redis_port, settings.redis_password)
     cached_token = FedMLModelCache.get_instance(settings.redis_addr, settings.redis_port).\
         get_end_point_token(end_point_id)
     if cached_token == token:

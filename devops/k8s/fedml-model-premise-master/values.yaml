@@ -100,8 +100,6 @@ env:
   fedmlServerOsName: "Linux"
   fedmlInferIngress: "https://model.fedml.ai/inference"
   fedmlRunningSource: "k8s"
-  fedmlRedisAddr: "127.0.0.1"
-  fedmlRedisPort: 6379
 
 volume:
   serverHomeDirHostPath: "/home/fedml-server"
@@ -119,6 +117,7 @@ inferenceGateway:
     env:
       fedmlRedisAddr: "model-master.fedml.ai"
       fedmlRedisPort: 6379
+      fedmlRedisPassword: "fedml_default"
       fedmlEndPointId: "0"
       fedmlModelId: "0"
       fedmlModelName: "default"
