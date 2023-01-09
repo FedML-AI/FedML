@@ -40,6 +40,8 @@ spec:
             value: "{{ .Values.env.fedmlVersion }}"
           - name: CLIENT_OS_NAME
             value: "{{ .Values.env.fedmlClientOsName }}"
+          - name: FEDML_RUNNING_SOURCE
+            value: "{{ .Values.env.fedmlRunningSource }}"
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
