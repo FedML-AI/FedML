@@ -10,6 +10,8 @@ class FedMLModelCache(object):
     FEDML_MODEL_DEPLOYMENT_MONITOR_TAG = "FEDML_MODEL_DEPLOYMENT_MONITOR-"
     FEDML_MODEL_END_POINT_ACTIVATION_TAG = "FEDML_MODEL_END_POINT_ACTIVATION-"
     FEDML_MODEL_END_POINT_STATUS_TAG = "FEDML_MODEL_END_POINT_STATUS-"
+    FEDML_MODEL_DEVICE_INFO_TAG = "FEDML_MODEL_DEVICE_INFO_TAG-"
+    FEDML_MODEL_END_POINT_TOKEN_TAG = "FEDML_MODEL_END_POINT_TOKEN_TAG-"
     FEDML_KEY_COUNT_PER_SCAN = 1000
 
     def __init__(self):
@@ -143,6 +145,26 @@ class FedMLModelCache(object):
         status = True if int(status_int) == 1 else False
         return status
 
+    def set_end_point_device_info(self, end_point_id, device_info):
+        self.redis_connection.set(self.get_deployment_device_info_key(end_point_id), device_info)
+
+    def get_end_point_device_info(self, end_point_id):
+        if not self.redis_connection.exists(self.get_deployment_device_info_key(end_point_id)):
+            return False
+
+        device_info = self.redis_connection.get(self.get_deployment_device_info_key(end_point_id))
+        return device_info
+
+    def set_end_point_token(self, end_point_id, token):
+        self.redis_connection.set(self.get_deployment_token_key(end_point_id), token)
+
+    def get_end_point_token(self, end_point_id):
+        if not self.redis_connection.exists(self.get_deployment_token_key(end_point_id)):
+            return False
+
+        token = self.redis_connection.get(self.get_deployment_token_key(end_point_id))
+        return token
+
     def get_deployment_result_key(self, end_point_id):
         return "{}{}".format(FedMLModelCache.FEDML_MODEL_DEPLOYMENT_RESULT_TAG, end_point_id)
 
@@ -154,6 +176,12 @@ class FedMLModelCache(object):
 
     def get_end_point_activation_key(self, end_point_id):
         return "{}{}".format(FedMLModelCache.FEDML_MODEL_END_POINT_ACTIVATION_TAG, end_point_id)
+
+    def get_deployment_device_info_key(self, end_point_id):
+        return "{}{}".format(FedMLModelCache.FEDML_MODEL_DEVICE_INFO_TAG, end_point_id)
+
+    def get_deployment_token_key(self, end_point_id):
+        return "{}{}".format(FedMLModelCache.FEDML_MODEL_END_POINT_TOKEN_TAG, end_point_id)
 
     def set_monitor_metrics(self, end_point_id, total_latency, avg_latency,
                             total_request_num, current_qps,

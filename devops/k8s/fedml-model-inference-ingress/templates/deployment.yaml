@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "fedml-model-premise-master.fullname" . }}
+  name: {{ include "fedml-model-inference-ingress.fullname" . }}
   labels:
-    {{- include "fedml-model-premise-master.labels" . | nindent 4 }}
+    {{- include "fedml-model-inference-ingress.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "fedml-model-premise-master.selectorLabels" . | nindent 6 }}
+      {{- include "fedml-model-inference-ingress.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -18,13 +18,13 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "fedml-model-premise-master.selectorLabels" . | nindent 8 }}
+        {{- include "fedml-model-inference-ingress.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "fedml-model-premise-master.serviceAccountName" . }}
+      serviceAccountName: {{ include "fedml-model-inference-ingress.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
