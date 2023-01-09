@@ -145,7 +145,7 @@ spec:
               mountPath: {{ .Values.volume.serverHomeDirMountPath }}
             - name: docker-sock
               mountPath: /var/run/docker.sock
-      {{- with .Values.nodeSelector }}
+      {{- with .Values.inferenceGateway.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
