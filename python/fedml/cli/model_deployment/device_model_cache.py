@@ -133,7 +133,7 @@ class FedMLModelCache(object):
 
     def get_end_point_status(self, end_point_id):
         if not self.redis_connection.exists(self.get_end_point_status_key(end_point_id)):
-            return False
+            return None
 
         status = self.redis_connection.get(self.get_end_point_status_key(end_point_id))
         return status
@@ -155,7 +155,7 @@ class FedMLModelCache(object):
 
     def get_end_point_device_info(self, end_point_id):
         if not self.redis_connection.exists(self.get_deployment_device_info_key(end_point_id)):
-            return False
+            return None
 
         device_info = self.redis_connection.get(self.get_deployment_device_info_key(end_point_id))
         return device_info
@@ -165,7 +165,7 @@ class FedMLModelCache(object):
 
     def get_end_point_token(self, end_point_id):
         if not self.redis_connection.exists(self.get_deployment_token_key(end_point_id)):
-            return False
+            return None
 
         token = self.redis_connection.get(self.get_deployment_token_key(end_point_id))
         return token
