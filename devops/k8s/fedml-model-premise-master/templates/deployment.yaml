@@ -48,6 +48,8 @@ spec:
             value: "{{ .Values.inferenceGateway.deployment.env.fedmlRedisAddr }}"
           - name: FEDML_REDIS_PORT
             value: "{{ .Values.inferenceGateway.deployment.env.fedmlRedisPort }}"
+          - name: FEDML_REDIS_PASSWORD
+            value: "{{ .Values.inferenceGateway.deployment.env.fedmlRedisPassword }}"
           ports:
             - name: master-port
               containerPort: {{ .Values.service.port }}
@@ -118,6 +120,8 @@ spec:
               value: "{{ .Values.inferenceGateway.deployment.env.fedmlRedisAddr }}"
             - name: FEDML_REDIS_PORT
               value: "{{ .Values.inferenceGateway.deployment.env.fedmlRedisPort }}"
+            - name: FEDML_REDIS_PASSWORD
+              value: "{{ .Values.inferenceGateway.deployment.env.fedmlRedisPassword }}"
             - name: FEDML_END_POINT_ID
               value: "{{ .Values.inferenceGateway.deployment.env.fedmlEndPointId }}"
             - name: FEDML_MODEL_ID
