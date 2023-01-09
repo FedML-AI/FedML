@@ -1411,7 +1411,7 @@ class FedMLServerRunner:
         )
         self.mlops_metrics.set_sys_reporting_status(enable=True, is_client=False)
         setattr(self.args, "mqtt_config_path", service_config["mqtt_config"])
-        self.mlops_metrics.report_sys_perf(self.args)
+        self.mlops_metrics.report_sys_perf(self.args, is_client=False)
         self.release_client_mqtt_mgr()
 
     def start_agent_mqtt_loop(self):
