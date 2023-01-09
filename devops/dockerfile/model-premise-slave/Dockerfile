@@ -16,6 +16,7 @@ RUN pip3 install -r ./fedml/requirements.txt
 COPY ./python ./fedml/fedml-pip
 COPY ./python/fedml ${FEDML_PIP_HOME}
 WORKDIR ./fedml/fedml-pip
+RUN pip3 install --upgrade fedml
 RUN pip3 install -e ./
 
 WORKDIR /fedml
