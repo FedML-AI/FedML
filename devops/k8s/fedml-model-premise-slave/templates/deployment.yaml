@@ -63,11 +63,11 @@ spec:
               containerPort: {{ .Values.inferenceBackend.service.http.port }}
               protocol: TCP
             - name: grpc
-                containerPort: {{ .Values.inferenceBackend.service.grpc.port }}
-                protocol: TCP
+              containerPort: {{ .Values.inferenceBackend.service.grpc.port }}
+              protocol: TCP
             - name: metrics
-                containerPort: { { .Values.inferenceBackend.service.metrics.port } }
-                protocol: TCP
+              containerPort: {{ .Values.inferenceBackend.service.metrics.port }}
+              protocol: TCP
           volumeMounts:
             - name: home-dir
               mountPath: {{ .Values.volume.clientHomeDirMountPath }}
