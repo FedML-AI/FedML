@@ -150,6 +150,8 @@ spec:
               mountPath: {{ .Values.volume.serverHomeDirMountPath }}
             - name: docker-sock
               mountPath: /var/run/docker.sock
+            - mountPath: /dev/shm
+              name: cache-volume
       {{- with .Values.inferenceGateway.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -170,3 +172,7 @@ spec:
         - name: docker-sock
           hostPath:
             path: /var/run/docker.sock
+        - emptyDir:
+            medium: Memory
+            sizeLimit: 4096Mi
+          name: cache-volume
