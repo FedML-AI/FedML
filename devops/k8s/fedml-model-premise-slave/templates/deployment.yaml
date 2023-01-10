@@ -43,11 +43,31 @@ spec:
           - name: FEDML_RUNNING_SOURCE
             value: "{{ .Values.env.fedmlRunningSource }}"
           ports:
-            - name: http
+            - name: slave-port
               containerPort: {{ .Values.service.port }}
               protocol: TCP
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: home-dir
+              mountPath: {{ .Values.volume.clientHomeDirMountPath }}
+            - name: docker-sock
+              mountPath: /var/run/docker.sock
+        - name: {{ .Values.inferenceBackend.name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.inferenceBackend.image.repository }}:{{ .Values.inferenceBackend.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.inferenceBackend.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.inferenceBackend.service.http.port }}
+              protocol: TCP
+            - name: grpc
+                containerPort: {{ .Values.inferenceBackend.service.grpc.port }}
+                protocol: TCP
+            - name: metrics
+                containerPort: { { .Values.inferenceBackend.service.metrics.port } }
+                protocol: TCP
           volumeMounts:
             - name: home-dir
               mountPath: {{ .Values.volume.clientHomeDirMountPath }}
