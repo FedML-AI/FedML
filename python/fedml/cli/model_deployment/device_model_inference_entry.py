@@ -1,4 +1,5 @@
 import argparse
+import time
 
 from fedml.cli.model_deployment.device_client_constants import ClientConstants
 from fedml.cli.model_deployment.device_server_constants import ServerConstants
@@ -33,4 +34,7 @@ if __name__ == "__main__":
         should_capture_stdout=False,
         should_capture_stderr=False
     )
+
+    while True:
+        time.sleep(3)
 
