@@ -38,6 +38,8 @@ spec:
           env:
           - name: ACCOUNT_ID
             value: "{{ .Values.env.fedmlAccountId }}"
+          - name: FEDML_API_KEY
+            value: "{{ .Values.env.fedmlApiKey }}"
           - name: FEDML_VERSION
             value: "{{ .Values.env.fedmlVersion }}"
           - name: CLIENT_OS_NAME
