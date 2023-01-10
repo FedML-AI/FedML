@@ -543,7 +543,6 @@ class FedMLServerRunner:
             base64_bytes = base64.b64decode(message_bytes)
             payload = base64_bytes.decode("ascii")
             logging.info("decoded payload: {}".format(payload))
-        logging.info("callback_start_deployment step 2")
 
         # get deployment params
         request_json = json.loads(payload)
@@ -570,17 +569,11 @@ class FedMLServerRunner:
         self.request_json = request_json
         self.running_request_json[str(run_id)] = request_json
 
-        logging.info("callback_start_deployment step 3, redis addr {},"
-                     "redis port {}, redis password {}".format(self.redis_addr,
-                                                               self.redis_port, self.redis_password))
-
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             set_end_point_device_info(run_id, json.dumps(device_objs))
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             set_end_point_token(run_id, token)
-
-        logging.info("callback_start_deployment step 4")
 
         # Send stage: MODEL_DEPLOYMENT_STAGE1 = "Received"
         time.sleep(2)
