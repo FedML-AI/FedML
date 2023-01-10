@@ -6,7 +6,7 @@ replicaCount: 1
 
 image:
   repository: public.ecr.aws/x6k8q1x9/fedml-model-premise-master
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
 
@@ -38,18 +38,30 @@ securityContext: {}
 
 service:
   type: ClusterIP
-  port: 5001
+  port: 20000
 
 ingress:
-  enabled: true
+  enabled: false
   className: ""
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    ingress.kubernetes.io/cors-allow-headers: '*'
+    ingress.kubernetes.io/cors-allow-methods: 'PUT, GET, POST, OPTIONS, HEAD, DELETE, PATCH'
+    ingress.kubernetes.io/cors-allow-origin: '*'
+    ingress.kubernetes.io/enable-cors: 'true'
+    nginx.ingress.kubernetes.io/backend-protocol: HTTP
+    nginx.ingress.kubernetes.io/force-ssl-redirect: 'true'
+    nginx.ingress.kubernetes.io/proxy-body-size: 2400m
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: '6000'
+    nginx.ingress.kubernetes.io/proxy-next-upstream-timeout: '6000'
+    nginx.ingress.kubernetes.io/proxy-read-timeout: '6000'
+    nginx.ingress.kubernetes.io/proxy-send-timeout: '6000'
+    nginx.ingress.kubernetes.io/ssl-redirect: 'true'
     # kubernetes.io/tls-acme: "true"
   hosts:
     - host: model.fedml.ai
       paths:
-        - path: /fedmlModelServing
+        - path: /
           pathType: Prefix
   tls: []
   #  - secretName: chart-example-tls
@@ -75,7 +87,8 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 
-nodeSelector: {}
+nodeSelector:
+  fedml-master-node: "true"
 
 tolerations: []
 
@@ -83,10 +96,61 @@ affinity: {}
 
 env:
   fedmlAccountId: "1420"
+  fedmlApiKey: "YourApiKey"
   fedmlVersion: "release"
   fedmlServerOsName: "Linux"
-  fedmlInferIngress: "127.0.0.1"
 
 volume:
   serverHomeDirHostPath: "/home/fedml-server"
   serverHomeDirMountPath: "/home/fedml/fedml-server"
+
+inferenceGateway:
+  deployment:
+    name: fedml-model-inference-gateway
+    replicaCount: 1
+    image:
+      repository: public.ecr.aws/x6k8q1x9/fedml-inference-ingress
+      pullPolicy: Always
+      # Overrides the image tag whose default is the chart appVersion.
+      tag: ""
+    env:
+      fedmlRedisAddr: "model-master.fedml.ai"
+      fedmlRedisPort: 6379
+      fedmlRedisPassword: "fedml_redis_2030"
+      fedmlEndPointId: "0"
+      fedmlModelId: "0"
+      fedmlModelName: "default"
+      fedmlModelVersion: "v1"
+      fedmlInferUrl: "default"
+      fedmlInferPort: 5001
+      fedmlRunningSource: "k8s"
+  nodeSelector:
+    fedml-inference-ingress: "true"
+  service:
+    type: ClusterIP
+    port: 5001
+  ingress:
+    enabled: true
+    name: fedml-model-inference-gateway
+    className: ""
+    annotations:
+      kubernetes.io/ingress.class: nginx
+      ingress.kubernetes.io/cors-allow-headers: '*'
+      ingress.kubernetes.io/cors-allow-methods: 'PUT, GET, POST, OPTIONS, HEAD, DELETE, PATCH'
+      ingress.kubernetes.io/cors-allow-origin: '*'
+      ingress.kubernetes.io/enable-cors: 'true'
+      nginx.ingress.kubernetes.io/backend-protocol: HTTP
+      nginx.ingress.kubernetes.io/force-ssl-redirect: 'true'
+      nginx.ingress.kubernetes.io/proxy-body-size: 2400m
+      nginx.ingress.kubernetes.io/proxy-connect-timeout: '6000'
+      nginx.ingress.kubernetes.io/proxy-next-upstream-timeout: '6000'
+      nginx.ingress.kubernetes.io/proxy-read-timeout: '6000'
+      nginx.ingress.kubernetes.io/proxy-send-timeout: '6000'
+      nginx.ingress.kubernetes.io/ssl-redirect: 'true'
+      # kubernetes.io/tls-acme: "true"
+    host: model.fedml.ai
+    protocol: https #http
+    tls: [ ]
+    #  - secretName: chart-example-tls
+    #    hosts:
+    #      - chart-example.local

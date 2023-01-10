@@ -301,10 +301,10 @@ class MLOpsMetrics(Singleton):
         return self.is_sys_perf_reporting
 
     @staticmethod
-    def report_sys_perf(sys_args):
+    def report_sys_perf(sys_args, is_client=True):
         sys_metrics = MLOpsMetrics()
         sys_metrics.args = sys_args
-        sys_metrics.set_sys_reporting_status(True)
+        sys_metrics.set_sys_reporting_status(True, is_client)
         sys_metrics.is_system_perf_reporting()
         sys_metrics.sys_stats_process = multiprocessing.Process(
             target=sys_metrics.report_sys_performances

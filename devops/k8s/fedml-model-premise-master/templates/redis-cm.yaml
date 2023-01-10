@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-conf
+data:
+  redis.conf: |
+        bind 0.0.0.0
+        port 6379
+        requirepass {{ .Values.inferenceGateway.deployment.env.fedmlRedisPassword }}
+        pidfile .pid
+        appendonly yes
+        cluster-config-file nodes-6379.conf
+        pidfile /data/middleware-data/redis/log/redis-6379.pid
+        cluster-config-file /data/middleware-data/redis/conf/redis.conf
+        dir /data/middleware-data/redis/data/
+        logfile "/data/middleware-data/redis/log/redis-6379.log"
+        cluster-node-timeout 5000
+        protected-mode no

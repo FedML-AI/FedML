@@ -1,3 +1,5 @@
+{{- $curNameSpace := .Release.Namespace -}}
+{{- $fullName := include "fedml-model-premise-slave.fullname" . -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -36,12 +38,18 @@ spec:
           env:
           - name: ACCOUNT_ID
             value: "{{ .Values.env.fedmlAccountId }}"
+          - name: FEDML_API_KEY
+            value: "{{ .Values.env.fedmlApiKey }}"
           - name: FEDML_VERSION
             value: "{{ .Values.env.fedmlVersion }}"
           - name: CLIENT_OS_NAME
             value: "{{ .Values.env.fedmlClientOsName }}"
+          - name: INFER_HOST
+            value: "{{ $fullName }}.{{ $curNameSpace }}"
+          - name: FEDML_RUNNING_SOURCE
+            value: "{{ .Values.env.fedmlRunningSource }}"
           ports:
-            - name: http
+            - name: slave-port
               containerPort: {{ .Values.service.port }}
               protocol: TCP
           resources:
@@ -51,6 +59,31 @@ spec:
               mountPath: {{ .Values.volume.clientHomeDirMountPath }}
             - name: docker-sock
               mountPath: /var/run/docker.sock
+        - name: {{ .Values.inferenceBackend.name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.inferenceBackend.image.repository }}:{{ .Values.inferenceBackend.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.inferenceBackend.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.inferenceBackend.service.http.port }}
+              protocol: TCP
+            - name: grpc
+              containerPort: {{ .Values.inferenceBackend.service.grpc.port }}
+              protocol: TCP
+            - name: metrics
+              containerPort: {{ .Values.inferenceBackend.service.metrics.port }}
+              protocol: TCP
+          resources:
+            limits:
+              memory: 8192Mi
+          volumeMounts:
+            - name: home-dir
+              mountPath: {{ .Values.volume.clientHomeDirMountPath }}
+            - name: docker-sock
+              mountPath: /var/run/docker.sock
+            - mountPath: /dev/shm
+              name: cache-volume
       {{- if .Values.nodeSelector }}
       nodeSelector:
         {{- .Values.nodeSelector | toYaml | nindent 8 }}
@@ -71,3 +104,7 @@ spec:
         - name: docker-sock
           hostPath:
             path: /var/run/docker.sock
+        - emptyDir:
+            medium: Memory
+            sizeLimit: 4096Mi
+          name: cache-volume

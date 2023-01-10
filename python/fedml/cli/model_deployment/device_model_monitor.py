@@ -9,9 +9,10 @@ from fedml.core.distributed.communication.mqtt.mqtt_manager import MqttManager
 
 
 class FedMLModelMetrics:
-    def __init__(self, end_point_id, model_id, model_name, infer_url, redis_addr, redis_port, version="release"):
+    def __init__(self, end_point_id, model_id, model_name, infer_url, redis_addr, redis_port, redis_password, version="release"):
         self.redis_addr = redis_addr
         self.redis_port = redis_port
+        self.redis_password = redis_password
         self.config_version = version
         self.current_end_point_id = end_point_id
         self.current_model_id = model_id
@@ -27,6 +28,7 @@ class FedMLModelMetrics:
 
     def calc_metrics(self, model_id, model_name, end_point_id, inference_output_url):
         total_latency, avg_latency, total_request_num, current_qps, timestamp = 0, 0, 0, 0, 0
+        FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         metrics_item = FedMLModelCache.get_instance(self.redis_addr, self.redis_port).get_latest_monitor_metrics(
                                                                                     end_point_id)
         if metrics_item is not None:
@@ -76,6 +78,7 @@ class FedMLModelMetrics:
         self.monitor_mqtt_mgr.loop_stop()
 
     def send_monitoring_metrics(self, index):
+        FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         metrics_item, inc_index = FedMLModelCache.get_instance(self.redis_addr,
                                                                self.redis_port).get_monitor_metrics_item(
                                                                self.current_end_point_id, index)
@@ -115,10 +118,11 @@ if __name__ == "__main__":
     parser.add_argument("--infer_url", "-iu", type=str, help="inference url")
     parser.add_argument("--redis_addr", "-ra", type=str, default="local")
     parser.add_argument("--redis_port", "-rp", type=str, default="6379")
+    parser.add_argument("--redis_password", "-rpw", type=str, default="fedml_default")
     args = parser.parse_args()
 
     monitor_center = FedMLModelMetrics(args.end_point_id, args.model_id, args.model_name, args.infer_url,
-                                       args.redis_addr, args.redis_port,
+                                       args.redis_addr, args.redis_port, args.redis_password,
                                        version=args.version)
     monitor_center.start_monitoring_metrics_center()
 
