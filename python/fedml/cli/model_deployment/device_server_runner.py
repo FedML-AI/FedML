@@ -499,19 +499,18 @@ class FedMLServerRunner:
             logging.info("start_deployment: send topic " + topic_start_deployment + " to client...")
             self.client_mqtt_mgr.send_message_json(topic_start_deployment, json.dumps(self.request_json))
 
-    def send_deployment_delete_request_to_edges(self):
+    def send_deployment_delete_request_to_edges(self, payload, model_msg_object):
         self.wait_client_mqtt_connected()
 
-        run_id = self.request_json["run_id"]
-        edge_id_list = self.request_json["device_ids"]
-        logging.info("Edge ids: " + str(edge_id_list))
+        edge_id_list = model_msg_object.device_ids
+        logging.info("Device ids: " + str(edge_id_list))
         for edge_id in edge_id_list:
             if edge_id == self.edge_id:
                 continue
             # send delete deployment request to each model device
             topic_delete_deployment = "/model_ops/model_device/delete_deployment/{}".format(str(edge_id))
             logging.info("delete_deployment: send topic " + topic_delete_deployment + " to client...")
-            self.client_mqtt_mgr.send_message_json(topic_delete_deployment, json.dumps(self.request_json))
+            self.client_mqtt_mgr.send_message_json(topic_delete_deployment, payload)
 
     def callback_client_status_msg(self, topic=None, payload=None):
         payload_json = json.loads(payload)
@@ -763,7 +762,7 @@ class FedMLServerRunner:
 
         self.setup_client_mqtt_mgr()
         self.wait_client_mqtt_connected()
-        self.send_deployment_delete_request_to_edges(topic, payload)
+        self.send_deployment_delete_request_to_edges(payload, model_msg_object)
         self.release_client_mqtt_mgr()
 
     def send_deployment_results_with_payload(self, end_point_id, payload):
