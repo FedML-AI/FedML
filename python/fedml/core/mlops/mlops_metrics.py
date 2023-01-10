@@ -301,10 +301,10 @@ class MLOpsMetrics(Singleton):
         return self.is_sys_perf_reporting
 
     @staticmethod
-    def report_sys_perf(sys_args):
+    def report_sys_perf(sys_args, is_client=True):
         sys_metrics = MLOpsMetrics()
         sys_metrics.args = sys_args
-        sys_metrics.set_sys_reporting_status(True)
+        sys_metrics.set_sys_reporting_status(True, is_client)
         sys_metrics.is_system_perf_reporting()
         sys_metrics.sys_stats_process = multiprocessing.Process(
             target=sys_metrics.report_sys_performances
@@ -319,7 +319,7 @@ class MLOpsMetrics(Singleton):
             self.args.mqtt_config_path["MQTT_USER"],
             self.args.mqtt_config_path["MQTT_PWD"],
             180,
-            "FedML_Metrics_SysPerf_{}_{}".format(str(self.args.device_id), str(self.edge_id))
+            "FedML_Metrics_SysPerf_{}_{}_{}".format(str(self.args.device_id), str(self.edge_id), str(uuid.uuid4()))
         )
 
         self.set_messenger(mqtt_mgr, self.args)

@@ -43,6 +43,19 @@ pipeline {
         VERSION_PRODUCTION = 'release'
         BRANCH_PRODUCTION = 'master'
 
+        FEDML_HELM_CHARTS_BASE_DIR="./devops/k8s"
+        FEDML_MODEL_OPS_ACCOUNT_ID = 240
+        FEDML_MODEL_OPS_VERSION_DEV = "dev"
+        FEDML_MODEL_OPS_VERSION_TEST = "test"
+        FEDML_MODEL_OPS_VERSION_PRODUCTION = "release"
+        FEDML_MODEL_PREMISE_MASTER_PACKAGE = "fedml-model-premise-master"
+        FEDML_MODEL_PREMISE_SLAVE_PACKAGE = "fedml-model-premise-slave"
+        FEDML_MODEL_INFERENCE_INGRESS_PACKAGE = "fedml-model-inference-ingress"
+        APP_NAME_PREMISE_MASTER = 'fedml-model-premise-master'
+        APP_NAME_PREMISE_SLAVE  = 'fedml-model-premise-slave'
+        APP_NAME_MODEL_INFERENCE_INGRESS  = 'fedml-model-inference-ingress'
+        APP_NAME_MODEL_INFERENCE_BASE  = 'fedml-model-inference-base'
+
         DOCKER_NAMESPACE = 'x6k8q1x9/'
         DOCKER_NAMESPACE_TEST = 's8w2q1c1/'
         APP_NAME_DEVICE_IMAGE = 'fedml-device-image'
@@ -141,7 +154,7 @@ pipeline {
                 sh 'unzip awscliv2.zip'
                 sh 'mkdir -p ./devops/scripts/aws'
                 sh 'cp -Rf ./aws/* ./devops/scripts/aws'
-                sh 'cd ./devops/scripts/;unzip ./docker.zip;unzip ./kubectl.zip;cd ../../'
+                sh 'cd ./devops/scripts/;unzip ./docker.zip;unzip ./kubectl.zip;tar -zxvf ./helm-v3.10.3-linux-amd64.tar.gz;mv linux-amd64/helm /usr/local/bin/helm;cd ../../'
 
                 sh 'docker pull public.ecr.aws/x6k8q1x9/fedml-device-image:base'
 
@@ -152,6 +165,11 @@ pipeline {
                 sh 'docker build --network=host -f ./devops/dockerfile/client-agent/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_CLIENT_AGENT:$VERSION_DEV --build-arg VERSION=$VERSION_DEV .'
 
                 sh 'docker build --network=host -f ./devops/dockerfile/edge-server/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_EDGE_SERVER:$VERSION_DEV --build-arg VERSION=$VERSION_DEV .'
+
+                sh 'docker build --network=host -f ./devops/dockerfile/model-premise-master/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_PREMISE_MASTER:$VERSION_DEV --build-arg VERSION=$VERSION_DEV .'
+                sh 'docker build --network=host -f ./devops/dockerfile/model-premise-slave/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_DEV --build-arg VERSION=$VERSION_DEV .'
+                sh 'docker build --network=host -f ./devops/dockerfile/model-inference-base/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BASE:$VERSION_DEV --build-arg VERSION=$VERSION_DEV .'
+                sh 'docker build --network=host -f ./devops/dockerfile/model-inference-ingress/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_DEV --build-arg VERSION=$VERSION_DEV .'
             }
           }
         }
@@ -162,6 +180,12 @@ pipeline {
           }
           steps {
             container('base') {
+              sh 'curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"'
+              sh 'unzip awscliv2.zip'
+              sh 'mkdir -p ./devops/scripts/aws'
+              sh 'cp -Rf ./aws/* ./devops/scripts/aws'
+              sh 'cd ./devops/scripts/;unzip ./docker.zip;unzip ./kubectl.zip;tar -zxvf ./helm-v3.10.3-linux-amd64.tar.gz;mv linux-amd64/helm /usr/local/bin/helm;cd ../../'
+
               sh 'docker pull public.ecr.aws/x6k8q1x9/fedml-device-image:base'
 
               sh 'docker build --network=host -f ./devops/dockerfile/device-image/Dockerfile-Test -t $REGISTRY_TEST/$DOCKER_NAMESPACE_TEST$APP_NAME_DEVICE_IMAGE:$VERSION_TEST .'
@@ -171,6 +195,11 @@ pipeline {
               sh 'docker build --network=host -f ./devops/dockerfile/client-agent/Dockerfile -t $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_CLIENT_AGENT:$VERSION_TEST --build-arg VERSION=$VERSION_TEST .'
 
               sh 'docker build --network=host -f ./devops/dockerfile/edge-server/Dockerfile -t $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_EDGE_SERVER:$VERSION_TEST --build-arg VERSION=$VERSION_TEST .'
+
+              sh 'docker build --network=host -f ./devops/dockerfile/model-premise-master/Dockerfile -t $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_PREMISE_MASTER:$VERSION_TEST --build-arg VERSION=$VERSION_TEST .'
+              sh 'docker build --network=host -f ./devops/dockerfile/model-premise-slave/Dockerfile -t $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_TEST --build-arg VERSION=$VERSION_TEST .'
+              sh 'docker build --network=host -f ./devops/dockerfile/model-inference-base/Dockerfile -t $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BASE:$VERSION_TEST --build-arg VERSION=$VERSION_TEST .'
+              sh 'docker build --network=host -f ./devops/dockerfile/model-inference-ingress/Dockerfile -t $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_TEST --build-arg VERSION=$VERSION_TEST .'
             }
           }
         }
@@ -185,7 +214,7 @@ pipeline {
               sh 'unzip awscliv2.zip'
               sh 'mkdir -p ./devops/scripts/aws'
               sh 'cp -Rf ./aws/* ./devops/scripts/aws'
-              sh 'cd ./devops/scripts/;unzip ./docker.zip;unzip ./kubectl.zip;cd ../../'
+              sh 'cd ./devops/scripts/;unzip ./docker.zip;unzip ./kubectl.zip;tar -zxvf ./helm-v3.10.3-linux-amd64.tar.gz;mv linux-amd64/helm /usr/local/bin/helm;cd ../../'
 
               sh './devops/scripts/build-fedml-docker.sh'
 
@@ -200,6 +229,11 @@ pipeline {
               sh 'docker build --network=host -f ./devops/dockerfile/edge-server/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_EDGE_SERVER:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
 
               sh 'docker build --network=host -f ./devops/dockerfile/docs-server/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DOCS_SERVER:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
+
+              sh 'docker build --network=host -f ./devops/dockerfile/model-premise-master/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_PREMISE_MASTER:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
+              sh 'docker build --network=host -f ./devops/dockerfile/model-premise-slave/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
+              sh 'docker build --network=host -f ./devops/dockerfile/model-inference-base/Dockerfile -t $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BASE:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
+              sh 'docker build --network=host -f ./devops/dockerfile/model-inference-ingress/Dockerfile -t $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
             }
           }
         }
@@ -224,6 +258,11 @@ pipeline {
               sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_SERVER_AGENT:$VERSION_DEV'
               sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_CLIENT_AGENT:$VERSION_DEV'
               sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_EDGE_SERVER:$VERSION_DEV'
+
+              sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_PREMISE_MASTER:$VERSION_DEV'
+              sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_DEV'
+              sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BASE:$VERSION_DEV'
+              sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_DEV'
             }
           }
         }
@@ -248,6 +287,11 @@ pipeline {
               sh 'docker push  $REGISTRY_TEST/$DOCKER_NAMESPACE_TEST$APP_NAME_SERVER_AGENT:$VERSION_TEST'
               sh 'docker push  $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_CLIENT_AGENT:$VERSION_TEST'
               sh 'docker push  $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_EDGE_SERVER:$VERSION_TEST'
+
+              sh 'docker push  $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_PREMISE_MASTER:$VERSION_TEST'
+              sh 'docker push  $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_TEST'
+              sh 'docker push  $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BASE:$VERSION_TEST'
+              sh 'docker push  $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_TEST'
             }
           }
         }
@@ -279,6 +323,11 @@ pipeline {
               sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_CLIENT_AGENT:$VERSION_PRODUCTION'
               sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_EDGE_SERVER:$VERSION_PRODUCTION'
               sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DOCS_SERVER:$VERSION_PRODUCTION'
+
+              sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_PREMISE_MASTER:$VERSION_PRODUCTION'
+              sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_PRODUCTION'
+              sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BASE:$VERSION_PRODUCTION'
+              sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_PRODUCTION'
             }
           }
         }
@@ -299,6 +348,10 @@ pipeline {
 
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_DEV --replicas=0 deployment/$DEPLOY_NAME_2'
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_DEV --replicas=1 deployment/$DEPLOY_NAME_2'
+
+                    sh './devops/scripts/install-model-premise.sh $FEDML_HELM_CHARTS_BASE_DIR $FEDML_MODEL_PREMISE_MASTER_PACKAGE $FEDML_MODEL_OPS_VERSION_DEV $DEPLOY_NAMESPACE_DEV $FEDML_MODEL_OPS_ACCOUNT_ID'
+                    sh './devops/scripts/install-model-slave.sh $FEDML_HELM_CHARTS_BASE_DIR $FEDML_MODEL_PREMISE_SLAVE_PACKAGE $FEDML_MODEL_OPS_VERSION_DEV $DEPLOY_NAMESPACE_DEV $FEDML_MODEL_OPS_ACCOUNT_ID'
+                    sh './devops/scripts/install-model-inference.sh $FEDML_HELM_CHARTS_BASE_DIR $FEDML_MODEL_INFERENCE_INGRESS_PACKAGE $FEDML_MODEL_OPS_VERSION_DEV $DEPLOY_NAMESPACE_DEV $FEDML_MODEL_OPS_ACCOUNT_ID'
                 }
              }
           }
@@ -317,6 +370,10 @@ pipeline {
                     ]) {
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_TEST --replicas=0 deployment/$DEPLOY_NAME'
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_TEST --replicas=1 deployment/$DEPLOY_NAME'
+
+                    sh './devops/scripts/install-model-premise.sh $FEDML_HELM_CHARTS_BASE_DIR $FEDML_MODEL_PREMISE_MASTER_PACKAGE $FEDML_MODEL_OPS_VERSION_TEST $DEPLOY_NAMESPACE_TEST $FEDML_MODEL_OPS_ACCOUNT_ID'
+                    sh './devops/scripts/install-model-slave.sh $FEDML_HELM_CHARTS_BASE_DIR $FEDML_MODEL_PREMISE_SLAVE_PACKAGE $FEDML_MODEL_OPS_VERSION_TEST $DEPLOY_NAMESPACE_TEST $FEDML_MODEL_OPS_ACCOUNT_ID'
+                    sh './devops/scripts/install-model-inference.sh $FEDML_HELM_CHARTS_BASE_DIR $FEDML_MODEL_INFERENCE_INGRESS_PACKAGE $FEDML_MODEL_OPS_VERSION_TEST $DEPLOY_NAMESPACE_TEST $FEDML_MODEL_OPS_ACCOUNT_ID'
                 }
              }
           }
@@ -341,6 +398,10 @@ pipeline {
 
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DEPLOY_NAME_3'
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION  --replicas=1 deployment/$DEPLOY_NAME_3'
+
+                    sh './devops/scripts/install-model-premise.sh $FEDML_HELM_CHARTS_BASE_DIR $FEDML_MODEL_PREMISE_MASTER_PACKAGE $FEDML_MODEL_OPS_VERSION_PRODUCTION $DEPLOY_NAMESPACE_PRODUCTION $FEDML_MODEL_OPS_ACCOUNT_ID'
+                    sh './devops/scripts/install-model-slave.sh $FEDML_HELM_CHARTS_BASE_DIR $FEDML_MODEL_PREMISE_SLAVE_PACKAGE $FEDML_MODEL_OPS_VERSION_PRODUCTION $DEPLOY_NAMESPACE_PRODUCTION $FEDML_MODEL_OPS_ACCOUNT_ID'
+                    sh './devops/scripts/install-model-inference.sh $FEDML_HELM_CHARTS_BASE_DIR $FEDML_MODEL_INFERENCE_INGRESS_PACKAGE $FEDML_MODEL_OPS_VERSION_PRODUCTION $DEPLOY_NAMESPACE_PRODUCTION $FEDML_MODEL_OPS_ACCOUNT_ID'
                 }
 
                 withCredentials([

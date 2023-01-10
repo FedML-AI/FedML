@@ -23,7 +23,7 @@ from .core.common.ml_engine_backend import MLEngineBackend
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.7.377"
+__version__ = "0.7.378"
 
 
 def init(args=None):
@@ -293,8 +293,7 @@ def update_client_id_list(args):
         In MLOps mode, args.client_id_list will be set to real-time client id list selected by UI (not starting from 1)
     """
     if not hasattr(args, "using_mlops") or (hasattr(args, "using_mlops") and not args.using_mlops):
-        print("args.client_id_list = {}".format(print(args.client_id_list)))
-        if args.client_id_list is None or args.client_id_list == "None" or args.client_id_list == "[]":
+        if not hasattr(args, "client_id_list") or args.client_id_list is None or args.client_id_list == "None" or args.client_id_list == "[]":
             if (
                 args.training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE
                 or args.training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO
