@@ -20,6 +20,7 @@ RUN pip3 install -e ./
 
 WORKDIR /fedml
 
-ENV ACCOUNT_ID=0 FEDML_VERSION=${VERSION} CLIENT_DEVICE_ID=0 CLIENT_OS_NAME=linux
+ENV ACCOUNT_ID=0 FEDML_VERSION=${VERSION} CLIENT_DEVICE_ID=0 CLIENT_OS_NAME=linux INFER_HOST="127.0.0.1"
 
-CMD fedml model device login ${ACCOUNT_ID} -v ${FEDML_VERSION} -p -id ${CLIENT_DEVICE_ID} -os ${CLIENT_OS_NAME}; ./runner.sh
+CMD fedml model device login ${ACCOUNT_ID} -v ${FEDML_VERSION} -p \
+    -id ${CLIENT_DEVICE_ID} -os ${CLIENT_OS_NAME} -ih ${INFER_HOST}; ./runner.sh
