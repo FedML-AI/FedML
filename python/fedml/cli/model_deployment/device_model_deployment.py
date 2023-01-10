@@ -69,13 +69,13 @@ def start_deployment(end_point_id, model_id, model_version,
     running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id,
                                                                 inference_model_name,
                                                                 model_version)
-    model_storage_local_path = ClientConstants.get_k8s_slave_host_dir(model_storage_local_path)
+    model_storage_processed_path = ClientConstants.get_k8s_slave_host_dir(model_storage_local_path)
     convert_model_cmd = "{}docker stop {}; {}docker rm {}; " \
                         "{}docker run --name {} --rm {} -v {}:/project " \
                         "{} bash -c \"cd /project && convert_model -m /project --name {} " \
                         "--backend {} --seq-len 16 128 128\"; exit". \
         format(sudo_prefix, convert_model_container_name, sudo_prefix, convert_model_container_name,
-               sudo_prefix, convert_model_container_name, gpu_attach_cmd, model_storage_local_path,
+               sudo_prefix, convert_model_container_name, gpu_attach_cmd, model_storage_processed_path,
                inference_convertor_image, running_model_name,
                inference_engine)
     logging.info("Convert the model to ONNX format: {}".format(convert_model_cmd))

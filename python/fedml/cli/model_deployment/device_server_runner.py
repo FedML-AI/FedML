@@ -198,27 +198,31 @@ class FedMLServerRunner:
         logging.info("Download and unzip model to local...")
         unzip_package_path, fedml_config_object = self.update_local_fedml_config(run_id, model_config)
 
-        # start unified inference server
-        running_model_name = ClientConstants.get_running_model_name(run_id, model_id,
-                                                                    model_name, model_version)
-        process = ServerConstants.exec_console_with_script(
-            "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
-            "END_POINT_ID=\"{}\" MODEL_ID=\"{}\" "
-            "MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" VERSION=\"{}\" "
-            "uvicorn fedml.cli.model_deployment.device_model_inference:api --host 0.0.0.0 --port {} --reload".format(
-                self.redis_addr, self.redis_port, self.redis_password,
-                str(self.run_id), str(model_id),
-                running_model_name, model_version, "", self.args.version,
-                str(ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)),
-            should_capture_stdout=False,
-            should_capture_stderr=False
-        )
-        ServerConstants.save_learning_process(process.pid)
+        if not ServerConstants.is_running_on_k8s():
+            # start unified inference server
+            running_model_name = ClientConstants.get_running_model_name(run_id, model_id,
+                                                                        model_name, model_version)
+            process = ServerConstants.exec_console_with_script(
+                "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
+                "END_POINT_ID=\"{}\" MODEL_ID=\"{}\" "
+                "MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" VERSION=\"{}\" "
+                "uvicorn fedml.cli.model_deployment.device_model_inference:api --host 0.0.0.0 --port {} --reload".format(
+                    self.redis_addr, self.redis_port, self.redis_password,
+                    str(self.run_id), str(model_id),
+                    running_model_name, model_version, "", self.args.version,
+                    str(ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)),
+                should_capture_stdout=False,
+                should_capture_stderr=False
+            )
+            ServerConstants.save_learning_process(process.pid)
 
         # start inference monitor server
         python_program = get_python_program()
         pip_source_dir = os.path.dirname(__file__)
         monitor_file = os.path.join(pip_source_dir, "device_model_monitor.py")
+        logging.inf("redis addr {}, port {}, password {}.".format(self.redis_addr,
+                                                                  self.redis_port,
+                                                                  self.redis_password))
         self.monitor_process = ServerConstants.exec_console_with_shell_script_list(
             [
                 python_program,
@@ -564,7 +568,7 @@ class FedMLServerRunner:
         self.running_request_json[str(run_id)] = request_json
 
         logging.info("callback_start_deployment step 3, redis addr {},"
-                     "redis port, redis password {}".format(self.redis_addr,
+                     "redis port {}, redis password {}".format(self.redis_addr,
                                                             self.redis_port, self.redis_password))
 
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)

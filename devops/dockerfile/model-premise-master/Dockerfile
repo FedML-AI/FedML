@@ -26,6 +26,6 @@ WORKDIR /fedml
 ENV ACCOUNT_ID=0 FEDML_VERSION=${VERSION} SERVER_DEVICE_ID=0 SERVER_OS_NAME=linux INFER_HOST="127.0.0.1" \
     FEDML_REDIS_ADDR="127.0.0.1" FEDML_REDIS_PORT=6379 EDML_REDIS_PASSWORD="fedml_default"
 
-CMD bash -c "redis-server &";fedml model device login ${ACCOUNT_ID} -v ${FEDML_VERSION} -p -m \
+CMD fedml model device login ${ACCOUNT_ID} -v ${FEDML_VERSION} -p -m \
     -ih ${INFER_HOST} -id ${SERVER_DEVICE_ID} -os ${SERVER_OS_NAME} \
     -ra ${FEDML_REDIS_ADDR} -rp ${FEDML_REDIS_PORT} -rpw ${FEDML_REDIS_PASSWORD};./runner.sh

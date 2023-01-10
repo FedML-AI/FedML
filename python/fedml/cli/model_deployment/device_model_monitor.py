@@ -120,6 +120,7 @@ if __name__ == "__main__":
     parser.add_argument("--redis_port", "-rp", type=str, default="6379")
     parser.add_argument("--redis_password", "-rpw", type=str, default="fedml_default")
     args = parser.parse_args()
+    print("monitor logs {}".format(args))
 
     monitor_center = FedMLModelMetrics(args.end_point_id, args.model_id, args.model_name, args.infer_url,
                                        args.redis_addr, args.redis_port, args.redis_password,
