@@ -68,9 +68,9 @@ Notes: $YourEndPointIngressDomainName is your model serving end point URL host w
 ```curl -XPOST https://$YourEndPointIngressDomainName/inference/api/v1/predict -H 'accept: application/json' -d'{  "model_version": "v11-Thu Jan 05 08:20:24 GMT 2023",  "model_name": "model_340_18_fedml_test_model_v11-Thu-Jan-05-08-20-24-GMT-2023",  "data": "This is our test data. Please fill in here with your real data.",  "end_point_id": 336,  "model_id": 18,  "token": "2e081ef115d04ee8adaffe5c1d0bfbac"}'```
 
 ### 6). Config your CNAME record in your DNS provider (Godaddy, wordpress, AWS Route 53...)
-#### Find the Kubernetes nginx ingress named 'fedml-model-inference-gateway' in your Kubernetes cluster.
-#### Fetch its gateway address, e.g. a865e3a1e9aa54c71b50e3a6c764cbd3-337285825.us-west-1.elb.amazonaws.com
-#### Set your CNAME record, config $YourEndPointIngressDomainName to point to the above gateway address 
+#### (a). Find the Kubernetes nginx ingress named 'fedml-model-inference-gateway' in your Kubernetes cluster.
+#### (b). Fetch its gateway address, e.g. a865e3a1e9aa54c71b50e3a6c764cbd3-337285825.us-west-1.elb.amazonaws.com
+#### (c). Set your CNAME record, config $YourEndPointIngressDomainName to point to the above gateway address 
   
 
 ## 2. Make the model package for your trained model files.
