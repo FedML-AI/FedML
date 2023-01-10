@@ -23,7 +23,7 @@ from ...cli.comm_utils import sys_utils
 
 def login_as_model_device_agent(
     userid, cloud, on_premise, master, infer_host, version, local_server,
-    runner_cmd, device_id, os_name, docker, docker_rank, redis_addr, redis_port
+    runner_cmd, device_id, os_name, docker, docker_rank, redis_addr, redis_port, redis_password
 ):
     account_id = userid[0]
     platform_url = "open.fedml.ai"
@@ -142,7 +142,9 @@ def login_as_model_device_agent(
                 "-ra",
                 redis_addr,
                 "-rp",
-                redis_port
+                redis_port,
+                "-rpw",
+                redis_password
             ]
         ).pid
         sys_utils.save_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME,

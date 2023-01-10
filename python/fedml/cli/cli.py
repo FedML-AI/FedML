@@ -760,21 +760,25 @@ def device():
 @click.option(
     "--redis_port", "-rp", default="6379", help="redis port for caching inference information in the master device.",
 )
+@click.option(
+    "--redis_password", "-rpw", default="fedml_default",
+    help="redis password for caching inference information in the master device.",
+)
 def login_as_model_device_agent(
         userid, cloud, on_premise, master, infer_host, version, local_server,
-        runner_cmd, device_id, os_name, docker, docker_rank, redis_addr, redis_port
+        runner_cmd, device_id, os_name, docker, docker_rank, redis_addr, redis_port, redis_password
 ):
     device_login_entry.login_as_model_device_agent(userid, cloud, on_premise, master, infer_host, version, local_server,
                                                    runner_cmd, device_id, os_name, docker, docker_rank,
-                                                   redis_addr, redis_port)
+                                                   redis_addr, redis_port, redis_password)
 
 
 @device.command("logout", help="Logout from the ModelOps platform (model.fedml.ai)")
 @click.option(
-    "--slave", "-sl", default=None, is_flag=True, help="logout from slave device.",
+    "--slave", "-s", default=None, is_flag=True, help="logout from slave device.",
 )
 @click.option(
-    "--master", "-ma", default=None, is_flag=True, help="logout from master device.",
+    "--master", "-m", default=None, is_flag=True, help="logout from master device.",
 )
 @click.option(
     "--docker", "-d", default=None, is_flag=True, help="logout from docker mode at the model device agent.",
@@ -813,13 +817,10 @@ def delete_model(name):
     "--name", "-n", type=str, help="model name.",
 )
 @click.option(
-    "--meta", "-m", type=str, is_flag=True, default="", help="meta information for specific model.",
-)
-@click.option(
     "--path", "-p", type=str, help="path for specific model.",
 )
 def add_model_files(name, meta, path):
-    if FedMLModelCards.get_instance().add_model_files(name, meta, path):
+    if FedMLModelCards.get_instance().add_model_files(name, path):
         click.echo("Add file to model {} successfully.".format(name))
     else:
         click.echo("Failed to add file to model {}.".format(name))
@@ -843,6 +844,26 @@ def remove_model_files(name, file):
 @click.option(
     "--name", "-n", type=str, help="model name.",
 )
+def list_models(name):
+    models = FedMLModelCards.get_instance().list_models(name)
+    if len(models) <= 0:
+        click.echo("Model list is empty.")
+    else:
+        for model_item in models:
+            click.echo(model_item)
+        click.echo("List model {} successfully.".format(name))
+
+
+@model.command("list-remote", help="List models in the remote model repository.")
+@click.option(
+    "--name", "-n", type=str, help="model name.",
+)
+@click.option(
+    "--user", "-u", type=str, help="user id.",
+)
+@click.option(
+    "--api_key", "-k", type=str, help="user api key.",
+)
 @click.option(
     "--version",
     "-v",
@@ -850,14 +871,20 @@ def remove_model_files(name, file):
     default="release",
     help="interact with which version of ModelOps platform. It should be dev, test or release",
 )
-def list_models(name, version):
+def list_remote_models(name, user, api_key, version):
+    if user is None or api_key is None:
+        click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
+        return
     FedMLModelCards.get_instance().set_config_version(version)
-    models = FedMLModelCards.get_instance().list_models(name)
-    if len(models) <= 0:
+    model_query_result = FedMLModelCards.get_instance().list_models(name, user, api_key)
+    if model_query_result is None or model_query_result.model_list is None or len(model_query_result.model_list) <= 0:
         click.echo("Model list is empty.")
     else:
-        for model_item in models:
-            click.echo(model_item)
+        click.echo("Found {} models:".format(len(model_query_result.model_list)))
+        index = 1
+        for model_item in model_query_result.model_list:
+            model_item.show("{}. ".format(index))
+            index += 1
         click.echo("List model {} successfully.".format(name))
 
 
@@ -879,7 +906,10 @@ def package_model(name):
     "--name", "-n", type=str, help="model name.",
 )
 @click.option(
-    "--user", "-u", type=str, help="user id or api key.",
+    "--user", "-u", type=str, help="user id.",
+)
+@click.option(
+    "--api_key", "-k", type=str, help="user api key.",
 )
 @click.option(
     "--version",
@@ -888,9 +918,12 @@ def package_model(name):
     default="release",
     help="interact with which version of ModelOps platform. It should be dev, test or release",
 )
-def push_model(name, user, version):
+def push_model(name, user, api_key, version):
+    if user is None or api_key is None:
+        click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
+        return
     FedMLModelCards.get_instance().set_config_version(version)
-    model_storage_url, model_zip = FedMLModelCards.get_instance().push_model(name, user)
+    model_storage_url, model_zip = FedMLModelCards.get_instance().push_model(name, user, api_key)
     if model_storage_url != "":
         click.echo("Push model {} successfully".format(name))
         click.echo("The remote model storage is located at {}".format(model_storage_url))
@@ -904,15 +937,24 @@ def push_model(name, user, version):
     "--name", "-n", type=str, help="model name.",
 )
 @click.option(
+    "--user", "-u", type=str, help="user id.",
+)
+@click.option(
+    "--api_key", "-k", type=str, help="user api key.",
+)
+@click.option(
     "--version",
     "-v",
     type=str,
     default="release",
     help="interact with which version of ModelOps platform. It should be dev, test or release",
 )
-def pull_model(name, version):
+def pull_model(name, user, api_key, version):
+    if user is None or api_key is None:
+        click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
+        return
     FedMLModelCards.get_instance().set_config_version(version)
-    if FedMLModelCards.get_instance().pull_model(name):
+    if FedMLModelCards.get_instance().pull_model(name, user, api_key):
         click.echo("Pull model {} successfully.".format(name))
     else:
         click.echo("Failed to pull model {}.".format(name))
@@ -933,6 +975,9 @@ def pull_model(name, version):
     "--user", "-u", type=str, help="user id or api key.",
 )
 @click.option(
+    "--api_key", "-k", type=str, help="user api key.",
+)
+@click.option(
     "--params", "-p", type=str, default="", help="serving parameters.",
 )
 @click.option(
@@ -946,9 +991,13 @@ def pull_model(name, version):
     "--use_local_deployment", "-ld", default=None, is_flag=True,
     help="deploy local model repository by sending MQTT message(just use for debugging).",
 )
-def deploy_model(name, device_type, devices, user, params, version, use_local_deployment):
+def deploy_model(name, device_type, devices, user, api_key, params, version, use_local_deployment):
+    if user is None or api_key is None:
+        click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
+        return
     FedMLModelCards.get_instance().set_config_version(version)
-    if FedMLModelCards.get_instance().deploy_model(name, device_type, devices, user, params, use_local_deployment):
+    if FedMLModelCards.get_instance().deploy_model(name, device_type, devices, user, api_key,
+                                                   params, use_local_deployment):
         click.echo("Deploy model {} successfully.".format(name))
     else:
         click.echo("Failed to deploy model {}.".format(name))

@@ -1,4 +1,4 @@
-protobuf
+protobuf<5.0dev,>=4.21.6
 grpcio
 grpcio-tools
 dill

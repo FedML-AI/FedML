@@ -29,6 +29,27 @@ class ServerConstants(object):
     FEDML_OTA_CMD_UPGRADE = "upgrade"
     FEDML_OTA_CMD_RESTART = "restart"
 
+    # Constants for models
+    K8S_DEPLOYMENT_MASTER_HOST_HOME_DIR = "/home/fedml-server"
+    K8S_DEPLOYMENT_SLAVE_HOST_HOME_DIR = "/home/fedml-client"
+    K8S_DEPLOYMENT_MASTER_MOUNT_HOME_DIR = "/home/fedml/fedml-server"
+    K8S_DEPLOYMENT_SLAVE_MOUNT_HOME_DIR = "/home/fedml/fedml-client"
+
+    INFERENCE_HTTP_PORT = 8000
+    INFERENCE_GRPC_PORT = 8001
+    INFERENCE_METRIC_PORT = 8002
+
+    FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT = "MODEL_END_POINT"
+
+    INFERENCE_CONVERTOR_IMAGE = "public.ecr.aws/x6k8q1x9/fedml-inference-converter:latest"
+    INFERENCE_SERVER_IMAGE = "public.ecr.aws/x6k8q1x9/fedml-inference-backend:latest"
+
+    INFERENCE_SERVER_STARTED_TAG = "Started HTTPService at 0.0.0.0:"
+    INFERENCE_ENGINE_TYPE_ONNX = "onnx"
+    INFERENCE_ENGINE_TYPE_TENSORRT = "tensorrt"
+    INFERENCE_MODEL_VERSION = "1"
+    INFERENCE_INFERENCE_SERVER_VERSION = "v2"
+
     MSG_MODELOPS_DEPLOYMENT_STATUS_INITIALIZING = "INITIALIZING"
     MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYING = "DEPLOYING"
     MSG_MODELOPS_DEPLOYMENT_STATUS_INFERRING = "INFERRING"
@@ -39,12 +60,22 @@ class ServerConstants(object):
     MSG_MODELOPS_DEPLOYMENT_STATUS_ROLLBACK = "ROLLBACK"
     MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED = "DEPLOYED"
 
-    INFERENCE_HTTP_PORT = 8000
-    INFERENCE_GRPC_PORT = 8001
-    INFERENCE_METRIC_PORT = 8002
-    MODEL_INFERENCE_DEFAULT_PORT = 5001
+    MODEL_REQUIRED_MODEL_CONFIG_FILE = "fedml_model_config.yaml"
+    MODEL_REQUIRED_MODEL_BIN_FILE = "fedml_model.bin"
+    MODEL_REQUIRED_MODEL_README_FILE = "README.md"
 
-    FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT = "MODEL_END_POINT"
+    CMD_TYPE_CONVERT_MODEL = "convert_model"
+    CMD_TYPE_RUN_TRITON_SERVER = "run_triton_server"
+    FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX = "fedml_convert_model_container"
+    FEDML_TRITON_SERVER_CONTAINER_NAME_PREFIX = "fedml_triton_server_container"
+    FEDML_CONVERTED_MODEL_DIR_NAME = "triton_models"
+    FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL = 3
+
+    FEDML_RUNNING_SOURCE_ENV_NAME = "FEDML_RUNNING_SOURCE"
+    FEDML_RUNNING_SOURCE_ENV_VALUE_K8S = "k8s"
+
+    MODEL_INFERENCE_DEFAULT_PORT = 5001
+    # -----End-----
 
     MODEL_DEPLOYMENT_STAGE1 = {"index": 1, "text": "ReceivedRequest"}
     MODEL_DEPLOYMENT_STAGE2 = {"index": 2, "text": "Initializing"}
@@ -106,24 +137,63 @@ class ServerConstants(object):
         return model_packages_dir
 
     @staticmethod
-    def get_model_ops_list_url(model_name, page_num, page_size, config_version="release"):
-        model_ops_url = "{}/api/v1/model/list?modelName={}&pageNum={}&pageSize={}".format(
-            ServerConstants.get_model_ops_url(config_version), model_name, page_num, page_size)
+    def get_k8s_master_host_dir(current_dir):
+        if not ServerConstants.is_running_on_k8s():
+            return current_dir
+
+        if str(current_dir).startswith(ServerConstants.K8S_DEPLOYMENT_MASTER_MOUNT_HOME_DIR):
+            return str(current_dir).replace(ServerConstants.K8S_DEPLOYMENT_MASTER_MOUNT_HOME_DIR,
+                                            ServerConstants.K8S_DEPLOYMENT_MASTER_HOST_HOME_DIR)
+        return current_dir
+
+    @staticmethod
+    def get_k8s_slave_host_dir(current_dir):
+        if not ServerConstants.is_running_on_k8s():
+            return current_dir
+
+        if str(current_dir).startswith(ServerConstants.K8S_DEPLOYMENT_SLAVE_MOUNT_HOME_DIR):
+            return str(current_dir).replace(ServerConstants.K8S_DEPLOYMENT_SLAVE_MOUNT_HOME_DIR,
+                                            ServerConstants.K8S_DEPLOYMENT_SLAVE_HOST_HOME_DIR)
+        return current_dir
+
+    @staticmethod
+    def is_running_on_k8s():
+        running_source = os.getenv(ServerConstants.FEDML_RUNNING_SOURCE_ENV_NAME, default=None)
+        if running_source is not None and running_source == ServerConstants.FEDML_RUNNING_SOURCE_ENV_VALUE_K8S:
+            return True
+        return False
+
+    @staticmethod
+    def get_model_serving_dir():
+        model_file_dir = os.path.join(ServerConstants.get_fedml_home_dir(), "fedml", "models_serving")
+        return model_file_dir
+
+    @staticmethod
+    def get_model_ops_list_url(config_version="release"):
+        model_ops_url = "{}/api/v1/model/listFromCli".format(ServerConstants.get_model_ops_url(config_version))
         return model_ops_url
 
     @staticmethod
     def get_model_ops_upload_url(config_version="release"):
-        model_ops_url = "{}/api/v1/model/create".format(ServerConstants.get_model_ops_url(config_version))
+        model_ops_url = "{}/api/v1/model/createFromCli".format(ServerConstants.get_model_ops_url(config_version))
         return model_ops_url
 
     @staticmethod
     def get_model_ops_url(config_version="release"):
-        return "https://model-{}.fedml.ai/fedmlModelServer".format("" if config_version == "release" else config_version)
+        return "https://model{}.fedml.ai/fedmlModelServer".format(
+            "" if config_version == "release" else "-" + config_version)
 
     @staticmethod
     def get_model_ops_deployment_url(config_version="release"):
-        model_ops_url = "{}/api/v1/endpoint/create".format(ServerConstants.get_model_ops_url(config_version))
+        model_ops_url = "{}/api/v1/endpoint/createFromCli".format(ServerConstants.get_model_ops_url(config_version))
         return model_ops_url
+
+    @staticmethod
+    def get_running_model_name(end_point_id, model_id, model_name, model_version):
+        running_model_name = "model_{}_{}_{}_{}".format(end_point_id, model_id, model_name, model_version)
+        running_model_name = running_model_name.replace(' ', '-')
+        running_model_name = running_model_name.replace(':', '-')
+        return running_model_name
 
     @staticmethod
     def get_local_ip():
