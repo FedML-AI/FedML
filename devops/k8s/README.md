@@ -40,14 +40,18 @@ fedml model deploy -n $model_name -dt $device_type(options:md.on_premise_device/
 ### Prerequisite steps: Install FedML master and slave device package to Kubernetes Clusters via Helm Charts (Automatically login to ModelOps)
 #### Overview
 Here we will provide guide on how to run FedML master and slave device package (Helm Charts) on your Kubernetes cluster.
+
 The master device will be used as model deployment and scheduling center which could forward end point creation and other messages to slave devices.
+
 Slave devices could deploy your models into triton or other inference backend and return inference results to the master device.
 Your actually inference requests will arrive to our inference ingress gateway, and then route to inference backend located in slave devices.
 
 #### CLI
-kubectl create namespace $YourNameSpace
-helm install --set env.fedmlAccountId="$YourAccountId" --set env.fedmlApiKey="$YourApiKey" --set env.fedmlVersion="release"  fedml-model-premise-slave fedml-model-premise-slave-0.7.377.tgz -n $YourNameSpace
-helm install --set env.fedmlAccountId="$YourAccountId" --set env.fedmlApiKey="$YourApiKey" --set env.fedmlVersion="release" --set "inferenceGateway.ingress.host=$YourIngressDomainName" fedml-model-premise-master fedml-model-premise-master-0.7.377.tgz -n $YourNameSpace
+```kubectl create namespace $YourNameSpace```
+
+```helm install --set env.fedmlAccountId="$YourAccountId" --set env.fedmlApiKey="$YourApiKey" --set env.fedmlVersion="release"  fedml-model-premise-slave fedml-model-premise-slave-0.7.377.tgz -n $YourNameSpace```
+
+```helm install --set env.fedmlAccountId="$YourAccountId" --set env.fedmlApiKey="$YourApiKey" --set env.fedmlVersion="release" --set "inferenceGateway.ingress.host=$YourIngressDomainName" fedml-model-premise-master fedml-model-premise-master-0.7.377.tgz -n $YourNameSpace```
 
 #### Prerequisites:
 1. You should get $YourAccountId and $YourApiKey from ModelOps(model.fedml.ai) and fill in here.
@@ -56,16 +60,22 @@ e.g. a865e3a1e9aa54c71b50e3a6c764cbd3-337285825.us-west-1.elb.amazonaws.com.
 Which should be set your CNAME record in your DNS provider, e.g. godaddy, wordpress, AWS Route 53.
 
 2. You need to specify at least one node as your master node via kubectl label CLI:
-   kubectl label nodes <your-node-name> fedml-master-node=true
-   kubectl get nodes --show-labels
+
+   ```kubectl label nodes <your-node-name> fedml-master-node=true```
+
+   ```kubectl get nodes --show-labels```
 
 3. You need to specify at least one node as your slave node via kubectl label CLI:
-   kubectl label nodes <your-node-name> fedml-slave-node=true
-   kubectl get nodes --show-labels 
+
+   ```kubectl label nodes <your-node-name> fedml-slave-node=true```
+
+   ```kubectl get nodes --show-labels``` 
 
 4. You need to specify at least one node as your inference ingress node via kubectl label CLI:
-   kubectl label nodes <your-node-name> fedml-inference-ingress=true
-   kubectl get nodes --show-labels
+
+   ```kubectl label nodes <your-node-name> fedml-inference-ingress=true```
+
+   ```kubectl get nodes --show-labels```
 
 
 
