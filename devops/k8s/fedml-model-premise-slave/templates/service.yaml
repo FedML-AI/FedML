@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "fedml-model-premise-slave.fullname" . }}
+  labels:
+    {{- include "fedml-model-premise-slave.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.port }}
+      protocol: TCP
+      name: slave-port
+    - port: {{ .Values.inferenceBackend.service.http.port }}
+      targetPort: {{ .Values.inferenceBackend.service.http.port }}
+      protocol: TCP
+      name: http
+    - port: {{ .Values.inferenceBackend.service.grpc.port }}
+      targetPort: {{ .Values.inferenceBackend.service.grpc.port }}
+      protocol: TCP
+      name: grpc
+    - port: {{ .Values.inferenceBackend.service.metrics.port }}
+      targetPort: {{ .Values.inferenceBackend.service.metrics.port }}
+      protocol: TCP
+      name: metrics
+  selector:
+    {{- include "fedml-model-premise-slave.selectorLabels" . | nindent 4 }}

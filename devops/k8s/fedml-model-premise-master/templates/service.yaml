@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "fedml-model-premise-master.fullname" . }}
+  labels:
+    {{- include "fedml-model-premise-master.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.port }}
+      protocol: TCP
+      name: master-port
+  selector:
+    {{- include "fedml-model-premise-master.selectorLabels" . | nindent 4 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.inferenceGateway.deployment.name }}
+  labels:
+    {{- include "fedml-model-premise-master.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.inferenceGateway.service.type }}
+  ports:
+    - port: {{ .Values.inferenceGateway.service.port }}
+      targetPort: {{ .Values.inferenceGateway.service.port }}
+      protocol: TCP
+      name: gateway-port
+  selector:
+    {{- include "fedml-model-premise-master.selectorLabels" . | nindent 4 }}
