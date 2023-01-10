@@ -81,7 +81,10 @@ def __login_as_edge_server_and_agent(args, userid, version):
         role_str = "InferenceInstance"
 
     # Build unique device id
-    if is_from_docker:
+    is_from_k8s = ServerConstants.is_running_on_k8s()
+    if is_from_k8s:
+        unique_device_id = args.current_device_id + "@" + args.os_name + ".MDA.K8S." + role_str + ".Master.Device"
+    elif is_from_docker:
         unique_device_id = args.current_device_id + "@" + args.os_name + ".MDA.Docker." + role_str + ".Master.Device"
     else:
         unique_device_id = args.current_device_id + "@" + args.os_name + ".MDA." + role_str + ".Master.Device"
