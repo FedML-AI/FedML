@@ -625,6 +625,7 @@ class FedMLServerRunner:
             server_runner.infer_host = self.infer_host
             server_runner.redis_addr = self.redis_addr
             server_runner.redis_port = self.redis_port
+            server_runner.redis_password = self.redis_password
             # server_runner.run()
             server_process = Process(target=server_runner.run)
             server_process.start()
@@ -652,6 +653,7 @@ class FedMLServerRunner:
             server_runner.infer_host = self.infer_host
             server_runner.redis_addr = self.redis_addr
             server_runner.redis_port = self.redis_port
+            server_runner.redis_password = self.redis_password
             server_process = Process(target=server_runner.start_cloud_server_process)
             server_process.start()
             ServerConstants.save_run_process(server_process.pid)
