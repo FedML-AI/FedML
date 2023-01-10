@@ -100,7 +100,7 @@ class MqttManager(object):
         except Exception as e:
             return False
 
-    def send_message_json(self, topic, message, wait_for_publish=True):
+    def send_message_json(self, topic, message, wait_for_publish=False):
         ret_info = self._client.publish(topic, payload=message, qos=2)
         if wait_for_publish:
             try:

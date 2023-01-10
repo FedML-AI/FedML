@@ -1,0 +1,174 @@
+{{- $curNameSpace := .Release.Namespace -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "fedml-model-premise-master.fullname" . }}
+  labels:
+    {{- include "fedml-model-premise-master.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "fedml-model-premise-master.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "fedml-model-premise-master.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "fedml-model-premise-master.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+          - name: ACCOUNT_ID
+            value: "{{ .Values.env.fedmlAccountId }}"
+          - name: FEDML_API_KEY
+            value: "{{ .Values.env.fedmlApiKey }}"
+          - name: FEDML_VERSION
+            value: "{{ .Values.env.fedmlVersion }}"
+          - name: SERVER_OS_NAME
+            value: "{{ .Values.env.fedmlServerOsName }}"
+          - name: INFER_HOST
+            value: "{{ .Values.inferenceGateway.ingress.protocol }}://{{ .Values.inferenceGateway.ingress.host }}/inference"
+          - name: FEDML_RUNNING_SOURCE
+            value: "k8s"
+          - name: FEDML_REDIS_ADDR
+            value: "fedml-redis.{{ $curNameSpace }}.svc.cluster.local"
+          - name: FEDML_REDIS_PORT
+            value: "{{ .Values.inferenceGateway.deployment.env.fedmlRedisPort }}"
+          - name: FEDML_REDIS_PASSWORD
+            value: "{{ .Values.inferenceGateway.deployment.env.fedmlRedisPassword }}"
+          ports:
+            - name: master-port
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: home-dir
+              mountPath: {{ .Values.volume.serverHomeDirMountPath }}
+            - name: docker-sock
+              mountPath: /var/run/docker.sock
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: home-dir
+          hostPath:
+            type: DirectoryOrCreate
+            path: {{ .Values.volume.serverHomeDirHostPath }}
+        - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.inferenceGateway.deployment.name }}
+  labels:
+    {{- include "fedml-model-premise-master.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.inferenceGateway.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "fedml-model-premise-master.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "fedml-model-premise-master.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "fedml-model-premise-master.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Values.inferenceGateway.deployment.name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.inferenceGateway.deployment.image.repository }}:{{ .Values.inferenceGateway.deployment.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: FEDML_REDIS_ADDR
+              value: "fedml-redis.{{ $curNameSpace }}.svc.cluster.local"
+            - name: FEDML_REDIS_PORT
+              value: "{{ .Values.inferenceGateway.deployment.env.fedmlRedisPort }}"
+            - name: FEDML_REDIS_PASSWORD
+              value: "{{ .Values.inferenceGateway.deployment.env.fedmlRedisPassword }}"
+            - name: FEDML_END_POINT_ID
+              value: "{{ .Values.inferenceGateway.deployment.env.fedmlEndPointId }}"
+            - name: FEDML_MODEL_ID
+              value: "{{ .Values.inferenceGateway.deployment.env.fedmlModelId }}"
+            - name: FEDML_MODEL_NAME
+              value: "{{ .Values.inferenceGateway.deployment.env.fedmlModelName }}"
+            - name: FEDML_MODEL_VERSION
+              value: "{{ .Values.inferenceGateway.deployment.env.fedmlModelVersion }}"
+            - name: FEDML_INFER_URL
+              value: "{{ .Values.inferenceGateway.deployment.env.fedmlInferUrl }}"
+            - name: FEDML_CONFIG_VERSION
+              value: "{{ .Values.env.fedmlVersion }}"
+            - name: FEDML_INFER_PORT
+              value: "{{ .Values.inferenceGateway.deployment.env.fedmlInferPort }}"
+            - name: FEDML_RUNNING_SOURCE
+              value: "k8s"
+          ports:
+            - name: gateway-port
+              containerPort: {{ .Values.inferenceGateway.service.port }}
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: home-dir
+              mountPath: {{ .Values.volume.serverHomeDirMountPath }}
+            - name: docker-sock
+              mountPath: /var/run/docker.sock
+      {{- with .Values.inferenceGateway.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: home-dir
+          hostPath:
+            type: DirectoryOrCreate
+            path: {{ .Values.volume.serverHomeDirHostPath }}
+        - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock
