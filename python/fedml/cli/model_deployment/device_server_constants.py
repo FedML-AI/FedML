@@ -127,6 +127,16 @@ class ServerConstants(object):
         return package_run_dir
 
     @staticmethod
+    def get_model_dir():
+        model_file_dir = os.path.join(ServerConstants.get_fedml_home_dir(), "fedml", "models")
+        return model_file_dir
+
+    @staticmethod
+    def get_model_package_dir():
+        model_packages_dir = os.path.join(ServerConstants.get_fedml_home_dir(), "fedml", "model_packages")
+        return model_packages_dir
+
+    @staticmethod
     def get_k8s_master_host_dir(current_dir):
         if not ServerConstants.is_running_on_k8s():
             return current_dir
