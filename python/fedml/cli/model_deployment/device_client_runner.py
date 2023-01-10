@@ -839,10 +839,6 @@ class FedMLClientRunner:
         self.mlops_metrics.report_sys_perf(self.args)
         self.release_client_mqtt_mgr()
 
-        # Pull inference server image
-        cmd_pulling_inference_image = "docker pull {}".format(ClientConstants.INFERENCE_SERVER_IMAGE)
-        ServerConstants.exec_console_with_script(cmd_pulling_inference_image)
-
     def start_agent_mqtt_loop(self):
         # Start MQTT message loop
         try:
