@@ -49,8 +49,8 @@ class ClientConstants(object):
 
     FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT = "MODEL_END_POINT"
 
-    INFERENCE_CONVERTOR_IMAGE = "ghcr.io/els-rd/transformer-deploy:0.4.0"
-    INFERENCE_SERVER_IMAGE = "nvcr.io/nvidia/tritonserver:22.01-py3"
+    INFERENCE_CONVERTOR_IMAGE = "public.ecr.aws/x6k8q1x9/fedml-inference-converter:latest"
+    INFERENCE_SERVER_IMAGE = "public.ecr.aws/x6k8q1x9/fedml-inference-backend:latest"
 
     INFERENCE_SERVER_STARTED_TAG = "Started HTTPService at 0.0.0.0:"
     INFERENCE_ENGINE_TYPE_ONNX = "onnx"
