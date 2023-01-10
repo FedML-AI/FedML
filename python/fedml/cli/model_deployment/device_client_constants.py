@@ -42,6 +42,8 @@ class ClientConstants(object):
 
     K8S_DEPLOYMENT_MASTER_HOST_HOME_DIR = "/home/fedml-server"
     K8S_DEPLOYMENT_SLAVE_HOST_HOME_DIR = "/home/fedml-client"
+    K8S_DEPLOYMENT_MASTER_MOUNT_HOME_DIR = "/home/fedml/fedml-server"
+    K8S_DEPLOYMENT_SLAVE_MOUNT_HOME_DIR = "/home/fedml/fedml-client"
 
     INFERENCE_HTTP_PORT = 8000
     INFERENCE_GRPC_PORT = 8001
@@ -138,16 +140,22 @@ class ClientConstants(object):
 
     @staticmethod
     def get_k8s_master_host_dir(current_dir):
-        home_dir = expanduser("~")
-        if str(current_dir).startswith(home_dir):
-            return str(current_dir).replace(home_dir, ClientConstants.K8S_DEPLOYMENT_MASTER_HOST_HOME_DIR)
+        if not ClientConstants.is_running_on_k8s():
+            return current_dir
+
+        if str(current_dir).startswith(ClientConstants.K8S_DEPLOYMENT_MASTER_MOUNT_HOME_DIR):
+            return str(current_dir).replace(ClientConstants.K8S_DEPLOYMENT_MASTER_MOUNT_HOME_DIR,
+                                            ClientConstants.K8S_DEPLOYMENT_MASTER_HOST_HOME_DIR)
         return current_dir
 
     @staticmethod
     def get_k8s_slave_host_dir(current_dir):
-        home_dir = expanduser("~")
-        if str(current_dir).startswith(home_dir):
-            return str(current_dir).replace(home_dir, ClientConstants.K8S_DEPLOYMENT_SLAVE_HOST_HOME_DIR)
+        if not ClientConstants.is_running_on_k8s():
+            return current_dir
+
+        if str(current_dir).startswith(ClientConstants.K8S_DEPLOYMENT_SLAVE_MOUNT_HOME_DIR):
+            return str(current_dir).replace(ClientConstants.K8S_DEPLOYMENT_SLAVE_MOUNT_HOME_DIR,
+                                            ClientConstants.K8S_DEPLOYMENT_SLAVE_HOST_HOME_DIR)
         return current_dir
 
     @staticmethod
