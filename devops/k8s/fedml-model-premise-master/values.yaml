@@ -96,6 +96,7 @@ affinity: {}
 
 env:
   fedmlAccountId: "1420"
+  fedmlApiKey: "YourApiKey"
   fedmlVersion: "release"
   fedmlServerOsName: "Linux"
 
