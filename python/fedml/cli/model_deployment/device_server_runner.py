@@ -220,9 +220,6 @@ class FedMLServerRunner:
         python_program = get_python_program()
         pip_source_dir = os.path.dirname(__file__)
         monitor_file = os.path.join(pip_source_dir, "device_model_monitor.py")
-        logging.info("redis addr {}, port {}, password {}.".format(self.redis_addr,
-                                                                   self.redis_port,
-                                                                   self.redis_password))
         self.monitor_process = ServerConstants.exec_console_with_shell_script_list(
             [
                 python_program,
