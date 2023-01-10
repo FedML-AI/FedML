@@ -43,7 +43,7 @@ spec:
           - name: CLIENT_OS_NAME
             value: "{{ .Values.env.fedmlClientOsName }}"
           - name: INFER_HOST
-            value: "http://{{ $fullName }}.{{ $curNameSpace }}:{{ .Values.inferenceBackend.service.http.port }}"
+            value: "{{ $fullName }}.{{ $curNameSpace }}"
           - name: FEDML_RUNNING_SOURCE
             value: "{{ .Values.env.fedmlRunningSource }}"
           ports:
