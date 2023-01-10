@@ -46,16 +46,6 @@ def start_deployment(end_point_id, model_id, model_version,
             out_str = out.decode(encoding="utf-8")
             if str(out_str) != "":
                 triton_server_is_running = True
-    else:
-        check_triton_server_running_cmds = "ps -ef |grep {} |wc -l".format(sudo_prefix, triton_server_container_name)
-        running_process = ClientConstants.exec_console_with_script(check_triton_server_running_cmds,
-                                                                   should_capture_stdout=True,
-                                                                   should_capture_stderr=True)
-        ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(running_process)
-        if out is not None:
-            out_str = out.decode(encoding="utf-8")
-            if str(out_str) == "2":
-                triton_server_is_running = True
 
     # Setup nvidia docker related packages.
     if not ClientConstants.is_running_on_k8s():
@@ -115,31 +105,24 @@ def start_deployment(end_point_id, model_id, model_version,
                 shutil.copyfile(src_model_file, dst_model_file)
 
     # Run triton server
-    if not triton_server_is_running:
-        if ClientConstants.is_running_on_k8s():
-            triton_server_cmd = "pip install transformers && tritonserver " \
-                                "--model-control-mode=poll --repository-poll-secs={} " \
-                                "--model-repository={}". \
-                format(ClientConstants.FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL,
-                       ClientConstants.get_model_serving_dir())
-        else:
-            triton_server_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} {} -p{}:8000 " \
-                                "-p{}:8001 -p{}:8002 " \
-                                "--shm-size {} " \
-                                "-v {}:/models {} " \
-                                "bash -c \"pip install transformers && tritonserver " \
-                                "--model-control-mode=poll --repository-poll-secs={} " \
-                                "--model-repository=/models\" ".format(sudo_prefix, triton_server_container_name,
-                                                                       sudo_prefix, triton_server_container_name,
-                                                                       sudo_prefix, triton_server_container_name,
-                                                                       gpu_attach_cmd,
-                                                                       inference_http_port,
-                                                                       inference_grpc_port,
-                                                                       inference_metric_port,
-                                                                       inference_memory_size,
-                                                                       model_serving_dir,
-                                                                       inference_server_image,
-                                                                       ClientConstants.FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL)
+    if not triton_server_is_running and not ClientConstants.is_running_on_k8s():
+        triton_server_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} {} -p{}:8000 " \
+                            "-p{}:8001 -p{}:8002 " \
+                            "--shm-size {} " \
+                            "-v {}:/models {} " \
+                            "bash -c \"pip install transformers && tritonserver " \
+                            "--model-control-mode=poll --repository-poll-secs={} " \
+                            "--model-repository=/models\" ".format(sudo_prefix, triton_server_container_name,
+                                                                   sudo_prefix, triton_server_container_name,
+                                                                   sudo_prefix, triton_server_container_name,
+                                                                   gpu_attach_cmd,
+                                                                   inference_http_port,
+                                                                   inference_grpc_port,
+                                                                   inference_metric_port,
+                                                                   inference_memory_size,
+                                                                   model_serving_dir,
+                                                                   inference_server_image,
+                                                                   ClientConstants.FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL)
         logging.info("Run triton inference server: {}".format(triton_server_cmd))
         triton_server_process = ClientConstants.exec_console_with_script(triton_server_cmd,
                                                                          should_capture_stdout=False,
