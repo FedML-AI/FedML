@@ -1,0 +1,120 @@
+# Default values for fedml-model-premise-slave.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: public.ecr.aws/x6k8q1x9/fedml-model-premise-slave
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 19988
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector:
+  fedml-slave-node: "true"
+
+tolerations: []
+
+affinity: {}
+
+env:
+  fedmlAccountId: "1420"
+  fedmlApiKey: "YourApiKey"
+  fedmlVersion: "release"
+  fedmlClientOsName: "Linux"
+  fedmlRunningSource: "k8s"
+
+volume:
+  clientHomeDirHostPath: "/home/fedml-client"
+  clientHomeDirMountPath: "/home/fedml/fedml-client"
+
+inferenceConverter:
+  name: fedml-inference-converter
+  image:
+    repository: public.ecr.aws/x6k8q1x9/fedml-inference-converter
+    pullPolicy: Always
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "latest"
+
+inferenceBackend:
+  name: fedml-inference-backend
+  image:
+    repository: public.ecr.aws/x6k8q1x9/fedml-inference-backend
+    pullPolicy: Always
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "latest"
+  service:
+    http:
+      type: ClusterIP
+      port: 8000
+    grpc:
+      type: ClusterIP
+      port: 8001
+    metrics:
+      type: ClusterIP
+      port: 8002
