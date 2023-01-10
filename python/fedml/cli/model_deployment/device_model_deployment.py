@@ -222,7 +222,7 @@ def get_model_info(model_name, inference_engine, inference_http_port, infer_host
         infer_url_host = local_ip
     local_infer_url = "{}:{}".format(infer_url_host, inference_http_port)
     model_version = ""
-    logging.info("triton infer url {}.".format(local_infer_url))
+    logging.info("triton infer url: {}.".format(local_infer_url))
     inference_model_name = "{}_{}_inference".format(model_name, inference_engine)
     triton_client = http_client.InferenceServerClient(url=local_infer_url, verbose=False)
     while True:
