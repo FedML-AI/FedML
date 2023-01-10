@@ -198,10 +198,10 @@ class FedMLServerRunner:
         logging.info("Download and unzip model to local...")
         unzip_package_path, fedml_config_object = self.update_local_fedml_config(run_id, model_config)
 
+        running_model_name = ServerConstants.get_running_model_name(run_id, model_id,
+                                                                    model_name, model_version)
         if not ServerConstants.is_running_on_k8s():
             # start unified inference server
-            running_model_name = ClientConstants.get_running_model_name(run_id, model_id,
-                                                                        model_name, model_version)
             process = ServerConstants.exec_console_with_script(
                 "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
                 "END_POINT_ID=\"{}\" MODEL_ID=\"{}\" "
