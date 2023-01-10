@@ -91,3 +91,29 @@ env:
 volume:
   clientHomeDirHostPath: "/home/fedml-client"
   clientHomeDirMountPath: "/home/fedml/fedml-client"
+
+inferenceConverter:
+  name: fedml-inference-converter
+  image:
+    repository: public.ecr.aws/x6k8q1x9/fedml-inference-converter
+    pullPolicy: Always
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "latest"
+
+inferenceBackend:
+  name: fedml-inference-backend
+  image:
+    repository: public.ecr.aws/x6k8q1x9/fedml-inference-backend
+    pullPolicy: Always
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "latest"
+  service:
+    http:
+      type: ClusterIP
+      port: 8000
+    grpc:
+      type: ClusterIP
+      port: 8001
+    metrics:
+      type: ClusterIP
+      port: 8002
