@@ -17,6 +17,8 @@ import zipfile
 
 import click
 import requests
+from fedml.cli.model_deployment.device_model_msg_object import FedMLModelMsgObject
+
 from ...core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 
 from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
@@ -146,13 +148,14 @@ class FedMLClientRunner:
         model_config = self.request_json["model_config"]
         model_name = model_config["model_name"]
         model_id = model_config["model_id"]
+        model_version = model_config["model_version"]
         model_storage_url = model_config["model_storage_url"]
         scale_min = model_config["instance_scale_min"]
         scale_max = model_config["instance_scale_max"]
         inference_engine = model_config["inference_engine"]
         inference_end_point_id = run_id
         use_gpu = "gpu"  # TODO: Get GPU from device infos
-        memory_size = "256m"  # TODO: Get Memory size for each instance
+        memory_size = "4096m"  # TODO: Get Memory size for each instance
 
         logging.info("Model deployment request: {}".format(self.request_json))
 
@@ -170,22 +173,23 @@ class FedMLClientRunner:
         logging.info("Download and unzip model to local...")
         unzip_package_path, fedml_config_object = self.update_local_fedml_config(run_id, model_config)
 
-        inference_output_url, model_version, model_metadata, model_config = start_deployment(
-            inference_end_point_id, model_id,
-            unzip_package_path, model_name, inference_engine,
-            ClientConstants.INFERENCE_HTTP_PORT,
-            ClientConstants.INFERENCE_GRPC_PORT,
-            ClientConstants.INFERENCE_METRIC_PORT,
-            use_gpu, memory_size,
-            ClientConstants.INFERENCE_CONVERTOR_IMAGE,
-            ClientConstants.INFERENCE_SERVER_IMAGE,
-            self.infer_host)
+        running_model_name, inference_output_url, inference_model_version, model_metadata, model_config = \
+            start_deployment(
+                inference_end_point_id, model_id, model_version,
+                unzip_package_path, model_name, inference_engine,
+                ClientConstants.INFERENCE_HTTP_PORT,
+                ClientConstants.INFERENCE_GRPC_PORT,
+                ClientConstants.INFERENCE_METRIC_PORT,
+                use_gpu, memory_size,
+                ClientConstants.INFERENCE_CONVERTOR_IMAGE,
+                ClientConstants.INFERENCE_SERVER_IMAGE,
+                self.infer_host)
         if inference_output_url == "":
-            self.send_deployment_status(self.edge_id, model_id, model_name, inference_output_url,
+            self.send_deployment_status(self.edge_id, model_id, running_model_name, inference_output_url,
                                         ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
-            self.send_deployment_results(self.edge_id, model_id, model_name, inference_output_url, model_version,
-                                         ClientConstants.INFERENCE_HTTP_PORT, inference_engine,
-                                         model_metadata, model_config)
+            self.send_deployment_results(self.edge_id, model_id, running_model_name, inference_output_url,
+                                         inference_model_version, ClientConstants.INFERENCE_HTTP_PORT,
+                                         inference_engine, model_metadata, model_config)
             self.setup_client_mqtt_mgr()
             self.wait_client_mqtt_connected()
             self.mlops_metrics.run_id = self.run_id
@@ -193,11 +197,11 @@ class FedMLClientRunner:
                                                                 ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
             self.release_client_mqtt_mgr()
         else:
-            self.send_deployment_status(self.edge_id, model_id, model_name, inference_output_url,
+            self.send_deployment_status(self.edge_id, model_id, running_model_name, inference_output_url,
                                         ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED)
-            self.send_deployment_results(self.edge_id, model_id, model_name, inference_output_url, model_version,
-                                         ClientConstants.INFERENCE_HTTP_PORT, inference_engine,
-                                         model_metadata, model_config)
+            self.send_deployment_results(self.edge_id, model_id, running_model_name, inference_output_url,
+                                         inference_model_version, ClientConstants.INFERENCE_HTTP_PORT,
+                                         inference_engine, model_metadata, model_config)
             time.sleep(1)
             self.broadcast_client_training_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
 
@@ -210,7 +214,7 @@ class FedMLClientRunner:
         deployment_results_topic = "/model_ops/model_device/return_deployment_result/{}".format(device_id)
         deployment_results_payload = {"end_point_id": self.run_id, "model_id": model_id,
                                       "model_name": model_name, "model_url": model_inference_url,
-                                      "version": model_version, "port": inference_port,
+                                      "model_version": model_version, "port": inference_port,
                                       "inference_engine": inference_engine,
                                       "model_metadata": model_metadata,
                                       "model_config": model_config}
@@ -222,6 +226,7 @@ class FedMLClientRunner:
     def send_deployment_status(self, device_id, model_id, model_name, model_inference_url, model_status):
         deployment_status_topic = "/model_ops/model_device/return_deployment_status/{}".format(device_id)
         deployment_status_payload = {"end_point_id": self.run_id, "model_id": model_id,
+                                     "device_id": device_id,
                                      "model_name": model_name, "model_url": model_inference_url,
                                      "model_status": model_status}
         self.setup_client_mqtt_mgr()
@@ -499,6 +504,15 @@ class FedMLClientRunner:
         # Stop log processor for current run
         MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
 
+    def callback_delete_deployment(self, topic, payload):
+        logging.info("callback_delete_deployment: topic = %s, payload = %s" % (topic, payload))
+
+        # Parse payload as the model message object.
+        model_msg_object = FedMLModelMsgObject(topic, payload)
+
+        ClientConstants.remove_deployment(model_msg_object.inference_end_point_id, model_msg_object.model_id,
+                                          model_msg_object.model_name, model_msg_object.model_version)
+
     def callback_exit_train_with_exception(self, topic, payload):
         logging.info("callback_exit_train_with_exception: topic = %s, payload = %s" % (topic, payload))
 
@@ -737,6 +751,10 @@ class FedMLClientRunner:
         topic_stop_deployment = "/model_ops/model_device/stop_deployment/{}".format(str(self.edge_id))
         self.mqtt_mgr.add_message_listener(topic_stop_deployment, self.callback_stop_deployment)
 
+        # Setup MQTT message listener for delete deployment
+        topic_delete_deployment = "/model_ops/model_device/delete_deployment/{}".format(str(self.edge_id))
+        self.mqtt_mgr.add_message_listener(topic_delete_deployment, self.callback_delete_deployment)
+
         # Setup MQTT message listener for running failed
         topic_exit_train_with_exception = "flserver_agent/" + str(self.edge_id) + "/exit_train_with_exception"
         self.mqtt_mgr.add_message_listener(topic_exit_train_with_exception, self.callback_exit_train_with_exception)
@@ -764,6 +782,7 @@ class FedMLClientRunner:
         # Subscribe topics for starting deployment, stopping deployment and fetching client status.
         mqtt_client_object.subscribe(topic_start_deployment, qos=2)
         mqtt_client_object.subscribe(topic_stop_deployment, qos=2)
+        mqtt_client_object.subscribe(topic_delete_deployment, qos=2)
         mqtt_client_object.subscribe(topic_client_status, qos=2)
         mqtt_client_object.subscribe(topic_report_status, qos=2)
         mqtt_client_object.subscribe(topic_last_will_msg, qos=2)

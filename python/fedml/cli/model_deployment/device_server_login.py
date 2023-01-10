@@ -81,7 +81,10 @@ def __login_as_edge_server_and_agent(args, userid, version):
         role_str = "InferenceInstance"
 
     # Build unique device id
-    if is_from_docker:
+    is_from_k8s = ServerConstants.is_running_on_k8s()
+    if is_from_k8s:
+        unique_device_id = args.current_device_id + "@" + args.os_name + ".MDA.K8S." + role_str + ".Master.Device"
+    elif is_from_docker:
         unique_device_id = args.current_device_id + "@" + args.os_name + ".MDA.Docker." + role_str + ".Master.Device"
     else:
         unique_device_id = args.current_device_id + "@" + args.os_name + ".MDA." + role_str + ".Master.Device"
@@ -116,6 +119,7 @@ def __login_as_edge_server_and_agent(args, userid, version):
     runner.infer_host = args.infer_host
     runner.redis_addr = args.redis_addr
     runner.redis_port = args.redis_port
+    runner.redis_password = args.redis_password
     init_logs(edge_id)
 
     # Log arguments and binding results.
@@ -214,6 +218,7 @@ def __login_as_cloud_agent(args, userid, version):
     runner.infer_host = args.infer_host
     runner.redis_addr = args.redis_addr
     runner.redis_port = args.redis_port
+    runner.redis_password = args.redis_password
     init_logs(edge_id)
     logging.info("args {}".format(args))
 
@@ -312,6 +317,7 @@ def __login_as_cloud_server(args, userid, version):
     runner.infer_host = args.infer_host
     runner.redis_addr = args.redis_addr
     runner.redis_port = args.redis_port
+    runner.redis_password = args.redis_password
     init_logs(edge_id)
 
     # Log arguments and binding results.
@@ -376,6 +382,7 @@ if __name__ == "__main__":
     parser.add_argument("--infer_host", "-ih", type=str, default="127.0.0.1")
     parser.add_argument("--redis_addr", "-ra", type=str, default="local")
     parser.add_argument("--redis_port", "-rp", type=str, default="6379")
+    parser.add_argument("--redis_password", "-rpw", type=str, default="fedml_default")
 
     args = parser.parse_args()
     args.user = args.user

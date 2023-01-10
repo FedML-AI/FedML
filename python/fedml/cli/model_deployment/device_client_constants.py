@@ -1,9 +1,11 @@
+import logging
 import os
 import platform
 import shutil
 import signal
 import subprocess
 import sys
+import urllib
 import zipfile
 from os.path import expanduser
 
@@ -38,14 +40,20 @@ class ClientConstants(object):
     LOCAL_RUNNER_INFO_DIR_NAME = 'runner_infos'
     LOCAL_PACKAGE_HOME_DIR_NAME = "fedml_packages"
 
+    # Constants for models
+    K8S_DEPLOYMENT_MASTER_HOST_HOME_DIR = "/home/fedml-server"
+    K8S_DEPLOYMENT_SLAVE_HOST_HOME_DIR = "/home/fedml-client"
+    K8S_DEPLOYMENT_MASTER_MOUNT_HOME_DIR = "/home/fedml/fedml-server"
+    K8S_DEPLOYMENT_SLAVE_MOUNT_HOME_DIR = "/home/fedml/fedml-client"
+
     INFERENCE_HTTP_PORT = 8000
     INFERENCE_GRPC_PORT = 8001
     INFERENCE_METRIC_PORT = 8002
 
     FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT = "MODEL_END_POINT"
 
-    INFERENCE_CONVERTOR_IMAGE = "ghcr.io/els-rd/transformer-deploy:0.4.0"
-    INFERENCE_SERVER_IMAGE = "nvcr.io/nvidia/tritonserver:22.01-py3"
+    INFERENCE_CONVERTOR_IMAGE = "public.ecr.aws/x6k8q1x9/fedml-inference-converter:latest"
+    INFERENCE_SERVER_IMAGE = "public.ecr.aws/x6k8q1x9/fedml-inference-backend:latest"
 
     INFERENCE_SERVER_STARTED_TAG = "Started HTTPService at 0.0.0.0:"
     INFERENCE_ENGINE_TYPE_ONNX = "onnx"
@@ -67,7 +75,18 @@ class ClientConstants(object):
     MODEL_REQUIRED_MODEL_BIN_FILE = "fedml_model.bin"
     MODEL_REQUIRED_MODEL_README_FILE = "README.md"
 
+    CMD_TYPE_CONVERT_MODEL = "convert_model"
+    CMD_TYPE_RUN_TRITON_SERVER = "run_triton_server"
+    FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX = "fedml_convert_model_container"
+    FEDML_TRITON_SERVER_CONTAINER_NAME_PREFIX = "fedml_triton_server_container"
+    FEDML_CONVERTED_MODEL_DIR_NAME = "triton_models"
+    FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL = 3
+
+    FEDML_RUNNING_SOURCE_ENV_NAME = "FEDML_RUNNING_SOURCE"
+    FEDML_RUNNING_SOURCE_ENV_VALUE_K8S = "k8s"
+
     MODEL_INFERENCE_DEFAULT_PORT = 5001
+    # -----End-----
 
     FEDML_OTA_CMD_UPGRADE = "upgrade"
     FEDML_OTA_CMD_RESTART = "restart"
@@ -122,29 +141,91 @@ class ClientConstants(object):
         return model_packages_dir
 
     @staticmethod
+    def get_k8s_master_host_dir(current_dir):
+        if not ClientConstants.is_running_on_k8s():
+            return current_dir
+
+        if str(current_dir).startswith(ClientConstants.K8S_DEPLOYMENT_MASTER_MOUNT_HOME_DIR):
+            return str(current_dir).replace(ClientConstants.K8S_DEPLOYMENT_MASTER_MOUNT_HOME_DIR,
+                                            ClientConstants.K8S_DEPLOYMENT_MASTER_HOST_HOME_DIR)
+        return current_dir
+
+    @staticmethod
+    def get_k8s_slave_host_dir(current_dir):
+        if not ClientConstants.is_running_on_k8s():
+            return current_dir
+
+        if str(current_dir).startswith(ClientConstants.K8S_DEPLOYMENT_SLAVE_MOUNT_HOME_DIR):
+            return str(current_dir).replace(ClientConstants.K8S_DEPLOYMENT_SLAVE_MOUNT_HOME_DIR,
+                                            ClientConstants.K8S_DEPLOYMENT_SLAVE_HOST_HOME_DIR)
+        return current_dir
+
+    @staticmethod
+    def is_running_on_k8s():
+        running_source = os.getenv(ClientConstants.FEDML_RUNNING_SOURCE_ENV_NAME, default=None)
+        if running_source is not None and running_source == ClientConstants.FEDML_RUNNING_SOURCE_ENV_VALUE_K8S:
+            return True
+        return False
+
+    @staticmethod
     def get_model_serving_dir():
         model_file_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "models_serving")
         return model_file_dir
 
     @staticmethod
-    def get_model_ops_list_url(model_name, page_num, page_size, config_version="release"):
-        model_ops_url = "{}/api/v1/model/list?modelName={}&pageNum={}&pageSize={}".format(
-            ClientConstants.get_model_ops_url(config_version), model_name, page_num, page_size)
+    def get_model_ops_list_url(config_version="release"):
+        model_ops_url = "{}/api/v1/model/listFromCli".format(ClientConstants.get_model_ops_url(config_version))
         return model_ops_url
 
     @staticmethod
     def get_model_ops_upload_url(config_version="release"):
-        model_ops_url = "{}/api/v1/model/create".format(ClientConstants.get_model_ops_url(config_version))
+        model_ops_url = "{}/api/v1/model/createFromCli".format(ClientConstants.get_model_ops_url(config_version))
         return model_ops_url
 
     @staticmethod
     def get_model_ops_url(config_version="release"):
-        return "https://model-{}.fedml.ai/fedmlModelServer".format("" if config_version == "release" else config_version)
+        return "https://model{}.fedml.ai/fedmlModelServer".format(
+            "" if config_version == "release" else "-" + config_version)
 
     @staticmethod
     def get_model_ops_deployment_url(config_version="release"):
-        model_ops_url = "{}/api/v1/endpoint/create".format(ClientConstants.get_model_ops_url(config_version))
+        model_ops_url = "{}/api/v1/endpoint/createFromCli".format(ClientConstants.get_model_ops_url(config_version))
         return model_ops_url
+
+    @staticmethod
+    def get_running_model_name(end_point_id, model_id, model_name, model_version):
+        running_model_name = "model_{}_{}_{}_{}".format(end_point_id, model_id, model_name, model_version)
+        running_model_name = running_model_name.replace(' ', '-')
+        running_model_name = running_model_name.replace(':', '-')
+        return running_model_name
+
+    @staticmethod
+    def remove_deployment(end_point_id, model_id, model_name, model_version):
+        running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id, model_name, model_version)
+        model_dir = os.path.join(ClientConstants.get_model_dir(), model_name,
+                                 ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME)
+        model_dir_list = os.listdir(model_dir)
+        for dir_item in model_dir_list:
+            if not dir_item.startswith(running_model_name):
+                continue
+            logging.info("remove model file {}.".format(dir_item))
+            model_file_path = os.path.join(model_dir, dir_item)
+            shutil.rmtree(model_file_path, ignore_errors=True)
+            os.system("sudo rm -Rf {}".format(model_file_path))
+
+        model_serving_dir = ClientConstants.get_model_serving_dir()
+        if not os.path.exists(model_serving_dir):
+            return False
+        serving_dir_list = os.listdir(model_serving_dir)
+        for dir_item in serving_dir_list:
+            if not dir_item.startswith(running_model_name):
+                continue
+            logging.info("remove model serving file {}.".format(dir_item))
+            model_file_path = os.path.join(model_serving_dir, dir_item)
+            shutil.rmtree(model_file_path, ignore_errors=True)
+            os.system("sudo rm -Rf {}".format(model_file_path))
+
+        return True
 
     @staticmethod
     def get_local_ip():
@@ -186,6 +267,20 @@ class ClientConstants(object):
                 result = True
 
         return result
+
+    @staticmethod
+    def retrieve_and_unzip_package(package_url, package_name, local_package_file, unzip_package_path):
+        if not os.path.exists(local_package_file):
+            urllib.request.urlretrieve(package_url, local_package_file)
+        try:
+            shutil.rmtree(
+                os.path.join(unzip_package_path, package_name), ignore_errors=True
+            )
+        except Exception as e:
+            pass
+        ClientConstants.unzip_file(local_package_file, unzip_package_path)
+        unzip_package_path = os.path.join(unzip_package_path, package_name)
+        return unzip_package_path
 
     @staticmethod
     def cleanup_run_process():
