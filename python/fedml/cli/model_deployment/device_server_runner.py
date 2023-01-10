@@ -404,11 +404,13 @@ class FedMLServerRunner:
             # 2. We should send to MBE(ModelOps Backend)
             payload_json["model_url"] = model_inference_url
             payload_json["port"] = model_inference_port
+            token = FedMLModelCache.get_instance(self.redis_addr, self.redis_port).\
+                get_end_point_token(end_point_id)
             payload_json["input_json"] = {"end_point_id": self.run_id,
                                           "model_id": model_id,
                                           "model_name": model_name,
                                           "model_version": model_version,
-                                          "token": str(uuid.uuid4()),
+                                          "token": str(token),
                                           "data": "This is our test data. Please fill in here with your real data."}
             model_metadata = payload_json["model_metadata"]
             payload_json["output_json"] = {"outputs": model_metadata["outputs"]}
