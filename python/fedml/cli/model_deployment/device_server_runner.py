@@ -784,7 +784,7 @@ class FedMLServerRunner:
                                       "model_config": model_config,
                                       "input_json": input_json,
                                       "output_json": output_json,
-                                      "timestamp": int(format(time.time_ns()/1000, '.0f'))}
+                                      "timestamp": int(format(time.time_ns()/1000.0, '.0f'))}
         self.setup_client_mqtt_mgr()
         self.wait_client_mqtt_connected()
         self.client_mqtt_mgr.send_message_json(deployment_results_topic, json.dumps(deployment_results_payload))
@@ -797,7 +797,7 @@ class FedMLServerRunner:
         deployment_status_payload = {"end_point_id": end_point_id, "model_name": model_name,
                                      "model_url": model_inference_url,
                                      "model_status": model_status,
-                                     "timestamp": int(format(time.time_ns()/1000, '.0f'))}
+                                     "timestamp": int(format(time.time_ns()/1000.0, '.0f'))}
         self.setup_client_mqtt_mgr()
         self.wait_client_mqtt_connected()
         self.client_mqtt_mgr.send_message_json(deployment_status_topic, json.dumps(deployment_status_payload))
