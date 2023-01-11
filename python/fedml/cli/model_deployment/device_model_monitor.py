@@ -43,7 +43,7 @@ class FedMLModelMetrics:
         avg_qps = format(avg_qps, '.0f')
         avg_latency = format(total_latency / total_request_num / self.ms_per_sec, '.6f')
 
-        timestamp = int(format(time.time(), '.0f'))
+        timestamp = int(format(time.time_ns()/1000.0, '.0f'))
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port).set_monitor_metrics(end_point_id, total_latency,
                                                                                            avg_latency,
                                                                                            total_request_num,
