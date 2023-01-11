@@ -4,6 +4,7 @@ import os
 import uuid
 
 import paho.mqtt.client as mqtt
+import paho.mqtt.publish as mqtt_publish
 import time
 from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
@@ -49,7 +50,7 @@ class MqttManager(object):
         self._client.on_disconnect = self.on_disconnect
         self._client.on_message = self.on_message
         self._client.on_subscribe = self._on_subscribe
-        #self._client.on_log = self._on_log
+        # self._client.on_log = self._on_log
         self._client.disable_logger()
         self._client.username_pw_set(self.user, self.pwd)
 
@@ -81,38 +82,36 @@ class MqttManager(object):
     def loop_forever(self):
         self._client.loop_forever(retry_first_connection=True)
 
-    def send_message(self, topic, message, wait_for_publish=False):
+    def send_message(self, topic, message, publish_single_message=True):
         # if self._client.is_connected() is False:
         #     return False
 
         mqtt_send_start_time = time.time()
-        ret_info = self._client.publish(topic, payload=message, qos=2)
-        if wait_for_publish:
-            try:
-                ret_info.wait_for_publish(1)
-            except Exception as e:
-                pass
+        if publish_single_message:
+            connection_id = "FEDML_SINGLE_CONN_{}_{}".format(self._client_id,
+                                                             str(mqtt.base62(uuid.uuid4().int, padding=22)))
+            mqtt_publish.single(topic, payload=message, qos=2,
+                                hostname=self._host, port=self._port,
+                                client_id=connection_id,
+                                auth={'username': self.user, 'password': self.pwd})
+        else:
+            ret_info = self._client.publish(topic, payload=message, qos=2)
+            return ret_info.is_published()
         MLOpsProfilerEvent.log_to_wandb({"Comm/send_delay_mqtt": time.time() - mqtt_send_start_time})
+        return True
 
-        try:
-            sent = ret_info.is_published()
-            return sent
-        except Exception as e:
-            return False
-
-    def send_message_json(self, topic, message, wait_for_publish=False):
-        ret_info = self._client.publish(topic, payload=message, qos=2)
-        if wait_for_publish:
-            try:
-                ret_info.wait_for_publish(1)
-            except Exception as e:
-                pass
-
-        try:
-            sent = ret_info.is_published()
-            return sent
-        except Exception as e:
-            return False
+    def send_message_json(self, topic, message, publish_single_message=True):
+        if publish_single_message:
+            connection_id = "FEDML_SINGLE_CONN_{}_{}".format(self._client_id,
+                                                             str(mqtt.base62(uuid.uuid4().int, padding=22)))
+            mqtt_publish.single(topic, payload=message, qos=2,
+                                hostname=self._host, port=self._port,
+                                client_id=connection_id,
+                                auth={'username': self.user, 'password': self.pwd})
+        else:
+            ret_info = self._client.publish(topic, payload=message, qos=2)
+            return ret_info.is_published()
+        return True
 
     def on_connect(self, client, userdata, flags, rc):
         # Callback connected listeners
@@ -228,5 +227,3 @@ class MqttManager(object):
 
     def subscribe_msg(self, topic):
         self._client.subscribe(topic, qos=2)
-
-
