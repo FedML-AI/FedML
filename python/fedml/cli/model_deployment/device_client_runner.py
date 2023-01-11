@@ -166,7 +166,7 @@ class FedMLClientRunner:
         self.mlops_metrics.report_client_training_status(self.edge_id,
                                                          ClientConstants.MSG_MLOPS_CLIENT_STATUS_RUNNING)
         self.send_deployment_status(self.edge_id, model_name, model_id, "",
-                                    ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_INITIALIZING)
+                                    ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYING)
 
         # update local config with real time parameters from server and dynamically replace variables value
         logging.info("Download and unzip model to local...")
