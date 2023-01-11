@@ -189,7 +189,7 @@ class FedMLServerRunner:
         # report server running status
         self.mlops_metrics.report_server_training_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_RUNNING)
         self.send_deployment_status(self.run_id, model_name, "",
-                                    ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_INITIALIZING)
+                                    ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYING)
 
         # start unified inference server
         running_model_name = ServerConstants.get_running_model_name(run_id, model_id,
