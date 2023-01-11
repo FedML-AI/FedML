@@ -1,4 +1,5 @@
 import argparse
+import os
 import time
 
 from fedml.cli.model_deployment.device_client_constants import ClientConstants
@@ -18,6 +19,14 @@ if __name__ == "__main__":
     parser.add_argument("--infer_port", "-ip", type=int,
                         default=ServerConstants.MODEL_INFERENCE_DEFAULT_PORT, help="inference port")
     args = parser.parse_args()
+
+    # create directories
+    if not os.path.exists(ClientConstants.get_model_dir()):
+        os.makedirs(ClientConstants.get_model_dir())
+    if not os.path.exists(ClientConstants.get_model_package_dir()):
+        os.makedirs(ClientConstants.get_model_package_dir())
+    if not os.path.exists(ClientConstants.get_model_serving_dir()):
+        os.makedirs(ClientConstants.get_model_serving_dir())
 
     # start unified inference server
     running_model_name = ClientConstants.get_running_model_name(args.end_point_id, args.model_id,
