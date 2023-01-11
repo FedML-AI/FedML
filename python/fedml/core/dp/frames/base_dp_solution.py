@@ -1,8 +1,7 @@
 from abc import ABC
 from collections import OrderedDict
-
 from fedml.core.dp.mechanisms.dp_mechanism import DPMechanism
-import torch
+from typing import List, Tuple
 
 
 class BaseDPFrame(ABC):
@@ -23,4 +22,6 @@ class BaseDPFrame(ABC):
     def add_global_noise(self, global_model: OrderedDict):
         return self.cdp.add_noise(grad=global_model)
 
+    def set_params_for_dp(self, raw_client_model_or_grad_list: List[Tuple[float, OrderedDict]]):
+        pass
 

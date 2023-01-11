@@ -1,7 +1,6 @@
 from fedml.core.dp.mechanisms import Gaussian, Laplace
 import torch
 from typing import Union, Iterable
-
 from collections import OrderedDict
 
 """call dp mechanisms, e.g., Gaussian, Laplace """
@@ -10,7 +9,7 @@ _tensor_or_tensors = Union[torch.Tensor, Iterable[torch.Tensor]]
 
 
 class DPMechanism:
-    def __init__(self, mechanism_type, epsilon, delta, sensitivity):
+    def __init__(self, mechanism_type, epsilon, delta, sensitivity=1):
         mechanism_type = mechanism_type.lower()
         if mechanism_type == "laplace":
             self.dp = Laplace(

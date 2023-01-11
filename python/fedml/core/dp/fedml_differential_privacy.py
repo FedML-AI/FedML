@@ -1,11 +1,10 @@
 import logging
 from collections import OrderedDict
-
+from typing import List, Tuple
 from fedml.core.dp.common.constants import DP_LDP, DP_CDP, NBAFL_DP, DP_CLIP
 from fedml.core.dp.frames.cdp import GlobalDP
 from fedml.core.dp.frames.ldp import LocalDP
 from fedml.core.dp.budget_accountant.dp_accountant import LDPAccountant, CDPAccountant
-
 from .frames.NbAFL import NbAFL_DP
 from .frames.dp_clip import DP_Clip
 from ..common.ml_engine_backend import MLEngineBackend
@@ -77,6 +76,9 @@ class FedMLDifferentialPrivacy:
     def is_global_dp_enabled(self):
         return self.is_enabled and self.dp_solution_type in [DP_CDP]
 
+    def to_compute_params_in_aggregation_enabled(self):
+        return self.is_enabled and self.dp_solution_type in [NBAFL_DP]
+
     def add_local_noise(self, local_grad: OrderedDict):
         if self.dp_solution is None:
             raise Exception("dp solution is not initialized!")
@@ -86,4 +88,9 @@ class FedMLDifferentialPrivacy:
         if self.dp_solution is None:
             raise Exception("dp solution is not initialized!")
         return self.dp_solution.add_global_noise(global_model)
+
+    def set_params_for_dp(self, raw_client_model_or_grad_list: List[Tuple[float, OrderedDict]]):
+        if self.dp_solution is None:
+            raise Exception("dp solution is not initialized!")
+        self.dp_solution.set_params_for_dp(raw_client_model_or_grad_list)
 
