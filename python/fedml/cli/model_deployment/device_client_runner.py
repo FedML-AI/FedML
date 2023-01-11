@@ -162,7 +162,6 @@ class FedMLClientRunner:
         MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
 
         self.setup_client_mqtt_mgr()
-        self.wait_client_mqtt_connected()
 
         self.mlops_metrics.report_client_training_status(self.edge_id,
                                                          ClientConstants.MSG_MLOPS_CLIENT_STATUS_RUNNING)
@@ -191,11 +190,9 @@ class FedMLClientRunner:
                                          inference_model_version, ClientConstants.INFERENCE_HTTP_PORT,
                                          inference_engine, model_metadata, model_config)
             self.setup_client_mqtt_mgr()
-            self.wait_client_mqtt_connected()
             self.mlops_metrics.run_id = self.run_id
             self.mlops_metrics.broadcast_client_training_status(self.edge_id,
                                                                 ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
-            self.release_client_mqtt_mgr()
         else:
             self.send_deployment_status(self.edge_id, model_id, running_model_name, inference_output_url,
                                         ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED)
@@ -205,8 +202,7 @@ class FedMLClientRunner:
             time.sleep(1)
             self.broadcast_client_training_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
 
-        while True:
-            time.sleep(1)
+        self.client_mqtt_mgr.loop_forever()
 
     def send_deployment_results(self, device_id, model_id, model_name, model_inference_url,
                                 model_version, inference_port, inference_engine,
@@ -219,9 +215,7 @@ class FedMLClientRunner:
                                       "model_metadata": model_metadata,
                                       "model_config": model_config}
         self.setup_client_mqtt_mgr()
-        self.wait_client_mqtt_connected()
         self.client_mqtt_mgr.send_message_json(deployment_results_topic, json.dumps(deployment_results_payload))
-        self.release_client_mqtt_mgr()
 
     def send_deployment_status(self, device_id, model_id, model_name, model_inference_url, model_status):
         deployment_status_topic = "/model_ops/model_device/return_deployment_status/{}".format(device_id)
@@ -230,9 +224,7 @@ class FedMLClientRunner:
                                      "model_name": model_name, "model_url": model_inference_url,
                                      "model_status": model_status}
         self.setup_client_mqtt_mgr()
-        self.wait_client_mqtt_connected()
         self.client_mqtt_mgr.send_message_json(deployment_status_topic, json.dumps(deployment_status_payload))
-        self.release_client_mqtt_mgr()
 
     def broadcast_client_training_status(self, edge_id, status):
         run_id = 0
@@ -243,9 +235,7 @@ class FedMLClientRunner:
         message_json = json.dumps(msg)
         logging.info("report_client_training_status. message_json = %s" % message_json)
         self.setup_client_mqtt_mgr()
-        self.wait_client_mqtt_connected()
         self.client_mqtt_mgr.send_message_json(topic_name, message_json)
-        self.release_client_mqtt_mgr()
 
     def reset_devices_status(self, edge_id, status):
         self.mlops_metrics.run_id = self.run_id
@@ -254,8 +244,6 @@ class FedMLClientRunner:
 
     def stop_run(self):
         self.setup_client_mqtt_mgr()
-
-        self.wait_client_mqtt_connected()
 
         logging.info("Stop run successfully.")
 
@@ -266,12 +254,8 @@ class FedMLClientRunner:
 
         time.sleep(1)
 
-        self.release_client_mqtt_mgr()
-
     def stop_run_with_killed_status(self):
         self.setup_client_mqtt_mgr()
-
-        self.wait_client_mqtt_connected()
 
         logging.info("Stop deployment successfully.")
 
@@ -282,12 +266,8 @@ class FedMLClientRunner:
 
         time.sleep(1)
 
-        self.release_client_mqtt_mgr()
-
     def exit_run_with_exception(self):
         self.setup_client_mqtt_mgr()
-
-        self.wait_client_mqtt_connected()
 
         logging.info("Exit run successfully.")
 
@@ -299,12 +279,8 @@ class FedMLClientRunner:
 
         time.sleep(1)
 
-        self.release_client_mqtt_mgr()
-
     def cleanup_run_when_starting_failed(self):
         self.setup_client_mqtt_mgr()
-
-        self.wait_client_mqtt_connected()
 
         logging.info("Cleanup run successfully when starting failed.")
 
@@ -319,12 +295,8 @@ class FedMLClientRunner:
 
         time.sleep(1)
 
-        self.release_client_mqtt_mgr()
-
     def cleanup_run_when_finished(self):
         self.setup_client_mqtt_mgr()
-
-        self.wait_client_mqtt_connected()
 
         logging.info("Cleanup run successfully when finished.")
 
@@ -338,8 +310,6 @@ class FedMLClientRunner:
             pass
 
         time.sleep(1)
-
-        self.release_client_mqtt_mgr()
 
     def callback_server_status_msg(self, topic=None, payload=None):
         payload_json = json.loads(payload)
@@ -380,16 +350,6 @@ class FedMLClientRunner:
         if self.client_mqtt_mgr is not None:
             return
 
-        if self.client_mqtt_lock is None:
-            self.client_mqtt_lock = threading.Lock()
-        if self.client_mqtt_mgr is not None:
-            self.client_mqtt_lock.acquire()
-            self.client_mqtt_mgr.remove_disconnected_listener(self.on_client_mqtt_disconnected)
-            self.client_mqtt_is_connected = False
-            self.client_mqtt_mgr.disconnect()
-            self.client_mqtt_mgr = None
-            self.client_mqtt_lock.release()
-
         self.client_mqtt_mgr = MqttManager(
             self.agent_config["mqtt_config"]["BROKER_HOST"],
             self.agent_config["mqtt_config"]["BROKER_PORT"],
@@ -399,37 +359,12 @@ class FedMLClientRunner:
             "FedML_ClientAgent_Metrics_{}_{}".format(self.args.current_device_id, str(os.getpid()))
         )
 
-        self.client_mqtt_mgr.add_connected_listener(self.on_client_mqtt_connected)
-        self.client_mqtt_mgr.add_disconnected_listener(self.on_client_mqtt_disconnected)
-        self.client_mqtt_mgr.connect()
-        self.client_mqtt_mgr.loop_start()
-
         if self.mlops_metrics is None:
             self.mlops_metrics = MLOpsMetrics()
         self.mlops_metrics.set_messenger(self.client_mqtt_mgr)
         self.mlops_metrics.run_id = self.run_id
 
-    def release_client_mqtt_mgr(self, real_release=False):
-        if real_release:
-            if self.client_mqtt_mgr is not None:
-                self.client_mqtt_mgr.disconnect()
-                self.client_mqtt_mgr.loop_stop()
-
-            self.client_mqtt_lock.acquire()
-            if self.client_mqtt_mgr is not None:
-                self.client_mqtt_is_connected = False
-                self.client_mqtt_mgr = None
-            self.client_mqtt_lock.release()
-
-    def wait_client_mqtt_connected(self):
-        pass
-        # while True:
-        #     self.client_mqtt_lock.acquire()
-        #     if self.client_mqtt_is_connected is True:
-        #         self.client_mqtt_lock.release()
-        #         break
-        #     self.client_mqtt_lock.release()
-        #     time.sleep(1)
+        self.client_mqtt_mgr.connect()
 
     def callback_start_deployment(self, topic, payload):
         """
@@ -830,14 +765,12 @@ class FedMLClientRunner:
         self.mqtt_mgr.connect()
 
         self.setup_client_mqtt_mgr()
-        self.wait_client_mqtt_connected()
         self.mlops_metrics.report_client_training_status(self.edge_id,
                                                          ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
         MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
         self.mlops_metrics.set_sys_reporting_status(enable=True, is_client=True)
         setattr(self.args, "mqtt_config_path", service_config["mqtt_config"])
         self.mlops_metrics.report_sys_perf(self.args)
-        self.release_client_mqtt_mgr()
 
     def start_agent_mqtt_loop(self):
         # Start MQTT message loop
