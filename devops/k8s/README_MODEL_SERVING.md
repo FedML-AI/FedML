@@ -139,15 +139,15 @@ Pull remote model(ModelOps) to local model repository:
 
 # Q&A
 
-1. Q: automatically scale?
-A: yes. Call CLI `helm upgrade`. For example, you can do upgrade by using the following CLI:
+1. Q: Supports automatically scale?
+A: Yes. Call CLI `helm upgrade`. For example, you can do upgrade by using the following CLI:
 
 ```helm upgrade --set "autoscaling.enabled=true" --set replicaCount=$InstanceNumber fedml-model-premise-master fedml-model-premise-master-0.7.377.tgz -n $YourNameSpace```
 
 
-2. Q: does the inference endpoint support private IP? \
-A: yes.
+2. Q: Does the inference endpoint supports private IP? \
+A: Yes.
 
 
-4. Q: during deployment, what if the k8s service does not have a public IP? \
-A: allow our public IP/domain to access your k8s cluster.
+4. Q: During deployment, what if the k8s service does not have a public IP? \
+A: During deployment, we don't need to initiate access to your k8s service from model.fedml.ai, only your k8s cluster can initiate access to model.fedml.ai
