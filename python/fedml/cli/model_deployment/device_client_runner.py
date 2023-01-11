@@ -194,6 +194,7 @@ class FedMLClientRunner:
             self.mlops_metrics.broadcast_client_training_status(self.edge_id,
                                                                 ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
         else:
+            logging.info("Finished deployment, continue to send results to master...")
             self.send_deployment_status(self.edge_id, model_id, running_model_name, inference_output_url,
                                         ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED)
             self.send_deployment_results(self.edge_id, model_id, running_model_name, inference_output_url,
@@ -215,6 +216,8 @@ class FedMLClientRunner:
                                       "model_metadata": model_metadata,
                                       "model_config": model_config}
         self.setup_client_mqtt_mgr()
+        logging.info("send_deployment_results: topic {}, payload {}.".format(deployment_results_topic,
+                                                                             deployment_results_payload))
         self.client_mqtt_mgr.send_message_json(deployment_results_topic, json.dumps(deployment_results_payload))
 
     def send_deployment_status(self, device_id, model_id, model_name, model_inference_url, model_status):
@@ -224,6 +227,8 @@ class FedMLClientRunner:
                                      "model_name": model_name, "model_url": model_inference_url,
                                      "model_status": model_status}
         self.setup_client_mqtt_mgr()
+        logging.info("send_deployment_status: topic {}, payload {}.".format(deployment_status_topic,
+                                                                            deployment_status_payload))
         self.client_mqtt_mgr.send_message_json(deployment_status_topic, json.dumps(deployment_status_payload))
 
     def broadcast_client_training_status(self, edge_id, status):
