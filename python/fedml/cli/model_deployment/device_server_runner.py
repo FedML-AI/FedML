@@ -356,6 +356,8 @@ class FedMLServerRunner:
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             set_deployment_result(end_point_id, device_id, payload_json)
 
+        logging.info("callback_deployment_result_message: topic {}, payload {}.".format(topic, payload))
+
         # When all deployments are finished
         edge_id_list = self.request_json["device_ids"]
         if len(edge_id_list) - 1 == \
@@ -412,6 +414,8 @@ class FedMLServerRunner:
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port).set_deployment_status(end_point_id, device_id,
                                                                                              payload_json)
+
+        logging.info("callback_deployment_status_message: topic {}, payload {}.".format(topic, payload))
 
         # When all deployments are finished
         edge_id_list = self.request_json["device_ids"]
