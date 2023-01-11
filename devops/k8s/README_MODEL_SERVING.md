@@ -1,7 +1,16 @@
-# Model Serving Overview:
- You may deploy your models to target computing devices, e.g. GPU/CPU physical devices or Kubernetes pods running on GPU/CPU physical nodes.
- 
- When your model deployment finishes, you will get an end point URL and inference API.
+# FedML MLOps Model Serving with Kubernetes
+
+This tutorial will guide you to deploy your models to target computing devices, e.g. GPU/CPU physical devices or Kubernetes pods running on GPU/CPU physical nodes.
+
+The entire workflow is as follows:
+1. create a model card by uploading your trained model file and related configuration (YAML)
+2. bind (login) computing resource to FedML MLOps model serving platform (https://model.fedml.ai)
+   - Kubernetes mode
+   - CLI mode
+3. start the deployment and get the inference API once the deployment is finished
+
+
+When your model deployment is finished, you will get an endpoint URL and inference API.
 
 ```curl -XPOST https://$YourEndPointIngressDomainName/inference/api/v1/predict -H 'accept: application/json' -d'{  "model_version": "v11-Thu Jan 05 08:20:24 GMT 2023",  "model_name": "model_340_18_fedml_test_model_v11-Thu-Jan-05-08-20-24-GMT-2023",  "data": "This is our test data. Please fill in here with your real data.",  "end_point_id": 336,  "model_id": 18,  "token": "2e081ef115d04ee8adaffe5c1d0bfbac"}'```
 
@@ -18,7 +27,7 @@ Note: You may find your device id in the Computing Resource page at the ModelOps
       In the $device_id_list, the master device should be the first item.
 ```
 
-The above command needs two key parameters: $model_name, $device_id_list. We may run the following steps to prepare these parameters.
+The above command needs two key parameters: $model_name, $device_id_list. Now let us run the following steps to prepare these parameters.
 
 # 1. Install FedML model serving packages to computing devices (Kubernetes pods or GPU/CPU physical nodes)
 
