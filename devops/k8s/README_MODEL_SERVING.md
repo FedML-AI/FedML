@@ -19,7 +19,7 @@ When your model deployment is finished, you will get an endpoint URL and inferen
 Model Deployment CLI:
 
 ```
-fedml model deploy -n $model_name -dt $device_type(options:md.on_premise_device/md.fedml_cloud_device) -d $device_id_list -u $user_id -k $user_api_key -p $deployment_extra_params
+fedml model deploy -n $model_name --on_premise -d $device_id_list -u $user_id -k $user_api_key -p $deployment_extra_params
 
 e.g. fedml model deploy -n fedml_sample_model -u 1420 -k c9356b9c4ce44363bb66366b290201 -dt md.on_premise_device -d [178077,178076]
 
@@ -62,7 +62,7 @@ Inference end point ingress will be used as your model serving endpoint URL whic
    ```kubectl get nodes --show-labels```
 
 ### 4). Prepare parameters will be used in the next step.
-     You should fetch $YourAccountId and $YourApiKey from ModelOps(model.fedml.ai) which will be used in the next step. 
+ You should fetch $YourAccountId and $YourApiKey from ModelOps(model.fedml.ai) which will be used in the next step. 
 
 ### 5). You may run the Helm Charts Installation commands to install FedML model serving packages to the above labeled nodes.
 
