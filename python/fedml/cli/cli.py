@@ -966,7 +966,10 @@ def pull_model(name, user, api_key, version):
     "--name", "-n", type=str, help="model name.",
 )
 @click.option(
-    "--device_type", "-dt", type=str, help="device type(md.on_premise_device or md.fedml_cloud_device).",
+    "--on_premise", "-p", default=None, is_flag=True, help="all devices are from on-premise.",
+)
+@click.option(
+    "--cloud", "-c", default=None, is_flag=True, help="all devices are from fedml cloud.",
 )
 @click.option(
     "--devices", "-d", type=str, help="device list, format: [1,2,3]. The first id is master device.",
@@ -991,10 +994,22 @@ def pull_model(name, user, api_key, version):
     "--use_local_deployment", "-ld", default=None, is_flag=True,
     help="deploy local model repository by sending MQTT message(just use for debugging).",
 )
-def deploy_model(name, device_type, devices, user, api_key, params, version, use_local_deployment):
+def deploy_model(name, on_premise, cloud, devices, user, api_key, params, version, use_local_deployment):
     if user is None or api_key is None:
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
         return
+
+    is_cloud = cloud
+    is_on_premise = on_premise
+    if cloud is None and on_premise is None:
+        is_on_premise = True
+    if is_cloud and is_on_premise:
+        is_cloud = False
+
+    if is_on_premise:
+        device_type = "md.on_premise_device"
+    else:
+        device_type = "md.fedml_cloud_device"
     FedMLModelCards.get_instance().set_config_version(version)
     if FedMLModelCards.get_instance().deploy_model(name, device_type, devices, user, api_key,
                                                    params, use_local_deployment):
