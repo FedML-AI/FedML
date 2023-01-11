@@ -465,16 +465,6 @@ class FedMLServerRunner:
         for edge_id in edge_id_list:
             if edge_id == self.edge_id:
                 continue
-            # subscribe deployment result message for each model device
-            deployment_results_topic = "/model_ops/model_device/return_deployment_result/{}".format(edge_id)
-            self.client_mqtt_mgr.add_message_listener(deployment_results_topic, self.callback_deployment_result_message)
-            self.client_mqtt_mgr.subscribe_msg(deployment_results_topic)
-
-            # subscribe deployment status message for each model device
-            deployment_status_topic = "/model_ops/model_device/return_deployment_status/{}".format(edge_id)
-            self.client_mqtt_mgr.add_message_listener(deployment_status_topic, self.callback_deployment_status_message)
-            self.client_mqtt_mgr.subscribe_msg(deployment_status_topic)
-
             # send start deployment request to each model device
             topic_start_deployment = "/model_ops/model_device/start_deployment/{}".format(str(edge_id))
             logging.info("start_deployment: send topic " + topic_start_deployment + " to client...")
@@ -571,6 +561,9 @@ class FedMLServerRunner:
 
         ServerConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, self.edge_id, run_id=run_id)
         time.sleep(1)
+
+        # Subscribe slave device device messages
+        self.subscribe_slave_devices_message()
 
         # Start server with multi-processing mode
         if not self.run_as_cloud_server:
@@ -1246,6 +1239,25 @@ class FedMLServerRunner:
         active_msg = {"ID": self.edge_id, "status": status}
         MLOpsStatus.get_instance().set_server_agent_status(self.edge_id, status)
         self.mqtt_mgr.send_message_json(active_topic, json.dumps(active_msg))
+
+    def subscribe_slave_devices_message(self):
+        run_id = self.request_json["run_id"]
+        edge_id_list = self.request_json["device_ids"]
+        logging.info("Edge ids: " + str(edge_id_list))
+        for edge_id in edge_id_list:
+            if edge_id == self.edge_id:
+                continue
+            # subscribe deployment result message for each model device
+            deployment_results_topic = "/model_ops/model_device/return_deployment_result/{}".format(edge_id)
+            self.mqtt_mgr.add_message_listener(deployment_results_topic, self.callback_deployment_result_message)
+            self.mqtt_mgr.subscribe_msg(deployment_results_topic)
+
+            # subscribe deployment status message for each model device
+            deployment_status_topic = "/model_ops/model_device/return_deployment_status/{}".format(edge_id)
+            self.mqtt_mgr.add_message_listener(deployment_status_topic, self.callback_deployment_status_message)
+            self.mqtt_mgr.subscribe_msg(deployment_status_topic)
+
+            logging.info("subscribe device messages {deployment_results_topic}, {deployment_status_topic}")
 
     def on_agent_mqtt_connected(self, mqtt_client_object):
         # The MQTT message topic format is as follows: <sender>/<receiver>/<action>
