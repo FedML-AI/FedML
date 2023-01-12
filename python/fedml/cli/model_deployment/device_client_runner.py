@@ -205,7 +205,7 @@ class FedMLClientRunner:
             time.sleep(1)
             self.broadcast_client_training_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
 
-        self.client_mqtt_mgr.loop_forever()
+        self.release_client_mqtt_mgr()
 
     def send_deployment_results(self, device_id, model_status,
                                 model_id, model_name, model_inference_url,
@@ -374,6 +374,12 @@ class FedMLClientRunner:
         self.mlops_metrics.run_id = self.run_id
 
         self.client_mqtt_mgr.connect()
+        self.client_mqtt_mgr.loop_start()
+
+    def release_client_mqtt_mgr(self):
+        time.sleep(1)
+        self.client_mqtt_mgr.loop_stop()
+        self.client_mqtt_mgr.disconnect()
 
     def callback_start_deployment(self, topic, payload):
         """
