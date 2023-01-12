@@ -92,17 +92,18 @@ def start_deployment(end_point_id, model_id, model_version,
     if not os.path.exists(model_serving_dir):
         os.makedirs(model_serving_dir)
     converted_model_path = os.path.join(model_storage_local_path, ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME)
-    model_file_list = os.listdir(converted_model_path)
-    for model_file in model_file_list:
-        src_model_file = os.path.join(converted_model_path, model_file)
-        dst_model_file = os.path.join(model_serving_dir, model_file)
-        if os.path.isdir(src_model_file):
-            if not os.path.exists(dst_model_file):
-                shutil.copytree(src_model_file, dst_model_file, copy_function=shutil.copy,
-                                ignore_dangling_symlinks=True)
-        else:
-            if not os.path.exists(dst_model_file):
-                shutil.copyfile(src_model_file, dst_model_file)
+    if os.path.exists(converted_model_path):
+        model_file_list = os.listdir(converted_model_path)
+        for model_file in model_file_list:
+            src_model_file = os.path.join(converted_model_path, model_file)
+            dst_model_file = os.path.join(model_serving_dir, model_file)
+            if os.path.isdir(src_model_file):
+                if not os.path.exists(dst_model_file):
+                    shutil.copytree(src_model_file, dst_model_file, copy_function=shutil.copy,
+                                    ignore_dangling_symlinks=True)
+            else:
+                if not os.path.exists(dst_model_file):
+                    shutil.copyfile(src_model_file, dst_model_file)
 
     # Run triton server
     if not triton_server_is_running and not ClientConstants.is_running_on_k8s():
