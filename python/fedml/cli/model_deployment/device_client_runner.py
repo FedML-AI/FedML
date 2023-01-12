@@ -186,7 +186,8 @@ class FedMLClientRunner:
         if inference_output_url == "":
             self.send_deployment_status(self.edge_id, model_id, running_model_name, inference_output_url,
                                         ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
-            self.send_deployment_results(self.edge_id, model_id, running_model_name, inference_output_url,
+            self.send_deployment_results(self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED,
+                                         model_id, running_model_name, inference_output_url,
                                          inference_model_version, ClientConstants.INFERENCE_HTTP_PORT,
                                          inference_engine, model_metadata, model_config)
             self.setup_client_mqtt_mgr()
@@ -197,7 +198,8 @@ class FedMLClientRunner:
             logging.info("Finished deployment, continue to send results to master...")
             self.send_deployment_status(self.edge_id, model_id, running_model_name, inference_output_url,
                                         ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED)
-            self.send_deployment_results(self.edge_id, model_id, running_model_name, inference_output_url,
+            self.send_deployment_results(self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED,
+                                         model_id, running_model_name, inference_output_url,
                                          inference_model_version, ClientConstants.INFERENCE_HTTP_PORT,
                                          inference_engine, model_metadata, model_config)
             time.sleep(1)
@@ -205,7 +207,8 @@ class FedMLClientRunner:
 
         self.client_mqtt_mgr.loop_forever()
 
-    def send_deployment_results(self, device_id, model_id, model_name, model_inference_url,
+    def send_deployment_results(self, device_id, model_status,
+                                model_id, model_name, model_inference_url,
                                 model_version, inference_port, inference_engine,
                                 model_metadata, model_config):
         deployment_results_topic = "/model_ops/model_device/return_deployment_result/{}".format(device_id)
@@ -214,7 +217,8 @@ class FedMLClientRunner:
                                       "model_version": model_version, "port": inference_port,
                                       "inference_engine": inference_engine,
                                       "model_metadata": model_metadata,
-                                      "model_config": model_config}
+                                      "model_config": model_config,
+                                      "model_status": model_status}
         self.setup_client_mqtt_mgr()
         logging.info("send_deployment_results: topic {}, payload {}.".format(deployment_results_topic,
                                                                              deployment_results_payload))
