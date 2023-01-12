@@ -384,6 +384,7 @@ class FedMLServerRunner:
                                             "Failed to deploy the model to all devices.")
                 FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
                     set_deployment_result(end_point_id, self.edge_id, payload_json)
+                self.release_client_mqtt_mgr()
                 return
 
             # 1. We should generate one unified inference api
@@ -427,6 +428,7 @@ class FedMLServerRunner:
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
                 set_end_point_activation(end_point_id, True)
             self.send_deployment_results_with_payload(self.run_id, payload_json)
+            self.release_client_mqtt_mgr()
 
     def callback_deployment_status_message(self, topic=None, payload=None):
         # Save deployment status to local cache
@@ -999,6 +1001,11 @@ class FedMLServerRunner:
         self.client_mqtt_mgr.add_connected_listener(self.on_client_mqtt_connected)
         self.client_mqtt_mgr.add_disconnected_listener(self.on_client_mqtt_disconnected)
         self.client_mqtt_mgr.connect()
+
+    def release_client_mqtt_mgr(self):
+        time.sleep(1)
+        self.client_mqtt_mgr.loop_stop()
+        self.client_mqtt_mgr.disconnect()
 
     def send_deployment_stop_request_to_edges(self, edge_id_list, payload):
         for edge_id in edge_id_list:
