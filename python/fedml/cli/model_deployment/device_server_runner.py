@@ -368,14 +368,20 @@ class FedMLServerRunner:
         device_id_list = self.request_json["device_ids"]
         if len(device_id_list) <= len(self.slave_deployment_results_mapping) + 1:
             is_exist_deployed_model = False
+            failed_to_deploy_all_models = True
             for device_item in device_id_list:
-                status = self.slave_deployment_results_mapping.get(str(device_item), None)
-                if status is not None and status == ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
-                    is_exist_deployed_model = True
-                    break
+                status = self.slave_deployment_results_mapping.\
+                    get(str(device_item), ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
+                if status == ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED:
+                    pass
+                else:
+                    failed_to_deploy_all_models = False
+                    if status == ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
+                        is_exist_deployed_model = True
+                        break
 
             # Failed to deploy models.
-            if not is_exist_deployed_model:
+            if failed_to_deploy_all_models:
                 # Send stage: MODEL_DEPLOYMENT_STAGE5 = "StartInferenceIngress"
                 self.send_deployment_stages(self.run_id, model_name, model_id,
                                             "",
@@ -385,6 +391,8 @@ class FedMLServerRunner:
                 FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
                     set_deployment_result(end_point_id, self.edge_id, payload_json)
                 self.release_client_mqtt_mgr()
+                return
+            if not is_exist_deployed_model:
                 return
 
             # 1. We should generate one unified inference api
@@ -448,20 +456,28 @@ class FedMLServerRunner:
         device_id_list = self.request_json["device_ids"]
         if len(device_id_list) <= len(self.slave_deployment_statuses_mapping) + 1:
             is_exist_deployed_model = False
+            failed_to_deploy_all_models = True
             for device_item in device_id_list:
-                status = self.slave_deployment_statuses_mapping.get(str(device_item), None)
-                if status is not None and status == ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
-                    is_exist_deployed_model = True
-                    break
+                status = self.slave_deployment_statuses_mapping.\
+                    get(str(device_item), ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
+                if status == ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED:
+                    pass
+                else:
+                    failed_to_deploy_all_models = False
+                    if status == ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
+                        is_exist_deployed_model = True
+                        break
 
             # Failed to deploy the model to all devices
-            if not is_exist_deployed_model:
+            if failed_to_deploy_all_models:
                 FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
                     set_end_point_activation(end_point_id, False)
                 FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
                     set_end_point_status(end_point_id, ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
                 self.send_deployment_status(self.run_id, payload_json["model_name"], "",
                                             ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
+                return
+            if not is_exist_deployed_model:
                 return
 
             # Send deployment finished message to ModelOps
