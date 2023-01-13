@@ -84,6 +84,11 @@ spec:
               mountPath: /var/run/docker.sock
             - mountPath: /dev/shm
               name: cache-volume
+        - name: {{ .Values.inferenceConverter.name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.inferenceConverter.image.repository }}:{{ .Values.inferenceConverter.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.inferenceConverter.image.pullPolicy }}
       {{- if .Values.nodeSelector }}
       nodeSelector:
         {{- .Values.nodeSelector | toYaml | nindent 8 }}
