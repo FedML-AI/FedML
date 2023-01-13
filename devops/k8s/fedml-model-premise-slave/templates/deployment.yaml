@@ -84,6 +84,7 @@ spec:
               mountPath: /var/run/docker.sock
             - mountPath: /dev/shm
               name: cache-volume
+      initContainers:
         - name: {{ .Values.inferenceConverter.name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
