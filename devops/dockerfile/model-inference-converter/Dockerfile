@@ -10,4 +10,3 @@ ADD ./devops/scripts/requirements.txt ./fedml/requirements.txt
 RUN chmod a+x ./fedml/runner.sh
 RUN echo "Updating..."
 
-CMD ./fedml/runner.sh
