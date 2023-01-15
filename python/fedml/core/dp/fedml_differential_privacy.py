@@ -4,7 +4,7 @@ from typing import List, Tuple
 from fedml.core.dp.common.constants import DP_LDP, DP_CDP, NBAFL_DP, DP_CLIP
 from fedml.core.dp.frames.cdp import GlobalDP
 from fedml.core.dp.frames.ldp import LocalDP
-from fedml.core.dp.budget_accountant.dp_accountant import LDPAccountant, CDPAccountant
+from .budget_accountant.rdp_accountant import RDP_Accountant
 from .frames.NbAFL import NbAFL_DP
 from .frames.dp_clip import DP_Clip
 from ..common.ml_engine_backend import MLEngineBackend
@@ -26,13 +26,12 @@ class FedMLDifferentialPrivacy:
         self.is_enabled = False
         self.privacy_engine = None
         self.current_round = 0
+        self.accountant = None
 
     def init(self, args):
         if hasattr(args, "enable_dp") and args.enable_dp:
             logging.info(".......init dp......." + args.dp_solution_type + "-" + args.dp_solution_type)
             self.is_enabled = True
-            # if hasattr(args, "accountant_type") and args.accountant_type in ["adding"]:
-            #     self.enable_accountant = True
             self.dp_solution_type = args.dp_solution_type.strip()
             logging.info("self.dp_solution = {}".format(self.dp_solution_type))
 
@@ -40,21 +39,19 @@ class FedMLDifferentialPrivacy:
 
             if self.dp_solution_type == DP_LDP:
                 self.dp_solution = LocalDP(args)
-                # self.dp_accountant = LDPAccountant(args)
-                # total_epsilon = self.dp_accountant.compute_total_epsilon(args)
-                # logging.info('LDP total epsilon={}'.format(total_epsilon))
             elif self.dp_solution_type == DP_CDP:
                 self.dp_solution = GlobalDP(args)
-                # self.dp_accountant = CDPAccountant(args)
-                # total_epsilon = self.dp_accountant.compute_total_epsilon(args)
-                # logging.info('CDP total epsilon={}'.format(total_epsilon))
             elif self.dp_solution_type == NBAFL_DP:
                 self.dp_solution = NbAFL_DP(args)
             elif self.dp_solution_type == DP_CLIP:
                 self.dp_solution = DP_Clip(args)
-                # self.dp_accountant = CDPAccountant(args)
             else:
                 raise Exception("dp solution is not defined")
+
+            if hasattr(args, "enable_rdp_accountant") and args.enable_rdp_accountant and hasattr(args, "rdp_alpha"):
+                self.accountant = RDP_Accountant(dp_param=self.dp_solution.get_rdp_accountant_val(), alpha=args.rdp_alpha, dp_mechanism=args.dp_mechanism)
+                total_epsilon = self.accountant.get_accountant() * args.comm_round
+                logging.info('total epsilon={}'.format(total_epsilon))
 
         if hasattr(args, MLEngineBackend.ml_engine_args_flag) and args.ml_engine in [
             MLEngineBackend.ml_engine_backend_tf,

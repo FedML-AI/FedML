@@ -25,3 +25,12 @@ class BaseDPFrame(ABC):
     def set_params_for_dp(self, raw_client_model_or_grad_list: List[Tuple[float, OrderedDict]]):
         pass
 
+    def get_rdp_accountant_val(self):
+        if self.cdp is not None:
+            dp_param = self.cdp.get_rdp_scale()
+        elif self.ldp is not None:
+            dp_param = self.ldp.get_rdp_scale()
+        else:
+            raise Exception("can not create rdp accountant")
+        return dp_param
+
