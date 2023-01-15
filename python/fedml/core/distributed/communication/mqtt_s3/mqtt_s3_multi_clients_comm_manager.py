@@ -317,10 +317,10 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                 payload[Message.MSG_ARG_KEY_MODEL_PARAMS] = model_key
                 payload[Message.MSG_ARG_KEY_MODEL_PARAMS_URL] = model_url
                 payload[Message.MSG_ARG_KEY_MODEL_PARAMS_KEY] = model_key
-                sent_result = self.mqtt_mgr.send_message(topic, json.dumps(payload), wait_for_publish=wait_for_publish)
+                sent_result = self.mqtt_mgr.send_message(topic, json.dumps(payload))
             else:
                 # pure MQTT
-                sent_result = self.mqtt_mgr.send_message(topic, json.dumps(payload), wait_for_publish=wait_for_publish)
+                sent_result = self.mqtt_mgr.send_message(topic, json.dumps(payload))
         else:
             # client
             topic = self._topic + str(msg.get_sender_id())
@@ -348,10 +348,10 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                     "mqtt_s3.send_message: client s3, topic = %s"
                     % topic
                 )
-                sent_result = self.mqtt_mgr.send_message(topic, json.dumps(payload), wait_for_publish=wait_for_publish)
+                sent_result = self.mqtt_mgr.send_message(topic, json.dumps(payload))
             else:
                 logging.info("mqtt_s3.send_message: MQTT msg sent")
-                sent_result = self.mqtt_mgr.send_message(topic, json.dumps(payload), wait_for_publish=wait_for_publish)
+                sent_result = self.mqtt_mgr.send_message(topic, json.dumps(payload))
 
         if sent_result is not None and not sent_result:
             # if not not_cache:
