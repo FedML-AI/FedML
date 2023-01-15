@@ -2,6 +2,9 @@ from collections import OrderedDict
 import torch
 from fedml.core.dp.frames.base_dp_solution import BaseDPFrame
 
+"""
+(ICLR 2018) Learning Differentially Private Recurrent Language Models
+"""
 
 class DP_Clip(BaseDPFrame):
     def __init__(self, args):
