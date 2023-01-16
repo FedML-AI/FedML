@@ -59,3 +59,5 @@ dp_args:
   delta: 0.1
   sensitivity: 1
   mechanism_type: gaussian
+  rdp_alpha: 5
+  enable_rdp_accountant: False

@@ -40,6 +40,9 @@ class DPMechanism:
             new_data.append(tuple(list))
         return new_data
 
+    def get_rdp_scale(self):
+        return self.dp.get_rdp_scale()
+
 
 
 
