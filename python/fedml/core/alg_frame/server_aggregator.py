@@ -50,7 +50,7 @@ class ServerAggregator(ABC):
                 raw_client_grad_list=raw_client_model_or_grad_list,
                 extra_auxiliary_info=self.get_model_params(),
             )
-            client_idxs = FedMLDefender.get_instance().get_malicious_client_idxs()
+            client_idxs = FedMLDefender.get_instance().get_benign_client_idxs(client_idxs=client_idxs)
 
         return raw_client_model_or_grad_list, client_idxs
 
