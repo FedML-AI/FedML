@@ -52,7 +52,7 @@ class FedMLModelCache(object):
         result_list = self.get_deployment_result_list(end_point_id)
         for result_item in result_list:
             cache_device_id, _ = self.get_result_item_info(result_item)
-            if cache_device_id == device_id:
+            if str(cache_device_id) == str(device_id):
                 self.redis_connection.lrem(self.get_deployment_result_key(end_point_id), 0, result_item)
                 break
         self.redis_connection.rpush(self.get_deployment_result_key(end_point_id), json.dumps(result_dict))
@@ -62,7 +62,7 @@ class FedMLModelCache(object):
         status_list = self.get_deployment_status_list(end_point_id)
         for status_item in status_list:
             cache_device_id, _ = self.get_status_item_info(status_item)
-            if cache_device_id == device_id:
+            if str(cache_device_id == device_id):
                 self.redis_connection.lrem(self.get_deployment_status_key(end_point_id), 0, status_item)
                 break
         self.redis_connection.rpush(self.get_deployment_status_key(end_point_id), json.dumps(status_dict))
