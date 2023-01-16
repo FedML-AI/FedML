@@ -49,7 +49,7 @@ class FedMLDifferentialPrivacy:
                 raise Exception("dp solution is not defined")
 
             if hasattr(args, "enable_rdp_accountant") and args.enable_rdp_accountant and hasattr(args, "rdp_alpha"):
-                self.accountant = RDP_Accountant(dp_param=self.dp_solution.get_rdp_accountant_val(), alpha=args.rdp_alpha, dp_mechanism=args.dp_mechanism)
+                self.accountant = RDP_Accountant(dp_param=self.dp_solution.get_rdp_accountant_val(), alpha=args.rdp_alpha, dp_mechanism=args.mechanism_type)
                 total_epsilon = self.accountant.get_accountant() * args.comm_round
                 logging.info('total epsilon={}'.format(total_epsilon))
 
