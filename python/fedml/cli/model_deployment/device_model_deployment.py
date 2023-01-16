@@ -79,12 +79,14 @@ def start_deployment(end_point_id, model_id, model_version,
                inference_convertor_image, running_model_name,
                inference_engine)
     logging.info("Convert the model to ONNX format: {}".format(convert_model_cmd))
-    convert_process = ClientConstants.exec_console_with_script(convert_model_cmd,
-                                                               should_capture_stdout=False,
-                                                               should_capture_stderr=False,
-                                                               no_sys_out_err=True)
+    logging.info("Now is converting the model to onnx, please wait...")
+    os.system(convert_model_cmd)
+    # convert_process = ClientConstants.exec_console_with_script(convert_model_cmd,
+    #                                                            should_capture_stdout=False,
+    #                                                            should_capture_stderr=False,
+    #                                                            no_sys_out_err=True)
     log_deployment_result(end_point_id, model_id, convert_model_container_name,
-                          ClientConstants.CMD_TYPE_CONVERT_MODEL, convert_process.pid,
+                          ClientConstants.CMD_TYPE_CONVERT_MODEL, 0,
                           running_model_name, inference_engine, inference_http_port)
 
     # Move converted model to serving dir for inference
@@ -92,17 +94,18 @@ def start_deployment(end_point_id, model_id, model_version,
     if not os.path.exists(model_serving_dir):
         os.makedirs(model_serving_dir)
     converted_model_path = os.path.join(model_storage_local_path, ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME)
-    model_file_list = os.listdir(converted_model_path)
-    for model_file in model_file_list:
-        src_model_file = os.path.join(converted_model_path, model_file)
-        dst_model_file = os.path.join(model_serving_dir, model_file)
-        if os.path.isdir(src_model_file):
-            if not os.path.exists(dst_model_file):
-                shutil.copytree(src_model_file, dst_model_file, copy_function=shutil.copy,
-                                ignore_dangling_symlinks=True)
-        else:
-            if not os.path.exists(dst_model_file):
-                shutil.copyfile(src_model_file, dst_model_file)
+    if os.path.exists(converted_model_path):
+        model_file_list = os.listdir(converted_model_path)
+        for model_file in model_file_list:
+            src_model_file = os.path.join(converted_model_path, model_file)
+            dst_model_file = os.path.join(model_serving_dir, model_file)
+            if os.path.isdir(src_model_file):
+                if not os.path.exists(dst_model_file):
+                    shutil.copytree(src_model_file, dst_model_file, copy_function=shutil.copy,
+                                    ignore_dangling_symlinks=True)
+            else:
+                if not os.path.exists(dst_model_file):
+                    shutil.copyfile(src_model_file, dst_model_file)
 
     # Run triton server
     if not triton_server_is_running and not ClientConstants.is_running_on_k8s():
