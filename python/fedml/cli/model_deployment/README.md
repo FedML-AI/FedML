@@ -63,5 +63,5 @@ Build local model repository as zip model package:
 
 ## 4. Model Deploy:
 ```
-fedml model deploy -n $model_name -dt $device_type(md.on_premise_device/md.fedml_cloud_device) -d $master_device_id -u $user_id -k $user_api_key -p $deployment_extra_params
+fedml model deploy -n $model_name -dt --on_premise --cloud -d $master_device_id -u $user_id -k $user_api_key -p $deployment_extra_params
 ```
