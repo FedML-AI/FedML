@@ -1,5 +1,7 @@
 #!/bin/bash
-# https://www.ibm.com/support/pages/configuring-ssh-login-without-password
+# simplify ssh login with pem file: https://cloud-gc.readthedocs.io/en/latest/chapter06_appendix/ssh-config.html
+# ssh without passwords: https://www.ibm.com/support/pages/configuring-ssh-login-without-password
+
 DEV_NODE=chaoyanghe@everest.usc.edu
 
 LOCAL_PATH=/Users/chaoyanghe/sourcecode/FedML_product/FedML/
