@@ -200,7 +200,8 @@ class FedMLClientRunner:
         ClientConstants.generate_yaml_doc(package_conf_object, fedml_updated_config_file)
 
         # Build dynamic arguments and set arguments to fedml config object
-        self.build_dynamic_args(run_config, package_conf_object, unzip_package_path)
+        if not self.build_dynamic_args(run_config, package_conf_object, unzip_package_path):
+            return None, None
 
         return unzip_package_path, package_conf_object
 
@@ -248,6 +249,7 @@ class FedMLClientRunner:
 
         ClientConstants.generate_yaml_doc(fedml_conf_object, fedml_conf_path)
 
+        is_bootstrap_run_ok = True
         try:
             if bootstrap_script_path is not None:
                 if os.path.exists(bootstrap_script_path):
@@ -271,6 +273,7 @@ class FedMLClientRunner:
                         if str(out_str).find(FedMLClientRunner.FEDML_BOOTSTRAP_RUN_OK) == -1 \
                                 and str(out_str).lstrip(' ').rstrip(' ') != '':
                             logging.error("{}".format(out_str))
+                            is_bootstrap_run_ok = False
                         else:
                             logging.info("{}".format(out_str))
                     if err is not None:
@@ -278,10 +281,14 @@ class FedMLClientRunner:
                         if str(err_str).find(FedMLClientRunner.FEDML_BOOTSTRAP_RUN_OK) == -1 \
                                 and str(err_str).lstrip(' ').rstrip(' ') != '':
                             logging.error("{}".format(err_str))
+                            is_bootstrap_run_ok = False
                         else:
                             logging.info("{}".format(err_str))
         except Exception as e:
             logging.error("Bootstrap scripts error: {}".format(traceback.format_exc()))
+            is_bootstrap_run_ok = False
+
+        return is_bootstrap_run_ok
 
     def run(self):
         run_id = self.request_json["runId"]
@@ -313,6 +320,9 @@ class FedMLClientRunner:
 
         # update local config with real time parameters from server and dynamically replace variables value
         unzip_package_path, fedml_config_object = self.update_local_fedml_config(run_id, run_config)
+        if unzip_package_path is None or fedml_config_object is None:
+            self.cleanup_run_when_starting_failed()
+            return
 
         entry_file_config = fedml_config_object["entry_config"]
         dynamic_args_config = fedml_config_object["dynamic_args"]
