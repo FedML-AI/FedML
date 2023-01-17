@@ -2,7 +2,6 @@ import logging
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from typing import List, Tuple
-
 from .. import Context
 from ..contribution.contribution_assessor_manager import ContributionAssessorManager
 from ..dp.fedml_differential_privacy import FedMLDifferentialPrivacy
@@ -51,7 +50,7 @@ class ServerAggregator(ABC):
                 raw_client_grad_list=raw_client_model_or_grad_list,
                 extra_auxiliary_info=self.get_model_params(),
             )
-            client_idxs = FedMLDefender.get_instance().get_malicious_client_idxs()
+            client_idxs = FedMLDefender.get_instance().get_benign_client_idxs(client_idxs=client_idxs)
 
         return raw_client_model_or_grad_list, client_idxs
 
@@ -62,6 +61,8 @@ class ServerAggregator(ABC):
                 base_aggregation_func=FedMLAggOperator.agg,
                 extra_auxiliary_info=self.get_model_params(),
             )
+        if FedMLDifferentialPrivacy.get_instance().to_compute_params_in_aggregation_enabled():
+            FedMLDifferentialPrivacy.get_instance().set_params_for_dp(raw_client_model_or_grad_list)
         return FedMLAggOperator.agg(self.args, raw_client_model_or_grad_list)
 
     def on_after_aggregation(self, aggregated_model_or_grad: OrderedDict) -> OrderedDict:
@@ -70,7 +71,6 @@ class ServerAggregator(ABC):
             aggregated_model_or_grad = FedMLDifferentialPrivacy.get_instance().add_global_noise(
                 aggregated_model_or_grad
             )
-            logging.info("-----aaaaaaaaaaaaaaaaaaaaaa ----")
         if FedMLDefender.get_instance().is_defense_enabled():
             aggregated_model_or_grad = FedMLDefender.get_instance().defend_after_aggregation(aggregated_model_or_grad)
         return aggregated_model_or_grad
