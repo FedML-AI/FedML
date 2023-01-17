@@ -12,6 +12,10 @@ class Laplace(BaseDPMechanism):
     def __init__(self, epsilon, delta=0.0, sensitivity=1):
         check_params(epsilon, delta, sensitivity)
         self.scale = float(sensitivity) / (float(epsilon) - np.log(1 - float(delta)))
+        self.sensitivity = sensitivity
 
     def compute_noise(self, size):
         return torch.tensor(np.random.laplace(loc=0.0, scale=self.scale, size=size))
+
+    def get_rdp_scale(self):
+        return self.scale/self.sensitivity

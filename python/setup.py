@@ -50,7 +50,7 @@ requirements = [
     "uvicorn",
     "geventhttpclient>=1.4.4,<=2.0.2",
     "aiohttp>=3.8.1",
-    "numpy>=1.19.1",
+    "numpy==1.21",
     "python-rapidjson>=0.9.1",
     "tritonclient",
     "redis"
@@ -84,7 +84,7 @@ requirements_extra_mxnet = [
 
 setup(
     name="fedml",
-    version="0.7.380",
+    version="0.7.385",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
