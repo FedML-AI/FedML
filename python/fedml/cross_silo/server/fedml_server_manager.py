@@ -179,6 +179,11 @@ class FedMLServerManager(FedMLCommManager):
                             receiver_id, global_model_params, client_index, global_model_url, global_model_key
                         )
                     client_idx_in_this_round += 1
+
+                mlops.log_aggregated_model_info(
+                    self.args.round_idx - 1, model_url=global_model_url,
+                    )
+
                 logging.info("\n\n==========end {}-th round training===========\n".format(self.args.round_idx))
                 mlops.event("server.wait", event_started=True, event_value=str(self.args.round_idx))
 
@@ -241,9 +246,5 @@ class FedMLServerManager(FedMLCommManager):
 
         global_model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
         global_model_key = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY)
-
-        mlops.log_aggregated_model_info(
-            self.args.round_idx + 1, model_url=global_model_url,
-        )
 
         return global_model_url, global_model_key
