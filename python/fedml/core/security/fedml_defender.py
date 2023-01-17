@@ -184,3 +184,6 @@ class FedMLDefender:
 
     def get_malicious_client_idxs(self):
         return self.defender.get_malicious_client_idxs()
+
+    def get_benign_client_idxs(self, client_idxs):
+        return [i for i in client_idxs if i not in self.defender.get_malicious_client_idxs()]
