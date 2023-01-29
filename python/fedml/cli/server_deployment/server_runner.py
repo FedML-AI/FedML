@@ -375,6 +375,11 @@ class FedMLServerRunner:
         for edge_id in edge_id_list:
             self.mlops_metrics.report_client_training_status(edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
 
+    def set_all_devices_status(self, status):
+        edge_id_list = self.request_json["edgeids"]
+        for edge_id in edge_id_list:
+            self.mlops_metrics.broadcast_client_training_status(edge_id, status)
+
     def stop_run(self):
         self.setup_client_mqtt_mgr()
 
@@ -419,6 +424,8 @@ class FedMLServerRunner:
         self.mlops_metrics.report_server_id_status(self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
 
         time.sleep(1)
+
+        self.set_all_devices_status(ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
 
         self.release_client_mqtt_mgr()
 
@@ -807,6 +814,7 @@ class FedMLServerRunner:
             topic_stop_train = "flserver_agent/" + str(edge_id) + "/stop_train"
             logging.info("stop_train: send topic " + topic_stop_train)
             self.client_mqtt_mgr.send_message(topic_stop_train, payload)
+            self.mlops_metrics.broadcast_client_training_status(edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED)
 
     def send_exit_train_with_exception_request_to_edges(self, edge_id_list, payload):
         self.wait_client_mqtt_connected()
@@ -814,6 +822,7 @@ class FedMLServerRunner:
             topic_exit_train = "flserver_agent/" + str(edge_id) + "/exit_train_with_exception"
             logging.info("exit_train_with_exception: send topic " + topic_exit_train)
             self.client_mqtt_mgr.send_message(topic_exit_train, payload)
+            self.mlops_metrics.broadcast_client_training_status(edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
 
     def callback_stop_train(self, topic, payload):
         logging.info("callback_stop_train: topic = %s, payload = %s" % (topic, payload))
