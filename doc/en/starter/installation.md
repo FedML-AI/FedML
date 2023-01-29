@@ -15,10 +15,16 @@ pip install fedml
 The default machine learning engine is `PyTorch`. FedML also supports `TensorFlow`, `Jax`, and `MXNet`.
 You can install related engine as follows:
 ```
+pip install "fedml[MPI]"
 pip install "fedml[tensorflow]"
 pip install "fedml[jax]"
 pip install "fedml[mxnet]"
 ```
+For MPI installation, it's used for local distributed simulation with MPI (https://mpi4py.readthedocs.io/en/stable/). On MacOS, the installation commands in conda environment is:
+```
+conda install mpi4py openmpi
+```
+
 The above commands work properly in Linux environment. 
 For Windows/Mac OS (Intel)/Mac OS (M1), you may need to follow TensorFlow/Jax/MXNet official guidance to fix related installation issues.
 
