@@ -23,7 +23,6 @@ class SysStats:
         self.cpu_utilization = 0.0
 
     def produce_info(self):
-        self.sys_stats_impl.gpu_count = 0
         stats = self.sys_stats_impl.stats()
 
         self.cpu_utilization = stats["cpu"]
