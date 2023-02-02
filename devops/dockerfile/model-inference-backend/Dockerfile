@@ -14,5 +14,6 @@ ENV FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL=3 \
     FEDML_MODEL_SERVING_REPO_PATH=/home/fedml/fedml-client/fedml/models_serving
 
 CMD tritonserver --model-control-mode=poll \
+    --strict-model-config=false \
     --repository-poll-secs=${FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL} \
     --model-repository=${FEDML_MODEL_SERVING_REPO_PATH}
