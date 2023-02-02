@@ -68,9 +68,9 @@ Inference end point ingress will be used as your model serving endpoint URL whic
 
 ```kubectl create namespace $YourNameSpace```
 
-```helm install --set env.fedmlAccountId="$YourAccountId" --set env.fedmlApiKey="$YourApiKey" --set env.fedmlVersion="release"  fedml-model-premise-slave fedml-model-premise-slave-0.7.377.tgz -n $YourNameSpace```
+```helm install --set env.fedmlAccountId="$YourAccountId" --set env.fedmlApiKey="$YourApiKey" --set env.fedmlVersion="release"  fedml-model-premise-slave fedml-model-premise-slave-0.7.397.tgz -n $YourNameSpace```
 
-```helm install --set env.fedmlAccountId="$YourAccountId" --set env.fedmlApiKey="$YourApiKey" --set env.fedmlVersion="release" --set "inferenceGateway.ingress.host=$YourEndPointIngressDomainName" --set "inferenceGateway.ingress.className=nginx" fedml-model-premise-master fedml-model-premise-master-0.7.377.tgz -n $YourNameSpace```
+```helm install --set env.fedmlAccountId="$YourAccountId" --set env.fedmlApiKey="$YourApiKey" --set env.fedmlVersion="release" --set "inferenceGateway.ingress.host=$YourEndPointIngressDomainName" --set "inferenceGateway.ingress.className=nginx" fedml-model-premise-master fedml-model-premise-master-0.7.397.tgz -n $YourNameSpace```
 
 Notes: $YourEndPointIngressDomainName is your model serving end point URL host which will be used in your inference API, e.g.
 
@@ -97,7 +97,7 @@ If you install FedML model serving packages on GCP k8s cluster, you should chang
 After you have installed FedML model serving packages, you may run the helm upgrade commands to modify parameters.
 
 e.g.
-```helm upgrade --set "autoscaling.enabled=true" --set replicaCount=$InstanceNumber fedml-model-premise-master fedml-model-premise-master-0.7.377.tgz -n $YourNameSpace```
+```helm upgrade --set "autoscaling.enabled=true" --set replicaCount=$InstanceNumber fedml-model-premise-master fedml-model-premise-master-0.7.397.tgz -n $YourNameSpace```
 
 ### 6). Config your CNAME record in your DNS provider (Godaddy, wordpress, AWS Route 53...)
 #### (a). Find the Kubernetes nginx ingress named 'fedml-model-inference-gateway' in your Kubernetes cluster.
@@ -146,7 +146,7 @@ Pull remote model(ModelOps) to local model repository:
 1. Q: Supports automatically scale?
 A: Yes. Call CLI `helm upgrade`. For example, you can do upgrade by using the following CLI:
 
-```helm upgrade --set "autoscaling.enabled=true" --set replicaCount=$InstanceNumber fedml-model-premise-master fedml-model-premise-master-0.7.377.tgz -n $YourNameSpace```
+```helm upgrade --set "autoscaling.enabled=true" --set replicaCount=$InstanceNumber fedml-model-premise-master fedml-model-premise-master-0.7.397.tgz -n $YourNameSpace```
 
 
 2. Q: Does the inference endpoint supports private IP? \
