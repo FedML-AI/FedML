@@ -7,6 +7,7 @@ import time
 
 import numpy as np
 import requests
+import torch
 import tritonclient.http as http_client
 
 from fedml.cli.model_deployment.modelops_configs import ModelOpsConfigs
@@ -14,11 +15,11 @@ from fedml.cli.model_deployment.device_client_constants import ClientConstants
 
 
 def start_deployment(end_point_id, model_id, model_version,
-                     model_storage_local_path, inference_model_name, inference_engine,
+                     model_storage_local_path, model_bin_file, inference_model_name, inference_engine,
                      inference_http_port, inference_grpc_port, inference_metric_port,
                      inference_use_gpu, inference_memory_size,
                      inference_convertor_image, inference_server_image,
-                     infer_host):
+                     infer_host, model_is_from_open, model_input_size):
     logging.info("Model deployment is starting...")
 
     gpu_attach_cmd = ""
@@ -63,31 +64,42 @@ def start_deployment(end_point_id, model_id, model_version,
                 os.system(sudo_prefix + "systemctl restart docker")
 
     # Convert models from pytorch to onnx format
-    convert_model_container_name = "{}_{}_{}".format(ClientConstants.FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX,
-                                                     str(end_point_id),
-                                                     str(model_id))
-    running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id,
-                                                                inference_model_name,
-                                                                model_version)
-    model_storage_processed_path = ClientConstants.get_k8s_slave_host_dir(model_storage_local_path)
-    convert_model_cmd = "{}docker stop {}; {}docker rm {}; " \
-                        "{}docker run --name {} --rm {} -v {}:/project " \
-                        "{} bash -c \"cd /project && convert_model -m /project --name {} " \
-                        "--backend {} --seq-len 16 128 128\"; exit". \
-        format(sudo_prefix, convert_model_container_name, sudo_prefix, convert_model_container_name,
-               sudo_prefix, convert_model_container_name, gpu_attach_cmd, model_storage_processed_path,
-               inference_convertor_image, running_model_name,
-               inference_engine)
-    logging.info("Convert the model to ONNX format: {}".format(convert_model_cmd))
-    logging.info("Now is converting the model to onnx, please wait...")
-    os.system(convert_model_cmd)
-    # convert_process = ClientConstants.exec_console_with_script(convert_model_cmd,
-    #                                                            should_capture_stdout=False,
-    #                                                            should_capture_stderr=False,
-    #                                                            no_sys_out_err=True)
-    log_deployment_result(end_point_id, model_id, convert_model_container_name,
-                          ClientConstants.CMD_TYPE_CONVERT_MODEL, 0,
-                          running_model_name, inference_engine, inference_http_port)
+    if model_is_from_open:
+        torch_model = torch.load(model_bin_file)
+        running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id,
+                                                                    inference_model_name,
+                                                                    model_version)
+        onnx_model_path = os.path.join(model_storage_local_path,
+                                       ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME,
+                                       running_model_name, ClientConstants.INFERENCE_MODEL_VERSION, "model.onnx")
+        input_names = {"x": 0}
+        convert_model_to_onnx(torch_model, onnx_model_path, input_names, model_input_size)
+    else:
+        convert_model_container_name = "{}_{}_{}".format(ClientConstants.FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX,
+                                                         str(end_point_id),
+                                                         str(model_id))
+        running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id,
+                                                                    inference_model_name,
+                                                                    model_version)
+        model_storage_processed_path = ClientConstants.get_k8s_slave_host_dir(model_storage_local_path)
+        convert_model_cmd = "{}docker stop {}; {}docker rm {}; " \
+                            "{}docker run --name {} --rm {} -v {}:/project " \
+                            "{} bash -c \"cd /project && convert_model -m /project --name {} " \
+                            "--backend {} --seq-len 16 128 128\"; exit". \
+            format(sudo_prefix, convert_model_container_name, sudo_prefix, convert_model_container_name,
+                   sudo_prefix, convert_model_container_name, gpu_attach_cmd, model_storage_processed_path,
+                   inference_convertor_image, running_model_name,
+                   inference_engine)
+        logging.info("Convert the model to ONNX format: {}".format(convert_model_cmd))
+        logging.info("Now is converting the model to onnx, please wait...")
+        os.system(convert_model_cmd)
+        # convert_process = ClientConstants.exec_console_with_script(convert_model_cmd,
+        #                                                            should_capture_stdout=False,
+        #                                                            should_capture_stderr=False,
+        #                                                            no_sys_out_err=True)
+        log_deployment_result(end_point_id, model_id, convert_model_container_name,
+                              ClientConstants.CMD_TYPE_CONVERT_MODEL, 0,
+                              running_model_name, inference_engine, inference_http_port)
 
     # Move converted model to serving dir for inference
     model_serving_dir = ClientConstants.get_model_serving_dir()
@@ -113,7 +125,7 @@ def start_deployment(end_point_id, model_id, model_version,
                             "-p{}:8001 -p{}:8002 " \
                             "--shm-size {} " \
                             "-v {}:/models {} " \
-                            "bash -c \"pip install transformers && tritonserver " \
+                            "bash -c \"pip install transformers && tritonserver --strict-model-config=false " \
                             "--model-control-mode=poll --repository-poll-secs={} " \
                             "--model-repository=/models\" ".format(sudo_prefix, triton_server_container_name,
                                                                    sudo_prefix, triton_server_container_name,
@@ -356,6 +368,44 @@ def run_http_inference_with_raw_http_request(self, inference_input_json, inferen
         inference_output_sample = resp_data
 
     return inference_output_sample
+
+
+def convert_model_to_onnx(
+        model_params, output_path: str, inputs_pytorch, input_size: int
+) -> None:
+    """
+    Convert a Pytorch model to an ONNX graph by tracing the provided input inside the Pytorch code.
+    :param model_params: Pytorch model
+    :param output_path: where to save ONNX file
+    :param inputs_pytorch: Tensor, can be dummy data, shape is not important as we declare all axes as dynamic.
+    Should be on the same device than the model (CPU or GPU)
+    :param input_size: input data size, e.g. 28 * 28
+    :param opset: version of ONNX protocol to use, usually 12, or 13 if you use per channel quantized model
+    """
+    from collections import OrderedDict
+    import torch
+    from torch.onnx import TrainingMode
+
+    # dynamic axis == variable length axis
+    dynamic_axis = OrderedDict()
+    for k in inputs_pytorch.keys():
+        dynamic_axis[k] = {0: "batch_size", 1: "sequence"}
+    dynamic_axis["output"] = {0: "batch_size"}
+    dummy_input = torch.randn(1, input_size, requires_grad=True)
+    with torch.no_grad():
+        torch.onnx.export(
+            model_params,  # model to optimize
+            args=dummy_input,  # tuple of multiple inputs
+            f=output_path,  # output path / file object
+            opset_version=10,  # the ONNX version to use, 13 if quantized model, 12 for not quantized ones
+            do_constant_folding=True,  # simplify model (replace constant expressions)
+            input_names=['input'],  # input names
+            output_names=["output"],  # output axis name
+            dynamic_axes={'input': {0: 'batch_size'},    # variable length axes
+                          'output': {0: 'batch_size'}},  # declare dynamix axis for each input / output
+            training=TrainingMode.EVAL,  # always put the model in evaluation mode
+            verbose=False,
+        )
 
 
 if __name__ == "__main__":
