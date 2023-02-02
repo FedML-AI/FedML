@@ -190,3 +190,5 @@ python/examples/cross_silo/light_sec_agg_example/mpi_host_file
 /devops/dockerfile/device-image/Dockerfile-Local
 /FedML-dev-v0.7.0.iml
 /python/fedml/cli/debug-cli.py
+python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/custom_data_and_model/cache/S3_DOWNLOADED_MODEL_P6998/fedml_0_0_1_bff6ee1a-c2bb-490f-ad10-4bd6ef4a67fc
+python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/custom_data_and_model/cache/S3_DOWNLOADED_MODEL_P7081/fedml_0_0_1_c06b5007-9e92-4ad1-a247-707374b61ad7

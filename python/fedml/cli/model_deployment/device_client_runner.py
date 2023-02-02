@@ -72,6 +72,7 @@ class FedMLClientRunner:
         self.mlops_metrics = None
         self.client_active_list = dict()
         self.infer_host = "127.0.0.1"
+        self.model_is_from_open = False
 
     def unzip_file(self, zip_file, unzip_file_path):
         result = False
@@ -99,13 +100,30 @@ class FedMLClientRunner:
             pass
         self.unzip_file(local_package_file, unzip_package_path)
         unzip_package_path = os.path.join(unzip_package_path, package_name)
-        return unzip_package_path
+        model_bin_file = os.path.join(unzip_package_path, "fedml_model.bin")
+        if os.path.exists(model_bin_file):
+            pytorch_model_bin_file = os.path.join(unzip_package_path, "pytorch_model.bin")
+            if not os.path.exists(model_bin_file):
+                shutil.copy(model_bin_file, pytorch_model_bin_file)
+            model_bin_file = pytorch_model_bin_file
+        else:
+            model_bin_file = os.path.join(unzip_package_path, "pytorch_model.bin")
+        return unzip_package_path, model_bin_file
+
+    def retrieve_binary_model_file(self, package_name, package_url):
+        local_package_path = ClientConstants.get_model_package_dir()
+        if not os.path.exists(local_package_path):
+            os.makedirs(local_package_path)
+        unzip_package_path = os.path.join(local_package_path, package_name)
+        local_package_file = "{}".format(os.path.join(unzip_package_path, package_name))
+        if not os.path.exists(local_package_file):
+            urllib.request.urlretrieve(package_url, local_package_file)
+        return unzip_package_path, local_package_file
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
         pass
 
-    def update_local_fedml_config(self, run_id, run_config):
-        model_config = run_config
+    def update_local_fedml_config(self, run_id, model_config, model_config_parameters):
         model_name = model_config["model_name"]
         model_storage_url = model_config["model_storage_url"]
         scale_min = model_config["instance_scale_min"]
@@ -113,18 +131,23 @@ class FedMLClientRunner:
         inference_engine = model_config["inference_engine"]
         inference_end_point_id = run_id
 
-        # Copy config file from the client
-        unzip_package_path = self.retrieve_and_unzip_package(
-            model_name, model_storage_url
-        )
-        fedml_local_config_file = os.path.join(unzip_package_path, "model_config.yaml")
+        # Retrieve model package or model binary file.
+        if self.model_is_from_open:
+            unzip_package_path, model_bin_file = self.retrieve_binary_model_file(model_name, model_storage_url)
+        else:
+            unzip_package_path, model_bin_file = self.retrieve_and_unzip_package(model_name, model_storage_url)
 
-        # Load the above config to memory
+        # Load the config to memory
         package_conf_object = {}
-        if os.path.exists(fedml_local_config_file):
-            package_conf_object = load_yaml_config(fedml_local_config_file)
+        fedml_local_config_file = os.path.join(unzip_package_path, "model_config.yaml")
+        if model_config_parameters is not None:
+            package_conf_object = model_config_parameters
+            ClientConstants.generate_yaml_doc(package_conf_object, fedml_local_config_file)
+        else:
+            if os.path.exists(fedml_local_config_file):
+                package_conf_object = load_yaml_config(fedml_local_config_file)
 
-        return unzip_package_path, package_conf_object
+        return unzip_package_path, model_bin_file, package_conf_object
 
     def build_dynamic_args(self, run_config, package_conf_object, base_dir):
         pass
@@ -153,6 +176,10 @@ class FedMLClientRunner:
         scale_min = model_config["instance_scale_min"]
         scale_max = model_config["instance_scale_max"]
         inference_engine = model_config["inference_engine"]
+        self.model_is_from_open = True if model_config.get("is_from_open", 0) == 1 else False
+        model_config_parameters = self.request_json["parameters"]
+        model_input_size = model_config_parameters.get("input_size", 0)
+        model_output_size = model_config_parameters.get("output_size", 0)
         inference_end_point_id = run_id
         use_gpu = "gpu"  # TODO: Get GPU from device infos
         memory_size = "4096m"  # TODO: Get Memory size for each instance
@@ -168,19 +195,21 @@ class FedMLClientRunner:
 
         # update local config with real time parameters from server and dynamically replace variables value
         logging.info("Download and unzip model to local...")
-        unzip_package_path, fedml_config_object = self.update_local_fedml_config(run_id, model_config)
+        unzip_package_path, model_bin_file, fedml_config_object = \
+            self.update_local_fedml_config(run_id, model_config, model_config_parameters)
 
         running_model_name, inference_output_url, inference_model_version, model_metadata, model_config = \
             start_deployment(
                 inference_end_point_id, model_id, model_version,
-                unzip_package_path, model_name, inference_engine,
+                unzip_package_path, model_bin_file, model_name, inference_engine,
                 ClientConstants.INFERENCE_HTTP_PORT,
                 ClientConstants.INFERENCE_GRPC_PORT,
                 ClientConstants.INFERENCE_METRIC_PORT,
                 use_gpu, memory_size,
                 ClientConstants.INFERENCE_CONVERTOR_IMAGE,
                 ClientConstants.INFERENCE_SERVER_IMAGE,
-                self.infer_host)
+                self.infer_host,
+                self.model_is_from_open, model_input_size)
         if inference_output_url == "":
             self.send_deployment_status(self.edge_id, model_id, running_model_name, inference_output_url,
                                         ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
