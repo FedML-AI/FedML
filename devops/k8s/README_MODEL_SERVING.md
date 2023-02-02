@@ -70,7 +70,7 @@ Inference end point ingress will be used as your model serving endpoint URL whic
 
 ```helm install --set env.fedmlAccountId="$YourAccountId" --set env.fedmlApiKey="$YourApiKey" --set env.fedmlVersion="release"  fedml-model-premise-slave fedml-model-premise-slave-0.7.377.tgz -n $YourNameSpace```
 
-```helm install --set env.fedmlAccountId="$YourAccountId" --set env.fedmlApiKey="$YourApiKey" --set env.fedmlVersion="release" --set "inferenceGateway.ingress.host=$YourEndPointIngressDomainName" fedml-model-premise-master fedml-model-premise-master-0.7.377.tgz -n $YourNameSpace```
+```helm install --set env.fedmlAccountId="$YourAccountId" --set env.fedmlApiKey="$YourApiKey" --set env.fedmlVersion="release" --set "inferenceGateway.ingress.host=$YourEndPointIngressDomainName" --set "inferenceGateway.ingress.className=nginx" fedml-model-premise-master fedml-model-premise-master-0.7.377.tgz -n $YourNameSpace```
 
 Notes: $YourEndPointIngressDomainName is your model serving end point URL host which will be used in your inference API, e.g.
 
@@ -89,6 +89,10 @@ On the slave device:
 On the inference endpoint ingress device:
 
 ```--set "inferenceGateway.replicaCount=$InstanceNumber"```
+
+If you install FedML model serving packages on GCP k8s cluster, you should change the ingress class to gcp via the following command:
+
+```--set "inferenceGateway.ingress.className=gcp"```
 
 After you have installed FedML model serving packages, you may run the helm upgrade commands to modify parameters.
 
