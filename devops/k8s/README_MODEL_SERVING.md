@@ -92,7 +92,7 @@ On the inference endpoint ingress device:
 
 If you install FedML model serving packages on GCP k8s cluster, you should change the ingress class to gcp via the following command:
 
-```--set "inferenceGateway.ingress.className=gcp"```
+```--set "inferenceGateway.ingress.className=gce"```
 
 After you have installed FedML model serving packages, you may run the helm upgrade commands to modify parameters.
 
