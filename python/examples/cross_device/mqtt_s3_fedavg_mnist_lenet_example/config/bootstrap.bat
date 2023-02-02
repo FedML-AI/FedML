@@ -1,6 +1,7 @@
 :: ### don't modify this part ###
 :: ##############################
 
+pip3 install MNN==1.1.6
 
 :: ### please customize your script in this region ####
 set DATA_PATH=%userprofile%\fedml_data
