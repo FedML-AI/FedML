@@ -51,6 +51,10 @@ def log_aggregated_model_info(round_index, model_url):
     mlops.log_aggregated_model_info(round_index, model_url)
 
 
+def log_training_model_net_info(model_net):
+    mlops.log_training_model_net_info(model_net)
+
+
 def log_client_model_info(round_index, model_url):
     mlops.log_client_model_info(round_index, model_url)
 
