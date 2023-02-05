@@ -47,6 +47,8 @@ class FedMLServerManager(FedMLCommManager):
 
         mlops.event("server.wait", event_started=True, event_value=str(self.args.round_idx))
 
+        mlops.log_training_model_net_info(self.aggregator.aggregator.model)
+
     def register_message_receive_handlers(self):
         logging.info("register_message_receive_handlers------")
         self.register_message_receive_handler(
