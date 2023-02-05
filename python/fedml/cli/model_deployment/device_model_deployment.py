@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import pickle
 import platform
 import shutil
 import time
@@ -8,6 +9,7 @@ import time
 import numpy as np
 import requests
 import torch
+import torch.nn
 import tritonclient.http as http_client
 
 from fedml.cli.model_deployment.modelops_configs import ModelOpsConfigs
@@ -19,7 +21,8 @@ def start_deployment(end_point_id, model_id, model_version,
                      inference_http_port, inference_grpc_port, inference_metric_port,
                      inference_use_gpu, inference_memory_size,
                      inference_convertor_image, inference_server_image,
-                     infer_host, model_is_from_open, model_input_size):
+                     infer_host, model_is_from_open, model_input_size,
+                     model_from_open):
     logging.info("Model deployment is starting...")
 
     gpu_attach_cmd = ""
@@ -65,15 +68,33 @@ def start_deployment(end_point_id, model_id, model_version,
 
     # Convert models from pytorch to onnx format
     if model_is_from_open:
-        torch_model = torch.load(model_bin_file)
         running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id,
                                                                     inference_model_name,
                                                                     model_version)
+        if model_from_open is None:
+            return running_model_name, "", model_version, {}, {}
+
+        input_size = model_input_size
+        with open(model_bin_file, 'rb') as model_pkl_file:
+            open_model_params = pickle.load(model_pkl_file)
+            model_from_open.load_state_dict(open_model_params)
+            input_parameter = None
+            for model_parameter in model_from_open.parameters():
+                model_parameter.requires_grad = False
+                if input_parameter is None:
+                    input_parameter = model_parameter
+            input_size = input_parameter.shape[-1]
+            model_from_open.eval()
+
         onnx_model_path = os.path.join(model_storage_local_path,
                                        ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME,
-                                       running_model_name, ClientConstants.INFERENCE_MODEL_VERSION, "model.onnx")
+                                       running_model_name, ClientConstants.INFERENCE_MODEL_VERSION)
+        if not os.path.exists(onnx_model_path):
+            os.makedirs(onnx_model_path)
+        onnx_model_path = os.path.join(onnx_model_path, "model.onnx")
+
         input_names = {"x": 0}
-        convert_model_to_onnx(torch_model, onnx_model_path, input_names, model_input_size)
+        convert_model_to_onnx(model_from_open, onnx_model_path, input_names, input_size)
     else:
         convert_model_container_name = "{}_{}_{}".format(ClientConstants.FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX,
                                                          str(end_point_id),
@@ -409,38 +430,67 @@ def convert_model_to_onnx(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--cf", "-c", help="config file")
-    parser.add_argument("--role", "-r", type=str, default="client", help="role")
-    parser.add_argument("--model_storage_local_path", "-url", type=str, default="/home/ubuntu",
-                        help="model storage local path")
-    parser.add_argument("--inference_model_name", "-n", type=str, default="fedml-model",
-                        help="inference model name")
-    parser.add_argument("--inference_engine", "-engine", type=str, default="ONNX", help="inference engine")
-    parser.add_argument("--inference_http_port", "-http", type=int, default=8000, help="inference http port")
-    parser.add_argument("--inference_grpc_port", "-gprc", type=int, default=8001, help="inference grpc port")
-    parser.add_argument("--inference_metric_port", "-metric", type=int, default=8002, help="inference metric port")
-    parser.add_argument("--inference_use_gpu", "-gpu", type=str, default="gpu", help="inference use gpu")
-    parser.add_argument("--inference_memory_size", "-mem", type=str, default="256m", help="inference memory size")
-    parser.add_argument("--inference_convertor_image", "-convertor", type=str,
-                        default=ClientConstants.INFERENCE_CONVERTOR_IMAGE, help="inference convertor image")
-    parser.add_argument("--inference_server_image", "-server", type=str,
-                        default=ClientConstants.INFERENCE_SERVER_IMAGE, help="inference server image")
-    args = parser.parse_args()
-    args.user = args.user
 
-    pip_source_dir = os.path.dirname(__file__)
-    __running_model_name, __inference_output_url, __model_version, __model_metadata, __model_config = \
-        start_deployment(
-            args.model_storage_local_path,
-            args.inference_model_name,
-            args.inference_engine,
-            args.inference_http_port,
-            args.inference_grpc_port,
-            args.inference_metric_port,
-            args.inference_use_gpu,
-            args.inference_memory_size,
-            args.inference_convertor_image,
-            args.inference_server_image)
-    print("Model deployment results, running model name: {}, url: {}, model metadata: {}, model config: {}".format(
-        __running_model_name, __inference_output_url, __model_metadata, __model_config))
+    class LogisticRegression(torch.nn.Module):
+        def __init__(self, input_dim, output_dim):
+            super(LogisticRegression, self).__init__()
+            self.linear = torch.nn.Linear(input_dim, output_dim)
+
+        def forward(self, x):
+            outputs = torch.sigmoid(self.linear(x))
+            return outputs
+
+    model = LogisticRegression(28 * 28, 10)
+    checkpoint = {'model': model}
+    model_net_file = "/Users/alexliang/fedml-client/fedml/models/open-model-test/model-net.pt"
+    torch.save(checkpoint, model_net_file)
+
+    with open("/Users/alexliang/fedml-client/fedml/models/open-model-test/open-model-test", 'rb') as model_pkl_file:
+        model_params = pickle.load(model_pkl_file)
+        # torch.save(model_params, "/Users/alexliang/fedml-client/fedml/models/open-model-test/a.pt")
+        # model = torch.load("/Users/alexliang/fedml-client/fedml/models/open-model-test/a.pt")
+        loaded_checkpoint = torch.load(model_net_file)
+        loaded_model = loaded_checkpoint["model"]
+        loaded_model.load_state_dict(model_params)
+        for parameter in loaded_model.parameters():
+            parameter.requires_grad = False
+        loaded_model.eval()
+        input_names = {"x": 0}
+        convert_model_to_onnx(loaded_model, "/Users/alexliang/fedml-client/fedml/models/open-model-test/a.onnx",
+                              input_names, 28 * 28)
+
+    # parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    # parser.add_argument("--cf", "-c", help="config file")
+    # parser.add_argument("--role", "-r", type=str, default="client", help="role")
+    # parser.add_argument("--model_storage_local_path", "-url", type=str, default="/home/ubuntu",
+    #                     help="model storage local path")
+    # parser.add_argument("--inference_model_name", "-n", type=str, default="fedml-model",
+    #                     help="inference model name")
+    # parser.add_argument("--inference_engine", "-engine", type=str, default="ONNX", help="inference engine")
+    # parser.add_argument("--inference_http_port", "-http", type=int, default=8000, help="inference http port")
+    # parser.add_argument("--inference_grpc_port", "-gprc", type=int, default=8001, help="inference grpc port")
+    # parser.add_argument("--inference_metric_port", "-metric", type=int, default=8002, help="inference metric port")
+    # parser.add_argument("--inference_use_gpu", "-gpu", type=str, default="gpu", help="inference use gpu")
+    # parser.add_argument("--inference_memory_size", "-mem", type=str, default="256m", help="inference memory size")
+    # parser.add_argument("--inference_convertor_image", "-convertor", type=str,
+    #                     default=ClientConstants.INFERENCE_CONVERTOR_IMAGE, help="inference convertor image")
+    # parser.add_argument("--inference_server_image", "-server", type=str,
+    #                     default=ClientConstants.INFERENCE_SERVER_IMAGE, help="inference server image")
+    # args = parser.parse_args()
+    # args.user = args.user
+    #
+    # pip_source_dir = os.path.dirname(__file__)
+    # __running_model_name, __inference_output_url, __model_version, __model_metadata, __model_config = \
+    #     start_deployment(
+    #         args.model_storage_local_path,
+    #         args.inference_model_name,
+    #         args.inference_engine,
+    #         args.inference_http_port,
+    #         args.inference_grpc_port,
+    #         args.inference_metric_port,
+    #         args.inference_use_gpu,
+    #         args.inference_memory_size,
+    #         args.inference_convertor_image,
+    #         args.inference_server_image)
+    # print("Model deployment results, running model name: {}, url: {}, model metadata: {}, model config: {}".format(
+    #     __running_model_name, __inference_output_url, __model_metadata, __model_config))
