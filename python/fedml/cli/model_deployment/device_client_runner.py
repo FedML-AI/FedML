@@ -14,10 +14,12 @@ import traceback
 import urllib
 import uuid
 import zipfile
+from urllib.parse import urlparse
 
 import click
 import requests
 from fedml.cli.model_deployment.device_model_msg_object import FedMLModelMsgObject
+from fedml.core.distributed.communication.s3.remote_storage import S3Storage
 
 from ...core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 
@@ -114,11 +116,19 @@ class FedMLClientRunner:
         local_package_path = ClientConstants.get_model_package_dir()
         if not os.path.exists(local_package_path):
             os.makedirs(local_package_path)
-        unzip_package_path = os.path.join(local_package_path, package_name)
-        local_package_file = "{}".format(os.path.join(unzip_package_path, package_name))
+        unzip_package_path = ClientConstants.get_model_dir()
+        local_package_file = "{}".format(os.path.join(local_package_path, package_name))
         if not os.path.exists(local_package_file):
             urllib.request.urlretrieve(package_url, local_package_file)
-        return unzip_package_path, local_package_file
+
+        unzip_package_path = os.path.join(unzip_package_path, package_name)
+        if not os.path.exists(unzip_package_path):
+            os.makedirs(unzip_package_path)
+        dst_model_file = os.path.join(unzip_package_path, package_name)
+        if os.path.exists(local_package_file):
+            shutil.copy(local_package_file, dst_model_file)
+
+        return unzip_package_path, dst_model_file
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
         pass
@@ -177,6 +187,7 @@ class FedMLClientRunner:
         scale_max = model_config["instance_scale_max"]
         inference_engine = model_config["inference_engine"]
         self.model_is_from_open = True if model_config.get("is_from_open", 0) == 1 else False
+        model_net_url = model_config["model_net_url"]
         model_config_parameters = self.request_json["parameters"]
         model_input_size = model_config_parameters.get("input_size", 0)
         model_output_size = model_config_parameters.get("output_size", 0)
@@ -198,6 +209,18 @@ class FedMLClientRunner:
         unzip_package_path, model_bin_file, fedml_config_object = \
             self.update_local_fedml_config(run_id, model_config, model_config_parameters)
 
+        # download model net and load into the torch model
+        model_from_open = None
+        if self.model_is_from_open:
+            s3_config = self.agent_config.get("s3_config", None)
+            if s3_config is not None and model_net_url is not None and model_net_url != "":
+                s3_client = S3Storage(s3_config)
+                url_parsed = urlparse(model_net_url)
+                path_list = url_parsed.path.split("/")
+                if len(path_list) > 0:
+                    model_key = path_list[-1]
+                    model_from_open = s3_client.read_model_net(model_key)
+
         running_model_name, inference_output_url, inference_model_version, model_metadata, model_config = \
             start_deployment(
                 inference_end_point_id, model_id, model_version,
@@ -209,7 +232,8 @@ class FedMLClientRunner:
                 ClientConstants.INFERENCE_CONVERTOR_IMAGE,
                 ClientConstants.INFERENCE_SERVER_IMAGE,
                 self.infer_host,
-                self.model_is_from_open, model_input_size)
+                self.model_is_from_open, model_input_size,
+                model_from_open)
         if inference_output_url == "":
             self.send_deployment_status(self.edge_id, model_id, running_model_name, inference_output_url,
                                         ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)

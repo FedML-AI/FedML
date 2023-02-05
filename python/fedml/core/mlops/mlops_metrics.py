@@ -209,6 +209,13 @@ class MLOpsMetrics(Singleton):
         message_json = json.dumps(model_info_json)
         self.messenger.send_message_json(topic_name, message_json)
 
+    def report_training_model_net_info(self, model_net_info_json):
+        # if not self.comm_sanity_check():
+        #     return
+        topic_name = "fl_server/mlops/training_model_net"
+        message_json = json.dumps(model_net_info_json)
+        self.messenger.send_message_json(topic_name, message_json)
+
     def report_system_metric(self, metric_json=None):
         # if not self.comm_sanity_check():
         #     return

@@ -19,6 +19,7 @@ from ...constants import FEDML_TRAINING_PLATFORM_SIMULATION, FEDML_TRAINING_PLAT
 from ...cli.server_deployment.server_constants import ServerConstants
 
 from ..distributed.communication.mqtt.mqtt_manager import MqttManager
+from ..distributed.communication.s3.remote_storage import S3Storage
 
 from .mlops_metrics import MLOpsMetrics
 from .mlops_profiler_event import MLOpsProfilerEvent
@@ -359,7 +360,7 @@ def log_aggregated_model_info(round_index, model_url):
     if not MLOpsStore.mlops_bind_result:
         return
 
-    logging.info("log aggregated mode info {}".format(model_url))
+    logging.info("log aggregated model info {}".format(model_url))
 
     setup_log_mqtt_mgr()
     wait_log_mqtt_connected()
@@ -369,6 +370,36 @@ def log_aggregated_model_info(round_index, model_url):
         "global_aggregated_model_s3_address": model_url,
     }
     MLOpsStore.mlops_metrics.report_aggregated_model_info(model_info)
+    release_log_mqtt_mgr()
+
+
+def log_training_model_net_info(model_net):
+    if model_net is None:
+        return
+    if not mlops_enabled(MLOpsStore.mlops_args):
+        return
+
+    set_realtime_params()
+
+    if not MLOpsStore.mlops_bind_result:
+        return
+
+    s3_config = MLOpsStore.mlops_log_agent_config.get("s3_config", None)
+    if s3_config is None:
+        return
+    s3_client = S3Storage(s3_config)
+    model_key = "fedml-model-net-run-{}-{}".format(str(MLOpsStore.mlops_run_id), str(uuid.uuid4()))
+    model_url = s3_client.write_model_net(model_key, model_net)
+
+    logging.info("log training model net info {}".format(model_url))
+
+    setup_log_mqtt_mgr()
+    wait_log_mqtt_connected()
+    model_info = {
+        "run_id": MLOpsStore.mlops_run_id,
+        "training_model_net_s3_address": model_url,
+    }
+    MLOpsStore.mlops_metrics.report_training_model_net_info(model_info)
     release_log_mqtt_mgr()
 
 
@@ -383,7 +414,7 @@ def log_client_model_info(round_index, model_url):
     if not MLOpsStore.mlops_bind_result:
         return
 
-    logging.info("log client mode info {}".format(model_url))
+    logging.info("log client model info {}".format(model_url))
 
     setup_log_mqtt_mgr()
     wait_log_mqtt_connected()
