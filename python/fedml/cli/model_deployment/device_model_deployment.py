@@ -292,10 +292,14 @@ def get_model_info(model_name, inference_engine, inference_http_port, infer_host
 
 def run_http_inference_with_lib_http_api(model_name, inference_http_port, batch_size,
                                          inference_input_data_list, host="localhost",
-                                         inference_engine=ClientConstants.INFERENCE_ENGINE_TYPE_ONNX):
+                                         inference_engine=ClientConstants.INFERENCE_ENGINE_TYPE_ONNX,
+                                         is_hg_model=False):
     local_infer_url = "{}:{}".format(host, inference_http_port)
     model_version = ClientConstants.INFERENCE_MODEL_VERSION
-    inference_model_name = "{}_{}_inference".format(model_name, inference_engine)
+    if is_hg_model:
+        inference_model_name = "{}_{}_inference".format(model_name, inference_engine)
+    else:
+        inference_model_name = model_name
     triton_client = http_client.InferenceServerClient(url=local_infer_url, verbose=False)
     while True:
         if not triton_client.is_model_ready(
