@@ -53,7 +53,8 @@ requirements = [
     "numpy==1.21",
     "python-rapidjson>=0.9.1",
     "tritonclient",
-    "redis"
+    "redis",
+    "attrdict",
 ]
 
 requirements_extra_mpi = [
