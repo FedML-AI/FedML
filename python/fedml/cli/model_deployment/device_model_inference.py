@@ -1,9 +1,11 @@
+import logging
 import time
+import traceback
 from urllib.parse import urlparse
 
 from fastapi import FastAPI, Request
 from fedml.cli.model_deployment.device_model_deployment import run_http_inference_with_lib_http_api, \
-    run_http_inference_with_raw_http_request
+    run_http_inference_with_raw_http_request, run_http_inference_with_lib_http_api_with_image_data
 from fedml.cli.model_deployment.device_client_constants import ClientConstants
 from fedml.cli.model_deployment.device_server_constants import ServerConstants
 from fedml.cli.model_deployment.device_model_monitor import FedMLModelMetrics
@@ -113,12 +115,26 @@ def found_idle_inference_device(end_point_id, in_model_id):
 
 
 def send_inference_request(device, model_name, inference_host, inference_url, json_req, input_data_list=None):
-    inference_response = run_http_inference_with_lib_http_api(model_name,
-                                                              ClientConstants.INFERENCE_HTTP_PORT,
-                                                              1,
-                                                              input_data_list,
-                                                              inference_host)
-    return inference_response
+    try:
+        if input_data_list[0].startswith("http://") or input_data_list[0].startswith("https://") or \
+                input_data_list[0].startswith("file://"):
+            inference_response = run_http_inference_with_lib_http_api_with_image_data(model_name,
+                                                                                      ClientConstants.INFERENCE_HTTP_PORT,
+                                                                                      1,
+                                                                                      input_data_list,
+                                                                                      inference_host)
+        else:
+            inference_response = run_http_inference_with_lib_http_api(model_name,
+                                                                      ClientConstants.INFERENCE_HTTP_PORT,
+                                                                      1,
+                                                                      input_data_list,
+                                                                      inference_host)
+        return inference_response
+    except Exception as e:
+        logging.info("Inference Exception: {}".format(traceback.format_exc()))
+        pass
+
+    return {}
 
 
 def run_inference(json_req, bin_data=None, host="localhost"):
@@ -135,7 +151,7 @@ def auth_request_token(end_point_id, token):
         return False
 
     FedMLModelCache.get_instance().set_redis_params(settings.redis_addr, settings.redis_port, settings.redis_password)
-    cached_token = FedMLModelCache.get_instance(settings.redis_addr, settings.redis_port).\
+    cached_token = FedMLModelCache.get_instance(settings.redis_addr, settings.redis_port). \
         get_end_point_token(end_point_id)
     if cached_token is not None and cached_token == token:
         return True
