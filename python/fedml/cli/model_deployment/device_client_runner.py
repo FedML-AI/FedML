@@ -220,7 +220,8 @@ class FedMLClientRunner:
                 path_list = url_parsed.path.split("/")
                 if len(path_list) > 0:
                     model_key = path_list[-1]
-                    model_from_open = s3_client.read_model_net(model_key)
+                    model_from_open = s3_client.read_model_net(model_key,
+                                                               ClientConstants.get_model_cache_dir())
 
         running_model_name, inference_output_url, inference_model_version, model_metadata, model_config = \
             start_deployment(
