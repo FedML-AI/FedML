@@ -35,6 +35,7 @@ from ...core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 from ...core.mlops.mlops_status import MLOpsStatus
 from ..comm_utils.sys_utils import get_sys_runner_info
 from .device_model_deployment import start_deployment
+from ..edge_deployment.client_data_interface import FedMLClientDataInterface
 
 
 class FedMLClientRunner:
@@ -822,6 +823,9 @@ class FedMLClientRunner:
             json.dumps({"ID": self.edge_id, "status": ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE}),
         )
         self.agent_config = service_config
+
+        # Init local database
+        FedMLClientDataInterface.get_instance().create_job_table()
 
         MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
 
