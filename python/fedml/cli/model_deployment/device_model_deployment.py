@@ -15,7 +15,6 @@ import requests
 import torch
 import torch.nn
 import tritonclient.http as http_client
-import tritonclient.grpc.model_config_pb2 as mc
 from PIL.Image import Resampling
 from attrdict import AttrDict
 from PIL import Image
@@ -526,6 +525,8 @@ def parse_model(model_metadata, model_config):
     requirements for an image classification network (as expected by
     this client)
     """
+    import tritonclient.grpc.model_config_pb2 as mc
+
     if len(model_metadata.inputs) != 1:
         raise Exception("expecting 1 input, got {}".format(
             len(model_metadata.inputs)))
