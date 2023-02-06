@@ -112,7 +112,7 @@ class ClientMasterManager(FedMLCommManager):
 
         MLOpsProfilerEvent.log_to_wandb({"Communication/Send_Total": time.time() - tick})
         mlops.log_client_model_info(
-            self.round_idx+1, model_url=message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL),
+            self.round_idx+1, self.num_rounds, model_url=message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL),
         )
 
     def send_client_status(self, receive_id, status="ONLINE"):
