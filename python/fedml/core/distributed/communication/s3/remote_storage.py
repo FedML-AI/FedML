@@ -179,7 +179,6 @@ class S3Storage:
         checkpoint = torch.load(temp_file_path)
         model = checkpoint["model"]
         os.remove(temp_file_path)
-        os.rmdir(temp_base_file_path)
         MLOpsProfilerEvent.log_to_wandb(
             {"UnpickleTime": time.time() - unpickle_start_time}
         )
