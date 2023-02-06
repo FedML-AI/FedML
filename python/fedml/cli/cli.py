@@ -1,4 +1,5 @@
 import os
+import pickle
 import shutil
 import subprocess
 from os.path import expanduser
@@ -22,6 +23,7 @@ import fedml
 # from ..cli.comm_utils import sys_utils
 # from .model_deployment import device_login_entry
 # from .model_deployment.device_model_cards import FedMLModelCards
+import torch
 
 from fedml.cli.edge_deployment.client_constants import ClientConstants
 from fedml.cli.server_deployment.server_constants import ServerConstants
@@ -906,6 +908,12 @@ def package_model(name):
     "--name", "-n", type=str, help="model name.",
 )
 @click.option(
+    "--model_storage_url", "-s", type=str, help="model storage url.",
+)
+@click.option(
+    "--model_net_url", "-mn", type=str, help="model net url.",
+)
+@click.option(
     "--user", "-u", type=str, help="user id.",
 )
 @click.option(
@@ -918,18 +926,24 @@ def package_model(name):
     default="release",
     help="interact with which version of ModelOps platform. It should be dev, test or release",
 )
-def push_model(name, user, api_key, version):
+def push_model(name, model_storage_url, model_net_url, user, api_key, version):
     if user is None or api_key is None:
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
         return
     FedMLModelCards.get_instance().set_config_version(version)
-    model_storage_url, model_zip = FedMLModelCards.get_instance().push_model(name, user, api_key)
-    if model_storage_url != "":
-        click.echo("Push model {} successfully".format(name))
-        click.echo("The remote model storage is located at {}".format(model_storage_url))
-        click.echo("The local model package is locate at .".format(model_zip))
+    model_is_from_open = True if model_storage_url is not None and model_storage_url != "" else False
+    model_storage_url, model_zip = FedMLModelCards.get_instance().push_model(name, user, api_key,
+                                                                             model_storage_url=model_storage_url,
+                                                                             model_net_url=model_net_url)
+    if model_is_from_open:
+        click.echo("Push model {} with model storage url {} successfully.".format(name, model_storage_url))
     else:
-        click.echo("Failed to push model {}.".format(name))
+        if model_storage_url != "":
+            click.echo("Push model {} successfully".format(name))
+            click.echo("The remote model storage is located at {}".format(model_storage_url))
+            click.echo("The local model package is locate at .".format(model_zip))
+        else:
+            click.echo("Failed to push model {}.".format(name))
 
 
 @model.command("pull", help="Pull remote model(ModelOps) to local model repository.")
@@ -981,7 +995,7 @@ def pull_model(name, user, api_key, version):
     "--api_key", "-k", type=str, help="user api key.",
 )
 @click.option(
-    "--params", "-p", type=str, default="", help="serving parameters.",
+    "--params", "-pa", type=str, default="", help="serving parameters.",
 )
 @click.option(
     "--version",
