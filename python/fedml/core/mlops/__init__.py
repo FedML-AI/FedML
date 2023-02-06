@@ -28,6 +28,7 @@ from .mlops_status import MLOpsStatus
 from .mlops_runtime_log import MLOpsRuntimeLog
 from .mlops_runtime_log_daemon import MLOpsRuntimeLogProcessor
 from .mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
+from ...cli.edge_deployment.client_data_interface import FedMLClientDataInterface
 
 FEDML_MLOPS_API_RESPONSE_SUCCESS_CODE = "SUCCESS"
 
@@ -173,7 +174,7 @@ def log(metrics: dict, commit=True):
         #     k = "round_idx_" + k
         MLOpsStore.mlops_log_metrics[k] = v
     MLOpsStore.mlops_log_metrics["run_id"] = str(MLOpsStore.mlops_run_id)
-    MLOpsStore.mlops_log_metrics["timestamp"] = float(time.time_ns()/1000/1000*1.0)
+    MLOpsStore.mlops_log_metrics["timestamp"] = float(time.time_ns() / 1000 / 1000 * 1.0)
     MLOpsStore.mlops_log_metrics_lock.release()
 
     logging.info("log metrics {}".format(json.dumps(MLOpsStore.mlops_log_metrics)))
@@ -403,7 +404,7 @@ def log_training_model_net_info(model_net):
     release_log_mqtt_mgr()
 
 
-def log_client_model_info(round_index, model_url):
+def log_client_model_info(round_index, total_rounds, model_url):
     if model_url is None:
         return
     if not mlops_enabled(MLOpsStore.mlops_args):
@@ -426,6 +427,11 @@ def log_client_model_info(round_index, model_url):
     }
     MLOpsStore.mlops_metrics.report_client_model_info(model_info)
     release_log_mqtt_mgr()
+
+    FedMLClientDataInterface.get_instance().save_running_job(MLOpsStore.mlops_run_id, MLOpsStore.mlops_edge_id,
+                                                             round_index,
+                                                             total_rounds,
+                                                             "Running")
 
 
 def log_sys_perf(sys_args=None):
