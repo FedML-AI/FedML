@@ -90,9 +90,13 @@ On the inference endpoint ingress device:
 
 ```--set "inferenceGateway.replicaCount=$InstanceNumber"```
 
-If you install FedML model serving packages on GCP k8s cluster, you should change the ingress class to gcp via the following command:
+If you install FedML model serving packages on GCP k8s cluster, first, you should install Nginx Ingress Controller based on the following link:
 
-```--set "inferenceGateway.ingress.className=gce"```
+[https://github.com/kubernetes/ingress-nginx/blob/main/docs/deploy/index.md#gce-gke](https://github.com/kubernetes/ingress-nginx/blob/main/docs/deploy/index.md#gce-gke)
+
+Moreover, on GCP k8s cluster, you should set up your GPU nodes based on the following link:
+
+[https://cloud.google.com/kubernetes-engine/docs/how-to/gpus](https://cloud.google.com/kubernetes-engine/docs/how-to/gpus)
 
 After you have installed FedML model serving packages, you may run the helm upgrade commands to modify parameters.
 

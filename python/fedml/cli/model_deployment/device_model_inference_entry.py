@@ -5,6 +5,7 @@ import time
 from fedml.cli.model_deployment.device_client_constants import ClientConstants
 from fedml.cli.model_deployment.device_server_constants import ServerConstants
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--redis_addr", "-rp", type=str, default="local", help="redis address")

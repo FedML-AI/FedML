@@ -53,7 +53,8 @@ requirements = [
     "numpy==1.21",
     "python-rapidjson>=0.9.1",
     "tritonclient",
-    "redis"
+    "redis",
+    "attrdict",
 ]
 
 requirements_extra_mpi = [
@@ -84,7 +85,7 @@ requirements_extra_mxnet = [
 
 setup(
     name="fedml",
-    version="0.7.397",
+    version="0.7.398",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "

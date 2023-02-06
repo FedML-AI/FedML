@@ -173,6 +173,11 @@ class ClientConstants(object):
         return model_file_dir
 
     @staticmethod
+    def get_model_infer_data_dir():
+        model_infer_data_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "models_infer_data")
+        return model_infer_data_dir
+
+    @staticmethod
     def get_model_ops_list_url(config_version="release"):
         model_ops_url = "{}/api/v1/model/listFromCli".format(ClientConstants.get_model_ops_url(config_version))
         return model_ops_url
