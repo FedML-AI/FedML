@@ -166,51 +166,60 @@ class FedMLModelCards(Singleton):
 
         return model_zip_path
 
-    def push_model(self, model_name, user_id, user_api_key, no_uploading_modelops=False):
+    def push_model(self, model_name, user_id, user_api_key, model_storage_url=None,
+                   model_net_url=None, no_uploading_modelops=False):
         model_dir = os.path.join(ClientConstants.get_model_dir(), model_name)
         if not os.path.exists(model_dir):
             return "", ""
 
-        model_config_file = os.path.join(model_dir, ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE)
-        if not os.path.exists(model_config_file):
-            print("You model repository is missing file {}, you should add it.".format(
-                ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE))
-            return "", ""
+        is_from_open = None
+        if model_storage_url is not None:
+            is_from_open = True
+            model_zip_path = ""
+        else:
+            is_from_open = False
+            model_config_file = os.path.join(model_dir, ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE)
+            if not os.path.exists(model_config_file):
+                print("You model repository is missing file {}, you should add it.".format(
+                    ClientConstants.MODEL_REQUIRED_MODEL_CONFIG_FILE))
+                return "", ""
 
-        model_bin_file = os.path.join(model_dir, ClientConstants.MODEL_REQUIRED_MODEL_BIN_FILE)
-        if not os.path.exists(model_bin_file):
-            print("You model repository is missing file {}, you should add it.".format(
-                ClientConstants.MODEL_REQUIRED_MODEL_BIN_FILE))
-            return "", ""
+            model_bin_file = os.path.join(model_dir, ClientConstants.MODEL_REQUIRED_MODEL_BIN_FILE)
+            if not os.path.exists(model_bin_file):
+                print("You model repository is missing file {}, you should add it.".format(
+                    ClientConstants.MODEL_REQUIRED_MODEL_BIN_FILE))
+                return "", ""
 
-        model_readme_file = os.path.join(model_dir, ClientConstants.MODEL_REQUIRED_MODEL_README_FILE)
-        if not os.path.exists(model_readme_file):
-            print("You model repository is missing file {}, you should add it.".format(
-                ClientConstants.MODEL_REQUIRED_MODEL_README_FILE))
-            return "", ""
+            model_readme_file = os.path.join(model_dir, ClientConstants.MODEL_REQUIRED_MODEL_README_FILE)
+            if not os.path.exists(model_readme_file):
+                print("You model repository is missing file {}, you should add it.".format(
+                    ClientConstants.MODEL_REQUIRED_MODEL_README_FILE))
+                return "", ""
 
-        if not os.path.exists(ClientConstants.get_model_package_dir()):
-            os.makedirs(ClientConstants.get_model_package_dir())
+            if not os.path.exists(ClientConstants.get_model_package_dir()):
+                os.makedirs(ClientConstants.get_model_package_dir())
 
-        model_archive_name = os.path.join(ClientConstants.get_model_package_dir(), model_name)
-        model_zip_path = "{}.zip".format(model_archive_name)
-        if os.path.exists(model_zip_path):
-            os.remove(model_zip_path)
-        shutil.make_archive(
-            model_archive_name,
-            "zip",
-            root_dir=ClientConstants.get_model_dir(),
-            base_dir=model_name,
-        )
+            model_archive_name = os.path.join(ClientConstants.get_model_package_dir(), model_name)
+            model_zip_path = "{}.zip".format(model_archive_name)
+            if os.path.exists(model_zip_path):
+                os.remove(model_zip_path)
+            shutil.make_archive(
+                model_archive_name,
+                "zip",
+                root_dir=ClientConstants.get_model_dir(),
+                base_dir=model_name,
+            )
 
-        if not os.path.exists(model_zip_path):
-            return "", ""
+            if not os.path.exists(model_zip_path):
+                return "", ""
 
-        model_storage_url = self.push_model_to_s3(model_name, model_zip_path, user_id)
-        print("Model storage url: {}".format(model_storage_url))
+            model_storage_url = self.push_model_to_s3(model_name, model_zip_path, user_id)
+            print("Model storage url: {}".format(model_storage_url))
+
         if not no_uploading_modelops:
             if model_storage_url != "":
-                upload_result = self.upload_model_api(model_name, model_storage_url, user_id, user_api_key)
+                upload_result = self.upload_model_api(model_name, model_storage_url, model_net_url, user_id,
+                                                      user_api_key, is_from_open=is_from_open)
                 if upload_result is not None:
                     return model_storage_url, model_zip_path
                 else:
@@ -307,7 +316,7 @@ class FedMLModelCards(Singleton):
 
         return model_list_result
 
-    def upload_model_api(self, model_name, model_storage_url, user_id, user_api_key):
+    def upload_model_api(self, model_name, model_storage_url, model_net_url, user_id, user_api_key, is_from_open=True):
         model_upload_result = None
         model_ops_url = ClientConstants.get_model_ops_upload_url(self.config_version)
         model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
@@ -320,7 +329,9 @@ class FedMLModelCards(Singleton):
             "parameters": {},
             "updateBy": user_id,
             "userId": str(user_id),
-            "apiKey": user_api_key
+            "apiKey": user_api_key,
+            "isFromOpen": int(is_from_open),
+            "modelNetUrl": model_net_url
         }
         args = {"config_version": self.config_version}
         _, cert_path = ModelOpsConfigs.get_instance(args).get_request_params(self.config_version)
@@ -378,7 +389,7 @@ class FedMLModelCards(Singleton):
         model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
         model_deployment_json = {
             "edgeId": devices,
-            "endpointName": "ModelName-{}@ModelId-{}@{}".format(model_name, model_id, str(uuid.uuid4())),
+            "endpointName": "EndPoint-ModelName-{}-ModelId-{}-{}".format(model_name, model_id, str(uuid.uuid4())),
             "modelId": model_id,
             "modelVersion": model_version,
             "resourceType": device_type,
