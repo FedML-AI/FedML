@@ -71,7 +71,7 @@ class S3Storage:
         )
         return model_url
 
-    def write_model_net(self, message_key, model):
+    def write_model_net(self, message_key, model, local_model_cache_path):
         global aws_s3_client
         pickle_dump_start_time = time.time()
         MLOpsProfilerEvent.log_to_wandb(
@@ -79,9 +79,15 @@ class S3Storage:
         )
 
         checkpoint = {'model': model}
-        model_to_send = io.BytesIO()
-        torch.save(checkpoint, model_to_send)
+        if not os.path.exists(local_model_cache_path):
+            os.makedirs(local_model_cache_path)
+        write_model_path = os.path.join(local_model_cache_path, message_key)
+        torch.save(checkpoint, write_model_path)
+
         s3_upload_start_time = time.time()
+
+        with open(write_model_path, 'rb') as f:
+            model_to_send = io.BytesIO(f.read())
 
         model_to_send.seek(0, 2)
         file_size = model_to_send.tell()
