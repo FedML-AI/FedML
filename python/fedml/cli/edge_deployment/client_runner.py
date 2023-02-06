@@ -30,6 +30,7 @@ from ...core.mlops.mlops_configs import MLOpsConfigs
 from ...core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 from ...core.mlops.mlops_status import MLOpsStatus
 from ..comm_utils.sys_utils import get_sys_runner_info,get_python_program
+from .client_data_interface import FedMLClientDataInterface
 
 
 class FedMLClientRunner:
@@ -566,7 +567,7 @@ class FedMLClientRunner:
         #     time.sleep(1)
 
     def callback_start_train(self, topic, payload):
-        # get training params
+        # Get training params
         request_json = json.loads(payload)
         run_id = request_json["runId"]
         server_agent_id = request_json["cloud_agent_id"]
@@ -919,6 +920,17 @@ class FedMLClientRunner:
             json.dumps({"ID": self.edge_id, "status": ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE}),
             )
         self.agent_config = service_config
+
+        # Init local database
+        FedMLClientDataInterface.get_instance().create_job_table()
+
+        # Start local API services
+        local_api_process = ClientConstants.exec_console_with_script(
+            "uvicorn fedml.cli.edge_deployment.client_api:api --host 0.0.0.0 --port {} --reload".format(
+                ClientConstants.LOCAL_CLIENT_API_PORT),
+            should_capture_stdout=False,
+            should_capture_stderr=False
+        )
 
         # Setup MQTT connected listener
         self.mqtt_mgr.add_connected_listener(self.on_agent_mqtt_connected)
