@@ -55,8 +55,8 @@ def log_training_model_net_info(model_net):
     mlops.log_training_model_net_info(model_net)
 
 
-def log_client_model_info(round_index, model_url):
-    mlops.log_client_model_info(round_index, model_url)
+def log_client_model_info(round_index, total_rounds, model_url):
+    mlops.log_client_model_info(round_index, total_rounds, model_url)
 
 
 def log_sys_perf(sys_args=None):

@@ -13,6 +13,7 @@ from ...cli.server_deployment.server_constants import ServerConstants
 from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
 from ...core.mlops.mlops_status import MLOpsStatus
 from ...core.mlops.system_stats import SysStats
+from ...cli.edge_deployment.client_data_interface import FedMLClientDataInterface
 
 
 class MLOpsMetrics(Singleton):
@@ -98,6 +99,8 @@ class MLOpsMetrics(Singleton):
         self.messenger.send_message_json(topic_name, message_json)
         self.report_client_id_status(run_id, edge_id, status)
 
+        FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status)
+
     def broadcast_client_training_status(self, edge_id, status):
         # if not self.comm_sanity_check():
         #     return
@@ -112,6 +115,8 @@ class MLOpsMetrics(Singleton):
         message_json = json.dumps(msg)
         logging.info("report_client_training_status. message_json = %s" % message_json)
         self.messenger.send_message_json(topic_name, message_json)
+
+        FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status)
 
     def report_client_id_status(self, run_id, edge_id, status):
         # if not self.comm_sanity_check():

@@ -172,7 +172,7 @@ class FedMLClientManager(FedMLCommManager):
         self.send_message(message)
 
         mlops.log_client_model_info(
-            self.round_idx + 1, model_url=message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL),
+            self.round_idx + 1, self.num_rounds,  model_url=message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL),
         )
 
     def _send_public_key_to_sever(self, public_key):
