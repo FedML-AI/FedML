@@ -40,6 +40,8 @@ class ClientConstants(object):
     FEDML_OTA_CMD_UPGRADE = "upgrade"
     FEDML_OTA_CMD_RESTART = "restart"
 
+    LOCAL_CLIENT_API_PORT = 40800
+
     LOGIN_MODE_CLIEN_INDEX = 0
     LOGIN_MODE_EDGE_SIMULATOR_INDEX = 1
     login_role_list = ["client", "edge_simulator"]
@@ -77,6 +79,11 @@ class ClientConstants(object):
         package_run_dir = os.path.join(ClientConstants.get_package_unzip_dir(),
                                        package_file_no_extension)
         return package_run_dir
+
+    @staticmethod
+    def get_database_dir():
+        database_dir = os.path.join(ClientConstants.get_data_dir(), "database")
+        return database_dir
 
     @staticmethod
     def cleanup_run_process():

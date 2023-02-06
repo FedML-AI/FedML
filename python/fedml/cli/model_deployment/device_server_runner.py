@@ -169,6 +169,7 @@ class FedMLServerRunner:
         scale_min = model_config["instance_scale_min"]
         scale_max = model_config["instance_scale_max"]
         inference_engine = model_config["inference_engine"]
+        model_is_from_open = model_config["is_from_open"]
         inference_end_point_id = run_id
         use_gpu = "gpu"  # TODO: Get GPU from device infos
         memory_size = "256m"  # TODO: Get Memory size for each instance
@@ -541,7 +542,7 @@ class FedMLServerRunner:
     def callback_start_deployment(self, topic, payload):
         """
         topic: /model_ops/model_device/start_deployment/model-agent-device-id
-        payload: {"model_name": "image-model", "model_storage_url":"s3-url", "instance_scale_min":1, "instance_scale_max":3, "inference_engine":"onnx (or tensorrt)"}
+        payload: {"timestamp": 1671440005119, "end_point_id": 4325, "token": "FCpWU", "state": "STARTING","user_id": "105", "user_name": "alex.liang2", "device_ids": [693], "device_objs": [{"device_id": "0xT3630FW2YM@MacOS.Edge.Device", "os_type": "MacOS", "id": 693, "ip": "1.1.1.1", "memory": 1024, "cpu": "1.7", "gpu": "Nvidia", "extra_infos":{}}], "model_config": {"model_name": "image-model", "model_id": 111, "model_version": "v1", 'is_from_open": 0, "model_storage_url": "https://fedml.s3.us-west-1.amazonaws.com/1666239314792client-package.zip", "instance_scale_min": 1, "instance_scale_max": 3, "inference_engine": "onnx"}, "parameters": {"hidden_size": 128, "hidden_act": "gelu", "initializer_range": 0.02, "vocab_size": 30522, "hidden_dropout_prob": 0.1, "num_attention_heads": 2, "type_vocab_size": 2, "max_position_embeddings": 512, "num_hidden_layers": 2, "intermediate_size": 512, "attention_probs_dropout_prob": 0.1}}
         """
         logging.info("callback_start_deployment {}".format(payload))
         # get training params

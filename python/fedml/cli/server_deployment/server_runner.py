@@ -347,6 +347,8 @@ class FedMLServerRunner:
         ServerConstants.cleanup_learning_process()
         os.chdir(os.path.join(unzip_package_path, "fedml"))
 
+        time.sleep(15)
+
         python_program = get_python_program()
         process = ServerConstants.exec_console_with_shell_script_list(
             [
