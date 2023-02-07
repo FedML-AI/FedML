@@ -9,6 +9,7 @@ import boto3
 # for multi-processing, we need to create a global variable for AWS S3 client:
 # https://www.pythonforthelab.com/blog/differences-between-multiprocessing-windows-and-linux/
 # https://stackoverflow.com/questions/72313845/multiprocessing-picklingerror-cant-pickle-class-botocore-client-s3-attr
+import dill
 import torch
 import tqdm
 import yaml
@@ -71,7 +72,7 @@ class S3Storage:
         )
         return model_url
 
-    def write_model_net(self, message_key, model):
+    def write_model_net(self, message_key, model, local_model_cache_path):
         global aws_s3_client
         pickle_dump_start_time = time.time()
         MLOpsProfilerEvent.log_to_wandb(
@@ -79,9 +80,15 @@ class S3Storage:
         )
 
         checkpoint = {'model': model}
-        model_to_send = io.BytesIO()
-        torch.save(checkpoint, model_to_send)
+        if not os.path.exists(local_model_cache_path):
+            os.makedirs(local_model_cache_path)
+        write_model_path = os.path.join(local_model_cache_path, message_key)
+        torch.save(checkpoint, write_model_path, pickle_module=dill)
+
         s3_upload_start_time = time.time()
+
+        with open(write_model_path, 'rb') as f:
+            model_to_send = io.BytesIO(f.read())
 
         model_to_send.seek(0, 2)
         file_size = model_to_send.tell()
@@ -154,16 +161,18 @@ class S3Storage:
         )
         return model
 
-    def read_model_net(self, message_key):
+    def read_model_net(self, message_key, local_model_cache_path):
         global aws_s3_client
         message_handler_start_time = time.time()
 
         kwargs = {"Bucket": self.bucket_name, "Key": message_key}
         object_size = aws_s3_client.head_object(**kwargs)["ContentLength"]
-        temp_base_file_path = './cache/S3_DOWNLOADED_MODEL' + "_P" + str(os.getpid())
+        temp_base_file_path = local_model_cache_path
         if not os.path.exists(temp_base_file_path):
             os.makedirs(temp_base_file_path)
-        temp_file_path = temp_base_file_path + "/" + str(message_key)
+        temp_file_path = os.path.join(temp_base_file_path, str(message_key))
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
         logging.info("temp_file_path = {}".format(temp_file_path))
         with tqdm.tqdm(total=object_size, unit="B", unit_scale=True, desc="Downloading Model Net from AWS S3") as pbar:
             with open(temp_file_path, 'wb') as f:
@@ -174,10 +183,9 @@ class S3Storage:
         )
 
         unpickle_start_time = time.time()
-        checkpoint = torch.load(temp_file_path)
+        checkpoint = torch.load(temp_file_path, pickle_module=dill)
         model = checkpoint["model"]
         os.remove(temp_file_path)
-        os.rmdir(temp_base_file_path)
         MLOpsProfilerEvent.log_to_wandb(
             {"UnpickleTime": time.time() - unpickle_start_time}
         )
