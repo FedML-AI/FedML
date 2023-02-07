@@ -390,7 +390,7 @@ def log_training_model_net_info(model_net):
         return
     s3_client = S3Storage(s3_config)
     model_key = "fedml-model-net-run-{}-{}".format(str(MLOpsStore.mlops_run_id), str(uuid.uuid4()))
-    model_url = s3_client.write_model_net(model_key, model_net)
+    model_url = s3_client.write_model_net(model_key, model_net, ClientConstants.get_model_cache_dir())
 
     logging.info("log training model net info {}".format(model_url))
 
