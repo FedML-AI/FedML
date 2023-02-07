@@ -10,6 +10,8 @@ ADD ./devops/scripts/requirements.txt ./fedml/requirements.txt
 RUN chmod a+x ./fedml/runner.sh
 RUN pip install transformers
 
+RUN mkdir -p /home/fedml/fedml-client/fedml/models_serving
+
 ENV FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL=3 \
     FEDML_MODEL_SERVING_REPO_PATH=/home/fedml/fedml-client/fedml/models_serving
 
