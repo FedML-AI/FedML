@@ -81,6 +81,11 @@ class ClientConstants(object):
         return package_run_dir
 
     @staticmethod
+    def get_model_cache_dir():
+        model_cache_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "model_cache")
+        return model_cache_dir
+
+    @staticmethod
     def get_database_dir():
         database_dir = os.path.join(ClientConstants.get_data_dir(), "database")
         return database_dir
