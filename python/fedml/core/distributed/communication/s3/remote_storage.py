@@ -9,6 +9,7 @@ import boto3
 # for multi-processing, we need to create a global variable for AWS S3 client:
 # https://www.pythonforthelab.com/blog/differences-between-multiprocessing-windows-and-linux/
 # https://stackoverflow.com/questions/72313845/multiprocessing-picklingerror-cant-pickle-class-botocore-client-s3-attr
+import dill
 import torch
 import tqdm
 import yaml
@@ -82,7 +83,7 @@ class S3Storage:
         if not os.path.exists(local_model_cache_path):
             os.makedirs(local_model_cache_path)
         write_model_path = os.path.join(local_model_cache_path, message_key)
-        torch.save(checkpoint, write_model_path)
+        torch.save(checkpoint, write_model_path, pickle_module=dill)
 
         s3_upload_start_time = time.time()
 
@@ -182,7 +183,7 @@ class S3Storage:
         )
 
         unpickle_start_time = time.time()
-        checkpoint = torch.load(temp_file_path)
+        checkpoint = torch.load(temp_file_path, pickle_module=dill)
         model = checkpoint["model"]
         os.remove(temp_file_path)
         MLOpsProfilerEvent.log_to_wandb(
