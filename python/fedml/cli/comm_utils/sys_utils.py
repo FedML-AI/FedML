@@ -9,6 +9,19 @@ import yaml
 from .yaml_utils import load_yaml_config
 
 
+FETAL_ERROR_START_CODE = 128
+
+SYS_ERR_CODE_MAP = {"0": "Successful exit without errors.",
+                    "1": "One or more generic errors encountered upon exit.",
+                    "2": "Incorrect usage, such as invalid options or missing arguments.",
+                    "126": "Command found but is not executable.",
+                    "127": "Command not found, usually the result of a missing directory in PATH variable.",
+                    "128": "Command encountered fatal error "
+                           "(was forcefully terminated manually or from an outside source).",
+                    "130": "Command terminated with signal 2 (SIGINT) (ctrl+c on keyboard).",
+                    "143": "Command terminated with signal 15 (SIGTERM) (kill command)."}
+
+
 def get_sys_runner_info():
     import fedml
     fedml_ver = str(fedml.__version__)
@@ -325,4 +338,18 @@ def simulator_process_is_running(process_id):
 
     return False
 
+
+def log_return_info(bootstrap_file, ret_code):
+    import logging
+    err_desc = SYS_ERR_CODE_MAP.get(str(ret_code), "")
+    if ret_code == 0:
+        logging.info("Bootstrap script {} return code {}. {}".format(
+            bootstrap_file, ret_code, err_desc))
+    else:
+        fatal_err_desc = SYS_ERR_CODE_MAP.get(str(ret_code), "")
+        if ret_code >= FETAL_ERROR_START_CODE and fatal_err_desc == "":
+            fatal_err_desc = SYS_ERR_CODE_MAP.get(str(FETAL_ERROR_START_CODE))
+
+        logging.error("Bootstrap script {} return code {}. {}".format(
+            bootstrap_file, ret_code, fatal_err_desc if fatal_err_desc != "" else err_desc))
 

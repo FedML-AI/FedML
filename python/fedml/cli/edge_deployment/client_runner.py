@@ -31,12 +31,13 @@ from ...core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 from ...core.mlops.mlops_status import MLOpsStatus
 from ..comm_utils.sys_utils import get_sys_runner_info,get_python_program
 from .client_data_interface import FedMLClientDataInterface
+from ..comm_utils import sys_utils
 
 
 class FedMLClientRunner:
-    FEDML_BOOTSTRAP_RUN_OK = "[FedML]Bootstrap Finished"
 
     def __init__(self, args, edge_id=0, request_json=None, agent_config=None, run_id=0):
+        self.start_request_json = None
         self.device_status = None
         self.current_training_status = None
         self.mqtt_mgr = None
@@ -269,24 +270,25 @@ class FedMLClientRunner:
                     process = ClientConstants.exec_console_with_script(bootstrap_scripts, should_capture_stdout=True,
                                                                        should_capture_stderr=True)
                     ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(process)
-                    if out is not None:
+                    if ret_code is None or ret_code == 0:
                         out_str = out.decode(encoding="utf-8")
-                        if str(out_str).find(FedMLClientRunner.FEDML_BOOTSTRAP_RUN_OK) == -1 \
-                                and str(out_str).lstrip(' ').rstrip(' ') != '':
-                            logging.error("{}".format(out_str))
-                            is_bootstrap_run_ok = False
-                        else:
+                        if out_str != "":
                             logging.info("{}".format(out_str))
-                    if err is not None:
-                        err_str = err.decode(encoding="utf-8")
-                        if str(err_str).find(FedMLClientRunner.FEDML_BOOTSTRAP_RUN_OK) == -1 \
-                                and str(err_str).lstrip(' ').rstrip(' ') != '':
-                            logging.info("{}".format(err_str))
-                            # is_bootstrap_run_ok = False
-                        else:
-                            logging.info("{}".format(err_str))
+
+                        sys_utils.log_return_info(bootstrap_script_file, ret_code)
+
+                        is_bootstrap_run_ok = True
+                    else:
+                        if err is not None:
+                            err_str = err.decode(encoding="utf-8")
+                            if err_str != "":
+                                logging.error("{}".format(err_str))
+
+                        sys_utils.log_return_info(bootstrap_script_file, ret_code)
+
+                        is_bootstrap_run_ok = False
         except Exception as e:
-            logging.error("Bootstrap scripts error: {}".format(traceback.format_exc()))
+            logging.error("Bootstrap script error: {}".format(traceback.format_exc()))
             is_bootstrap_run_ok = False
 
         return is_bootstrap_run_ok
@@ -303,7 +305,8 @@ class FedMLClientRunner:
         self.wait_client_mqtt_connected()
 
         self.mlops_metrics.report_client_training_status(self.edge_id,
-                                                         ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING)
+                                                         ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING,
+                                                         self.start_request_json)
 
         # get training params
         private_local_data_dir = data_config.get("privateLocalData", "")
@@ -562,6 +565,7 @@ class FedMLClientRunner:
     def callback_start_train(self, topic, payload):
         # Get training params
         request_json = json.loads(payload)
+        self.start_request_json = payload
         run_id = request_json["runId"]
         server_agent_id = request_json["cloud_agent_id"]
 
@@ -584,6 +588,7 @@ class FedMLClientRunner:
         client_runner = FedMLClientRunner(
             self.args, edge_id=self.edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id
         )
+        client_runner.start_request_json = self.start_request_json
         self.process = Process(target=client_runner.run)
         self.process.start()
         ClientConstants.save_run_process(self.process.pid)
