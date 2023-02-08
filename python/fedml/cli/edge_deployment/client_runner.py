@@ -282,12 +282,12 @@ class FedMLClientRunner:
                         if str(err_str).find(FedMLClientRunner.FEDML_BOOTSTRAP_RUN_OK) == -1 \
                                 and str(err_str).lstrip(' ').rstrip(' ') != '':
                             logging.error("{}".format(err_str))
-                            is_bootstrap_run_ok = False
+                            # is_bootstrap_run_ok = False
                         else:
                             logging.info("{}".format(err_str))
         except Exception as e:
             logging.error("Bootstrap scripts error: {}".format(traceback.format_exc()))
-            is_bootstrap_run_ok = False
+            # is_bootstrap_run_ok = False
 
         return is_bootstrap_run_ok
 
@@ -373,9 +373,6 @@ class FedMLClientRunner:
 
         logging.info("Stop run successfully.")
 
-        # Notify MLOps with the stopping message
-        self.mlops_metrics.report_client_training_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_STOPPING)
-
         self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
 
         time.sleep(1)
@@ -393,9 +390,6 @@ class FedMLClientRunner:
         self.wait_client_mqtt_connected()
 
         logging.info("Stop run successfully.")
-
-        # Notify MLOps with the stopping message
-        self.mlops_metrics.report_client_training_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_STOPPING)
 
         self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED)
 
@@ -418,7 +412,6 @@ class FedMLClientRunner:
         ClientConstants.cleanup_learning_process()
         ClientConstants.cleanup_run_process()
 
-        # Notify MLOps with the stopping message
         self.mlops_metrics.report_client_id_status(self.run_id, self.edge_id,
                                                    ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
 
@@ -601,8 +594,7 @@ class FedMLClientRunner:
         request_json = json.loads(payload)
         run_id = request_json["runId"]
 
-        logging.info("Stopping run...")
-        logging.info("Stop run with multiprocessing.")
+        logging.info("Stop run with multiprocessing...")
 
         # Stop cross-silo server with multi processing mode
         self.request_json = request_json
