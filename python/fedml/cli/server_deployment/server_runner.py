@@ -35,12 +35,14 @@ from ...core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 from ...core.mlops.mlops_status import MLOpsStatus
 from ..comm_utils.sys_utils import get_sys_runner_info,get_python_program
 from ..comm_utils import sys_utils
+from .server_data_interface import FedMLServerDataInterface
 
 
 class FedMLServerRunner:
     FEDML_CLOUD_SERVER_PREFIX = "fedml-server-run-"
 
     def __init__(self, args, run_id=0, request_json=None, agent_config=None, edge_id=0):
+        self.start_request_json = None
         self.server_docker_image = None
         self.cloud_server_name = None
         self.run_as_cloud_agent = False
@@ -328,7 +330,9 @@ class FedMLServerRunner:
         self.release_client_mqtt_mgr()
 
         # report server running status
-        self.mlops_metrics.report_server_training_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING)
+        self.mlops_metrics.report_server_training_status(run_id,
+                                                         ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING,
+                                                         running_json=self.start_request_json)
 
         # get training params
         private_local_data_dir = data_config.get("privateLocalData", "")
@@ -436,6 +440,7 @@ class FedMLServerRunner:
         time.sleep(1)
 
         self.set_all_devices_status(ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+        self.mlops_metrics.server_send_stop_train_msg()
 
         self.release_client_mqtt_mgr()
 
@@ -542,6 +547,7 @@ class FedMLServerRunner:
             payload = base64_bytes.decode("ascii")
             logging.info("decoded payload: {}".format(payload))
         request_json = json.loads(payload)
+        self.start_request_json = payload
         run_id = request_json["runId"]
         self.run_id = run_id
         ServerConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, self.edge_id, run_id=run_id)
@@ -568,6 +574,7 @@ class FedMLServerRunner:
             )
             server_runner.run_as_edge_server_and_agent = self.run_as_edge_server_and_agent
             server_runner.edge_id = self.edge_id
+            server_runner.start_request_json = self.start_request_json
             server_process = Process(target=server_runner.run)
             server_process.start()
             ServerConstants.save_run_process(server_process.pid)
@@ -581,6 +588,7 @@ class FedMLServerRunner:
                 self.args, run_id=run_id, request_json=request_json, agent_config=self.agent_config
             )
             server_runner.run_as_cloud_agent = self.run_as_cloud_agent
+            server_runner.start_request_json = self.start_request_json
             server_process = Process(target=server_runner.start_cloud_server_process)
             server_process.start()
             ServerConstants.save_run_process(server_process.pid)
@@ -832,7 +840,9 @@ class FedMLServerRunner:
             topic_exit_train = "flserver_agent/" + str(edge_id) + "/exit_train_with_exception"
             logging.info("exit_train_with_exception: send topic " + topic_exit_train)
             self.client_mqtt_mgr.send_message(topic_exit_train, payload)
-            self.mlops_metrics.broadcast_client_training_status(edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+            self.mlops_metrics.broadcast_client_training_status(edge_id,
+                                                                ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
+                                                                should_send_stop_msg=False)
 
     def callback_stop_train(self, topic, payload):
         logging.info("callback_stop_train: topic = %s, payload = %s" % (topic, payload))
@@ -1202,6 +1212,17 @@ class FedMLServerRunner:
             "/flserver_agent/last_will_msg",
             json.dumps({"ID": self.edge_id, "status": ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE}),
             )
+
+        # Init local database
+        FedMLServerDataInterface.get_instance().create_job_table()
+
+        # Start local API services
+        local_api_process = ServerConstants.exec_console_with_script(
+            "uvicorn fedml.cli.server_deployment.server_api:api --host 0.0.0.0 --port {} --reload".format(
+                ServerConstants.LOCAL_SERVER_API_PORT),
+            should_capture_stdout=False,
+            should_capture_stderr=False
+        )
 
         # Setup MQTT connected listener
         self.mqtt_mgr.add_connected_listener(self.on_agent_mqtt_connected)
