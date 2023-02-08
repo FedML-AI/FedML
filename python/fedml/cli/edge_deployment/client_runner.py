@@ -281,13 +281,13 @@ class FedMLClientRunner:
                         err_str = err.decode(encoding="utf-8")
                         if str(err_str).find(FedMLClientRunner.FEDML_BOOTSTRAP_RUN_OK) == -1 \
                                 and str(err_str).lstrip(' ').rstrip(' ') != '':
-                            logging.error("{}".format(err_str))
+                            logging.info("{}".format(err_str))
                             # is_bootstrap_run_ok = False
                         else:
                             logging.info("{}".format(err_str))
         except Exception as e:
             logging.error("Bootstrap scripts error: {}".format(traceback.format_exc()))
-            # is_bootstrap_run_ok = False
+            is_bootstrap_run_ok = False
 
         return is_bootstrap_run_ok
 
