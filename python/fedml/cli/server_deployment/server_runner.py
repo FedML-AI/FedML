@@ -34,11 +34,11 @@ from ...core.mlops.mlops_configs import MLOpsConfigs
 from ...core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 from ...core.mlops.mlops_status import MLOpsStatus
 from ..comm_utils.sys_utils import get_sys_runner_info,get_python_program
+from ..comm_utils import sys_utils
 
 
 class FedMLServerRunner:
     FEDML_CLOUD_SERVER_PREFIX = "fedml-server-run-"
-    FEDML_BOOTSTRAP_RUN_OK = "[FedML]Bootstrap Finished"
 
     def __init__(self, args, run_id=0, request_json=None, agent_config=None, edge_id=0):
         self.server_docker_image = None
@@ -216,7 +216,8 @@ class FedMLServerRunner:
         ServerConstants.generate_yaml_doc(package_conf_object, fedml_updated_config_file)
 
         # Build dynamic arguments and set arguments to fedml config object
-        self.build_dynamic_args(run_config, package_conf_object, unzip_package_path)
+        if not self.build_dynamic_args(run_config, package_conf_object, unzip_package_path):
+            return None, None
 
         return unzip_package_path, package_conf_object
 
@@ -269,6 +270,7 @@ class FedMLServerRunner:
 
         ServerConstants.generate_yaml_doc(fedml_conf_object, fedml_conf_path)
 
+        is_bootstrap_run_ok = True
         try:
             if bootstrap_script_path is not None:
                 if os.path.exists(bootstrap_script_path):
@@ -285,22 +287,29 @@ class FedMLServerRunner:
                                                                        should_capture_stdout=True,
                                                                        should_capture_stderr=True)
                     ret_code, out, err = ServerConstants.get_console_pipe_out_err_results(process)
-                    if out is not None:
+                    if ret_code is None or ret_code == 0:
                         out_str = out.decode(encoding="utf-8")
-                        if str(out_str).find(FedMLServerRunner.FEDML_BOOTSTRAP_RUN_OK) == -1 \
-                                and str(out_str).lstrip(' ').rstrip(' ') != '':
-                            logging.error("{}".format(out_str))
-                        else:
+                        if out_str != "":
                             logging.info("{}".format(out_str))
-                    if err is not None:
-                        err_str = err.decode(encoding="utf-8")
-                        if str(err_str).find(FedMLServerRunner.FEDML_BOOTSTRAP_RUN_OK) == -1 \
-                                and str(err_str).lstrip(' ').rstrip(' ') != '':
-                            logging.error("{}".format(err_str))
-                        else:
-                            logging.info("{}".format(err_str))
+
+                        sys_utils.log_return_info(bootstrap_script_file, ret_code)
+
+                        is_bootstrap_run_ok = True
+                    else:
+                        if err is not None:
+                            err_str = err.decode(encoding="utf-8")
+                            if err_str != "":
+                                logging.error("{}".format(err_str))
+
+                        sys_utils.log_return_info(bootstrap_script_file, ret_code)
+
+                        is_bootstrap_run_ok = False
         except Exception as e:
             logging.error("Bootstrap scripts error: {}".format(traceback.format_exc()))
+
+            is_bootstrap_run_ok = False
+
+        return is_bootstrap_run_ok
 
     def run(self):
         run_id = self.request_json["runId"]
@@ -337,6 +346,9 @@ class FedMLServerRunner:
 
         # update local config with real time parameters from server and dynamically replace variables value
         unzip_package_path, fedml_config_object = self.update_local_fedml_config(run_id, run_config)
+        if unzip_package_path is None or fedml_config_object is None:
+            self.cleanup_run_when_starting_failed()
+            return
 
         entry_file_config = fedml_config_object["entry_config"]
         dynamic_args_config = fedml_config_object["dynamic_args"]
