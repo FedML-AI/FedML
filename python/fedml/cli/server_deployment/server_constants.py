@@ -29,6 +29,8 @@ class ServerConstants(object):
     FEDML_OTA_CMD_UPGRADE = "upgrade"
     FEDML_OTA_CMD_RESTART = "restart"
 
+    LOCAL_SERVER_API_PORT = 40802
+
     LOGIN_MODE_LOCAL_INDEX = 0
     LOGIN_MODE_CLOUD_AGENT_INDEX = 1
     LOGIN_MODE_CLOUD_SERVER_INDEX = 2
@@ -69,6 +71,11 @@ class ServerConstants(object):
         package_run_dir = os.path.join(ServerConstants.get_package_unzip_dir(run_id, package_url),
                                        package_file_no_extension)
         return package_run_dir
+
+    @staticmethod
+    def get_database_dir():
+        database_dir = os.path.join(ServerConstants.get_data_dir(), "database")
+        return database_dir
 
     @staticmethod
     def cleanup_run_process():
