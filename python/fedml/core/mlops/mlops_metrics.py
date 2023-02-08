@@ -14,6 +14,7 @@ from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
 from ...core.mlops.mlops_status import MLOpsStatus
 from ...core.mlops.system_stats import SysStats
 from ...cli.edge_deployment.client_data_interface import FedMLClientDataInterface
+from ...cli.server_deployment.server_data_interface import FedMLServerDataInterface
 
 
 class MLOpsMetrics(Singleton):
@@ -81,7 +82,7 @@ class MLOpsMetrics(Singleton):
         else:
             return True
 
-    def report_client_training_status(self, edge_id, status):
+    def report_client_training_status(self, edge_id, status, running_json=None):
         # if not self.comm_sanity_check():
         #     logging.info("comm_sanity_check at report_client_training_status.")
         #     return
@@ -100,11 +101,13 @@ class MLOpsMetrics(Singleton):
         self.report_client_id_status(run_id, edge_id, status)
 
         if status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED and run_id != 0:
-            self.report_server_training_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
+            self.report_server_training_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED,
+                                               call_from_server=False)
+            self.client_send_stop_train_msg()
 
-        FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status)
+        FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status, running_json)
 
-    def broadcast_client_training_status(self, edge_id, status):
+    def broadcast_client_training_status(self, edge_id, status, should_send_stop_msg=True):
         # if not self.comm_sanity_check():
         #     return
         """
@@ -120,9 +123,40 @@ class MLOpsMetrics(Singleton):
         self.messenger.send_message_json(topic_name, message_json)
 
         if status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED and run_id != 0:
-            self.report_server_training_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
+            self.report_server_training_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED,
+                                               call_from_server=False)
+            if should_send_stop_msg:
+                self.client_send_stop_train_msg()
 
         FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status)
+
+    def client_send_stop_train_msg(self):
+        current_job = FedMLClientDataInterface.get_instance().get_current_job()
+        if current_job is None or current_job.running_json == "":
+            return
+        running_json_obj = json.loads(current_job.running_json)
+        server_id = running_json_obj.get("server_id", None)
+        if server_id is None:
+            return
+
+        topic_stop_train = "mlops/flserver_agent_" + str(server_id) + "/stop_train"
+        message_json = current_job.running_json
+        logging.info("send_stop_train_msg.")
+        self.messenger.send_message_json(topic_stop_train, message_json)
+
+    def server_send_stop_train_msg(self):
+        current_job = FedMLServerDataInterface.get_instance().get_current_job()
+        if current_job is None or current_job.running_json == "":
+            return
+        running_json_obj = json.loads(current_job.running_json)
+        server_id = running_json_obj.get("server_id", None)
+        if server_id is None:
+            return
+
+        topic_stop_train = "mlops/flserver_agent_" + str(server_id) + "/stop_train"
+        message_json = current_job.running_json
+        logging.info("send_stop_train_msg.")
+        self.messenger.send_message_json(topic_stop_train, message_json)
 
     def report_client_id_status(self, run_id, edge_id, status):
         # if not self.comm_sanity_check():
@@ -137,7 +171,7 @@ class MLOpsMetrics(Singleton):
         MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, status)
         self.messenger.send_message_json(topic_name, message_json)
 
-    def report_server_training_status(self, run_id, status, role=None):
+    def report_server_training_status(self, run_id, status, role=None, running_json=None, call_from_server=True):
         # if not self.comm_sanity_check():
         #     return
         topic_name = "fl_server/mlops/status"
@@ -155,6 +189,12 @@ class MLOpsMetrics(Singleton):
         self.messenger.send_message_json(topic_name, message_json)
         self.report_server_id_status(run_id, status)
 
+        if call_from_server:
+            if status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED and run_id != 0:
+                self.server_send_stop_train_msg()
+
+            FedMLServerDataInterface.get_instance().save_job(run_id, self.edge_id, status, running_json)
+
     def broadcast_server_training_status(self, run_id, status, role=None):
         if self.messenger is None:
             return
@@ -170,6 +210,11 @@ class MLOpsMetrics(Singleton):
         logging.info("broadcast_server_training_status. msg = %s" % msg)
         message_json = json.dumps(msg)
         self.messenger.send_message_json(topic_name, message_json)
+
+        if status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED and run_id != 0:
+            self.server_send_stop_train_msg()
+
+        FedMLServerDataInterface.get_instance().save_job(run_id, self.edge_id, status)
 
     def report_server_id_status(self, run_id, status):
         # if not self.comm_sanity_check():
