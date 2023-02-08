@@ -119,6 +119,9 @@ class MLOpsMetrics(Singleton):
         logging.info("report_client_training_status. message_json = %s" % message_json)
         self.messenger.send_message_json(topic_name, message_json)
 
+        if status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED and run_id != 0:
+            self.report_server_training_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
+
         FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status)
 
     def report_client_id_status(self, run_id, edge_id, status):
