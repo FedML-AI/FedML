@@ -15,9 +15,7 @@ import requests
 import torch
 import torch.nn
 import tritonclient.http as http_client
-from PIL.Image import Resampling
 from attrdict import AttrDict
-from PIL import Image
 
 from fedml.cli.model_deployment.modelops_configs import ModelOpsConfigs
 from fedml.cli.model_deployment.device_client_constants import ClientConstants
@@ -365,12 +363,16 @@ def run_http_inference_with_lib_http_api_with_image_data(model_name, inference_h
                                                          inference_engine=ClientConstants.INFERENCE_ENGINE_TYPE_ONNX,
                                                          is_hg_model=False):
     def image_preprocess(image_obj, data_type, c, w, h):
+        import PIL.Image
+        if not hasattr(PIL.Image, 'Resampling'):  # Pillow<9.0
+            PIL.Image.Resampling = PIL.Image
+
         if c == 1:
             processed_image = image_obj.convert('L')
         else:
             processed_image = image_obj.convert('RGB')
 
-        processed_image = processed_image.resize((w, h), Resampling.BILINEAR)
+        processed_image = processed_image.resize((w, h), PIL.Image.Resampling.BILINEAR)
 
         resized = np.array(processed_image)
         if resized.ndim == 2:
@@ -434,6 +436,7 @@ def run_http_inference_with_lib_http_api_with_image_data(model_name, inference_h
         urllib.request.urlretrieve(image_url, image_file_path)
         if not os.path.exists(image_file_path):
             raise Exception("Failed to download image from url {}.".format(image_url))
+    from PIL.Image import Image
     input_image = Image.open(image_file_path)
     image_data = image_preprocess(input_image, data_type, c, w, h)
 
