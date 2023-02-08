@@ -37,6 +37,7 @@ from ..comm_utils import sys_utils
 class FedMLClientRunner:
 
     def __init__(self, args, edge_id=0, request_json=None, agent_config=None, run_id=0):
+        self.start_request_json = None
         self.device_status = None
         self.current_training_status = None
         self.mqtt_mgr = None
@@ -304,7 +305,8 @@ class FedMLClientRunner:
         self.wait_client_mqtt_connected()
 
         self.mlops_metrics.report_client_training_status(self.edge_id,
-                                                         ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING)
+                                                         ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING,
+                                                         self.start_request_json)
 
         # get training params
         private_local_data_dir = data_config.get("privateLocalData", "")
@@ -563,6 +565,7 @@ class FedMLClientRunner:
     def callback_start_train(self, topic, payload):
         # Get training params
         request_json = json.loads(payload)
+        self.start_request_json = payload
         run_id = request_json["runId"]
         server_agent_id = request_json["cloud_agent_id"]
 
@@ -585,6 +588,7 @@ class FedMLClientRunner:
         client_runner = FedMLClientRunner(
             self.args, edge_id=self.edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id
         )
+        client_runner.start_request_json = self.start_request_json
         self.process = Process(target=client_runner.run)
         self.process.start()
         ClientConstants.save_run_process(self.process.pid)

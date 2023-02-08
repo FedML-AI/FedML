@@ -5,6 +5,7 @@ import time
 
 from fedml.cli.edge_deployment.client_constants import ClientConstants
 from fedml.core.common.singleton import Singleton
+from fedml.cli.server_deployment.server_constants import ServerConstants
 
 
 class FedMLClientDataInterface(Singleton):
@@ -27,7 +28,7 @@ class FedMLClientDataInterface(Singleton):
         history_job_list = self.get_jobs_from_db()
         return history_job_list
 
-    def save_started_job(self, job_id, edge_id, started_time, status, msg):
+    def save_started_job(self, job_id, edge_id, started_time, status, msg, running_json):
         job_obj = FedMLClientJobModel()
         job_obj.job_id = job_id
         job_obj.edge_id = edge_id
@@ -35,6 +36,7 @@ class FedMLClientDataInterface(Singleton):
         job_obj.status = status
         job_obj.error_code = 0
         job_obj.msg = msg
+        job_obj.running_json = running_json
         self.insert_job_to_db(job_obj)
 
     def save_ended_job(self, job_id, edge_id, ended_time, status, msg):
@@ -76,15 +78,16 @@ class FedMLClientDataInterface(Singleton):
         job_obj.msg = msg
         self.update_job_to_db(job_obj)
 
-    def save_job(self, run_id, edge_id, status):
+    def save_job(self, run_id, edge_id, status, running_json=None):
         if run_id == 0:
             return
 
-        if status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING:
+        if status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING or \
+                status == ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING:
             self.save_started_job(run_id, edge_id,
                                   time.time(),
                                   status,
-                                  status)
+                                  status, running_json)
         elif status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED:
             self.save_failed_job(run_id, edge_id,
                                  time.time(),
@@ -134,7 +137,8 @@ class FedMLClientDataInterface(Singleton):
                    msg TEXT,
                    updated_time TEXT,
                    round_index INT,
-                   total_rounds INT);''')
+                   total_rounds INT,
+                   running_json TEXT);''')
             self.db_connection.commit()
         except Exception as e:
             pass
@@ -160,7 +164,9 @@ class FedMLClientDataInterface(Singleton):
             job_obj.round_index = row[11]
             job_obj.total_rounds = row[12]
             job_obj.progress = (0 if job_obj.total_rounds == 0 else job_obj.round_index / job_obj.total_rounds)
-            job_obj.eta = (0 if job_obj.progress == 0 else (float(job_obj.updated_time) - float(job_obj.started_time)) / job_obj.progress)
+            job_obj.eta = (0 if job_obj.progress == 0 else (float(job_obj.updated_time) - float(
+                job_obj.started_time)) / job_obj.progress)
+            job_obj.running_json = row[13]
             job_obj.show()
             break
 
@@ -187,7 +193,9 @@ class FedMLClientDataInterface(Singleton):
             job_obj.round_index = row[11]
             job_obj.total_rounds = row[12]
             job_obj.progress = (0 if job_obj.total_rounds == 0 else job_obj.round_index / job_obj.total_rounds)
-            job_obj.eta = (0 if job_obj.progress == 0 else (float(job_obj.updated_time) - float(job_obj.started_time)) / job_obj.progress)
+            job_obj.eta = (0 if job_obj.progress == 0 else (float(job_obj.updated_time) - float(
+                job_obj.started_time)) / job_obj.progress)
+            job_obj.running_json = row[13]
             job_list_obj.job_list.append(job_obj)
 
             if len(job_list_obj.job_list) > FedMLClientDataInterface.MAX_JOB_LIST_SIZE:
@@ -200,11 +208,13 @@ class FedMLClientDataInterface(Singleton):
         self.open_job_db()
         current_cursor = self.db_connection.cursor()
         current_cursor.execute("INSERT INTO jobs (\
-            job_id, edge_id, started_time, ended_time, progress, ETA, status, failed_time, error_code, msg, updated_time, round_index, total_rounds) \
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (job.job_id, job.edge_id, job.started_time, job.ended_time,
-                                                              job.progress, job.eta, job.status, job.failed_time,
-                                                              job.error_code, job.msg, str(time.time()),
-                                                              job.round_index, job.total_rounds))
+            job_id, edge_id, started_time, ended_time, progress, ETA, status, failed_time, error_code, msg, \
+            updated_time, round_index, total_rounds, running_json) \
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                               (job.job_id, job.edge_id, job.started_time, job.ended_time,
+                                job.progress, job.eta, job.status, job.failed_time,
+                                job.error_code, job.msg, str(time.time()),
+                                job.round_index, job.total_rounds, job.running_json))
         self.db_connection.commit()
         self.db_connection.close()
 
@@ -246,6 +256,7 @@ class FedMLClientJobModel(object):
         self.round_index = 0
         self.total_rounds = 0
         self.status = ""
+        self.running_json = ""
 
     def show(self):
         logging.info("Job object, job id {}, edge id {}, started time {},"
