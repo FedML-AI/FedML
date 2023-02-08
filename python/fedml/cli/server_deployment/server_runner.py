@@ -392,9 +392,6 @@ class FedMLServerRunner:
 
         time.sleep(4)
 
-        # Notify MLOps with the stopping message
-        self.mlops_metrics.report_server_training_status(self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_STOPPING)
-
         self.mlops_metrics.report_server_training_status(self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED)
 
         time.sleep(1)
@@ -422,7 +419,6 @@ class FedMLServerRunner:
 
         time.sleep(4)
 
-        # Notify MLOps with the stopping message
         self.mlops_metrics.report_server_id_status(self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
 
         time.sleep(1)
@@ -834,7 +830,6 @@ class FedMLServerRunner:
         edge_id_list = request_json["edgeids"]
         server_id = request_json["serverId"]
 
-        logging.info("Stopping run...")
         logging.info("Stop run with multiprocessing.")
 
         # Stop cross-silo server with multi processing mode
