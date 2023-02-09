@@ -343,13 +343,13 @@ def log_return_info(bootstrap_file, ret_code):
     import logging
     err_desc = SYS_ERR_CODE_MAP.get(str(ret_code), "")
     if ret_code == 0:
-        logging.info("Bootstrap script {} return code {}. {}".format(
+        logging.info("Run {} return code {}. {}".format(
             bootstrap_file, ret_code, err_desc))
     else:
         fatal_err_desc = SYS_ERR_CODE_MAP.get(str(ret_code), "")
         if ret_code >= FETAL_ERROR_START_CODE and fatal_err_desc == "":
             fatal_err_desc = SYS_ERR_CODE_MAP.get(str(FETAL_ERROR_START_CODE))
 
-        logging.error("Bootstrap script {} return code {}. {}".format(
+        logging.error("Run {} return code {}. {}".format(
             bootstrap_file, ret_code, fatal_err_desc if fatal_err_desc != "" else err_desc))
 

@@ -70,6 +70,8 @@ if __name__ == "__main__":
     # load model (the size of MNIST image is 28 x 28)
     model = LogisticRegression(28 * 28, output_dim)
 
+    raise Exception("Test Server Exception")
+
     # start training
     fedml_runner = FedMLRunner(args, device, dataset, model)
     fedml_runner.run()
