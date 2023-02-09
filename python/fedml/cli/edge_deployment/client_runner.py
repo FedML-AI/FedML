@@ -270,10 +270,11 @@ class FedMLClientRunner:
                     process = ClientConstants.exec_console_with_script(bootstrap_scripts, should_capture_stdout=True,
                                                                        should_capture_stderr=True)
                     ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(process)
-                    if ret_code is None or ret_code == 0:
-                        out_str = out.decode(encoding="utf-8")
-                        if out_str != "":
-                            logging.info("{}".format(out_str))
+                    if ret_code is None or ret_code <= 0:
+                        if out is not None:
+                            out_str = out.decode(encoding="utf-8")
+                            if out_str != "":
+                                logging.info("{}".format(out_str))
 
                         sys_utils.log_return_info(bootstrap_script_file, 0)
 
@@ -358,10 +359,11 @@ class FedMLClientRunner:
         ClientConstants.save_learning_process(process.pid)
         self.release_client_mqtt_mgr()
         ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(process)
-        if ret_code is None or ret_code == 0:
-            out_str = out.decode(encoding="utf-8")
-            if out_str != "":
-                logging.info("{}".format(out_str))
+        if ret_code is None or ret_code <= 0:
+            if out is not None:
+                out_str = out.decode(encoding="utf-8")
+                if out_str != "":
+                    logging.info("{}".format(out_str))
 
             sys_utils.log_return_info(entry_file, 0)
         else:
