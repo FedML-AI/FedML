@@ -43,6 +43,8 @@ class MLOpsRuntimeLog:
         else:
             mlops.log_aggregation_failed_status()
 
+        mlops.send_exit_train_msg()
+
     def __init__(self, args):
         self.logger = None
         self.args = args
