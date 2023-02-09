@@ -112,9 +112,7 @@ class FedMLServerManager(FedMLCommManager):
 
     def handle_message_receive_model_from_client(self, msg_params):
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
-        mlops.event(
-            "comm_c2s", event_started=False, event_value=str(self.args.round_idx), event_edge_id=sender_id,
-        )
+        mlops.event("comm_c2s", event_started=False, event_value=str(self.args.round_idx), event_edge_id=sender_id)
 
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         local_sample_number = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
@@ -126,9 +124,7 @@ class FedMLServerManager(FedMLCommManager):
         logging.info("b_all_received = " + str(b_all_received))
         if b_all_received:
             mlops.event("server.wait", event_started=False, event_value=str(self.args.round_idx))
-            mlops.event(
-                "server.agg_and_eval", event_started=True, event_value=str(self.args.round_idx),
-            )
+            mlops.event("server.agg_and_eval", event_started=True, event_value=str(self.args.round_idx))
             tick = time.time()
             global_model_params, model_list, model_list_idxes = self.aggregator.aggregate()
 
