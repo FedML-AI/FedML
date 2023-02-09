@@ -275,6 +275,21 @@ def log_training_finished_status(run_id=None):
     release_log_mqtt_mgr()
 
 
+def send_exit_train_msg(run_id=None):
+    if not mlops_enabled(MLOpsStore.mlops_args):
+        return
+
+    set_realtime_params()
+
+    if not MLOpsStore.mlops_bind_result:
+        return
+
+    setup_log_mqtt_mgr()
+    wait_log_mqtt_connected()
+    MLOpsStore.mlops_metrics.client_send_exit_train_msg()
+    release_log_mqtt_mgr()
+
+
 def log_training_failed_status(run_id=None):
     if mlops_parrot_enabled(MLOpsStore.mlops_args):
         log_training_status(ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED, run_id)
