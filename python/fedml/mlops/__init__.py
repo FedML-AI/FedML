@@ -39,6 +39,10 @@ def log_aggregation_finished_status(run_id=None):
     mlops.log_aggregation_finished_status(run_id)
 
 
+def send_exit_train_msg(run_id=None):
+    mlops.send_exit_train_msg(run_id)
+
+
 def log_aggregation_failed_status(run_id=None):
     mlops.log_aggregation_failed_status(run_id)
 

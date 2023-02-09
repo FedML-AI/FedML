@@ -327,6 +327,7 @@ class FedMLClientRunner:
         unzip_package_path, fedml_config_object = self.update_local_fedml_config(run_id, run_config)
         if unzip_package_path is None or fedml_config_object is None:
             self.cleanup_run_when_starting_failed()
+            self.mlops_metrics.client_send_exit_train_msg()
             return
 
         entry_file_config = fedml_config_object["entry_config"]
@@ -338,6 +339,7 @@ class FedMLClientRunner:
         ClientConstants.cleanup_learning_process()
         if not os.path.exists(unzip_package_path):
             self.cleanup_run_when_starting_failed()
+            self.mlops_metrics.client_send_exit_train_msg()
             return
         os.chdir(os.path.join(unzip_package_path, "fedml"))
 
@@ -379,6 +381,8 @@ class FedMLClientRunner:
             self.mlops_metrics.report_client_id_status(run_id, self.edge_id,
                                                        ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
             self.release_client_mqtt_mgr()
+
+            self.mlops_metrics.client_send_exit_train_msg()
 
     def reset_devices_status(self, edge_id, status):
         self.mlops_metrics.run_id = self.run_id
@@ -633,10 +637,15 @@ class FedMLClientRunner:
         MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
 
     def callback_exit_train_with_exception(self, topic, payload):
-        logging.info("callback_exit_train_with_exception: topic = %s, payload = %s" % (topic, payload))
+        # logging.info("callback_exit_train_with_exception: topic = %s, payload = %s" % (topic, payload))
 
         request_json = json.loads(payload)
-        run_id = request_json["runId"]
+        run_id = request_json.get("runId", None)
+        if run_id is None:
+            run_id = request_json.get("id", None)
+
+        if run_id is None:
+            return
 
         logging.info("Exit run...")
         logging.info("Exit run with multiprocessing.")
