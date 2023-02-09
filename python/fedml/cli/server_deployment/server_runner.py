@@ -594,7 +594,11 @@ class FedMLServerRunner:
             ServerConstants.save_run_process(server_process.pid)
         elif self.run_as_cloud_server:
             self.server_agent_id = self.request_json.get("cloud_agent_id", self.edge_id)
+            self.start_request_json = json.dumps(self.request_json)
             run_id = self.request_json["runId"]
+
+            # Init local database
+            FedMLServerDataInterface.get_instance().create_job_table()
 
             # Start log processor for current run
             self.args.run_id = run_id
