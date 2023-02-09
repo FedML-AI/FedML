@@ -335,6 +335,9 @@ class FedMLClientRunner:
         conf_file = entry_file_config["conf_file"]
         conf_file = str(conf_file).replace('\\', os.sep).replace('/', os.sep)
         ClientConstants.cleanup_learning_process()
+        if not os.path.exists(unzip_package_path):
+            self.cleanup_run_when_starting_failed()
+            return
         os.chdir(os.path.join(unzip_package_path, "fedml"))
 
         python_program = get_python_program()
