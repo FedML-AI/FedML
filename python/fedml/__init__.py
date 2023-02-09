@@ -23,7 +23,7 @@ from .core.common.ml_engine_backend import MLEngineBackend
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.7.409"
+__version__ = "0.7.410"
 
 
 def init(args=None):
@@ -318,8 +318,6 @@ def update_client_id_list(args):
             print("args.client_id_list is not None")
     else:
         print("using_mlops = true")
-
-
 
 
 def init_cross_device(args):

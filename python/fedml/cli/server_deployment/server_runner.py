@@ -292,12 +292,13 @@ class FedMLServerRunner:
                                                                        should_capture_stdout=True,
                                                                        should_capture_stderr=True)
                     ret_code, out, err = ServerConstants.get_console_pipe_out_err_results(process)
-                    if ret_code is None or ret_code == 0:
-                        out_str = out.decode(encoding="utf-8")
-                        if out_str != "":
-                            logging.info("{}".format(out_str))
+                    if ret_code is None or ret_code <= 0:
+                        if out is not None:
+                            out_str = out.decode(encoding="utf-8")
+                            if out_str != "":
+                                logging.info("{}".format(out_str))
 
-                        sys_utils.log_return_info(bootstrap_script_file, ret_code)
+                        sys_utils.log_return_info(bootstrap_script_file, 0)
 
                         is_bootstrap_run_ok = True
                     else:
@@ -378,10 +379,10 @@ class FedMLServerRunner:
                 entry_file,
                 "--cf",
                 conf_file,
-                "--rank",
-                str(dynamic_args_config["rank"]),
+                "--rank ",
+                "0",
                 "--role",
-                "server",
+                "server"
             ],
             should_capture_stdout=False,
             should_capture_stderr=True
@@ -389,10 +390,11 @@ class FedMLServerRunner:
         ServerConstants.save_learning_process(process.pid)
         self.release_client_mqtt_mgr()
         ret_code, out, err = ServerConstants.get_console_pipe_out_err_results(process)
-        if ret_code is None or ret_code == 0:
-            out_str = out.decode(encoding="utf-8")
-            if out_str != "":
-                logging.info("{}".format(out_str))
+        if ret_code is None or ret_code <= 0:
+            if out is not None:
+                out_str = out.decode(encoding="utf-8")
+                if out_str != "":
+                    logging.info("{}".format(out_str))
 
             sys_utils.log_return_info(entry_file, 0)
         else:
@@ -408,12 +410,12 @@ class FedMLServerRunner:
     def reset_all_devices_status(self):
         edge_id_list = self.request_json["edgeids"]
         for edge_id in edge_id_list:
-            self.mlops_metrics.report_client_training_status(edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
+            self.mlops_metrics.server_broadcast_client_training_status(edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
 
     def set_all_devices_status(self, status):
         edge_id_list = self.request_json["edgeids"]
         for edge_id in edge_id_list:
-            self.mlops_metrics.broadcast_client_training_status(edge_id, status)
+            self.mlops_metrics.server_broadcast_client_training_status(edge_id, status)
 
     def stop_run(self):
         self.setup_client_mqtt_mgr()
