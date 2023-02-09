@@ -265,10 +265,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         self._notify(payload_obj)
 
     def _on_message(self, msg):
-        try:
-            self._on_message_impl(msg)
-        except Exception as e:
-            logging.error("mqtt_s3.on_message exception: {}".format(traceback.format_exc()))
+        self._on_message_impl(msg)
 
     def send_message(self, msg: Message, wait_for_publish=False, not_cache=False):
         """
