@@ -164,8 +164,9 @@ class FedMLClientDataInterface(Singleton):
             job_obj.round_index = row[11]
             job_obj.total_rounds = row[12]
             job_obj.progress = (0 if job_obj.total_rounds == 0 else job_obj.round_index / job_obj.total_rounds)
-            job_obj.eta = (0 if job_obj.progress == 0 else (float(job_obj.updated_time) - float(
-                job_obj.started_time)) / job_obj.progress)
+            total_time = (0 if job_obj.progress == 0 else (float(job_obj.updated_time) - float(job_obj.started_time))
+                                                          / job_obj.progress)
+            job_obj.eta = total_time * (1.0 - job_obj.progress)
             job_obj.running_json = row[13]
             job_obj.show()
             break
@@ -193,8 +194,9 @@ class FedMLClientDataInterface(Singleton):
             job_obj.round_index = row[11]
             job_obj.total_rounds = row[12]
             job_obj.progress = (0 if job_obj.total_rounds == 0 else job_obj.round_index / job_obj.total_rounds)
-            job_obj.eta = (0 if job_obj.progress == 0 else (float(job_obj.updated_time) - float(
-                job_obj.started_time)) / job_obj.progress)
+            total_time = (0 if job_obj.progress == 0 else (float(job_obj.updated_time) - float(job_obj.started_time))
+                                                          / job_obj.progress)
+            job_obj.eta = total_time * (1.0 - job_obj.progress)
             job_obj.running_json = row[13]
             job_list_obj.job_list.append(job_obj)
 
