@@ -8,6 +8,7 @@ from ....core.distributed.fedml_comm_manager import FedMLCommManager
 from ....core.distributed.communication.message import Message
 
 from fedml.ml.trainer.local_cache import FedMLLocalCache
+from fedml.ml.ml_message import MLMessage
 
 
 class ClientManager(FedMLCommManager):
@@ -48,13 +49,15 @@ class ClientManager(FedMLCommManager):
         server_result = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
 
+        self.args.round_idx = server_result[MLMessage.GLOBAL_ROUND]
+        self.trainer.args.round_idx = self.args.round_idx
         self.trainer.update_trainer(int(client_index), server_result)
         self.trainer.update_dataset(int(client_index))
-        self.args.round_idx = 0
+        # self.args.round_idx = 0
         self.__train()
 
     def start_training(self):
-        self.args.round_idx = 0
+        # self.args.round_idx = 0
         self.__train()
 
     def handle_message_receive_model_from_server(self, msg_params):
@@ -63,9 +66,11 @@ class ClientManager(FedMLCommManager):
         server_result = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
 
+        self.args.round_idx = server_result[MLMessage.GLOBAL_ROUND]
+        self.trainer.args.round_idx = self.args.round_idx
         self.trainer.update_trainer(int(client_index), server_result)
         self.trainer.update_dataset(int(client_index))
-        self.args.round_idx += 1
+        # self.args.round_idx += 1
         self.__train()
         if self.args.round_idx == self.num_rounds - 1:
             # post_complete_message_to_sweep_process(self.args)

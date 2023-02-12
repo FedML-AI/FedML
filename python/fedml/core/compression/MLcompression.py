@@ -10,7 +10,7 @@ import logging
 from . import utils
 
 
-
+ 
 from fedml.core.compression.constants import (
    NO_COMPRESS, TOPK, EFTOPK, GAUSSIAN, RANDOMK, EFRANDOMK, DGCSAMPLING, QUANTIZE, QSGD, ATOMO, POWERSGD)
 
@@ -144,7 +144,7 @@ class TopKCompressor():
             ratio = args.down_compression_sparse_ratio
             quantize_level = args.down_compression_quantize_level,
             is_biased = args.down_compression_is_biased
-            factorization_rank = args.factorization_rank
+            factorization_rank = args.down_factorization_rank
         else:
             raise NotImplementedError
 
@@ -201,6 +201,12 @@ class TopKCompressor():
                 #     model_params[k], model_indexes[k], k
                 # ))
                 named_parameters[k] = self.decompress_new(named_parameters[k])
+        elif compression_name in LOWRANK:
+            for k in named_parameters.keys():
+                # logging.debug("model_params[k]:{}, model_indexes[k]:{}, k:{}".format(
+                #     model_params[k], model_indexes[k], k
+                # ))
+                named_parameters[k] = self.decompress(named_parameters[k], k)
         else:
             raise NotImplementedError
         return named_parameters
@@ -507,6 +513,7 @@ class DGCSamplingCompressor(TopKCompressor):
             self.indexes[name] = indexes
             self._process_data_after_residual(name, tensor)
 
+            return tensor, indexes, values
 
 
 
@@ -594,6 +601,7 @@ class QSGDCompressor(TopKCompressor):
 
     def compress(self, tensor, name=None, quantize_level=32, is_biased=True):
         if quantize_level != 32:
+            # logging.info(f"quantize_level:{quantize_level}, type(quantize_level):{type(quantize_level)}")
             s = 2 ** quantize_level - 1
             values = self.get_qsgd(tensor, s, is_biased)
         else:
@@ -614,6 +622,8 @@ class ATOMOCompressor(TopKCompressor):
     """
     def __init__(self):
         self.name = 'atomo'
+        self.shapes = {}
+        self.stateful = False
 
     def reshape_to_2d(self, tensor):
         # slightly from the Atomo paper's reshaping strategy
@@ -679,8 +689,10 @@ class ATOMOCompressor(TopKCompressor):
         elif len(self.ori_tensor_size) == 2:
             matrix = tensor.clone()
         else:
-            raise NotImplementedError("Unsupported tensor dim ...")
-        print("** matrix size: {}".format(matrix.size()))
+            return tensor
+            # raise NotImplementedError("Unsupported tensor dim ...")
+
+        # print("** matrix size: {}".format(matrix.size()))
         u, s, v = self.svd(matrix)
         i, probs = self.sample_svd(s, factorization_rank)
         u = u[:, i]
@@ -689,14 +701,29 @@ class ATOMOCompressor(TopKCompressor):
         compressed = {"u":u, "s":s, "v":v}
         return compressed
 
-    def decompress(self, compressed):
+    def decompress(self, compressed, name=None):
         """
         Factorized gradients
         :param compressed: Dict
         """
-        u, s, v = compressed["u"], compressed["s"], compressed["v"]
-        decompressed = torch.einsum('md, d, nd -> mn', u, s, v)
-        return decompressed.view(self.ori_tensor_size)
+        if name is not None:
+            if self.shapes[name] is None:
+                return compressed
+            else:
+                u, s, v = compressed["u"], compressed["s"], compressed["v"]
+                decompressed = torch.einsum('md, d, nd -> mn', u, s, v)
+            return decompressed.view(self.shapes[name])
+        else:
+            u, s, v = compressed["u"], compressed["s"], compressed["v"]
+            decompressed = torch.einsum('md, d, nd -> mn', u, s, v)
+            return decompressed.view(self.ori_tensor_size)
+
+
+    def update_shapes_dict(self, tensor, name):
+        if len(tensor.size()) in [4, 2]:
+            self.shapes[name] = tensor.size()
+        else:
+            self.shapes[name] = None
 
 
 compressors = {
@@ -708,7 +735,6 @@ compressors = {
     RANDOMK: RandomKCompressor, #RandomK without error-feedback
     EFRANDOMK: RandomKECCompressor, #RandomK with error-feedback
     DGCSAMPLING: DGCSamplingCompressor, #DGC (doubling sampling) with error-feedback
-
 
     QUANTIZE: QuantizationCompressor, # Naive Quantization Compressor
     QSGD: QSGDCompressor, # QSGD Quantization Compressor

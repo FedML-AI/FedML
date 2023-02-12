@@ -119,6 +119,8 @@ def add_args():
     parser.add_argument("--down_compression_quantize_level", type=int, default=8)
     parser.add_argument("--down_compression_is_biased", type=str, default="False")
 
+    parser.add_argument("--compression_warmup_round", type=int, default=20)
+
     parser.add_argument("--aggregate_seq", type=str, default="False")
     parser.add_argument("--hierarchical_agg", type=str, default="False")
 
@@ -130,6 +132,8 @@ def add_args():
     parser.add_argument("--device_tag", type=str, default="lambda3")
 
     parser.add_argument("--enable_wandb", type=str, default="True")
+    parser.add_argument("--run_name", type=str, default="fl-compression")
+
 
     parser.add_argument("--local_cache", type=str, default="False")
     parser.add_argument("--simulation_schedule", type=str, default=None)

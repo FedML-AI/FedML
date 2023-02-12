@@ -52,6 +52,7 @@ class SeqServerManager(FedMLCommManager):
         server_result.add(MLMessage.SAMPLE_NUM_DICT, dict([
             (client_index, self.aggregator.train_data_local_num_dict[client_index]) for client_index in client_indexes
         ]))
+        server_result.add(MLMessage.GLOBAL_ROUND, self.args.round_idx)
         logging.info(f"client_indexes = {client_indexes}")
 
         for process_id in range(1, self.size):
@@ -135,6 +136,7 @@ class SeqServerManager(FedMLCommManager):
             server_result.add(MLMessage.SAMPLE_NUM_DICT, dict([
                     (client_index, self.aggregator.train_data_local_num_dict[client_index]) for client_index in client_indexes
                 ]))
+            server_result.add(MLMessage.GLOBAL_ROUND, self.args.round_idx)
 
             print("indexes of clients: " + str(client_indexes))
             print("size = %d" % self.size)

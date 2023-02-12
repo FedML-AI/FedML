@@ -106,11 +106,15 @@ compression_args:
   compression_sparse_ratio: 0.1
   compression_quantize_level: 8
   compression_is_biased: True
+  factorization_rank: 128
   down_compression: "topk"
   down_compression_sigma_scale: 3
   down_compression_sparse_ratio: 0.1
   down_compression_quantize_level: 8
   down_compression_is_biased: True
+  down_factorization_rank: 128
+  compression_warmup_round: 20
+
 
 
 attack_args:

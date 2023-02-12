@@ -19,4 +19,6 @@ class MLMessage(object):
     LOCAL_AGG_RESULT = "local_agg_result"
     LOCAL_COLLECT_RESULT = "local_collect_result"
 
+    GLOBAL_ROUND = "global_round"
+
 

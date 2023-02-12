@@ -61,12 +61,13 @@ class SeqClientManager(FedMLCommManager):
         client_schedule = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_SCHEDULE)
         client_indexes = client_schedule[self.worker_id]
 
-        self.args.round_idx = 0
+        self.args.round_idx = server_result[MLMessage.GLOBAL_ROUND]
+        self.trainer.args.round_idx = self.args.round_idx
         self.__train(server_result, client_indexes)
 
     def start_training(self):
-        self.args.round_idx = 0
         # self.__train()
+        pass
 
     def handle_message_receive_model_from_server(self, msg_params):
         # logging.info("handle_message_receive_model_from_server.")
@@ -76,6 +77,8 @@ class SeqClientManager(FedMLCommManager):
         # client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
         client_schedule = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_SCHEDULE)
         client_indexes = client_schedule[self.worker_id]
+        self.args.round_idx = server_result[MLMessage.GLOBAL_ROUND]
+        self.trainer.args.round_idx = self.args.round_idx
 
         self.__train(server_result, client_indexes)
         if self.args.round_idx == self.num_rounds - 1:
@@ -172,7 +175,7 @@ class SeqClientManager(FedMLCommManager):
             local_agg_client_result = Params()
         else:
             local_agg_client_result = self.hierarchical_aggregator.end_local_aggregate_seq()
-        self.args.round_idx += 1
+        # self.args.round_idx += 1
         self.send_local_agg_result_to_server(0, local_agg_client_result,
                 local_sample_num_dict, client_runtime_info)
 
