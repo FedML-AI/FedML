@@ -253,7 +253,7 @@ def cleanup_all_fedml_client_api_processes():
 
             if find_api_process:
                 click.echo("find client api process at {}.".format(process.pid))
-                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                os.kill(process.pid, signal.SIGTERM)
         except Exception as e:
             pass
 
@@ -270,7 +270,7 @@ def cleanup_all_fedml_server_api_processes():
 
             if find_api_process:
                 click.echo("find server api process at {}.".format(process.pid))
-                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                os.kill(process.pid, signal.SIGTERM)
         except Exception as e:
             pass
 
