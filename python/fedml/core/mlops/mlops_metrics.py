@@ -93,17 +93,34 @@ class MLOpsMetrics(Singleton):
 
         FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status, running_json)
 
+    def report_client_device_status_to_web_ui(self, edge_id, status):
+        """
+        this is used for notifying the client device status to MLOps Frontend
+        """
+        if status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE:
+            return
+
+        run_id = 0
+        if self.run_id is not None:
+            run_id = self.run_id
+        topic_name = "fl_client/mlops/status"
+        msg = {"edge_id": edge_id, "run_id": run_id, "status": status, "version": "v1.0"}
+        message_json = json.dumps(msg)
+        logging.info("report_client_device_status. message_json = %s" % message_json)
+        MLOpsStatus.get_instance().set_client_status(edge_id, status)
+        self.messenger.send_message_json(topic_name, message_json)
+
     def common_report_client_training_status(self, edge_id, status):
         # if not self.comm_sanity_check():
         #     logging.info("comm_sanity_check at report_client_training_status.")
         #     return
         """
-        this is used for notifying the client status to MLOps (both web UI, FedML CLI and backend can consume it)
+        this is used for notifying the client status to MLOps (both FedML CLI and backend can consume it)
         """
         run_id = 0
         if self.run_id is not None:
             run_id = self.run_id
-        topic_name = "fl_client/mlops/status"
+        topic_name = "fl_run/fl_client/mlops/status"
         msg = {"edge_id": edge_id, "run_id": run_id, "status": status}
         message_json = json.dumps(msg)
         logging.info("report_client_training_status. message_json = %s" % message_json)
@@ -114,7 +131,7 @@ class MLOpsMetrics(Singleton):
         # if not self.comm_sanity_check():
         #     return
         """
-        this is used for broadcasting the client status to MLOps (both web UI and backend can consume it)
+        this is used for broadcasting the client status to MLOps (backend can consume it)
         """
         run_id = 0
         if self.run_id is not None:
@@ -122,18 +139,20 @@ class MLOpsMetrics(Singleton):
 
         self.common_broadcast_client_training_status(edge_id, status)
 
+        self.report_client_device_status_to_web_ui(edge_id, status)
+
         FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status)
 
     def common_broadcast_client_training_status(self, edge_id, status):
         # if not self.comm_sanity_check():
         #     return
         """
-        this is used for broadcasting the client status to MLOps (both web UI and backend can consume it)
+        this is used for broadcasting the client status to MLOps (backend can consume it)
         """
         run_id = 0
         if self.run_id is not None:
             run_id = self.run_id
-        topic_name = "fl_client/mlops/status"
+        topic_name = "fl_run/fl_client/mlops/status"
         msg = {"edge_id": edge_id, "run_id": run_id, "status": status}
         message_json = json.dumps(msg)
         logging.info("report_client_training_status. message_json = %s" % message_json)
@@ -161,6 +180,8 @@ class MLOpsMetrics(Singleton):
         """
         self.common_report_client_id_status(run_id, edge_id, status)
 
+        self.report_client_device_status_to_web_ui(edge_id, status)
+
         FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status, running_json)
 
     def common_report_client_id_status(self, run_id, edge_id, status):
@@ -181,12 +202,36 @@ class MLOpsMetrics(Singleton):
         #     return
         self.common_report_server_training_status(run_id, status, role)
 
+        self.report_server_device_status_to_web_ui(run_id, status, role)
+
         FedMLServerDataInterface.get_instance().save_job(run_id, self.edge_id, status, running_json)
+
+    def report_server_device_status_to_web_ui(self, run_id, status, role=None):
+        """
+        this is used for notifying the server device status to MLOps Frontend
+        """
+        if status == ServerConstants.MSG_MLOPS_DEVICE_STATUS_IDLE:
+            return
+
+        topic_name = "fl_server/mlops/status"
+        if role is None:
+            role = "normal"
+        msg = {
+            "run_id": run_id,
+            "edge_id": self.edge_id,
+            "status": status,
+            "role": role,
+            "version": "v1.0"
+        }
+        logging.info("report_server_device_status. msg = %s" % msg)
+        message_json = json.dumps(msg)
+        MLOpsStatus.get_instance().set_server_status(self.edge_id, status)
+        self.messenger.send_message_json(topic_name, message_json)
 
     def common_report_server_training_status(self, run_id, status, role=None):
         # if not self.comm_sanity_check():
         #     return
-        topic_name = "fl_server/mlops/status"
+        topic_name = "fl_run/fl_server/mlops/status"
         if role is None:
             role = "normal"
         msg = {
@@ -204,7 +249,7 @@ class MLOpsMetrics(Singleton):
     def broadcast_server_training_status(self, run_id, status, role=None):
         if self.messenger is None:
             return
-        topic_name = "fl_server/mlops/status"
+        topic_name = "fl_run/fl_server/mlops/status"
         if role is None:
             role = "normal"
         msg = {
@@ -216,6 +261,8 @@ class MLOpsMetrics(Singleton):
         logging.info("broadcast_server_training_status. msg = %s" % msg)
         message_json = json.dumps(msg)
         self.messenger.send_message_json(topic_name, message_json)
+
+        self.report_server_device_status_to_web_ui(run_id, status, role)
 
         FedMLServerDataInterface.get_instance().save_job(run_id, self.edge_id, status)
 
@@ -230,6 +277,8 @@ class MLOpsMetrics(Singleton):
         # logging.info("report_server_id_status. message_json = %s" % message_json)
         MLOpsStatus.get_instance().set_server_agent_status(server_agent_id, status)
         self.messenger.send_message_json(topic_name, message_json)
+
+        self.report_server_device_status_to_web_ui(run_id, status)
 
     def report_client_training_metric(self, metric_json):
         # if not self.comm_sanity_check():

@@ -121,10 +121,12 @@ class FedMLClientDataInterface(Singleton):
             self.db_connection.close()
 
     def create_job_table(self):
+        self.handle_database_compatibility()
+
         self.open_job_db()
         current_cursor = self.db_connection.cursor()
         try:
-            current_cursor.execute('''CREATE TABLE jobs
+            current_cursor.execute('''CREATE TABLE IF NOT EXISTS jobs
                    (job_id INT PRIMARY KEY NOT NULL,
                    edge_id INT NOT NULL,
                    started_time TEXT NULL,
@@ -144,12 +146,22 @@ class FedMLClientDataInterface(Singleton):
             pass
         self.db_connection.close()
 
+    def drop_job_table(self):
+        self.open_job_db()
+        current_cursor = self.db_connection.cursor()
+        try:
+            current_cursor.execute('''DROP TABLE IF EXISTS jobs;''')
+            self.db_connection.commit()
+        except Exception as e:
+            logging.info("Process compatibility on the local db.")
+        self.db_connection.close()
+
     def get_current_job_from_db(self):
-        job_obj = FedMLClientJobModel
+        job_obj = None
 
         self.open_job_db()
         current_cursor = self.db_connection.cursor()
-        results = current_cursor.execute("SELECT *  from jobs order by job_id desc")
+        results = current_cursor.execute("SELECT *  from jobs order by updated_time desc")
         for row in results:
             job_obj = FedMLClientJobModel()
             job_obj.job_id = row[0]
@@ -168,7 +180,7 @@ class FedMLClientDataInterface(Singleton):
                                                           / job_obj.progress)
             job_obj.eta = total_time * (1.0 - job_obj.progress)
             job_obj.running_json = row[13]
-            job_obj.show()
+            # job_obj.show()
             break
 
         self.db_connection.close()
@@ -179,7 +191,7 @@ class FedMLClientDataInterface(Singleton):
 
         self.open_job_db()
         current_cursor = self.db_connection.cursor()
-        results = current_cursor.execute("SELECT * from jobs order by job_id desc")
+        results = current_cursor.execute("SELECT * from jobs order by updated_time desc")
         for row in results:
             job_obj = FedMLClientJobModel()
             job_obj.job_id = row[0]
@@ -240,6 +252,22 @@ class FedMLClientDataInterface(Singleton):
         current_cursor.execute(update_statement)
         self.db_connection.commit()
         self.db_connection.close()
+
+    def handle_database_compatibility(self):
+        self.open_job_db()
+        should_drop_old_table = False
+        current_cursor = self.db_connection.cursor()
+        results = current_cursor.execute("select * from sqlite_master where type='table' and name='jobs';")
+        for row in results:
+            table_statement = str(row[4])
+            if table_statement.find("running_json") == -1:
+                should_drop_old_table = True
+
+        if should_drop_old_table:
+            logging.info("Process compatibility on the local db.")
+            self.drop_job_table()
+
+        self.close_job_db()
 
 
 class FedMLClientJobModel(object):
