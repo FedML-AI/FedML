@@ -694,13 +694,13 @@ def jobs():
 )
 @click.option(
     "--project_name",
-    "-pr",
+    "-prj",
     type=str,
     help="The project name at the MLOps platform.",
 )
 @click.option(
     "--application_name",
-    "-a",
+    "-app",
     type=str,
     help="Application name in the My Application list at the MLOps platform.",
 )
