@@ -130,6 +130,7 @@ at the MLOps platform.
 -v, --version TEXT             start job at which version of MLOps platform.
 It should be dev, test or release
 --help                         Show this message and exit.
+```
 
 Example: 
 ```
