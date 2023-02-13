@@ -56,6 +56,29 @@ class MLOpsConfigs(Singleton):
 
         return url, cert_path
 
+    def get_request_params_with_version(self, version):
+        url = "https://open.fedml.ai/fedmlOpsServer/configs/fetch"
+        if version == "release":
+            url = "https://open.fedml.ai/fedmlOpsServer/configs/fetch"
+        elif version == "test":
+            url = "https://open-test.fedml.ai/fedmlOpsServer/configs/fetch"
+        elif version == "dev":
+            url = "https://open-dev.fedml.ai/fedmlOpsServer/configs/fetch"
+        elif version == "local":
+            if hasattr(self.args, "local_server") and self.args.local_server is not None:
+                url = "http://{}:9000/fedmlOpsServer/configs/fetch".format(self.args.local_server)
+            else:
+                url = "http://localhost:9000/fedmlOpsServer/configs/fetch"
+
+        cert_path = None
+        if str(url).startswith("https://"):
+            cur_source_dir = os.path.dirname(__file__)
+            cert_path = os.path.join(
+                cur_source_dir, "ssl", "open-" + version + ".fedml.ai_bundle.crt"
+            )
+
+        return url, cert_path
+
     @staticmethod
     def get_root_ca_path():
         cur_source_dir = os.path.dirname(__file__)

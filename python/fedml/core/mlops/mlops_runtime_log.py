@@ -172,9 +172,7 @@ class MLOpsRuntimeLog:
                     edge_id = in_args.edge_id
                 else:
                     edge_id = 0
-            program_prefix = "FedML-Client({rank}) @device-id-{edge}".format(
-                rank=in_args.rank, edge=edge_id
-            )
+            program_prefix = "FedML-Client @device-id-{edge}".format(edge=edge_id)
 
         os.system("mkdir -p " + in_args.log_file_dir)
         log_file_path = os.path.join(in_args.log_file_dir, "fedml-run-"
