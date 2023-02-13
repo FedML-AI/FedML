@@ -5,6 +5,7 @@ import platform
 import time
 
 import click
+from fedml.cli.comm_utils import sys_utils
 from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from fedml.cli.server_deployment.server_runner import FedMLServerRunner
 from fedml.cli.server_deployment.server_constants import ServerConstants
@@ -330,6 +331,7 @@ def login(args):
 
 def logout():
     ServerConstants.cleanup_run_process()
+    sys_utils.cleanup_all_fedml_server_api_processes()
 
 
 if __name__ == "__main__":
