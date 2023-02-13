@@ -256,7 +256,9 @@ class FedMLClientRunner:
                                          inference_model_version, ClientConstants.INFERENCE_HTTP_PORT,
                                          inference_engine, model_metadata, model_config)
             time.sleep(1)
-            self.broadcast_client_training_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
+            self.setup_client_mqtt_mgr()
+            self.mlops_metrics.run_id = self.run_id
+            self.mlops_metrics.broadcast_client_training_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
 
         self.release_client_mqtt_mgr()
 
@@ -287,17 +289,6 @@ class FedMLClientRunner:
         logging.info("send_deployment_status: topic {}, payload {}.".format(deployment_status_topic,
                                                                             deployment_status_payload))
         self.client_mqtt_mgr.send_message_json(deployment_status_topic, json.dumps(deployment_status_payload))
-
-    def broadcast_client_training_status(self, edge_id, status):
-        run_id = 0
-        if self.run_id is not None:
-            run_id = self.run_id
-        topic_name = "fl_client/mlops/status"
-        msg = {"edge_id": edge_id, "run_id": run_id, "status": status}
-        message_json = json.dumps(msg)
-        logging.info("report_client_training_status. message_json = %s" % message_json)
-        self.setup_client_mqtt_mgr()
-        self.client_mqtt_mgr.send_message_json(topic_name, message_json)
 
     def reset_devices_status(self, edge_id, status):
         self.mlops_metrics.run_id = self.run_id
@@ -631,7 +622,7 @@ class FedMLClientRunner:
         else:
             if "nt" in os.name:
 
-                def GetUUID():
+                def get_uuid():
                     guid = ""
                     try:
                         cmd = "wmic csproduct get uuid"
@@ -642,7 +633,7 @@ class FedMLClientRunner:
                         pass
                     return str(guid)
 
-                device_id = str(GetUUID())
+                device_id = str(get_uuid())
                 logging.info(device_id)
             elif "posix" in os.name:
                 device_id = hex(uuid.getnode())
