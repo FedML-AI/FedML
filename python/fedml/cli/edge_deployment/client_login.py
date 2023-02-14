@@ -10,6 +10,8 @@ from os.path import expanduser
 
 import click
 from fedml.cli.comm_utils import sys_utils
+from fedml.cli.edge_deployment.client_data_interface import FedMLClientDataInterface
+from fedml.core.mlops import MLOpsProfilerEvent
 from fedml.core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 from fedml.cli.edge_deployment.client_runner import FedMLClientRunner
 from fedml.cli.edge_deployment.client_constants import ClientConstants
@@ -274,6 +276,7 @@ def login(args):
 
 def logout():
     ClientConstants.cleanup_run_process()
+    sys_utils.cleanup_all_fedml_client_api_processes()
 
 
 if __name__ == "__main__":
