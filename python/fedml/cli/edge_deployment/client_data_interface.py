@@ -255,17 +255,18 @@ class FedMLClientDataInterface(Singleton):
 
     def handle_database_compatibility(self):
         self.open_job_db()
-        should_drop_old_table = False
+        should_alter_old_table = False
         current_cursor = self.db_connection.cursor()
         results = current_cursor.execute("select * from sqlite_master where type='table' and name='jobs';")
         for row in results:
             table_statement = str(row[4])
             if table_statement.find("running_json") == -1:
-                should_drop_old_table = True
+                should_alter_old_table = True
 
-        if should_drop_old_table:
+        if should_alter_old_table:
+            current_cursor.execute("ALTER TABLE jobs ADD running_json TEXT;")
+            self.db_connection.commit()
             logging.info("Process compatibility on the local db.")
-            self.drop_job_table()
 
         self.close_job_db()
 
