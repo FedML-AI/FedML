@@ -203,7 +203,8 @@ class FedMLServerRunner:
                 "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
                 "END_POINT_ID=\"{}\" MODEL_ID=\"{}\" "
                 "MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" VERSION=\"{}\" "
-                "uvicorn fedml.cli.model_deployment.device_model_inference:api --host 0.0.0.0 --port {} --reload".format(
+                "uvicorn fedml.cli.model_deployment.device_model_inference:api --host 0.0.0.0 --port {} "
+                "--reload --log-level critical".format(
                     self.redis_addr, self.redis_port, self.redis_password,
                     str(self.run_id), str(model_id),
                     running_model_name, model_version, "", self.args.version,
@@ -1170,7 +1171,7 @@ class FedMLServerRunner:
         else:
             if "nt" in os.name:
 
-                def GetUUID():
+                def get_uuid():
                     guid = ""
                     try:
                         cmd = "wmic csproduct get uuid"
@@ -1181,7 +1182,7 @@ class FedMLServerRunner:
                         pass
                     return str(guid)
 
-                device_id = str(GetUUID())
+                device_id = str(get_uuid())
             elif "posix" in os.name:
                 device_id = hex(uuid.getnode())
             else:
