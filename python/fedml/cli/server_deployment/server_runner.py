@@ -1215,7 +1215,7 @@ class FedMLServerRunner:
 
         current_job = FedMLServerDataInterface.get_instance().get_current_job()
         if current_job is None:
-            status = ServerConstants.MSG_MLOPS_CLIENT_STATUS_IDLE
+            status = ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE
         else:
             status = ServerConstants.get_device_state_from_run_edge_state(current_job.status)
         active_msg = {"ID": self.edge_id, "status": status}
