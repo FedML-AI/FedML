@@ -728,10 +728,9 @@ class FedMLClientRunner:
         cmd = request_json["cmd"]
 
         if cmd == ClientConstants.FEDML_OTA_CMD_UPGRADE:
-            try:
-                Process(target=FedMLClientRunner.process_ota_upgrade_msg).start()
-            except Exception as e:
-                pass
+            FedMLClientRunner.process_ota_upgrade_msg()
+            # Process(target=FedMLClientRunner.process_ota_upgrade_msg).start()
+            raise Exception("After upgraded, restart runner...")
         elif cmd == ClientConstants.FEDML_OTA_CMD_RESTART:
             raise Exception("Restart runner...")
 
@@ -764,7 +763,7 @@ class FedMLClientRunner:
         else:
             if "nt" in os.name:
 
-                def GetUUID():
+                def get_uuid():
                     guid = ""
                     try:
                         cmd = "wmic csproduct get uuid"
@@ -775,7 +774,7 @@ class FedMLClientRunner:
                         pass
                     return str(guid)
 
-                device_id = str(GetUUID())
+                device_id = str(get_uuid())
                 logging.info(device_id)
             elif "posix" in os.name:
                 device_id = hex(uuid.getnode())
@@ -863,7 +862,12 @@ class FedMLClientRunner:
                 and status != ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE
         ):
             return
-        status = ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE
+
+        current_job = FedMLClientDataInterface.get_instance().get_current_job()
+        if current_job is None:
+            status = ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE
+        else:
+            status = ClientConstants.get_device_state_from_run_edge_state(current_job.status)
         active_msg = {"ID": self.edge_id, "status": status}
         MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, status)
         self.mqtt_mgr.send_message_json(active_topic, json.dumps(active_msg))
@@ -950,7 +954,8 @@ class FedMLClientRunner:
 
         # Start local API services
         local_api_process = ClientConstants.exec_console_with_script(
-            "uvicorn fedml.cli.edge_deployment.client_api:api --host 0.0.0.0 --port {} --reload".format(
+            "uvicorn fedml.cli.edge_deployment.client_api:api --host 0.0.0.0 --port {} "
+            "--reload --log-level critical".format(
                 ClientConstants.LOCAL_CLIENT_API_PORT),
             should_capture_stdout=False,
             should_capture_stderr=False

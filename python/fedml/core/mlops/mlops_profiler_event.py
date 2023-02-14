@@ -107,24 +107,46 @@ class MLOpsProfilerEvent:
         self.com_manager.send_message_json(event_topic, event_msg_str)
 
     @staticmethod
+    def get_ntp_time():
+        import ntplib
+        import datetime
+        from datetime import timezone
+        try:
+            ntp_client = ntplib.NTPClient()
+            ntp_time = datetime.datetime.utcfromtimestamp(ntp_client.request('pool.ntp.org').tx_time)
+            ntp_time = ntp_time.replace(tzinfo=timezone.utc).timestamp()
+            return ntp_time
+        except Exception as e:
+            pass
+
+        return None
+
+
+    @staticmethod
     def __build_event_mqtt_msg(run_id, edge_id, event_type, event_name, event_value):
         event_topic = "/mlops/events"
         event_msg = {}
         if event_type == MLOpsProfilerEvent.EVENT_TYPE_STARTED:
+            current_time = MLOpsProfilerEvent.get_ntp_time()
+            if current_time is None:
+                current_time = time.time()
             event_msg = {
                 "run_id": run_id,
                 "edge_id": edge_id,
                 "event_name": event_name,
                 "event_value": event_value,
-                "started_time": int(time.time()),
+                "started_time": int(current_time),
             }
         elif event_type == MLOpsProfilerEvent.EVENT_TYPE_ENDED:
+            current_time = MLOpsProfilerEvent.get_ntp_time()
+            if current_time is None:
+                current_time = time.time()
             event_msg = {
                 "run_id": run_id,
                 "edge_id": edge_id,
                 "event_name": event_name,
                 "event_value": event_value,
-                "ended_time": int(time.time()),
+                "ended_time": int(current_time),
             }
 
         return event_topic, event_msg

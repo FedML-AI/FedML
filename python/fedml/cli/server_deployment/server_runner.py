@@ -322,6 +322,7 @@ class FedMLServerRunner:
         run_config = self.request_json["run_config"]
         data_config = run_config["data_config"]
         packages_config = run_config["packages_config"]
+        edge_ids = self.request_json["edgeids"]
         self.run_id = run_id
 
         self.args.run_id = self.run_id
@@ -356,7 +357,6 @@ class FedMLServerRunner:
         unzip_package_path, fedml_config_object = self.update_local_fedml_config(run_id, run_config)
         if unzip_package_path is None or fedml_config_object is None:
             self.cleanup_run_when_starting_failed()
-            edge_ids = self.request_json["edgeids"]
             self.send_exit_train_with_exception_request_to_edges(edge_ids, self.start_request_json)
             return
 
@@ -1073,7 +1073,9 @@ class FedMLServerRunner:
 
         if cmd == ServerConstants.FEDML_OTA_CMD_UPGRADE:
             try:
-                Process(target=FedMLServerRunner.process_ota_upgrade_msg).start()
+                self.process_ota_upgrade_msg()
+                # Process(target=FedMLServerRunner.process_ota_upgrade_msg).start()
+                raise Exception("After upgraded, restart runner...")
             except Exception as e:
                 pass
         elif cmd == ServerConstants.FEDML_OTA_CMD_RESTART:
@@ -1103,7 +1105,7 @@ class FedMLServerRunner:
         else:
             if "nt" in os.name:
 
-                def GetUUID():
+                def get_uuid():
                     guid = ""
                     try:
                         cmd = "wmic csproduct get uuid"
@@ -1114,7 +1116,7 @@ class FedMLServerRunner:
                         pass
                     return str(guid)
 
-                device_id = str(GetUUID())
+                device_id = str(get_uuid())
             elif "posix" in os.name:
                 device_id = hex(uuid.getnode())
             else:
@@ -1209,7 +1211,12 @@ class FedMLServerRunner:
                 and status != ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE
         ):
             return
-        status = ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE
+
+        current_job = FedMLServerDataInterface.get_instance().get_current_job()
+        if current_job is None:
+            status = ServerConstants.MSG_MLOPS_CLIENT_STATUS_IDLE
+        else:
+            status = ServerConstants.get_device_state_from_run_edge_state(current_job.status)
         active_msg = {"ID": self.edge_id, "status": status}
         MLOpsStatus.get_instance().set_server_agent_status(self.edge_id, status)
         self.mqtt_mgr.send_message_json(active_topic, json.dumps(active_msg))
@@ -1301,7 +1308,8 @@ class FedMLServerRunner:
 
         # Start local API services
         local_api_process = ServerConstants.exec_console_with_script(
-            "uvicorn fedml.cli.server_deployment.server_api:api --host 0.0.0.0 --port {} --reload".format(
+            "uvicorn fedml.cli.server_deployment.server_api:api --host 0.0.0.0 --port {} "
+            "--reload --log-level critical".format(
                 ServerConstants.LOCAL_SERVER_API_PORT),
             should_capture_stdout=False,
             should_capture_stderr=False
