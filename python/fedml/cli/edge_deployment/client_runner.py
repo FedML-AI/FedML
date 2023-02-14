@@ -802,6 +802,7 @@ class FedMLClientRunner:
             "accountid": account_id,
             "deviceid": device_id,
             "type": os_name,
+            "status": ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE,
             "processor": cpu_info,
             "core_type": cpu_info,
             "network": "",
@@ -918,7 +919,7 @@ class FedMLClientRunner:
         mqtt_client_object.subscribe(topic_ota_msg, qos=2)
 
         # Broadcast the first active message.
-        # self.send_agent_active_msg()
+        self.send_agent_active_msg()
 
         # Echo results
         click.echo("")
@@ -980,4 +981,4 @@ class FedMLClientRunner:
         try:
             self.mqtt_mgr.loop_forever()
         except Exception as e:
-            pass
+            logging.info("Client tracing: {}".format(traceback.format_exc()))
