@@ -241,6 +241,40 @@ def cleanup_all_fedml_server_learning_processes():
             pass
 
 
+def cleanup_all_fedml_client_api_processes():
+    # Cleanup all fedml client api processes.
+    for process in psutil.process_iter():
+        try:
+            pinfo = process.as_dict(attrs=["pid", "name", "cmdline"])
+            find_api_process = False
+            for cmd in pinfo["cmdline"]:
+                if str(cmd).find("client_api:api") != -1:
+                    find_api_process = True
+
+            if find_api_process:
+                click.echo("find client api process at {}.".format(process.pid))
+                os.kill(process.pid, signal.SIGTERM)
+        except Exception as e:
+            pass
+
+
+def cleanup_all_fedml_server_api_processes():
+    # Cleanup all fedml server api processes.
+    for process in psutil.process_iter():
+        try:
+            pinfo = process.as_dict(attrs=["pid", "name", "cmdline"])
+            find_api_process = False
+            for cmd in pinfo["cmdline"]:
+                if str(cmd).find("server_api:api") != -1:
+                    find_api_process = True
+
+            if find_api_process:
+                click.echo("find server api process at {}.".format(process.pid))
+                os.kill(process.pid, signal.SIGTERM)
+        except Exception as e:
+            pass
+
+
 def cleanup_all_fedml_server_login_processes(login_program):
     # Cleanup all fedml client login processes.
     for process in psutil.process_iter():
