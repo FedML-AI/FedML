@@ -376,6 +376,8 @@ class FedMLServerRunner:
         time.sleep(3)
 
         python_program = get_python_program()
+        logging.info("Run the server: {} {} --cf {} --rank 0 --role server".format(
+            python_program, entry_file, conf_file))
         process = ServerConstants.exec_console_with_shell_script_list(
             [
                 python_program,
