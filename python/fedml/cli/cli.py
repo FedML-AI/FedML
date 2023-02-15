@@ -1,4 +1,5 @@
 import os
+import pickle
 import shutil
 import subprocess
 from os.path import expanduser
@@ -6,22 +7,6 @@ from os.path import expanduser
 import click
 
 import fedml
-
-# from ..cli.edge_deployment.client_constants import ClientConstants
-# from ..cli.server_deployment.server_constants import ServerConstants
-# from ..cli.edge_deployment.client_login import logout as client_logout
-# from ..cli.env.collect_env import collect_env
-# from ..cli.server_deployment.server_login import logout as server_logout
-# from ..cli.edge_deployment.docker_login import login_with_docker_mode
-# from ..cli.edge_deployment.docker_login import logout_with_docker_mode
-# from ..cli.edge_deployment.docker_login import logs_with_docker_mode
-# from ..cli.server_deployment.docker_login import login_with_server_docker_mode
-# from ..cli.server_deployment.docker_login import logout_with_server_docker_mode
-# from ..cli.server_deployment.docker_login import logs_with_server_docker_mode
-# from ..cli.edge_deployment.client_diagnosis import ClientDiagnosis
-# from ..cli.comm_utils import sys_utils
-# from .model_deployment import device_login_entry
-# from .model_deployment.device_model_cards import FedMLModelCards
 
 from fedml.cli.edge_deployment.client_constants import ClientConstants
 from fedml.cli.server_deployment.server_constants import ServerConstants
@@ -38,6 +23,7 @@ from fedml.cli.edge_deployment.client_diagnosis import ClientDiagnosis
 from fedml.cli.comm_utils import sys_utils
 from fedml.cli.model_deployment import device_login_entry
 from fedml.cli.model_deployment.device_model_cards import FedMLModelCards
+from fedml.cli.server_deployment.job_manager import FedMLJobManager
 
 
 FEDML_MLOPS_BUILD_PRE_IGNORE_LIST = 'dist-packages,client-package.zip,server-package.zip,__pycache__,*.pyc,*.git'
@@ -690,6 +676,65 @@ def launch(arguments):
     CrossSiloLauncher.launch_dist_trainers(arguments[0], list(arguments[1:]))
 
 
+@cli.group("jobs")
+def jobs():
+    """
+    Manage jobs on the MLOps platform.
+    """
+    pass
+
+
+@jobs.command("start", help="Start a job at the MLOps platform.")
+@click.option(
+    "--platform",
+    "-pf",
+    type=str,
+    default="octopus",
+    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive).",
+)
+@click.option(
+    "--project_name",
+    "-prj",
+    type=str,
+    help="The project name at the MLOps platform.",
+)
+@click.option(
+    "--application_name",
+    "-app",
+    type=str,
+    help="Application name in the My Application list at the MLOps platform.",
+)
+@click.option(
+    "--devices", "-d", type=str, default="[]",
+    help="The devices with the format: [{\"serverId\": 727, \"edgeIds\": [\"693\"], \"account\": 105}]"
+)
+@click.option(
+    "--user", "-u", type=str, help="user id or api key.",
+)
+@click.option(
+    "--api_key", "-k", type=str, help="user api key.",
+)
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help="start job at which version of MLOps platform. It should be dev, test or release",
+)
+def start_job(platform, project_name, application_name, devices, user, api_key, version):
+    if platform != 'octopus' and platform != 'parrot' and platform != 'spider' and platform != 'beehive':
+        click.echo("The platform should be the following options: octopus, parrot, spider, beehive")
+        return
+
+    FedMLJobManager.get_instance().set_config_version(version)
+    result = FedMLJobManager.get_instance().start_job(platform, project_name, application_name, devices, user, api_key)
+    if result:
+        click.echo("Job started, please review the job details at the MLOps platform.")
+    else:
+        click.echo("Failed to start job, please check your network connection "
+                   "whether could be access the MLOps platform.")
+
+
 @cli.group("model")
 def model():
     """
@@ -906,6 +951,12 @@ def package_model(name):
     "--name", "-n", type=str, help="model name.",
 )
 @click.option(
+    "--model_storage_url", "-s", type=str, help="model storage url.",
+)
+@click.option(
+    "--model_net_url", "-mn", type=str, help="model net url.",
+)
+@click.option(
     "--user", "-u", type=str, help="user id.",
 )
 @click.option(
@@ -918,18 +969,24 @@ def package_model(name):
     default="release",
     help="interact with which version of ModelOps platform. It should be dev, test or release",
 )
-def push_model(name, user, api_key, version):
+def push_model(name, model_storage_url, model_net_url, user, api_key, version):
     if user is None or api_key is None:
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
         return
     FedMLModelCards.get_instance().set_config_version(version)
-    model_storage_url, model_zip = FedMLModelCards.get_instance().push_model(name, user, api_key)
-    if model_storage_url != "":
-        click.echo("Push model {} successfully".format(name))
-        click.echo("The remote model storage is located at {}".format(model_storage_url))
-        click.echo("The local model package is locate at .".format(model_zip))
+    model_is_from_open = True if model_storage_url is not None and model_storage_url != "" else False
+    model_storage_url, model_zip = FedMLModelCards.get_instance().push_model(name, user, api_key,
+                                                                             model_storage_url=model_storage_url,
+                                                                             model_net_url=model_net_url)
+    if model_is_from_open:
+        click.echo("Push model {} with model storage url {} successfully.".format(name, model_storage_url))
     else:
-        click.echo("Failed to push model {}.".format(name))
+        if model_storage_url != "":
+            click.echo("Push model {} successfully".format(name))
+            click.echo("The remote model storage is located at {}".format(model_storage_url))
+            click.echo("The local model package is locate at .".format(model_zip))
+        else:
+            click.echo("Failed to push model {}.".format(name))
 
 
 @model.command("pull", help="Pull remote model(ModelOps) to local model repository.")
@@ -981,7 +1038,7 @@ def pull_model(name, user, api_key, version):
     "--api_key", "-k", type=str, help="user api key.",
 )
 @click.option(
-    "--params", "-p", type=str, default="", help="serving parameters.",
+    "--params", "-pa", type=str, default="", help="serving parameters.",
 )
 @click.option(
     "--version",

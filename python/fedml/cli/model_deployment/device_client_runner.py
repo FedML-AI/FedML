@@ -14,10 +14,12 @@ import traceback
 import urllib
 import uuid
 import zipfile
+from urllib.parse import urlparse
 
 import click
 import requests
 from fedml.cli.model_deployment.device_model_msg_object import FedMLModelMsgObject
+from fedml.core.distributed.communication.s3.remote_storage import S3Storage
 
 from ...core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 
@@ -33,6 +35,7 @@ from ...core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 from ...core.mlops.mlops_status import MLOpsStatus
 from ..comm_utils.sys_utils import get_sys_runner_info
 from .device_model_deployment import start_deployment
+from ..edge_deployment.client_data_interface import FedMLClientDataInterface
 
 
 class FedMLClientRunner:
@@ -72,6 +75,7 @@ class FedMLClientRunner:
         self.mlops_metrics = None
         self.client_active_list = dict()
         self.infer_host = "127.0.0.1"
+        self.model_is_from_open = False
 
     def unzip_file(self, zip_file, unzip_file_path):
         result = False
@@ -99,13 +103,38 @@ class FedMLClientRunner:
             pass
         self.unzip_file(local_package_file, unzip_package_path)
         unzip_package_path = os.path.join(unzip_package_path, package_name)
-        return unzip_package_path
+        model_bin_file = os.path.join(unzip_package_path, "fedml_model.bin")
+        if os.path.exists(model_bin_file):
+            pytorch_model_bin_file = os.path.join(unzip_package_path, "pytorch_model.bin")
+            if not os.path.exists(model_bin_file):
+                shutil.copy(model_bin_file, pytorch_model_bin_file)
+            model_bin_file = pytorch_model_bin_file
+        else:
+            model_bin_file = os.path.join(unzip_package_path, "pytorch_model.bin")
+        return unzip_package_path, model_bin_file
+
+    def retrieve_binary_model_file(self, package_name, package_url):
+        local_package_path = ClientConstants.get_model_package_dir()
+        if not os.path.exists(local_package_path):
+            os.makedirs(local_package_path)
+        unzip_package_path = ClientConstants.get_model_dir()
+        local_package_file = "{}".format(os.path.join(local_package_path, package_name))
+        if not os.path.exists(local_package_file):
+            urllib.request.urlretrieve(package_url, local_package_file)
+
+        unzip_package_path = os.path.join(unzip_package_path, package_name)
+        if not os.path.exists(unzip_package_path):
+            os.makedirs(unzip_package_path)
+        dst_model_file = os.path.join(unzip_package_path, package_name)
+        if os.path.exists(local_package_file):
+            shutil.copy(local_package_file, dst_model_file)
+
+        return unzip_package_path, dst_model_file
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
         pass
 
-    def update_local_fedml_config(self, run_id, run_config):
-        model_config = run_config
+    def update_local_fedml_config(self, run_id, model_config, model_config_parameters):
         model_name = model_config["model_name"]
         model_storage_url = model_config["model_storage_url"]
         scale_min = model_config["instance_scale_min"]
@@ -113,18 +142,23 @@ class FedMLClientRunner:
         inference_engine = model_config["inference_engine"]
         inference_end_point_id = run_id
 
-        # Copy config file from the client
-        unzip_package_path = self.retrieve_and_unzip_package(
-            model_name, model_storage_url
-        )
-        fedml_local_config_file = os.path.join(unzip_package_path, "model_config.yaml")
+        # Retrieve model package or model binary file.
+        if self.model_is_from_open:
+            unzip_package_path, model_bin_file = self.retrieve_binary_model_file(model_name, model_storage_url)
+        else:
+            unzip_package_path, model_bin_file = self.retrieve_and_unzip_package(model_name, model_storage_url)
 
-        # Load the above config to memory
+        # Load the config to memory
         package_conf_object = {}
-        if os.path.exists(fedml_local_config_file):
-            package_conf_object = load_yaml_config(fedml_local_config_file)
+        fedml_local_config_file = os.path.join(unzip_package_path, "model_config.yaml")
+        if model_config_parameters is not None:
+            package_conf_object = model_config_parameters
+            ClientConstants.generate_yaml_doc(package_conf_object, fedml_local_config_file)
+        else:
+            if os.path.exists(fedml_local_config_file):
+                package_conf_object = load_yaml_config(fedml_local_config_file)
 
-        return unzip_package_path, package_conf_object
+        return unzip_package_path, model_bin_file, package_conf_object
 
     def build_dynamic_args(self, run_config, package_conf_object, base_dir):
         pass
@@ -153,6 +187,11 @@ class FedMLClientRunner:
         scale_min = model_config["instance_scale_min"]
         scale_max = model_config["instance_scale_max"]
         inference_engine = model_config["inference_engine"]
+        self.model_is_from_open = True if model_config.get("is_from_open", 0) == 1 else False
+        model_net_url = model_config["model_net_url"]
+        model_config_parameters = self.request_json["parameters"]
+        model_input_size = model_config_parameters.get("input_size", 0)
+        model_output_size = model_config_parameters.get("output_size", 0)
         inference_end_point_id = run_id
         use_gpu = "gpu"  # TODO: Get GPU from device infos
         memory_size = "4096m"  # TODO: Get Memory size for each instance
@@ -168,19 +207,35 @@ class FedMLClientRunner:
 
         # update local config with real time parameters from server and dynamically replace variables value
         logging.info("Download and unzip model to local...")
-        unzip_package_path, fedml_config_object = self.update_local_fedml_config(run_id, model_config)
+        unzip_package_path, model_bin_file, fedml_config_object = \
+            self.update_local_fedml_config(run_id, model_config, model_config_parameters)
+
+        # download model net and load into the torch model
+        model_from_open = None
+        if self.model_is_from_open:
+            s3_config = self.agent_config.get("s3_config", None)
+            if s3_config is not None and model_net_url is not None and model_net_url != "":
+                s3_client = S3Storage(s3_config)
+                url_parsed = urlparse(model_net_url)
+                path_list = url_parsed.path.split("/")
+                if len(path_list) > 0:
+                    model_key = path_list[-1]
+                    model_from_open = s3_client.read_model_net(model_key,
+                                                               ClientConstants.get_model_cache_dir())
 
         running_model_name, inference_output_url, inference_model_version, model_metadata, model_config = \
             start_deployment(
                 inference_end_point_id, model_id, model_version,
-                unzip_package_path, model_name, inference_engine,
+                unzip_package_path, model_bin_file, model_name, inference_engine,
                 ClientConstants.INFERENCE_HTTP_PORT,
                 ClientConstants.INFERENCE_GRPC_PORT,
                 ClientConstants.INFERENCE_METRIC_PORT,
                 use_gpu, memory_size,
                 ClientConstants.INFERENCE_CONVERTOR_IMAGE,
                 ClientConstants.INFERENCE_SERVER_IMAGE,
-                self.infer_host)
+                self.infer_host,
+                self.model_is_from_open, model_input_size,
+                model_from_open)
         if inference_output_url == "":
             self.send_deployment_status(self.edge_id, model_id, running_model_name, inference_output_url,
                                         ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
@@ -201,7 +256,9 @@ class FedMLClientRunner:
                                          inference_model_version, ClientConstants.INFERENCE_HTTP_PORT,
                                          inference_engine, model_metadata, model_config)
             time.sleep(1)
-            self.broadcast_client_training_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
+            self.setup_client_mqtt_mgr()
+            self.mlops_metrics.run_id = self.run_id
+            self.mlops_metrics.broadcast_client_training_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
 
         self.release_client_mqtt_mgr()
 
@@ -233,17 +290,6 @@ class FedMLClientRunner:
                                                                             deployment_status_payload))
         self.client_mqtt_mgr.send_message_json(deployment_status_topic, json.dumps(deployment_status_payload))
 
-    def broadcast_client_training_status(self, edge_id, status):
-        run_id = 0
-        if self.run_id is not None:
-            run_id = self.run_id
-        topic_name = "fl_client/mlops/status"
-        msg = {"edge_id": edge_id, "run_id": run_id, "status": status}
-        message_json = json.dumps(msg)
-        logging.info("report_client_training_status. message_json = %s" % message_json)
-        self.setup_client_mqtt_mgr()
-        self.client_mqtt_mgr.send_message_json(topic_name, message_json)
-
     def reset_devices_status(self, edge_id, status):
         self.mlops_metrics.run_id = self.run_id
         self.mlops_metrics.edge_id = edge_id
@@ -254,9 +300,6 @@ class FedMLClientRunner:
 
         logging.info("Stop run successfully.")
 
-        # Notify MLOps with the stopping message
-        self.mlops_metrics.report_client_training_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_STOPPING)
-
         self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
 
         time.sleep(1)
@@ -265,9 +308,6 @@ class FedMLClientRunner:
         self.setup_client_mqtt_mgr()
 
         logging.info("Stop deployment successfully.")
-
-        # Notify MLOps with the stopping message
-        self.mlops_metrics.report_client_training_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_STOPPING)
 
         self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED)
 
@@ -280,7 +320,6 @@ class FedMLClientRunner:
 
         ClientConstants.cleanup_run_process()
 
-        # Notify MLOps with the stopping message
         self.mlops_metrics.report_client_id_status(self.run_id, self.edge_id,
                                                    ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
 
@@ -436,8 +475,7 @@ class FedMLClientRunner:
         request_json = json.loads(payload)
         run_id = request_json["runId"]
 
-        logging.info("Stopping deployment...")
-        logging.info("Stop deployment with multiprocessing.")
+        logging.info("Stop deployment with multiprocessing...")
 
         # Stop cross-silo server with multi processing mode
         self.request_json = request_json
@@ -584,7 +622,7 @@ class FedMLClientRunner:
         else:
             if "nt" in os.name:
 
-                def GetUUID():
+                def get_uuid():
                     guid = ""
                     try:
                         cmd = "wmic csproduct get uuid"
@@ -595,7 +633,7 @@ class FedMLClientRunner:
                         pass
                     return str(guid)
 
-                device_id = str(GetUUID())
+                device_id = str(get_uuid())
                 logging.info(device_id)
             elif "posix" in os.name:
                 device_id = hex(uuid.getnode())
@@ -769,6 +807,9 @@ class FedMLClientRunner:
             json.dumps({"ID": self.edge_id, "status": ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE}),
         )
         self.agent_config = service_config
+
+        # Init local database
+        FedMLClientDataInterface.get_instance().create_job_table()
 
         MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
 

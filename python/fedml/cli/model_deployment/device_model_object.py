@@ -34,6 +34,7 @@ class FedMLModelObject(object):
         self.model_version = model_json["modelVersion"]
         self.file_name = model_json["fileName"]
         self.is_init = model_json["isInit"]
+        self.is_from_open = model_json["isFromOpen"]
 
     def show(self, prefix=""):
         print("{}model name: {}, model id: {}, "

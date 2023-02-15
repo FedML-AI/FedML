@@ -1,4 +1,3 @@
-
 import os
 import platform
 import shutil
@@ -33,12 +32,29 @@ class ClientConstants(object):
     MSG_MLOPS_SERVER_DEVICE_STATUS_FAILED = "FAILED"
     MSG_MLOPS_SERVER_DEVICE_STATUS_FINISHED = "FINISHED"
 
+    # Device Status
+    MSG_MLOPS_DEVICE_STATUS_IDLE = "IDLE"
+    MSG_MLOPS_DEVICE_STATUS_UPGRADING = "UPGRADING"
+    MSG_MLOPS_DEVICE_STATUS_RUNNING = "RUNNING"
+    MSG_MLOPS_DEVICE_STATUS_OFFLINE = "OFFLINE"
+
+    # Run Status
+    MSG_MLOPS_RUN_STATUS_QUEUED = "QUEUED"
+    MSG_MLOPS_RUN_STATUS_STARTING = "STARTING"
+    MSG_MLOPS_RUN_STATUS_RUNNING = "RUNNING"
+    MSG_MLOPS_RUN_STATUS_STOPPING = "STOPPING"
+    MSG_MLOPS_RUN_STATUS_KILLED = "KILLED"
+    MSG_MLOPS_RUN_STATUS_FAILED = "FAILED"
+    MSG_MLOPS_RUN_STATUS_FINISHED = "FINISHED"
+
     LOCAL_HOME_RUNNER_DIR_NAME = 'fedml-client'
     LOCAL_RUNNER_INFO_DIR_NAME = 'runner_infos'
     LOCAL_PACKAGE_HOME_DIR_NAME = "fedml_packages"
 
     FEDML_OTA_CMD_UPGRADE = "upgrade"
     FEDML_OTA_CMD_RESTART = "restart"
+
+    LOCAL_CLIENT_API_PORT = 40800
 
     LOGIN_MODE_CLIEN_INDEX = 0
     LOGIN_MODE_EDGE_SIMULATOR_INDEX = 1
@@ -79,10 +95,21 @@ class ClientConstants(object):
         return package_run_dir
 
     @staticmethod
+    def get_model_cache_dir():
+        model_cache_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "model_cache")
+        return model_cache_dir
+
+    @staticmethod
+    def get_database_dir():
+        database_dir = os.path.join(ClientConstants.get_data_dir(), "database")
+        return database_dir
+
+    @staticmethod
     def cleanup_run_process():
         try:
             local_pkg_data_dir = ClientConstants.get_data_dir()
-            process_id_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, "runner-sub-process.id")
+            process_id_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                                           "runner-sub-process.id")
             process_info = load_yaml_config(process_id_file)
             process_id = process_info.get('process_id', None)
             if process_id is not None:
@@ -105,7 +132,8 @@ class ClientConstants(object):
     def save_run_process(process_id):
         try:
             local_pkg_data_dir = ClientConstants.get_data_dir()
-            process_id_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, "runner-sub-process.id")
+            process_id_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                                           "runner-sub-process.id")
             yaml_object = {}
             yaml_object['process_id'] = process_id
             ClientConstants.generate_yaml_doc(yaml_object, process_id_file)
@@ -116,7 +144,8 @@ class ClientConstants(object):
     def cleanup_learning_process():
         try:
             local_pkg_data_dir = ClientConstants.get_data_dir()
-            process_id_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, "runner-learning-process.id")
+            process_id_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                                           "runner-learning-process.id")
             process_info = load_yaml_config(process_id_file)
             process_id = process_info.get('process_id', None)
             if process_id is not None:
@@ -139,7 +168,8 @@ class ClientConstants(object):
     def save_learning_process(learning_id):
         try:
             local_pkg_data_dir = ClientConstants.get_data_dir()
-            process_id_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, "runner-learning-process.id")
+            process_id_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                                           "runner-learning-process.id")
             yaml_object = {}
             yaml_object['process_id'] = learning_id
             ClientConstants.generate_yaml_doc(yaml_object, process_id_file)
@@ -158,7 +188,8 @@ class ClientConstants(object):
         except Exception as e:
             pass
 
-        runner_info_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, "runner_infos.yaml")
+        runner_info_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                                        "runner_infos.yaml")
         running_info = dict()
         running_info["unique_device_id"] = str(unique_device_id)
         running_info["edge_id"] = str(edge_id)
@@ -177,7 +208,8 @@ class ClientConstants(object):
         except Exception as e:
             pass
 
-        training_info_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, "training_infos.yaml")
+        training_info_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                                          "training_infos.yaml")
         training_info = dict()
         training_info["edge_id"] = edge_id
         training_info["training_status"] = str(training_status)
@@ -186,7 +218,8 @@ class ClientConstants(object):
     @staticmethod
     def get_training_infos():
         local_pkg_data_dir = ClientConstants.get_data_dir()
-        training_info_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, "training_infos.yaml")
+        training_info_file = os.path.join(local_pkg_data_dir, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                                          "training_infos.yaml")
         training_info = dict()
         training_info["edge_id"] = 0
         training_info["training_status"] = "INITIALIZING"
@@ -244,7 +277,8 @@ class ClientConstants(object):
         return script_process
 
     @staticmethod
-    def exec_console_with_shell_script_list(shell_script_list, should_capture_stdout=False, should_capture_stderr=False):
+    def exec_console_with_shell_script_list(shell_script_list, should_capture_stdout=False,
+                                            should_capture_stderr=False):
         stdout_flag = subprocess.PIPE if should_capture_stdout else sys.stdout
         stderr_flag = subprocess.PIPE if should_capture_stderr else sys.stderr
 
@@ -271,6 +305,26 @@ class ClientConstants(object):
         for info in iter(script_process.stderr.readline, ""):
             print(info)
 
+    @staticmethod
+    def get_device_state_from_run_edge_state(run_edge_state):
+        ret_state = ClientConstants.MSG_MLOPS_DEVICE_STATUS_IDLE
+        if run_edge_state == ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE:
+            ret_state = ClientConstants.MSG_MLOPS_DEVICE_STATUS_OFFLINE
+        elif run_edge_state == ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING:
+            ret_state = ClientConstants.MSG_MLOPS_DEVICE_STATUS_UPGRADING
+        elif run_edge_state == ClientConstants.MSG_MLOPS_CLIENT_STATUS_QUEUED or \
+                run_edge_state == ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING or \
+                run_edge_state == ClientConstants.MSG_MLOPS_CLIENT_STATUS_TRAINING or \
+                run_edge_state == ClientConstants.MSG_MLOPS_CLIENT_STATUS_STOPPING:
+            ret_state = ClientConstants.MSG_MLOPS_DEVICE_STATUS_RUNNING
+        elif run_edge_state == ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE or \
+                run_edge_state == ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED or \
+                run_edge_state == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED or \
+                run_edge_state == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED:
+            ret_state = ClientConstants.MSG_MLOPS_DEVICE_STATUS_IDLE
+
+        return ret_state
+
 
 if __name__ == "__main__":
     ignore = "*test*,abc*"
@@ -280,8 +334,8 @@ if __name__ == "__main__":
                     "/Users/alexliang/fedml-test/examples2",
                     ignore=shutil.ignore_patterns(*ignore))
 
-    script_process = ClientConstants.exec_console_with_shell_script_list(['sh', '-c', "while [ 1 = 1 ]; do echo 'hello'; sleep 1; done "])
+    script_process = ClientConstants.exec_console_with_shell_script_list(
+        ['sh', '-c', "while [ 1 = 1 ]; do echo 'hello'; sleep 1; done "])
     ClientConstants.print_console_output(script_process)
     ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(script_process)
     print("script process {}".format(script_process.pid))
-

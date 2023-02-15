@@ -5,6 +5,7 @@ import time
 from fedml.cli.model_deployment.device_client_constants import ClientConstants
 from fedml.cli.model_deployment.device_server_constants import ServerConstants
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--redis_addr", "-rp", type=str, default="local", help="redis address")
@@ -35,7 +36,8 @@ if __name__ == "__main__":
         "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
         "END_POINT_ID=\"{}\" MODEL_ID=\"{}\" "
         "MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" VERSION=\"{}\" "
-        "uvicorn fedml.cli.model_deployment.device_model_inference:api --host 0.0.0.0 --port {} --reload".format(
+        "uvicorn fedml.cli.model_deployment.device_model_inference:api --host 0.0.0.0 --port {} "
+        "--reload --log-level critical".format(
             args.redis_addr, args.redis_port, args.redis_password,
             str(args.end_point_id), str(args.model_id),
             running_model_name, args.model_version, args.infer_url, args.config_version,
