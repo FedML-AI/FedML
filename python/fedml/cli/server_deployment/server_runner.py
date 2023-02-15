@@ -377,7 +377,7 @@ class FedMLServerRunner:
 
         python_program = get_python_program()
         entry_fill_full_path = os.path.join(unzip_package_path, "fedml", entry_file)
-        conf_file_full_path = os.path.join(unzip_package_path, conf_file)
+        conf_file_full_path = os.path.join(unzip_package_path, "fedml", conf_file)
         logging.info("Run the server: {} {} --cf {} --rank 0 --role server".format(
             python_program, entry_fill_full_path, conf_file_full_path))
         process = ServerConstants.exec_console_with_shell_script_list(
