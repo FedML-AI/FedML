@@ -138,6 +138,8 @@ class FedMLClientRunner:
             shutil.rmtree(ClientConstants.get_package_run_dir(package_name), ignore_errors=True)
         except Exception as e:
             pass
+        logging.info("local_package_file {}, unzip_package_path {}, unzip file full path {}".format(
+            local_package_file, unzip_package_path, ClientConstants.get_package_run_dir(package_name)))
         self.unzip_file(local_package_file, unzip_package_path)
         unzip_package_path = ClientConstants.get_package_run_dir(package_name)
         return unzip_package_path
