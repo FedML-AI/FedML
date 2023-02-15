@@ -91,7 +91,7 @@ class MLOpsMetrics(Singleton):
 
         self.common_report_client_id_status(run_id, edge_id, status)
 
-        self.report_client_device_status_to_web_ui(run_id, edge_id, status)
+        self.report_client_device_status_to_web_ui(edge_id, status)
 
         FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status, running_json)
 
