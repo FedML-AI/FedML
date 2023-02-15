@@ -2,6 +2,7 @@ import logging
 import os
 import sqlite3
 import time
+import traceback
 
 from fedml.cli.edge_deployment.client_constants import ClientConstants
 from fedml.core.common.singleton import Singleton
@@ -221,14 +222,23 @@ class FedMLClientDataInterface(Singleton):
     def insert_job_to_db(self, job):
         self.open_job_db()
         current_cursor = self.db_connection.cursor()
-        current_cursor.execute("INSERT INTO jobs (\
-            job_id, edge_id, started_time, ended_time, progress, ETA, status, failed_time, error_code, msg, \
-            updated_time, round_index, total_rounds, running_json) \
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                               (job.job_id, job.edge_id, job.started_time, job.ended_time,
-                                job.progress, job.eta, job.status, job.failed_time,
-                                job.error_code, job.msg, str(time.time()),
-                                job.round_index, job.total_rounds, job.running_json))
+        job_query_results = current_cursor.execute("SELECT * from jobs where job_id={};".format(job.job_id))
+        for row in job_query_results:
+            self.db_connection.close()
+            self.update_job_to_db(job)
+            return
+
+        try:
+            current_cursor.execute("INSERT INTO jobs (\
+                job_id, edge_id, started_time, ended_time, progress, ETA, status, failed_time, error_code, msg, \
+                updated_time, round_index, total_rounds, running_json) \
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                                   (job.job_id, job.edge_id, job.started_time, job.ended_time,
+                                    job.progress, job.eta, job.status, job.failed_time,
+                                    job.error_code, job.msg, str(time.time()),
+                                    job.round_index, job.total_rounds, job.running_json))
+        except Exception as e:
+            logging.info("Process jobs insertion {}.".format(traceback.format_exc()))
         self.db_connection.commit()
         self.db_connection.close()
 
