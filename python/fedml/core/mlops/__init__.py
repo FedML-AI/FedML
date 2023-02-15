@@ -284,9 +284,14 @@ def send_exit_train_msg(run_id=None):
     if not MLOpsStore.mlops_bind_result:
         return
 
+    run_id_param = run_id
+    if run_id is None:
+        run_id_param = MLOpsStore.mlops_run_id
+
     setup_log_mqtt_mgr()
     wait_log_mqtt_connected()
-    MLOpsStore.mlops_metrics.client_send_exit_train_msg()
+    MLOpsStore.mlops_metrics.client_send_exit_train_msg(run_id_param, MLOpsStore.mlops_edge_id,
+                                                        ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
     release_log_mqtt_mgr()
 
 

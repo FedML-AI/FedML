@@ -541,22 +541,18 @@ class FedMLServerRunner:
             self.client_mqtt_mgr.send_message(topic_start_train, json.dumps(self.request_json))
 
     def callback_client_status_msg(self, topic=None, payload=None):
+        logging.info("callback_client_status_msg payload {}".format(payload))
         payload_json = json.loads(payload)
         run_id = payload_json["run_id"]
         edge_id = payload_json["edge_id"]
         status = payload_json["status"]
-        edge_id_list = self.request_json["edgeids"]
-        if len(edge_id_list) == 1 and edge_id_list[0] == edge_id and \
-                status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED:
-            if self.run_as_edge_server_and_agent or self.run_as_cloud_agent:
-                server_runner = FedMLServerRunner(
-                    self.args, run_id=run_id, request_json=self.request_json, agent_config=self.agent_config
-                )
-                server_runner.edge_id = self.edge_id
-                server_runner.run_as_edge_server_and_agent = self.run_as_edge_server_and_agent
-                server_runner.run_as_cloud_agent = self.run_as_cloud_agent
-                server_runner.run_status = ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED
-                Process(target=server_runner.cleanup_client_with_status).start()
+
+        job = FedMLServerDataInterface.get_instance().get_job_by_id(run_id)
+        if job is not None and job.running_json is not None and job.running_json != "":
+            job_json_obj = json.loads(job.running_json)
+            edge_id_list = job_json_obj["edgeids"]
+            if status == ServerConstants.MSG_MLOPS_SERVER_STATUS_EXCEPTION:
+                self.send_exit_train_with_exception_request_to_edges(edge_id_list, job.running_json)
 
     def callback_start_train(self, topic=None, payload=None):
         logging.info("callback_start_train from Web: {}".format(payload))
@@ -577,13 +573,18 @@ class FedMLServerRunner:
         self.request_json = request_json
         self.running_request_json[str(run_id)] = request_json
 
-        if not self.run_as_cloud_server:
-            # Setup MQTT message listener to the client status message from the server.
-            edge_id_list = request_json["edgeids"]
-            for edge_id in edge_id_list:
-                topic_name = "fl_client/flclient_agent_" + str(edge_id) + "/status"
-                self.mqtt_mgr.add_message_listener(topic_name, self.callback_client_status_msg)
-                self.mqtt_mgr.subscribe_msg(topic_name)
+        # Setup MQTT message listener for run exception
+        topic_client_exit_train_with_exception = "flserver_agent/" + str(run_id) + "/client_exit_train_with_exception"
+        self.mqtt_mgr.add_message_listener(topic_client_exit_train_with_exception, self.callback_client_exit_train_with_exception)
+        self.mqtt_mgr.subscribe_msg(topic_client_exit_train_with_exception)
+
+        # if not self.run_as_cloud_server:
+        #     # Setup MQTT message listener to the client status message from the server.
+        #     edge_id_list = request_json["edgeids"]
+        #     for edge_id in edge_id_list:
+        #         topic_name = "fl_client/flclient_agent_" + str(edge_id) + "/status"
+        #         self.mqtt_mgr.add_message_listener(topic_name, self.callback_client_status_msg)
+        #         self.mqtt_mgr.subscribe_msg(topic_name)
 
         if self.run_as_edge_server_and_agent:
             # Start log processor for current run
@@ -963,6 +964,30 @@ class FedMLServerRunner:
             Process(target=client_runner.exit_run_with_exception).start()
         except Exception as e:
             pass
+
+    def callback_client_exit_train_with_exception(self, topic, payload):
+        logging.info("callback_client_exit_train_with_exception: topic = %s, payload = %s" % (topic, payload))
+
+        request_json = json.loads(payload)
+        run_id = request_json.get("run_id", None)
+        edge_id = request_json.get("edge_id", None)
+        if run_id is None:
+            logging.info("callback_client_exit_train_with_exception run id is none")
+            return
+
+        job = FedMLServerDataInterface.get_instance().get_job_by_id(run_id)
+        if job is not None and job.running_json is not None and job.running_json != "":
+            job_json_obj = json.loads(job.running_json)
+            edge_ids = job_json_obj.get("edgeids", None)
+
+            logging.info("Exit run...")
+            logging.info("Exit run with multiprocessing.")
+
+            self.mlops_metrics.broadcast_server_training_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
+
+            self.send_exit_train_with_exception_request_to_edges(edge_ids, payload)
+
+            self.exit_run_with_exception()
 
     def callback_runner_id_status(self, topic, payload):
         # logging.info("callback_runner_id_status: topic = %s, payload = %s" % (topic, payload))
