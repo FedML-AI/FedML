@@ -145,7 +145,8 @@ class Arguments:
                 pass
             else:
                 pass
-            
+        
+
         if hasattr(self, "training_type"):
             training_type = self.training_type
 
@@ -162,30 +163,6 @@ class Arguments:
                     extra_config_path = self.client_silo_config_paths[self.rank - 1]
                 extra_config = self.load_yaml_config(extra_config_path)
                 self.set_attr_from_config(extra_config)
-
-            """
-            "data_silo_config" is used for reading specific configuration for each client
-            Example: In fedml_config.yaml, we have the following configuration
-            client_specific_args: 
-                data_silo_config: 
-                    [
-                        fedml_config/data_silo_1_config.yaml,
-                        fedml_config/data_silo_2_config.yaml,
-                        fedml_config/data_silo_3_config.yaml,
-                        fedml_config/data_silo_4_config.yaml,
-                    ]
-                data_silo_1_config.yaml contains some client client speicifc arguments.
-            """
-            if (
-                hasattr(self, "data_silo_config")
-            ):
-                # reading the clients file
-                self.rank = int(self.rank)
-                self.worker_num = len(self.data_silo_config)
-                if self.rank > 0:
-                    extra_config_path = self.data_silo_config[self.rank - 1]
-                    extra_config = self.load_yaml_config(extra_config_path)
-                    self.set_attr_from_config(extra_config)
 
         return configuration
 
