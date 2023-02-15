@@ -1001,3 +1001,4 @@ class FedMLClientRunner:
             self.mqtt_mgr.loop_forever()
         except Exception as e:
             logging.info("Client tracing: {}".format(traceback.format_exc()))
+            time.sleep(5)
