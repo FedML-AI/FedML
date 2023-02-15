@@ -943,7 +943,9 @@ class FedMLServerRunner:
         request_json = json.loads(payload)
         run_id = request_json.get("runId", None)
         if run_id is None:
-            run_id = request_json.get("id", None)
+            run_id = request_json.get("run_id", None)
+            if run_id is None:
+                run_id = request_json.get("id", None)
 
         if run_id is None:
             return
@@ -966,7 +968,7 @@ class FedMLServerRunner:
             pass
 
     def callback_client_exit_train_with_exception(self, topic, payload):
-        logging.info("callback_client_exit_train_with_exception: topic = %s, payload = %s" % (topic, payload))
+        # logging.info("callback_client_exit_train_with_exception: topic = %s, payload = %s" % (topic, payload))
 
         request_json = json.loads(payload)
         run_id = request_json.get("run_id", None)
@@ -985,7 +987,7 @@ class FedMLServerRunner:
 
             self.mlops_metrics.broadcast_server_training_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
 
-            self.send_exit_train_with_exception_request_to_edges(edge_ids, payload)
+            self.send_exit_train_with_exception_request_to_edges(edge_ids, job.running_json)
 
             self.exit_run_with_exception()
 
