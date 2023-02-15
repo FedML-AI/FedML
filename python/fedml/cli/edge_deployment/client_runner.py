@@ -645,7 +645,9 @@ class FedMLClientRunner:
         request_json = json.loads(payload)
         run_id = request_json.get("runId", None)
         if run_id is None:
-            run_id = request_json.get("id", None)
+            run_id = request_json.get("run_id", None)
+            if run_id is None:
+                run_id = request_json.get("id", None)
 
         if run_id is None:
             return
@@ -920,6 +922,7 @@ class FedMLClientRunner:
         mqtt_client_object.subscribe(topic_active_msg, qos=2)
         mqtt_client_object.subscribe(topic_exit_train_with_exception, qos=2)
         mqtt_client_object.subscribe(topic_ota_msg, qos=2)
+        mqtt_client_object.subscribe(topic_exit_train_with_exception, qos=2)
 
         # Broadcast the first active message.
         self.send_agent_active_msg()
