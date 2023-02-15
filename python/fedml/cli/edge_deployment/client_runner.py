@@ -346,14 +346,16 @@ class FedMLClientRunner:
         os.chdir(os.path.join(unzip_package_path, "fedml"))
 
         python_program = get_python_program()
+        entry_fill_full_path = os.path.join(unzip_package_path, "fedml", entry_file)
+        conf_file_full_path = os.path.join(unzip_package_path, conf_file)
         logging.info("Run the client: {} {} --cf {} --rank {} --role client".format(
-            python_program, entry_file, conf_file, str(dynamic_args_config["rank"])))
+            python_program, entry_fill_full_path, conf_file_full_path, str(dynamic_args_config["rank"])))
         process = ClientConstants.exec_console_with_shell_script_list(
             [
                 python_program,
-                entry_file,
+                entry_fill_full_path,
                 "--cf",
-                conf_file,
+                conf_file_full_path,
                 "--rank",
                 str(dynamic_args_config["rank"]),
                 "--role",
