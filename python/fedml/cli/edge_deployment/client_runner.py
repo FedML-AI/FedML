@@ -346,6 +346,8 @@ class FedMLClientRunner:
         os.chdir(os.path.join(unzip_package_path, "fedml"))
 
         python_program = get_python_program()
+        logging.info("Run the client: {} {} --cf {} --rank {} --role client".format(
+            python_program, entry_file, conf_file, str(dynamic_args_config["rank"])))
         process = ClientConstants.exec_console_with_shell_script_list(
             [
                 python_program,
