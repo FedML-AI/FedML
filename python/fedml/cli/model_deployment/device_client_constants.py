@@ -141,6 +141,11 @@ class ClientConstants(object):
         return model_packages_dir
 
     @staticmethod
+    def get_model_cache_dir():
+        model_cache_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "model_cache")
+        return model_cache_dir
+
+    @staticmethod
     def get_k8s_master_host_dir(current_dir):
         if not ClientConstants.is_running_on_k8s():
             return current_dir
@@ -171,6 +176,11 @@ class ClientConstants(object):
     def get_model_serving_dir():
         model_file_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "models_serving")
         return model_file_dir
+
+    @staticmethod
+    def get_model_infer_data_dir():
+        model_infer_data_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "models_infer_data")
+        return model_infer_data_dir
 
     @staticmethod
     def get_model_ops_list_url(config_version="release"):

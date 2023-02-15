@@ -43,6 +43,8 @@ class MLOpsRuntimeLog:
         else:
             mlops.log_aggregation_failed_status()
 
+        mlops.send_exit_train_msg()
+
     def __init__(self, args):
         self.logger = None
         self.args = args
@@ -65,11 +67,14 @@ class MLOpsRuntimeLog:
             if hasattr(args, "client_id"):
                 self.edge_id = args.client_id
             elif hasattr(args, "client_id_list"):
-                edge_ids = json.loads(args.client_id_list)
-                if len(edge_ids) > 0:
-                    self.edge_id = edge_ids[0]
-                else:
+                if args.client_id_list is None:
                     self.edge_id = 0
+                else:
+                    edge_ids = json.loads(args.client_id_list)
+                    if len(edge_ids) > 0:
+                        self.edge_id = edge_ids[0]
+                    else:
+                        self.edge_id = 0
             else:
                 if hasattr(args, "edge_id"):
                     self.edge_id = args.edge_id
@@ -154,19 +159,20 @@ class MLOpsRuntimeLog:
             if hasattr(in_args, "client_id"):
                 edge_id = in_args.client_id
             elif hasattr(in_args, "client_id_list"):
-                edge_ids = json.loads(in_args.client_id_list)
-                if len(edge_ids) > 0:
-                    edge_id = edge_ids[0]
-                else:
+                if in_args.client_id_list is None:
                     edge_id = 0
+                else:
+                    edge_ids = json.loads(in_args.client_id_list)
+                    if len(edge_ids) > 0:
+                        edge_id = edge_ids[0]
+                    else:
+                        edge_id = 0
             else:
                 if hasattr(in_args, "edge_id"):
                     edge_id = in_args.edge_id
                 else:
                     edge_id = 0
-            program_prefix = "FedML-Client({rank}) @device-id-{edge}".format(
-                rank=in_args.rank, edge=edge_id
-            )
+            program_prefix = "FedML-Client @device-id-{edge}".format(edge=edge_id)
 
         os.system("mkdir -p " + in_args.log_file_dir)
         log_file_path = os.path.join(in_args.log_file_dir, "fedml-run-"

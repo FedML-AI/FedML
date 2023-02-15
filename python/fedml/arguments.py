@@ -145,7 +145,8 @@ class Arguments:
                 pass
             else:
                 pass
-            
+        
+
         if hasattr(self, "training_type"):
             training_type = self.training_type
 

@@ -39,6 +39,10 @@ def log_aggregation_finished_status(run_id=None):
     mlops.log_aggregation_finished_status(run_id)
 
 
+def send_exit_train_msg(run_id=None):
+    mlops.send_exit_train_msg(run_id)
+
+
 def log_aggregation_failed_status(run_id=None):
     mlops.log_aggregation_failed_status(run_id)
 
@@ -51,8 +55,12 @@ def log_aggregated_model_info(round_index, model_url):
     mlops.log_aggregated_model_info(round_index, model_url)
 
 
-def log_client_model_info(round_index, model_url):
-    mlops.log_client_model_info(round_index, model_url)
+def log_training_model_net_info(model_net):
+    mlops.log_training_model_net_info(model_net)
+
+
+def log_client_model_info(round_index, total_rounds, model_url):
+    mlops.log_client_model_info(round_index, total_rounds, model_url)
 
 
 def log_sys_perf(sys_args=None):

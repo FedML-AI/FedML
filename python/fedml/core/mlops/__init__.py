@@ -19,6 +19,7 @@ from ...constants import FEDML_TRAINING_PLATFORM_SIMULATION, FEDML_TRAINING_PLAT
 from ...cli.server_deployment.server_constants import ServerConstants
 
 from ..distributed.communication.mqtt.mqtt_manager import MqttManager
+from ..distributed.communication.s3.remote_storage import S3Storage
 
 from .mlops_metrics import MLOpsMetrics
 from .mlops_profiler_event import MLOpsProfilerEvent
@@ -27,6 +28,7 @@ from .mlops_status import MLOpsStatus
 from .mlops_runtime_log import MLOpsRuntimeLog
 from .mlops_runtime_log_daemon import MLOpsRuntimeLogProcessor
 from .mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
+from ...cli.edge_deployment.client_data_interface import FedMLClientDataInterface
 
 FEDML_MLOPS_API_RESPONSE_SUCCESS_CODE = "SUCCESS"
 
@@ -172,7 +174,7 @@ def log(metrics: dict, commit=True):
         #     k = "round_idx_" + k
         MLOpsStore.mlops_log_metrics[k] = v
     MLOpsStore.mlops_log_metrics["run_id"] = str(MLOpsStore.mlops_run_id)
-    MLOpsStore.mlops_log_metrics["timestamp"] = float(time.time_ns()/1000/1000*1.0)
+    MLOpsStore.mlops_log_metrics["timestamp"] = float(time.time_ns() / 1000 / 1000 * 1.0)
     MLOpsStore.mlops_log_metrics_lock.release()
 
     logging.info("log metrics {}".format(json.dumps(MLOpsStore.mlops_log_metrics)))
@@ -273,6 +275,26 @@ def log_training_finished_status(run_id=None):
     release_log_mqtt_mgr()
 
 
+def send_exit_train_msg(run_id=None):
+    if not mlops_enabled(MLOpsStore.mlops_args):
+        return
+
+    set_realtime_params()
+
+    if not MLOpsStore.mlops_bind_result:
+        return
+
+    run_id_param = run_id
+    if run_id is None:
+        run_id_param = MLOpsStore.mlops_run_id
+
+    setup_log_mqtt_mgr()
+    wait_log_mqtt_connected()
+    MLOpsStore.mlops_metrics.client_send_exit_train_msg(run_id_param, MLOpsStore.mlops_edge_id,
+                                                        ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+    release_log_mqtt_mgr()
+
+
 def log_training_failed_status(run_id=None):
     if mlops_parrot_enabled(MLOpsStore.mlops_args):
         log_training_status(ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED, run_id)
@@ -359,7 +381,7 @@ def log_aggregated_model_info(round_index, model_url):
     if not MLOpsStore.mlops_bind_result:
         return
 
-    logging.info("log aggregated mode info {}".format(model_url))
+    logging.info("log aggregated model info {}".format(model_url))
 
     setup_log_mqtt_mgr()
     wait_log_mqtt_connected()
@@ -372,7 +394,37 @@ def log_aggregated_model_info(round_index, model_url):
     release_log_mqtt_mgr()
 
 
-def log_client_model_info(round_index, model_url):
+def log_training_model_net_info(model_net):
+    if model_net is None:
+        return
+    if not mlops_enabled(MLOpsStore.mlops_args):
+        return
+
+    set_realtime_params()
+
+    if not MLOpsStore.mlops_bind_result:
+        return
+
+    s3_config = MLOpsStore.mlops_log_agent_config.get("s3_config", None)
+    if s3_config is None:
+        return
+    s3_client = S3Storage(s3_config)
+    model_key = "fedml-model-net-run-{}-{}".format(str(MLOpsStore.mlops_run_id), str(uuid.uuid4()))
+    model_url = s3_client.write_model_net(model_key, model_net, ClientConstants.get_model_cache_dir())
+
+    logging.info("log training model net info {}".format(model_url))
+
+    setup_log_mqtt_mgr()
+    wait_log_mqtt_connected()
+    model_info = {
+        "run_id": MLOpsStore.mlops_run_id,
+        "training_model_net_s3_address": model_url,
+    }
+    MLOpsStore.mlops_metrics.report_training_model_net_info(model_info)
+    release_log_mqtt_mgr()
+
+
+def log_client_model_info(round_index, total_rounds, model_url):
     if model_url is None:
         return
     if not mlops_enabled(MLOpsStore.mlops_args):
@@ -383,7 +435,7 @@ def log_client_model_info(round_index, model_url):
     if not MLOpsStore.mlops_bind_result:
         return
 
-    logging.info("log client mode info {}".format(model_url))
+    logging.info("log client model info {}".format(model_url))
 
     setup_log_mqtt_mgr()
     wait_log_mqtt_connected()
@@ -395,6 +447,11 @@ def log_client_model_info(round_index, model_url):
     }
     MLOpsStore.mlops_metrics.report_client_model_info(model_info)
     release_log_mqtt_mgr()
+
+    FedMLClientDataInterface.get_instance().save_running_job(MLOpsStore.mlops_run_id, MLOpsStore.mlops_edge_id,
+                                                             round_index,
+                                                             total_rounds,
+                                                             "Running")
 
 
 def log_sys_perf(sys_args=None):
