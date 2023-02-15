@@ -241,7 +241,7 @@ def cleanup_all_fedml_server_learning_processes():
             pass
 
 
-def cleanup_all_fedml_client_api_processes():
+def cleanup_all_fedml_client_api_processes(kill_all=False):
     # Cleanup all fedml client api processes.
     for process in psutil.process_iter():
         try:
@@ -253,12 +253,15 @@ def cleanup_all_fedml_client_api_processes():
 
             if find_api_process:
                 click.echo("find client api process at {}.".format(process.pid))
-                os.kill(process.pid, signal.SIGTERM)
+                if kill_all:
+                    os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                else:
+                    os.kill(process.pid, signal.SIGTERM)
         except Exception as e:
             pass
 
 
-def cleanup_all_fedml_server_api_processes():
+def cleanup_all_fedml_server_api_processes(kill_all=False):
     # Cleanup all fedml server api processes.
     for process in psutil.process_iter():
         try:
@@ -270,7 +273,10 @@ def cleanup_all_fedml_server_api_processes():
 
             if find_api_process:
                 click.echo("find server api process at {}.".format(process.pid))
-                os.kill(process.pid, signal.SIGTERM)
+                if kill_all:
+                    os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                else:
+                    os.kill(process.pid, signal.SIGTERM)
         except Exception as e:
             pass
 
