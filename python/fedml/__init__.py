@@ -23,7 +23,7 @@ from .core.common.ml_engine_backend import MLEngineBackend
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.7.392"
+__version__ = "0.7.425"
 
 
 def init(args=None):
@@ -91,6 +91,8 @@ def init(args=None):
 
     mlops.init(args)
 
+    logging.info("args.rank = {}, args.process_id = {}, args.worker_num = {}".format(args.rank, args.process_id, args.worker_num))
+    update_client_specific_args(args)
     print_args(args)
 
     return args
@@ -111,6 +113,35 @@ def print_args(args):
         args_copy.mqtt_config_path = mqtt_config_path
     if hasattr(args_copy, "s3_config_path"):
         args_copy.s3_config_path = s3_config_path
+
+
+def update_client_specific_args(args):
+    """
+        data_silo_config is used for reading specific configuration for each client
+        Example: In fedml_config.yaml, we have the following configuration
+        client_specific_args: 
+            data_silo_config: 
+                [
+                    fedml_config/data_silo_1_config.yaml,
+                    fedml_config/data_silo_2_config.yaml,
+                    fedml_config/data_silo_3_config.yaml,
+                    fedml_config/data_silo_4_config.yaml,
+                ]
+            data_silo_1_config.yaml contains some client client speicifc arguments.
+    """
+    if (
+        hasattr(args, "data_silo_config")
+    ):
+        # reading the clients file
+        logging.info("data_silo_config is defined in fedml_config.yaml")
+        args.rank = int(args.rank)
+        args.worker_num = len(args.data_silo_config)
+        if args.rank > 0:
+            extra_config_path = args.data_silo_config[args.rank - 1]
+            extra_config = args.load_yaml_config(extra_config_path)
+            args.set_attr_from_config(extra_config)
+    else:
+        logging.info("data_silo_config is not defined in fedml_config.yaml")
 
 
 def init_simulation_mpi(args):
@@ -318,8 +349,6 @@ def update_client_id_list(args):
             print("args.client_id_list is not None")
     else:
         print("using_mlops = true")
-
-
 
 
 def init_cross_device(args):

@@ -9,6 +9,19 @@ import yaml
 from .yaml_utils import load_yaml_config
 
 
+FETAL_ERROR_START_CODE = 128
+
+SYS_ERR_CODE_MAP = {"0": "Successful exit without errors.",
+                    "1": "One or more generic errors encountered upon exit.",
+                    "2": "Incorrect usage, such as invalid options or missing arguments.",
+                    "126": "Command found but is not executable.",
+                    "127": "Command not found, usually the result of a missing directory in PATH variable.",
+                    "128": "Command encountered fatal error "
+                           "(was forcefully terminated manually or from an outside source).",
+                    "130": "Command terminated with signal 2 (SIGINT) (ctrl+c on keyboard).",
+                    "143": "Command terminated with signal 15 (SIGTERM) (kill command)."}
+
+
 def get_sys_runner_info():
     import fedml
     fedml_ver = str(fedml.__version__)
@@ -228,6 +241,40 @@ def cleanup_all_fedml_server_learning_processes():
             pass
 
 
+def cleanup_all_fedml_client_api_processes():
+    # Cleanup all fedml client api processes.
+    for process in psutil.process_iter():
+        try:
+            pinfo = process.as_dict(attrs=["pid", "name", "cmdline"])
+            find_api_process = False
+            for cmd in pinfo["cmdline"]:
+                if str(cmd).find("client_api:api") != -1:
+                    find_api_process = True
+
+            if find_api_process:
+                click.echo("find client api process at {}.".format(process.pid))
+                os.kill(process.pid, signal.SIGTERM)
+        except Exception as e:
+            pass
+
+
+def cleanup_all_fedml_server_api_processes():
+    # Cleanup all fedml server api processes.
+    for process in psutil.process_iter():
+        try:
+            pinfo = process.as_dict(attrs=["pid", "name", "cmdline"])
+            find_api_process = False
+            for cmd in pinfo["cmdline"]:
+                if str(cmd).find("server_api:api") != -1:
+                    find_api_process = True
+
+            if find_api_process:
+                click.echo("find server api process at {}.".format(process.pid))
+                os.kill(process.pid, signal.SIGTERM)
+        except Exception as e:
+            pass
+
+
 def cleanup_all_fedml_server_login_processes(login_program):
     # Cleanup all fedml client login processes.
     for process in psutil.process_iter():
@@ -325,4 +372,18 @@ def simulator_process_is_running(process_id):
 
     return False
 
+
+def log_return_info(bootstrap_file, ret_code):
+    import logging
+    err_desc = SYS_ERR_CODE_MAP.get(str(ret_code), "")
+    if ret_code == 0:
+        logging.info("Run {} return code {}. {}".format(
+            bootstrap_file, ret_code, err_desc))
+    else:
+        fatal_err_desc = SYS_ERR_CODE_MAP.get(str(ret_code), "")
+        if ret_code >= FETAL_ERROR_START_CODE and fatal_err_desc == "":
+            fatal_err_desc = SYS_ERR_CODE_MAP.get(str(FETAL_ERROR_START_CODE))
+
+        logging.error("Run {} return code {}. {}".format(
+            bootstrap_file, ret_code, fatal_err_desc if fatal_err_desc != "" else err_desc))
 
