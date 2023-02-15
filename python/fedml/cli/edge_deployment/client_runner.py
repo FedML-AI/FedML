@@ -327,7 +327,8 @@ class FedMLClientRunner:
         unzip_package_path, fedml_config_object = self.update_local_fedml_config(run_id, run_config)
         if unzip_package_path is None or fedml_config_object is None:
             self.cleanup_run_when_starting_failed()
-            self.mlops_metrics.client_send_exit_train_msg()
+            self.mlops_metrics.client_send_exit_train_msg(run_id, self.edge_id,
+                                                          ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
             return
 
         entry_file_config = fedml_config_object["entry_config"]
@@ -339,7 +340,8 @@ class FedMLClientRunner:
         ClientConstants.cleanup_learning_process()
         if not os.path.exists(unzip_package_path):
             self.cleanup_run_when_starting_failed()
-            self.mlops_metrics.client_send_exit_train_msg()
+            self.mlops_metrics.client_send_exit_train_msg(run_id, self.edge_id,
+                                                          ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
             return
         os.chdir(os.path.join(unzip_package_path, "fedml"))
 
@@ -382,7 +384,8 @@ class FedMLClientRunner:
                                                        ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
             self.release_client_mqtt_mgr()
 
-            self.mlops_metrics.client_send_exit_train_msg()
+            self.mlops_metrics.client_send_exit_train_msg(run_id, self.edge_id,
+                                                          ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
 
     def reset_devices_status(self, edge_id, status):
         self.mlops_metrics.run_id = self.run_id
@@ -599,9 +602,9 @@ class FedMLClientRunner:
         MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
 
         # Subscribe server status message.
-        topic_name = "fl_server/flserver_agent_" + str(server_agent_id) + "/status"
-        self.mqtt_mgr.add_message_listener(topic_name, self.callback_server_status_msg)
-        self.mqtt_mgr.subscribe_msg(topic_name)
+        # topic_name = "fl_server/flserver_agent_" + str(server_agent_id) + "/status"
+        # self.mqtt_mgr.add_message_listener(topic_name, self.callback_server_status_msg)
+        # self.mqtt_mgr.subscribe_msg(topic_name)
 
         # Start cross-silo server with multi processing mode
         self.request_json = request_json
