@@ -309,6 +309,7 @@ def mlops_logout(client, server, docker, docker_rank):
         sys_utils.cleanup_all_fedml_client_learning_processes()
         sys_utils.cleanup_all_fedml_client_login_processes("client_login.py")
         sys_utils.cleanup_all_fedml_client_api_processes(kill_all=True)
+        sys_utils.cleanup_all_fedml_client_login_processes("client_daemon.py")
 
     if is_server is True:
         if is_docker:
@@ -319,6 +320,7 @@ def mlops_logout(client, server, docker, docker_rank):
         sys_utils.cleanup_all_fedml_server_learning_processes()
         sys_utils.cleanup_all_fedml_server_login_processes("server_login.py")
         sys_utils.cleanup_all_fedml_server_api_processes(kill_all=True)
+        sys_utils.cleanup_all_fedml_server_login_processes("server_daemon.py")
 
 
 @cli.command("build", help="Build packages for MLOps platform (open.fedml.ai)")
