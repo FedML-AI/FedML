@@ -144,8 +144,9 @@ class FedMLServerRunner:
         except Exception as e:
             pass
         local_package_file = os.path.join(local_package_path, os.path.basename(package_url))
-        if not os.path.exists(local_package_file):
-            urllib.request.urlretrieve(package_url, local_package_file)
+        if os.path.exists(local_package_file):
+            os.remove(local_package_file)
+        urllib.request.urlretrieve(package_url, local_package_file)
         unzip_package_path = ServerConstants.get_package_unzip_dir(self.run_id, package_url)
         self.fedml_packages_base_dir = unzip_package_path
         try:
