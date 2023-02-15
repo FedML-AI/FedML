@@ -4,6 +4,8 @@
 .vscode/*
 *.pkl
 
+devops/geo-distributed-cluster
+
 data/*
 python/tests/smoke_test/data
 python/tests/smoke_test/data/*
