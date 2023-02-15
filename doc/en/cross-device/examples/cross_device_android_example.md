@@ -126,13 +126,26 @@ To set data path on your device, click the top green bar. Set it as the path to 
 
 - Create an account at FedML MLOps Platform ([https://open.fedml.ai](https://open.fedml.ai))
 
+- Run local test fo
+
 - Build Python Server Package and Upload to FedML MLOps Platform ("Create Application")
 
+Our example code is provided at:
 [https://github.com/FedML-AI/FedML/tree/master/python/quick_start/beehive](https://github.com/FedML-AI/FedML/tree/master/python/quick_start/beehive)
+
+1) First, you need to have sanity check of this example to make it bug free. By default, the server code example is bug free. 
+
+Note that this example relies on MNN library (https://pypi.org/project/MNN/). It can only support python 3.7. So make sure to test this server code example under python 3.7 environment.
+
+2) Second, please build the server package by running the following command:
+
+
 ```
 bash build_mlops_pkg.sh
 ```
-You can find the package under `mlops` folder.
+After correct execution, you can find the package `server-package.zip` under `mlops` folder. 
+
+3) Then you need to upload the `server-package.zip` package to FedML MLOps Platform as the UI shown below.
 
 <img src="./../../_static/image/android-pkg-uploading.png" />
 
@@ -141,7 +154,7 @@ You can find the package under `mlops` folder.
 
 Steps at MLOps: create group -> create project -> create run -> select application (the one we uploaded server package for Android) -> start run
 
-On the Android side, you will see training status as follows if every step works correctly.
+On the Android side, you will see training status if every step works correctly.
 
 ## 4. Get Started with Integrating Android SDK for Your Host App
 

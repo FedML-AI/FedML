@@ -154,5 +154,32 @@ Diagnosis for connection to https://open.fedml.ai, AWS S3 and MQTT (mqtt.fedml.a
 fedml diagnosis --open --s3 --mqtt
 ```
 
+## 7. Jobs
+Start a job at the MLOps platform.
+```
+Usage: fedml jobs start [OPTIONS]
+
+Start a job at the MLOps platform.
+
+Options:
+-pf, --platform TEXT           The platform name at the MLOps platform
+(options: octopus, parrot, spider, beehive).
+-prj, --project_name TEXT      The project name at the MLOps platform.
+-app, --application_name TEXT  Application name in the My Application list
+at the MLOps platform.
+-d, --devices TEXT             The devices with the format: [{"serverId":
+727, "edgeIds": ["693"], "account": 105}]
+-u, --user TEXT                user id or api key.
+-k, --api_key TEXT             user api key.
+-v, --version TEXT             start job at which version of MLOps platform.
+It should be dev, test or release
+--help                         Show this message and exit.
+```
+
+Example: 
+```
+fedml jobs start -pf octopus -prj test-fedml -app test-alex-app -d '[{"serverId":706,"edgeIds":["705"],"account":214}]' -u 214 -k c9356b9c4ce44363bb66366d210301
+```
+
 You can also refer to a sanity check test example here:
 [https://github.com/FedML-AI/FedML/blob/master/test/fedml_user_code/cli/build.sh](https://github.com/FedML-AI/FedML/blob/master/test/fedml_user_code/cli/build.sh)
