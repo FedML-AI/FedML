@@ -1377,3 +1377,4 @@ class FedMLServerRunner:
             self.mqtt_mgr.loop_forever()
         except Exception as e:
             logging.info("Server tracing: {}".format(traceback.format_exc()))
+            time.sleep(5)
