@@ -91,6 +91,8 @@ class MLOpsMetrics(Singleton):
 
         self.common_report_client_id_status(run_id, edge_id, status)
 
+        self.report_client_device_status_to_web_ui(run_id, edge_id, status)
+
         FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status, running_json)
 
     def report_client_device_status_to_web_ui(self, edge_id, status):
@@ -158,17 +160,10 @@ class MLOpsMetrics(Singleton):
         logging.info("report_client_training_status. message_json = %s" % message_json)
         self.messenger.send_message_json(topic_name, message_json)
 
-    def client_send_exit_train_msg(self):
-        current_job = FedMLClientDataInterface.get_instance().get_current_job()
-        if current_job is None or current_job.running_json == "":
-            return
-        running_json_obj = json.loads(current_job.running_json)
-        server_id = running_json_obj.get("server_id", None)
-        if server_id is None:
-            return
-
-        topic_exit_train_with_exception = "flserver_agent/" + str(server_id) + "/exit_train_with_exception"
-        message_json = current_job.running_json
+    def client_send_exit_train_msg(self, run_id, edge_id, status):
+        topic_exit_train_with_exception = "flserver_agent/" + str(run_id) + "/client_exit_train_with_exception"
+        msg = {"run_id": run_id, "edge_id": edge_id, "status": status}
+        message_json = json.dumps(msg)
         logging.info("client_send_exit_train_msg.")
         self.messenger.send_message_json(topic_exit_train_with_exception, message_json)
 
