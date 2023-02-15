@@ -380,8 +380,8 @@ class FedMLClientRunner:
         else:
             # If the run status is killed or finished, then return with the normal state.
             current_job = FedMLClientDataInterface.get_instance().get_job_by_id(run_id)
-            if current_job is not None and current_job.status  == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED or
-                current_job.status  == ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED:
+            if current_job is not None and (current_job.status  == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED or \
+                current_job.status  == ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED):
                 return
 
             if err is not None:
