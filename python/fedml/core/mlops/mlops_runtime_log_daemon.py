@@ -84,7 +84,8 @@ class MLOpsRuntimeLogProcessor:
                     log_device_id = 0
             program_prefix = "FedML-Client({}) @device-id-{}".format(in_args.rank, log_device_id)
 
-        os.system("mkdir -p " + in_args.log_file_dir)
+        if not os.path.exists(in_args.log_file_dir):
+            os.makedirs(in_args.log_file_dir)
         log_file_path = os.path.join(in_args.log_file_dir, "fedml-run-"
                                      + str(in_args.run_id)
                                      + "-edge-"
