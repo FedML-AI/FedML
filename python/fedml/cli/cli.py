@@ -304,6 +304,7 @@ def mlops_logout(client, server, docker, docker_rank):
         if is_docker:
             logout_with_docker_mode(docker_rank)
             return
+        sys_utils.cleanup_all_fedml_client_login_processes("client_daemon.py")
         client_logout()
         sys_utils.cleanup_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
         sys_utils.cleanup_all_fedml_client_learning_processes()
@@ -315,6 +316,7 @@ def mlops_logout(client, server, docker, docker_rank):
         if is_docker:
             logout_with_server_docker_mode(docker_rank)
             return
+        sys_utils.cleanup_all_fedml_server_login_processes("server_daemon.py")
         server_logout()
         sys_utils.cleanup_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
         sys_utils.cleanup_all_fedml_server_learning_processes()
