@@ -178,7 +178,7 @@ It should be dev, test or release
 
 Example: 
 ```
-fedml jobs start -pf octopus -prj test-fedml -app test-alex-app -d [{\“serverId\“:706,\“edgeIds\“:[\“705\“],\“account\“:214}] -u 214 -k c9356b9c4ce44363bb66366d210301
+fedml jobs start -pf octopus -prj test-fedml -app test-alex-app -d '[{"serverId":706,"edgeIds":["705"],"account":214}]' -u 214 -k c9356b9c4ce44363bb66366d210301
 ```
 
 You can also refer to a sanity check test example here:
