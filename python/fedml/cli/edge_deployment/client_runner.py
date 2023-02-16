@@ -130,13 +130,16 @@ class FedMLClientRunner:
         except Exception as e:
             pass
         local_package_file = os.path.join(local_package_path, os.path.basename(package_url))
-        if not os.path.exists(local_package_file):
-            urllib.request.urlretrieve(package_url, local_package_file)
+        if os.path.exists(local_package_file):
+            os.remove(local_package_file)
+        urllib.request.urlretrieve(package_url, local_package_file)
         unzip_package_path = ClientConstants.get_package_unzip_dir()
         try:
             shutil.rmtree(ClientConstants.get_package_run_dir(package_name), ignore_errors=True)
         except Exception as e:
             pass
+        logging.info("local_package_file {}, unzip_package_path {}, unzip file full path {}".format(
+            local_package_file, unzip_package_path, ClientConstants.get_package_run_dir(package_name)))
         self.unzip_file(local_package_file, unzip_package_path)
         unzip_package_path = ClientConstants.get_package_run_dir(package_name)
         return unzip_package_path
@@ -346,12 +349,16 @@ class FedMLClientRunner:
         os.chdir(os.path.join(unzip_package_path, "fedml"))
 
         python_program = get_python_program()
+        entry_fill_full_path = os.path.join(unzip_package_path, "fedml", entry_file)
+        conf_file_full_path = os.path.join(unzip_package_path, "fedml", conf_file)
+        logging.info("Run the client: {} {} --cf {} --rank {} --role client".format(
+            python_program, entry_fill_full_path, conf_file_full_path, str(dynamic_args_config["rank"])))
         process = ClientConstants.exec_console_with_shell_script_list(
             [
                 python_program,
-                entry_file,
+                entry_fill_full_path,
                 "--cf",
-                conf_file,
+                conf_file_full_path,
                 "--rank",
                 str(dynamic_args_config["rank"]),
                 "--role",
@@ -371,6 +378,12 @@ class FedMLClientRunner:
 
             sys_utils.log_return_info(entry_file, 0)
         else:
+            # If the run status is killed or finished, then return with the normal state.
+            current_job = FedMLClientDataInterface.get_instance().get_job_by_id(run_id)
+            if current_job is not None and (current_job.status  == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED or \
+                current_job.status  == ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED):
+                return
+
             if err is not None:
                 err_str = err.decode(encoding="utf-8")
                 if err_str != "":
@@ -645,7 +658,9 @@ class FedMLClientRunner:
         request_json = json.loads(payload)
         run_id = request_json.get("runId", None)
         if run_id is None:
-            run_id = request_json.get("id", None)
+            run_id = request_json.get("run_id", None)
+            if run_id is None:
+                run_id = request_json.get("id", None)
 
         if run_id is None:
             return
@@ -920,6 +935,7 @@ class FedMLClientRunner:
         mqtt_client_object.subscribe(topic_active_msg, qos=2)
         mqtt_client_object.subscribe(topic_exit_train_with_exception, qos=2)
         mqtt_client_object.subscribe(topic_ota_msg, qos=2)
+        mqtt_client_object.subscribe(topic_exit_train_with_exception, qos=2)
 
         # Broadcast the first active message.
         self.send_agent_active_msg()
@@ -985,3 +1001,4 @@ class FedMLClientRunner:
             self.mqtt_mgr.loop_forever()
         except Exception as e:
             logging.info("Client tracing: {}".format(traceback.format_exc()))
+            time.sleep(5)
