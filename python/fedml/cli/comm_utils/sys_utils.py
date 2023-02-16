@@ -1,4 +1,5 @@
 import os
+import platform
 import signal
 import traceback
 from os.path import expanduser
@@ -114,11 +115,11 @@ def get_running_info(cs_home_dir, cs_info_dir):
 
 
 def get_python_program():
-    python_program = "python3"
-    python_version_str = os.popen("python3 --version").read()
-    if python_version_str.find("Python 3.") == -1:
-        python_program = "python"
-
+    python_program = "python"
+    # force to use "python" as the default interpretator
+    # python_version_str = os.popen("python3 --version").read()
+    # if python_version_str.find("Python 3.") == -1:
+    #     python_program = "python"
     return python_program
 
 
@@ -134,7 +135,10 @@ def cleanup_login_process(runner_home_dir, runner_info_dir):
         if edge_process_id is not None:
             edge_process = psutil.Process(edge_process_id)
             if edge_process is not None:
-                os.killpg(os.getpgid(edge_process.pid), signal.SIGTERM)
+                if platform.system() == 'Windows':
+                    os.system("taskkill /PID {} /T /F".format(edge_process.pid))
+                else:
+                    os.killpg(os.getpgid(edge_process.pid), signal.SIGKILL)
                 # edge_process.terminate()
                 # edge_process.join()
         yaml_object = {}
@@ -184,7 +188,10 @@ def cleanup_all_fedml_client_learning_processes():
 
             if found_learning_process and found_client_process:
                 click.echo("find client learning process at {}.".format(process.pid))
-                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                if platform.system() == 'Windows':
+                    os.system("taskkill /PID {} /T /F".format(process.pid))
+                else:
+                    os.killpg(os.getpgid(process.pid), signal.SIGKILL)
         except Exception as e:
             pass
 
@@ -201,7 +208,10 @@ def cleanup_all_fedml_client_diagnosis_processes():
 
             if found_client_diagnosis_process:
                 click.echo("find client diagnosis process at {}.".format(process.pid))
-                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                if platform.system() == 'Windows':
+                    os.system("taskkill /PID {} /T /F".format(process.pid))
+                else:
+                    os.killpg(os.getpgid(process.pid), signal.SIGKILL)
         except Exception as e:
             pass
 
@@ -215,7 +225,10 @@ def cleanup_all_fedml_client_login_processes(login_program):
                 if str(cmd).find(login_program) != -1:
                     if os.path.basename(cmd) == login_program:
                         click.echo("find client login process at {}.".format(process.pid))
-                        os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                        if platform.system() == "Windows":
+                            os.system("taskkill /PID {} /T /F".format(process.pid))
+                        else:
+                            os.killpg(os.getpgid(process.pid), signal.SIGKILL)
         except Exception as e:
             pass
 
@@ -236,12 +249,15 @@ def cleanup_all_fedml_server_learning_processes():
 
             if found_learning_process and found_server_process:
                 click.echo("find server learning process at {}.".format(process.pid))
-                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                if platform.system() == 'Windows':
+                    os.system("taskkill /PID {} /T /F".format(process.pid))
+                else:
+                    os.killpg(os.getpgid(process.pid), signal.SIGKILL)
         except Exception as e:
             pass
 
 
-def cleanup_all_fedml_client_api_processes():
+def cleanup_all_fedml_client_api_processes(kill_all=False):
     # Cleanup all fedml client api processes.
     for process in psutil.process_iter():
         try:
@@ -253,12 +269,18 @@ def cleanup_all_fedml_client_api_processes():
 
             if find_api_process:
                 click.echo("find client api process at {}.".format(process.pid))
-                os.kill(process.pid, signal.SIGTERM)
+                if platform.system() == 'Windows':
+                    os.system("taskkill /PID {} /T /F".format(process.pid))
+                else:
+                    if kill_all:
+                        os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                    else:
+                        os.kill(process.pid, signal.SIGKILL)
         except Exception as e:
             pass
 
 
-def cleanup_all_fedml_server_api_processes():
+def cleanup_all_fedml_server_api_processes(kill_all=False):
     # Cleanup all fedml server api processes.
     for process in psutil.process_iter():
         try:
@@ -270,7 +292,13 @@ def cleanup_all_fedml_server_api_processes():
 
             if find_api_process:
                 click.echo("find server api process at {}.".format(process.pid))
-                os.kill(process.pid, signal.SIGTERM)
+                if platform.system() == 'Windows':
+                    os.system("taskkill /PID {} /T /F".format(process.pid))
+                else:
+                    if kill_all:
+                        os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                    else:
+                        os.kill(process.pid, signal.SIGKILL)
         except Exception as e:
             pass
 
@@ -284,7 +312,10 @@ def cleanup_all_fedml_server_login_processes(login_program):
                 if str(cmd).find(login_program) != -1:
                     if os.path.basename(cmd) == login_program:
                         click.echo("find server login process at {}.".format(process.pid))
-                        os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                        if platform.system() == 'Windows':
+                            os.system("taskkill /PID {} /T /F".format(process.pid))
+                        else:
+                            os.killpg(os.getpgid(process.pid), signal.SIGKILL)
         except Exception as e:
             pass
 

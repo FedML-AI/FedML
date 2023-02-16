@@ -78,8 +78,7 @@ class FoolsGoldDefense(BaseDefenseMethod):
         # Foolsgold uses the last layer's gradient/weights as the importance feature.
         ret_feature_vector_list = []
         for idx in range(len(raw_client_grad_list)):
-            raw_grad = raw_client_grad_list[idx]
-            (p, grads) = raw_grad
+            (p, grads) = raw_client_grad_list[idx]
 
             # Get last key-value tuple
             (weight_name, importance_feature) = list(grads.items())[-2]
