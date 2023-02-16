@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request
-from .server_data_interface import FedMLServerDataInterface
+from fedml.cli.server_deployment.server_data_interface import FedMLServerDataInterface
 
 
 api = FastAPI()

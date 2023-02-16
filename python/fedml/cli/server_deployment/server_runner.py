@@ -144,8 +144,9 @@ class FedMLServerRunner:
         except Exception as e:
             pass
         local_package_file = os.path.join(local_package_path, os.path.basename(package_url))
-        if not os.path.exists(local_package_file):
-            urllib.request.urlretrieve(package_url, local_package_file)
+        if os.path.exists(local_package_file):
+            os.remove(local_package_file)
+        urllib.request.urlretrieve(package_url, local_package_file)
         unzip_package_path = ServerConstants.get_package_unzip_dir(self.run_id, package_url)
         self.fedml_packages_base_dir = unzip_package_path
         try:
@@ -154,6 +155,8 @@ class FedMLServerRunner:
             )
         except Exception as e:
             pass
+        logging.info("local_package_file {}, unzip_package_path {}, unzip file full path {}".format(
+            local_package_file, unzip_package_path, ClientConstants.get_package_run_dir(package_name)))
         self.unzip_file(local_package_file, unzip_package_path)
         unzip_package_path = ServerConstants.get_package_run_dir(self.run_id, package_url, package_name)
         return unzip_package_path
@@ -376,12 +379,16 @@ class FedMLServerRunner:
         time.sleep(3)
 
         python_program = get_python_program()
+        entry_fill_full_path = os.path.join(unzip_package_path, "fedml", entry_file)
+        conf_file_full_path = os.path.join(unzip_package_path, "fedml", conf_file)
+        logging.info("Run the server: {} {} --cf {} --rank 0 --role server".format(
+            python_program, entry_fill_full_path, conf_file_full_path))
         process = ServerConstants.exec_console_with_shell_script_list(
             [
                 python_program,
-                entry_file,
+                entry_fill_full_path,
                 "--cf",
-                conf_file,
+                conf_file_full_path,
                 "--rank ",
                 "0",
                 "--role",
@@ -401,6 +408,12 @@ class FedMLServerRunner:
 
             sys_utils.log_return_info(entry_file, 0)
         else:
+            # If the run status is killed or finished, then return with the normal state.
+            current_job = FedMLServerDataInterface.get_instance().get_job_by_id(run_id)
+            if current_job is not None and (current_job.status  == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED or \
+                current_job.status  == ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED):
+                return
+
             if err is not None:
                 err_str = err.decode(encoding="utf-8")
                 if err_str != "":
@@ -541,22 +554,18 @@ class FedMLServerRunner:
             self.client_mqtt_mgr.send_message(topic_start_train, json.dumps(self.request_json))
 
     def callback_client_status_msg(self, topic=None, payload=None):
+        logging.info("callback_client_status_msg payload {}".format(payload))
         payload_json = json.loads(payload)
         run_id = payload_json["run_id"]
         edge_id = payload_json["edge_id"]
         status = payload_json["status"]
-        edge_id_list = self.request_json["edgeids"]
-        if len(edge_id_list) == 1 and edge_id_list[0] == edge_id and \
-                status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED:
-            if self.run_as_edge_server_and_agent or self.run_as_cloud_agent:
-                server_runner = FedMLServerRunner(
-                    self.args, run_id=run_id, request_json=self.request_json, agent_config=self.agent_config
-                )
-                server_runner.edge_id = self.edge_id
-                server_runner.run_as_edge_server_and_agent = self.run_as_edge_server_and_agent
-                server_runner.run_as_cloud_agent = self.run_as_cloud_agent
-                server_runner.run_status = ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED
-                Process(target=server_runner.cleanup_client_with_status).start()
+
+        job = FedMLServerDataInterface.get_instance().get_job_by_id(run_id)
+        if job is not None and job.running_json is not None and job.running_json != "":
+            job_json_obj = json.loads(job.running_json)
+            edge_id_list = job_json_obj["edgeids"]
+            if status == ServerConstants.MSG_MLOPS_SERVER_STATUS_EXCEPTION:
+                self.send_exit_train_with_exception_request_to_edges(edge_id_list, job.running_json)
 
     def callback_start_train(self, topic=None, payload=None):
         logging.info("callback_start_train from Web: {}".format(payload))
@@ -577,13 +586,18 @@ class FedMLServerRunner:
         self.request_json = request_json
         self.running_request_json[str(run_id)] = request_json
 
-        if not self.run_as_cloud_server:
-            # Setup MQTT message listener to the client status message from the server.
-            edge_id_list = request_json["edgeids"]
-            for edge_id in edge_id_list:
-                topic_name = "fl_client/flclient_agent_" + str(edge_id) + "/status"
-                self.mqtt_mgr.add_message_listener(topic_name, self.callback_client_status_msg)
-                self.mqtt_mgr.subscribe_msg(topic_name)
+        # Setup MQTT message listener for run exception
+        topic_client_exit_train_with_exception = "flserver_agent/" + str(run_id) + "/client_exit_train_with_exception"
+        self.mqtt_mgr.add_message_listener(topic_client_exit_train_with_exception, self.callback_client_exit_train_with_exception)
+        self.mqtt_mgr.subscribe_msg(topic_client_exit_train_with_exception)
+
+        # if not self.run_as_cloud_server:
+        #     # Setup MQTT message listener to the client status message from the server.
+        #     edge_id_list = request_json["edgeids"]
+        #     for edge_id in edge_id_list:
+        #         topic_name = "fl_client/flclient_agent_" + str(edge_id) + "/status"
+        #         self.mqtt_mgr.add_message_listener(topic_name, self.callback_client_status_msg)
+        #         self.mqtt_mgr.subscribe_msg(topic_name)
 
         if self.run_as_edge_server_and_agent:
             # Start log processor for current run
@@ -942,7 +956,9 @@ class FedMLServerRunner:
         request_json = json.loads(payload)
         run_id = request_json.get("runId", None)
         if run_id is None:
-            run_id = request_json.get("id", None)
+            run_id = request_json.get("run_id", None)
+            if run_id is None:
+                run_id = request_json.get("id", None)
 
         if run_id is None:
             return
@@ -963,6 +979,30 @@ class FedMLServerRunner:
             Process(target=client_runner.exit_run_with_exception).start()
         except Exception as e:
             pass
+
+    def callback_client_exit_train_with_exception(self, topic, payload):
+        # logging.info("callback_client_exit_train_with_exception: topic = %s, payload = %s" % (topic, payload))
+
+        request_json = json.loads(payload)
+        run_id = request_json.get("run_id", None)
+        edge_id = request_json.get("edge_id", None)
+        if run_id is None:
+            logging.info("callback_client_exit_train_with_exception run id is none")
+            return
+
+        job = FedMLServerDataInterface.get_instance().get_job_by_id(run_id)
+        if job is not None and job.running_json is not None and job.running_json != "":
+            job_json_obj = json.loads(job.running_json)
+            edge_ids = job_json_obj.get("edgeids", None)
+
+            logging.info("Exit run...")
+            logging.info("Exit run with multiprocessing.")
+
+            self.mlops_metrics.broadcast_server_training_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
+
+            self.send_exit_train_with_exception_request_to_edges(edge_ids, job.running_json)
+
+            self.exit_run_with_exception()
 
     def callback_runner_id_status(self, topic, payload):
         # logging.info("callback_runner_id_status: topic = %s, payload = %s" % (topic, payload))
@@ -1337,3 +1377,4 @@ class FedMLServerRunner:
             self.mqtt_mgr.loop_forever()
         except Exception as e:
             logging.info("Server tracing: {}".format(traceback.format_exc()))
+            time.sleep(5)
