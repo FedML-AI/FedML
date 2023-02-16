@@ -219,6 +219,36 @@ class FedMLClientDataInterface(Singleton):
         self.db_connection.close()
         return job_list_obj
 
+    def get_job_by_id(self, job_id):
+        job_obj = None
+
+        self.open_job_db()
+        current_cursor = self.db_connection.cursor()
+        results = current_cursor.execute("SELECT *  from jobs where job_id={};".format(job_id))
+        for row in results:
+            job_obj = FedMLClientJobModel()
+            job_obj.job_id = row[0]
+            job_obj.edge_id = row[1]
+            job_obj.started_time = row[2]
+            job_obj.ended_time = row[3]
+            job_obj.status = row[6]
+            job_obj.failed_time = row[7]
+            job_obj.error_code = row[8]
+            job_obj.msg = row[9]
+            job_obj.updated_time = row[10]
+            job_obj.round_index = row[11]
+            job_obj.total_rounds = row[12]
+            job_obj.progress = (0 if job_obj.total_rounds == 0 else job_obj.round_index / job_obj.total_rounds)
+            total_time = (0 if job_obj.progress == 0 else (float(job_obj.updated_time) - float(job_obj.started_time))
+                                                          / job_obj.progress)
+            job_obj.eta = total_time * (1.0 - job_obj.progress)
+            job_obj.running_json = row[13]
+            # job_obj.show()
+            break
+
+        self.db_connection.close()
+        return job_obj
+
     def insert_job_to_db(self, job):
         self.open_job_db()
         current_cursor = self.db_connection.cursor()

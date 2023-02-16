@@ -28,7 +28,7 @@ requirements = [
     "paho-mqtt",
     "boto3",
     "pynvml",
-    "sklearn",
+    "scikit-learn",
     "networkx",
     "click",
     "torch",
@@ -55,7 +55,8 @@ requirements = [
     "tritonclient",
     "redis",
     "attrdict",
-    "ntplib"
+    "ntplib",
+    "typing_extensions==4.4.0"
 ]
 
 requirements_extra_mpi = [
@@ -86,7 +87,7 @@ requirements_extra_mxnet = [
 
 setup(
     name="fedml",
-    version="0.7.422",
+    version="0.7.427",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
