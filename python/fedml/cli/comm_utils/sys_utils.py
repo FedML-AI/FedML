@@ -222,10 +222,8 @@ def cleanup_all_fedml_client_login_processes(login_program):
                 if str(cmd).find(login_program) != -1:
                     if os.path.basename(cmd) == login_program:
                         click.echo("find client login process at {}.".format(process.pid))
-                        os.killpg(os.getpgid(process.pid), signal.SIGKILL)
-                        if platform.system() == 'Windows':
-                            print("kill process")
-                            os.system("taskkill /PID {} /T /F".format(process.pid))
+                        os.system("taskkill /PID {} /T /F".format(process.pid))
+                        #os.killpg(os.getpgid(process.pid), signal.SIGKILL)
         except Exception as e:
             pass
 
