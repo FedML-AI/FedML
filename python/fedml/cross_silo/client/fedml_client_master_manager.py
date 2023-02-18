@@ -15,6 +15,9 @@ from ...core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
 
 class ClientMasterManager(FedMLCommManager):
+    ONLINE_STATUS_FLAG = "ONLINE"
+    RUN_FINISHED_STATUS_FLAG = "FINISHED"
+
     def __init__(self, args, trainer_dist_adapter, comm=None, rank=0, size=0, backend="MPI"):
         super().__init__(args, comm, rank, size, backend)
         self.trainer_dist_adapter = trainer_dist_adapter
@@ -99,8 +102,12 @@ class ClientMasterManager(FedMLCommManager):
         self.cleanup()
 
     def cleanup(self):
-        self.finish()
         mlops.log_training_finished_status()
+        for i in range(1, 4):
+            self.send_client_status(0, ClientMasterManager.RUN_FINISHED_STATUS_FLAG)
+            time.sleep(2)
+        time.sleep(3)
+        self.finish()
 
     def send_model_to_server(self, receive_id, weights, local_sample_num):
         tick = time.time()
@@ -115,7 +122,7 @@ class ClientMasterManager(FedMLCommManager):
             self.round_idx+1, self.num_rounds, model_url=message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL),
         )
 
-    def send_client_status(self, receive_id, status="ONLINE"):
+    def send_client_status(self, receive_id, status=ONLINE_STATUS_FLAG):
         logging.info("send_client_status")
         logging.info("self.client_real_id = {}".format(self.client_real_id))
         message = Message(MyMessage.MSG_TYPE_C2S_CLIENT_STATUS, self.client_real_id, receive_id)
