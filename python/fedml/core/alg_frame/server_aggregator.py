@@ -39,6 +39,9 @@ class ServerAggregator(ABC):
     def on_before_aggregation(
             self, raw_client_model_or_grad_list: List[Tuple[float, OrderedDict]]
     ):
+        if FedMLDifferentialPrivacy.get_instance().is_global_dp_enabled() and FedMLDifferentialPrivacy.get_instance().is_clipping():
+            logging.info("-----clipping ----")
+            raw_client_model_or_grad_list = FedMLDifferentialPrivacy.get_instance().global_clip(raw_client_model_or_grad_list)
         if FedMLAttacker.get_instance().is_model_attack():
             raw_client_model_or_grad_list = FedMLAttacker.get_instance().attack_model(
                 raw_client_grad_list=raw_client_model_or_grad_list,
