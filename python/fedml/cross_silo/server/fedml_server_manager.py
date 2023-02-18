@@ -12,6 +12,9 @@ from ...core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
 
 class FedMLServerManager(FedMLCommManager):
+    ONLINE_STATUS_FLAG = "ONLINE"
+    RUN_FINISHED_STATUS_FLAG = "FINISHED"
+
     def __init__(
             self, args, aggregator, comm=None, client_rank=0, client_num=0, backend="MQTT_S3",
     ):
@@ -23,6 +26,8 @@ class FedMLServerManager(FedMLCommManager):
 
         self.client_online_mapping = {}
         self.client_real_ids = json.loads(args.client_id_list)
+
+        self.client_finished_mapping = {}
 
         self.is_initialized = False
         self.client_id_list_in_this_round = None
@@ -88,10 +93,13 @@ class FedMLServerManager(FedMLCommManager):
 
     def handle_message_client_status_update(self, msg_params):
         client_status = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_STATUS)
-        if client_status == "ONLINE":
+        if client_status == FedMLServerManager.ONLINE_STATUS_FLAG:
             self.client_online_mapping[str(msg_params.get_sender_id())] = True
+            self.client_finished_mapping[str(msg_params.get_sender_id())] = False
 
             logging.info("self.client_online_mapping = {}".format(self.client_online_mapping))
+        elif client_status == FedMLServerManager.RUN_FINISHED_STATUS_FLAG:
+            self.client_finished_mapping[str(msg_params.get_sender_id())] = True
 
         mlops.log_aggregation_status(MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING)
 
@@ -109,6 +117,17 @@ class FedMLServerManager(FedMLCommManager):
             # send initialization message to all clients to start training
             self.send_init_msg()
             self.is_initialized = True
+
+        all_client_is_finished = True
+        for client_id in self.client_id_list_in_this_round:
+            if not self.client_finished_mapping.get(str(client_id), False):
+                all_client_is_finished = False
+                break
+
+        if all_client_is_finished:
+            mlops.log_aggregation_finished_status()
+            time.sleep(5)
+            self.finish()
 
     def handle_message_receive_model_from_client(self, msg_params):
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
@@ -192,9 +211,6 @@ class FedMLServerManager(FedMLCommManager):
                 client_id, self.data_silo_index_list[client_idx_in_this_round],
             )
             client_idx_in_this_round += 1
-        time.sleep(3)
-        self.finish()
-        mlops.log_aggregation_finished_status()
 
     def send_message_init_config(self, receive_id, global_model_params, datasilo_index,
                                  global_model_url=None, global_model_key=None):
