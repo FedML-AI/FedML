@@ -185,6 +185,6 @@ jobs:
         with:
           skip_existing: true
           packages_dir: python/dist
-          user: ${{ secrets.PYPI_USER_NAME }}
-          password: ${{ secrets.PYPI_PASSWORD }}
+          user: ${{ secrets.PYPI_API_USER_NAME }}
+          password: ${{ secrets.PYPI_API_TOKEN }}
           repository_url: https://test.pypi.org/legacy/
