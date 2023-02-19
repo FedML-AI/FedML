@@ -46,7 +46,7 @@ requirements = [
     "PyNaCl",
     "httpx",
     "attrs",
-    "fastapi",
+    "fastapi==0.92.0",
     "uvicorn",
     "geventhttpclient>=1.4.4,<=2.0.2",
     "aiohttp>=3.8.1",
@@ -87,7 +87,7 @@ requirements_extra_mxnet = [
 
 setup(
     name="fedml",
-    version="0.7.427",
+    version="0.7.428",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
