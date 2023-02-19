@@ -598,7 +598,7 @@ class FedMLClientRunner:
             self.args, edge_id=self.edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id
         )
         client_runner.start_request_json = self.start_request_json
-        self.process = Process(target=client_runner.run, daemon=True)
+        self.process = Process(target=client_runner.run)
         self.process.start()
         ClientConstants.save_run_process(self.process.pid)
 
