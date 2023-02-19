@@ -27,7 +27,7 @@ if __name__ == "__main__":
             ClientConstants.cleanup_run_process()
             sys_utils.cleanup_all_fedml_client_api_processes()
             sys_utils.cleanup_all_fedml_client_learning_processes()
-            sys_utils.cleanup_all_fedml_client_login_processes("client_login.py")
+            sys_utils.cleanup_all_fedml_client_login_processes("client_login.py", clean_process_group=False)
         except Exception as e:
             pass
 
