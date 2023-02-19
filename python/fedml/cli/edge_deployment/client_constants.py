@@ -51,6 +51,8 @@ class ClientConstants(object):
     LOCAL_RUNNER_INFO_DIR_NAME = 'runner_infos'
     LOCAL_PACKAGE_HOME_DIR_NAME = "fedml_packages"
 
+    CLIENT_LOGIN_PROGRAM = "client_login.py"
+
     FEDML_OTA_CMD_UPGRADE = "upgrade"
     FEDML_OTA_CMD_RESTART = "restart"
 
@@ -324,6 +326,17 @@ class ClientConstants(object):
             ret_state = ClientConstants.MSG_MLOPS_DEVICE_STATUS_IDLE
 
         return ret_state
+
+    @staticmethod
+    def is_client_running(status):
+        if status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED or \
+                status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED or \
+                status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED or \
+                status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE or \
+                status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE:
+            return False
+
+        return True
 
 
 if __name__ == "__main__":
