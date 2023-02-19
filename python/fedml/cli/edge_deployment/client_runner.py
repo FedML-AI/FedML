@@ -429,7 +429,9 @@ class FedMLClientRunner:
             self.stop_run_with_killed_status()
         except Exception as e:
             self.release_client_mqtt_mgr()
-            sys_utils.cleanup_all_fedml_client_login_processes( ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
+            sys_utils.cleanup_all_bootstrap_processes(
+                ClientConstants.CLIENT_BOOTSTRAP_WIN_PROGRAM if platform.system() == "Windows" else
+                ClientConstants.CLIENT_BOOTSTRAP_LINUX_PROGRAM, clean_process_group=False)
             sys.exit(1)
         finally:
             self.release_client_mqtt_mgr()
@@ -443,6 +445,7 @@ class FedMLClientRunner:
 
         try:
             ClientConstants.cleanup_learning_process()
+            ClientConstants.cleanup_all_bootstrap_processes()
         except Exception as e:
             pass
 
@@ -462,6 +465,9 @@ class FedMLClientRunner:
 
         ClientConstants.cleanup_learning_process()
         ClientConstants.cleanup_run_process()
+        sys_utils.cleanup_all_bootstrap_processes(
+            ClientConstants.CLIENT_BOOTSTRAP_WIN_PROGRAM if platform.system() == "Windows" else
+            ClientConstants.CLIENT_BOOTSTRAP_LINUX_PROGRAM, clean_process_group=False)
 
         self.mlops_metrics.report_client_id_status(self.run_id, self.edge_id,
                                                    ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
