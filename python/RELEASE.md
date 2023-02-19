@@ -25,6 +25,13 @@ pip install -e '.[gRPC]'
 
 ```
 
+### Test
+```
+pip install twine
+python setup.py sdist bdist_wheel
+twine check dist/*
+twine upload --repository testpypi dist/*
+```
 
 ### Release
 ```
@@ -32,5 +39,4 @@ pip install twine
 python setup.py sdist bdist_wheel
 twine check dist/*
 twine upload dist/*
-
 ```
