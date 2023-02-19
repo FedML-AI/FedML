@@ -2,7 +2,7 @@ name: Build-Wheels-PyPi
 # https://github.com/pypa/cibuildwheel
 # Controls when the workflow will run
 on:
-  pull_request:
+  push:
     branches: [ dev/v0.7.0 ]
 
   # Allows you to run this workflow manually from the Actions tab
