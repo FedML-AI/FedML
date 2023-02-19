@@ -305,7 +305,8 @@ class FedMLClientRunner:
             self.run_impl()
         except Exception:
             self.release_client_mqtt_mgr()
-            sys_utils.cleanup_all_fedml_client_login_processes( ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
+            sys_utils.cleanup_all_fedml_client_login_processes(
+                ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
             sys.exit(1)
         finally:
             self.release_client_mqtt_mgr()
@@ -351,6 +352,9 @@ class FedMLClientRunner:
         conf_file = entry_file_config["conf_file"]
         conf_file = str(conf_file).replace('\\', os.sep).replace('/', os.sep)
         ClientConstants.cleanup_learning_process()
+        sys_utils.cleanup_all_bootstrap_processes(
+            ClientConstants.CLIENT_BOOTSTRAP_WIN_PROGRAM if platform.system() == "Windows" else
+            ClientConstants.CLIENT_BOOTSTRAP_LINUX_PROGRAM, clean_process_group=False)
         if not os.path.exists(unzip_package_path):
             self.cleanup_run_when_starting_failed()
             self.mlops_metrics.client_send_exit_train_msg(run_id, self.edge_id,
@@ -420,6 +424,9 @@ class FedMLClientRunner:
 
         try:
             ClientConstants.cleanup_learning_process()
+            sys_utils.cleanup_all_bootstrap_processes(
+                ClientConstants.CLIENT_BOOTSTRAP_WIN_PROGRAM if platform.system() == "Windows" else
+                ClientConstants.CLIENT_BOOTSTRAP_LINUX_PROGRAM, clean_process_group=False)
         except Exception as e:
             pass
 
@@ -429,9 +436,8 @@ class FedMLClientRunner:
             self.stop_run_with_killed_status()
         except Exception as e:
             self.release_client_mqtt_mgr()
-            sys_utils.cleanup_all_bootstrap_processes(
-                ClientConstants.CLIENT_BOOTSTRAP_WIN_PROGRAM if platform.system() == "Windows" else
-                ClientConstants.CLIENT_BOOTSTRAP_LINUX_PROGRAM, clean_process_group=False)
+            sys_utils.cleanup_all_fedml_client_login_processes(
+                ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
             sys.exit(1)
         finally:
             self.release_client_mqtt_mgr()
@@ -445,7 +451,9 @@ class FedMLClientRunner:
 
         try:
             ClientConstants.cleanup_learning_process()
-            ClientConstants.cleanup_all_bootstrap_processes()
+            sys_utils.cleanup_all_bootstrap_processes(
+                ClientConstants.CLIENT_BOOTSTRAP_WIN_PROGRAM if platform.system() == "Windows" else
+                ClientConstants.CLIENT_BOOTSTRAP_LINUX_PROGRAM, clean_process_group=False)
         except Exception as e:
             pass
 
@@ -455,7 +463,8 @@ class FedMLClientRunner:
             self.exit_run_with_exception()
         except Exception as e:
             self.release_client_mqtt_mgr()
-            sys_utils.cleanup_all_fedml_client_login_processes( ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
+            sys_utils.cleanup_all_fedml_client_login_processes(
+                ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
             sys.exit(1)
         finally:
             self.release_client_mqtt_mgr()
@@ -490,6 +499,9 @@ class FedMLClientRunner:
 
         try:
             ClientConstants.cleanup_learning_process()
+            sys_utils.cleanup_all_bootstrap_processes(
+                ClientConstants.CLIENT_BOOTSTRAP_WIN_PROGRAM if platform.system() == "Windows" else
+                ClientConstants.CLIENT_BOOTSTRAP_LINUX_PROGRAM, clean_process_group=False)
         except Exception as e:
             pass
 
@@ -509,6 +521,9 @@ class FedMLClientRunner:
 
         try:
             ClientConstants.cleanup_learning_process()
+            sys_utils.cleanup_all_bootstrap_processes(
+                ClientConstants.CLIENT_BOOTSTRAP_WIN_PROGRAM if platform.system() == "Windows" else
+                ClientConstants.CLIENT_BOOTSTRAP_LINUX_PROGRAM, clean_process_group=False)
         except Exception as e:
             pass
 
@@ -986,6 +1001,7 @@ class FedMLClientRunner:
             self.mqtt_mgr.disconnect()
             self.release_client_mqtt_mgr()
             time.sleep(5)
-            sys_utils.cleanup_all_fedml_client_login_processes( ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
+            sys_utils.cleanup_all_fedml_client_login_processes(
+                ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
             sys.exit(1)
 
