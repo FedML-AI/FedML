@@ -462,6 +462,12 @@ class FedMLServerRunner:
 
     def stop_run(self):
         edge_id_list = self.request_json["edgeids"]
+
+        ServerConstants.cleanup_learning_process()
+        sys_utils.cleanup_all_bootstrap_processes(
+            ServerConstants.SERVER_BOOTSTRAP_WIN_PROGRAM if platform.system() == "Windows" else
+            ServerConstants.SERVER_BOOTSTRAP_LINUX_PROGRAM, clean_process_group=False)
+
         self.send_training_stop_request_to_edges(edge_id_list, json.dumps(self.request_json))
 
         logging.info("Stop run successfully.")
@@ -471,11 +477,6 @@ class FedMLServerRunner:
         self.mlops_metrics.report_server_training_status(self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED)
 
         time.sleep(1)
-
-        ServerConstants.cleanup_learning_process()
-        sys_utils.cleanup_all_bootstrap_processes(
-            ServerConstants.SERVER_BOOTSTRAP_WIN_PROGRAM if platform.system() == "Windows" else
-            ServerConstants.SERVER_BOOTSTRAP_LINUX_PROGRAM, clean_process_group=False)
 
         try:
             local_package_path = ServerConstants.get_package_download_dir()
