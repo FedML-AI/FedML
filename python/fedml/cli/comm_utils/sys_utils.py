@@ -7,6 +7,8 @@ from os.path import expanduser
 import click
 import psutil
 import yaml
+from psutil import NoSuchProcess
+
 from .yaml_utils import load_yaml_config
 
 
@@ -325,7 +327,11 @@ def cleanup_all_fedml_server_login_processes(login_program, clean_process_group=
 
 
 def is_process_running(pid):
-    process = psutil.Process(pid)
+    try:
+        process = psutil.Process(pid)
+    except NoSuchProcess:
+        return False
+
     if process is None:
         return False
     return True
