@@ -43,6 +43,7 @@ class FedMLServerRunner:
     FEDML_CLOUD_SERVER_PREFIX = "fedml-server-run-"
 
     def __init__(self, args, run_id=0, request_json=None, agent_config=None, edge_id=0):
+        self.server_process = None
         self.start_request_json = None
         self.server_docker_image = None
         self.cloud_server_name = None
@@ -564,11 +565,10 @@ class FedMLServerRunner:
             return
         self.start_request_json = payload
         run_id = request_json["runId"]
-        job = FedMLServerDataInterface.get_instance().get_current_job()
-        if job is not None and ServerConstants.is_server_running(job.status):
-            logging.info("There is a running job, please stop it before running new job.")
-            return
-
+        if self.run_as_edge_server_and_agent or self.run_as_cloud_agent:
+            if self.server_process is not None and sys_utils.is_process_running(self.server_process.pid):
+                logging.info("There is a running job, please stop it before running new job.")
+                return
         self.run_id = run_id
         ServerConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, self.edge_id, run_id=run_id)
 
@@ -592,9 +592,9 @@ class FedMLServerRunner:
             server_runner.run_as_edge_server_and_agent = self.run_as_edge_server_and_agent
             server_runner.edge_id = self.edge_id
             server_runner.start_request_json = self.start_request_json
-            server_process = Process(target=server_runner.run)
-            server_process.start()
-            ServerConstants.save_run_process(server_process.pid)
+            self.server_process = Process(target=server_runner.run)
+            self.server_process.start()
+            ServerConstants.save_run_process(self.server_process.pid)
         elif self.run_as_cloud_agent:
             # Start log processor for current run
             MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(
@@ -606,9 +606,9 @@ class FedMLServerRunner:
             )
             server_runner.run_as_cloud_agent = self.run_as_cloud_agent
             server_runner.start_request_json = self.start_request_json
-            server_process = Process(target=server_runner.start_cloud_server_process_entry)
-            server_process.start()
-            ServerConstants.save_run_process(server_process.pid)
+            self.server_process = Process(target=server_runner.start_cloud_server_process_entry)
+            self.server_process.start()
+            ServerConstants.save_run_process(self.server_process.pid)
         elif self.run_as_cloud_server:
             self.server_agent_id = self.request_json.get("cloud_agent_id", self.edge_id)
             self.start_request_json = json.dumps(self.request_json)
@@ -953,9 +953,6 @@ class FedMLServerRunner:
             return
 
         edge_ids = request_json.get("edgeids", None)
-
-        logging.info("Exit run...")
-        logging.info("Exit run with multiprocessing.")
 
         self.send_exit_train_with_exception_request_to_edges(edge_ids, payload)
 
