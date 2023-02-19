@@ -102,11 +102,8 @@ class ClientMasterManager(FedMLCommManager):
         self.cleanup()
 
     def cleanup(self):
+        self.send_client_status(0, ClientMasterManager.RUN_FINISHED_STATUS_FLAG)
         mlops.log_training_finished_status()
-        for i in range(1, 4):
-            self.send_client_status(0, ClientMasterManager.RUN_FINISHED_STATUS_FLAG)
-            time.sleep(2)
-        time.sleep(3)
         self.finish()
 
     def send_model_to_server(self, receive_id, weights, local_sample_num):
@@ -134,7 +131,11 @@ class ClientMasterManager(FedMLCommManager):
 
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_STATUS, status)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, sys_name)
-        self.send_message(message)
+
+        if status == ClientMasterManager.RUN_FINISHED_STATUS_FLAG:
+            mlops.log_server_payload(self.args.run_id, self.client_real_id, json.dumps(message.get_params()))
+        else:
+            self.send_message(message)
 
     def report_training_status(self, status):
         mlops.log_training_status(status)
