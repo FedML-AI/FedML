@@ -143,7 +143,6 @@ def event(event_name, event_started=True, event_value=None, event_edge_id=None):
         return
 
     setup_log_mqtt_mgr()
-    wait_log_mqtt_connected()
 
     if event_started:
         MLOpsStore.mlops_event.log_event_started(event_name, event_value, event_edge_id)
@@ -181,12 +180,10 @@ def log(metrics: dict, commit=True):
 
     if commit:
         setup_log_mqtt_mgr()
-        wait_log_mqtt_connected()
         MLOpsStore.mlops_log_metrics_lock.acquire()
         MLOpsStore.mlops_metrics.report_server_training_metric(MLOpsStore.mlops_log_metrics)
         MLOpsStore.mlops_log_metrics.clear()
         MLOpsStore.mlops_log_metrics_lock.release()
-        release_log_mqtt_mgr()
 
 
 def log_training_status(status, run_id=None):
@@ -204,12 +201,10 @@ def log_training_status(status, run_id=None):
     logging.info("log training status {}".format(status))
 
     setup_log_mqtt_mgr()
-    wait_log_mqtt_connected()
     if mlops_parrot_enabled(MLOpsStore.mlops_args):
         MLOpsStore.mlops_metrics.broadcast_client_training_status(MLOpsStore.mlops_edge_id, status)
     else:
         MLOpsStore.mlops_metrics.report_client_training_status(MLOpsStore.mlops_edge_id, status)
-    release_log_mqtt_mgr()
 
 
 def log_aggregation_status(status, run_id=None):
@@ -227,7 +222,6 @@ def log_aggregation_status(status, run_id=None):
     logging.info("log aggregation status {}".format(status))
 
     setup_log_mqtt_mgr()
-    wait_log_mqtt_connected()
     if mlops_parrot_enabled(MLOpsStore.mlops_args):
         device_role = "simulator"
     else:
@@ -246,7 +240,6 @@ def log_aggregation_status(status, run_id=None):
                                                                                          MLOpsStore.mlops_edge_id)
     else:
         MLOpsStore.mlops_metrics.report_server_training_status(MLOpsStore.mlops_run_id, status, role=device_role)
-    release_log_mqtt_mgr()
 
 
 def log_training_finished_status(run_id=None):
@@ -266,14 +259,11 @@ def log_training_finished_status(run_id=None):
     logging.info("log training inner status {}".format(ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED))
 
     setup_log_mqtt_mgr()
-    wait_log_mqtt_connected()
     MLOpsStore.mlops_metrics.broadcast_client_training_status(MLOpsStore.mlops_edge_id,
                                                               ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
     MLOpsStore.mlops_metrics.report_client_id_status(MLOpsStore.mlops_run_id,
                                                      MLOpsStore.mlops_edge_id,
                                                      ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
-    release_log_mqtt_mgr()
-
 
 def send_exit_train_msg(run_id=None):
     if not mlops_enabled(MLOpsStore.mlops_args):
@@ -289,10 +279,8 @@ def send_exit_train_msg(run_id=None):
         run_id_param = MLOpsStore.mlops_run_id
 
     setup_log_mqtt_mgr()
-    wait_log_mqtt_connected()
     MLOpsStore.mlops_metrics.client_send_exit_train_msg(run_id_param, MLOpsStore.mlops_edge_id,
                                                         ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
-    release_log_mqtt_mgr()
 
 
 def log_training_failed_status(run_id=None):
@@ -312,13 +300,11 @@ def log_training_failed_status(run_id=None):
     logging.info("log training inner status {}".format(ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED))
 
     setup_log_mqtt_mgr()
-    wait_log_mqtt_connected()
     MLOpsStore.mlops_metrics.broadcast_client_training_status(MLOpsStore.mlops_edge_id,
                                                               ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
     MLOpsStore.mlops_metrics.report_client_id_status(MLOpsStore.mlops_run_id,
                                                      MLOpsStore.mlops_edge_id,
                                                      ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
-    release_log_mqtt_mgr()
 
 
 def log_aggregation_finished_status(run_id=None):
@@ -338,12 +324,10 @@ def log_aggregation_finished_status(run_id=None):
     logging.info("log aggregation inner status {}".format(ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED))
 
     setup_log_mqtt_mgr()
-    wait_log_mqtt_connected()
     MLOpsStore.mlops_metrics.broadcast_server_training_status(MLOpsStore.mlops_run_id,
                                                               ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED)
     MLOpsStore.mlops_metrics.report_server_id_status(MLOpsStore.mlops_run_id,
                                                      ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED)
-    release_log_mqtt_mgr()
 
 
 def log_aggregation_failed_status(run_id=None):
@@ -362,12 +346,10 @@ def log_aggregation_failed_status(run_id=None):
     # logging.info("log aggregation inner status {}".format(ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED))
 
     setup_log_mqtt_mgr()
-    wait_log_mqtt_connected()
     MLOpsStore.mlops_metrics.broadcast_server_training_status(MLOpsStore.mlops_run_id,
                                                               ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
     MLOpsStore.mlops_metrics.report_server_id_status(MLOpsStore.mlops_run_id,
                                                      ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
-    release_log_mqtt_mgr()
 
 
 def log_aggregated_model_info(round_index, model_url):
@@ -384,14 +366,12 @@ def log_aggregated_model_info(round_index, model_url):
     logging.info("log aggregated model info {}".format(model_url))
 
     setup_log_mqtt_mgr()
-    wait_log_mqtt_connected()
     model_info = {
         "run_id": MLOpsStore.mlops_run_id,
         "round_idx": round_index,
         "global_aggregated_model_s3_address": model_url,
     }
     MLOpsStore.mlops_metrics.report_aggregated_model_info(model_info)
-    release_log_mqtt_mgr()
 
 
 def log_training_model_net_info(model_net):
@@ -415,13 +395,11 @@ def log_training_model_net_info(model_net):
     logging.info("log training model net info {}".format(model_url))
 
     setup_log_mqtt_mgr()
-    wait_log_mqtt_connected()
     model_info = {
         "run_id": MLOpsStore.mlops_run_id,
         "training_model_net_s3_address": model_url,
     }
     MLOpsStore.mlops_metrics.report_training_model_net_info(model_info)
-    release_log_mqtt_mgr()
 
 
 def log_client_model_info(round_index, total_rounds, model_url):
@@ -438,7 +416,6 @@ def log_client_model_info(round_index, total_rounds, model_url):
     logging.info("log client model info {}".format(model_url))
 
     setup_log_mqtt_mgr()
-    wait_log_mqtt_connected()
     model_info = {
         "run_id": MLOpsStore.mlops_run_id,
         "edge_id": MLOpsStore.mlops_edge_id,
@@ -446,7 +423,6 @@ def log_client_model_info(round_index, total_rounds, model_url):
         "client_model_s3_address": model_url,
     }
     MLOpsStore.mlops_metrics.report_client_model_info(model_info)
-    release_log_mqtt_mgr()
 
     FedMLClientDataInterface.get_instance().save_running_job(MLOpsStore.mlops_run_id, MLOpsStore.mlops_edge_id,
                                                              round_index,
@@ -464,6 +440,23 @@ def log_sys_perf(sys_args=None):
     MLOpsMetrics.report_sys_perf(MLOpsStore.mlops_args)
 
 
+def log_server_payload(run_id, edge_id, payload):
+    if not mlops_enabled(MLOpsStore.mlops_args):
+        return
+
+    set_realtime_params()
+
+    if not mlops_enabled(MLOpsStore.mlops_args):
+        return False
+
+    if not MLOpsStore.mlops_bind_result:
+        return
+
+    setup_log_mqtt_mgr()
+    topic = "fedml_{}_{}".format(run_id, edge_id)
+    logging.info("log json message, topic {}, payload {}.".format(topic, payload))
+    MLOpsStore.mlops_metrics.report_json_message(topic, payload)
+
 def log_round_info(total_rounds, round_index):
     if not mlops_enabled(MLOpsStore.mlops_args):
         return
@@ -480,7 +473,6 @@ def log_round_info(total_rounds, round_index):
         MLOpsStore.mlops_log_round_start_time = time.time()
 
     setup_log_mqtt_mgr()
-    wait_log_mqtt_connected()
     round_info = {
         "run_id": MLOpsStore.mlops_run_id,
         "round_index": round_index,
@@ -489,7 +481,6 @@ def log_round_info(total_rounds, round_index):
     }
     logging.info("log round info {}".format(round_info))
     MLOpsStore.mlops_metrics.report_server_training_round_info(round_info)
-    release_log_mqtt_mgr()
 
 
 def create_project(project_name, api_key):
@@ -628,14 +619,6 @@ def setup_log_mqtt_mgr():
     if MLOpsStore.mlops_log_mqtt_lock is None:
         MLOpsStore.mlops_log_mqtt_lock = threading.Lock()
 
-    if MLOpsStore.mlops_log_mqtt_mgr is not None:
-        MLOpsStore.mlops_log_mqtt_lock.acquire()
-        MLOpsStore.mlops_log_mqtt_mgr.remove_disconnected_listener(on_log_mqtt_disconnected)
-        MLOpsStore.mlops_log_mqtt_is_connected = False
-        MLOpsStore.mlops_log_mqtt_mgr.disconnect()
-        MLOpsStore.mlops_log_mqtt_mgr = None
-        MLOpsStore.mlops_log_mqtt_lock.release()
-
     if len(MLOpsStore.mlops_log_agent_config) == 0:
         return
 
@@ -649,7 +632,9 @@ def setup_log_mqtt_mgr():
         MLOpsStore.mlops_log_agent_config["mqtt_config"]["MQTT_USER"],
         MLOpsStore.mlops_log_agent_config["mqtt_config"]["MQTT_PWD"],
         MLOpsStore.mlops_log_agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
-        "FedML_MLOps_Metrics_" + MLOpsStore.mlops_args.device_id + "_" + str(MLOpsStore.mlops_edge_id)
+        "FedML_MLOps_Metrics_{}_{}_{}".format(MLOpsStore.mlops_args.device_id,
+                                              str(MLOpsStore.mlops_edge_id),
+                                              str(uuid.uuid4()))
     )
     MLOpsStore.mlops_log_mqtt_mgr.add_connected_listener(on_log_mqtt_connected)
     MLOpsStore.mlops_log_mqtt_mgr.add_disconnected_listener(on_log_mqtt_disconnected)
@@ -671,31 +656,15 @@ def setup_log_mqtt_mgr():
     MLOpsStore.mlops_event.edge_id = MLOpsStore.mlops_edge_id
 
 
-def release_log_mqtt_mgr(real_release=False):
-    if real_release:
-        if MLOpsStore.mlops_log_mqtt_mgr is not None:
-            MLOpsStore.mlops_log_mqtt_mgr.disconnect()
-            MLOpsStore.mlops_log_mqtt_mgr.loop_stop()
+def release_log_mqtt_mgr():
+    if MLOpsStore.mlops_log_mqtt_mgr is not None:
+        MLOpsStore.mlops_log_mqtt_mgr.disconnect()
+        MLOpsStore.mlops_log_mqtt_mgr.loop_stop()
 
-        MLOpsStore.mlops_log_mqtt_lock.acquire()
-        if MLOpsStore.mlops_log_mqtt_mgr is not None:
-            MLOpsStore.mlops_log_mqtt_is_connected = False
-        MLOpsStore.mlops_log_mqtt_lock.release()
-
-
-def wait_log_mqtt_connected():
-    pass
-    # while True:
-    #     MLOpsStore.mlops_log_mqtt_lock.acquire()
-    #     if MLOpsStore.mlops_log_mqtt_is_connected is True \
-    #             and MLOpsStore.mlops_metrics is not None:
-    #         MLOpsStore.mlops_metrics.set_messenger(MLOpsStore.mlops_log_mqtt_mgr, MLOpsStore.mlops_args)
-    #         if MLOpsStore.mlops_event is not None:
-    #             MLOpsStore.mlops_event.set_messenger(MLOpsStore.mlops_log_mqtt_mgr, MLOpsStore.mlops_args)
-    #         MLOpsStore.mlops_log_mqtt_lock.release()
-    #         break
-    #     MLOpsStore.mlops_log_mqtt_lock.release()
-    #     time.sleep(0.01)
+    MLOpsStore.mlops_log_mqtt_lock.acquire()
+    if MLOpsStore.mlops_log_mqtt_mgr is not None:
+        MLOpsStore.mlops_log_mqtt_is_connected = False
+    MLOpsStore.mlops_log_mqtt_lock.release()
 
 
 def init_logs(args, edge_id):

@@ -12,6 +12,9 @@ from ...core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
 
 class FedMLServerManager(FedMLCommManager):
+    ONLINE_STATUS_FLAG = "ONLINE"
+    RUN_FINISHED_STATUS_FLAG = "FINISHED"
+
     def __init__(
             self, args, aggregator, comm=None, client_rank=0, client_num=0, backend="MQTT_S3",
     ):
@@ -23,6 +26,8 @@ class FedMLServerManager(FedMLCommManager):
 
         self.client_online_mapping = {}
         self.client_real_ids = json.loads(args.client_id_list)
+
+        self.client_finished_mapping = {}
 
         self.is_initialized = False
         self.client_id_list_in_this_round = None
@@ -86,12 +91,10 @@ class FedMLServerManager(FedMLCommManager):
                     logging.info("Connection not ready for client" + str(client_id))
                 client_idx_in_this_round += 1
 
-    def handle_message_client_status_update(self, msg_params):
-        client_status = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_STATUS)
-        if client_status == "ONLINE":
-            self.client_online_mapping[str(msg_params.get_sender_id())] = True
+    def process_online_status(self, client_status, msg_params):
+        self.client_online_mapping[str(msg_params.get_sender_id())] = True
 
-            logging.info("self.client_online_mapping = {}".format(self.client_online_mapping))
+        logging.info("self.client_online_mapping = {}".format(self.client_online_mapping))
 
         mlops.log_aggregation_status(MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING)
 
@@ -110,7 +113,37 @@ class FedMLServerManager(FedMLCommManager):
             self.send_init_msg()
             self.is_initialized = True
 
+    def process_finished_status(self, client_status, msg_params):
+        self.client_finished_mapping[str(msg_params.get_sender_id())] = True
+
+        all_client_is_finished = True
+        for client_id in self.client_id_list_in_this_round:
+            if not self.client_finished_mapping.get(str(client_id), False):
+                all_client_is_finished = False
+                break
+
+        logging.info(
+            "sender_id = %d, all_client_is_finished = %s" % (msg_params.get_sender_id(), str(all_client_is_finished))
+        )
+
+        if all_client_is_finished:
+            mlops.log_aggregation_finished_status()
+            time.sleep(5)
+            self.finish()
+
+    def handle_message_client_status_update(self, msg_params):
+        client_status = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_STATUS)
+        if client_status == FedMLServerManager.ONLINE_STATUS_FLAG:
+            self.process_online_status(client_status, msg_params)
+        elif client_status == FedMLServerManager.RUN_FINISHED_STATUS_FLAG:
+            self.process_finished_status(client_status, msg_params)
+
     def handle_message_receive_model_from_client(self, msg_params):
+        if self.args.round_idx == self.round_num:
+            logging.info("=============training is finished. Cleanup...============")
+            self.cleanup()
+            return
+
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         mlops.event("comm_c2s", event_started=False, event_value=str(self.args.round_idx), event_edge_id=sender_id)
 
@@ -181,10 +214,6 @@ class FedMLServerManager(FedMLCommManager):
             logging.info("\n\n==========end {}-th round training===========\n".format(self.args.round_idx))
             mlops.event("server.wait", event_started=True, event_value=str(self.args.round_idx))
 
-            if self.args.round_idx == self.round_num:
-                logging.info("=============training is finished. Cleanup...============")
-                self.cleanup()
-
     def cleanup(self):
         client_idx_in_this_round = 0
         for client_id in self.client_id_list_in_this_round:
@@ -192,9 +221,6 @@ class FedMLServerManager(FedMLCommManager):
                 client_id, self.data_silo_index_list[client_idx_in_this_round],
             )
             client_idx_in_this_round += 1
-        time.sleep(3)
-        self.finish()
-        mlops.log_aggregation_finished_status()
 
     def send_message_init_config(self, receive_id, global_model_params, datasilo_index,
                                  global_model_url=None, global_model_key=None):
