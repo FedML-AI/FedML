@@ -91,15 +91,10 @@ class FedMLServerManager(FedMLCommManager):
                     logging.info("Connection not ready for client" + str(client_id))
                 client_idx_in_this_round += 1
 
-    def handle_message_client_status_update(self, msg_params):
-        client_status = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_STATUS)
-        if client_status == FedMLServerManager.ONLINE_STATUS_FLAG:
-            self.client_online_mapping[str(msg_params.get_sender_id())] = True
-            self.client_finished_mapping[str(msg_params.get_sender_id())] = False
+    def process_online_status(self, client_status, msg_params):
+        self.client_online_mapping[str(msg_params.get_sender_id())] = True
 
-            logging.info("self.client_online_mapping = {}".format(self.client_online_mapping))
-        elif client_status == FedMLServerManager.RUN_FINISHED_STATUS_FLAG:
-            self.client_finished_mapping[str(msg_params.get_sender_id())] = True
+        logging.info("self.client_online_mapping = {}".format(self.client_online_mapping))
 
         mlops.log_aggregation_status(MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING)
 
@@ -118,18 +113,37 @@ class FedMLServerManager(FedMLCommManager):
             self.send_init_msg()
             self.is_initialized = True
 
+    def process_finished_status(self, client_status, msg_params):
+        self.client_finished_mapping[str(msg_params.get_sender_id())] = True
+
         all_client_is_finished = True
         for client_id in self.client_id_list_in_this_round:
             if not self.client_finished_mapping.get(str(client_id), False):
                 all_client_is_finished = False
                 break
 
+        logging.info(
+            "sender_id = %d, all_client_is_finished = %s" % (msg_params.get_sender_id(), str(all_client_is_finished))
+        )
+
         if all_client_is_finished:
             mlops.log_aggregation_finished_status()
             time.sleep(5)
             self.finish()
 
+    def handle_message_client_status_update(self, msg_params):
+        client_status = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_STATUS)
+        if client_status == FedMLServerManager.ONLINE_STATUS_FLAG:
+            self.process_online_status(client_status, msg_params)
+        elif client_status == FedMLServerManager.RUN_FINISHED_STATUS_FLAG:
+            self.process_finished_status(client_status, msg_params)
+
     def handle_message_receive_model_from_client(self, msg_params):
+        if self.args.round_idx == self.round_num:
+            logging.info("=============training is finished. Cleanup...============")
+            self.cleanup()
+            return
+
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         mlops.event("comm_c2s", event_started=False, event_value=str(self.args.round_idx), event_edge_id=sender_id)
 
@@ -199,10 +213,6 @@ class FedMLServerManager(FedMLCommManager):
 
             logging.info("\n\n==========end {}-th round training===========\n".format(self.args.round_idx))
             mlops.event("server.wait", event_started=True, event_value=str(self.args.round_idx))
-
-            if self.args.round_idx == self.round_num:
-                logging.info("=============training is finished. Cleanup...============")
-                self.cleanup()
 
     def cleanup(self):
         client_idx_in_this_round = 0
