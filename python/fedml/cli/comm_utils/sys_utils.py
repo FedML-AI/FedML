@@ -326,12 +326,19 @@ def cleanup_all_fedml_server_login_processes(login_program, clean_process_group=
             pass
 
 
-def is_process_running(pid):
+def get_process_running_count(process_name):
+    count = 0
     for process in psutil.process_iter():
-        if str(process.pid) == str(pid):
-            return True
+        try:
+            pinfo = process.as_dict(attrs=["pid", "name", "cmdline"])
+            for cmd in pinfo["cmdline"]:
+                if str(cmd).find(process_name) != -1:
+                    if os.path.basename(cmd) == process_name:
+                        count += 1
+        except Exception as e:
+            pass
 
-    return False
+    return count
 
 
 def edge_simulator_has_login(login_program="client_login.py"):
