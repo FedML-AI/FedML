@@ -340,6 +340,7 @@ class FedMLClientRunner:
         # update local config with real time parameters from server and dynamically replace variables value
         unzip_package_path, fedml_config_object = self.update_local_fedml_config(run_id, run_config)
         if unzip_package_path is None or fedml_config_object is None:
+            logging.info("failed to update local fedml config.")
             self.cleanup_run_when_starting_failed()
             self.mlops_metrics.client_send_exit_train_msg(run_id, self.edge_id,
                                                           ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
@@ -356,6 +357,7 @@ class FedMLClientRunner:
             ClientConstants.CLIENT_BOOTSTRAP_WIN_PROGRAM if platform.system() == "Windows" else
             ClientConstants.CLIENT_BOOTSTRAP_LINUX_PROGRAM, clean_process_group=False)
         if not os.path.exists(unzip_package_path):
+            logging.info("failed to unzip file.")
             self.cleanup_run_when_starting_failed()
             self.mlops_metrics.client_send_exit_train_msg(run_id, self.edge_id,
                                                           ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
@@ -393,8 +395,8 @@ class FedMLClientRunner:
         else:
             # If the run status is killed or finished, then return with the normal state.
             current_job = FedMLClientDataInterface.get_instance().get_job_by_id(run_id)
-            if current_job is not None and (current_job.status  == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED or \
-                current_job.status  == ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED):
+            if current_job is not None and (current_job.status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED or \
+                current_job.status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED):
                 return
 
             if err is not None:
@@ -675,8 +677,10 @@ class FedMLClientRunner:
 
     def cleanup_client_with_status(self):
         if self.device_status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED:
+            logging.info("received to finished status.")
             self.cleanup_run_when_finished()
         elif self.device_status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED:
+            logging.info("received to failed status.")
             self.cleanup_run_when_starting_failed()
 
     def callback_runner_id_status(self, topic, payload):
