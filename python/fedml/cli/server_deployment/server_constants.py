@@ -43,6 +43,8 @@ class ServerConstants(object):
     LOCAL_PACKAGE_HOME_DIR_NAME = "fedml_packages"
 
     SERVER_LOGIN_PROGRAM = "server_login.py"
+    SERVER_BOOTSTRAP_LINUX_PROGRAM = "bootstrap.sh"
+    SERVER_BOOTSTRAP_WIN_PROGRAM = "bootstrap.bat"
 
     FEDML_OTA_CMD_UPGRADE = "upgrade"
     FEDML_OTA_CMD_RESTART = "restart"
