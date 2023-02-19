@@ -566,11 +566,13 @@ class FedMLServerRunner:
         self.start_request_json = payload
         run_id = request_json["runId"]
         if self.run_as_edge_server_and_agent or self.run_as_cloud_agent:
-            if self.server_process is not None and sys_utils.is_process_running(self.server_process.pid):
+            if self.server_process is not None and \
+                    sys_utils.get_process_running_count(ServerConstants.SERVER_LOGIN_PROGRAM) >= 2:
                 logging.info("There is a running job {}, please stop it before running new job.".format(
                     self.server_process.pid
                 ))
                 return
+            
         self.run_id = run_id
         ServerConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, self.edge_id, run_id=run_id)
 
