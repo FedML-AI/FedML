@@ -327,14 +327,11 @@ def cleanup_all_fedml_server_login_processes(login_program, clean_process_group=
 
 
 def is_process_running(pid):
-    try:
-        process = psutil.Process(pid)
-    except NoSuchProcess:
-        return False
+    for process in psutil.process_iter():
+        if str(process.pid) == str(pid):
+            return True
 
-    if process is None:
-        return False
-    return True
+    return False
 
 
 def edge_simulator_has_login(login_program="client_login.py"):
