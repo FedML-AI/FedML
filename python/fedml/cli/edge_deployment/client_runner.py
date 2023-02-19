@@ -575,8 +575,7 @@ class FedMLClientRunner:
             return
         self.start_request_json = payload
         run_id = request_json["runId"]
-        job = FedMLClientDataInterface.get_instance().get_current_job()
-        if job is not None and ClientConstants.is_client_running(job.status):
+        if self.process is not None and sys_utils.is_process_running(self.process.pid):
             logging.info("There is a running job, please stop it before running new job.")
             return
 
