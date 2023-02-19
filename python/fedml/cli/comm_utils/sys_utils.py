@@ -324,6 +324,13 @@ def cleanup_all_fedml_server_login_processes(login_program, clean_process_group=
             pass
 
 
+def is_process_running(pid):
+    process = psutil.Process(pid)
+    if process is None:
+        return False
+    return True
+
+
 def edge_simulator_has_login(login_program="client_login.py"):
     for process in psutil.process_iter():
         try:
