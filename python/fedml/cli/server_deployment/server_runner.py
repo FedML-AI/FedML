@@ -465,6 +465,9 @@ class FedMLServerRunner:
         time.sleep(1)
 
         ServerConstants.cleanup_learning_process()
+        sys_utils.cleanup_all_bootstrap_processes(
+            ServerConstants.SERVER_BOOTSTRAP_WIN_PROGRAM if platform.system() == "Windows" else
+            ServerConstants.SERVER_BOOTSTRAP_LINUX_PROGRAM, clean_process_group=False)
 
         try:
             local_package_path = ServerConstants.get_package_download_dir()
@@ -934,6 +937,9 @@ class FedMLServerRunner:
 
         ServerConstants.cleanup_learning_process()
         ServerConstants.cleanup_run_process()
+        sys_utils.cleanup_all_bootstrap_processes(
+            ServerConstants.SERVER_BOOTSTRAP_WIN_PROGRAM if platform.system() == "Windows" else
+            ServerConstants.SERVER_BOOTSTRAP_LINUX_PROGRAM, clean_process_group=False)
 
         self.mlops_metrics.report_server_id_status(self.run_id,
                                                    ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
