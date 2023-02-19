@@ -442,6 +442,8 @@ class FedMLClientRunner:
                 ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
             sys.exit(1)
         finally:
+            sys_utils.cleanup_all_fedml_client_login_processes(
+                ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
             self.release_client_mqtt_mgr()
 
     def stop_run_with_killed_status(self):
