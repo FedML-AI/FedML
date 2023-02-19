@@ -326,6 +326,25 @@ def cleanup_all_fedml_server_login_processes(login_program, clean_process_group=
             pass
 
 
+def cleanup_all_bootstrap_processes(bootstrap_program, clean_process_group=False):
+    # Cleanup all fedml bootstrap processes.
+    for process in psutil.process_iter():
+        try:
+            pinfo = process.as_dict(attrs=["pid", "name", "cmdline"])
+            for cmd in pinfo["cmdline"]:
+                if str(cmd).find(bootstrap_program) != -1:
+                    if os.path.basename(cmd) == bootstrap_program:
+                        # click.echo("find server login process at {}.".format(process.pid))
+                        if platform.system() == 'Windows':
+                            os.system("taskkill /PID {} /T /F".format(process.pid))
+                        else:
+                            os.kill(process.pid, signal.SIGTERM)
+                            if clean_process_group:
+                                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+        except Exception as e:
+            pass
+
+
 def get_process_running_count(process_name):
     count = 0
     for process in psutil.process_iter():
