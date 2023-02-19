@@ -422,8 +422,6 @@ class FedMLClientRunner:
 
         self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
 
-        time.sleep(1)
-
         try:
             ClientConstants.cleanup_learning_process()
             sys_utils.cleanup_all_bootstrap_processes(
@@ -457,8 +455,6 @@ class FedMLClientRunner:
             pass
 
         self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED)
-
-        time.sleep(1)
 
     def exit_run_with_exception_entry(self):
         try:

@@ -469,14 +469,9 @@ class FedMLServerRunner:
             ServerConstants.SERVER_BOOTSTRAP_LINUX_PROGRAM, clean_process_group=False)
 
         self.send_training_stop_request_to_edges(edge_id_list, json.dumps(self.request_json))
-
-        logging.info("Stop run successfully.")
-
-        time.sleep(4)
-
         self.mlops_metrics.report_server_training_status(self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED)
 
-        time.sleep(1)
+        logging.info("Stop run successfully.")
 
         try:
             local_package_path = ServerConstants.get_package_download_dir()
@@ -493,11 +488,7 @@ class FedMLServerRunner:
 
         # logging.info("Stop run successfully when starting failed.")
 
-        time.sleep(4)
-
         self.mlops_metrics.report_server_id_status(self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
-
-        time.sleep(1)
 
         self.set_all_devices_status(ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
 
