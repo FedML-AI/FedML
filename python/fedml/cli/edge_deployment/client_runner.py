@@ -301,10 +301,14 @@ class FedMLClientRunner:
 
     def run(self):
         try:
+            self.setup_client_mqtt_mgr()
             self.run_impl()
         except Exception:
-            sys_utils.cleanup_all_fedml_client_login_processes("client_login.py", clean_process_group=False)
+            self.release_client_mqtt_mgr()
+            sys_utils.cleanup_all_fedml_client_login_processes( ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
             sys.exit(1)
+        finally:
+            self.release_client_mqtt_mgr()
 
     def run_impl(self):
         run_id = self.request_json["runId"]
@@ -313,8 +317,6 @@ class FedMLClientRunner:
         packages_config = run_config["packages_config"]
 
         MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
-
-        self.setup_client_mqtt_mgr()
 
         self.mlops_metrics.report_client_training_status(self.edge_id,
                                                          ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING,
@@ -398,7 +400,6 @@ class FedMLClientRunner:
 
             sys_utils.log_return_info(entry_file, ret_code)
 
-            self.setup_client_mqtt_mgr()
             self.mlops_metrics.report_client_id_status(run_id, self.edge_id,
                                                        ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
 
@@ -411,8 +412,6 @@ class FedMLClientRunner:
         self.mlops_metrics.broadcast_client_training_status(edge_id, status)
 
     def stop_run(self):
-        self.setup_client_mqtt_mgr()
-
         logging.info("Stop run successfully.")
 
         self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
@@ -426,15 +425,16 @@ class FedMLClientRunner:
 
     def stop_run_entry(self):
         try:
+            self.setup_client_mqtt_mgr()
             self.stop_run_with_killed_status()
         except Exception as e:
-            sys_utils.cleanup_all_fedml_client_login_processes("client_login.py", clean_process_group=False)
+            self.release_client_mqtt_mgr()
+            sys_utils.cleanup_all_fedml_client_login_processes( ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
             sys.exit(1)
+        finally:
+            self.release_client_mqtt_mgr()
 
     def stop_run_with_killed_status(self):
-        raise Exception("Stop run exception")
-        self.setup_client_mqtt_mgr()
-
         # logging.info("Stop run successfully.")
 
         self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED)
@@ -448,14 +448,16 @@ class FedMLClientRunner:
 
     def exit_run_with_exception_entry(self):
         try:
+            self.setup_client_mqtt_mgr()
             self.exit_run_with_exception()
         except Exception as e:
-            sys_utils.cleanup_all_fedml_client_login_processes("client_login.py", clean_process_group=False)
+            self.release_client_mqtt_mgr()
+            sys_utils.cleanup_all_fedml_client_login_processes( ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
             sys.exit(1)
+        finally:
+            self.release_client_mqtt_mgr()
 
     def exit_run_with_exception(self):
-        self.setup_client_mqtt_mgr()
-
         logging.info("Exit run successfully.")
 
         ClientConstants.cleanup_learning_process()
@@ -467,8 +469,6 @@ class FedMLClientRunner:
         time.sleep(1)
 
     def cleanup_run_when_starting_failed(self):
-        self.setup_client_mqtt_mgr()
-
         logging.info("Cleanup run successfully when starting failed.")
 
         self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
@@ -488,8 +488,6 @@ class FedMLClientRunner:
             pass
 
     def cleanup_run_when_finished(self):
-        self.setup_client_mqtt_mgr()
-
         logging.info("Cleanup run successfully when finished.")
 
         self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
@@ -536,13 +534,6 @@ class FedMLClientRunner:
 
         if self.client_mqtt_lock is None:
             self.client_mqtt_lock = threading.Lock()
-        if self.client_mqtt_mgr is not None:
-            self.client_mqtt_lock.acquire()
-            self.client_mqtt_mgr.remove_disconnected_listener(self.on_client_mqtt_disconnected)
-            self.client_mqtt_is_connected = False
-            self.client_mqtt_mgr.disconnect()
-            self.client_mqtt_mgr = None
-            self.client_mqtt_lock.release()
 
         self.client_mqtt_mgr = MqttManager(
             self.agent_config["mqtt_config"]["BROKER_HOST"],
@@ -565,17 +556,16 @@ class FedMLClientRunner:
         self.mlops_metrics.set_messenger(self.client_mqtt_mgr)
         self.mlops_metrics.run_id = self.run_id
 
-    def release_client_mqtt_mgr(self, real_release=False):
-        if real_release:
-            if self.client_mqtt_mgr is not None:
-                self.client_mqtt_mgr.disconnect()
-                self.client_mqtt_mgr.loop_stop()
+    def release_client_mqtt_mgr(self):
+        if self.client_mqtt_mgr is not None:
+            self.client_mqtt_mgr.loop_stop()
+            self.client_mqtt_mgr.disconnect()
 
-            self.client_mqtt_lock.acquire()
-            if self.client_mqtt_mgr is not None:
-                self.client_mqtt_is_connected = False
-                self.client_mqtt_mgr = None
-            self.client_mqtt_lock.release()
+        self.client_mqtt_lock.acquire()
+        if self.client_mqtt_mgr is not None:
+            self.client_mqtt_is_connected = False
+            self.client_mqtt_mgr = None
+        self.client_mqtt_lock.release()
 
     def callback_start_train(self, topic, payload):
         # Get training params
@@ -585,9 +575,13 @@ class FedMLClientRunner:
             return
         self.start_request_json = payload
         run_id = request_json["runId"]
-        server_agent_id = request_json["cloud_agent_id"]
+        job = FedMLClientDataInterface.get_instance().get_current_job()
+        if job is not None and ClientConstants.is_client_running(job.status):
+            logging.info("There is a running job, please stop it before running new job.")
+            return
 
         # Terminate previous process about starting or stopping run command
+        server_agent_id = request_json["cloud_agent_id"]
         ClientConstants.exit_process(self.process)
         ClientConstants.cleanup_run_process()
         ClientConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, self.edge_id, run_id=run_id)
@@ -646,10 +640,6 @@ class FedMLClientRunner:
         if run_id is None:
             return
 
-        logging.info("Exit run...")
-        logging.info("Exit run with multiprocessing.")
-        return
-
         # Stop cross-silo server with multi processing mode
         self.request_json = request_json
         client_runner = FedMLClientRunner(
@@ -694,6 +684,8 @@ class FedMLClientRunner:
                 run_id=run_id,
             )
             client_runner.device_status = status
+            client_runner.client_mqtt_mgr = self.client_mqtt_mgr
+            client_runner.mlops_metrics = self.mlops_metrics
             client_runner.cleanup_client_with_status()
 
             # Stop log processor for current run
@@ -984,7 +976,8 @@ class FedMLClientRunner:
             logging.info("Client tracing: {}".format(traceback.format_exc()))
             self.mqtt_mgr.loop_stop()
             self.mqtt_mgr.disconnect()
+            self.release_client_mqtt_mgr()
             time.sleep(5)
-            sys_utils.cleanup_all_fedml_client_login_processes("client_login.py", clean_process_group=False)
+            sys_utils.cleanup_all_fedml_client_login_processes( ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
             sys.exit(1)
 

@@ -42,6 +42,8 @@ class ServerConstants(object):
     LOCAL_RUNNER_INFO_DIR_NAME = 'runner_infos'
     LOCAL_PACKAGE_HOME_DIR_NAME = "fedml_packages"
 
+    SERVER_LOGIN_PROGRAM = "server_login.py"
+
     FEDML_OTA_CMD_UPGRADE = "upgrade"
     FEDML_OTA_CMD_RESTART = "restart"
 
@@ -304,3 +306,14 @@ class ServerConstants(object):
             ret_state = ServerConstants.MSG_MLOPS_DEVICE_STATUS_IDLE
 
         return ret_state
+
+    @staticmethod
+    def is_server_running(status):
+        if status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED or \
+                status == ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED or \
+                status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED or \
+                status == ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE or \
+                status == ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE:
+            return False
+
+        return True
