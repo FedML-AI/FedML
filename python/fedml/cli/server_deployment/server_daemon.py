@@ -27,8 +27,8 @@ if __name__ == "__main__":
         try:
             ServerConstants.cleanup_run_process()
             sys_utils.cleanup_all_fedml_server_api_processes()
-            sys_utils.cleanup_all_fedml_client_learning_processes()
-            sys_utils.cleanup_all_fedml_client_login_processes("server_login.py")
+            sys_utils.cleanup_all_fedml_server_learning_processes()
+            sys_utils.cleanup_all_fedml_server_login_processes("server_login.py", clean_process_group=False)
         except Exception as e:
             pass
 
