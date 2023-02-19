@@ -7,7 +7,7 @@ from os.path import expanduser
 import click
 import psutil
 import yaml
-from psutil import NoSuchProcess
+from psutil import NoSuchProcess, STATUS_ZOMBIE
 
 from .yaml_utils import load_yaml_config
 
@@ -140,7 +140,7 @@ def cleanup_login_process(runner_home_dir, runner_info_dir):
                 if platform.system() == 'Windows':
                     os.system("taskkill /PID {} /T /F".format(edge_process.pid))
                 else:
-                    os.killpg(os.getpgid(edge_process.pid), signal.SIGKILL)
+                    os.killpg(os.getpgid(edge_process.pid), signal.SIGTERM)
                 # edge_process.terminate()
                 # edge_process.join()
         yaml_object = {}
@@ -193,7 +193,7 @@ def cleanup_all_fedml_client_learning_processes():
                 if platform.system() == 'Windows':
                     os.system("taskkill /PID {} /T /F".format(process.pid))
                 else:
-                    os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                    os.killpg(os.getpgid(process.pid), signal.SIGTERM)
         except Exception as e:
             pass
 
@@ -213,7 +213,7 @@ def cleanup_all_fedml_client_diagnosis_processes():
                 if platform.system() == 'Windows':
                     os.system("taskkill /PID {} /T /F".format(process.pid))
                 else:
-                    os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                    os.killpg(os.getpgid(process.pid), signal.SIGTERM)
         except Exception as e:
             pass
 
@@ -230,9 +230,9 @@ def cleanup_all_fedml_client_login_processes(login_program, clean_process_group=
                         if platform.system() == "Windows":
                             os.system("taskkill /PID {} /T /F".format(process.pid))
                         else:
-                            os.kill(process.pid, signal.SIGKILL)
+                            os.kill(process.pid, signal.SIGTERM)
                             if clean_process_group:
-                                os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
         except Exception as e:
             pass
 
@@ -256,7 +256,7 @@ def cleanup_all_fedml_server_learning_processes():
                 if platform.system() == 'Windows':
                     os.system("taskkill /PID {} /T /F".format(process.pid))
                 else:
-                    os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                    os.killpg(os.getpgid(process.pid), signal.SIGTERM)
         except Exception as e:
             pass
 
@@ -277,9 +277,9 @@ def cleanup_all_fedml_client_api_processes(kill_all=False):
                     os.system("taskkill /PID {} /T /F".format(process.pid))
                 else:
                     if kill_all:
-                        os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                        os.killpg(os.getpgid(process.pid), signal.SIGTERM)
                     else:
-                        os.kill(process.pid, signal.SIGKILL)
+                        os.kill(process.pid, signal.SIGTERM)
         except Exception as e:
             pass
 
@@ -300,9 +300,9 @@ def cleanup_all_fedml_server_api_processes(kill_all=False):
                     os.system("taskkill /PID {} /T /F".format(process.pid))
                 else:
                     if kill_all:
-                        os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                        os.killpg(os.getpgid(process.pid), signal.SIGTERM)
                     else:
-                        os.kill(process.pid, signal.SIGKILL)
+                        os.kill(process.pid, signal.SIGTERM)
         except Exception as e:
             pass
 
@@ -319,19 +319,26 @@ def cleanup_all_fedml_server_login_processes(login_program, clean_process_group=
                         if platform.system() == 'Windows':
                             os.system("taskkill /PID {} /T /F".format(process.pid))
                         else:
-                            os.kill(process.pid, signal.SIGKILL)
+                            os.kill(process.pid, signal.SIGTERM)
                             if clean_process_group:
-                                os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
         except Exception as e:
             pass
 
 
-def is_process_running(pid):
+def get_process_running_count(process_name):
+    count = 0
     for process in psutil.process_iter():
-        if str(process.pid) == str(pid):
-            return True
+        try:
+            pinfo = process.as_dict(attrs=["pid", "name", "cmdline"])
+            for cmd in pinfo["cmdline"]:
+                if str(cmd).find(process_name) != -1:
+                    if os.path.basename(cmd) == process_name:
+                        count += 1
+        except Exception as e:
+            pass
 
-    return False
+    return count
 
 
 def edge_simulator_has_login(login_program="client_login.py"):
