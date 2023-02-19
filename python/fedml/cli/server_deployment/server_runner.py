@@ -379,6 +379,9 @@ class FedMLServerRunner:
         conf_file = entry_file_config["conf_file"]
         conf_file = str(conf_file).replace('\\', os.sep).replace('/', os.sep)
         ServerConstants.cleanup_learning_process()
+        sys_utils.cleanup_all_bootstrap_processes(
+            ServerConstants.SERVER_BOOTSTRAP_WIN_PROGRAM if platform.system() == "Windows" else
+            ServerConstants.SERVER_BOOTSTRAP_LINUX_PROGRAM, clean_process_group=False)
         if not os.path.exists(unzip_package_path):
             self.cleanup_run_when_starting_failed()
             self.send_exit_train_with_exception_request_to_edges(edge_ids, self.start_request_json)
@@ -447,7 +450,8 @@ class FedMLServerRunner:
             self.stop_run()
         except Exception as e:
             self.release_client_mqtt_mgr()
-            sys_utils.cleanup_all_fedml_server_login_processes(ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
+            sys_utils.cleanup_all_fedml_server_login_processes(
+                ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
             sys.exit(1)
         finally:
             self.release_client_mqtt_mgr()
@@ -510,6 +514,9 @@ class FedMLServerRunner:
         time.sleep(1)
 
         ServerConstants.cleanup_learning_process()
+        sys_utils.cleanup_all_bootstrap_processes(
+            ServerConstants.SERVER_BOOTSTRAP_WIN_PROGRAM if platform.system() == "Windows" else
+            ServerConstants.SERVER_BOOTSTRAP_LINUX_PROGRAM, clean_process_group=False)
 
         try:
             local_package_path = ServerConstants.get_package_download_dir()
@@ -535,6 +542,9 @@ class FedMLServerRunner:
         time.sleep(1)
 
         ServerConstants.cleanup_learning_process()
+        sys_utils.cleanup_all_bootstrap_processes(
+            ServerConstants.SERVER_BOOTSTRAP_WIN_PROGRAM if platform.system() == "Windows" else
+            ServerConstants.SERVER_BOOTSTRAP_LINUX_PROGRAM, clean_process_group=False)
 
         try:
             local_package_path = ServerConstants.get_package_download_dir()
@@ -633,7 +643,8 @@ class FedMLServerRunner:
         try:
             self.start_cloud_server_process()
         except Exception as e:
-            sys_utils.cleanup_all_fedml_server_login_processes(ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
+            sys_utils.cleanup_all_fedml_server_login_processes(
+                ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
             sys.exit(1)
 
     def start_cloud_server_process(self):
@@ -726,7 +737,8 @@ class FedMLServerRunner:
             self.stop_cloud_server_process()
         except Exception as e:
             self.release_client_mqtt_mgr()
-            sys_utils.cleanup_all_fedml_server_login_processes(ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
+            sys_utils.cleanup_all_fedml_server_login_processes(
+                ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
             sys.exit(1)
         finally:
             self.release_client_mqtt_mgr()
@@ -927,7 +939,8 @@ class FedMLServerRunner:
             self.exit_run_with_exception()
         except Exception as e:
             self.release_client_mqtt_mgr()
-            sys_utils.cleanup_all_fedml_server_login_processes(ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
+            sys_utils.cleanup_all_fedml_server_login_processes(
+                ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
             sys.exit(1)
         finally:
             self.release_client_mqtt_mgr()
@@ -997,7 +1010,8 @@ class FedMLServerRunner:
 
             self.exit_run_with_exception()
 
-            sys_utils.cleanup_all_fedml_server_login_processes(ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
+            sys_utils.cleanup_all_fedml_server_login_processes(
+                ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
 
     def callback_runner_id_status(self, topic, payload):
         # logging.info("callback_runner_id_status: topic = %s, payload = %s" % (topic, payload))
@@ -1327,5 +1341,6 @@ class FedMLServerRunner:
             self.mqtt_mgr.disconnect()
             self.release_client_mqtt_mgr()
             time.sleep(5)
-            sys_utils.cleanup_all_fedml_server_login_processes(ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
+            sys_utils.cleanup_all_fedml_server_login_processes(
+                ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
             sys.exit(1)
