@@ -121,10 +121,16 @@ class ServerConstants(object):
                 try:
                     process = psutil.Process(process_id)
                     for sub_process in process.children():
-                        os.kill(sub_process.pid, signal.SIGTERM)
+                        if platform.system() == 'Windows':
+                            os.system("taskkill /PID {} /T /F".format(sub_process.pid))
+                        else:
+                            os.kill(sub_process.pid, signal.SIGTERM)
 
                     if process is not None:
-                        os.kill(process.pid, signal.SIGTERM)
+                        if platform.system() == 'Windows':
+                            os.system("taskkill /PID {} /T /F".format(process.pid))
+                        else:
+                            os.kill(process.pid, signal.SIGTERM)
                 except Exception as e:
                     pass
 
@@ -166,10 +172,16 @@ class ServerConstants(object):
                 try:
                     process = psutil.Process(process_id)
                     for sub_process in process.children():
-                        os.kill(sub_process.pid, signal.SIGTERM)
+                        if platform.system() == 'Windows':
+                            os.system("taskkill /PID {} /T /F".format(sub_process.pid))
+                        else:
+                            os.kill(sub_process.pid, signal.SIGTERM)
 
                     if process is not None:
-                        os.kill(process.pid, signal.SIGTERM)
+                        if platform.system() == 'Windows':
+                            os.system("taskkill /PID {} /T /F".format(process.pid))
+                        else:
+                            os.kill(process.pid, signal.SIGTERM)
                 except Exception as e:
                     pass
             yaml_object = {}
