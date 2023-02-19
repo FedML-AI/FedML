@@ -368,6 +368,7 @@ class FedMLServerRunner:
         # update local config with real time parameters from server and dynamically replace variables value
         unzip_package_path, fedml_config_object = self.update_local_fedml_config(run_id, run_config)
         if unzip_package_path is None or fedml_config_object is None:
+            logging.info("failed to update local fedml config.")
             self.cleanup_run_when_starting_failed()
             self.send_exit_train_with_exception_request_to_edges(edge_ids, self.start_request_json)
             return
@@ -383,6 +384,7 @@ class FedMLServerRunner:
             ServerConstants.SERVER_BOOTSTRAP_WIN_PROGRAM if platform.system() == "Windows" else
             ServerConstants.SERVER_BOOTSTRAP_LINUX_PROGRAM, clean_process_group=False)
         if not os.path.exists(unzip_package_path):
+            logging.info("failed to unzip file.")
             self.cleanup_run_when_starting_failed()
             self.send_exit_train_with_exception_request_to_edges(edge_ids, self.start_request_json)
             return
@@ -454,6 +456,8 @@ class FedMLServerRunner:
                 ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
             sys.exit(1)
         finally:
+            sys_utils.cleanup_all_fedml_server_login_processes(
+                ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
             self.release_client_mqtt_mgr()
 
     def stop_run(self):
@@ -1069,8 +1073,10 @@ class FedMLServerRunner:
 
     def cleanup_client_with_status(self):
         if self.run_status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED:
+            logging.info("received to finished status.")
             self.cleanup_run_when_finished()
         elif self.run_status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED:
+            logging.info("received to failed status.")
             self.cleanup_run_when_starting_failed()
 
     def report_client_status(self):
