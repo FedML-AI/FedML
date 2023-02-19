@@ -38,6 +38,11 @@ twine upload --repository testpypi dist/*
 pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple fedml
 ```
 
+### Upgrade test pip
+```
+pip install -U --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple fedml
+```
+
 ### Release
 ```
 pip install twine
