@@ -341,10 +341,11 @@ class FedMLServerRunner:
 
         return is_bootstrap_run_ok
 
-    def run(self):
+    def run(self, process_event):
         os.environ['PYTHONWARNINGS'] = 'ignore:semaphore_tracker:UserWarning'
         os.environ.setdefault('PYTHONWARNINGS', 'ignore:semaphore_tracker:UserWarning')
 
+        self.run_process_event = process_event
         try:
             self.setup_client_mqtt_mgr()
             self.run_impl()
@@ -630,12 +631,16 @@ class FedMLServerRunner:
                 ))
                 return
 
+        logging.info("save runner information")
+
         self.run_id = run_id
         ServerConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, self.edge_id, run_id=run_id)
 
         # Start server with multi processing mode
         self.request_json = request_json
         self.running_request_json[str(run_id)] = request_json
+
+        logging.info("subscribe the client exception message.")
 
         # Setup MQTT message listener for run exception
         topic_client_exit_train_with_exception = "flserver_agent/" + str(run_id) + "/client_exit_train_with_exception"
@@ -645,6 +650,7 @@ class FedMLServerRunner:
 
         if self.run_as_edge_server_and_agent:
             # Start log processor for current run
+            logging.info("start the log processor.")
             MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
             self.args.run_id = run_id
 
@@ -656,8 +662,10 @@ class FedMLServerRunner:
             server_runner.start_request_json = self.start_request_json
             if self.run_process_event is None:
                 self.run_process_event = multiprocessing.Event()
+            self.run_process_event.clear()
             server_runner.run_process_event = self.run_process_event
-            self.run_process = Process(target=server_runner.run)
+            logging.info("start the runner process.")
+            self.run_process = Process(target=server_runner.run, args=(self.run_process_event,))
             self.run_process.start()
             ServerConstants.save_run_process(self.run_process.pid)
         elif self.run_as_cloud_agent:
