@@ -41,6 +41,11 @@ from .server_data_interface import FedMLServerDataInterface
 import tqdm
 
 
+class RunnerError(BaseException):
+    """ Runner failed. """
+    pass
+
+
 class FedMLServerRunner:
     FEDML_CLOUD_SERVER_PREFIX = "fedml-server-run-"
 
@@ -143,16 +148,14 @@ class FedMLServerRunner:
         return result
 
     def package_download_progress(self, count, blksize, filesize):
-        if self.run_process_event.is_set():
-            # received the stopping message.
-            logging.info("Received stopping event when downloading packages.")
-            raise Exception('download aborted!')
-        else:
-            downloaded = count * blksize
-            downloaded = filesize if downloaded > filesize else downloaded
-            progress = (downloaded / filesize * 100) if filesize != 0 else 0
-            progress = format(progress, '.2f')
-            downloaded_kb = format(downloaded/1024, '.2f')
+        self.check_runner_stop_event()
+
+        downloaded = count * blksize
+        downloaded = filesize if downloaded > filesize else downloaded
+        progress = (downloaded / filesize * 100) if filesize != 0 else 0
+        progress = format(progress, '.2f')
+        downloaded_kb = format(downloaded/1024, '.2f')
+        if progress <= 0 or (int(progress) % 5 == 0):
             logging.info("package downloaded size {} KB, progress {}%".format(downloaded_kb, progress))
 
     def retrieve_and_unzip_package(self, package_name, package_url):
@@ -339,34 +342,27 @@ class FedMLServerRunner:
         return is_bootstrap_run_ok
 
     def run(self):
+        os.environ['PYTHONWARNINGS'] = 'ignore:semaphore_tracker:UserWarning'
+        os.environ.setdefault('PYTHONWARNINGS', 'ignore:semaphore_tracker:UserWarning')
+
         try:
             self.setup_client_mqtt_mgr()
             self.run_impl()
-        except FedMLServerRunner.RunnerError:
+        except RunnerError:
             logging.info("Runner stopped.")
-        except Exception:
+        except Exception as e:
             logging.info("Runner exits with exceptions.")
             sys_utils.cleanup_all_fedml_server_login_processes(ServerConstants.SERVER_LOGIN_PROGRAM,
                                                                clean_process_group=False)
             sys.exit(1)
         finally:
+            logging.info("Release resources.")
             self.release_client_mqtt_mgr()
-
-    class RunnerError(Exception):
-        """ Runner failed. """
-
-        def __init__(self, *args, **kwargs):  # real signature unknown
-            pass
-
-        @staticmethod  # known case of __new__
-        def __new__(*args, **kwargs):  # real signature unknown
-            """ Create and return a new object.  See help(type) for accurate signature. """
-            pass
 
     def check_runner_stop_event(self):
         if self.run_process_event.is_set():
             logging.info("Received stopping event.")
-            raise FedMLServerRunner.RunnerError("Runner stopped")
+            raise RunnerError("Runner stopped")
 
     def run_impl(self):
         run_id = self.request_json["runId"]
@@ -503,20 +499,14 @@ class FedMLServerRunner:
         try:
             if self.run_process_event is not None:
                 self.run_process_event.set()
-            self.setup_client_mqtt_mgr()
             self.stop_run()
             # if self.run_process is not None:
             #     logging.info("Run will be stopped, waiting...")
             #     self.run_process.join()
         except Exception as e:
-            self.release_client_mqtt_mgr()
             sys_utils.cleanup_all_fedml_server_login_processes(
                 ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
             sys.exit(1)
-        finally:
-            self.release_client_mqtt_mgr()
-            sys_utils.cleanup_all_fedml_server_login_processes(
-                ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
 
     def stop_run(self):
         edge_id_list = self.request_json["edgeids"]
@@ -917,15 +907,18 @@ class FedMLServerRunner:
         self.mlops_metrics.server_agent_id = self.server_agent_id
 
     def release_client_mqtt_mgr(self):
-        if self.client_mqtt_mgr is not None:
-            self.client_mqtt_mgr.loop_stop()
-            self.client_mqtt_mgr.disconnect()
+        try:
+            if self.client_mqtt_mgr is not None:
+                self.client_mqtt_mgr.loop_stop()
+                self.client_mqtt_mgr.disconnect()
 
-        self.client_mqtt_lock.acquire()
-        if self.client_mqtt_mgr is not None:
-            self.client_mqtt_is_connected = False
-            self.client_mqtt_mgr = None
-        self.client_mqtt_lock.release()
+            self.client_mqtt_lock.acquire()
+            if self.client_mqtt_mgr is not None:
+                self.client_mqtt_is_connected = False
+                self.client_mqtt_mgr = None
+            self.client_mqtt_lock.release()
+        except Exception:
+            pass
 
     def send_training_stop_request_to_edges(self, edge_id_list, payload):
         for edge_id in edge_id_list:
@@ -976,6 +969,8 @@ class FedMLServerRunner:
             server_runner.run_as_edge_server_and_agent = self.run_as_edge_server_and_agent
             server_runner.run_process = self.run_process
             server_runner.run_process_event = self.run_process_event
+            server_runner.client_mqtt_mgr = self.client_mqtt_mgr
+            server_runner.mlops_metrics = self.mlops_metrics
             server_runner.stop_run_entry()
 
             # Stop log processor for current run

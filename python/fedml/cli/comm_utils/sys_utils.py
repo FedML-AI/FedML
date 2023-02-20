@@ -22,7 +22,7 @@ SYS_ERR_CODE_MAP = {"0": "Successful exit without errors.",
                     "128": "Command encountered fatal error "
                            "(was forcefully terminated manually or from an outside source).",
                     "130": "Command terminated with signal 2 (SIGINT) (ctrl+c on keyboard).",
-                    "143": "Command terminated with signal 15 (SIGKILL) (kill command)."}
+                    "143": "Command terminated with signal 15 (SIGTERM) (kill command)."}
 
 
 def get_sys_runner_info():
@@ -140,7 +140,7 @@ def cleanup_login_process(runner_home_dir, runner_info_dir):
                 if platform.system() == 'Windows':
                     os.system("taskkill /PID {} /T /F".format(edge_process.pid))
                 else:
-                    os.killpg(os.getpgid(edge_process.pid), signal.SIGKILL)
+                    os.killpg(os.getpgid(edge_process.pid), signal.SIGTERM)
                 # edge_process.terminate()
                 # edge_process.join()
         yaml_object = {}
@@ -193,7 +193,7 @@ def cleanup_all_fedml_client_learning_processes():
                 if platform.system() == 'Windows':
                     os.system("taskkill /PID {} /T /F".format(process.pid))
                 else:
-                    os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                    os.killpg(os.getpgid(process.pid), signal.SIGTERM)
         except Exception as e:
             pass
 
@@ -213,7 +213,7 @@ def cleanup_all_fedml_client_diagnosis_processes():
                 if platform.system() == 'Windows':
                     os.system("taskkill /PID {} /T /F".format(process.pid))
                 else:
-                    os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                    os.killpg(os.getpgid(process.pid), signal.SIGTERM)
         except Exception as e:
             pass
 
@@ -230,9 +230,9 @@ def cleanup_all_fedml_client_login_processes(login_program, clean_process_group=
                         if platform.system() == "Windows":
                             os.system("taskkill /PID {} /T /F".format(process.pid))
                         else:
-                            os.kill(process.pid, signal.SIGKILL)
+                            os.kill(process.pid, signal.SIGTERM)
                             if clean_process_group:
-                                os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
         except Exception as e:
             pass
 
@@ -256,7 +256,7 @@ def cleanup_all_fedml_server_learning_processes():
                 if platform.system() == 'Windows':
                     os.system("taskkill /PID {} /T /F".format(process.pid))
                 else:
-                    os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                    os.killpg(os.getpgid(process.pid), signal.SIGTERM)
         except Exception as e:
             pass
 
@@ -277,9 +277,9 @@ def cleanup_all_fedml_client_api_processes(kill_all=False):
                     os.system("taskkill /PID {} /T /F".format(process.pid))
                 else:
                     if kill_all:
-                        os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                        os.killpg(os.getpgid(process.pid), signal.SIGTERM)
                     else:
-                        os.kill(process.pid, signal.SIGKILL)
+                        os.kill(process.pid, signal.SIGTERM)
         except Exception as e:
             pass
 
@@ -300,9 +300,9 @@ def cleanup_all_fedml_server_api_processes(kill_all=False):
                     os.system("taskkill /PID {} /T /F".format(process.pid))
                 else:
                     if kill_all:
-                        os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                        os.killpg(os.getpgid(process.pid), signal.SIGTERM)
                     else:
-                        os.kill(process.pid, signal.SIGKILL)
+                        os.kill(process.pid, signal.SIGTERM)
         except Exception as e:
             pass
 
@@ -319,9 +319,9 @@ def cleanup_all_fedml_server_login_processes(login_program, clean_process_group=
                         if platform.system() == 'Windows':
                             os.system("taskkill /PID {} /T /F".format(process.pid))
                         else:
-                            os.kill(process.pid, signal.SIGKILL)
+                            os.kill(process.pid, signal.SIGTERM)
                             if clean_process_group:
-                                os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
         except Exception as e:
             pass
 
@@ -338,9 +338,9 @@ def cleanup_all_bootstrap_processes(bootstrap_program, clean_process_group=False
                         if platform.system() == 'Windows':
                             os.system("taskkill /PID {} /T /F".format(process.pid))
                         else:
-                            os.kill(process.pid, signal.SIGKILL)
+                            os.kill(process.pid, signal.SIGTERM)
                             if clean_process_group:
-                                os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
         except Exception as e:
             pass
 

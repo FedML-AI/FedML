@@ -23,6 +23,7 @@ if __name__ == "__main__":
 
     pip_source_dir = os.path.dirname(__file__)
     login_cmd = os.path.join(pip_source_dir, "server_login.py")
+
     while True:
         try:
             ServerConstants.cleanup_run_process()
@@ -35,6 +36,8 @@ if __name__ == "__main__":
         login_pid = ServerConstants.exec_console_with_shell_script_list(
             [
                 sys_utils.get_python_program(),
+                "-W",
+                "ignore:semaphore_tracker:UserWarning",
                 login_cmd,
                 "-t",
                 "login",
