@@ -1,5 +1,6 @@
 import json
 import logging
+import multiprocessing
 import signal
 import sys
 
@@ -31,7 +32,7 @@ from ...core.mlops.mlops_metrics import MLOpsMetrics
 from ...core.mlops.mlops_configs import MLOpsConfigs
 from ...core.mlops.mlops_runtime_log_daemon import MLOpsRuntimeLogDaemon
 from ...core.mlops.mlops_status import MLOpsStatus
-from ..comm_utils.sys_utils import get_sys_runner_info,get_python_program
+from ..comm_utils.sys_utils import get_sys_runner_info, get_python_program
 from .client_data_interface import FedMLClientDataInterface
 from ..comm_utils import sys_utils
 
@@ -39,6 +40,8 @@ from ..comm_utils import sys_utils
 class FedMLClientRunner:
 
     def __init__(self, args, edge_id=0, request_json=None, agent_config=None, run_id=0):
+        self.run_process_event = None
+        self.run_process = None
         self.start_request_json = None
         self.device_status = None
         self.current_training_status = None
@@ -49,7 +52,6 @@ class FedMLClientRunner:
         self.edge_id = edge_id
         self.run_id = run_id
         self.unique_device_id = None
-        self.process = None
         self.args = args
         self.request_json = request_json
         self.version = args.version
@@ -125,6 +127,19 @@ class FedMLClientRunner:
 
         return result
 
+    def package_download_progress(self, count, blksize, filesize):
+        if self.run_process_event.is_set():
+            # received the stopping message.
+            logging.info("Received stopping event when downloading packages.")
+            raise Exception('download aborted!')
+        else:
+            downloaded = count * blksize
+            downloaded = filesize if downloaded > filesize else downloaded
+            progress = (downloaded / filesize * 100) if filesize != 0 else 0
+            progress = format(progress, '.2f')
+            downloaded_kb = format(downloaded / 1024, '.2f')
+            logging.info("package downloaded size {} KB, progress {}%".format(downloaded_kb, progress))
+
     def retrieve_and_unzip_package(self, package_name, package_url):
         local_package_path = ClientConstants.get_package_download_dir()
         try:
@@ -134,7 +149,7 @@ class FedMLClientRunner:
         local_package_file = os.path.join(local_package_path, os.path.basename(package_url))
         if os.path.exists(local_package_file):
             os.remove(local_package_file)
-        urllib.request.urlretrieve(package_url, local_package_file)
+        urllib.request.urlretrieve(package_url, local_package_file, reporthook=self.package_download_progress)
         unzip_package_path = ClientConstants.get_package_unzip_dir()
         try:
             shutil.rmtree(ClientConstants.get_package_run_dir(package_name), ignore_errors=True)
@@ -303,19 +318,39 @@ class FedMLClientRunner:
         try:
             self.setup_client_mqtt_mgr()
             self.run_impl()
+        except FedMLClientRunner.RunnerError:
+            logging.info("Runner stopped.")
         except Exception:
-            self.release_client_mqtt_mgr()
-            sys_utils.cleanup_all_fedml_client_login_processes(
-                ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
+            logging.info("Runner exits with exceptions.")
+            sys_utils.cleanup_all_fedml_server_login_processes(ServerConstants.SERVER_LOGIN_PROGRAM,
+                                                               clean_process_group=False)
             sys.exit(1)
         finally:
             self.release_client_mqtt_mgr()
+
+    class RunnerError(Exception):
+        """ Runner failed. """
+
+        def __init__(self, *args, **kwargs):  # real signature unknown
+            pass
+
+        @staticmethod  # known case of __new__
+        def __new__(*args, **kwargs):  # real signature unknown
+            """ Create and return a new object.  See help(type) for accurate signature. """
+            pass
+
+    def check_runner_stop_event(self):
+        if self.run_process_event.is_set():
+            logging.info("Received stopping event.")
+            raise FedMLClientRunner.RunnerError("Runner stopped")
 
     def run_impl(self):
         run_id = self.request_json["runId"]
         run_config = self.request_json["run_config"]
         data_config = run_config["data_config"]
         packages_config = run_config["packages_config"]
+
+        self.check_runner_stop_event()
 
         MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
 
@@ -337,14 +372,21 @@ class FedMLClientRunner:
             fedml_local_data_dir = private_local_data_dir
         self.fedml_data_dir = self.fedml_data_local_package_dir
 
+        self.check_runner_stop_event()
+
+        logging.info("download packages and run the bootstrap script...")
+
         # update local config with real time parameters from server and dynamically replace variables value
         unzip_package_path, fedml_config_object = self.update_local_fedml_config(run_id, run_config)
         if unzip_package_path is None or fedml_config_object is None:
             logging.info("failed to update local fedml config.")
+            self.check_runner_stop_event()
             self.cleanup_run_when_starting_failed()
             self.mlops_metrics.client_send_exit_train_msg(run_id, self.edge_id,
                                                           ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
             return
+
+        logging.info("cleanup the previous learning process and check downloaded packages...")
 
         entry_file_config = fedml_config_object["entry_config"]
         dynamic_args_config = fedml_config_object["dynamic_args"]
@@ -358,11 +400,16 @@ class FedMLClientRunner:
             ClientConstants.CLIENT_BOOTSTRAP_LINUX_PROGRAM, clean_process_group=False)
         if not os.path.exists(unzip_package_path):
             logging.info("failed to unzip file.")
+            self.check_runner_stop_event()
             self.cleanup_run_when_starting_failed()
             self.mlops_metrics.client_send_exit_train_msg(run_id, self.edge_id,
                                                           ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
             return
         os.chdir(os.path.join(unzip_package_path, "fedml"))
+
+        self.check_runner_stop_event()
+
+        logging.info("starting the learning process...")
 
         python_program = get_python_program()
         entry_fill_full_path = os.path.join(unzip_package_path, "fedml", entry_file)
@@ -383,6 +430,7 @@ class FedMLClientRunner:
             should_capture_stdout=False,
             should_capture_stderr=True
         )
+        logging.info("waiting the learning process to train models...")
         ClientConstants.save_learning_process(process.pid)
         ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(process)
         if ret_code is None or ret_code <= 0:
@@ -395,9 +443,13 @@ class FedMLClientRunner:
         else:
             # If the run status is killed or finished, then return with the normal state.
             current_job = FedMLClientDataInterface.get_instance().get_job_by_id(run_id)
-            if current_job is not None and (current_job.status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED or \
-                current_job.status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED):
+            if current_job is not None and (current_job.status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED or
+                                            current_job.status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED):
                 return
+
+            self.check_runner_stop_event()
+
+            logging.error("failed to run the learning process...")
 
             if err is not None:
                 err_str = err.decode(encoding="utf-8")
@@ -432,17 +484,22 @@ class FedMLClientRunner:
 
     def stop_run_entry(self):
         try:
+            if self.run_process_event is not None:
+                self.run_process_event.set()
             self.setup_client_mqtt_mgr()
             self.stop_run_with_killed_status()
+            # if self.run_process is not None:
+            #     logging.info("Run will be stopped, waiting...")
+            #     self.run_process.join()
         except Exception as e:
             self.release_client_mqtt_mgr()
             sys_utils.cleanup_all_fedml_client_login_processes(
                 ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
             sys.exit(1)
         finally:
+            self.release_client_mqtt_mgr()
             sys_utils.cleanup_all_fedml_client_login_processes(
                 ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
-            self.release_client_mqtt_mgr()
 
     def stop_run_with_killed_status(self):
         # logging.info("Stop run successfully.")
@@ -595,16 +652,16 @@ class FedMLClientRunner:
             return
         self.start_request_json = payload
         run_id = request_json["runId"]
-        if self.process is not None and \
+        if self.run_process is not None and \
                 sys_utils.get_process_running_count(ClientConstants.CLIENT_LOGIN_PROGRAM) >= 2:
             logging.info("There is a running job {}, please stop it before running new job.".format(
-                self.process.pid
+                self.run_process.pid
             ))
             return
 
         # Terminate previous process about starting or stopping run command
         server_agent_id = request_json["cloud_agent_id"]
-        ClientConstants.exit_process(self.process)
+        ClientConstants.exit_process(self.run_process)
         ClientConstants.cleanup_run_process()
         ClientConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, self.edge_id, run_id=run_id)
 
@@ -618,9 +675,12 @@ class FedMLClientRunner:
             self.args, edge_id=self.edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id
         )
         client_runner.start_request_json = self.start_request_json
-        self.process = Process(target=client_runner.run)
-        self.process.start()
-        ClientConstants.save_run_process(self.process.pid)
+        if self.run_process_event is None:
+            self.run_process_event = multiprocessing.Event()
+        client_runner.run_process_event = self.run_process_event
+        self.run_process = Process(target=client_runner.run)
+        self.run_process.start()
+        ClientConstants.save_run_process(self.run_process.pid)
 
     def callback_stop_train(self, topic, payload):
         # logging.info("callback_stop_train: topic = %s, payload = %s" % (topic, payload))
@@ -640,10 +700,9 @@ class FedMLClientRunner:
         client_runner = FedMLClientRunner(
             self.args, edge_id=self.edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id
         )
-        try:
-            Process(target=client_runner.stop_run_entry).start()
-        except Exception as e:
-            pass
+        client_runner.run_process_event = self.run_process_event
+        client_runner.run_process = self.run_process
+        client_runner.stop_run_entry()
 
         # Stop log processor for current run
         MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
@@ -965,7 +1024,7 @@ class FedMLClientRunner:
             "FedML_ClientAgent_Daemon_" + self.args.current_device_id,
             "/flclient_agent/last_will_msg",
             json.dumps({"ID": self.edge_id, "status": ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE}),
-            )
+        )
         self.agent_config = service_config
 
         # Init local database
@@ -1005,4 +1064,3 @@ class FedMLClientRunner:
             sys_utils.cleanup_all_fedml_client_login_processes(
                 ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
             sys.exit(1)
-
