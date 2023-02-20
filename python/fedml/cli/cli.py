@@ -211,6 +211,8 @@ def mlops_login(
         login_pid = subprocess.Popen(
             [
                 sys_utils.get_python_program(),
+                "-W",
+                "ignore",
                 login_cmd,
                 "-t",
                 "login",
@@ -257,6 +259,8 @@ def mlops_login(
         login_pid = subprocess.Popen(
             [
                 sys_utils.get_python_program(),
+                "-W",
+                "ignore",
                 login_cmd,
                 "-t",
                 "login",
