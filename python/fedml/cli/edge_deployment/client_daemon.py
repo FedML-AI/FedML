@@ -34,6 +34,8 @@ if __name__ == "__main__":
         login_pid = ClientConstants.exec_console_with_shell_script_list(
             [
                 sys_utils.get_python_program(),
+                "-W",
+                "ignore:semaphore_tracker:UserWarning",
                 login_cmd,
                 "-t",
                 "login",

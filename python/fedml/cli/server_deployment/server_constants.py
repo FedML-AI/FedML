@@ -126,13 +126,13 @@ class ServerConstants(object):
                         if platform.system() == 'Windows':
                             os.system("taskkill /PID {} /T /F".format(sub_process.pid))
                         else:
-                            os.kill(sub_process.pid, signal.SIGKILL)
+                            os.kill(sub_process.pid, signal.SIGTERM)
 
                     if process is not None:
                         if platform.system() == 'Windows':
                             os.system("taskkill /PID {} /T /F".format(process.pid))
                         else:
-                            os.kill(process.pid, signal.SIGKILL)
+                            os.kill(process.pid, signal.SIGTERM)
                 except Exception as e:
                     pass
 
@@ -177,13 +177,13 @@ class ServerConstants(object):
                         if platform.system() == 'Windows':
                             os.system("taskkill /PID {} /T /F".format(sub_process.pid))
                         else:
-                            os.kill(sub_process.pid, signal.SIGKILL)
+                            os.kill(sub_process.pid, signal.SIGTERM)
 
                     if process is not None:
                         if platform.system() == 'Windows':
                             os.system("taskkill /PID {} /T /F".format(process.pid))
                         else:
-                            os.kill(process.pid, signal.SIGKILL)
+                            os.kill(process.pid, signal.SIGTERM)
                 except Exception as e:
                     pass
             yaml_object = {}
