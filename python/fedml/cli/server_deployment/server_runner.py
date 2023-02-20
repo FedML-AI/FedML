@@ -351,6 +351,8 @@ class FedMLServerRunner:
             self.run_impl()
         except RunnerError:
             logging.info("Runner stopped.")
+            self.mlops_metrics.report_server_training_status(self.run_id,
+                                                             ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED)
         except Exception as e:
             logging.info("Runner exits with exceptions.")
             sys_utils.cleanup_all_fedml_server_login_processes(ServerConstants.SERVER_LOGIN_PROGRAM,
