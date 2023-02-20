@@ -37,7 +37,7 @@ if __name__ == "__main__":
             [
                 sys_utils.get_python_program(),
                 "-W",
-                "ignore:semaphore_tracker:UserWarning",
+                "ignore",
                 login_cmd,
                 "-t",
                 "login",
