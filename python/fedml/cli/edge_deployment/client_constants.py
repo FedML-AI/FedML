@@ -123,13 +123,13 @@ class ClientConstants(object):
                         if platform.system() == 'Windows':
                             os.system("taskkill /PID {} /T /F".format(sub_process.pid))
                         else:
-                            os.kill(sub_process.pid, signal.SIGTERM)
+                            os.kill(sub_process.pid, signal.SIGKILL)
 
                     if process is not None:
                         if platform.system() == 'Windows':
                             os.system("taskkill /PID {} /T /F".format(process.pid))
                         else:
-                            os.kill(process.pid, signal.SIGTERM)
+                            os.kill(process.pid, signal.SIGKILL)
                 except Exception as e:
                     pass
             yaml_object = {}
@@ -165,13 +165,13 @@ class ClientConstants(object):
                         if platform.system() == 'Windows':
                             os.system("taskkill /PID {} /T /F".format(sub_process.pid))
                         else:
-                            os.kill(sub_process.pid, signal.SIGTERM)
+                            os.kill(sub_process.pid, signal.SIGKILL)
 
                     if process is not None:
                         if platform.system() == 'Windows':
                             os.system("taskkill /PID {} /T /F".format(process.pid))
                         else:
-                            os.kill(process.pid, signal.SIGTERM)
+                            os.kill(process.pid, signal.SIGKILL)
                 except Exception as e:
                     pass
             yaml_object = {}
