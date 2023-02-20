@@ -317,10 +317,11 @@ class FedMLClientRunner:
 
         return is_bootstrap_run_ok
 
-    def run(self):
+    def run(self, process_event):
         os.environ['PYTHONWARNINGS'] = 'ignore:semaphore_tracker:UserWarning'
         os.environ.setdefault('PYTHONWARNINGS', 'ignore:semaphore_tracker:UserWarning')
 
+        self.run_process_event = process_event
         try:
             self.setup_client_mqtt_mgr()
             self.run_impl()
@@ -652,6 +653,8 @@ class FedMLClientRunner:
             ))
             return
 
+        logging.info("cleanup and save runner information")
+
         # Terminate previous process about starting or stopping run command
         server_agent_id = request_json["cloud_agent_id"]
         ClientConstants.exit_process(self.run_process)
@@ -660,6 +663,7 @@ class FedMLClientRunner:
 
         # Start log processor for current run
         self.args.run_id = run_id
+        logging.info("start the log processor")
         MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
 
         # Start cross-silo server with multi processing mode
@@ -670,8 +674,10 @@ class FedMLClientRunner:
         client_runner.start_request_json = self.start_request_json
         if self.run_process_event is None:
             self.run_process_event = multiprocessing.Event()
+        self.run_process_event.clear()
         client_runner.run_process_event = self.run_process_event
-        self.run_process = Process(target=client_runner.run)
+        logging.info("start the runner process.")
+        self.run_process = Process(target=client_runner.run, args=(self.run_process_event,))
         self.run_process.start()
         ClientConstants.save_run_process(self.run_process.pid)
 
