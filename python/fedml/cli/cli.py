@@ -212,7 +212,7 @@ def mlops_login(
             [
                 sys_utils.get_python_program(),
                 "-W",
-                "ignore:semaphore_tracker:UserWarning",
+                "ignore",
                 login_cmd,
                 "-t",
                 "login",
@@ -260,7 +260,7 @@ def mlops_login(
             [
                 sys_utils.get_python_program(),
                 "-W",
-                "ignore:semaphore_tracker:UserWarning",
+                "ignore",
                 login_cmd,
                 "-t",
                 "login",
