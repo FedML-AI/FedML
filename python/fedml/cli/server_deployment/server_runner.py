@@ -152,10 +152,10 @@ class FedMLServerRunner:
 
         downloaded = count * blksize
         downloaded = filesize if downloaded > filesize else downloaded
-        progress = (downloaded / filesize * 100) if filesize != 0 else 0
-        progress = format(progress, '.2f')
+        progress_int = (downloaded / filesize * 100) if filesize != 0 else 0
+        progress = format(progress_int, '.2f')
         downloaded_kb = format(downloaded/1024, '.2f')
-        if progress <= 0 or (int(progress) % 5 == 0):
+        if progress_int <= 0 or (int(progress_int) % 5 == 0):
             logging.info("package downloaded size {} KB, progress {}%".format(downloaded_kb, progress))
 
     def retrieve_and_unzip_package(self, package_name, package_url):
