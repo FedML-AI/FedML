@@ -83,6 +83,8 @@ class FedMLClientDataInterface(Singleton):
         if run_id == 0:
             return
 
+        self.create_job_table()
+
         if status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING or \
                 status == ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING:
             self.save_started_job(run_id, edge_id,
@@ -275,22 +277,25 @@ class FedMLClientDataInterface(Singleton):
     def update_job_to_db(self, job):
         self.open_job_db()
         current_cursor = self.db_connection.cursor()
-        update_statement = "UPDATE jobs set {} {} {} {} {} {} {} {} {} {} {} {} where job_id={}".format(
-            f"edge_id={job.edge_id}" if job.edge_id != 0 else "",
-            f",started_time='{job.started_time}'" if job.started_time != "" else "",
-            f",ended_time='{job.ended_time}'" if job.ended_time != "" else "",
-            f",progress={job.progress}" if job.progress != 0 else "",
-            f",eta={job.eta}" if job.eta != 0 else "",
-            f",status='{job.status}'" if job.status != "" else "",
-            f",failed_time='{job.failed_time}'" if job.failed_time != "" else "",
-            f",error_code={job.error_code}" if job.error_code != -1 else "",
-            f",msg='{job.msg}'" if job.msg != "" else "",
-            ",updated_time='" + str(time.time()) + "'",
-            f",round_index={job.round_index}" if job.round_index != 0 else "",
-            f",total_rounds={job.total_rounds}" if job.total_rounds != 0 else "",
-            job.job_id)
-        current_cursor.execute(update_statement)
-        self.db_connection.commit()
+        try:
+            update_statement = "UPDATE jobs set {} {} {} {} {} {} {} {} {} {} {} {} where job_id={}".format(
+                f"edge_id={job.edge_id}" if job.edge_id != 0 else "",
+                f",started_time='{job.started_time}'" if job.started_time != "" else "",
+                f",ended_time='{job.ended_time}'" if job.ended_time != "" else "",
+                f",progress={job.progress}" if job.progress != 0 else "",
+                f",eta={job.eta}" if job.eta != 0 else "",
+                f",status='{job.status}'" if job.status != "" else "",
+                f",failed_time='{job.failed_time}'" if job.failed_time != "" else "",
+                f",error_code={job.error_code}" if job.error_code != -1 else "",
+                f",msg='{job.msg}'" if job.msg != "" else "",
+                ",updated_time='" + str(time.time()) + "'",
+                f",round_index={job.round_index}" if job.round_index != 0 else "",
+                f",total_rounds={job.total_rounds}" if job.total_rounds != 0 else "",
+                job.job_id)
+            current_cursor.execute(update_statement)
+            self.db_connection.commit()
+        except Exception as e:
+            pass
         self.db_connection.close()
 
     def handle_database_compatibility(self):
