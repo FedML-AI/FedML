@@ -23,7 +23,7 @@ from .core.common.ml_engine_backend import MLEngineBackend
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.7.446"
+__version__ = "0.7.447"
 
 
 def init(args=None):
@@ -90,7 +90,12 @@ def init(args=None):
     update_client_id_list(args)
 
     mlops.init(args)
-    
+
+    if hasattr(args, "process_id") and args.process_id is not None:
+        logging.info("args.rank = {}, args.process_id = {}, args.worker_num = {}".format(args.rank, args.process_id, args.worker_num))
+    else:
+        logging.info("args.rank = {}, args.worker_num = {}".format(args.rank, args.worker_num))
+
     update_client_specific_args(args)
     print_args(args)
 
