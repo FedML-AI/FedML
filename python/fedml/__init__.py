@@ -90,8 +90,7 @@ def init(args=None):
     update_client_id_list(args)
 
     mlops.init(args)
-
-    logging.info("args.rank = {}, args.process_id = {}, args.worker_num = {}".format(args.rank, args.process_id, args.worker_num))
+    
     update_client_specific_args(args)
     print_args(args)
 
