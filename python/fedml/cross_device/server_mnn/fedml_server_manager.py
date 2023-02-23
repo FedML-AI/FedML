@@ -283,9 +283,9 @@ class FedMLServerManager(FedMLCommManager):
                     self.send_message_check_client_status(
                         client_id, self.data_silo_index_list[client_idx_in_this_round],
                     )
-                    logging.info("Connection ready for client " + str(client_id))
+                    logging.info("Connection ready for client: " + str(client_id))
                 except Exception as e:
-                    logging.info("Connection not ready for client : {}".format(
+                    logging.info("Connection not ready for client: {}".format(
                         str(client_id), traceback.format_exc()))
                 client_idx_in_this_round += 1
 
