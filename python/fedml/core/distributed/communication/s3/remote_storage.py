@@ -265,7 +265,7 @@ class S3Storage:
             return model_url
         except Exception as e:
             logging.error(
-                f"Upload data failed. | src: {src_local_path} | dest: {dest_s3_path} | Exception: {e}"
+                f"Upload data failed. | src: {src_local_path} | dest: {message_key} | Exception: {e}"
             )
             return None
         logging.info(
