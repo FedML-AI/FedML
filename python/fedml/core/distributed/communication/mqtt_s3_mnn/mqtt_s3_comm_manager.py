@@ -33,6 +33,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
         self.broker_host = None
         self.keepalive_time = 180
         self.args = args
+        self.rank = client_id
 
         self._topic = "fedml_" + str(topic) + "_"  # topic is set as run_id
         self.s3_storage = S3MNNStorage(s3_config_path)
@@ -208,7 +209,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
         receiving message topic (subscribe): fedml_runid_serverID_clientID
 
         """
-        if self.client_id == 0:
+        if self.rank == 0:
             # server
             receiver_id = msg.get_receiver_id()
 
