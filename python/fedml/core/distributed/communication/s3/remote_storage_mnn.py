@@ -18,7 +18,7 @@ class S3MNNStorage:
         :param model_file_path:
         :return:
         """
-        self.s3_storage.upload_file(model_file_path, message_key)
+        return self.s3_storage.upload_file(model_file_path, message_key)
 
     def download_model_file(self, message_key, model_file_path):
         """
