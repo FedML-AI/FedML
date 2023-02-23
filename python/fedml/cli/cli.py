@@ -879,7 +879,7 @@ def delete_model(name):
 @click.option(
     "--path", "-p", type=str, help="path for specific model.",
 )
-def add_model_files(name, meta, path):
+def add_model_files(name, path):
     if FedMLModelCards.get_instance().add_model_files(name, path):
         click.echo("Add file to model {} successfully.".format(name))
     else:
