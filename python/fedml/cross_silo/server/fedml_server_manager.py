@@ -96,8 +96,6 @@ class FedMLServerManager(FedMLCommManager):
 
         logging.info("self.client_online_mapping = {}".format(self.client_online_mapping))
 
-        mlops.log_aggregation_status(MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING)
-
         all_client_is_online = True
         for client_id in self.client_id_list_in_this_round:
             if not self.client_online_mapping.get(str(client_id), False):
@@ -109,6 +107,8 @@ class FedMLServerManager(FedMLCommManager):
         )
 
         if all_client_is_online:
+            mlops.log_aggregation_status(MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING)
+
             # send initialization message to all clients to start training
             self.send_init_msg()
             self.is_initialized = True
