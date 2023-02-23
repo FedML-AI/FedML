@@ -163,10 +163,10 @@ class FedMLServerManager(FedMLCommManager):
             send MNN file
         """
         self.client_id_list_in_this_round = self.aggregator.client_selection(
-            self.round_idx, self.client_real_ids, self.args.client_num_per_round
+            self.args.round_idx, self.client_real_ids, self.args.client_num_per_round
         )
         self.data_silo_index_list = self.aggregator.data_silo_selection(
-            self.round_idx,
+            self.args.round_idx,
             self.args.client_num_in_total,
             len(self.client_id_list_in_this_round),
         )
@@ -189,7 +189,7 @@ class FedMLServerManager(FedMLCommManager):
             )
             client_idx_in_this_round += 1
 
-        mlops.event("server.wait", event_started=True, event_value=str(self.round_idx))
+        mlops.event("server.wait", event_started=True, event_value=str(self.args.round_idx))
 
         # Todo: for serving the cross-device model,
         #       how to transform it to pytorch and upload the model network to ModelOps
@@ -260,10 +260,10 @@ class FedMLServerManager(FedMLCommManager):
     def handle_message_connection_ready(self, msg_params):
         if not self.is_initialized:
             self.client_id_list_in_this_round = self.aggregator.client_selection(
-                self.round_idx, self.client_real_ids, self.args.client_num_per_round
+                self.args.round_idx, self.client_real_ids, self.args.client_num_per_round
             )
             self.data_silo_index_list = self.aggregator.data_silo_selection(
-                self.round_idx,
+                self.args.round_idx,
                 self.args.client_num_in_total,
                 len(self.client_id_list_in_this_round),
             )
@@ -295,7 +295,7 @@ class FedMLServerManager(FedMLCommManager):
 
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
 
-        mlops.event("comm_c2s", event_started=False, event_value=str(self.round_idx), event_edge_id=sender_id)
+        mlops.event("comm_c2s", event_started=False, event_value=str(self.args.round_idx), event_edge_id=sender_id)
 
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         local_sample_number = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
@@ -309,7 +309,7 @@ class FedMLServerManager(FedMLCommManager):
             logging.info("=================================================")
             logging.info(
                 "=========== ROUND {} IS FINISHED!!! =============".format(
-                    self.round_idx
+                    self.args.round_idx
                 )
             )
             logging.info("=================================================")
@@ -324,17 +324,17 @@ class FedMLServerManager(FedMLCommManager):
             mlops.event("server.agg_and_eval", event_started=False, event_value=str(self.args.round_idx))
 
             self.aggregator.test_on_server_for_all_clients(
-                self.global_model_file_path, self.round_idx
+                self.global_model_file_path, self.args.round_idx
             )
 
             # send round info to the MQTT backend
-            mlops.log_round_info(self.round_num, self.round_idx)
+            mlops.log_round_info(self.round_num, self.args.round_idx)
 
             client_id_list_in_this_round = self.aggregator.client_selection(
-                self.round_idx, self.client_real_ids, self.args.client_num_per_round
+                self.args.round_idx, self.client_real_ids, self.args.client_num_per_round
             )
             data_silo_index_list = self.aggregator.data_silo_selection(
-                self.round_idx,
+                self.args.round_idx,
                 self.args.client_num_in_total,
                 len(client_id_list_in_this_round),
             )
@@ -424,7 +424,7 @@ class FedMLServerManager(FedMLCommManager):
         global_model_key = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY)
 
         mlops.log_aggregated_model_info(
-            self.round_idx + 1,
+            self.args.round_idx + 1,
             model_url=global_model_url,
         )
 
