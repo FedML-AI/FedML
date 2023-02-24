@@ -411,9 +411,4 @@ class FedMLServerManager(FedMLCommManager):
         global_model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
         global_model_key = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY)
 
-        mlops.log_aggregated_model_info(
-            self.args.round_idx + 1,
-            model_url=global_model_url,
-        )
-
         return global_model_url, global_model_key
