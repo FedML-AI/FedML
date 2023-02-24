@@ -102,6 +102,10 @@ class ClientMasterManager(FedMLCommManager):
         if self.round_idx < self.num_rounds:
             self.__train()
             self.round_idx += 1
+        else:
+            self.send_client_status(0, ClientMasterManager.RUN_FINISHED_STATUS_FLAG)
+            mlops.log_training_finished_status()
+            self.finish()
 
     def handle_message_finish(self, msg_params):
         logging.info(" ====================cleanup ====================")

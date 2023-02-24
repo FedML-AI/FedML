@@ -139,11 +139,6 @@ class FedMLServerManager(FedMLCommManager):
             self.process_finished_status(client_status, msg_params)
 
     def handle_message_receive_model_from_client(self, msg_params):
-        if self.args.round_idx == self.round_num:
-            logging.info("=============training is finished. Cleanup...============")
-            self.cleanup()
-            return
-
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         mlops.event("comm_c2s", event_started=False, event_value=str(self.args.round_idx), event_edge_id=sender_id)
 
