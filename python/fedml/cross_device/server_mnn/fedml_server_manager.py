@@ -163,20 +163,6 @@ class FedMLServerManager(FedMLCommManager):
         S2C - send the model to clients
             send MNN file
         """
-        self.client_id_list_in_this_round = self.aggregator.client_selection(
-            self.args.round_idx, self.client_real_ids, self.args.client_num_per_round
-        )
-        self.data_silo_index_list = self.aggregator.data_silo_selection(
-            self.args.round_idx,
-            self.args.client_num_in_total,
-            len(self.client_id_list_in_this_round),
-        )
-        logging.info(
-            "client_id_list_in_this_round = {}, data_silo_index_list = {}".format(
-                self.client_id_list_in_this_round, self.data_silo_index_list
-            )
-        )
-
         global_model_url = None
         global_model_key = None
 
