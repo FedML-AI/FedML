@@ -27,7 +27,7 @@ def start_deployment(end_point_id, model_id, model_version,
                      inference_http_port, inference_grpc_port, inference_metric_port,
                      inference_use_gpu, inference_memory_size,
                      inference_convertor_image, inference_server_image,
-                     infer_host, model_is_from_open, model_input_size,
+                     infer_host, model_is_from_open, model_params,
                      model_from_open):
     logging.info("Model deployment is starting...")
 
@@ -80,7 +80,7 @@ def start_deployment(end_point_id, model_id, model_version,
         if model_from_open is None:
             return running_model_name, "", model_version, {}, {}
 
-        input_size = model_input_size
+        input_size = model_params["input_size"]
         with open(model_bin_file, 'rb') as model_pkl_file:
             open_model_params = pickle.load(model_pkl_file)
             model_from_open.load_state_dict(open_model_params)
@@ -101,32 +101,68 @@ def start_deployment(end_point_id, model_id, model_version,
 
         input_names = {"x": 0}
         convert_model_to_onnx(model_from_open, onnx_model_path, input_names, input_size)
-    else:
-        convert_model_container_name = "{}_{}_{}".format(ClientConstants.FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX,
-                                                         str(end_point_id),
-                                                         str(model_id))
+    else:    
         running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id,
                                                                     inference_model_name,
                                                                     model_version)
-        model_storage_processed_path = ClientConstants.get_k8s_slave_host_dir(model_storage_local_path)
-        convert_model_cmd = "{}docker stop {}; {}docker rm {}; " \
-                            "{}docker run --name {} --rm {} -v {}:/project " \
-                            "{} bash -c \"cd /project && convert_model -m /project --name {} " \
-                            "--backend {} --seq-len 16 128 128\"; exit". \
-            format(sudo_prefix, convert_model_container_name, sudo_prefix, convert_model_container_name,
-                   sudo_prefix, convert_model_container_name, gpu_attach_cmd, model_storage_processed_path,
-                   inference_convertor_image, running_model_name,
-                   inference_engine)
-        logging.info("Convert the model to ONNX format: {}".format(convert_model_cmd))
-        logging.info("Now is converting the model to onnx, please wait...")
-        os.system(convert_model_cmd)
-        # convert_process = ClientConstants.exec_console_with_script(convert_model_cmd,
-        #                                                            should_capture_stdout=False,
-        #                                                            should_capture_stderr=False,
-        #                                                            no_sys_out_err=True)
-        log_deployment_result(end_point_id, model_id, convert_model_container_name,
-                              ClientConstants.CMD_TYPE_CONVERT_MODEL, 0,
-                              running_model_name, inference_engine, inference_http_port)
+        # configuration passed by user in the Cli
+        model_location = model_storage_local_path+ "/fedml_model.bin"
+        input_size = model_params["input_size"]
+        input_types = model_params["input_types"]
+
+        model = torch.load(model_location)  # model def + params
+        model.eval()
+
+        dummy_input_list = []
+        for index, input_i in enumerate(input_size):
+            if input_types[index] == "int":
+                this_input = torch.randint(0,1, input_i)
+            else:
+                this_input = torch.zeros(input_i)
+            dummy_input_list.append(this_input)
+        
+        onnx_model_path = os.path.join(model_storage_local_path,
+                                       ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME,
+                                       running_model_name, ClientConstants.INFERENCE_MODEL_VERSION)
+        if not os.path.exists(onnx_model_path):
+            os.makedirs(onnx_model_path)
+        onnx_model_path = os.path.join(onnx_model_path, "model.onnx")
+
+        torch.onnx.export(model,            # model being run
+                tuple(dummy_input_list),    # model input (or a tuple for multiple inputs)
+                onnx_model_path,            # where to save the model (can be a file or file-like object)
+                export_params=True,         # store the trained parameter weights inside the model file
+                opset_version=10,           # the ONNX version to export the model to
+                do_constant_folding=False,  # whether to execute constant folding for optimization
+                input_names=["input"+ str(i) for i in range(1, len(input_size)+ 1)],  # the model's input names
+                output_names=['output'],    # the model's output names
+            )
+        
+        # convert_model_container_name = "{}_{}_{}".format(ClientConstants.FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX,
+        #                                                  str(end_point_id),
+        #                                                  str(model_id))
+        # running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id,
+        #                                                             inference_model_name,
+        #                                                             model_version)
+        # model_storage_processed_path = ClientConstants.get_k8s_slave_host_dir(model_storage_local_path)
+        # convert_model_cmd = "{}docker stop {}; {}docker rm {}; " \
+        #                     "{}docker run --name {} --rm {} -v {}:/project " \
+        #                     "{} bash -c \"cd /project && convert_model -m /project --name {} " \
+        #                     "--backend {} --seq-len 16 128 128\"; exit". \
+        #     format(sudo_prefix, convert_model_container_name, sudo_prefix, convert_model_container_name,
+        #            sudo_prefix, convert_model_container_name, gpu_attach_cmd, model_storage_processed_path,
+        #            inference_convertor_image, running_model_name,
+        #            inference_engine)
+        # logging.info("Convert the model to ONNX format: {}".format(convert_model_cmd))
+        # logging.info("Now is converting the model to onnx, please wait...")
+        # os.system(convert_model_cmd)
+        # # convert_process = ClientConstants.exec_console_with_script(convert_model_cmd,
+        # #                                                            should_capture_stdout=False,
+        # #                                                            should_capture_stderr=False,
+        # #                                                            no_sys_out_err=True)
+        # log_deployment_result(end_point_id, model_id, convert_model_container_name,
+        #                       ClientConstants.CMD_TYPE_CONVERT_MODEL, 0,
+        #                       running_model_name, inference_engine, inference_http_port)
 
     # Move converted model to serving dir for inference
     model_serving_dir = ClientConstants.get_model_serving_dir()
