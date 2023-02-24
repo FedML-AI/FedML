@@ -127,7 +127,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
         self.mqtt_mgr.add_message_passthrough_listener(self._on_message)
 
         # Subscribe one topic
-        if self.client_id == 0:
+        if self.rank == 0:
             # server
             self.subscribe_client_status_message()
 
