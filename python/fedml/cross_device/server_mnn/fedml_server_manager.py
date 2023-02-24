@@ -16,15 +16,15 @@ class FedMLServerManager(FedMLCommManager):
     RUN_FINISHED_STATUS_FLAG = "FINISHED"
 
     def __init__(
-        self,
-        args,
-        aggregator,
-        comm=None,
-        rank=0,
-        size=0,
-        backend="MPI",
-        is_preprocessed=False,
-        preprocessed_client_lists=None,
+            self,
+            args,
+            aggregator,
+            comm=None,
+            rank=0,
+            size=0,
+            backend="MPI",
+            is_preprocessed=False,
+            preprocessed_client_lists=None,
     ):
         super().__init__(args, comm, rank, size, backend)
         self.args = args
@@ -318,23 +318,27 @@ class FedMLServerManager(FedMLCommManager):
             # send round info to the MQTT backend
             mlops.log_round_info(self.round_num, self.args.round_idx)
 
-            client_id_list_in_this_round = self.aggregator.client_selection(
+            self.client_id_list_in_this_round = self.aggregator.client_selection(
                 self.args.round_idx, self.client_real_ids, self.args.client_num_per_round
             )
-            data_silo_index_list = self.aggregator.data_silo_selection(
+            self.data_silo_index_list = self.aggregator.data_silo_selection(
                 self.args.round_idx,
                 self.args.client_num_in_total,
-                len(client_id_list_in_this_round),
+                len(self.client_id_list_in_this_round),
             )
 
             client_idx_in_this_round = 0
             global_model_url = None
             global_model_key = None
-            for receiver_id in client_id_list_in_this_round:
+            logging.info("round idx {}, client_num_in_total {}, data_silo_index_list length {},"
+                         "client_id_list_in_this_round length {}.".format(
+                self.args.round_idx, self.args.client_num_in_total,
+                len(self.data_silo_index_list), len(self.client_id_list_in_this_round)))
+            for receiver_id in self.client_id_list_in_this_round:
                 global_model_url, global_model_key = self.send_message_sync_model_to_client(
                     receiver_id,
                     self.global_model_file_path,
-                    data_silo_index_list[client_idx_in_this_round],
+                    self.data_silo_index_list[client_idx_in_this_round],
                     global_model_url,
                     global_model_key
                 )
@@ -391,8 +395,8 @@ class FedMLServerManager(FedMLCommManager):
         self.send_message(message)
 
     def send_message_sync_model_to_client(
-        self, receive_id, global_model_params, data_silo_index,
-        global_model_url=None, global_model_key=None
+            self, receive_id, global_model_params, data_silo_index,
+            global_model_url=None, global_model_key=None
     ):
         logging.info("send_message_sync_model_to_client. receive_id = %d" % receive_id)
         message = Message(
@@ -406,6 +410,7 @@ class FedMLServerManager(FedMLCommManager):
         if global_model_key is not None:
             message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY, global_model_key)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(data_silo_index))
+        message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "AndroidClient")
         self.send_message(message)
 
         global_model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
