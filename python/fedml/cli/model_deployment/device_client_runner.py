@@ -188,10 +188,9 @@ class FedMLClientRunner:
         scale_max = model_config["instance_scale_max"]
         inference_engine = model_config["inference_engine"]
         self.model_is_from_open = True if model_config.get("is_from_open", 0) == 1 else False
-        model_net_url = model_config["model_net_url"]
+        if self.model_is_from_open:
+            model_net_url = model_config["model_net_url"]
         model_config_parameters = self.request_json["parameters"]
-        model_input_size = model_config_parameters.get("input_size", 0)
-        model_output_size = model_config_parameters.get("output_size", 0)
         inference_end_point_id = run_id
         use_gpu = "gpu"  # TODO: Get GPU from device infos
         memory_size = "4096m"  # TODO: Get Memory size for each instance
@@ -234,7 +233,7 @@ class FedMLClientRunner:
                 ClientConstants.INFERENCE_CONVERTOR_IMAGE,
                 ClientConstants.INFERENCE_SERVER_IMAGE,
                 self.infer_host,
-                self.model_is_from_open, model_input_size,
+                self.model_is_from_open, model_config_parameters,
                 model_from_open)
         if inference_output_url == "":
             self.send_deployment_status(self.edge_id, model_id, running_model_name, inference_output_url,
