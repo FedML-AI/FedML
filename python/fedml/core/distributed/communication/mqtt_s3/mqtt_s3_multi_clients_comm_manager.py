@@ -1,7 +1,6 @@
 # -*-coding:utf-8-*-
 import json
 import logging
-import traceback
 import uuid
 from typing import List
 from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
@@ -19,8 +18,6 @@ import time
 
 
 class MqttS3MultiClientsCommManager(BaseCommunicationManager):
-    MESSAGE_CACHE_SENT_JSON_TOPIC = "message_json_topic"
-    MESSAGE_CACHE_SENT_JSON_PAYLOAD = "message_json_payload"
 
     def __init__(
             self,
@@ -85,7 +82,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
 
         self._observers: List[Observer] = []
 
-        self._client_id = "FedML_CS_{}_{}".format(str(args.run_id), str(self.edge_id))
+        self._client_id = "FedML_CS_{}_{}_{}".format(str(args.run_id), str(self.edge_id), str(uuid.uuid4()))
         self.client_num = client_num
         logging.info("mqtt_s3.init: client_num = %d" % client_num)
 
@@ -114,7 +111,6 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         self.mqtt_mgr.connect()
 
         self.is_connected = False
-        self.sent_msg_caches: List[Message] = []
 
     @property
     def client_id(self):
@@ -156,14 +152,12 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                 # )
             # logging.info("mqtt_s3.on_connect: server subscribes")
 
-            self.send_cache_msgs()
             self._notify_connection_ready()
         else:
             # client
             real_topic = self._topic + str(self.server_id) + "_" + str(self.client_real_ids[0])
             result, mid = mqtt_client_object.subscribe(real_topic, qos=2)
 
-            self.send_cache_msgs()
             self._notify_connection_ready()
 
             # logging.info(
@@ -171,27 +165,6 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
             #     % (real_topic, mid, str(result))
             # )
         self.is_connected = True
-
-    def send_cache_msgs(self):
-        pass
-        # sent_msgs: List[Message] = []
-        # for msg in self.sent_msg_caches:
-        #     sent_json_topic = msg.get(MqttS3MultiClientsCommManager.MESSAGE_CACHE_SENT_JSON_TOPIC)
-        #     sent_json_payload = msg.get(MqttS3MultiClientsCommManager.MESSAGE_CACHE_SENT_JSON_PAYLOAD)
-        #     if sent_json_topic is None:
-        #         print("send cache obj")
-        #         sent = self.send_message(msg, wait_for_publish=False, not_cache=True)
-        #     else:
-        #         print("send cache json")
-        #         sent = self.send_message_json(sent_json_topic, sent_json_payload)
-        #     # if sent:
-        #     sent_msgs.append(msg)
-        #
-        # # for msg in sent_msgs:
-        # #     del self.sent_msg_caches[msg]
-        # if len(sent_msgs) > 0:
-        #     sent_msgs.clear()
-        # self.sent_msg_caches.clear()
 
     def on_disconnected(self, mqtt_client_object):
         self.is_connected = False
@@ -267,7 +240,7 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
     def _on_message(self, msg):
         self._on_message_impl(msg)
 
-    def send_message(self, msg: Message, wait_for_publish=False, not_cache=False):
+    def send_message(self, msg: Message, wait_for_publish=False):
         """
         [server]
         sending message topic (publish): fedml_runid_serverID_clientID
@@ -278,14 +251,6 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
         receiving message topic (subscribe): fedml_runid_serverID_clientID
 
         """
-        # if self.mqtt_mgr.is_connected() is False:
-        #     if not not_cache:
-        #         self.sent_msg_caches.append(msg)
-        #     return False
-        # print("msg cache num {}.".format(str(len(self.sent_msg_caches))))
-
-        sent_result = None
-        sender_id = msg.get_sender_id()
         receiver_id = msg.get_receiver_id()
         if self.args.rank == 0:
             # topic = "fedml" + "_" + "run_id" + "_0" + "_" + "client_id"
@@ -314,10 +279,10 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                 payload[Message.MSG_ARG_KEY_MODEL_PARAMS] = model_key
                 payload[Message.MSG_ARG_KEY_MODEL_PARAMS_URL] = model_url
                 payload[Message.MSG_ARG_KEY_MODEL_PARAMS_KEY] = model_key
-                sent_result = self.mqtt_mgr.send_message(topic, json.dumps(payload))
+                self.mqtt_mgr.send_message(topic, json.dumps(payload))
             else:
                 # pure MQTT
-                sent_result = self.mqtt_mgr.send_message(topic, json.dumps(payload))
+                self.mqtt_mgr.send_message(topic, json.dumps(payload))
         else:
             # client
             topic = self._topic + str(msg.get_sender_id())
@@ -345,28 +310,15 @@ class MqttS3MultiClientsCommManager(BaseCommunicationManager):
                     "mqtt_s3.send_message: client s3, topic = %s"
                     % topic
                 )
-                sent_result = self.mqtt_mgr.send_message(topic, json.dumps(payload))
+                self.mqtt_mgr.send_message(topic, json.dumps(payload))
             else:
                 logging.info("mqtt_s3.send_message: MQTT msg sent")
-                sent_result = self.mqtt_mgr.send_message(topic, json.dumps(payload))
-
-        if sent_result is not None and not sent_result:
-            # if not not_cache:
-            #     self.sent_msg_caches.append(msg)
-            return False
+                self.mqtt_mgr.send_message(topic, json.dumps(payload))
 
         return True
 
     def send_message_json(self, topic_name, json_message):
-        sent_result = self.mqtt_mgr.send_message_json(topic_name, json_message)
-        if sent_result is not None and not sent_result:
-            # msb_obj = Message()
-            # msb_obj.add(MqttS3MultiClientsCommManager.MESSAGE_CACHE_SENT_JSON_TOPIC, topic_name)
-            # msb_obj.add(MqttS3MultiClientsCommManager.MESSAGE_CACHE_SENT_JSON_PAYLOAD, json_message)
-            # self.sent_msg_caches.append(msb_obj)
-            return False
-
-        return True
+        return self.mqtt_mgr.send_message_json(topic_name, json_message)
 
     def handle_receive_message(self):
         start_listening_time = time.time()
