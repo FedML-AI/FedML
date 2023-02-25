@@ -30,6 +30,8 @@ public final class ClientAgentManager implements MessageDefine {
     private final TokenChecker mTokenChecker;
     private final MetricsReporter mReporter;
     private volatile long mEdgeId = 0;
+
+    private volatile long mRunId = 0;
     private final Gson mGson;
 
     private ClientManager mClientManager;
@@ -75,6 +77,9 @@ public final class ClientAgentManager implements MessageDefine {
         edgeCommunicator.subscribe(stopTrainTopic, (OnTrainStopListener) this::handleTrainStop);
         final String MLOpsQueryStatusTopic = "/mlops/report_device_status";
         edgeCommunicator.subscribe(MLOpsQueryStatusTopic, (OnMLOpsMsgListener) this::handleMLOpsMsg);
+
+        final String exitTrainWithExceptionTopic = "flserver_agent/" + edgeId + "/exit_train_with_exception";
+        edgeCommunicator.subscribe(exitTrainWithExceptionTopic, (OnMLOpsMsgListener) this::handleTrainException);
     }
 
     private void handleTrainStart(JSONObject msgParams) {
@@ -92,6 +97,7 @@ public final class ClientAgentManager implements MessageDefine {
         // TODO: waiting dataset split, then download the dataset package and Training Client App
 
         long runId = msgParams.optLong("runId", 0);
+        mRunId = runId;
 
         JSONObject hyperParameters = null;
         final String strServerId = msgParams.optString(TRAIN_SERVER_ID);
@@ -121,10 +127,17 @@ public final class ClientAgentManager implements MessageDefine {
             mClientManager.stopTrain();
             mClientManager = null;
         }
+
+        mRunId = 0;
     }
 
     private void handleMLOpsMsg(JSONObject msgParams) {
         LogHelper.d("handleMLOpsMsg :%s", msgParams.toString());
         mReporter.reportClientActiveStatus(mEdgeId);
+    }
+
+    private void handleTrainException(JSONObject msgParams) {
+        LogHelper.d("handleTrainException :%s", msgParams.toString());
+        mReporter.reportTrainingStatus(mRunId, mEdgeId, KEY_CLIENT_STATUS_FAILED);
     }
 }
