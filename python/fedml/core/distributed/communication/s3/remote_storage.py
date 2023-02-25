@@ -243,44 +243,51 @@ class S3Storage:
     #             print("Exception " + str(e))
     #     return model
 
-    def upload_file(self, src_local_path, dest_s3_path):
+    def upload_file(self, src_local_path, message_key):
         """
         upload file
         :param src_local_path:
-        :param dest_s3_path:
+        :param message_key:
         :return:
         """
         try:
             with open(src_local_path, "rb") as f:
                 global aws_s3_client
                 aws_s3_client.upload_fileobj(
-                    f, self.bucket_name, dest_s3_path, ExtraArgs={"ACL": "public-read"}
+                    f, self.bucket_name, message_key, ExtraArgs={"ACL": "public-read"}
                 )
+
+            model_url = aws_s3_client.generate_presigned_url(
+                        "get_object",
+                        ExpiresIn=60 * 60 * 24 * 5,
+                        Params={"Bucket": self.bucket_name, "Key": message_key},
+                    )
+            return model_url
         except Exception as e:
             logging.error(
-                f"Upload data failed. | src: {src_local_path} | dest: {dest_s3_path} | Exception: {e}"
+                f"Upload data failed. | src: {src_local_path} | dest: {message_key} | Exception: {e}"
             )
-            return False
+            return None
         logging.info(
             f"Uploading file successful. | src: {src_local_path} | dest: {dest_s3_path}"
         )
-        return True
+        return None
 
-    def download_file(self, path_s3, path_local):
+    def download_file(self, message_key, path_local):
         """
         download file
-        :param path_s3: s3 key
+        :param message_key: s3 key
         :param path_local: local path
         :return:
         """
         retry = 0
         while retry < 3:
             logging.info(
-                f"Start downloading files. | path_s3: {path_s3} | path_local: {path_local}"
+                f"Start downloading files. | message key: {message_key} | path_local: {path_local}"
             )
             try:
                 global aws_s3_client
-                aws_s3_client.download_file(self.bucket_name, path_s3, path_local)
+                aws_s3_client.download_file(self.bucket_name, message_key, path_local)
                 file_size = os.path.getsize(path_local)
                 logging.info(
                     f"Downloading completed. | size: {round(file_size / 1048576, 2)} MB"

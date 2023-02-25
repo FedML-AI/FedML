@@ -23,6 +23,8 @@ public interface OnTrainListener extends OnJsonReceivedListener, MessageDefine {
             handleMessageReceiveModelFromServer(jsonMsg);
         } else if (MSG_TYPE_S2C_CHECK_CLIENT_STATUS == msgType) {
             handle_message_check_status(jsonMsg);
+        } else if (MSG_TYPE_S2C_FINISH == msgType) {
+            handle_message_finish(jsonMsg);
         }
     }
 
@@ -33,4 +35,6 @@ public interface OnTrainListener extends OnJsonReceivedListener, MessageDefine {
     void handleMessageReceiveModelFromServer(JSONObject jsonMsg);
 
     void handle_message_check_status(JSONObject jsonMsg);
+
+    void handle_message_finish(JSONObject jsonMsg);
 }
