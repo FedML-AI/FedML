@@ -9,6 +9,7 @@ import ai.fedml.edge.service.communicator.message.MessageDefine;
 import ai.fedml.edge.service.communicator.message.TrainStatusMessage;
 import ai.fedml.edge.utils.LogHelper;
 import androidx.annotation.NonNull;
+import androidx.annotation.StringRes;
 
 public class MetricsReporter implements MessageDefine {
     private final EdgeCommunicator edgeCommunicator;
@@ -43,6 +44,14 @@ public class MetricsReporter implements MessageDefine {
         return edgeCommunicator.sendMessage(onLineTopic, trainStatus);
     }
 
+    public boolean reportEdgeFinished(final long runId, final long edgeId) {
+        TrainStatusMessage trainStatus = TrainStatusMessage.builder().sender(edgeId).receiver(0)
+                .messageType(TrainStatusMessage.MSG_TYPE_C2S_CLIENT_STATUS)
+                .status("FINISHED").os(MSG_CLIENT_OS_ANDROID).build();
+        final String onLineTopic = "fedml_" + runId + "_" + edgeId;
+        return edgeCommunicator.sendMessage(onLineTopic, trainStatus);
+    }
+
     public void reportClientStatus(final long runId, final long edgeId, final int status) {
         notifyClientStatus(status);
         final String topic = "fl_client/mlops/" + edgeId + "/status";
@@ -57,17 +66,25 @@ public class MetricsReporter implements MessageDefine {
         edgeCommunicator.sendMessage(topic, jsonObject.toString());
     }
 
-    public void reportTrainingStatus(final long edgeId, final int status) {
+    public void reportTrainingStatus(final long runId, final long edgeId, final int status) {
         notifyClientStatus(status);
-        final String topicName = "fl_client/mlops/status";
+        final String topicName4WebUI = "fl_client/mlops/status";
         JSONObject jsonObject = new JSONObject();
         try {
+            jsonObject.put(RUN_ID, runId);
             jsonObject.put(EDGE_ID, edgeId);
             jsonObject.put(REPORT_STATUS, CLIENT_STATUS_MAP.get(status));
         } catch (JSONException e) {
             LogHelper.e(e, "reportTrainingStatus(%d, %d)", edgeId, status);
         }
-        edgeCommunicator.sendMessage(topicName, jsonObject.toString());
+        edgeCommunicator.sendMessage(topicName4WebUI, jsonObject.toString());
+
+        final String topicName4Run = "fl_run/fl_client/mlops/status";
+        edgeCommunicator.sendMessage(topicName4Run, jsonObject.toString());
+
+        if (status == KEY_CLIENT_STATUS_FAILED) {
+            reportClientException(runId, edgeId, status);
+        }
     }
 
     public void reportClientActiveStatus(final long edgeId) {
@@ -145,5 +162,19 @@ public class MetricsReporter implements MessageDefine {
         if (mOnTrainingStatusListener != null) {
             mOnTrainingStatusListener.onStatusChanged(status);
         }
+    }
+
+    public void reportClientException(final long runId, final long edgeId, int status) {
+        notifyClientStatus(status);
+        final String topicException = "flserver_agent/" + runId + "/client_exit_train_with_exception";
+        JSONObject jsonObject = new JSONObject();
+        try {
+            jsonObject.put(RUN_ID, runId);
+            jsonObject.put(EDGE_ID, edgeId);
+            jsonObject.put(REPORT_STATUS, CLIENT_STATUS_MAP.get(status));
+        } catch (JSONException e) {
+            LogHelper.e(e, "reportTrainingStatus(%d, %d)", edgeId, status);
+        }
+        edgeCommunicator.sendMessage(topicException, jsonObject.toString());
     }
 }
