@@ -96,8 +96,6 @@ class FedMLServerManager(FedMLCommManager):
 
         logging.info("self.client_online_mapping = {}".format(self.client_online_mapping))
 
-        mlops.log_aggregation_status(MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING)
-
         all_client_is_online = True
         for client_id in self.client_id_list_in_this_round:
             if not self.client_online_mapping.get(str(client_id), False):
@@ -109,6 +107,8 @@ class FedMLServerManager(FedMLCommManager):
         )
 
         if all_client_is_online:
+            mlops.log_aggregation_status(MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING)
+
             # send initialization message to all clients to start training
             self.send_init_msg()
             self.is_initialized = True
@@ -139,11 +139,6 @@ class FedMLServerManager(FedMLCommManager):
             self.process_finished_status(client_status, msg_params)
 
     def handle_message_receive_model_from_client(self, msg_params):
-        if self.args.round_idx == self.round_num:
-            logging.info("=============training is finished. Cleanup...============")
-            self.cleanup()
-            return
-
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         mlops.event("comm_c2s", event_started=False, event_value=str(self.args.round_idx), event_edge_id=sender_id)
 
