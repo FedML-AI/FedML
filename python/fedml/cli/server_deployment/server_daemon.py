@@ -61,3 +61,7 @@ if __name__ == "__main__":
         ret_code, exec_out, exec_err = ServerConstants.get_console_sys_out_pipe_err_results(login_pid)
         time.sleep(3)
 
+        if args.role == ServerConstants.login_role_list[ServerConstants.LOGIN_MODE_CLOUD_SERVER_INDEX]:
+            break
+
+
