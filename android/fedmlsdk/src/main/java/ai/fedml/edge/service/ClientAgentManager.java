@@ -139,5 +139,11 @@ public final class ClientAgentManager implements MessageDefine {
     private void handleTrainException(JSONObject msgParams) {
         LogHelper.d("handleTrainException :%s", msgParams.toString());
         mReporter.reportTrainingStatus(mRunId, mEdgeId, KEY_CLIENT_STATUS_FAILED);
+
+        if (mClientManager != null) {
+            mClientManager.stopTrainWithoutReportStatus();
+            mClientManager = null;
+        }
+        mRunId = 0;
     }
 }
