@@ -55,7 +55,7 @@ public class ProfilerEventLogger {
             } else if (EVENT_TYPE_ENDED == event_type) {
                 timeKey = "ended_time";
             }
-            jsonObject.put(timeKey, System.currentTimeMillis());
+            jsonObject.put(timeKey, System.currentTimeMillis()/1000);
         } catch (JSONException e) {
             LogHelper.e(e, "buildEventMessage(%d, %s, %s)", event_type, name, value);
         }

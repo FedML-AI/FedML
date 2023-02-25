@@ -68,7 +68,7 @@ public final class ClientAgentManager implements MessageDefine {
      * @param edgeId edge id
      */
     public void registerMessageReceiveHandlers(final long edgeId) {
-        mReporter.reportTrainingStatus(edgeId, KEY_CLIENT_STATUS_IDLE);
+        mReporter.reportTrainingStatus(0, edgeId, KEY_CLIENT_STATUS_IDLE);
         final String startTrainTopic = "flserver_agent/" + edgeId + "/start_train";
         edgeCommunicator.subscribe(startTrainTopic, (OnTrainStartListener) this::handleTrainStart);
         final String stopTrainTopic = "flserver_agent/" + edgeId + "/stop_train";
@@ -112,10 +112,9 @@ public final class ClientAgentManager implements MessageDefine {
 
     private void handleTrainStop(JSONObject msgParams) {
         LogHelper.d("handleTrainStop :%s", msgParams.toString());
-        mReporter.reportTrainingStatus(mEdgeId, KEY_CLIENT_STATUS_STOPPING);
 //        edgeCommunicator.unsubscribe("flserver_agent/" + mEdgeId + "/start_train");
 //        edgeCommunicator.unsubscribe("flserver_agent/" + mEdgeId + "/stop_train");
-        mReporter.reportTrainingStatus(mEdgeId, KEY_CLIENT_STATUS_IDLE);
+        mReporter.reportTrainingStatus(0, mEdgeId, KEY_CLIENT_STATUS_IDLE);
 
         // Stop Training Client
         if (mClientManager != null) {
