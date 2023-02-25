@@ -1,6 +1,7 @@
+import argparse
 import json
 import logging
-import os
+import traceback
 import uuid
 
 import paho.mqtt.client as mqtt
@@ -43,8 +44,10 @@ class MqttManager(object):
         self._client = None
 
     def init_connect(self):
-        self.mqtt_connection_id = "{}_{}".format(self._client_id, str(mqtt.base62(uuid.uuid4().int, padding=22)))
+        self.mqtt_connection_id = "{}_{}".format(self._client_id, "ID")
         self._client = mqtt.Client(client_id=self.mqtt_connection_id, clean_session=False)
+        self._client.connected_flag = False
+        self._client.bad_conn_flag = False
         self._client.on_connect = self.on_connect
         self._client.on_publish = self.on_publish
         self._client.on_disconnect = self.on_disconnect
@@ -53,6 +56,9 @@ class MqttManager(object):
         # self._client.on_log = self._on_log
         self._client.disable_logger()
         self._client.username_pw_set(self.user, self.pwd)
+        self._client._connect_timeout = 15
+        logging.info("MQTT Connection timeout: {}, client id {}.".format(
+            self._client._connect_timeout, self.mqtt_connection_id))
 
     def connect(self):
         if self.last_will_topic is not None:
@@ -60,7 +66,7 @@ class MqttManager(object):
                 self.last_will_msg = json.dumps({"ID": f"{self._client_id}", "status": "OFFLINE"})
             self._client.will_set(self.last_will_topic,
                                   payload=self.last_will_msg,
-                                  qos=0, retain=True)
+                                  qos=2, retain=True)
         self._client.connect(self._host, self._port, self.keepalive_time)
 
     def reconnect(self):
@@ -68,7 +74,8 @@ class MqttManager(object):
             self.init_connect()
             self._client.reconnect()
         except Exception as e:
-            pass
+            logging.info("Failed to reconnect to MQTT server: {}, client id {}".format(
+                traceback.format_exc(), self.mqtt_connection_id))
 
     def disconnect(self):
         self._client.disconnect()
@@ -82,9 +89,8 @@ class MqttManager(object):
     def loop_forever(self):
         self._client.loop_forever(retry_first_connection=True)
 
-    def send_message(self, topic, message, publish_single_message=True):
-        # if self._client.is_connected() is False:
-        #     return False
+    def send_message(self, topic, message, publish_single_message=False):
+        self.check_connection()
 
         mqtt_send_start_time = time.time()
         if publish_single_message:
@@ -92,30 +98,62 @@ class MqttManager(object):
                                                              str(mqtt.base62(uuid.uuid4().int, padding=22)))
             mqtt_publish.single(topic, payload=message, qos=2,
                                 hostname=self._host, port=self._port,
-                                client_id=connection_id,
+                                client_id=connection_id, retain=True,
                                 auth={'username': self.user, 'password': self.pwd})
         else:
-            ret_info = self._client.publish(topic, payload=message, qos=2)
+            ret_info = self._client.publish(topic, payload=message, qos=2, retain=True)
             return ret_info.is_published()
         MLOpsProfilerEvent.log_to_wandb({"Comm/send_delay_mqtt": time.time() - mqtt_send_start_time})
         return True
 
-    def send_message_json(self, topic, message, publish_single_message=True):
+    def send_message_json(self, topic, message, publish_single_message=False):
+        self.check_connection()
+
         if publish_single_message:
             connection_id = "FEDML_SINGLE_CONN_{}_{}".format(self._client_id,
                                                              str(mqtt.base62(uuid.uuid4().int, padding=22)))
             mqtt_publish.single(topic, payload=message, qos=2,
                                 hostname=self._host, port=self._port,
-                                client_id=connection_id,
+                                client_id=connection_id, retain=True,
                                 auth={'username': self.user, 'password': self.pwd})
         else:
-            ret_info = self._client.publish(topic, payload=message, qos=2)
+            ret_info = self._client.publish(topic, payload=message, qos=2, retain=True)
             return ret_info.is_published()
         return True
 
     def on_connect(self, client, userdata, flags, rc):
-        # Callback connected listeners
-        self.callback_connected_listener(client)
+        if rc == 0:
+            client.connected_flag = True
+            logging.info("MQTT Connection is OK, client id {}.".format(self.mqtt_connection_id))
+
+            # Callback connected listeners
+            self.callback_connected_listener(client)
+        else:
+            client.bad_conn_flag = True
+
+            if rc == 1:
+                logging.info("MQTT Connection refused - incorrect protocol version, client id {}.".format(
+                    self.mqtt_connection_id
+                ))
+            elif rc == 2:
+                logging.info("MQTT Connection refused - invalid client identifier client id {}.".format(
+                    self.mqtt_connection_id
+                ))
+            elif rc == 3:
+                logging.info("MQTT Connection refused - server unavailable client id {}.".format(
+                    self.mqtt_connection_id
+                ))
+            elif rc == 4:
+                logging.info("MQTT Connection refused - bad username or password client id {}.".format(
+                    self.mqtt_connection_id
+                ))
+            elif rc == 5:
+                logging.info("MQTT Connection refused - not authorised client id {}.".format(
+                    self.mqtt_connection_id
+                ))
+            else:
+                logging.info("MQTT Connection failed - client id {}, return code {}.".format(
+                    self.mqtt_connection_id, rc))
 
     def is_connected(self):
         return self._client.is_connected()
@@ -128,6 +166,8 @@ class MqttManager(object):
         logging.info(f"MQTT client will be disconnected, id: {self._client_id}, topic: {topic}, payload: {payload}")
 
     def on_message(self, client, userdata, msg):
+        # logging.info("on_message: msg.topic {}, msg.retain {}".format(msg.topic, msg.retain))
+
         message_handler_start_time = time.time()
         MLOpsProfilerEvent.log_to_wandb({"MessageReceiveTime": message_handler_start_time})
         for passthrough_listener in self._passthrough_listeners:
@@ -135,20 +175,24 @@ class MqttManager(object):
 
         _listener = self._listeners.get(msg.topic, None)
         if _listener is not None and callable(_listener):
-            _listener(msg.topic, str(msg.payload, encoding="utf-8"))
+            payload_obj = json.loads(msg.payload)
+            payload_obj["is_retain"] = msg.retain
+            _listener(msg.topic, json.dumps(payload_obj))
         MLOpsProfilerEvent.log_to_wandb({"BusyTime": time.time() - message_handler_start_time})
 
     def on_publish(self, client, obj, mid):
         self.callback_published_listener(client)
 
     def on_disconnect(self, client, userdata, rc):
+        client.connected_flag = False
+        client.bad_conn_flag = True
         self.callback_disconnected_listener(client)
 
     def _on_subscribe(self, client, userdata, mid, granted_qos):
         self.callback_subscribed_listener(client)
 
     def _on_log(self, client, userdata, level, buf):
-        logging.info("mqtt log {}".format(buf))
+        logging.info("mqtt log {}, client id {}.".format(buf, self.mqtt_connection_id))
 
     def add_message_listener(self, topic, listener):
         self._listeners[topic] = listener
@@ -227,3 +271,72 @@ class MqttManager(object):
 
     def subscribe_msg(self, topic):
         self._client.subscribe(topic, qos=2)
+
+    def check_connection(self):
+        count = 0
+        while not self._client.connected_flag and not self._client.bad_conn_flag:
+            if count >= 30:
+                raise Exception("MQTT Connection timeout, please check your network connection!")
+            logging.info("MQTT client id {}, waiting to connect to MQTT server...".format(self.mqtt_connection_id))
+            time.sleep(1)
+            count += 1
+
+        if self._client.bad_conn_flag:
+            logging.info("Failed to connect to MQTT server!")
+            self._client.loop_stop()
+            raise Exception("MQTT Connection failed, please check your network connection!")
+
+
+global received_msg_count
+received_msg_count = 0
+
+
+def test_msg_callback(topic, payload):
+    global received_msg_count
+    received_msg_count += 1
+    logging.info("Received the topic: {}, message: {}, count {}.".format(topic, payload, received_msg_count))
+
+
+def test_last_will_callback(topic, payload):
+    logging.info("Received the topic: {}, message: {}.".format(topic, payload))
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("--client_id", "-i", type=str, help="client id for mqtt.")
+    parser.add_argument("--action", "-a", default="send", help="action, options: send or receive")
+    parser.add_argument("--num", "-n", type=int, default=10, help="running number for sending or receiving")
+    args = parser.parse_args()
+
+    if args.action != "send" and args.action != "receive":
+        logging.info("action must be the following options: send, receive.")
+        exit(1)
+
+    logging.getLogger().setLevel(logging.INFO)
+
+    last_will_topic = "/fedml/mqtt-test/lastwill"
+    last_will_msg = {"ID": 1, "status": "OFFLINE"}
+    mqtt_manager = MqttManager("mqtt.fedml.ai", 1883, "admin", "test",
+                               30, args.client_id,
+                               last_will_topic=last_will_topic,
+                               last_will_msg=json.dumps(last_will_msg))
+    mqtt_manager.connect()
+    mqtt_manager.loop_start()
+
+    topic = "/fedml/mqtt-test/connect"
+    if args.action == "receive":
+        mqtt_manager.add_message_listener(topic, test_msg_callback)
+        mqtt_manager.add_message_listener(last_will_topic, test_last_will_callback)
+        mqtt_manager.add_message_listener("#", test_msg_callback)
+        mqtt_manager.subscribe_msg(topic)
+        mqtt_manager.subscribe_msg(last_will_topic)
+        mqtt_manager.subscribe_msg("#")
+    elif args.action == "send":
+        for i in range(1, args.num):
+            logging.info("send message {}, index {}.".format(topic, i))
+            mqtt_manager.send_message(topic, "index {}".format(i))
+            time.sleep(0.1)
+
+    time.sleep(40000)
+    mqtt_manager.loop_stop()
+    mqtt_manager.disconnect()

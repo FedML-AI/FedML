@@ -449,6 +449,9 @@ class MLOpsMetrics(Singleton):
         mqtt_mgr.loop_stop()
         mqtt_mgr.disconnect()
 
+    def report_json_message(self, topic, payload):
+        self.messenger.send_message_json(topic, payload)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

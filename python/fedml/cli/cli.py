@@ -161,6 +161,9 @@ def display_server_logs():
 def mlops_login(
         userid, version, client, server, local_server, role, runner_cmd, device_id, os_name, docker, docker_rank
 ):
+    if userid is None or len(userid) <= 0:
+        click.echo("Please specify your account id, usage: fedml login $your_account_id")
+        return
     account_id = userid[0]
     platform_url = "open.fedml.ai"
     if version != "release":
@@ -208,6 +211,8 @@ def mlops_login(
         login_pid = subprocess.Popen(
             [
                 sys_utils.get_python_program(),
+                "-W",
+                "ignore",
                 login_cmd,
                 "-t",
                 "login",
@@ -254,6 +259,8 @@ def mlops_login(
         login_pid = subprocess.Popen(
             [
                 sys_utils.get_python_program(),
+                "-W",
+                "ignore",
                 login_cmd,
                 "-t",
                 "login",
@@ -872,7 +879,7 @@ def delete_model(name):
 @click.option(
     "--path", "-p", type=str, help="path for specific model.",
 )
-def add_model_files(name, meta, path):
+def add_model_files(name, path):
     if FedMLModelCards.get_instance().add_model_files(name, path):
         click.echo("Add file to model {} successfully.".format(name))
     else:

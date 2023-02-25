@@ -23,18 +23,21 @@ if __name__ == "__main__":
 
     pip_source_dir = os.path.dirname(__file__)
     login_cmd = os.path.join(pip_source_dir, "server_login.py")
+
     while True:
         try:
             ServerConstants.cleanup_run_process()
             sys_utils.cleanup_all_fedml_server_api_processes()
-            sys_utils.cleanup_all_fedml_client_learning_processes()
-            sys_utils.cleanup_all_fedml_client_login_processes("server_login.py")
+            sys_utils.cleanup_all_fedml_server_learning_processes()
+            sys_utils.cleanup_all_fedml_server_login_processes("server_login.py", clean_process_group=False)
         except Exception as e:
             pass
 
         login_pid = ServerConstants.exec_console_with_shell_script_list(
             [
                 sys_utils.get_python_program(),
+                "-W",
+                "ignore",
                 login_cmd,
                 "-t",
                 "login",
