@@ -117,7 +117,7 @@ def get_running_info(cs_home_dir, cs_info_dir):
 
 
 def get_python_program():
-    python_program = "python"
+    python_program = "python3"
     # force to use "python" as the default interpretator
     python_version_str = os.popen("python3 --version").read()
     if python_version_str.find("Python 3.") == -1:
