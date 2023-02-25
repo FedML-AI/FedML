@@ -344,6 +344,8 @@ pipeline {
                     credentialsId: env.DEV_KUBECONFIG_CREDENTIAL_ID,
                     variable: 'KUBECONFIG')
                     ]) {
+                    sh 'kubectl rollout restart -n  $DEPLOY_NAMESPACE_DEV deployment/fedml-cloud-server'
+
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_DEV --replicas=0 deployment/$DEPLOY_NAME'
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_DEV --replicas=1 deployment/$DEPLOY_NAME'
 
@@ -369,6 +371,8 @@ pipeline {
                     credentialsId: env.TEST_KUBECONFIG_CREDENTIAL_ID,
                     variable: 'KUBECONFIG')
                     ]) {
+                    sh 'kubectl rollout restart -n  $DEPLOY_NAMESPACE_TEST deployment/fedml-cloud-server'
+
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_TEST --replicas=0 deployment/$DEPLOY_NAME'
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_TEST --replicas=1 deployment/$DEPLOY_NAME'
 
@@ -391,6 +395,8 @@ pipeline {
                     credentialsId: env.PRODUCTION_KUBECONFIG_CREDENTIAL_ID,
                     variable: 'KUBECONFIG')
                     ]) {
+                    sh 'kubectl rollout restart -n  $DEPLOY_NAMESPACE_PRODUCTION deployment/fedml-cloud-server'
+
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DEPLOY_NAME'
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION  --replicas=1 deployment/$DEPLOY_NAME'
 
