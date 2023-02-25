@@ -1096,6 +1096,8 @@ class FedMLServerRunner:
             job_json_obj = json.loads(job.running_json)
             edge_ids = job_json_obj.get("edgeids", None)
 
+            self.mlops_metrics.report_server_id_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
+
             self.mlops_metrics.broadcast_server_training_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
 
             self.send_exit_train_with_exception_request_to_edges(edge_ids, job.running_json)
