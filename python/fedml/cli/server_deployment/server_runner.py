@@ -348,6 +348,13 @@ class FedMLServerRunner:
         self.run_process_event = process_event
         try:
             self.setup_client_mqtt_mgr()
+
+            if self.run_as_cloud_server:
+                topic_client_exit_train_with_exception = "flserver_agent/" + str(self.run_id) + "/client_exit_train_with_exception"
+                self.client_mqtt_mgr.add_message_listener(topic_client_exit_train_with_exception,
+                                                   self.callback_client_exit_train_with_exception)
+                self.client_mqtt_mgr.subscribe_msg(topic_client_exit_train_with_exception)
+
             self.run_impl()
         except RunnerError:
             logging.info("Runner stopped.")
@@ -654,10 +661,11 @@ class FedMLServerRunner:
         logging.info("subscribe the client exception message.")
 
         # Setup MQTT message listener for run exception
-        topic_client_exit_train_with_exception = "flserver_agent/" + str(run_id) + "/client_exit_train_with_exception"
-        self.mqtt_mgr.add_message_listener(topic_client_exit_train_with_exception,
-                                           self.callback_client_exit_train_with_exception)
-        self.mqtt_mgr.subscribe_msg(topic_client_exit_train_with_exception)
+        if self.run_as_edge_server_and_agent or self.run_as_cloud_agent:
+            topic_client_exit_train_with_exception = "flserver_agent/" + str(run_id) + "/client_exit_train_with_exception"
+            self.mqtt_mgr.add_message_listener(topic_client_exit_train_with_exception,
+                                               self.callback_client_exit_train_with_exception)
+            self.mqtt_mgr.subscribe_msg(topic_client_exit_train_with_exception)
 
         if self.run_as_edge_server_and_agent:
             # Start log processor for current run
@@ -709,7 +717,7 @@ class FedMLServerRunner:
             MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
             if self.run_process_event is None:
                 self.run_process_event = multiprocessing.Event()
-            self.run()
+            self.run(self.run_process_event)
 
     def start_cloud_server_process_entry(self):
         try:
