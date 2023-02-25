@@ -493,7 +493,7 @@ class FedMLClientRunner:
                 ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
             sys.exit(1)
 
-    def stop_run_with_killed_status(self):
+    def stop_run_with_killed_status(self, report_status=True):
         # logging.info("Stop run successfully.")
         try:
             ClientConstants.cleanup_learning_process()
@@ -503,7 +503,8 @@ class FedMLClientRunner:
         except Exception as e:
             pass
 
-        self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED)
+        if report_status:
+            self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED)
 
     def exit_run_with_exception_entry(self):
         try:
@@ -649,10 +650,17 @@ class FedMLClientRunner:
         run_id = request_json["runId"]
         if self.run_process is not None and \
                 sys_utils.get_process_running_count(ClientConstants.CLIENT_LOGIN_PROGRAM) >= 2:
-            logging.info("There is a running job {}, please stop it before running new job.".format(
+            logging.info("There is a running job {}.".format(
                 self.run_process.pid
             ))
-            return
+            try:
+                if self.run_process_event is not None:
+                    self.run_process_event.set()
+                self.stop_run_with_killed_status()
+                sys_utils.cleanup_all_fedml_client_login_processes(
+                    ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
+            except Exception as e:
+                pass
 
         logging.info("cleanup and save runner information")
 
