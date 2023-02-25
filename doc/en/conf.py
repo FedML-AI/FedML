@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 #
 project = "FedML"
-copyright = "2022, FedML, Inc."
+copyright = "2022-2023, FedML, Inc."
 author = "fedml"
 
 # The full version, including alpha/beta/rc tags
