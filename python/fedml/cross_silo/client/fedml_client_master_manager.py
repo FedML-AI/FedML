@@ -32,6 +32,7 @@ class ClientMasterManager(FedMLCommManager):
         self.client_real_id = self.client_real_ids[0]
 
         self.has_sent_online_msg = False
+        self.is_inited = False
 
     def register_message_receive_handlers(self):
         self.register_message_receive_handler(
@@ -62,6 +63,11 @@ class ClientMasterManager(FedMLCommManager):
         self.send_client_status(0)
 
     def handle_message_init(self, msg_params):
+        if self.is_inited:
+            return
+
+        self.is_inited = True
+
         global_model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         data_silo_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
 
@@ -96,6 +102,10 @@ class ClientMasterManager(FedMLCommManager):
         if self.round_idx < self.num_rounds:
             self.__train()
             self.round_idx += 1
+        else:
+            self.send_client_status(0, ClientMasterManager.RUN_FINISHED_STATUS_FLAG)
+            mlops.log_training_finished_status()
+            self.finish()
 
     def handle_message_finish(self, msg_params):
         logging.info(" ====================cleanup ====================")
