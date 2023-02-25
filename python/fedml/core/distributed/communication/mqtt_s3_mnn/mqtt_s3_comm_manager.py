@@ -33,6 +33,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
         self.broker_host = None
         self.keepalive_time = 180
         self.args = args
+        self.rank = client_id
 
         self._topic = "fedml_" + str(topic) + "_"  # topic is set as run_id
         self.s3_storage = S3MNNStorage(s3_config_path)
@@ -40,7 +41,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
         logging.info(
             "MqttS3CommManager args client_id_list: " + str(args.client_id_list)
         )
-        if args is not None:
+        if args.client_id_list is not None:
             self.client_real_ids = json.loads(args.client_id_list)
 
         self.group_server_id_list = None
@@ -69,10 +70,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
                     self.edge_id = 0
 
         self._observers: List[Observer] = []
-        if client_id is None:
-            self._client_id = mqtt.base62(uuid.uuid4().int, padding=22)
-        else:
-            self._client_id = client_id
+        self._client_id = "FedML_CS_{}_{}_{}".format(str(args.run_id), str(self.edge_id), str(uuid.uuid4()))
         self.client_num = client_num
         logging.info("mqtt_s3.init: client_num = %d" % client_num)
 
@@ -129,7 +127,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
         self.mqtt_mgr.add_message_passthrough_listener(self._on_message)
 
         # Subscribe one topic
-        if self.client_id == 0:
+        if self.rank == 0:
             # server
             self.subscribe_client_status_message()
 
@@ -181,15 +179,13 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
             logging.info(
                 "mqtt_s3.on_message: use s3 pack, s3 message key %s" % s3_key_str
             )
-            model_params = self.args.model_file_cache_folder + "/" + s3_key_str
-            self.s3_storage.download_model_file(s3_key_str, model_params)
+            model_file_path = self.args.model_file_cache_folder + "/" + s3_key_str
+            self.s3_storage.download_model_file(s3_key_str, model_file_path)
 
-            logging.info(
-                "mqtt_s3.on_message: model params length %d" % len(model_params)
-            )
+            logging.info("mqtt_s3.on_message: downloaded model file {}".format(model_file_path))
 
             # replace the S3 object key with raw model params
-            payload_obj[Message.MSG_ARG_KEY_MODEL_PARAMS] = model_params
+            payload_obj[Message.MSG_ARG_KEY_MODEL_PARAMS] = model_file_path
             payload_obj[Message.MSG_ARG_KEY_MODEL_PARAMS_KEY] = s3_key_str
         else:
             logging.info("mqtt_s3.on_message: not use s3 pack")
@@ -213,7 +209,7 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
         receiving message topic (subscribe): fedml_runid_serverID_clientID
 
         """
-        if self.client_id == 0:
+        if self.rank == 0:
             # server
             receiver_id = msg.get_receiver_id()
 
@@ -227,14 +223,16 @@ class MqttS3MNNCommManager(BaseCommunicationManager):
             model_key = payload.get(Message.MSG_ARG_KEY_MODEL_PARAMS_KEY, "")
             if model_params_obj != "":
                 # S3
-                if model_key == "":
+                if model_url == "":
                     model_key = topic + "_" + str(uuid.uuid4())
-                    self.s3_storage.upload_model_file(model_key, model_params_obj)
+                    model_url = self.s3_storage.upload_model_file(model_key, model_params_obj)
+
                 logging.info(
                     "mqtt_s3.send_message: S3+MQTT msg sent, s3 message key = %s"
                     % model_key
                 )
                 payload[Message.MSG_ARG_KEY_MODEL_PARAMS] = model_key
+                payload[Message.MSG_ARG_KEY_MODEL_PARAMS_URL] = model_url
                 payload[Message.MSG_ARG_KEY_MODEL_PARAMS_KEY] = model_key
                 self.mqtt_mgr.send_message(topic, json.dumps(payload))
             else:
