@@ -368,7 +368,8 @@ class FedMLServerRunner:
             sys.exit(1)
         finally:
             logging.info("Release resources.")
-            self.release_client_mqtt_mgr()
+            if not self.run_as_cloud_server:
+                self.release_client_mqtt_mgr()
 
     def check_runner_stop_event(self):
         if self.run_process_event.is_set():
@@ -396,7 +397,7 @@ class FedMLServerRunner:
         self.mlops_metrics.report_server_training_status(run_id,
                                                          ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING,
                                                          running_json=self.start_request_json)
-
+        
         # get training params
         private_local_data_dir = data_config.get("privateLocalData", "")
         is_using_local_data = 0
@@ -1047,7 +1048,7 @@ class FedMLServerRunner:
             ServerConstants.SERVER_BOOTSTRAP_LINUX_PROGRAM, clean_process_group=False)
 
         self.mlops_metrics.report_server_id_status(self.run_id,
-                                                   ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
+                                                   ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
 
         time.sleep(1)
 
@@ -1096,16 +1097,15 @@ class FedMLServerRunner:
             job_json_obj = json.loads(job.running_json)
             edge_ids = job_json_obj.get("edgeids", None)
 
-            self.mlops_metrics.report_server_id_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
-
             self.mlops_metrics.broadcast_server_training_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
 
             self.send_exit_train_with_exception_request_to_edges(edge_ids, job.running_json)
 
             self.exit_run_with_exception()
 
-            sys_utils.cleanup_all_fedml_server_login_processes(
-                ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
+            if not self.run_as_cloud_server:
+                sys_utils.cleanup_all_fedml_server_login_processes(
+                    ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
 
     def callback_runner_id_status(self, topic, payload):
         # logging.info("callback_runner_id_status: topic = %s, payload = %s" % (topic, payload))
