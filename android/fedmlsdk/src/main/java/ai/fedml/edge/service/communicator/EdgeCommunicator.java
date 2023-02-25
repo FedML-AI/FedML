@@ -61,7 +61,7 @@ public class EdgeCommunicator implements MqttCallbackExtended {
         connOpts.setUserName(mqttConfig.getUser());
         connOpts.setPassword(mqttConfig.getPassword().toCharArray());
         connOpts.setCustomWebSocketHeaders(CONN_PROPERTIES);
-        connOpts.setCleanSession(true);
+        connOpts.setCleanSession(false);
         connOpts.setConnectionTimeout(10);
         connOpts.setKeepAliveInterval(mqttConfig.getKeepAlive());
         connOpts.setAutomaticReconnect(true);
@@ -131,6 +131,8 @@ public class EdgeCommunicator implements MqttCallbackExtended {
                 new String(message.getPayload()));
         OnReceivedListener receivedListener = subscribeTopics.get(topic);
         if (receivedListener != null) {
+            if (message.isRetained())
+                return;
             receivedListener.onReceived(topic, message.getPayload());
         }
     }
@@ -145,7 +147,7 @@ public class EdgeCommunicator implements MqttCallbackExtended {
         LogHelper.d("EdgeCommunicator subscribe topic:%s", topic);
         if (client != null && client.isConnected()) {
             try {
-                client.subscribe(topic);
+                client.subscribe(topic, QOS);
                 // finish subscribe "fedml_{runId}_{server_id}_{edgeId}, connection is Ready
                 if (topic.startsWith("fedml_")) {
                     notifyConnectionReady(topic, listener);
@@ -177,6 +179,7 @@ public class EdgeCommunicator implements MqttCallbackExtended {
         }
         MqttMessage message = new MqttMessage(msg.getBytes());
         message.setQos(QOS);
+        message.setRetained(true);
         try {
             client.publish(topic, message);
             LogHelper.d("sendMessage(%s, %s)", topic, msg);
