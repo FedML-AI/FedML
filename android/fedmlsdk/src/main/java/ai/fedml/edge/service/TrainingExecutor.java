@@ -46,8 +46,6 @@ public class TrainingExecutor implements MessageDefine {
     }
 
     public void training(final TrainingParams params) {
-
-
         final long edgeId = params.getEdgeId();
         final long runId = params.getRunId();
         final int clientIdx = params.getClientIdx();
