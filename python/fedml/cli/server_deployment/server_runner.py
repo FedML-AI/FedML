@@ -397,10 +397,7 @@ class FedMLServerRunner:
         self.mlops_metrics.report_server_training_status(run_id,
                                                          ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING,
                                                          running_json=self.start_request_json)
-
-        self.mlops_metrics.client_send_exit_train_msg(self.run_id, 693,
-                                                      ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
-
+        
         # get training params
         private_local_data_dir = data_config.get("privateLocalData", "")
         is_using_local_data = 0
