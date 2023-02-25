@@ -15,6 +15,13 @@ import requests
 import torch
 import torch.nn
 import tritonclient.http as http_client
+
+import collections
+import collections.abc
+
+for type_name in collections.abc.__all__:
+    setattr(collections, type_name, getattr(collections.abc, type_name))
+
 from attrdict import AttrDict
 
 from fedml.cli.model_deployment.modelops_configs import ModelOpsConfigs
