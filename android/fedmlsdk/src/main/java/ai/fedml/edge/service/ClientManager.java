@@ -348,6 +348,11 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
         mTrainer.stopTrain();
     }
 
+    public void stopTrainWithoutReportStatus() {
+        LogHelper.i("stop train without status reporting.");
+        mTrainer.stopTrain();
+    }
+
     private void finish() {
         LogHelper.i("Training finished for master client");
         mReporter.reportClientStatus(mRunId, mEdgeId, KEY_CLIENT_STATUS_FINISHED);
