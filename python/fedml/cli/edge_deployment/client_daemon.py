@@ -3,7 +3,8 @@ import argparse
 import os
 import time
 
-from fedml.cli.comm_utils import sys_utils
+from fedml.cli.comm_utils.sys_utils import cleanup_all_fedml_client_api_processes, \
+    cleanup_all_fedml_client_learning_processes, cleanup_all_fedml_client_login_processes, get_python_program
 from fedml.cli.edge_deployment.client_constants import ClientConstants
 
 
@@ -25,15 +26,15 @@ if __name__ == "__main__":
     while True:
         try:
             ClientConstants.cleanup_run_process()
-            sys_utils.cleanup_all_fedml_client_api_processes()
-            sys_utils.cleanup_all_fedml_client_learning_processes()
-            sys_utils.cleanup_all_fedml_client_login_processes("client_login.py", clean_process_group=False)
+            cleanup_all_fedml_client_api_processes()
+            cleanup_all_fedml_client_learning_processes()
+            cleanup_all_fedml_client_login_processes("client_login.py", clean_process_group=False)
         except Exception as e:
             pass
 
         login_pid = ClientConstants.exec_console_with_shell_script_list(
             [
-                sys_utils.get_python_program(),
+                get_python_program(),
                 "-W",
                 "ignore",
                 login_cmd,
