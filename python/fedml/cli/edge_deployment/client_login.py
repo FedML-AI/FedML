@@ -280,6 +280,8 @@ def logout():
 
 
 if __name__ == "__main__":
+    os.environ['PYTHONWARNINGS'] = 'ignore:semaphore_tracker:UserWarning'
+    os.environ.setdefault('PYTHONWARNINGS', 'ignore:semaphore_tracker:UserWarning')
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--type", "-t", help="Login or logout to MLOps platform")
     parser.add_argument("--user", "-u", type=str,
@@ -295,3 +297,5 @@ if __name__ == "__main__":
         login(args)
     else:
         logout()
+
+

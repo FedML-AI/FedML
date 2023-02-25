@@ -124,6 +124,8 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
                 runOnUiThread(() -> {
                     if (status == MessageDefine.KEY_CLIENT_STATUS_INITIALIZING) {
                         mHyperTextView.setText(FedEdgeManager.getFedEdgeApi().getHyperParameters());
+                        mProgressView.setProgress(0);
+                        mAccLossTextView.setText(getString(R.string.acc_loss_txt, 0, 0, 0.0, 0.0));
                     }
                     mStatusTextView.setText(MessageDefine.CLIENT_STATUS_MAP.get(status));
                 }));

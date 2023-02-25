@@ -51,6 +51,10 @@ class ClientConstants(object):
     LOCAL_RUNNER_INFO_DIR_NAME = 'runner_infos'
     LOCAL_PACKAGE_HOME_DIR_NAME = "fedml_packages"
 
+    CLIENT_LOGIN_PROGRAM = "client_login.py"
+    CLIENT_BOOTSTRAP_LINUX_PROGRAM = "bootstrap.sh"
+    CLIENT_BOOTSTRAP_WIN_PROGRAM = "bootstrap.bat"
+
     FEDML_OTA_CMD_UPGRADE = "upgrade"
     FEDML_OTA_CMD_RESTART = "restart"
 
@@ -116,10 +120,16 @@ class ClientConstants(object):
                 try:
                     process = psutil.Process(process_id)
                     for sub_process in process.children():
-                        os.kill(sub_process.pid, signal.SIGTERM)
+                        if platform.system() == 'Windows':
+                            os.system("taskkill /PID {} /T /F".format(sub_process.pid))
+                        else:
+                            os.kill(sub_process.pid, signal.SIGKILL)
 
                     if process is not None:
-                        os.kill(process.pid, signal.SIGTERM)
+                        if platform.system() == 'Windows':
+                            os.system("taskkill /PID {} /T /F".format(process.pid))
+                        else:
+                            os.kill(process.pid, signal.SIGKILL)
                 except Exception as e:
                     pass
             yaml_object = {}
@@ -152,10 +162,16 @@ class ClientConstants(object):
                 try:
                     process = psutil.Process(process_id)
                     for sub_process in process.children():
-                        os.kill(sub_process.pid, signal.SIGTERM)
+                        if platform.system() == 'Windows':
+                            os.system("taskkill /PID {} /T /F".format(sub_process.pid))
+                        else:
+                            os.kill(sub_process.pid, signal.SIGKILL)
 
                     if process is not None:
-                        os.kill(process.pid, signal.SIGTERM)
+                        if platform.system() == 'Windows':
+                            os.system("taskkill /PID {} /T /F".format(process.pid))
+                        else:
+                            os.kill(process.pid, signal.SIGKILL)
                 except Exception as e:
                     pass
             yaml_object = {}
@@ -324,6 +340,17 @@ class ClientConstants(object):
             ret_state = ClientConstants.MSG_MLOPS_DEVICE_STATUS_IDLE
 
         return ret_state
+
+    @staticmethod
+    def is_client_running(status):
+        if status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED or \
+                status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED or \
+                status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED or \
+                status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE or \
+                status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE:
+            return False
+
+        return True
 
 
 if __name__ == "__main__":
