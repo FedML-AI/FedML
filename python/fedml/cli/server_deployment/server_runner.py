@@ -154,7 +154,7 @@ class FedMLServerRunner:
         downloaded = filesize if downloaded > filesize else downloaded
         progress_int = (downloaded / filesize * 100) if filesize != 0 else 0
         progress = format(progress_int, '.2f')
-        downloaded_kb = format(downloaded/1024, '.2f')
+        downloaded_kb = format(downloaded / 1024, '.2f')
         if progress_int <= 0 or (int(progress_int) % 5 == 0):
             logging.info("package downloaded size {} KB, progress {}%".format(downloaded_kb, progress))
 
@@ -350,9 +350,10 @@ class FedMLServerRunner:
             self.setup_client_mqtt_mgr()
 
             if self.run_as_cloud_server:
-                topic_client_exit_train_with_exception = "flserver_agent/" + str(self.run_id) + "/client_exit_train_with_exception"
+                topic_client_exit_train_with_exception = "flserver_agent/" + str(self.run_id) \
+                                                         + "/client_exit_train_with_exception"
                 self.client_mqtt_mgr.add_message_listener(topic_client_exit_train_with_exception,
-                                                   self.callback_client_exit_train_with_exception)
+                                                          self.callback_client_exit_train_with_exception)
                 self.client_mqtt_mgr.subscribe_msg(topic_client_exit_train_with_exception)
 
             self.run_impl()
@@ -662,7 +663,8 @@ class FedMLServerRunner:
 
         # Setup MQTT message listener for run exception
         if self.run_as_edge_server_and_agent or self.run_as_cloud_agent:
-            topic_client_exit_train_with_exception = "flserver_agent/" + str(run_id) + "/client_exit_train_with_exception"
+            topic_client_exit_train_with_exception = "flserver_agent/" + str(run_id) + \
+                                                     "/client_exit_train_with_exception"
             self.mqtt_mgr.add_message_listener(topic_client_exit_train_with_exception,
                                                self.callback_client_exit_train_with_exception)
             self.mqtt_mgr.subscribe_msg(topic_client_exit_train_with_exception)
@@ -717,6 +719,7 @@ class FedMLServerRunner:
             MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
             if self.run_process_event is None:
                 self.run_process_event = multiprocessing.Event()
+            self.run_process_event.clear()
             self.run(self.run_process_event)
 
     def start_cloud_server_process_entry(self):
