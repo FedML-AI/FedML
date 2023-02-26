@@ -397,7 +397,7 @@ class FedMLServerRunner:
         self.mlops_metrics.report_server_training_status(run_id,
                                                          ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING,
                                                          running_json=self.start_request_json)
-        
+
         # get training params
         private_local_data_dir = data_config.get("privateLocalData", "")
         is_using_local_data = 0
@@ -820,10 +820,7 @@ class FedMLServerRunner:
             self.setup_client_mqtt_mgr()
             self.stop_cloud_server_process()
         except Exception as e:
-            self.release_client_mqtt_mgr()
-            sys_utils.cleanup_all_fedml_server_login_processes(
-                ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
-            sys.exit(1)
+            pass
         finally:
             self.release_client_mqtt_mgr()
 
