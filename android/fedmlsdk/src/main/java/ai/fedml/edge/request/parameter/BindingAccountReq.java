@@ -25,4 +25,8 @@ public class BindingAccountReq {
     @SerializedName("role")
     @Builder.Default
     private final String role = "client";
+
+    public String getAccountId() {
+        return accountId;
+    }
 }

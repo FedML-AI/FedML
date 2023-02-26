@@ -174,15 +174,13 @@ class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
     private void initBindingState(@NonNull final Context context) {
         final String bindingId = SharePreferencesData.getBindingId();
         LogHelper.d("initBindingState bindingId: %s", bindingId);
-        if (!TextUtils.isEmpty(bindingId)) {
-            // The device has bound the account, don't need to binding again.
-            return;
-        }
-        final String accountId = getAccountFromMeta(context);
+        String accountId = getAccountFromMeta(context);
         final String deviceId = DeviceUtils.getDeviceId();
         LogHelper.d("initBindingState AccountFromMeta: %s, deviceId: %s", accountId, deviceId);
         if (TextUtils.isEmpty(accountId)) {
-            // The account isn't wrote in app manifest, skip the default binding flow.
+            accountId = SharePreferencesData.getAccountId();
+        }
+        if (TextUtils.isEmpty(accountId)) {
             return;
         }
         BindingAccountReq req = BindingAccountReq.builder()
