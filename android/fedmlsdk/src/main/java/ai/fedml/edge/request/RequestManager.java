@@ -94,6 +94,7 @@ public final class RequestManager {
                     BindingResponse.BindingData bindingData = response.body().getBindingData();
                     if (bindingData != null) {
                         SharePreferencesData.saveBindingId(bindingData.getBindingId());
+                        SharePreferencesData.saveAccountId(req.getAccountId());
                     }
                     listener.onDeviceBinding(bindingData);
                 }

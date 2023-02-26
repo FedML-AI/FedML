@@ -78,6 +78,24 @@ public class SharePreferencesData {
     }
 
     /**
+     * save account id
+     *
+     * @param id account id
+     */
+    public static void saveAccountId(final String id) {
+        saveInfo(ContextHolder.getAppContext(), SP_USERINFO, KEY_ACCOUNT_ID, id);
+    }
+
+    /**
+     * get account id
+     *
+     * @return account id
+     */
+    public static String getAccountId() {
+        return getInfo(ContextHolder.getAppContext(), SP_USERINFO, KEY_ACCOUNT_ID);
+    }
+
+    /**
      * delete binding edgeId
      */
     public static void deleteBindingId() {
