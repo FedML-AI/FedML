@@ -634,7 +634,7 @@ class FedMLServerRunner:
             return
         self.start_request_json = payload
         run_id = request_json["runId"]
-        if self.run_as_edge_server_and_agent or self.run_as_cloud_agent:
+        if self.run_as_edge_server_and_agent:
             if self.run_process is not None and \
                     sys_utils.get_process_running_count(ServerConstants.SERVER_LOGIN_PROGRAM) >= 2:
                 logging.info("There is a running job {}.".format(
@@ -663,7 +663,7 @@ class FedMLServerRunner:
         logging.info("subscribe the client exception message.")
 
         # Setup MQTT message listener for run exception
-        if self.run_as_edge_server_and_agent or self.run_as_cloud_agent:
+        if self.run_as_edge_server_and_agent:
             topic_client_exit_train_with_exception = "flserver_agent/" + str(run_id) + \
                                                      "/client_exit_train_with_exception"
             self.mqtt_mgr.add_message_listener(topic_client_exit_train_with_exception,
