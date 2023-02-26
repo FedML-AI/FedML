@@ -36,7 +36,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
     private final ProfilerEventLogger eventLogger;
     private final RuntimeLogger mRuntimeLogger;
     private final long mEdgeId;
-    private final long mRunId;
+    private long mRunId;
     private final int mNumRounds;
     private int mClientIndex;
     private int mClientRound;
@@ -46,6 +46,8 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
     private final int mEpochNum;
     private final int mTrainSize;
     private final int mTestSize;
+
+    private boolean mHasSentOnlineMsg = false;
 
     private final Map<Long, Boolean> initStateMap;
     private final OnTrainProgressListener mOnTrainProgressListener;
@@ -114,11 +116,17 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
     private void cleanup() {
         mReporter.reportEdgeFinished(mRunId, mEdgeId);
         finish();
+        mRunId = 0;
     }
 
     @Override
     public void handleMessageConnectionReady(JSONObject params) {
-        send_init_online_msg(params);
+        LogHelper.d("handleMessageConnectionReady: %d", mHasSentOnlineMsg);
+
+        if (!mHasSentOnlineMsg) {
+            mHasSentOnlineMsg = true;
+            send_init_online_msg(params);
+        }
     }
 
     @Override
