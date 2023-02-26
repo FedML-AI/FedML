@@ -81,7 +81,7 @@ Let's have a look at the `run_one_line_example.sh`
 * Executing `echo $PROCESS_NUM`  will output 5 on the terminal, representing the total number of processes is 5 (including server).
 * `hostname > mpi_host_file`
 * `$(which mpirun) -np $PROCESS_NUM \`
-  `-hostfile mpi_host_file \`
+  `-hostfile mpi_host_file --oversubscribe \`
   `python torch_fedavg_mnist_lr_one_line_example.py --cf config/fedml_config.yaml` This line of code mpirun will run the program using the mpi method and specify the parameter file with `-np $PROCESS_NUM` specifies the total number of processes in the program, `--cf config/fedml_config.yaml`, `hostname > mpi_host_file` write the hostname to the mpi_host_file fileand `-hostfile mpi_host_file` specifies the host file of the mpi
 
 ```shell
@@ -95,7 +95,7 @@ echo $PROCESS_NUM
 hostname > mpi_host_file
 
 $(which mpirun) -np $PROCESS_NUM \
--hostfile mpi_host_file \
+-hostfile mpi_host_file --oversubscribe \
 python torch_fedavg_mnist_lr_one_line_example.py --cf config/fedml_config.yaml
 ```
 
@@ -134,7 +134,7 @@ echo $PROCESS_NUM
 hostname > mpi_host_file
 
 $(which mpirun) -np $PROCESS_NUM \
--hostfile mpi_host_file \
+-hostfile mpi_host_file --oversubscribe \
 python torch_fedavg_mnist_lr_step_by_step_example.py --cf config/fedml_config.yaml
 ```
 
@@ -286,7 +286,7 @@ echo $PROCESS_NUM
 hostname > mpi_host_file
 
 $(which mpirun) -np $PROCESS_NUM \
--hostfile mpi_host_file \
+-hostfile mpi_host_file --oversubscribe \
 python mpi_base_framework_example.py --cf config/fedml_config.yaml
 ```
 
@@ -336,7 +336,7 @@ echo $PROCESS_NUM
 hostname > mpi_host_file
 
 $(which mpirun) -np $PROCESS_NUM \
--hostfile mpi_host_file \
+-hostfile mpi_host_file --oversubscribe \
 python mpi_decentralized_fl_example.py --cf config/fedml_config.yaml
 ```
 
