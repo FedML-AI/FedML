@@ -121,7 +121,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
 
     @Override
     public void handleMessageConnectionReady(JSONObject params) {
-        LogHelper.d("handleMessageConnectionReady: %d", mHasSentOnlineMsg);
+        LogHelper.d("handleMessageConnectionReady: %d", mHasSentOnlineMsg?1:0);
 
         if (!mHasSentOnlineMsg) {
             mHasSentOnlineMsg = true;
