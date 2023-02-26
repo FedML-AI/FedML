@@ -18,6 +18,10 @@ public class BindingAccountReq {
     @Builder.Default
     private final String type = "Android";
 
+    @SerializedName("state")
+    @Builder.Default
+    private final String state = "IDLE";
+
     @SerializedName("role")
     @Builder.Default
     private final String role = "client";
