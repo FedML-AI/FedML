@@ -62,7 +62,7 @@ public class EdgeCommunicator implements MqttCallbackExtended {
         connOpts.setPassword(mqttConfig.getPassword().toCharArray());
         connOpts.setCustomWebSocketHeaders(CONN_PROPERTIES);
         connOpts.setCleanSession(false);
-        connOpts.setConnectionTimeout(10);
+        connOpts.setConnectionTimeout(15);
         connOpts.setKeepAliveInterval(mqttConfig.getKeepAlive());
         connOpts.setAutomaticReconnect(true);
         String edge_id = SharePreferencesData.getBindingId();
