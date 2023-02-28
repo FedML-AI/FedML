@@ -4,6 +4,7 @@ import time
 
 from fedml.cli.model_deployment.device_client_constants import ClientConstants
 from fedml.cli.model_deployment.device_server_constants import ServerConstants
+from fedml.cli.comm_utils.sys_utils import get_python_program
 
 
 if __name__ == "__main__":
@@ -32,16 +33,17 @@ if __name__ == "__main__":
     # start unified inference server
     running_model_name = ClientConstants.get_running_model_name(args.end_point_id, args.model_id,
                                                                 args.model_name, args.model_version)
+    python_program = get_python_program()
     process = ServerConstants.exec_console_with_script(
         "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
         "END_POINT_ID=\"{}\" MODEL_ID=\"{}\" "
         "MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" VERSION=\"{}\" "
-        "uvicorn fedml.cli.model_deployment.device_model_inference:api --host 0.0.0.0 --port {} "
+        "{} -m uvicorn fedml.cli.model_deployment.device_model_inference:api --host 0.0.0.0 --port {} "
         "--reload --log-level critical".format(
             args.redis_addr, args.redis_port, args.redis_password,
             str(args.end_point_id), str(args.model_id),
             running_model_name, args.model_version, args.infer_url, args.config_version,
-            str(args.infer_port)),
+            python_program, str(args.infer_port)),
         should_capture_stdout=False,
         should_capture_stderr=False
     )

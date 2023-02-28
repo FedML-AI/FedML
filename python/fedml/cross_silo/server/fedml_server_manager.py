@@ -207,7 +207,8 @@ class FedMLServerManager(FedMLCommManager):
                 )
 
             logging.info("\n\n==========end {}-th round training===========\n".format(self.args.round_idx))
-            mlops.event("server.wait", event_started=True, event_value=str(self.args.round_idx))
+            if self.args.round_idx < self.round_num:
+                mlops.event("server.wait", event_started=True, event_value=str(self.args.round_idx))
 
     def cleanup(self):
         client_idx_in_this_round = 0
