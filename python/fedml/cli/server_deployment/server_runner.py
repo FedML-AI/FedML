@@ -1403,10 +1403,10 @@ class FedMLServerRunner:
         FedMLServerDataInterface.get_instance().create_job_table()
 
         # Start local API services
+        python_program = get_python_program()
         local_api_process = ServerConstants.exec_console_with_script(
-            "uvicorn fedml.cli.server_deployment.server_api:api --host 0.0.0.0 --port {} "
-            "--reload --log-level critical".format(
-                ServerConstants.LOCAL_SERVER_API_PORT),
+            "{} -m uvicorn fedml.cli.server_deployment.server_api:api --host 0.0.0.0 --port {} "
+            "--reload --log-level critical".format(python_program, ServerConstants.LOCAL_SERVER_API_PORT),
             should_capture_stdout=False,
             should_capture_stderr=False
         )
