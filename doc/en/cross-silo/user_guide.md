@@ -11,7 +11,7 @@ Researchers and engineers do not need to maintain the complex geo-distributed GP
 Essentially, Our MLOps can seamlessly migrate the local development to the real-world edge-cloud deployment without code changes. 
 A detailed workflow is shown as below. 
 
-![image](../_static/image/mlops_workflow.png)
+![image](../_static/image/MLOps_workflow.png)
 
 You can also read [the tutorial](https://doc.fedml.ai/mlops/user_guide.html)  to see how easy it is to simplify the real-world deployment (including an video tutorial).
 
