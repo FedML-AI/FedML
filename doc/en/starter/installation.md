@@ -24,6 +24,10 @@ For MPI installation, it's used for local distributed simulation with MPI (https
 ```
 conda install mpi4py openmpi
 ```
+About OpenMPI library installation for MPI, the reference is as follows: [https://docs.open-mpi.org/en/v5.0.x/installing-open-mpi/quickstart.html](https://docs.open-mpi.org/en/v5.0.x/installing-open-mpi/quickstart.html,)
+For OpenMPI on MacOS, please review the following links: 
+[https://betterprogramming.pub/integrating-open-mpi-with-clion-on-apple-m1-76b7815c27f2](https://formulae.brew.sh/formula/open-mpi)
+[https://formulae.brew.sh/formula/open-mpi](https://formulae.brew.sh/formula/open-mpi)
 
 The above commands work properly in Linux environment. 
 For Windows/Mac OS (Intel)/Mac OS (M1), you may need to follow TensorFlow/Jax/MXNet official guidance to fix related installation issues.
