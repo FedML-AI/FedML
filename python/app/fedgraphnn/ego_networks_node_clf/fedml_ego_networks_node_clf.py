@@ -1,5 +1,5 @@
 import fedml
-from app.fedgraphnn.ego_networks_node_clf.trainer.federated_nc_aggregator import FedNodeClfAggregator
+from trainer.federated_nc_aggregator import FedNodeClfAggregator
 from data.data_loader import *
 from fedml import FedMLRunner
 from model.gat import GATNodeCLF
