@@ -40,6 +40,8 @@ class ClientConstants(object):
     LOCAL_RUNNER_INFO_DIR_NAME = 'runner_infos'
     LOCAL_PACKAGE_HOME_DIR_NAME = "fedml_packages"
 
+    CLIENT_LOGIN_PROGRAM = "device_client_login.py"
+
     # Constants for models
     K8S_DEPLOYMENT_MASTER_HOST_HOME_DIR = "/home/fedml-server"
     K8S_DEPLOYMENT_SLAVE_HOST_HOME_DIR = "/home/fedml-client"
