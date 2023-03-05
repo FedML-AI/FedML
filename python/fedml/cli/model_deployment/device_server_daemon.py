@@ -3,7 +3,8 @@ import argparse
 import os
 import time
 
-from fedml.cli.comm_utils import sys_utils
+from fedml.cli.comm_utils.sys_utils import cleanup_all_fedml_server_api_processes, \
+    cleanup_all_fedml_server_learning_processes,cleanup_all_fedml_server_login_processes, get_python_program
 from fedml.cli.model_deployment.device_server_constants import ServerConstants
 
 
@@ -28,9 +29,15 @@ if __name__ == "__main__":
     pip_source_dir = os.path.dirname(__file__)
     login_cmd = os.path.join(pip_source_dir, "device_server_login.py")
     while True:
+        try:
+            ServerConstants.cleanup_run_process()
+            cleanup_all_fedml_server_login_processes("device_server_login.py", clean_process_group=False)
+        except Exception as e:
+            pass
+
         login_pid = ServerConstants.exec_console_with_shell_script_list(
             [
-                sys_utils.get_python_program(),
+                get_python_program(),
                 login_cmd,
                 "-t",
                 "login",
