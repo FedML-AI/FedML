@@ -1,5 +1,6 @@
 import json
 import logging
+import sys
 
 from multiprocessing import Process
 import os
@@ -20,6 +21,7 @@ import click
 import requests
 from fedml.cli.model_deployment.device_model_msg_object import FedMLModelMsgObject
 from fedml.core.distributed.communication.s3.remote_storage import S3Storage
+from ..comm_utils import sys_utils
 
 from ...core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 
@@ -258,7 +260,8 @@ class FedMLClientRunner:
             time.sleep(1)
             self.setup_client_mqtt_mgr()
             self.mlops_metrics.run_id = self.run_id
-            self.mlops_metrics.broadcast_client_training_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
+            self.mlops_metrics.broadcast_client_training_status(self.edge_id,
+                                                                ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED)
 
         self.release_client_mqtt_mgr()
 
@@ -396,27 +399,43 @@ class FedMLClientRunner:
         if self.client_mqtt_mgr is not None:
             return
 
+        if self.client_mqtt_lock is None:
+            self.client_mqtt_lock = threading.Lock()
+
         self.client_mqtt_mgr = MqttManager(
             self.agent_config["mqtt_config"]["BROKER_HOST"],
             self.agent_config["mqtt_config"]["BROKER_PORT"],
             self.agent_config["mqtt_config"]["MQTT_USER"],
             self.agent_config["mqtt_config"]["MQTT_PWD"],
             self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
-            "FedML_ClientAgent_Metrics_{}_{}".format(self.args.current_device_id, str(os.getpid()))
+            "FedML_ModelClientAgent_Metrics_{}_{}_{}".format(self.args.current_device_id,
+                                                             str(os.getpid()),
+                                                             str(uuid.uuid4()))
         )
+
+        self.client_mqtt_mgr.add_connected_listener(self.on_client_mqtt_connected)
+        self.client_mqtt_mgr.add_disconnected_listener(self.on_client_mqtt_disconnected)
+        self.client_mqtt_mgr.connect()
+        self.client_mqtt_mgr.loop_start()
 
         if self.mlops_metrics is None:
             self.mlops_metrics = MLOpsMetrics()
         self.mlops_metrics.set_messenger(self.client_mqtt_mgr)
         self.mlops_metrics.run_id = self.run_id
 
-        self.client_mqtt_mgr.connect()
-        self.client_mqtt_mgr.loop_start()
-
     def release_client_mqtt_mgr(self):
-        time.sleep(1)
-        self.client_mqtt_mgr.loop_stop()
-        self.client_mqtt_mgr.disconnect()
+        try:
+            if self.client_mqtt_mgr is not None:
+                self.client_mqtt_mgr.loop_stop()
+                self.client_mqtt_mgr.disconnect()
+
+            self.client_mqtt_lock.acquire()
+            if self.client_mqtt_mgr is not None:
+                self.client_mqtt_is_connected = False
+                self.client_mqtt_mgr = None
+            self.client_mqtt_lock.release()
+        except Exception:
+            pass
 
     def callback_start_deployment(self, topic, payload):
         """
@@ -802,7 +821,7 @@ class FedMLClientRunner:
             service_config["mqtt_config"]["MQTT_USER"],
             service_config["mqtt_config"]["MQTT_PWD"],
             service_config["mqtt_config"]["MQTT_KEEPALIVE"],
-            "FedML_ClientAgent_Daemon_" + self.args.current_device_id,
+            "FedML_ModelClientAgent_Daemon_" + self.args.current_device_id,
             "/flclient_agent/last_will_msg",
             json.dumps({"ID": self.edge_id, "status": ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE}),
         )
@@ -831,4 +850,11 @@ class FedMLClientRunner:
         try:
             self.mqtt_mgr.loop_forever()
         except Exception as e:
-            pass
+            logging.info("Client tracing: {}".format(traceback.format_exc()))
+            self.mqtt_mgr.loop_stop()
+            self.mqtt_mgr.disconnect()
+            self.release_client_mqtt_mgr()
+            time.sleep(5)
+            sys_utils.cleanup_all_fedml_client_login_processes(
+                ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
+            sys.exit(1)
