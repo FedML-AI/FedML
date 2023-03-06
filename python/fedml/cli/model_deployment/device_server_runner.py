@@ -1301,6 +1301,8 @@ class FedMLServerRunner:
         self.mqtt_mgr.send_message_json(active_topic, json.dumps(active_msg))
 
     def subscribe_slave_devices_message(self):
+        if self.request_json is None:
+            return
         run_id = self.request_json["run_id"]
         edge_id_list = self.request_json["device_ids"]
         logging.info("Edge ids: " + str(edge_id_list))
