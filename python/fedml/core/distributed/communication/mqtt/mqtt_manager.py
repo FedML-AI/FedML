@@ -168,6 +168,9 @@ class MqttManager(object):
     def on_message(self, client, userdata, msg):
         # logging.info("on_message: msg.topic {}, msg.retain {}".format(msg.topic, msg.retain))
 
+        if msg.retain:
+            return
+
         message_handler_start_time = time.time()
         MLOpsProfilerEvent.log_to_wandb({"MessageReceiveTime": message_handler_start_time})
         for passthrough_listener in self._passthrough_listeners:
