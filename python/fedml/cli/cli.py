@@ -1,5 +1,6 @@
 import os
 import pickle
+import json
 import shutil
 import subprocess
 from os.path import expanduser
@@ -1083,8 +1084,9 @@ def deploy_model(name, on_premise, cloud, devices, user, api_key, params, versio
     else:
         device_type = "md.fedml_cloud_device"
     FedMLModelCards.get_instance().set_config_version(version)
+    paramsDict = json.loads(params) # load config from Cli
     if FedMLModelCards.get_instance().deploy_model(name, device_type, devices, user, api_key,
-                                                   params, use_local_deployment):
+                                                   paramsDict, use_local_deployment):
         click.echo("Deploy model {} successfully.".format(name))
     else:
         click.echo("Failed to deploy model {}.".format(name))
