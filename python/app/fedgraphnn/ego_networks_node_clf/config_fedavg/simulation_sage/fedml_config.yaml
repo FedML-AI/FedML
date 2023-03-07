@@ -12,7 +12,7 @@ data_args:
   hop_number: 5
 
 model_args:
-  model: "gcn"
+  model: "sage"
   hidden_size: 32
   node_embedding_dim: 32
   graph_embedding_dim: 64
