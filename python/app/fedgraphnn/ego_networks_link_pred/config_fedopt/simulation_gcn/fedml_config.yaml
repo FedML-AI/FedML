@@ -26,16 +26,21 @@ model_args:
   sparse_adjacency: False
 
 train_args:
-  federated_optimizer: "FedAvg"
+  federated_optimizer: "FedOpt"
   client_id_list: "[]"
-  client_num_in_total: 4
-  client_num_per_round: 4
+  client_num_in_total: 10
+  client_num_per_round: 10
   comm_round: 100
   epochs: 5
   batch_size: 64
-  client_optimizer: sgd
-  learning_rate: 0.03
+  client_optimizer: AdamW
+  learning_rate: 0.001
   weight_decay: 0.001
+  server_optimizer: sgd
+  server_lr: 0.001
+  wd: 0.001
+  ci: 0
+  server_momentum: 0.9
   metric: "AP"
 
 validation_args:
@@ -44,18 +49,8 @@ validation_args:
 device_args:
   worker_num: 4
   using_gpu: false
-  gpu_mapping_file: config/simulation/gpu_mapping.yaml
+  gpu_mapping_file: config_fedopt/simulation_gcn/gpu_mapping.yaml
   gpu_mapping_key: mapping_config1_5
-
-
-attack_args:
-  add_attack: N
-  attack_type: None
-
-defense_args:
-  add_defense: N
-  defense_type: norm_diff_clipping
-  norm_bound: 5.0
 
 comm_args:
   backend: "MPI"
