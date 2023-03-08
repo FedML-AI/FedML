@@ -49,12 +49,12 @@ validation_args:
   frequency_of_the_test: 5
 
 environment_args:
-  bootstrap: config/bootstrap.sh
+  bootstrap: config_fedprox/bootstrap.sh
 
 device_args:
   worker_num: 4
   using_gpu: true
-  gpu_mapping_file: config/simulation/gpu_mapping.yaml
+  gpu_mapping_file: config_fedprox/simulation_gcn/gpu_mapping.yaml
   gpu_mapping_key: mapping_default
 
 comm_args:
