@@ -13,7 +13,7 @@ data_args:
 
 
 model_args:
-  model: "sage"
+  model: "gat"
   hidden_size: 32
   node_embedding_dim: 32
   graph_embedding_dim: 64
@@ -27,33 +27,34 @@ model_args:
   sparse_adjacency: False
 
 train_args:
-  federated_optimizer: "FedOpt"
+  federated_optimizer: "FedProx"
   client_id_list: "[]"
   client_num_in_total: 10
   client_num_per_round: 10
   comm_round: 100
   epochs: 5
-  batch_size: 64
-  metric: "prc-auc"
-  client_optimizer: AdamW
-  learning_rate: 0.001
+  batch_size: 32
+  client_optimizer: sgd
+  learning_rate: 0.03
   weight_decay: 0.001
   server_optimizer: sgd
+  lr: 0.001
   server_lr: 0.001
   wd: 0.001
   ci: 0
   server_momentum: 0.9
+  metric: "prc-auc"
 
 validation_args:
   frequency_of_the_test: 5
 
 environment_args:
-  bootstrap: config_fedopt/bootstrap.sh
+  bootstrap: config_fedprox/bootstrap.sh
 
 device_args:
   worker_num: 4
   using_gpu: true
-  gpu_mapping_file: config_fedopt/simulation_Sage/gpu_mapping.yaml
+  gpu_mapping_file: config_fedprox/simulation_gat/gpu_mapping.yaml
   gpu_mapping_key: mapping_default
 
 comm_args:
