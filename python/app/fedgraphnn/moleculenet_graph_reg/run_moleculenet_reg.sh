@@ -6,13 +6,6 @@ OPT=$3
 PROCESS_NUM=`expr $WORKER_NUM + 1`
 echo $PROCESS_NUM
 
-hostname > mpi_host_file
-
-mpirun -np $PROCESS_NUM \
--hostfile mpi_host_file --oversubscribe \
-python fedml_moleculenet_property_prediction.py --cf config/simulation/fedml_config.yaml
-
-
 
 if [ "$ALG" = "gcn" ]; then
     if [ "$OPT" = "fedavg" ]; then
