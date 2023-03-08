@@ -44,18 +44,8 @@ validation_args:
 device_args:
   worker_num: 4
   using_gpu: false
-  gpu_mapping_file: config/simulation/gpu_mapping.yaml
+  gpu_mapping_file: config_fedavg/simulation_gcn/gpu_mapping.yaml
   gpu_mapping_key: mapping_config1_5
-
-
-attack_args:
-  add_attack: N
-  attack_type: None
-
-defense_args:
-  add_defense: N
-  defense_type: norm_diff_clipping
-  norm_bound: 5.0
 
 comm_args:
   backend: "MPI"
