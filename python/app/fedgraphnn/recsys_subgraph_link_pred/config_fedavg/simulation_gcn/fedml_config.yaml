@@ -43,23 +43,21 @@ validation_args:
   frequency_of_the_test: 5
 
 environment_args:
-  bootstrap: config/bootstrap.sh
+  bootstrap: config_fedavg/bootstrap.sh
 
 device_args:
   worker_num: 4
   using_gpu: true
-  gpu_mapping_file: config/simulation/gpu_mapping.yaml
+  gpu_mapping_file: config_fedavg/simulation_gcn/gpu_mapping.yaml
   gpu_mapping_key: mapping_default
 
 comm_args:
   backend: "MPI"
   is_mobile: 0
   
-
-
 tracking_args:
   log_file_dir: ./log
   enable_wandb: false
   wandb_key: ee0b5f53d949c84cee7decbe7a629e63fb2f8408
-  wandb_project: fedml
-  wandb_name: fed_node_classification
+  wandb_project: fedgraphlearn
+  wandb_name: fed_recsys_gubgraph_link_pred
