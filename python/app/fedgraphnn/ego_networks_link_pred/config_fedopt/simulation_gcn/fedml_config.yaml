@@ -4,9 +4,9 @@ common_args:
 
 data_args:
   dataset: "citeseer"
-  data_cache_dir: ~/fedgraphnn_data/
+  data_cache_dir: ./ego-networks/
+  part_file: ./ego-networks/citeseer/partition
   partition_method: "hetero"
-  part_file: ~/fedgraphnn_data/citeseer/partition
   partition_alpha: 0.5
   ego_number: 10
   hop_number: 2
