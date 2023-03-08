@@ -8,11 +8,15 @@
 
 # this is used for 10 clients and 1 server training within a single machine which has 4 GPUs
 mapping_default:
-    ChaoyangHe-GPU-RTX2080Tix4: [1, 1 ,1 ,1]
+    ChaoyangHe-GPU-RTX2080Tix4: [3, 3, 3, 2]
 
 # this is used for 4 clients and 1 server training within a single machine which has 4 GPUs
 mapping_config1_5:
-    host1: [2, 3]
+    host1: [2, 1, 1, 1]
+
+# this is used for 4 clients and 1 server training within a single machine which has 4 GPUs
+mapping_config1_7:
+    host1: [2, 1, 1, 1, 0 , 0 , 0]
 
 # this is used for 10 clients and 1 server training within a single machine which has 4 GPUs
 mapping_config2_11:
@@ -20,11 +24,11 @@ mapping_config2_11:
 
 # this is used for 10 clients and 1 server training within a single machine which has 8 GPUs
 mapping_config3_11:
-    host1: [0,4,0,0,4,0,3,0]
+    host1: [2, 2, 2, 1, 1, 1, 1, 1]
 
 # this is used for 4 clients and 1 server training within a single machine which has 8 GPUs, but you hope to skip the GPU device ID.
 mapping_config4_5:
-    host1: [1, 0, 0, 1, 1, 0, 1, 1]
+    host1: [0, 2, 0, 0, 2, 0, 1, 0]
 
 # this is used for 4 clients and 1 server training using 6 machines, each machine has 2 GPUs inside, but you hope to use the second GPU.
 mapping_config5_6:
