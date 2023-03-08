@@ -46,7 +46,7 @@ validation_args:
 device_args:
   worker_num: 4
   using_gpu: true
-  gpu_mapping_file: config_fedprox/simulation_gat/gpu_mapping.yaml
+  gpu_mapping_file: config_fedprox/gpu_mapping.yaml
   gpu_mapping_key: mapping_default
 
 comm_args:
