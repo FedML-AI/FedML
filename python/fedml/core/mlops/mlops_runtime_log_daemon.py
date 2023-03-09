@@ -153,7 +153,6 @@ class MLOpsRuntimeLogProcessor:
             if self.log_source is not None and self.log_source != "":
                 log_upload_request["source"] = self.log_source
 
-
             log_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
 
             # send log data to the log server
