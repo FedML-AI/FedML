@@ -58,7 +58,7 @@ ingress:
     nginx.ingress.kubernetes.io/ssl-redirect: 'true'
     # kubernetes.io/tls-acme: "true"
   hosts:
-    - host: model.fedml.ai
+    - host: open.fedml.ai
       paths:
         - path: /
           pathType: Prefix
@@ -146,7 +146,7 @@ inferenceGateway:
       nginx.ingress.kubernetes.io/proxy-send-timeout: '6000'
       nginx.ingress.kubernetes.io/ssl-redirect: 'true'
       # kubernetes.io/tls-acme: "true"
-    host: model.fedml.ai
+    host: open.fedml.ai
     protocol: https #http
     tls: [ ]
     #  - secretName: chart-example-tls

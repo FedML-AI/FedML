@@ -220,8 +220,12 @@ class FedMLModelCards(Singleton):
 
         if not no_uploading_modelops:
             if model_storage_url != "":
-                upload_result = self.upload_model_api(model_name, model_storage_url, model_net_url, user_id,
-                                                      user_api_key, is_from_open=is_from_open)
+                with open(model_config_file, 'r') as f:
+                    model_params = json.load(f)
+
+                upload_result = self.upload_model_api(model_name, model_params, model_storage_url,
+                                                      model_net_url, user_id, user_api_key,
+                                                      is_from_open=is_from_open)
                 if upload_result is not None:
                     return model_storage_url, model_zip_path
                 else:
@@ -318,7 +322,7 @@ class FedMLModelCards(Singleton):
 
         return model_list_result
 
-    def upload_model_api(self, model_name, model_storage_url, model_net_url, user_id, user_api_key, is_from_open=True):
+    def upload_model_api(self, model_name, model_params, model_storage_url, model_net_url, user_id, user_api_key, is_from_open=True):
         model_upload_result = None
         model_ops_url = ClientConstants.get_model_ops_upload_url(self.config_version)
         model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
@@ -328,7 +332,7 @@ class FedMLModelCards(Singleton):
             "modelName": model_name,
             "modelUrl": model_storage_url,
             "owner": user_id,
-            "parameters": {},
+            "parameters": model_params,
             "updateBy": user_id,
             "userId": str(user_id),
             "apiKey": user_api_key,
