@@ -1,5 +1,5 @@
 common_args:
-  training_type: "cross_silo"
+  training_type: "simulation"
   random_seed: 0
 
 data_args:
@@ -12,7 +12,9 @@ model_args:
   model: "lr"
 
 train_args:
-  federated_optimizer: "FedAvg"
+  federated_optimizer: "FedOpt"
+  client_optimizer:
+  server_optimizer: "FedOpt"
   client_id_list:
   client_num_in_total: 1000
   client_num_per_round: 4
@@ -28,7 +30,7 @@ validation_args:
 
 device_args:
   worker_num: 4
-  using_gpu: true
+  using_gpu: false
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_default
 
