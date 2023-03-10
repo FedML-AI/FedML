@@ -108,26 +108,29 @@ def start_deployment(end_point_id, model_id, model_version,
 
         input_names = {"x": 0}
         convert_model_to_onnx(model_from_open, onnx_model_path, input_names, input_size)
-    else:    
+    else:
         running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id,
                                                                     inference_model_name,
                                                                     model_version)
         # configuration passed by user in the Cli
-        model_location = model_storage_local_path+ "/fedml_model.bin"
+        model_location = os.path.join(model_storage_local_path, "fedml_model.bin")
         input_size = model_params["input_size"]
         input_types = model_params["input_types"]
 
         model = torch.load(model_location)  # model def + params
-        model.eval()
+        try:
+            model.eval()
+        except Exception as e:
+            pass
 
         dummy_input_list = []
         for index, input_i in enumerate(input_size):
             if input_types[index] == "int":
-                this_input = torch.randint(0,1, input_i)
+                this_input = torch.randint(0, 1, input_i)
             else:
                 this_input = torch.zeros(input_i)
             dummy_input_list.append(this_input)
-        
+
         onnx_model_path = os.path.join(model_storage_local_path,
                                        ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME,
                                        running_model_name, ClientConstants.INFERENCE_MODEL_VERSION)
@@ -135,16 +138,17 @@ def start_deployment(end_point_id, model_id, model_version,
             os.makedirs(onnx_model_path)
         onnx_model_path = os.path.join(onnx_model_path, "model.onnx")
 
-        torch.onnx.export(model,            # model being run
-                tuple(dummy_input_list),    # model input (or a tuple for multiple inputs)
-                onnx_model_path,            # where to save the model (can be a file or file-like object)
-                export_params=True,         # store the trained parameter weights inside the model file
-                opset_version=10,           # the ONNX version to export the model to
-                do_constant_folding=False,  # whether to execute constant folding for optimization
-                input_names=["input"+ str(i) for i in range(1, len(input_size)+ 1)],  # the model's input names
-                output_names=['output'],    # the model's output names
-            )
-        
+        torch.onnx.export(model,  # model being run
+                          tuple(dummy_input_list),  # model input (or a tuple for multiple inputs)
+                          onnx_model_path,  # where to save the model (can be a file or file-like object)
+                          export_params=True,  # store the trained parameter weights inside the model file
+                          opset_version=10,  # the ONNX version to export the model to
+                          do_constant_folding=False,  # whether to execute constant folding for optimization
+                          input_names=["input" + str(i) for i in range(1, len(input_size) + 1)],
+                          # the model's input names
+                          output_names=['output'],  # the model's output names
+                          )
+
         # convert_model_container_name = "{}_{}_{}".format(ClientConstants.FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX,
         #                                                  str(end_point_id),
         #                                                  str(model_id))
@@ -423,7 +427,7 @@ def run_http_inference_with_lib_http_api_with_image_data(model_name, inference_h
 
         npd_type = triton_to_np_dtype(data_type)
         processed_image = resized.astype(npd_type)
-        processed_image = processed_image.reshape(c, w*h)
+        processed_image = processed_image.reshape(c, w * h)
 
         return processed_image
 
@@ -490,7 +494,7 @@ def run_http_inference_with_lib_http_api_with_image_data(model_name, inference_h
 
     for infer_input_item in inference_input_list:
         query_item = http_client.InferInput(name=infer_input_item["name"],
-                                            shape=(c, w*h), datatype=infer_input_item["datatype"])
+                                            shape=(c, w * h), datatype=infer_input_item["datatype"])
         query_item.set_data_from_numpy(image_data)
         inference_query_list.append(query_item)
         infer_item_count += 1
@@ -698,7 +702,7 @@ if __name__ == "__main__":
 
     input_data = {"model_version": "v0-Sun Feb 05 12:17:16 GMT 2023",
                   "model_name": "model_414_45_open-model-test_v0-Sun-Feb-05-12-17-16-GMT-2023",
-                  #"data": "file:///Users/alexliang/fedml_data/mnist-image.png",
+                  # "data": "file:///Users/alexliang/fedml_data/mnist-image.png",
                   "data": "https://raw.githubusercontent.com/niyazed/triton-mnist-example/master/images/sample_image.png",
                   "end_point_id": 414, "model_id": 45, "token": "a09a18a14c4c4d89a8d5f9515704c073"}
 
@@ -706,6 +710,7 @@ if __name__ == "__main__":
     data_list.append(input_data["data"])
     run_http_inference_with_lib_http_api_with_image_data(input_data["model_name"],
                                                          5001, 1, data_list, "")
+
 
     class LogisticRegression(torch.nn.Module):
         def __init__(self, input_dim, output_dim):
