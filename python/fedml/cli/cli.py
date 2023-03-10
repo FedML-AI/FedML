@@ -767,7 +767,7 @@ def device():
     pass
 
 
-@device.command("login", help="Login as model device agent(MDA) on the ModelOps platform (model.fedml.ai).")
+@device.command("login", help="Login as model device agent(MDA) on the ModelOps platform (open.fedml.ai).")
 @click.argument("userid", nargs=-1)
 @click.option(
     "--cloud", "-c", default=None, is_flag=True, help="login as fedml cloud device.",
@@ -834,7 +834,7 @@ def login_as_model_device_agent(
                                                    redis_addr, redis_port, redis_password)
 
 
-@device.command("logout", help="Logout from the ModelOps platform (model.fedml.ai)")
+@device.command("logout", help="Logout from the ModelOps platform (open.fedml.ai)")
 @click.option(
     "--slave", "-s", default=None, is_flag=True, help="logout from slave device.",
 )
@@ -962,7 +962,7 @@ def package_model(name):
         click.echo("Failed to build model {}.".format(name))
 
 
-@model.command("push", help="Push local model repository to ModelOps(model.fedml.ai).")
+@model.command("push", help="Push local model repository to ModelOps(open.fedml.ai).")
 @click.option(
     "--name", "-n", type=str, help="model name.",
 )
@@ -1034,7 +1034,7 @@ def pull_model(name, user, api_key, version):
 
 
 @model.command("deploy",
-               help="Deploy specific model to ModelOps platform(model.fedml.ai) or just for local debugging deployment.")
+               help="Deploy specific model to ModelOps platform(open.fedml.ai) or just for local debugging deployment.")
 @click.option(
     "--name", "-n", type=str, help="model name.",
 )
@@ -1079,14 +1079,22 @@ def deploy_model(name, on_premise, cloud, devices, user, api_key, params, versio
     if is_cloud and is_on_premise:
         is_cloud = False
 
+    is_local_dev = use_local_deployment
+    if use_local_deployment is None:
+        is_local_dev = False
+
     if is_on_premise:
         device_type = "md.on_premise_device"
     else:
         device_type = "md.fedml_cloud_device"
     FedMLModelCards.get_instance().set_config_version(version)
-    paramsDict = json.loads(params) # load config from Cli
+
+    params_dict = {}
+    if is_local_dev:
+        params_dict = json.loads(params)  # load config from Cli
+
     if FedMLModelCards.get_instance().deploy_model(name, device_type, devices, user, api_key,
-                                                   paramsDict, use_local_deployment):
+                                                   params_dict, use_local_deployment):
         click.echo("Deploy model {} successfully.".format(name))
     else:
         click.echo("Failed to deploy model {}.".format(name))
@@ -1100,7 +1108,7 @@ def inference():
     pass
 
 
-@inference.command("query", help="Query inference parameters for specific model from ModelOps platform(model.fedml.ai).")
+@inference.command("query", help="Query inference parameters for specific model from ModelOps platform(open.fedml.ai).")
 @click.option(
     "--name", "-n", type=str, help="model name.",
 )
@@ -1115,7 +1123,7 @@ def query_model_infer(name):
         click.echo("Failed to query model {}.".format(name))
 
 
-@inference.command("run", help="Run inference action for specific model from ModelOps platform(model.fedml.ai).")
+@inference.command("run", help="Run inference action for specific model from ModelOps platform(open.fedml.ai).")
 @click.option(
     "--name", "-n", type=str, help="model name.",
 )
