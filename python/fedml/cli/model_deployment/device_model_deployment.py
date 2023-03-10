@@ -10,6 +10,7 @@ import urllib
 import uuid
 from urllib.parse import urlparse
 
+import dill
 import numpy as np
 import requests
 import torch
@@ -117,7 +118,7 @@ def start_deployment(end_point_id, model_id, model_version,
         input_size = model_params["input_size"]
         input_types = model_params["input_types"]
 
-        model = torch.load(model_location)  # model def + params
+        model = torch.load(model_location, pickle_module=dill)  # model def + params
         try:
             model.eval()
         except Exception as e:
