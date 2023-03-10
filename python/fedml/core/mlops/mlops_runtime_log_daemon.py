@@ -134,7 +134,7 @@ class MLOpsRuntimeLogProcessor:
             for log_index in range(line_start_req, line_end_req):
                 log_line = str(log_lines[log_index])
                 if log_line.find(' [ERROR] ') != -1:
-                    err_line_dict = {"errLine": log_index, "errMsg": log_line}
+                    err_line_dict = {"errLine": self.log_line_index + log_index, "errMsg": log_line}
                     err_list.append(err_line_dict)
 
             log_upload_request = {
