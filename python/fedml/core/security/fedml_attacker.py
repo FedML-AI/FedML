@@ -90,5 +90,4 @@ class FedMLAttacker:
     def reconstruct_data(self, raw_client_grad_list: List[Tuple[float, OrderedDict]], extra_auxiliary_info: Any = None):
         if self.attacker is None:
             raise Exception("attacker is not initialized!")
-        for (_, a_local_model) in raw_client_grad_list:
-            self.attacker.reconstruct_data(a_local_model, extra_auxiliary_info=extra_auxiliary_info)
+        self.attacker.reconstruct_data(raw_client_grad_list, extra_auxiliary_info=extra_auxiliary_info)
