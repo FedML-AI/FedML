@@ -1,6 +1,6 @@
 apiVersion: v2
 name: fedml-model-inference-ingress
-description: A Helm chart for master on-premise device on FedML model serving platform(model.fedml.ai)
+description: A Helm chart for master on-premise device on FedML model serving platform(open.fedml.ai)
 
 # A chart can be either an 'application' or a 'library' chart.
 #
