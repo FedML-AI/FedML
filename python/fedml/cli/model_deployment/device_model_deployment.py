@@ -118,7 +118,7 @@ def start_deployment(end_point_id, model_id, model_version,
         input_size = model_params["input_size"]
         input_types = model_params["input_types"]
 
-        model = torch.load(model_location, pickle_module=dill)  # model def + params
+        model = torch.jit.load(model_location)  # model def + params
         try:
             model.eval()
         except Exception as e:
