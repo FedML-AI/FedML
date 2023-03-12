@@ -87,7 +87,12 @@ class FedMLAggregator(object):
         averaged_params = self.aggregator.aggregate(model_list)
 
         if type(averaged_params) is dict:
-            for client_index in range(len(averaged_params)):
+            if len(averaged_params) == self.client_num + 1: # aggregator pass extra {-1 : global_parms_dict}  as global_params
+                itr_count = len(averaged_params) - 1        # do not apply on_after_aggregation to client -1
+            else:
+                itr_count = len(averaged_params)
+
+            for client_index in range(itr_count):
                 averaged_params[client_index] = self.aggregator.on_after_aggregation(averaged_params[client_index])
         else:
             averaged_params = self.aggregator.on_after_aggregation(averaged_params)
