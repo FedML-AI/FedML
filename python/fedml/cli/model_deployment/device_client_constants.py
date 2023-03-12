@@ -21,8 +21,8 @@ class ClientConstants(object):
     MSG_MLOPS_CLIENT_STATUS_QUEUED = "QUEUED"
     MSG_MLOPS_CLIENT_STATUS_INITIALIZING = "INITIALIZING"
     MSG_MLOPS_CLIENT_STATUS_TRAINING = "TRAINING"
-    MSG_MLOPS_CLIENT_STATUS_RUNNING = "RUNNING"
     MSG_MLOPS_CLIENT_STATUS_STOPPING = "STOPPING"
+    MSG_MLOPS_CLIENT_STATUS_RUNNING = "RUNNING"
     MSG_MLOPS_CLIENT_STATUS_KILLED = "KILLED"
     MSG_MLOPS_CLIENT_STATUS_FAILED = "FAILED"
     MSG_MLOPS_CLIENT_STATUS_FINISHED = "FINISHED"
@@ -36,6 +36,21 @@ class ClientConstants(object):
     MSG_MLOPS_SERVER_DEVICE_STATUS_FAILED = "FAILED"
     MSG_MLOPS_SERVER_DEVICE_STATUS_FINISHED = "FINISHED"
 
+    # Device Status
+    MSG_MLOPS_DEVICE_STATUS_IDLE = "IDLE"
+    MSG_MLOPS_DEVICE_STATUS_UPGRADING = "UPGRADING"
+    MSG_MLOPS_DEVICE_STATUS_RUNNING = "RUNNING"
+    MSG_MLOPS_DEVICE_STATUS_OFFLINE = "OFFLINE"
+
+    # Run Status
+    MSG_MLOPS_RUN_STATUS_QUEUED = "QUEUED"
+    MSG_MLOPS_RUN_STATUS_STARTING = "STARTING"
+    MSG_MLOPS_RUN_STATUS_RUNNING = "RUNNING"
+    MSG_MLOPS_RUN_STATUS_STOPPING = "STOPPING"
+    MSG_MLOPS_RUN_STATUS_KILLED = "KILLED"
+    MSG_MLOPS_RUN_STATUS_FAILED = "FAILED"
+    MSG_MLOPS_RUN_STATUS_FINISHED = "FINISHED"
+
     LOCAL_HOME_RUNNER_DIR_NAME = 'fedml-client'
     LOCAL_RUNNER_INFO_DIR_NAME = 'runner_infos'
     LOCAL_PACKAGE_HOME_DIR_NAME = "fedml_packages"
@@ -47,6 +62,8 @@ class ClientConstants(object):
     K8S_DEPLOYMENT_SLAVE_HOST_HOME_DIR = "/home/fedml-client"
     K8S_DEPLOYMENT_MASTER_MOUNT_HOME_DIR = "/home/fedml/fedml-server"
     K8S_DEPLOYMENT_SLAVE_MOUNT_HOME_DIR = "/home/fedml/fedml-client"
+
+    LOCAL_CLIENT_API_PORT = 40804
 
     INFERENCE_HTTP_PORT = 8000
     INFERENCE_GRPC_PORT = 8001
@@ -88,7 +105,6 @@ class ClientConstants(object):
     FEDML_RUNNING_SOURCE_ENV_VALUE_K8S = "k8s"
 
     MODEL_INFERENCE_DEFAULT_PORT = 5001
-    # -----End-----
 
     FEDML_OTA_CMD_UPGRADE = "upgrade"
     FEDML_OTA_CMD_RESTART = "restart"
@@ -146,6 +162,11 @@ class ClientConstants(object):
     def get_model_cache_dir():
         model_cache_dir = os.path.join(ClientConstants.get_fedml_home_dir(), "fedml", "model_cache")
         return model_cache_dir
+
+    @staticmethod
+    def get_database_dir():
+        database_dir = os.path.join(ClientConstants.get_data_dir(), "database")
+        return database_dir
 
     @staticmethod
     def get_k8s_master_host_dir(current_dir):
@@ -500,6 +521,38 @@ class ClientConstants(object):
 
         for info in iter(script_process.stderr.readline, ""):
             print(info)
+
+    @staticmethod
+    def get_device_state_from_run_edge_state(run_edge_state):
+        ret_state = ClientConstants.MSG_MLOPS_DEVICE_STATUS_IDLE
+        if run_edge_state == ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE:
+            ret_state = ClientConstants.MSG_MLOPS_DEVICE_STATUS_OFFLINE
+        elif run_edge_state == ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING:
+            ret_state = ClientConstants.MSG_MLOPS_DEVICE_STATUS_UPGRADING
+        elif run_edge_state == ClientConstants.MSG_MLOPS_CLIENT_STATUS_QUEUED or \
+                run_edge_state == ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING or \
+                run_edge_state == ClientConstants.MSG_MLOPS_CLIENT_STATUS_TRAINING or \
+                run_edge_state == ClientConstants.MSG_MLOPS_CLIENT_STATUS_STOPPING or \
+                run_edge_state == ClientConstants.MSG_MLOPS_CLIENT_STATUS_RUNNING:
+            ret_state = ClientConstants.MSG_MLOPS_DEVICE_STATUS_RUNNING
+        elif run_edge_state == ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE or \
+                run_edge_state == ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED or \
+                run_edge_state == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED or \
+                run_edge_state == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED:
+            ret_state = ClientConstants.MSG_MLOPS_DEVICE_STATUS_IDLE
+
+        return ret_state
+
+    @staticmethod
+    def is_client_running(status):
+        if status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED or \
+                status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED or \
+                status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED or \
+                status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE or \
+                status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE:
+            return False
+
+        return True
 
 
 if __name__ == "__main__":

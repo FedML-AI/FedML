@@ -15,12 +15,29 @@ from ...cli.comm_utils.yaml_utils import load_yaml_config
 class ServerConstants(object):
     MSG_MLOPS_SERVER_STATUS_OFFLINE = "OFFLINE"
     MSG_MLOPS_SERVER_STATUS_IDLE = "IDLE"
+    MSG_MLOPS_SERVER_STATUS_UPGRADING = "UPGRADING"
     MSG_MLOPS_SERVER_STATUS_STARTING = "STARTING"
     MSG_MLOPS_SERVER_STATUS_RUNNING = "RUNNING"
     MSG_MLOPS_SERVER_STATUS_STOPPING = "STOPPING"
     MSG_MLOPS_SERVER_STATUS_KILLED = "KILLED"
     MSG_MLOPS_SERVER_STATUS_FAILED = "FAILED"
     MSG_MLOPS_SERVER_STATUS_FINISHED = "FINISHED"
+    MSG_MLOPS_SERVER_STATUS_EXCEPTION = "EXCEPTION"
+
+    # Device Status
+    MSG_MLOPS_DEVICE_STATUS_IDLE = "IDLE"
+    MSG_MLOPS_DEVICE_STATUS_UPGRADING = "UPGRADING"
+    MSG_MLOPS_DEVICE_STATUS_RUNNING = "RUNNING"
+    MSG_MLOPS_DEVICE_STATUS_OFFLINE = "OFFLINE"
+
+    # Run Status
+    MSG_MLOPS_RUN_STATUS_QUEUED = "QUEUED"
+    MSG_MLOPS_RUN_STATUS_STARTING = "STARTING"
+    MSG_MLOPS_RUN_STATUS_RUNNING = "RUNNING"
+    MSG_MLOPS_RUN_STATUS_STOPPING = "STOPPING"
+    MSG_MLOPS_RUN_STATUS_KILLED = "KILLED"
+    MSG_MLOPS_RUN_STATUS_FAILED = "FAILED"
+    MSG_MLOPS_RUN_STATUS_FINISHED = "FINISHED"
 
     LOCAL_HOME_RUNNER_DIR_NAME = 'fedml-server'
     LOCAL_RUNNER_INFO_DIR_NAME = 'runner_infos'
@@ -28,6 +45,8 @@ class ServerConstants(object):
 
     FEDML_OTA_CMD_UPGRADE = "upgrade"
     FEDML_OTA_CMD_RESTART = "restart"
+
+    LOCAL_SERVER_API_PORT = 40806
 
     # Constants for models
     K8S_DEPLOYMENT_MASTER_HOST_HOME_DIR = "/home/fedml-server"
@@ -127,6 +146,11 @@ class ServerConstants(object):
         package_run_dir = os.path.join(ServerConstants.get_package_unzip_dir(run_id, package_url),
                                        package_file_no_extension)
         return package_run_dir
+
+    @staticmethod
+    def get_database_dir():
+        database_dir = os.path.join(ServerConstants.get_data_dir(), "database")
+        return database_dir
 
     @staticmethod
     def get_model_dir():
@@ -381,3 +405,33 @@ class ServerConstants(object):
 
         for info in iter(script_process.stderr.readline, ""):
             print(info)
+
+    @staticmethod
+    def get_device_state_from_run_edge_state(run_edge_state):
+        ret_state = ServerConstants.MSG_MLOPS_DEVICE_STATUS_IDLE
+        if run_edge_state == ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE:
+            ret_state = ServerConstants.MSG_MLOPS_DEVICE_STATUS_OFFLINE
+        elif run_edge_state == ServerConstants.MSG_MLOPS_SERVER_STATUS_UPGRADING:
+            ret_state = ServerConstants.MSG_MLOPS_DEVICE_STATUS_UPGRADING
+        elif run_edge_state == ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING or \
+                run_edge_state == ServerConstants.MSG_MLOPS_SERVER_STATUS_RUNNING or \
+                run_edge_state == ServerConstants.MSG_MLOPS_SERVER_STATUS_STOPPING:
+            ret_state = ServerConstants.MSG_MLOPS_DEVICE_STATUS_RUNNING
+        elif run_edge_state == ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE or \
+                run_edge_state == ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED or \
+                run_edge_state == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED or \
+                run_edge_state == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED:
+            ret_state = ServerConstants.MSG_MLOPS_DEVICE_STATUS_IDLE
+
+        return ret_state
+
+    @staticmethod
+    def is_server_running(status):
+        if status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED or \
+                status == ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED or \
+                status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED or \
+                status == ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE or \
+                status == ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE:
+            return False
+
+        return True

@@ -124,11 +124,13 @@ class MqttManager(object):
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
             client.connected_flag = True
+            client.bad_conn_flag = False
             logging.info("MQTT Connection is OK, client id {}.".format(self.mqtt_connection_id))
 
             # Callback connected listeners
             self.callback_connected_listener(client)
         else:
+            client.connected_flag = False
             client.bad_conn_flag = True
 
             if rc == 1:
@@ -317,7 +319,7 @@ if __name__ == "__main__":
 
     logging.getLogger().setLevel(logging.INFO)
 
-    last_will_topic = "/fedml/mqtt-test/lastwill"
+    last_will_topic = "fedml/mqtt-test/lastwill"
     last_will_msg = {"ID": 1, "status": "OFFLINE"}
     mqtt_manager = MqttManager("mqtt.fedml.ai", 1883, "admin", "test",
                                30, args.client_id,
