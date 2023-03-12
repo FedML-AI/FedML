@@ -89,16 +89,20 @@ def start_deployment(end_point_id, model_id, model_version,
             return running_model_name, "", model_version, {}, {}
 
         input_size = model_params["input_size"]
+        input_types = model_params["input_types"]
+
         with open(model_bin_file, 'rb') as model_pkl_file:
             open_model_params = pickle.load(model_pkl_file)
             model_from_open.load_state_dict(open_model_params)
-            input_parameter = None
-            for model_parameter in model_from_open.parameters():
-                model_parameter.requires_grad = False
-                if input_parameter is None:
-                    input_parameter = model_parameter
-            input_size = input_parameter.shape[-1]
             model_from_open.eval()
+
+        dummy_input_list = []
+        for index, input_i in enumerate(input_size):
+            if input_types[index] == "int":
+                this_input = torch.randint(0, 1, input_i)
+            else:
+                this_input = torch.zeros(input_i)
+            dummy_input_list.append(this_input)
 
         onnx_model_path = os.path.join(model_storage_local_path,
                                        ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME,
@@ -107,8 +111,7 @@ def start_deployment(end_point_id, model_id, model_version,
             os.makedirs(onnx_model_path)
         onnx_model_path = os.path.join(onnx_model_path, "model.onnx")
 
-        input_names = {"x": 0}
-        convert_model_to_onnx(model_from_open, onnx_model_path, input_names, input_size)
+        convert_model_to_onnx(model_from_open, onnx_model_path, dummy_input_list, input_size)
     else:
         running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id,
                                                                     inference_model_name,
@@ -139,16 +142,7 @@ def start_deployment(end_point_id, model_id, model_version,
             os.makedirs(onnx_model_path)
         onnx_model_path = os.path.join(onnx_model_path, "model.onnx")
 
-        torch.onnx.export(model,  # model being run
-                          tuple(dummy_input_list),  # model input (or a tuple for multiple inputs)
-                          onnx_model_path,  # where to save the model (can be a file or file-like object)
-                          export_params=True,  # store the trained parameter weights inside the model file
-                          opset_version=10,  # the ONNX version to export the model to
-                          do_constant_folding=False,  # whether to execute constant folding for optimization
-                          input_names=["input" + str(i) for i in range(1, len(input_size) + 1)],
-                          # the model's input names
-                          output_names=['output'],  # the model's output names
-                          )
+        convert_model_to_onnx(model, onnx_model_path, dummy_input_list, input_size)
 
         # convert_model_container_name = "{}_{}_{}".format(ClientConstants.FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX,
         #                                                  str(end_point_id),
@@ -662,41 +656,25 @@ def convert_http_metadata_config(_metadata, _config):
 
 
 def convert_model_to_onnx(
-        model_params, output_path: str, inputs_pytorch, input_size: int
+        torch_model, output_path: str, dummy_input_list, input_size: int
 ) -> None:
-    """
-    Convert a Pytorch model to an ONNX graph by tracing the provided input inside the Pytorch code.
-    :param model_params: Pytorch model
-    :param output_path: where to save ONNX file
-    :param inputs_pytorch: Tensor, can be dummy data, shape is not important as we declare all axes as dynamic.
-    Should be on the same device than the model (CPU or GPU)
-    :param input_size: input data size, e.g. 28 * 28
-    :param opset: version of ONNX protocol to use, usually 12, or 13 if you use per channel quantized model
-    """
     from collections import OrderedDict
     import torch
     from torch.onnx import TrainingMode
 
-    # dynamic axis == variable length axis
-    dynamic_axis = OrderedDict()
-    for k in inputs_pytorch.keys():
-        dynamic_axis[k] = {0: "batch_size", 1: "sequence"}
-    dynamic_axis["output"] = {0: "batch_size"}
-    dummy_input = torch.randn(1, input_size, requires_grad=True)
     with torch.no_grad():
-        torch.onnx.export(
-            model_params,  # model to optimize
-            args=dummy_input,  # tuple of multiple inputs
-            f=output_path,  # output path / file object
-            opset_version=10,  # the ONNX version to use, 13 if quantized model, 12 for not quantized ones
-            do_constant_folding=True,  # simplify model (replace constant expressions)
-            input_names=['input'],  # input names
-            output_names=["output"],  # output axis name
-            dynamic_axes={'input': {0: 'batch_size'},  # variable length axes
-                          'output': {0: 'batch_size'}},  # declare dynamix axis for each input / output
-            training=TrainingMode.EVAL,  # always put the model in evaluation mode
-            verbose=False,
-        )
+        torch.onnx.export(torch_model,  # model being run
+                          tuple(dummy_input_list),  # model input (or a tuple for multiple inputs)
+                          f=output_path,  # where to save the model (can be a file or file-like object)
+                          export_params=True,  # store the trained parameter weights inside the model file
+                          opset_version=10,  # the ONNX version to export the model to
+                          do_constant_folding=False,  # whether to execute constant folding for optimization
+                          input_names=["input" + str(i) for i in range(1, len(input_size) + 1)],
+                          # the model's input names
+                          output_names=['output'],  # the model's output names
+                          training=TrainingMode.EVAL,  # always put the model in evaluation mode
+                          verbose=False,
+                          )
 
 
 if __name__ == "__main__":

@@ -79,11 +79,10 @@ class S3Storage:
             {"PickleDumpsTime": time.time() - pickle_dump_start_time}
         )
 
-        checkpoint = {'model': model}
         if not os.path.exists(local_model_cache_path):
             os.makedirs(local_model_cache_path)
         write_model_path = os.path.join(local_model_cache_path, message_key)
-        torch.save(checkpoint, write_model_path, pickle_module=dill)
+        torch.jit.save(model, write_model_path)
 
         s3_upload_start_time = time.time()
 
@@ -183,8 +182,7 @@ class S3Storage:
         )
 
         unpickle_start_time = time.time()
-        checkpoint = torch.load(temp_file_path, pickle_module=dill)
-        model = checkpoint["model"]
+        model = torch.jit.load(temp_file_path)
         os.remove(temp_file_path)
         MLOpsProfilerEvent.log_to_wandb(
             {"UnpickleTime": time.time() - unpickle_start_time}
