@@ -2,6 +2,7 @@ import json
 import redis
 from random import shuffle
 from fedml.cli.model_deployment.device_server_constants import ServerConstants
+from fedml.cli.model_deployment.device_server_data_interface import FedMLServerDataInterface
 
 
 class FedMLModelCache(object):
@@ -165,6 +166,10 @@ class FedMLModelCache(object):
 
     def get_end_point_token(self, end_point_id):
         if not self.redis_connection.exists(self.get_deployment_token_key(end_point_id)):
+            job_obj = FedMLServerDataInterface.get_instance().get_job_by_id(end_point_id)
+            if job_obj is not None and job_obj.running_json is not None:
+                running_json_obj = json.loads(job_obj.running_json)
+                return running_json_obj.get("token", None)
             return None
 
         token = self.redis_connection.get(self.get_deployment_token_key(end_point_id))

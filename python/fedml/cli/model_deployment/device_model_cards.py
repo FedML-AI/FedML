@@ -450,7 +450,7 @@ class FedMLModelCards(Singleton):
         model_storage_url, _ = self.push_model(model_name, user_id, user_api_key, no_uploading_modelops=True)
 
         master_device_id = device_id_list[0]
-        topic_start_deployment = "/model_ops/model_device/start_deployment/{}".format(str(master_device_id))
+        topic_start_deployment = "model_ops/model_device/start_deployment/{}".format(str(master_device_id))
         start_deployment_payload = {"timestamp": int(time.time()), "end_point_id": str(end_point_id),
                                     "token": str(end_point_token), "state": "STARTING", "user_id": user_id,
                                     "user_name": user_id,
@@ -488,13 +488,13 @@ class FedMLModelCards(Singleton):
         self.local_deployment_mqtt_mgr.loop_stop()
 
     def on_mqtt_connected(self, mqtt_client_object):
-        deployment_results_topic = "/model_ops/model_device/return_deployment_result/{}".format(
+        deployment_results_topic = "model_ops/model_device/return_deployment_result/{}".format(
             self.local_deployment_end_point_id)
-        deployment_status_topic = "/model_ops/model_device/return_deployment_status/{}".format(
+        deployment_status_topic = "model_ops/model_device/return_deployment_status/{}".format(
             self.local_deployment_end_point_id)
-        deployment_stages_topic = "/model_ops/model_device/return_deployment_stages/{}".format(
+        deployment_stages_topic = "model_ops/model_device/return_deployment_stages/{}".format(
             self.local_deployment_end_point_id)
-        deployment_monitoring_topic = "/model_ops/model_device/return_inference_monitoring/{}".format(
+        deployment_monitoring_topic = "model_ops/model_device/return_inference_monitoring/{}".format(
             self.local_deployment_end_point_id)
 
         self.local_deployment_mqtt_mgr.add_message_listener(deployment_results_topic,

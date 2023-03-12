@@ -193,7 +193,7 @@ RUN pip3 install --upgrade requests
 #sudo python3 setup.py install
 #RUN rm -rf ${INSTALL_DIR}/FedML
 
-RUN pip install -U fedml
+RUN pip install -U fedml && pip install grpcio
 RUN pip install mpi4py
 
 RUN python3 -c "import fedml; fedml.__version__"
