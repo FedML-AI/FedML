@@ -1,7 +1,8 @@
 from .attack.byzantine_attack import ByzantineAttack
-from .attack.label_flipping_attack import LabelFlippingAttack
+from .attack.dlg_attack import DLGAttack
 from .attack.model_replacement_backdoor_attack import ModelReplacementBackdoorAttack
-from .constants import ATTACK_METHOD_BYZANTINE_ATTACK, ATTACK_LABEL_FLIPPING, BACKDOOR_ATTACK_MODEL_REPLACEMENT
+from .constants import ATTACK_METHOD_BYZANTINE_ATTACK, ATTACK_LABEL_FLIPPING, BACKDOOR_ATTACK_MODEL_REPLACEMENT, \
+    ATTACK_METHOD_DLG
 import logging
 from ..common.ml_engine_backend import MLEngineBackend
 from typing import List, Tuple, Any
@@ -35,8 +36,8 @@ class FedMLAttacker:
             #     self.attacker = LabelFlippingAttack(args)
             elif self.attack_type == BACKDOOR_ATTACK_MODEL_REPLACEMENT:
                 self.attacker = ModelReplacementBackdoorAttack(args)
-            # elif self.attack_type == ATTACK_METHOD_DLG:
-            #     self.attacker = DLGAttack(model=args.model, attack_epoch=args.attack_epoch)
+            elif self.attack_type == ATTACK_METHOD_DLG:
+                self.attacker = DLGAttack(args=args)
         else:
             self.is_enabled = False
 
@@ -72,7 +73,7 @@ class FedMLAttacker:
         return False
 
     def is_reconstruct_data_attack(self):
-        if self.is_attack_enabled() and self.attack_type in []:
+        if self.is_attack_enabled() and self.attack_type in [ATTACK_METHOD_DLG]:
             return True
         return False
 
@@ -86,7 +87,7 @@ class FedMLAttacker:
             raise Exception("attacker is not initialized!")
         return self.attacker.poison_data(dataset)
 
-    def reconstruct_data(self, a_gradient: dict, extra_auxiliary_info: Any = None):
+    def reconstruct_data(self, raw_client_grad_list: List[Tuple[float, OrderedDict]], extra_auxiliary_info: Any = None):
         if self.attacker is None:
             raise Exception("attacker is not initialized!")
-        return self.attacker.reconstruct_data(a_gradient, extra_auxiliary_info=extra_auxiliary_info)
+        self.attacker.reconstruct_data(raw_client_grad_list, extra_auxiliary_info=extra_auxiliary_info)

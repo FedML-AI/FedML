@@ -65,11 +65,13 @@ class FedMLModelCards(Singleton):
                 file_full_path = os.path.join(file_path, file_item)
                 if os.path.isdir(file_full_path):
                     dst_dir = os.path.join(model_dir, file_item)
+                    if os.path.exists(dst_dir): # avoid using shutil.copytree(dirs_exist_ok=True)
+                        shutil.rmtree(dst_dir)
                     shutil.copytree(file_full_path, dst_dir,
                                     copy_function=shutil.copy,
                                     ignore_dangling_symlinks=True,
                                     ignore=shutil.ignore_patterns(*file_ignore_list),
-                                    dirs_exist_ok=True)
+                                    )
                     if not os.path.exists(dst_dir):
                         print("Directory {} can't be added into the model.".format(file_full_path))
                         return False
@@ -266,7 +268,7 @@ class FedMLModelCards(Singleton):
             end_point_id = uuid.uuid4()
             end_point_token = "FedMLEndPointToken@{}".format(str(uuid.uuid4()))
             self.send_start_deployment_msg(user_id, user_api_key, end_point_id, end_point_token,
-                                           devices, model_name, model_id)
+                                           devices, model_name, model_id, params)
 
         return False
 
@@ -423,7 +425,7 @@ class FedMLModelCards(Singleton):
         return model_deployment_result
 
     def send_start_deployment_msg(self, user_id, user_api_key, end_point_id, end_point_token,
-                                  devices, model_name, model_id):
+                                  devices, model_name, model_id, params):
         ServerConstants.get_local_ip()
         device_id_list = json.loads(devices)
         device_objs = list()
@@ -455,7 +457,7 @@ class FedMLModelCards(Singleton):
                                                      "model_storage_url": model_storage_url,
                                                      "instance_scale_min": 1, "instance_scale_max": 3,
                                                      "inference_engine": ClientConstants.INFERENCE_ENGINE_TYPE_ONNX},
-                                    "parameters": {}}
+                                    "parameters": params}
 
         self.local_deployment_end_point_id = end_point_id
         args = {"config_version": "release"}
