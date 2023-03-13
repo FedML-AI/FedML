@@ -167,6 +167,10 @@ class FedMLServerManager(FedMLCommManager):
 
             self.aggregator.test_on_server_for_all_clients(self.args.round_idx)
 
+            # TODO: Utilize aggregator.save_dummy_input_tensor()
+            # to send output input size and type (saved as pickle) to s3,
+            # and transfer when click "Create Model Card" 
+
             self.aggregator.assess_contribution()
 
             mlops.event("server.agg_and_eval", event_started=False, event_value=str(self.args.round_idx))
