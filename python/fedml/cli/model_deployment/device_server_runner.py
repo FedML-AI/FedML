@@ -3,6 +3,7 @@ import copy
 import json
 import logging
 import platform
+import sys
 from urllib.parse import urlparse
 
 import multiprocess as multiprocessing
@@ -23,6 +24,8 @@ from os import listdir
 import click
 import requests
 
+from ..comm_utils import sys_utils
+from ..server_deployment.server_data_interface import FedMLServerDataInterface
 from ...core.mlops.mlops_runtime_log import MLOpsRuntimeLog
 
 from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
@@ -369,7 +372,7 @@ class FedMLServerRunner:
             is_exist_deployed_model = False
             failed_to_deploy_all_models = True
             for device_item in device_id_list:
-                status = self.slave_deployment_results_mapping.\
+                status = self.slave_deployment_results_mapping. \
                     get(str(device_item), ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
                 if status == ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED:
                     pass
@@ -457,7 +460,7 @@ class FedMLServerRunner:
             is_exist_deployed_model = False
             failed_to_deploy_all_models = True
             for device_item in device_id_list:
-                status = self.slave_deployment_statuses_mapping.\
+                status = self.slave_deployment_statuses_mapping. \
                     get(str(device_item), ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
                 if status == ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED:
                     pass
@@ -791,7 +794,7 @@ class FedMLServerRunner:
                                       "model_config": model_config,
                                       "input_json": input_json,
                                       "output_json": output_json,
-                                      "timestamp": int(format(time.time_ns()/1000.0, '.0f'))}
+                                      "timestamp": int(format(time.time_ns() / 1000.0, '.0f'))}
         self.setup_client_mqtt_mgr()
         self.client_mqtt_mgr.send_message_json(deployment_results_topic, json.dumps(deployment_results_payload))
         self.client_mqtt_mgr.send_message_json(deployment_results_topic_prefix, json.dumps(deployment_results_payload))
@@ -802,7 +805,7 @@ class FedMLServerRunner:
         deployment_status_payload = {"end_point_id": end_point_id, "model_name": model_name,
                                      "model_url": model_inference_url,
                                      "model_status": model_status,
-                                     "timestamp": int(format(time.time_ns()/1000.0, '.0f'))}
+                                     "timestamp": int(format(time.time_ns() / 1000.0, '.0f'))}
         self.setup_client_mqtt_mgr()
         self.client_mqtt_mgr.send_message_json(deployment_status_topic, json.dumps(deployment_status_payload))
         self.client_mqtt_mgr.send_message_json(deployment_status_topic_prefix, json.dumps(deployment_status_payload))
@@ -818,7 +821,7 @@ class FedMLServerRunner:
                                      "model_stage_index": model_stages_index,
                                      "model_stage_title": model_stages_title,
                                      "model_stage_detail": model_stage_detail,
-                                     "timestamp": int(format(time.time_ns()/1000.0, '.0f'))}
+                                     "timestamp": int(format(time.time_ns() / 1000.0, '.0f'))}
         logging.info("-----Stages{}:{}-----".format(model_stages_index, model_stages_title))
         logging.info("-----Stages{}:{}.....".format(model_stages_index, model_stage_detail))
         self.setup_client_mqtt_mgr()
@@ -990,6 +993,9 @@ class FedMLServerRunner:
         if self.client_mqtt_mgr is not None:
             return
 
+        if self.client_mqtt_lock is None:
+            self.client_mqtt_lock = threading.Lock()
+
         logging.info(
             "client agent config: {},{}".format(
                 self.agent_config["mqtt_config"]["BROKER_HOST"], self.agent_config["mqtt_config"]["BROKER_PORT"]
@@ -1002,8 +1008,14 @@ class FedMLServerRunner:
             self.agent_config["mqtt_config"]["MQTT_USER"],
             self.agent_config["mqtt_config"]["MQTT_PWD"],
             self.agent_config["mqtt_config"]["MQTT_KEEPALIVE"],
-            "FedML_ServerAgent_Metrics_{}_{}".format(self.args.current_device_id, str(os.getpid())),
+            "FedML_ModelServerAgent_Metrics_{}_{}_{}".format(self.args.current_device_id,
+                                                             str(os.getpid()),
+                                                             str(uuid.uuid4()))
         )
+        self.client_mqtt_mgr.add_connected_listener(self.on_client_mqtt_connected)
+        self.client_mqtt_mgr.add_disconnected_listener(self.on_client_mqtt_disconnected)
+        self.client_mqtt_mgr.connect()
+        self.client_mqtt_mgr.loop_start()
 
         if self.mlops_metrics is None:
             self.mlops_metrics = MLOpsMetrics()
@@ -1012,14 +1024,19 @@ class FedMLServerRunner:
         self.mlops_metrics.edge_id = self.edge_id
         self.mlops_metrics.server_agent_id = self.server_agent_id
 
-        self.client_mqtt_mgr.add_connected_listener(self.on_client_mqtt_connected)
-        self.client_mqtt_mgr.add_disconnected_listener(self.on_client_mqtt_disconnected)
-        self.client_mqtt_mgr.connect()
-
     def release_client_mqtt_mgr(self):
-        time.sleep(1)
-        self.client_mqtt_mgr.loop_stop()
-        self.client_mqtt_mgr.disconnect()
+        try:
+            if self.client_mqtt_mgr is not None:
+                self.client_mqtt_mgr.loop_stop()
+                self.client_mqtt_mgr.disconnect()
+
+            self.client_mqtt_lock.acquire()
+            if self.client_mqtt_mgr is not None:
+                self.client_mqtt_is_connected = False
+                self.client_mqtt_mgr = None
+            self.client_mqtt_lock.release()
+        except Exception:
+            pass
 
     def send_deployment_stop_request_to_edges(self, edge_id_list, payload):
         for edge_id in edge_id_list:
@@ -1284,6 +1301,8 @@ class FedMLServerRunner:
         self.mqtt_mgr.send_message_json(active_topic, json.dumps(active_msg))
 
     def subscribe_slave_devices_message(self):
+        if self.request_json is None:
+            return
         run_id = self.request_json["run_id"]
         edge_id_list = self.request_json["device_ids"]
         logging.info("Edge ids: " + str(edge_id_list))
@@ -1390,10 +1409,13 @@ class FedMLServerRunner:
             service_config["mqtt_config"]["MQTT_USER"],
             service_config["mqtt_config"]["MQTT_PWD"],
             service_config["mqtt_config"]["MQTT_KEEPALIVE"],
-            "FedML_ServerAgent_Daemon_" + self.args.current_device_id,
+            "FedML_ModelServerAgent_Daemon_" + self.args.current_device_id,
             "/flserver_agent/last_will_msg",
             json.dumps({"ID": self.edge_id, "status": ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE}),
         )
+
+        # Init local database
+        FedMLServerDataInterface.get_instance().create_job_table()
 
         MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
 
@@ -1416,4 +1438,11 @@ class FedMLServerRunner:
         try:
             self.mqtt_mgr.loop_forever()
         except Exception as e:
-            pass
+            logging.info("Server tracing: {}".format(traceback.format_exc()))
+            self.mqtt_mgr.loop_stop()
+            self.mqtt_mgr.disconnect()
+            self.release_client_mqtt_mgr()
+            time.sleep(5)
+            sys_utils.cleanup_all_fedml_server_login_processes(
+                ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
+            sys.exit(1)

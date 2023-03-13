@@ -124,11 +124,13 @@ class MqttManager(object):
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
             client.connected_flag = True
+            client.bad_conn_flag = False
             logging.info("MQTT Connection is OK, client id {}.".format(self.mqtt_connection_id))
 
             # Callback connected listeners
             self.callback_connected_listener(client)
         else:
+            client.connected_flag = False
             client.bad_conn_flag = True
 
             if rc == 1:
@@ -167,6 +169,9 @@ class MqttManager(object):
 
     def on_message(self, client, userdata, msg):
         # logging.info("on_message: msg.topic {}, msg.retain {}".format(msg.topic, msg.retain))
+
+        if msg.retain:
+            return
 
         message_handler_start_time = time.time()
         MLOpsProfilerEvent.log_to_wandb({"MessageReceiveTime": message_handler_start_time})
