@@ -130,6 +130,13 @@ class MLOpsRuntimeLogProcessor:
 
                 index += 1
 
+            err_list = list()
+            for log_index in range(line_start_req, line_end_req):
+                log_line = str(log_lines[log_index])
+                if log_line.find(' [ERROR] ') != -1:
+                    err_line_dict = {"errLine": self.log_line_index + log_index, "errMsg": log_line}
+                    err_list.append(err_line_dict)
+
             log_upload_request = {
                 "run_id": run_id,
                 "edge_id": device_id,
@@ -139,6 +146,10 @@ class MLOpsRuntimeLogProcessor:
                 "created_by": str(device_id),
                 "updated_by": str(device_id)
             }
+
+            if len(err_list) > 0:
+                log_upload_request["errors"] = err_list
+
             if self.log_source is not None and self.log_source != "":
                 log_upload_request["source"] = self.log_source
 

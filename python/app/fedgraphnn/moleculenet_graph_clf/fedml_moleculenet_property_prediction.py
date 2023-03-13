@@ -1,7 +1,6 @@
 import logging
 
 import fedml
-from app.fedgraphnn.moleculenet_graph_reg.trainer.sage_readout_trainer_regression import SageMoleculeNetTrainer
 from data.data_loader import load_partition_data, get_data
 from fedml import FedMLRunner
 from model.gat_readout import GatMoleculeNet
@@ -12,6 +11,8 @@ from trainer.gat_readout_trainer import GatMoleculeNetTrainer
 from trainer.gcn_readout_aggregator import GcnMoleculeNetAggregator
 from trainer.gcn_readout_trainer import GcnMoleculeNetTrainer
 from trainer.sage_readout_aggregator import SageMoleculeNetAggregator
+from trainer.sage_readout_trainer import SageMoleculeNetTrainer
+
 
 
 def load_data(args, dataset_name):
