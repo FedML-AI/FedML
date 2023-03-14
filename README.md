@@ -243,7 +243,7 @@ Here `hierarchical` means that inside each FL Client (data silo), there are mult
 
 ## **FedML Beehive Examples**
 
-- [Federated Learning on Android Smartphones](./doc/en/cross-device/examples/mqtt_s3_fedavg_mnist_lr_example.md)
+- [Federated Learning on Android Smartphones](./doc/en/cross-device/examples/cross_device_android_example.md)
 
 
 # FedML on Smartphone and IoTs
