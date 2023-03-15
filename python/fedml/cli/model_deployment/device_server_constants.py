@@ -1,4 +1,3 @@
-
 import json
 import os
 import platform
@@ -111,6 +110,17 @@ class ServerConstants(object):
     login_role_list = ["md.on_premise_device.master", "md.fedml_cloud_device.master", "md.pubic_cloud_device.master",
                        "md.inference_instance_device"]
 
+    MODEL_DATA_TYPE_INT = "int"
+    MODEL_DATA_TYPE_FLOAT = "float"
+    MODEL_DATA_TYPE_STR = "str"
+    MODEL_DATA_TYPE_MAPPING = {"TYPE_BOOL": MODEL_DATA_TYPE_INT, "TYPE_UINT8": MODEL_DATA_TYPE_INT,
+                               "TYPE_UINT16": MODEL_DATA_TYPE_INT, "TYPE_UINT32": MODEL_DATA_TYPE_INT,
+                               "TYPE_UINT64": MODEL_DATA_TYPE_INT, "TYPE_INT8": MODEL_DATA_TYPE_INT,
+                               "TYPE_INT16": MODEL_DATA_TYPE_INT, "TYPE_INT32": MODEL_DATA_TYPE_INT,
+                               "TYPE_INT64": MODEL_DATA_TYPE_INT, "TYPE_FP16": MODEL_DATA_TYPE_FLOAT,
+                               "TYPE_FP32": MODEL_DATA_TYPE_FLOAT, "TYPE_FP64": MODEL_DATA_TYPE_FLOAT,
+                               "TYPE_STRING": MODEL_DATA_TYPE_STR, "TYPE_BF16": MODEL_DATA_TYPE_INT}
+
     @staticmethod
     def get_fedml_home_dir():
         home_dir = expanduser("~")
@@ -129,7 +139,8 @@ class ServerConstants(object):
 
     @staticmethod
     def get_package_download_dir():
-        package_download_dir = os.path.join(ServerConstants.get_fedml_home_dir(), ServerConstants.LOCAL_PACKAGE_HOME_DIR_NAME)
+        package_download_dir = os.path.join(ServerConstants.get_fedml_home_dir(),
+                                            ServerConstants.LOCAL_PACKAGE_HOME_DIR_NAME)
         return package_download_dir
 
     @staticmethod
@@ -230,13 +241,13 @@ class ServerConstants(object):
         s.close()
         return ip
 
-
     @staticmethod
     def cleanup_run_process():
         try:
             home_dir = expanduser("~")
             local_pkg_data_dir = ServerConstants.get_data_dir()
-            process_id_file = os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, "runner-sub-process.id")
+            process_id_file = os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                                           "runner-sub-process.id")
             process_info = load_yaml_config(process_id_file)
             process_ids_str = process_info.get('process_id', '[]')
             process_ids = json.loads(process_ids_str)
@@ -262,7 +273,8 @@ class ServerConstants(object):
         try:
             home_dir = expanduser("~")
             local_pkg_data_dir = ServerConstants.get_data_dir()
-            process_id_file = os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, "runner-sub-process.id")
+            process_id_file = os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                                           "runner-sub-process.id")
             process_ids = []
             if os.path.exists(process_id_file) is True:
                 yaml_object = load_yaml_config(process_id_file)
@@ -280,7 +292,8 @@ class ServerConstants(object):
         try:
             home_dir = expanduser("~")
             local_pkg_data_dir = ServerConstants.get_data_dir()
-            process_id_file = os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, "runner-learning-process.id")
+            process_id_file = os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                                           "runner-learning-process.id")
             process_info = load_yaml_config(process_id_file)
             process_id = process_info.get('process_id', None)
             if process_id is not None:
@@ -304,7 +317,8 @@ class ServerConstants(object):
         try:
             home_dir = expanduser("~")
             local_pkg_data_dir = ServerConstants.get_data_dir()
-            process_id_file = os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, "runner-learning-process.id")
+            process_id_file = os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                                           "runner-learning-process.id")
             yaml_object = {}
             yaml_object['process_id'] = learning_id
             ServerConstants.generate_yaml_doc(yaml_object, process_id_file)
@@ -324,7 +338,8 @@ class ServerConstants(object):
         except Exception as e:
             pass
 
-        runner_info_file = os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, "runner_infos.yaml")
+        runner_info_file = os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                                        "runner_infos.yaml")
         running_info = dict()
         running_info["unique_device_id"] = str(unique_device_id)
         running_info["edge_id"] = str(edge_id)
@@ -379,7 +394,8 @@ class ServerConstants(object):
         return script_process
 
     @staticmethod
-    def exec_console_with_shell_script_list(shell_script_list, should_capture_stdout=False, should_capture_stderr=False):
+    def exec_console_with_shell_script_list(shell_script_list, should_capture_stdout=False,
+                                            should_capture_stderr=False):
         stdout_flag = subprocess.PIPE if should_capture_stdout else sys.stdout
         stderr_flag = subprocess.PIPE if should_capture_stderr else sys.stderr
 

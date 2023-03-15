@@ -114,6 +114,17 @@ class ClientConstants(object):
     LOGIN_MODE_PUBLIC_CLOUD_INDEX = 2
     login_role_list = ["md.on_premise_device", "md.fedml_cloud_device", "md.pubic_cloud_device"]
 
+    MODEL_DATA_TYPE_INT = "int"
+    MODEL_DATA_TYPE_FLOAT = "float"
+    MODEL_DATA_TYPE_STR = "str"
+    MODEL_DATA_TYPE_MAPPING = {"TYPE_BOOL": MODEL_DATA_TYPE_INT, "TYPE_UINT8": MODEL_DATA_TYPE_INT,
+                               "TYPE_UINT16": MODEL_DATA_TYPE_INT, "TYPE_UINT32": MODEL_DATA_TYPE_INT,
+                               "TYPE_UINT64": MODEL_DATA_TYPE_INT, "TYPE_INT8": MODEL_DATA_TYPE_INT,
+                               "TYPE_INT16": MODEL_DATA_TYPE_INT, "TYPE_INT32": MODEL_DATA_TYPE_INT,
+                               "TYPE_INT64": MODEL_DATA_TYPE_INT, "TYPE_FP16": MODEL_DATA_TYPE_FLOAT,
+                               "TYPE_FP32": MODEL_DATA_TYPE_FLOAT, "TYPE_FP64": MODEL_DATA_TYPE_FLOAT,
+                               "TYPE_STRING": MODEL_DATA_TYPE_STR, "TYPE_BF16": MODEL_DATA_TYPE_INT}
+
     @staticmethod
     def get_fedml_home_dir():
         home_dir = expanduser("~")
@@ -207,12 +218,14 @@ class ClientConstants(object):
 
     @staticmethod
     def get_model_ops_list_url(config_version="release", local_server=None):
-        model_ops_url = "{}/api/v1/model/listFromCli".format(ClientConstants.get_model_ops_url(config_version, local_server))
+        model_ops_url = "{}/api/v1/model/listFromCli".format(
+            ClientConstants.get_model_ops_url(config_version, local_server))
         return model_ops_url
 
     @staticmethod
     def get_model_ops_upload_url(config_version="release", local_server=None):
-        model_ops_url = "{}/api/v1/model/createFromCli".format(ClientConstants.get_model_ops_url(config_version, local_server))
+        model_ops_url = "{}/api/v1/model/createFromCli".format(
+            ClientConstants.get_model_ops_url(config_version, local_server))
         return model_ops_url
 
     @staticmethod
@@ -225,7 +238,8 @@ class ClientConstants(object):
 
     @staticmethod
     def get_model_ops_deployment_url(config_version="release", local_server=None):
-        model_ops_url = "{}/api/v1/endpoint/createFromCli".format(ClientConstants.get_model_ops_url(config_version, local_server))
+        model_ops_url = "{}/api/v1/endpoint/createFromCli".format(
+            ClientConstants.get_model_ops_url(config_version, local_server))
         return model_ops_url
 
     @staticmethod
@@ -470,7 +484,8 @@ class ClientConstants(object):
             pass
 
     @staticmethod
-    def exec_console_with_script(script_path, should_capture_stdout=False, should_capture_stderr=False, no_sys_out_err=False):
+    def exec_console_with_script(script_path, should_capture_stdout=False, should_capture_stderr=False,
+                                 no_sys_out_err=False):
         stdout_flag = subprocess.PIPE if should_capture_stdout else sys.stdout
         stderr_flag = subprocess.PIPE if should_capture_stderr else sys.stderr
 
