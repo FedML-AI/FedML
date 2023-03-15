@@ -261,15 +261,19 @@ def cleanup_all_fedml_server_learning_processes():
             pass
 
 
-def cleanup_all_fedml_client_api_processes(kill_all=False):
+def cleanup_all_fedml_client_api_processes(kill_all=False, is_model_device=False):
     # Cleanup all fedml client api processes.
     for process in psutil.process_iter():
         try:
             pinfo = process.as_dict(attrs=["pid", "name", "cmdline"])
             find_api_process = False
             for cmd in pinfo["cmdline"]:
-                if str(cmd).find("client_api:api") != -1:
-                    find_api_process = True
+                if is_model_device:
+                    if str(cmd).find("model_deployment.device_client_api:api") != -1:
+                        find_api_process = True
+                else:
+                    if str(cmd).find("edge_deployment.client_api:api") != -1:
+                        find_api_process = True
 
             if find_api_process:
                 # click.echo("find client api process at {}.".format(process.pid))
@@ -284,15 +288,19 @@ def cleanup_all_fedml_client_api_processes(kill_all=False):
             pass
 
 
-def cleanup_all_fedml_server_api_processes(kill_all=False):
+def cleanup_all_fedml_server_api_processes(kill_all=False, is_model_device=False):
     # Cleanup all fedml server api processes.
     for process in psutil.process_iter():
         try:
             pinfo = process.as_dict(attrs=["pid", "name", "cmdline"])
             find_api_process = False
             for cmd in pinfo["cmdline"]:
-                if str(cmd).find("server_api:api") != -1:
-                    find_api_process = True
+                if is_model_device:
+                    if str(cmd).find("model_deployment.device_server_api:api") != -1:
+                        find_api_process = True
+                else:
+                    if str(cmd).find("server_deployment.server_api:api") != -1:
+                        find_api_process = True
 
             if find_api_process:
                 # click.echo("find server api process at {}.".format(process.pid))
