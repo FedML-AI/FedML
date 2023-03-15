@@ -87,7 +87,12 @@ class FedMLAggregator(object):
         averaged_params = self.aggregator.aggregate(model_list)
 
         if type(averaged_params) is dict:
-            for client_index in range(len(averaged_params)):
+            if len(averaged_params) == self.client_num + 1: # aggregator pass extra {-1 : global_parms_dict}  as global_params
+                itr_count = len(averaged_params) - 1        # do not apply on_after_aggregation to client -1
+            else:
+                itr_count = len(averaged_params)
+
+            for client_index in range(itr_count):
                 averaged_params[client_index] = self.aggregator.on_after_aggregation(averaged_params[client_index])
         else:
             averaged_params = self.aggregator.on_after_aggregation(averaged_params)
@@ -193,4 +198,21 @@ class FedMLAggregator(object):
             logging.info("key_metrics_on_last_round = {}".format(key_metrics_on_last_round))
         else:
             mlops.log({"round_idx": round_idx})
+    
+    def get_dummy_input_tensor(self):
+        from torch.utils.data import DataLoader
 
+        testloader = DataLoader(self.test_global, batch_size=1, shuffle=False)
+        with torch.no_grad():
+            batch_idx, features_and_lable = next(enumerate(testloader))
+        
+        features = features_and_lable[:-1]  # TODO: Process Multi-Label
+        return features
+    
+    def save_dummy_input_tensor(self):
+        import pickle
+        features = self.get_input_size_type()
+        with open('dummy_input_tensor.pkl', 'wb') as handle:
+            pickle.dump(features, handle)
+
+        # TODO: save the dummy_input_tensor.pkl to s3, and transfer when click "Create Model Card"

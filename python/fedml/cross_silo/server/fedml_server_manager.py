@@ -167,6 +167,10 @@ class FedMLServerManager(FedMLCommManager):
 
             self.aggregator.test_on_server_for_all_clients(self.args.round_idx)
 
+            # TODO: Utilize aggregator.save_dummy_input_tensor()
+            # to send output input size and type (saved as pickle) to s3,
+            # and transfer when click "Create Model Card" 
+
             self.aggregator.assess_contribution()
 
             mlops.event("server.agg_and_eval", event_started=False, event_value=str(self.args.round_idx))
@@ -191,15 +195,21 @@ class FedMLServerManager(FedMLCommManager):
             for receiver_id in self.client_id_list_in_this_round:
                 client_index = self.data_silo_index_list[client_idx_in_this_round]
                 if type(global_model_params) is dict:
-                    global_model_url, global_model_key = self.send_message_sync_model_to_client(
-                        receiver_id, global_model_params[client_index], client_index, global_model_url,
-                        global_model_key
+                    # compatible with the old version that, user did not give {-1 : global_parms_dict}
+                    global_model_url, global_model_key = self.send_message_diff_sync_model_to_client(
+                        receiver_id, global_model_params[client_index], client_index
                     )
                 else:
                     global_model_url, global_model_key = self.send_message_sync_model_to_client(
                         receiver_id, global_model_params, client_index, global_model_url, global_model_key
                     )
                 client_idx_in_this_round += 1
+
+            # if user give {-1 : global_parms_dict}, then record global_model url separately
+            if type(global_model_params) is dict and (-1 in global_model_params.keys()):
+                global_model_url, global_model_key = self.send_message_diff_sync_model_to_client(
+                    -1, global_model_params[-1], -1
+                )
 
             self.args.round_idx += 1
             mlops.log_aggregated_model_info(
@@ -267,4 +277,20 @@ class FedMLServerManager(FedMLCommManager):
         global_model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
         global_model_key = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY)
 
+        return global_model_url, global_model_key
+
+    def send_message_diff_sync_model_to_client(self, receive_id, client_model_params, client_index):
+        tick = time.time()
+        logging.info("send_message_sync_model_to_client. receive_id = %d" % receive_id)
+        message = Message(MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT, self.get_sender_id(), receive_id, )
+        message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, client_model_params)
+        message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(client_index))
+        message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")
+        self.send_message(message)
+
+        MLOpsProfilerEvent.log_to_wandb({"Communiaction/Send_Total": time.time() - tick})
+
+        global_model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
+        global_model_key = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY)
+        
         return global_model_url, global_model_key
