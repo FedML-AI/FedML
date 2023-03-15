@@ -578,6 +578,21 @@ def run_http_inference_with_raw_http_request(self, inference_input_json, inferen
     return inference_output_sample
 
 
+def run_http_inference_with_curl_request(inference_url, inference_input_list, inference_output_list):
+    model_inference_result = {}
+    model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+    model_inference_json = {
+        "inputs": inference_input_list,
+        "outputs": inference_output_list
+    }
+
+    response = requests.post(inference_url, headers=model_api_headers, json=model_inference_json)
+    if response.status_code == 200:
+        model_inference_result = response.json()
+
+    return model_inference_result
+
+
 def parse_model(model_metadata, model_config):
     """
     Check the configuration of a model to make sure it meets the
