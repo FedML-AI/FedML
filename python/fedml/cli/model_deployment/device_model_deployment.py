@@ -65,6 +65,8 @@ def start_deployment(end_point_id, model_id, model_version,
             if str(out_str) != "":
                 triton_server_is_running = True
 
+    logging.info("install nvidia docker...")
+
     # Setup nvidia docker related packages.
     if not ClientConstants.is_running_on_k8s():
         if sys_name == "Linux":
@@ -82,19 +84,24 @@ def start_deployment(end_point_id, model_id, model_version,
 
     # Convert models from pytorch to onnx format
     if model_is_from_open:
+        logging.info("convert the onnx model when the mode is from the MLOps platform...")
+
+        logging.info("Input size {}, input types {}".format(model_params["input_size"],
+                                                            model_params["input_types"]))
+
         running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id,
                                                                     inference_model_name,
                                                                     model_version)
         if model_from_open is None:
             return running_model_name, "", model_version, {}, {}
 
-        input_size = model_params["input_size"]
-        input_types = model_params["input_types"]
-
         with open(model_bin_file, 'rb') as model_pkl_file:
             open_model_params = pickle.load(model_pkl_file)
             model_from_open.load_state_dict(open_model_params)
             model_from_open.eval()
+
+        input_size = model_params["input_size"]
+        input_types = model_params["input_types"]
 
         dummy_input_list = []
         for index, input_i in enumerate(input_size):
@@ -113,6 +120,10 @@ def start_deployment(end_point_id, model_id, model_version,
 
         convert_model_to_onnx(model_from_open, onnx_model_path, dummy_input_list, input_size)
     else:
+        logging.info("convert the onnx model when the mode is from the general PyTorch...")
+        logging.info("Input size {}, input types {}".format(model_params["input_size"],
+                                                            model_params["input_types"]))
+
         running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id,
                                                                     inference_model_name,
                                                                     model_version)
@@ -172,6 +183,7 @@ def start_deployment(end_point_id, model_id, model_version,
         #                       running_model_name, inference_engine, inference_http_port)
 
     # Move converted model to serving dir for inference
+    logging.info("move converted model to serving dir for inference...")
     model_serving_dir = ClientConstants.get_model_serving_dir()
     if not os.path.exists(model_serving_dir):
         os.makedirs(model_serving_dir)
@@ -190,6 +202,7 @@ def start_deployment(end_point_id, model_id, model_version,
                     shutil.copyfile(src_model_file, dst_model_file)
 
     # Run triton server
+    logging.info("prepare to run triton server...")
     if not triton_server_is_running and not ClientConstants.is_running_on_k8s():
         triton_server_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} {} -p{}:8000 " \
                             "-p{}:8001 -p{}:8002 " \

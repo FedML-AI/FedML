@@ -234,7 +234,7 @@ class FedMLModelCards(Singleton):
         return model_storage_url, model_zip_path
 
     def pull_model(self, model_name, user_id, user_api_key, local_server=None):
-        model_query_result = self.list_model_api(model_name, user_id, user_api_key, local_server=None)
+        model_query_result = self.list_model_api(model_name, user_id, user_api_key, local_server=local_server)
         if model_query_result is None:
             return False
 
