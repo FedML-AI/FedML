@@ -433,22 +433,25 @@ class FedMLServerRunner:
             model_metadata = payload_json["model_metadata"]
             model_inputs = model_metadata["inputs"]
             ret_inputs = list()
+
             for input_item in model_inputs:
-                shape = input_item["shape"]
-                data_type = input_item["datatype"]
+                ret_item = input_item
+                shape = ret_item["shape"]
+                data_type = ret_item["datatype"]
                 if ServerConstants.MODEL_DATA_TYPE_MAPPING[data_type] == ServerConstants.MODEL_DATA_TYPE_INT:
-                    input_item["data"] = torch.randint(0, 1, shape)
+                    ret_item["data"] = torch.randint(0, 1, shape).tolist()
                 else:
-                    input_item["data"] = torch.zeros(shape)
-                ret_inputs.append(input_item)
+                    ret_item["data"] = torch.zeros(shape).tolist()
+                ret_inputs.append(ret_item)
 
             payload_json["input_json"] = {"end_point_id": self.run_id,
                                           "model_id": model_id,
                                           "model_name": model_name,
                                           "model_version": model_version,
                                           "token": str(token),
-                                          "inputs": ret_inputs}
-            payload_json["output_json"] = {"outputs": model_metadata["outputs"]}
+                                          "inputs": ret_inputs,
+                                          "outputs": model_metadata["outputs"]}
+            payload_json["output_json"] = model_metadata["outputs"]
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
                 set_deployment_result(end_point_id, self.edge_id, payload_json)
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
