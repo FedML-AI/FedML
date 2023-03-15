@@ -123,7 +123,14 @@ class ClientConstants(object):
                                "TYPE_INT16": MODEL_DATA_TYPE_INT, "TYPE_INT32": MODEL_DATA_TYPE_INT,
                                "TYPE_INT64": MODEL_DATA_TYPE_INT, "TYPE_FP16": MODEL_DATA_TYPE_FLOAT,
                                "TYPE_FP32": MODEL_DATA_TYPE_FLOAT, "TYPE_FP64": MODEL_DATA_TYPE_FLOAT,
-                               "TYPE_STRING": MODEL_DATA_TYPE_STR, "TYPE_BF16": MODEL_DATA_TYPE_INT}
+                               "TYPE_STRING": MODEL_DATA_TYPE_STR, "TYPE_BF16": MODEL_DATA_TYPE_INT,
+                               "BOOL": MODEL_DATA_TYPE_INT, "UINT8": MODEL_DATA_TYPE_INT,
+                               "UINT16": MODEL_DATA_TYPE_INT, "UINT32": MODEL_DATA_TYPE_INT,
+                               "UINT64": MODEL_DATA_TYPE_INT, "INT8": MODEL_DATA_TYPE_INT,
+                               "INT16": MODEL_DATA_TYPE_INT, "INT32": MODEL_DATA_TYPE_INT,
+                               "INT64": MODEL_DATA_TYPE_INT, "FP16": MODEL_DATA_TYPE_FLOAT,
+                               "FP32": MODEL_DATA_TYPE_FLOAT, "FP64": MODEL_DATA_TYPE_FLOAT,
+                               "STRING": MODEL_DATA_TYPE_STR, "BF16": MODEL_DATA_TYPE_INT}
 
     @staticmethod
     def get_fedml_home_dir():
