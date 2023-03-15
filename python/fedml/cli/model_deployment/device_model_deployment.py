@@ -138,6 +138,7 @@ def start_deployment(end_point_id, model_id, model_version,
         onnx_model_path = os.path.join(model_storage_local_path,
                                        ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME,
                                        running_model_name, ClientConstants.INFERENCE_MODEL_VERSION)
+        logging.info("converted onnx model path: {}".format(onnx_model_path))
         if not os.path.exists(onnx_model_path):
             os.makedirs(onnx_model_path)
         onnx_model_path = os.path.join(onnx_model_path, "model.onnx")

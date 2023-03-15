@@ -1064,10 +1064,18 @@ def pull_model(name, user, api_key, version):
     help="interact with which version of ModelOps platform. It should be dev, test or release",
 )
 @click.option(
+    "--local_server",
+    "-ls",
+    type=str,
+    default="127.0.0.1",
+    help="local server address.",
+)
+@click.option(
     "--use_local_deployment", "-ld", default=None, is_flag=True,
     help="deploy local model repository by sending MQTT message(just use for debugging).",
 )
-def deploy_model(name, on_premise, cloud, devices, user, api_key, params, version, use_local_deployment):
+def deploy_model(name, on_premise, cloud, devices, user, api_key, params, version,
+                 local_server, use_local_deployment):
     if user is None or api_key is None:
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
         return
@@ -1094,7 +1102,8 @@ def deploy_model(name, on_premise, cloud, devices, user, api_key, params, versio
         params_dict = json.loads(params)  # load config from Cli
 
     if FedMLModelCards.get_instance().deploy_model(name, device_type, devices, user, api_key,
-                                                   params_dict, use_local_deployment):
+                                                   params_dict, use_local_deployment,
+                                                   local_server):
         click.echo("Deploy model {} successfully.".format(name))
     else:
         click.echo("Failed to deploy model {}.".format(name))
