@@ -108,7 +108,7 @@ class FedMLModelCards(Singleton):
 
         return True
 
-    def list_models(self, model_name, user_id=None, user_api_key=None):
+    def list_models(self, model_name, user_id=None, user_api_key=None, local_server=None):
         if user_id is None:
             model_home_dir = ClientConstants.get_model_dir()
             if not os.path.exists(model_home_dir):
@@ -122,7 +122,7 @@ class FedMLModelCards(Singleton):
                     if model == model_name:
                         return [model]
         else:
-            return self.list_model_api(model_name, user_id, user_api_key)
+            return self.list_model_api(model_name, user_id, user_api_key, local_server)
 
         return []
 
@@ -169,7 +169,7 @@ class FedMLModelCards(Singleton):
         return model_zip_path
 
     def push_model(self, model_name, user_id, user_api_key, model_storage_url=None,
-                   model_net_url=None, no_uploading_modelops=False):
+                   model_net_url=None, no_uploading_modelops=False, local_server=None):
         model_dir = os.path.join(ClientConstants.get_model_dir(), model_name)
         if not os.path.exists(model_dir):
             return "", ""
@@ -225,7 +225,7 @@ class FedMLModelCards(Singleton):
 
                 upload_result = self.upload_model_api(model_name, model_params, model_storage_url,
                                                       model_net_url, user_id, user_api_key,
-                                                      is_from_open=is_from_open)
+                                                      is_from_open=is_from_open, local_server=local_server)
                 if upload_result is not None:
                     return model_storage_url, model_zip_path
                 else:
@@ -233,8 +233,8 @@ class FedMLModelCards(Singleton):
 
         return model_storage_url, model_zip_path
 
-    def pull_model(self, model_name, user_id, user_api_key):
-        model_query_result = self.list_model_api(model_name, user_id, user_api_key)
+    def pull_model(self, model_name, user_id, user_api_key, local_server=None):
+        model_query_result = self.list_model_api(model_name, user_id, user_api_key, local_server=None)
         if model_query_result is None:
             return False
 
@@ -253,18 +253,19 @@ class FedMLModelCards(Singleton):
 
         return result
 
-    def deploy_model(self, model_name, device_type, devices, user_id, user_api_key, params, use_local_deployment):
+    def deploy_model(self, model_name, device_type, devices, user_id, user_api_key,
+                     params, use_local_deployment, local_server=None):
         if use_local_deployment is None:
             use_local_deployment = False
         if not use_local_deployment:
-            model_query_result = self.list_model_api(model_name, user_id, user_api_key)
+            model_query_result = self.list_model_api(model_name, user_id, user_api_key, local_server)
             if model_query_result is None:
                 return False
             for model in model_query_result.model_list:
                 model_id = model.id
                 model_version = model.model_version
                 deployment_result = self.deploy_model_api(model_id, model_name, model_version, device_type,
-                                                          devices, user_id, user_api_key)
+                                                          devices, user_id, user_api_key, local_server)
                 if deployment_result is not None:
                     return True
         else:
@@ -285,9 +286,9 @@ class FedMLModelCards(Singleton):
                                                     1,
                                                     input_data)
 
-    def list_model_api(self, model_name, user_id, user_api_key):
+    def list_model_api(self, model_name, user_id, user_api_key, local_server):
         model_list_result = None
-        model_ops_url = ClientConstants.get_model_ops_list_url(self.config_version)
+        model_ops_url = ClientConstants.get_model_ops_list_url(self.config_version, local_server)
         model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
         model_list_json = {
             "model_name": model_name,
@@ -322,9 +323,10 @@ class FedMLModelCards(Singleton):
 
         return model_list_result
 
-    def upload_model_api(self, model_name, model_params, model_storage_url, model_net_url, user_id, user_api_key, is_from_open=True):
+    def upload_model_api(self, model_name, model_params, model_storage_url, model_net_url,
+                         user_id, user_api_key, is_from_open=True, local_server=None):
         model_upload_result = None
-        model_ops_url = ClientConstants.get_model_ops_upload_url(self.config_version)
+        model_ops_url = ClientConstants.get_model_ops_upload_url(self.config_version, local_server)
         model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
         model_upload_json = {
             "description": model_name,
@@ -389,9 +391,10 @@ class FedMLModelCards(Singleton):
 
         return ""
 
-    def deploy_model_api(self, model_id, model_name, model_version, device_type, devices, user_id, user_api_key):
+    def deploy_model_api(self, model_id, model_name, model_version, device_type, devices,
+                         user_id, user_api_key, local_server):
         model_deployment_result = None
-        model_ops_url = ClientConstants.get_model_ops_deployment_url(self.config_version)
+        model_ops_url = ClientConstants.get_model_ops_deployment_url(self.config_version, local_server)
         model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
         model_deployment_json = {
             "edgeId": devices,

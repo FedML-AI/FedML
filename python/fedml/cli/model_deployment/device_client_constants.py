@@ -206,23 +206,26 @@ class ClientConstants(object):
         return model_infer_data_dir
 
     @staticmethod
-    def get_model_ops_list_url(config_version="release"):
-        model_ops_url = "{}/api/v1/model/listFromCli".format(ClientConstants.get_model_ops_url(config_version))
+    def get_model_ops_list_url(config_version="release", local_server=None):
+        model_ops_url = "{}/api/v1/model/listFromCli".format(ClientConstants.get_model_ops_url(config_version, local_server))
         return model_ops_url
 
     @staticmethod
-    def get_model_ops_upload_url(config_version="release"):
-        model_ops_url = "{}/api/v1/model/createFromCli".format(ClientConstants.get_model_ops_url(config_version))
+    def get_model_ops_upload_url(config_version="release", local_server=None):
+        model_ops_url = "{}/api/v1/model/createFromCli".format(ClientConstants.get_model_ops_url(config_version, local_server))
         return model_ops_url
 
     @staticmethod
-    def get_model_ops_url(config_version="release"):
+    def get_model_ops_url(config_version="release", local_server=None):
+        if config_version == "local":
+            return "http://{}:9000/fedmlModelServer".format(
+                "localhost" if local_server is None else local_server)
         return "https://model{}.fedml.ai/fedmlModelServer".format(
             "" if config_version == "release" else "-" + config_version)
 
     @staticmethod
-    def get_model_ops_deployment_url(config_version="release"):
-        model_ops_url = "{}/api/v1/endpoint/createFromCli".format(ClientConstants.get_model_ops_url(config_version))
+    def get_model_ops_deployment_url(config_version="release", local_server=None):
+        model_ops_url = "{}/api/v1/endpoint/createFromCli".format(ClientConstants.get_model_ops_url(config_version, local_server))
         return model_ops_url
 
     @staticmethod
