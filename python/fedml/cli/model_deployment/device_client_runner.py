@@ -168,7 +168,8 @@ class FedMLClientRunner:
         fedml_local_config_file = os.path.join(unzip_package_path, "fedml_model_config.yaml")
         if model_config_parameters is not None:
             package_conf_object = model_config_parameters
-            ClientConstants.generate_yaml_doc(package_conf_object, fedml_local_config_file)
+            with open(fedml_local_config_file, 'w') as f:
+                json.dump(package_conf_object, f)
         else:
             if os.path.exists(fedml_local_config_file):
                 package_conf_object = load_yaml_config(fedml_local_config_file)
@@ -272,6 +273,7 @@ class FedMLClientRunner:
         model_from_open = None
         if self.model_is_from_open:
             logging.info("process the model net from open...")
+            self.check_runner_stop_event()
             s3_config = self.agent_config.get("s3_config", None)
             if s3_config is not None and model_net_url is not None and model_net_url != "":
                 s3_client = S3Storage(s3_config)
@@ -283,6 +285,7 @@ class FedMLClientRunner:
                                                                ClientConstants.get_model_cache_dir())
 
         logging.info("start the model deployment...")
+        self.check_runner_stop_event()
         running_model_name, inference_output_url, inference_model_version, model_metadata, model_config = \
             start_deployment(
                 inference_end_point_id, model_id, model_version,

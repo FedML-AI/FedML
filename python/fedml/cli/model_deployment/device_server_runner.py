@@ -209,10 +209,11 @@ class FedMLServerRunner:
         memory_size = "256m"  # TODO: Get Memory size for each instance
         model_version = "v1"
 
-        logging.info("Model deployment request: {}".format(self.request_json))
+        logging.info("model deployment request: {}".format(self.request_json))
 
-        # set mqtt connection for client
-        self.setup_client_mqtt_mgr()
+        logging.info("send deployment stages...")
+
+        self.check_runner_stop_event()
 
         # Send stage: MODEL_DEPLOYMENT_STAGE4 = "ForwardRequest2Slave"
         self.send_deployment_stages(self.run_id, model_name, model_id,
@@ -225,6 +226,8 @@ class FedMLServerRunner:
         MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
 
         # report server running status
+        logging.info("report deployment status...")
+        self.check_runner_stop_event()
         self.mlops_metrics.report_server_training_status(run_id,
                                                          ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING,
                                                          is_from_model=True)
@@ -236,6 +239,8 @@ class FedMLServerRunner:
                                                                     model_name, model_version)
         python_program = get_python_program()
         if not ServerConstants.is_running_on_k8s():
+            logging.info("start the model inference gateway...")
+            self.check_runner_stop_event()
             process = ServerConstants.exec_console_with_script(
                 "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
                 "END_POINT_ID=\"{}\" MODEL_ID=\"{}\" "
@@ -252,6 +257,8 @@ class FedMLServerRunner:
             ServerConstants.save_learning_process(process.pid)
 
         # start inference monitor server
+        logging.info("start the model inference monitor...")
+        self.check_runner_stop_event()
         pip_source_dir = os.path.dirname(__file__)
         monitor_file = os.path.join(pip_source_dir, "device_model_monitor.py")
         self.monitor_process = ServerConstants.exec_console_with_shell_script_list(
@@ -284,9 +291,13 @@ class FedMLServerRunner:
                                                             is_from_model=True)
 
         # forward deployment request to slave devices
+        logging.info("send the model inference request to slave devices...")
+        self.check_runner_stop_event()
         self.send_deployment_start_request_to_edges()
 
-        self.client_mqtt_mgr.loop_forever()
+        while True:
+            self.check_runner_stop_event()
+            time.sleep(3)
 
     def check_runner_stop_event(self):
         if self.run_process_event.is_set():
@@ -427,6 +438,10 @@ class FedMLServerRunner:
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
                 set_end_point_activation(end_point_id, True)
             self.send_deployment_results_with_payload(self.run_id, payload_json)
+
+            time.sleep(3)
+            if self.run_process_event is not None:
+                self.run_process_event.set()
 
     def callback_deployment_status_message(self, topic=None, payload=None):
         # Save deployment status to local cache
@@ -638,6 +653,9 @@ class FedMLServerRunner:
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             set_end_point_activation(model_msg_object.inference_end_point_id, False)
 
+        if self.run_process_event is not None:
+            self.run_process_event.set()
+
     def callback_delete_deployment(self, topic, payload):
         logging.info("callback_delete_deployment: topic = %s, payload = %s" % (topic, payload))
 
@@ -650,6 +668,9 @@ class FedMLServerRunner:
             set_end_point_activation(model_msg_object.inference_end_point_id, False)
 
         self.send_deployment_delete_request_to_edges(payload, model_msg_object)
+
+        if self.run_process_event is not None:
+            self.run_process_event.set()
 
     def send_deployment_results_with_payload(self, end_point_id, payload):
         self.send_deployment_results(end_point_id, payload["model_name"], payload["model_url"],

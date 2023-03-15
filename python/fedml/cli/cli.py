@@ -932,12 +932,19 @@ def list_models(name):
     default="release",
     help="interact with which version of ModelOps platform. It should be dev, test or release",
 )
-def list_remote_models(name, user, api_key, version):
+@click.option(
+    "--local_server",
+    "-ls",
+    type=str,
+    default="127.0.0.1",
+    help="local server address.",
+)
+def list_remote_models(name, user, api_key, version, local_server):
     if user is None or api_key is None:
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
         return
     FedMLModelCards.get_instance().set_config_version(version)
-    model_query_result = FedMLModelCards.get_instance().list_models(name, user, api_key)
+    model_query_result = FedMLModelCards.get_instance().list_models(name, user, api_key, local_server)
     if model_query_result is None or model_query_result.model_list is None or len(model_query_result.model_list) <= 0:
         click.echo("Model list is empty.")
     else:
@@ -985,7 +992,14 @@ def package_model(name):
     default="release",
     help="interact with which version of ModelOps platform. It should be dev, test or release",
 )
-def push_model(name, model_storage_url, model_net_url, user, api_key, version):
+@click.option(
+    "--local_server",
+    "-ls",
+    type=str,
+    default="127.0.0.1",
+    help="local server address.",
+)
+def push_model(name, model_storage_url, model_net_url, user, api_key, version, local_server):
     if user is None or api_key is None:
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
         return
@@ -993,7 +1007,8 @@ def push_model(name, model_storage_url, model_net_url, user, api_key, version):
     model_is_from_open = True if model_storage_url is not None and model_storage_url != "" else False
     model_storage_url, model_zip = FedMLModelCards.get_instance().push_model(name, user, api_key,
                                                                              model_storage_url=model_storage_url,
-                                                                             model_net_url=model_net_url)
+                                                                             model_net_url=model_net_url,
+                                                                             local_server=local_server)
     if model_is_from_open:
         click.echo("Push model {} with model storage url {} successfully.".format(name, model_storage_url))
     else:
@@ -1022,12 +1037,19 @@ def push_model(name, model_storage_url, model_net_url, user, api_key, version):
     default="release",
     help="interact with which version of ModelOps platform. It should be dev, test or release",
 )
-def pull_model(name, user, api_key, version):
+@click.option(
+    "--local_server",
+    "-ls",
+    type=str,
+    default="127.0.0.1",
+    help="local server address.",
+)
+def pull_model(name, user, api_key, version, local_server):
     if user is None or api_key is None:
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
         return
     FedMLModelCards.get_instance().set_config_version(version)
-    if FedMLModelCards.get_instance().pull_model(name, user, api_key):
+    if FedMLModelCards.get_instance().pull_model(name, user, api_key, local_server):
         click.echo("Pull model {} successfully.".format(name))
     else:
         click.echo("Failed to pull model {}.".format(name))
