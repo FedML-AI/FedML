@@ -3,6 +3,7 @@ import json
 import logging
 import multiprocessing
 import platform
+import random
 import sys
 
 from multiprocessing import Process
@@ -20,6 +21,7 @@ from os import listdir
 
 import click
 import requests
+import torch
 
 from ..comm_utils import sys_utils
 from .device_server_data_interface import FedMLServerDataInterface
@@ -93,6 +95,8 @@ class FedMLServerRunner:
 
         self.slave_deployment_statuses_mapping = {}
         self.slave_deployment_results_mapping = {}
+
+        self.model_runner_mapping = dict()
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
         pass
@@ -425,13 +429,25 @@ class FedMLServerRunner:
             payload_json["port"] = model_inference_port
             token = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
                 get_end_point_token(end_point_id)
+
+            model_metadata = payload_json["model_metadata"]
+            model_inputs = model_metadata["inputs"]
+            ret_inputs = list()
+            for input_item in model_inputs:
+                shape = input_item["shape"]
+                data_type = input_item["datatype"]
+                if ServerConstants.MODEL_DATA_TYPE_MAPPING[data_type] == ServerConstants.MODEL_DATA_TYPE_INT:
+                    input_item["data"] = torch.randint(0, 1, shape)
+                else:
+                    input_item["data"] = torch.zeros(shape)
+                ret_inputs.append(input_item)
+
             payload_json["input_json"] = {"end_point_id": self.run_id,
                                           "model_id": model_id,
                                           "model_name": model_name,
                                           "model_version": model_version,
                                           "token": str(token),
-                                          "data": "This is our test data. Please fill in here with your real data."}
-            model_metadata = payload_json["model_metadata"]
+                                          "inputs": ret_inputs}
             payload_json["output_json"] = {"outputs": model_metadata["outputs"]}
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
                 set_deployment_result(end_point_id, self.edge_id, payload_json)
@@ -440,8 +456,7 @@ class FedMLServerRunner:
             self.send_deployment_results_with_payload(self.run_id, payload_json)
 
             time.sleep(3)
-            if self.run_process_event is not None:
-                self.run_process_event.set()
+            self.set_runner_stopped_event(end_point_id)
 
     def callback_deployment_status_message(self, topic=None, payload=None):
         # Save deployment status to local cache
@@ -605,6 +620,7 @@ class FedMLServerRunner:
                 self.run_process_event = multiprocessing.Event()
             self.run_process_event.clear()
             server_runner.run_process_event = self.run_process_event
+            self.model_runner_mapping[run_id] = server_runner
             server_process = Process(target=server_runner.run, args=(self.run_process_event,))
             server_process.start()
             ServerConstants.save_run_process(server_process.pid)
@@ -615,6 +631,7 @@ class FedMLServerRunner:
                                         ServerConstants.MODEL_DEPLOYMENT_STAGE3["index"],
                                         ServerConstants.MODEL_DEPLOYMENT_STAGE3["text"],
                                         ServerConstants.MODEL_DEPLOYMENT_STAGE3["text"])
+
     def callback_activate_deployment(self, topic, payload):
         logging.info("callback_activate_deployment: topic = %s, payload = %s" % (topic, payload))
 
@@ -653,8 +670,14 @@ class FedMLServerRunner:
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             set_end_point_activation(model_msg_object.inference_end_point_id, False)
 
-        if self.run_process_event is not None:
-            self.run_process_event.set()
+        self.set_runner_stopped_event(model_msg_object.run_id)
+
+    def set_runner_stopped_event(self, run_id):
+        server_runner = self.model_runner_mapping.get(run_id, None)
+        if server_runner is not None:
+            if server_runner.run_process_event is not None:
+                server_runner.run_process_event.set()
+            self.model_runner_mapping.pop(run_id)
 
     def callback_delete_deployment(self, topic, payload):
         logging.info("callback_delete_deployment: topic = %s, payload = %s" % (topic, payload))
@@ -669,8 +692,7 @@ class FedMLServerRunner:
 
         self.send_deployment_delete_request_to_edges(payload, model_msg_object)
 
-        if self.run_process_event is not None:
-            self.run_process_event.set()
+        self.set_runner_stopped_event(model_msg_object.run_id)
 
     def send_deployment_results_with_payload(self, end_point_id, payload):
         self.send_deployment_results(end_point_id, payload["model_name"], payload["model_url"],

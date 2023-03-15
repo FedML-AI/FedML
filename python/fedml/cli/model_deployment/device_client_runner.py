@@ -84,6 +84,8 @@ class FedMLClientRunner:
         self.infer_host = "127.0.0.1"
         self.model_is_from_open = False
 
+        self.model_runner_mapping = dict()
+
     def unzip_file(self, zip_file, unzip_file_path):
         result = False
         if zipfile.is_zipfile(zip_file):
@@ -498,10 +500,18 @@ class FedMLClientRunner:
             self.run_process_event = multiprocessing.Event()
         self.run_process_event.clear()
         client_runner.run_process_event = self.run_process_event
+        self.model_runner_mapping[run_id] = client_runner
         self.process = Process(target=client_runner.run, args=(self.run_process_event,))
         # client_runner.run()
         self.process.start()
         ClientConstants.save_run_process(self.process.pid)
+
+    def set_runner_stopped_event(self, run_id):
+        client_runner = self.model_runner_mapping.get(run_id, None)
+        if client_runner is not None:
+            if client_runner.run_process_event is not None:
+                client_runner.run_process_event.set()
+            self.model_runner_mapping.pop(run_id)
 
     def callback_delete_deployment(self, topic, payload):
         logging.info("callback_delete_deployment: topic = %s, payload = %s" % (topic, payload))
@@ -511,6 +521,8 @@ class FedMLClientRunner:
 
         ClientConstants.remove_deployment(model_msg_object.inference_end_point_id, model_msg_object.model_id,
                                           model_msg_object.model_name, model_msg_object.model_version)
+
+        self.set_runner_stopped_event(model_msg_object.run_id)
 
     def exit_run_with_exception_entry(self):
         try:
