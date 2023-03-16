@@ -63,8 +63,8 @@ def log_training_model_input_info(input_sizes, input_types):
     return mlops.log_training_model_input_info(input_sizes, input_types)
 
 
-def get_training_model_input_info(training_model_net_url):
-    return mlops.get_training_model_input_info(training_model_net_url)
+def get_training_model_input_info(training_model_net_url, s3_config):
+    return mlops.get_training_model_input_info(training_model_net_url, s3_config)
 
 
 def log_client_model_info(round_index, total_rounds, model_url):
