@@ -208,6 +208,21 @@ class FedMLAggregator(object):
         
         features = features_and_lable[:-1]  # TODO: Process Multi-Label
         return features
+
+    def get_input_shape_type(self):
+        from torch.utils.data import DataLoader
+
+        testloader = DataLoader(self.test_global, batch_size=1, shuffle=False)
+        with torch.no_grad():
+            batch_idx, features_and_lable = next(enumerate(testloader))
+        features = features_and_lable[:-1]  
+
+        input_shape, input_type = [], []
+        for feature in features:
+            input_shape.append(feature.shape)
+            input_type.append(feature.dtype)
+            
+        return input_shape, input_type
     
     def save_dummy_input_tensor(self):
         import pickle
