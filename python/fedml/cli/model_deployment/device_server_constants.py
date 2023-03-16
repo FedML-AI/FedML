@@ -1,4 +1,3 @@
-
 import json
 import os
 import platform
@@ -15,12 +14,29 @@ from ...cli.comm_utils.yaml_utils import load_yaml_config
 class ServerConstants(object):
     MSG_MLOPS_SERVER_STATUS_OFFLINE = "OFFLINE"
     MSG_MLOPS_SERVER_STATUS_IDLE = "IDLE"
+    MSG_MLOPS_SERVER_STATUS_UPGRADING = "UPGRADING"
     MSG_MLOPS_SERVER_STATUS_STARTING = "STARTING"
     MSG_MLOPS_SERVER_STATUS_RUNNING = "RUNNING"
     MSG_MLOPS_SERVER_STATUS_STOPPING = "STOPPING"
     MSG_MLOPS_SERVER_STATUS_KILLED = "KILLED"
     MSG_MLOPS_SERVER_STATUS_FAILED = "FAILED"
     MSG_MLOPS_SERVER_STATUS_FINISHED = "FINISHED"
+    MSG_MLOPS_SERVER_STATUS_EXCEPTION = "EXCEPTION"
+
+    # Device Status
+    MSG_MLOPS_DEVICE_STATUS_IDLE = "IDLE"
+    MSG_MLOPS_DEVICE_STATUS_UPGRADING = "UPGRADING"
+    MSG_MLOPS_DEVICE_STATUS_RUNNING = "RUNNING"
+    MSG_MLOPS_DEVICE_STATUS_OFFLINE = "OFFLINE"
+
+    # Run Status
+    MSG_MLOPS_RUN_STATUS_QUEUED = "QUEUED"
+    MSG_MLOPS_RUN_STATUS_STARTING = "STARTING"
+    MSG_MLOPS_RUN_STATUS_RUNNING = "RUNNING"
+    MSG_MLOPS_RUN_STATUS_STOPPING = "STOPPING"
+    MSG_MLOPS_RUN_STATUS_KILLED = "KILLED"
+    MSG_MLOPS_RUN_STATUS_FAILED = "FAILED"
+    MSG_MLOPS_RUN_STATUS_FINISHED = "FINISHED"
 
     LOCAL_HOME_RUNNER_DIR_NAME = 'fedml-server'
     LOCAL_RUNNER_INFO_DIR_NAME = 'runner_infos'
@@ -28,6 +44,8 @@ class ServerConstants(object):
 
     FEDML_OTA_CMD_UPGRADE = "upgrade"
     FEDML_OTA_CMD_RESTART = "restart"
+
+    LOCAL_SERVER_API_PORT = 40806
 
     # Constants for models
     K8S_DEPLOYMENT_MASTER_HOST_HOME_DIR = "/home/fedml-server"
@@ -92,6 +110,24 @@ class ServerConstants(object):
     login_role_list = ["md.on_premise_device.master", "md.fedml_cloud_device.master", "md.pubic_cloud_device.master",
                        "md.inference_instance_device"]
 
+    MODEL_DATA_TYPE_INT = "int"
+    MODEL_DATA_TYPE_FLOAT = "float"
+    MODEL_DATA_TYPE_STR = "str"
+    MODEL_DATA_TYPE_MAPPING = {"TYPE_BOOL": MODEL_DATA_TYPE_INT, "TYPE_UINT8": MODEL_DATA_TYPE_INT,
+                               "TYPE_UINT16": MODEL_DATA_TYPE_INT, "TYPE_UINT32": MODEL_DATA_TYPE_INT,
+                               "TYPE_UINT64": MODEL_DATA_TYPE_INT, "TYPE_INT8": MODEL_DATA_TYPE_INT,
+                               "TYPE_INT16": MODEL_DATA_TYPE_INT, "TYPE_INT32": MODEL_DATA_TYPE_INT,
+                               "TYPE_INT64": MODEL_DATA_TYPE_INT, "TYPE_FP16": MODEL_DATA_TYPE_FLOAT,
+                               "TYPE_FP32": MODEL_DATA_TYPE_FLOAT, "TYPE_FP64": MODEL_DATA_TYPE_FLOAT,
+                               "TYPE_STRING": MODEL_DATA_TYPE_STR, "TYPE_BF16": MODEL_DATA_TYPE_INT,
+                               "BOOL": MODEL_DATA_TYPE_INT, "UINT8": MODEL_DATA_TYPE_INT,
+                               "UINT16": MODEL_DATA_TYPE_INT, "UINT32": MODEL_DATA_TYPE_INT,
+                               "UINT64": MODEL_DATA_TYPE_INT, "INT8": MODEL_DATA_TYPE_INT,
+                               "INT16": MODEL_DATA_TYPE_INT, "INT32": MODEL_DATA_TYPE_INT,
+                               "INT64": MODEL_DATA_TYPE_INT, "FP16": MODEL_DATA_TYPE_FLOAT,
+                               "FP32": MODEL_DATA_TYPE_FLOAT, "FP64": MODEL_DATA_TYPE_FLOAT,
+                               "STRING": MODEL_DATA_TYPE_STR, "BF16": MODEL_DATA_TYPE_INT}
+
     @staticmethod
     def get_fedml_home_dir():
         home_dir = expanduser("~")
@@ -110,7 +146,8 @@ class ServerConstants(object):
 
     @staticmethod
     def get_package_download_dir():
-        package_download_dir = os.path.join(ServerConstants.get_fedml_home_dir(), ServerConstants.LOCAL_PACKAGE_HOME_DIR_NAME)
+        package_download_dir = os.path.join(ServerConstants.get_fedml_home_dir(),
+                                            ServerConstants.LOCAL_PACKAGE_HOME_DIR_NAME)
         return package_download_dir
 
     @staticmethod
@@ -127,6 +164,11 @@ class ServerConstants(object):
         package_run_dir = os.path.join(ServerConstants.get_package_unzip_dir(run_id, package_url),
                                        package_file_no_extension)
         return package_run_dir
+
+    @staticmethod
+    def get_database_dir():
+        database_dir = os.path.join(ServerConstants.get_data_dir(), "database")
+        return database_dir
 
     @staticmethod
     def get_model_dir():
@@ -206,13 +248,13 @@ class ServerConstants(object):
         s.close()
         return ip
 
-
     @staticmethod
     def cleanup_run_process():
         try:
             home_dir = expanduser("~")
             local_pkg_data_dir = ServerConstants.get_data_dir()
-            process_id_file = os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, "runner-sub-process.id")
+            process_id_file = os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                                           "runner-sub-process.id")
             process_info = load_yaml_config(process_id_file)
             process_ids_str = process_info.get('process_id', '[]')
             process_ids = json.loads(process_ids_str)
@@ -238,7 +280,8 @@ class ServerConstants(object):
         try:
             home_dir = expanduser("~")
             local_pkg_data_dir = ServerConstants.get_data_dir()
-            process_id_file = os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, "runner-sub-process.id")
+            process_id_file = os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                                           "runner-sub-process.id")
             process_ids = []
             if os.path.exists(process_id_file) is True:
                 yaml_object = load_yaml_config(process_id_file)
@@ -256,7 +299,8 @@ class ServerConstants(object):
         try:
             home_dir = expanduser("~")
             local_pkg_data_dir = ServerConstants.get_data_dir()
-            process_id_file = os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, "runner-learning-process.id")
+            process_id_file = os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                                           "runner-learning-process.id")
             process_info = load_yaml_config(process_id_file)
             process_id = process_info.get('process_id', None)
             if process_id is not None:
@@ -280,7 +324,8 @@ class ServerConstants(object):
         try:
             home_dir = expanduser("~")
             local_pkg_data_dir = ServerConstants.get_data_dir()
-            process_id_file = os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, "runner-learning-process.id")
+            process_id_file = os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                                           "runner-learning-process.id")
             yaml_object = {}
             yaml_object['process_id'] = learning_id
             ServerConstants.generate_yaml_doc(yaml_object, process_id_file)
@@ -300,7 +345,8 @@ class ServerConstants(object):
         except Exception as e:
             pass
 
-        runner_info_file = os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, "runner_infos.yaml")
+        runner_info_file = os.path.join(local_pkg_data_dir, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
+                                        "runner_infos.yaml")
         running_info = dict()
         running_info["unique_device_id"] = str(unique_device_id)
         running_info["edge_id"] = str(edge_id)
@@ -355,7 +401,8 @@ class ServerConstants(object):
         return script_process
 
     @staticmethod
-    def exec_console_with_shell_script_list(shell_script_list, should_capture_stdout=False, should_capture_stderr=False):
+    def exec_console_with_shell_script_list(shell_script_list, should_capture_stdout=False,
+                                            should_capture_stderr=False):
         stdout_flag = subprocess.PIPE if should_capture_stdout else sys.stdout
         stderr_flag = subprocess.PIPE if should_capture_stderr else sys.stderr
 
@@ -381,3 +428,33 @@ class ServerConstants(object):
 
         for info in iter(script_process.stderr.readline, ""):
             print(info)
+
+    @staticmethod
+    def get_device_state_from_run_edge_state(run_edge_state):
+        ret_state = ServerConstants.MSG_MLOPS_DEVICE_STATUS_IDLE
+        if run_edge_state == ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE:
+            ret_state = ServerConstants.MSG_MLOPS_DEVICE_STATUS_OFFLINE
+        elif run_edge_state == ServerConstants.MSG_MLOPS_SERVER_STATUS_UPGRADING:
+            ret_state = ServerConstants.MSG_MLOPS_DEVICE_STATUS_UPGRADING
+        elif run_edge_state == ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING or \
+                run_edge_state == ServerConstants.MSG_MLOPS_SERVER_STATUS_RUNNING or \
+                run_edge_state == ServerConstants.MSG_MLOPS_SERVER_STATUS_STOPPING:
+            ret_state = ServerConstants.MSG_MLOPS_DEVICE_STATUS_RUNNING
+        elif run_edge_state == ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE or \
+                run_edge_state == ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED or \
+                run_edge_state == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED or \
+                run_edge_state == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED:
+            ret_state = ServerConstants.MSG_MLOPS_DEVICE_STATUS_IDLE
+
+        return ret_state
+
+    @staticmethod
+    def is_server_running(status):
+        if status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED or \
+                status == ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED or \
+                status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED or \
+                status == ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE or \
+                status == ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE:
+            return False
+
+        return True

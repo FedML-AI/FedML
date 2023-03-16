@@ -59,7 +59,7 @@ ingress:
     nginx.ingress.kubernetes.io/ssl-redirect: 'true'
     # kubernetes.io/tls-acme: "true"
   hosts:
-    - host: model.fedml.ai
+    - host: open.fedml.ai
       paths:
         - path: /inference
           pathType: Prefix

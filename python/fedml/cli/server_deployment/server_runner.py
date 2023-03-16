@@ -656,7 +656,7 @@ class FedMLServerRunner:
         self.run_id = run_id
         ServerConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, self.edge_id, run_id=run_id)
 
-        # Start server with multi processing mode
+        # Start server with multiprocessing mode
         self.request_json = request_json
         self.running_request_json[str(run_id)] = request_json
 
@@ -907,7 +907,7 @@ class FedMLServerRunner:
             self.client_mqtt_lock = threading.Lock()
 
         logging.info(
-            "client agent config: {},{}".format(
+            "server agent config: {},{}".format(
                 self.agent_config["mqtt_config"]["BROKER_HOST"], self.agent_config["mqtt_config"]["BROKER_PORT"]
             )
         )
@@ -985,7 +985,7 @@ class FedMLServerRunner:
 
         # logging.info("Stop run with multiprocessing.")
 
-        # Stop cross-silo server with multi processing mode
+        # Stop server with multiprocessing mode
         stop_request_json = self.running_request_json.get(str(run_id), None)
         if stop_request_json is None:
             stop_request_json = request_json
@@ -1069,13 +1069,13 @@ class FedMLServerRunner:
 
         self.send_exit_train_with_exception_request_to_edges(edge_ids, payload)
 
-        # Stop cross-silo server with multi processing mode
+        # Stop server with multiprocessing mode
         self.request_json = request_json
-        client_runner = FedMLServerRunner(
+        server_runner = FedMLServerRunner(
             self.args, edge_id=self.edge_id, request_json=request_json, agent_config=self.agent_config, run_id=run_id
         )
         try:
-            Process(target=client_runner.exit_run_with_exception_entry).start()
+            Process(target=server_runner.exit_run_with_exception_entry).start()
         except Exception as e:
             pass
 
@@ -1119,11 +1119,7 @@ class FedMLServerRunner:
                 status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED
                 or status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED
         ):
-            # logging.info("Received training finished message.")
-
-            # logging.info("Will end training server.")
-
-            # Stop cross-silo server with multi processing mode
+            # Stop server with multiprocessing mode
             stop_request_json = self.running_request_json.get(str(run_id), None)
             if stop_request_json is None:
                 stop_request_json = request_json
@@ -1165,9 +1161,6 @@ class FedMLServerRunner:
         elif self.run_status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED:
             logging.info("received to failed status.")
             self.cleanup_run_when_starting_failed()
-
-    def report_client_status(self):
-        self.send_agent_active_msg()
 
     def callback_report_current_status(self, topic, payload):
         request_json = json.loads(payload)
@@ -1319,7 +1312,7 @@ class FedMLServerRunner:
         return MLOpsConfigs.get_instance(self.args).fetch_all_configs()
 
     def send_agent_active_msg(self):
-        active_topic = "/flserver_agent/active"
+        active_topic = "flserver_agent/active"
         status = MLOpsStatus.get_instance().get_server_agent_status(self.edge_id)
         if (
                 status is not None
@@ -1354,11 +1347,11 @@ class FedMLServerRunner:
         self.mqtt_mgr.add_message_listener(topic_server_status, self.callback_runner_id_status)
 
         # Setup MQTT message listener to report current device status.
-        topic_report_status = "/mlops/report_device_status"
+        topic_report_status = "mlops/report_device_status"
         self.mqtt_mgr.add_message_listener(topic_report_status, self.callback_report_current_status)
 
         # Setup MQTT message listener to OTA messages from the MLOps.
-        topic_ota_msg = "/mlops/flserver_agent_" + str(server_agent_id) + "/ota"
+        topic_ota_msg = "mlops/flserver_agent_" + str(server_agent_id) + "/ota"
         self.mqtt_mgr.add_message_listener(topic_ota_msg, self.callback_server_ota_msg)
 
         # Setup MQTT message listener for running failed
@@ -1395,7 +1388,7 @@ class FedMLServerRunner:
             service_config["mqtt_config"]["MQTT_PWD"],
             service_config["mqtt_config"]["MQTT_KEEPALIVE"],
             "FedML_ServerAgent_Daemon_" + self.args.current_device_id,
-            "/flserver_agent/last_will_msg",
+            "flserver_agent/last_will_msg",
             json.dumps({"ID": self.edge_id, "status": ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE}),
         )
 
