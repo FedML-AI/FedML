@@ -69,9 +69,6 @@ class FedMLServerManager(FedMLCommManager):
         logging.info(f"log input size {list(input_shape)}, input type {list(input_type)}")
         model_input_url = mlops.log_training_model_input_info(list(input_shape), list(input_type))
 
-        # model_input_size, model_input_type = mlops.get_training_model_input_info(model_net_url)
-        # logging.info(f"read input size {model_input_size}, input type {model_input_type} from the saved storage")
-
     def register_message_receive_handlers(self):
         logging.info("register_message_receive_handlers------")
         self.register_message_receive_handler(
