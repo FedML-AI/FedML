@@ -82,8 +82,11 @@ class S3Storage:
         if not os.path.exists(local_model_cache_path):
             os.makedirs(local_model_cache_path)
         write_model_path = os.path.join(local_model_cache_path, message_key)
-        jit_model = torch.jit.script(model)
-        torch.jit.save(jit_model, write_model_path)
+        try:
+            jit_model = torch.jit.script(model)
+            torch.jit.save(jit_model, write_model_path)
+        except Exception as e:
+            torch.save(model, write_model_path)
 
         s3_upload_start_time = time.time()
 
@@ -201,7 +204,10 @@ class S3Storage:
         )
 
         unpickle_start_time = time.time()
-        model = torch.jit.load(temp_file_path)
+        try:
+            model = torch.jit.load(temp_file_path)
+        except Exception as e:
+            model = torch.load(temp_file_path)
         os.remove(temp_file_path)
         MLOpsProfilerEvent.log_to_wandb(
             {"UnpickleTime": time.time() - unpickle_start_time}
