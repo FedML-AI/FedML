@@ -10,6 +10,7 @@ import boto3
 # https://www.pythonforthelab.com/blog/differences-between-multiprocessing-windows-and-linux/
 # https://stackoverflow.com/questions/72313845/multiprocessing-picklingerror-cant-pickle-class-botocore-client-s3-attr
 import dill
+import onnx
 import torch
 import tqdm
 import yaml
@@ -83,8 +84,10 @@ class S3Storage:
             os.makedirs(local_model_cache_path)
         write_model_path = os.path.join(local_model_cache_path, message_key)
         try:
-            jit_model = torch.jit.trace(model, dummy_input_tensor)
-            jit_model.save(write_model_path)
+            # jit_model = torch.jit.trace(model, dummy_input_tensor)
+            # jit_model.save(write_model_path)
+            torch.onnx.export(model, dummy_input_tensor,
+                              write_model_path, export_params=False)
         except Exception as e:
             logging.info("jit.save failed")
             torch.save(model, write_model_path, pickle_module=dill)
@@ -206,7 +209,10 @@ class S3Storage:
 
         unpickle_start_time = time.time()
         try:
-            model = torch.jit.load(temp_file_path)
+            # model = torch.jit.load(temp_file_path)
+            onnx_model = onnx.load(temp_file_path)
+            from onnx2pytorch import ConvertModel
+            model = ConvertModel(onnx_model)
         except Exception as e:
             logging.info("jit.load failed")
             model = torch.load(temp_file_path, pickle_module=dill)
