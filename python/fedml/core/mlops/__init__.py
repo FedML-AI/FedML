@@ -374,7 +374,7 @@ def log_aggregated_model_info(round_index, model_url):
     MLOpsStore.mlops_metrics.report_aggregated_model_info(model_info)
 
 
-def log_training_model_net_info(model_net):
+def log_training_model_net_info(model_net, dummy_input_tensor):
     if model_net is None:
         return None
     if not mlops_enabled(MLOpsStore.mlops_args):
@@ -390,7 +390,8 @@ def log_training_model_net_info(model_net):
         return None
     s3_client = S3Storage(s3_config)
     model_key = "fedml-model-net-run-{}-{}".format(str(MLOpsStore.mlops_run_id), str(uuid.uuid4()))
-    model_url = s3_client.write_model_net(model_key, model_net, ClientConstants.get_model_cache_dir())
+    model_url = s3_client.write_model_net(model_key, model_net,
+                                          dummy_input_tensor, ClientConstants.get_model_cache_dir())
 
     logging.info("log training model net info {}".format(model_url))
 
