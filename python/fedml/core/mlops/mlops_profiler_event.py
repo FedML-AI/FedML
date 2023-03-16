@@ -124,7 +124,7 @@ class MLOpsProfilerEvent:
 
     @staticmethod
     def __build_event_mqtt_msg(run_id, edge_id, event_type, event_name, event_value):
-        event_topic = "/mlops/events"
+        event_topic = "mlops/events"
         event_msg = {}
         if event_type == MLOpsProfilerEvent.EVENT_TYPE_STARTED:
             current_time = MLOpsProfilerEvent.get_ntp_time()
