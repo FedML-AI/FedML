@@ -2,6 +2,7 @@ import json
 import logging
 import time
 
+import onnx
 import torch
 from fedml import mlops
 
@@ -57,10 +58,30 @@ class FedMLServerManager(FedMLCommManager):
         dummy_input_tensor = self.aggregator.get_dummy_input_tensor()
         logging.info(f"dummy tensor: {dummy_input_tensor}")  # sample tensor for ONNX
 
-        model_net_url = mlops.log_training_model_net_info(self.aggregator.aggregator.model, dummy_input_tensor)
+        input_shape, input_type = self.aggregator.get_input_shape_type()
+
+        dummy_input_list = []
+        for index, input_i in enumerate(input_shape):
+            if input_type[index] == "int":
+                this_input = torch.randint(0, 1, input_i)
+            else:
+                this_input = torch.zeros(input_i)
+            dummy_input_list.append(this_input)
+
+        # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        # torch.onnx.export(self.aggregator.aggregator.model, tuple(dummy_input_list),
+        #                   "/Users/alexliang/fedml-client/fedml/model_cache/test.onnx",
+        #                   export_params=False)
+        #
+        # from onnx2pytorch import ConvertModel
+        #
+        # onnx_model = onnx.load("/Users/alexliang/fedml-client/fedml/model_cache/test.onnx")
+        # torch_model = ConvertModel(onnx_model)
+        # torch_model.load_state_dict(global_model_params)
+
+        model_net_url = mlops.log_training_model_net_info(self.aggregator.aggregator.model, tuple(dummy_input_list))
 
         # type and shape for later configuration
-        input_shape, input_type = self.aggregator.get_input_shape_type()
         logging.info(f"input shape: {input_shape}")  # [torch.Size([1, 24]), torch.Size([1, 2])]
         logging.info(f"input type: {input_type}")    # [torch.int64, torch.float32]
 
