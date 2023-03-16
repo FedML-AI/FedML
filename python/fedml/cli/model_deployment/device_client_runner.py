@@ -142,11 +142,16 @@ class FedMLClientRunner:
 
         downloaded = count * blksize
         downloaded = filesize if downloaded > filesize else downloaded
-        progress_int = (downloaded / filesize * 100) if filesize != 0 else 0
-        progress = format(progress_int, '.2f')
+        progress = (downloaded / filesize * 100) if filesize != 0 else 0
+        progress_int = int(progress)
         downloaded_kb = format(downloaded/1024, '.2f')
-        if progress_int <= 0 or (int(progress_int) % 5 == 0):
-            logging.info("package downloaded size {} KB, progress {}%".format(downloaded_kb, progress))
+        
+        # since this hook funtion is stateless, we need a state to avoid printing progress repeatly
+        if count == 0:
+            self.prev_download_progress = 0 
+        if progress_int != self.prev_download_progress and progress_int % 5 == 0:
+            self.prev_download_progress = progress_int
+            logging.info("package downloaded size {} KB, progress {}%".format(downloaded_kb, progress_int))
 
     def build_dynamic_constrain_variables(self, run_id, run_config):
         pass
