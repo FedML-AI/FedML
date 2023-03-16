@@ -87,7 +87,7 @@ class S3Storage:
             # jit_model = torch.jit.trace(model, dummy_input_tensor)
             # jit_model.save(write_model_path)
             torch.onnx.export(model, dummy_input_tensor,
-                              write_model_path, export_params=False)
+                              write_model_path, export_params=True)
         except Exception as e:
             logging.info("jit.save failed")
             torch.save(model, write_model_path, pickle_module=dill)
