@@ -376,18 +376,18 @@ def log_aggregated_model_info(round_index, model_url):
 
 def log_training_model_net_info(model_net):
     if model_net is None:
-        return
+        return None
     if not mlops_enabled(MLOpsStore.mlops_args):
-        return
+        return None
 
     set_realtime_params()
 
     if not MLOpsStore.mlops_bind_result:
-        return
+        return None
 
     s3_config = MLOpsStore.mlops_log_agent_config.get("s3_config", None)
     if s3_config is None:
-        return
+        return None
     s3_client = S3Storage(s3_config)
     model_key = "fedml-model-net-run-{}-{}".format(str(MLOpsStore.mlops_run_id), str(uuid.uuid4()))
     model_url = s3_client.write_model_net(model_key, model_net, ClientConstants.get_model_cache_dir())
@@ -400,6 +400,43 @@ def log_training_model_net_info(model_net):
         "training_model_net_s3_address": model_url,
     }
     MLOpsStore.mlops_metrics.report_training_model_net_info(model_info)
+    return model_url
+
+
+def log_training_model_input_info(input_sizes, input_types):
+    if input_sizes is None or input_types is None:
+        return None
+    if not mlops_enabled(MLOpsStore.mlops_args):
+        return None
+
+    set_realtime_params()
+
+    if not MLOpsStore.mlops_bind_result:
+        return None
+
+    s3_config = MLOpsStore.mlops_log_agent_config.get("s3_config", None)
+    if s3_config is None:
+        return None
+    s3_client = S3Storage(s3_config)
+    model_key = "fedml-model-input-run-{}".format(str(MLOpsStore.mlops_run_id))
+    model_input_url = s3_client.write_model_input(model_key, input_sizes, input_types,
+                                                  ClientConstants.get_model_cache_dir())
+    logging.info(f"training model input: {model_input_url}")
+
+    return model_input_url
+
+
+def get_training_model_input_info(training_model_net_url):
+    s3_config = MLOpsStore.mlops_log_agent_config.get("s3_config", None)
+    if s3_config is None:
+        return
+
+    model_input_url = str(training_model_net_url).replace("fedml-model-net-run-", "fedml-model-input-run-").split("?")
+    model_key = model_input_url[0].split("/")[-1]
+    s3_client = S3Storage(s3_config)
+    input_size, input_type = s3_client.read_model_input(model_key, ClientConstants.get_model_cache_dir())
+    logging.info(f"training model input size: {input_size}, input type: {input_type}")
+    return input_size, input_type
 
 
 def log_client_model_info(round_index, total_rounds, model_url):
