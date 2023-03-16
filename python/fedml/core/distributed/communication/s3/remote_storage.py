@@ -86,7 +86,7 @@ class S3Storage:
             jit_model = torch.jit.script(model)
             torch.jit.save(jit_model, write_model_path)
         except Exception as e:
-            torch.save(model, write_model_path)
+            torch.save(model, write_model_path, pickle_module=dill)
 
         s3_upload_start_time = time.time()
 
@@ -207,7 +207,7 @@ class S3Storage:
         try:
             model = torch.jit.load(temp_file_path)
         except Exception as e:
-            model = torch.load(temp_file_path)
+            model = torch.load(temp_file_path, pickle_module=dill)
         os.remove(temp_file_path)
         MLOpsProfilerEvent.log_to_wandb(
             {"UnpickleTime": time.time() - unpickle_start_time}
