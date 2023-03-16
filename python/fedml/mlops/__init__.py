@@ -55,8 +55,8 @@ def log_aggregated_model_info(round_index, model_url):
     mlops.log_aggregated_model_info(round_index, model_url)
 
 
-def log_training_model_net_info(model_net):
-    return mlops.log_training_model_net_info(model_net)
+def log_training_model_net_info(model_net, dummy_input_tensor):
+    return mlops.log_training_model_net_info(model_net, dummy_input_tensor)
 
 
 def log_training_model_input_info(input_sizes, input_types):

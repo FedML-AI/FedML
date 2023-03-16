@@ -72,7 +72,7 @@ class S3Storage:
         )
         return model_url
 
-    def write_model_net(self, message_key, model, local_model_cache_path):
+    def write_model_net(self, message_key, model, dummy_input_tensor, local_model_cache_path):
         global aws_s3_client
         pickle_dump_start_time = time.time()
         MLOpsProfilerEvent.log_to_wandb(
@@ -83,7 +83,7 @@ class S3Storage:
             os.makedirs(local_model_cache_path)
         write_model_path = os.path.join(local_model_cache_path, message_key)
         try:
-            jit_model = torch.jit.script(model)
+            jit_model = torch.jit.trace(model, dummy_input_tensor)
             torch.jit.save(jit_model, write_model_path)
         except Exception as e:
             torch.save(model, write_model_path, pickle_module=dill)
