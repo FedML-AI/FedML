@@ -133,6 +133,7 @@ class FedMLServerManager(FedMLCommManager):
 
     def handle_message_client_status_update(self, msg_params):
         client_status = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_STATUS)
+        logging.info(f"received client status {client_status}")
         if client_status == FedMLServerManager.ONLINE_STATUS_FLAG:
             self.process_online_status(client_status, msg_params)
         elif client_status == FedMLServerManager.RUN_FINISHED_STATUS_FLAG:
