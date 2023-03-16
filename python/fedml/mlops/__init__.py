@@ -56,7 +56,15 @@ def log_aggregated_model_info(round_index, model_url):
 
 
 def log_training_model_net_info(model_net):
-    mlops.log_training_model_net_info(model_net)
+    return mlops.log_training_model_net_info(model_net)
+
+
+def log_training_model_input_info(input_sizes, input_types):
+    return mlops.log_training_model_input_info(input_sizes, input_types)
+
+
+def get_training_model_input_info(training_model_net_url):
+    return mlops.get_training_model_input_info(training_model_net_url)
 
 
 def log_client_model_info(round_index, total_rounds, model_url):
