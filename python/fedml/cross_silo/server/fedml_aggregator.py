@@ -204,9 +204,9 @@ class FedMLAggregator(object):
 
         testloader = DataLoader(self.test_global, batch_size=1, shuffle=False)
         with torch.no_grad():
-            batch_idx, features_and_lable = next(enumerate(testloader))
+            batch_idx, features_and_label = next(enumerate(testloader))
         
-        features = features_and_lable[:-1]  # TODO: Process Multi-Label
+        features = features_and_label[:-1]  # TODO: Process Multi-Label
         return features
 
     def get_input_shape_type(self):
@@ -219,8 +219,13 @@ class FedMLAggregator(object):
 
         input_shape, input_type = [], []
         for feature in features:
-            input_shape.append(feature.shape)
-            input_type.append(feature.dtype)
+            input_shape.append(list(feature.shape))
+            if feature.dtype == torch.int or feature.dtype == torch.int8 or feature.dtype == torch.int16 or \
+                    feature.dtype == torch.int32 or feature.dtype == torch.int64 or feature.dtype == torch.uint8 or \
+                    feature.dtype == torch.short or feature.dtype == torch.long or feature.dtype == torch.bool:
+                input_type.append("int")
+            else:
+                input_type.append("float")
             
         return input_shape, input_type
     

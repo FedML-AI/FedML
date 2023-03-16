@@ -2,6 +2,7 @@ import json
 import logging
 import time
 
+import torch
 from fedml import mlops
 
 from .message_define import MyMessage
@@ -52,7 +53,24 @@ class FedMLServerManager(FedMLCommManager):
 
         mlops.event("server.wait", event_started=True, event_value=str(self.args.round_idx))
 
-        mlops.log_training_model_net_info(self.aggregator.aggregator.model)
+        model_net_url = mlops.log_training_model_net_info(self.aggregator.aggregator.model)
+
+        # get input type and shape for inference
+        dummy_input_tensor = self.aggregator.get_dummy_input_tensor()
+        logging.info(f"dummy tensor: {dummy_input_tensor}")  # sample tensor for ONNX
+
+        # type and shape for later configuration
+        input_shape, input_type = self.aggregator.get_input_shape_type()
+        logging.info(f"input shape: {input_shape}")  # [torch.Size([1, 24]), torch.Size([1, 2])]
+        logging.info(f"input type: {input_type}")    # [torch.int64, torch.float32]
+
+        # Send output input size and type (saved as json) to s3,
+        # and transfer when click "Create Model Card"
+        logging.info(f"log input size {list(input_shape)}, input type {list(input_type)}")
+        model_input_url = mlops.log_training_model_input_info(list(input_shape), list(input_type))
+
+        # model_input_size, model_input_type = mlops.get_training_model_input_info(model_net_url)
+        # logging.info(f"read input size {model_input_size}, input type {model_input_type} from the saved storage")
 
     def register_message_receive_handlers(self):
         logging.info("register_message_receive_handlers------")
@@ -167,20 +185,6 @@ class FedMLServerManager(FedMLCommManager):
             MLOpsProfilerEvent.log_to_wandb({"AggregationTime": time.time() - tick, "round": self.args.round_idx})
 
             self.aggregator.test_on_server_for_all_clients(self.args.round_idx)
-
-            # get input type and shape for inference
-            dummy_input_tensor = self.aggregator.get_dummy_input_tensor()
-            logging.info(f"dummy tensor: {dummy_input_tensor}") # sample tensor for ONNX
-
-            # type and shape for later configuration
-            input_shape, input_type = self.aggregator.get_input_shape_type()
-            logging.info(f"input shape: {input_shape}") # [torch.Size([1, 24]), torch.Size([1, 2])] 
-            logging.info(f"input type: {input_type}")   # [torch.int64, torch.float32]
-
-            # TODO:Utilize aggregator.save_dummy_input_tensor()
-            # to send output input size and type (saved as pickle) to s3,
-            # and transfer when click "Create Model Card"
-            # mlops.log_dummy_input() ...
 
             self.aggregator.assess_contribution()
 
