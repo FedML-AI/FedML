@@ -426,13 +426,12 @@ def log_training_model_input_info(input_sizes, input_types):
     return model_input_url
 
 
-def get_training_model_input_info(training_model_net_url):
-    s3_config = MLOpsStore.mlops_log_agent_config.get("s3_config", None)
+def get_training_model_input_info(training_model_net_url, s3_config):
     if s3_config is None:
-        return
+        return None, None
 
-    model_input_url = str(training_model_net_url).replace("fedml-model-net-run-", "fedml-model-input-run-").split("?")
-    model_key = model_input_url[0].split("/")[-1]
+    run_id = str(training_model_net_url).split("fedml-model-net-run-")[1].split("-")[0]
+    model_key = f"fedml-model-input-run-{run_id}"
     s3_client = S3Storage(s3_config)
     input_size, input_type = s3_client.read_model_input(model_key, ClientConstants.get_model_cache_dir())
     logging.info(f"training model input size: {input_size}, input type: {input_type}")

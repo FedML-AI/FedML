@@ -287,10 +287,11 @@ class FedMLClientRunner:
                     model_from_open = s3_client.read_model_net(model_key,
                                                                ClientConstants.get_model_cache_dir())
 
-                model_input_size, model_input_type = mlops.get_training_model_input_info(model_net_url)
-                model_config_parameters["input_size"] = model_input_size
-                model_config_parameters["input_type"] = model_input_type
-                logging.info(f"model input size {model_input_size}, input type {model_input_type} from the open platform.")
+                model_input_size, model_input_type = mlops.get_training_model_input_info(model_net_url, s3_config)
+                if model_input_size is not None and model_input_type is not None:
+                    model_config_parameters["input_size"] = model_input_size
+                    model_config_parameters["input_type"] = model_input_type
+                    logging.info(f"model input size {model_input_size}, input type {model_input_type} from the open platform.")
 
         logging.info("start the model deployment...")
         self.check_runner_stop_event()
