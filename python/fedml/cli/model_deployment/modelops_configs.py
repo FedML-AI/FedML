@@ -27,17 +27,17 @@ class ModelOpsConfigs(Singleton):
         return ModelOpsConfigs._config_instance
 
     def get_request_params(self, in_config_version="release"):
-        url = "https://model.fedml.ai/fedmlOpsServer/configs/fetch"
+        url = "https://open.fedml.ai/fedmlOpsServer/configs/fetch"
         config_version = "release"
         if in_config_version is not None and in_config_version != "":
             # Setup config url based on selected version.
             config_version = in_config_version
             if config_version == "release":
-                url = "https://model.fedml.ai/fedmlOpsServer/configs/fetch"
+                url = "https://open.fedml.ai/fedmlOpsServer/configs/fetch"
             elif config_version == "test":
-                url = "https://model-test.fedml.ai/fedmlOpsServer/configs/fetch"
+                url = "https://open-test.fedml.ai/fedmlOpsServer/configs/fetch"
             elif config_version == "dev":
-                url = "https://model-dev.fedml.ai/fedmlOpsServer/configs/fetch"
+                url = "https://open-dev.fedml.ai/fedmlOpsServer/configs/fetch"
             elif config_version == "local":
                 if hasattr(self.args, "local_server") and self.args.local_server is not None:
                     url = "http://{}:9000/fedmlOpsServer/configs/fetch".format(self.args.local_server)

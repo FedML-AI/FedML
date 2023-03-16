@@ -10,6 +10,7 @@ import urllib
 import uuid
 from urllib.parse import urlparse
 
+import dill
 import numpy as np
 import requests
 import torch
@@ -64,6 +65,8 @@ def start_deployment(end_point_id, model_id, model_version,
             if str(out_str) != "":
                 triton_server_is_running = True
 
+    logging.info("install nvidia docker...")
+
     # Setup nvidia docker related packages.
     if not ClientConstants.is_running_on_k8s():
         if sys_name == "Linux":
@@ -81,53 +84,33 @@ def start_deployment(end_point_id, model_id, model_version,
 
     # Convert models from pytorch to onnx format
     if model_is_from_open:
+        logging.info("convert the onnx model when the mode is from the MLOps platform...")
+
+        logging.info("Input size {}, input types {}".format(model_params["input_size"],
+                                                            model_params["input_types"]))
+
         running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id,
                                                                     inference_model_name,
                                                                     model_version)
         if model_from_open is None:
             return running_model_name, "", model_version, {}, {}
 
-        input_size = model_params["input_size"]
         with open(model_bin_file, 'rb') as model_pkl_file:
             open_model_params = pickle.load(model_pkl_file)
             model_from_open.load_state_dict(open_model_params)
-            input_parameter = None
-            for model_parameter in model_from_open.parameters():
-                model_parameter.requires_grad = False
-                if input_parameter is None:
-                    input_parameter = model_parameter
-            input_size = input_parameter.shape[-1]
             model_from_open.eval()
 
-        onnx_model_path = os.path.join(model_storage_local_path,
-                                       ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME,
-                                       running_model_name, ClientConstants.INFERENCE_MODEL_VERSION)
-        if not os.path.exists(onnx_model_path):
-            os.makedirs(onnx_model_path)
-        onnx_model_path = os.path.join(onnx_model_path, "model.onnx")
-
-        input_names = {"x": 0}
-        convert_model_to_onnx(model_from_open, onnx_model_path, input_names, input_size)
-    else:    
-        running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id,
-                                                                    inference_model_name,
-                                                                    model_version)
-        # configuration passed by user in the Cli
-        model_location = model_storage_local_path+ "/fedml_model.bin"
         input_size = model_params["input_size"]
         input_types = model_params["input_types"]
-
-        model = torch.load(model_location)  # model def + params
-        model.eval()
 
         dummy_input_list = []
         for index, input_i in enumerate(input_size):
             if input_types[index] == "int":
-                this_input = torch.randint(0,1, input_i)
+                this_input = torch.randint(0, 1, input_i)
             else:
                 this_input = torch.zeros(input_i)
             dummy_input_list.append(this_input)
-        
+
         onnx_model_path = os.path.join(model_storage_local_path,
                                        ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME,
                                        running_model_name, ClientConstants.INFERENCE_MODEL_VERSION)
@@ -135,16 +118,44 @@ def start_deployment(end_point_id, model_id, model_version,
             os.makedirs(onnx_model_path)
         onnx_model_path = os.path.join(onnx_model_path, "model.onnx")
 
-        torch.onnx.export(model,            # model being run
-                tuple(dummy_input_list),    # model input (or a tuple for multiple inputs)
-                onnx_model_path,            # where to save the model (can be a file or file-like object)
-                export_params=True,         # store the trained parameter weights inside the model file
-                opset_version=10,           # the ONNX version to export the model to
-                do_constant_folding=False,  # whether to execute constant folding for optimization
-                input_names=["input"+ str(i) for i in range(1, len(input_size)+ 1)],  # the model's input names
-                output_names=['output'],    # the model's output names
-            )
-        
+        convert_model_to_onnx(model_from_open, onnx_model_path, dummy_input_list, input_size)
+    else:
+        logging.info("convert the onnx model when the mode is from the general PyTorch...")
+        logging.info("Input size {}, input types {}".format(model_params["input_size"],
+                                                            model_params["input_types"]))
+
+        running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id,
+                                                                    inference_model_name,
+                                                                    model_version)
+        # configuration passed by user in the Cli
+        model_location = os.path.join(model_storage_local_path, "fedml_model.bin")
+        input_size = model_params["input_size"]
+        input_types = model_params["input_types"]
+
+        model = torch.jit.load(model_location)  # model def + params
+        try:
+            model.eval()
+        except Exception as e:
+            pass
+
+        dummy_input_list = []
+        for index, input_i in enumerate(input_size):
+            if input_types[index] == "int":
+                this_input = torch.randint(0, 1, input_i)
+            else:
+                this_input = torch.zeros(input_i)
+            dummy_input_list.append(this_input)
+
+        onnx_model_path = os.path.join(model_storage_local_path,
+                                       ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME,
+                                       running_model_name, ClientConstants.INFERENCE_MODEL_VERSION)
+        logging.info("converted onnx model path: {}".format(onnx_model_path))
+        if not os.path.exists(onnx_model_path):
+            os.makedirs(onnx_model_path)
+        onnx_model_path = os.path.join(onnx_model_path, "model.onnx")
+
+        convert_model_to_onnx(model, onnx_model_path, dummy_input_list, input_size)
+
         # convert_model_container_name = "{}_{}_{}".format(ClientConstants.FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX,
         #                                                  str(end_point_id),
         #                                                  str(model_id))
@@ -172,6 +183,7 @@ def start_deployment(end_point_id, model_id, model_version,
         #                       running_model_name, inference_engine, inference_http_port)
 
     # Move converted model to serving dir for inference
+    logging.info("move converted model to serving dir for inference...")
     model_serving_dir = ClientConstants.get_model_serving_dir()
     if not os.path.exists(model_serving_dir):
         os.makedirs(model_serving_dir)
@@ -190,6 +202,7 @@ def start_deployment(end_point_id, model_id, model_version,
                     shutil.copyfile(src_model_file, dst_model_file)
 
     # Run triton server
+    logging.info("prepare to run triton server...")
     if not triton_server_is_running and not ClientConstants.is_running_on_k8s():
         triton_server_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} {} -p{}:8000 " \
                             "-p{}:8001 -p{}:8002 " \
@@ -423,7 +436,7 @@ def run_http_inference_with_lib_http_api_with_image_data(model_name, inference_h
 
         npd_type = triton_to_np_dtype(data_type)
         processed_image = resized.astype(npd_type)
-        processed_image = processed_image.reshape(c, w*h)
+        processed_image = processed_image.reshape(c, w * h)
 
         return processed_image
 
@@ -490,7 +503,7 @@ def run_http_inference_with_lib_http_api_with_image_data(model_name, inference_h
 
     for infer_input_item in inference_input_list:
         query_item = http_client.InferInput(name=infer_input_item["name"],
-                                            shape=(c, w*h), datatype=infer_input_item["datatype"])
+                                            shape=(c, w * h), datatype=infer_input_item["datatype"])
         query_item.set_data_from_numpy(image_data)
         inference_query_list.append(query_item)
         infer_item_count += 1
@@ -563,6 +576,21 @@ def run_http_inference_with_raw_http_request(self, inference_input_json, inferen
         inference_output_sample = resp_data
 
     return inference_output_sample
+
+
+def run_http_inference_with_curl_request(inference_url, inference_input_list, inference_output_list):
+    model_inference_result = {}
+    model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
+    model_inference_json = {
+        "inputs": inference_input_list,
+        "outputs": inference_output_list
+    }
+
+    response = requests.post(inference_url, headers=model_api_headers, json=model_inference_json)
+    if response.status_code == 200:
+        model_inference_result = response.json()
+
+    return model_inference_result
 
 
 def parse_model(model_metadata, model_config):
@@ -657,48 +685,32 @@ def convert_http_metadata_config(_metadata, _config):
 
 
 def convert_model_to_onnx(
-        model_params, output_path: str, inputs_pytorch, input_size: int
+        torch_model, output_path: str, dummy_input_list, input_size: int
 ) -> None:
-    """
-    Convert a Pytorch model to an ONNX graph by tracing the provided input inside the Pytorch code.
-    :param model_params: Pytorch model
-    :param output_path: where to save ONNX file
-    :param inputs_pytorch: Tensor, can be dummy data, shape is not important as we declare all axes as dynamic.
-    Should be on the same device than the model (CPU or GPU)
-    :param input_size: input data size, e.g. 28 * 28
-    :param opset: version of ONNX protocol to use, usually 12, or 13 if you use per channel quantized model
-    """
     from collections import OrderedDict
     import torch
     from torch.onnx import TrainingMode
 
-    # dynamic axis == variable length axis
-    dynamic_axis = OrderedDict()
-    for k in inputs_pytorch.keys():
-        dynamic_axis[k] = {0: "batch_size", 1: "sequence"}
-    dynamic_axis["output"] = {0: "batch_size"}
-    dummy_input = torch.randn(1, input_size, requires_grad=True)
     with torch.no_grad():
-        torch.onnx.export(
-            model_params,  # model to optimize
-            args=dummy_input,  # tuple of multiple inputs
-            f=output_path,  # output path / file object
-            opset_version=10,  # the ONNX version to use, 13 if quantized model, 12 for not quantized ones
-            do_constant_folding=True,  # simplify model (replace constant expressions)
-            input_names=['input'],  # input names
-            output_names=["output"],  # output axis name
-            dynamic_axes={'input': {0: 'batch_size'},  # variable length axes
-                          'output': {0: 'batch_size'}},  # declare dynamix axis for each input / output
-            training=TrainingMode.EVAL,  # always put the model in evaluation mode
-            verbose=False,
-        )
+        torch.onnx.export(torch_model,  # model being run
+                          tuple(dummy_input_list),  # model input (or a tuple for multiple inputs)
+                          f=output_path,  # where to save the model (can be a file or file-like object)
+                          export_params=True,  # store the trained parameter weights inside the model file
+                          opset_version=10,  # the ONNX version to export the model to
+                          do_constant_folding=False,  # whether to execute constant folding for optimization
+                          input_names=["input" + str(i) for i in range(1, len(input_size) + 1)],
+                          # the model's input names
+                          output_names=['output'],  # the model's output names
+                          training=TrainingMode.EVAL,  # always put the model in evaluation mode
+                          verbose=False,
+                          )
 
 
 if __name__ == "__main__":
 
     input_data = {"model_version": "v0-Sun Feb 05 12:17:16 GMT 2023",
                   "model_name": "model_414_45_open-model-test_v0-Sun-Feb-05-12-17-16-GMT-2023",
-                  #"data": "file:///Users/alexliang/fedml_data/mnist-image.png",
+                  # "data": "file:///Users/alexliang/fedml_data/mnist-image.png",
                   "data": "https://raw.githubusercontent.com/niyazed/triton-mnist-example/master/images/sample_image.png",
                   "end_point_id": 414, "model_id": 45, "token": "a09a18a14c4c4d89a8d5f9515704c073"}
 
@@ -706,6 +718,7 @@ if __name__ == "__main__":
     data_list.append(input_data["data"])
     run_http_inference_with_lib_http_api_with_image_data(input_data["model_name"],
                                                          5001, 1, data_list, "")
+
 
     class LogisticRegression(torch.nn.Module):
         def __init__(self, input_dim, output_dim):
