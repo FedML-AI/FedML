@@ -86,6 +86,7 @@ class S3Storage:
             jit_model = torch.jit.trace(model, dummy_input_tensor)
             jit_model.save(write_model_path)
         except Exception as e:
+            logging.info("jit.save failed")
             torch.save(model, write_model_path, pickle_module=dill)
 
         s3_upload_start_time = time.time()
@@ -207,6 +208,7 @@ class S3Storage:
         try:
             model = torch.jit.load(temp_file_path)
         except Exception as e:
+            logging.info("jit.load failed")
             model = torch.load(temp_file_path, pickle_module=dill)
         os.remove(temp_file_path)
         MLOpsProfilerEvent.log_to_wandb(
