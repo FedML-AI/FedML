@@ -87,6 +87,7 @@ class S3Storage:
         try:
             # jit_model = torch.jit.trace(model, dummy_input_tensor)
             # jit_model.save(write_model_path)
+            model.eval()
             torch.onnx.export(model, dummy_input_tensor,
                               write_model_path, export_params=True,
                               training=TrainingMode.EVAL)
