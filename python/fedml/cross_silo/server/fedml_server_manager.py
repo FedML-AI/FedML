@@ -167,9 +167,19 @@ class FedMLServerManager(FedMLCommManager):
 
             self.aggregator.test_on_server_for_all_clients(self.args.round_idx)
 
-            # TODO: Utilize aggregator.save_dummy_input_tensor()
+            # get input type and shape for inference
+            dummy_input_tensor = self.aggregator.get_dummy_input_tensor()
+            logging.info(f"dummy tensor: {dummy_input_tensor}") # sample tensor for ONNX
+
+            # type and shape for later configuration
+            input_shape, input_type = self.aggregator.get_input_shape_type()
+            logging.info(f"input shape: {input_shape}") # [torch.Size([1, 24]), torch.Size([1, 2])] 
+            logging.info(f"input type: {input_type}")   # [torch.int64, torch.float32]
+
+            # TODO:Utilize aggregator.save_dummy_input_tensor()
             # to send output input size and type (saved as pickle) to s3,
-            # and transfer when click "Create Model Card" 
+            # and transfer when click "Create Model Card"
+            # mlops.log_dummy_input() ...
 
             self.aggregator.assess_contribution()
 
