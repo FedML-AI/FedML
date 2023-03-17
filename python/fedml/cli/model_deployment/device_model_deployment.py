@@ -700,6 +700,7 @@ def convert_model_to_onnx(
                       input_names=["input" + str(i) for i in range(1, len(input_size) + 1)],
                       # the model's input names
                       output_names=['output'],  # the model's output names
+                      training=TrainingMode.EVAL,
                       verbose=True)
 
 
