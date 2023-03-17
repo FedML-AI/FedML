@@ -207,7 +207,7 @@ class FedMLClientRunner:
             logging.info("Runner stopped.")
             self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED)
         except Exception as e:
-            logging.info("Runner exits with exceptions.")
+            logging.info("Runner exits with exceptions. {}".format(traceback.format_exc()))
             sys_utils.cleanup_all_fedml_client_login_processes(ClientConstants.CLIENT_LOGIN_PROGRAM,
                                                                clean_process_group=False)
             sys.exit(1)
@@ -291,6 +291,12 @@ class FedMLClientRunner:
                     model_key = path_list[-1]
                     model_from_open = s3_client.read_model_net(model_key,
                                                                ClientConstants.get_model_cache_dir())
+
+                model_input_size, model_input_type = mlops.get_training_model_input_info(model_net_url, s3_config)
+                if model_input_size is not None and model_input_type is not None:
+                    model_config_parameters["input_size"] = model_input_size
+                    model_config_parameters["input_types"] = model_input_type
+                    logging.info(f"model input size {model_input_size}, input type {model_input_type} from the open platform.")
 
         logging.info("start the model deployment...")
         self.check_runner_stop_event()
@@ -507,6 +513,7 @@ class FedMLClientRunner:
         self.run_process_event.clear()
         client_runner.run_process_event = self.run_process_event
         self.model_runner_mapping[run_id] = client_runner
+        self.run_id = run_id
         self.process = Process(target=client_runner.run, args=(self.run_process_event,))
         # client_runner.run()
         self.process.start()
@@ -760,9 +767,15 @@ class FedMLClientRunner:
         ):
             return
 
-        current_job = FedMLClientDataInterface.get_instance().get_current_job()
+        try:
+            current_job = FedMLClientDataInterface.get_instance().get_job_by_id(self.run_id)
+        except Exception as e:
+            current_job = None
         if current_job is None:
-            status = ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE
+            if status is not None and status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE:
+                status = ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE
+            else:
+                return
         else:
             status = ClientConstants.get_device_state_from_run_edge_state(current_job.status)
         active_msg = {"ID": self.edge_id, "status": status}
