@@ -1334,7 +1334,10 @@ class FedMLServerRunner:
             except Exception as e:
                 current_job = None
             if current_job is None:
-                status = ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE
+                if status is not None and status == ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE:
+                    status = ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE
+                else:
+                    return
             else:
                 status = ServerConstants.get_device_state_from_run_edge_state(current_job.status)
         active_msg = {"ID": self.edge_id, "status": status}
