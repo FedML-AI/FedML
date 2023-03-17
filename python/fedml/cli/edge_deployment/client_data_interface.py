@@ -222,6 +222,9 @@ class FedMLClientDataInterface(Singleton):
         return job_list_obj
 
     def get_job_by_id(self, job_id):
+        if job_id is None:
+            return None
+
         job_obj = None
 
         self.open_job_db()

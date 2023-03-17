@@ -932,7 +932,10 @@ class FedMLClientRunner:
         ):
             return
 
-        current_job = FedMLClientDataInterface.get_instance().get_current_job()
+        try:
+            current_job = FedMLClientDataInterface.get_instance().get_job_by_id(self.run_id)
+        except Exception as e:
+            current_job = None
         if current_job is None:
             status = ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE
         else:
