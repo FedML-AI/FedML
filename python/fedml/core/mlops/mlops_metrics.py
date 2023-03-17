@@ -201,7 +201,6 @@ class MLOpsMetrics(Singleton):
         msg = {"run_id": run_id, "edge_id": edge_id, "status": status}
         message_json = json.dumps(msg)
         logging.info("report_client_id_status. message_json = %s" % message_json)
-        MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, status)
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_server_training_status(self, run_id, status, role=None, running_json=None, is_from_model=False):
@@ -292,7 +291,6 @@ class MLOpsMetrics(Singleton):
         message_json = json.dumps(msg)
         # logging.info("report_server_id_status server id {}".format(server_agent_id))
         # logging.info("report_server_id_status. message_json = %s" % message_json)
-        MLOpsStatus.get_instance().set_server_agent_status(server_agent_id, status)
         self.messenger.send_message_json(topic_name, message_json)
 
         self.report_server_device_status_to_web_ui(run_id, status)
