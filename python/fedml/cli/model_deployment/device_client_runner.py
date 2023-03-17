@@ -19,6 +19,7 @@ from urllib.parse import urlparse
 
 import click
 import requests
+from fedml import mlops
 from fedml.cli.model_deployment.device_model_msg_object import FedMLModelMsgObject
 from fedml.core.distributed.communication.s3.remote_storage import S3Storage
 from ..comm_utils import sys_utils
