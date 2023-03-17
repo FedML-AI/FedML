@@ -106,9 +106,9 @@ def start_deployment(end_point_id, model_id, model_version,
         dummy_input_list = []
         for index, input_i in enumerate(input_size):
             if input_types[index] == "int":
-                this_input = torch.tensor(torch.randint(0, 1, input_i))
+                this_input = torch.randint(0, 1, input_i).clone().detach()
             else:
-                this_input = torch.tensor(torch.zeros(input_i))
+                this_input = torch.zeros(input_i).clone().detach()
             dummy_input_list.append(this_input)
 
         onnx_model_path = os.path.join(model_storage_local_path,
@@ -141,9 +141,9 @@ def start_deployment(end_point_id, model_id, model_version,
         dummy_input_list = []
         for index, input_i in enumerate(input_size):
             if input_types[index] == "int":
-                this_input = torch.randint(0, 1, input_i)
+                this_input = torch.randint(0, 1, input_i).clone().detach()
             else:
-                this_input = torch.zeros(input_i)
+                this_input = torch.zeros(input_i).clone().detach()
             dummy_input_list.append(this_input)
 
         onnx_model_path = os.path.join(model_storage_local_path,
@@ -685,7 +685,7 @@ def convert_http_metadata_config(_metadata, _config):
 
 
 def convert_model_to_onnx(
-        torch_model, output_path: str, dummy_input_list, input_size: int, input_is_tensor=False
+        torch_model, output_path: str, dummy_input_list, input_size: int, input_is_tensor=True
 ) -> None:
     from collections import OrderedDict
     import torch
