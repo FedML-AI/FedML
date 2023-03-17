@@ -72,7 +72,7 @@ class S3Storage:
         )
         return model_url
 
-    def write_model_net(self, message_key, model, local_model_cache_path):
+    def write_model_net(self, message_key, model, dummy_input_tensor, local_model_cache_path):
         global aws_s3_client
         pickle_dump_start_time = time.time()
         MLOpsProfilerEvent.log_to_wandb(
@@ -82,7 +82,12 @@ class S3Storage:
         if not os.path.exists(local_model_cache_path):
             os.makedirs(local_model_cache_path)
         write_model_path = os.path.join(local_model_cache_path, message_key)
-        torch.jit.save(model, write_model_path)
+        try:
+            jit_model = torch.jit.trace(model, dummy_input_tensor)
+            jit_model.save(write_model_path)
+        except Exception as e:
+            logging.info("jit.save failed")
+            torch.save(model, write_model_path, pickle_module=dill)
 
         s3_upload_start_time = time.time()
 
@@ -106,6 +111,24 @@ class S3Storage:
             Params={"Bucket": self.bucket_name, "Key": message_key},
         )
         return model_url
+
+    def write_model_input(self, message_key, input_size, input_type, local_model_cache_path):
+        global aws_s3_client
+
+        if not os.path.exists(local_model_cache_path):
+            os.makedirs(local_model_cache_path)
+        model_input_path = os.path.join(local_model_cache_path, message_key)
+        model_input_dict = {"input_size": input_size, "input_type": input_type}
+        with open(model_input_path, "w") as f:
+            json.dump(model_input_dict, f)
+
+        with open(model_input_path, 'rb') as f:
+            aws_s3_client.upload_fileobj(f, Bucket=self.bucket_name, Key=message_key)
+
+        model_input_url = aws_s3_client.generate_presigned_url("get_object",
+                                                               ExpiresIn=60 * 60 * 24 * 5,
+                                                               Params={"Bucket": self.bucket_name, "Key": message_key})
+        return model_input_url
 
     def write_model_web(self, message_key, model):
         global aws_s3_client
@@ -182,12 +205,37 @@ class S3Storage:
         )
 
         unpickle_start_time = time.time()
-        model = torch.jit.load(temp_file_path)
+        try:
+            model = torch.jit.load(temp_file_path)
+        except Exception as e:
+            logging.info("jit.load failed")
+            model = torch.load(temp_file_path, pickle_module=dill)
         os.remove(temp_file_path)
         MLOpsProfilerEvent.log_to_wandb(
             {"UnpickleTime": time.time() - unpickle_start_time}
         )
         return model
+
+    def read_model_input(self, message_key, local_model_cache_path):
+        global aws_s3_client
+
+        temp_base_file_path = local_model_cache_path
+        if not os.path.exists(temp_base_file_path):
+            os.makedirs(temp_base_file_path)
+        temp_file_path = os.path.join(temp_base_file_path, str(message_key))
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
+        logging.info("temp_file_path = {}".format(temp_file_path))
+        with open(temp_file_path, 'wb') as f:
+            aws_s3_client.download_fileobj(Bucket=self.bucket_name, Key=message_key, Fileobj=f)
+
+        with open(temp_file_path, 'r') as f:
+            model_input_dict = json.load(f)
+
+        input_size = model_input_dict.get("input_size", None)
+        input_type = model_input_dict.get("input_type", None)
+
+        return input_size, input_type
 
     # TODO: added python torch model to align the Tensorflow parameters from browser
     def read_model_web(self, message_key, py_model: nn.Module):
@@ -256,10 +304,10 @@ class S3Storage:
                 )
 
             model_url = aws_s3_client.generate_presigned_url(
-                        "get_object",
-                        ExpiresIn=60 * 60 * 24 * 5,
-                        Params={"Bucket": self.bucket_name, "Key": message_key},
-                    )
+                "get_object",
+                ExpiresIn=60 * 60 * 24 * 5,
+                Params={"Bucket": self.bucket_name, "Key": message_key},
+            )
             return model_url
         except Exception as e:
             logging.error(
@@ -349,10 +397,12 @@ class S3Storage:
                 global aws_s3_client
                 kwargs = {"Bucket": self.bucket_name, "Key": path_s3}
                 object_size = aws_s3_client.head_object(**kwargs)["ContentLength"]
-                with tqdm.tqdm(total=object_size, unit="B", unit_scale=True, desc="Downloading Model to AWS S3") as pbar:
+                with tqdm.tqdm(total=object_size, unit="B", unit_scale=True,
+                               desc="Downloading Model to AWS S3") as pbar:
                     with open(path_local, 'wb') as f:
                         aws_s3_client.download_fileobj(Bucket=self.bucket_name, Key=path_s3, Fileobj=f,
-                                                       Callback=lambda bytes_transferred: pbar.update(bytes_transferred), )
+                                                       Callback=lambda bytes_transferred: pbar.update(
+                                                           bytes_transferred), )
                 break
             except Exception as e:
                 logging.error(f"Download zip failed. | Exception: {e}")

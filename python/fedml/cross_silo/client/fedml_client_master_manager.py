@@ -142,7 +142,8 @@ class ClientMasterManager(FedMLCommManager):
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_STATUS, status)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, sys_name)
 
-        if status == ClientMasterManager.RUN_FINISHED_STATUS_FLAG:
+        if hasattr(self.args, "using_mlops") and self.args.using_mlops and \
+                status == ClientMasterManager.RUN_FINISHED_STATUS_FLAG:
             mlops.log_server_payload(self.args.run_id, self.client_real_id, json.dumps(message.get_params()))
         else:
             self.send_message(message)
