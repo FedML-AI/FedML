@@ -106,9 +106,9 @@ def start_deployment(end_point_id, model_id, model_version,
         dummy_input_list = []
         for index, input_i in enumerate(input_size):
             if input_types[index] == "int":
-                this_input = torch.randint(0, 1, input_i)
+                this_input = torch.tensor(torch.randint(0, 1, input_i))
             else:
-                this_input = torch.zeros(input_i)
+                this_input = torch.tensor(torch.zeros(input_i))
             dummy_input_list.append(this_input)
 
         onnx_model_path = os.path.join(model_storage_local_path,
@@ -685,14 +685,14 @@ def convert_http_metadata_config(_metadata, _config):
 
 
 def convert_model_to_onnx(
-        torch_model, output_path: str, dummy_input_list, input_size: int
+        torch_model, output_path: str, dummy_input_list, input_size: int, input_is_tensor=False
 ) -> None:
     from collections import OrderedDict
     import torch
     from torch.onnx import TrainingMode
 
     torch.onnx.export(torch_model,  # model being run
-                      tuple(dummy_input_list),  # model input (or a tuple for multiple inputs)
+                      dummy_input_list if input_is_tensor else tuple(dummy_input_list),  # model input (or a tuple for multiple inputs)
                       f=output_path,  # where to save the model (can be a file or file-like object)
                       export_params=True,  # store the trained parameter weights inside the model file
                       opset_version=11,  # the ONNX version to export the model to
@@ -704,48 +704,120 @@ def convert_model_to_onnx(
                       verbose=True)
 
 
+def test_start_triton_server(model_serving_dir):
+    sudo_prefix = "sudo "
+    sys_name = platform.system()
+    if sys_name == "Darwin":
+        sudo_prefix = ""
+        gpu_attach_cmd = ""
+
+    triton_server_container_name = "{}".format(ClientConstants.FEDML_TRITON_SERVER_CONTAINER_NAME_PREFIX)
+    triton_server_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} {} -p{}:8000 " \
+                        "-p{}:8001 -p{}:8002 " \
+                        "--shm-size {} " \
+                        "-v {}:/models {} " \
+                        "bash -c \"pip install transformers && tritonserver --strict-model-config=false " \
+                        "--model-control-mode=poll --repository-poll-secs={} " \
+                        "--model-repository=/models\" ".format(sudo_prefix, triton_server_container_name,
+                                                               sudo_prefix, triton_server_container_name,
+                                                               sudo_prefix, triton_server_container_name,
+                                                               gpu_attach_cmd,
+                                                               ClientConstants.INFERENCE_HTTP_PORT,
+                                                               ClientConstants.INFERENCE_GRPC_PORT,
+                                                               8002,
+                                                               "4096m",
+                                                               model_serving_dir,
+                                                               ClientConstants.INFERENCE_SERVER_IMAGE,
+                                                               ClientConstants.FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL)
+    logging.info("Run triton inference server: {}".format(triton_server_cmd))
+    triton_server_process = ClientConstants.exec_console_with_script(triton_server_cmd,
+                                                                     should_capture_stdout=False,
+                                                                     should_capture_stderr=False,
+                                                                     no_sys_out_err=True)
+
+def test_convert_pytorch_model_to_onnx(model_net_file, model_bin_file, model_name, model_in_params):
+    torch_model = torch.jit.load(model_net_file)
+    with open(model_bin_file, 'rb') as model_pkl_file:
+        model_state_dict = pickle.load(model_pkl_file)
+        torch_model.load_state_dict(model_state_dict)
+        torch_model.eval()
+
+    input_size = model_in_params["input_size"]
+    input_types = model_in_params["input_types"]
+
+    dummy_input_list = []
+    for index, input_i in enumerate(input_size):
+        if input_types[index] == "int":
+            this_input = torch.tensor(torch.randint(0, 1, input_i))
+        else:
+            this_input = torch.tensor(torch.zeros(input_i))
+        dummy_input_list.append(this_input)
+
+    onnx_model_dir = os.path.join(ClientConstants.get_model_cache_dir(),
+                                  ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME,
+                                  model_name, ClientConstants.INFERENCE_MODEL_VERSION)
+    if not os.path.exists(onnx_model_dir):
+        os.makedirs(onnx_model_dir)
+    onnx_model_path = os.path.join(onnx_model_dir, "model.onnx")
+
+    convert_model_to_onnx(torch_model, onnx_model_path, dummy_input_list, input_size,
+                          input_is_tensor=True)
+
+    model_serving_dir = os.path.join(ClientConstants.get_model_cache_dir(),
+                                     ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME)
+    return model_serving_dir
+
+
 if __name__ == "__main__":
 
-    input_data = {"model_version": "v0-Sun Feb 05 12:17:16 GMT 2023",
-                  "model_name": "model_414_45_open-model-test_v0-Sun-Feb-05-12-17-16-GMT-2023",
-                  # "data": "file:///Users/alexliang/fedml_data/mnist-image.png",
-                  "data": "https://raw.githubusercontent.com/niyazed/triton-mnist-example/master/images/sample_image.png",
-                  "end_point_id": 414, "model_id": 45, "token": "a09a18a14c4c4d89a8d5f9515704c073"}
+    model_serving_dir = test_convert_pytorch_model_to_onnx("./sample-training-model-net",
+                                                           "./sample-training-model",
+                                                           "rec-model",
+                                                           {"input_size": [[1,24], [1,2]],
+                                                            "input_types": ["int", "float"]})
 
-    data_list = list()
-    data_list.append(input_data["data"])
-    run_http_inference_with_lib_http_api_with_image_data(input_data["model_name"],
-                                                         5001, 1, data_list, "")
+    test_start_triton_server(model_serving_dir)
 
-
-    class LogisticRegression(torch.nn.Module):
-        def __init__(self, input_dim, output_dim):
-            super(LogisticRegression, self).__init__()
-            self.linear = torch.nn.Linear(input_dim, output_dim)
-
-        def forward(self, x):
-            outputs = torch.sigmoid(self.linear(x))
-            return outputs
-
-
-    model = LogisticRegression(28 * 28, 10)
-    checkpoint = {'model': model}
-    model_net_file = "/Users/alexliang/fedml-client/fedml/models/open-model-test/model-net.pt"
-    torch.save(checkpoint, model_net_file)
-
-    with open("/Users/alexliang/fedml-client/fedml/models/open-model-test/open-model-test", 'rb') as model_pkl_file:
-        model_params = pickle.load(model_pkl_file)
-        # torch.save(model_params, "/Users/alexliang/fedml-client/fedml/models/open-model-test/a.pt")
-        # model = torch.load("/Users/alexliang/fedml-client/fedml/models/open-model-test/a.pt")
-        loaded_checkpoint = torch.load(model_net_file)
-        loaded_model = loaded_checkpoint["model"]
-        loaded_model.load_state_dict(model_params)
-        for parameter in loaded_model.parameters():
-            parameter.requires_grad = False
-        loaded_model.eval()
-        input_names = {"x": 0}
-        convert_model_to_onnx(loaded_model, "/Users/alexliang/fedml-client/fedml/models/open-model-test/a.onnx",
-                              input_names, 28 * 28)
+    # input_data = {"model_version": "v0-Sun Feb 05 12:17:16 GMT 2023",
+    #               "model_name": "model_414_45_open-model-test_v0-Sun-Feb-05-12-17-16-GMT-2023",
+    #               # "data": "file:///Users/alexliang/fedml_data/mnist-image.png",
+    #               "data": "https://raw.githubusercontent.com/niyazed/triton-mnist-example/master/images/sample_image.png",
+    #               "end_point_id": 414, "model_id": 45, "token": "a09a18a14c4c4d89a8d5f9515704c073"}
+    #
+    # data_list = list()
+    # data_list.append(input_data["data"])
+    # run_http_inference_with_lib_http_api_with_image_data(input_data["model_name"],
+    #                                                      5001, 1, data_list, "")
+    #
+    #
+    # class LogisticRegression(torch.nn.Module):
+    #     def __init__(self, input_dim, output_dim):
+    #         super(LogisticRegression, self).__init__()
+    #         self.linear = torch.nn.Linear(input_dim, output_dim)
+    #
+    #     def forward(self, x):
+    #         outputs = torch.sigmoid(self.linear(x))
+    #         return outputs
+    #
+    #
+    # model = LogisticRegression(28 * 28, 10)
+    # checkpoint = {'model': model}
+    # model_net_file = "/Users/alexliang/fedml-client/fedml/models/open-model-test/model-net.pt"
+    # torch.save(checkpoint, model_net_file)
+    #
+    # with open("/Users/alexliang/fedml-client/fedml/models/open-model-test/open-model-test", 'rb') as model_pkl_file:
+    #     model_params = pickle.load(model_pkl_file)
+    #     # torch.save(model_params, "/Users/alexliang/fedml-client/fedml/models/open-model-test/a.pt")
+    #     # model = torch.load("/Users/alexliang/fedml-client/fedml/models/open-model-test/a.pt")
+    #     loaded_checkpoint = torch.load(model_net_file)
+    #     loaded_model = loaded_checkpoint["model"]
+    #     loaded_model.load_state_dict(model_params)
+    #     for parameter in loaded_model.parameters():
+    #         parameter.requires_grad = False
+    #     loaded_model.eval()
+    #     input_names = {"x": 0}
+    #     convert_model_to_onnx(loaded_model, "/Users/alexliang/fedml-client/fedml/models/open-model-test/a.onnx",
+    #                           input_names, 28 * 28)
 
     # parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     # parser.add_argument("--cf", "-c", help="config file")
