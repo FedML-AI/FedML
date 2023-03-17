@@ -772,7 +772,10 @@ class FedMLClientRunner:
         except Exception as e:
             current_job = None
         if current_job is None:
-            status = ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE
+            if status is not None and status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE:
+                status = ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE
+            else:
+                return
         else:
             status = ClientConstants.get_device_state_from_run_edge_state(current_job.status)
         active_msg = {"ID": self.edge_id, "status": status}
