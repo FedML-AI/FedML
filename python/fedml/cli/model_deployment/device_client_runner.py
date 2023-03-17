@@ -513,6 +513,7 @@ class FedMLClientRunner:
         self.run_process_event.clear()
         client_runner.run_process_event = self.run_process_event
         self.model_runner_mapping[run_id] = client_runner
+        self.run_id = run_id
         self.process = Process(target=client_runner.run, args=(self.run_process_event,))
         # client_runner.run()
         self.process.start()
@@ -766,7 +767,10 @@ class FedMLClientRunner:
         ):
             return
 
-        current_job = FedMLClientDataInterface.get_instance().get_current_job()
+        try:
+            current_job = FedMLClientDataInterface.get_instance().get_job_by_id(self.run_id)
+        except Exception as e:
+            current_job = None
         if current_job is None:
             status = ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE
         else:
