@@ -52,8 +52,7 @@ class S3Storage:
             {"PickleDumpsTime": time.time() - pickle_dump_start_time}
         )
         # for python clients
-        device = torch.device('cpu')
-        model_pkl = pickle.dumps(model.to(device))
+        model_pkl = pickle.dumps(model)
         model_to_send = model_pkl  # bytes object
         s3_upload_start_time = time.time()
 
