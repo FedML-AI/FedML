@@ -1126,11 +1126,7 @@ class FedMLServerRunner:
         ):
             return
 
-        current_job = FedMLServerDataInterface.get_instance().get_current_job()
-        if current_job is None:
-            status = ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE
-        else:
-            status = ServerConstants.get_device_state_from_run_edge_state(current_job.status)
+        status = ServerConstants.MSG_MLOPS_SERVER_STATUS_IDLE
         active_msg = {"ID": self.edge_id, "status": status}
         MLOpsStatus.get_instance().set_server_agent_status(self.edge_id, status)
         self.mqtt_mgr.send_message_json(active_topic, json.dumps(active_msg))
