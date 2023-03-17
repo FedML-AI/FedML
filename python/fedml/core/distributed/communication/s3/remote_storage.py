@@ -83,6 +83,7 @@ class S3Storage:
             os.makedirs(local_model_cache_path)
         write_model_path = os.path.join(local_model_cache_path, message_key)
         try:
+            model.eval()
             jit_model = torch.jit.trace(model, dummy_input_tensor)
             jit_model.save(write_model_path)
         except Exception as e:
