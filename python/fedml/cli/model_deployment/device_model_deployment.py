@@ -770,8 +770,8 @@ def test_convert_pytorch_model_to_onnx(model_net_file, model_bin_file, model_nam
 
 if __name__ == "__main__":
 
-    model_serving_dir = test_convert_pytorch_model_to_onnx("./sample-training-model-net",
-                                                           "./sample-training-model",
+    model_serving_dir = test_convert_pytorch_model_to_onnx("./sample-open-training-model-net",
+                                                           "./sample-open-training-model",
                                                            "rec-model",
                                                            {"input_size": [[1,24], [1,2]],
                                                             "input_types": ["int", "float"]})
