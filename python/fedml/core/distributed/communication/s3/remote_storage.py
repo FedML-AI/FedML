@@ -10,14 +10,12 @@ import boto3
 # https://www.pythonforthelab.com/blog/differences-between-multiprocessing-windows-and-linux/
 # https://stackoverflow.com/questions/72313845/multiprocessing-picklingerror-cant-pickle-class-botocore-client-s3-attr
 import dill
-import onnx
 import torch
 import tqdm
 import yaml
 from fedml.core.distributed.communication.s3.utils import load_params_from_tf, process_state_dict
 from fedml.core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 from torch import nn
-from torch.onnx import TrainingMode
 
 aws_s3_client = None
 aws_s3_resource = None
@@ -85,12 +83,8 @@ class S3Storage:
             os.makedirs(local_model_cache_path)
         write_model_path = os.path.join(local_model_cache_path, message_key)
         try:
-            # jit_model = torch.jit.trace(model, dummy_input_tensor)
-            # jit_model.save(write_model_path)
-            model.eval()
-            torch.onnx.export(model, dummy_input_tensor,
-                              write_model_path, export_params=True,
-                              training=TrainingMode.EVAL)
+            jit_model = torch.jit.trace(model, dummy_input_tensor)
+            jit_model.save(write_model_path)
         except Exception as e:
             logging.info("jit.save failed")
             torch.save(model, write_model_path, pickle_module=dill)
@@ -212,10 +206,7 @@ class S3Storage:
 
         unpickle_start_time = time.time()
         try:
-            # model = torch.jit.load(temp_file_path)
-            onnx_model = onnx.load(temp_file_path)
-            from onnx2pytorch import ConvertModel
-            model = ConvertModel(onnx_model)
+            model = torch.jit.load(temp_file_path)
         except Exception as e:
             logging.info("jit.load failed")
             model = torch.load(temp_file_path, pickle_module=dill)
