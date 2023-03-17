@@ -691,19 +691,16 @@ def convert_model_to_onnx(
     import torch
     from torch.onnx import TrainingMode
 
-    with torch.no_grad():
-        torch.onnx.export(torch_model,  # model being run
-                          tuple(dummy_input_list),  # model input (or a tuple for multiple inputs)
-                          f=output_path,  # where to save the model (can be a file or file-like object)
-                          export_params=True,  # store the trained parameter weights inside the model file
-                          opset_version=10,  # the ONNX version to export the model to
-                          do_constant_folding=False,  # whether to execute constant folding for optimization
-                          input_names=["input" + str(i) for i in range(1, len(input_size) + 1)],
-                          # the model's input names
-                          output_names=['output'],  # the model's output names
-                          training=TrainingMode.EVAL,  # always put the model in evaluation mode
-                          verbose=False,
-                          )
+    torch.onnx.export(torch_model,  # model being run
+                      tuple(dummy_input_list),  # model input (or a tuple for multiple inputs)
+                      f=output_path,  # where to save the model (can be a file or file-like object)
+                      export_params=True,  # store the trained parameter weights inside the model file
+                      opset_version=10,  # the ONNX version to export the model to
+                      do_constant_folding=False,  # whether to execute constant folding for optimization
+                      input_names=["input" + str(i) for i in range(1, len(input_size) + 1)],
+                      # the model's input names
+                      output_names=['output'],  # the model's output names
+                      verbose=True)
 
 
 if __name__ == "__main__":
