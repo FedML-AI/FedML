@@ -207,7 +207,7 @@ class FedMLClientRunner:
             logging.info("Runner stopped.")
             self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED)
         except Exception as e:
-            logging.info("Runner exits with exceptions.")
+            logging.info("Runner exits with exceptions. {}".format(traceback.format_exc()))
             sys_utils.cleanup_all_fedml_client_login_processes(ClientConstants.CLIENT_LOGIN_PROGRAM,
                                                                clean_process_group=False)
             sys.exit(1)
