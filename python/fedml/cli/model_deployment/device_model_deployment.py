@@ -695,7 +695,7 @@ def convert_model_to_onnx(
                       tuple(dummy_input_list),  # model input (or a tuple for multiple inputs)
                       f=output_path,  # where to save the model (can be a file or file-like object)
                       export_params=True,  # store the trained parameter weights inside the model file
-                      opset_version=12,  # the ONNX version to export the model to
+                      opset_version=11,  # the ONNX version to export the model to
                       do_constant_folding=False,  # whether to execute constant folding for optimization
                       input_names=["input" + str(i) for i in range(1, len(input_size) + 1)],
                       # the model's input names
