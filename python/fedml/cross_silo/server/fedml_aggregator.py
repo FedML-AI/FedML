@@ -200,21 +200,15 @@ class FedMLAggregator(object):
             mlops.log({"round_idx": round_idx})
     
     def get_dummy_input_tensor(self):
-        from torch.utils.data import DataLoader
-
-        testloader = DataLoader(self.test_global, batch_size=1, shuffle=False)
         with torch.no_grad():
-            batch_idx, features_and_label = next(enumerate(testloader))
+            batch_idx, features_and_label = next(enumerate(self.test_global))   # test_global -> dataloader obj
         
         features = features_and_label[:-1]  # TODO: Process Multi-Label
         return features
 
     def get_input_shape_type(self):
-        from torch.utils.data import DataLoader
-
-        testloader = DataLoader(self.test_global, batch_size=1, shuffle=False)
         with torch.no_grad():
-            batch_idx, features_and_lable = next(enumerate(testloader))
+            batch_idx, features_and_lable = next(enumerate(self.test_global))   # test_global -> dataloader obj
         features = features_and_lable[:-1]  
 
         input_shape, input_type = [], []
