@@ -1,0 +1,108 @@
+import torch
+
+"""
+Approximated Shapley value-based contribution assessment for each user.
+The idea is to compute the accuracy of the aggregate model at the end of each iteration with all the users first.
+Then we remove users one by one and compute the accuracy again.
+The change in the accuracy is the reflection of the contribution of the removed user.
+
+Inputs:
+acc: the accuracy of the aggregate model with all the user's model updates
+net_ps_updated: the updated global model of the server (with all user's local updates) at the end of the iteration 
+ps_flat: the flattaned model of the server at the beginning of the iteration
+user_net: the model of the user whose contribution we want to compute
+avg_diff: aggregate update of all users at the end of the iteration. note that this is the aggregate difference.
+          that is, to compute the net_ps_updated we do unflatten(ps_flat + avg_diff)
+num_client: number of clients that participate in the current iteraiton
+testloader: used to evaluate the accuracy of the model
+device: gpu or cpu
+"""
+
+# assess contribution of a user
+# for this compute the accuracy of the model without a certain user and find the difference.
+def assess_contribution(acc, net_ps_updated, ps_flat, user_net, avg_diff, num_client, testloader, device):
+    accuracy_wo_user = accuracy_wo_a_user(user_net, ps_flat, net_ps_updated, testloader, avg_diff, num_client, device)
+
+    # the accuracy - accuracy without a user is the contribution of that user
+    user_contribution = ((acc - accuracy_wo_user) * 100)
+    return user_contribution
+
+# compute the model without a certain user and find the accuracy of that model. Then compare it with the aggregate model's accuracy
+# ideally, whenever the difference is large, we say that user contributed significantly that iteration
+def accuracy_wo_a_user(user_net, ps_flat, net_ps, testloader, avg_diff, num_client, device):
+
+    # get the network structure
+    net_sizes, net_nelements = get_model_sizes(net_ps)
+    ind_pairs = get_indices(net_sizes, net_nelements)
+
+    # get the flattened model of a user
+    flat_model = get_model_flattened(user_net, device)
+    # record the aggregate model without a user --> remove the update of a user from the aggregate update
+    avg_diff_wo_user = (((avg_diff * num_client).sub(flat_model, alpha=1)).add(ps_flat, alpha=1) / (num_client - 1))
+    # unflatten the aggregate model without a user
+    make_model_unflattened(net_ps, ps_flat.add(avg_diff_wo_user, alpha=1), net_sizes, ind_pairs)
+    # find the accuracy of that model
+    accuracy_wo_user = evaluate_accuracy(net_ps, testloader, device)
+    return accuracy_wo_user
+
+
+def evaluate_accuracy(model, testloader, device):
+    """Calculates the accuracy of a model"""
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for data in testloader:
+            images, labels = data
+            images, labels = images.to(device), labels.to(device)
+            outputs = model(images)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+    return correct / total
+
+def get_model_flattened(model, device):
+    model_flattened = torch.empty(0).to(device)
+    for p in model.parameters():
+        a = p.data.flatten().to(device)
+        model_flattened = torch.cat((model_flattened, a), 0)
+    return model_flattened
+
+
+def make_model_unflattened(model, model_flattened, net_sizes, ind_pairs):
+    # unflattens the grad_flattened into the model.grad
+    i = 0
+    for p in model.parameters():
+        temp = model_flattened[ind_pairs[i][0]:ind_pairs[i][1]]
+        p.data = temp.reshape(net_sizes[i])
+        i += 1
+    return None
+
+def get_model_sizes(model):
+    # get the size of the layers and number of elements in each layer.
+    # only layers that are trainable
+    net_sizes = []
+    net_nelements = []
+    for p in model.parameters():
+        if p.requires_grad:
+            net_sizes.append(p.data.size())
+            net_nelements.append(p.nelement())
+    return net_sizes, net_nelements
+
+
+def get_indices(net_sizes, net_nelements):
+    # for reconstructing grad from flattened grad
+    ind_pairs = []
+    ind_start = 0
+    ind_end = 0
+    for i in range(len(net_sizes)):
+
+        for j in range(i + 1):
+            ind_end += net_nelements[j]
+        # print(ind_start, ind_end)
+        ind_pairs.append((ind_start, ind_end))
+        ind_start = ind_end + 0
+        ind_end = 0
+    return ind_pairs
+
+
+
