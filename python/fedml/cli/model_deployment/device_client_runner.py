@@ -251,6 +251,11 @@ class FedMLClientRunner:
         MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
 
         self.mlops_metrics.report_client_training_status(self.edge_id,
+                                                         ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING,
+                                                         is_from_model=True,
+                                                         running_json=json.dumps(self.request_json))
+
+        self.mlops_metrics.report_client_training_status(self.edge_id,
                                                          ClientConstants.MSG_MLOPS_CLIENT_STATUS_RUNNING,
                                                          is_from_model=True)
 
