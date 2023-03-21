@@ -197,15 +197,15 @@ class FedMLServerRunner:
             if not self.run_as_cloud_server:
                 self.release_client_mqtt_mgr()
 
-    def run_impl(self):
-        run_id = self.request_json["end_point_id"]
-        token = self.request_json["token"]
-        user_id = self.request_json["user_id"]
-        user_name = self.request_json["user_name"]
-        device_ids = self.request_json["device_ids"]
-        device_objs = self.request_json["device_objs"]
+    def parse_model_run_params(self, running_json):
+        run_id = running_json["end_point_id"]
+        token = running_json["token"]
+        user_id = running_json["user_id"]
+        user_name = running_json["user_name"]
+        device_ids = running_json["device_ids"]
+        device_objs = running_json["device_objs"]
 
-        model_config = self.request_json["model_config"]
+        model_config = running_json["model_config"]
         model_name = model_config["model_name"]
         model_id = model_config["model_id"]
         model_storage_url = model_config["model_storage_url"]
@@ -216,7 +216,16 @@ class FedMLServerRunner:
         inference_end_point_id = run_id
         use_gpu = "gpu"  # TODO: Get GPU from device infos
         memory_size = "256m"  # TODO: Get Memory size for each instance
-        model_version = "v1"
+        model_version = model_config["model_version"]
+
+        return run_id, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
+            model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \
+            inference_end_point_id, use_gpu, memory_size, model_version
+
+    def run_impl(self):
+        run_id, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
+            model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \
+            inference_end_point_id, use_gpu, memory_size, model_version = self.parse_model_run_params(self.request_json)
 
         logging.info("model deployment request: {}".format(self.request_json))
 
@@ -239,16 +248,42 @@ class FedMLServerRunner:
         self.check_runner_stop_event()
         self.mlops_metrics.report_server_training_status(run_id,
                                                          ServerConstants.MSG_MLOPS_SERVER_STATUS_STARTING,
-                                                         is_from_model=True)
+                                                         is_from_model=True,
+                                                         running_json=json.dumps(self.request_json))
         self.send_deployment_status(self.run_id, model_name, "",
                                     ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYING)
 
+        # start unified inference server
+        self.start_device_inference_gateway(run_id, model_id, model_name, model_version)
+
+        # start inference monitor server
+        self.start_device_inference_monitor(run_id, model_id, model_name, model_version)
+
+        self.mlops_metrics.broadcast_server_training_status(run_id,
+                                                            ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED,
+                                                            is_from_model=True)
+
+        # forward deployment request to slave devices
+        logging.info("send the model inference request to slave devices...")
+        self.check_runner_stop_event()
+        self.send_deployment_start_request_to_edges()
+
+        while True:
+            self.check_runner_stop_event()
+            time.sleep(3)
+
+    def check_runner_stop_event(self):
+        if self.run_process_event is not None and self.run_process_event.is_set():
+            logging.info("Received stopping event.")
+            raise RunnerError("Runner stopped")
+
+    def start_device_inference_gateway(self, run_id, model_id, model_name, model_version):
         # start unified inference server
         running_model_name = ServerConstants.get_running_model_name(run_id, model_id,
                                                                     model_name, model_version)
         python_program = get_python_program()
         if not ServerConstants.is_running_on_k8s():
-            logging.info("start the model inference gateway...")
+            logging.info(f"start the model inference gateway, end point {run_id}, model name {model_name}...")
             self.check_runner_stop_event()
             process = ServerConstants.exec_console_with_script(
                 "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
@@ -263,13 +298,16 @@ class FedMLServerRunner:
                 should_capture_stdout=False,
                 should_capture_stderr=False
             )
-            ServerConstants.save_learning_process(process.pid)
 
+    def start_device_inference_monitor(self, run_id, model_id, model_name, model_version):
         # start inference monitor server
-        logging.info("start the model inference monitor...")
+        logging.info(f"start the model inference monitor, end point {run_id}, model name {model_name}...")
         self.check_runner_stop_event()
         pip_source_dir = os.path.dirname(__file__)
         monitor_file = os.path.join(pip_source_dir, "device_model_monitor.py")
+        python_program = get_python_program()
+        running_model_name = ServerConstants.get_running_model_name(run_id, model_id,
+                                                                    model_name, model_version)
         self.monitor_process = ServerConstants.exec_console_with_shell_script_list(
             [
                 python_program,
@@ -277,7 +315,7 @@ class FedMLServerRunner:
                 "-v",
                 self.args.version,
                 "-ep",
-                str(self.run_id),
+                str(run_id),
                 "-mi",
                 str(model_id),
                 "-mn",
@@ -294,24 +332,6 @@ class FedMLServerRunner:
             should_capture_stdout=False,
             should_capture_stderr=False
         )
-        ServerConstants.save_learning_process(self.monitor_process.pid)
-        self.mlops_metrics.broadcast_server_training_status(run_id,
-                                                            ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED,
-                                                            is_from_model=True)
-
-        # forward deployment request to slave devices
-        logging.info("send the model inference request to slave devices...")
-        self.check_runner_stop_event()
-        self.send_deployment_start_request_to_edges()
-
-        while True:
-            self.check_runner_stop_event()
-            time.sleep(3)
-
-    def check_runner_stop_event(self):
-        if self.run_process_event.is_set():
-            logging.info("Received stopping event.")
-            raise RunnerError("Runner stopped")
 
     def cleanup_run_when_finished(self):
         logging.info("Cleanup run successfully when finished.")
@@ -430,6 +450,7 @@ class FedMLServerRunner:
                                         "inference url: {}".format(model_inference_url))
 
             # 2. We should send to MBE(ModelOps Backend)
+            model_slave_url = payload_json["model_url"]
             payload_json["model_url"] = model_inference_url
             payload_json["port"] = model_inference_port
             token = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
@@ -449,7 +470,7 @@ class FedMLServerRunner:
                     ret_item["data"] = torch.zeros(shape).tolist()
                 ret_inputs.append(ret_item)
 
-            payload_json["input_json"] = {"end_point_id": self.run_id,
+            payload_json["input_json"] = {"end_point_id": end_point_id,
                                           "model_id": model_id,
                                           "model_name": model_name,
                                           "model_version": model_version,
@@ -462,6 +483,11 @@ class FedMLServerRunner:
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
                 set_end_point_activation(end_point_id, True)
             self.send_deployment_results_with_payload(self.run_id, payload_json)
+
+            payload_json_saved = payload_json
+            payload_json_saved["model_slave_url"] = model_slave_url
+            FedMLServerDataInterface.get_instance().save_job_result(end_point_id, self.edge_id,
+                                                                    json.dumps(payload_json_saved))
 
             time.sleep(3)
             self.set_runner_stopped_event(end_point_id)
@@ -1207,6 +1233,24 @@ class FedMLServerRunner:
             self.edge_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE
         )
 
+    def recover_inference_and_monitor(self):
+        history_jobs = FedMLServerDataInterface.get_instance().get_history_jobs()
+        for job in history_jobs.job_list:
+            if job.running_json is None:
+                continue
+
+            if job.deployment_result == "":
+                continue
+
+            run_id, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
+                model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \
+                inference_end_point_id, use_gpu, memory_size, model_version = \
+                self.parse_model_run_params(json.loads(job.running_json))
+
+            self.start_device_inference_gateway(run_id, model_id, model_name, model_version)
+
+            self.start_device_inference_monitor(run_id, model_id, model_name, model_version)
+
     def setup_agent_mqtt_connection(self, service_config):
         # Setup MQTT connection
         self.mqtt_mgr = MqttManager(
@@ -1231,6 +1275,8 @@ class FedMLServerRunner:
             should_capture_stdout=False,
             should_capture_stderr=False
         )
+
+        self.recover_inference_and_monitor()
 
         MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
 
