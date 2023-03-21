@@ -114,6 +114,15 @@ class FedMLClientDataInterface(Singleton):
                                  status,
                                  status)
 
+    def save_job_result(self, job_id, edge_id, deployment_result=None):
+        self.create_job_table()
+
+        job_obj = FedMLClientJobModel()
+        job_obj.job_id = job_id
+        job_obj.edge_id = edge_id
+        job_obj.deployment_result = deployment_result
+        self.update_job_to_db(job_obj)
+
     def open_job_db(self):
         if not os.path.exists(ClientConstants.get_database_dir()):
             os.makedirs(ClientConstants.get_database_dir())
@@ -144,7 +153,8 @@ class FedMLClientDataInterface(Singleton):
                    updated_time TEXT,
                    round_index INT,
                    total_rounds INT,
-                   running_json TEXT);''')
+                   running_json TEXT,
+                   deployment_result TEXT);''')
             self.db_connection.commit()
         except Exception as e:
             pass
@@ -184,6 +194,7 @@ class FedMLClientDataInterface(Singleton):
                                                           / job_obj.progress)
             job_obj.eta = total_time * (1.0 - job_obj.progress)
             job_obj.running_json = row[13]
+            job_obj.deployment_result = row[14]
             # job_obj.show()
             break
 
@@ -214,6 +225,7 @@ class FedMLClientDataInterface(Singleton):
                                                           / job_obj.progress)
             job_obj.eta = total_time * (1.0 - job_obj.progress)
             job_obj.running_json = row[13]
+            job_obj.deployment_result = row[14]
             job_list_obj.job_list.append(job_obj)
 
             if len(job_list_obj.job_list) > FedMLClientDataInterface.MAX_JOB_LIST_SIZE:
@@ -248,6 +260,7 @@ class FedMLClientDataInterface(Singleton):
                                                           / job_obj.progress)
             job_obj.eta = total_time * (1.0 - job_obj.progress)
             job_obj.running_json = row[13]
+            job_obj.deployment_result = row[14]
             # job_obj.show()
             break
 
@@ -266,12 +279,12 @@ class FedMLClientDataInterface(Singleton):
         try:
             current_cursor.execute("INSERT INTO jobs (\
                 job_id, edge_id, started_time, ended_time, progress, ETA, status, failed_time, error_code, msg, \
-                updated_time, round_index, total_rounds, running_json) \
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                updated_time, round_index, total_rounds, running_json, deployment_result) \
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                                    (job.job_id, job.edge_id, job.started_time, job.ended_time,
                                     job.progress, job.eta, job.status, job.failed_time,
                                     job.error_code, job.msg, str(time.time()),
-                                    job.round_index, job.total_rounds, job.running_json))
+                                    job.round_index, job.total_rounds, job.running_json, job.deployment_result))
         except Exception as e:
             logging.info("Process jobs insertion {}.".format(traceback.format_exc()))
         self.db_connection.commit()
@@ -281,7 +294,7 @@ class FedMLClientDataInterface(Singleton):
         self.open_job_db()
         current_cursor = self.db_connection.cursor()
         try:
-            update_statement = "UPDATE jobs set {} {} {} {} {} {} {} {} {} {} {} {} where job_id={}".format(
+            update_statement = "UPDATE jobs set {} {} {} {} {} {} {} {} {} {} {} {} {} where job_id={}".format(
                 f"edge_id={job.edge_id}" if job.edge_id != 0 else "",
                 f",started_time='{job.started_time}'" if job.started_time != "" else "",
                 f",ended_time='{job.ended_time}'" if job.ended_time != "" else "",
@@ -294,6 +307,7 @@ class FedMLClientDataInterface(Singleton):
                 ",updated_time='" + str(time.time()) + "'",
                 f",round_index={job.round_index}" if job.round_index != 0 else "",
                 f",total_rounds={job.total_rounds}" if job.total_rounds != 0 else "",
+                f",deployment_result='{job.deployment_result}'" if job.deployment_result != "" else "",
                 job.job_id)
             current_cursor.execute(update_statement)
             self.db_connection.commit()
@@ -308,11 +322,11 @@ class FedMLClientDataInterface(Singleton):
         results = current_cursor.execute("select * from sqlite_master where type='table' and name='jobs';")
         for row in results:
             table_statement = str(row[4])
-            if table_statement.find("running_json") == -1:
+            if table_statement.find("deployment_result") == -1:
                 should_alter_old_table = True
 
         if should_alter_old_table:
-            current_cursor.execute("ALTER TABLE jobs ADD running_json TEXT;")
+            current_cursor.execute("ALTER TABLE jobs ADD deployment_result TEXT;")
             self.db_connection.commit()
             logging.info("Process compatibility on the local db.")
 
@@ -336,6 +350,7 @@ class FedMLClientJobModel(object):
         self.total_rounds = 0
         self.status = ""
         self.running_json = ""
+        self.deployment_result = ""
 
     def show(self):
         logging.info("Job object, job id {}, edge id {}, started time {},"
