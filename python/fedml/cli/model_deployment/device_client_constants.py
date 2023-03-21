@@ -261,14 +261,15 @@ class ClientConstants(object):
         running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id, model_name, model_version)
         model_dir = os.path.join(ClientConstants.get_model_dir(), model_name,
                                  ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME)
-        model_dir_list = os.listdir(model_dir)
-        for dir_item in model_dir_list:
-            if not dir_item.startswith(running_model_name):
-                continue
-            logging.info("remove model file {}.".format(dir_item))
-            model_file_path = os.path.join(model_dir, dir_item)
-            shutil.rmtree(model_file_path, ignore_errors=True)
-            os.system("sudo rm -Rf {}".format(model_file_path))
+        if os.path.exists(model_dir):
+            model_dir_list = os.listdir(model_dir)
+            for dir_item in model_dir_list:
+                if not dir_item.startswith(running_model_name):
+                    continue
+                logging.info("remove model file {}.".format(dir_item))
+                model_file_path = os.path.join(model_dir, dir_item)
+                shutil.rmtree(model_file_path, ignore_errors=True)
+                os.system("sudo rm -Rf {}".format(model_file_path))
 
         model_serving_dir = ClientConstants.get_model_serving_dir()
         if not os.path.exists(model_serving_dir):

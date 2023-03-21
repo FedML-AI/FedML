@@ -13,7 +13,7 @@ from ...core.distributed.communication.s3.remote_storage import S3Storage
 from .device_client_constants import ClientConstants
 from ...core.common.singleton import Singleton
 from .modelops_configs import ModelOpsConfigs
-from .device_model_deployment import get_model_info, run_http_inference_with_lib_http_api
+from .device_model_deployment import get_model_info
 from .device_server_constants import ServerConstants
 from .device_model_object import FedMLModelList, FedMLModelObject
 
@@ -279,12 +279,6 @@ class FedMLModelCards(Singleton):
 
     def query_model(self, model_name):
         return get_model_info(model_name, ClientConstants.INFERENCE_HTTP_PORT)
-
-    def inference_model(self, model_name, input_data):
-        return run_http_inference_with_lib_http_api(model_name,
-                                                    ClientConstants.INFERENCE_HTTP_PORT,
-                                                    1,
-                                                    input_data)
 
     def list_model_api(self, model_name, user_id, user_api_key, local_server):
         model_list_result = None
