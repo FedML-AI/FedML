@@ -5,12 +5,10 @@ from urllib.parse import urlparse
 
 from fastapi import FastAPI, Request
 from fedml.cli.model_deployment.device_model_deployment import run_http_inference_with_curl_request
-from fedml.cli.model_deployment.device_client_constants import ClientConstants
 from fedml.cli.model_deployment.device_server_constants import ServerConstants
 from fedml.cli.model_deployment.device_model_monitor import FedMLModelMetrics
 from fedml.cli.model_deployment.device_model_cache import FedMLModelCache
 
-import os
 from pydantic import BaseSettings
 
 
@@ -122,15 +120,6 @@ def send_inference_request(device, model_name, inference_host, inference_url, in
         pass
 
     return {}
-
-
-def run_inference(json_req, bin_data=None, host="localhost"):
-    model_name = json_req["model_name"]
-    infer_data = json_req["infer_data"]
-    predication_result = run_http_inference_with_lib_http_api(model_name,
-                                                              ClientConstants.INFERENCE_HTTP_PORT, 1, infer_data,
-                                                              host)
-    return predication_result
 
 
 def auth_request_token(end_point_id, token):
