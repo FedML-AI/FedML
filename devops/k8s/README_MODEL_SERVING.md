@@ -68,9 +68,9 @@ Inference end point ingress will be used as your model serving endpoint URL whic
 
 ```kubectl create namespace $YourNameSpace```
 
-```helm install --set env.fedmlAccountId="$YourAccountId" --set env.fedmlApiKey="$YourApiKey" --set env.fedmlVersion="release"  fedml-model-premise-slave fedml-model-premise-slave-0.7.397.tgz -n $YourNameSpace```
+```helm install --set env.fedmlAccountId="$YourAccountId" --set env.fedmlApiKey="$YourApiKey" --set env.fedmlVersion="release"  fedml-model-premise-slave fedml-model-premise-slave-latest.tgz -n $YourNameSpace```
 
-```helm install --set env.fedmlAccountId="$YourAccountId" --set env.fedmlApiKey="$YourApiKey" --set env.fedmlVersion="release" --set "inferenceGateway.ingress.host=$YourEndPointIngressDomainName" --set "inferenceGateway.ingress.className=nginx" fedml-model-premise-master fedml-model-premise-master-0.7.397.tgz -n $YourNameSpace```
+```helm install --set env.fedmlAccountId="$YourAccountId" --set env.fedmlApiKey="$YourApiKey" --set env.fedmlVersion="release" --set "inferenceGateway.ingress.host=$YourEndPointIngressDomainName" --set "inferenceGateway.ingress.className=nginx" fedml-model-premise-master fedml-model-premise-master-latest.tgz -n $YourNameSpace```
 
 Notes: $YourEndPointIngressDomainName is your model serving end point URL host which will be used in your inference API, e.g.
 
