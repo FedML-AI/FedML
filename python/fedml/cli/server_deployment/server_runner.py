@@ -813,9 +813,6 @@ class FedMLServerRunner:
                 + ";envsubst < "
                 + os.path.join(cur_dir, "templates", "fedml-server-deployment.yaml")
                 + " | kubectl apply -f - "
-                + ";envsubst < "
-                + os.path.join(cur_dir, "templates", "fedml-server-svc.yaml")
-                + " | kubectl apply -f - "
         )
         logging.info("FedMLServerRunner.run with k8s: " + run_deployment_cmd)
         os.system(run_deployment_cmd)
