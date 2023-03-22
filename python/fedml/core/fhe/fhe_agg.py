@@ -1,9 +1,10 @@
-import SHELFI_FHE as fhe_core
+import tenseal as fhe_core
 import torch
 import copy
 from collections import OrderedDict
 import numpy as np
 import os
+import pickle
 
 import logging
 from ..common.ml_engine_backend import MLEngineBackend
@@ -19,7 +20,8 @@ class FedMLFHE:
 
     def __init__(self):
         #self.fhe_type = None
-        self.fhe_helper = None
+        self.context_file = None
+        self.he_context = None
         self.is_enabled = False
 
     def is_fhe_enabled(self):
@@ -30,12 +32,16 @@ class FedMLFHE:
             logging.info(
                 ".......init Fully Homomorphic Encryption......."
             )
+            self.total_client_number = int(args.client_num_in_total)
             self.is_enabled = True
-            # TODO: parse fhe args if more decentralized
             script_path = os.getcwd()
-            # TODO: edit file path
-            self.fhe_helper = fhe_core.CKKS('ckks', 4096,  52, script_path+'/resources/cryptoparams/')
-            self.fhe_helper.loadCryptoParams()
+            # read in he context file
+            with open(script_path+'/context.pickle', 'rb') as handle:
+                self.context_file = pickle.load(handle)
+            
+			# load the context into fhe_core
+            self.he_context = fhe_core.context_from(self.context_file)
+            
             
         if hasattr(args, MLEngineBackend.ml_engine_args_flag) and args.ml_engine in [
             MLEngineBackend.ml_engine_backend_tf,
@@ -43,7 +49,7 @@ class FedMLFHE:
             MLEngineBackend.ml_engine_backend_mxnet,
         ]:
             logging.info(
-                "FedMLFHE is not supported for the machine learning engine: %s. "
+                "FedML_HE is not supported for the machine learning engine: %s. "
                 "We will support more engines in the future iteration." % args.ml_engine
             )
             self.is_enabled = False
@@ -52,18 +58,24 @@ class FedMLFHE:
         return self.is_enabled
 
     def fhe_enc(self, enc_type, model_params):
-        # transform tensor to np arrays for encrypted computation
-        # TODO: local enc mode
+        # transform tensor to encrypted form
+        weight_factors = copy.deepcopy(model_params)
+        for key in weight_factors.keys():
+            weight_factors[key] = torch.flatten(torch.full_like(weight_factors[key], 1/self.total_client_number))
+
         if enc_type == 'local':
             np_params = OrderedDict()
             for key in model_params.keys():
-                np_params[key] = torch.flatten(model_params[key]).numpy()
+                prepared_tensor = (torch.flatten(model_params[key])) * weight_factors[key]
+                np_params[key] = fhe_core.plain_tensor(prepared_tensor)
+
 
             enc_model_params = OrderedDict()
             for key in np_params.keys():
-                enc_model_params[key] = self.fhe_helper.encrypt(np_params[key])
+                enc_model_params[key] = (fhe_core.ckks_vector(self.he_context, np_params[key])).serialize()
             return enc_model_params
         else:
+            # not supported in the current version
             enc_raw_client_model_or_grad_list = []
             for i in range(len(model_params)):
                 local_sample_number, local_model_params = model_params[i]
@@ -79,35 +91,39 @@ class FedMLFHE:
 
     def fhe_fedavg(self, list_enc_model_parmas):
         # init an template model
+        n_clients = len(list_enc_model_parmas)
         temp_sample_number, temp_model_params = list_enc_model_parmas[0]
         enc_global_params =  copy.deepcopy(temp_model_params)
-        # (current) weighting factors of basic avg
-        n_clients = len(list_enc_model_parmas)
-        weight_factors = np.full(n_clients, 1/n_clients).tolist()
 
+        for i in range(n_clients):
+            list_enc_model_parmas[i] = list_enc_model_parmas[i][1]
+            for key in enc_global_params.keys():
+                list_enc_model_parmas[i][key] = fhe_core.ckks_vector_from(self.he_context, list_enc_model_parmas[i][key])
+        
         for key in enc_global_params.keys():
-            temp_client_layer = []
             for i in range(n_clients):
-                local_sample_number, local_model_params = list_enc_model_parmas[i]
-                temp_client_layer.append(local_model_params[key])
-            enc_global_params[key] = self.fhe_helper.computeWeightedAverage(temp_client_layer, weight_factors)
+                if i != 0:
+                    # temp = list_enc_model_parmas[i][key] * weight_factors[key]
+                    temp = list_enc_model_parmas[i][key]
+                    list_enc_model_parmas[0][key] = list_enc_model_parmas[0][key] + temp
+               
+        for key in enc_global_params.keys():
+            list_enc_model_parmas[0][key] = list_enc_model_parmas[0][key].serialize()
+
+        enc_global_params = list_enc_model_parmas[0]
         return enc_global_params
 
     def fhe_dec(self, template_model_params, enc_model_params): 
         params_shape = OrderedDict()
-        tensor_size = OrderedDict()
         for key in template_model_params.keys():
             params_shape[key] = template_model_params[key].size()
-            tensor_size[key] = torch.flatten(template_model_params[key]).numpy().size
 
-        dec_np_params = OrderedDict()
+        params_tensor = OrderedDict()
         for key in enc_model_params.keys():
-            dec_np_params[key] = self.fhe_helper.decrypt(enc_model_params[key], tensor_size[key])
+            enc_model_params[key] = fhe_core.ckks_vector_from(self.he_context, enc_model_params[key])
+            params_tensor[key] = torch.FloatTensor(enc_model_params[key].decrypt())
     
- 
-        params_tensor = OrderedDict()  
-        for key in dec_np_params.keys():
-            params_tensor[key] = torch.from_numpy(dec_np_params[key])
+        for key in params_tensor.keys():
             # need torch.Size() to tuple
             params_tensor[key] = torch.reshape(params_tensor[key], tuple(list((params_shape[key]))))
         return params_tensor

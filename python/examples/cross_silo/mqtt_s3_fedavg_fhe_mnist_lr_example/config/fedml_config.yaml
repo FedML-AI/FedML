@@ -63,8 +63,6 @@ dp_args:
 fhe_args:
   enable_fhe: true
   scheme: ckks
-  batch_size: 4096
+  batch_size: 8192
   scaling_factor: 52
-  multi_depth: 1
-  security_level: HEStd_128_classic
   file_loc: "resources/cryptoparams/"

@@ -18,6 +18,7 @@ class ServerAggregator(ABC):
         self.model = model
         self.id = 0
         self.args = args
+        # self.template_model_params = self.get_model_params()
         FedMLAttacker.get_instance().init(args)
         FedMLDefender.get_instance().init(args)
         FedMLDifferentialPrivacy.get_instance().init(args)

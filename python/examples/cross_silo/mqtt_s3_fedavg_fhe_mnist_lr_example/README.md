@@ -1,34 +1,25 @@
 ## Training Script
-FHE-based FedAvg: using CKKS scheme from PALISADE library. Implementation can be found under `python/fedml/core/fhe`.
+HE-based FedAvg: example using CKKS scheme from TenSeal. Implementation can be found under `python/fedml/core/fhe`.
 
 ## Setup
 
-Use the Dockerfile under the root dir: to install (1) PAlISADE FHE library and (2) fhe-fedavg as a python module
+Install TenSeal library
  ```
- sudo docker build -t fhe-fedml:v1 .
- sudo docker run -it fhe-fedml:v1 /bin/bash
+ pip3 install tenseal
  ```
 
 
 
 ## After installation
-(Optional) Please modify config/fedml_config.yaml, changing the `client_num_in_total` the as the number of clients (currently 2) you plan to run.
+(Optional) Please modify config/fedml_config.yaml, changing the `client_num_in_total` the as the number of clients (default: 2) you plan to run.
 
-Above docker run already gives us a server.
+To run clients, open more terminal windows to spawn clients at will:
 
-To run clients, first get the docker <containerID>:
-
-```
-sudo docker ps
-```
-then spawn clients at will:
-```
-sudo docker exec -it <containerID> /bin/bash
-```
 go to the example for all terminals (including the server):
 ```
 cd python/examples/cross_silo/mqtt_s3_fedavg_fhe_mnist_lr_example
 ```
+Note: make sure there is a context.pickle file (crypto context) under this dir
 
 Note: please run the server first!
 
@@ -64,4 +55,4 @@ FedML MLOps provides:
 - model serving
 
 ## Acknowledgement
-Our FHE functionality adopts some part of the work from https://github.com/tanmayghai18/he-encryption-shelfi
+Our FHE functionality adopts some part of the work from https://github.com/tanmayghai18/he-encryption-shelfi and also there is a version using the TenSeal library.
