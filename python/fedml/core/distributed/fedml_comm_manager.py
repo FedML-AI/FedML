@@ -77,6 +77,8 @@ class FedMLCommManager(Observer):
             self.com_manager.stop_receive_message()
         elif self.backend == "GRPC":
             self.com_manager.stop_receive_message()
+        elif self.backend == "GRPC_STREAM":
+            self.com_manager.stop_receive_message()
         elif self.backend == "TRPC":
             self.com_manager.stop_receive_message()
 
@@ -193,6 +195,14 @@ class FedMLCommManager(Observer):
             PORT = CommunicationConstants.GRPC_BASE_PORT + self.rank
             self.com_manager = GRPCCommManager(
                 HOST, PORT, ip_config_path=self.args.grpc_ipconfig_path, client_id=self.rank, client_num=self.size,
+            )
+        elif self.backend == "GRPC_STREAM":
+            from .communication.grpc_stream.grpc_stream_comm_manager import GRPCStreamCommManager
+
+            HOST = "0.0.0.0"
+            PORT = CommunicationConstants.GRPC_BASE_PORT + self.rank
+            self.com_manager = GRPCStreamCommManager(
+                HOST, PORT, server_ip=self.args.server_ip, client_id=self.rank, client_num=self.size,
             )
         elif self.backend == "TRPC":
             from .communication.trpc.trpc_comm_manager import TRPCCommManager
