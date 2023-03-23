@@ -152,6 +152,8 @@ class MLOpsRuntimeLog:
             file_handle.setLevel(logging.INFO)
             self.logger.addHandler(file_handle)
         logging.root = self.logger
+        # Rewrite sys.stdout to redirect stdout (i.e print()) to Logger
+        sys.stdout.write = self.logger.info
 
     @staticmethod
     def build_log_file_path(in_args):
