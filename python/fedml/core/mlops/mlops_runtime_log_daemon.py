@@ -117,6 +117,18 @@ class MLOpsRuntimeLogProcessor:
                 prev_index = index-1
                 if prev_index < 0:
                     prev_index = 0
+                #  if str is empty, then continue, will move it later
+                if str(log_lines[index]) == '' or str(log_lines[index]) == '\n':
+                    index += 1
+                    continue
+                #  if the str has prefix but contains nothing,
+                #  then signed it as '\n', will move it later
+                cur_line_list = str(log_lines[index]).split(']')
+                if str(log_lines[index]).startswith('[FedML-') and \
+                    len(cur_line_list) == 5 and (cur_line_list[4] == ' \n'):
+                    log_lines[index] = '\n'
+                    index += 1
+                    continue
                 prev_line_prefix = ''
                 prev_line_prefix_list = str(log_lines[prev_index]).split(']')
                 if len(prev_line_prefix_list) >= 3:
@@ -137,10 +149,16 @@ class MLOpsRuntimeLogProcessor:
                     err_line_dict = {"errLine": self.log_line_index + log_index, "errMsg": log_line}
                     err_list.append(err_line_dict)
 
+            # remove the '\n' and '' str
+            upload_lines = []
+            for line in log_lines[line_start_req:line_end_req]:
+                if line != '' and line != '\n':
+                    upload_lines.append(line)
+                    
             log_upload_request = {
                 "run_id": run_id,
                 "edge_id": device_id,
-                "logs": log_lines[line_start_req:line_end_req],
+                "logs": upload_lines,
                 "create_time": time.time(),
                 "update_time": time.time(),
                 "created_by": str(device_id),
