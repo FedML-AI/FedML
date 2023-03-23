@@ -56,7 +56,8 @@ def login_with_docker_mode(userid, version, docker_rank):
     # Pull client agent docker
     fedml_docker_name = "fedml_client_agent_{}".format(str(docker_rank))
     click.echo("Now is pulling fedml docker client.........................")
-    os.system("docker pull " + client_agent_image)
+    os.system(f"docker logout {registry_server}")
+    os.system(f"docker pull {client_agent_image}")
     click.echo("Now is opening fedml docker client.........................")
     docker_stop_proc = ClientConstants.exec_console_with_shell_script_list(['docker', 'stop', fedml_docker_name])
     _, _, _ = ClientConstants.get_console_pipe_out_err_results(docker_stop_proc)
@@ -82,7 +83,8 @@ def login_with_docker_mode(userid, version, docker_rank):
 
     # Get the running state for the client agent docker
     docker_ps_process = ClientConstants.exec_console_with_shell_script_list(['docker', 'ps', '-a'],
-                                                                            should_capture_stdout_err=True)
+                                                                            should_capture_stdout=True,
+                                                                            should_capture_stderr=True)
     ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(docker_ps_process)
     is_deployment_ok = False
     if out is not None:
@@ -116,7 +118,8 @@ def logs_with_docker_mode(docker_rank):
     fedml_docker_name = "fedml_client_agent_{}".format(str(docker_rank))
     docker_name_format = 'name={}'.format(fedml_docker_name)
     docker_name_proc = ClientConstants.exec_console_with_shell_script_list(['docker', 'ps', '-aqf', docker_name_format],
-                                                                           should_capture_stdout_err=True)
+                                                                           should_capture_stdout=True,
+                                                                           should_capture_stderr=True)
     _, out_id, err_id = ClientConstants.get_console_pipe_out_err_results(docker_name_proc)
     if out_id is not None:
         out_id_str = out_id.decode(encoding="utf-8")
