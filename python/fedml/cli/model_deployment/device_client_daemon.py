@@ -24,9 +24,19 @@ if __name__ == "__main__":
     pip_source_dir = os.path.dirname(__file__)
     login_cmd = os.path.join(pip_source_dir, "device_client_login.py")
     while True:
+        try:
+            ClientConstants.cleanup_run_process()
+            sys_utils.cleanup_all_fedml_client_api_processes(is_model_device=True)
+            sys_utils.cleanup_all_fedml_client_learning_processes()
+            sys_utils.cleanup_all_fedml_client_login_processes("device_client_login.py", clean_process_group=False)
+        except Exception as e:
+            pass
+
         login_pid = ClientConstants.exec_console_with_shell_script_list(
             [
                 sys_utils.get_python_program(),
+                "-W",
+                "ignore",
                 login_cmd,
                 "-t",
                 "login",
