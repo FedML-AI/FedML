@@ -767,7 +767,7 @@ def device():
     pass
 
 
-@device.command("login", help="Login as model device agent(MDA) on the ModelOps platform (model.fedml.ai).")
+@device.command("login", help="Login as model device agent(MDA) on the ModelOps platform (open.fedml.ai).")
 @click.argument("userid", nargs=-1)
 @click.option(
     "--cloud", "-c", default=None, is_flag=True, help="login as fedml cloud device.",
@@ -834,7 +834,7 @@ def login_as_model_device_agent(
                                                    redis_addr, redis_port, redis_password)
 
 
-@device.command("logout", help="Logout from the ModelOps platform (model.fedml.ai)")
+@device.command("logout", help="Logout from the ModelOps platform (open.fedml.ai)")
 @click.option(
     "--slave", "-s", default=None, is_flag=True, help="logout from slave device.",
 )
@@ -932,12 +932,19 @@ def list_models(name):
     default="release",
     help="interact with which version of ModelOps platform. It should be dev, test or release",
 )
-def list_remote_models(name, user, api_key, version):
+@click.option(
+    "--local_server",
+    "-ls",
+    type=str,
+    default="127.0.0.1",
+    help="local server address.",
+)
+def list_remote_models(name, user, api_key, version, local_server):
     if user is None or api_key is None:
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
         return
     FedMLModelCards.get_instance().set_config_version(version)
-    model_query_result = FedMLModelCards.get_instance().list_models(name, user, api_key)
+    model_query_result = FedMLModelCards.get_instance().list_models(name, user, api_key, local_server)
     if model_query_result is None or model_query_result.model_list is None or len(model_query_result.model_list) <= 0:
         click.echo("Model list is empty.")
     else:
@@ -962,7 +969,7 @@ def package_model(name):
         click.echo("Failed to build model {}.".format(name))
 
 
-@model.command("push", help="Push local model repository to ModelOps(model.fedml.ai).")
+@model.command("push", help="Push local model repository to ModelOps(open.fedml.ai).")
 @click.option(
     "--name", "-n", type=str, help="model name.",
 )
@@ -985,7 +992,14 @@ def package_model(name):
     default="release",
     help="interact with which version of ModelOps platform. It should be dev, test or release",
 )
-def push_model(name, model_storage_url, model_net_url, user, api_key, version):
+@click.option(
+    "--local_server",
+    "-ls",
+    type=str,
+    default="127.0.0.1",
+    help="local server address.",
+)
+def push_model(name, model_storage_url, model_net_url, user, api_key, version, local_server):
     if user is None or api_key is None:
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
         return
@@ -993,7 +1007,8 @@ def push_model(name, model_storage_url, model_net_url, user, api_key, version):
     model_is_from_open = True if model_storage_url is not None and model_storage_url != "" else False
     model_storage_url, model_zip = FedMLModelCards.get_instance().push_model(name, user, api_key,
                                                                              model_storage_url=model_storage_url,
-                                                                             model_net_url=model_net_url)
+                                                                             model_net_url=model_net_url,
+                                                                             local_server=local_server)
     if model_is_from_open:
         click.echo("Push model {} with model storage url {} successfully.".format(name, model_storage_url))
     else:
@@ -1022,19 +1037,26 @@ def push_model(name, model_storage_url, model_net_url, user, api_key, version):
     default="release",
     help="interact with which version of ModelOps platform. It should be dev, test or release",
 )
-def pull_model(name, user, api_key, version):
+@click.option(
+    "--local_server",
+    "-ls",
+    type=str,
+    default="127.0.0.1",
+    help="local server address.",
+)
+def pull_model(name, user, api_key, version, local_server):
     if user is None or api_key is None:
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
         return
     FedMLModelCards.get_instance().set_config_version(version)
-    if FedMLModelCards.get_instance().pull_model(name, user, api_key):
+    if FedMLModelCards.get_instance().pull_model(name, user, api_key, local_server):
         click.echo("Pull model {} successfully.".format(name))
     else:
         click.echo("Failed to pull model {}.".format(name))
 
 
 @model.command("deploy",
-               help="Deploy specific model to ModelOps platform(model.fedml.ai) or just for local debugging deployment.")
+               help="Deploy specific model to ModelOps platform(open.fedml.ai) or just for local debugging deployment.")
 @click.option(
     "--name", "-n", type=str, help="model name.",
 )
@@ -1064,10 +1086,18 @@ def pull_model(name, user, api_key, version):
     help="interact with which version of ModelOps platform. It should be dev, test or release",
 )
 @click.option(
+    "--local_server",
+    "-ls",
+    type=str,
+    default="127.0.0.1",
+    help="local server address.",
+)
+@click.option(
     "--use_local_deployment", "-ld", default=None, is_flag=True,
     help="deploy local model repository by sending MQTT message(just use for debugging).",
 )
-def deploy_model(name, on_premise, cloud, devices, user, api_key, params, version, use_local_deployment):
+def deploy_model(name, on_premise, cloud, devices, user, api_key, params, version,
+                 local_server, use_local_deployment):
     if user is None or api_key is None:
         click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
         return
@@ -1079,14 +1109,23 @@ def deploy_model(name, on_premise, cloud, devices, user, api_key, params, versio
     if is_cloud and is_on_premise:
         is_cloud = False
 
+    is_local_dev = use_local_deployment
+    if use_local_deployment is None:
+        is_local_dev = False
+
     if is_on_premise:
         device_type = "md.on_premise_device"
     else:
         device_type = "md.fedml_cloud_device"
     FedMLModelCards.get_instance().set_config_version(version)
-    paramsDict = json.loads(params) # load config from Cli
+
+    params_dict = {}
+    if is_local_dev:
+        params_dict = json.loads(params)  # load config from Cli
+
     if FedMLModelCards.get_instance().deploy_model(name, device_type, devices, user, api_key,
-                                                   paramsDict, use_local_deployment):
+                                                   params_dict, use_local_deployment,
+                                                   local_server):
         click.echo("Deploy model {} successfully.".format(name))
     else:
         click.echo("Failed to deploy model {}.".format(name))
@@ -1100,7 +1139,7 @@ def inference():
     pass
 
 
-@inference.command("query", help="Query inference parameters for specific model from ModelOps platform(model.fedml.ai).")
+@inference.command("query", help="Query inference parameters for specific model from ModelOps platform(open.fedml.ai).")
 @click.option(
     "--name", "-n", type=str, help="model name.",
 )
@@ -1115,7 +1154,7 @@ def query_model_infer(name):
         click.echo("Failed to query model {}.".format(name))
 
 
-@inference.command("run", help="Run inference action for specific model from ModelOps platform(model.fedml.ai).")
+@inference.command("run", help="Run inference action for specific model from ModelOps platform(open.fedml.ai).")
 @click.option(
     "--name", "-n", type=str, help="model name.",
 )

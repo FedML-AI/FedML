@@ -52,7 +52,20 @@ class FedMLServerManager(FedMLCommManager):
 
         mlops.event("server.wait", event_started=True, event_value=str(self.args.round_idx))
 
-        mlops.log_training_model_net_info(self.aggregator.aggregator.model)
+        # get input type and shape for inference
+        dummy_input_tensor = self.aggregator.get_dummy_input_tensor()
+        logging.info(f"dummy tensor: {dummy_input_tensor}")  # sample tensor for ONNX
+
+        model_net_url = mlops.log_training_model_net_info(self.aggregator.aggregator.model, dummy_input_tensor)
+
+        # type and shape for later configuration
+        input_shape, input_type = self.aggregator.get_input_shape_type()
+        logging.info(f"input shape: {input_shape}")  # [torch.Size([1, 24]), torch.Size([1, 2])]
+        logging.info(f"input type: {input_type}")    # [torch.int64, torch.float32]
+
+        # Send output input size and type (saved as json) to s3,
+        # and transfer when click "Create Model Card"
+        model_input_url = mlops.log_training_model_input_info(list(input_shape), list(input_type))
 
     def register_message_receive_handlers(self):
         logging.info("register_message_receive_handlers------")
@@ -133,6 +146,7 @@ class FedMLServerManager(FedMLCommManager):
 
     def handle_message_client_status_update(self, msg_params):
         client_status = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_STATUS)
+        logging.info(f"received client status {client_status}")
         if client_status == FedMLServerManager.ONLINE_STATUS_FLAG:
             self.process_online_status(client_status, msg_params)
         elif client_status == FedMLServerManager.RUN_FINISHED_STATUS_FLAG:
@@ -191,15 +205,21 @@ class FedMLServerManager(FedMLCommManager):
             for receiver_id in self.client_id_list_in_this_round:
                 client_index = self.data_silo_index_list[client_idx_in_this_round]
                 if type(global_model_params) is dict:
-                    global_model_url, global_model_key = self.send_message_sync_model_to_client(
-                        receiver_id, global_model_params[client_index], client_index, global_model_url,
-                        global_model_key
+                    # compatible with the old version that, user did not give {-1 : global_parms_dict}
+                    global_model_url, global_model_key = self.send_message_diff_sync_model_to_client(
+                        receiver_id, global_model_params[client_index], client_index
                     )
                 else:
                     global_model_url, global_model_key = self.send_message_sync_model_to_client(
                         receiver_id, global_model_params, client_index, global_model_url, global_model_key
                     )
                 client_idx_in_this_round += 1
+
+            # if user give {-1 : global_parms_dict}, then record global_model url separately
+            if type(global_model_params) is dict and (-1 in global_model_params.keys()):
+                global_model_url, global_model_key = self.send_message_diff_sync_model_to_client(
+                    -1, global_model_params[-1], -1
+                )
 
             self.args.round_idx += 1
             mlops.log_aggregated_model_info(
@@ -267,4 +287,20 @@ class FedMLServerManager(FedMLCommManager):
         global_model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
         global_model_key = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY)
 
+        return global_model_url, global_model_key
+
+    def send_message_diff_sync_model_to_client(self, receive_id, client_model_params, client_index):
+        tick = time.time()
+        logging.info("send_message_sync_model_to_client. receive_id = %d" % receive_id)
+        message = Message(MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT, self.get_sender_id(), receive_id, )
+        message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, client_model_params)
+        message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(client_index))
+        message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")
+        self.send_message(message)
+
+        MLOpsProfilerEvent.log_to_wandb({"Communiaction/Send_Total": time.time() - tick})
+
+        global_model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
+        global_model_key = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY)
+        
         return global_model_url, global_model_key

@@ -7,7 +7,7 @@ import ai.fedml.edge.service.communicator.EdgeCommunicator;
 import ai.fedml.edge.utils.LogHelper;
 
 public class ProfilerEventLogger {
-    private static final String EVENT_TOPIC = "/mlops/events";
+    private static final String EVENT_TOPIC = "mlops/events";
     private static final int EVENT_TYPE_STARTED = 0;
     private static final int EVENT_TYPE_ENDED = 1;
 

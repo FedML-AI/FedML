@@ -4,7 +4,7 @@ This tutorial will guide you to deploy your models to target computing devices, 
 
 The entire workflow is as follows:
 1. create a model card by uploading your trained model file and related configuration (YAML)
-2. bind (login) computing resource to FedML MLOps model serving platform (https://model.fedml.ai)
+2. bind (login) computing resource to FedML MLOps model serving platform (https://open.fedml.ai)
    - Kubernetes mode
    - CLI mode
 3. start the deployment and get the inference API once the deployment is finished
@@ -14,7 +14,7 @@ When your model deployment is finished, you will get an endpoint URL and inferen
 
 ```curl -XPOST https://$YourEndPointIngressDomainName/inference/api/v1/predict -H 'accept: application/json' -d'{  "model_version": "v11-Thu Jan 05 08:20:24 GMT 2023",  "model_name": "model_340_18_fedml_test_model_v11-Thu-Jan-05-08-20-24-GMT-2023",  "data": "This is our test data. Please fill in here with your real data.",  "end_point_id": 336,  "model_id": 18,  "token": "2e081ef115d04ee8adaffe5c1d0bfbac"}'```
 
- You may run your model deployment flow via the ModelOps(model.fedml.ai) and CLI.
+ You may run your model deployment flow via the ModelOps(open.fedml.ai) and CLI.
 
 Model Deployment CLI:
 
@@ -23,7 +23,7 @@ fedml model deploy -n $model_name --on_premise -d $device_id_list -u $user_id -k
 
 e.g. fedml model deploy -n fedml_sample_model -u 1420 -k c9356b9c4ce44363bb66366b290201 -dt md.on_premise_device -d [178077,178076]
 
-Note: You may find your device id in the Computing Resource page at the ModelOps(model.fedml.ai) platform.
+Note: You may find your device id in the Computing Resource page at the ModelOps(open.fedml.ai) platform.
       In the $device_id_list, the master device should be the first item.
 ```
 
@@ -62,15 +62,15 @@ Inference end point ingress will be used as your model serving endpoint URL whic
    ```kubectl get nodes --show-labels```
 
 ### 4). Prepare parameters will be used in the next step.
- You should fetch $YourAccountId and $YourApiKey from ModelOps(model.fedml.ai) which will be used in the next step. 
+ You should fetch $YourAccountId and $YourApiKey from ModelOps(open.fedml.ai) which will be used in the next step. 
 
 ### 5). You may run the Helm Charts Installation commands to install FedML model serving packages to the above labeled nodes.
 
 ```kubectl create namespace $YourNameSpace```
 
-```helm install --set env.fedmlAccountId="$YourAccountId" --set env.fedmlApiKey="$YourApiKey" --set env.fedmlVersion="release"  fedml-model-premise-slave fedml-model-premise-slave-0.7.397.tgz -n $YourNameSpace```
+```helm install --set env.fedmlAccountId="$YourAccountId" --set env.fedmlApiKey="$YourApiKey" --set env.fedmlVersion="release"  fedml-model-premise-slave fedml-model-premise-slave-latest.tgz -n $YourNameSpace```
 
-```helm install --set env.fedmlAccountId="$YourAccountId" --set env.fedmlApiKey="$YourApiKey" --set env.fedmlVersion="release" --set "inferenceGateway.ingress.host=$YourEndPointIngressDomainName" --set "inferenceGateway.ingress.className=nginx" fedml-model-premise-master fedml-model-premise-master-0.7.397.tgz -n $YourNameSpace```
+```helm install --set env.fedmlAccountId="$YourAccountId" --set env.fedmlApiKey="$YourApiKey" --set env.fedmlVersion="release" --set "inferenceGateway.ingress.host=$YourEndPointIngressDomainName" --set "inferenceGateway.ingress.className=nginx" fedml-model-premise-master fedml-model-premise-master-latest.tgz -n $YourNameSpace```
 
 Notes: $YourEndPointIngressDomainName is your model serving end point URL host which will be used in your inference API, e.g.
 
@@ -137,7 +137,7 @@ List model in the remote model repository:
 Build local model repository as zip model package:
 ```fedml model package -n $model_name```
 
-Push local model repository to ModelOps(model.fedml.ai):
+Push local model repository to ModelOps(open.fedml.ai):
 ```fedml model push -n $model_name -u $user_id -k $user_api_key```
 
 Pull remote model(ModelOps) to local model repository:
@@ -158,4 +158,4 @@ A: Yes.
 
 
 4. Q: During deployment, what if the k8s service does not have a public IP? \
-A: During deployment, we don't need to initiate access to your k8s service from model.fedml.ai, only your k8s cluster can initiate access to model.fedml.ai
+A: During deployment, we don't need to initiate access to your k8s service from open.fedml.ai, only your k8s cluster can initiate access to open.fedml.ai
