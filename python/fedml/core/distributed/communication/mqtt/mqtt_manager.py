@@ -319,7 +319,7 @@ if __name__ == "__main__":
 
     logging.getLogger().setLevel(logging.INFO)
 
-    last_will_topic = "/fedml/mqtt-test/lastwill"
+    last_will_topic = "fedml/mqtt-test/lastwill"
     last_will_msg = {"ID": 1, "status": "OFFLINE"}
     mqtt_manager = MqttManager("mqtt.fedml.ai", 1883, "admin", "test",
                                30, args.client_id,

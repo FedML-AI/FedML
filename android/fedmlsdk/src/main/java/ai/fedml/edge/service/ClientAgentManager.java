@@ -75,7 +75,7 @@ public final class ClientAgentManager implements MessageDefine {
         edgeCommunicator.subscribe(startTrainTopic, (OnTrainStartListener) this::handleTrainStart);
         final String stopTrainTopic = "flserver_agent/" + edgeId + "/stop_train";
         edgeCommunicator.subscribe(stopTrainTopic, (OnTrainStopListener) this::handleTrainStop);
-        final String MLOpsQueryStatusTopic = "/mlops/report_device_status";
+        final String MLOpsQueryStatusTopic = "mlops/report_device_status";
         edgeCommunicator.subscribe(MLOpsQueryStatusTopic, (OnMLOpsMsgListener) this::handleMLOpsMsg);
 
         final String exitTrainWithExceptionTopic = "flserver_agent/" + edgeId + "/exit_train_with_exception";

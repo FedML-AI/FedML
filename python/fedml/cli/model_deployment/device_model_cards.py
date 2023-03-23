@@ -13,7 +13,7 @@ from ...core.distributed.communication.s3.remote_storage import S3Storage
 from .device_client_constants import ClientConstants
 from ...core.common.singleton import Singleton
 from .modelops_configs import ModelOpsConfigs
-from .device_model_deployment import get_model_info, run_http_inference_with_lib_http_api
+from .device_model_deployment import get_model_info
 from .device_server_constants import ServerConstants
 from .device_model_object import FedMLModelList, FedMLModelObject
 
@@ -108,7 +108,7 @@ class FedMLModelCards(Singleton):
 
         return True
 
-    def list_models(self, model_name, user_id=None, user_api_key=None):
+    def list_models(self, model_name, user_id=None, user_api_key=None, local_server=None):
         if user_id is None:
             model_home_dir = ClientConstants.get_model_dir()
             if not os.path.exists(model_home_dir):
@@ -122,7 +122,7 @@ class FedMLModelCards(Singleton):
                     if model == model_name:
                         return [model]
         else:
-            return self.list_model_api(model_name, user_id, user_api_key)
+            return self.list_model_api(model_name, user_id, user_api_key, local_server)
 
         return []
 
@@ -169,7 +169,7 @@ class FedMLModelCards(Singleton):
         return model_zip_path
 
     def push_model(self, model_name, user_id, user_api_key, model_storage_url=None,
-                   model_net_url=None, no_uploading_modelops=False):
+                   model_net_url=None, no_uploading_modelops=False, local_server=None):
         model_dir = os.path.join(ClientConstants.get_model_dir(), model_name)
         if not os.path.exists(model_dir):
             return "", ""
@@ -220,8 +220,12 @@ class FedMLModelCards(Singleton):
 
         if not no_uploading_modelops:
             if model_storage_url != "":
-                upload_result = self.upload_model_api(model_name, model_storage_url, model_net_url, user_id,
-                                                      user_api_key, is_from_open=is_from_open)
+                with open(model_config_file, 'r') as f:
+                    model_params = json.load(f)
+
+                upload_result = self.upload_model_api(model_name, model_params, model_storage_url,
+                                                      model_net_url, user_id, user_api_key,
+                                                      is_from_open=is_from_open, local_server=local_server)
                 if upload_result is not None:
                     return model_storage_url, model_zip_path
                 else:
@@ -229,8 +233,8 @@ class FedMLModelCards(Singleton):
 
         return model_storage_url, model_zip_path
 
-    def pull_model(self, model_name, user_id, user_api_key):
-        model_query_result = self.list_model_api(model_name, user_id, user_api_key)
+    def pull_model(self, model_name, user_id, user_api_key, local_server=None):
+        model_query_result = self.list_model_api(model_name, user_id, user_api_key, local_server=local_server)
         if model_query_result is None:
             return False
 
@@ -249,18 +253,19 @@ class FedMLModelCards(Singleton):
 
         return result
 
-    def deploy_model(self, model_name, device_type, devices, user_id, user_api_key, params, use_local_deployment):
+    def deploy_model(self, model_name, device_type, devices, user_id, user_api_key,
+                     params, use_local_deployment, local_server=None):
         if use_local_deployment is None:
             use_local_deployment = False
         if not use_local_deployment:
-            model_query_result = self.list_model_api(model_name, user_id, user_api_key)
+            model_query_result = self.list_model_api(model_name, user_id, user_api_key, local_server)
             if model_query_result is None:
                 return False
             for model in model_query_result.model_list:
                 model_id = model.id
                 model_version = model.model_version
                 deployment_result = self.deploy_model_api(model_id, model_name, model_version, device_type,
-                                                          devices, user_id, user_api_key)
+                                                          devices, user_id, user_api_key, local_server)
                 if deployment_result is not None:
                     return True
         else:
@@ -275,15 +280,9 @@ class FedMLModelCards(Singleton):
     def query_model(self, model_name):
         return get_model_info(model_name, ClientConstants.INFERENCE_HTTP_PORT)
 
-    def inference_model(self, model_name, input_data):
-        return run_http_inference_with_lib_http_api(model_name,
-                                                    ClientConstants.INFERENCE_HTTP_PORT,
-                                                    1,
-                                                    input_data)
-
-    def list_model_api(self, model_name, user_id, user_api_key):
+    def list_model_api(self, model_name, user_id, user_api_key, local_server):
         model_list_result = None
-        model_ops_url = ClientConstants.get_model_ops_list_url(self.config_version)
+        model_ops_url = ClientConstants.get_model_ops_list_url(self.config_version, local_server)
         model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
         model_list_json = {
             "model_name": model_name,
@@ -318,9 +317,10 @@ class FedMLModelCards(Singleton):
 
         return model_list_result
 
-    def upload_model_api(self, model_name, model_storage_url, model_net_url, user_id, user_api_key, is_from_open=True):
+    def upload_model_api(self, model_name, model_params, model_storage_url, model_net_url,
+                         user_id, user_api_key, is_from_open=True, local_server=None):
         model_upload_result = None
-        model_ops_url = ClientConstants.get_model_ops_upload_url(self.config_version)
+        model_ops_url = ClientConstants.get_model_ops_upload_url(self.config_version, local_server)
         model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
         model_upload_json = {
             "description": model_name,
@@ -328,7 +328,7 @@ class FedMLModelCards(Singleton):
             "modelName": model_name,
             "modelUrl": model_storage_url,
             "owner": user_id,
-            "parameters": {},
+            "parameters": model_params,
             "updateBy": user_id,
             "userId": str(user_id),
             "apiKey": user_api_key,
@@ -385,9 +385,10 @@ class FedMLModelCards(Singleton):
 
         return ""
 
-    def deploy_model_api(self, model_id, model_name, model_version, device_type, devices, user_id, user_api_key):
+    def deploy_model_api(self, model_id, model_name, model_version, device_type, devices,
+                         user_id, user_api_key, local_server):
         model_deployment_result = None
-        model_ops_url = ClientConstants.get_model_ops_deployment_url(self.config_version)
+        model_ops_url = ClientConstants.get_model_ops_deployment_url(self.config_version, local_server)
         model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
         model_deployment_json = {
             "edgeId": devices,
@@ -446,7 +447,7 @@ class FedMLModelCards(Singleton):
         model_storage_url, _ = self.push_model(model_name, user_id, user_api_key, no_uploading_modelops=True)
 
         master_device_id = device_id_list[0]
-        topic_start_deployment = "/model_ops/model_device/start_deployment/{}".format(str(master_device_id))
+        topic_start_deployment = "model_ops/model_device/start_deployment/{}".format(str(master_device_id))
         start_deployment_payload = {"timestamp": int(time.time()), "end_point_id": str(end_point_id),
                                     "token": str(end_point_token), "state": "STARTING", "user_id": user_id,
                                     "user_name": user_id,
@@ -484,13 +485,13 @@ class FedMLModelCards(Singleton):
         self.local_deployment_mqtt_mgr.loop_stop()
 
     def on_mqtt_connected(self, mqtt_client_object):
-        deployment_results_topic = "/model_ops/model_device/return_deployment_result/{}".format(
+        deployment_results_topic = "model_ops/model_device/return_deployment_result/{}".format(
             self.local_deployment_end_point_id)
-        deployment_status_topic = "/model_ops/model_device/return_deployment_status/{}".format(
+        deployment_status_topic = "model_ops/model_device/return_deployment_status/{}".format(
             self.local_deployment_end_point_id)
-        deployment_stages_topic = "/model_ops/model_device/return_deployment_stages/{}".format(
+        deployment_stages_topic = "model_ops/model_device/return_deployment_stages/{}".format(
             self.local_deployment_end_point_id)
-        deployment_monitoring_topic = "/model_ops/model_device/return_inference_monitoring/{}".format(
+        deployment_monitoring_topic = "model_ops/model_device/return_inference_monitoring/{}".format(
             self.local_deployment_end_point_id)
 
         self.local_deployment_mqtt_mgr.add_message_listener(deployment_results_topic,

@@ -56,7 +56,8 @@ requirements = [
     "redis",
     "attrdict",
     "ntplib",
-    "typing_extensions==4.4.0"
+    "typing_extensions==4.4.0",
+    "chardet"
 ]
 
 requirements_extra_mpi = [
@@ -87,7 +88,7 @@ requirements_extra_mxnet = [
 
 setup(
     name="fedml",
-    version="0.7.601",
+    version="0.8.0",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
