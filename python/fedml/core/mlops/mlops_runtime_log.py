@@ -91,12 +91,12 @@ class MLOpsRuntimeLog:
                                                  + "-edge-"
                                                  + str(self.edge_id)
                                                  + ".log")
-        self.ntp_offset = 0
+        self.ntp_offset = None
         sys.excepthook = MLOpsRuntimeLog.handle_exception
 
     def get_ntp_offset(self):
         cnt = 0
-        ntp_server_url = 'pool.ntp.org'
+        ntp_server_url = 'time.aws.com'
         while True:     # try until we get time offset
             try:
                 ntp_client = ntplib.NTPClient()
@@ -108,8 +108,7 @@ class MLOpsRuntimeLog:
                 cnt += 1
                 time.sleep(1)
                 if cnt >= 3:
-                    logging.info("Cannot Connect To NTP Server: {}, details: {}".format(ntp_server_url,
-                                                                                        traceback.format_exc()))
+                    logging.info(f"Cannot Connect To NTP Server: {ntp_server_url}")
                     break
         return 0
 
@@ -129,7 +128,7 @@ class MLOpsRuntimeLog:
                                                                   "message)s",
                                        datefmt="%a, %d %b %Y %H:%M:%S")
         def log_ntp_time(sec, what):
-            if self.ntp_offset == 0:
+            if self.ntp_offset is None:
                 self.ntp_offset = self.get_ntp_offset()
             ntp_time_seconds = time.time() + self.ntp_offset
             ntp_time = datetime.datetime.fromtimestamp(ntp_time_seconds)
