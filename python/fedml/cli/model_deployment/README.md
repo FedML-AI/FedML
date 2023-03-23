@@ -34,7 +34,7 @@ List model in the remote model repository:
 Build local model repository as zip model package: 
 ```fedml model package -n $model_name```
 
-Push local model repository to ModelOps(model.fedml.ai): 
+Push local model repository to ModelOps(open.fedml.ai): 
 ```fedml model push -n $model_name -u $user_id -k $user_api_key```
 
 Pull remote model(ModelOps) to local model repository: 

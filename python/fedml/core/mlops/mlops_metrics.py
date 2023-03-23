@@ -13,8 +13,6 @@ from ...cli.server_deployment.server_constants import ServerConstants
 from ...core.distributed.communication.mqtt.mqtt_manager import MqttManager
 from ...core.mlops.mlops_status import MLOpsStatus
 from ...core.mlops.system_stats import SysStats
-from ...cli.edge_deployment.client_data_interface import FedMLClientDataInterface
-from ...cli.server_deployment.server_data_interface import FedMLServerDataInterface
 
 
 class MLOpsMetrics(Singleton):
@@ -82,7 +80,7 @@ class MLOpsMetrics(Singleton):
         else:
             return True
 
-    def report_client_training_status(self, edge_id, status, running_json=None):
+    def report_client_training_status(self, edge_id, status, running_json=None, is_from_model=False):
         run_id = 0
         if self.run_id is not None:
             run_id = self.run_id
@@ -93,7 +91,12 @@ class MLOpsMetrics(Singleton):
 
         self.report_client_device_status_to_web_ui(edge_id, status)
 
-        FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status, running_json)
+        if is_from_model:
+            from ...cli.model_deployment.device_client_data_interface import FedMLClientDataInterface
+            FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status, running_json)
+        else:
+            from ...cli.edge_deployment.client_data_interface import FedMLClientDataInterface
+            FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status, running_json)
 
     def report_client_device_status_to_web_ui(self, edge_id, status):
         """
@@ -129,7 +132,7 @@ class MLOpsMetrics(Singleton):
         MLOpsStatus.get_instance().set_client_status(edge_id, status)
         self.messenger.send_message_json(topic_name, message_json)
 
-    def broadcast_client_training_status(self, edge_id, status):
+    def broadcast_client_training_status(self, edge_id, status, is_from_model=False):
         # if not self.comm_sanity_check():
         #     return
         """
@@ -142,8 +145,12 @@ class MLOpsMetrics(Singleton):
         self.common_broadcast_client_training_status(edge_id, status)
 
         self.report_client_device_status_to_web_ui(edge_id, status)
-
-        FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status)
+        if is_from_model:
+            from ...cli.model_deployment.device_client_data_interface import FedMLClientDataInterface
+            FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status)
+        else:
+            from ...cli.edge_deployment.client_data_interface import FedMLClientDataInterface
+            FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status)
 
     def common_broadcast_client_training_status(self, edge_id, status):
         # if not self.comm_sanity_check():
@@ -167,7 +174,7 @@ class MLOpsMetrics(Singleton):
         logging.info("client_send_exit_train_msg.")
         self.messenger.send_message_json(topic_exit_train_with_exception, message_json)
 
-    def report_client_id_status(self, run_id, edge_id, status, running_json=None):
+    def report_client_id_status(self, run_id, edge_id, status, running_json=None, is_from_model=False):
         # if not self.comm_sanity_check():
         #     return
         """
@@ -177,7 +184,12 @@ class MLOpsMetrics(Singleton):
 
         self.report_client_device_status_to_web_ui(edge_id, status)
 
-        FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status, running_json)
+        if is_from_model:
+            from ...cli.model_deployment.device_client_data_interface import FedMLClientDataInterface
+            FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status, running_json)
+        else:
+            from ...cli.edge_deployment.client_data_interface import FedMLClientDataInterface
+            FedMLClientDataInterface.get_instance().save_job(run_id, edge_id, status, running_json)
 
     def common_report_client_id_status(self, run_id, edge_id, status):
         # if not self.comm_sanity_check():
@@ -189,17 +201,21 @@ class MLOpsMetrics(Singleton):
         msg = {"run_id": run_id, "edge_id": edge_id, "status": status}
         message_json = json.dumps(msg)
         logging.info("report_client_id_status. message_json = %s" % message_json)
-        MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, status)
         self.messenger.send_message_json(topic_name, message_json)
 
-    def report_server_training_status(self, run_id, status, role=None, running_json=None):
+    def report_server_training_status(self, run_id, status, role=None, running_json=None, is_from_model=False):
         # if not self.comm_sanity_check():
         #     return
         self.common_report_server_training_status(run_id, status, role)
 
         self.report_server_device_status_to_web_ui(run_id, status, role)
 
-        FedMLServerDataInterface.get_instance().save_job(run_id, self.edge_id, status, running_json)
+        if is_from_model:
+            from ...cli.model_deployment.device_server_data_interface import FedMLServerDataInterface
+            FedMLServerDataInterface.get_instance().save_job(run_id, self.edge_id, status, running_json)
+        else:
+            from ...cli.server_deployment.server_data_interface import FedMLServerDataInterface
+            FedMLServerDataInterface.get_instance().save_job(run_id, self.edge_id, status, running_json)
 
     def report_server_device_status_to_web_ui(self, run_id, status, role=None):
         """
@@ -241,7 +257,7 @@ class MLOpsMetrics(Singleton):
         self.messenger.send_message_json(topic_name, message_json)
         self.report_server_id_status(run_id, status)
 
-    def broadcast_server_training_status(self, run_id, status, role=None):
+    def broadcast_server_training_status(self, run_id, status, role=None, is_from_model=False):
         if self.messenger is None:
             return
         topic_name = "fl_run/fl_server/mlops/status"
@@ -259,7 +275,12 @@ class MLOpsMetrics(Singleton):
 
         self.report_server_device_status_to_web_ui(run_id, status, role)
 
-        FedMLServerDataInterface.get_instance().save_job(run_id, self.edge_id, status)
+        if is_from_model:
+            from ...cli.model_deployment.device_server_data_interface import FedMLServerDataInterface
+            FedMLServerDataInterface.get_instance().save_job(run_id, self.edge_id, status)
+        else:
+            from ...cli.server_deployment.server_data_interface import FedMLServerDataInterface
+            FedMLServerDataInterface.get_instance().save_job(run_id, self.edge_id, status)
 
     def report_server_id_status(self, run_id, status):
         # if not self.comm_sanity_check():
@@ -270,7 +291,6 @@ class MLOpsMetrics(Singleton):
         message_json = json.dumps(msg)
         # logging.info("report_server_id_status server id {}".format(server_agent_id))
         # logging.info("report_server_id_status. message_json = %s" % message_json)
-        MLOpsStatus.get_instance().set_server_agent_status(server_agent_id, status)
         self.messenger.send_message_json(topic_name, message_json)
 
         self.report_server_device_status_to_web_ui(run_id, status)

@@ -149,8 +149,10 @@ def __login_as_simulator(args, userid, version, mqtt_connection=True):
     setattr(args, "version", version)
     setattr(args, "log_file_dir", ClientConstants.get_log_file_dir())
     setattr(args, "device_id", FedMLClientRunner.get_device_id())
+    setattr(args, "current_device_id", FedMLClientRunner.get_device_id())
     setattr(args, "config_version", version)
     setattr(args, "cloud_region", "")
+
 
     # Create client runner for communication with the FedML server.
     runner = FedMLClientRunner(args)
