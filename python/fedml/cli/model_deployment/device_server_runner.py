@@ -1058,7 +1058,9 @@ class FedMLServerRunner:
 
                 device_id = str(get_uuid())
             elif "posix" in os.name:
-                device_id = hex(uuid.getnode())
+                device_id = sys_utils.get_device_id_in_docker()
+                if device_id is None:
+                    device_id = hex(uuid.getnode())
             else:
                 device_id = subprocess.Popen(
                     "hal-get-property --udi /org/freedesktop/Hal/devices/computer --key system.hardware.uuid".split()
