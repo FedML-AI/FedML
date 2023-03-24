@@ -13,6 +13,7 @@ from datetime import timezone
 from logging import handlers
 
 from fedml import mlops
+from .mlops_utils import MLOpsUtils
 
 
 class MLOpsRuntimeLog:
@@ -91,26 +92,8 @@ class MLOpsRuntimeLog:
                                                  + "-edge-"
                                                  + str(self.edge_id)
                                                  + ".log")
-        self.ntp_offset = self.get_ntp_offset()
+        self.ntp_offset = MLOpsUtils.get_ntp_offset()
         sys.excepthook = MLOpsRuntimeLog.handle_exception
-
-    def get_ntp_offset(self):
-        cnt = 0
-        ntp_server_url = 'time.aws.com'
-        while True:     # try until we get time offset
-            try:
-                ntp_client = ntplib.NTPClient()
-                ntp_time = datetime.datetime.utcfromtimestamp(ntp_client.request(ntp_server_url, 10).tx_time).timestamp()
-                loc_computer_time = time.time()
-                offset = ntp_time - loc_computer_time
-                return offset
-            except Exception as e:
-                cnt += 1
-                time.sleep(1)
-                if cnt >= 3:
-                    logging.info(f"Cannot Connect To NTP Server: {ntp_server_url}")
-                    break
-        return None
 
     @staticmethod
     def get_instance(args):
@@ -129,8 +112,11 @@ class MLOpsRuntimeLog:
                                        datefmt="%a, %d %b %Y %H:%M:%S")
         def log_ntp_time(sec, what):
             if self.ntp_offset is None:
-                self.ntp_offset = self.get_ntp_offset()
-            ntp_time_seconds = time.time() + self.ntp_offset
+                self.ntp_offset = MLOpsUtils.get_ntp_offset()
+            if self.ntp_offset is not None:
+                ntp_time_seconds = time.time() + self.ntp_offset
+            else:
+                ntp_time_seconds = time.time()
             ntp_time = datetime.datetime.fromtimestamp(ntp_time_seconds)
             return ntp_time.timetuple()
         logging.Formatter.converter = log_ntp_time
