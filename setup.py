@@ -50,7 +50,7 @@ requirements = [
     "uvicorn",
     "geventhttpclient>=1.4.4,<=2.0.2",
     "aiohttp>=3.8.1",
-    "numpy==1.21",
+    "numpy==1.24.2",
     "python-rapidjson>=0.9.1",
     "tritonclient",
     "redis",
