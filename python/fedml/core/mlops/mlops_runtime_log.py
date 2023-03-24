@@ -91,7 +91,7 @@ class MLOpsRuntimeLog:
                                                  + "-edge-"
                                                  + str(self.edge_id)
                                                  + ".log")
-        self.ntp_offset = None
+        self.ntp_offset = self.get_ntp_offset()
         sys.excepthook = MLOpsRuntimeLog.handle_exception
 
     def get_ntp_offset(self):
@@ -110,7 +110,7 @@ class MLOpsRuntimeLog:
                 if cnt >= 3:
                     logging.info(f"Cannot Connect To NTP Server: {ntp_server_url}")
                     break
-        return 0
+        return None
 
     @staticmethod
     def get_instance(args):
