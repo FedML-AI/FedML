@@ -56,7 +56,7 @@ requirements = [
     "redis",
     "attrdict",
     "ntplib",
-    "typing_extensions==4.4.0",
+    "typing_extensions==4.5.0",
     "chardet"
 ]
 
