@@ -4,6 +4,8 @@ import threading
 import time
 
 import wandb
+from .mlops_utils import MLOpsUtils
+import datetime
 
 
 class MLOpsProfilerEvent:
@@ -13,6 +15,7 @@ class MLOpsProfilerEvent:
     _instance_lock = threading.Lock()
     _sys_perf_profiling = False
     _enable_wandb = False
+    _ntp_offset = None
 
     def __new__(cls, *args, **kwargs):
         if not hasattr(MLOpsProfilerEvent, "_instance"):
@@ -108,19 +111,14 @@ class MLOpsProfilerEvent:
 
     @staticmethod
     def get_ntp_time():
-        import ntplib
-        import datetime
-        from datetime import timezone
-        try:
-            ntp_client = ntplib.NTPClient()
-            ntp_time = datetime.datetime.utcfromtimestamp(ntp_client.request('pool.ntp.org').tx_time)
-            ntp_time = ntp_time.replace(tzinfo=timezone.utc).timestamp()
-            return ntp_time
-        except Exception as e:
-            pass
+        if MLOpsProfilerEvent._ntp_offset is None:
+            MLOpsProfilerEvent._ntp_offset = MLOpsUtils.get_ntp_offset()
 
-        return None
+        if MLOpsProfilerEvent._ntp_offset is not None:
+            ntp_time_seconds = time.time() + MLOpsProfilerEvent._ntp_offset
+            return ntp_time_seconds
 
+        return time.time()
 
     @staticmethod
     def __build_event_mqtt_msg(run_id, edge_id, event_type, event_name, event_value):
