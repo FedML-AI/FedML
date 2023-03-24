@@ -41,7 +41,7 @@ requirements = [
     "matplotlib",
     "dill",
     "pandas",
-    "wandb==0.13.2",
+    "wandb==0.14.0",
     "eciespy",
     "PyNaCl",
     "httpx",
