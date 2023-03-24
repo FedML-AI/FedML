@@ -11,7 +11,6 @@ from psutil import NoSuchProcess, STATUS_ZOMBIE
 
 from .yaml_utils import load_yaml_config
 
-
 FETAL_ERROR_START_CODE = 128
 
 SYS_ERR_CODE_MAP = {"0": "Successful exit without errors.",
@@ -90,7 +89,7 @@ def get_sys_runner_info():
         pass
 
     return fedml_ver, exec_path, os_ver, cpu_info, python_ver, torch_ver, mpi_installed, \
-           cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem
+        cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem
 
 
 def generate_yaml_doc(yaml_object, yaml_file, append=False):
@@ -465,4 +464,12 @@ def log_return_info(bootstrap_file, ret_code):
 
         logging.error("Run {} return code {}. {}".format(
             bootstrap_file, ret_code, fatal_err_desc if fatal_err_desc != "" else err_desc))
+
+
+def get_device_id_in_docker():
+    if os.path.exists("/.dockerenv") or os.path.exists("/proc/1/cgroup"):
+        with open("/sys/class/dmi/id/product_uuid", 'r') as f:
+            device_id = f.readline().rstrip("\n").strip(" ")
+            return device_id
+    return None
 
