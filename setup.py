@@ -48,7 +48,7 @@ requirements = [
     "attrs",
     "fastapi==0.92.0",
     "uvicorn",
-    "geventhttpclient>=1.4.4,<=2.0.2",
+    "geventhttpclient>=1.4.4,<=2.0.9",
     "aiohttp>=3.8.1",
     "numpy==1.21",
     "python-rapidjson>=0.9.1",
