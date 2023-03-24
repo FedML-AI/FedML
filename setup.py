@@ -36,7 +36,7 @@ requirements = [
     "spacy",
     "gensim",
     "multiprocess",
-    "smart-open==5.2.1",
+    "smart-open==6.3.0",
     "nvidia-ml-py3",
     "matplotlib",
     "dill",
