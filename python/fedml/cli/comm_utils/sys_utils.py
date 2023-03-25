@@ -2,6 +2,7 @@ import os
 import platform
 import signal
 import traceback
+import uuid
 from os.path import expanduser
 
 import click
@@ -467,9 +468,16 @@ def log_return_info(bootstrap_file, ret_code):
 
 
 def get_device_id_in_docker():
-    if os.path.exists("/.dockerenv") or os.path.exists("/proc/1/cgroup"):
-        with open("/sys/class/dmi/id/product_uuid", 'r') as f:
-            device_id = f.readline().rstrip("\n").strip(" ")
-            return device_id
+    docker_env_file = "/.dockerenv"
+    cgroup_file = "/proc/1/cgroup"
+    product_uuid_file = "/sys/class/dmi/id/product_uuid"
+
+    if os.path.exists(docker_env_file) or os.path.exists(cgroup_file):
+        if os.path.exists(product_uuid_file):
+            with open(product_uuid_file, 'r') as f:
+                device_id = f.readline().rstrip("\n").strip(" ")
+                if device_id == "":
+                    device_id = str(uuid.uuid4())
+                return f"{device_id}-docker"
     return None
 
