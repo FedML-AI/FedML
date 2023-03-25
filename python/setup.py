@@ -20,7 +20,7 @@ except ImportError:
     bdist_wheel = None
 
 requirements = [
-    "numpy",
+    "numpy>=1.22",
     "PyYAML",
     "h5py",
     "tqdm",
@@ -36,7 +36,7 @@ requirements = [
     "spacy",
     "gensim",
     "multiprocess",
-    "smart-open==5.2.1",
+    "smart-open==6.3.0",
     "nvidia-ml-py3",
     "matplotlib",
     "dill",
@@ -48,15 +48,14 @@ requirements = [
     "attrs",
     "fastapi==0.92.0",
     "uvicorn",
-    "geventhttpclient>=1.4.4,<=2.0.2",
+    "geventhttpclient>=1.4.4,<=2.0.9",
     "aiohttp>=3.8.1",
-    "numpy==1.21",
     "python-rapidjson>=0.9.1",
     "tritonclient",
     "redis",
     "attrdict",
     "ntplib",
-    "typing_extensions==4.4.0",
+    "typing_extensions==4.5.0",
     "chardet"
 ]
 
@@ -88,7 +87,7 @@ requirements_extra_mxnet = [
 
 setup(
     name="fedml",
-    version="0.8.2a",
+    version="0.8.2a2",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
