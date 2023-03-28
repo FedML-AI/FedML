@@ -217,7 +217,7 @@ pipeline {
               sh 'cp -Rf ./aws/* ./devops/scripts/aws'
               sh 'cd ./devops/scripts/;unzip ./docker.zip;unzip ./kubectl.zip;tar -zxvf ./helm-v3.10.3-linux-amd64.tar.gz;mv linux-amd64/helm /usr/local/bin/helm;cd ../../'
 
-              sh './devops/scripts/build-fedml-docker.sh'
+              //sh './devops/scripts/build-fedml-docker.sh'
 
               sh 'docker build --network=host -f ./devops/dockerfile/device-image/Dockerfile-Base -t public.ecr.aws/x6k8q1x9/fedml-device-image:base .'
 
