@@ -20,7 +20,7 @@ except ImportError:
     bdist_wheel = None
 
 requirements = [
-    "numpy>=1.22",
+    "numpy>=1.21",
     "PyYAML",
     "h5py",
     "tqdm",
@@ -88,7 +88,7 @@ requirements_extra_mxnet = [
 
 setup(
     name="fedml",
-    version="0.8.2a2",
+    version="0.8.2a3",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "

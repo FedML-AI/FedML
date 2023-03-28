@@ -36,6 +36,7 @@ class MLOpsRuntimeLogProcessor:
         self.device_id = log_device_id
         self.log_server_url = log_server_url
         self.log_line_index = 0
+        self.log_uploaded_line_index = 0
         self.log_config_file = os.path.join(log_file_dir, "log-config.yaml")
         self.log_config = dict()
         self.load_log_config()
@@ -114,9 +115,15 @@ class MLOpsRuntimeLogProcessor:
             # Add prefix in exception lines which have not any fedml log prefix
             index = line_start_req
             while index < line_end_req:
-                prev_index = index-1
+                prev_index = index - 1
                 if prev_index < 0:
                     prev_index = 0
+
+                if MLOpsRuntimeLogProcessor.should_ignore_log_line(log_lines[index]):
+                    log_lines[index] = '\n'
+                    index += 1
+                    continue
+
                 prev_line_prefix = ''
                 prev_line_prefix_list = str(log_lines[prev_index]).split(']')
                 if len(prev_line_prefix_list) >= 3:
@@ -130,17 +137,23 @@ class MLOpsRuntimeLogProcessor:
 
                 index += 1
 
+            # remove the '\n' and '' str
+            upload_lines = []
+            for line in log_lines[line_start_req:line_end_req]:
+                if line != '' and line != '\n':
+                    upload_lines.append(line)
+
             err_list = list()
-            for log_index in range(line_start_req, line_end_req):
-                log_line = str(log_lines[log_index])
+            for log_index in range(len(upload_lines)):
+                log_line = str(upload_lines[log_index])
                 if log_line.find(' [ERROR] ') != -1:
-                    err_line_dict = {"errLine": self.log_line_index + log_index, "errMsg": log_line}
+                    err_line_dict = {"errLine": self.log_uploaded_line_index + log_index, "errMsg": log_line}
                     err_list.append(err_line_dict)
 
             log_upload_request = {
                 "run_id": run_id,
                 "edge_id": device_id,
-                "logs": log_lines[line_start_req:line_end_req],
+                "logs": upload_lines,
                 "create_time": time.time(),
                 "update_time": time.time(),
                 "created_by": str(device_id),
@@ -174,10 +187,26 @@ class MLOpsRuntimeLogProcessor:
                 pass
             else:
                 self.log_line_index += (line_end_req - line_start_req)
+                self.log_uploaded_line_index += len(upload_lines)
                 line_count += (line_end_req - line_start_req)
                 line_start_req = line_end_req
                 self.save_log_config()
                 resp_data = response.json()
+
+    @staticmethod
+    def should_ignore_log_line(log_line):
+        #  if str is empty, then continue, will move it later
+        if str(log_line) == '' or str(log_line) == '\n':
+            return True
+
+        #  if the str has prefix but contains nothing,
+        #  then signed it as '\n', will move it later
+        cur_line_list = str(log_line).split(']')
+        if str(log_line).startswith('[FedML-') and \
+                len(cur_line_list) == 5 and (cur_line_list[4] == ' \n'):
+            return True
+
+        return False
 
     def log_process(self):
         self.set_log_reporting_status(True)
@@ -190,10 +219,13 @@ class MLOpsRuntimeLogProcessor:
 
     def log_relocation(self):
         log_line_count = self.log_line_index
+        self.log_uploaded_line_index = self.log_line_index
         while log_line_count > 0:
             line = self.log_file.readline()
             if line is None:
                 break
+            if MLOpsRuntimeLogProcessor.should_ignore_log_line(line):
+                self.log_uploaded_line_index -= 1
             log_line_count -= 1
 
         if log_line_count != 0:
@@ -359,7 +391,7 @@ class MLOpsRuntimeLogDaemon:
                                                  in_args=self.args)
         log_processor.set_log_source(self.log_source)
         process = multiprocessing.Process(target=log_processor.log_process)
-        #process = threading.Thread(target=log_processor.log_process)
+        # process = threading.Thread(target=log_processor.log_process)
         if process is not None:
             process.start()
 
@@ -396,4 +428,4 @@ if __name__ == "__main__":
 
     while True:
         time.sleep(1)
-        #MLOpsRuntimeLogDaemon.get_instance(args).stop_log_processor(run_id, device_id)
+        # MLOpsRuntimeLogDaemon.get_instance(args).stop_log_processor(run_id, device_id)

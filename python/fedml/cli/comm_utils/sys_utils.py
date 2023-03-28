@@ -2,6 +2,7 @@ import os
 import platform
 import signal
 import traceback
+import uuid
 from os.path import expanduser
 
 import click
@@ -10,7 +11,6 @@ import yaml
 from psutil import NoSuchProcess, STATUS_ZOMBIE
 
 from .yaml_utils import load_yaml_config
-
 
 FETAL_ERROR_START_CODE = 128
 
@@ -90,7 +90,7 @@ def get_sys_runner_info():
         pass
 
     return fedml_ver, exec_path, os_ver, cpu_info, python_ver, torch_ver, mpi_installed, \
-           cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem
+        cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem
 
 
 def generate_yaml_doc(yaml_object, yaml_file, append=False):
@@ -465,4 +465,19 @@ def log_return_info(bootstrap_file, ret_code):
 
         logging.error("Run {} return code {}. {}".format(
             bootstrap_file, ret_code, fatal_err_desc if fatal_err_desc != "" else err_desc))
+
+
+def get_device_id_in_docker():
+    docker_env_file = "/.dockerenv"
+    cgroup_file = "/proc/1/cgroup"
+    product_uuid_file = "/sys/class/dmi/id/product_uuid"
+
+    if os.path.exists(docker_env_file) or os.path.exists(cgroup_file):
+        if os.path.exists(product_uuid_file):
+            with open(product_uuid_file, 'r') as f:
+                device_id = f.readline().rstrip("\n").strip(" ")
+                if device_id == "":
+                    device_id = str(uuid.uuid4())
+                return f"{device_id}-docker"
+    return None
 
