@@ -23,8 +23,7 @@ class KPercentileElementAggregatorFA(FAServerAggregator):
         self.quit = False
         self.total_sample_num = 0
         self.train_data_num_in_total = train_data_num
-        self.k_percentage_numbers = int(self.train_data_num_in_total * args.k / 100)
-        # self.flag = 100
+        self.percentage = args.k / 100
         if hasattr(args, "flag"):
             self.server_data = args.flag
             self.previous_server_data = args.flag
@@ -35,36 +34,46 @@ class KPercentileElementAggregatorFA(FAServerAggregator):
             self.use_all_data = False  # in each iteration, each client randomly sample some data to compute
         else:
             self.use_all_data = True  # in each iteration, each client uses its all local data to compute
+        self.max_val = self.previous_server_data
+        self.min_val = self.previous_server_data
 
     def aggregate(self, local_submission_list: List[Tuple[float, Any]]):
         if self.quit:
             return self.server_data
         total_sample_num_this_round = 0
         local_satisfied_data_num_current_round = 0
-        logging.info(f"flag={self.server_data}, w_locals={local_submission_list}")
-        for (sample_num, w_local) in local_submission_list:
+        logging.info(f"flag={self.server_data}, local_submission_list={local_submission_list}")
+        for (sample_num, satisfied_counter) in local_submission_list:
             total_sample_num_this_round += sample_num
-            local_satisfied_data_num_current_round += w_local
-        if total_sample_num_this_round == int(
-                self.train_data_num_in_total * local_satisfied_data_num_current_round / self.k_percentage_numbers):
+            local_satisfied_data_num_current_round += satisfied_counter
+        if total_sample_num_this_round * self.percentage == local_satisfied_data_num_current_round:
             self.quit = True
             self.previous_server_data = self.server_data
-        elif total_sample_num_this_round > int(
-                self.train_data_num_in_total * local_satisfied_data_num_current_round / self.k_percentage_numbers):
+        elif total_sample_num_this_round * self.percentage > local_satisfied_data_num_current_round:
             # decrease server_data
+            self.max_val = self.server_data
             if self.previous_server_data >= self.server_data:
                 self.previous_server_data = self.server_data
-                self.server_data = int(self.server_data / 2)
+                if self.server_data / 2 < self.min_val < self.max_val:
+                    self.server_data = (self.server_data + self.min_val)/2
+                else:
+                    self.server_data = self.server_data / 2
+                    self.min_val = self.server_data  # set lower bound for flag
             else:
-                new_server_data = int((self.previous_server_data + self.server_data) / 2)
+                new_server_data = (self.previous_server_data + self.server_data) / 2
                 self.previous_server_data = self.server_data
                 self.server_data = new_server_data
         else:  # increase server_data
+            self.min_val = self.server_data
             if self.previous_server_data <= self.server_data:
                 self.previous_server_data = self.server_data
-                self.server_data = int(2 * self.server_data)
+                if 2 * self.server_data > self.max_val > self.min_val:
+                    self.server_data = (self.server_data + self.max_val) / 2
+                else:
+                    self.server_data = 2 * self.server_data
+                    self.max_val = self.server_data
             else:
-                new_server_data = int((self.previous_server_data + self.server_data) / 2)
+                new_server_data = (self.previous_server_data + self.server_data) / 2
                 self.previous_server_data = self.server_data
                 self.server_data = new_server_data
         return self.server_data
