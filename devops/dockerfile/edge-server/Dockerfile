@@ -14,9 +14,9 @@ RUN pip3 install -r ./fedml/requirements.txt
 COPY ./python ./fedml/fedml-pip
 WORKDIR ./fedml/fedml-pip
 RUN pip3 install -e ./
-RUN pip3 install -e '.[tensorflow]'
-RUN pip3 install -e '.[jax]'
-RUN pip3 install -e '.[mxnet]'
+#RUN pip3 install -e '.[tensorflow]'
+#RUN pip3 install -e '.[jax]'
+#RUN pip3 install -e '.[mxnet]'
 
 WORKDIR /fedml
 
