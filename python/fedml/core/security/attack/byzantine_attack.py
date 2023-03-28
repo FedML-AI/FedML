@@ -71,6 +71,6 @@ class ByzantineAttack(BaseAttackMethod):
                 local_sample_number, local_model_params = model_list[i]
                 for k in local_model_params.keys():
                     if is_weight_param(k):
-                        local_model_params[k] = global_model[k] + (global_model[k] - local_model_params[k])
+                        local_model_params[k] = global_model[k].float().to(self.device) + (global_model[k].float().to(self.device) - local_model_params[k].float().to(self.device))
                 new_model_list.append((local_sample_number, local_model_params))
         return new_model_list
