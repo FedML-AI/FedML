@@ -1,6 +1,6 @@
 {
   "name": "@fedml/spider",
-  "version": "0.0.1-beta.3",
+  "version": "0.0.1-beta.4",
   "description": "Collaborative Learning from Scattered Data on Browser",
   "type": "module",
   "main": "dist/index.cjs",
