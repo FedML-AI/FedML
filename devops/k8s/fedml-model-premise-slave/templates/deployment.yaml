@@ -77,6 +77,8 @@ spec:
           resources:
             limits:
               memory: 8192Mi
+            requests:
+              memory: 4096Mi
           volumeMounts:
             - name: home-dir
               mountPath: {{ .Values.volume.clientHomeDirMountPath }}
