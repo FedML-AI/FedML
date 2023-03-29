@@ -119,7 +119,7 @@ class MLOpsRuntimeLog:
                 ntp_time_seconds = time.time()
             ntp_time = datetime.datetime.fromtimestamp(ntp_time_seconds)
             return ntp_time.timetuple()
-        # logging.Formatter.converter = log_ntp_time
+        logging.Formatter.converter = log_ntp_time
         stdout_handle = logging.StreamHandler()
         stdout_handle.setFormatter(format_str)
         if show_stdout_log:
