@@ -21,7 +21,9 @@ def is_weight_param(k):
     )
 
 
-def compute_euclidean_distance(v1, v2):
+def compute_euclidean_distance(v1, v2, device='cpu'):
+    v1 = v1.to(device)
+    v2 = v2.to(device)
     return (v1 - v2).norm()
 
 
@@ -36,7 +38,7 @@ def compute_middle_point(alphas, model_list):
     """
     sum_batch = torch.zeros(model_list[0].shape)
     for a, a_batch_w in zip(alphas, model_list):
-        sum_batch += a * a_batch_w
+        sum_batch += a * a_batch_w.float().cpu().numpy()
     return sum_batch
 
 
