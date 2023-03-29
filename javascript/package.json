@@ -1,0 +1,65 @@
+{
+  "name": "@fedml/spider",
+  "version": "0.0.1-beta",
+  "description": "Collaborative Learning from Scattered Data on Browser",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "files": [
+    "dist",
+    "*.d.ts"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "nr build --watch",
+    "lint": "eslint .",
+    "prepublishOnly": "npm run build",
+    "release": "bumpp --commit --push --tag && npm publish",
+    "start": "esno src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FedML-AI/FedML.git"
+  },
+  "keywords": [
+    "Collaborative",
+    "AI",
+    "MLOps"
+  ],
+  "author": "fedml-inc",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/FedML-AI/FedML/issues"
+  },
+  "homepage": "https://github.com/FedML-AI/FedML#readme",
+  "devDependencies": {
+    "@antfu/eslint-config": "^0.32.0",
+    "@antfu/ni": "^0.18.8",
+    "@rollup/plugin-alias": "^4.0.2",
+    "@rollup/plugin-commonjs": "^23.0.3",
+    "@rollup/plugin-json": "^5.0.2",
+    "@rollup/plugin-node-resolve": "^15.0.1",
+    "@types/node": "^18.11.9",
+    "@types/throttle-debounce": "^5.0.0",
+    "bumpp": "^8.2.1",
+    "eslint": "^8.28.0",
+    "esno": "^0.16.3",
+    "p-limit": "^4.0.0",
+    "rollup": "^3.5.0",
+    "rollup-plugin-dts": "^5.0.0",
+    "rollup-plugin-esbuild": "^5.0.0",
+    "throttle-debounce": "5.0.0",
+    "typescript": "^5.0.2",
+    "vite": "^3.2.4",
+    "vitest": "^0.25.3"
+  }
+}

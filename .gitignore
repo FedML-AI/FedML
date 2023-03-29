@@ -52,6 +52,8 @@ cifar-10-batches-py
 *.tar.gz
 *.zip
 *.json
+# 但是放行 javascript 目录下的 JSON 文件
+!javascript/*.json 
 *.tar.bz2
 *.stats
 
