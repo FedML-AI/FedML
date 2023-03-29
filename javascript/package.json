@@ -1,6 +1,7 @@
 {
   "name": "@fedml/spider",
-  "version": "0.0.1-beta.1",
+  "version": "0.0.1-beta.2",
+  "private": "false",
   "description": "Collaborative Learning from Scattered Data on Browser",
   "type": "module",
   "main": "dist/index.cjs",
@@ -22,7 +23,7 @@
     "dev": "nr build --watch",
     "lint": "eslint .",
     "prepublishOnly": "npm run build",
-    "release": "bumpp --commit --push --tag && npm publish",
+    "release": "bumpp --commit --push --tag && npm publish --access=public",
     "start": "esno src/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest"
