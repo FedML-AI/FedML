@@ -16,13 +16,13 @@ fi
 if [ $# -ge 10 ]; then
   PYTORCH_EXTRA_INDEX_URL=${10}
 else
-  PYTORCH_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cu113
+  PYTORCH_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cu116
 fi
 
 if [ $# -ge 11 ]; then
   PYTORCH_GEOMETRIC_URL=${11}
 else
-  PYTORCH_GEOMETRIC_URL=https://data.pyg.org/whl/torch-1.12.0+cu113.html
+  PYTORCH_GEOMETRIC_URL=https://data.pyg.org/whl/torch-1.13.1+cu116.html
 fi
 
 if [ $# -ge 12 ]; then
