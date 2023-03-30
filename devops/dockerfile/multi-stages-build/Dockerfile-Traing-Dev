@@ -69,8 +69,8 @@ RUN pip3 install MNN==1.1.6
 
 WORKDIR /fedml
 
-COPY --from=fedml-image-base /fedml/fedml-pip /fedml/fedml-pip
-COPY --from=fedml-image-base /fedml/fedml-pip/python/fedml ${FEDML_PIP_HOME}
+COPY --from=fedml-training-env-base /fedml/fedml-pip /fedml/fedml-pip
+COPY --from=fedml-training-env-base /fedml/fedml-pip/python/fedml ${FEDML_PIP_HOME}
 
 ENV MODE=normal FEDML_VERSION=${VERSION} ACCOUNT_ID=0 SERVER_DEVICE_ID=0 \
     FEDML_PACKAGE_NAME=package FEDML_PACKAGE_URL=s3_url \
