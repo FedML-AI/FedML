@@ -40,7 +40,6 @@ RUN pip3 install -r ./fedml/requirements.txt
 RUN pip3 install --upgrade gevent
 
 
-ARG BASE_IMAGE=public.ecr.aws/x6k8q1x9/fedml-device-image:base
 FROM ${BASE_IMAGE} AS fedml-training-env-base
 
 ADD ./devops/scripts/runner.sh ./fedml/runner.sh
@@ -70,7 +69,7 @@ RUN pip3 install MNN==1.1.6
 WORKDIR /fedml
 
 COPY --from=fedml-training-env-base /fedml/fedml-pip /fedml/fedml-pip
-COPY --from=fedml-training-env-base /fedml/fedml-pip/python/fedml ${FEDML_PIP_HOME}
+COPY --from=fedml-training-env-base /fedml/fedml-pip/fedml ${FEDML_PIP_HOME}
 
 ENV MODE=normal FEDML_VERSION=${VERSION} ACCOUNT_ID=0 SERVER_DEVICE_ID=0 \
     FEDML_PACKAGE_NAME=package FEDML_PACKAGE_URL=s3_url \
@@ -84,7 +83,7 @@ FROM ${BASE_IMAGE} AS fedml-client-agent
 WORKDIR /fedml
 
 COPY --from=fedml-training-env-base /fedml/fedml-pip /fedml/fedml-pip
-COPY --from=fedml-image-base /fedml/fedml-pip/python/fedml ${FEDML_PIP_HOME}
+COPY --from=fedml-training-env-base /fedml/fedml-pip/fedml ${FEDML_PIP_HOME}
 
 ENV ACCOUNT_ID=0 FEDML_VERSION=${VERSION} CLIENT_DEVICE_ID=0 CLIENT_OS_NAME=linux
 
