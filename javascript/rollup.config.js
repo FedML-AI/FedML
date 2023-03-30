@@ -25,6 +25,14 @@ const plugins = [
   }),
 ]
 
+/**
+ * @see https://rollupjs.org/configuration-options/#external
+ */
+const external = [
+  "@tensorflow/tfjs",
+  "@tensorflow/tfjs-vis"
+]
+
 export default [
   ...entries.map(input => ({
     input,
@@ -38,7 +46,7 @@ export default [
         format: 'cjs',
       },
     ],
-    external: [],
+    external,
     plugins,
   })),
   ...entries.map(input => ({
@@ -47,7 +55,7 @@ export default [
       file: input.replace('src/', '').replace('.ts', '.d.ts'),
       format: 'esm',
     },
-    external: [],
+    external,
     plugins: [
       dts({ respectExternal: true }),
     ],
