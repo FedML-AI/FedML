@@ -1,10 +1,10 @@
-import { BaseCommunicationManager } from './communication/base_com_manager';
+import { MyMessage } from '../../cross_web/client/message_define'
+import { BaseCommunicationManager } from './communication/base_com_manager'
 // import { MqttS3MNNCommManager } from './distributed/communication/mqtt_s3_mnn/mqtt_s3_comm_manager';
-import { MqttS3MultiClientsCommManager } from './communication/mqtt_s3_multi_clients_comm_manager';
-// import { fetchConfig } from '/@/api/config/index';
-import { Message } from './communication/message';
-import { MyMessage } from '../../cross_web/client/message_define';
-
+import { MqttS3MultiClientsCommManager } from './communication/mqtt_s3_multi_clients_comm_manager'
+// import { fetchConfig } from '/@/api/config/index'
+import { Message } from './communication/message'
+import axios from 'axios'
 export class FedMLCommManager {
   args;
   comm;
@@ -81,17 +81,17 @@ export class FedMLCommManager {
     this.com_manager.add_observer(this);
   }
 
-  // async get_training_mqtt_s3_config() {
-  //   const params = {
-  //     config_name: ['mqtt_config', 's3_config'],
-  //   };
-  //   const { mqtt_config, s3_config } = await fetchConfig(params);
-  //   console.log('config!!!!!!!!!!! ', mqtt_config, ' ', s3_config);
-  //   return {
-  //     mqtt_config: mqtt_config,
-  //     s3_config: s3_config,
-  //   };
-  // }
+  async get_training_mqtt_s3_config() {
+    const params = {
+      config_name: ['mqtt_config', 's3_config'],
+    };
+    const { mqtt_config, s3_config } = await this.fetchConfig(params);
+    console.log('config!!!!!!!!!!! ', mqtt_config, ' ', s3_config);
+    return {
+      mqtt_config: mqtt_config,
+      s3_config: s3_config,
+    };
+  }
 
   receive_message(msg_type, msg_params) {
     console.log('receive topic ', msg_type, 'msg_params: ', msg_params);
@@ -106,6 +106,18 @@ export class FedMLCommManager {
     message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_STATUS, status);
     message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, 'mac');
     await this.send_message(message);
+  }
+
+  async fetchConfig(params) {
+    axios.post('https://jsonplaceholder.typicode.com/posts', {
+      title: 'foo',
+      body: 'bar',
+      userId: 1,
+    }).then(response => {
+      console.log(response.data);
+    }).catch(error => {
+      console.log(error);
+    });
   }
 }
 

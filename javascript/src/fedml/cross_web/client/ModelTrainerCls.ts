@@ -28,10 +28,10 @@ export class ModelTrainerCLS implements ClientTrainer {
   }
   async train() {
     const model = this.model;
-    // console.log('model_cls args: ', this.args);
-    // const metrics = ['loss', 'val_loss', 'acc', 'val_acc'];
-    // const container = { name: 'Loss and accuracy', tab: 'Training' };
-    // const ftfvis_options = { callbacks: ['onEpochEnd'] };
+    console.log('model_cls args: ', this.args);
+    const metrics = ['loss', 'val_loss', 'acc', 'val_acc'];
+    const container = { name: 'Loss and accuracy', tab: 'Training' };
+    const ftfvis_options = { callbacks: ['onEpochEnd'] };
     // TODO: fixed here hard coding
     if (this.args.dataset == 'mnist') {
       await model.fit(
@@ -44,7 +44,7 @@ export class ModelTrainerCLS implements ClientTrainer {
           ],
           batchSize: 10,
           epochs: 5,
-          // callbacks: [tfvis.show.fitCallbacks(container, metrics, ftfvis_options)],
+          callbacks: [tfvis.show.fitCallbacks(container, metrics, ftfvis_options)],
         },
       );
     } else if (this.args.dataset == 'cifar10') {
@@ -52,7 +52,7 @@ export class ModelTrainerCLS implements ClientTrainer {
         validationData: [tf.reshape(this.testData, [100, 32, 32, 3]), this.testDataLabel],
         batchSize: 10,
         epochs: 50,
-        // callbacks: [tfvis.show.fitCallbacks(container, metrics, ftfvis_options)],
+        callbacks: [tfvis.show.fitCallbacks(container, metrics, ftfvis_options)],
       });
     }
   }

@@ -1,14 +1,14 @@
-import { BaseCommunicationManager } from './base_com_manager';
-import { Message } from './message';
-import { Observer } from './observer';
-import { CommunicationConstants } from './constants';
-import { S3Storage } from './remote_storage';
-import { v4 as uuidv4 } from 'uuid';
-import * as tf from '@tensorflow/tfjs';
-import * as mqtt from 'mqtt/dist/mqtt.min';
-import { computed } from 'vue';
-import { useAppStore } from '/@/store/modules/app';
-import { useGlobSetting } from '/@/hooks/setting';
+import mqtt from 'mqtt'
+import { BaseCommunicationManager } from './base_com_manager'
+import { Message } from './message'
+import { Observer } from './observer'
+import { CommunicationConstants } from './constants'
+import { S3Storage } from './remote_storage'
+import { v4 as uuidv4 } from 'uuid'
+import * as tf from '@tensorflow/tfjs'
+import { computed } from 'vue'
+import { useAppStore } from '/@/store/modules/app'
+import { useGlobSetting } from '/@/hooks/setting'
 
 const { mqttUrl } = useGlobSetting();
 const appStore = useAppStore();
@@ -116,7 +116,7 @@ export class MqttS3MultiClientsCommManager implements BaseCommunicationManager {
       will: { topic: this.topic_last_will_msg, payload: this.last_will_msg, qos: 2, retain: true },
     };
     const connectUrl = mqttUrl;
-    this.mqtt_mgr = mqtt.connect(connectUrl, this.options);
+    this.mqtt_mgr = mqtt.connect(connectUrl, this.options)
     // this.mqtt_mgr = currClient.value;
     this.mqtt_mgr.on('connect', () => {
       console.log('Connected');

@@ -27,7 +27,7 @@ export class S3Storage {
       accessKeyId: access_key_id,
       secretAccessKey: secret_access_key,
       apiVersion: '2006-03-01',
-    });
+    })
   }
 
   async write_model(message_key, model) {
