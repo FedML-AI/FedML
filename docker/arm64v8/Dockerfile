@@ -1,7 +1,7 @@
 
 # https://hub.docker.com/r/nvidia/cuda/tags
 # https://hub.docker.com/r/nvidia/cuda/tags?page=1&name=11.6.0-devel-ubuntu was released at May 6th, 2022
-ARG NVIDIA_BASE_IMAGE=nvidia/cuda:11.3.0-cudnn8-devel-ubuntu20.04@sha256:8e3df8601e81c57e85c082e9bcc6c547641635730ef8516b2cfa9c9e6c1208af
+ARG NVIDIA_BASE_IMAGE=nvidia/cuda:11.6.1-cudnn8-devel-ubuntu20.04@sha256:1a06a6cc47ba6ade96c646231c3d0f3216f9b32fb1420f88e46616eea478a661
 
 FROM ${NVIDIA_BASE_IMAGE}
 ARG OS=ubuntu20.04
@@ -14,23 +14,23 @@ ARG ARCH=arm64
 # ARG ARCH
 
 ARG PYTHON_VERSION=3.8
-# ARG PYTHON_VERSION
 
-ARG PYTORCH_VERSION=1.12.1
-# ARG PYTORCH_VERSION
+ARG PYTORCH_VERSION=1.13.1
+ARG TORCH_VISION_VERSION=0.14.1
+ARG TORCH_AUDIO_VERSION=0.13.1
 
 
 # https://docs.nvidia.com/deeplearning/nccl/release-notes/rel_2-12-10.html#rel_2-12-10
-ARG NCCL_VERSION=2.9.6
+ARG NCCL_VERSION=2.11.4
 
 # NCCL 2.12.10 release supports CUDA 10.2, CUDA 11.0, and CUDA 11.6.
-ARG CUDA_VERSION=11.3
+ARG CUDA_VERSION=11.6
 
-ARG PYTORCH_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cu113
+ARG PYTORCH_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cu116
 
-ARG PYTORCH_GEOMETRIC_URL=https://data.pyg.org/whl/torch-1.12.0+cu113.html
+ARG PYTORCH_GEOMETRIC_URL=https://data.pyg.org/whl/torch-1.13.1+cu116.html
 
-ARG LIB_NCCL=2.9.6-1+cuda11.3
+ARG LIB_NCCL=2.11.4-1+cuda11.6
 
 RUN echo ${NCCL_VERSION}
 RUN echo ${CUDA_VERSION}
@@ -142,7 +142,7 @@ RUN pip3 install --ignore-installed pyyaml>=5.3.1 && pip3 install numpy ninja se
 #sudo rm -f /usr/bin/python && sudo ln -s /usr/bin/python${PYTHON_VERSION} /usr/bin/python && sudo USE_SYSTEM_NCCL=1 TORCH_CUDA_ARC_LIST="6.0 6.1 7.0 7.5 8.0" CMAKE_CUDA_COMPILER="/usr/local/cuda" python3.8 setup.py install
 #RUN rm -rf ${INSTALL_DIR}/pytorch
 #RUN pip install torch==${PYTORCH_VERSION}
-RUN pip install --upgrade pip && pip install torch==${PYTORCH_VERSION} torchvision torchaudio --extra-index-url ${PYTORCH_EXTRA_INDEX_URL}
+RUN pip install --upgrade pip && pip install torch==${PYTORCH_VERSION} torchvision==${TORCH_VISION_VERSION} torchaudio==${TORCH_AUDIO_VERSION} --extra-index-url ${PYTORCH_EXTRA_INDEX_URL}
 
 RUN echo `python3 --version`;python3 -c "import torch; torch.__version__;print('cuda available: {}'.format(torch.cuda.is_available()));"
 
