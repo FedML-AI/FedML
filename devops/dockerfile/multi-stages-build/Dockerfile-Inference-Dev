@@ -1,0 +1,89 @@
+ARG VERSION=dev
+ARG BASE_IMAGE=public.ecr.aws/x6k8q1x9/fedml-device-image:base
+ARG FEDML_PIP_HOME=/usr/local/lib/python3.8/dist-packages/fedml
+FROM ${BASE_IMAGE} AS fedml-inference-env-base
+
+ADD ./devops/scripts/runner.sh ./fedml/runner.sh
+
+ADD ./devops/scripts/requirements.txt ./fedml/requirements.txt
+
+RUN chmod a+x ./fedml/runner.sh
+RUN echo "Updating..."
+
+RUN pip3 install -r ./fedml/requirements.txt
+
+COPY ./python ./fedml/fedml-pip
+COPY ./python/fedml ${FEDML_PIP_HOME}
+WORKDIR ./fedml/fedml-pip
+RUN pip3 install -e ./
+
+WORKDIR /fedml
+
+
+ARG FEDML_PIP_HOME=/usr/local/lib/python3.8/dist-packages/fedml
+FROM ${BASE_IMAGE} AS fedml-inference-master
+
+WORKDIR /fedml
+
+COPY --from=fedml-inference-env-base /fedml/fedml-pip /fedml/fedml-pip
+COPY --from=fedml-inference-env-base /fedml/fedml-pip/python/fedml ${FEDML_PIP_HOME}
+
+ENV ACCOUNT_ID=0 FEDML_VERSION=${VERSION} SERVER_DEVICE_ID=0 SERVER_OS_NAME=linux INFER_HOST="127.0.0.1" \
+    FEDML_REDIS_ADDR="127.0.0.1" FEDML_REDIS_PORT=6379 FEDML_REDIS_PASSWORD="fedml_default"
+
+CMD fedml model device login ${ACCOUNT_ID} -v ${FEDML_VERSION} -p -m \
+    -ih ${INFER_HOST} -id ${SERVER_DEVICE_ID} -os ${SERVER_OS_NAME} \
+    -ra ${FEDML_REDIS_ADDR} -rp ${FEDML_REDIS_PORT} -rpw ${FEDML_REDIS_PASSWORD};./runner.sh
+
+
+FROM ${BASE_IMAGE} AS fedml-inference-slave
+
+WORKDIR /fedml
+
+COPY --from=fedml-inference-env-base /fedml/fedml-pip /fedml/fedml-pip
+COPY --from=fedml-inference-env-base /fedml/fedml-pip/python/fedml ${FEDML_PIP_HOME}
+
+ENV ACCOUNT_ID=0 FEDML_VERSION=${VERSION} CLIENT_DEVICE_ID=0 CLIENT_OS_NAME=linux INFER_HOST="127.0.0.1"
+
+CMD fedml model device login ${ACCOUNT_ID} -v ${FEDML_VERSION} -p \
+    -id ${CLIENT_DEVICE_ID} -os ${CLIENT_OS_NAME} -ih ${INFER_HOST}; ./runner.sh
+
+
+FROM ${BASE_IMAGE} AS fedml-inference-ingress
+
+WORKDIR /fedml
+
+COPY --from=fedml-inference-env-base /fedml/fedml-pip /fedml/fedml-pip
+COPY --from=fedml-inference-env-base /fedml/fedml-pip/python/fedml ${FEDML_PIP_HOME}
+
+ENV FEDML_REDIS_ADDR="local" FEDML_REDIS_PORT=6379 FEDML_REDIS_PASSWORD="fedml_default" \
+    FEDML_END_POINT_ID=0 FEDML_MODEL_ID=0 \
+    FEDML_MODEL_NAME="model" FEDML_MODEL_VERSION="v1" \
+    FEDML_INFER_URL="infer" FEDML_CONFIG_VERSION="release" \
+    FEDML_INFER_PORT=5001
+
+CMD python3 ${FEDML_PIP_HOME}/cli/model_deployment/device_model_inference_entry.py \
+    -rp ${FEDML_REDIS_ADDR} -ra ${FEDML_REDIS_PORT} -rpw ${FEDML_REDIS_PASSWORD} \
+    -ep ${FEDML_END_POINT_ID} -mi ${FEDML_MODEL_ID} \
+    -mn ${FEDML_MODEL_NAME} -mv ${FEDML_MODEL_VERSION} \
+    -iu ${FEDML_INFER_URL} -cv ${FEDML_CONFIG_VERSION} \
+    -ip ${FEDML_INFER_PORT};./runner.sh
+
+
+ARG INF_BACKEND_BASE_IMAGE=nvcr.io/nvidia/tritonserver:22.01-py3
+FROM ${INF_BACKEND_BASE_IMAGE} AS fedml-inference-backend
+
+ADD ./devops/scripts/runner.sh ./fedml/runner.sh
+
+ADD ./devops/scripts/requirements.txt ./fedml/requirements.txt
+
+RUN chmod a+x ./fedml/runner.sh
+
+ENV FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL=3 \
+    FEDML_MODEL_SERVING_REPO_PATH=/home/fedml/fedml-client/fedml/models_serving
+
+CMD mkdir -p ${FEDML_MODEL_SERVING_REPO_PATH};tritonserver --model-control-mode=poll \
+    --strict-model-config=false \
+    --backend-config=onnxruntime,default-max-batch-size=1 \
+    --repository-poll-secs=${FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL} \
+    --model-repository=${FEDML_MODEL_SERVING_REPO_PATH}
