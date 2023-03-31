@@ -31,8 +31,8 @@ requirements = [
     "scikit-learn",
     "networkx",
     "click",
-    "torch",
-    "torchvision",
+    "torch==1.13.1",
+    "torchvision==0.14.1",
     "spacy",
     "gensim",
     "multiprocess",
@@ -88,7 +88,7 @@ requirements_extra_mxnet = [
 
 setup(
     name="fedml",
-    version="0.8.2a3",
+    version="0.8.2a5",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "

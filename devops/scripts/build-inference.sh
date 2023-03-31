@@ -8,9 +8,6 @@ docker login --username AWS --password $(aws ecr-public get-login-password --reg
 docker build -f ./devops/dockerfile/model-inference-backend/Dockerfile -t public.ecr.aws/x6k8q1x9/fedml-inference-backend:latest .
 docker push public.ecr.aws/x6k8q1x9/fedml-inference-backend:latest
 
-docker build -f ./devops/dockerfile/model-inference-converter/Dockerfile -t public.ecr.aws/x6k8q1x9/fedml-inference-converter:latest .
-docker push public.ecr.aws/x6k8q1x9/fedml-inference-converter:latest
-
 docker build -f ./devops/dockerfile/model-inference-ingress/Dockerfile -t public.ecr.aws/x6k8q1x9/fedml-inference-ingress:${version} .
 docker push public.ecr.aws/x6k8q1x9/fedml-inference-ingress:${version}
 

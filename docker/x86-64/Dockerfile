@@ -1,35 +1,36 @@
 
 # https://hub.docker.com/r/nvidia/cuda/tags
 # https://hub.docker.com/r/nvidia/cuda/tags?page=1&name=11.6.0-devel-ubuntu was released at May 6th, 2022
-ARG NVIDIA_BASE_IMAGE=nvidia/cuda:11.3.1-cudnn8-devel-ubuntu18.04
+ARG NVIDIA_BASE_IMAGE=nvidia/cuda:11.6.1-cudnn8-devel-ubuntu20.04
 FROM ${NVIDIA_BASE_IMAGE}
-ARG OS=ubuntu18.04
+ARG OS=ubuntu20.04
 # ARG OS
 
-ARG DISTRO=ubuntu1804
+ARG DISTRO=ubuntu2004
 # ARG DISTRO
 
 ARG ARCH=x86_64
 # ARG ARCH
 
-ARG PYTHON_VERSION=3.7
+ARG PYTHON_VERSION=3.8
 # ARG PYTHON_VERSION
 
-ARG PYTORCH_VERSION=1.12.1
-# ARG PYTORCH_VERSION
+ARG PYTORCH_VERSION=1.13.1
+ARG TORCH_VISION_VERSION=0.14.1
+ARG TORCH_AUDIO_VERSION=0.13.1
 
 
 # https://docs.nvidia.com/deeplearning/nccl/release-notes/rel_2-12-10.html#rel_2-12-10
-ARG NCCL_VERSION=2.9.9
+ARG NCCL_VERSION=2.11.4
 
 # NCCL 2.12.10 release supports CUDA 10.2, CUDA 11.0, and CUDA 11.6.
-ARG CUDA_VERSION=11.3
+ARG CUDA_VERSION=11.6
 
-ARG PYTORCH_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cu113
+ARG PYTORCH_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cu116
 
-ARG PYTORCH_GEOMETRIC_URL=https://data.pyg.org/whl/torch-1.12.0+cu113.html
+ARG PYTORCH_GEOMETRIC_URL=https://data.pyg.org/whl/torch-1.13.1+cu116.html
 
-ARG LIB_NCCL="2.9.9-1+cuda11.3"
+ARG LIB_NCCL="2.11.4-1+cuda11.6"
 
 RUN echo ${NCCL_VERSION}
 RUN echo ${CUDA_VERSION}
@@ -87,7 +88,7 @@ RUN apt-get install -y --no-install-recommends \
 # ***************************************************************************
 # Git
 # ***************************************************************************
-RUN cd /usr/lib/python3/dist-packages;echo `python3 --version`;cp -f apt_pkg.cpython-36m-x86_64-linux-gnu.so apt_pkg.so
+#RUN cd /usr/lib/python3/dist-packages;echo `python3 --version`;cp -f apt_pkg.cpython-36m-x86_64-linux-gnu.so apt_pkg.so
 RUN apt install python-dev python3-dev python${PYTHON_VERSION}-dev -y
 RUN apt-get install libgirepository1.0-dev python-cairo libcairo2 libcairo2-dev -y
 RUN python${PYTHON_VERSION}  -m pip install --ignore-installed PyGObject
@@ -126,7 +127,7 @@ RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/
 add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/${DISTRO}/${ARCH} /" && \
 apt update && \
 #export NCCL_VERSION_ENV=`echo $NCCL_VERSION | awk -F'-1' '{print $1}'` && \
-apt install -y --allow-change-held-packages libnccl2=${LIB_NCCL} libnccl-dev=${LIB_NCCL}
+apt install -y --allow-change-held-packages --allow-downgrades libnccl2=${LIB_NCCL} libnccl-dev=${LIB_NCCL}
 
 # ***************************************************************************
 # PyTorch (install from source)
@@ -141,7 +142,7 @@ RUN sudo pip3 install --upgrade pip && pip3 install --ignore-installed pyyaml>=5
 #sudo rm -f /usr/bin/python && sudo ln -s /usr/bin/python${PYTHON_VERSION} /usr/bin/python && sudo USE_SYSTEM_NCCL=1 TORCH_CUDA_ARC_LIST="6.0 6.1 7.0 7.5 8.0" CMAKE_CUDA_COMPILER="/usr/local/cuda" python3.8 setup.py install
 #RUN rm -rf ${INSTALL_DIR}/pytorch
 #RUN pip install torch==${PYTORCH_VERSION}
-RUN pip install --upgrade pip && pip install torch==${PYTORCH_VERSION} torchvision torchaudio --extra-index-url ${PYTORCH_EXTRA_INDEX_URL}
+RUN pip install --upgrade pip && pip install torch==${PYTORCH_VERSION} torchvision==${TORCH_VISION_VERSION} torchaudio==${TORCH_AUDIO_VERSION} --extra-index-url ${PYTORCH_EXTRA_INDEX_URL}
 
 RUN echo `python3 --version`;python3 -c "import torch; torch.__version__;print('cuda available: {}'.format(torch.cuda.is_available()));"
 

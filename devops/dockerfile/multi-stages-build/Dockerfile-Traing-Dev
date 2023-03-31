@@ -1,0 +1,117 @@
+ARG VERSION=dev
+ARG IS_BUILDING_GPU_IMAGE=0
+#ARG BASE_IMAGE=continuumio/miniconda3:4.7.12
+ARG BASE_IMAGE=fedml/fedml:latest-torch1.13.1-cuda11.6-cudnn8-devel
+ARG FEDML_PIP_HOME=/usr/local/lib/python3.8/dist-packages/fedml
+FROM ${BASE_IMAGE} AS fedml-image-base
+
+ADD ./devops/scripts/aws ./fedml/aws
+ADD ./devops/scripts/setup-aws-cli.sh ./fedml/setup-aws-cli.sh
+ADD ./devops/scripts/set-aws-credentials.sh ./fedml/set-aws-credentials.sh
+ADD ./devops/scripts/docker /usr/bin/
+ADD ./devops/scripts/kubectl /usr/bin/
+
+ADD ./devops/scripts/requirements.txt ./fedml/requirements.txt
+ADD ./devops/scripts/setup-conda-env.sh ./fedml/setup-conda-env.sh
+
+RUN chmod a+x /usr/bin/docker
+RUN chmod a+x /usr/bin/kubectl
+RUN chmod a+x ./fedml/setup-aws-cli.sh
+RUN chmod a+x ./fedml/set-aws-credentials.sh
+RUN ./fedml/setup-aws-cli.sh
+
+RUN apt-get update
+#RUN apt-get -y install gettext-base
+#RUN apt-get -y install unar wget
+#RUN apt-get -y install libquadmath0
+
+RUN sudo DEBIAN_FRONTEND=noninteractive apt-get install -qq gettext-base < /dev/null > /dev/null
+RUN sudo DEBIAN_FRONTEND=noninteractive apt-get install -qq unar wget < /dev/null > /dev/null
+RUN sudo DEBIAN_FRONTEND=noninteractive apt-get install -qq libquadmath0 < /dev/null > /dev/null
+
+RUN chmod a+x ./fedml/setup-conda-env.sh
+RUN bash ./fedml/setup-conda-env.sh ${IS_BUILDING_GPU_IMAGE}
+
+#RUN pip install --upgrade pip
+#RUN pip3 uninstall fedml
+
+RUN pip3 install --upgrade fedml
+RUN pip3 install -r ./fedml/requirements.txt
+RUN pip3 install --upgrade gevent
+
+
+FROM ${BASE_IMAGE} AS fedml-training-env-base
+
+ADD ./devops/scripts/runner.sh ./fedml/runner.sh
+
+ADD ./devops/scripts/requirements.txt ./fedml/requirements.txt
+
+RUN chmod a+x ./fedml/runner.sh
+RUN echo "Updating..."
+
+RUN pip3 install -r ./fedml/requirements.txt
+
+COPY ./python ./fedml/fedml-pip
+COPY ./python/fedml ${FEDML_PIP_HOME}
+WORKDIR ./fedml/fedml-pip
+RUN pip3 install -e ./
+#RUN pip3 install -e '.[tensorflow]'
+#RUN pip3 install -e '.[jax]'
+#RUN pip3 install -e '.[mxnet]'
+
+WORKDIR /fedml
+
+
+FROM ${BASE_IMAGE} AS fedml-image-base-with-version
+
+RUN pip3 install MNN==1.1.6
+
+WORKDIR /fedml
+
+COPY --from=fedml-training-env-base /fedml/fedml-pip /fedml/fedml-pip
+COPY --from=fedml-training-env-base /fedml/fedml-pip/fedml ${FEDML_PIP_HOME}
+
+ENV MODE=normal FEDML_VERSION=${VERSION} ACCOUNT_ID=0 SERVER_DEVICE_ID=0 \
+    FEDML_PACKAGE_NAME=package FEDML_PACKAGE_URL=s3_url \
+    FEDML_RUNNER_CMD=3dsad
+
+CMD fedml login ${ACCOUNT_ID} -v ${FEDML_VERSION} -s -r cloud_server -rc ${FEDML_RUNNER_CMD} -id ${SERVER_DEVICE_ID}; ./runner.sh
+
+
+FROM ${BASE_IMAGE} AS fedml-client-agent
+
+WORKDIR /fedml
+
+COPY --from=fedml-training-env-base /fedml/fedml-pip /fedml/fedml-pip
+COPY --from=fedml-training-env-base /fedml/fedml-pip/fedml ${FEDML_PIP_HOME}
+
+ENV ACCOUNT_ID=0 FEDML_VERSION=${VERSION} CLIENT_DEVICE_ID=0 CLIENT_OS_NAME=linux
+
+CMD fedml login ${ACCOUNT_ID} -v ${FEDML_VERSION} -c -id ${CLIENT_DEVICE_ID} -os ${CLIENT_OS_NAME}; ./runner.sh
+
+
+FROM ${BASE_IMAGE} AS fedml-server-agent
+
+WORKDIR /fedml
+
+COPY --from=fedml-training-env-base /fedml/fedml-pip /fedml/fedml-pip
+COPY --from=fedml-image-base /fedml/fedml-pip/python/fedml ${FEDML_PIP_HOME}
+
+ENV MODE=normal FEDML_VERSION=${VERSION} ACCOUNT_ID=0 SERVER_AGENT_ID=0 \
+    AWS_IAM_ACCESS_ID=0 \
+    AWS_IAM_ACCESS_KEY=0 \
+    AWS_REGION=0
+
+CMD ./set-aws-credentials.sh ${AWS_IAM_ACCESS_ID} ${AWS_IAM_ACCESS_KEY} ${AWS_REGION};fedml login ${ACCOUNT_ID} -v ${FEDML_VERSION} -s -r cloud_agent -id ${SERVER_AGENT_ID};./runner.sh
+
+
+FROM ${BASE_IMAGE} AS fedml-edge-server
+
+WORKDIR /fedml
+
+COPY --from=fedml-training-env-base /fedml/fedml-pip /fedml/fedml-pip
+COPY --from=fedml-image-base /fedml/fedml-pip/python/fedml ${FEDML_PIP_HOME}
+
+ENV ACCOUNT_ID=0 FEDML_VERSION=${VERSION} SERVER_DEVICE_ID=0 SERVER_OS_NAME=linux
+
+CMD fedml login ${ACCOUNT_ID} -v ${FEDML_VERSION} -s -id ${SERVER_DEVICE_ID} -os ${SERVER_OS_NAME};./runner.sh
