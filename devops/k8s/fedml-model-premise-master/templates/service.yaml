@@ -19,7 +19,8 @@ kind: Service
 metadata:
   name: {{ .Values.inferenceGateway.deployment.name }}
   labels:
-    {{- include "fedml-model-premise-master.labels" . | nindent 4 }}
+    app.kubernetes.io/instance: fedml-model-inference-gateway
+    app.kubernetes.io/name: fedml-model-inference-gateway
 spec:
   type: {{ .Values.inferenceGateway.service.type }}
   ports:
@@ -28,4 +29,5 @@ spec:
       protocol: TCP
       name: gateway-port
   selector:
-    {{- include "fedml-model-premise-master.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/instance: fedml-model-inference-gateway
+    app.kubernetes.io/name: fedml-model-inference-gateway

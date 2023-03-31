@@ -90,12 +90,14 @@ kind: Deployment
 metadata:
   name: {{ .Values.inferenceGateway.deployment.name }}
   labels:
-    {{- include "fedml-model-premise-master.labels" . | nindent 4 }}
+    app.kubernetes.io/instance: fedml-model-inference-gateway
+    app.kubernetes.io/name: fedml-model-inference-gateway
 spec:
   replicas: {{ .Values.inferenceGateway.replicaCount }}
   selector:
     matchLabels:
-      {{- include "fedml-model-premise-master.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/instance: fedml-model-inference-gateway
+      app.kubernetes.io/name: fedml-model-inference-gateway
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -103,7 +105,8 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "fedml-model-premise-master.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/instance: fedml-model-inference-gateway
+        app.kubernetes.io/name: fedml-model-inference-gateway
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
