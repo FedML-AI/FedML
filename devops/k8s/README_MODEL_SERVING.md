@@ -101,7 +101,7 @@ Moreover, on GCP k8s cluster, you should set up your GPU nodes based on the foll
 After you have installed FedML model serving packages, you may run the helm upgrade commands to modify parameters.
 
 e.g.
-```helm upgrade --set "autoscaling.enabled=true" --set replicaCount=$InstanceNumber fedml-model-premise-master fedml-model-premise-master-0.7.397.tgz -n $YourNameSpace```
+```helm upgrade --set "autoscaling.enabled=true" --set replicaCount=$InstanceNumber fedml-model-premise-master fedml-model-premise-master-latest.tgz -n $YourNameSpace```
 
 ### 6). Config your CNAME record in your DNS provider (Godaddy, wordpress, AWS Route 53...)
 #### (a). Find the Kubernetes nginx ingress named 'fedml-model-inference-gateway' in your Kubernetes cluster.
@@ -150,7 +150,7 @@ Pull remote model(ModelOps) to local model repository:
 1. Q: Supports automatically scale?
 A: Yes. Call CLI `helm upgrade`. For example, you can do upgrade by using the following CLI:
 
-```helm upgrade --set "autoscaling.enabled=true" --set replicaCount=$InstanceNumber fedml-model-premise-master fedml-model-premise-master-0.7.397.tgz -n $YourNameSpace```
+```helm upgrade --set "autoscaling.enabled=true" --set replicaCount=$InstanceNumber fedml-model-premise-master fedml-model-premise-master-latest.tgz -n $YourNameSpace```
 
 
 2. Q: Does the inference endpoint supports private IP? \
