@@ -20,7 +20,7 @@ except ImportError:
     bdist_wheel = None
 
 requirements = [
-    "numpy>=1.21",
+    "numpy>=1.21,<=1.23",
     "PyYAML",
     "h5py",
     "tqdm",
