@@ -24,7 +24,7 @@ eciespy
 PyNaCl
 httpx
 attrs
-fastapi==0.92.0
+fastapi==0.95.0
 uvicorn
 geventhttpclient>=1.4.4,<=2.0.9
 aiohttp>=3.8.1
