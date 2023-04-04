@@ -45,6 +45,5 @@ class MLOpsUtils:
                 cnt += 1
                 time.sleep(1)
                 if cnt >= 3:
-                    logging.info(f"Cannot Connect To NTP Server: {ntp_server_url}")
                     break
         return None

@@ -92,7 +92,7 @@ class MLOpsRuntimeLog:
                                                  + "-edge-"
                                                  + str(self.edge_id)
                                                  + ".log")
-        self.ntp_offset = MLOpsUtils.get_ntp_offset()
+        self.ntp_offset = None
         sys.excepthook = MLOpsRuntimeLog.handle_exception
 
     @staticmethod
@@ -110,9 +110,9 @@ class MLOpsRuntimeLog:
                                                                   "[%(filename)s:%(lineno)d:%(funcName)s] %("
                                                                   "message)s",
                                        datefmt="%a, %d %b %Y %H:%M:%S")
+        if self.ntp_offset is None:
+            self.ntp_offset = MLOpsUtils.get_ntp_offset()
         def log_ntp_time(sec, what):
-            if self.ntp_offset is None:
-                self.ntp_offset = MLOpsUtils.get_ntp_offset()
             if self.ntp_offset is not None:
                 ntp_time_seconds = time.time() + self.ntp_offset
             else:
