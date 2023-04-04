@@ -201,15 +201,22 @@ class FedMLAggregator(object):
     
     def get_dummy_input_tensor(self):
         with torch.no_grad():
-            batch_idx, features_and_label = next(enumerate(self.test_global))   # test_global -> dataloader obj
-        
-        features = features_and_label[:-1]  # TODO: Process Multi-Label
+            batch_idx, features_label_tensors = next(enumerate(self.test_global))  # test_global -> dataloader obj
+            dummy_list = []
+            for tensor in features_label_tensors:
+                dummy_tensor = torch.stack([tensor[:1]]) # only take the first element as dummy input
+                dummy_list.append(dummy_tensor)
+        features = dummy_list[:-1]  # TODO: Process Multi-Label
         return features
 
     def get_input_shape_type(self):
         with torch.no_grad():
-            batch_idx, features_and_lable = next(enumerate(self.test_global))   # test_global -> dataloader obj
-        features = features_and_lable[:-1]  
+            batch_idx, features_label_tensors = next(enumerate(self.test_global))  # test_global -> dataloader obj
+            dummy_list = []
+            for tensor in features_label_tensors:
+                dummy_tensor = torch.stack([tensor[:1]]) # only take the first element as dummy input
+                dummy_list.append(dummy_tensor)
+        features = dummy_list[:-1]  # TODO: Process Multi-Label  
 
         input_shape, input_type = [], []
         for feature in features:

@@ -368,11 +368,15 @@ def convert_model_to_onnx(
                       export_params=True,  # store the trained parameter weights inside the model file
                       opset_version=11,  # the ONNX version to export the model to
                       do_constant_folding=False,  # whether to execute constant folding for optimization
-                      input_names=["input" + str(i) for i in range(1, len(input_size) + 1)],
+                      input_names=["input1", "input2"],
                       # the model's input names
                       output_names=['output'],  # the model's output names
                       training=TrainingMode.EVAL,
-                      verbose=True)
+                      verbose=True,
+                      dynamic_axes={"input1": {0: "batch_size"}, 
+                                    "input2": {0: "batch_size"},
+                                    "output": {0: "batch_size"}}
+                      )
 
 
 def test_start_triton_server(model_serving_dir):
