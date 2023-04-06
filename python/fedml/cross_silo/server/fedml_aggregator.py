@@ -200,23 +200,39 @@ class FedMLAggregator(object):
             mlops.log({"round_idx": round_idx})
     
     def get_dummy_input_tensor(self):
+        test_data = self.test_global
+        if not self.test_global:
+            for k, v in self.test_data_local_dict.items():
+                if v:
+                    test_data = v
+                    break
+            raise Exception("Cannot construct sample output for prediction, the test dataset is None")
+            
         with torch.no_grad():
-            batch_idx, features_label_tensors = next(enumerate(self.test_global))  # test_global -> dataloader obj
+            batch_idx, features_label_tensors = next(enumerate(test_data))  # test_data -> dataloader obj
             dummy_list = []
             for tensor in features_label_tensors:
-                dummy_tensor = torch.stack([tensor[:1]]) # only take the first element as dummy input
+                dummy_tensor = tensor[:1] # only take the first element as dummy input
                 dummy_list.append(dummy_tensor)
-        features = dummy_list[:-1]  # TODO: Process Multi-Label
+        features = dummy_list[:-1]  # Can adapt Process Multi-Label
         return features
 
     def get_input_shape_type(self):
+        test_data = self.test_global
+        if not self.test_global:
+            for k, v in self.test_data_local_dict.items():
+                if v:
+                    test_data = v
+                    break
+            raise Exception("Cannot construct sample output for prediction, the test dataset is None")
+        
         with torch.no_grad():
-            batch_idx, features_label_tensors = next(enumerate(self.test_global))  # test_global -> dataloader obj
+            batch_idx, features_label_tensors = next(enumerate(test_data))  # test_data -> dataloader obj
             dummy_list = []
             for tensor in features_label_tensors:
-                dummy_tensor = torch.stack([tensor[:1]]) # only take the first element as dummy input
+                dummy_tensor = tensor[:1] # only take the first element as dummy input
                 dummy_list.append(dummy_tensor)
-        features = dummy_list[:-1]  # TODO: Process Multi-Label  
+        features = dummy_list[:-1]  # Can adapt Multi-Label
 
         input_shape, input_type = [], []
         for feature in features:
