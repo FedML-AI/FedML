@@ -1,6 +1,7 @@
 import json
 import logging
 import time
+import traceback
 
 from fedml import mlops
 
@@ -52,20 +53,24 @@ class FedMLServerManager(FedMLCommManager):
 
         mlops.event("server.wait", event_started=True, event_value=str(self.args.round_idx))
 
-        # get input type and shape for inference
-        dummy_input_tensor = self.aggregator.get_dummy_input_tensor()
-        logging.info(f"dummy tensor: {dummy_input_tensor}")  # sample tensor for ONNX
+        try:
+            # get input type and shape for inference
+            dummy_input_tensor = self.aggregator.get_dummy_input_tensor()
+            logging.info(f"dummy tensor: {dummy_input_tensor}")  # sample tensor for ONNX
 
-        model_net_url = mlops.log_training_model_net_info(self.aggregator.aggregator.model, dummy_input_tensor)
+            model_net_url = mlops.log_training_model_net_info(self.aggregator.aggregator.model, dummy_input_tensor)
 
-        # type and shape for later configuration
-        input_shape, input_type = self.aggregator.get_input_shape_type()
-        logging.info(f"input shape: {input_shape}")  # [torch.Size([1, 24]), torch.Size([1, 2])]
-        logging.info(f"input type: {input_type}")    # [torch.int64, torch.float32]
+            # type and shape for later configuration
+            input_shape, input_type = self.aggregator.get_input_shape_type()
+            logging.info(f"input shape: {input_shape}")  # [torch.Size([1, 24]), torch.Size([1, 2])]
+            logging.info(f"input type: {input_type}")    # [torch.int64, torch.float32]
 
-        # Send output input size and type (saved as json) to s3,
-        # and transfer when click "Create Model Card"
-        model_input_url = mlops.log_training_model_input_info(list(input_shape), list(input_type))
+            # Send output input size and type (saved as json) to s3,
+            # and transfer when click "Create Model Card"
+            model_input_url = mlops.log_training_model_input_info(list(input_shape), list(input_type))
+        except Exception as e:
+            logging.info("exception when processing model net and model input info: {}".format(
+                traceback.format_exc()))
 
     def register_message_receive_handlers(self):
         logging.info("register_message_receive_handlers------")
