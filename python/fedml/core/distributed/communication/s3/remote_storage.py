@@ -58,14 +58,20 @@ class S3Storage:
 
         model_file_size = len(model_to_send)
         model_file_transfered = 0
+        prev_progress = 0
         def upload_model_progress(bytes_transferred):
             nonlocal model_file_transfered
             nonlocal model_file_size
+            nonlocal prev_progress  # since the callback is stateless, we need to keep the previous progress
             model_file_transfered += bytes_transferred
             uploaded_kb = format(model_file_transfered / 1024, '.2f')
             progress = (model_file_transfered / model_file_size * 100) if model_file_size != 0 else 0
-            progress_format = format(progress, '.2f')
-            logging.info("model uploaded to S3 size {} KB, progress {}%".format(uploaded_kb, progress_format))
+            progress_format_int = int(progress)
+            # print the process every 5%
+            if progress_format_int % 5 == 0 and progress_format_int != prev_progress:
+                logging.info("model uploaded to S3 size {} KB, progress {}%".format(uploaded_kb, progress_format_int))
+                prev_progress = progress_format_int
+        
         aws_s3_client.upload_fileobj(
             Fileobj=io.BytesIO(model_to_send), Bucket=self.bucket_name, Key=message_key,
             Callback=upload_model_progress,
@@ -107,14 +113,19 @@ class S3Storage:
         net_file_size = model_to_send.tell()
         model_to_send.seek(0, 0)
         net_file_transfered = 0
+        prev_progress = 0
         def upload_model_net_progress(bytes_transferred):
             nonlocal net_file_transfered
             nonlocal net_file_size
+            nonlocal prev_progress  # since the callback is stateless, we need to keep the previous progress
             net_file_transfered += bytes_transferred
             uploaded_kb = format(net_file_transfered / 1024, '.2f')
             progress = (net_file_transfered / net_file_size * 100) if net_file_size != 0 else 0
-            progress_format = format(progress, '.2f')
-            logging.info("model net uploaded to S3 size {} KB, progress {}%".format(uploaded_kb, progress_format))
+            progress_format_int = int(progress)
+            # print the process every 5%
+            if progress_format_int % 5 == 0 and progress_format_int != prev_progress:
+                logging.info("model net uploaded to S3 size {} KB, progress {}%".format(uploaded_kb, progress_format_int))
+                prev_progress = progress_format_int
         aws_s3_client.upload_fileobj(
             Fileobj=model_to_send, Bucket=self.bucket_name, Key=message_key,
             Callback= upload_model_net_progress,
@@ -183,14 +194,20 @@ class S3Storage:
         temp_file_path = temp_base_file_path + "/" + str(message_key)
         logging.info("temp_file_path = {}".format(temp_file_path))
         model_file_transfered = 0
+        prev_progress = 0
         def read_model_progress(bytes_transferred):
             nonlocal model_file_transfered
             nonlocal object_size
+            nonlocal prev_progress
             model_file_transfered += bytes_transferred
             readed_kb = format(model_file_transfered / 1024, '.2f')
             progress = (model_file_transfered / object_size * 100) if object_size != 0 else 0
-            progress_format = format(progress, '.2f')
-            logging.info("model readed from S3 size {} KB, progress {}%".format(readed_kb, progress_format))
+            progress_format_int = int(progress)
+            # print the process every 5%
+            if progress_format_int % 5 == 0 and progress_format_int != prev_progress:
+                logging.info("model readed from S3 size {} KB, progress {}%".format(readed_kb, progress_format_int))
+                prev_progress = progress_format_int
+
         with open(temp_file_path, 'wb') as f:
             aws_s3_client.download_fileobj(Bucket=self.bucket_name, Key=message_key, Fileobj=f,
                                             Callback=read_model_progress)
@@ -222,14 +239,19 @@ class S3Storage:
             os.remove(temp_file_path)
         logging.info("temp_file_path = {}".format(temp_file_path))
         model_file_transfered = 0
+        prev_progress = 0
         def read_model_net_progress(bytes_transferred):
             nonlocal model_file_transfered
             nonlocal object_size
+            nonlocal prev_progress  # since the callback is stateless, we need to keep the previous progress
             model_file_transfered += bytes_transferred
             readed_kb = format(model_file_transfered / 1024, '.2f')
             progress = (model_file_transfered / object_size * 100) if object_size != 0 else 0
-            progress_format = format(progress, '.2f')
-            logging.info("model net readed from S3 size {} KB, progress {}%".format(readed_kb, progress_format))
+            progress_format_int = int(progress)
+            # print the process every 5%
+            if progress_format_int % 5 == 0 and progress_format_int != prev_progress:
+                logging.info("model net readed from S3 size {} KB, progress {}%".format(readed_kb, progress_format_int))
+                prev_progress = progress_format_int
         with open(temp_file_path, 'wb') as f:
             aws_s3_client.download_fileobj(Bucket=self.bucket_name, Key=message_key, Fileobj=f,
                                             Callback=read_model_net_progress)
