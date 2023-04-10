@@ -1,8 +1,8 @@
 import { MyMessage } from '../../cross_web/client/message_define';
+import { fetchConfig } from '../../../api/index.js';
 import { BaseCommunicationManager } from './communication/base_com_manager';
 // import { MqttS3MNNCommManager } from './distributed/communication/mqtt_s3_mnn/mqtt_s3_comm_manager';
 import { MqttS3MultiClientsCommManager } from './communication/mqtt_s3_multi_clients_comm_manager';
-import { fetchConfig } from '/@/api/config/index';
 import { Message } from './communication/message';
 
 export class FedMLCommManager {
