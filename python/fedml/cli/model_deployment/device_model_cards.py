@@ -392,7 +392,7 @@ class FedMLModelCards(Singleton):
         model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
         model_deployment_json = {
             "edgeId": devices,
-            "endpointName": "EndPoint-ModelName-{}-ModelId-{}-{}".format(model_name, model_id, str(uuid.uuid4())),
+            "endpointName": "EndPoint-{}".format(str(uuid.uuid4())),
             "modelId": model_id,
             "modelVersion": model_version,
             "resourceType": device_type,

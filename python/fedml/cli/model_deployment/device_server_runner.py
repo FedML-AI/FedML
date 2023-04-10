@@ -401,7 +401,7 @@ class FedMLServerRunner:
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             set_deployment_result(end_point_id, end_point_name,
                                   model_name, model_version,
-                                  device_id, payload_json)
+                                  device_id, payload)
         self.slave_deployment_results_mapping[device_id] = model_status
 
         logging.info("callback_deployment_result_message: topic {}, payload {}, mapping {}.".format(
@@ -434,7 +434,7 @@ class FedMLServerRunner:
                 FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
                     set_deployment_result(end_point_id, end_point_name,
                                           model_name, model_version,
-                                          self.edge_id, payload_json)
+                                          self.edge_id, payload)
                 return
             if not is_exist_deployed_model:
                 return
@@ -489,8 +489,7 @@ class FedMLServerRunner:
                     ret_item["data"] = torch.zeros(shape).tolist()
                 ret_inputs.append(ret_item)
 
-            payload_json["input_json"] = {"end_point_id": end_point_id,
-                                          "model_id": model_id,
+            payload_json["input_json"] = {"end_point_name": end_point_name,
                                           "model_name": model_name,
                                           "model_version": model_version,
                                           "token": str(token),
@@ -498,9 +497,11 @@ class FedMLServerRunner:
                                           "outputs": model_metadata["outputs"]}
             payload_json["output_json"] = model_metadata["outputs"]
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
-                set_deployment_result(end_point_id, self.edge_id, payload_json)
+                set_deployment_result(end_point_id, end_point_name,
+                                      model_name, model_version,
+                                      self.edge_id, json.dumps(payload_json))
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
-                set_end_point_activation(end_point_id, True)
+                set_end_point_activation(end_point_id, end_point_name, True)
             self.send_deployment_results_with_payload(self.run_id, end_point_name, payload_json)
 
             payload_json_saved = payload_json
@@ -526,7 +527,7 @@ class FedMLServerRunner:
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port).\
             set_deployment_status(end_point_id, end_point_name,
                                   model_name, model_version,
-                                  device_id, payload_json)
+                                  device_id, payload)
         self.slave_deployment_statuses_mapping[device_id] = model_status
         logging.info("callback_deployment_status_message: topic {}, payload {}, mapping {}.".format(
             topic, payload, self.slave_deployment_statuses_mapping))
@@ -681,13 +682,13 @@ class FedMLServerRunner:
             server_runner.redis_password = self.redis_password
             if self.run_process_event is None:
                 self.run_process_event = multiprocessing.Event()
-            server_runner.run(self.run_process_event)
-            # self.run_process_event.clear()
-            # server_runner.run_process_event = self.run_process_event
-            # self.model_runner_mapping[run_id] = server_runner
-            # server_process = Process(target=server_runner.run, args=(self.run_process_event,))
-            # server_process.start()
-            # ServerConstants.save_run_process(server_process.pid)
+            #server_runner.run(self.run_process_event)
+            self.run_process_event.clear()
+            server_runner.run_process_event = self.run_process_event
+            self.model_runner_mapping[run_id] = server_runner
+            server_process = Process(target=server_runner.run, args=(self.run_process_event,))
+            server_process.start()
+            ServerConstants.save_run_process(server_process.pid)
 
             # Send stage: MODEL_DEPLOYMENT_STAGE3 = "StartRunner"
             self.send_deployment_stages(self.run_id, model_name, model_id,

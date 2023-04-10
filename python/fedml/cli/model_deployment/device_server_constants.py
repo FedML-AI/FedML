@@ -234,7 +234,7 @@ class ServerConstants(object):
 
     @staticmethod
     def get_running_model_name(end_point_name, model_name, model_version, end_point_id=None, model_id=None):
-        running_model_name = "model_{}_{}_{}".format(end_point_name, model_name, model_version)
+        running_model_name = "model_endpoint_{}_model_{}_ver_-{}".format(end_point_name, model_name, model_version)
         running_model_name = running_model_name.replace(' ', '-')
         running_model_name = running_model_name.replace(':', '-')
         return running_model_name

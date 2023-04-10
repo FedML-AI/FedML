@@ -342,9 +342,10 @@ class FedMLClientRunner:
                                         model_id, model_name, model_version,
                                         inference_output_url,
                                         ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED)
-            self.send_deployment_results(end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED,
+            self.send_deployment_results(end_point_name, self.edge_id,
+                                         ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED,
                                          model_id, model_name, inference_output_url,
-                                         inference_model_version, ClientConstants.INFERENCE_HTTP_PORT,
+                                         model_version, ClientConstants.INFERENCE_HTTP_PORT,
                                          inference_engine, model_metadata, model_config)
             time.sleep(1)
             self.mlops_metrics.run_id = self.run_id
