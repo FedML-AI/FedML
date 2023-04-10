@@ -1,6 +1,7 @@
-declare let AWS: any
+// declare let AWS: any
 // import * as jpickle from 'jpickle';
 // import unpickle from 'unpickle';
+import AWS from 'aws-sdk'
 
 export class S3Storage {
   region

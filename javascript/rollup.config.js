@@ -21,7 +21,8 @@ const plugins = [
   json(),
   commonjs(),
   esbuild({
-    target: 'node14',
+    target: 'chrome58',
+    // target: 'node14',
   }),
 ]
 

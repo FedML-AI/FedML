@@ -1,6 +1,6 @@
 import * as tf from "@tensorflow/tfjs";
 import { v4 as uuidv4 } from "uuid";
-import * as mqtt from "mqtt/dist/mqtt.min";
+import * as mqtt from "mqtt";
 import { BaseCommunicationManager } from "./base_com_manager";
 import { Message } from "./message";
 import type { Observer } from "./observer";
