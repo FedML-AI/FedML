@@ -41,6 +41,7 @@ class FedMLModelMsgObject(object):
         self.msg_topic = topic
         self.request_json = request_json
         self.run_id = request_json["end_point_id"]
+        self.end_point_name = request_json["end_point_name"]
         self.token = request_json["token"]
         self.user_id = request_json["user_id"]
         self.user_name = request_json["user_name"]

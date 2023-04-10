@@ -57,7 +57,8 @@ requirements = [
     "ntplib",
     "typing_extensions",
     "chardet",
-    "graphviz<0.9.0,>=0.8.1"
+    "graphviz<0.9.0,>=0.8.1",
+    "sqlalchemy",
 ]
 
 requirements_extra_mpi = [

@@ -18,7 +18,7 @@ for type_name in collections.abc.__all__:
 from fedml.cli.model_deployment.device_client_constants import ClientConstants
 
 
-def start_deployment(end_point_id, model_id, model_version,
+def start_deployment(end_point_id, end_point_name, model_id, model_version,
                      model_storage_local_path, model_bin_file, inference_model_name, inference_engine,
                      inference_http_port, inference_grpc_port, inference_metric_port,
                      inference_use_gpu, inference_memory_size,
@@ -77,9 +77,9 @@ def start_deployment(end_point_id, model_id, model_version,
         logging.info("Input size {}, input types {}".format(model_params["input_size"],
                                                             model_params["input_types"]))
 
-        running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id,
+        running_model_name = ClientConstants.get_running_model_name(end_point_name,
                                                                     inference_model_name,
-                                                                    model_version)
+                                                                    model_version, end_point_id, model_id)
         if model_from_open is None:
             return running_model_name, "", model_version, {}, {}
 
@@ -112,9 +112,9 @@ def start_deployment(end_point_id, model_id, model_version,
         logging.info("Input size {}, input types {}".format(model_params["input_size"],
                                                             model_params["input_types"]))
 
-        running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id,
+        running_model_name = ClientConstants.get_running_model_name(end_point_name,
                                                                     inference_model_name,
-                                                                    model_version)
+                                                                    model_version, end_point_id, model_id)
         # configuration passed by user in the Cli
         model_location = os.path.join(model_storage_local_path, "fedml_model.bin")
         input_size = model_params["input_size"]
@@ -147,9 +147,9 @@ def start_deployment(end_point_id, model_id, model_version,
         # convert_model_container_name = "{}_{}_{}".format(ClientConstants.FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX,
         #                                                  str(end_point_id),
         #                                                  str(model_id))
-        # running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id,
+        # running_model_name = ClientConstants.get_running_model_name(end_point_name,
         #                                                             inference_model_name,
-        #                                                             model_version)
+        #                                                             model_version, end_point_id, model_id)
         # model_storage_processed_path = ClientConstants.get_k8s_slave_host_dir(model_storage_local_path)
         # convert_model_cmd = "{}docker stop {}; {}docker rm {}; " \
         #                     "{}docker run --name {} --rm {} -v {}:/project " \

@@ -250,15 +250,16 @@ class ClientConstants(object):
         return model_ops_url
 
     @staticmethod
-    def get_running_model_name(end_point_id, model_id, model_name, model_version):
-        running_model_name = "model_{}_{}_{}_{}".format(end_point_id, model_id, model_name, model_version)
+    def get_running_model_name(end_point_name, model_name, model_version, end_point_id=None, model_id=None):
+        running_model_name = "model_{}_{}_{}".format(end_point_name, model_name, model_version)
         running_model_name = running_model_name.replace(' ', '-')
         running_model_name = running_model_name.replace(':', '-')
         return running_model_name
 
     @staticmethod
-    def remove_deployment(end_point_id, model_id, model_name, model_version):
-        running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id, model_name, model_version)
+    def remove_deployment(end_point_name, model_name, model_version, end_point_id=None, model_id=None):
+        running_model_name = ClientConstants.get_running_model_name(end_point_name, model_name, model_version,
+                                                                    end_point_id, model_id)
         model_dir = os.path.join(ClientConstants.get_model_dir(), model_name,
                                  ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME)
         if os.path.exists(model_dir):

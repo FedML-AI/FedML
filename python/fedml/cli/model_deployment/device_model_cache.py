@@ -3,6 +3,7 @@ import redis
 from random import shuffle
 from fedml.cli.model_deployment.device_server_constants import ServerConstants
 from fedml.cli.model_deployment.device_server_data_interface import FedMLServerDataInterface
+from .device_model_db import FedMLModelDatabase
 
 
 class FedMLModelCache(object):
@@ -28,6 +29,8 @@ class FedMLModelCache(object):
     def init(self):
         self.redis_pool = None
         self.redis_connection = None
+        self.model_deployment_db = FedMLModelDatabase().get_instance()
+        self.model_deployment_db.create_table()
 
     def setup_redis_connection(self, redis_addr, redis_port, redis_password="fedml_default"):
         if redis_password is None or redis_password == "" or redis_password == "fedml_default":
@@ -48,40 +51,46 @@ class FedMLModelCache(object):
     def get_instance(redis_addr="local", redis_port=6379):
         return FedMLModelCache()
 
-    def set_deployment_result(self, end_point_id, device_id, deployment_result):
+    def set_deployment_result(self, end_point_id, end_point_name,
+                              model_name, model_version, device_id, deployment_result):
         result_dict = {"cache_device_id": device_id, "result": deployment_result}
-        result_list = self.get_deployment_result_list(end_point_id)
-        for result_item in result_list:
-            cache_device_id, _ = self.get_result_item_info(result_item)
-            if str(cache_device_id) == str(device_id):
-                self.redis_connection.lrem(self.get_deployment_result_key(end_point_id), 0, result_item)
-                break
-        self.redis_connection.rpush(self.get_deployment_result_key(end_point_id), json.dumps(result_dict))
+        self.redis_connection.rpush(self.get_deployment_result_key(end_point_name, model_name), json.dumps(result_dict))
+        self.model_deployment_db.set_deployment_result(end_point_id, end_point_name,
+                                                       model_name, model_version,
+                                                       device_id, deployment_result)
 
-    def set_deployment_status(self, end_point_id, device_id, deployment_status):
+    def set_deployment_status(self, end_point_id, end_point_name,
+                              model_name, model_version, device_id, deployment_status):
         status_dict = {"cache_device_id": device_id, "status": deployment_status}
-        status_list = self.get_deployment_status_list(end_point_id)
-        for status_item in status_list:
-            cache_device_id, _ = self.get_status_item_info(status_item)
-            if str(cache_device_id == device_id):
-                self.redis_connection.lrem(self.get_deployment_status_key(end_point_id), 0, status_item)
-                break
-        self.redis_connection.rpush(self.get_deployment_status_key(end_point_id), json.dumps(status_dict))
+        self.redis_connection.rpush(self.get_deployment_status_key(end_point_name, model_name), json.dumps(status_dict))
+        self.model_deployment_db.set_deployment_status(end_point_id, end_point_name,
+                                                       model_name, model_version,
+                                                       device_id, deployment_status)
 
-    def get_deployment_result_list(self, end_point_id):
-        result_list = self.redis_connection.lrange(self.get_deployment_result_key(end_point_id), 0, -1)
+    def get_deployment_result_list(self, end_point_name, model_name):
+        result_list = self.redis_connection.lrange(self.get_deployment_result_key(end_point_name, model_name), 0, -1)
+        if result_list is None or len(result_list) <= 0:
+            result_list = self.model_deployment_db.get_deployment_result_list(end_point_name, model_name)
+            for result in result_list:
+                self.redis_connection.rpush(self.get_deployment_result_key(end_point_name, model_name),
+                                            json.dumps(result))
         return result_list
 
-    def get_deployment_result_list_size(self, end_point_id):
-        result_list = self.get_deployment_result_list(end_point_id)
+    def get_deployment_result_list_size(self, end_point_name, model_name):
+        result_list = self.get_deployment_result_list(end_point_name, model_name)
         return len(result_list)
 
-    def get_deployment_status_list(self, end_point_id):
-        status_list = self.redis_connection.lrange(self.get_deployment_status_key(end_point_id), 0, -1)
+    def get_deployment_status_list(self, end_point_name, model_name):
+        status_list = self.redis_connection.lrange(self.get_deployment_status_key(end_point_name, model_name), 0, -1)
+        if status_list is None or len(status_list) <= 0:
+            status_list = self.model_deployment_db.get_deployment_status_list(end_point_name, model_name)
+            for status in status_list:
+                self.redis_connection.rpush(self.get_deployment_status_key(end_point_name, model_name),
+                                            json.dumps(status))
         return status_list
 
-    def get_deployment_status_list_size(self, end_point_id):
-        status_list = self.get_deployment_status_list(end_point_id)
+    def get_deployment_status_list_size(self, end_point_name, model_name):
+        status_list = self.get_deployment_status_list(end_point_name, model_name)
         return len(status_list)
 
     def get_status_item_info(self, status_item):
@@ -96,90 +105,119 @@ class FedMLModelCache(object):
         result_payload = result_item_json["result"]
         return device_id, result_payload
 
-    def get_idle_device(self, end_point_id, in_model_id, check_end_point_status=True):
-        # Check whether the end point is activated.
-        if check_end_point_status:
-            end_point_activated = self.get_end_point_activation(end_point_id)
-            if not end_point_activated:
-                return None
-
+    def get_idle_device(self, end_point_id, end_point_name,
+                        model_id, model_name, model_version,
+                        check_end_point_status=True):
         # Find all deployed devices
-        status_list = self.get_deployment_status_list(end_point_id)
+        status_list = self.get_deployment_status_list(end_point_name, model_name)
+        if len(status_list) == 0:
+            return None
+
         idle_device_list = list()
-        for status_item in status_list:
-            device_id, status_payload = self.get_status_item_info(status_item)
+        if model_version == "latest":
+            device_id, status_payload = self.get_status_item_info(status_list[-1])
             model_status = status_payload["model_status"]
-            model_id = status_payload["model_id"]
-            if model_id == in_model_id and model_status == ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
-                idle_device_list.append(device_id)
+            end_point_id_cache = status_payload["end_point_id"]
+            if model_status != ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
+                return None
+            idle_device_list.append({"device_id": device_id, "end_point_id": end_point_id_cache})
+        else:
+            for status_item in status_list:
+                device_id, status_payload = self.get_status_item_info(status_item)
+                model_status = status_payload["model_status"]
+                model_version_cache = status_payload["model_version"]
+                end_point_id_cache = status_payload["end_point_id"]
+                if model_version == model_version_cache and \
+                        model_status == ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
+                    idle_device_list.append({"device_id": device_id, "end_point_id": end_point_id_cache})
 
         # Randomly shuffle the list of deployed devices and get the first one as the target idle device.
         if len(idle_device_list) <= 0:
             return None
         shuffle(idle_device_list)
-        idle_device_id = idle_device_list[0]
+        idle_device_dict = idle_device_list[0]
 
         # Find deployment result from the target idle device.
-        result_list = self.get_deployment_result_list(end_point_id)
+        result_list = self.get_deployment_result_list(end_point_name, model_name)
         for result_item in result_list:
             device_id, result_payload = self.get_result_item_info(result_item)
-            model_id = result_payload["model_id"]
-            if device_id == idle_device_id and model_id == in_model_id:
+            found_end_point_id = result_payload["end_point_id"]
+            found_end_point_name = result_payload["end_point_name"]
+            # Check whether the end point is activated.
+            if check_end_point_status:
+                end_point_activated = self.get_end_point_activation(found_end_point_id)
+                if not end_point_activated:
+                    continue
+
+            if found_end_point_id == idle_device_dict["end_point_id"] \
+                    and device_id == idle_device_dict["device_id"]:
                 return result_payload
 
         return None
 
-    def set_end_point_status(self, end_point_id, status):
+    def set_end_point_status(self, end_point_id, end_point_name, status):
         self.redis_connection.set(self.get_end_point_status_key(end_point_id), status)
+        self.model_deployment_db.set_end_point_status(end_point_id, end_point_name, status)
 
     def get_end_point_status(self, end_point_id):
         if not self.redis_connection.exists(self.get_end_point_status_key(end_point_id)):
-            return None
+            status = self.model_deployment_db.get_end_point_status(end_point_id)
+            if status is not None:
+                self.redis_connection.set(self.get_end_point_status_key(end_point_id), status)
+            return status
 
         status = self.redis_connection.get(self.get_end_point_status_key(end_point_id))
         return status
 
-    def set_end_point_activation(self, end_point_id, activate_status):
+    def set_end_point_activation(self, end_point_id, end_point_name, activate_status):
         status = 1 if activate_status else 0
         self.redis_connection.set(self.get_end_point_activation_key(end_point_id), status)
+        self.model_deployment_db.set_end_point_activation(end_point_id, end_point_name, status)
 
     def get_end_point_activation(self, end_point_id):
         if not self.redis_connection.exists(self.get_end_point_activation_key(end_point_id)):
-            return False
+            activated = self.model_deployment_db.get_end_point_activation(end_point_id)
+            self.redis_connection.set(self.get_end_point_activation_key(end_point_id), activated)
+            status = True if int(activated) == 1 else False
+            return status
 
         status_int = self.redis_connection.get(self.get_end_point_activation_key(end_point_id))
         status = True if int(status_int) == 1 else False
         return status
 
-    def set_end_point_device_info(self, end_point_id, device_info):
+    def set_end_point_device_info(self, end_point_id, end_point_name, device_info):
         self.redis_connection.set(self.get_deployment_device_info_key(end_point_id), device_info)
+        self.model_deployment_db.set_end_point_device_info(end_point_id, end_point_name, device_info)
 
     def get_end_point_device_info(self, end_point_id):
         if not self.redis_connection.exists(self.get_deployment_device_info_key(end_point_id)):
-            return None
+            device_info = self.model_deployment_db.get_end_point_device_info(end_point_id)
+            if device_info is not None:
+                self.redis_connection.set(self.get_deployment_device_info_key(end_point_id), device_info)
+            return device_info
 
         device_info = self.redis_connection.get(self.get_deployment_device_info_key(end_point_id))
         return device_info
 
-    def set_end_point_token(self, end_point_id, token):
-        self.redis_connection.set(self.get_deployment_token_key(end_point_id), token)
+    def set_end_point_token(self, end_point_id, end_point_name, model_name, token):
+        self.redis_connection.set(self.get_deployment_token_key(end_point_name, model_name), token)
+        self.model_deployment_db.set_end_point_token(end_point_id, end_point_name, model_name, token)
 
-    def get_end_point_token(self, end_point_id):
-        if not self.redis_connection.exists(self.get_deployment_token_key(end_point_id)):
-            job_obj = FedMLServerDataInterface.get_instance().get_job_by_id(end_point_id)
-            if job_obj is not None and job_obj.running_json is not None:
-                running_json_obj = json.loads(job_obj.running_json)
-                return running_json_obj.get("token", None)
-            return None
+    def get_end_point_token(self, end_point_name, model_name):
+        if not self.redis_connection.exists(self.get_deployment_token_key(end_point_name, model_name)):
+            token = self.model_deployment_db.get_end_point_token(end_point_name, model_name)
+            if token is not None:
+                self.redis_connection.set(self.get_deployment_token_key(end_point_name, model_name), token)
+            return token
 
-        token = self.redis_connection.get(self.get_deployment_token_key(end_point_id))
+        token = self.redis_connection.get(self.get_deployment_token_key(end_point_name, model_name))
         return token
 
-    def get_deployment_result_key(self, end_point_id):
-        return "{}{}".format(FedMLModelCache.FEDML_MODEL_DEPLOYMENT_RESULT_TAG, end_point_id)
+    def get_deployment_result_key(self, end_point_name, model_name):
+        return "{}{}-{}".format(FedMLModelCache.FEDML_MODEL_DEPLOYMENT_RESULT_TAG, end_point_name, model_name)
 
-    def get_deployment_status_key(self, end_point_id):
-        return "{}{}".format(FedMLModelCache.FEDML_MODEL_DEPLOYMENT_STATUS_TAG, end_point_id)
+    def get_deployment_status_key(self, end_point_name, model_name):
+        return "{}{}-{}".format(FedMLModelCache.FEDML_MODEL_DEPLOYMENT_STATUS_TAG, end_point_name, model_name)
 
     def get_end_point_status_key(self, end_point_id):
         return "{}{}".format(FedMLModelCache.FEDML_MODEL_END_POINT_STATUS_TAG, end_point_id)
@@ -190,28 +228,43 @@ class FedMLModelCache(object):
     def get_deployment_device_info_key(self, end_point_id):
         return "{}{}".format(FedMLModelCache.FEDML_MODEL_DEVICE_INFO_TAG, end_point_id)
 
-    def get_deployment_token_key(self, end_point_id):
-        return "{}{}".format(FedMLModelCache.FEDML_MODEL_END_POINT_TOKEN_TAG, end_point_id)
+    def get_deployment_token_key(self, end_point_name, model_name):
+        return "{}{}-{}".format(FedMLModelCache.FEDML_MODEL_END_POINT_TOKEN_TAG, end_point_name, model_name)
 
-    def set_monitor_metrics(self, end_point_id, total_latency, avg_latency,
+    def set_monitor_metrics(self, end_point_id, end_point_name,
+                            model_name, model_version,
+                            total_latency, avg_latency,
                             total_request_num, current_qps,
                             avg_qps, timestamp):
         metrics_dict = {"total_latency": total_latency, "avg_latency": avg_latency,
                         "total_request_num": total_request_num, "current_qps": current_qps,
                         "avg_qps": avg_qps, "timestamp": timestamp}
-        self.redis_connection.rpush(self.get_monitor_metrics_key(end_point_id), json.dumps(metrics_dict))
+        self.redis_connection.rpush(self.get_monitor_metrics_key(end_point_name, model_name, model_version), json.dumps(metrics_dict))
+        self.model_deployment_db.set_monitor_metrics(end_point_id, end_point_name,
+                                                     model_name, model_version,
+                                                     total_latency, avg_latency,
+                                                     total_request_num, current_qps,
+                                                     avg_qps, timestamp)
 
-    def get_latest_monitor_metrics(self, end_point_id):
-        if not self.redis_connection.exists(self.get_monitor_metrics_key(end_point_id)):
-            return None
+    def get_latest_monitor_metrics(self, end_point_name, model_name, model_version):
+        if not self.redis_connection.exists(self.get_monitor_metrics_key(end_point_name, model_name, model_version)):
+            metrics_dict = self.model_deployment_db.get_latest_monitor_metrics(end_point_name, model_name, model_version)
+            if metrics_dict is not None:
+                self.redis_connection.rpush(self.get_monitor_metrics_key(end_point_name, model_name, model_version),
+                                            json.dumps(metrics_dict))
+            return metrics_dict
 
-        return self.redis_connection.lindex(self.get_monitor_metrics_key(end_point_id), -1)
+        return self.redis_connection.lindex(self.get_monitor_metrics_key(end_point_name, model_name, model_version), -1)
 
-    def get_monitor_metrics_item(self, end_point_id, index):
-        if not self.redis_connection.exists(self.get_monitor_metrics_key(end_point_id)):
+    def get_monitor_metrics_item(self, end_point_name, model_name, model_version, index):
+        if not self.redis_connection.exists(self.get_monitor_metrics_key(end_point_name, model_name, model_version)):
+            metrics_dict = self.model_deployment_db.get_monitor_metrics_item(end_point_name, model_name, model_version, index)
+            if metrics_dict is not None:
+                self.redis_connection.rpush(self.get_monitor_metrics_key(end_point_name, model_name, model_version), json.dumps(metrics_dict))
+                return metrics_dict, index+1
             return None, 0
 
-        metrics_item = self.redis_connection.lindex(self.get_monitor_metrics_key(end_point_id), index)
+        metrics_item = self.redis_connection.lindex(self.get_monitor_metrics_key(end_point_name, model_name, model_version), index)
         return metrics_item, index+1
 
     def get_metrics_item_info(self, metrics_item):
@@ -224,8 +277,9 @@ class FedMLModelCache(object):
         timestamp = metrics_item_json["timestamp"]
         return total_latency, avg_latency, total_request_num, current_qps, avg_qps, timestamp
 
-    def get_monitor_metrics_key(self, end_point_id):
-        return "{}{}".format(FedMLModelCache.FEDML_MODEL_DEPLOYMENT_MONITOR_TAG, end_point_id)
+    def get_monitor_metrics_key(self, end_point_name, model_name, model_version):
+        return "{}{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_DEPLOYMENT_MONITOR_TAG,
+                                   end_point_name, model_name, model_version)
 
 
 if __name__ == "__main__":

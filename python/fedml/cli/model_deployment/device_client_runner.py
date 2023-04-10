@@ -222,6 +222,7 @@ class FedMLClientRunner:
 
     def run_impl(self):
         run_id = self.request_json["end_point_id"]
+        end_point_name = self.request_json["end_point_name"]
         token = self.request_json["token"]
         user_id = self.request_json["user_id"]
         user_name = self.request_json["user_name"]
@@ -307,7 +308,7 @@ class FedMLClientRunner:
         self.check_runner_stop_event()
         running_model_name, inference_output_url, inference_model_version, model_metadata, model_config = \
             start_deployment(
-                inference_end_point_id, model_id, model_version,
+                inference_end_point_id, end_point_name, model_id, model_version,
                 unzip_package_path, model_bin_file, model_name, inference_engine,
                 ClientConstants.INFERENCE_HTTP_PORT,
                 ClientConstants.INFERENCE_GRPC_PORT,
@@ -320,10 +321,12 @@ class FedMLClientRunner:
                 model_from_open)
         if inference_output_url == "":
             logging.info("failed to deploy the model...")
-            self.send_deployment_status(self.edge_id, model_id, running_model_name, inference_output_url,
+            self.send_deployment_status(end_point_name, self.edge_id,
+                                        model_id, model_name, model_version,
+                                        inference_output_url,
                                         ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
-            self.send_deployment_results(self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED,
-                                         model_id, running_model_name, inference_output_url,
+            self.send_deployment_results(end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED,
+                                         model_id, model_name, inference_output_url,
                                          inference_model_version, ClientConstants.INFERENCE_HTTP_PORT,
                                          inference_engine, model_metadata, model_config)
             self.mlops_metrics.run_id = self.run_id
@@ -335,10 +338,12 @@ class FedMLClientRunner:
                                                           ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
         else:
             logging.info("finished deployment, continue to send results to master...")
-            self.send_deployment_status(self.edge_id, model_id, running_model_name, inference_output_url,
+            self.send_deployment_status(end_point_name, self.edge_id,
+                                        model_id, model_name, model_version,
+                                        inference_output_url,
                                         ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED)
-            self.send_deployment_results(self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED,
-                                         model_id, running_model_name, inference_output_url,
+            self.send_deployment_results(end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED,
+                                         model_id, model_name, inference_output_url,
                                          inference_model_version, ClientConstants.INFERENCE_HTTP_PORT,
                                          inference_engine, model_metadata, model_config)
             time.sleep(1)
@@ -347,14 +352,15 @@ class FedMLClientRunner:
                                                                 ClientConstants.MSG_MLOPS_CLIENT_STATUS_FINISHED,
                                                                 is_from_model=True)
 
-    def send_deployment_results(self, device_id, model_status,
+    def send_deployment_results(self, end_point_name, device_id, model_status,
                                 model_id, model_name, model_inference_url,
                                 model_version, inference_port, inference_engine,
                                 model_metadata, model_config):
         deployment_results_topic = "model_ops/model_device/return_deployment_result/{}".format(device_id)
-        deployment_results_payload = {"end_point_id": self.run_id, "model_id": model_id,
-                                      "model_name": model_name, "model_url": model_inference_url,
-                                      "model_version": model_version, "port": inference_port,
+        deployment_results_payload = {"end_point_id": self.run_id, "end_point_name": end_point_name,
+                                      "model_id": model_id, "model_name": model_name,
+                                      "model_url": model_inference_url, "model_version": model_version,
+                                      "port": inference_port,
                                       "inference_engine": inference_engine,
                                       "model_metadata": model_metadata,
                                       "model_config": model_config,
@@ -364,12 +370,15 @@ class FedMLClientRunner:
                                                                              deployment_results_payload))
         self.client_mqtt_mgr.send_message_json(deployment_results_topic, json.dumps(deployment_results_payload))
 
-    def send_deployment_status(self, device_id, model_id, model_name, model_inference_url, model_status):
+    def send_deployment_status(self, end_point_name, device_id,
+                               model_id, model_name, model_version,
+                               model_inference_url, model_status):
         deployment_status_topic = "model_ops/model_device/return_deployment_status/{}".format(device_id)
-        deployment_status_payload = {"end_point_id": self.run_id, "model_id": model_id,
+        deployment_status_payload = {"end_point_id": self.run_id, "end_point_name": end_point_name,
                                      "device_id": device_id,
-                                     "model_name": model_name, "model_url": model_inference_url,
-                                     "model_status": model_status}
+                                     "model_id": model_id, "model_name": model_name,
+                                     "model_version": model_version,
+                                     "model_url": model_inference_url, "model_status": model_status}
 
         logging.info("send_deployment_status: topic {}, payload {}.".format(deployment_status_topic,
                                                                             deployment_status_payload))
