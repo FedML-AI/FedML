@@ -1,13 +1,9 @@
 import { FedMLCommManager } from '../../core/distributed/fedml_comm_manager'
-import { MyMessage } from './message_define'
 import { Message } from '../../core/distributed/communication/message'
 import { event } from '../../mlops/mlops_init'
+import { MyMessage } from './message_define'
 import type { TrainerDistAdapter } from './fedml_trainer_dist_adapter'
-import { computed } from 'vue'
-import { useAppStore } from '/@/store/modules/app'
 
-const appStore = useAppStore()
-const currClient = computed(() => appStore.getClient)
 export class ClientMasterManager extends FedMLCommManager {
   args: object
   trainer_dist_adapter: TrainerDistAdapter

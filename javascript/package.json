@@ -47,7 +47,7 @@
     "test": "vitest"
   },
   "peerDependencies": {
-    "@tensorflow/tfjs": "^4.2.0",
+    "@tensorflow/tfjs": "^4.4.0",
     "@tensorflow/tfjs-vis": "^1.5.1"
   },
   "dependencies": {
