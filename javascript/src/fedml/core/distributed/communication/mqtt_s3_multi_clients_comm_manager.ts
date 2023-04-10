@@ -1,18 +1,14 @@
 import * as tf from "@tensorflow/tfjs";
 import { v4 as uuidv4 } from "uuid";
+import * as mqtt from "mqtt/dist/mqtt.min";
 import { BaseCommunicationManager } from "./base_com_manager";
 import { Message } from "./message";
 import type { Observer } from "./observer";
 import { CommunicationConstants } from "./constants";
-import { S3Storage } from "./remote_storage";
-import * as mqtt from "mqtt/dist/mqtt.min";
-// import { computed } from 'vue';
-// import { useAppStore } from '/@/store/modules/app';
-// import { useGlobSetting } from '/@/hooks/setting';
+import { S3Storage } from "./remote_storage"
 
 const mqttUrl = "wss://open-dev.fedml.ai/mqtt";
-// const appStore = useAppStore();
-// const currClient = computed(() => appStore.getClient);
+
 export class MqttS3MultiClientsCommManager implements BaseCommunicationManager {
   // mqtt config
   config_path;
@@ -139,7 +135,7 @@ export class MqttS3MultiClientsCommManager implements BaseCommunicationManager {
       console.log("ML Weights Topic: ", topic);
       if (packet.retain) {
         console.log("Received retain message, just return.");
-        return;
+        return
       }
       if (
         topic ==

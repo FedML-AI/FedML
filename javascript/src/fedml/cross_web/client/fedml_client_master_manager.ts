@@ -160,7 +160,7 @@ export class ClientMasterManager extends FedMLCommManager {
       status,
       version: 'v1.0',
     }
-    currClient.value.publish(
+    this.com_manager.mqtt_mgr.publish(
       'fl_client/mlops/status',
       JSON.stringify(payload),
       { qos: 2, retain: true },
@@ -181,7 +181,7 @@ export class ClientMasterManager extends FedMLCommManager {
       edge_id,
       status,
     }
-    currClient.value.publish(
+    this.com_manager.mqtt_mgr.publish(
       `fl_client/flclient_agent_${edge_id}/status`,
       JSON.stringify(payload),
       { qos: 2, retain: true },
@@ -201,7 +201,7 @@ export class ClientMasterManager extends FedMLCommManager {
       edge_id,
       status,
     }
-    currClient.value.publish(
+    this.com_manager.mqtt_mgr.publish(
       'fl_run/fl_client/mlops/status',
       JSON.stringify(payload),
       { qos: 2, retain: true },
@@ -254,7 +254,7 @@ export class ClientMasterManager extends FedMLCommManager {
       client_model_s3_address: model_url,
     }
     const message_json = JSON.stringify(model_info)
-    currClient.value.publish(
+    this.com_manager.mqtt_mgr.publish(
       'fl_server/mlops/client_model',
       message_json,
       { qos: 2, retain: true },
