@@ -1,10 +1,10 @@
 import * as tf from "@tensorflow/tfjs";
+import { v4 as uuidv4 } from "uuid";
 import { BaseCommunicationManager } from "./base_com_manager";
 import { Message } from "./message";
-import { Observer } from "./observer";
+import type { Observer } from "./observer";
 import { CommunicationConstants } from "./constants";
 import { S3Storage } from "./remote_storage";
-import { v4 as uuidv4 } from "uuid";
 import * as mqtt from "mqtt/dist/mqtt.min";
 // import { computed } from 'vue';
 // import { useAppStore } from '/@/store/modules/app';
@@ -144,9 +144,9 @@ export class MqttS3MultiClientsCommManager implements BaseCommunicationManager {
       if (
         topic ==
         this._topic +
-        String(this.server_id) +
-        "_" +
-        String(this.client_real_ids[0])
+          String(this.server_id) +
+          "_" +
+          String(this.client_real_ids[0])
       ) {
         const msgData = message.toString();
         const jsonData = JSON.parse(msgData);
