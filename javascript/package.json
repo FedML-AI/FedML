@@ -51,7 +51,7 @@
     "@tensorflow/tfjs-vis": "^1.5.1"
   },
   "dependencies": {
-    "aws-sdk": "^2.1346.0",
+    "@aws-sdk/client-s3": "^3.309.0",
     "core-js": "^3.29.1",
     "mqtt": "^4.3.7",
     "uuid": "^9.0.0"

@@ -1,15 +1,20 @@
 // declare let AWS: any
 // import * as jpickle from 'jpickle';
 // import unpickle from 'unpickle';
-import AWS from 'aws-sdk'
+import { S3 } from '@aws-sdk/client-s3'
 
 export class S3Storage {
   region
   bucketName
   accesskeyId
   secretAccesskey
-  s3
-  constructor(s3_config) {
+  s3?: S3
+  constructor(s3_config: {
+    CN_REGION_NAME: string
+    BUCKET_NAME: string
+    CN_S3_AKI: string
+    CN_S3_SAK: string
+  }) {
     this.region = s3_config.CN_REGION_NAME
     this.bucketName = s3_config.BUCKET_NAME
     this.accesskeyId = s3_config.CN_S3_AKI
@@ -17,13 +22,13 @@ export class S3Storage {
     this.createS3Client(this.region, this.accesskeyId, this.secretAccesskey)
   }
 
-  createS3Client(region_name, access_key_id, secret_access_key) {
+  createS3Client(region_name: string, access_key_id: string, secret_access_key: string) {
     // aws.config.update({
     //   region: region_name,
     //   accessKeyId: access_key_id,
     //   secretAccessKey: secret_access_key,
     // });
-    this.s3 = new AWS.S3({
+    this.s3 = new S3({
       region: region_name,
       accessKeyId: access_key_id,
       secretAccessKey: secret_access_key,
@@ -31,7 +36,10 @@ export class S3Storage {
     })
   }
 
-  async write_model(message_key, model) {
+  async write_model(message_key: string, model: object) {
+    if (!this.s3)
+      throw new Error('AWS S3 is not initialized')
+
     const model_pkl = JSON.stringify(model)
     console.log('check send model: ', model)
     const params = {
@@ -41,31 +49,26 @@ export class S3Storage {
       Expires: 180,
     }
     const model_url = await this.s3.getSignedUrl('putObject', params)
-    this.s3
+    await this.s3
       .putObject(params)
-      .on('success', (response) => {
+      .then((response) => {
         console.log('putObject_response ', response)
       })
-      .send()
+      // .on('success', (response) => {
+      // })
+      // .send()
     console.log('generated model_url: ', model_url)
     return model_url
   }
 
-  async read_model(message_key, verbose = false) {
-    return new Promise(async (resolve, reject) => {
-      const params = {
-        Bucket: this.bucketName,
-        Key: message_key,
-      }
-      console.log('receive message_key: ', message_key)
-      await this.s3
-        .getObject(params, (err, data) => {
-          if (err)
-            reject(err)
+  async read_model(message_key: string, verbose = false) {
+    if (!this.s3)
+      throw new Error('AWS S3 is not initialized')
 
-          resolve(data)
-        })
-        .send()
-    })
+    const params = {
+      Bucket: this.bucketName,
+      Key: message_key,
+    }
+    return await this.s3.getObject(params)
   }
 }
