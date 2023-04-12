@@ -200,14 +200,15 @@ class FedMLAggregator(object):
             mlops.log({"round_idx": round_idx})
     
     def get_dummy_input_tensor(self):
-        test_data = self.test_global
-        if not self.test_global:
+        test_data = None
+        if self.test_global:
+            test_data = self.test_global
+        else:   # if test_global is None, then we use the first non-empty test_data_local_dict
             for k, v in self.test_data_local_dict.items():
                 if v:
                     test_data = v
-                    break
-            raise Exception("Cannot construct sample output for prediction, the test dataset is None")
-            
+                    break 
+        
         with torch.no_grad():
             batch_idx, features_label_tensors = next(enumerate(test_data))  # test_data -> dataloader obj
             dummy_list = []
@@ -218,13 +219,14 @@ class FedMLAggregator(object):
         return features
 
     def get_input_shape_type(self):
-        test_data = self.test_global
-        if not self.test_global:
+        test_data = None
+        if self.test_global:
+            test_data = self.test_global
+        else:   # if test_global is None, then we use the first non-empty test_data_local_dict
             for k, v in self.test_data_local_dict.items():
                 if v:
                     test_data = v
                     break
-            raise Exception("Cannot construct sample output for prediction, the test dataset is None")
         
         with torch.no_grad():
             batch_idx, features_label_tensors = next(enumerate(test_data))  # test_data -> dataloader obj
