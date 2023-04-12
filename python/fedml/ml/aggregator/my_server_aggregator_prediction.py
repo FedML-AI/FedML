@@ -87,35 +87,3 @@ class MyServerAggregatorTAGPred(ServerAggregator):
 
         stats = {"test_acc": test_acc, "test_loss": test_loss}
         logging.info(stats)
-
-    def test_all(self, train_data_local_dict, test_data_local_dict, device, args) -> bool:
-        train_num_samples = []
-        train_tot_corrects = []
-        train_losses = []
-        for client_idx in range(self.args.client_num_in_total):
-            # train data
-            metrics = self._test(train_data_local_dict[client_idx], device, args)
-            train_tot_correct, train_num_sample, train_loss = (
-                metrics["test_correct"],
-                metrics["test_total"],
-                metrics["test_loss"],
-            )
-            train_tot_corrects.append(copy.deepcopy(train_tot_correct))
-            train_num_samples.append(copy.deepcopy(train_num_sample))
-            train_losses.append(copy.deepcopy(train_loss))
-            # logging.info("testing client_idx = {}".format(client_idx))
-
-        # test on training dataset
-        train_acc = sum(train_tot_corrects) / sum(train_num_samples)
-        train_loss = sum(train_losses) / sum(train_num_samples)
-        if self.args.enable_wandb:
-            wandb.log({"Train/Acc": train_acc, "round": args.round_idx})
-            wandb.log({"Train/Loss": train_loss, "round": args.round_idx})
-
-        mlops.log({"Train/Acc": train_acc, "round": args.round_idx})
-        mlops.log({"Train/Loss": train_loss, "round": args.round_idx})
-
-        stats = {"training_acc": train_acc, "training_loss": train_loss}
-        logging.info(stats)
-
-        return True

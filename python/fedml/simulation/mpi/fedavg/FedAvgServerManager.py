@@ -67,7 +67,6 @@ class FedAVGServerManager(FedMLCommManager):
             if self.args.round_idx == self.round_num:
                 # post_complete_message_to_sweep_process(self.args)
                 self.finish()
-                print("here")
                 return
             if self.is_preprocessed:
                 if self.preprocessed_client_lists is None:
