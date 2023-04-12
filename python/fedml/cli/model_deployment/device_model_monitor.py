@@ -1,6 +1,7 @@
 import argparse
 import json
 import time
+import traceback
 import uuid
 
 from fedml.cli.model_deployment.device_model_cache import FedMLModelCache
@@ -9,28 +10,37 @@ from fedml.core.distributed.communication.mqtt.mqtt_manager import MqttManager
 
 
 class FedMLModelMetrics:
-    def __init__(self, end_point_id, model_id, model_name, infer_url, redis_addr, redis_port, redis_password, version="release"):
+    def __init__(self, end_point_id, end_point_name, model_id, model_name, model_version,
+                 infer_url, redis_addr, redis_port, redis_password, version="release"):
         self.redis_addr = redis_addr
         self.redis_port = redis_port
         self.redis_password = redis_password
         self.config_version = version
         self.current_end_point_id = end_point_id
+        self.current_end_point_name = end_point_name
         self.current_model_id = model_id
         self.current_model_name = model_name
+        self.current_model_version = model_version
         self.current_infer_url = infer_url
         self.start_time = time.time_ns()
         self.monitor_mqtt_mgr = None
         self.ms_per_sec = 1000
         self.ns_per_ms = 1000 * 1000
 
-    def set_start_time(self):
-        self.start_time = time.time_ns()
+    def set_start_time(self, start_time):
+        if start_time is None:
+            self.start_time = time.time_ns()
+        else:
+            self.start_time = start_time
 
-    def calc_metrics(self, model_id, model_name, end_point_id, inference_output_url):
+    def calc_metrics(self, end_point_id, end_point_name,
+                     model_id, model_name, model_version,
+                     inference_output_url):
         total_latency, avg_latency, total_request_num, current_qps, timestamp = 0, 0, 0, 0, 0
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
-        metrics_item = FedMLModelCache.get_instance(self.redis_addr, self.redis_port).get_latest_monitor_metrics(
-                                                                                    end_point_id)
+        metrics_item = FedMLModelCache.get_instance(self.redis_addr, self.redis_port).\
+            get_latest_monitor_metrics(end_point_name, model_name, model_version)
+        print(f"calc metrics_item {metrics_item}")
         if metrics_item is not None:
             total_latency, avg_latency, total_request_num, current_qps, avg_qps, timestamp = \
                 FedMLModelCache.get_instance(self.redis_addr, self.redis_port).get_metrics_item_info(metrics_item)
@@ -44,7 +54,11 @@ class FedMLModelMetrics:
         avg_latency = format(total_latency / total_request_num / self.ms_per_sec, '.6f')
 
         timestamp = int(format(time.time_ns()/1000.0, '.0f'))
-        FedMLModelCache.get_instance(self.redis_addr, self.redis_port).set_monitor_metrics(end_point_id, total_latency,
+        FedMLModelCache.get_instance(self.redis_addr, self.redis_port).set_monitor_metrics(end_point_id,
+                                                                                           end_point_name,
+                                                                                           model_name,
+                                                                                           model_version,
+                                                                                           total_latency,
                                                                                            avg_latency,
                                                                                            total_request_num,
                                                                                            current_qps, avg_qps,
@@ -72,16 +86,19 @@ class FedMLModelMetrics:
         index = 0
         while True:
             time.sleep(2)
-            index = self.send_monitoring_metrics(index)
+            try:
+                index = self.send_monitoring_metrics(index)
+            except Exception as e:
+                print("Exception when processing monitoring metrics: {}".format(traceback.format_exc()))
 
         self.monitor_mqtt_mgr.disconnect()
         self.monitor_mqtt_mgr.loop_stop()
 
     def send_monitoring_metrics(self, index):
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
-        metrics_item, inc_index = FedMLModelCache.get_instance(self.redis_addr,
-                                                               self.redis_port).get_monitor_metrics_item(
-                                                               self.current_end_point_id, index)
+        metrics_item, inc_index = FedMLModelCache.get_instance(self.redis_addr, self.redis_port).\
+            get_monitor_metrics_item(self.current_end_point_name, self.current_model_name,
+                                     self.current_model_version, index)
         if metrics_item is None:
             return index
         total_latency, avg_latency, total_request_num, current_qps, avg_qps, timestamp = \
@@ -96,6 +113,7 @@ class FedMLModelMetrics:
                                          "qps": int(avg_qps),
                                          "total_request_num": int(total_request_num),
                                          "timestamp": timestamp}
+        print("send monitor metrics {}".format(json.dumps(deployment_monitoring_payload)))
 
         self.monitor_mqtt_mgr.send_message_json(deployment_monitoring_topic, json.dumps(deployment_monitoring_payload))
         self.monitor_mqtt_mgr.send_message_json(deployment_monitoring_topic_prefix,
@@ -113,15 +131,19 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--version", "-v", type=str, default="release", help="version")
     parser.add_argument("--end_point_id", "-ep", help="end point id")
+    parser.add_argument("--end_point_name", "-epn", help="end point name")
     parser.add_argument("--model_id", "-mi", type=str, help='model id')
     parser.add_argument("--model_name", "-mn", type=str, help="model name")
+    parser.add_argument("--model_version", "-mv", type=str, help="model model_version")
     parser.add_argument("--infer_url", "-iu", type=str, help="inference url")
     parser.add_argument("--redis_addr", "-ra", type=str, default="local")
     parser.add_argument("--redis_port", "-rp", type=str, default="6379")
     parser.add_argument("--redis_password", "-rpw", type=str, default="fedml_default")
     args = parser.parse_args()
 
-    monitor_center = FedMLModelMetrics(args.end_point_id, args.model_id, args.model_name, args.infer_url,
+    monitor_center = FedMLModelMetrics(args.end_point_id, args.end_point_name,
+                                       args.model_id, args.model_name, args.model_version,
+                                       args.infer_url,
                                        args.redis_addr, args.redis_port, args.redis_password,
                                        version=args.version)
     monitor_center.start_monitoring_metrics_center()

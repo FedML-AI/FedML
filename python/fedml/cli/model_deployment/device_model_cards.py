@@ -65,7 +65,7 @@ class FedMLModelCards(Singleton):
                 file_full_path = os.path.join(file_path, file_item)
                 if os.path.isdir(file_full_path):
                     dst_dir = os.path.join(model_dir, file_item)
-                    if os.path.exists(dst_dir): # avoid using shutil.copytree(dirs_exist_ok=True)
+                    if os.path.exists(dst_dir):  # avoid using shutil.copytree(dirs_exist_ok=True)
                         shutil.rmtree(dst_dir)
                     shutil.copytree(file_full_path, dst_dir,
                                     copy_function=shutil.copy,
@@ -392,7 +392,7 @@ class FedMLModelCards(Singleton):
         model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
         model_deployment_json = {
             "edgeId": devices,
-            "endpointName": "EndPoint-ModelName-{}-ModelId-{}-{}".format(model_name, model_id, str(uuid.uuid4())),
+            "endpointName": "EndPoint-{}".format(str(uuid.uuid4())),
             "modelId": model_id,
             "modelVersion": model_version,
             "resourceType": device_type,
@@ -464,13 +464,13 @@ class FedMLModelCards(Singleton):
         args = {"config_version": "release"}
         mqtt_config, _ = ModelOpsConfigs.get_instance(args).fetch_configs(self.config_version)
         self.local_deployment_mqtt_mgr = MqttManager(
-                mqtt_config["BROKER_HOST"],
-                mqtt_config["BROKER_PORT"],
-                mqtt_config["MQTT_USER"],
-                mqtt_config["MQTT_PWD"],
-                mqtt_config["MQTT_KEEPALIVE"],
-                "FedML_LocalModelDeployment_" + str(uuid.uuid4())
-            )
+            mqtt_config["BROKER_HOST"],
+            mqtt_config["BROKER_PORT"],
+            mqtt_config["MQTT_USER"],
+            mqtt_config["MQTT_PWD"],
+            mqtt_config["MQTT_KEEPALIVE"],
+            "FedML_LocalModelDeployment_" + str(uuid.uuid4())
+        )
         self.local_deployment_mqtt_mgr.add_connected_listener(self.on_mqtt_connected)
         self.local_deployment_mqtt_mgr.add_disconnected_listener(self.on_mqtt_disconnected)
         self.local_deployment_mqtt_mgr.connect()

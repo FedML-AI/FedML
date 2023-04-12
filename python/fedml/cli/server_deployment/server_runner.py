@@ -154,11 +154,11 @@ class FedMLServerRunner:
         downloaded = filesize if downloaded > filesize else downloaded
         progress = (downloaded / filesize * 100) if filesize != 0 else 0
         progress_int = int(progress)
-        downloaded_kb = format(downloaded/1024, '.2f')
-        
+        downloaded_kb = format(downloaded / 1024, '.2f')
+
         # since this hook funtion is stateless, we need a state to avoid printing progress repeatly
         if count == 0:
-            self.prev_download_progress = 0 
+            self.prev_download_progress = 0
         if progress_int != self.prev_download_progress and progress_int % 5 == 0:
             self.prev_download_progress = progress_int
             logging.info("package downloaded size {} KB, progress {}%".format(downloaded_kb, progress_int))
@@ -632,8 +632,21 @@ class FedMLServerRunner:
             message_bytes = payload.encode("ascii")
             base64_bytes = base64.b64decode(message_bytes)
             payload = base64_bytes.decode("ascii")
+            request_json = json.loads(payload)
             logging.info("decoded payload: {}".format(payload))
-        request_json = json.loads(payload)
+        else:
+            request_json = json.loads(payload)
+            run_id = request_json["runId"]
+            job_obj = FedMLServerDataInterface.get_instance().get_job_by_id(run_id)
+            if job_obj is None:
+                os.system("pip install -U fedml")
+                FedMLServerDataInterface.get_instance().save_started_job(run_id, self.edge_id,
+                                                                         time.time(),
+                                                                         ServerConstants.MSG_MLOPS_SERVER_STATUS_UPGRADING,
+                                                                         ServerConstants.MSG_MLOPS_SERVER_STATUS_UPGRADING,
+                                                                         payload)
+                raise Exception("Upgrading...")
+
         is_retain = request_json.get("is_retain", False)
         if is_retain:
             return
@@ -1258,7 +1271,7 @@ class FedMLServerRunner:
 
         ip = requests.get('https://checkip.amazonaws.com').text.strip()
         fedml_ver, exec_path, os_ver, cpu_info, python_ver, torch_ver, mpi_installed, \
-        cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem = get_sys_runner_info()
+            cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem = get_sys_runner_info()
         json_params = {
             "accountid": account_id,
             "deviceid": device_id,
@@ -1342,6 +1355,18 @@ class FedMLServerRunner:
         active_msg = {"ID": self.edge_id, "status": status}
         MLOpsStatus.get_instance().set_server_agent_status(self.edge_id, status)
         self.mqtt_mgr.send_message_json(active_topic, json.dumps(active_msg))
+
+    def recover_start_train_msg_after_upgrading(self):
+        try:
+            current_job = FedMLServerDataInterface.get_instance().get_current_job()
+            if current_job is not None and \
+                    current_job.status == ServerConstants.MSG_MLOPS_SERVER_STATUS_UPGRADING:
+                logging.info("start training after upgrading.")
+                server_agent_id = self.edge_id
+                topic_start_train = "mlops/flserver_agent_" + str(server_agent_id) + "/start_train"
+                self.callback_start_train(topic_start_train, current_job.running_json)
+        except Exception as e:
+            logging.info("recover starting train message after upgrading: {}".format(traceback.format_exc()))
 
     def on_agent_mqtt_connected(self, mqtt_client_object):
         # The MQTT message topic format is as follows: <sender>/<receiver>/<action>
@@ -1429,6 +1454,8 @@ class FedMLServerRunner:
         )
 
         MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
+
+        self.recover_start_train_msg_after_upgrading()
 
     def start_agent_mqtt_loop(self):
         # Start MQTT message loop

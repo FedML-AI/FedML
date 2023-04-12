@@ -175,7 +175,7 @@ class FedMLClientDataInterface(Singleton):
 
         self.open_job_db()
         current_cursor = self.db_connection.cursor()
-        results = current_cursor.execute("SELECT *  from jobs order by updated_time desc")
+        results = current_cursor.execute("SELECT *  from jobs order by updated_time desc limit(1)")
         for row in results:
             job_obj = FedMLClientJobModel()
             job_obj.job_id = row[0]
