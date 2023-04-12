@@ -289,14 +289,12 @@ class FedMLServerRunner:
             self.check_runner_stop_event()
             process = ServerConstants.exec_console_with_script(
                 "REDIS_ADDR=\"{}\" REDIS_PORT=\"{}\" REDIS_PASSWORD=\"{}\" "
-                "END_POINT_ID=\"{}\" END_POINT_Name=\"{}\" "
-                "MODEL_ID=\"{}\" MODEL_NAME=\"{}\" "
+                "END_POINT_Name=\"{}\" "
                 "MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" VERSION=\"{}\" "
                 "{} -m uvicorn fedml.cli.model_deployment.device_model_inference:api --host 0.0.0.0 --port {} "
                 "--reload --log-level critical".format(
                     self.redis_addr, self.redis_port, self.redis_password,
-                    str(self.run_id), end_point_name,
-                    str(model_id), model_name,
+                    end_point_name,
                     model_name, model_version, "", self.args.version,
                     python_program, str(ServerConstants.MODEL_INFERENCE_DEFAULT_PORT)),
                 should_capture_stdout=False,
@@ -491,7 +489,6 @@ class FedMLServerRunner:
 
             payload_json["input_json"] = {"end_point_name": end_point_name,
                                           "model_name": model_name,
-                                          "model_version": model_version,
                                           "token": str(token),
                                           "inputs": ret_inputs,
                                           "outputs": model_metadata["outputs"]}

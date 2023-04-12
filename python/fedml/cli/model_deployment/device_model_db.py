@@ -1,5 +1,7 @@
+import json
 import logging
 import os
+import time
 
 from fedml.cli.model_deployment.device_client_constants import ClientConstants
 from sqlalchemy import Column, String, TEXT, Integer, Float, create_engine, and_
@@ -45,7 +47,7 @@ class FedMLModelDatabase(object):
         ret_result_list = list()
         for result in result_list:
             result_dict = {"cache_device_id": result.device_id, "result": result.deployment_result}
-            ret_result_list.append(result_dict)
+            ret_result_list.append(json.dumps(result_dict))
         return ret_result_list
 
     def get_deployment_status_list(self, end_point_name, model_name, model_version=None):
@@ -53,7 +55,7 @@ class FedMLModelDatabase(object):
         ret_status_list = list()
         for result in result_list:
             status_dict = {"cache_device_id": result.device_id, "status": result.deployment_status}
-            ret_status_list.append(status_dict)
+            ret_status_list.append(json.dumps(status_dict))
         return ret_status_list
 
     def set_end_point_status(self, end_point_id, end_point_name, status):
@@ -84,6 +86,8 @@ class FedMLModelDatabase(object):
         return None
 
     def set_end_point_token(self, end_point_id, end_point_name, model_name, token):
+        if self.get_end_point_token(end_point_name, model_name) is not None:
+            return
         self.set_deployment_auth_info(end_point_id, end_point_name, model_name, token)
 
     def get_end_point_token(self, end_point_name, model_name):
@@ -111,7 +115,7 @@ class FedMLModelDatabase(object):
                         "total_request_num": endpoint_metrics.total_request_num,
                         "current_qps": endpoint_metrics.current_qps,
                         "avg_qps": endpoint_metrics.avg_qps, "timestamp": endpoint_metrics.timestamp}
-        return metrics_dict
+        return json.dumps(metrics_dict)
 
     def get_monitor_metrics_item(self, end_point_name, model_name, model_version, index):
         endpoint_metrics = self.get_end_point_metrics_by_index(end_point_name, model_name, model_version, index)
@@ -121,7 +125,7 @@ class FedMLModelDatabase(object):
                         "total_request_num": endpoint_metrics.total_request_num,
                         "current_qps": endpoint_metrics.current_qps,
                         "avg_qps": endpoint_metrics.avg_qps, "timestamp": endpoint_metrics.timestamp}
-        return metrics_dict
+        return json.dumps(metrics_dict)
 
     def open_job_db(self):
         if self.db_connection is not None:
@@ -130,7 +134,7 @@ class FedMLModelDatabase(object):
         if not os.path.exists(ClientConstants.get_database_dir()):
             os.makedirs(ClientConstants.get_database_dir())
         job_db_path = os.path.join(ClientConstants.get_database_dir(), FedMLModelDatabase.MODEL_DEPLOYMENT_DB)
-        self.db_engine = create_engine('sqlite:////{}'.format(job_db_path), echo=True)
+        self.db_engine = create_engine('sqlite:////{}'.format(job_db_path), echo=False)
 
         db_session_class = sessionmaker(bind=self.db_engine)
         self.db_connection = db_session_class()
@@ -151,10 +155,13 @@ class FedMLModelDatabase(object):
         self.open_job_db()
         if model_version is None:
             result_info = self.db_connection.query(FedMLDeploymentResultInfoModel). \
-                filter(and_(end_point_name == end_point_name, model_name == model_name)).all()
+                filter(and_(FedMLDeploymentResultInfoModel.end_point_name == f'{end_point_name}',
+                            FedMLDeploymentResultInfoModel.model_name == f'{model_name}')).all()
         else:
             result_info = self.db_connection.query(FedMLDeploymentResultInfoModel). \
-                filter(and_(end_point_name == end_point_name, model_name == model_name, model_version == model_version)).all()
+                filter(and_(FedMLDeploymentResultInfoModel.end_point_name == f'{end_point_name}',
+                            FedMLDeploymentResultInfoModel.model_name == f'{model_name}',
+                            FedMLDeploymentResultInfoModel.model_version == f'{model_version}')).all()
         return result_info
 
     def set_deployment_results_info(self, end_point_id, end_point_name,
@@ -162,7 +169,9 @@ class FedMLModelDatabase(object):
                                     deployment_result=None, deployment_status=None):
         self.open_job_db()
         result_info = self.db_connection.query(FedMLDeploymentResultInfoModel). \
-            filter(and_(end_point_name == end_point_name, model_name == model_name, model_version == model_version)).first()
+            filter(and_(FedMLDeploymentResultInfoModel.end_point_name == f'{end_point_name}',
+                        FedMLDeploymentResultInfoModel.model_name == f'{model_name}',
+                        FedMLDeploymentResultInfoModel.model_version == f'{model_version}')).first()
         if result_info is None:
             result_info = FedMLDeploymentResultInfoModel(end_point_id=end_point_id,
                                                          end_point_name=end_point_name,
@@ -185,7 +194,7 @@ class FedMLModelDatabase(object):
     def get_deployment_run_info(self, end_point_id):
         self.open_job_db()
         run_info = self.db_connection.query(FedMLDeploymentRunInfoModel). \
-            filter_by(end_point_id=end_point_id).first()
+            filter_by(end_point_id=f'{end_point_id}').first()
         return run_info
 
     def set_deployment_run_info(self, end_point_id, end_point_name,
@@ -193,7 +202,7 @@ class FedMLModelDatabase(object):
                                 activated=None, token=None):
         self.open_job_db()
         run_info = self.db_connection.query(FedMLDeploymentRunInfoModel). \
-            filter_by(end_point_id=end_point_id).first()
+            filter_by(end_point_id=f'{end_point_id}').first()
         if run_info is None:
             run_info = FedMLDeploymentRunInfoModel(end_point_id=end_point_id,
                                                    end_point_name=end_point_name,
@@ -218,13 +227,15 @@ class FedMLModelDatabase(object):
     def get_deployment_auth_info(self, end_point_name, model_name):
         self.open_job_db()
         run_info = self.db_connection.query(FedMLDeploymentAuthInfoModel). \
-            filter(and_(end_point_name == end_point_name, model_name == model_name)).first()
+            filter(and_(FedMLDeploymentAuthInfoModel.end_point_name == f'{end_point_name}',
+                        FedMLDeploymentAuthInfoModel.model_name == f'{model_name}')).first()
         return run_info
 
     def set_deployment_auth_info(self, end_point_id, end_point_name, model_name, token):
         self.open_job_db()
         auth_info = self.db_connection.query(FedMLDeploymentAuthInfoModel). \
-            filter(and_(end_point_name == end_point_name, model_name == model_name)).first()
+            filter(and_(FedMLDeploymentAuthInfoModel.end_point_name == f'{end_point_name}',
+                        FedMLDeploymentAuthInfoModel.model_name == f'{model_name}')).first()
         if auth_info is None:
             auth_info = FedMLDeploymentAuthInfoModel(end_point_id=end_point_id,
                                                      end_point_name=end_point_name,
@@ -241,13 +252,19 @@ class FedMLModelDatabase(object):
     def get_latest_end_point_metrics(self, end_point_name, model_name, model_version):
         self.open_job_db()
         endpoint_metric = self.db_connection.query(FedMLEndPointMetricsModel). \
-            filter(and_(end_point_name == end_point_name, model_name == model_name, model_version == model_version)).last()
-        return endpoint_metric
+            filter(and_(FedMLEndPointMetricsModel.end_point_name == f'{end_point_name}',
+                        FedMLEndPointMetricsModel.model_name == f'{model_name}',
+                        FedMLEndPointMetricsModel.model_version == f'{model_version}')).all()
+        if len(endpoint_metric) >= 1:
+            return endpoint_metric[-1]
+        return None
 
     def get_end_point_metrics_by_index(self, end_point_name, model_name, model_version, index):
         self.open_job_db()
         endpoint_metric = self.db_connection.query(FedMLEndPointMetricsModel). \
-            filter(and_(end_point_name == end_point_name, model_name == model_name, model_version == model_version)). \
+            filter(and_(FedMLEndPointMetricsModel.end_point_name == f'{end_point_name}',
+                        FedMLEndPointMetricsModel.model_name == f'{model_name}',
+                        FedMLEndPointMetricsModel.model_version == f'{model_version}')). \
             offset(index).limit(1).first()
         return endpoint_metric
 
@@ -258,7 +275,9 @@ class FedMLModelDatabase(object):
                               avg_qps=None, timestamp=None):
         self.open_job_db()
         endpoint_metric = self.db_connection.query(FedMLEndPointMetricsModel). \
-            filter(and_(end_point_name == end_point_name, model_name == model_name, model_version == model_version)).first()
+            filter(and_(FedMLEndPointMetricsModel.end_point_name == f'{end_point_name}',
+                        FedMLEndPointMetricsModel.model_name == f'{model_name}',
+                        FedMLEndPointMetricsModel.model_version == f'{model_version}')).first()
         if endpoint_metric is None:
             endpoint_metric = FedMLEndPointMetricsModel(end_point_id=end_point_id,
                                                         end_point_name=end_point_name,
@@ -337,5 +356,187 @@ class FedMLEndPointMetricsModel(Base):
     timestamp = Column(Integer)
 
 
+def test_deployment_result():
+    test_end_point_id = "545"
+    test_end_point_name = "EndPoint-98f9f598-5ac7-40a4-b780-54c20f19acaa"
+    test_model_name = "alex-test-model"
+    test_model_version = "v0-Mon Apr 10 12:30:55 CST 2023"
+    test_device_id = "178076"
+    test_deployment_result = {"end_point_id": test_end_point_id}
+    FedMLModelDatabase.get_instance().create_table()
+    FedMLModelDatabase.get_instance().set_deployment_result(test_end_point_id,
+                                                            test_end_point_name,
+                                                            test_model_name,
+                                                            test_model_version,
+                                                            test_device_id,
+                                                            json.dumps(test_deployment_result))
+
+    result_list = FedMLModelDatabase.get_instance().get_deployment_result_list(test_end_point_name,
+                                                                               test_model_name,
+                                                                               test_model_version)
+    if result_list is None or len(result_list) != 1:
+        print("Failed to test for setting and getting deployment result")
+    else:
+        result_info = json.loads(result_list[0])
+        if result_info["cache_device_id"] == test_device_id and \
+                result_info["result"] == json.dumps(test_deployment_result):
+            print("Succeeded to test for setting and getting deployment result")
+        else:
+            print("Failed to test for setting and getting deployment result")
+
+
+def test_deployment_status():
+    test_end_point_id = "545"
+    test_end_point_name = "EndPoint-98f9f598-5ac7-40a4-b780-54c20f19acaa"
+    test_model_name = "alex-test-model"
+    test_model_version = "v0-Mon Apr 10 12:30:55 CST 2023"
+    test_device_id = "178076"
+    test_deployment_status = {"end_point_id": test_end_point_id}
+    FedMLModelDatabase.get_instance().create_table()
+    FedMLModelDatabase.get_instance().set_deployment_status(test_end_point_id,
+                                                            test_end_point_name,
+                                                            test_model_name,
+                                                            test_model_version,
+                                                            test_device_id,
+                                                            json.dumps(test_deployment_status))
+
+    status_list = FedMLModelDatabase.get_instance().get_deployment_result_list(test_end_point_name,
+                                                                               test_model_name,
+                                                                               test_model_version)
+    if status_list is None or len(status_list) != 1:
+        print("Failed to test for setting and getting deployment status")
+    else:
+        status_info = json.loads(status_list[0])
+        if status_info["cache_device_id"] == test_device_id and \
+                status_info["result"] == json.dumps(test_deployment_status):
+            print("Succeeded to test for setting and getting deployment status")
+        else:
+            print("Failed to test for setting and getting deployment status")
+
+
+def test_end_point_status():
+    test_end_point_id = "545"
+    test_end_point_name = "EndPoint-98f9f598-5ac7-40a4-b780-54c20f19acaa"
+    test_end_point_status = "DEPLOYED"
+    FedMLModelDatabase.get_instance().set_end_point_status(test_end_point_id,
+                                                           test_end_point_name,
+                                                           test_end_point_status)
+
+    status = FedMLModelDatabase.get_instance().get_end_point_status(test_end_point_id)
+    if status is None or status != test_end_point_status:
+        print("Failed to test for setting and getting end point status")
+    else:
+        print("Succeeded to test for setting and getting end point status")
+
+
+def test_end_point_activation():
+    test_end_point_id = "545"
+    test_end_point_name = "EndPoint-98f9f598-5ac7-40a4-b780-54c20f19acaa"
+    test_end_point_activation = 1
+    FedMLModelDatabase.get_instance().set_end_point_activation(test_end_point_id,
+                                                               test_end_point_name,
+                                                               test_end_point_activation)
+
+    activation = FedMLModelDatabase.get_instance().get_end_point_activation(test_end_point_id)
+    if activation != test_end_point_activation:
+        print("Failed to test for setting and getting end point activation")
+    else:
+        print("Succeeded to test for setting and getting end point activation")
+
+
+def test_end_point_device_info():
+    test_end_point_id = "545"
+    test_end_point_name = "EndPoint-98f9f598-5ac7-40a4-b780-54c20f19acaa"
+    test_end_point_device_info = {"device_id": 1}
+    FedMLModelDatabase.get_instance().set_end_point_device_info(test_end_point_id,
+                                                                test_end_point_name,
+                                                                json.dumps(test_end_point_device_info))
+
+    ret_device_info = FedMLModelDatabase.get_instance().get_end_point_device_info(test_end_point_id)
+    if ret_device_info != json.dumps(test_end_point_device_info):
+        print("Failed to test for setting and getting end point device info")
+    else:
+        print("Succeeded to test for setting and getting end point device info")
+
+
+def test_end_point_token():
+    test_end_point_id = "545"
+    test_end_point_name = "EndPoint-98f9f598-5ac7-40a4-b780-54c20f19acaa"
+    test_model_name = "alex-test-model"
+    test_end_point_token = "addee88adf9899asdfsdfsfdee"
+    FedMLModelDatabase.get_instance().set_end_point_token(test_end_point_id,
+                                                          test_end_point_name,
+                                                          test_model_name,
+                                                          test_end_point_token)
+
+    ret_token = FedMLModelDatabase.get_instance().get_end_point_token(test_end_point_name, test_model_name)
+    if ret_token is None or ret_token != test_end_point_token:
+        print("Failed to test for setting and getting end point token")
+    else:
+        print("Succeeded to test for setting and getting end point token")
+
+
+def test_end_point_monitor_metrics():
+    test_end_point_id = "545"
+    test_end_point_name = "EndPoint-98f9f598-5ac7-40a4-b780-54c20f19acaa"
+    test_model_name = "alex-test-model"
+    test_model_version = "v0-Mon Apr 10 12:30:55 CST 2023"
+    total_latency = 1.0
+    avg_latency = 1.0
+    total_request_num = 1
+    current_qps = 1
+    avg_qps = 1
+    timestamp = time.time()
+    FedMLModelDatabase.get_instance().set_monitor_metrics(test_end_point_id,
+                                                          test_end_point_name,
+                                                          test_model_name,
+                                                          test_model_version,
+                                                          total_latency, avg_latency,
+                                                          total_request_num, current_qps,
+                                                          avg_qps, timestamp)
+
+    ret_latest_metrics = FedMLModelDatabase.get_instance().get_latest_monitor_metrics(test_end_point_name,
+                                                                                      test_model_name,
+                                                                                      test_model_version)
+    if ret_latest_metrics is None:
+        print("Failed to test for setting and getting end point monitoring metrics")
+    else:
+        metrics_obj = json.loads(ret_latest_metrics)
+        if metrics_obj["total_latency"] == total_latency and metrics_obj["avg_latency"] == avg_latency and \
+                metrics_obj["total_request_num"] == total_request_num and metrics_obj["current_qps"] == current_qps and \
+                metrics_obj["avg_qps"] == avg_qps and metrics_obj["timestamp"] == timestamp:
+            print("Succeeded to test for setting and getting end point monitoring metrics")
+        else:
+            print("Failed to test for setting and getting end point monitoring metrics")
+
+    ret_latest_metrics = FedMLModelDatabase.get_instance().get_monitor_metrics_item(test_end_point_name,
+                                                                                    test_model_name,
+                                                                                    test_model_version, 0)
+    if ret_latest_metrics is None:
+        print("Failed to test for setting and getting end point monitoring metrics")
+    else:
+        metrics_obj = json.loads(ret_latest_metrics)
+        if metrics_obj["total_latency"] == total_latency and metrics_obj["avg_latency"] == avg_latency and \
+                metrics_obj["total_request_num"] == total_request_num and metrics_obj["current_qps"] == current_qps and \
+                metrics_obj["avg_qps"] == avg_qps and metrics_obj["timestamp"] == timestamp:
+            print("Succeeded to test for setting and getting end point monitoring metrics")
+        else:
+            print("Failed to test for setting and getting end point monitoring metrics")
+
+
 if __name__ == "__main__":
+    test_deployment_result()
+
+    test_deployment_status()
+
+    test_end_point_status()
+
+    test_end_point_activation()
+
+    test_end_point_device_info()
+
+    test_end_point_token()
+
+    test_end_point_monitor_metrics()
+
     pass

@@ -547,7 +547,7 @@ class FedMLClientRunner:
         # Parse payload as the model message object.
         model_msg_object = FedMLModelMsgObject(topic, payload)
 
-        ClientConstants.remove_deployment(model_msg_object.inference_end_point_id, model_msg_object.model_id,
+        ClientConstants.remove_deployment(model_msg_object.end_point_name,
                                           model_msg_object.model_name, model_msg_object.model_version)
 
         self.set_runner_stopped_event(model_msg_object.run_id)

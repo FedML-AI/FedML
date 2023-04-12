@@ -1,6 +1,7 @@
 import argparse
 import json
 import time
+import traceback
 import uuid
 
 from fedml.cli.model_deployment.device_model_cache import FedMLModelCache
@@ -26,15 +27,20 @@ class FedMLModelMetrics:
         self.ms_per_sec = 1000
         self.ns_per_ms = 1000 * 1000
 
-    def set_start_time(self):
-        self.start_time = time.time_ns()
+    def set_start_time(self, start_time):
+        if start_time is None:
+            self.start_time = time.time_ns()
+        else:
+            self.start_time = start_time
 
-    def calc_metrics(self, model_id, model_name, model_version,
-                     end_point_id, end_point_name, inference_output_url):
+    def calc_metrics(self, end_point_id, end_point_name,
+                     model_id, model_name, model_version,
+                     inference_output_url):
         total_latency, avg_latency, total_request_num, current_qps, timestamp = 0, 0, 0, 0, 0
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         metrics_item = FedMLModelCache.get_instance(self.redis_addr, self.redis_port).\
             get_latest_monitor_metrics(end_point_name, model_name, model_version)
+        print(f"calc metrics_item {metrics_item}")
         if metrics_item is not None:
             total_latency, avg_latency, total_request_num, current_qps, avg_qps, timestamp = \
                 FedMLModelCache.get_instance(self.redis_addr, self.redis_port).get_metrics_item_info(metrics_item)
@@ -80,7 +86,10 @@ class FedMLModelMetrics:
         index = 0
         while True:
             time.sleep(2)
-            index = self.send_monitoring_metrics(index)
+            try:
+                index = self.send_monitoring_metrics(index)
+            except Exception as e:
+                print("Exception when processing monitoring metrics: {}".format(traceback.format_exc()))
 
         self.monitor_mqtt_mgr.disconnect()
         self.monitor_mqtt_mgr.loop_stop()
@@ -104,6 +113,7 @@ class FedMLModelMetrics:
                                          "qps": int(avg_qps),
                                          "total_request_num": int(total_request_num),
                                          "timestamp": timestamp}
+        print("send monitor metrics {}".format(json.dumps(deployment_monitoring_payload)))
 
         self.monitor_mqtt_mgr.send_message_json(deployment_monitoring_topic, json.dumps(deployment_monitoring_payload))
         self.monitor_mqtt_mgr.send_message_json(deployment_monitoring_topic_prefix,
