@@ -1,7 +1,7 @@
 
 # Customizing Data Loader for Your Own Dataset
 
-Datasets are loaded by data_loader.py (located under [https://github.com/FedML-AI/FedML-refactor/tree/master/python/fedml/data](https://github.com/FedML-AI/FedML-refactor/tree/master/python/fedml/data). When your customized data loader follows the following data structure, FedML Parrot framework can process it without any source code change.
+Datasets are loaded by data_loader.py (located under [https://github.com/FedML-AI/FedML/tree/master/python/fedml/data](https://github.com/FedML-AI/FedML/tree/master/python/fedml/data). When your customized data loader follows the following data structure, FedML Parrot framework can process it without any source code change.
 
 |__Params__ | |
 |-|-|
@@ -36,4 +36,4 @@ logger.info("load_data. dataset_name = %s" % dataset_name)
 )
 ```
 
-For more examples, please read through [https://github.com/FedML-AI/FedML-refactor/blob/master/python/fedml/data/data_loader.py](https://github.com/FedML-AI/FedML-refactor/blob/master/python/fedml/data/data_loader.py).
+For more examples, please read through [https://github.com/FedML-AI/FedML/blob/master/python/fedml/data/data_loader.py](https://github.com/FedML-AI/FedML/blob/master/python/fedml/data/data_loader.py).

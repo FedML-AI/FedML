@@ -35,7 +35,7 @@ In general, FedML source code architecture follows the paper which won the [Best
 
 ![FedML Code Architecture](../_static/image/fedml.png)
 
-As of March 2022, FedML has been made into an AI company which aims to provide machine learning capability from anywhere and at any scale. The python version of FedML [https://github.com/FedML-AI/FedML-refactor/tree/master/python](https://github.com/FedML-AI/FedML-refactor/tree/master/python) is now reorganized as follows:
+As of March 2022, FedML has been made into an AI company which aims to provide machine learning capability from anywhere and at any scale. The python version of FedML [https://github.com/FedML-AI/FedML/tree/master/python](https://github.com/FedML-AI/FedML/tree/master/python) is now reorganized as follows:
 
 **core**: The FedML low-level API package. This package implements distributed computing by communication backend such as MPI, NCCL, MQTT, gRPC, PyTorch RPC, and also supports topology management. 
 Other low-level APIs related to security and privacy are also supported. All algorithms and Scenarios are built based on the "core" package.
