@@ -651,6 +651,17 @@ class FedMLClientRunner:
             return
         self.start_request_json = payload
         run_id = request_json["runId"]
+
+        job_obj = FedMLClientDataInterface.get_instance().get_job_by_id(run_id)
+        if job_obj is None:
+            os.system("pip install -U fedml")
+            FedMLClientDataInterface.get_instance().save_started_job(run_id, self.edge_id,
+                                                                     time.time(),
+                                                                     ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING,
+                                                                     ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING,
+                                                                     payload)
+            raise Exception("Upgrading...")
+
         if self.run_process is not None and \
                 sys_utils.get_process_running_count(ClientConstants.CLIENT_LOGIN_PROGRAM) >= 2:
             logging.info("There is a running job {}.".format(
@@ -949,6 +960,16 @@ class FedMLClientRunner:
         MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, status)
         self.mqtt_mgr.send_message_json(active_topic, json.dumps(active_msg))
 
+    def recover_start_train_msg_after_upgrading(self):
+        try:
+            current_job = FedMLClientDataInterface.get_instance().get_current_job()
+            if current_job is not None and \
+                    current_job.status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING:
+                topic_start_train = "flserver_agent/" + str(self.edge_id) + "/start_train"
+                self.callback_start_train(topic_start_train, current_job.running_json)
+        except Exception as e:
+            logging.info("recover starting train message after upgrading: {}".format(traceback.format_exc()))
+
     def on_agent_mqtt_connected(self, mqtt_client_object):
         # The MQTT message topic format is as follows: <sender>/<receiver>/<action>
 
@@ -1041,6 +1062,8 @@ class FedMLClientRunner:
         MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
 
         MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
+
+        self.recover_start_train_msg_after_upgrading()
 
     def start_agent_mqtt_loop(self):
         # Start MQTT message loop
