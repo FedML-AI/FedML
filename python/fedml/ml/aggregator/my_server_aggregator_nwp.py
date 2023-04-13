@@ -70,3 +70,5 @@ class MyServerAggregatorNWP(ServerAggregator):
 
         stats = {"test_acc": test_acc, "test_loss": test_loss}
         logging.info(stats)
+
+        return (test_acc, test_loss, None, None)
