@@ -652,19 +652,36 @@ class FedMLClientRunner:
         self.start_request_json = payload
         run_id = request_json["runId"]
 
-        job_obj = FedMLClientDataInterface.get_instance().get_job_by_id(run_id)
-        if job_obj is None:
-            FedMLClientDataInterface.get_instance(). \
-                save_started_job(run_id, self.edge_id, time.time(),
-                                 ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING,
-                                 ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING,
-                                 payload)
-            self.mlops_metrics.\
-                report_client_training_status(self.edge_id,
-                                              ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING,
-                                              in_run_id=run_id)
-            os.system("pip install -U fedml")
-            raise Exception("Upgrading...")
+        no_upgrade = False
+        upgrade_version = None
+        try:
+            run_config = request_json.get("run_config", None)
+            parameters = run_config.get("parameters", None)
+            common_args = parameters.get("common_args", None)
+            no_upgrade = common_args.get("no_upgrade", False)
+            upgrade_version = common_args.get("upgrade_version", None)
+        except Exception as e:
+            pass
+
+        if not no_upgrade:
+            job_obj = FedMLClientDataInterface.get_instance().get_job_by_id(run_id)
+            if job_obj is None:
+                FedMLClientDataInterface.get_instance(). \
+                    save_started_job(run_id, self.edge_id, time.time(),
+                                     ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING,
+                                     ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING,
+                                     payload)
+                self.mlops_metrics.\
+                    report_client_training_status(self.edge_id,
+                                                  ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING,
+                                                  in_run_id=run_id)
+                if upgrade_version is None or upgrade_version == "latest":
+                    logging.info("Upgrade to latest version...")
+                    os.system("pip uninstall -y fedml;pip install fedml")
+                else:
+                    logging.info(f"Upgrade to version {upgrade_version} ...")
+                    os.system(f"pip uninstall -y fedml;pip install fedml=={upgrade_version}")
+                raise Exception("Upgrading...")
 
         if self.run_process is not None and \
                 sys_utils.get_process_running_count(ClientConstants.CLIENT_LOGIN_PROGRAM) >= 2:
