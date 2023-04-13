@@ -19,7 +19,7 @@ nvidia-ml-py3
 matplotlib~=3.5.2
 dill~=0.3.5.1
 pandas~=1.4.3
-wandb==0.13.2
+wandb==0.14.2
 eciespy
 PyNaCl
 httpx~=0.23.0
