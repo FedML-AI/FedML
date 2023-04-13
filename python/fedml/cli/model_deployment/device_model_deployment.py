@@ -27,7 +27,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                      model_from_open):
     logging.info("Model deployment is starting...")
 
-    use_simulation_test_without_triton = True
+    use_simulation_test_without_triton = False
 
     gpu_attach_cmd = ""
     if inference_use_gpu is not None and inference_use_gpu != "":

@@ -137,11 +137,11 @@ class FedMLClientRunner:
         downloaded = filesize if downloaded > filesize else downloaded
         progress = (downloaded / filesize * 100) if filesize != 0 else 0
         progress_int = int(progress)
-        downloaded_kb = format(downloaded/1024, '.2f')
-        
+        downloaded_kb = format(downloaded / 1024, '.2f')
+
         # since this hook funtion is stateless, we need a state to avoid print progress repeatly
         if count == 0:
-            self.prev_download_progress = 0 
+            self.prev_download_progress = 0
         if progress_int != self.prev_download_progress and progress_int % 5 == 0:
             self.prev_download_progress = progress_int
             logging.info("package downloaded size {} KB, progress {}%".format(downloaded_kb, progress_int))
@@ -654,12 +654,16 @@ class FedMLClientRunner:
 
         job_obj = FedMLClientDataInterface.get_instance().get_job_by_id(run_id)
         if job_obj is None:
+            FedMLClientDataInterface.get_instance(). \
+                save_started_job(run_id, self.edge_id, time.time(),
+                                 ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING,
+                                 ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING,
+                                 payload)
+            self.mlops_metrics.\
+                report_client_training_status(self.edge_id,
+                                              ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING,
+                                              in_run_id=run_id)
             os.system("pip install -U fedml")
-            FedMLClientDataInterface.get_instance().save_started_job(run_id, self.edge_id,
-                                                                     time.time(),
-                                                                     ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING,
-                                                                     ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING,
-                                                                     payload)
             raise Exception("Upgrading...")
 
         if self.run_process is not None and \
@@ -878,7 +882,7 @@ class FedMLClientRunner:
     def bind_account_and_device_id(self, url, account_id, device_id, os_name, role="client"):
         ip = requests.get('https://checkip.amazonaws.com').text.strip()
         fedml_ver, exec_path, os_ver, cpu_info, python_ver, torch_ver, mpi_installed, \
-        cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem = get_sys_runner_info()
+            cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem = get_sys_runner_info()
         json_params = {
             "accountid": account_id,
             "deviceid": device_id,
@@ -1046,7 +1050,7 @@ class FedMLClientRunner:
         local_api_process = ClientConstants.exec_console_with_script(
             "{} -m uvicorn fedml.cli.edge_deployment.client_api:api --host 0.0.0.0 --port {} "
             "--reload --log-level critical".format(python_program,
-                ClientConstants.LOCAL_CLIENT_API_PORT),
+                                                   ClientConstants.LOCAL_CLIENT_API_PORT),
             should_capture_stdout=False,
             should_capture_stderr=False
         )

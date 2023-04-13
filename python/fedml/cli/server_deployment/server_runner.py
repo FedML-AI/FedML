@@ -639,12 +639,15 @@ class FedMLServerRunner:
             run_id = request_json["runId"]
             job_obj = FedMLServerDataInterface.get_instance().get_job_by_id(run_id)
             if job_obj is None:
+                FedMLServerDataInterface.get_instance(). \
+                    save_started_job(run_id, self.edge_id, time.time(),
+                                     ServerConstants.MSG_MLOPS_SERVER_STATUS_UPGRADING,
+                                     ServerConstants.MSG_MLOPS_SERVER_STATUS_UPGRADING,
+                                     payload)
+                self.mlops_metrics.report_server_training_status(run_id,
+                                                                 ServerConstants.MSG_MLOPS_SERVER_STATUS_UPGRADING)
                 os.system("pip install -U fedml")
-                FedMLServerDataInterface.get_instance().save_started_job(run_id, self.edge_id,
-                                                                         time.time(),
-                                                                         ServerConstants.MSG_MLOPS_SERVER_STATUS_UPGRADING,
-                                                                         ServerConstants.MSG_MLOPS_SERVER_STATUS_UPGRADING,
-                                                                         payload)
+
                 raise Exception("Upgrading...")
 
         is_retain = request_json.get("is_retain", False)
