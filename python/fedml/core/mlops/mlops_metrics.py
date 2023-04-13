@@ -80,10 +80,13 @@ class MLOpsMetrics(Singleton):
         else:
             return True
 
-    def report_client_training_status(self, edge_id, status, running_json=None, is_from_model=False):
+    def report_client_training_status(self, edge_id, status, running_json=None, is_from_model=False, in_run_id=None):
         run_id = 0
         if self.run_id is not None:
             run_id = self.run_id
+
+        if in_run_id is not None:
+            run_id = in_run_id
 
         self.common_report_client_training_status(edge_id, status)
 

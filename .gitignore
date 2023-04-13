@@ -52,6 +52,8 @@ cifar-10-batches-py
 *.tar.gz
 *.zip
 *.json
+# don't ignore json file on javascript folder
+!javascript/**/*.json
 *.tar.bz2
 *.stats
 

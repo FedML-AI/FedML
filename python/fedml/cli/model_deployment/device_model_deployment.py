@@ -18,7 +18,7 @@ for type_name in collections.abc.__all__:
 from fedml.cli.model_deployment.device_client_constants import ClientConstants
 
 
-def start_deployment(end_point_id, model_id, model_version,
+def start_deployment(end_point_id, end_point_name, model_id, model_version,
                      model_storage_local_path, model_bin_file, inference_model_name, inference_engine,
                      inference_http_port, inference_grpc_port, inference_metric_port,
                      inference_use_gpu, inference_memory_size,
@@ -26,6 +26,8 @@ def start_deployment(end_point_id, model_id, model_version,
                      infer_host, model_is_from_open, model_params,
                      model_from_open):
     logging.info("Model deployment is starting...")
+
+    use_simulation_test_without_triton = False
 
     gpu_attach_cmd = ""
     if inference_use_gpu is not None and inference_use_gpu != "":
@@ -41,34 +43,35 @@ def start_deployment(end_point_id, model_id, model_version,
 
     # Check whether triton server is running.
     triton_server_is_running = False
-    triton_server_container_name = "{}".format(ClientConstants.FEDML_TRITON_SERVER_CONTAINER_NAME_PREFIX)
-    if not ClientConstants.is_running_on_k8s():
-        check_triton_server_running_cmds = "{}docker ps |grep {}".format(sudo_prefix, triton_server_container_name)
-        running_process = ClientConstants.exec_console_with_script(check_triton_server_running_cmds,
-                                                                   should_capture_stdout=True,
-                                                                   should_capture_stderr=True)
-        ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(running_process)
-        if out is not None:
-            out_str = out.decode(encoding="utf-8")
-            if str(out_str) != "":
-                triton_server_is_running = True
+    if not use_simulation_test_without_triton:
+        triton_server_container_name = "{}".format(ClientConstants.FEDML_TRITON_SERVER_CONTAINER_NAME_PREFIX)
+        if not ClientConstants.is_running_on_k8s():
+            check_triton_server_running_cmds = "{}docker ps |grep {}".format(sudo_prefix, triton_server_container_name)
+            running_process = ClientConstants.exec_console_with_script(check_triton_server_running_cmds,
+                                                                       should_capture_stdout=True,
+                                                                       should_capture_stderr=True)
+            ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(running_process)
+            if out is not None:
+                out_str = out.decode(encoding="utf-8")
+                if str(out_str) != "":
+                    triton_server_is_running = True
 
-    logging.info("install nvidia docker...")
+        logging.info("install nvidia docker...")
 
-    # Setup nvidia docker related packages.
-    if not ClientConstants.is_running_on_k8s():
-        if sys_name == "Linux":
-            if not triton_server_is_running:
-                os.system(sudo_prefix + "apt-get update")
-                os.system(sudo_prefix + "apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin")
-                os.system("distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
-              && sudo rm -f /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg;curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
-              && curl -s -L https://nvidia.github.io/libnvidia-container/experimental/$distribution/libnvidia-container.list | \
-                 sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
-                 sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list")
-                os.system(sudo_prefix + "apt-get update")
-                os.system(sudo_prefix + "apt-get install -y nvidia-docker2")
-                os.system(sudo_prefix + "systemctl restart docker")
+        # Setup nvidia docker related packages.
+        if not ClientConstants.is_running_on_k8s():
+            if sys_name == "Linux":
+                if not triton_server_is_running:
+                    os.system(sudo_prefix + "apt-get update")
+                    os.system(sudo_prefix + "apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin")
+                    os.system("distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
+                  && sudo rm -f /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg;curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
+                  && curl -s -L https://nvidia.github.io/libnvidia-container/experimental/$distribution/libnvidia-container.list | \
+                     sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+                     sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list")
+                    os.system(sudo_prefix + "apt-get update")
+                    os.system(sudo_prefix + "apt-get install -y nvidia-docker2")
+                    os.system(sudo_prefix + "systemctl restart docker")
 
     # Convert models from pytorch to onnx format
     if model_is_from_open:
@@ -77,9 +80,9 @@ def start_deployment(end_point_id, model_id, model_version,
         logging.info("Input size {}, input types {}".format(model_params["input_size"],
                                                             model_params["input_types"]))
 
-        running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id,
+        running_model_name = ClientConstants.get_running_model_name(end_point_name,
                                                                     inference_model_name,
-                                                                    model_version)
+                                                                    model_version, end_point_id, model_id)
         if model_from_open is None:
             return running_model_name, "", model_version, {}, {}
 
@@ -112,9 +115,9 @@ def start_deployment(end_point_id, model_id, model_version,
         logging.info("Input size {}, input types {}".format(model_params["input_size"],
                                                             model_params["input_types"]))
 
-        running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id,
+        running_model_name = ClientConstants.get_running_model_name(end_point_name,
                                                                     inference_model_name,
-                                                                    model_version)
+                                                                    model_version, end_point_id, model_id)
         # configuration passed by user in the Cli
         model_location = os.path.join(model_storage_local_path, "fedml_model.bin")
         input_size = model_params["input_size"]
@@ -147,9 +150,9 @@ def start_deployment(end_point_id, model_id, model_version,
         # convert_model_container_name = "{}_{}_{}".format(ClientConstants.FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX,
         #                                                  str(end_point_id),
         #                                                  str(model_id))
-        # running_model_name = ClientConstants.get_running_model_name(end_point_id, model_id,
+        # running_model_name = ClientConstants.get_running_model_name(end_point_name,
         #                                                             inference_model_name,
-        #                                                             model_version)
+        #                                                             model_version, end_point_id, model_id)
         # model_storage_processed_path = ClientConstants.get_k8s_slave_host_dir(model_storage_local_path)
         # convert_model_cmd = "{}docker stop {}; {}docker rm {}; " \
         #                     "{}docker run --name {} --rm {} -v {}:/project " \
@@ -191,37 +194,64 @@ def start_deployment(end_point_id, model_id, model_version,
 
     # Run triton server
     logging.info("prepare to run triton server...")
-    if not triton_server_is_running and not ClientConstants.is_running_on_k8s():
-        triton_server_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} {} -p{}:8000 " \
-                            "-p{}:8001 -p{}:8002 " \
-                            "--shm-size {} " \
-                            "-v {}:/models {} " \
-                            "bash -c \"pip install transformers && tritonserver --strict-model-config=false " \
-                            "--model-control-mode=poll --repository-poll-secs={} " \
-                            "--model-repository=/models\" ".format(sudo_prefix, triton_server_container_name,
-                                                                   sudo_prefix, triton_server_container_name,
-                                                                   sudo_prefix, triton_server_container_name,
-                                                                   gpu_attach_cmd,
-                                                                   inference_http_port,
-                                                                   inference_grpc_port,
-                                                                   inference_metric_port,
-                                                                   inference_memory_size,
-                                                                   model_serving_dir,
-                                                                   inference_server_image,
-                                                                   ClientConstants.FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL)
-        logging.info("Run triton inference server: {}".format(triton_server_cmd))
-        triton_server_process = ClientConstants.exec_console_with_script(triton_server_cmd,
-                                                                         should_capture_stdout=False,
-                                                                         should_capture_stderr=False,
-                                                                         no_sys_out_err=True)
-        log_deployment_result(end_point_id, model_id, triton_server_container_name,
-                              ClientConstants.CMD_TYPE_RUN_TRITON_SERVER, triton_server_process.pid,
-                              running_model_name, inference_engine, inference_http_port)
+    if not use_simulation_test_without_triton:
+        if not triton_server_is_running and not ClientConstants.is_running_on_k8s():
+            triton_server_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} {} -p{}:8000 " \
+                                "-p{}:8001 -p{}:8002 " \
+                                "--shm-size {} " \
+                                "-v {}:/models {} " \
+                                "bash -c \"pip install transformers && tritonserver --strict-model-config=false " \
+                                "--model-control-mode=poll --repository-poll-secs={} " \
+                                "--model-repository=/models\" ".format(sudo_prefix, triton_server_container_name,
+                                                                       sudo_prefix, triton_server_container_name,
+                                                                       sudo_prefix, triton_server_container_name,
+                                                                       gpu_attach_cmd,
+                                                                       inference_http_port,
+                                                                       inference_grpc_port,
+                                                                       inference_metric_port,
+                                                                       inference_memory_size,
+                                                                       model_serving_dir,
+                                                                       inference_server_image,
+                                                                       ClientConstants.FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL)
+            logging.info("Run triton inference server: {}".format(triton_server_cmd))
+            triton_server_process = ClientConstants.exec_console_with_script(triton_server_cmd,
+                                                                             should_capture_stdout=False,
+                                                                             should_capture_stderr=False,
+                                                                             no_sys_out_err=True)
+            log_deployment_result(end_point_id, model_id, triton_server_container_name,
+                                  ClientConstants.CMD_TYPE_RUN_TRITON_SERVER, triton_server_process.pid,
+                                  running_model_name, inference_engine, inference_http_port)
 
-    inference_output_url, running_model_version, model_metadata, model_config = \
-        get_model_info(running_model_name, inference_engine, inference_http_port, infer_host)
-    logging.info("Deploy model successfully, inference url: {}, model metadata: {}, model config: {}".format(
-        inference_output_url, model_metadata, model_config))
+        inference_output_url, running_model_version, model_metadata, model_config = \
+            get_model_info(running_model_name, inference_engine, inference_http_port, infer_host)
+        logging.info("Deploy model successfully, inference url: {}, model metadata: {}, model config: {}".format(
+            inference_output_url, model_metadata, model_config))
+    else:
+        inference_output_url = f"http://localhost:{inference_http_port}/v2/models/{running_model_name}/versions/1/infer"
+        model_metadata = {'name': inference_model_name,
+                          'versions': ['1'], 'platform': 'onnxruntime_onnx',
+                          'inputs': [{'name': 'input2', 'datatype': 'INT32', 'shape': [1, 24]}, {'name': 'input1', 'datatype': 'FP32', 'shape': [1, 2]}],
+                          'outputs': [{'name': 'output', 'datatype': 'FP32', 'shape': [1]}]}
+        model_config = {
+            "platform": "onnxruntime",
+            "max_batch_size": 1,
+            "input_size": [[1, 24], [1, 2]],
+            "input_types": ["int", "float"],
+            "input": [
+                {
+                    "name": "input",
+                    "data_type": "TYPE_FP32",
+                    "dims": []
+                }
+            ],
+            "output": [
+                {
+                    "name": "output",
+                    "data_type": "TYPE_FP32",
+                    "dims": []
+                }
+            ]
+        }
 
     return running_model_name, inference_output_url, model_version, model_metadata, model_config
 

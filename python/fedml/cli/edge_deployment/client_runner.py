@@ -137,11 +137,11 @@ class FedMLClientRunner:
         downloaded = filesize if downloaded > filesize else downloaded
         progress = (downloaded / filesize * 100) if filesize != 0 else 0
         progress_int = int(progress)
-        downloaded_kb = format(downloaded/1024, '.2f')
-        
+        downloaded_kb = format(downloaded / 1024, '.2f')
+
         # since this hook funtion is stateless, we need a state to avoid print progress repeatly
         if count == 0:
-            self.prev_download_progress = 0 
+            self.prev_download_progress = 0
         if progress_int != self.prev_download_progress and progress_int % 5 == 0:
             self.prev_download_progress = progress_int
             logging.info("package downloaded size {} KB, progress {}%".format(downloaded_kb, progress_int))
@@ -651,6 +651,38 @@ class FedMLClientRunner:
             return
         self.start_request_json = payload
         run_id = request_json["runId"]
+
+        no_upgrade = False
+        upgrade_version = None
+        try:
+            run_config = request_json.get("run_config", None)
+            parameters = run_config.get("parameters", None)
+            common_args = parameters.get("common_args", None)
+            no_upgrade = common_args.get("no_upgrade", False)
+            upgrade_version = common_args.get("upgrade_version", None)
+        except Exception as e:
+            pass
+
+        if not no_upgrade:
+            job_obj = FedMLClientDataInterface.get_instance().get_job_by_id(run_id)
+            if job_obj is None:
+                FedMLClientDataInterface.get_instance(). \
+                    save_started_job(run_id, self.edge_id, time.time(),
+                                     ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING,
+                                     ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING,
+                                     payload)
+                self.mlops_metrics.\
+                    report_client_training_status(self.edge_id,
+                                                  ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING,
+                                                  in_run_id=run_id)
+                if upgrade_version is None or upgrade_version == "latest":
+                    logging.info("Upgrade to latest version...")
+                    os.system("pip uninstall -y fedml;pip install fedml")
+                else:
+                    logging.info(f"Upgrade to version {upgrade_version} ...")
+                    os.system(f"pip uninstall -y fedml;pip install fedml=={upgrade_version}")
+                raise Exception("Upgrading...")
+
         if self.run_process is not None and \
                 sys_utils.get_process_running_count(ClientConstants.CLIENT_LOGIN_PROGRAM) >= 2:
             logging.info("There is a running job {}.".format(
@@ -867,7 +899,7 @@ class FedMLClientRunner:
     def bind_account_and_device_id(self, url, account_id, device_id, os_name, role="client"):
         ip = requests.get('https://checkip.amazonaws.com').text.strip()
         fedml_ver, exec_path, os_ver, cpu_info, python_ver, torch_ver, mpi_installed, \
-        cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem = get_sys_runner_info()
+            cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem = get_sys_runner_info()
         json_params = {
             "accountid": account_id,
             "deviceid": device_id,
@@ -949,6 +981,16 @@ class FedMLClientRunner:
         MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, status)
         self.mqtt_mgr.send_message_json(active_topic, json.dumps(active_msg))
 
+    def recover_start_train_msg_after_upgrading(self):
+        try:
+            current_job = FedMLClientDataInterface.get_instance().get_current_job()
+            if current_job is not None and \
+                    current_job.status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING:
+                topic_start_train = "flserver_agent/" + str(self.edge_id) + "/start_train"
+                self.callback_start_train(topic_start_train, current_job.running_json)
+        except Exception as e:
+            logging.info("recover starting train message after upgrading: {}".format(traceback.format_exc()))
+
     def on_agent_mqtt_connected(self, mqtt_client_object):
         # The MQTT message topic format is as follows: <sender>/<receiver>/<action>
 
@@ -1025,7 +1067,7 @@ class FedMLClientRunner:
         local_api_process = ClientConstants.exec_console_with_script(
             "{} -m uvicorn fedml.cli.edge_deployment.client_api:api --host 0.0.0.0 --port {} "
             "--reload --log-level critical".format(python_program,
-                ClientConstants.LOCAL_CLIENT_API_PORT),
+                                                   ClientConstants.LOCAL_CLIENT_API_PORT),
             should_capture_stdout=False,
             should_capture_stderr=False
         )
@@ -1041,6 +1083,8 @@ class FedMLClientRunner:
         MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_IDLE)
 
         MLOpsRuntimeLogDaemon.get_instance(self.args).stop_all_log_processor()
+
+        self.recover_start_train_msg_after_upgrading()
 
     def start_agent_mqtt_loop(self):
         # Start MQTT message loop
