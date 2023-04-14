@@ -16,7 +16,7 @@ gensim~=4.2.0
 multiprocess~=0.70.13
 smart-open==6.3.0
 nvidia-ml-py3
-matplotlib~=3.5.2
+matplotlib~=3.7.1
 dill~=0.3.5.1
 pandas~=1.4.3
 wandb==0.13.2
