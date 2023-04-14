@@ -44,6 +44,7 @@ async def predict(request: Request):
         in_model_version = "latest"
 
     print("Inference json: {}".format(input_json))
+    logging.info("Inference request json: {}".format(input_json))
 
     start_time = time.time_ns()
 
@@ -74,10 +75,13 @@ async def predict(request: Request):
                                    model_id, model_name, model_version,
                                    inference_output_url)
 
+        logging.info("Inference result json: {}".format(inference_response))
+
         return inference_response
 
     else:
         inference_response = {"error": True, "message": "token is not valid."}
+        logging.info("Inference result json: {}".format(inference_response))
         return inference_response
 
     return inference_response
