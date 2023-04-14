@@ -660,7 +660,12 @@ class FedMLServerRunner:
                 self.mlops_metrics.report_server_training_status(run_id,
                                                                  ServerConstants.MSG_MLOPS_SERVER_STATUS_UPGRADING)
             logging.info(f"Upgrade to version {upgrade_version} ...")
-            os.system(f"pip uninstall -y fedml;pip install fedml=={upgrade_version}")
+            if self.version == "release":
+                os.system(f"pip uninstall -y fedml;pip install fedml=={upgrade_version}")
+            else:
+                os.system(f"pip uninstall -y fedml;"
+                          f"pip install --index-url https://test.pypi.org/simple/ "
+                          f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version}")
             raise Exception("Upgrading...")
 
     def callback_start_train(self, topic=None, payload=None):
