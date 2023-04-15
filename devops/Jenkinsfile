@@ -266,6 +266,8 @@ pipeline {
               sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_DEV'
 
               withCredentials([usernamePassword(passwordVariable : 'DOCKERHUB_PASSWORD' ,usernameVariable : 'DOCKERHUB_USERNAME' ,credentialsId : "$DOCKERHUB_CREDENTIAL_ID" ,)]) {
+                 sh 'docker login --username $DOCKERHUB_USERNAME --password $DOCKERHUB_PASSWORD'
+
                  sh 'docker tag $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BACKEND:latest fedml/fedml-inference-backend:latest'
                  sh 'docker push fedml/$APP_NAME_MODEL_INFERENCE_BACKEND:latest'
 
@@ -361,6 +363,8 @@ pipeline {
               sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_PRODUCTION'
 
               withCredentials([usernamePassword(passwordVariable : 'DOCKERHUB_PASSWORD' ,usernameVariable : 'DOCKERHUB_USERNAME' ,credentialsId : "$DOCKERHUB_CREDENTIAL_ID" ,)]) {
+                 sh 'docker login --username $DOCKERHUB_USERNAME --password $DOCKERHUB_PASSWORD'
+                 
                  sh 'docker tag $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BACKEND:latest fedml/fedml-inference-backend:latest'
                  sh 'docker push fedml/$APP_NAME_MODEL_INFERENCE_BACKEND:latest'
 
