@@ -2,6 +2,7 @@ import logging
 import time
 import traceback
 from urllib.parse import urlparse
+import os
 
 from fastapi import FastAPI, Request
 from fedml.cli.model_deployment.device_model_deployment import run_http_inference_with_curl_request
@@ -44,7 +45,6 @@ async def predict(request: Request):
         in_model_version = "latest"
 
     print("Inference json: {}".format(input_json))
-    logging.info("Inference request json: {}".format(input_json))
 
     start_time = time.time_ns()
 
@@ -75,13 +75,13 @@ async def predict(request: Request):
                                    model_id, model_name, model_version,
                                    inference_output_url)
 
-        logging.info("Inference result json: {}".format(inference_response))
+        logging_inference_request(input_json, inference_response)
 
         return inference_response
 
     else:
         inference_response = {"error": True, "message": "token is not valid."}
-        logging.info("Inference result json: {}".format(inference_response))
+        logging_inference_request(input_json, inference_response)
         return inference_response
 
     return inference_response
@@ -134,3 +134,10 @@ def auth_request_token(end_point_name, model_name, token):
         return True
 
     return False
+
+
+def logging_inference_request(request, response):
+    inference_log_file = os.path.join(ServerConstants.get_log_file_dir(), "inference.log")
+    with open(inference_log_file, "a") as f:
+        f.writelines([f"request: {request}, response: {response}\n"])
+
