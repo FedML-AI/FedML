@@ -680,12 +680,23 @@ class FedMLClientRunner:
                                               in_run_id=run_id)
 
             logging.info(f"Upgrade to version {upgrade_version} ...")
+            python_ver_major = sys.version_info[0]
+            python_ver_minor = sys.version_info[1]
             if self.version == "release":
-                os.system(f"pip uninstall -y fedml;pip install fedml=={upgrade_version}")
+                if python_ver_major == 3 and python_ver_minor == 7:
+                    os.system(f"pip uninstall -y fedml;pip install fedml=={upgrade_version} --use-deprecated=legacy-resolver")
+                else:
+                    os.system(f"pip uninstall -y fedml;pip install fedml=={upgrade_version}")
             else:
-                os.system(f"pip uninstall -y fedml;"
-                          f"pip install --index-url https://test.pypi.org/simple/ "
-                          f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version}")
+                if python_ver_major == 3 and python_ver_minor == 7:
+                    os.system(f"pip uninstall -y fedml;"
+                              f"pip install --index-url https://test.pypi.org/simple/ "
+                              f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version} "
+                              f"--use-deprecated=legacy-resolver")
+                else:
+                    os.system(f"pip uninstall -y fedml;"
+                              f"pip install --index-url https://test.pypi.org/simple/ "
+                              f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version}")
             raise Exception("Upgrading...")
 
     def callback_start_train(self, topic, payload):
@@ -1107,7 +1118,10 @@ class FedMLClientRunner:
         try:
             self.mqtt_mgr.loop_forever()
         except Exception as e:
-            logging.info("Client tracing: {}".format(traceback.format_exc()))
+            if str(e) == "Upgrading...":
+                logging.info("Upgrading...")
+            else:
+                logging.info("Client tracing: {}".format(traceback.format_exc()))
             self.mqtt_mgr.loop_stop()
             self.mqtt_mgr.disconnect()
             self.release_client_mqtt_mgr()
