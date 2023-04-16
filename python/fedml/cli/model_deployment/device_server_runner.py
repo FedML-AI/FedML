@@ -301,10 +301,12 @@ class FedMLServerRunner:
                 should_capture_stderr=False
             )
 
-    def start_device_inference_monitor(self, run_id, end_point_name, model_id, model_name, model_version):
+    def start_device_inference_monitor(self, run_id, end_point_name,
+                                       model_id, model_name, model_version, check_stopped_event=True):
         # start inference monitor server
         logging.info(f"start the model inference monitor, end point {run_id}, model name {model_name}...")
-        self.check_runner_stop_event()
+        if check_stopped_event:
+            self.check_runner_stop_event()
         pip_source_dir = os.path.dirname(__file__)
         monitor_file = os.path.join(pip_source_dir, "device_model_monitor.py")
         python_program = get_python_program()
@@ -735,7 +737,7 @@ class FedMLServerRunner:
 
         self.start_device_inference_monitor(model_msg_object.run_id, model_msg_object.end_point_name,
                                             model_msg_object.model_id, model_msg_object.model_name,
-                                            model_msg_object.model_version)
+                                            model_msg_object.model_version, check_stopped_event=False)
 
     def callback_deactivate_deployment(self, topic, payload):
         logging.info("callback_deactivate_deployment: topic = %s, payload = %s" % (topic, payload))
