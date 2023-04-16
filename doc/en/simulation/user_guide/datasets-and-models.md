@@ -61,8 +61,8 @@ Stack Overflow dataset originally hosted by Kaggle consists of questions and ans
 
 For a comprehensive dataset list, please check the following APIs:
 
-`fedml.data.load(args)` ([https://github.com/FedML-AI/FedML-refactor/tree/master/python/fedml/data](https://github.com/FedML-AI/FedML-refactor/tree/master/python/fedml/data)) and 
-`fedml.model.create(args)` ([https://github.com/FedML-AI/FedML-refactor/tree/master/python/fedml/data](https://github.com/FedML-AI/FedML-refactor/tree/master/python/fedml/model))
+`fedml.data.load(args)` ([https://github.com/FedML-AI/FedML/tree/master/python/fedml/data](https://github.com/FedML-AI/FedML/tree/master/python/fedml/data)) and 
+`fedml.model.create(args)` ([https://github.com/FedML-AI/FedML/tree/master/python/fedml/data](https://github.com/FedML-AI/FedML/tree/master/python/fedml/model))
 
 
 Their usage in different algorithms are as follows:

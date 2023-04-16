@@ -643,17 +643,11 @@ class FedMLClientRunner:
         except Exception:
             pass
 
-    def callback_start_train(self, topic, payload):
-        # Get training params
-        request_json = json.loads(payload)
-        is_retain = request_json.get("is_retain", False)
-        if is_retain:
-            return
-        self.start_request_json = payload
-        run_id = request_json["runId"]
-
+    def ota_upgrade(self, payload, request_json):
         no_upgrade = False
         upgrade_version = None
+        run_id = request_json["runId"]
+
         try:
             run_config = request_json.get("run_config", None)
             parameters = run_config.get("parameters", None)
@@ -663,25 +657,47 @@ class FedMLClientRunner:
         except Exception as e:
             pass
 
-        if not no_upgrade:
-            job_obj = FedMLClientDataInterface.get_instance().get_job_by_id(run_id)
-            if job_obj is None:
-                FedMLClientDataInterface.get_instance(). \
-                    save_started_job(run_id, self.edge_id, time.time(),
-                                     ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING,
-                                     ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING,
-                                     payload)
-                self.mlops_metrics.\
-                    report_client_training_status(self.edge_id,
-                                                  ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING,
-                                                  in_run_id=run_id)
-                if upgrade_version is None or upgrade_version == "latest":
-                    logging.info("Upgrade to latest version...")
-                    os.system("pip uninstall -y fedml;pip install fedml")
-                else:
-                    logging.info(f"Upgrade to version {upgrade_version} ...")
-                    os.system(f"pip uninstall -y fedml;pip install fedml=={upgrade_version}")
-                raise Exception("Upgrading...")
+        should_upgrade = True
+        if upgrade_version is None or upgrade_version == "latest":
+            fedml_is_latest_version, local_ver, remote_ver = sys_utils. \
+                check_fedml_is_latest_version(self.version)
+            if fedml_is_latest_version:
+                should_upgrade = False
+            upgrade_version = remote_ver
+
+        if no_upgrade:
+            should_upgrade = False
+
+        if should_upgrade:
+            FedMLClientDataInterface.get_instance(). \
+                save_started_job(run_id, self.edge_id, time.time(),
+                                 ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING,
+                                 ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING,
+                                 payload)
+            self.mlops_metrics. \
+                report_client_training_status(self.edge_id,
+                                              ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING,
+                                              in_run_id=run_id)
+
+            logging.info(f"Upgrade to version {upgrade_version} ...")
+            if self.version == "release":
+                os.system(f"pip uninstall -y fedml;pip install fedml=={upgrade_version}")
+            else:
+                os.system(f"pip uninstall -y fedml;"
+                          f"pip install --index-url https://test.pypi.org/simple/ "
+                          f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version}")
+            raise Exception("Upgrading...")
+
+    def callback_start_train(self, topic, payload):
+        # Get training params
+        request_json = json.loads(payload)
+        is_retain = request_json.get("is_retain", False)
+        if is_retain:
+            return
+        self.start_request_json = payload
+        run_id = request_json["runId"]
+
+        self.ota_upgrade(payload, request_json)
 
         if self.run_process is not None and \
                 sys_utils.get_process_running_count(ClientConstants.CLIENT_LOGIN_PROGRAM) >= 2:

@@ -19,6 +19,9 @@ pipeline {
         FEDML_PIP_CREDENTIAL_ID_PRODUCTION = 'fedml-pip-upload-id'
         PRODUCTION_KUBECONFIG_CREDENTIAL_ID = 'fedml-release-kubeconfig'
         PRODUCTION_KUBECONFIG_CREDENTIAL_ID_FOR_DOCS = 'fedml-release-kubeconfig-for-docs'
+        DEV_KUBECONFIG_CREDENTIAL_ID_FOR_MODEL_SERVING = 'fedml-dev-config-for-model-serving'
+        TEST_KUBECONFIG_CREDENTIAL_ID_FOR_MODEL_SERVING = 'fedml-test-config-for-model-serving'
+        PRODUCTION_KUBECONFIG_CREDENTIAL_ID_FOR_MODEL_SERVING = 'fedml-release-config-for-model-serving'
 
         DOCKERHUB_CREDENTIAL_ID = 'dockerhub'
 
@@ -30,6 +33,7 @@ pipeline {
         AWS_REGION_NAME_TEST = 'us-east-1'
         DEPLOY_NAMESPACE_DEV = 'fedml-devops-aggregator-dev'
         DEPLOY_NAMESPACE_TEST = 'fedml-devops-aggregator-test'
+        MODEL_SERVING_NAMESPACE = "fedml-model-serving"
         VERSION_DEV = 'dev'
         VERSION_TEST = 'test'
         BRANCH_DEV = 'dev/v0.7.0'
@@ -53,9 +57,8 @@ pipeline {
         FEDML_MODEL_INFERENCE_INGRESS_PACKAGE = "fedml-model-inference-ingress"
         APP_NAME_PREMISE_MASTER = 'fedml-model-premise-master'
         APP_NAME_PREMISE_SLAVE  = 'fedml-model-premise-slave'
-        APP_NAME_MODEL_INFERENCE_INGRESS  = 'fedml-model-inference-ingress'
-        APP_NAME_MODEL_INFERENCE_BACKEND  = 'fedml-model-inference-backend'
-        APP_NAME_MODEL_INFERENCE_CONVERTER = 'fedml-model-inference-converter'
+        APP_NAME_MODEL_INFERENCE_INGRESS  = 'fedml-inference-ingress'
+        APP_NAME_MODEL_INFERENCE_BACKEND  = 'fedml-inference-backend'
 
         DOCKER_NAMESPACE = 'x6k8q1x9/'
         DOCKER_NAMESPACE_TEST = 's8w2q1c1/'
@@ -167,10 +170,10 @@ pipeline {
 
                 sh 'docker build --network=host -f ./devops/dockerfile/edge-server/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_EDGE_SERVER:$VERSION_DEV --build-arg VERSION=$VERSION_DEV .'
 
-                //sh 'docker build --network=host -f ./devops/dockerfile/model-premise-master/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_PREMISE_MASTER:$VERSION_DEV --build-arg VERSION=$VERSION_DEV .'
-                //sh 'docker build --network=host -f ./devops/dockerfile/model-premise-slave/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_DEV --build-arg VERSION=$VERSION_DEV .'
-                //sh 'docker build --network=host -f ./devops/dockerfile/model-inference-backend/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BACKEND:$VERSION_DEV --build-arg VERSION=$VERSION_DEV .'
-                //sh 'docker build --network=host -f ./devops/dockerfile/model-inference-ingress/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_DEV --build-arg VERSION=$VERSION_DEV .'
+                sh 'docker build --network=host -f ./devops/dockerfile/model-inference-backend/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BACKEND:latest .'
+                sh 'docker build --network=host -f ./devops/dockerfile/model-inference-ingress/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_DEV --build-arg VERSION=$VERSION_DEV .'
+                sh 'docker build --network=host -f ./devops/dockerfile/model-premise-master/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_PREMISE_MASTER:$VERSION_DEV --build-arg VERSION=$VERSION_DEV .'
+                sh 'docker build --network=host -f ./devops/dockerfile/model-premise-slave/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_DEV --build-arg VERSION=$VERSION_DEV .'
             }
           }
         }
@@ -197,10 +200,10 @@ pipeline {
 
               sh 'docker build --network=host -f ./devops/dockerfile/edge-server/Dockerfile -t $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_EDGE_SERVER:$VERSION_TEST --build-arg VERSION=$VERSION_TEST .'
 
-              //sh 'docker build --network=host -f ./devops/dockerfile/model-premise-master/Dockerfile -t $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_PREMISE_MASTER:$VERSION_TEST --build-arg VERSION=$VERSION_TEST .'
-              //sh 'docker build --network=host -f ./devops/dockerfile/model-premise-slave/Dockerfile -t $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_TEST --build-arg VERSION=$VERSION_TEST .'
-              //sh 'docker build --network=host -f ./devops/dockerfile/model-inference-base/Dockerfile -t $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BASE:$VERSION_TEST --build-arg VERSION=$VERSION_TEST .'
-              //sh 'docker build --network=host -f ./devops/dockerfile/model-inference-ingress/Dockerfile -t $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_TEST --build-arg VERSION=$VERSION_TEST .'
+              sh 'docker build --network=host -f ./devops/dockerfile/model-inference-backend/Dockerfile -t $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BACKEND:latest .'
+              sh 'docker build --network=host -f ./devops/dockerfile/model-inference-ingress/Dockerfile -t $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_TEST --build-arg VERSION=$VERSION_TEST .'
+              sh 'docker build --network=host -f ./devops/dockerfile/model-premise-master/Dockerfile -t $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_PREMISE_MASTER:$VERSION_TEST --build-arg VERSION=$VERSION_TEST .'
+              sh 'docker build --network=host -f ./devops/dockerfile/model-premise-slave/Dockerfile -t $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_TEST --build-arg VERSION=$VERSION_TEST .'
             }
           }
         }
@@ -231,10 +234,10 @@ pipeline {
 
               sh 'docker build --network=host -f ./devops/dockerfile/docs-server/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DOCS_SERVER:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
 
-              //sh 'docker build --network=host -f ./devops/dockerfile/model-premise-master/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_PREMISE_MASTER:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
-              //sh 'docker build --network=host -f ./devops/dockerfile/model-premise-slave/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
-              //sh 'docker build --network=host -f ./devops/dockerfile/model-inference-base/Dockerfile -t $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BASE:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
-              //sh 'docker build --network=host -f ./devops/dockerfile/model-inference-ingress/Dockerfile -t $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
+              sh 'docker build --network=host -f ./devops/dockerfile/model-inference-backend/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BACKEND:latest .'
+              sh 'docker build --network=host -f ./devops/dockerfile/model-inference-ingress/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
+              sh 'docker build --network=host -f ./devops/dockerfile/model-premise-master/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_PREMISE_MASTER:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
+              sh 'docker build --network=host -f ./devops/dockerfile/model-premise-slave/Dockerfile -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_PRODUCTION --build-arg VERSION=$VERSION_PRODUCTION .'
             }
           }
         }
@@ -260,10 +263,26 @@ pipeline {
               sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_CLIENT_AGENT:$VERSION_DEV'
               sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_EDGE_SERVER:$VERSION_DEV'
 
-              //sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_PREMISE_MASTER:$VERSION_DEV'
-              //sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_DEV'
-              //sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BASE:$VERSION_DEV'
-              //sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_DEV'
+              sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BACKEND:latest'
+              sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_DEV'
+              sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_PREMISE_MASTER:$VERSION_DEV'
+              sh 'docker push  $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_DEV'
+
+              withCredentials([usernamePassword(passwordVariable : 'DOCKERHUB_PASSWORD' ,usernameVariable : 'DOCKERHUB_USERNAME' ,credentialsId : "$DOCKERHUB_CREDENTIAL_ID" ,)]) {
+                 sh 'docker login --username $DOCKERHUB_USERNAME --password $DOCKERHUB_PASSWORD'
+
+                 sh 'docker tag $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BACKEND:latest fedml/fedml-inference-backend:latest'
+                 sh 'docker push fedml/$APP_NAME_MODEL_INFERENCE_BACKEND:latest'
+
+                 sh 'docker tag $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_DEV fedml/fedml-inference-ingress:$VERSION_DEV'
+                 sh 'docker push fedml/$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_DEV'
+
+                 sh 'docker tag $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_PREMISE_MASTER:$VERSION_DEV fedml/fedml-model-premise-master:$VERSION_DEV'
+                 sh 'docker push fedml/$APP_NAME_PREMISE_MASTER:$VERSION_DEV'
+
+                 sh 'docker tag $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_DEV fedml/fedml-model-premise-slave:$VERSION_DEV'
+                 sh 'docker push fedml/$APP_NAME_PREMISE_SLAVE:$VERSION_DEV'
+              }
             }
           }
         }
@@ -289,10 +308,26 @@ pipeline {
               sh 'docker push  $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_CLIENT_AGENT:$VERSION_TEST'
               sh 'docker push  $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_EDGE_SERVER:$VERSION_TEST'
 
-              //sh 'docker push  $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_PREMISE_MASTER:$VERSION_TEST'
-              //sh 'docker push  $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_TEST'
-              //sh 'docker push  $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BASE:$VERSION_TEST'
-              //sh 'docker push  $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_TEST'
+              sh 'docker push  $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BACKEND:latest'
+              sh 'docker push  $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_TEST'
+              sh 'docker push  $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_PREMISE_MASTER:$VERSION_TEST'
+              sh 'docker push  $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_TEST'
+
+              withCredentials([usernamePassword(passwordVariable : 'DOCKERHUB_PASSWORD' ,usernameVariable : 'DOCKERHUB_USERNAME' ,credentialsId : "$DOCKERHUB_CREDENTIAL_ID" ,)]) {
+                sh 'docker login --username $DOCKERHUB_USERNAME --password $DOCKERHUB_PASSWORD'
+
+                sh 'docker tag $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BACKEND:latest fedml/fedml-inference-backend:latest'
+                sh 'docker push fedml/$APP_NAME_MODEL_INFERENCE_BACKEND:latest'
+
+                sh 'docker tag $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_TEST fedml/fedml-inference-ingress:$VERSION_TEST'
+                sh 'docker push fedml/$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_TEST'
+
+                sh 'docker tag $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_PREMISE_MASTER:$VERSION_TEST fedml/fedml-model-premise-master:$VERSION_TEST'
+                sh 'docker push fedml/$APP_NAME_PREMISE_MASTER:$VERSION_TEST'
+
+                sh 'docker tag $REGISTRY_TEST/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_TEST fedml/fedml-model-premise-slave:$VERSION_TEST'
+                sh 'docker push fedml/$APP_NAME_PREMISE_SLAVE:$VERSION_TEST'
+              }
             }
           }
         }
@@ -325,10 +360,26 @@ pipeline {
               sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_EDGE_SERVER:$VERSION_PRODUCTION'
               sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_DOCS_SERVER:$VERSION_PRODUCTION'
 
-              //sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_PREMISE_MASTER:$VERSION_PRODUCTION'
-              //sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_PRODUCTION'
-              //sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BASE:$VERSION_PRODUCTION'
-              //sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_PRODUCTION'
+              sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BACKEND:latest'
+              sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_PRODUCTION'
+              sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_PREMISE_MASTER:$VERSION_PRODUCTION'
+              sh 'docker push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_PRODUCTION'
+
+              withCredentials([usernamePassword(passwordVariable : 'DOCKERHUB_PASSWORD' ,usernameVariable : 'DOCKERHUB_USERNAME' ,credentialsId : "$DOCKERHUB_CREDENTIAL_ID" ,)]) {
+                 sh 'docker login --username $DOCKERHUB_USERNAME --password $DOCKERHUB_PASSWORD'
+
+                 sh 'docker tag $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BACKEND:latest fedml/fedml-inference-backend:latest'
+                 sh 'docker push fedml/$APP_NAME_MODEL_INFERENCE_BACKEND:latest'
+
+                 sh 'docker tag $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_PRODUCTION fedml/fedml-inference-ingress:$VERSION_PRODUCTION'
+                 sh 'docker push fedml/$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_PRODUCTION'
+
+                 sh 'docker tag $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_PREMISE_MASTER:$VERSION_PRODUCTION fedml/fedml-model-premise-master:$VERSION_PRODUCTION'
+                 sh 'docker push fedml/$APP_NAME_PREMISE_MASTER:$VERSION_PRODUCTION'
+
+                 sh 'docker tag $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_PREMISE_SLAVE:$VERSION_PRODUCTION fedml/fedml-model-premise-slave:$VERSION_PRODUCTION'
+                 sh 'docker push fedml/$APP_NAME_PREMISE_SLAVE:$VERSION_PRODUCTION'
+              }
             }
           }
         }
@@ -351,10 +402,16 @@ pipeline {
 
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_DEV --replicas=0 deployment/$DEPLOY_NAME_2'
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_DEV --replicas=1 deployment/$DEPLOY_NAME_2'
+                }
 
-                    //sh './devops/scripts/install-model-premise.sh $FEDML_HELM_CHARTS_BASE_DIR $FEDML_MODEL_PREMISE_MASTER_PACKAGE $FEDML_MODEL_OPS_VERSION_DEV $DEPLOY_NAMESPACE_DEV $FEDML_MODEL_OPS_ACCOUNT_ID'
-                    //sh './devops/scripts/install-model-slave.sh $FEDML_HELM_CHARTS_BASE_DIR $FEDML_MODEL_PREMISE_SLAVE_PACKAGE $FEDML_MODEL_OPS_VERSION_DEV $DEPLOY_NAMESPACE_DEV $FEDML_MODEL_OPS_ACCOUNT_ID'
-                    //sh './devops/scripts/install-model-inference.sh $FEDML_HELM_CHARTS_BASE_DIR $FEDML_MODEL_INFERENCE_INGRESS_PACKAGE $FEDML_MODEL_OPS_VERSION_DEV $DEPLOY_NAMESPACE_DEV $FEDML_MODEL_OPS_ACCOUNT_ID'
+                withCredentials([
+                    kubeconfigFile(
+                    credentialsId: env.DEV_KUBECONFIG_CREDENTIAL_ID_FOR_MODEL_SERVING,
+                    variable: 'KUBECONFIG')
+                    ]) {
+                    sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-premise-master'
+                    sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-inference-gateway'
+                    sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-premise-slave'
                 }
              }
           }
@@ -375,11 +432,17 @@ pipeline {
 
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_TEST --replicas=0 deployment/$DEPLOY_NAME'
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_TEST --replicas=1 deployment/$DEPLOY_NAME'
-
-                    //sh './devops/scripts/install-model-premise.sh $FEDML_HELM_CHARTS_BASE_DIR $FEDML_MODEL_PREMISE_MASTER_PACKAGE $FEDML_MODEL_OPS_VERSION_TEST $DEPLOY_NAMESPACE_TEST $FEDML_MODEL_OPS_ACCOUNT_ID'
-                    //sh './devops/scripts/install-model-slave.sh $FEDML_HELM_CHARTS_BASE_DIR $FEDML_MODEL_PREMISE_SLAVE_PACKAGE $FEDML_MODEL_OPS_VERSION_TEST $DEPLOY_NAMESPACE_TEST $FEDML_MODEL_OPS_ACCOUNT_ID'
-                    //sh './devops/scripts/install-model-inference.sh $FEDML_HELM_CHARTS_BASE_DIR $FEDML_MODEL_INFERENCE_INGRESS_PACKAGE $FEDML_MODEL_OPS_VERSION_TEST $DEPLOY_NAMESPACE_TEST $FEDML_MODEL_OPS_ACCOUNT_ID'
                 }
+
+                withCredentials([
+                    kubeconfigFile(
+                    credentialsId: env.TEST_KUBECONFIG_CREDENTIAL_ID_FOR_MODEL_SERVING,
+                    variable: 'KUBECONFIG')
+                    ]) {
+                    sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-premise-master'
+                    sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-inference-gateway'
+                    sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-premise-slave'
+                 }
              }
           }
         }
@@ -405,10 +468,6 @@ pipeline {
 
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DEPLOY_NAME_3'
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION  --replicas=1 deployment/$DEPLOY_NAME_3'
-
-                    //sh './devops/scripts/install-model-premise.sh $FEDML_HELM_CHARTS_BASE_DIR $FEDML_MODEL_PREMISE_MASTER_PACKAGE $FEDML_MODEL_OPS_VERSION_PRODUCTION $DEPLOY_NAMESPACE_PRODUCTION $FEDML_MODEL_OPS_ACCOUNT_ID'
-                    //sh './devops/scripts/install-model-slave.sh $FEDML_HELM_CHARTS_BASE_DIR $FEDML_MODEL_PREMISE_SLAVE_PACKAGE $FEDML_MODEL_OPS_VERSION_PRODUCTION $DEPLOY_NAMESPACE_PRODUCTION $FEDML_MODEL_OPS_ACCOUNT_ID'
-                    //sh './devops/scripts/install-model-inference.sh $FEDML_HELM_CHARTS_BASE_DIR $FEDML_MODEL_INFERENCE_INGRESS_PACKAGE $FEDML_MODEL_OPS_VERSION_PRODUCTION $DEPLOY_NAMESPACE_PRODUCTION $FEDML_MODEL_OPS_ACCOUNT_ID'
                 }
 
                 withCredentials([
@@ -417,6 +476,16 @@ pipeline {
                     variable: 'KUBECONFIG')
                     ]) {
                     sh 'kubectl rollout restart -n $DOCS_DEPLOY_NAMESPACE_PRODUCTION deployment/$DOCS_DEPLOY_NAME'
+                }
+
+                withCredentials([
+                    kubeconfigFile(
+                    credentialsId: env.PRODUCTION_KUBECONFIG_CREDENTIAL_ID_FOR_MODEL_SERVING,
+                    variable: 'KUBECONFIG')
+                    ]) {
+                    sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-premise-master'
+                    sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-inference-gateway'
+                    sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-premise-slave'
                 }
              }
           }
@@ -432,7 +501,7 @@ pipeline {
        echo "branch name: " + env.BRANCH_NAME
        script {
             if (env.BRANCH_NAME == env.BRANCH_DEV || env.BRANCH_NAME == env.BRANCH_TEST || env.BRANCH_NAME == env.BRANCH_PRODUCTION) {
-                def mail_list = ['alexliang.kh@gmail.com','chaoyanghe.com@gmail.com']
+                def mail_list = ['alexliang.kh@gmail.com','chaoyanghe.com@gmail.com','jinhanharry@gmail.com']
                 mail_list.each { x ->
                     echo "mail item: ${x}"
                     mail (to: "${x}",
@@ -450,7 +519,7 @@ pipeline {
        echo "branch name: " + env.BRANCH_NAME
        script {
             if (env.BRANCH_NAME == env.BRANCH_DEV || env.BRANCH_NAME == env.BRANCH_TEST || env.BRANCH_NAME == env.BRANCH_PRODUCTION) {
-                def mail_list = ['alexliang.kh@gmail.com','chaoyanghe.com@gmail.com']
+                def mail_list = ['alexliang.kh@gmail.com','chaoyanghe.com@gmail.com','jinhanharry@gmail.com']
                 mail_list.each { x ->
                     echo "mail item: ${x}"
                     mail (to: "${x}",

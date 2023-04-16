@@ -339,6 +339,12 @@ class FedMLServerRunner:
             should_capture_stderr=False
         )
 
+    def stop_device_inference_monitor(self, run_id, end_point_name, model_id, model_name, model_version):
+        # stop inference monitor server
+        logging.info(f"stop the model inference monitor, end point {run_id}, model name {model_name}...")
+        sys_utils.cleanup_model_monitor_processes(run_id, end_point_name,
+                                                  model_id, model_name, model_version)
+
     def cleanup_run_when_finished(self):
         logging.info("Cleanup run successfully when finished.")
 
@@ -727,6 +733,10 @@ class FedMLServerRunner:
                                         model_msg_object.end_point_name,
                                         model_msg_object.model_name, "", prev_status)
 
+        self.start_device_inference_monitor(model_msg_object.run_id, model_msg_object.end_point_name,
+                                            model_msg_object.model_id, model_msg_object.model_name,
+                                            model_msg_object.model_version)
+
     def callback_deactivate_deployment(self, topic, payload):
         logging.info("callback_deactivate_deployment: topic = %s, payload = %s" % (topic, payload))
 
@@ -740,6 +750,10 @@ class FedMLServerRunner:
                                      model_msg_object.model_name, False)
 
         self.set_runner_stopped_event(model_msg_object.run_id)
+
+        self.stop_device_inference_monitor(model_msg_object.run_id, model_msg_object.end_point_name,
+                                           model_msg_object.model_id, model_msg_object.model_name,
+                                           model_msg_object.model_version)
 
     def set_runner_stopped_event(self, run_id):
         server_runner = self.model_runner_mapping.get(run_id, None)
@@ -763,6 +777,10 @@ class FedMLServerRunner:
         self.send_deployment_delete_request_to_edges(payload, model_msg_object)
 
         self.set_runner_stopped_event(model_msg_object.run_id)
+
+        self.stop_device_inference_monitor(model_msg_object.run_id, model_msg_object.end_point_name,
+                                           model_msg_object.model_id, model_msg_object.model_name,
+                                           model_msg_object.model_version)
 
     def send_deployment_results_with_payload(self, end_point_id, end_point_name, payload):
         self.send_deployment_results(end_point_id, end_point_name,

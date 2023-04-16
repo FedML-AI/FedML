@@ -624,6 +624,50 @@ class FedMLServerRunner:
             logging.info("start_train: send topic " + topic_start_train + " to client...")
             self.client_mqtt_mgr.send_message(topic_start_train, json.dumps(self.request_json))
 
+    def ota_upgrade(self, payload, request_json):
+        no_upgrade = False
+        upgrade_version = None
+        run_id = request_json["runId"]
+
+        try:
+            run_config = request_json.get("run_config", None)
+            parameters = run_config.get("parameters", None)
+            common_args = parameters.get("common_args", None)
+            no_upgrade = common_args.get("no_upgrade", False)
+            upgrade_version = common_args.get("upgrade_version", None)
+        except Exception as e:
+            pass
+
+        should_upgrade = True
+        if upgrade_version is None or upgrade_version == "latest":
+            fedml_is_latest_version, local_ver, remote_ver = sys_utils. \
+                check_fedml_is_latest_version(self.version)
+            if fedml_is_latest_version:
+                should_upgrade = False
+            upgrade_version = remote_ver
+
+        if no_upgrade:
+            should_upgrade = False
+
+        if should_upgrade:
+            job_obj = FedMLServerDataInterface.get_instance().get_job_by_id(run_id)
+            if job_obj is None:
+                FedMLServerDataInterface.get_instance(). \
+                    save_started_job(run_id, self.edge_id, time.time(),
+                                     ServerConstants.MSG_MLOPS_SERVER_STATUS_UPGRADING,
+                                     ServerConstants.MSG_MLOPS_SERVER_STATUS_UPGRADING,
+                                     payload)
+                self.mlops_metrics.report_server_training_status(run_id,
+                                                                 ServerConstants.MSG_MLOPS_SERVER_STATUS_UPGRADING)
+            logging.info(f"Upgrade to version {upgrade_version} ...")
+            if self.version == "release":
+                os.system(f"pip uninstall -y fedml;pip install fedml=={upgrade_version}")
+            else:
+                os.system(f"pip uninstall -y fedml;"
+                          f"pip install --index-url https://test.pypi.org/simple/ "
+                          f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version}")
+            raise Exception("Upgrading...")
+
     def callback_start_train(self, topic=None, payload=None):
         logging.info("callback_start_train payload: {}".format(payload))
 
@@ -632,45 +676,16 @@ class FedMLServerRunner:
             message_bytes = payload.encode("ascii")
             base64_bytes = base64.b64decode(message_bytes)
             payload = base64_bytes.decode("ascii")
-            request_json = json.loads(payload)
             logging.info("decoded payload: {}".format(payload))
-        else:
-            request_json = json.loads(payload)
-            run_id = request_json["runId"]
 
-            no_upgrade = False
-            upgrade_version = None
-            try:
-                run_config = request_json.get("run_config", None)
-                parameters = run_config.get("parameters", None)
-                common_args = parameters.get("common_args", None)
-                no_upgrade = common_args.get("no_upgrade", False)
-                upgrade_version = common_args.get("upgrade_version", None)
-            except Exception as e:
-                pass
-
-            if not no_upgrade:
-                job_obj = FedMLServerDataInterface.get_instance().get_job_by_id(run_id)
-                if job_obj is None:
-                    FedMLServerDataInterface.get_instance(). \
-                        save_started_job(run_id, self.edge_id, time.time(),
-                                         ServerConstants.MSG_MLOPS_SERVER_STATUS_UPGRADING,
-                                         ServerConstants.MSG_MLOPS_SERVER_STATUS_UPGRADING,
-                                         payload)
-                    self.mlops_metrics.report_server_training_status(run_id,
-                                                                     ServerConstants.MSG_MLOPS_SERVER_STATUS_UPGRADING)
-                    if upgrade_version is None or upgrade_version == "latest":
-                        logging.info("Upgrade to latest version...")
-                        os.system("pip uninstall -y fedml;pip install fedml")
-                    else:
-                        logging.info(f"Upgrade to version {upgrade_version} ...")
-                        os.system(f"pip uninstall -y fedml;pip install fedml=={upgrade_version}")
-
-                    raise Exception("Upgrading...")
-
+        request_json = json.loads(payload)
         is_retain = request_json.get("is_retain", False)
         if is_retain:
             return
+
+        if not self.run_as_cloud_agent and not self.run_as_cloud_server:
+            self.ota_upgrade(payload, request_json)
+
         self.start_request_json = payload
         run_id = request_json["runId"]
         if self.run_as_edge_server_and_agent:

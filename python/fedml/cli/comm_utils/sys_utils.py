@@ -10,7 +10,12 @@ import psutil
 import yaml
 from psutil import NoSuchProcess, STATUS_ZOMBIE
 
-from .yaml_utils import load_yaml_config
+from fedml.cli.comm_utils.yaml_utils import load_yaml_config
+import json
+from urllib import request
+from pkg_resources import parse_version
+import fedml
+
 
 FETAL_ERROR_START_CODE = 128
 
@@ -353,6 +358,29 @@ def cleanup_all_bootstrap_processes(bootstrap_program, clean_process_group=False
             pass
 
 
+def cleanup_model_monitor_processes(run_id, end_point_name, model_id, model_name, model_version):
+    # Cleanup all fedml server api processes.
+    for process in psutil.process_iter():
+        try:
+            pinfo = process.as_dict(attrs=["pid", "name", "cmdline"])
+            find_monitor_process = False
+            for cmd in pinfo["cmdline"]:
+                if str(cmd).find("-ep {}".format(str(run_id))) != -1:
+                    find_monitor_process = True
+
+                if str(cmd).find("-epn {}".format(end_point_name)) != -1:
+                    find_monitor_process = True
+
+            if find_monitor_process:
+                # click.echo("find the monitor process at {}.".format(process.pid))
+                if platform.system() == 'Windows':
+                    os.system("taskkill /PID {} /T /F".format(process.pid))
+                else:
+                    os.kill(process.pid, signal.SIGTERM)
+        except Exception as e:
+            pass
+
+
 def get_process_running_count(process_name):
     count = 0
     for process in psutil.process_iter():
@@ -485,3 +513,26 @@ def get_device_id_in_docker():
                 return f"{device_id}-docker"
     return None
 
+
+def versions(configuration_env, pkg_name):
+    if configuration_env == "release":
+        url = f'https://pypi.python.org/pypi/{pkg_name}/json'
+    else:
+        url = f'https://test.pypi.org/pypi/{pkg_name}/json'
+    releases = json.loads(request.urlopen(url).read())['releases']
+    return sorted(releases, key=parse_version, reverse=True)
+
+
+def check_fedml_is_latest_version(configuration_env="release"):
+    fedml_version_list = versions(configuration_env, "fedml")
+    local_fedml_version = fedml.__version__
+    if local_fedml_version == fedml_version_list[0]:
+        return True, local_fedml_version, fedml_version_list[0]
+
+    return False, local_fedml_version, fedml_version_list[0]
+
+
+if __name__ == '__main__':
+    fedml_is_latest_version, local_ver, remote_ver = check_fedml_is_latest_version("dev")
+    print("FedML is latest version: {}, local version {}, remote version {}".format(
+        fedml_is_latest_version, local_ver, remote_ver))
