@@ -19,6 +19,9 @@ pipeline {
         FEDML_PIP_CREDENTIAL_ID_PRODUCTION = 'fedml-pip-upload-id'
         PRODUCTION_KUBECONFIG_CREDENTIAL_ID = 'fedml-release-kubeconfig'
         PRODUCTION_KUBECONFIG_CREDENTIAL_ID_FOR_DOCS = 'fedml-release-kubeconfig-for-docs'
+        DEV_KUBECONFIG_CREDENTIAL_ID_FOR_MODEL_SERVING = 'fedml-dev-config-for-model-serving'
+        TEST_KUBECONFIG_CREDENTIAL_ID_FOR_MODEL_SERVING = 'fedml-test-config-for-model-serving'
+        PRODUCTION_KUBECONFIG_CREDENTIAL_ID_FOR_MODEL_SERVING = 'fedml-release-config-for-model-serving'
 
         DOCKERHUB_CREDENTIAL_ID = 'dockerhub'
 
@@ -364,7 +367,7 @@ pipeline {
 
               withCredentials([usernamePassword(passwordVariable : 'DOCKERHUB_PASSWORD' ,usernameVariable : 'DOCKERHUB_USERNAME' ,credentialsId : "$DOCKERHUB_CREDENTIAL_ID" ,)]) {
                  sh 'docker login --username $DOCKERHUB_USERNAME --password $DOCKERHUB_PASSWORD'
-                 
+
                  sh 'docker tag $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BACKEND:latest fedml/fedml-inference-backend:latest'
                  sh 'docker push fedml/$APP_NAME_MODEL_INFERENCE_BACKEND:latest'
 
@@ -399,7 +402,13 @@ pipeline {
 
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_DEV --replicas=0 deployment/$DEPLOY_NAME_2'
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_DEV --replicas=1 deployment/$DEPLOY_NAME_2'
+                }
 
+                withCredentials([
+                    kubeconfigFile(
+                    credentialsId: env.DEV_KUBECONFIG_CREDENTIAL_ID_FOR_MODEL_SERVING,
+                    variable: 'KUBECONFIG')
+                    ]) {
                     sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-premise-master'
                     sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-inference-gateway'
                     sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-premise-slave'
@@ -423,11 +432,17 @@ pipeline {
 
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_TEST --replicas=0 deployment/$DEPLOY_NAME'
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_TEST --replicas=1 deployment/$DEPLOY_NAME'
+                }
 
+                withCredentials([
+                    kubeconfigFile(
+                    credentialsId: env.TEST_KUBECONFIG_CREDENTIAL_ID_FOR_MODEL_SERVING,
+                    variable: 'KUBECONFIG')
+                    ]) {
                     sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-premise-master'
                     sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-inference-gateway'
                     sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-premise-slave'
-                }
+                 }
              }
           }
         }
@@ -453,10 +468,6 @@ pipeline {
 
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION --replicas=0 deployment/$DEPLOY_NAME_3'
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_PRODUCTION  --replicas=1 deployment/$DEPLOY_NAME_3'
-
-                    sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-premise-master'
-                    sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-inference-gateway'
-                    sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-premise-slave'
                 }
 
                 withCredentials([
@@ -465,6 +476,16 @@ pipeline {
                     variable: 'KUBECONFIG')
                     ]) {
                     sh 'kubectl rollout restart -n $DOCS_DEPLOY_NAMESPACE_PRODUCTION deployment/$DOCS_DEPLOY_NAME'
+                }
+
+                withCredentials([
+                    kubeconfigFile(
+                    credentialsId: env.PRODUCTION_KUBECONFIG_CREDENTIAL_ID_FOR_MODEL_SERVING,
+                    variable: 'KUBECONFIG')
+                    ]) {
+                    sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-premise-master'
+                    sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-inference-gateway'
+                    sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-premise-slave'
                 }
              }
           }
