@@ -232,19 +232,25 @@ Now you are ready to start the training. Enjoy! We provide the following experim
   Also, you may review your edge client logs via the command 'fedml logs' in your edge client device, and you may review your edge server logs via the command 'fedml logs -s' in your edge server device.
 
 ## 6. FedML OTA(Over-the-Air) upgrade mechanism
-  When you run the CLI ```fedml login $YourUserId``` to login the MLOps platform. The FedML core framework compares its local version with the remote fedml version from the repository of pypi.org.
-If the local version is less than the remote version, FedML core framework starts an OTA process to upgrade its local fedml pip to the remote version. And also, there is another entry point to upgrade the fedml version, when you start a new run on the MLOps platform, the FedML server agent runs the same process to upgrade its local version.
-When the FedML server agent completes its upgrade process, it forwards this OTA request to all FedML client agents in the same run group. And then, when these FedML client agents receive the OTA command, it runs the same OTA process to upgrade its local version.
+  The OTA process is a useful feature of FedML because it ensures that all agents in a run group are using the same version of the platform. This helps to avoid compatibility issues and ensures that everyone is working with the same set of features and bug fixes.
 
-  The above is FedML OTA automatic process for upgrading to the latest version. But in some cases, maybe you want to upgrade FedML library to special version. In our design, we facilitate the fedml_config.yaml to support this requirement. You may specify the following configuration keys under the section _common_args_.
+  The FedML core framework provides an easy way to upgrade to the latest version of the platform using an over-the-air (OTA) process. When you use the CLI command `fedml login $YourUserId` to log into the MLOps platform, the core framework compares the local version with the latest version available on the pypi.org repository. If the local version is outdated, the framework initiates the OTA process to upgrade the local fedml pip to the latest version.
+
+Additionally, when you start a new run on the MLOps platform, the FedML server agent runs the OTA process to upgrade its local version. Once the server agent completes the upgrade process, it forwards the OTA request to all FedML client agents in the same run group. The client agents then run the same OTA process to upgrade their local versions.
+
+Although the OTA process automatically upgrades FedML to the latest version, there may be situations where you want to upgrade to a specific version. In this case, you can use the fedml_config.yaml file to specify the version you want to upgrade to. Simply add the following configuration keys under the common_args section:
+
 ```
-common_args:
-  upgrade_version: 0.8.2
-  no_upgrade: false
+  common_args:
+
+      upgrade_version: 0.8.2
+
+      no_upgrade: false
 ```
 
-Notice: When the value of no_upgrade is set to true, the FedML server agent and client agent will not run the OTA process.
+If you set the value of no_upgrade to true, neither the FedML server agent nor the client agent will run the OTA process when you start a new run.
 
+Overall, the OTA process and the ability to specify a specific version to upgrade to make upgrading FedML convenient and flexible for users.
 
 More advanced features will be supported soon. We appreciate your valuable feedback.
 
