@@ -2,13 +2,7 @@
 // import * as jpickle from 'jpickle';
 // import unpickle from 'unpickle';
 import AWS from 'aws-sdk'
-
 export class S3Storage {
-  region
-  bucketName
-  accesskeyId
-  secretAccesskey
-  s3
   constructor(s3_config) {
     this.region = s3_config.CN_REGION_NAME
     this.bucketName = s3_config.BUCKET_NAME

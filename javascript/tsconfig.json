@@ -3,13 +3,17 @@
     "target": "es2018",
     "module": "esnext",
     "lib": ["esnext", "DOM"],
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "esModuleInterop": true,
     "strict": true,
     "strictNullChecks": true,
     "resolveJsonModule": true,
-    "skipLibCheck": true
+    "declaration": true,
+    "resolvePackageJsonImports": true,
+    "skipLibCheck": true,
+    "baseUrl": "src",
+    "outDir": "lib"
   },
-  "include": ["**/*"],
-  "exclude": ["node_modules"]
+  "include": ["src"],
+  "exclude": ["node_modules", "src/**/*.(test|spec).ts"]
 }

@@ -1,0 +1,33 @@
+import { FedMLCommManager } from '../../core/distributed/fedml_comm_manager';
+import type { TrainerDistAdapter } from './fedml_trainer_dist_adapter';
+export declare class ClientMasterManager extends FedMLCommManager {
+    args: object;
+    trainer_dist_adapter: TrainerDistAdapter;
+    num_rounds: number;
+    round_idx: number;
+    rank: number;
+    client_real_ids: any;
+    client_real_id: any;
+    has_sent_online_msg: boolean;
+    message_handler_dict: {};
+    is_inited: boolean;
+    constructor(args: any, trainer_dist_adapter: TrainerDistAdapter, comm?: null, rank?: number, size?: number, backend?: string);
+    register_message_receive_handlers(): void;
+    handle_message_connection_ready(msg: any): void;
+    handle_message_check_status(msg: any): void;
+    handle_message_init(msg: any): Promise<void>;
+    handle_message_receive_model_from_server(msg: any): Promise<void>;
+    handle_message_finish(msg: any): void;
+    cleanup(): void;
+    report_client_training_status(edge_id: any, runId: any, status: any): void;
+    broadcast_client_training_status(edge_id: any, runId: any, status: any): void;
+    report_client_device_status_to_web_ui(edge_id: any, runId: any, status: any): void;
+    common_report_client_id_status(edge_id: any, runId: any, status: any): void;
+    common_report_client_training_status(edge_id: any, runId: any, status: any): void;
+    send_model_to_server(receive_id: any, weights: any): Promise<void>;
+    send_client_status(receive_id: any, status?: string): Promise<void>;
+    log_client_model_info(round_index: any, model_url: any): Promise<void>;
+    train(): Promise<void>;
+    run(): void;
+}
+export default ClientMasterManager;

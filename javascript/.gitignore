@@ -112,7 +112,6 @@ dist
 # Recommended template: Node.gitignore
 
 dist/
-*.d.ts
 npm-debug.log
 yarn-error.log
 

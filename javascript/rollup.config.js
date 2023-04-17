@@ -1,64 +1,139 @@
-import esbuild from 'rollup-plugin-esbuild'
-import dts from 'rollup-plugin-dts'
+import path from 'path'
+import { readFileSync } from 'fs'
+import { defineConfig } from 'rollup'
+// import esbuild from 'rollup-plugin-esbuild'
 import resolve from '@rollup/plugin-node-resolve'
 import commonjs from '@rollup/plugin-commonjs'
+import terser from '@rollup/plugin-terser'
 import json from '@rollup/plugin-json'
-import alias from '@rollup/plugin-alias'
+import { babel } from '@rollup/plugin-babel'
+import autoExternal from 'rollup-plugin-auto-external'
+import bundleSize from 'rollup-plugin-bundle-size'
+import nodePolyfills from 'rollup-plugin-polyfill-node'
 
-const entries = [
-  'src/index.ts',
-]
+const lib = JSON.parse(readFileSync('./package.json'))
+const OUTPUT_FILENAME = 'FedmlSpider'
+const MOD_NAME = 'FedmlSpider'
+const NAMED_INPUT = './lib/index.js'
+const DEFAULT_INPUT = './lib/FedmlSpider.js'
 
-const plugins = [
-  alias({
-    entries: [
-      { find: /^node:(.+)$/, replacement: '$1' },
-    ],
-  }),
-  resolve({
-    preferBuiltins: true,
-  }),
-  json(),
-  commonjs(),
-  esbuild({
-    target: 'chrome58',
-    // target: 'node14',
-  }),
-]
+const buildConfig = ({
+  es5 = true,
+  browser = true,
+  minifiedVersion = true,
+  ...config
+}) => {
+  const { file } = config.output
+  const ext = path.extname(file)
+  const basename = path.basename(file, ext)
+  const extArr = ext.split('.')
+  extArr.shift()
 
-/**
- * @see https://rollupjs.org/configuration-options/#external
- */
-const external = [
-  '@tensorflow/tfjs',
-  '@tensorflow/tfjs-vis',
-]
-
-export default [
-  ...entries.map(input => ({
-    input,
-    output: [
-      {
-        file: input.replace('src/', 'dist/').replace('.ts', '.mjs'),
-        format: 'esm',
-      },
-      {
-        file: input.replace('src/', 'dist/').replace('.ts', '.cjs'),
-        format: 'cjs',
-      },
-    ],
-    external,
-    plugins,
-  })),
-  ...entries.map(input => ({
-    input,
+  const build = ({ minified = false }) => ({
+    input: NAMED_INPUT,
+    ...config,
     output: {
-      file: input.replace('src/', '').replace('.ts', '.d.ts'),
-      format: 'esm',
+      ...config.output,
+      file: `${path.dirname(file)}/${basename}.${(minified ? ['min', ...extArr] : extArr).join('.')}`,
     },
-    external,
     plugins: [
-      dts({ respectExternal: true }),
+      json(),
+      resolve({ browser }),
+      commonjs(),
+      nodePolyfills(),
+      // esbuild({
+      //   target: 'chrome58',
+      //   // target: 'node14',
+      // }),
+      minified && terser(),
+      minified && bundleSize(),
+      ...(es5
+        ? [babel({
+            babelHelpers: 'bundled',
+            presets: ['@babel/preset-env'],
+          })]
+        : []),
+      ...(config.plugins || []),
     ],
-  })),
-]
+  })
+
+  const configs = [
+    build({ minified: false }),
+  ]
+
+  if (minifiedVersion)
+    configs.push(build({ minified: true }))
+
+  return configs
+}
+
+export default defineConfig(() => {
+  const year = new Date().getFullYear()
+  const banner = `// ${MOD_NAME} v${lib.version} Copyright (c) ${year} ${lib.author} and contributors`
+
+  return [
+    // browser ESM bundle for CDN
+    ...buildConfig({
+      input: NAMED_INPUT,
+      output: {
+        file: `dist/esm/${OUTPUT_FILENAME}.mjs`,
+        format: 'esm',
+        generatedCode: {
+          constBindings: true,
+        },
+        exports: 'named',
+        banner,
+      },
+    }),
+
+    // Browser UMD bundle for CDN
+    ...buildConfig({
+      input: DEFAULT_INPUT,
+      es5: true,
+      output: {
+        file: `dist/${OUTPUT_FILENAME}.js`,
+        name: MOD_NAME,
+        format: 'umd',
+        exports: 'default',
+        banner,
+      },
+    }),
+
+    // Browser CJS bundle
+    ...buildConfig({
+      input: DEFAULT_INPUT,
+      es5: false,
+      minifiedVersion: false,
+      output: {
+        file: `dist/browser/${MOD_NAME}.cjs`,
+        name: MOD_NAME,
+        format: 'cjs',
+        exports: 'default',
+        banner,
+      },
+    }),
+
+    // Node.js commonjs bundle
+    {
+      input: DEFAULT_INPUT,
+      output: {
+        file: `dist/node/${MOD_NAME}.cjs`,
+        format: 'cjs',
+        generatedCode: {
+          constBindings: true,
+        },
+        exports: 'default',
+        banner,
+      },
+      plugins: [
+        json(),
+        autoExternal(),
+        resolve(),
+        commonjs(),
+        // esbuild({
+        //   target: 'node14',
+        // }),
+      ],
+    },
+  ]
+})
