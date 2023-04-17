@@ -232,14 +232,17 @@ Now you are ready to start the training. Enjoy! We provide the following experim
   Also, you may review your edge client logs via the command 'fedml logs' in your edge client device, and you may review your edge server logs via the command 'fedml logs -s' in your edge server device.
 
 ## 6. FedML OTA(Over-the-Air) upgrade mechanism
-  When you run the CLI `fedml login $YourUserId` to login the MLOps platform. The FedML core framework compares its local version with the remote fedml version from the repository of pypi.org.
+  When you run the CLI ```fedml login $YourUserId``` to login the MLOps platform. The FedML core framework compares its local version with the remote fedml version from the repository of pypi.org.
 If the local version is less than the remote version, FedML core framework starts an OTA process to upgrade its local fedml pip to the remote version. And also, there is another entry point to upgrade the fedml version, when you start a new run on the MLOps platform, the FedML server agent runs the same process to upgrade its local version.
 When the FedML server agent completes its upgrade process, it forwards this OTA request to all FedML client agents in the same run group. And then, when these FedML client agents receive the OTA command, it runs the same OTA process to upgrade its local version.
 
-  The above is FedML OTA automatic process for upgrading to the latest version. But in some cases, maybe you want to upgrade FedML library to special version. In our design, we facilitate the fedml_config.yaml to support this requirement. You may specify the following configuration keys under the section `common_args`:
-`common_args:
+  The above is FedML OTA automatic process for upgrading to the latest version. But in some cases, maybe you want to upgrade FedML library to special version. In our design, we facilitate the fedml_config.yaml to support this requirement. You may specify the following configuration keys under the section _common_args_.
+```
+common_args:
   upgrade_version: 0.8.2
-  no_upgrade: false`
+  no_upgrade: false
+```
+
 Notice: When the value of no_upgrade is set to true, the FedML server agent and client agent will not run the OTA process.
 
 
