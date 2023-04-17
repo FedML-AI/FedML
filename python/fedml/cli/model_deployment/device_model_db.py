@@ -3,7 +3,7 @@ import logging
 import os
 import time
 
-from fedml.cli.model_deployment.device_client_constants import ClientConstants
+from fedml.cli.model_deployment.device_server_constants import ServerConstants
 from sqlalchemy import Column, String, TEXT, Integer, Float, create_engine, and_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
@@ -131,9 +131,9 @@ class FedMLModelDatabase(object):
         if self.db_connection is not None:
             return
 
-        if not os.path.exists(ClientConstants.get_database_dir()):
-            os.makedirs(ClientConstants.get_database_dir())
-        job_db_path = os.path.join(ClientConstants.get_database_dir(), FedMLModelDatabase.MODEL_DEPLOYMENT_DB)
+        if not os.path.exists(ServerConstants.get_database_dir()):
+            os.makedirs(ServerConstants.get_database_dir())
+        job_db_path = os.path.join(ServerConstants.get_database_dir(), FedMLModelDatabase.MODEL_DEPLOYMENT_DB)
         self.db_engine = create_engine('sqlite:////{}'.format(job_db_path), echo=False)
 
         db_session_class = sessionmaker(bind=self.db_engine)

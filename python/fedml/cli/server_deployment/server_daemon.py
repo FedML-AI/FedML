@@ -2,10 +2,48 @@
 import argparse
 import os
 import time
+import sys
 
 from fedml.cli.comm_utils.sys_utils import cleanup_all_fedml_server_api_processes,\
-    cleanup_all_fedml_server_learning_processes,cleanup_all_fedml_server_login_processes, get_python_program
+    cleanup_all_fedml_server_learning_processes,cleanup_all_fedml_server_login_processes, get_python_program, \
+    check_fedml_is_latest_version
 from fedml.cli.server_deployment.server_constants import ServerConstants
+
+
+def ota_upgrade(in_args):
+    if in_args.role == ServerConstants.login_role_list[ServerConstants.LOGIN_MODE_CLOUD_SERVER_INDEX] or \
+            in_args.role == ServerConstants.login_role_list[ServerConstants.LOGIN_MODE_CLOUD_AGENT_INDEX]:
+        return
+
+    should_upgrade = False
+    fedml_is_latest_version = True
+    try:
+        fedml_is_latest_version, local_ver, remote_ver = check_fedml_is_latest_version(in_args.version)
+        should_upgrade = False if fedml_is_latest_version else True
+    except Exception as e:
+        return
+
+    if not should_upgrade:
+        return
+    upgrade_version = remote_ver
+
+    python_ver_major = sys.version_info[0]
+    python_ver_minor = sys.version_info[1]
+    if in_args.version == "release":
+        if python_ver_major == 3 and python_ver_minor == 7:
+            os.system(f"pip uninstall -y fedml;pip install fedml=={upgrade_version} --use-deprecated=legacy-resolver")
+        else:
+            os.system(f"pip uninstall -y fedml;pip install fedml=={upgrade_version}")
+    else:
+        if python_ver_major == 3 and python_ver_minor == 7:
+            os.system(f"pip uninstall -y fedml;"
+                      f"pip install --index-url https://test.pypi.org/simple/ "
+                      f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version} "
+                      f"--use-deprecated=legacy-resolver")
+        else:
+            os.system(f"pip uninstall -y fedml;"
+                      f"pip install --index-url https://test.pypi.org/simple/ "
+                      f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version}")
 
 
 if __name__ == "__main__":
@@ -33,6 +71,8 @@ if __name__ == "__main__":
             cleanup_all_fedml_server_login_processes("server_login.py", clean_process_group=False)
         except Exception as e:
             pass
+
+        ota_upgrade(args)
 
         login_pid = ServerConstants.exec_console_with_shell_script_list(
             [
