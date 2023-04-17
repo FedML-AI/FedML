@@ -15,6 +15,7 @@ import json
 from urllib import request
 from pkg_resources import parse_version
 import fedml
+from packaging import version
 
 
 FETAL_ERROR_START_CODE = 128
@@ -526,7 +527,7 @@ def versions(configuration_env, pkg_name):
 def check_fedml_is_latest_version(configuration_env="release"):
     fedml_version_list = versions(configuration_env, "fedml")
     local_fedml_version = fedml.__version__
-    if local_fedml_version == fedml_version_list[0]:
+    if version.parse(local_fedml_version) >= version.parse(fedml_version_list[0]):
         return True, local_fedml_version, fedml_version_list[0]
 
     return False, local_fedml_version, fedml_version_list[0]
