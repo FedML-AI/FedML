@@ -640,8 +640,12 @@ class FedMLServerRunner:
 
         should_upgrade = True
         if upgrade_version is None or upgrade_version == "latest":
-            fedml_is_latest_version, local_ver, remote_ver = sys_utils. \
-                check_fedml_is_latest_version(self.version)
+            try:
+                fedml_is_latest_version, local_ver, remote_ver = sys_utils. \
+                    check_fedml_is_latest_version(self.version)
+            except Exception as e:
+                return
+
             if fedml_is_latest_version:
                 should_upgrade = False
             upgrade_version = remote_ver
