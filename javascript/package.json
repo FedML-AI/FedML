@@ -1,7 +1,7 @@
 {
-  "name": "@fedml/spider",
+  "name": "@snoopylion/spider",
   "type": "module",
-  "version": "0.0.1-beta",
+  "version": "0.0.1-beta.0",
   "description": "Collaborative Learning from Scattered Data on Browser",
   "author": "fedml-inc",
   "license": "ISC",
@@ -41,7 +41,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "prepublishOnly": "npm run build",
-    "release": "bumpp --commit --push --tag && npm publish --access=public",
+    "release": "bumpp --commit --push --tag 'jssdk-v' && npm publish --access=public",
     "start": "esno src/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest"
