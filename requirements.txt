@@ -18,7 +18,7 @@ smart-open==6.3.0
 nvidia-ml-py3
 matplotlib~=3.5.2
 dill~=0.3.5.1
-pandas~=1.4.3
+pandas~=2.0.0
 wandb==0.13.2
 eciespy
 PyNaCl
