@@ -1,10 +1,12 @@
-
+import io
 import logging
 import os
 import pickle
 import platform
 import shutil
 import time
+import traceback
+
 import requests
 import torch
 import torch.nn
@@ -28,6 +30,30 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
     logging.info("Model deployment is starting...")
 
     use_simulation_test_without_triton = False
+    model_metadata = {'name': inference_model_name,
+                      'versions': ['1'], 'platform': 'onnxruntime_onnx',
+                      'inputs': [{'name': 'input2', 'datatype': 'INT32', 'shape': [1, 24]}, {'name': 'input1', 'datatype': 'FP32', 'shape': [1, 2]}],
+                      'outputs': [{'name': 'output', 'datatype': 'FP32', 'shape': [1]}]}
+    model_config = {
+        "platform": "onnxruntime",
+        "max_batch_size": 1,
+        "input_size": [[1, 24], [1, 2]],
+        "input_types": ["int", "float"],
+        "input": [
+            {
+                "name": "input",
+                "data_type": "TYPE_FP32",
+                "dims": []
+            }
+        ],
+        "output": [
+            {
+                "name": "output",
+                "data_type": "TYPE_FP32",
+                "dims": []
+            }
+        ]
+    }
 
     gpu_attach_cmd = ""
     if inference_use_gpu is not None and inference_use_gpu != "":
@@ -87,7 +113,25 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             return running_model_name, "", model_version, {}, {}
 
         with open(model_bin_file, 'rb') as model_pkl_file:
-            open_model_params = pickle.load(model_pkl_file)
+            if not torch.cuda.is_available():
+                class CPUUnpickler(pickle.Unpickler):
+                    def find_class(self, module, name):
+                        if module == 'torch.storage' and name == '_load_from_bytes':
+                            return lambda b: torch.load(io.BytesIO(b), map_location='cpu')
+                        else:
+                            return super().find_class(module, name)
+
+                try:
+                    open_model_params = pickle.load(model_pkl_file)
+                except Exception as e:
+                    logging.info("load model exceptions, try to use another loading method, details: {}".format(traceback.format_exc()))
+                    try:
+                        open_model_params = CPUUnpickler(model_pkl_file).load()
+                    except Exception as ex:
+                        logging.info("load model exceptions when using CPUUnpickler: {}".format(traceback.format_exc()))
+                        return "", "", model_version, model_metadata, model_config
+            else:
+                open_model_params = pickle.load(model_pkl_file)
             model_from_open.load_state_dict(open_model_params)
             model_from_open.eval()
 
@@ -228,30 +272,6 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             inference_output_url, model_metadata, model_config))
     else:
         inference_output_url = f"http://localhost:{inference_http_port}/v2/models/{running_model_name}/versions/1/infer"
-        model_metadata = {'name': inference_model_name,
-                          'versions': ['1'], 'platform': 'onnxruntime_onnx',
-                          'inputs': [{'name': 'input2', 'datatype': 'INT32', 'shape': [1, 24]}, {'name': 'input1', 'datatype': 'FP32', 'shape': [1, 2]}],
-                          'outputs': [{'name': 'output', 'datatype': 'FP32', 'shape': [1]}]}
-        model_config = {
-            "platform": "onnxruntime",
-            "max_batch_size": 1,
-            "input_size": [[1, 24], [1, 2]],
-            "input_types": ["int", "float"],
-            "input": [
-                {
-                    "name": "input",
-                    "data_type": "TYPE_FP32",
-                    "dims": []
-                }
-            ],
-            "output": [
-                {
-                    "name": "output",
-                    "data_type": "TYPE_FP32",
-                    "dims": []
-                }
-            ]
-        }
 
     return running_model_name, inference_output_url, model_version, model_metadata, model_config
 
