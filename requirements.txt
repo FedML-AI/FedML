@@ -13,7 +13,7 @@ torch~=1.13.1
 torchvision~=0.14.1
 spacy~=3.4.0
 gensim~=4.2.0
-multiprocess~=0.70.13
+multiprocess~=0.70.14
 smart-open==6.3.0
 nvidia-ml-py3
 matplotlib~=3.5.2
