@@ -30,7 +30,7 @@ geventhttpclient>=1.4.4,<=2.0.9
 aiohttp>=3.8.1
 python-rapidjson>=0.9.1
 tritonclient~=2.29.0
-redis~=4.4.0
+redis~=4.5.4
 attrdict
 ntplib~=0.4.0
 typing_extensions
