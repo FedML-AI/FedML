@@ -38,6 +38,7 @@ from ...core.mlops.mlops_status import MLOpsStatus
 from ..comm_utils.sys_utils import get_sys_runner_info, get_python_program
 from .device_model_deployment import start_deployment
 from .device_client_data_interface import FedMLClientDataInterface
+from ...inference.fedml_client import FedMLInferenceClient
 
 
 class RunnerError(Exception):
@@ -220,6 +221,18 @@ class FedMLClientRunner:
             logging.info("Received stopping event.")
             raise RunnerError("Runner stopped")
 
+    def inference_run(self):
+        run_id, end_point_name, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
+            model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \
+            inference_end_point_id, use_gpu, memory_size, model_version = self.parse_model_run_params(self.request_json)
+
+        inference_client = FedMLInferenceClient(self.args,
+                                                end_point_name,
+                                                model_name,
+                                                model_version,
+                                                inference_request=self.request_json)
+        inference_client.run()
+
     def run_impl(self):
         run_id = self.request_json["end_point_id"]
         end_point_name = self.request_json["end_point_name"]
@@ -250,6 +263,14 @@ class FedMLClientRunner:
         logging.info("model deployment request: {}".format(self.request_json))
 
         MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
+
+        # Initiate an FedMLInferenceClient object
+        # client_runner = FedMLClientRunner(
+        #     self.args, edge_id=self.edge_id, run_id=self.run_id, request_json=self.request_json,
+        #     agent_config=self.agent_config
+        # )
+        # inference_process = Process(target=client_runner.inference_run)
+        # inference_process.start()
 
         self.mlops_metrics.report_client_training_status(self.edge_id,
                                                          ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING,

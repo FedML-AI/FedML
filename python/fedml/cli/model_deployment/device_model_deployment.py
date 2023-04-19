@@ -89,7 +89,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             if sys_name == "Linux":
                 if not triton_server_is_running:
                     os.system(sudo_prefix + "apt-get update")
-                    os.system(sudo_prefix + "apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin")
+                    os.system(sudo_prefix + "apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin")
                     os.system("distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
                   && sudo rm -f /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg;curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
                   && curl -s -L https://nvidia.github.io/libnvidia-container/experimental/$distribution/libnvidia-container.list | \
