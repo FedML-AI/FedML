@@ -65,7 +65,8 @@ The following script uses `examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/o
 
 - Build the deployable package for the client
 ```shell
-cd python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line
+git clone https://github.com/FedML-AI/FedML
+cd ./FedML/python/examples/cross_silo/mqtt_s3_fedavg_mnist_lr_example/one_line
 
 SOURCE=client
 ENTRY=torch_client.py
