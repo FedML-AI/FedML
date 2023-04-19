@@ -35,12 +35,12 @@ For Windows/Mac OS (Intel)/Mac OS (M1), you may need to follow TensorFlow/Jax/MX
 ## Installing FedML with Anaconda
 
 ```
-conda create --name fedml python
-conda activate fedml
-conda install --name fedml pip
+conda create --name fedml-pip python=3.8
+conda activate fedml-pip
+conda install --name fedml-pip pip
 pip install fedml
 ```
-(Note: please use python 3.7 if you met any compatability issues. We will support 3.8, 3.9, 3.10 systematically in the next iteration.)
+(Note: please use python 3.8 if you met any compatability issues. Currently, we support 3.7, 3.8, 3.9, 3.10.)
 
 After installation, please use "pip list | grep fedml" to check whether `fedml` is installed.
 

@@ -40,7 +40,7 @@ from ...core.mlops.mlops_status import MLOpsStatus
 from ..comm_utils.sys_utils import get_sys_runner_info, get_python_program
 from .device_model_cache import FedMLModelCache
 from .device_model_msg_object import FedMLModelMsgObject
-
+from ...inference.fedml_server import FedMLInferenceServer
 
 class RunnerError(BaseException):
     """ Runner failed. """
@@ -223,12 +223,31 @@ class FedMLServerRunner:
             model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \
             inference_end_point_id, use_gpu, memory_size, model_version
 
+    def inference_run(self):
+        run_id, end_point_name, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
+            model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \
+            inference_end_point_id, use_gpu, memory_size, model_version = self.parse_model_run_params(self.request_json)
+
+        inference_server = FedMLInferenceServer(self.args,
+                                                end_point_name,
+                                                model_name,
+                                                model_version,
+                                                inference_request=self.request_json)
+        inference_server.run()
+
     def run_impl(self):
         run_id, end_point_name, token, user_id, user_name, device_ids, device_objs, model_config, model_name, \
             model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \
             inference_end_point_id, use_gpu, memory_size, model_version = self.parse_model_run_params(self.request_json)
 
         logging.info("model deployment request: {}".format(self.request_json))
+
+        # Initiate an FedMLInferenceServer object which the request will be forwarded to
+        # server_runner = FedMLServerRunner(
+        #     self.args, run_id=self.run_id, request_json=self.request_json, agent_config=self.agent_config
+        # )
+        # inference_process = Process(target=server_runner.inference_run)
+        # inference_process.start()
 
         logging.info("send deployment stages...")
 
