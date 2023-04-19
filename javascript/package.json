@@ -1,7 +1,7 @@
 {
   "name": "@snoopylion/spider",
   "type": "module",
-  "version": "0.0.1-beta.0",
+  "version": "0.0.1-beta.1",
   "description": "Collaborative Learning from Scattered Data on Browser",
   "author": "fedml-inc",
   "license": "ISC",
@@ -41,14 +41,17 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "prepublishOnly": "npm run build",
+    "prebuildAWS": "esno script/prebuildAWS.ts",
     "release": "bumpp --commit --push --tag 'jssdk-v' && npm publish --access=public",
     "start": "esno src/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest"
   },
   "peerDependencies": {
+    "@aws-sdk/s3-request-presigner": "^3.315.0",
     "@tensorflow/tfjs": "^4.4.0",
-    "@tensorflow/tfjs-vis": "^1.5.1"
+    "@tensorflow/tfjs-vis": "^1.5.1",
+    "aws-sdk": "^2.1360.0"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.309.0",
@@ -58,12 +61,15 @@
   },
   "devDependencies": {
     "@antfu/eslint-config": "^0.32.0",
+    "@aws-sdk/s3-request-presigner": "^3.315.0",
     "@rollup/plugin-alias": "^4.0.3",
     "@rollup/plugin-commonjs": "^23.0.7",
     "@rollup/plugin-json": "^5.0.2",
     "@rollup/plugin-node-resolve": "^15.0.1",
+    "@rollup/plugin-terser": "^0.4.1",
     "@types/node": "^18.15.11",
     "@types/uuid": "^9.0.1",
+    "aws-sdk": "^2.1360.0",
     "bumpp": "^8.2.1",
     "eslint": "^8.37.0",
     "esno": "^0.16.3",
