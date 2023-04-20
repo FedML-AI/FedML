@@ -266,10 +266,13 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                                   ClientConstants.CMD_TYPE_RUN_TRITON_SERVER, triton_server_process.pid,
                                   running_model_name, inference_engine, inference_http_port)
 
-        inference_output_url, running_model_version, model_metadata, model_config = \
+        inference_output_url, running_model_version, ret_model_metadata, ret_model_config = \
             get_model_info(running_model_name, inference_engine, inference_http_port, infer_host)
-        logging.info("Deploy model successfully, inference url: {}, model metadata: {}, model config: {}".format(
-            inference_output_url, model_metadata, model_config))
+        if inference_output_url != "":
+            logging.info("Deploy model successfully, inference url: {}, model metadata: {}, model config: {}".format(
+                inference_output_url, model_metadata, model_config))
+            model_metadata = ret_model_metadata
+            model_config = ret_model_config
     else:
         inference_output_url = f"http://localhost:{inference_http_port}/v2/models/{running_model_name}/versions/1/infer"
 
@@ -323,6 +326,7 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
 
     last_out_logs = ""
     last_err_logs = ""
+    deployment_count = 0
     while True:
         if not ClientConstants.is_running_on_k8s():
             logs_cmd = "{}docker logs {}".format(sudo_prefix, cmd_container_name)
@@ -344,6 +348,9 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
                 last_err_logs = err_str
 
         time.sleep(3)
+        deployment_count += 1
+        if deployment_count >= 5:
+            break
 
         if should_exit_logs(end_point_id, model_id, cmd_type, cmd_process_id,
                             inference_model_name, inference_engine, inference_http_port):
@@ -364,12 +371,16 @@ def get_model_info(model_name, inference_engine, inference_http_port, infer_host
     else:
         inference_model_name = model_name
     triton_client = http_client.InferenceServerClient(url=local_infer_url, verbose=False)
+    wait_count = 0
     while True:
         if not triton_client.is_model_ready(
                 model_name=inference_model_name, model_version=model_version
         ):
             logging.info(f"model {model_name} not yet ready")
             time.sleep(1)
+            wait_count += 1
+            if wait_count >= 15:
+                return "", model_version, {}, {}
         else:
             break
 

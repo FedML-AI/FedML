@@ -113,7 +113,7 @@ class FedMLModelMetrics:
                                          "qps": int(avg_qps),
                                          "total_request_num": int(total_request_num),
                                          "timestamp": timestamp}
-        print("send monitor metrics {}".format(json.dumps(deployment_monitoring_payload)))
+        # print("send monitor metrics {}".format(json.dumps(deployment_monitoring_payload)))
 
         self.monitor_mqtt_mgr.send_message_json(deployment_monitoring_topic, json.dumps(deployment_monitoring_payload))
         self.monitor_mqtt_mgr.send_message_json(deployment_monitoring_topic_prefix,

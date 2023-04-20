@@ -1017,6 +1017,7 @@ class FedMLClientRunner:
             current_job = FedMLClientDataInterface.get_instance().get_current_job()
             if current_job is not None and \
                     current_job.status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING:
+                logging.info("start training after upgrading.")
                 topic_start_train = "flserver_agent/" + str(self.edge_id) + "/start_train"
                 self.callback_start_train(topic_start_train, current_job.running_json)
         except Exception as e:
