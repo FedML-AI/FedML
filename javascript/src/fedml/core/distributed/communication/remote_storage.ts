@@ -1,10 +1,4 @@
-// declare let AWS: any
-// import * as jpickle from 'jpickle';
-// import unpickle from 'unpickle';
 import AWS from 'aws-sdk'
-// @ts-ignore
-// import type { S3 } from 'aws-sdk'
-// import AWS from '../../../../libs/aws-sdk'
 
 type GetObjectOutput = AWS.S3.GetObjectOutput
 
