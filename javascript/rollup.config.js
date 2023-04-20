@@ -33,14 +33,15 @@ function createPlugins(minify = false) {
   return plugins
 }
 
+const globals = {
+  '@tensorflow/tfjs': 'tf',
+  '@tensorflow/tfjs-vis': 'tfvis',
+}
+
 /**
  * @see https://rollupjs.org/configuration-options/#external
  */
-const external = [
-  '@tensorflow/tfjs',
-  '@tensorflow/tfjs-vis',
-  // 'aws-sdk',
-]
+const external = Object.keys(globals)
 
 /**
  *
@@ -54,25 +55,19 @@ function createBundle(input, minify = false) {
       {
         file: input.replace('src/', 'dist/').replace('.ts', minify ? '.min.mjs' : '.mjs'),
         format: 'esm',
-        globals: {
-          '@tensorflow/tfjs': 'tf'
-        }
+        globals,
       },
       {
         file: input.replace('src/', 'dist/').replace('.ts', minify ? '.min.cjs' : '.cjs'),
         format: 'cjs',
-        globals: {
-          '@tensorflow/tfjs': 'tf'
-        }
+        globals,
       },
       {
         file: input.replace('src/', 'dist/umd/').replace('.ts', minify ? '.min.js' : '.js'),
         name: 'FedmlSpider',
         format: 'umd',
         exports: 'named',
-        globals: {
-          '@tensorflow/tfjs': 'tf'
-        }
+        globals,
       },
     ],
     external,

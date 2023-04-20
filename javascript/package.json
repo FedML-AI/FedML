@@ -1,7 +1,7 @@
 {
   "name": "@snoopylion/spider",
   "type": "module",
-  "version": "0.0.1-beta.1",
+  "version": "0.0.1-beta.2",
   "description": "Collaborative Learning from Scattered Data on Browser",
   "author": "fedml-inc",
   "license": "ISC",
@@ -24,16 +24,17 @@
   "exports": {
     ".": {
       "types": "./index.d.ts",
-      "require": "./dist/index.cjs",
-      "import": "./dist/index.mjs"
+      "require": "./dist/index.min.cjs",
+      "import": "./dist/index.min.mjs"
     }
   },
-  "main": "dist/index.cjs",
-  "module": "dist/index.mjs",
+  "main": "dist/index.min.cjs",
+  "module": "dist/index.min.mjs",
   "types": "index.d.ts",
   "files": [
     "dist",
-    "*.d.ts"
+    "*.d.ts",
+    "README.md"
   ],
   "scripts": {
     "build": "rollup -c",
@@ -48,20 +49,17 @@
     "test": "vitest"
   },
   "peerDependencies": {
-    "@aws-sdk/s3-request-presigner": "^3.315.0",
     "@tensorflow/tfjs": "^4.4.0",
     "@tensorflow/tfjs-vis": "^1.5.1",
     "aws-sdk": "^2.1360.0"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.309.0",
     "core-js": "^3.29.1",
     "mqtt": "^4.3.7",
     "uuid": "^9.0.0"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^0.32.0",
-    "@aws-sdk/s3-request-presigner": "^3.315.0",
     "@rollup/plugin-alias": "^4.0.3",
     "@rollup/plugin-commonjs": "^23.0.7",
     "@rollup/plugin-json": "^5.0.2",

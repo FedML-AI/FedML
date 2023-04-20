@@ -1,6 +1,7 @@
 import { reshape } from '@tensorflow/tfjs'
-// import { show } from '@tensorflow/tfjs-vis'
+import { show } from '@tensorflow/tfjs-vis'
 import type { ClientTrainer } from '../../core/alg_frame/client_trainer'
+
 export class ModelTrainerCLS implements ClientTrainer {
   model: any
   id: any
@@ -33,11 +34,6 @@ export class ModelTrainerCLS implements ClientTrainer {
     const metrics = ['loss', 'val_loss', 'acc', 'val_acc']
     const container = { name: 'Loss and accuracy', tab: 'Training' }
     const ftfvis_options = { callbacks: ['onEpochEnd'] }
-    const { show } = await import('@tensorflow/tfjs-vis').catch(() => ({
-      show: {
-        fitCallbacks: () => console.warn('The dependency @tensorflow/tfjs-vis is not installed'),
-      },
-    }))
     // TODO: fixed here hard coding
     if (this.args.dataset == 'mnist') {
       await model.fit(

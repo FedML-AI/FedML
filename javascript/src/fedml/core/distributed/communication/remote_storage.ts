@@ -4,7 +4,7 @@
 // import AWS from 'aws-sdk'
 // @ts-ignore
 import type { S3 } from 'aws-sdk'
-import AWS from '../../../../libs/aws-sdk.js'
+import AWS from '../../../../libs/aws-sdk'
 
 type GetObjectOutput = S3.GetObjectOutput
 
