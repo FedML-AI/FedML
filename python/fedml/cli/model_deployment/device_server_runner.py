@@ -1387,6 +1387,11 @@ class FedMLServerRunner:
                     inference_end_point_id, use_gpu, memory_size, model_version = \
                     self.parse_model_run_params(json.loads(job.running_json))
 
+                is_activated = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
+                    get_end_point_activation(run_id)
+                if not is_activated:
+                    continue
+
                 self.start_device_inference_gateway(run_id, end_point_name, model_id, model_name, model_version)
 
                 self.start_device_inference_monitor(run_id, end_point_name, model_id, model_name, model_version)
@@ -1398,6 +1403,10 @@ class FedMLServerRunner:
             current_job = FedMLServerDataInterface.get_instance().get_current_job()
             if current_job is not None and \
                     current_job.status == ServerConstants.MSG_MLOPS_SERVER_STATUS_UPGRADING:
+                is_activated = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
+                    get_end_point_activation(current_job.job_id)
+                if not is_activated:
+                    return
                 logging.info("start deployment after upgrading.")
                 topic_start_deployment = "model_ops/model_device/start_deployment/{}".format(str(self.edge_id))
                 self.callback_start_deployment(topic_start_deployment, current_job.running_json)
