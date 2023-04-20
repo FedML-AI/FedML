@@ -1,0 +1,81 @@
+{
+  "name": "@snoopylion/spider",
+  "type": "module",
+  "version": "0.0.1-beta.2",
+  "description": "Collaborative Learning from Scattered Data on Browser",
+  "author": "fedml-inc",
+  "license": "ISC",
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://github.com/FedML-AI/FedML#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FedML-AI/FedML.git"
+  },
+  "bugs": {
+    "url": "https://github.com/FedML-AI/FedML/issues"
+  },
+  "keywords": [
+    "Collaborative",
+    "AI",
+    "MLOps"
+  ],
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "require": "./dist/index.min.cjs",
+      "import": "./dist/index.min.mjs"
+    }
+  },
+  "main": "dist/index.min.cjs",
+  "module": "dist/index.min.mjs",
+  "types": "index.d.ts",
+  "files": [
+    "dist",
+    "*.d.ts",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c --watch",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "prepublishOnly": "npm run build",
+    "prebuildAWS": "esno script/prebuildAWS.ts",
+    "release": "bumpp --commit --push --tag 'jssdk-v' && npm publish --access=public",
+    "start": "esno src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest"
+  },
+  "peerDependencies": {
+    "@tensorflow/tfjs": "^4.4.0",
+    "@tensorflow/tfjs-vis": "^1.5.1",
+    "aws-sdk": "^2.1360.0"
+  },
+  "dependencies": {
+    "core-js": "^3.29.1",
+    "mqtt": "^4.3.7",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "^0.32.0",
+    "@rollup/plugin-alias": "^4.0.3",
+    "@rollup/plugin-commonjs": "^23.0.7",
+    "@rollup/plugin-json": "^5.0.2",
+    "@rollup/plugin-node-resolve": "^15.0.1",
+    "@rollup/plugin-terser": "^0.4.1",
+    "@types/node": "^18.15.11",
+    "@types/uuid": "^9.0.1",
+    "aws-sdk": "^2.1360.0",
+    "bumpp": "^8.2.1",
+    "eslint": "^8.37.0",
+    "esno": "^0.16.3",
+    "rollup": "^3.20.2",
+    "rollup-plugin-dts": "^5.3.0",
+    "rollup-plugin-esbuild": "^5.0.0",
+    "typescript": "^5.0.2",
+    "vite": "^3.2.5",
+    "vitest": "^0.25.8"
+  }
+}
