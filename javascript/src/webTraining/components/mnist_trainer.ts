@@ -1,4 +1,4 @@
-import * as tf from '@tensorflow/tfjs'
+import { layers, sequential, train } from '@tensorflow/tfjs'
 // import type { DataSet } from './cifar10/base'
 // DataSet
 export interface DataSet { trainData: { shape: number[] }; trainDataLabel: { shape: number[] } }
@@ -20,16 +20,16 @@ export function createLogisticRegression(dataset?: DataSet) {
 
   // console.log('outputShape', dataset.trainDataLabel.shape);
 
-  const model = tf.sequential()
+  const model = sequential()
   model.add(
-    tf.layers.dense({
+    layers.dense({
       inputShape: [inputShape],
       units: outputShape,
       activation: 'sigmoid',
     }),
   )
   model.compile({
-    optimizer: tf.train.sgd(0.03),
+    optimizer: train.sgd(0.03),
     loss: 'binaryCrossentropy',
     metrics: ['accuracy'],
   })
@@ -38,9 +38,9 @@ export function createLogisticRegression(dataset?: DataSet) {
 
 export function createConvModel() {
   // Creating CIFAR-10 cnn model
-  const model = tf.sequential()
+  const model = sequential()
   model.add(
-    tf.layers.conv2d({
+    layers.conv2d({
       inputShape: [32, 32, 3], // picture size
       kernelSize: [5, 5],
       filters: 6, // out_channels in pytorch
@@ -51,13 +51,13 @@ export function createConvModel() {
     }),
   )
   model.add(
-    tf.layers.maxPool2d({
+    layers.maxPool2d({
       poolSize: 2,
       strides: 2,
     }),
   )
   model.add(
-    tf.layers.conv2d({
+    layers.conv2d({
       // inputShape: [14, 14, 6],
       kernelSize: [5, 5],
       filters: 16,
@@ -67,35 +67,35 @@ export function createConvModel() {
     }),
   )
   model.add(
-    tf.layers.maxPool2d({
+    layers.maxPool2d({
       poolSize: 2,
       strides: 2,
     }),
   )
-  model.add(tf.layers.flatten())
+  model.add(layers.flatten())
   model.add(
-    tf.layers.dense({
+    layers.dense({
       inputShape: 16 * 5 * 5,
       units: 120,
       activation: 'relu',
     }),
   )
   model.add(
-    tf.layers.dense({
+    layers.dense({
       inputShape: 120,
       units: 84,
       activation: 'relu',
     }),
   )
   model.add(
-    tf.layers.dense({
+    layers.dense({
       inputShape: 84,
       units: 10,
       activation: 'relu',
     }),
   )
   model.compile({
-    optimizer: tf.train.sgd(0.01),
+    optimizer: train.sgd(0.01),
     loss: 'binaryCrossentropy',
     metrics: ['accuracy'],
   })

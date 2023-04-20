@@ -1,7 +1,9 @@
-import * as tf from '@tensorflow/tfjs'
+import { util } from '@tensorflow/tfjs'
 import { DataSet } from './cifar10/base'
-
 import train_lables from './cifar10/train_labels.json'
+
+const { createShuffledIndices } = util
+
 const data_batch_1 = 'https://fedml.s3.us-west-1.amazonaws.com/data_batch_1.png'
 const data_batch_2 = 'https://fedml.s3.us-west-1.amazonaws.com/data_batch_2.png'
 const data_batch_3 = 'https://fedml.s3.us-west-1.amazonaws.com/data_batch_3.png'
@@ -63,7 +65,7 @@ export class Cifar10 extends DataSet {
 
     // Create shuffled indices into the train/test set for when we select a
     // random dataset element for training / validation.
-    this.trainIndices = tf.util.createShuffledIndices(this.trainM)
-    this.testIndices = tf.util.createShuffledIndices(this.testM)
+    this.trainIndices = createShuffledIndices(this.trainM)
+    this.testIndices = createShuffledIndices(this.testM)
   }
 }

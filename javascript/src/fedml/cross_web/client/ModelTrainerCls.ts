@@ -1,7 +1,6 @@
-import * as tf from '@tensorflow/tfjs'
-import * as tfvis from '@tensorflow/tfjs-vis'
+import { reshape } from '@tensorflow/tfjs'
+// import { show } from '@tensorflow/tfjs-vis'
 import type { ClientTrainer } from '../../core/alg_frame/client_trainer'
-
 export class ModelTrainerCLS implements ClientTrainer {
   model: any
   id: any
@@ -15,7 +14,7 @@ export class ModelTrainerCLS implements ClientTrainer {
   round = 0
   round_acc = []
   round_loss = []
-  constructor(model, trainData, trainDataLabel, testData, testDataLabel, args) {
+  constructor(model: any, trainData: any, trainDataLabel: any, testData: any, testDataLabel: any, args: any) {
     this.model = model
     this.args = args
     this.trainData = trainData
@@ -34,28 +33,33 @@ export class ModelTrainerCLS implements ClientTrainer {
     const metrics = ['loss', 'val_loss', 'acc', 'val_acc']
     const container = { name: 'Loss and accuracy', tab: 'Training' }
     const ftfvis_options = { callbacks: ['onEpochEnd'] }
+    const { show } = await import('@tensorflow/tfjs-vis').catch(() => ({
+      show: {
+        fitCallbacks: () => console.warn('The dependency @tensorflow/tfjs-vis is not installed'),
+      },
+    }))
     // TODO: fixed here hard coding
     if (this.args.dataset == 'mnist') {
       await model.fit(
-        tf.reshape(this.trainData, [this.trainData.shape[0], -1]),
+        reshape(this.trainData, [this.trainData.shape[0], -1]),
         this.trainDataLabel,
         {
           validationData: [
-            tf.reshape(this.testData, [this.testData.shape[0], -1]),
+            reshape(this.testData, [this.testData.shape[0], -1]),
             this.testDataLabel,
           ],
           batchSize: 10,
           epochs: 5,
-          callbacks: [tfvis.show.fitCallbacks(container, metrics, ftfvis_options)],
+          callbacks: [show?.fitCallbacks?.(container, metrics, ftfvis_options)],
         },
       )
     }
     else if (this.args.dataset == 'cifar10') {
-      await model.fit(tf.reshape(this.trainData, [500, 32, 32, 3]), this.trainDataLabel, {
-        validationData: [tf.reshape(this.testData, [100, 32, 32, 3]), this.testDataLabel],
+      await model.fit(reshape(this.trainData, [500, 32, 32, 3]), this.trainDataLabel, {
+        validationData: [reshape(this.testData, [100, 32, 32, 3]), this.testDataLabel],
         batchSize: 10,
         epochs: 50,
-        callbacks: [tfvis.show.fitCallbacks(container, metrics, ftfvis_options)],
+        callbacks: [show?.fitCallbacks?.(container, metrics, ftfvis_options)],
       })
     }
   }

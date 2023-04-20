@@ -12,7 +12,7 @@ export class Message {
   static MSG_ARG_KEY_MODEL_PARAMS = 'model_params'
   static MSG_ARG_KEY_MODEL_PARAMS_URL = 'model_params_url'
 
-  type: string
+  type: string | number
   sender_id: number
   receiver_id: number
   msg_params: {
@@ -20,6 +20,7 @@ export class Message {
     sender: number
     receiver: number
     deviceType: string
+    [s: string]: any
   }
 
   constructor(type = 0, sender_id = 0, receiver_id = 0, device_type = 'web') {
@@ -34,18 +35,18 @@ export class Message {
     }
   }
 
-  init(msg_params) {
+  init(msg_params: { msg_type: string | number; sender: number; receiver: number; deviceType: string }) {
     this.msg_params = msg_params
   }
 
-  init_from_json_string(json_string) {
+  init_from_json_string(json_string: string) {
     this.msg_params = JSON.parse(json_string)
     this.type = this.msg_params.msg_type
     this.sender_id = this.msg_params.sender
     this.receiver_id = this.msg_params.receiver
   }
 
-  init_from_json_object(json_object) {
+  init_from_json_object(json_object: { msg_type: string | number; sender: number; receiver: number; deviceType: string }) {
     this.msg_params = json_object
     this.type = this.msg_params.msg_type
     this.sender_id = this.msg_params.sender
@@ -60,7 +61,7 @@ export class Message {
     return this.receiver_id
   }
 
-  add_params(key, value) {
+  add_params(key: string | number, value: string | number) {
     this.msg_params[key] = value
   }
 
@@ -68,13 +69,13 @@ export class Message {
     return this.msg_params
   }
 
-  add(key: any, value) {
-    this.msg_params.key = value
+  add(key: keyof typeof this.msg_params, value: any) {
+    this.msg_params[key] = value
   }
 
-  get(key) {
-    if (this.msg_params != undefined || this.msg_params.key != null)
-      return this.msg_params.key
+  get(key: keyof typeof this.msg_params) {
+    if (this.msg_params != undefined || this.msg_params[key] != null)
+      return this.msg_params[key]
 
     return null
   }

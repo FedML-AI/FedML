@@ -40,7 +40,16 @@ export function init(run_arguments: any, client_id: any) {
   return args
 }
 
-export function init_cross_silo_horizontal(args: any, client_id: any) {
+export function init_cross_silo_horizontal(
+  args: {
+    n_proc_in_silo?: number
+    proc_rank_in_silo?: number
+    rank?: any
+    process_id?: any
+    client_id_list?: any[]
+  },
+  client_id: string | number,
+) {
   args.n_proc_in_silo = 1
   args.proc_rank_in_silo = 0
   //   待处理

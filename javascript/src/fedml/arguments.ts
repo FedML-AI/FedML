@@ -73,7 +73,7 @@ const runArgsJSON = {
 
 export type RunArgsJSON = Partial<typeof runArgsJSON>
 
-export class Arguments<T = any> {
+export class Arguments<T extends RunArgsJSON> {
   worker_num: number | undefined
   client_num_per_round!: number
   data_cache_dir: any

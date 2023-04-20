@@ -1,16 +1,16 @@
-import * as tf from '@tensorflow/tfjs'
+import { tidy } from '@tensorflow/tfjs'
 import { MnistData } from './mnist_data_loader'
 
 export async function exportBatchData(args: any, client_id: string | number, trainBatchSize: number, testBatchSize: number) {
   console.log('input args ', args)
   const data = new MnistData()
   await data.load()
-  const [trainXs, trainYs] = tf.tidy(() => {
+  const [trainXs, trainYs] = tidy(() => {
     const d = data.nextTrainBatch(trainBatchSize)
     return [d.xs.reshape([trainBatchSize, 28, 28, 1]), d.labels]
   })
 
-  const [testXs, testYs] = tf.tidy(() => {
+  const [testXs, testYs] = tidy(() => {
     const d = data.nextTestBatch(testBatchSize)
     return [d.xs.reshape([testBatchSize, 28, 28, 1]), d.labels]
   })

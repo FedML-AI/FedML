@@ -1,16 +1,16 @@
-import * as tf from '@tensorflow/tfjs'
+import { tidy } from '@tensorflow/tfjs'
 import { Cifar10 } from './cifar10_data_loader'
 
 export async function exportCifar10BatchData(args: any, client_id: string | number, trainBatchSize: number, testBatchSize: number) {
   const data = new Cifar10()
   await data.load()
-  const [trainXs, trainYs] = tf.tidy(() => {
+  const [trainXs, trainYs] = tidy(() => {
     const d = data.nextTrainBatch(trainBatchSize)
     console.log('check the cifar10 d: ', d)
     return [d.xs.reshape([trainBatchSize, 32, 32, 3]), d.ys]
   })
 
-  const [testXs, testYs] = tf.tidy(() => {
+  const [testXs, testYs] = tidy(() => {
     const d = data.nextTestBatch(testBatchSize)
     return [d.xs.reshape([testBatchSize, 32, 32, 3]), d.ys]
   })

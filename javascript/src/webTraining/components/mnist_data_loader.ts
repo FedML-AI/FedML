@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import * as tf from '@tensorflow/tfjs'
+import { tensor2d, util } from '@tensorflow/tfjs'
 
 const IMAGE_SIZE = 784
 const NUM_CLASSES = 10
@@ -101,8 +101,8 @@ export class MnistData {
 
     // Create shuffled indices into the train/test set for when we select a
     // random dataset element for training / validation.
-    this.trainIndices = tf.util.createShuffledIndices(NUM_TRAIN_ELEMENTS)
-    this.testIndices = tf.util.createShuffledIndices(NUM_TEST_ELEMENTS)
+    this.trainIndices = util.createShuffledIndices(NUM_TRAIN_ELEMENTS)
+    this.testIndices = util.createShuffledIndices(NUM_TEST_ELEMENTS)
 
     // Slice the the images and labels into train and test sets.
     this.trainImages = this.datasetImages.slice(0, IMAGE_SIZE * NUM_TRAIN_ELEMENTS)
@@ -139,8 +139,8 @@ export class MnistData {
       batchLabelsArray.set(label, i * NUM_CLASSES)
     }
 
-    const xs = tf.tensor2d(batchImagesArray, [batchSize, IMAGE_SIZE])
-    const labels = tf.tensor2d(batchLabelsArray, [batchSize, NUM_CLASSES])
+    const xs = tensor2d(batchImagesArray, [batchSize, IMAGE_SIZE])
+    const labels = tensor2d(batchLabelsArray, [batchSize, NUM_CLASSES])
 
     return { xs, labels }
   }

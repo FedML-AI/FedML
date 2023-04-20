@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-import * as tf from '@tensorflow/tfjs'
+import { tensor2d, util } from '@tensorflow/tfjs'
 
 const IMAGE_SIZE = 784
 const NUM_CLASSES = 10
@@ -34,7 +34,7 @@ export class LoadImgData {
     const canvas = document.createElement('canvas')
     const ctx = canvas.getContext('2d')!
     // document.body.appendChild(canvas);
-    this.trainIndices = tf.util.createShuffledIndices(NUM_TRAIN_ELEMENTS)
+    this.trainIndices = util.createShuffledIndices(NUM_TRAIN_ELEMENTS)
     return new Promise((resolve, reject) => {
       img.crossOrigin = ''
       img.onload = () => {
@@ -74,7 +74,7 @@ export class LoadImgData {
     }
     const image = this.datasetImages.slice(idx * IMAGE_SIZE, idx * IMAGE_SIZE + IMAGE_SIZE)
     batchImagesArray.set(image, 1 * IMAGE_SIZE)
-    const xs = tf.tensor2d(batchImagesArray, [1, IMAGE_SIZE])
+    const xs = tensor2d(batchImagesArray, [1, IMAGE_SIZE])
     return xs
   }
 }

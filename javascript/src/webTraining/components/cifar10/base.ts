@@ -1,4 +1,4 @@
-import * as tf from '@tensorflow/tfjs'
+import { oneHot, tensor2d } from '@tensorflow/tfjs'
 
 export class DataSet {
   readonly IMG_WIDTH: number = 32
@@ -72,8 +72,8 @@ export class DataSet {
         batchLables.push(lables[idx])
       }
     }
-    const xs = tf.tensor2d(batchImagesArray, [batchSize, this.IMAGE_SIZE])
-    const ys = tf.oneHot(batchLables, this.NUM_CLASSES)
+    const xs = tensor2d(batchImagesArray, [batchSize, this.IMAGE_SIZE])
+    const ys = oneHot(batchLables, this.NUM_CLASSES)
 
     return { xs, ys }
   }

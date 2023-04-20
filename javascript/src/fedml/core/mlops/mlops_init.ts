@@ -1,33 +1,34 @@
 import { ClientConstants } from '../../cli/edge_deployment/client_constants'
+
 export class MLOpsStore {
-  mlops_args: Object
-  mlops_project_id: Number
-  mlops_run_id
-  mlops_edge_id
-  mlops_log_metrics: Object
-  mlops_log_round_info: Object
+  mlops_args: any
+  mlops_project_id!: number
+  mlops_run_id: any
+  mlops_edge_id!: number
+  mlops_log_metrics: any
+  mlops_log_round_info: any
   mlops_log_client_training_status = ClientConstants.MSG_MLOPS_CLIENT_STATUS_TRAINING
-  mlops_log_round_start_time
-  mlops_log_metrics_lock
-  mlops_log_mqtt_mgr
-  mlops_log_mqtt_lock
+  mlops_log_round_start_time: any
+  mlops_log_metrics_lock: any
+  mlops_log_mqtt_mgr: any
+  mlops_log_mqtt_lock: any
   mlops_log_mqtt_is_connected = false
-  mlops_log_agent_config: Object
-  mlops_metrics
-  mlops_event
+  mlops_log_agent_config: any
+  mlops_metrics: any
+  mlops_event!: { log_event_started: (arg0: any, arg1: any, arg2: any) => void; log_event_ended: (arg0: any, arg1: any, arg2: any) => void }
   mlops_bind_result = false
-  server_agent_id
-  current_parrot_process
+  server_agent_id: any
+  current_parrot_process: any
 
-  pre_setup(args) {
+  pre_setup(args: object) {
     this.mlops_args = args
   }
 
-  init(args) {
+  init(args: object) {
     this.mlops_args = args
   }
 
-  event(event_name, event_started = true, event_value, event_edge_id) {
+  event(event_name: any, event_started = true, event_value: any, event_edge_id: null) {
     if (!this.mlops_enabled(this.mlops_args))
       return
 
@@ -46,7 +47,7 @@ export class MLOpsStore {
 
   set_realtime_params() {
     this.mlops_bind_result = true
-    if (this.mlops_args != null) {
+    if (this.mlops_args) {
       this.mlops_run_id = this.mlops_args.run_id
       if (this.mlops_args != null && this.mlops_args.client_id != null)
         this.mlops_edge_id = this.mlops_args.client_id
@@ -63,10 +64,7 @@ export class MLOpsStore {
     return true
   }
 
-  mlops_enabled(args): Boolean {
-    if (args.using_mlops != undefined && args.using_mlops != null)
-      return true
-    else
-      return false
+  mlops_enabled(args: any): Boolean {
+    return args && args.using_mlops != undefined && args.using_mlops != null
   }
 }

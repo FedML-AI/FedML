@@ -1,3 +1,4 @@
 dist
+script
 node_modules
 *.d.ts

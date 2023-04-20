@@ -17,7 +17,7 @@ export class ClientMasterManager extends FedMLCommManager {
   is_inited
 
   constructor(
-    args,
+    args: object,
     trainer_dist_adapter: TrainerDistAdapter,
     comm = null,
     rank = 0,
@@ -62,7 +62,7 @@ export class ClientMasterManager extends FedMLCommManager {
     )
   }
 
-  handle_message_connection_ready(msg) {
+  handle_message_connection_ready(msg: any) {
     console.log('handle_message_connection_ready ', msg)
     if (!this.has_sent_online_msg) {
       this.has_sent_online_msg = true
@@ -70,12 +70,12 @@ export class ClientMasterManager extends FedMLCommManager {
     }
   }
 
-  handle_message_check_status(msg) {
+  handle_message_check_status(msg: any) {
     console.log('handle_message_check_status ', msg)
     this.send_client_status(0)
   }
 
-  async handle_message_init(msg) {
+  async handle_message_init(msg: { msg_params: { [x: string]: any } }) {
     if (this.is_inited)
       return
 
@@ -96,7 +96,7 @@ export class ClientMasterManager extends FedMLCommManager {
     this.round_idx += 1
   }
 
-  async handle_message_receive_model_from_server(msg) {
+  async handle_message_receive_model_from_server(msg: { msg_params: { model_params: any } }) {
     console.log('handle_message_receive_model_from_server.', msg)
     console.log('check the args-content: ', this.args)
     const model_params = msg.msg_params.model_params
@@ -118,7 +118,7 @@ export class ClientMasterManager extends FedMLCommManager {
     }
   }
 
-  handle_message_finish(msg) {
+  handle_message_finish(msg: any) {
     console.log('====================cleanup ====================')
     console.log('handle_message_finish.', msg)
     this.cleanup()
@@ -135,7 +135,7 @@ export class ClientMasterManager extends FedMLCommManager {
     // currClient.value.end();
   }
 
-  report_client_training_status(edge_id, runId, status) {
+  report_client_training_status(edge_id: any, runId: any, status: MyMessage) {
     console.log('report_client_training_status ', runId)
 
     this.common_report_client_training_status(edge_id, runId, status)
@@ -145,13 +145,13 @@ export class ClientMasterManager extends FedMLCommManager {
     this.report_client_device_status_to_web_ui(edge_id, runId, status)
   }
 
-  broadcast_client_training_status(edge_id, runId, status) {
+  broadcast_client_training_status(edge_id: any, runId: any, status: any) {
     this.common_report_client_training_status(edge_id, runId, status)
 
     this.report_client_device_status_to_web_ui(edge_id, runId, status)
   }
 
-  report_client_device_status_to_web_ui(edge_id, runId, status) {
+  report_client_device_status_to_web_ui(edge_id: any, runId: any, status: any) {
     console.log('report_client_device_status_to_web_ui')
     const run_id = runId
     const payload = {
@@ -164,7 +164,7 @@ export class ClientMasterManager extends FedMLCommManager {
       'fl_client/mlops/status',
       JSON.stringify(payload),
       { qos: 2, retain: true },
-      (error) => {
+      (error: any) => {
         if (error)
           console.log(error)
         else
@@ -173,7 +173,7 @@ export class ClientMasterManager extends FedMLCommManager {
     )
   }
 
-  common_report_client_id_status(edge_id, runId, status) {
+  common_report_client_id_status(edge_id: any, runId: any, status: any) {
     console.log('report_client_id_status')
     const run_id = runId
     const payload = {
@@ -185,7 +185,7 @@ export class ClientMasterManager extends FedMLCommManager {
       `fl_client/flclient_agent_${edge_id}/status`,
       JSON.stringify(payload),
       { qos: 2, retain: true },
-      (error) => {
+      (error: any) => {
         if (error)
           console.log(error)
         else
@@ -194,7 +194,7 @@ export class ClientMasterManager extends FedMLCommManager {
     )
   }
 
-  common_report_client_training_status(edge_id, runId, status) {
+  common_report_client_training_status(edge_id: any, runId: any, status: any) {
     const run_id = runId
     const payload = {
       run_id,
@@ -205,7 +205,7 @@ export class ClientMasterManager extends FedMLCommManager {
       'fl_run/fl_client/mlops/status',
       JSON.stringify(payload),
       { qos: 2, retain: true },
-      (error) => {
+      (error: any) => {
         if (error)
           console.log(error)
         else
@@ -214,7 +214,7 @@ export class ClientMasterManager extends FedMLCommManager {
     )
   }
 
-  async send_model_to_server(receive_id, weights) {
+  async send_model_to_server(receive_id: number | undefined, weights: string | number | { weights: any } | undefined) {
     event('comm_c2s', true, String(this.round_idx))
     const message = new Message(
       MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER,
@@ -230,7 +230,7 @@ export class ClientMasterManager extends FedMLCommManager {
     await this.log_client_model_info(this.round_idx + 1, model_url)
   }
 
-  async send_client_status(receive_id, status = 'ONLINE') {
+  async send_client_status(receive_id: number | undefined, status = 'ONLINE') {
     console.log('send_client_status ', status)
     const message = new Message(
       MyMessage.MSG_TYPE_C2S_CLIENT_STATUS,
@@ -242,7 +242,7 @@ export class ClientMasterManager extends FedMLCommManager {
     await this.send_message(message)
   }
 
-  async log_client_model_info(round_index, model_url) {
+  async log_client_model_info(round_index: number, model_url: string) {
     if (model_url == 'undefined')
       return
 
@@ -258,7 +258,7 @@ export class ClientMasterManager extends FedMLCommManager {
       'fl_server/mlops/client_model',
       message_json,
       { qos: 2, retain: true },
-      (error) => {
+      (error: any) => {
         if (error)
           console.log(error)
         else
