@@ -20,7 +20,7 @@ except ImportError:
     bdist_wheel = None
 
 requirements = [
-    "numpy>=1.21,<=1.23",
+    "numpy>=1.21",
     "PyYAML",
     "h5py",
     "tqdm",
@@ -31,8 +31,8 @@ requirements = [
     "scikit-learn",
     "networkx",
     "click",
-    "torch==1.13.1",
-    "torchvision==0.14.1",
+    "torch>=1.13.1",
+    "torchvision>=0.14.1",
     "spacy",
     "gensim",
     "multiprocess",
@@ -89,7 +89,7 @@ requirements_extra_mxnet = [
 
 setup(
     name="fedml",
-    version="0.8.3a14",
+    version="0.8.3a15",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "

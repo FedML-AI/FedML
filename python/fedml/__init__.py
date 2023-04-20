@@ -23,7 +23,7 @@ from .core.common.ml_engine_backend import MLEngineBackend
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.8.3a14"
+__version__ = "0.8.3a15"
 
 
 def init(args=None):
