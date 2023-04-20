@@ -1,19 +1,19 @@
 // declare let AWS: any
 // import * as jpickle from 'jpickle';
 // import unpickle from 'unpickle';
-// import AWS from 'aws-sdk'
+import AWS from 'aws-sdk'
 // @ts-ignore
-import type { S3 } from 'aws-sdk'
-import AWS from '../../../../libs/aws-sdk'
+// import type { S3 } from 'aws-sdk'
+// import AWS from '../../../../libs/aws-sdk'
 
-type GetObjectOutput = S3.GetObjectOutput
+type GetObjectOutput = AWS.S3.GetObjectOutput
 
 export class S3Storage {
   region
   bucketName
   accesskeyId
   secretAccesskey
-  s3?: S3
+  s3?: AWS.S3
 
   constructor(s3_config: { CN_REGION_NAME: any; BUCKET_NAME: any; CN_S3_AKI: any; CN_S3_SAK: any }) {
     this.region = s3_config.CN_REGION_NAME

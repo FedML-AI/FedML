@@ -8,7 +8,7 @@ import type { Observer } from './observer'
 import { CommunicationConstants } from './constants'
 import { S3Storage } from './remote_storage'
 
-const mqttUrl = 'wss://open.fedml.ai/mqtt'
+const mqttUrl = 'wss://open-dev.fedml.ai/mqtt'
 
 export class MqttS3MultiClientsCommManager implements BaseCommunicationManager {
   // mqtt config
@@ -222,11 +222,8 @@ export class MqttS3MultiClientsCommManager implements BaseCommunicationManager {
     if (this.is_connected)
       return
 
-    const real_topic
-      = `${this._topic
-      + String(this.server_id)
-      }_${
-      String(this.client_real_ids[0])}`
+    const real_topic = `${this._topic + String(this.server_id)}_${String(this.client_real_ids[0])}`
+
     console.log('real_topic ', real_topic)
     this.mqtt_mgr.subscribe(real_topic, { qos: 2 })
     this._notify_connection_ready()

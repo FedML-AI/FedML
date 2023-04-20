@@ -24,12 +24,13 @@
   "exports": {
     ".": {
       "types": "./index.d.ts",
-      "require": "./dist/index.min.cjs",
-      "import": "./dist/index.min.mjs"
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.mjs"
     }
   },
-  "main": "dist/index.min.cjs",
-  "module": "dist/index.min.mjs",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "unpkg": "dist/umd/index.min.js",
   "types": "index.d.ts",
   "files": [
     "dist",

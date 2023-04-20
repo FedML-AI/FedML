@@ -36,6 +36,7 @@ function createPlugins(minify = false) {
 const globals = {
   '@tensorflow/tfjs': 'tf',
   '@tensorflow/tfjs-vis': 'tfvis',
+  'aws-sdk': 'AWS',
 }
 
 /**
@@ -46,32 +47,35 @@ const external = Object.keys(globals)
 /**
  *
  * @param {string} input
- * @param {boolean} minify
+ * @param {boolean} umd
  */
-function createBundle(input, minify = false) {
+function createBundle(input, umd = false) {
   return {
     input,
-    output: [
-      {
-        file: input.replace('src/', 'dist/').replace('.ts', minify ? '.min.mjs' : '.mjs'),
-        format: 'esm',
-        globals,
-      },
-      {
-        file: input.replace('src/', 'dist/').replace('.ts', minify ? '.min.cjs' : '.cjs'),
-        format: 'cjs',
-        globals,
-      },
-      {
-        file: input.replace('src/', 'dist/umd/').replace('.ts', minify ? '.min.js' : '.js'),
-        name: 'FedmlSpider',
-        format: 'umd',
-        exports: 'named',
-        globals,
-      },
-    ],
+    output: umd
+      ? [
+          {
+            file: input.replace('src/', 'dist/umd/').replace('.ts', umd ? '.min.js' : '.js'),
+            name: 'FedmlSpider',
+            format: 'umd',
+            exports: 'named',
+            globals,
+          },
+        ]
+      : [
+          {
+            file: input.replace('src/', 'dist/').replace('.ts', '.mjs'),
+            format: 'esm',
+            globals,
+          },
+          {
+            file: input.replace('src/', 'dist/').replace('.ts', '.cjs'),
+            format: 'cjs',
+            globals,
+          },
+        ],
     external,
-    plugins: createPlugins(minify),
+    plugins: createPlugins(umd),
   }
 }
 
