@@ -8,7 +8,7 @@ import type { Observer } from './observer'
 import { CommunicationConstants } from './constants'
 import { S3Storage } from './remote_storage'
 
-const mqttUrl = 'wss://open.fedml.ai/mqtt'
+const mqttUrl = 'wss://open-dev.fedml.ai/mqtt'
 
 export class MqttS3MultiClientsCommManager implements BaseCommunicationManager {
   // mqtt config
