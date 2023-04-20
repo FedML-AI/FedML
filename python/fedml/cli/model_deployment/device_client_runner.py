@@ -146,11 +146,11 @@ class FedMLClientRunner:
         downloaded = filesize if downloaded > filesize else downloaded
         progress = (downloaded / filesize * 100) if filesize != 0 else 0
         progress_int = int(progress)
-        downloaded_kb = format(downloaded/1024, '.2f')
-        
+        downloaded_kb = format(downloaded / 1024, '.2f')
+
         # since this hook funtion is stateless, we need a state to avoid printing progress repeatly
         if count == 0:
-            self.prev_download_progress = 0 
+            self.prev_download_progress = 0
         if progress_int != self.prev_download_progress and progress_int % 5 == 0:
             self.prev_download_progress = progress_int
             logging.info("package downloaded size {} KB, progress {}%".format(downloaded_kb, progress_int))
@@ -323,7 +323,8 @@ class FedMLClientRunner:
                 if model_input_size is not None and model_input_type is not None:
                     model_config_parameters["input_size"] = model_input_size
                     model_config_parameters["input_types"] = model_input_type
-                    logging.info(f"model input size {model_input_size}, input type {model_input_type} from the open platform.")
+                    logging.info(
+                        f"model input size {model_input_size}, input type {model_input_type} from the open platform.")
 
         logging.info("start the model deployment...")
         self.check_runner_stop_event()
@@ -346,7 +347,8 @@ class FedMLClientRunner:
                                         model_id, model_name, model_version,
                                         inference_output_url,
                                         ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED)
-            self.send_deployment_results(end_point_name, self.edge_id, ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED,
+            self.send_deployment_results(end_point_name, self.edge_id,
+                                         ClientConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_FAILED,
                                          model_id, model_name, inference_output_url,
                                          inference_model_version, ClientConstants.INFERENCE_HTTP_PORT,
                                          inference_engine, model_metadata, model_config)
@@ -503,6 +505,62 @@ class FedMLClientRunner:
         except Exception:
             pass
 
+    def ota_upgrade(self, payload, request_json):
+        no_upgrade = False
+        upgrade_version = None
+        run_id = request_json["end_point_id"]
+
+        try:
+            parameters = request_json.get("parameters", None)
+            common_args = parameters.get("common_args", None)
+            no_upgrade = common_args.get("no_upgrade", False)
+            upgrade_version = common_args.get("upgrade_version", None)
+        except Exception as e:
+            pass
+
+        should_upgrade = True
+        if upgrade_version is None or upgrade_version == "latest":
+            try:
+                fedml_is_latest_version, local_ver, remote_ver = sys_utils. \
+                    check_fedml_is_latest_version(self.version)
+            except Exception as e:
+                return
+
+            if fedml_is_latest_version:
+                should_upgrade = False
+            upgrade_version = remote_ver
+
+        if no_upgrade:
+            should_upgrade = False
+
+        if should_upgrade:
+            FedMLClientDataInterface.get_instance(). \
+                save_started_job(run_id, self.edge_id, time.time(),
+                                 ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING,
+                                 ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING,
+                                 payload)
+
+            logging.info(f"Upgrade to version {upgrade_version} ...")
+            python_ver_major = sys.version_info[0]
+            python_ver_minor = sys.version_info[1]
+            if self.version == "release":
+                if python_ver_major == 3 and python_ver_minor == 7:
+                    os.system(
+                        f"pip uninstall -y fedml;pip install fedml=={upgrade_version} --use-deprecated=legacy-resolver")
+                else:
+                    os.system(f"pip uninstall -y fedml;pip install fedml=={upgrade_version}")
+            else:
+                if python_ver_major == 3 and python_ver_minor == 7:
+                    os.system(f"pip uninstall -y fedml;"
+                              f"pip install --index-url https://test.pypi.org/simple/ "
+                              f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version} "
+                              f"--use-deprecated=legacy-resolver")
+                else:
+                    os.system(f"pip uninstall -y fedml;"
+                              f"pip install --index-url https://test.pypi.org/simple/ "
+                              f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version}")
+            raise Exception("Upgrading...")
+
     def callback_start_deployment(self, topic, payload):
         """
         topic: model_ops/model_device/start_deployment/model-agent-device-id
@@ -524,6 +582,8 @@ class FedMLClientRunner:
         scale_max = model_config["instance_scale_max"]
         inference_engine = model_config["inference_engine"]
         inference_end_point_id = run_id
+
+        self.ota_upgrade(payload, request_json)
 
         # Terminate previous process about starting or stopping run command
         ClientConstants.exit_process(self.process)
@@ -739,7 +799,7 @@ class FedMLClientRunner:
     def bind_account_and_device_id(self, url, account_id, device_id, os_name, role="md.on_premise_device"):
         ip = requests.get('https://checkip.amazonaws.com').text.strip()
         fedml_ver, exec_path, os_ver, cpu_info, python_ver, torch_ver, mpi_installed, \
-        cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem = get_sys_runner_info()
+            cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem = get_sys_runner_info()
         json_params = {
             "accountid": account_id,
             "deviceid": device_id,
@@ -819,6 +879,17 @@ class FedMLClientRunner:
         active_msg = {"ID": self.edge_id, "status": status}
         MLOpsStatus.get_instance().set_client_agent_status(self.edge_id, status)
         self.mqtt_mgr.send_message_json(active_topic, json.dumps(active_msg))
+
+    def recover_start_deployment_msg_after_upgrading(self):
+        try:
+            current_job = FedMLClientDataInterface.get_instance().get_current_job()
+            if current_job is not None and \
+                    current_job.status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_UPGRADING:
+                logging.info("start deployment after upgrading.")
+                topic_start_deployment = "model_ops/model_device/start_deployment/{}".format(str(self.edge_id))
+                self.callback_start_deployment(topic_start_deployment, current_job.running_json)
+        except Exception as e:
+            logging.info("recover starting deployment message after upgrading: {}".format(traceback.format_exc()))
 
     def on_agent_mqtt_connected(self, mqtt_client_object):
         # The MQTT message topic format is as follows: <sender>/<receiver>/<action>
@@ -916,12 +987,17 @@ class FedMLClientRunner:
         setattr(self.args, "mqtt_config_path", service_config["mqtt_config"])
         self.mlops_metrics.report_sys_perf(self.args)
 
+        self.recover_start_deployment_msg_after_upgrading()
+
     def start_agent_mqtt_loop(self):
         # Start MQTT message loop
         try:
             self.mqtt_mgr.loop_forever()
         except Exception as e:
-            logging.info("Client tracing: {}".format(traceback.format_exc()))
+            if str(e) == "Upgrading...":
+                logging.info("Upgrading...")
+            else:
+                logging.info("Client tracing: {}".format(traceback.format_exc()))
             self.mqtt_mgr.loop_stop()
             self.mqtt_mgr.disconnect()
             self.release_client_mqtt_mgr()

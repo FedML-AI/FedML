@@ -628,6 +628,63 @@ class FedMLServerRunner:
             logging.info("delete_deployment: send topic " + topic_delete_deployment + " to client...")
             self.client_mqtt_mgr.send_message_json(topic_delete_deployment, payload)
 
+    def ota_upgrade(self, payload, request_json):
+        no_upgrade = False
+        upgrade_version = None
+        run_id = request_json["end_point_id"]
+
+        try:
+            parameters = request_json.get("parameters", None)
+            common_args = parameters.get("common_args", None)
+            no_upgrade = common_args.get("no_upgrade", False)
+            upgrade_version = common_args.get("upgrade_version", None)
+        except Exception as e:
+            pass
+
+        should_upgrade = True
+        if upgrade_version is None or upgrade_version == "latest":
+            try:
+                fedml_is_latest_version, local_ver, remote_ver = sys_utils. \
+                    check_fedml_is_latest_version(self.version)
+            except Exception as e:
+                return
+
+            if fedml_is_latest_version:
+                should_upgrade = False
+            upgrade_version = remote_ver
+
+        if no_upgrade:
+            should_upgrade = False
+
+        if should_upgrade:
+            job_obj = FedMLServerDataInterface.get_instance().get_job_by_id(run_id)
+            if job_obj is None:
+                FedMLServerDataInterface.get_instance(). \
+                    save_started_job(run_id, self.edge_id, time.time(),
+                                     ServerConstants.MSG_MLOPS_SERVER_STATUS_UPGRADING,
+                                     ServerConstants.MSG_MLOPS_SERVER_STATUS_UPGRADING,
+                                     payload)
+
+            logging.info(f"Upgrade to version {upgrade_version} ...")
+            python_ver_major = sys.version_info[0]
+            python_ver_minor = sys.version_info[1]
+            if self.version == "release":
+                if python_ver_major == 3 and python_ver_minor == 7:
+                    os.system(f"pip uninstall -y fedml;pip install fedml=={upgrade_version} --use-deprecated=legacy-resolver")
+                else:
+                    os.system(f"pip uninstall -y fedml;pip install fedml=={upgrade_version}")
+            else:
+                if python_ver_major == 3 and python_ver_minor == 7:
+                    os.system(f"pip uninstall -y fedml;"
+                              f"pip install --index-url https://test.pypi.org/simple/ "
+                              f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version} "
+                              f"--use-deprecated=legacy-resolver")
+                else:
+                    os.system(f"pip uninstall -y fedml;"
+                              f"pip install --index-url https://test.pypi.org/simple/ "
+                              f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version}")
+            raise Exception("Upgrading...")
+
     def callback_start_deployment(self, topic, payload):
         """
         topic: model_ops/model_device/start_deployment/model-agent-device-id
@@ -653,6 +710,8 @@ class FedMLServerRunner:
         scale_max = model_config["instance_scale_max"]
         inference_engine = model_config["inference_engine"]
         inference_end_point_id = run_id
+
+        self.ota_upgrade(payload, request_json)
 
         run_id = inference_end_point_id
         self.args.run_id = run_id
@@ -1334,6 +1393,17 @@ class FedMLServerRunner:
         except Exception as e:
             logging.info("recover inference and monitor: {}".format(traceback.format_exc()))
 
+    def recover_start_deployment_msg_after_upgrading(self):
+        try:
+            current_job = FedMLServerDataInterface.get_instance().get_current_job()
+            if current_job is not None and \
+                    current_job.status == ServerConstants.MSG_MLOPS_SERVER_STATUS_UPGRADING:
+                logging.info("start deployment after upgrading.")
+                topic_start_deployment = "model_ops/model_device/start_deployment/{}".format(str(self.edge_id))
+                self.callback_start_deployment(topic_start_deployment, current_job.running_json)
+        except Exception as e:
+            logging.info("recover starting deployment message after upgrading: {}".format(traceback.format_exc()))
+
     def setup_agent_mqtt_connection(self, service_config):
         # Setup MQTT connection
         self.mqtt_mgr = MqttManager(
@@ -1379,12 +1449,17 @@ class FedMLServerRunner:
         setattr(self.args, "mqtt_config_path", service_config["mqtt_config"])
         self.mlops_metrics.report_sys_perf(self.args, is_client=False)
 
+        self.recover_start_deployment_msg_after_upgrading()
+
     def start_agent_mqtt_loop(self):
         # Start MQTT message loop
         try:
             self.mqtt_mgr.loop_forever()
         except Exception as e:
-            logging.info("Server tracing: {}".format(traceback.format_exc()))
+            if str(e) == "Upgrading...":
+                logging.info("Upgrading...")
+            else:
+                logging.info("Server tracing: {}".format(traceback.format_exc()))
             self.mqtt_mgr.loop_stop()
             self.mqtt_mgr.disconnect()
             self.release_client_mqtt_mgr()

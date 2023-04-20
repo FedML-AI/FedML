@@ -1,4 +1,4 @@
-numpy>=1.21,<=1.23
+numpy>=1.21
 PyYAML~=5.4.1
 h5py~=3.7.0
 tqdm~=4.64.0
@@ -9,8 +9,8 @@ pynvml
 scikit-learn~=1.1.1
 networkx~=2.8.5
 click~=8.1.3
-torch~=1.13.1
-torchvision~=0.14.1
+torch>=1.13.1
+torchvision>=0.14.1
 spacy~=3.4.0
 gensim~=4.2.0
 multiprocess~=0.70.13
