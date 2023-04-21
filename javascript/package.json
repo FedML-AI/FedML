@@ -1,14 +1,14 @@
 {
-  "name": "@snoopylion/spider",
+  "name": "@fedml/spider",
   "type": "module",
-  "version": "0.0.1-beta.4",
+  "version": "0.0.1-alpha.0",
   "description": "Collaborative Learning from Scattered Data on Browser",
   "author": "fedml-inc",
   "license": "ISC",
   "publishConfig": {
     "access": "public"
   },
-  "homepage": "https://github.com/FedML-AI/FedML#readme",
+  "homepage": "https://github.com/FedML-AI/FedML/blob/feat/jssdk/javascript/README.md",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/FedML-AI/FedML.git"
