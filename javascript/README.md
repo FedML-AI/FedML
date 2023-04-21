@@ -13,12 +13,26 @@
   # pnpm
   pnpm install @fedml/spider -S
   ```
+
+- Install peer dependencies
+
+  `npm i @tensorflow/tfjs @tensorflow/tfjs-vis -S`
+
 - Import `fedml_train` function to start train
-  ```js
-  // in your js or ts code
+  ``` javascript
   import { fedml_train } from '@fedml/spider'
+
+  // prepare running args 
+  const client_id = YOUR_CLIENT_ID
+  const run_args = await AnyFunctionFetchRunArgs(...)
+
+  // start training
+  fedml_train(run_args, client_id, {
+    // customDataLoader?: <Optional: Your custom data loader>
+  })
   ```
-- Basic api
+
+- API
 
   ```ts
   type DataLoader = (
@@ -44,7 +58,16 @@
   ): Promise<void>
   ```
 
-## Develop
+## Contributing
+We recommend that you use `pnpm`(https://pnpm.io/installation) as the package manager.
 
-- `npm install`
-- `npm run dev`
+### catalog
+- `src`: Here the source codes, and `src/index.ts` is the entry file for rollup bundle.
+- `dist`: The rollup bundle artifacts is output here. This will be not be committed to the GitHub codebase, however, will be released to npm.
+
+### script
+- `pnpm install`: Bootstrap dependencies of this project.
+- `pnpm run dev`: Starting rollup bundler with `watch` mode.
+- `pnpm run lint:fix`: Format source code style under `src` folder with eslint and prettier.
+- `pnpm run release`(**Authorization required**
+): Release a upgraded version package to npm, then mark and push a released tag to GitHub.
