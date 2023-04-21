@@ -60,7 +60,6 @@
     "uuid": "^9.0.0"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^0.32.0",
     "@rollup/plugin-alias": "^4.0.3",
     "@rollup/plugin-commonjs": "^23.0.7",
     "@rollup/plugin-json": "^5.0.2",
@@ -68,9 +67,13 @@
     "@rollup/plugin-terser": "^0.4.1",
     "@types/node": "^18.15.11",
     "@types/uuid": "^9.0.1",
+    "@typescript-eslint/eslint-plugin": "^5.59.0",
     "aws-sdk": "^2.1360.0",
     "bumpp": "^8.2.1",
     "eslint": "^8.37.0",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-define-config": "^1.18.0",
+    "eslint-plugin-prettier": "^4.2.1",
     "esno": "^0.16.3",
     "rollup": "^3.20.2",
     "rollup-plugin-dts": "^5.3.0",

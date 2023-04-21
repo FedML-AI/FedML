@@ -6,7 +6,7 @@ export function fetchConfig(params: any) {
       'content-type': 'application/json',
     },
   })
-    .then(res => res.json())
-    .then(res => res.data)
-    .catch(error => console.error(error))
+    .then((res) => res.json())
+    .then((res) => res.data)
+    .catch((error) => console.error(error));
 }

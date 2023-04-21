@@ -13,7 +13,7 @@ import { S3Storage } from './remote_storage';
 // const { mqttUrl } = useGlobSetting();
 // const appStore = useAppStore();
 // const currClient = computed(() => appStore.getClient);
-const mqttUrl = 'wss://open-dev.fedml.ai/mqtt'
+const mqttUrl = 'wss://open-dev.fedml.ai/mqtt';
 export class MqttS3MultiClientsCommManager implements BaseCommunicationManager {
   // mqtt config
   config_path;
@@ -114,7 +114,12 @@ export class MqttS3MultiClientsCommManager implements BaseCommunicationManager {
       keepAlive: 180,
       clientId: 'mqttjs_' + Math.random().toString(16).substr(2, 8),
       connectTimeout: 15000,
-      will: { topic: this.topic_last_will_msg, payload: this.last_will_msg, qos: 2, retain: true },
+      will: {
+        topic: this.topic_last_will_msg,
+        payload: this.last_will_msg,
+        qos: 2,
+        retain: true,
+      },
     };
     const connectUrl = mqttUrl;
     this.mqtt_mgr = mqtt.connect(connectUrl, this.options);

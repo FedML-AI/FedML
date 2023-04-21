@@ -1,5 +1,5 @@
-import { TrainerDistAdapter } from './fedml_trainer_dist_adapter'
-import { ClientMasterManager } from './fedml_client_master_manager'
+import { TrainerDistAdapter } from './fedml_trainer_dist_adapter';
+import { ClientMasterManager } from './fedml_client_master_manager';
 
 export function init_client(
   args: any,
@@ -14,7 +14,7 @@ export function init_client(
   testDataLabel: any,
   model_trainer = null,
 ) {
-  const backend = 'MQTT_S3'
+  const backend = 'MQTT_S3';
   const trainer_dist_adapter = get_trainer_dist_adapter(
     args,
     device,
@@ -25,7 +25,7 @@ export function init_client(
     testData,
     testDataLabel,
     model_trainer,
-  )
+  );
   const client_manager = get_client_manager_master(
     args,
     trainer_dist_adapter,
@@ -33,8 +33,8 @@ export function init_client(
     client_rank,
     client_num,
     backend,
-  )
-  client_manager.run()
+  );
+  client_manager.run();
 }
 
 export function get_trainer_dist_adapter(
@@ -58,7 +58,7 @@ export function get_trainer_dist_adapter(
     testData,
     testDataLabel,
     model_trainer,
-  )
+  );
 }
 
 export function get_client_manager_master(
@@ -76,5 +76,5 @@ export function get_client_manager_master(
     client_rank,
     client_num,
     backend,
-  )
+  );
 }

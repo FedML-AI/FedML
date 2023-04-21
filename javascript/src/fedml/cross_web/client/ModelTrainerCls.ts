@@ -1,5 +1,5 @@
-import { ClientTrainer } from "../../core/alg_frame/client_trainer";
-import * as tf from "@tensorflow/tfjs";
+import { ClientTrainer } from '../../core/alg_frame/client_trainer';
+import * as tf from '@tensorflow/tfjs';
 // import * as tfvis from '@tensorflow/tfjs-vis';
 
 export class ModelTrainerCLS implements ClientTrainer {
@@ -33,7 +33,7 @@ export class ModelTrainerCLS implements ClientTrainer {
     // const container = { name: 'Loss and accuracy', tab: 'Training' };
     // const ftfvis_options = { callbacks: ['onEpochEnd'] };
     // TODO: fixed here hard coding
-    if (this.args.dataset == "mnist") {
+    if (this.args.dataset == 'mnist') {
       await model.fit(
         tf.reshape(this.trainData, [this.trainData.shape[0], -1]),
         this.trainDataLabel,
@@ -45,22 +45,15 @@ export class ModelTrainerCLS implements ClientTrainer {
           batchSize: 10,
           epochs: 5,
           // callbacks: [tfvis.show.fitCallbacks(container, metrics, ftfvis_options)],
-        }
+        },
       );
-    } else if (this.args.dataset == "cifar10") {
-      await model.fit(
-        tf.reshape(this.trainData, [500, 32, 32, 3]),
-        this.trainDataLabel,
-        {
-          validationData: [
-            tf.reshape(this.testData, [100, 32, 32, 3]),
-            this.testDataLabel,
-          ],
-          batchSize: 10,
-          epochs: 50,
-          // callbacks: [tfvis.show.fitCallbacks(container, metrics, ftfvis_options)],
-        }
-      );
+    } else if (this.args.dataset == 'cifar10') {
+      await model.fit(tf.reshape(this.trainData, [500, 32, 32, 3]), this.trainDataLabel, {
+        validationData: [tf.reshape(this.testData, [100, 32, 32, 3]), this.testDataLabel],
+        batchSize: 10,
+        epochs: 50,
+        // callbacks: [tfvis.show.fitCallbacks(container, metrics, ftfvis_options)],
+      });
     }
   }
   get_model_params() {
@@ -85,10 +78,10 @@ export class ModelTrainerCLS implements ClientTrainer {
       this.model.setWeights(model_parameters);
       verbose = true;
       if (verbose) {
-        console.log("Updated Tensorflow model from pytorch model");
+        console.log('Updated Tensorflow model from pytorch model');
       } else {
         console.log(
-          "ERROR: The model structure of pytorch and tensorflow.js is not aligned! Cannot transfer parameters accordingly."
+          'ERROR: The model structure of pytorch and tensorflow.js is not aligned! Cannot transfer parameters accordingly.',
         );
       }
     }
