@@ -8,38 +8,6 @@ from fedml.cli.comm_utils import sys_utils
 from fedml.cli.model_deployment.device_client_constants import ClientConstants
 
 
-def ota_upgrade(in_args):
-    should_upgrade = False
-    fedml_is_latest_version = True
-    try:
-        fedml_is_latest_version, local_ver, remote_ver = sys_utils.check_fedml_is_latest_version(in_args.version)
-        should_upgrade = False if fedml_is_latest_version else True
-    except Exception as e:
-        return
-
-    if not should_upgrade:
-        return
-    upgrade_version = remote_ver
-
-    python_ver_major = sys.version_info[0]
-    python_ver_minor = sys.version_info[1]
-    if in_args.version == "release":
-        if python_ver_major == 3 and python_ver_minor == 7:
-            os.system(f"pip uninstall -y fedml;pip install fedml=={upgrade_version} --use-deprecated=legacy-resolver")
-        else:
-            os.system(f"pip uninstall -y fedml;pip install fedml=={upgrade_version}")
-    else:
-        if python_ver_major == 3 and python_ver_minor == 7:
-            os.system(f"pip uninstall -y fedml;"
-                      f"pip install --index-url https://test.pypi.org/simple/ "
-                      f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version} "
-                      f"--use-deprecated=legacy-resolver")
-        else:
-            os.system(f"pip uninstall -y fedml;"
-                      f"pip install --index-url https://test.pypi.org/simple/ "
-                      f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version}")
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--type", "-t", help="Login or logout to ModelOps platform")
@@ -65,7 +33,7 @@ if __name__ == "__main__":
         except Exception as e:
             pass
 
-        ota_upgrade(args)
+        sys_utils.daemon_ota_upgrade(args)
 
         login_pid = ClientConstants.exec_console_with_shell_script_list(
             [

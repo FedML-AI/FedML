@@ -688,18 +688,27 @@ class FedMLClientRunner:
             python_ver_minor = sys.version_info[1]
             if self.version == "release":
                 if python_ver_major == 3 and python_ver_minor == 7:
-                    os.system(f"pip uninstall -y fedml;pip install fedml=={upgrade_version} --use-deprecated=legacy-resolver")
+                    os.system(f"pip uninstall -y fedml;pip3 uninstall -y fedml;"
+                              f"pip install fedml=={upgrade_version} --use-deprecated=legacy-resolver;"
+                              f"pip3 install fedml=={upgrade_version} --use-deprecated=legacy-resolver")
                 else:
-                    os.system(f"pip uninstall -y fedml;pip install fedml=={upgrade_version}")
+                    os.system(f"pip uninstall -y fedml;pip3 uninstall -y fedml;"
+                              f"pip install fedml=={upgrade_version};"
+                              f"pip3 install fedml=={upgrade_version}")
             else:
                 if python_ver_major == 3 and python_ver_minor == 7:
-                    os.system(f"pip uninstall -y fedml;"
+                    os.system(f"pip uninstall -y fedml;pip3 uninstall -y fedml;"
                               f"pip install --index-url https://test.pypi.org/simple/ "
+                              f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version} "
+                              f"--use-deprecated=legacy-resolver;"
+                              f"pip3 install --index-url https://test.pypi.org/simple/ "
                               f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version} "
                               f"--use-deprecated=legacy-resolver")
                 else:
-                    os.system(f"pip uninstall -y fedml;"
+                    os.system(f"pip uninstall -y fedml;pip3 uninstall -y fedml;"
                               f"pip install --index-url https://test.pypi.org/simple/ "
+                              f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version};"
+                              f"pip3 install --index-url https://test.pypi.org/simple/ "
                               f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version}")
             raise Exception("Upgrading...")
 

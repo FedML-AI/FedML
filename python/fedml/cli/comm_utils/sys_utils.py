@@ -16,6 +16,7 @@ from urllib import request
 from pkg_resources import parse_version
 import fedml
 from packaging import version
+import sys
 
 
 FETAL_ERROR_START_CODE = 128
@@ -531,6 +532,47 @@ def check_fedml_is_latest_version(configuration_env="release"):
         return True, local_fedml_version, fedml_version_list[0]
 
     return False, local_fedml_version, fedml_version_list[0]
+
+
+def daemon_ota_upgrade(in_args):
+    should_upgrade = False
+    fedml_is_latest_version = True
+    try:
+        fedml_is_latest_version, local_ver, remote_ver = check_fedml_is_latest_version(in_args.version)
+        should_upgrade = False if fedml_is_latest_version else True
+    except Exception as e:
+        return
+
+    if not should_upgrade:
+        return
+    upgrade_version = remote_ver
+
+    python_ver_major = sys.version_info[0]
+    python_ver_minor = sys.version_info[1]
+    if in_args.version == "release":
+        if python_ver_major == 3 and python_ver_minor == 7:
+            os.system(f"pip uninstall -y fedml;pip3 uninstall -y fedml;"
+                      f"pip install fedml=={upgrade_version} --use-deprecated=legacy-resolver;"
+                      f"pip3 install fedml=={upgrade_version} --use-deprecated=legacy-resolver")
+        else:
+            os.system(f"pip uninstall -y fedml;pip3 uninstall -y fedml;"
+                      f"pip install fedml=={upgrade_version};"
+                      f"pip3 install fedml=={upgrade_version}")
+    else:
+        if python_ver_major == 3 and python_ver_minor == 7:
+            os.system(f"pip uninstall -y fedml;pip3 uninstall -y fedml;"
+                      f"pip install --index-url https://test.pypi.org/simple/ "
+                      f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version} "
+                      f"--use-deprecated=legacy-resolver;"
+                      f"pip3 install --index-url https://test.pypi.org/simple/ "
+                      f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version} "
+                      f"--use-deprecated=legacy-resolver")
+        else:
+            os.system(f"pip uninstall -y fedml;pip3 uninstall -y fedml;"
+                      f"pip install --index-url https://test.pypi.org/simple/ "
+                      f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version};"
+                      f"pip3 install --index-url https://test.pypi.org/simple/ "
+                      f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version}")
 
 
 if __name__ == '__main__':
