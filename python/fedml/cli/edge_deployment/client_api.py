@@ -16,6 +16,8 @@ async def get_current_job_status(request: Request):
     input_json = await request.json()
 
     current_job = FedMLClientDataInterface.get_instance().get_current_job()
+    if current_job is None:
+        return {}
     response = {"jobId": current_job.job_id,
                 "edgeId": current_job.edge_id,
                 "startedTime": int(float(current_job.started_time)) if current_job.started_time != "" else 0,
