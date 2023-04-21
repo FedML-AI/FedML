@@ -2,7 +2,7 @@
   "name": "@fedml/spider",
   "type": "module",
   "version": "0.0.1-alpha.0",
-  "description": "Collaborative Learning from Scattered Data on Browser",
+  "description": "A Lightweight and Customizable Federated Learning Javascript SDK for Web Browser, Backed by FedML MLOps (https://open.fedml.ai) ",
   "author": "fedml-inc",
   "license": "ISC",
   "publishConfig": {

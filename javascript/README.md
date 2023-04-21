@@ -1,6 +1,6 @@
 # @fedml/spider
 
-> Collaborative Learning from Scattered Data on Browser
+> A Lightweight and Customizable Federated Learning Javascript SDK for Web Browser, Backed by [FedML MLOps](https://open.fedml.ai)
 
 ## Usage
 
