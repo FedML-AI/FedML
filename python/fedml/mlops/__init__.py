@@ -1,3 +1,6 @@
+import logging
+import traceback
+
 from ..core import mlops
 
 
@@ -72,7 +75,10 @@ def log_client_model_info(round_index, total_rounds, model_url):
 
 
 def log_sys_perf(sys_args=None):
-    mlops.log_sys_perf(sys_args)
+    try:
+        mlops.log_sys_perf(sys_args)
+    except Exception as e:
+        logging.info("excpetions when logging sys perf: {}".format(traceback.format_exc()))
 
 
 def log_server_payload(run_id, edge_id, payload):
