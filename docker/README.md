@@ -52,7 +52,7 @@ bash build-docker.sh $ARCH $OS $DISTRO $PYTHON_VERSION $PYTORCH_VERSION $NCCL_VE
 
 ```
 # c56e5f90d546 is the docker image ID
-docker tag c56e5f90d546 fedml/fedml:latest-torch1.12.1-cuda11.3-cudnn8-devel
+docker tag c56e5f90d546 fedml/fedml:latest-torch1.13.1-cuda11.6-cudnn8-devel
 docker login --username fedml
-docker push fedml/fedml:latest-torch1.12.1-cuda11.3-cudnn8-devel
+docker push fedml/fedml:latest-torch1.13.1-cuda11.6-cudnn8-devel
 ```
