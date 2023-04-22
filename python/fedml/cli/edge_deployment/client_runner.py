@@ -722,6 +722,8 @@ class FedMLClientRunner:
 
         # Start log processor for current run
         self.args.run_id = run_id
+        self.args.edge_id = self.edge_id
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
         logging.info("start the log processor")
         MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
 

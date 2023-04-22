@@ -576,6 +576,8 @@ class FedMLClientRunner:
         # Start log processor for current run
         run_id = inference_end_point_id
         self.args.run_id = run_id
+        self.args.edge_id = self.edge_id
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
         MLOpsRuntimeLogDaemon.get_instance(self.args).set_log_source(
             ClientConstants.FEDML_LOG_SOURCE_TYPE_MODEL_END_POINT)
         MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)

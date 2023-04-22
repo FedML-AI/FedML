@@ -688,6 +688,9 @@ class FedMLServerRunner:
         if self.run_as_edge_server_and_agent:
             # Start log processor for current run
             logging.info("start the log processor.")
+            self.args.run_id = run_id
+            self.args.edge_id = self.edge_id
+            MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
             MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
 
         if not self.run_as_cloud_agent and not self.run_as_cloud_server:
