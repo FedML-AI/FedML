@@ -544,7 +544,7 @@ class FedMLClientRunner:
 
             sys_utils.do_upgrade(self.version, upgrade_version)
 
-            raise Exception("Upgrading...")
+            raise Exception("Restarting after upgraded...")
 
     def callback_start_deployment(self, topic, payload):
         """
@@ -981,8 +981,8 @@ class FedMLClientRunner:
         try:
             self.mqtt_mgr.loop_forever()
         except Exception as e:
-            if str(e) == "Upgrading...":
-                logging.info("Upgrading...")
+            if str(e) == "Restarting after upgraded...":
+                logging.info("Restarting after upgraded...")
             else:
                 logging.info("Client tracing: {}".format(traceback.format_exc()))
             self.mqtt_mgr.loop_stop()
