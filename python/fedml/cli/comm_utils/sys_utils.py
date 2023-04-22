@@ -1,3 +1,4 @@
+import logging
 import os
 import platform
 import signal
@@ -17,6 +18,9 @@ from pkg_resources import parse_version
 import fedml
 from packaging import version
 import sys
+
+from fedml.cli.edge_deployment.client_constants import ClientConstants
+import importlib
 
 
 FETAL_ERROR_START_CODE = 128
@@ -486,14 +490,14 @@ def log_return_info(bootstrap_file, ret_code):
     import logging
     err_desc = SYS_ERR_CODE_MAP.get(str(ret_code), "")
     if ret_code == 0:
-        logging.info("Run {} return code {}. {}".format(
+        logging.info("Run '{}' return code {}. {}".format(
             bootstrap_file, ret_code, err_desc))
     else:
         fatal_err_desc = SYS_ERR_CODE_MAP.get(str(ret_code), "")
         if ret_code >= FETAL_ERROR_START_CODE and fatal_err_desc == "":
             fatal_err_desc = SYS_ERR_CODE_MAP.get(str(FETAL_ERROR_START_CODE))
 
-        logging.error("Run {} return code {}. {}".format(
+        logging.error("Run '{}' return code {}. {}".format(
             bootstrap_file, ret_code, fatal_err_desc if fatal_err_desc != "" else err_desc))
 
 
@@ -547,35 +551,110 @@ def daemon_ota_upgrade(in_args):
         return
     upgrade_version = remote_ver
 
+    do_upgrade(in_args.version, upgrade_version, show_local_console=True)
+
+
+def run_cmd(command, show_local_console=False):
+    process = ClientConstants.exec_console_with_script(command, should_capture_stdout=True,
+                                                       should_capture_stderr=True)
+    ret_code, out, err = ClientConstants.get_console_pipe_out_err_results(process)
+    if ret_code is None or ret_code <= 0:
+        if out is not None:
+            out_str = out.decode(encoding="utf-8")
+            if out_str != "":
+                logging.info("{}".format(out_str))
+                if show_local_console:
+                    print(out_str)
+
+        log_return_info(command, 0)
+
+        is_cmd_run_ok = True
+    else:
+        if err is not None:
+            err_str = err.decode(encoding="utf-8")
+            if err_str != "":
+                logging.error("{}".format(err_str))
+                if show_local_console:
+                    print(err_str)
+
+        log_return_info(command, ret_code)
+
+        is_cmd_run_ok = False
+
+    return is_cmd_run_ok
+
+
+def get_local_fedml_version(fedml_init_file):
+    fedml_version = fedml.__version__
+    with open(fedml_init_file, "r") as f:
+        while True:
+            init_line = f.readline()
+            if init_line is None:
+                break
+
+            if init_line.find("__version__") != -1:
+                line_splits = init_line.split('"')
+                if len(line_splits) >= 3:
+                    fedml_version = line_splits[1]
+                    break
+
+    return fedml_version
+
+
+def do_upgrade(config_version, upgrade_version, show_local_console=False):
     python_ver_major = sys.version_info[0]
     python_ver_minor = sys.version_info[1]
-    if in_args.version == "release":
-        if python_ver_major == 3 and python_ver_minor == 7:
-            os.system(f"pip uninstall -y fedml;pip3 uninstall -y fedml;"
-                      f"pip install fedml=={upgrade_version} --use-deprecated=legacy-resolver;"
-                      f"pip3 install fedml=={upgrade_version} --use-deprecated=legacy-resolver")
-        else:
-            os.system(f"pip uninstall -y fedml;pip3 uninstall -y fedml;"
-                      f"pip install fedml=={upgrade_version};"
-                      f"pip3 install fedml=={upgrade_version}")
+    is_pyton_37 = False
+    if python_ver_major == 3 and python_ver_minor == 7:
+        is_pyton_37 = True
+
+    run_cmd("pip uninstall -y fedml", show_local_console=show_local_console)
+    run_cmd("pip3 uninstall -y fedml", show_local_console=show_local_console)
+    resolver_option = "--use-deprecated=legacy-resolver"
+
+    fedml_init_file = os.path.abspath(fedml.__file__)
+
+    if config_version == "release":
+        run_cmd("pip install fedml=={} {}".format(
+            upgrade_version, resolver_option if is_pyton_37 else ""
+        ), show_local_console=show_local_console)
+
+        local_fedml_version = get_local_fedml_version(fedml_init_file)
+        upgrade_result = True if local_fedml_version == upgrade_version else False
+        if not upgrade_result:
+            run_cmd("pip3 install fedml=={} {}".format(
+                upgrade_version, resolver_option if is_pyton_37 else ""
+            ), show_local_console=show_local_console)
+
+            local_fedml_version = get_local_fedml_version(fedml_init_file)
+            upgrade_result = True if local_fedml_version == upgrade_version else False
     else:
-        if python_ver_major == 3 and python_ver_minor == 7:
-            os.system(f"pip uninstall -y fedml;pip3 uninstall -y fedml;"
-                      f"pip install --index-url https://test.pypi.org/simple/ "
-                      f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version} "
-                      f"--use-deprecated=legacy-resolver;"
-                      f"pip3 install --index-url https://test.pypi.org/simple/ "
-                      f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version} "
-                      f"--use-deprecated=legacy-resolver")
-        else:
-            os.system(f"pip uninstall -y fedml;pip3 uninstall -y fedml;"
-                      f"pip install --index-url https://test.pypi.org/simple/ "
-                      f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version};"
-                      f"pip3 install --index-url https://test.pypi.org/simple/ "
-                      f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version}")
+        run_cmd("pip install --index-url https://test.pypi.org/simple/ "
+                "--extra-index-url https://pypi.org/simple fedml=={} {}".
+                format(upgrade_version, resolver_option if is_pyton_37 else ""),
+                show_local_console=show_local_console)
+
+        local_fedml_version = get_local_fedml_version(fedml_init_file)
+        upgrade_result = True if local_fedml_version == upgrade_version else False
+        if not upgrade_result:
+            run_cmd("pip3 install --index-url https://test.pypi.org/simple/ "
+                    "--extra-index-url https://pypi.org/simple fedml=={} {}".
+                    format(upgrade_version, resolver_option if is_pyton_37 else ""),
+                    show_local_console=show_local_console)
+
+            local_fedml_version = get_local_fedml_version(fedml_init_file)
+            upgrade_result = True if local_fedml_version == upgrade_version else False
+
+    if upgrade_result:
+        logging.info("Upgrade successfully")
+    else:
+        logging.info("Upgrade error")
+
+    return upgrade_result
 
 
 if __name__ == '__main__':
     fedml_is_latest_version, local_ver, remote_ver = check_fedml_is_latest_version("dev")
     print("FedML is latest version: {}, local version {}, remote version {}".format(
         fedml_is_latest_version, local_ver, remote_ver))
+    do_upgrade("release", remote_ver)
