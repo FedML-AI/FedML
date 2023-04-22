@@ -664,32 +664,9 @@ class FedMLServerRunner:
                 self.mlops_metrics.report_server_training_status(run_id,
                                                                  ServerConstants.MSG_MLOPS_SERVER_STATUS_UPGRADING)
             logging.info(f"Upgrade to version {upgrade_version} ...")
-            python_ver_major = sys.version_info[0]
-            python_ver_minor = sys.version_info[1]
-            if self.version == "release":
-                if python_ver_major == 3 and python_ver_minor == 7:
-                    os.system(f"pip uninstall -y fedml;pip3 uninstall -y fedml;"
-                              f"pip install fedml=={upgrade_version} --use-deprecated=legacy-resolver;"
-                              f"pip3 install fedml=={upgrade_version} --use-deprecated=legacy-resolver")
-                else:
-                    os.system(f"pip uninstall -y fedml;pip3 uninstall -y fedml;"
-                              f"pip install fedml=={upgrade_version};"
-                              f"pip3 install fedml=={upgrade_version}")
-            else:
-                if python_ver_major == 3 and python_ver_minor == 7:
-                    os.system(f"pip uninstall -y fedml;pip3 uninstall -y fedml;"
-                              f"pip install --index-url https://test.pypi.org/simple/ "
-                              f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version} "
-                              f"--use-deprecated=legacy-resolver;"
-                              f"pip3 install --index-url https://test.pypi.org/simple/ "
-                              f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version} "
-                              f"--use-deprecated=legacy-resolver")
-                else:
-                    os.system(f"pip uninstall -y fedml;pip3 uninstall -y fedml;"
-                              f"pip install --index-url https://test.pypi.org/simple/ "
-                              f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version};"
-                              f"pip3 install --index-url https://test.pypi.org/simple/ "
-                              f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version}")
+
+            sys_utils.do_upgrade(self.version, upgrade_version)
+
             raise Exception("Upgrading...")
 
     def callback_start_train(self, topic=None, payload=None):
@@ -707,11 +684,16 @@ class FedMLServerRunner:
         if is_retain:
             return
 
+        run_id = request_json["runId"]
+        if self.run_as_edge_server_and_agent:
+            # Start log processor for current run
+            logging.info("start the log processor.")
+            MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
+
         if not self.run_as_cloud_agent and not self.run_as_cloud_server:
             self.ota_upgrade(payload, request_json)
 
         self.start_request_json = payload
-        run_id = request_json["runId"]
         if self.run_as_edge_server_and_agent:
             if self.run_process is not None and \
                     sys_utils.get_process_running_count(ServerConstants.SERVER_LOGIN_PROGRAM) >= 2:
@@ -749,9 +731,6 @@ class FedMLServerRunner:
             self.mqtt_mgr.subscribe_msg(topic_client_exit_train_with_exception)
 
         if self.run_as_edge_server_and_agent:
-            # Start log processor for current run
-            logging.info("start the log processor.")
-            MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
             self.args.run_id = run_id
 
             server_runner = FedMLServerRunner(
@@ -1497,7 +1476,7 @@ class FedMLServerRunner:
         python_program = get_python_program()
         local_api_process = ServerConstants.exec_console_with_script(
             "{} -m uvicorn fedml.cli.server_deployment.server_api:api --host 0.0.0.0 --port {} "
-            "--reload --log-level critical".format(python_program, ServerConstants.LOCAL_SERVER_API_PORT),
+            "--log-level critical".format(python_program, ServerConstants.LOCAL_SERVER_API_PORT),
             should_capture_stdout=False,
             should_capture_stderr=False
         )
