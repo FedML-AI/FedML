@@ -128,6 +128,7 @@ class MLOpsRuntimeLog:
         else:
             stdout_handle.setLevel(logging.CRITICAL)
             self.logger.setLevel(logging.CRITICAL)
+        self.logger.handlers.clear()
         self.logger.addHandler(stdout_handle)
         if hasattr(self, "should_write_log_file") and self.should_write_log_file:
             when = 'D'
