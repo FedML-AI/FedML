@@ -41,7 +41,7 @@ if __name__ == "__main__":
         "END_POINT_NAME=\"{}\" "
         "MODEL_NAME=\"{}\" MODEL_VERSION=\"{}\" MODEL_INFER_URL=\"{}\" VERSION=\"{}\" "
         "{} -m uvicorn fedml.cli.model_deployment.device_model_inference:api --host 0.0.0.0 --port {} "
-        "--reload --log-level critical".format(
+        "--log-level critical".format(
             args.redis_addr, args.redis_port, args.redis_password,
             args.end_point_name,
             args.model_name, args.model_version, args.infer_url, args.config_version,

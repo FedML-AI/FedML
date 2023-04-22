@@ -684,32 +684,9 @@ class FedMLClientRunner:
                                               in_run_id=run_id)
 
             logging.info(f"Upgrade to version {upgrade_version} ...")
-            python_ver_major = sys.version_info[0]
-            python_ver_minor = sys.version_info[1]
-            if self.version == "release":
-                if python_ver_major == 3 and python_ver_minor == 7:
-                    os.system(f"pip uninstall -y fedml;pip3 uninstall -y fedml;"
-                              f"pip install fedml=={upgrade_version} --use-deprecated=legacy-resolver;"
-                              f"pip3 install fedml=={upgrade_version} --use-deprecated=legacy-resolver")
-                else:
-                    os.system(f"pip uninstall -y fedml;pip3 uninstall -y fedml;"
-                              f"pip install fedml=={upgrade_version};"
-                              f"pip3 install fedml=={upgrade_version}")
-            else:
-                if python_ver_major == 3 and python_ver_minor == 7:
-                    os.system(f"pip uninstall -y fedml;pip3 uninstall -y fedml;"
-                              f"pip install --index-url https://test.pypi.org/simple/ "
-                              f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version} "
-                              f"--use-deprecated=legacy-resolver;"
-                              f"pip3 install --index-url https://test.pypi.org/simple/ "
-                              f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version} "
-                              f"--use-deprecated=legacy-resolver")
-                else:
-                    os.system(f"pip uninstall -y fedml;pip3 uninstall -y fedml;"
-                              f"pip install --index-url https://test.pypi.org/simple/ "
-                              f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version};"
-                              f"pip3 install --index-url https://test.pypi.org/simple/ "
-                              f"--extra-index-url https://pypi.org/simple fedml=={upgrade_version}")
+
+            sys_utils.do_upgrade(self.version, upgrade_version)
+
             raise Exception("Upgrading...")
 
     def callback_start_train(self, topic, payload):
@@ -720,8 +697,6 @@ class FedMLClientRunner:
             return
         self.start_request_json = payload
         run_id = request_json["runId"]
-
-        self.ota_upgrade(payload, request_json)
 
         if self.run_process is not None and \
                 sys_utils.get_process_running_count(ClientConstants.CLIENT_LOGIN_PROGRAM) >= 2:
@@ -749,6 +724,8 @@ class FedMLClientRunner:
         self.args.run_id = run_id
         logging.info("start the log processor")
         MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(run_id, self.edge_id)
+
+        self.ota_upgrade(payload, request_json)
 
         # Start server with multiprocessing mode
         self.request_json = request_json
@@ -1107,7 +1084,7 @@ class FedMLClientRunner:
         python_program = get_python_program()
         local_api_process = ClientConstants.exec_console_with_script(
             "{} -m uvicorn fedml.cli.edge_deployment.client_api:api --host 0.0.0.0 --port {} "
-            "--reload --log-level critical".format(python_program,
+            "--log-level critical".format(python_program,
                                                    ClientConstants.LOCAL_CLIENT_API_PORT),
             should_capture_stdout=False,
             should_capture_stderr=False
