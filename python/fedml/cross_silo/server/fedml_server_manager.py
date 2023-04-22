@@ -69,8 +69,7 @@ class FedMLServerManager(FedMLCommManager):
             # and transfer when click "Create Model Card"
             model_input_url = mlops.log_training_model_input_info(list(input_shape), list(input_type))
         except Exception as e:
-            logging.info("exception when processing model net and model input info: {}".format(
-                traceback.format_exc()))
+            logging.info("Cannot get dummy input size or shape for model serving")
 
     def register_message_receive_handlers(self):
         logging.info("register_message_receive_handlers------")

@@ -667,7 +667,7 @@ class FedMLServerRunner:
 
             sys_utils.do_upgrade(self.version, upgrade_version)
 
-            raise Exception("Upgrading...")
+            raise Exception("Restarting after upgraded...")
 
     def callback_start_train(self, topic=None, payload=None):
         logging.info("callback_start_train payload: {}".format(payload))
@@ -1504,8 +1504,8 @@ class FedMLServerRunner:
         try:
             self.mqtt_mgr.loop_forever()
         except Exception as e:
-            if str(e) == "Upgrading...":
-                logging.info("Upgrading...")
+            if str(e) == "Restarting after upgraded...":
+                logging.info("Restarting after upgraded...")
             else:
                 logging.info("Server tracing: {}".format(traceback.format_exc()))
             self.mqtt_mgr.loop_stop()
