@@ -34,9 +34,9 @@ class FedMLFHE:
             )
             self.total_client_number = int(args.client_num_in_total)
             self.is_enabled = True
-            script_path = os.getcwd()
+            # script_path = os.getcwd()
             # read in he context file
-            with open(script_path+'/context.pickle', 'rb') as handle:
+            with open(__file__[:-10]+'/context.pickle', 'rb') as handle:
                 self.context_file = pickle.load(handle)
             
 			# load the context into fhe_core
