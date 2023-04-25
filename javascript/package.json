@@ -1,7 +1,7 @@
 {
   "name": "@fedml/spider",
   "type": "module",
-  "version": "0.0.1-alpha.1",
+  "version": "0.0.1-alpha.2",
   "description": "A Lightweight and Customizable Federated Learning Javascript SDK for Web Browser, Backed by FedML MLOps (https://open.fedml.ai) ",
   "author": "fedml-inc",
   "license": "ISC",
@@ -51,7 +51,6 @@
   },
   "peerDependencies": {
     "@tensorflow/tfjs": "^4.4.0",
-    "@tensorflow/tfjs-vis": "^1.5.1",
     "aws-sdk": "^2.1360.0"
   },
   "dependencies": {

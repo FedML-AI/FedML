@@ -31,7 +31,6 @@ function createPlugins(minify = false) {
 
 const globals = {
   '@tensorflow/tfjs': 'tf',
-  '@tensorflow/tfjs-vis': 'tfvis',
   'aws-sdk': 'AWS',
 };
 

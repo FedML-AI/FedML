@@ -1,6 +1,5 @@
 import { ClientTrainer } from '../../core/alg_frame/client_trainer';
 import * as tf from '@tensorflow/tfjs';
-// import * as tfvis from '@tensorflow/tfjs-vis';
 
 export class ModelTrainerCLS implements ClientTrainer {
   model: any;

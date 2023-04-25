@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>FedmlSpider.fedml_train</title>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0"></script>
+    <script src="https://unpkg.com/@fedml/spider@0.0.1-alpha.1/dist/umd/index.min.js"></script>
+  </head>
+  
+  <style>
+    :root {
+      --theme: #6e63a3;
+    }
+    .form-item {
+      display: flex;
+      flex-direction: column;
+      margin-top: 16px;
+      padding: 16px;
+    }
+
+    .label {
+      font-size: 1.4em;
+      margin-bottom: 8px;
+    }
+
+    textarea,
+    input,
+    button {
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid var(--theme);
+      box-shadow: 0px 0px 2px 0 var(--theme);
+      font-size: 1.4em;
+    }
+    textarea:hover,
+    input:hover,
+    button:hover {
+      transition: all 0.2s ease;
+      box-shadow: 6px 6px 2px 0 var(--theme);
+    }
+    #err_info {
+      color: orange;
+      font-size: 0.9em;
+    }
+  </style>
+  <body>
+    <h1>FedmlSpider.fedml_train</h1>
+    <form id="form">
+      <div class="form-item">
+        <span class="label">run_args:<span id="err_info"></span></span>
+        <textarea name="run_args" placeholder="JSON Format"></textarea>
+      </div>
+      <div class="form-item">
+        <span class="label">client_id:</span>
+        <input name="client_id" placeholder="client_id" />
+      </div>
+    </form>
+    <div class="form-item">
+      <button id="startBtn">Start Train</button>
+    </div>
+    <script>
+      console.log('FedmlSpider', FedmlSpider);
+      const btn = document.querySelector('#startBtn');
+      /* @type {HTMLFormElement} */
+      const form = document.querySelector('#form');
+      const err_info = document.querySelector('#err_info');
+      const run_args = document.querySelector('[name=run_args]');
+      const client_id = document.querySelector('[name=client_id]');
+
+      run_args.addEventListener('input', () => {
+        validateRunArgs();
+      });
+
+      function validateRunArgs() {
+        try {
+          err_info.style.display = 'none';
+          const json = JSON.parse(run_args.value);
+          const jsonTip = JSON.stringify(json, null, 2);
+          run_args.setAttribute('title', jsonTip);
+          return true;
+        } catch (error) {
+          err_info.style.display = 'block';
+          err_info.textContent = 'Invalid json format, please checkout again';
+          return false;
+        }
+      }
+
+      btn.addEventListener('click', function (evt) {
+        if (btn.hasAttribute('disabled')) return;
+        
+        if (validateRunArgs()) {
+          // const entries = Array.from(form.querySelectorAll('[name]')).map((item) => [item.name, item.name === 'run_args' ? JSON.parse(item.value) : item.value])
+          FedmlSpider.fedml_train(JSON.parse(run_args.value), client_id.value)
+            .then(() => {
+              btn.setAttribute('disabled', true);
+            })
+            .catch((err) => {
+              console.error(err);
+              alert((err && err.message) || 'ohh');
+              btn.removeAttribute('disabled')
+            })
+            .finally(() => {
+              btn.removeAttribute('disabled')
+            });
+        }
+      });
+    </script>
+  </body>
+</html>
