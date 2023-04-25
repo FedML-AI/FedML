@@ -6,14 +6,7 @@ import { Message } from './message';
 import type { Observer } from './observer';
 import { CommunicationConstants } from './constants';
 import { S3Storage } from './remote_storage';
-// import { computed } from 'vue';
-// import { useAppStore } from '/@/store/modules/app';
-// import { useGlobSetting } from '/@/hooks/setting';
 
-// const { mqttUrl } = useGlobSetting();
-// const appStore = useAppStore();
-// const currClient = computed(() => appStore.getClient);
-const mqttUrl = 'wss://open-dev.fedml.ai/mqtt';
 export class MqttS3MultiClientsCommManager implements BaseCommunicationManager {
   // mqtt config
   config_path;
@@ -50,6 +43,7 @@ export class MqttS3MultiClientsCommManager implements BaseCommunicationManager {
   _subscribed_listeners;
   _published_listeners;
   _passthrough_listeners;
+  web_mqtt_url;
   constructor(
     config_path,
     s3_config_path,
@@ -61,11 +55,13 @@ export class MqttS3MultiClientsCommManager implements BaseCommunicationManager {
     this.broker_port = null;
     this.broker_host = null;
     this.mqtt_pwd = null;
+    this.config_path = config_path;
+    this.s3_config_path = s3_config_path;
     this.keepalive_time = 180;
     this.topic_in = topic_in;
     this.client_id_list = args.client_id_list;
     this._topic = 'fedml_' + this.topic_in + '_';
-    this.s3_storage = new S3Storage(s3_config_path);
+    this.s3_storage = new S3Storage(this.s3_config_path);
     this._connected_listeners = [];
     this._subscribed_listeners = [];
     this._published_listeners = [];
@@ -95,7 +91,7 @@ export class MqttS3MultiClientsCommManager implements BaseCommunicationManager {
     }
     this.client_num = client_num;
     console.log('mqtt_s3.init: client_num = ', client_num);
-    this.set_config_from_objects(config_path);
+    // this.set_config_from_objects(config_path);
     this.client_active_list = {};
     this.last_will_msg = JSON.stringify({
       ID: this.edge_id,
@@ -108,10 +104,10 @@ export class MqttS3MultiClientsCommManager implements BaseCommunicationManager {
       status: CommunicationConstants.MSG_CLIENT_STATUS_OFFLINE,
     });
     this.options = {
-      username: 'admin',
-      password: 'exfedml4321CCC',
+      username: this.config_path.MQTT_USER,
+      password: this.config_path.MQTT_PWD,
       cleanSession: false,
-      keepAlive: 180,
+      keepAlive: this.config_path.MQTT_KEEPALIVE,
       clientId: 'mqttjs_' + Math.random().toString(16).substr(2, 8),
       connectTimeout: 15000,
       will: {
@@ -121,17 +117,14 @@ export class MqttS3MultiClientsCommManager implements BaseCommunicationManager {
         retain: true,
       },
     };
-    const connectUrl = mqttUrl;
+    const connectUrl = this.config_path.MQTT_WEB_HOST;
     this.mqtt_mgr = mqtt.connect(connectUrl, this.options);
-    // this.mqtt_mgr = currClient.value;
     this.mqtt_mgr.on('connect', () => {
       console.log('Connected');
       this.on_connect();
       this.callback_connected_listener(this.mqtt_mgr);
     });
     this.mqtt_mgr.on('message', async (topic, message, packet) => {
-      // message is Buffer
-      // this.on_message(message);
       console.log('ML Weights Topic: ', topic);
       if (packet.retain) {
         console.log('Received retain message, just return.');

@@ -63,6 +63,7 @@ export class FedMLCommManager {
       BROKER_PORT: data.mqtt_config.BROKER_PORT,
       MQTT_KEEPALIVE: data.mqtt_config.MQTT_KEEPALIVE,
       MQTT_USER: data.mqtt_config.MQTT_USER,
+      MQTT_WEB_HOST: data.mqtt_config.mqttWssHost,
     };
     const s3_config = {
       CN_S3_SAK: data.s3_config.CN_S3_SAK,
