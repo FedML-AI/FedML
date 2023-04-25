@@ -16,7 +16,7 @@
 
 - Install peer dependencies
 
-  `npm i @tensorflow/tfjs @tensorflow/tfjs-vis -S`
+  `npm i @tensorflow/tfjs -S`
 
 - Import `fedml_train` function to start train
   ``` javascript
