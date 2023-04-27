@@ -1,17 +1,23 @@
+<div align="center">
+ <img src="assets/fedml_logo_light_mode.png" width="400px">
+</div>
+
 # FedLLM: Foundational Ecosystem Design for LLM
 
 [FedLLM](https://blog.fedml.ai/releasing-fedllm-build-your-own-large-language-models-on-proprietary-data-using-the-fedml-platform/)
-is an MLOps-supported training pipeline to help users build their own large language model on proprietary/private
+is an MLOps-supported training pipeline to help users build their own large language model (LLM) on proprietary/private
 data.
-This repo aims to illustrate how to use FedML for large language model training and fine-tuning.
+This repo aims to provide a minimalist example of efficient LLM training/fine-tuning
+and to illustrate how to use FedML for federated LLM training and fine-tuning.
 
 The repo contains:
 
 - A minimalist PyTorch implementation for conventional/centralized LLM training, fine-tuning, and evaluation.
     - The training and evaluation logic
-      uses [transformers.Trainer](https://huggingface.co/docs/transformers/main_classes/trainer)
-    - LoRA integration from [peft](https://github.com/huggingface/peft)
+      follows [transformers.Trainer](https://huggingface.co/docs/transformers/main_classes/trainer).
+    - LoRA integration from [peft](https://github.com/huggingface/peft).
     - Supports [DeepSpeed](https://www.deepspeed.ai/).
+    - Dataset implementation with [datasets](https://huggingface.co/docs/datasets/index).
 - Cross-silo Federated training/fine-tuning implementation with [FedML](https://github.com/FedML-AI/FedML).
 
 ## Getting Started
@@ -45,14 +51,22 @@ bash scripts/train_deepspeed.sh \
   ... # additional arguments
 ```
 
-**_Notice_**: when using PyTorch DDP with LoRA and gradient checkpointing, you need to turn off `find_unused_parameters`
+**_Notice_**: when using PyTorch DDP with LoRA and gradient checkpointing,
+you need to turn off `find_unused_parameters`
 by passing `--ddp_find_unused_parameters "False"` in the command line.
 
 ### Cross-silo Federated Learning
 
-To train/fine-tune in federated setting, you need to provide a FedML config file. An example can be found
-in [fedml_config.yaml](fedml_config/fedml_config.yaml).
+To train/fine-tune in federated setting, you need to provide a FedML config file.
+An example can be found in [fedml_config.yaml](fedml_config/fedml_config.yaml).
 You can have different config file for each client or server.
+To launch an experiment, a `RUN_ID` should be provided. For each experiment, the same `RUN_ID` should be used across all
+the client(s) and server.
+
+**Notice**: since we use `RUN_ID` to uniquely identify experiments,
+we recommend that you carefully choose the `RUN_ID`.
+You may also generate a UUID for your `RUN_ID` with built-in Python module `uuid`;
+e.g. use `RUN_ID="$(python -c "import uuid; print(uuid.uuid4().hex)")"` in your shell.
 
 Example scripts:
 
@@ -83,9 +97,9 @@ We have tested our implement with the following setup:
 - Ubuntu `20.04.5 LTS`
 - CUDA `11.8`, `11.7` and `11.6`
 - Python `3.8.13`
+    - `fedml==0.8.3`
     - `torch==0.2.0`
     - `torchvision==0.15.1`
-    - `fedml==0.8.3`
     - `transformers==4.28.1`
     - `peft @ git+https://github.com/huggingface/peft.git@3890665e6082bdc354d4c3a26f3bf42ecedaaa81`
     - `datasets==2.11.0`
