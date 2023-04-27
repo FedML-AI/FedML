@@ -20,6 +20,7 @@ from peft import (
     PeftModelForCausalLM,
     TaskType,
 )
+import torch
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -160,8 +161,12 @@ class SavePeftModelCallback(TrainerCallback):
             model = kwargs.get("model", None)
 
             if isinstance(model, PeftModel):
+                # when using DeepSpeed Zero 3, model weights need to be converted.
+                # conversion is done by Trainer, we need to load the saved weights manually
+                checkpoint = torch.load(str(checkpoint_dir / "pytorch_model.bin"), map_location="cpu")
+
                 peft_model_path = checkpoint_dir / "adapter_model"
-                model.save_pretrained(str(peft_model_path))
+                model.save_pretrained(str(peft_model_path), state_dict=checkpoint)
 
         return control
 
