@@ -165,6 +165,8 @@ docker container kill $(docker ps -q)
 This tutorial will guide you to deploy your fedml client and server to target Kubernetes pods running on GPU/CPU physical nodes.
 
 The entire workflow is as follows:
+
+(k8s deployment file is located in: https://github.com/FedML-AI/FedML/tree/master/installation/install_on_k8s/fedml-edge-client-server)
 1. In the file fedml-edge-client-server/deployment-client.yml, modify the variable ACCOUNT_ID to your desired value
 2. Deploy the fedml client:  ```kubectl apply -f ./fedml-edge-client-server/deployment-client.yml```
 3. In the file fedml-edge-client-server/deployment-server.yml, modify the variable ACCOUNT_ID to your desired value
