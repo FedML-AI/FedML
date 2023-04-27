@@ -255,8 +255,6 @@ EXPOSE 22
 # Supervisor container startup
 ##############################################################################
 ADD ./x86-64/supervisord.conf /etc/supervisor/supervisord.conf
-ADD ./x86-64/sync_all_nodes.sh /supervised-scripts/sync_all_nodes.sh
-RUN sudo chmod 755 supervised-scripts/sync_all_nodes.sh
 
 ##############################################################################
 # Add docker location file
