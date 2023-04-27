@@ -11,5 +11,5 @@ it includes all Dockerfile for building fedml training client, server and model 
 2. k8s: 
 it includes the deployment file or Helm Charts for deploying fedml training client, server and model serving components.
 
-4. scripts:
+3. scripts:
 it includes related scripts for building the Docker Images which will be used in the Dockerfile.
