@@ -30,6 +30,7 @@ torchrun \
   --bf16 "True" \
   --use_lora \
   --gradient_checkpointing "True" \
+  --ddp_find_unused_parameters "False" \
   --per_device_train_batch_size 6 \
   --per_device_eval_batch_size 6 \
   --learning_rate "5e-6" \
@@ -45,4 +46,4 @@ torchrun \
   --save_strategy "steps" \
   --eval_accumulation_steps 4 \
   --report_to "tensorboard" \
-  "${@}"
+  "${@:4}" # skip first 3 arguments

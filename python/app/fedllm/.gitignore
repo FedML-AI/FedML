@@ -1,3 +1,6 @@
+# include all in this folder and its subfolders
+!/**
+
 # CMake
 cmake-build-*/
 
