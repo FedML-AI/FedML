@@ -23,7 +23,7 @@ if [ "$build_arm_arch_images" = "" ]; then
   OUTPUT_IMAGE="fedml/fedml:latest-torch1.13.1-cuda11.6-cudnn8-devel"
   CURRENT_IMAGE="fedml/fedml:${FEDML_VERSION}-torch1.13.1-cuda11.6-cudnn8-devel"
 
-  cd ./docker
+  cd ./installation/build_fedml_docker
   docker rmi $OUTPUT_IMAGE
   docker rmi $CURRENT_IMAGE
   bash build-docker.sh $ARCH $OS $DISTRO $PYTHON_VERSION $PYTORCH_VERSION $NCCL_VERSION $CUDA_VERSION \
@@ -40,7 +40,7 @@ if [ "$build_arm_arch_images" != "" ]; then
   NVIDIA_BASE_IMAGE="nvidia/cuda:11.6.1-cudnn8-devel-ubuntu20.04@sha256:1a06a6cc47ba6ade96c646231c3d0f3216f9b32fb1420f88e46616eea478a661"
   CURRENT_IMAGE="fedml/fedml:${FEDML_VERSION}-arm64-torch1.13.1-cuda11.6-cudnn8-devel"
 
-  cd ./docker
+  cd ./installation/build_fedml_docker
   docker rmi $OUTPUT_IMAGE
   docker rmi $CURRENT_IMAGE
   bash build-docker.sh $ARCH $OS $DISTRO $PYTHON_VERSION $PYTORCH_VERSION $NCCL_VERSION $CUDA_VERSION \
@@ -56,7 +56,7 @@ if [ "$build_arm_arch_images" != "" ]; then
   NVIDIA_BASE_IMAGE="nvidia/cuda:11.6.1-cudnn8-devel-ubuntu18.04@sha256:1a06a6cc47ba6ade96c646231c3d0f3216f9b32fb1420f88e46616eea478a661"
   CURRENT_IMAGE="fedml/fedml:${FEDML_VERSION}-nvidia-jetson-l4t-ml-r35.1.0-py3"
 
-  cd ./docker
+  cd ./installation/build_fedml_docker
   docker rmi $OUTPUT_IMAGE
   docker rmi $CURRENT_IMAGE
   bash build-docker.sh $ARCH $OS $DISTRO $PYTHON_VERSION $PYTORCH_VERSION $NCCL_VERSION $CUDA_VERSION \
@@ -72,7 +72,7 @@ if [ "$build_arm_arch_images" != "" ]; then
   #NVIDIA_BASE_IMAGE="nvidia/cuda:11.6.1-cudnn8-devel-ubuntu18.04@sha256:1a06a6cc47ba6ade96c646231c3d0f3216f9b32fb1420f88e46616eea478a661"
   #CURRENT_IMAGE="fedml/fedml:${FEDML_VERSION}-raspberrypi4-32-py38"
 
-  cd ./docker
+  cd ./installation/build_fedml_docker
   docker rmi $OUTPUT_IMAGE
   docker rmi $CURRENT_IMAGE
   bash build-docker.sh $ARCH $OS $DISTRO $PYTHON_VERSION $PYTORCH_VERSION $NCCL_VERSION $CUDA_VERSION \
@@ -88,7 +88,7 @@ if [ "$build_arm_arch_images" != "" ]; then
   NVIDIA_BASE_IMAGE="nvidia/cuda:11.6.1-cudnn8-devel-ubuntu20.04@sha256:1a06a6cc47ba6ade96c646231c3d0f3216f9b32fb1420f88e46616eea478a661"
   CURRENT_IMAGE="fedml/fedml:${FEDML_VERSION}-raspberrypi4-64-py38"
 
-  cd ./docker
+  cd ./installation/build_fedml_docker
   docker rmi $OUTPUT_IMAGE
   docker rmi $CURRENT_IMAGE
   bash build-docker.sh $ARCH $OS $DISTRO $PYTHON_VERSION $PYTORCH_VERSION $NCCL_VERSION $CUDA_VERSION \
