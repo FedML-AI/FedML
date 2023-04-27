@@ -1,10 +1,11 @@
-from .client import client_initializer
-from ..core import ClientTrainer
+from fedml.core import ServerAggregator
 
 
-class FedMLCheetahLLMClient:
-    def __init__(self, args, device, dataset, model, model_trainer: ClientTrainer = None):
+class FedMLCheetahServer:
+    def __init__(self, args, device, dataset, model, server_aggregator: ServerAggregator = None):
         if args.federated_optimizer == "FedAvg":
+            from fedml.cross_silo.server import server_initializer
+
             [
                 train_data_num,
                 test_data_num,
@@ -15,7 +16,7 @@ class FedMLCheetahLLMClient:
                 test_data_local_dict,
                 class_num,
             ] = dataset
-            client_initializer.init_client(
+            server_initializer.init_server(
                 args,
                 device,
                 args.comm,
@@ -23,10 +24,12 @@ class FedMLCheetahLLMClient:
                 args.worker_num,
                 model,
                 train_data_num,
-                train_data_local_num_dict,
+                train_data_global,
+                test_data_global,
                 train_data_local_dict,
                 test_data_local_dict,
-                model_trainer,
+                train_data_local_num_dict,
+                server_aggregator,
             )
 
         elif args.federated_optimizer == "LSA":
@@ -40,9 +43,10 @@ class FedMLCheetahLLMClient:
                 device,
                 dataset,
                 model,
-                model_trainer=model_trainer,
+                model_trainer=None,
                 preprocessed_sampling_lists=None,
             )
+
         elif args.federated_optimizer == "SA":
             from ..cross_silo.secagg.sa_fedml_api import FedML_SA_Horizontal
 
