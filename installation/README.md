@@ -165,10 +165,10 @@ docker container kill $(docker ps -q)
 This tutorial will guide you to deploy your fedml client and server to target Kubernetes pods running on GPU/CPU physical nodes.
 
 The entire workflow is as follows:
-1. In the file fedml-edge-client-server/deployment-client.yml, modify the variable ACCOUNT_ID to your desired value
-2. Deploy the fedml client:  ```kubectl apply -f ./fedml-edge-client-server/deployment-client.yml```
-3. In the file fedml-edge-client-server/deployment-server.yml, modify the variable ACCOUNT_ID to your desired value
-4. Deploy the fedml server:  ```kubectl apply -f ./fedml-edge-client-server/deployment-server.yml```
+1. In the file ./install_on_k8s/fedml-edge-client-server/deployment-client.yml, modify the variable ACCOUNT_ID to your desired value
+2. Deploy the fedml client:  ```kubectl apply -f ./install_on_k8s/fedml-edge-client-server/deployment-client.yml```
+3. In the file ./install_on_k8s/fedml-edge-client-server/deployment-server.yml, modify the variable ACCOUNT_ID to your desired value
+4. Deploy the fedml server:  ```kubectl apply -f ./install_on_k8s/fedml-edge-client-server/deployment-server.yml```
 5. Login the FedML MLOps platform (https://open.fedml.ai), the above deployed client and server will be found in the edge devices
 
 If you want to scale up or scal down the pods to your desired count, you may run the following command:
