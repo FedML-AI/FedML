@@ -2,48 +2,46 @@ common_args:
   training_type: "cross_silo"
   scenario: "horizontal"
   random_seed: 0
-#  deepspeed_config: #
 
 data_args:
-  dataset: "databricks-dollys"
+  dataset: "databricks-dollys"  # dataset name
   data_cache_dir: ~/fedml_data
-  dataset_path: ".data/databricks-dolly-15k.jsonl"
-  test_dataset_size: 100
+  # below copied from scripts/train_deepspeed.sh
+  dataset_path:
+    - ".data/databricks-dolly-15k.jsonl"
+  test_dataset_size: 200
 
 model_args:
-  #  model: "lr"
-  model_name: "EleutherAI/pythia-70m"
+  # below copied from scripts/train_deepspeed.sh
+  model_name: "EleutherAI/pythia-6.9b"
   use_lora: True
-  per_device_train_batch_size: 1
-  per_device_eval_batch_size: 1
 
 train_args:
   federated_optimizer: "FedAvg"
   client_optimizer: sgd
   server_optimizer: "FedAvg"
   client_id_list:
-  client_num_in_total: 2
-  client_num_per_round: 2
+  client_num_in_total: 2  # set number of clients
+  client_num_per_round: 2  # choose from 1~client_num_in_total
   comm_round: 50
-  #  epochs: 1
-  #  batch_size: 10
-  #  learning_rate: 0.03
-  #  weight_decay: 0.001
+  # below copied from scripts/train_deepspeed.sh
+  deepspeed: "configs/ds_z3_bf16_config.json"
   seed: 1234
   fp16: False
-  bf16: False
-  deepspeed: "configs/ds_z3_cpu_config.json"
-  gradient_checkpointing: False
+  bf16: True
+  gradient_checkpointing: True
+  per_device_train_batch_size: 2
+  per_device_eval_batch_size: 2
   learning_rate: 0.000005
   warmup_steps: 50
-  num_train_epochs: 1
-  output_dir: ".logs/debug"
+  num_train_epochs: 1   # number of training epoch for client on each round
+  output_dir: ".logs/FedML/dolly_pythia-6.9b"
   logging_steps: 50
-  eval_steps: 50
+  eval_steps: 200
   save_steps: 200
   save_total_limit: 20
   logging_strategy: "steps"
-  evaluation_strategy: "no"
+  evaluation_strategy: "no"  # should be turned off
   save_strategy: "steps"
   eval_accumulation_steps: 4
 
@@ -51,15 +49,12 @@ validation_args:
   frequency_of_the_test: 5
 
 device_args:
-  worker_num: 2
   using_gpu: True
 
 comm_args:
   backend: "MQTT_S3"
   is_mobile: 0
 
-
 tracking_args:
-  log_file_dir: ./log
   enable_wandb: False
   wandb_only_server: True
