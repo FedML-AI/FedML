@@ -5,7 +5,7 @@ from .constants import (
     FEDML_SIMULATION_TYPE_NCCL,
     FEDML_TRAINING_PLATFORM_CROSS_SILO,
     FEDML_TRAINING_PLATFORM_CROSS_DEVICE,
-    FEDML_TRAINING_PLATFORM_CHEETAH_LLM,
+    FEDML_TRAINING_PLATFORM_CHEETAH,
     FEDML_TRAINING_PLATFORM_SERVING,
     FEDML_SIMULATION_TYPE_MPI,
     FEDML_SIMULATION_TYPE_SP,
@@ -34,8 +34,8 @@ class FedMLRunner:
         elif args.training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO:
             init_runner_func = self._init_cross_silo_runner
 
-        elif args.training_type == FEDML_TRAINING_PLATFORM_CHEETAH_LLM:
-            init_runner_func = self._init_cheetah_llm_runner
+        elif args.training_type == FEDML_TRAINING_PLATFORM_CHEETAH:
+            init_runner_func = self._init_cheetah_runner
 
         elif args.training_type == FEDML_TRAINING_PLATFORM_SERVING:
             init_runner_func = self._init_model_serving_runner
@@ -149,17 +149,17 @@ class FedMLRunner:
             raise Exception("no such setting")
         return runner
 
-    def _init_cheetah_llm_runner(
+    def _init_cheetah_runner(
             self, args, device, dataset, model, client_trainer=None, server_aggregator=None
     ):
         if args.role == "client":
-            from .cheetah_llm import Client
+            from .cheetah import Client
 
             runner = Client(
                 args, device, dataset, model, client_trainer
             )
         elif args.role == "server":
-            from .cheetah_llm import Server
+            from .cheetah import Server
 
             runner = Server(
                 args, device, dataset, model, server_aggregator

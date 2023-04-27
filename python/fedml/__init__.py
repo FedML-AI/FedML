@@ -17,7 +17,7 @@ from .constants import (
     FEDML_SIMULATION_TYPE_NCCL,
     FEDML_TRAINING_PLATFORM_CROSS_SILO,
     FEDML_TRAINING_PLATFORM_CROSS_DEVICE,
-    FEDML_TRAINING_PLATFORM_CHEETAH_LLM,
+    FEDML_TRAINING_PLATFORM_CHEETAH,
     FEDML_TRAINING_PLATFORM_SERVING,
 )
 from .core.common.ml_engine_backend import MLEngineBackend
@@ -25,7 +25,7 @@ from .core.common.ml_engine_backend import MLEngineBackend
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.8.4a3"
+__version__ = "0.8.4a4"
 
 
 def init(args=None):
@@ -84,8 +84,8 @@ def init(args=None):
 
     elif args.training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE:
         args = init_cross_device(args)
-    elif args.training_type == FEDML_TRAINING_PLATFORM_CHEETAH_LLM:
-        args = init_cheetah_llm(args)
+    elif args.training_type == FEDML_TRAINING_PLATFORM_CHEETAH:
+        args = init_cheetah(args)
     elif args.training_type == FEDML_TRAINING_PLATFORM_SERVING:
         args = init_model_serving(args)
     else:
@@ -327,7 +327,7 @@ def init_cross_silo_hierarchical(args):
     return args
 
 
-def init_cheetah_llm(args):
+def init_cheetah(args):
     args.n_proc_in_silo = 1
     args.proc_rank_in_silo = 0
     manage_mpi_args(args)
@@ -402,8 +402,8 @@ from .launch_cross_silo_horizontal import run_cross_silo_client
 from .launch_cross_silo_hi import run_hierarchical_cross_silo_server
 from .launch_cross_silo_hi import run_hierarchical_cross_silo_client
 
-from .launch_cheeath_llm import run_cheetah_llm_server
-from .launch_cheeath_llm import run_cheetah_llm_client
+from .launch_cheeath import run_cheetah_server
+from .launch_cheeath import run_cheetah_client
 
 from .launch_serving import run_model_serving_client
 from .launch_serving import run_model_serving_server
@@ -426,8 +426,8 @@ __all__ = [
     "run_cross_silo_client",
     "run_hierarchical_cross_silo_server",
     "run_hierarchical_cross_silo_client",
-    "run_cheetah_llm_server",
-    "run_cheetah_llm_client",
+    "run_cheetah_server",
+    "run_cheetah_client",
     "run_model_serving_client",
     "run_model_serving_server",
     "run_mnn_server",
