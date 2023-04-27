@@ -40,7 +40,8 @@ from ...core.mlops.mlops_status import MLOpsStatus
 from ..comm_utils.sys_utils import get_sys_runner_info, get_python_program
 from .device_model_cache import FedMLModelCache
 from .device_model_msg_object import FedMLModelMsgObject
-from ...inference.fedml_server import FedMLInferenceServer
+from ...serving.fedml_server import FedMLModelServingServer
+
 
 class RunnerError(BaseException):
     """ Runner failed. """
@@ -117,11 +118,11 @@ class FedMLServerRunner:
         downloaded = filesize if downloaded > filesize else downloaded
         progress = (downloaded / filesize * 100) if filesize != 0 else 0
         progress_int = int(progress)
-        downloaded_kb = format(downloaded/1024, '.2f')
-        
+        downloaded_kb = format(downloaded / 1024, '.2f')
+
         # since this hook funtion is stateless, we need a state to avoid printing progress repeatly
         if count == 0:
-            self.prev_download_progress = 0 
+            self.prev_download_progress = 0
         if progress_int != self.prev_download_progress and progress_int % 5 == 0:
             self.prev_download_progress = progress_int
             logging.info("package downloaded size {} KB, progress {}%".format(downloaded_kb, progress_int))
@@ -228,11 +229,11 @@ class FedMLServerRunner:
             model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \
             inference_end_point_id, use_gpu, memory_size, model_version = self.parse_model_run_params(self.request_json)
 
-        inference_server = FedMLInferenceServer(self.args,
-                                                end_point_name,
-                                                model_name,
-                                                model_version,
-                                                inference_request=self.request_json)
+        inference_server = FedMLModelServingServer(self.args,
+                                                   end_point_name,
+                                                   model_name,
+                                                   model_version,
+                                                   inference_request=self.request_json)
         inference_server.run()
 
     def run_impl(self):
@@ -548,7 +549,7 @@ class FedMLServerRunner:
 
         model_status = payload_json["model_status"]
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
-        FedMLModelCache.get_instance(self.redis_addr, self.redis_port).\
+        FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             set_deployment_status(end_point_id, end_point_name,
                                   model_name, model_version,
                                   device_id, payload)
@@ -753,7 +754,7 @@ class FedMLServerRunner:
             server_runner.redis_password = self.redis_password
             if self.run_process_event is None:
                 self.run_process_event = multiprocessing.Event()
-            #server_runner.run(self.run_process_event)
+            # server_runner.run(self.run_process_event)
             self.run_process_event.clear()
             server_runner.run_process_event = self.run_process_event
             self.model_runner_mapping[run_id] = server_runner
@@ -1213,7 +1214,7 @@ class FedMLServerRunner:
 
         ip = requests.get('https://checkip.amazonaws.com').text.strip()
         fedml_ver, exec_path, os_ver, cpu_info, python_ver, torch_ver, mpi_installed, \
-        cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem = get_sys_runner_info()
+            cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem = get_sys_runner_info()
         json_params = {
             "accountid": account_id,
             "deviceid": device_id,
