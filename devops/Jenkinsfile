@@ -171,6 +171,8 @@ pipeline {
 
                 sh 'docker build --network=host -f ./devops/dockerfile/edge-server/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_EDGE_SERVER:$VERSION_DEV --build-arg VERSION=$VERSION_DEV .'
 
+                sh 'docker build --network=host -f ./devops/dockerfile/edge-client-server/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_EDGE_CLIENT_SERVER:$REGISTRY_DEV --build-arg VERSION=$REGISTRY_DEV .'
+
                 sh 'docker build --network=host -f ./devops/dockerfile/model-inference-backend/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BACKEND:latest .'
                 sh 'docker build --network=host -f ./devops/dockerfile/model-inference-ingress/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_DEV --build-arg VERSION=$VERSION_DEV .'
                 sh 'docker build --network=host -f ./devops/dockerfile/model-premise-master/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_PREMISE_MASTER:$VERSION_DEV --build-arg VERSION=$VERSION_DEV .'
@@ -274,6 +276,9 @@ pipeline {
               withCredentials([usernamePassword(passwordVariable : 'DOCKERHUB_PASSWORD' ,usernameVariable : 'DOCKERHUB_USERNAME' ,credentialsId : "$DOCKERHUB_CREDENTIAL_ID" ,)]) {
                  sh 'docker login --username $DOCKERHUB_USERNAME --password $DOCKERHUB_PASSWORD'
 
+                 sh 'docker tag $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_EDGE_CLIENT_SERVER:$VERSION_DEV fedml/fedml-edge-client-server:latest'
+                 sh 'docker push fedml/fedml-edge-client-server:latest'
+
                  sh 'docker tag $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BACKEND:latest fedml/fedml-inference-backend:latest'
                  sh 'docker push fedml/$APP_NAME_MODEL_INFERENCE_BACKEND:latest'
 
@@ -371,7 +376,7 @@ pipeline {
               withCredentials([usernamePassword(passwordVariable : 'DOCKERHUB_PASSWORD' ,usernameVariable : 'DOCKERHUB_USERNAME' ,credentialsId : "$DOCKERHUB_CREDENTIAL_ID" ,)]) {
                  sh 'docker login --username $DOCKERHUB_USERNAME --password $DOCKERHUB_PASSWORD'
 
-                 sh 'docker tag $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_EDGE_CLIENT_SERVER:latest fedml/fedml-edge-client-server:latest'
+                 sh 'docker tag $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_EDGE_CLIENT_SERVER:$VERSION_PRODUCTION fedml/fedml-edge-client-server:latest'
                  sh 'docker push fedml/fedml-edge-client-server:latest'
 
                  sh 'docker tag $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BACKEND:latest fedml/fedml-inference-backend:latest'
