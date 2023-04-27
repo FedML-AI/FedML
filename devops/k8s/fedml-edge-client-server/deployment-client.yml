@@ -17,10 +17,11 @@ spec:
       containers:
       - name: fedml-client
         image: fedml/fedml-edge-client-server:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 9999
         env:
         - name: ROLE
           value: "client"
         - name: ACCOUNT_ID
-          value: "2335"
+          value: "1606"
