@@ -1,6 +1,7 @@
 # FedLLM: Foundational Ecosystem Design for LLM
 
-FedLLM is an MLOps-supported training pipeline to help users build their own large language model on proprietary/private
+[FedLLM](https://blog.fedml.ai/releasing-fedllm-train-your-own-large-language-models-on-proprietary-data-using-the-fedml-platform/)
+is an MLOps-supported training pipeline to help users build their own large language model on proprietary/private
 data.
 This repo aims to illustrate how to use FedML for large language model training and fine-tuning.
 
@@ -44,9 +45,13 @@ bash scripts/train_deepspeed.sh \
   ... # additional arguments
 ```
 
+**_Notice_**: when using PyTorch DDP with LoRA and gradient checkpointing, you need to turn off `find_unused_parameters`
+by passing `--ddp_find_unused_parameters "False"` in the command line.
+
 ### Cross-silo Federated Learning
 
-To train/fine-tune in federated setting, you need to provide a FedML config file. An example can be found in [fedml_config.yaml](fedml_config/fedml_config.yaml).
+To train/fine-tune in federated setting, you need to provide a FedML config file. An example can be found
+in [fedml_config.yaml](fedml_config/fedml_config.yaml).
 You can have different config file for each client or server.
 
 Example scripts:
