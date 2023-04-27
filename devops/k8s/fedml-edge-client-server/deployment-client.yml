@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fedml-client-deployment
+  labels:
+    app: fedml-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fedml-client
+  template:
+    metadata:
+      labels:
+        app: fedml-client
+    spec:
+      containers:
+      - name: fedml-client
+        image: fedml/fedml-edge-client-server:latest
+        ports:
+        - containerPort: 9999
+        env:
+        - name: ROLE
+          value: "client"
+        - name: ACCOUNT_ID
+          value: "2335"

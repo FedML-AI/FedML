@@ -28,6 +28,8 @@ from .constants import (
     FEDML_TRAINING_PLATFORM_CROSS_SILO,
     FEDML_TRAINING_PLATFORM_CROSS_DEVICE,
     FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL,
+    FEDML_TRAINING_PLATFORM_CHEETAH_LLM,
+    FEDML_TRAINING_PLATFORM_SERVING,
 )
 
 
@@ -110,6 +112,10 @@ class Arguments:
                 print("training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO")
             elif training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE:
                 print("training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE")
+            elif training_type == FEDML_TRAINING_PLATFORM_CHEETAH_LLM:
+                print("training_type == FEDML_TRAINING_PLATFORM_CHEETAH_LLM")
+            elif training_type == FEDML_TRAINING_PLATFORM_SERVING:
+                print("training_type == FEDML_TRAINING_PLATFORM_SERVING")
             else:
                 raise Exception(
                     "no such a platform. training_type = {}, backend = {}".format(
@@ -142,6 +148,10 @@ class Arguments:
             elif training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO:
                 pass
             elif training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE:
+                pass
+            elif training_type == FEDML_TRAINING_PLATFORM_CHEETAH_LLM:
+                pass
+            elif training_type == FEDML_TRAINING_PLATFORM_SERVING:
                 pass
             else:
                 pass

@@ -25,6 +25,8 @@ from fedml.cli.comm_utils import sys_utils
 from fedml.cli.model_deployment import device_login_entry
 from fedml.cli.model_deployment.device_model_cards import FedMLModelCards
 from fedml.cli.server_deployment.job_manager import FedMLJobManager
+from fedml.cli.cli_utils import platform_is_valid
+from fedml.cli.server_deployment.app_manager import FedMLAppManager
 
 
 FEDML_MLOPS_BUILD_PRE_IGNORE_LIST = 'dist-packages,client-package.zip,server-package.zip,__pycache__,*.pyc,*.git'
@@ -86,7 +88,8 @@ def mlops_logs(client, server, docker, docker_rank):
 
 
 def display_client_logs():
-    run_id, edge_id = sys_utils.get_running_info(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
+    run_id, edge_id = sys_utils.get_running_info(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
+                                                 ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
     home_dir = expanduser("~")
     log_file = "{}/{}/fedml/logs/fedml-run-{}-edge-{}.log".format(
         home_dir, ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME, str(run_id), str(edge_id)
@@ -99,7 +102,8 @@ def display_client_logs():
 
 
 def display_server_logs():
-    run_id, edge_id = sys_utils.get_running_info(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
+    run_id, edge_id = sys_utils.get_running_info(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME,
+                                                 ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
     home_dir = expanduser("~")
     log_file = "{}/{}/fedml/logs/fedml-run-{}-edge-{}.log".format(
         home_dir, ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME, str(run_id), str(edge_id)
@@ -199,7 +203,8 @@ def mlops_login(
         pip_source_dir = os.path.dirname(__file__)
         login_cmd = os.path.join(pip_source_dir, "edge_deployment", "client_daemon.py")
         client_logout()
-        sys_utils.cleanup_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
+        sys_utils.cleanup_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
+                                        ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
         sys_utils.cleanup_all_fedml_client_learning_processes()
         sys_utils.cleanup_all_fedml_client_login_processes("client_login.py")
         sys_utils.cleanup_all_fedml_client_api_processes(kill_all=True)
@@ -253,7 +258,8 @@ def mlops_login(
         pip_source_dir = os.path.dirname(__file__)
         login_cmd = os.path.join(pip_source_dir, "server_deployment", "server_daemon.py")
         server_logout()
-        sys_utils.cleanup_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
+        sys_utils.cleanup_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME,
+                                        ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
         sys_utils.cleanup_all_fedml_server_learning_processes()
         sys_utils.cleanup_all_fedml_server_login_processes("server_login.py")
         sys_utils.cleanup_all_fedml_server_api_processes(kill_all=True)
@@ -314,7 +320,8 @@ def mlops_logout(client, server, docker, docker_rank):
             return
         sys_utils.cleanup_all_fedml_client_login_processes("client_daemon.py")
         client_logout()
-        sys_utils.cleanup_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME, ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
+        sys_utils.cleanup_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
+                                        ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
         sys_utils.cleanup_all_fedml_client_learning_processes()
         sys_utils.cleanup_all_fedml_client_login_processes("client_login.py")
         sys_utils.cleanup_all_fedml_client_api_processes(kill_all=True)
@@ -326,7 +333,8 @@ def mlops_logout(client, server, docker, docker_rank):
             return
         sys_utils.cleanup_all_fedml_server_login_processes("server_daemon.py")
         server_logout()
-        sys_utils.cleanup_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME, ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
+        sys_utils.cleanup_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME,
+                                        ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
         sys_utils.cleanup_all_fedml_server_learning_processes()
         sys_utils.cleanup_all_fedml_server_login_processes("server_login.py")
         sys_utils.cleanup_all_fedml_server_api_processes(kill_all=True)
@@ -334,6 +342,13 @@ def mlops_logout(client, server, docker, docker_rank):
 
 
 @cli.command("build", help="Build packages for MLOps platform (open.fedml.ai)")
+@click.option(
+    "--platform",
+    "-pf",
+    type=str,
+    default="octopus",
+    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive).",
+)
 @click.option(
     "--type",
     "-t",
@@ -368,13 +383,16 @@ def mlops_logout(client, server, docker, docker_rank):
     default="",
     help="the ignore list for copying files, the format is as follows: *.model,__pycache__,*.data*, ",
 )
-def mlops_build(type, source_folder, entry_point, config_folder, dest_folder, ignore):
+def mlops_build(platform, type, source_folder, entry_point, config_folder, dest_folder, ignore):
     click.echo("Argument for type: " + type)
     click.echo("Argument for source folder: " + source_folder)
     click.echo("Argument for entry point: " + entry_point)
     click.echo("Argument for config folder: " + config_folder)
     click.echo("Argument for destination package folder: " + dest_folder)
     click.echo("Argument for ignore lists: " + ignore)
+
+    if not platform_is_valid(platform):
+        return
 
     if type == "client" or type == "server":
         click.echo(
@@ -542,7 +560,7 @@ def build_mlops_package(
             "  is_using_local_data: ${FEDSYS.IS_USING_LOCAL_DATA}\n",
             "  synthetic_data_url: ${FEDSYS.SYNTHETIC_DATA_URL}\n",
             "  client_num_in_total: ${FEDSYS.CLIENT_NUM}\n",
-            ]
+        ]
     )
     mlops_pkg_conf_file.flush()
     mlops_pkg_conf_file.close()
@@ -585,18 +603,22 @@ def build_mlops_package(
 )
 @click.option(
 
-    "--mqtt_daemon", "-d", default=None, is_flag=True, help="check the connection to mqtt.fedml.ai (1883) with loop mode.",
+    "--mqtt_daemon", "-d", default=None, is_flag=True,
+    help="check the connection to mqtt.fedml.ai (1883) with loop mode.",
 )
 @click.option(
-    "--mqtt_s3_backend_server", "-msbs", default=None, is_flag=True, help="check the connection to mqtt.fedml.ai (1883) as mqtt+s3 server.",
+    "--mqtt_s3_backend_server", "-msbs", default=None, is_flag=True,
+    help="check the connection to mqtt.fedml.ai (1883) as mqtt+s3 server.",
 )
 @click.option(
-    "--mqtt_s3_backend_client", "-msbc", default=None, is_flag=True, help="check the connection to mqtt.fedml.ai (1883) as mqtt+s3 client.",
+    "--mqtt_s3_backend_client", "-msbc", default=None, is_flag=True,
+    help="check the connection to mqtt.fedml.ai (1883) as mqtt+s3 client.",
 )
 @click.option(
     "--mqtt_s3_backend_run_id", "-rid", type=str, default="fedml_diag_9988", help="mqtt+s3 run id.",
 )
-def mlops_diagnosis(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend_server, mqtt_s3_backend_client, mqtt_s3_backend_run_id):
+def mlops_diagnosis(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend_server, mqtt_s3_backend_client,
+                    mqtt_s3_backend_run_id):
     check_open = open
     check_s3 = s3
     check_mqtt = mqtt
@@ -671,6 +693,7 @@ def mlops_diagnosis(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend_server, mqtt_s3
         ]
         ).pid
 
+
 @cli.command(
     "env",
     help="collect the environment information to help debugging, including OS, Hardware Architecture, "
@@ -690,6 +713,124 @@ def launch(arguments):
 
     from fedml.cross_silo.client.client_launcher import CrossSiloLauncher
     CrossSiloLauncher.launch_dist_trainers(arguments[0], list(arguments[1:]))
+
+
+@cli.group("app")
+def app():
+    """
+    Manage applications on the MLOps platform..
+    """
+    pass
+
+
+@app.command("create", help="Create an application on the MLOps platform (open.fedml.ai).")
+@click.option(
+    "--platform",
+    "-pf",
+    type=str,
+    default="octopus",
+    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive).",
+)
+@click.option(
+    "--client_package", "-cp", type=str, help="client package path.",
+)
+@click.option(
+    "--server_package", "-sp", type=str, help="server package path.",
+)
+@click.option(
+    "--user", "-u", type=str, help="user id.",
+)
+@click.option(
+    "--api_key", "-k", type=str, help="user api key.",
+)
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help="interact with which version of ModelOps platform. It should be dev, test or release",
+)
+@click.option(
+    "--local_server",
+    "-ls",
+    type=str,
+    default="127.0.0.1",
+    help="local server address.",
+)
+def create_application(platform, application_name, client_package, server_package,
+                       user, api_key, version, local_server):
+    if user is None or api_key is None:
+        click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
+        return
+
+    client_package_file = os.path.basename(client_package)
+    server_package_file = os.path.basename(server_package)
+    client_package_url = client_package_file
+    server_package_url = server_package_file
+    FedMLJobManager.get_instance().set_config_version(version)
+    result = FedMLAppManager.get_instance().create_app(platform, application_name,
+                                                       client_package_url, client_package_file, server_package_url, server_package_file,
+                                                       user, api_key)
+    if result:
+        click.echo("Create application {} successfully.".format(application_name))
+    else:
+        click.echo("Failed to create application, please check your network connection "
+                   "whether could be access the MLOps platform.")
+
+
+@app.command("update", help="Update an application on the MLOps platform (open.fedml.ai).")
+@click.option(
+    "--platform",
+    "-pf",
+    type=str,
+    default="octopus",
+    help="The platform name at the MLOps platform (options: octopus, parrot, spider, beehive).",
+)
+@click.option(
+    "--client_package", "-cp", type=str, help="client package path.",
+)
+@click.option(
+    "--server_package", "-sp", type=str, help="server package path.",
+)
+@click.option(
+    "--user", "-u", type=str, help="user id.",
+)
+@click.option(
+    "--api_key", "-k", type=str, help="user api key.",
+)
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    default="release",
+    help="interact with which version of ModelOps platform. It should be dev, test or release",
+)
+@click.option(
+    "--local_server",
+    "-ls",
+    type=str,
+    default="127.0.0.1",
+    help="local server address.",
+)
+def update_application(platform, application_name, client_package, server_package,
+                       user, api_key, version, local_server):
+    if user is None or api_key is None:
+        click.echo("You must provide arguments for User Id and Api Key (use -u and -k options).")
+        return
+
+    client_package_file = os.path.basename(client_package)
+    server_package_file = os.path.basename(server_package)
+    client_package_url = client_package_file
+    server_package_url = server_package_file
+    FedMLJobManager.get_instance().set_config_version(version)
+    result = FedMLAppManager.get_instance().update_app(platform, application_name,
+                                                       client_package_url, client_package_file, server_package_url, server_package_file,
+                                                       user, api_key)
+    if result:
+        click.echo("Create application {} successfully.".format(application_name))
+    else:
+        click.echo("Failed to create application, please check your network connection "
+                   "whether could be access the MLOps platform.")
 
 
 @cli.group("jobs")
