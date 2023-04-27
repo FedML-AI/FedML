@@ -171,7 +171,7 @@ pipeline {
 
                 sh 'docker build --network=host -f ./devops/dockerfile/edge-server/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_EDGE_SERVER:$VERSION_DEV --build-arg VERSION=$VERSION_DEV .'
 
-                sh 'docker build --network=host -f ./devops/dockerfile/edge-client-server/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_EDGE_CLIENT_SERVER:$REGISTRY_DEV --build-arg VERSION=$REGISTRY_DEV .'
+                sh 'docker build --network=host -f ./devops/dockerfile/edge-client-server/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_EDGE_CLIENT_SERVER:$VERSION_DEV --build-arg VERSION=$VERSION_DEV .'
 
                 sh 'docker build --network=host -f ./devops/dockerfile/model-inference-backend/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_BACKEND:latest .'
                 sh 'docker build --network=host -f ./devops/dockerfile/model-inference-ingress/Dockerfile -t $REGISTRY_DEV/$DOCKER_NAMESPACE$APP_NAME_MODEL_INFERENCE_INGRESS:$VERSION_DEV --build-arg VERSION=$VERSION_DEV .'
