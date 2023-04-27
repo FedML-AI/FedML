@@ -153,14 +153,15 @@ class SavePeftModelCallback(TrainerCallback):
             state: TrainerState,
             control: TrainerControl,
             **kwargs
-    ):
-        # see https://github.com/huggingface/peft/issues/96#issuecomment-1460080427
-        checkpoint_dir = Path(args.output_dir) / f"{PREFIX_CHECKPOINT_DIR}-{state.global_step}"
-        model = kwargs.get("model", None)
+    ) -> TrainerControl:
+        if state.is_world_process_zero or (state.is_local_process_zero and args.save_on_each_node):
+            # see https://github.com/huggingface/peft/issues/96#issuecomment-1460080427
+            checkpoint_dir = Path(args.output_dir) / f"{PREFIX_CHECKPOINT_DIR}-{state.global_step}"
+            model = kwargs.get("model", None)
 
-        if isinstance(model, PeftModel):
-            peft_model_path = checkpoint_dir / "adapter_model"
-            model.save_pretrained(str(peft_model_path))
+            if isinstance(model, PeftModel):
+                peft_model_path = checkpoint_dir / "adapter_model"
+                model.save_pretrained(str(peft_model_path))
 
         return control
 
