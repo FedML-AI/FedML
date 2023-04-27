@@ -45,4 +45,4 @@ torchrun \
   --save_strategy "steps" \
   --eval_accumulation_steps 4 \
   --report_to "tensorboard" \
-  "${@}"
+  "${@:4}" # skip first 3 arguments
