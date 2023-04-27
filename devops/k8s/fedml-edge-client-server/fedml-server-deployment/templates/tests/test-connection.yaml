@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "fedml-server-deployment.fullname" . }}-test-connection"
+  labels:
+    {{- include "fedml-server-deployment.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['{{ include "fedml-server-deployment.fullname" . }}:{{ .Values.service.port }}']
+  restartPolicy: Never
