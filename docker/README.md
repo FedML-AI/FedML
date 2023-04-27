@@ -24,28 +24,42 @@ sudo apt-get install qemu binfmt-support qemu-user-static
 ```
 # https://docs.nvidia.com/deeplearning/nccl/release-notes/rel_2-12-10.html#rel_2-12-10
 
-ARCH=x86_64
-OS=ubuntu18.04
-DISTRO=ubuntu1804
-PYTHON_VERSION=3.7
-PYTORCH_VERSION=1.12.1
-NCCL_VERSION=2.9.9
-CUDA_VERSION=11.3
-bash build-docker.sh $ARCH $OS $DISTRO $PYTHON_VERSION $PYTORCH_VERSION $NCCL_VERSION $CUDA_VERSION
+ARCH="x86_64"
+OS="ubuntu20.04"
+DISTRO="ubuntu2004"
+PYTHON_VERSION="3.8"
+PYTORCH_VERSION="1.13.1"
+NCCL_VERSION="2.11.4"
+CUDA_VERSION="11.6"
+LIB_NCCL="2.11.4-1+cuda11.6"
+NVIDIA_BASE_IMAGE="nvidia/cuda:11.6.1-cudnn8-devel-ubuntu20.04"
+PYTORCH_EXTRA_INDEX_URL="https://download.pytorch.org/whl/cu116"
+PYTORCH_GEOMETRIC_URL="https://data.pyg.org/whl/torch-1.13.1+cu116.html"
+OUTPUT_IMAGE="fedml/fedml:latest-torch1.13.1-cuda11.6-cudnn8-devel"
+  
+bash build-docker.sh $ARCH $OS $DISTRO $PYTHON_VERSION $PYTORCH_VERSION $NCCL_VERSION $CUDA_VERSION \
+     $OUTPUT_IMAGE $NVIDIA_BASE_IMAGE $PYTORCH_EXTRA_INDEX_URL $PYTORCH_GEOMETRIC_URL $LIB_NCCL
 ```
 
 ## Build Docker Image (arm64v8)
 ```
 # https://docs.nvidia.com/deeplearning/nccl/release-notes/rel_2-12-10.html#rel_2-12-10
 
-ARCH=arm64
-OS=ubuntu20.04
-DISTRO=ubuntu2004
-PYTHON_VERSION=3.8
-PYTORCH_VERSION=1.12.1
-NCCL_VERSION=2.9.6
-CUDA_VERSION=11.3
-bash build-docker.sh $ARCH $OS $DISTRO $PYTHON_VERSION $PYTORCH_VERSION $NCCL_VERSION $CUDA_VERSION
+ARCH="arm64"
+OS="ubuntu20.04"
+DISTRO="ubuntu2004"
+PYTHON_VERSION="3.8"
+PYTORCH_VERSION="1.13.1"
+NCCL_VERSION="2.11.4"
+CUDA_VERSION="11.6"
+LIB_NCCL="2.11.4-1+cuda11.6"
+NVIDIA_BASE_IMAGE="nvidia/cuda:11.6.1-cudnn8-devel-ubuntu20.04"
+PYTORCH_EXTRA_INDEX_URL="https://download.pytorch.org/whl/cu116"
+PYTORCH_GEOMETRIC_URL="https://data.pyg.org/whl/torch-1.13.1+cu116.html"
+OUTPUT_IMAGE="fedml/fedml:latest-arm64-torch1.13.1-cuda11.6-cudnn8-devel"
+  
+bash build-docker.sh $ARCH $OS $DISTRO $PYTHON_VERSION $PYTORCH_VERSION $NCCL_VERSION $CUDA_VERSION \
+     $OUTPUT_IMAGE $NVIDIA_BASE_IMAGE $PYTORCH_EXTRA_INDEX_URL $PYTORCH_GEOMETRIC_URL $LIB_NCCL
 ```
 
 ## Push docker to the cloud (change image-id to your own)

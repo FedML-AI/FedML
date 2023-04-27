@@ -255,8 +255,6 @@ EXPOSE 22
 # Supervisor container startup
 ##############################################################################
 ADD ./arm64v8/supervisord.conf /etc/supervisor/supervisord.conf
-ADD ./arm64v8/sync_all_nodes.sh /supervised-scripts/sync_all_nodes.sh
-RUN sudo chmod 755 supervised-scripts/sync_all_nodes.sh
 
 ##############################################################################
 # Add docker location file
