@@ -93,7 +93,7 @@ Please refer to the following commands and remember to change `WORKSPACE` to you
 **(1) Pull the Docker image and prepare the docker environment**
 ```
 FEDML_DOCKER_IMAGE=fedml/fedml:latest-torch1.13.1-cuda11.6-cudnn8-devel
-docker pull FEDML_DOCKER_IMAGE
+docker pull $FEDML_DOCKER_IMAGE
 
 # if you want to use GPUs in your host OS, please follow this link: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker
 sudo apt-get update

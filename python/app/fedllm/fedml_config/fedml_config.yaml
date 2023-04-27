@@ -1,0 +1,65 @@
+common_args:
+  training_type: "cross_silo"
+  scenario: "horizontal"
+  random_seed: 0
+#  deepspeed_config: #
+
+data_args:
+  dataset: "databricks-dollys"
+  data_cache_dir: ~/fedml_data
+  dataset_path: ".data/databricks-dolly-15k.jsonl"
+  test_dataset_size: 100
+
+model_args:
+  #  model: "lr"
+  model_name: "EleutherAI/pythia-70m"
+  use_lora: True
+  per_device_train_batch_size: 1
+  per_device_eval_batch_size: 1
+
+train_args:
+  federated_optimizer: "FedAvg"
+  client_optimizer: sgd
+  server_optimizer: "FedAvg"
+  client_id_list:
+  client_num_in_total: 2
+  client_num_per_round: 2
+  comm_round: 50
+  #  epochs: 1
+  #  batch_size: 10
+  #  learning_rate: 0.03
+  #  weight_decay: 0.001
+  seed: 1234
+  fp16: False
+  bf16: False
+  deepspeed: "configs/ds_z3_cpu_config.json"
+  gradient_checkpointing: False
+  learning_rate: 0.000005
+  warmup_steps: 50
+  num_train_epochs: 1
+  output_dir: ".logs/debug"
+  logging_steps: 50
+  eval_steps: 50
+  save_steps: 200
+  save_total_limit: 20
+  logging_strategy: "steps"
+  evaluation_strategy: "no"
+  save_strategy: "steps"
+  eval_accumulation_steps: 4
+
+validation_args:
+  frequency_of_the_test: 5
+
+device_args:
+  worker_num: 2
+  using_gpu: True
+
+comm_args:
+  backend: "MQTT_S3"
+  is_mobile: 0
+
+
+tracking_args:
+  log_file_dir: ./log
+  enable_wandb: False
+  wandb_only_server: True
