@@ -22,7 +22,7 @@ A: Use the following commands:
 
 ```kubectl scale -n $YourNameSpace --replicas=$YourDesiredPodsCount deployment/fedml-client-deployment```
 
-```kubectl scale -n $YourNameSpace --replicas=$YourDesiredPodsCount deployment/fedml-client-deployment```
+```kubectl scale -n $YourNameSpace --replicas=$YourDesiredPodsCount deployment/fedml-server-deployment```
 
 2. Q: FedML Client send online status to FedML Server via which protocol?  
 A: Via MQTT

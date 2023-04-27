@@ -1,7 +1,7 @@
 # FedML DevOps
 
 We use the Jenkins to run our devops pipelines. So, all pipeline definition is located in the file named Jenkinsfile. 
-When the developer push or merge codes into the dev or master branch, the Jenkins pipelines will be triggered by the webhook.
+When the developer pushes or merges codes into the dev or master branch, the Jenkins pipelines will be triggered by the webhook.
 It will automatically build the related Docker Images, push the Docker Images into the AWS ECR or DockerHub, and rollout the Docker Images into the K8S cluster. 
 
 The devops includes three parts:
