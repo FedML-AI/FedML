@@ -15,12 +15,13 @@ spec:
         app: fedml-server
     spec:
       containers:
-      - name: fedml-client
+      - name: fedml-server
         image: fedml/fedml-edge-client-server:latest
+        imagePullPolicy: Always
         ports:
-        - containerPort: 80
+        - containerPort: 8080
         env:
         - name: ROLE
           value: "server"
         - name: ACCOUNT_ID
-          value: "2335"
+          value: "1606"

@@ -6,7 +6,7 @@ FEDML_VERSION=release
 FEDML_DEVICE_ID=0
 FEDML_OS_NAME=linux
 
-if [[ ${ROLE} == "client" ]]; then
+if [ "${ROLE}" == "client" ]; then
   fedml login ${ACCOUNT_ID} -v ${FEDML_VERSION} -c -id ${FEDML_DEVICE_ID} -os ${FEDML_OS_NAME}
 else
   fedml login ${ACCOUNT_ID} -v ${FEDML_VERSION} -s -id ${FEDML_DEVICE_ID} -os ${FEDML_OS_NAME}
