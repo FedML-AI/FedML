@@ -38,7 +38,7 @@ from ...core.mlops.mlops_status import MLOpsStatus
 from ..comm_utils.sys_utils import get_sys_runner_info, get_python_program
 from .device_model_deployment import start_deployment
 from .device_client_data_interface import FedMLClientDataInterface
-from ...inference.fedml_client import FedMLInferenceClient
+from ...serving.fedml_client import FedMLModelServingClient
 
 
 class RunnerError(Exception):
@@ -226,11 +226,11 @@ class FedMLClientRunner:
             model_id, model_storage_url, scale_min, scale_max, inference_engine, model_is_from_open, \
             inference_end_point_id, use_gpu, memory_size, model_version = self.parse_model_run_params(self.request_json)
 
-        inference_client = FedMLInferenceClient(self.args,
-                                                end_point_name,
-                                                model_name,
-                                                model_version,
-                                                inference_request=self.request_json)
+        inference_client = FedMLModelServingClient(self.args,
+                                                   end_point_name,
+                                                   model_name,
+                                                   model_version,
+                                                   inference_request=self.request_json)
         inference_client.run()
 
     def run_impl(self):
@@ -584,7 +584,7 @@ class FedMLClientRunner:
 
         self.ota_upgrade(payload, request_json)
 
-    # Start client with multiprocessing mode
+        # Start client with multiprocessing mode
         request_json["run_id"] = run_id
         self.request_json = request_json
         client_runner = FedMLClientRunner(
@@ -953,7 +953,7 @@ class FedMLClientRunner:
         local_api_process = ClientConstants.exec_console_with_script(
             "{} -m uvicorn fedml.cli.model_deployment.client_api:api --host 0.0.0.0 --port {} "
             "--log-level critical".format(python_program,
-                                                   ClientConstants.LOCAL_CLIENT_API_PORT),
+                                          ClientConstants.LOCAL_CLIENT_API_PORT),
             should_capture_stdout=False,
             should_capture_stderr=False
         )
