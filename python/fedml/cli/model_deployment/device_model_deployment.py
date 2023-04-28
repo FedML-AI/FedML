@@ -26,13 +26,14 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                      inference_use_gpu, inference_memory_size,
                      inference_convertor_image, inference_server_image,
                      infer_host, model_is_from_open, model_params,
-                     model_from_open):
+                     model_from_open, token):
     logging.info("Model deployment is starting...")
 
     use_simulation_test_without_triton = False
     model_metadata = {'name': inference_model_name,
                       'versions': ['1'], 'platform': 'onnxruntime_onnx',
-                      'inputs': [{'name': 'input2', 'datatype': 'INT32', 'shape': [1, 24]}, {'name': 'input1', 'datatype': 'FP32', 'shape': [1, 2]}],
+                      'inputs': [{'name': 'input2', 'datatype': 'INT32', 'shape': [1, 24]},
+                                 {'name': 'input1', 'datatype': 'FP32', 'shape': [1, 2]}],
                       'outputs': [{'name': 'output', 'datatype': 'FP32', 'shape': [1]}]}
     model_config = {
         "platform": "onnxruntime",
@@ -89,7 +90,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             if sys_name == "Linux":
                 if not triton_server_is_running:
                     os.system(sudo_prefix + "apt-get update")
-                    os.system(sudo_prefix + "apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin")
+                    os.system(
+                        sudo_prefix + "apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin")
                     os.system("distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
                   && sudo rm -f /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg;curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
                   && curl -s -L https://nvidia.github.io/libnvidia-container/experimental/$distribution/libnvidia-container.list | \
@@ -124,7 +126,8 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 try:
                     open_model_params = pickle.load(model_pkl_file)
                 except Exception as e:
-                    logging.info("load model exceptions, try to use another loading method, details: {}".format(traceback.format_exc()))
+                    logging.info("load model exceptions, try to use another loading method, details: {}".format(
+                        traceback.format_exc()))
                     try:
                         open_model_params = CPUUnpickler(model_pkl_file).load()
                     except Exception as ex:
@@ -269,14 +272,55 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         inference_output_url, running_model_version, ret_model_metadata, ret_model_config = \
             get_model_info(running_model_name, inference_engine, inference_http_port, infer_host)
         if inference_output_url != "":
-            logging.info("Deploy model successfully, inference url: {}, model metadata: {}, model config: {}".format(
-                inference_output_url, model_metadata, model_config))
-            model_metadata = ret_model_metadata
-            model_config = ret_model_config
+            # Send the test request to the inference backend and check if the response is normal
+            input_json, output_json = build_inference_req(end_point_name, inference_model_name,
+                                                          token, ret_model_metadata)
+            try:
+                inference_response = run_http_inference_with_curl_request(inference_output_url, input_json["inputs"], input_json["outputs"])
+                logging.info("Tested the inference backend, the response is {}".format(inference_response))
+            except Exception as e:
+                logging.info("Tested the inference backend, exceptions occurred: {}".format(traceback.format_exc()))
+                inference_output_url = ""
+
+            if inference_output_url != "":
+                logging.info("Deploy model successfully, inference url: {}, model metadata: {}, model config: {}".format(
+                    inference_output_url, model_metadata, model_config))
+                model_metadata = ret_model_metadata
+                model_config = ret_model_config
     else:
         inference_output_url = f"http://localhost:{inference_http_port}/v2/models/{running_model_name}/versions/1/infer"
 
     return running_model_name, inference_output_url, model_version, model_metadata, model_config
+
+
+def build_inference_req(end_point_name, model_name, token, in_model_metadata):
+    model_inputs = in_model_metadata["inputs"]
+    ret_inputs = list()
+
+    for input_item in model_inputs:
+        ret_item = input_item
+        shape = ret_item["shape"]
+        data_type = ret_item["datatype"]
+        if ClientConstants.MODEL_DATA_TYPE_MAPPING[data_type] == ClientConstants.MODEL_DATA_TYPE_INT:
+            for i in range(len(shape)):
+                if shape[i] == -1:  # if input shape is dynamic, we set a default value 1
+                    shape[i] = 1
+            ret_item["data"] = torch.randint(0, 1, shape).tolist()
+        else:
+            for i in range(len(shape)):
+                if shape[i] == -1:  # if input shape is dynamic, we set a default value 1
+                    shape[i] = 1
+            ret_item["data"] = torch.zeros(shape).tolist()
+        ret_inputs.append(ret_item)
+
+    input_json = {"end_point_name": end_point_name,
+                  "model_name": model_name,
+                  "token": str(token),
+                  "inputs": ret_inputs,
+                  "outputs": in_model_metadata["outputs"]}
+    output_json = in_model_metadata["outputs"]
+
+    return input_json, output_json
 
 
 def should_exit_logs(end_point_id, model_id, cmd_type, cmd_process_id, model_name, inference_engine, inference_port):
@@ -424,7 +468,8 @@ def convert_model_to_onnx(
     from torch.onnx import TrainingMode
 
     torch.onnx.export(torch_model,  # model being run
-                      dummy_input_list if input_is_tensor else tuple(dummy_input_list),  # model input (or a tuple for multiple inputs)
+                      dummy_input_list if input_is_tensor else tuple(dummy_input_list),
+                      # model input (or a tuple for multiple inputs)
                       f=output_path,  # where to save the model (can be a file or file-like object)
                       export_params=True,  # store the trained parameter weights inside the model file
                       opset_version=11,  # the ONNX version to export the model to
@@ -434,7 +479,7 @@ def convert_model_to_onnx(
                       output_names=['output'],  # the model's output names
                       training=TrainingMode.EVAL,
                       verbose=True,
-                      dynamic_axes={"input1": {0: "batch_size"}, 
+                      dynamic_axes={"input1": {0: "batch_size"},
                                     "input2": {0: "batch_size"},
                                     "output": {0: "batch_size"}}
                       )
@@ -506,11 +551,10 @@ def test_convert_pytorch_model_to_onnx(model_net_file, model_bin_file, model_nam
 
 
 if __name__ == "__main__":
-
     model_serving_dir = test_convert_pytorch_model_to_onnx("./sample-open-training-model-net",
                                                            "./sample-open-training-model",
                                                            "rec-model",
-                                                           {"input_size": [[1,24], [1,2]],
+                                                           {"input_size": [[1, 24], [1, 2]],
                                                             "input_types": ["int", "float"]})
 
     test_start_triton_server(model_serving_dir)
