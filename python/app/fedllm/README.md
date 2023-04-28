@@ -2,7 +2,7 @@
  <img src="assets/fedml_logo_light_mode.png" width="400px">
 </div>
 
-# FedLLM: Foundational Ecosystem Design for LLM
+# FedLLM: Build Your Own Large Language Models on Proprietary Data using the FedML Platform
 
 [FedLLM](https://blog.fedml.ai/releasing-fedllm-build-your-own-large-language-models-on-proprietary-data-using-the-fedml-platform/)
 is an MLOps-supported training pipeline to help users build their own large language model (LLM) on proprietary/private

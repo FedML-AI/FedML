@@ -93,7 +93,7 @@ Please refer to the following commands and remember to change `WORKSPACE` to you
 **(1) Pull the Docker image and prepare the docker environment**
 ```
 FEDML_DOCKER_IMAGE=fedml/fedml:latest-torch1.13.1-cuda11.6-cudnn8-devel
-docker pull FEDML_DOCKER_IMAGE
+docker pull $FEDML_DOCKER_IMAGE
 
 # if you want to use GPUs in your host OS, please follow this link: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker
 sudo apt-get update
@@ -104,19 +104,27 @@ sudo chmod 777 /var/run/docker.sock
 
 **(2) Run Docker with interactive mode**
 
+***On GPUs:***
 ```
 FEDML_DOCKER_IMAGE=fedml/fedml:latest-torch1.13.1-cuda11.6-cudnn8-devel
-WORKSPACE=/home/chaoyanghe/sourcecode/FedML_startup/FedML
+WORKSPACE=/home/fedml/fedml_source
 
 docker run -t -i -v $WORKSPACE:$WORKSPACE --shm-size=64g --ulimit nofile=65535 --ulimit memlock=-1 --privileged \
---env FEDML_NODE_INDEX=0 \
---env WORKSPACE=$WORKSPACE \
---env FEDML_NUM_NODES=1 \
---env FEDML_MAIN_NODE_INDEX=0 \
---env FEDML_RUN_ID=0 \
---env FEDML_MAIN_NODE_PRIVATE_IPV4_ADDRESS=127.0.0.1 \
 --gpus all \
--u fedml --net=host \
+--network=host \
+--env WORKSPACE=$WORKSPACE \
+$FEDML_DOCKER_IMAGE \
+/bin/bash
+```
+
+***On CPUs:***
+```
+FEDML_DOCKER_IMAGE=fedml/fedml:latest-torch1.13.1-cuda11.6-cudnn8-devel
+WORKSPACE=/home/fedml/fedml_source
+
+docker run -t -i -v $WORKSPACE:$WORKSPACE --shm-size=64g --ulimit nofile=65535 --ulimit memlock=-1 --privileged \
+--network=host \
+--env WORKSPACE=$WORKSPACE \
 $FEDML_DOCKER_IMAGE \
 /bin/bash
 ```
@@ -125,7 +133,7 @@ You should now see a prompt that looks something like:
 ```
 fedml@ChaoyangHe-GPU-RTX2080Tix4:/$ 
 fedml@ChaoyangHe-GPU-RTX2080Tix4:/$ cd $WORKSPACE
-fedml@ChaoyangHe-GPU-RTX2080Tix4:/home/chaoyanghe/sourcecode/FedML_startup/FedML$
+fedml@ChaoyangHe-GPU-RTX2080Tix4:/home/fedml/fedml_source$
 ```
 If you want to debug in Docker container, please follow these commands
 ```
@@ -135,67 +143,7 @@ cd python
 sudo pip install -e ./
 ```
 
-**(3) Run Docker with multiple commands to launch your project immediately**
-
-Here is an example of running federated learning with MNIST dataset and Logistic Regression model.
-```
-WORKSPACE=/home/chaoyanghe/sourcecode/FedML_startup/FedML
-
-docker run -t -i -v $WORKSPACE:$WORKSPACE --shm-size=64g --ulimit nofile=65535 --ulimit memlock=-1 --privileged \
---env FEDML_NODE_INDEX=0 \
---env WORKSPACE=$WORKSPACE \
---env FEDML_NUM_NODES=1 \
---env FEDML_MAIN_NODE_INDEX=0 \
---env FEDML_RUN_ID=0 \
---env FEDML_MAIN_NODE_PRIVATE_IPV4_ADDRESS=127.0.0.1 \
--u fedml --net=host \
---gpus all \
-$FEDML_DOCKER_IMAGE \
-/bin/bash -c `cd $WORKSPACE/python/examples/simulation/mpi_torch_fedavg_mnist_lr_example; sh run_one_line_example.sh`
-```
-
-**(4) Run Docker with bootstrap.sh and entry.sh**
-
-For advanced usage, you may need to install additional python packages or set some additional environments for your project.
-In this case, we recommend that you specify the `bootstrap.sh` for the additional package installation and environment settings, and
-`entry.sh`, where you launch your main program. Here is an example of running the same task in (3).
-
--------boostrap.sh----------
-```
-#!/bin/bash
-echo "This is bootstrap script. You can use it to customize your additional installation and set some environment variables"
-
-# here we upgrade fedml to the latest version.
-pip install --upgrade fedml
-```
--------entry.sh----------
-```
-#!/bin/bash
-echo "This is entry script where you launch your main program."
-
-cd $WORKSPACE/python/examples/simulation/mpi_torch_fedavg_mnist_lr_example
-sh run_one_line_example.sh
-
-```
-
-```
-WORKSPACE=/home/chaoyanghe/sourcecode/FedML_startup/FedML
-
-docker run -t -i -v $WORKSPACE:$WORKSPACE --shm-size=64g --ulimit nofile=65535 --ulimit memlock=-1 --privileged \
---env FEDML_NODE_INDEX=0 \
---env WORKSPACE=$WORKSPACE \
---env FEDML_NUM_NODES=1 \
---env FEDML_MAIN_NODE_INDEX=0 \
---env FEDML_RUN_ID=0 \
---env FEDML_MAIN_NODE_PRIVATE_IPV4_ADDRESS=127.0.0.1 \
---env FEDML_BATCH_BOOTSTRAP=$WORKSPACE/python/scripts/docker/bootstrap.sh \
---env FEDML_BATCH_ENTRY_SCRIPT=$WORKSPACE/python/scripts/docker/entry.sh \
---gpus all \
--u fedml --net=host \
-$FEDML_DOCKER_IMAGE
-```
-
-**(5) Run the interpreter in PyCharm or Visual Studio using Docker environment**
+**(3) Run the interpreter in PyCharm or Visual Studio using Docker environment**
 
 - PyCharm
 
@@ -205,12 +153,51 @@ $FEDML_DOCKER_IMAGE
 
 [https://code.visualstudio.com/docs/remote/containers](https://www.jetbrains.com/help/pycharm/using-docker-as-a-remote-interpreter.html#summary)
 
-(6) Other useful commands
+(4) Other useful commands
 ```
 # docker rm $(docker ps -aq)
 docker container kill $(docker ps -q)
 ```
 
+
+## Running FedML on Kubernetes
+
+This tutorial will guide you to deploy your fedml client and server to target Kubernetes pods running on GPU/CPU physical nodes.
+
+The entire workflow is as follows:
+
+(k8s deployment file is located in: https://github.com/FedML-AI/FedML/tree/master/installation/install_on_k8s/fedml-edge-client-server)
+1. In the file fedml-edge-client-server/deployment-client.yml, modify the variable ACCOUNT_ID to your desired value
+2. Deploy the fedml client:  ```kubectl apply -f ./fedml-edge-client-server/deployment-client.yml```
+3. In the file fedml-edge-client-server/deployment-server.yml, modify the variable ACCOUNT_ID to your desired value
+4. Deploy the fedml server:  ```kubectl apply -f ./fedml-edge-client-server/deployment-server.yml```
+5. Login the FedML MLOps platform (https://open.fedml.ai), the above deployed client and server will be found in the edge devices
+
+If you want to scale up or scal down the pods to your desired count, you may run the following command:
+
+```kubectl scale -n $YourNameSpace --replicas=$YourDesiredPodsCount deployment/fedml-client-deployment```
+
+```kubectl scale -n $YourNameSpace --replicas=$YourDesiredPodsCount deployment/fedml-server-deployment```
+
+# Q&A
+
+1. Q: How to scale up or scale down?  
+   A: Use the following commands:
+
+```kubectl scale -n $YourNameSpace --replicas=$YourDesiredPodsCount deployment/fedml-client-deployment```
+
+```kubectl scale -n $YourNameSpace --replicas=$YourDesiredPodsCount deployment/fedml-server-deployment```
+
+2. Q: FedML Client send online status to FedML Server via which protocol?  
+   A: Via MQTT
+
+
+3. Q: FedML Client send model, gradient parameters to FedML Server via which protocol?  
+   A: Use S3 protocol to store and exchange models and use MQTT to exchange messages between FedML Client and Server
+
+
+4. Q: Why do we need AWS S3?  
+   A: Use S3 protocol to store and exchange models.
 
 ## Guidance for Windows Users
 

@@ -5,6 +5,8 @@ from .constants import (
     FEDML_SIMULATION_TYPE_NCCL,
     FEDML_TRAINING_PLATFORM_CROSS_SILO,
     FEDML_TRAINING_PLATFORM_CROSS_DEVICE,
+    FEDML_TRAINING_PLATFORM_CHEETAH,
+    FEDML_TRAINING_PLATFORM_SERVING,
     FEDML_SIMULATION_TYPE_MPI,
     FEDML_SIMULATION_TYPE_SP,
 )
@@ -31,6 +33,12 @@ class FedMLRunner:
 
         elif args.training_type == FEDML_TRAINING_PLATFORM_CROSS_SILO:
             init_runner_func = self._init_cross_silo_runner
+
+        elif args.training_type == FEDML_TRAINING_PLATFORM_CHEETAH:
+            init_runner_func = self._init_cheetah_runner
+
+        elif args.training_type == FEDML_TRAINING_PLATFORM_SERVING:
+            init_runner_func = self._init_model_serving_runner
 
         elif args.training_type == FEDML_TRAINING_PLATFORM_CROSS_DEVICE:
             init_runner_func = self._init_cross_device_runner
@@ -102,6 +110,81 @@ class FedMLRunner:
                 raise Exception("no such role")
         else:
             raise Exception("no such setting")
+        return runner
+
+    def _init_cross_silo_runner(
+            self, args, device, dataset, model, client_trainer=None, server_aggregator=None
+    ):
+        if args.scenario == "horizontal":
+            if args.role == "client":
+                from .cross_silo import Client
+
+                runner = Client(
+                    args, device, dataset, model, client_trainer
+                )
+            elif args.role == "server":
+                from .cross_silo import Server
+
+                runner = Server(
+                    args, device, dataset, model, server_aggregator
+                )
+            else:
+                raise Exception("no such role")
+        elif args.scenario == "hierarchical":
+            if args.role == "client":
+                from .cross_silo import Client
+
+                runner = Client(
+                    args, device, dataset, model, client_trainer
+                )
+            elif args.role == "server":
+                from .cross_silo import Server
+
+                runner = Server(
+                    args, device, dataset, model, server_aggregator
+                )
+            else:
+                raise Exception("no such role")
+        else:
+            raise Exception("no such setting")
+        return runner
+
+    def _init_cheetah_runner(
+            self, args, device, dataset, model, client_trainer=None, server_aggregator=None
+    ):
+        if args.role == "client":
+            from .cheetah import Client
+
+            runner = Client(
+                args, device, dataset, model, client_trainer
+            )
+        elif args.role == "server":
+            from .cheetah import Server
+
+            runner = Server(
+                args, device, dataset, model, server_aggregator
+            )
+        else:
+            raise Exception("no such role")
+        return runner
+
+    def _init_model_serving_runner(
+            self, args, device, dataset, model, client_trainer=None, server_aggregator=None
+    ):
+        if args.role == "client":
+            from .serving import Client
+
+            runner = Client(
+                args, device, dataset, model, client_trainer
+            )
+        elif args.role == "server":
+            from .serving import Server
+
+            runner = Server(
+                args, device, dataset, model, server_aggregator
+            )
+        else:
+            raise Exception("no such role")
         return runner
 
     def _init_cross_device_runner(

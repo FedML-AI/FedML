@@ -8,7 +8,7 @@ Molecular ML has been maturing rapidly over the last few years thanks to the gra
 Before training, each dataset has to be downloaded first from our servers.  For graph property classification task, we provide 9 datasets. To process `sider` dataset, all you have to do is to run the bash script under each dataset folder: 
 
 ```
-cd config/bootstrap.sh
+cd config
 sh bootstrap.sh
 ```
 
@@ -20,5 +20,5 @@ Before starting training, make sure that setup with  `config/fedml_config.yaml` 
 WORKSPACE=./FedML/app/fedgraphnn/applications/moleculenet_graph_clf
 cd $WORKSPACE
 
-sh run_distributed_simulation.sh 4
+sh run_distributed_simulation.sh 4 gcn(options:gcn, gat, sage) fedavg(options:fedavg, fedprox, fedopt)
 ```
