@@ -28,7 +28,7 @@ train_args:
   deepspeed: "configs/ds_z3_bf16_config.json"
   seed: 1234
   fp16: False
-  bf16: True
+  bf16: False
   gradient_checkpointing: True
   per_device_train_batch_size: 2
   per_device_eval_batch_size: 2
