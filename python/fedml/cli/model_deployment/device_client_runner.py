@@ -340,7 +340,8 @@ class FedMLClientRunner:
                 ClientConstants.INFERENCE_SERVER_IMAGE,
                 self.infer_host,
                 self.model_is_from_open, model_config_parameters,
-                model_from_open)
+                model_from_open,
+                token)
         if inference_output_url == "":
             logging.info("failed to deploy the model...")
             self.send_deployment_status(end_point_name, self.edge_id,
