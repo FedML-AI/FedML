@@ -5,6 +5,7 @@ from fedml import FedMLRunner
 from fedml.arguments import Arguments
 from fedml.core import ClientTrainer, ServerAggregator
 from peft import get_peft_model_state_dict, set_peft_model_state_dict
+import torch.cuda
 from transformers import HfArgumentParser, Trainer as HfTrainer, TrainingArguments
 
 from train import (
@@ -23,7 +24,8 @@ from train import (
 
 def get_hf_trainer(args: Arguments, model: ModelType, tokenizer: TokenizerType, **kwargs) -> HfTrainer:
     args_dict = dict(args.__dict__)
-    if not args.using_gpu:
+    # TODO: scrutinize
+    if not args.using_gpu or torch.cuda.device_count() == 1:
         args_dict.pop("local_rank", None)
     training_args, *_ = HfArgumentParser(TrainingArguments).parse_dict(args_dict, allow_extra_keys=True)
 
