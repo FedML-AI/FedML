@@ -49,15 +49,13 @@ class LLMTrainer(ClientTrainer):
         self.model = model
 
     def get_model_params(self) -> OrderedDict:
-        return OrderedDict(get_peft_model_state_dict(self.model.cpu()))
+        return OrderedDict(get_peft_model_state_dict(self.model))
 
     def set_model_params(self, model_parameters) -> None:
         set_peft_model_state_dict(self.model, model_parameters)
 
     def train(self, train_data, device, args: Arguments) -> None:
-        # TODO: change train args? device?
-        trainer = get_hf_trainer(args, self.model, self.tokenizer)
-        trainer.train_dataset = train_data
+        trainer = get_hf_trainer(args, self.model, self.tokenizer, train_dataset=train_data)
         trainer.train()
 
 
@@ -82,15 +80,13 @@ class LLMAggregator(ServerAggregator):
         )
 
     def get_model_params(self) -> OrderedDict:
-        return OrderedDict(get_peft_model_state_dict(self.model.cpu()))
+        return OrderedDict(get_peft_model_state_dict(self.model))
 
     def set_model_params(self, model_parameters) -> None:
         set_peft_model_state_dict(self.model, model_parameters)
 
     def test(self, test_data, device, args: Arguments) -> None:
-        self.model = self.model.to(device)
-        self.trainer.eval_dataset = test_data
-        self.trainer.evaluate()
+        self.trainer.evaluate(eval_dataset=test_data)
 
 
 def transform_data_to_fedml_format(args: Arguments, dataset):
