@@ -58,7 +58,7 @@ class LLMTrainer(ClientTrainer):
 
         self.tokenizer = tokenizer
         self.model_args = model_args
-        self.trainer = get_hf_trainer(args, self.model, self.tokenizer)
+        self.trainer = get_hf_trainer(self.args, self.model, self.tokenizer)
 
         self.temp_ckpt_dir = Path(self.trainer.args.output_dir) / f"node{self.args.rank}_tmp"
         # this is required for DeepSpeed
@@ -87,8 +87,11 @@ class LLMTrainer(ClientTrainer):
         if hasattr(args, "round_idx"):
             setattr(self.args, "round_idx", args.round_idx)
 
+        # rebuild trainer
+        del self.trainer
+        self.trainer = get_hf_trainer(self.args, self.model, self.tokenizer, train_dataset=train_data)
+
     def train(self, train_data, device, args: Arguments) -> None:
-        self.trainer = get_hf_trainer(args, self.model, self.tokenizer, train_dataset=train_data)
         self.trainer.train()
 
     def on_after_local_training(self, train_data, device, args: Arguments) -> None:
