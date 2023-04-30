@@ -123,14 +123,17 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         if model_from_open is None:
             return running_model_name, "", model_version, {}, {}
 
+        logging.info("model binary file: {}".format(model_bin_file))
         with open(model_bin_file, 'rb') as model_pkl_file:
             if not torch.cuda.is_available():
                 try:
                     open_model_params = pickle.load(model_pkl_file)
                 except Exception as e:
+                    open_model_params = None
                     logging.info("load model exceptions, try to use CPU_Unpickler, "
                                  "details: {}".format(traceback.format_exc()))
 
+                if open_model_params is None:
                     try:
                         open_model_params = CPUUnpickler(model_pkl_file).load()
                     except Exception as ex:
