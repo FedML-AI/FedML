@@ -127,19 +127,10 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         with open(model_bin_file, 'rb') as model_pkl_file:
             if not torch.cuda.is_available():
                 try:
-                    open_model_params = pickle.load(model_pkl_file)
-                except Exception as e:
-                    open_model_params = None
-                    logging.info("load model exceptions, try to use CPU_Unpickler, "
-                                 "details: {}".format(traceback.format_exc()))
-
-                if open_model_params is None:
-                    try:
-                        open_model_params = CPUUnpickler(model_pkl_file).load()
-                    except Exception as ex:
-                        logging.info(
-                            "load model exceptions when using CPU_Unpickler: {}".format(traceback.format_exc()))
-                        return "", "", model_version, model_metadata, model_config
+                    open_model_params = CPUUnpickler(model_pkl_file).load()
+                except Exception as ex:
+                    logging.info("load model exceptions when using CPU_Unpickler: {}".format(traceback.format_exc()))
+                    return "", "", model_version, model_metadata, model_config
             else:
                 open_model_params = pickle.load(model_pkl_file)
             model_from_open.load_state_dict(open_model_params)
@@ -559,7 +550,40 @@ def test_convert_pytorch_model_to_onnx(model_net_file, model_bin_file, model_nam
     return model_serving_dir
 
 
+def start_gpu_model_load_process():
+    from multiprocessing import Process
+    import time
+    process = Process(target=load_gpu_model_to_cpu_device)
+    process.start()
+    while True:
+        time.sleep(1)
+
+
+def load_gpu_model_to_cpu_device():
+    import pickle
+    import io
+    import torch
+
+    class CPU_Unpickler(pickle.Unpickler):
+        def find_class(self, module, name):
+            if module == 'torch.storage' and name == '_load_from_bytes':
+                return lambda b: torch.load(io.BytesIO(b), map_location='cpu')
+            else:
+                return super().find_class(module, name)
+
+    model_file = "/home/fedml/fedml-client/fedml/models/theta_rec_auc_81_single_label/theta_rec_auc_81_single_label"
+    with open(model_file, "rb") as model_pkl_file:
+        if not torch.cuda.is_available():
+            model = CPU_Unpickler(model_pkl_file).load()
+            if model is None:
+                print("Failed to load gpu model to cpu device")
+            else:
+                print("Succeeded to load gpu model to cpu device")
+
+
 if __name__ == "__main__":
+    start_gpu_model_load_process()
+
     model_serving_dir = test_convert_pytorch_model_to_onnx("./sample-open-training-model-net",
                                                            "./sample-open-training-model",
                                                            "rec-model",
