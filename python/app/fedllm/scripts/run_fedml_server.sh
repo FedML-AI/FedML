@@ -6,25 +6,16 @@ BASE_DIR="$(realpath "${BASE_DIR}/../")"
 cd "${BASE_DIR}"
 
 export WANDB_MODE=disabled # remove this line if you want to use wandb
+export CUDA_VISIBLE_DEVICES="0"
 
 # FedML related
 RANK=0
 RUN_ID="$1"
 
-# GPU cluster related
-NUM_NODES=1
-NUM_GPU=1
-TORCH_DISTRIBUTED_DEFAULT_PORT=29500
-MASTER_PORT="$((TORCH_DISTRIBUTED_DEFAULT_PORT + RANK))"
-
 # FedML config
-CONFIG_PATH="fedml_config/fedml_config.yaml"
+CONFIG_PATH="fedml_config/fedml_server_config.yaml"
 
-deepspeed \
-  --num_nodes="${NUM_NODES}" \
-  --num_gpus="${NUM_GPU}" \
-  --master_port="${MASTER_PORT}" \
-  main_federated_llm.py \
+python main_federated_llm.py \
   --cf "${CONFIG_PATH}" \
   --rank "${RANK}" \
   --role server \

@@ -3,9 +3,11 @@ torchvision
 numpy
 git+https://github.com/huggingface/peft.git#egg=peft
 deepspeed>=0.8.0
+accelerate
 transformers[torch]>=4.25.1
 datasets>=2.8.0
-fedml>=0.8.3a18
+evaluate
+fedml>=0.8.4a7
 mpi4py
 sentencepiece
 tensorboard
