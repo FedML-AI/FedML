@@ -25,7 +25,7 @@ train_args:
   client_num_per_round: 2  # choose from 1~client_num_in_total
   comm_round: 50
   # below copied from scripts/train_deepspeed.sh
-  # deepspeed: "configs/ds_z3_bf16_config.json"
+  deepspeed: "configs/ds_z3_bf16_config.json"
   seed: 1234
   fp16: False
   bf16: False
@@ -35,7 +35,7 @@ train_args:
   learning_rate: 0.000005
   warmup_steps: 50
   num_train_epochs: 1   # number of training epoch for client on each round
-  output_dir: ".logs/FedML/dolly_pythia-6.9b/server"
+  output_dir: ".logs/FedML/dolly_pythia-6.9b/client"
   logging_steps: 50
   eval_steps: 200
   save_steps: 200
