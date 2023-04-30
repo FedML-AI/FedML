@@ -18,6 +18,15 @@ for type_name in collections.abc.__all__:
     setattr(collections, type_name, getattr(collections.abc, type_name))
 
 from fedml.cli.model_deployment.device_client_constants import ClientConstants
+import io
+
+
+class CPUUnpickler(pickle.Unpickler):
+    def find_class(self, module, name):
+        if module == 'torch.storage' and name == '_load_from_bytes':
+            return lambda b: torch.load(io.BytesIO(b), map_location='cpu')
+        else:
+            return super().find_class(module, name)
 
 
 def start_deployment(end_point_id, end_point_name, model_id, model_version,
@@ -119,12 +128,14 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 try:
                     open_model_params = pickle.load(model_pkl_file)
                 except Exception as e:
-                    logging.info("load model exceptions, try to use torch.load(f,map_location=torch.device('cpu')), "
+                    logging.info("load model exceptions, try to use CPU_Unpickler, "
                                  "details: {}".format(traceback.format_exc()))
+
                     try:
-                        open_model_params = torch.load(model_pkl_file, map_location=torch.device('cpu'))
+                        open_model_params = CPUUnpickler(model_pkl_file).load()
                     except Exception as ex:
-                        logging.info("load model exceptions when using torch.load: {}".format(traceback.format_exc()))
+                        logging.info(
+                            "load model exceptions when using CPU_Unpickler: {}".format(traceback.format_exc()))
                         return "", "", model_version, model_metadata, model_config
             else:
                 open_model_params = pickle.load(model_pkl_file)
@@ -269,15 +280,17 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             input_json, output_json = build_inference_req(end_point_name, inference_model_name,
                                                           token, ret_model_metadata)
             try:
-                inference_response = run_http_inference_with_curl_request(inference_output_url, input_json["inputs"], input_json["outputs"])
+                inference_response = run_http_inference_with_curl_request(inference_output_url, input_json["inputs"],
+                                                                          input_json["outputs"])
                 logging.info("Tested the inference backend, the response is {}".format(inference_response))
             except Exception as e:
                 logging.info("Tested the inference backend, exceptions occurred: {}".format(traceback.format_exc()))
                 inference_output_url = ""
 
             if inference_output_url != "":
-                logging.info("Deploy model successfully, inference url: {}, model metadata: {}, model config: {}".format(
-                    inference_output_url, model_metadata, model_config))
+                logging.info(
+                    "Deploy model successfully, inference url: {}, model metadata: {}, model config: {}".format(
+                        inference_output_url, model_metadata, model_config))
                 model_metadata = ret_model_metadata
                 model_config = ret_model_config
     else:
