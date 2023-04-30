@@ -13,7 +13,7 @@ RANK=0
 RUN_ID="$1"
 
 # FedML config
-CONFIG_PATH="fedml_config/fedml_config.yaml"
+CONFIG_PATH="fedml_config/fedml_server_config.yaml"
 
 python main_federated_llm.py \
   --cf "${CONFIG_PATH}" \

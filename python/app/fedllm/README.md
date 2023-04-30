@@ -69,7 +69,7 @@ by passing `--ddp_find_unused_parameters "False"` in the command line.
 ### Cross-silo Federated Learning
 
 To train/fine-tune in federated setting, you need to provide a FedML config file.
-An example can be found in [fedml_config.yaml](fedml_config/fedml_config.yaml).
+An example can be found in [fedml_server_config.yaml](fedml_config/fedml_server_config.yaml).
 You can have different config file for each client or server.
 To launch an experiment, a `RUN_ID` should be provided. For each experiment, the same `RUN_ID` should be used across all
 the client(s) and server.
