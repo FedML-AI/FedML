@@ -20,7 +20,7 @@ python train.py \
   --test_dataset_size 200 \
   --seed 1234 \
   --fp16 "False" \
-  --bf16 "True" \
+  --bf16 "False" \
   --use_lora \
   --gradient_checkpointing "True" \
   --per_device_train_batch_size 6 \

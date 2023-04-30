@@ -1,10 +1,12 @@
 from collections import OrderedDict
+from pathlib import Path
 
 import fedml
 from fedml import FedMLRunner
 from fedml.arguments import Arguments
 from fedml.core import ClientTrainer, ServerAggregator
 from peft import get_peft_model_state_dict, set_peft_model_state_dict
+import torch.cuda
 from transformers import HfArgumentParser, Trainer as HfTrainer, TrainingArguments
 
 from train import (
@@ -23,7 +25,8 @@ from train import (
 
 def get_hf_trainer(args: Arguments, model: ModelType, tokenizer: TokenizerType, **kwargs) -> HfTrainer:
     args_dict = dict(args.__dict__)
-    if not args.using_gpu:
+    # TODO: scrutinize
+    if not args.using_gpu or torch.cuda.device_count() == 1:
         args_dict.pop("local_rank", None)
     training_args, *_ = HfArgumentParser(TrainingArguments).parse_dict(args_dict, allow_extra_keys=True)
 
@@ -36,29 +39,64 @@ def get_hf_trainer(args: Arguments, model: ModelType, tokenizer: TokenizerType, 
     )
 
 
+def get_model_state_dict(trainer: HfTrainer, checkpoint_dir: Path) -> OrderedDict:
+    with trainer.args.main_process_first():
+        checkpoint_path = checkpoint_dir / "pytorch_model.bin"
+        checkpoint = torch.load(str(checkpoint_path), map_location="cpu")
+    return checkpoint
+
+
 class LLMTrainer(ClientTrainer):
     def __init__(
             self,
             model: ModelType,
             args: Arguments,
-            tokenizer: TokenizerType
+            tokenizer: TokenizerType,
+            model_args: ModelArguments
     ):
         super().__init__(model, args)
 
         self.tokenizer = tokenizer
-        self.model = model
+        self.model_args = model_args
+        self.trainer = get_hf_trainer(self.args, self.model, self.tokenizer)
+
+        self.temp_ckpt_dir = Path(self.trainer.args.output_dir) / f"node{self.args.rank}_tmp"
+        # this is required for DeepSpeed
+        self.trainer.save_model(str(self.temp_ckpt_dir))
 
     def get_model_params(self) -> OrderedDict:
-        return OrderedDict(get_peft_model_state_dict(self.model.cpu()))
+        state_dict = get_model_state_dict(self.trainer, self.temp_ckpt_dir)
+        return OrderedDict(get_peft_model_state_dict(self.model, state_dict=state_dict))
 
     def set_model_params(self, model_parameters) -> None:
+        # rebuild model
+        del self.model
+        self.model = get_model(
+            self.model_args,
+            tokenizer_length=len(self.tokenizer),
+            use_cache=not getattr(self.args, "gradient_checkpointing", False)
+        )
+
         set_peft_model_state_dict(self.model, model_parameters)
 
+    def on_before_local_training(self, train_data, device, args: Arguments) -> None:
+        super().on_before_local_training(train_data, device, args)
+
+        # TODO: replace args?
+        # update round_idx
+        if hasattr(args, "round_idx"):
+            setattr(self.args, "round_idx", args.round_idx)
+
+        # rebuild trainer
+        del self.trainer
+        self.trainer = get_hf_trainer(self.args, self.model, self.tokenizer, train_dataset=train_data)
+
     def train(self, train_data, device, args: Arguments) -> None:
-        # TODO: change train args? device?
-        trainer = get_hf_trainer(args, self.model, self.tokenizer)
-        trainer.train_dataset = train_data
-        trainer.train()
+        self.trainer.train()
+
+    def on_after_local_training(self, train_data, device, args: Arguments) -> None:
+        super().on_after_local_training(train_data, device, args)
+        self.trainer.save_model(str(self.temp_ckpt_dir))
 
 
 class LLMAggregator(ServerAggregator):
@@ -80,17 +118,18 @@ class LLMAggregator(ServerAggregator):
             # save peft adapted model weights
             callbacks=[SavePeftModelCallback]
         )
+        self.temp_ckpt_dir = Path(self.trainer.args.output_dir) / f"node{self.args.rank}_tmp"
 
     def get_model_params(self) -> OrderedDict:
-        return OrderedDict(get_peft_model_state_dict(self.model.cpu()))
+        state_dict = get_model_state_dict(self.trainer, self.temp_ckpt_dir)
+        return OrderedDict(get_peft_model_state_dict(self.model, state_dict=state_dict))
 
     def set_model_params(self, model_parameters) -> None:
+        # TODO: verify DeepSpeed support
         set_peft_model_state_dict(self.model, model_parameters)
 
     def test(self, test_data, device, args: Arguments) -> None:
-        self.model = self.model.to(device)
-        self.trainer.eval_dataset = test_data
-        self.trainer.evaluate()
+        self.trainer.evaluate(eval_dataset=test_data)
 
 
 def transform_data_to_fedml_format(args: Arguments, dataset):
@@ -159,7 +198,7 @@ def main(args: Arguments) -> None:
     dataset = transform_data_to_fedml_format(args, dataset)
 
     # FedML trainer
-    trainer = LLMTrainer(model=model, args=args, tokenizer=tokenizer)
+    trainer = LLMTrainer(model=model, args=args, tokenizer=tokenizer, model_args=model_args)
     aggregator = LLMAggregator(model=model, args=args, tokenizer=tokenizer)
 
     # start training

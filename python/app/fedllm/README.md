@@ -30,6 +30,14 @@ pip install -r requirements.txt
 
 See [Dependencies](#dependencies) for more information on the dependency versions.
 
+### Prepare Dataset
+
+Run the following command to download [`databricks-dolly-15k`](https://github.com/databrickslabs/dolly/tree/master/data).
+
+```shell
+bash script/setup.sh
+```
+
 ### Conventional/Centralized Training
 
 The [`train.py`](train.py) contains a minimal example for conventional/centralized LLM training and fine-tuning
@@ -51,6 +59,9 @@ bash scripts/train_deepspeed.sh \
   ... # additional arguments
 ```
 
+**_Tips_**: if you have an Amper or newer GPU, you could turn on bf16 to have more efficient training by passing
+`--bf16 "True"` in the command line.
+
 **_Notice_**: when using PyTorch DDP with LoRA and gradient checkpointing,
 you need to turn off `find_unused_parameters`
 by passing `--ddp_find_unused_parameters "False"` in the command line.
@@ -58,12 +69,12 @@ by passing `--ddp_find_unused_parameters "False"` in the command line.
 ### Cross-silo Federated Learning
 
 To train/fine-tune in federated setting, you need to provide a FedML config file.
-An example can be found in [fedml_config.yaml](fedml_config/fedml_config.yaml).
+An example can be found in [fedml_server_config.yaml](fedml_config/fedml_server_config.yaml).
 You can have different config file for each client or server.
 To launch an experiment, a `RUN_ID` should be provided. For each experiment, the same `RUN_ID` should be used across all
 the client(s) and server.
 
-**Notice**: since we use `RUN_ID` to uniquely identify experiments,
+**_Notice_**: since we use `RUN_ID` to uniquely identify experiments,
 we recommend that you carefully choose the `RUN_ID`.
 You may also generate a UUID for your `RUN_ID` with built-in Python module `uuid`;
 e.g. use `RUN_ID="$(python -c "import uuid; print(uuid.uuid4().hex)")"` in your shell.
