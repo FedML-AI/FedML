@@ -1392,6 +1392,7 @@ class FedMLServerRunner:
             current_job = FedMLServerDataInterface.get_instance().get_current_job()
             if current_job is not None and \
                     current_job.status == ServerConstants.MSG_MLOPS_SERVER_STATUS_UPGRADING:
+                FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
                 is_activated = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
                     get_end_point_activation(current_job.job_id)
                 if not is_activated:
