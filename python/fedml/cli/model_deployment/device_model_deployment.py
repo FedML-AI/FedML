@@ -116,22 +116,15 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
 
         with open(model_bin_file, 'rb') as model_pkl_file:
             if not torch.cuda.is_available():
-                class CPUUnpickler(pickle.Unpickler):
-                    def find_class(self, module, name):
-                        if module == 'torch.storage' and name == '_load_from_bytes':
-                            return lambda b: torch.load(io.BytesIO(b), map_location='cpu')
-                        else:
-                            return super().find_class(module, name)
-
                 try:
                     open_model_params = pickle.load(model_pkl_file)
                 except Exception as e:
-                    logging.info("load model exceptions, try to use another loading method, details: {}".format(
-                        traceback.format_exc()))
+                    logging.info("load model exceptions, try to use torch.load(f,map_location=torch.device('cpu')), "
+                                 "details: {}".format(traceback.format_exc()))
                     try:
-                        open_model_params = CPUUnpickler(model_pkl_file).load()
+                        open_model_params = torch.load(model_pkl_file, map_location=torch.device('cpu'))
                     except Exception as ex:
-                        logging.info("load model exceptions when using CPUUnpickler: {}".format(traceback.format_exc()))
+                        logging.info("load model exceptions when using torch.load: {}".format(traceback.format_exc()))
                         return "", "", model_version, model_metadata, model_config
             else:
                 open_model_params = pickle.load(model_pkl_file)

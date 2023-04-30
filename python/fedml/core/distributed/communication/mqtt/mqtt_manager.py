@@ -287,7 +287,7 @@ class MqttManager(object):
             count += 1
 
         if self._client.bad_conn_flag:
-            logging.info("Failed to connect to MQTT server!")
+            logging.info("Failed to connect to MQTT server! {}".format(traceback.format_exc()))
             self._client.loop_stop()
             raise Exception("MQTT Connection failed, please check your network connection!")
 
