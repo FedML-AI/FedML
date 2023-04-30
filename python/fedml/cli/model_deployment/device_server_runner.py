@@ -1376,6 +1376,7 @@ class FedMLServerRunner:
                     inference_end_point_id, use_gpu, memory_size, model_version = \
                     self.parse_model_run_params(json.loads(job.running_json))
 
+                FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
                 is_activated = FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
                     get_end_point_activation(run_id)
                 if not is_activated:
