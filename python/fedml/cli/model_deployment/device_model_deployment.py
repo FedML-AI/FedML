@@ -65,8 +65,9 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         ]
     }
 
-    gpu_attach_cmd = ""
-    if inference_use_gpu is not None and inference_use_gpu != "":
+    if not torch.cuda.is_available():
+        gpu_attach_cmd = ""
+    else:
         gpu_attach_cmd = "--gpus all"
 
     logging.info("Update docker environments...")
