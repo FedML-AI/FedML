@@ -279,17 +279,18 @@ class MqttManager(object):
 
     def check_connection(self):
         count = 0
-        while not self._client.connected_flag and not self._client.bad_conn_flag:
+        while not self._client.connected_flag and self._client.bad_conn_flag:
             if count >= 30:
                 raise Exception("MQTT Connection timeout, please check your network connection!")
             logging.info("MQTT client id {}, waiting to connect to MQTT server...".format(self.mqtt_connection_id))
             time.sleep(1)
             count += 1
 
-        if self._client.bad_conn_flag:
-            logging.info("Failed to connect to MQTT server! {}".format(traceback.format_exc()))
-            self._client.loop_stop()
-            raise Exception("MQTT Connection failed, please check your network connection!")
+        if self._client.bad_conn_flag and not self.connected_flag:
+            if not self._client.is_connected():
+                logging.info("Failed to connect to MQTT server! {}".format(traceback.format_exc()))
+                self._client.loop_stop()
+                raise Exception("MQTT Connection failed, please check your network connection!")
 
 
 global received_msg_count
