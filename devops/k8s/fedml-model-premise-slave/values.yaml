@@ -5,7 +5,7 @@
 replicaCount: 1
 
 image:
-  repository: public.ecr.aws/x6k8q1x9/fedml-model-premise-slave
+  repository: fedml/fedml-model-premise-slave
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
@@ -75,9 +75,6 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 
-nodeSelector:
-  fedml-slave-node: "true"
-
 tolerations: []
 
 affinity: {}
@@ -93,21 +90,17 @@ volume:
   clientHomeDirHostPath: "/home/fedml-client"
   clientHomeDirMountPath: "/home/fedml/fedml-client"
 
-inferenceConverter:
-  name: fedml-inference-converter
-  image:
-    repository: public.ecr.aws/x6k8q1x9/fedml-inference-converter
-    pullPolicy: Always
-    # Overrides the image tag whose default is the chart appVersion.
-    tag: "latest"
-
 inferenceBackend:
   name: fedml-inference-backend
   image:
-    repository: public.ecr.aws/x6k8q1x9/fedml-inference-backend
+    repository: fedml/fedml-inference-backend
     pullPolicy: Always
     # Overrides the image tag whose default is the chart appVersion.
     tag: "latest"
+  resources:
+    limitedMemory: 8192Mi
+    requestsMemory: 4096Mi
+    nvidiaGPUCount: 1
   service:
     http:
       type: ClusterIP

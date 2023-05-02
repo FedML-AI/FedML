@@ -5,7 +5,7 @@
 replicaCount: 1
 
 image:
-  repository: public.ecr.aws/x6k8q1x9/fedml-model-premise-master
+  repository: fedml/fedml-model-premise-master
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
@@ -86,9 +86,6 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 
-nodeSelector:
-  fedml-master-node: "true"
-
 tolerations: []
 
 affinity: {}
@@ -108,7 +105,7 @@ inferenceGateway:
     name: fedml-model-inference-gateway
     replicaCount: 1
     image:
-      repository: public.ecr.aws/x6k8q1x9/fedml-inference-ingress
+      repository: fedml/fedml-inference-ingress
       pullPolicy: Always
       # Overrides the image tag whose default is the chart appVersion.
       tag: ""
