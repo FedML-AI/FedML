@@ -103,6 +103,8 @@ def main(args: Namespace) -> None:
         input_path = Path(input_path)
         output_path = Path(output_path)
 
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
         with open(input_path, "r") as f, open(output_path, "w", encoding="utf-8") as of:
             data_dict: Dict[str, Any] = json.load(f)
             data_samples: List[Dict[str]] = data_dict["instances"]
