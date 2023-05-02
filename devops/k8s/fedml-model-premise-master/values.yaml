@@ -86,9 +86,6 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 
-nodeSelector:
-  fedml-master-node: "true"
-
 tolerations: []
 
 affinity: {}
