@@ -86,6 +86,9 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 
+nodeSelector:
+  fedml-master-node: "true"
+
 tolerations: []
 
 affinity: {}
@@ -120,8 +123,6 @@ inferenceGateway:
       fedmlInferUrl: "default"
       fedmlInferPort: 5001
       fedmlRunningSource: "k8s"
-  nodeSelector:
-    fedml-inference-ingress: "true"
   service:
     type: ClusterIP
     port: 5001
