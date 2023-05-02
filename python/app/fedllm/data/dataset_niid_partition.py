@@ -124,6 +124,7 @@ def save_partition(
                    f"{output_base_path.suffix}"
 
         output_path = output_base_path.parent / filename
+        output_path.parent.mkdir(parents=True, exist_ok=True)
         dataset.select(indices).to_json(output_path)
 
 
