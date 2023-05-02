@@ -107,26 +107,28 @@ sudo chmod 777 /var/run/docker.sock
 ***On GPUs:***
 ```
 FEDML_DOCKER_IMAGE=fedml/fedml:latest-torch1.13.1-cuda11.6-cudnn8-devel
-WORKSPACE=/home/fedml/fedml_source
+LOCAL_WORKSPACE=$PleaseUseYourLocalDirectory
+DOCKER_WORKSPACE=/home/fedml/fedml_source
 
-docker run -t -i -v $WORKSPACE:$WORKSPACE --shm-size=64g --ulimit nofile=65535 --ulimit memlock=-1 --privileged \
---gpus all \
---network=host \
---env WORKSPACE=$WORKSPACE \
-$FEDML_DOCKER_IMAGE \
-/bin/bash
+docker run -v $LOCAL_WORKSPACE:$DOCKER_WORKSPACE --shm-size=64g --ulimit nofile=65535 --ulimit memlock=-1 --privileged --gpus all --network=host --env WORKSPACE=$DOCKER_WORKSPACE -ti $FEDML_DOCKER_IMAGE /bin/bash
 ```
 
 ***On CPUs:***
 ```
 FEDML_DOCKER_IMAGE=fedml/fedml:latest-torch1.13.1-cuda11.6-cudnn8-devel
-WORKSPACE=/home/fedml/fedml_source
+LOCAL_WORKSPACE=$PleaseUseYourLocalDirectory
+DOCKER_WORKSPACE=/home/fedml/fedml_source
 
-docker run -t -i -v $WORKSPACE:$WORKSPACE --shm-size=64g --ulimit nofile=65535 --ulimit memlock=-1 --privileged \
---network=host \
---env WORKSPACE=$WORKSPACE \
-$FEDML_DOCKER_IMAGE \
-/bin/bash
+ddocker run -v $LOCAL_WORKSPACE:$DOCKER_WORKSPACE --shm-size=64g --ulimit nofile=65535 --ulimit memlock=-1 --privileged --network=host --env WORKSPACE=$DOCKER_WORKSPACE -ti $FEDML_DOCKER_IMAGE /bin/bash
+```
+
+if you are running on MACOS M1/M2, you may use the following command:
+```
+FEDML_DOCKER_IMAGE=fedml/fedml:0.8.4a13-torch1.13.1-cuda11.6-cudnn8-devel
+LOCAL_WORKSPACE=$PleaseUseYourLocalDirectory
+DOCKER_WORKSPACE=/home/fedml/fedml_source
+
+docker run  --platform linux/amd64  -v $LOCAL_WORKSPACE:$DOCKER_WORKSPACE --shm-size=64g --ulimit nofile=65535 --ulimit memlock=-1 --privileged --network=host --env WORKSPACE=$DOCKER_WORKSPACE -ti $FEDML_DOCKER_IMAGE /bin/bash
 ```
 
 You should now see a prompt that looks something like:
