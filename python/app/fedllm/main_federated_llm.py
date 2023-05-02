@@ -21,6 +21,7 @@ from train import (
     SavePeftModelCallback,
     TokenizerType,
 )
+from utils import to_device, process_state_dict
 
 
 def get_hf_trainer(args: Arguments, model: ModelType, tokenizer: TokenizerType, **kwargs) -> HfTrainer:
@@ -112,7 +113,7 @@ class LLMAggregator(ServerAggregator):
         self.model = model
 
         self.trainer = get_hf_trainer(
-            args=args,
+            args=self.args,
             model=self.model,
             tokenizer=self.tokenizer,
             # save peft adapted model weights
@@ -122,10 +123,14 @@ class LLMAggregator(ServerAggregator):
 
     def get_model_params(self) -> OrderedDict:
         state_dict = get_model_state_dict(self.trainer, self.temp_ckpt_dir)
-        return OrderedDict(get_peft_model_state_dict(self.model, state_dict=state_dict))
+        peft_state_dict = to_device(get_peft_model_state_dict(self.model, state_dict=state_dict), device="cpu")
+        return OrderedDict(peft_state_dict)
 
     def set_model_params(self, model_parameters) -> None:
         # TODO: verify DeepSpeed support
+        model_parameters = to_device(model_parameters, device="cpu")
+        model_parameters = process_state_dict(model_parameters, get_peft_model_state_dict(self.model))
+
         set_peft_model_state_dict(self.model, model_parameters)
 
     def test(self, test_data, device, args: Arguments) -> None:
