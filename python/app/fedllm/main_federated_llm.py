@@ -29,6 +29,9 @@ def get_hf_trainer(args: Arguments, model: ModelType, tokenizer: TokenizerType, 
     # TODO: scrutinize
     if not args.using_gpu or torch.cuda.device_count() == 1:
         args_dict.pop("local_rank", None)
+    if args.role == "client":
+        # disable logging for client
+        args_dict["report_to"] = "none"
     training_args, *_ = HfArgumentParser(TrainingArguments).parse_dict(args_dict, allow_extra_keys=True)
 
     return HfTrainer(
@@ -134,6 +137,8 @@ class LLMAggregator(ServerAggregator):
         set_peft_model_state_dict(self.model, model_parameters)
 
     def test(self, test_data, device, args: Arguments) -> None:
+        # update global_step
+        self.trainer.state.global_step = self.args.round_idx
         self.trainer.evaluate(eval_dataset=test_data)
 
 
