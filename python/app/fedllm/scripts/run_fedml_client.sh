@@ -19,7 +19,7 @@ NUM_GPU="$(python -c "import torch; print(torch.cuda.device_count())")"
 NUM_NODES="${5:-1}"
 
 # FedML config
-CONFIG_PATH="fedml_config/fedml_client_config.yaml"
+CONFIG_PATH="fedml_config/fedml_config.yaml"
 
 deepspeed \
   --num_nodes="${NUM_NODES}" \

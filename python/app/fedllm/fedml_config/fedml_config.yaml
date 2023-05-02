@@ -13,7 +13,7 @@ data_args:
 
 model_args:
   # below copied from scripts/train_deepspeed.sh
-  model_name: "EleutherAI/pythia-6.9b"
+  model_name: "EleutherAI/pythia-70m" # EleutherAI/pythia-70m; EleutherAI/pythia-6.9b
   use_lora: True
 
 train_args:
@@ -35,10 +35,11 @@ train_args:
   learning_rate: 0.000005
   warmup_steps: 50
   num_train_epochs: 1   # number of training epoch for client on each round
-  output_dir: ".logs/FedML/dolly_pythia-6.9b/client"
+  output_dir: ".logs/FedML/dolly_pythia-70m"
   logging_steps: 50
   eval_steps: 200
   save_steps: 200
+  max_steps: 4
   save_total_limit: 20
   logging_strategy: "steps"
   evaluation_strategy: "no"  # should be turned off
