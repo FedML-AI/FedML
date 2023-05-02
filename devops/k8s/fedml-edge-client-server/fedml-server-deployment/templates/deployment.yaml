@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "fedml-server-deployment.fullname" . }}
+  namespace: {{- with .Values.namespace }}
   labels:
     {{- include "fedml-server-deployment.labels" . | nindent 4 }}
 spec:
