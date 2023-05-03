@@ -124,7 +124,7 @@ ddocker run -v $LOCAL_WORKSPACE:$DOCKER_WORKSPACE --shm-size=64g --ulimit nofile
 
 if you are running on MACOS M1/M2, you may use the following command:
 ```
-FEDML_DOCKER_IMAGE=fedml/fedml:0.8.4a13-torch1.13.1-cuda11.6-cudnn8-devel
+FEDML_DOCKER_IMAGE=fedml/fedml:latest-torch1.13.1-cuda11.6-cudnn8-devel
 LOCAL_WORKSPACE=$PleaseUseYourLocalDirectory
 DOCKER_WORKSPACE=/home/fedml/fedml_source
 
