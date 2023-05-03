@@ -26,7 +26,7 @@ deepspeed \
   --num_gpus="${NUM_GPU}" \
   --master_addr="${MASTER_ADDR}" \
   --master_port="${MASTER_PORT}" \
-  main_federated_llm.py \
+  main_fedllm.py \
   --cf "${CONFIG_PATH}" \
   --rank "${RANK}" \
   --role server \
