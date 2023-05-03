@@ -49,16 +49,22 @@ Inference end point ingress will be used as your model serving endpoint URL whic
 
    ```kubectl get nodes --show-labels```
 
-### 2). You need to specify at least one node as your inference end point ingress node via kubectl label CLI:
+### 2). You need to specify at least one node as your slave node via kubectl label CLI:
+
+   ```kubectl label nodes <your-node-name> fedml-slave-node=true```
+
+   ```kubectl get nodes --show-labels```
+
+### 3). You need to specify at least one node as your inference end point ingress node via kubectl label CLI:
 
    ```kubectl label nodes <your-node-name> fedml-inference-ingress=true```
 
    ```kubectl get nodes --show-labels```
 
-### 3). Prepare parameters will be used in the next step.
+### 4). Prepare parameters will be used in the next step.
  You should fetch $YourAccountId and $YourApiKey from ModelOps(open.fedml.ai) which will be used in the next step. 
 
-### 4). You may run the Helm Charts Installation commands to install FedML model serving packages to the above labeled nodes.
+### 5). You may run the Helm Charts Installation commands to install FedML model serving packages to the above labeled nodes.
 
 ```kubectl create namespace $YourNameSpace```
 
@@ -97,7 +103,7 @@ After you have installed FedML model serving packages, you may run the helm upgr
 e.g.
 ```helm upgrade --set "autoscaling.enabled=true" --set replicaCount=$InstanceNumber fedml-model-premise-master fedml-model-premise-master-latest.tgz -n $YourNameSpace```
 
-### 5). Config your CNAME record in your DNS provider (Godaddy, wordpress, AWS Route 53...)
+### 6). Config your CNAME record in your DNS provider (Godaddy, wordpress, AWS Route 53...)
 #### (a). Find the Kubernetes nginx ingress named 'fedml-model-inference-gateway' in your Kubernetes cluster.
 #### (b). Fetch its gateway address, e.g. a865e3a1e9aa54c71b50e3a6c764cbd3-337285825.us-west-1.elb.amazonaws.com
 #### (c). Set your CNAME record, config $YourEndPointIngressDomainName to point to the above gateway address 
