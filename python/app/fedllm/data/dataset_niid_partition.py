@@ -24,6 +24,12 @@ def _get_arg_parser() -> ArgumentParser:
         help="client number for lda partition"
     )
     parser.add_argument(
+        "--client_start_idx",
+        type=int,
+        default=1,
+        help="starting client index"
+    )
+    parser.add_argument(
         "-i",
         "--dataset_path",
         type=str,
@@ -114,11 +120,12 @@ def save_partition(
         dataset: Dataset,
         partition_idx: List[List[int]],
         output_base_path: str,
-        seed: Optional[int]
+        seed: Optional[int],
+        client_start_idx: int = 0
 ) -> None:
     output_base_path = Path(output_base_path)
 
-    for client_idx, indices in enumerate(partition_idx):
+    for client_idx, indices in enumerate(partition_idx, start=client_start_idx):
         filename = f"{output_base_path.stem}-client_idx={client_idx}" \
                    f",max_client={len(partition_idx)},seed={seed}" \
                    f"{output_base_path.suffix}"
@@ -184,8 +191,8 @@ def main(args: Namespace) -> None:
     print(f"minsize of the train data: {min_train_size:,}")
     print(f"minsize of the test data {min_test_size:,}")
 
-    save_partition(train_dataset, train_partition_idx, train_output_path, args.seed)
-    save_partition(test_dataset, test_partition_idx, test_output_path, args.seed)
+    save_partition(train_dataset, train_partition_idx, train_output_path, args.seed, args.client_start_idx)
+    save_partition(test_dataset, test_partition_idx, test_output_path, args.seed, args.client_start_idx)
 
 
 if __name__ == '__main__':
