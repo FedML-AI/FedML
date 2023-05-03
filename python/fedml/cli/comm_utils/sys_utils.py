@@ -507,18 +507,17 @@ def get_device_id_in_docker():
     product_uuid_file = "/sys/class/dmi/id/product_uuid"
 
     if os.path.exists(docker_env_file) or os.path.exists(cgroup_file):
-        if os.path.exists(product_uuid_file):
-            try:
-                with open(product_uuid_file, 'r') as f:
-                    sys_device_id = f.readline().rstrip("\n").strip(" ")
-                    if sys_device_id is None or sys_device_id == "":
-                        device_id = str(uuid.uuid4())
-                    else:
-                        device_id = "{}-@-{}".format(sys_device_id, str(uuid.uuid4()))
-                    return f"{device_id}-docker"
-            except Exception as e:
-                device_id = str(uuid.uuid4())
+        try:
+            with open(product_uuid_file, 'r') as f:
+                sys_device_id = f.readline().rstrip("\n").strip(" ")
+                if sys_device_id is None or sys_device_id == "":
+                    device_id = str(uuid.uuid4())
+                else:
+                    device_id = "{}-@-{}".format(sys_device_id, str(uuid.uuid4()))
                 return f"{device_id}-docker"
+        except Exception as e:
+            device_id = str(uuid.uuid4())
+            return f"{device_id}-docker"
     return None
 
 
