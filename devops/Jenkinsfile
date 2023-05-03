@@ -415,15 +415,15 @@ pipeline {
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_DEV --replicas=1 deployment/$DEPLOY_NAME_2'
                 }
 
-                withCredentials([
-                    kubeconfigFile(
-                    credentialsId: env.DEV_KUBECONFIG_CREDENTIAL_ID_FOR_MODEL_SERVING,
-                    variable: 'KUBECONFIG')
-                    ]) {
-                    sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-premise-master'
-                    sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-inference-gateway'
-                    sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-premise-slave'
-                }
+//                 withCredentials([
+//                     kubeconfigFile(
+//                     credentialsId: env.DEV_KUBECONFIG_CREDENTIAL_ID_FOR_MODEL_SERVING,
+//                     variable: 'KUBECONFIG')
+//                     ]) {
+//                     sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-premise-master'
+//                     sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-inference-gateway'
+//                     sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-premise-slave'
+//                 }
              }
           }
         }
@@ -445,15 +445,15 @@ pipeline {
                     sh 'kubectl scale -n $DEPLOY_NAMESPACE_TEST --replicas=1 deployment/$DEPLOY_NAME'
                 }
 
-                withCredentials([
-                    kubeconfigFile(
-                    credentialsId: env.TEST_KUBECONFIG_CREDENTIAL_ID_FOR_MODEL_SERVING,
-                    variable: 'KUBECONFIG')
-                    ]) {
-                    sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-premise-master'
-                    sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-inference-gateway'
-                    sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-premise-slave'
-                 }
+//                 withCredentials([
+//                     kubeconfigFile(
+//                     credentialsId: env.TEST_KUBECONFIG_CREDENTIAL_ID_FOR_MODEL_SERVING,
+//                     variable: 'KUBECONFIG')
+//                     ]) {
+//                     sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-premise-master'
+//                     sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-inference-gateway'
+//                     sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-premise-slave'
+//                  }
              }
           }
         }
@@ -489,15 +489,15 @@ pipeline {
                     sh 'kubectl rollout restart -n $DOCS_DEPLOY_NAMESPACE_PRODUCTION deployment/$DOCS_DEPLOY_NAME'
                 }
 
-                withCredentials([
-                    kubeconfigFile(
-                    credentialsId: env.PRODUCTION_KUBECONFIG_CREDENTIAL_ID_FOR_MODEL_SERVING,
-                    variable: 'KUBECONFIG')
-                    ]) {
-                    sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-premise-master'
-                    sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-inference-gateway'
-                    sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-premise-slave'
-                }
+//                 withCredentials([
+//                     kubeconfigFile(
+//                     credentialsId: env.PRODUCTION_KUBECONFIG_CREDENTIAL_ID_FOR_MODEL_SERVING,
+//                     variable: 'KUBECONFIG')
+//                     ]) {
+//                     sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-premise-master'
+//                     sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-inference-gateway'
+//                     sh 'kubectl rollout restart -n $MODEL_SERVING_NAMESPACE deployment/fedml-model-premise-slave'
+//                 }
              }
           }
        }
