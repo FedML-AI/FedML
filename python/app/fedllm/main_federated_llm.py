@@ -24,14 +24,27 @@ from train import (
 from utils import to_device, process_state_dict
 
 
+def _parse_args(args: Arguments) -> Arguments:
+    if args.role == "client":
+        if hasattr(args, "client_dataset_path"):
+            args.dataset_path = args.client_dataset_path
+        # disable logging for client
+        setattr(args, "report_to", "none")
+
+    if isinstance(args.dataset_path, (tuple, list)):
+        args.dataset_path = [
+            p.format(rank=args.rank, client_num_in_total=args.client_num_in_total)
+            for p in args.dataset_path
+        ]
+
+    return args
+
+
 def get_hf_trainer(args: Arguments, model: ModelType, tokenizer: TokenizerType, **kwargs) -> HfTrainer:
     args_dict = dict(args.__dict__)
     # TODO: scrutinize
     if not args.using_gpu or torch.cuda.device_count() == 1:
         args_dict.pop("local_rank", None)
-    if args.role == "client":
-        # disable logging for client
-        args_dict["report_to"] = "none"
     training_args, *_ = HfArgumentParser(TrainingArguments).parse_dict(args_dict, allow_extra_keys=True)
 
     return HfTrainer(
@@ -137,7 +150,8 @@ class LLMAggregator(ServerAggregator):
         set_peft_model_state_dict(self.model, model_parameters)
 
     def test(self, test_data, device, args: Arguments) -> None:
-        # update global_step
+        # update epoch, global_step for logging
+        self.trainer.state.epoch = self.args.round_idx
         self.trainer.state.global_step = self.args.round_idx
         self.trainer.evaluate(eval_dataset=test_data)
 
@@ -218,4 +232,4 @@ def main(args: Arguments) -> None:
 
 if __name__ == "__main__":
     # init FedML framework
-    main(args=fedml.init())
+    main(args=_parse_args(fedml.init()))
