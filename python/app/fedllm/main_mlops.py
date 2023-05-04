@@ -11,9 +11,10 @@ if __name__ == '__main__':
         " ".join([
             "bash",
             "scripts/run_fedml.sh",
-            "",  # master address
-            "",  # master port
-            "",  # number of nodes
+            "\"\"",  # master address
+            "\"\"",  # master port
+            "\"\"",  # number of nodes
+            "main_fedllm.py",  # main program
             *sys.argv[1:],
         ]),
         # stdout=subprocess.PIPE,
