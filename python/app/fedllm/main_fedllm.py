@@ -11,6 +11,7 @@ from transformers import HfArgumentParser, Trainer as HfTrainer, TrainingArgumen
 
 from train import (
     DataArguments,
+    DEFAULT_MAX_SEQ_LENGTH,
     get_data_collator,
     get_dataset,
     get_model,
@@ -21,6 +22,23 @@ from train import (
     SavePeftModelCallback,
     TokenizerType,
 )
+from utils import to_device, process_state_dict
+
+
+def _parse_args(args: Arguments) -> Arguments:
+    if args.role == "client":
+        if hasattr(args, "client_dataset_path"):
+            args.dataset_path = args.client_dataset_path
+        # disable logging for client
+        setattr(args, "report_to", "none")
+
+    if isinstance(args.dataset_path, (tuple, list)):
+        args.dataset_path = [
+            p.format(rank=args.rank, client_num_in_total=args.client_num_in_total)
+            for p in args.dataset_path
+        ]
+
+    return args
 
 
 def get_hf_trainer(args: Arguments, model: ModelType, tokenizer: TokenizerType, **kwargs) -> HfTrainer:
@@ -34,7 +52,7 @@ def get_hf_trainer(args: Arguments, model: ModelType, tokenizer: TokenizerType, 
         model=model,
         tokenizer=tokenizer,
         args=training_args,
-        data_collator=get_data_collator(tokenizer),
+        data_collator=get_data_collator(tokenizer, getattr(args, "max_seq_length", DEFAULT_MAX_SEQ_LENGTH)),
         **kwargs
     )
 
@@ -112,7 +130,7 @@ class LLMAggregator(ServerAggregator):
         self.model = model
 
         self.trainer = get_hf_trainer(
-            args=args,
+            args=self.args,
             model=self.model,
             tokenizer=self.tokenizer,
             # save peft adapted model weights
@@ -122,13 +140,20 @@ class LLMAggregator(ServerAggregator):
 
     def get_model_params(self) -> OrderedDict:
         state_dict = get_model_state_dict(self.trainer, self.temp_ckpt_dir)
-        return OrderedDict(get_peft_model_state_dict(self.model, state_dict=state_dict))
+        peft_state_dict = to_device(get_peft_model_state_dict(self.model, state_dict=state_dict), device="cpu")
+        return OrderedDict(peft_state_dict)
 
     def set_model_params(self, model_parameters) -> None:
         # TODO: verify DeepSpeed support
+        model_parameters = to_device(model_parameters, device="cpu")
+        model_parameters = process_state_dict(model_parameters, get_peft_model_state_dict(self.model))
+
         set_peft_model_state_dict(self.model, model_parameters)
 
     def test(self, test_data, device, args: Arguments) -> None:
+        # update epoch, global_step for logging
+        self.trainer.state.epoch = self.args.round_idx
+        self.trainer.state.global_step = self.args.round_idx
         self.trainer.evaluate(eval_dataset=test_data)
 
 
@@ -179,6 +204,7 @@ def main(args: Arguments) -> None:
 
     if dataset_args.max_seq_length is None:
         dataset_args.max_seq_length = get_max_seq_length(model)
+        setattr(args, "max_seq_length", dataset_args.max_seq_length)
 
     train_dataset, test_dataset = get_dataset(
         dataset_path=dataset_args.dataset_path,
@@ -208,4 +234,4 @@ def main(args: Arguments) -> None:
 
 if __name__ == "__main__":
     # init FedML framework
-    main(args=fedml.init())
+    main(args=_parse_args(fedml.init()))

@@ -3,17 +3,25 @@ common_args:
   scenario: "horizontal"
   random_seed: 0
 
+environment_args:
+  bootstrap: fedml_config/bootstrap.sh  # set to "config/bootstrap.sh" when using MLOps
+
 data_args:
   dataset: "databricks-dollys"  # dataset name
   data_cache_dir: ~/fedml_data
   # below copied from scripts/train_deepspeed.sh
   dataset_path:
-    - ".data/databricks-dolly-15k.jsonl"
+    #    - ".data/databricks-dolly-15k.jsonl"
+    - ".data/dolly_niid_full/train_databricks-dolly-15k-seed=1234.jsonl"
+    - ".data/dolly_niid_full/test_databricks-dolly-15k-seed=1234.jsonl"
+  client_dataset_path:
+    - ".data/dolly_niid_splits/train_databricks-dolly-15k-client_idx={rank},max_client={client_num_in_total},seed=1234.jsonl"
+    - ".data/dolly_niid_full/test_databricks-dolly-15k-seed=1234.jsonl"
   test_dataset_size: 200
 
 model_args:
   # below copied from scripts/train_deepspeed.sh
-  model_name: "EleutherAI/pythia-6.9b"
+  model_name: "EleutherAI/pythia-70m" # EleutherAI/pythia-70m; EleutherAI/pythia-6.9b
   use_lora: True
 
 train_args:
@@ -35,19 +43,20 @@ train_args:
   learning_rate: 0.000005
   warmup_steps: 50
   num_train_epochs: 1   # number of training epoch for client on each round
-  output_dir: ".logs/FedML/dolly_pythia-6.9b/client"
+  output_dir: ".logs/FedML/dolly_niid_pythia-70m"
   logging_steps: 50
   eval_steps: 200
   save_steps: 200
+  max_steps: 4
   save_total_limit: 20
-  logging_strategy: "steps"
+  logging_strategy: "no"
   evaluation_strategy: "no"  # should be turned off
-  save_strategy: "steps"
+  save_strategy: "no"
   eval_accumulation_steps: 4
 #  save_on_each_node: True
 
 validation_args:
-  frequency_of_the_test: 5
+  frequency_of_the_test: 1
 
 device_args:
   using_gpu: True
