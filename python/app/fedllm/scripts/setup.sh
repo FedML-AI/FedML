@@ -4,7 +4,7 @@ BASE_DIR="$(dirname "$0")"
 BASE_DIR="$(realpath "${BASE_DIR}/../")"
 cd "${BASE_DIR}"
 
-TARGET_DATASET_HASH="60afe88200cf8fe9484acc364327a9d0"
+TARGET_DATASET_HASH="0378b9f4db7c95332d431c096b1161ee"
 
 dataset_dir="${BASE_DIR}/.data"
 mkdir -p "${dataset_dir}"
@@ -24,6 +24,6 @@ if [ "${dataset_hash}" != "${TARGET_DATASET_HASH}" ]; then
   [ -f "${dataset_path}" ] && rm "${dataset_path}"
 
   wget --no-check-certificate \
-    --content-disposition "https://github.com/databrickslabs/dolly/raw/master/data/databricks-dolly-15k.jsonl" \
+    --content-disposition "https://huggingface.co/datasets/databricks/databricks-dolly-15k/resolve/d72c16e4644a463b9c678c71d9440befd4594556/databricks-dolly-15k.jsonl" \
     --directory-prefix "${dataset_dir}"
 fi
