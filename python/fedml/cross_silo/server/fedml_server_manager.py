@@ -56,14 +56,11 @@ class FedMLServerManager(FedMLCommManager):
         try:
             # get input type and shape for inference
             dummy_input_tensor = self.aggregator.get_dummy_input_tensor()
-            logging.info(f"dummy tensor: {dummy_input_tensor}")  # sample tensor for ONNX
 
             model_net_url = mlops.log_training_model_net_info(self.aggregator.aggregator.model, dummy_input_tensor)
 
             # type and shape for later configuration
             input_shape, input_type = self.aggregator.get_input_shape_type()
-            logging.info(f"input shape: {input_shape}")  # [torch.Size([1, 24]), torch.Size([1, 2])]
-            logging.info(f"input type: {input_type}")    # [torch.int64, torch.float32]
 
             # Send output input size and type (saved as json) to s3,
             # and transfer when click "Create Model Card"
