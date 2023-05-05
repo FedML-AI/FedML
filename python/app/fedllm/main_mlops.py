@@ -1,11 +1,22 @@
 import os
-import sys
 from pathlib import Path
 import subprocess
+import sys
 
 if __name__ == '__main__':
-    curr_dir = Path(__file__).parent
-    os.chdir(curr_dir)
+    from argparse import ArgumentParser
+
+    parser = ArgumentParser()
+    parser.add_argument("--rank", type=int, default=0)
+
+    # go to project root directory
+    os.chdir(Path(__file__).parent)
+
+    torch_distributed_default_port = int(os.getenv("TORCH_DISTRIBUTED_DEFAULT_PORT", 29500))
+
+    args, *_ = parser.parse_known_args()
+
+    # TODO: parse RANK
 
     """
         process = ClientConstants.exec_console_with_shell_script_list(
@@ -21,23 +32,19 @@ if __name__ == '__main__':
             ],
         python main_mlops.py --cf fedml_config/fedml_config.yaml --rank 0 --role client
     """
-    print("sys.argv = {}".format(sys.argv))
+    print(f"sys.argv = {sys.argv}")
     result = subprocess.run(
         " ".join([
             "bash",
             "scripts/run_fedml.sh",
             "\"\"",  # master address
-            "\"\"",  # master port
+            f"{torch_distributed_default_port + args.rank}",  # master port
             "\"\"",  # number of nodes
             "main_fedllm.py",  # main program
             *sys.argv[1:],
         ]),
-        # stdout=subprocess.PIPE,
-        # stderr=subprocess.PIPE,
         stdout=sys.stdout,
         stderr=sys.stderr,
-        shell=True,
-        # capture_output=True,
-        # text=True
+        shell=True
     )
     print(result)
