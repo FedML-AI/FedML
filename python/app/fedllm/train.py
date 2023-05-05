@@ -46,6 +46,7 @@ MODEL_NAMES = [
     "EleutherAI/gpt-j-6B",
 ]
 DEFAULT_MAX_SEQ_LENGTH = 1024
+IGNORE_INDEX = -100
 
 INSTRUCTION_KEY = "### Instruction:"
 INPUT_KEY = "Input:"
@@ -140,7 +141,7 @@ class DataCollatorForCompletionOnlyLM(DataCollatorForLanguageModeling):
             response_token_ids_end_idx = response_token_ids_start_idx + 1
 
             # Make pytorch loss function ignore all tokens up through the end of the response key
-            labels[i, :response_token_ids_end_idx] = -100
+            labels[i, :response_token_ids_end_idx] = IGNORE_INDEX
 
         batch["labels"] = labels
 
@@ -310,12 +311,12 @@ def get_max_seq_length(model: ModelType, default_max_seq_length: int = DEFAULT_M
     return embedding_size
 
 
-def get_data_collator(tokenizer: TokenizerType) -> DataCollatorForCompletionOnlyLM:
+def get_data_collator(tokenizer: TokenizerType, pad_to_multiple_of: int = 8) -> DataCollatorForCompletionOnlyLM:
     return DataCollatorForCompletionOnlyLM(
         tokenizer=tokenizer,
         mlm=False,
         return_tensors="pt",
-        pad_to_multiple_of=8
+        pad_to_multiple_of=pad_to_multiple_of
     )
 
 
@@ -349,7 +350,7 @@ def train() -> None:
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=test_dataset,
-        data_collator=get_data_collator(tokenizer),
+        data_collator=get_data_collator(tokenizer, pad_to_multiple_of=dataset_args.max_seq_length),
         callbacks=[
             # save peft adapted model weights
             SavePeftModelCallback,
