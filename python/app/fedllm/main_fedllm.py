@@ -11,6 +11,7 @@ from transformers import HfArgumentParser, Trainer as HfTrainer, TrainingArgumen
 
 from train import (
     DataArguments,
+    DEFAULT_MAX_SEQ_LENGTH,
     get_data_collator,
     get_dataset,
     get_model,
@@ -51,7 +52,7 @@ def get_hf_trainer(args: Arguments, model: ModelType, tokenizer: TokenizerType, 
         model=model,
         tokenizer=tokenizer,
         args=training_args,
-        data_collator=get_data_collator(tokenizer),
+        data_collator=get_data_collator(tokenizer, getattr(args, "max_seq_length", DEFAULT_MAX_SEQ_LENGTH)),
         **kwargs
     )
 
@@ -203,6 +204,7 @@ def main(args: Arguments) -> None:
 
     if dataset_args.max_seq_length is None:
         dataset_args.max_seq_length = get_max_seq_length(model)
+        setattr(args, "max_seq_length", dataset_args.max_seq_length)
 
     train_dataset, test_dataset = get_dataset(
         dataset_path=dataset_args.dataset_path,
