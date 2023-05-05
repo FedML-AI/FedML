@@ -3,6 +3,9 @@ common_args:
   scenario: "horizontal"
   random_seed: 0
 
+environment_args:
+  bootstrap: fedml_config/bootstrap.sh  # set to "config/bootstrap.sh" when using MLOps
+
 data_args:
   dataset: "databricks-dollys"  # dataset name
   data_cache_dir: ~/fedml_data

@@ -14,6 +14,8 @@ BASE_DIR="$(realpath "${BASE_DIR}/../../")"
 cd "${BASE_DIR}"
 
 TARGET="${1:-"client"}"
+CONFIG_PATH="${2:-"fedml_config"}" # must be the directory containing the config file
+
 GIT_IGNORE_PATTERN=(
   "cmake-build-*"
   ".idea"
@@ -33,8 +35,8 @@ GIT_IGNORE_PATTERN=(
   "*_host_file"
   ".data"
   ".logs"
-  "cache/*"
-  "devops/geo-distributed-cluster/*"
+  "cache"
+  "devops/geo-distributed-cluster"
 )
 IGNORE_PATTERN=(
   "${GIT_IGNORE_PATTERN[@]}"
@@ -57,4 +59,5 @@ fedml build \
   -sf . \
   -ep main_mlops.py \
   -df build \
+  -cf "${CONFIG_PATH}" \
   -ig "${IGNORE_STR}"
