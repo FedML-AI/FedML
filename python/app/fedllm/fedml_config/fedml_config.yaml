@@ -7,17 +7,14 @@ environment_args:
   bootstrap: fedml_config/bootstrap.sh  # set to "config/bootstrap.sh" when using MLOps
 
 data_args:
-  dataset: "databricks-dollys"  # dataset name
+  dataset: "databricks-dolly"  # dataset name
   data_cache_dir: ~/fedml_data
   # below copied from scripts/train_deepspeed.sh
   dataset_path:
-    #    - ".data/databricks-dolly-15k.jsonl"
-    - ".data/dolly_niid_full/train_databricks-dolly-15k-seed=1234.jsonl"
-    - ".data/dolly_niid_full/test_databricks-dolly-15k-seed=1234.jsonl"
+    - ".data/databricks-dolly-15k.jsonl"
   client_dataset_path:
-    - ".data/dolly_niid_splits/train_databricks-dolly-15k-client_idx={rank},max_client={client_num_in_total},seed=1234.jsonl"
-    - ".data/dolly_niid_full/test_databricks-dolly-15k-seed=1234.jsonl"
-  test_dataset_size: 200
+    - ".data/databricks-dolly-15k.jsonl"
+  test_dataset_size: 1000
 
 model_args:
   # below copied from scripts/train_deepspeed.sh
@@ -40,7 +37,7 @@ train_args:
   gradient_checkpointing: True
   per_device_train_batch_size: 2
   per_device_eval_batch_size: 2
-  learning_rate: 0.000005
+  learning_rate: 5.0e-6
   warmup_steps: 50
   num_train_epochs: 1   # number of training epoch for client on each round
   output_dir: ".logs/FedML/dolly_niid_pythia-70m"
@@ -53,7 +50,7 @@ train_args:
   evaluation_strategy: "no"  # should be turned off
   save_strategy: "no"
   eval_accumulation_steps: 4
-#  save_on_each_node: True
+  #  save_on_each_node: True
 
 validation_args:
   frequency_of_the_test: 1

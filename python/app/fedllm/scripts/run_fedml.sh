@@ -5,14 +5,14 @@ BASE_DIR="$(dirname "$0")"
 BASE_DIR="$(realpath "${BASE_DIR}/../")"
 cd "${BASE_DIR}"
 
-NUM_GPU="$(python -c "import torch; print(torch.cuda.device_count())")"
+NUM_GPU="$(python3 -c "import torch; print(torch.cuda.device_count())")"
 
 MASTER_ADDR="${1:-"localhost"}"
 MASTER_PORT="${2:-29500}"
 NUM_NODES="${3:-1}"
 
-#echo "CUDA_VISIBLE_DEVICES=\"${CUDA_VISIBLE_DEVICES}\""
-#echo "${MASTER_ADDR}:${MASTER_PORT},${NUM_GPU},${NUM_NODES}"
+echo "CUDA_VISIBLE_DEVICES=\"${CUDA_VISIBLE_DEVICES}\""
+echo "${MASTER_ADDR}:${MASTER_PORT},${NUM_GPU},${NUM_NODES}"
 
 # DeepSpeed setting
 DS_ARGS=(

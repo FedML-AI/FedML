@@ -5,7 +5,9 @@ BASE_DIR="$(dirname "$0")"
 BASE_DIR="$(realpath "${BASE_DIR}/../")"
 cd "${BASE_DIR}"
 
-export WANDB_MODE=disabled # remove this line if you want to use wandb
+if [[ -z "${WANDB_MODE}" ]]; then
+  export WANDB_MODE=disabled # remove this line if you want to use wandb
+fi
 
 # FedML setting
 RANK=0

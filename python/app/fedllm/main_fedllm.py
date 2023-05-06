@@ -2,7 +2,7 @@ from collections import OrderedDict
 from pathlib import Path
 
 import fedml
-from fedml import FedMLRunner
+from fedml import FedMLRunner, mlops
 from fedml.arguments import Arguments
 from fedml.core import ClientTrainer, ServerAggregator
 from peft import get_peft_model_state_dict, set_peft_model_state_dict
@@ -154,7 +154,8 @@ class LLMAggregator(ServerAggregator):
         # update epoch, global_step for logging
         self.trainer.state.epoch = self.args.round_idx
         self.trainer.state.global_step = self.args.round_idx
-        self.trainer.evaluate(eval_dataset=test_data)
+        metrics = self.trainer.evaluate(eval_dataset=test_data)
+        mlops.log({**metrics, "round_idx": args.round_idx})
 
 
 def transform_data_to_fedml_format(args: Arguments, dataset):
