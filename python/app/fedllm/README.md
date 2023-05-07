@@ -77,7 +77,7 @@ the client(s) and server.
 **_Notice_**: since we use `RUN_ID` to uniquely identify experiments,
 we recommend that you carefully choose the `RUN_ID`.
 You may also generate a UUID for your `RUN_ID` with built-in Python module `uuid`;
-e.g. use `RUN_ID="$(python -c "import uuid; print(uuid.uuid4().hex)")"` in your shell.
+e.g. use `RUN_ID="$(python3 -c "import uuid; print(uuid.uuid4().hex)")"` in your shell.
 
 Example scripts:
 
