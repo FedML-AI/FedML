@@ -1,9 +1,9 @@
 from collections import OrderedDict
-import time
+# import time
 import numpy as np
 import torch
 import torch.nn.functional as F
-from matplotlib import pyplot as plt
+# from matplotlib import pyplot as plt
 from torchvision import transforms
 from typing import List, Tuple, Any
 import fedml
@@ -124,14 +124,15 @@ class DLGAttack(BaseAttackMethod):
                 print(iters, "%.4f" % current_loss.item())
                 history.append(tt(dummy_data[0].cpu()))
 
-        plt.figure(figsize=(12, 8))
-        for i in range(len(history)):
-            plt.subplot(3, 10, i + 1)
-            plt.imshow(history[i])
-            plt.title("iter=%d" % (i * 50))
-            plt.axis('off')
-        # plt.show()
-        filename = str(self.iteration_num) + '_' + str(round(time.time()*1000)) + '.png'
-        plt.savefig(filename)
+        # plot figures:
+        # plt.figure(figsize=(12, 8))
+        # for i in range(len(history)):
+        #     plt.subplot(3, 10, i + 1)
+        #     plt.imshow(history[i])
+        #     plt.title("iter=%d" % (i * 50))
+        #     plt.axis('off')
+        # # plt.show()
+        # filename = str(self.iteration_num) + '_' + str(round(time.time()*1000)) + '.png'
+        # plt.savefig(filename)
 
         return dummy_data, dummy_label

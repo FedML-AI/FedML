@@ -146,6 +146,7 @@ root@142ffce4cdf8:/home/fedml/fedml_source#
 ```
 
 **(3) Run light Docker with interactive mode**
+
 The light docker is a smaller image about 2.3GB size. So it can pull and run more smoothly.
 Each docker image needs more than 5GB memory size to run the fedml learning task.
 So, you need keep sufficient memory size for your federated learning task. 
@@ -175,6 +176,7 @@ root@142ffce4cdf8:/home/fedml/fedml_source#
 ```
 
 **(4) Run light Docker with daemon mode and automatically log into the MLOps platform**
+
 You may run the light docker as the daemon mode and automatically log into the MLOps platform as the client.
 The commands ars as follows:
 

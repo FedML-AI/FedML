@@ -1,5 +1,6 @@
 from .attack.byzantine_attack import ByzantineAttack
 from .attack.dlg_attack import DLGAttack
+from .attack.label_flipping_attack import LabelFlippingAttack
 from .attack.model_replacement_backdoor_attack import ModelReplacementBackdoorAttack
 from .constants import ATTACK_METHOD_BYZANTINE_ATTACK, ATTACK_LABEL_FLIPPING, BACKDOOR_ATTACK_MODEL_REPLACEMENT, \
     ATTACK_METHOD_DLG
@@ -32,8 +33,8 @@ class FedMLAttacker:
             self.attacker = None
             if self.attack_type == ATTACK_METHOD_BYZANTINE_ATTACK:
                 self.attacker = ByzantineAttack(args)
-            # elif self.attack_type == ATTACK_LABEL_FLIPPING:
-            #     self.attacker = LabelFlippingAttack(args)
+            elif self.attack_type == ATTACK_LABEL_FLIPPING:
+                self.attacker = LabelFlippingAttack(args)
             elif self.attack_type == BACKDOOR_ATTACK_MODEL_REPLACEMENT:
                 self.attacker = ModelReplacementBackdoorAttack(args)
             elif self.attack_type == ATTACK_METHOD_DLG:
@@ -60,6 +61,7 @@ class FedMLAttacker:
     def get_attack_types(self):
         return self.attack_type
 
+    # --------------- for model poisoning attacks --------------- #
     def is_model_attack(self):
         if self.is_attack_enabled() and self.attack_type in [
             ATTACK_METHOD_BYZANTINE_ATTACK, BACKDOOR_ATTACK_MODEL_REPLACEMENT
@@ -67,27 +69,37 @@ class FedMLAttacker:
             return True
         return False
 
-    def is_poison_data_attack(self):
-        if self.is_attack_enabled() and self.attack_type in []:
-            return True
-        return False
-
-    def is_reconstruct_data_attack(self):
-        if self.is_attack_enabled() and self.attack_type in [ATTACK_METHOD_DLG]:
-            return True
-        return False
-
     def attack_model(self, raw_client_grad_list: List[Tuple[float, OrderedDict]], extra_auxiliary_info: Any = None):
         if self.attacker is None:
             raise Exception("attacker is not initialized!")
         return self.attacker.attack_model(raw_client_grad_list, extra_auxiliary_info)
+    # --------------- for model poisoning attacks --------------- #
+
+    # --------------- for data poisoning attacks --------------- #
+    def is_poison_data_attack(self):
+        if self.is_attack_enabled() and self.attack_type in [ATTACK_LABEL_FLIPPING]:
+            return True
+        return False
+
+    def is_to_poison_data(self):
+        if self.attacker is None:
+            raise Exception("attacker is not initialized!")
+        return self.attacker.is_to_poison_data()
 
     def poison_data(self, dataset):
         if self.attacker is None:
             raise Exception("attacker is not initialized!")
         return self.attacker.poison_data(dataset)
+    # --------------- for data poisoning attacks --------------- #
+
+    # --------------- for data reconstructing attacks --------------- #
+    def is_reconstruct_data_attack(self):
+        if self.is_attack_enabled() and self.attack_type in [ATTACK_METHOD_DLG]:
+            return True
+        return False
 
     def reconstruct_data(self, raw_client_grad_list: List[Tuple[float, OrderedDict]], extra_auxiliary_info: Any = None):
         if self.attacker is None:
             raise Exception("attacker is not initialized!")
         self.attacker.reconstruct_data(raw_client_grad_list, extra_auxiliary_info=extra_auxiliary_info)
+    # --------------- for data reconstructing attacks --------------- #
