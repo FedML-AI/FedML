@@ -1,3 +1,4 @@
+import logging
 import math
 import random
 import numpy as np
@@ -104,7 +105,7 @@ def get_malicious_client_id_list(random_seed, client_num, malicious_client_num):
             random_seed
         )  # make sure for each comparison, we are selecting the same clients each round
         client_indexes = np.random.choice(range(client_num), num_clients, replace=False)
-    print("client_indexes = %s" % str(client_indexes))
+    print("malicious client_indexes = %s" % str(client_indexes))
     return client_indexes
 
 
@@ -116,7 +117,6 @@ def replace_original_class_with_target_class(
     :type targets: list
     :return: new class IDs
     """
-
     if (
             len(original_class_list) == 0
             or len(target_class_list) == 0
@@ -161,6 +161,26 @@ def log_client_data_statistics(poisoned_client_ids, train_data_local_dict):
             print("Client #{} has data distribution:".format(client_idx))
             for item in targets_set.items():
                 print("target:{} num:{}".format(item[0], item[1]))
+
+
+def get_client_data_stat(local_dataset):
+    print("-==========================")
+    targets_set = {}
+    for batch_idx, (data, targets) in enumerate(local_dataset):
+        for t in targets.tolist():
+            if t in targets_set.keys():
+                targets_set[t] += 1
+            else:
+                targets_set[t] = 1
+            # if t not in targets_set.keys():
+            #     targets_set[t] = 1
+            # else:
+            #     targets_set[t] += 1
+    total_counter = 0
+    for item in targets_set.items():
+        print("------target:{} num:{}".format(item[0], item[1]))
+        total_counter += item[1]
+    print(f"total counter = {total_counter}")
 
 
 def cross_entropy_for_onehot(pred, target):
