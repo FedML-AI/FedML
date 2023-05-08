@@ -59,7 +59,7 @@ bash scripts/train_deepspeed.sh \
   ... # additional arguments
 ```
 
-**_Tips_**: if you have an Amper or newer GPU, you could turn on bf16 to have more efficient training by passing
+**_Tips_**: if you have an Amper or newer GPU (e.g., RTX 3000 or newer), you could turn on **bf16** to have more efficient training by passing
 `--bf16 "True"` in the command line.
 
 **_Notice_**: when using PyTorch DDP with LoRA and gradient checkpointing,
@@ -69,7 +69,7 @@ by passing `--ddp_find_unused_parameters "False"` in the command line.
 ### Cross-silo Federated Learning
 
 To train/fine-tune in federated setting, you need to provide a FedML config file.
-An example can be found in [fedml_server_config.yaml](fedml_config/fedml_server_config.yaml).
+An example can be found in [fedml_config.yaml](fedml_config/fedml_config.yaml).
 You can have different config file for each client or server.
 To launch an experiment, a `RUN_ID` should be provided. For each experiment, the same `RUN_ID` should be used across all
 the client(s) and server.
@@ -77,7 +77,7 @@ the client(s) and server.
 **_Notice_**: since we use `RUN_ID` to uniquely identify experiments,
 we recommend that you carefully choose the `RUN_ID`.
 You may also generate a UUID for your `RUN_ID` with built-in Python module `uuid`;
-e.g. use `RUN_ID="$(python3 -c "import uuid; print(uuid.uuid4().hex)")"` in your shell.
+e.g. use `RUN_ID="$(python3 -c "import uuid; print(uuid.uuid4().hex)")"` in your shell script.
 
 Example scripts:
 
@@ -87,7 +87,7 @@ bash scripts/run_fedml_server.sh "$RUN_ID"
 
 # run client(s)
 for client_rank in "${client_ranks}"; do
-  bash scripts/run_fedml_client.sh "$client_rank" "$RUN_ID"
+  bash scripts/run_fedml_client.sh "$client_rank" "$RUN_ID" &
 done
 ```
 
@@ -95,24 +95,16 @@ See FedML's [Getting Started](https://doc.fedml.ai/starter/getting_started.html)
 
 ### Dependencies
 
-Notice that we require `peft>=0.3.0` which is not officially released yet.
-If you do not want to use our `requirements.txt`,
-you can install `peft` from its repo with the following command:
-
-```shell
-pip install git+https://github.com/huggingface/peft.git#egg=peft
-```
-
 We have tested our implement with the following setup:
 
 - Ubuntu `20.04.5 LTS`
 - CUDA `11.8`, `11.7` and `11.6`
 - Python `3.8.13`
-    - `fedml==0.8.3`
+    - `fedml>=0.8.4a7,<=0.8.4a17`
     - `torch==0.2.0`
     - `torchvision==0.15.1`
     - `transformers==4.28.1`
-    - `peft @ git+https://github.com/huggingface/peft.git@3890665e6082bdc354d4c3a26f3bf42ecedaaa81`
+    - `peft==0.3.0`
     - `datasets==2.11.0`
     - `deepspeed==0.9.1`
     - `numpy==1.24.3`
