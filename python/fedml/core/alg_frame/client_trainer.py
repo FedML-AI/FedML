@@ -1,6 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
-
+from ..security.fedml_attacker import FedMLAttacker
 from ...core.dp.fedml_differential_privacy import FedMLDifferentialPrivacy
 
 
@@ -20,13 +20,18 @@ class ClientTrainer(ABC):
         self.local_test_dataset = None
         self.local_sample_number = 0
         FedMLDifferentialPrivacy.get_instance().init(args)
+        FedMLAttacker.get_instance().init(args)
 
     def set_id(self, trainer_id):
         self.id = trainer_id
 
     def update_dataset(self, local_train_dataset, local_test_dataset, local_sample_number):
-        self.local_train_dataset = local_train_dataset
-        self.local_test_dataset = local_test_dataset
+        if FedMLAttacker.get_instance().is_poison_data_attack() and FedMLAttacker.get_instance().is_to_poison_data():
+            self.local_train_dataset = FedMLAttacker.get_instance().poison_data(local_train_dataset)
+            self.local_test_dataset = FedMLAttacker.get_instance().poison_data(local_test_dataset)
+        else:
+            self.local_train_dataset = local_train_dataset
+            self.local_test_dataset = local_test_dataset
         self.local_sample_number = local_sample_number
 
     @abstractmethod
