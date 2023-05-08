@@ -84,11 +84,11 @@ Please change the above commit id to your own (you can find it at [https://githu
 ## Running FedML in Docker (Recommended)
 FedML Docker Hub: [https://hub.docker.com/repository/docker/fedml/fedml](https://hub.docker.com/repository/docker/fedml/fedml)
 
-We recommend using FedML in the Docker environment as it circumvents complex and tedious installation debugging. Currently, we maintain docker images for two settings:
+We recommend using FedML in the Docker environment as it circumvents complex and tedious installation debugging. Currently, we maintain docker images for x86_64 architecture.
+But for your own purpose, you may build your docker image to support the following architectures: arm, raspberrypi, nvidia jetson via our Dockerfile located in the directory 
+[https://github.com/FedML-AI/FedML/tree/master/installation/build_fedml_docker](https://github.com/FedML-AI/FedML/tree/master/installation/build_fedml_docker)
 
-- For Linux servers with x86_64 architecture
-
-Please refer to the following commands and remember to change `WORKSPACE` to your own.
+Please refer to the following commands and remember to change `LOCAL_WORKSPACE` to your own.
 
 **(1) Pull the Docker image and prepare the docker environment**
 ```
@@ -102,7 +102,7 @@ sudo systemctl restart docker
 sudo chmod 777 /var/run/docker.sock
 ```
 
-**(2) Run Docker with interactive mode**
+**(2) Run standard Docker with interactive mode**
 
 ***On GPUs:***
 ```
@@ -122,7 +122,7 @@ DOCKER_WORKSPACE=/home/fedml/fedml_source
 ddocker run -v $LOCAL_WORKSPACE:$DOCKER_WORKSPACE --shm-size=64g --ulimit nofile=65535 --ulimit memlock=-1 --privileged --network=host --env WORKSPACE=$DOCKER_WORKSPACE -ti $FEDML_DOCKER_IMAGE /bin/bash
 ```
 
-if you are running on MACOS M1/M2, you may use the following command:
+if you are running on MACOS M1/M2, you may use the following command (with the option '--platform linux/amd64'):
 ```
 FEDML_DOCKER_IMAGE=fedml/fedml:latest-torch1.13.1-cuda11.6-cudnn8-devel
 LOCAL_WORKSPACE=$PleaseUseYourLocalDirectory
@@ -131,21 +131,93 @@ DOCKER_WORKSPACE=/home/fedml/fedml_source
 docker run  --platform linux/amd64  -v $LOCAL_WORKSPACE:$DOCKER_WORKSPACE --shm-size=64g --ulimit nofile=65535 --ulimit memlock=-1 --privileged --network=host --env WORKSPACE=$DOCKER_WORKSPACE -ti $FEDML_DOCKER_IMAGE /bin/bash
 ```
 
-You should now see a prompt that looks something like:
+You should now see a prompt that looks something like,
+you may run the 'fedml login $YourUserId' to log into the MLOps platform.
 ```
-fedml@ChaoyangHe-GPU-RTX2080Tix4:/$ 
-fedml@ChaoyangHe-GPU-RTX2080Tix4:/$ cd $WORKSPACE
-fedml@ChaoyangHe-GPU-RTX2080Tix4:/home/fedml/fedml_source$
-```
-If you want to debug in Docker container, please follow these commands
-```
-cd python
-# You need sudo permission to install your debugging package in editable mode 
-(-e means link the package to the original location, basically meaning any changes to the original package would reflect directly in your environment)
-sudo pip install -e ./
+root@142ffce4cdf8:/#
+root@142ffce4cdf8:/# fedml login 1606
 ```
 
-**(3) Run the interpreter in PyCharm or Visual Studio using Docker environment**
+And also, you may enter into the $WORKSPACE which is your host directory to run your own examples:
+```
+root@142ffce4cdf8:/#
+root@142ffce4cdf8:/# cd $WORKSPACE
+root@142ffce4cdf8:/home/fedml/fedml_source#
+```
+
+**(3) Run light Docker with interactive mode**
+The light docker is a smaller image about 2.3GB size. So it can pull and run more smoothly.
+Each docker image needs more than 5GB memory size to run the fedml learning task.
+So, you need keep sufficient memory size for your federated learning task. 
+On MacOS, you should set memory size in the navigation path DockerDesktop -> Preference -> Resource -> Memory.
+If you want to run three docker containers simultaneously, you need to set the resource memory to not less than 15GB.
+
+```
+FEDML_DOCKER_IMAGE=fedml/fedml:light
+LOCAL_WORKSPACE=$PleaseUseYourLocalDirectory
+DOCKER_WORKSPACE=/home/fedml/fedml_source
+
+docker run -v $LOCAL_WORKSPACE:$DOCKER_WORKSPACE --shm-size=64g --ulimit nofile=65535 --ulimit memlock=-1 --privileged --network=host --env WORKSPACE=$DOCKER_WORKSPACE -ti $FEDML_DOCKER_IMAGE /bin/bash
+```
+
+You should now see a prompt that looks something like,
+you may run the 'fedml login $YourUserId' to log into the MLOps platform.
+```
+root@142ffce4cdf8:/#
+root@142ffce4cdf8:/# fedml login 1606
+```
+
+And also, you may enter into the $WORKSPACE which is your host directory to run your own examples:
+```
+root@142ffce4cdf8:/#
+root@142ffce4cdf8:/# cd $WORKSPACE
+root@142ffce4cdf8:/home/fedml/fedml_source#
+```
+
+**(4) Run light Docker with daemon mode and automatically log into the MLOps platform**
+You may run the light docker as the daemon mode and automatically log into the MLOps platform as the client.
+The commands ars as follows:
+
+```
+FEDML_DOCKER_IMAGE=fedml/fedml:light
+LOCAL_WORKSPACE=$PleaseUseYourLocalDirectory
+DOCKER_WORKSPACE=/home/fedml/fedml_source
+YOUR_FEDML_USER_ID=1606
+
+docker run -v $LOCAL_WORKSPACE:$DOCKER_WORKSPACE --shm-size=64g --ulimit nofile=65535 --ulimit memlock=-1 --privileged --network=host --env WORKSPACE=$DOCKER_WORKSPACE -d $FEDML_DOCKER_IMAGE bash -c 'fedml login '$YOUR_FEDML_USER_ID';sleep 100000'
+```
+
+You may run the light docker as the daemon mode and automatically log into the MLOps platform as the server with the option '-s'.
+The commands ars as follows:
+
+```
+FEDML_DOCKER_IMAGE=fedml/fedml:light
+LOCAL_WORKSPACE=$PleaseUseYourLocalDirectory
+DOCKER_WORKSPACE=/home/fedml/fedml_source
+YOUR_FEDML_USER_ID=1606
+
+docker run -v $LOCAL_WORKSPACE:$DOCKER_WORKSPACE --shm-size=64g --ulimit nofile=65535 --ulimit memlock=-1 --privileged --network=host --env WORKSPACE=$DOCKER_WORKSPACE -d $FEDML_DOCKER_IMAGE bash -c 'fedml login -s '$YOUR_FEDML_USER_ID';sleep 100000'
+```
+
+After you run the above command, the terminal will show the container id like the following format.
+`b0769135f8e65c5b0b7b7cb9666f3f910a4e431c25084ed72ae059ea1a6376af`
+
+If you want to show logs for the fedml light container, you may run the following command with the above container id.
+```
+docker logs b0769135f8e65c5b0b7b7cb9666f3f910a4e431c25084ed72ae059ea1a6376af
+```
+
+If you want to list the fedml light containers, you may run the command.
+```
+docker ps |grep fedml:light
+```
+
+If you want to kill all fedml light containers, the command is as follows.
+```
+docker stop `docker ps |grep fedml:light |awk -F' ' '{print $1}'`
+```
+
+**(5) Run the interpreter in PyCharm or Visual Studio using Docker environment**
 
 - PyCharm
 
@@ -155,7 +227,7 @@ sudo pip install -e ./
 
 [https://code.visualstudio.com/docs/remote/containers](https://www.jetbrains.com/help/pycharm/using-docker-as-a-remote-interpreter.html#summary)
 
-(4) Other useful commands
+**(6) Other useful commands**
 ```
 # docker rm $(docker ps -aq)
 docker container kill $(docker ps -q)
