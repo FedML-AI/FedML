@@ -20,7 +20,7 @@ MASTER_PORT="${3:-$((TORCH_DISTRIBUTED_DEFAULT_PORT + RANK))}"
 NUM_NODES="${4:-1}"
 
 # FedML config
-CONFIG_PATH="fedml_config/fedml_config.yaml"
+CONFIG_PATH="${5:-"fedml_config/fedml_config.yaml"}"
 
 bash scripts/run_fedml.sh \
   "${MASTER_ADDR}" \

@@ -46,5 +46,5 @@ deepspeed \
   --evaluation_strategy "steps" \
   --save_strategy "steps" \
   --eval_accumulation_steps 4 \
-  --report_to "tensorboard" \
+  --do_train "True" \
   "${@:4}" # skip first 3 arguments
