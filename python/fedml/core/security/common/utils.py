@@ -1,4 +1,3 @@
-import logging
 import math
 import random
 import numpy as np
@@ -177,6 +176,23 @@ def get_client_data_stat(local_dataset):
             # else:
             #     targets_set[t] += 1
     total_counter = 0
+    # for item in targets_set.items():
+    #     print("------target:{} num:{}".format(item[0], item[1]))
+    #     total_counter += item[1]
+    # print(f"total counter = {total_counter}")
+    #
+    # targets_set = {}
+    # for batch_idx, (data, targets) in enumerate(local_dataset):
+    #     for t in targets.tolist():
+    #         if t in targets_set.keys():
+    #             targets_set[t] += 1
+    #         else:
+    #             targets_set[t] = 1
+    #         # if t not in targets_set.keys():
+    #         #     targets_set[t] = 1
+    #         # else:
+    #         #     targets_set[t] += 1
+    # total_counter = 0
     for item in targets_set.items():
         print("------target:{} num:{}".format(item[0], item[1]))
         total_counter += item[1]
