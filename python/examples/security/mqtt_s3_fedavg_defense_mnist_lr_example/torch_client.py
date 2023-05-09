@@ -11,7 +11,7 @@ def create_model():
     https://github.com/FedML-AI/FedML/blob/fedml_v0.6_before_fundraising/fedml_api/model/cv/pretrained/CIFAR10/resnet56/best.pth
     and rename the file to ``resnet56_on_cifar10.pth''
     """
-    pre_trained_model_path = "./config/resnet56_on_cifar10.pth"
+    pre_trained_model_path = "config/resnet56_on_cifar10.pth"
     model = resnet56(10, pretrained=True, path=pre_trained_model_path)
     logging.info("load pretrained model successfully")
     return model
