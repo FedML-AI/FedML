@@ -15,6 +15,16 @@ If you want to scale up or scal down the pods to your desired count, you may run
 
 ```kubectl scale -n $YourNameSpace --replicas=$YourDesiredPodsCount deployment/fedml-server-deployment```
 
+## Installation with Helm Charts
+
+Also, you may use the helm charts to deploy your fedml client and server to target Kubernetes cluster.
+You just need to run the following commands with your user id at the open.fedml.ai.
+```
+kubectl create namespace fedml
+helm install --set image.repository="fedml/fedml-edge-client-server-light" --set env.fedmlAccountId="$YourUserId" --set env.role="client" fedml-client-deployment ./fedml-client-deployment-latest.tgz
+helm install --set image.repository="fedml/fedml-edge-client-server-light" --set env.fedmlAccountId="$YourUserId" --set env.role="server" fedml-server-deployment ./fedml-server-deployment-latest.tgz
+```
+
 # Q&A
 
 1. Q: How to scale up or scale down?  
