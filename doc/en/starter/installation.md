@@ -151,7 +151,7 @@ root@142ffce4cdf8:/home/fedml/fedml_source#
 The light docker is a smaller image about 2.3GB size. So it can pull and run more smoothly.
 The light docker just supports cpu arch. So, if you want to use the GPU, you should use the above standard Docker with gpu options.
 Each docker image needs more than 5GB memory size to run the fedml learning task.
-So, you need keep sufficient memory size for your federated learning task.
+So, you need reserve sufficient memory size for your federated learning task.
 On MacOS, you should set memory size in the navigation path DockerDesktop -> Preference -> Resource -> Memory.
 If you want to run three docker containers simultaneously, you need to set the resource memory to not less than 15GB.
 
