@@ -3,7 +3,7 @@ import pickle
 import zipfile
 import wget
 from fedml.fa.constants import FA_DATA_TWITTER_Sentiment140_URL
-from fedml.fa.data.utils import equally_partition_a_dataset
+from fedml.fa.data.utils import equally_partition_a_dataset, equally_partition_a_dataset_according_to_users
 
 
 def download_twitter_Sentiment140(data_cache_dir):
@@ -18,9 +18,6 @@ def download_twitter_Sentiment140(data_cache_dir):
         zip_ref.extractall(data_cache_dir)
 
 
-def load_partition_data_twitter_sentiment140(data_dir, client_num_in_total):
-    clients_triehh_file = os.path.join(data_dir, 'clients_triehh.txt')
-    with open(clients_triehh_file, 'rb') as fp:
-        dataset = pickle.load(fp)
-    return equally_partition_a_dataset(client_num_in_total, dataset)
+def load_partition_data_twitter_sentiment140(dataset, client_num_in_total):
+    return equally_partition_a_dataset_according_to_users(client_num_in_total, dataset)
 

@@ -1,10 +1,10 @@
 import argparse
 import logging
 import os
-
 from fedml.fa.data.fake_numeric_data.data_loader import generate_fake_data, load_partition_data_fake
 from fedml.fa.data.twitter_Sentiment140.data_loader import download_twitter_Sentiment140, \
     load_partition_data_twitter_sentiment140
+from fedml.fa.data.twitter_Sentiment140.twitter_data_processing import preprocess_twitter_data
 
 
 def fa_load_data(args):
@@ -35,19 +35,21 @@ def load_synthetic_data(args):
     elif dataset_name == "twitter":
         path = os.path.join(args.data_cache_dir, "twitter_Sentiment140")
         download_twitter_Sentiment140(data_cache_dir=path)
-        # preprocess_twitter_data(path=path)
+        local_datasets = preprocess_twitter_data(path=path)
         (
             datasize,
             train_data_local_num_dict,
             local_data_dict,
-        ) = load_partition_data_twitter_sentiment140(data_dir=path, client_num_in_total=int(args.client_num_in_total))
+        ) = load_partition_data_twitter_sentiment140(local_datasets, client_num_in_total=int(args.client_num_in_total))
 
         dataset = [
             datasize,
             train_data_local_num_dict,
             local_data_dict,
         ]
-        print(f"datasize, train_data_local_num_dict, local_data_dict,{dataset}")
+        # print(f"local_data_dict = {len(local_data_dict)}")
+        # print(f"train_data_local_num_dict = {train_data_local_num_dict}")
+        # print(f"datasize={datasize}")
     else:
         raise "Not Implemented Error"
     return dataset
