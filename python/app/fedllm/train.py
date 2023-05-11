@@ -357,12 +357,17 @@ def train() -> None:
         ]
     )
 
-    print("Training")
-    trainer.train()
+    if training_args.do_train:
+        print("Training")
+        trainer.train()
 
-    print(f"Saving model to \"{training_args.output_dir}\"")
-    trainer.save_state()
-    trainer.save_model()
+        print(f"Saving model to \"{training_args.output_dir}\"")
+        trainer.save_state()
+        trainer.save_model()
+
+    if training_args.do_eval:
+        print("Evaluating")
+        print(trainer.evaluate())
 
 
 if __name__ == '__main__':

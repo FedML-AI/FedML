@@ -5,7 +5,9 @@ BASE_DIR="$(dirname "$0")"
 BASE_DIR="$(realpath "${BASE_DIR}/../")"
 cd "${BASE_DIR}"
 
-export WANDB_MODE=disabled # remove this line if you want to use wandb
+if [[ -z "${WANDB_MODE}" ]]; then
+  export WANDB_MODE=disabled # remove this line if you want to use wandb
+fi
 
 # FedML setting
 RANK="$1"
@@ -19,7 +21,7 @@ MASTER_PORT="${4:-$((TORCH_DISTRIBUTED_DEFAULT_PORT + RANK))}"
 NUM_NODES="${5:-1}"
 
 # FedML config
-CONFIG_PATH="fedml_config/fedml_config.yaml"
+CONFIG_PATH="${6:-"fedml_config/fedml_config.yaml"}"
 
 bash scripts/run_fedml.sh \
   "${MASTER_ADDR}" \

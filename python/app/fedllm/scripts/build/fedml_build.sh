@@ -14,7 +14,7 @@ BASE_DIR="$(realpath "${BASE_DIR}/../../")"
 cd "${BASE_DIR}"
 
 TARGET="${1:-"client"}"
-CONFIG_PATH="${2:-"fedml_config"}" # must be the directory containing the config file
+CONFIG_PATH="${2:-"mlops_config"}" # must be the directory containing the config file
 
 GIT_IGNORE_PATTERN=(
   "cmake-build-*"
