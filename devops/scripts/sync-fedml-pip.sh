@@ -23,3 +23,5 @@ else
     cp -Rf ./fedml/* ${python_site_dir_pip}/fedml > /dev/null 2>&1
   fi
 fi
+
+exit 0
