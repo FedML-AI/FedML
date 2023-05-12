@@ -19,7 +19,7 @@ on:
 jobs:
   # https://github.com/mpi4py/mpi4py/actions/runs/34979774/workflow
   mpi_run:
-    runs-on: [self-hosted, Linux]]
+    runs-on: [self-hosted, Linux]
     timeout-minutes: 15
     defaults:
       run:
