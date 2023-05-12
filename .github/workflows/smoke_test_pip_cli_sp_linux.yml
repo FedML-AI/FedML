@@ -50,10 +50,12 @@ jobs:
           ls
           echo ${{ steps.extract_branch.outputs.branch }}
           if [[ ${{ steps.extract_branch.outputs.branch }} == "master" ]]; then
+            echo "master"
             cd /home/fedml/FedML4GitHubAction
             git pull
             echo "{dir}={/home/fedml/FedML4GitHubAction}" >> "$GITHUB_OUTPUT"
           else
+            echo "dev"
             cd /home/fedml/FedML4GitHubAction-Dev
             git pull
             echo "{dir}={/home/fedml/FedML4GitHubAction-Dev}" >> "$GITHUB_OUTPUT"
