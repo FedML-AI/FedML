@@ -1,3 +1,4 @@
+import logging
 from abc import ABC, abstractmethod
 
 
@@ -8,6 +9,13 @@ class FAClientAnalyzer(ABC):
         self.args = args
         self.local_train_dataset = None
         self.server_data = None
+        self.init_msg = None
+
+    def set_init_msg(self, init_msg):
+        pass
+
+    def get_init_msg(self):
+        pass
 
     def set_id(self, analyzer_id):
         self.id = analyzer_id

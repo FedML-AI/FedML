@@ -21,6 +21,13 @@ class FALocalAnalyzer(object):
         self.local_sample_number = None
         self.test_local = None
         self.args = args
+        self.init_msg = None
+
+    def set_init_msg(self, init_msg):
+        self.local_analyzer.set_init_msg(init_msg)
+
+    def get_init_msg(self):
+        return self.local_analyzer.get_init_msg()
 
     def set_server_data(self, server_data):
         self.local_analyzer.set_server_data(server_data)

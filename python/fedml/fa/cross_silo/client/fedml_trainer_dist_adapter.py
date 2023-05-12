@@ -58,6 +58,9 @@ class TrainerDistAdapter:
     def set_server_data(self, server_data):
         self.local_analyzer.set_server_data(server_data)
 
+    def set_init_msg(self, init_msg):
+        self.local_analyzer.set_init_msg(init_msg)
+
     def set_client_submission(self, client_submission):
         self.local_analyzer.set_client_submission(client_submission)
 

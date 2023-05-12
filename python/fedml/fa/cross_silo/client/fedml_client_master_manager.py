@@ -55,7 +55,7 @@ class ClientMasterManager(FedMLCommManager):
     def handle_message_init(self, msg_params):
         global_model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         data_silo_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
-
+        init_msg = msg_params.get(MyMessage.MSG_INIT_MSG_TO_CLIENTS)
         logging.info("data_silo_index = %s" % str(data_silo_index))
 
         # Notify MLOps with training status.
@@ -63,6 +63,7 @@ class ClientMasterManager(FedMLCommManager):
 
         self.trainer_dist_adapter.update_dataset(int(data_silo_index))
         self.trainer_dist_adapter.set_server_data(global_model_params)
+        self.trainer_dist_adapter.set_init_msg(init_msg)
         self.round_idx = 0
 
         self.__train()

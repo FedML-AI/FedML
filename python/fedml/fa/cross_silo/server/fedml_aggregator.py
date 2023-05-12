@@ -28,6 +28,12 @@ class FAAggregator(object):
         for idx in range(self.client_num):
             self.flag_client_model_uploaded_dict[idx] = False
 
+    def get_init_msg(self):
+        return self.aggregator.get_init_msg()
+
+    def set_init_msg(self, init_msg):
+        self.aggregator.set_init_msg(init_msg)
+
     def get_server_data(self):
         return self.aggregator.get_server_data()
 
