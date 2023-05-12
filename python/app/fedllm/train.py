@@ -37,48 +37,16 @@ from transformers import (
 )
 from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
 
-MODEL_NAMES = [
-    "EleutherAI/pythia-70m",
-    "EleutherAI/pythia-160m",
-    "EleutherAI/pythia-2.8b",
-    "EleutherAI/pythia-6.9b",
-    "EleutherAI/pythia-12b",
-    "EleutherAI/gpt-j-6B",
-]
-DEFAULT_MAX_SEQ_LENGTH = 1024
-IGNORE_INDEX = -100
-
-INSTRUCTION_KEY = "### Instruction:"
-INPUT_KEY = "Input:"
-RESPONSE_KEY = "### Response:"
-END_KEY = "### End"
-RESPONSE_KEY_NL = f"{RESPONSE_KEY}\n"
-
-INTRO_BLURB = (
-    "Below is an instruction that describes a task. Write a response that appropriately completes the request."
+from src.constants import (
+    DEFAULT_MAX_SEQ_LENGTH,
+    END_KEY,
+    IGNORE_INDEX,
+    INSTRUCTION_KEY,
+    MODEL_NAMES,
+    PROMPT_NO_INPUT_FORMAT,
+    PROMPT_WITH_INPUT_FORMAT,
+    RESPONSE_KEY_NL,
 )
-PROMPT_NO_INPUT_FORMAT = f"""{INTRO_BLURB}
-
-{INSTRUCTION_KEY}
-{{instruction}}
-
-{RESPONSE_KEY}
-{{response}}
-
-{END_KEY}"""
-
-PROMPT_WITH_INPUT_FORMAT = f"""{INTRO_BLURB}
-
-{INSTRUCTION_KEY}
-{{instruction}}
-
-{INPUT_KEY}
-{{input}}
-
-{RESPONSE_KEY}
-{{response}}
-
-{END_KEY}"""
 
 ModelType = Union[GPTJModel, GPTNeoXForCausalLM, PeftModelForCausalLM]
 TokenizerType = Union[GPTNeoXTokenizerFast]

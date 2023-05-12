@@ -9,9 +9,9 @@ from peft import get_peft_model_state_dict, set_peft_model_state_dict
 import torch.cuda
 from transformers import HfArgumentParser, Trainer as HfTrainer, TrainingArguments
 
+from src.constants import DEFAULT_MAX_SEQ_LENGTH
 from train import (
     DataArguments,
-    DEFAULT_MAX_SEQ_LENGTH,
     get_data_collator,
     get_dataset,
     get_model,
