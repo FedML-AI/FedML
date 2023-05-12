@@ -20,7 +20,7 @@ train_args:
   client_id_list: "[]"
   client_num_in_total: 1000
   client_num_per_round: 10
-  comm_round: 200
+  comm_round: 3 # 3 is for quick GitHub sanity check. please change this to your own hyper-parameters (e.g., 200)
   epochs: 1
   batch_size: 10
   client_optimizer: sgd

@@ -13,7 +13,7 @@ class TrieHHClientAnalyzer(FAClientAnalyzer):
 
     def set_init_msg(self, init_msg):
         self.init_msg = init_msg
-        self.batch_size = int(math.ceil(init_msg * 1.0 / self.client_num_per_round))
+        self.batch_size = self.init_msg
 
     def get_init_msg(self):
         return self.init_msg
