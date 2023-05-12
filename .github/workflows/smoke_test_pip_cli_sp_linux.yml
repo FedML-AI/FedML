@@ -60,9 +60,11 @@ jobs:
           cd /home/fedml/FedML4GitHubAction-Dev
           git pull
           echo "{dir}={/home/fedml/FedML4GitHubAction-Dev}" >> "$GITHUB_OUTPUT"
+        id: working_directory
       - name: pip install -e ./
         working-directory: ${{ steps.working_directory.outputs.dir }}
         run: |
+          echo ${pwd}
           cd python
           pip install -e ./
 
