@@ -1,3 +1,4 @@
+import math
 import os
 
 
@@ -11,6 +12,31 @@ def equally_partition_a_dataset(client_num_in_total, dataset):
         local_data_dict[i] = dataset[start_counter:start_counter + client_data_num]
         start_counter += client_data_num
         train_data_local_num_dict[i] = client_data_num
+    return (
+        datasize,
+        train_data_local_num_dict,
+        local_data_dict,
+    )
+
+
+def equally_partition_a_dataset_according_to_users(client_num_in_total, dataset):
+    user_num_for_one_client = int(math.ceil(len(dataset) / client_num_in_total))
+    local_data_dict = dict()
+    train_data_local_num_dict = dict()
+    datasize = 0
+    user_list = list(dataset.keys())
+    user_list_counter = 0
+    for i in range(client_num_in_total):
+        local_data_dict[i] = list()
+        client_data_num = 0
+        for j in range(user_num_for_one_client):
+            if user_list_counter >= len(user_list):
+                break
+            local_data_dict[i].extend(dataset[user_list[user_list_counter]])
+            client_data_num += len(dataset[user_list[user_list_counter]])
+            user_list_counter += 1
+        train_data_local_num_dict[i] = client_data_num
+        datasize += train_data_local_num_dict[i]
     return (
         datasize,
         train_data_local_num_dict,
