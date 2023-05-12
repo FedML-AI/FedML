@@ -54,14 +54,16 @@ jobs:
             cd $path
             git config --global --add safe.directory $path
             git pull
-            echo "dir=$path" >>$GITHUB_OUTPUT
+            echo "dir={$path}" >> $GITHUB_OUTPUT
+            echo $GITHUB_OUTPUT
           else
             echo "running on dev"
             path=/home/actions-runner/fedml-dev
             cd $path
             git config --global --add safe.directory $path
             git pull
-            echo "dir=$path" >>$GITHUB_OUTPUT
+            echo "dir={$path}" >> $GITHUB_OUTPUT
+            echo $GITHUB_OUTPUT
           fi
         id: fedml_source_code_home
       - name: pip install -e ./

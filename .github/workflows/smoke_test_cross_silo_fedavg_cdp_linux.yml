@@ -42,7 +42,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Extract branch name
         shell: bash
-        run: echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >>$GITHUB_OUTPUT
+        run: echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_OUTPUT
         id: extract_branch
       - name: cd to master or dev branch and git pull
         run: |
@@ -54,14 +54,14 @@ jobs:
             cd $path
             git config --global --add safe.directory $path
             git pull
-            echo "dir=$path" >>$GITHUB_OUTPUT
+            echo "dir={$path}" >> $GITHUB_OUTPUT
           else
             echo "running on dev"
             path=/home/actions-runner/fedml-dev
             cd $path
             git config --global --add safe.directory $path
             git pull
-            echo "dir=$path" >>$GITHUB_OUTPUT
+            echo "dir={$path}" >> $GITHUB_OUTPUT
           fi
         id: fedml_source_code_home
       - name: pip install -e ./
