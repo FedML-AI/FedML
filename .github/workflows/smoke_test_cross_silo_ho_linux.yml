@@ -69,6 +69,8 @@ jobs:
       - name: pip install -e ./
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
+          run_id=${{ format('{0}', steps.fedml_source_code_home.outputs.dir) }}/python
+          echo ${run_id}
           cd python
           pip install -e ./
 
