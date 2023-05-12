@@ -45,21 +45,20 @@ jobs:
         shell: bash
         run: echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >>$GITHUB_OUTPUT
         id: extract_branch
-      - name: cd to master branch and git pull
+      - name: cd to master or dev branch and git pull
         if: ${{ steps.extract_branch.outputs.branch }} == "master"
         run: |
+          ls
           echo ${{ steps.extract_branch.outputs.branch }}
-          cd /home/fedml/FedML4GitHubAction
-          git pull
-          echo "{value}={/home/fedml/FedML4GitHubAction}" >> "$GITHUB_OUTPUT"
-        id: working_directory
-      - name: cd to dev branch
-        if: ${{ steps.extract_branch.outputs.branch }} == "dev/v0.7.0"
-        run: |
-          echo ${{ steps.extract_branch.outputs.branch }}
-          cd /home/fedml/FedML4GitHubAction-Dev
-          git pull
-          echo "{dir}={/home/fedml/FedML4GitHubAction-Dev}" >> "$GITHUB_OUTPUT"
+          if [[ ${{ steps.extract_branch.outputs.branch }} == "master" ]]; then
+            cd /home/fedml/FedML4GitHubAction
+            git pull
+            echo "{value}={/home/fedml/FedML4GitHubAction}" >> "$GITHUB_OUTPUT"
+          else
+            cd /home/fedml/FedML4GitHubAction-Dev
+            git pull
+            echo "{value}={/home/fedml/FedML4GitHubAction-Dev}" >> "$GITHUB_OUTPUT"
+          fi
         id: working_directory
       - name: pip install -e ./
         working-directory: ${{ steps.working_directory.outputs.dir }}
