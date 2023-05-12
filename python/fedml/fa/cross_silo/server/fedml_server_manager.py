@@ -167,6 +167,8 @@ class FedMLServerManager(FedMLCommManager):
             if self.args.round_idx == self.round_num:
                 logging.info("=============training is finished. Cleanup...============")
                 self.cleanup()
+        if self.aggregator.get_init_msg() is not None:
+            self.aggregator.set_init_msg(init_msg=None)
 
     def cleanup(self):
         client_idx_in_this_round = 0
@@ -187,6 +189,8 @@ class FedMLServerManager(FedMLCommManager):
             message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL, global_model_url)
         if global_model_key is not None:
             message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY, global_model_key)
+        if self.aggregator.get_init_msg() is not None:
+            message.add_params(MyMessage.MSG_INIT_MSG_TO_CLIENTS, self.aggregator.get_init_msg())
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")

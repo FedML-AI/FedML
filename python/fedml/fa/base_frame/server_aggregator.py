@@ -8,6 +8,15 @@ class FAServerAggregator(ABC):
         self.args = args
         self.eval_data = None
         self.server_data = None
+        self.init_msg = None
+
+    def get_init_msg(self):
+        # return self.init_msg
+        pass
+
+    def set_init_msg(self, init_msg):
+        # self.init_msg = init_msg
+        pass
 
     def set_id(self, aggregator_id):
         self.id = aggregator_id

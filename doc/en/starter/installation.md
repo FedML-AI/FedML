@@ -14,7 +14,7 @@ pip install fedml
 
 if your machine has not installed python, please install one version of the following pythons: 3.8, 3.9, 3.10.
 
-### Installing with pip on the Ubuntu
+### Installing with pip on Ubuntu
 
 On Ubuntu, run the following commands to install pip3 and fedml.
 ```
@@ -24,7 +24,7 @@ export PATH=$HOME/.local/bin:$PATH
 fedml env
 ```
 
-### Installing with pip on the CentOS
+### Installing with pip on CentOS
 On CentOS, run the following commands to install pip3 and fedml.
 ```
 yum –y install python3-pip
