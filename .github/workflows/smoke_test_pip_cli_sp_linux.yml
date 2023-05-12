@@ -53,17 +53,17 @@ jobs:
           if [[ ${{ steps.extract_branch.outputs.branch }} == "master" ]]; then
             cd /home/fedml/FedML4GitHubAction
             git pull
-            echo "{value}={/home/fedml/FedML4GitHubAction}" >> "$GITHUB_OUTPUT"
+            echo "{dir}={/home/fedml/FedML4GitHubAction}" >> "$GITHUB_OUTPUT"
           else
             cd /home/fedml/FedML4GitHubAction-Dev
             git pull
-            echo "{value}={/home/fedml/FedML4GitHubAction-Dev}" >> "$GITHUB_OUTPUT"
+            echo "{dir}={/home/fedml/FedML4GitHubAction-Dev}" >> "$GITHUB_OUTPUT"
           fi
         id: working_directory
       - name: pip install -e ./
         working-directory: ${{ steps.working_directory.outputs.dir }}
         run: |
-          echo ${pwd}
+          pwd
           cd python
           pip install -e ./
 
