@@ -19,10 +19,10 @@ permissions: write-all
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   pip-install-fedml-and-test-sp:
-    defaults:
-      run:
-        shell: bash
-        working-directory: python
+    # defaults:
+    #   run:
+    #     shell: bash
+    #     working-directory: python
     strategy:
       fail-fast: false
       matrix:
