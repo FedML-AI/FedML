@@ -1,0 +1,1 @@
+docker build -t fedml/github-action-runner:latest -f ./Dockerfile .
