@@ -4,10 +4,7 @@
 1. Multiple scenarios: Cross-silo Federated Learning; Cross-device Federated Learning; FL Simulation with Single Process or Distributed Computing.
 2. Support Any Machine Learning Framework: PyTorch, TensorFlow, JAX with Haiku, and MXNet.
 3. Diverse communication backends (MPI, gRPC, PyTorch RPC, MQTT + S3)
-4. Differential Privacy (CDP-central DP; LDP-local DP)
-5. Attacker (API: fedml.core.FedMLAttacker); README: [python/fedml/core/security/readme.md](../fedml/core/security/readme.md)
-6. Defender (API: fedml.core.FedMLDefender); README: [python/fedml/core/security/readme.md](../fedml/core/security/readme.md)
-7. Secure Aggregation (multi-party computation): [cross_silo/light_sec_agg_example](./cross_silo/light_sec_agg_example) 
+4. Secure Aggregation (multi-party computation): [cross_silo/light_sec_agg_example](./cross_silo/light_sec_agg_example) 
 
 
 
@@ -32,12 +29,6 @@
 | mxnet_mqtt_s3_fedavg_mnist_lr_example      | Octopus (cross-silo) | FedAvg              | MNIST   | Logistic Regression | MQTT_S3               | mxnet                    | [Link](cross_silo/mxnet_mqtt_s3_fedavg_mnist_lr_example)        | [Link](cross_silo/mxnet_mqtt_s3_fedavg_mnist_lr_example/README.md)        |
 | light_sec_agg_example                      | Octopus (cross-silo) | FedAvg              | MNIST   | Logistic Regression | MQTT_S3               | pytorch                  | [Link](cross_silo/light_sec_agg_example)                        | [Link](cross_silo/light_sec_agg_example)                                  |
 | mxnet_mqtt_s3_fedavg_mnist_lr_example      | Octopus (cross-silo) | FedAvg              | MNIST   | Logistic Regression | MQTT_S3               | mxnet                    | [Link](cross_silo/mxnet_mqtt_s3_fedavg_mnist_lr_example)        | [Link](cross_silo/mxnet_mqtt_s3_fedavg_mnist_lr_example/README.md)        |
-| mqtt_s3_fedavg_attack_mnist_lr_example     | Octopus (cross-silo) | FedAvg              | MNIST   | Logistic Regression | MQTT_S3               | pytorch                  | [Link](security/mqtt_s3_fedavg_attack_mnist_lr_example)       | [Link](security/mqtt_s3_fedavg_attack_mnist_lr_example/README.md)       |
-| mqtt_s3_fedavg_defense_mnist_lr_example    | Octopus (cross-silo) | FedAvg              | MNIST   | Logistic Regression | MQTT_S3               | pytorch                  | [Link](security/mqtt_s3_fedavg_defense_mnist_lr_example)      | [Link](security/mqtt_s3_fedavg_defense_mnist_lr_example/README.md)      |
-| mqtt_s3_fedavg_central_dp_mnist_lr_example | Octopus (cross-silo) | FedAvg              | MNIST   | Logistic Regression | MQTT_S3               | pytorch                  | [Link](cross_silo/mqtt_s3_fedavg_dp_mnist_lr_example)   | [Link](cross_silo/mqtt_s3_fedavg_dp_mnist_lr_example/README.md)   |
-| mqtt_s3_fedavg_local_dp_mnist_lr_example   | Octopus (cross-silo) | FedAvg              | MNIST   | Logistic Regression | MQTT_S3               | pytorch                  | [Link](cross_silo/mqtt_s3_fedavg_local_dp_mnist_lr_example)     | [Link](cross_silo/mqtt_s3_fedavg_local_dp_mnist_lr_example/README.md)     |
-
-
 ## Cross-device Federated Learning for Smartphones
 
 |                                            | platform/scenario     | federated optimizer | dataset | model               | communication backend | source code                                                     | example doc                                                               |
@@ -71,9 +62,6 @@
 | mpi_torch_fedopt_mnist_lr_example          | Parrot (simulator) | FedOpt               | MNIST            | Logistic Regression             | MPI                   | [Link](simulation/mpi_torch_fedopt_mnist_lr_example)          | [Link](simulation/mpi_torch_fedopt_mnist_lr_example/README.md)          |
 | mpi_torch_fedprox_mnist_lr_example         | Parrot (simulator) | FedProx              | MNIST            | Logistic Regression             | MPI                   | [Link](simulation/mpi_torch_fedprox_mnist_lr_example)         | [Link](simulation/mpi_torch_fedprox_mnist_lr_example/README.md)         |
 | mpi_torch_splitnn_cifar10_resnet56_example | Parrot (simulator) | SplitNN              | Cifar10          | ResNet56                        | MPI                   | [Link](simulation/mpi_torch_splitnn_cifar10_resnet56_example) | [Link](simulation/mpi_torch_splitnn_cifar10_resnet56_example/README.md) |
-| mpi_torch_fedavg_attack_mnist_lr_example   | Parrot (simulator) | FedAVG               | MNIST            | Logistic Regression             | MPI                   | [Link](simulation/mpi_torch_fedavg_attack_mnist_lr_example)   | [Link](simulation/mpi_torch_fedavg_attack_mnist_lr_example/README.md)   |
-| mpi_torch_fedavg_defense_mnist_lr_example  | Parrot (simulator) | FedAVG               | MNIST            | Logistic Regression             | MPI                   | [Link](simulation/mpi_torch_fedavg_defense_mnist_lr_example)  | [Link](simulation/mpi_torch_fedavg_defense_mnist_lr_example/README.md)  |
-| mpi_torch_fedavg_dp_mnist_lr_example       | Parrot (simulator) | FedAVG               | MNIST            | Logistic Regression             | MPI                   | [Link](simulation/mpi_torch_fedavg_dp_mnist_lr_example)       | [Link](simulation/mpi_torch_fedavg_dp_mnist_lr_example/README.md)       |
 | nccl_fedavg_example                        | Parrot (simulator) | FedAvg               | Cifar10          | ResNet56                        | NCCL                  | [Link](simulation/nccl_fedavg_example)                        | [Link](simulation/nccl_fedavg_example/README.md)                        |
 
 ## Distributed Training: Accelerate Model Training with Lightweight Cheetah
