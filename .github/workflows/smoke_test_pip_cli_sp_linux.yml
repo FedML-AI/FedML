@@ -59,9 +59,9 @@ jobs:
           echo ${{ steps.extract_branch.outputs.branch }}
           cd /home/fedml/FedML4GitHubAction-Dev
           git pull
-          echo "{value}={/home/fedml/FedML4GitHubAction-Dev}" >> "$GITHUB_OUTPUT"
+          echo "{dir}={/home/fedml/FedML4GitHubAction-Dev}" >> "$GITHUB_OUTPUT"
       - name: pip install -e ./
-        working_directory: ${{ steps.working_directory.outputs.working_directory }}
+        working_directory: ${{ steps.working_directory.outputs.dir }}
         run: |
           cd python
           pip install -e ./
