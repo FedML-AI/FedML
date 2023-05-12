@@ -12,8 +12,29 @@ FedML supports Linux, MacOS, Windows, and Android.
 pip install fedml
 ```
 
+if your machine has not installed python, please install one version of the following pythons: 3.8, 3.9, 3.10.
+
+### Installing with pip on the Ubuntu
+
+On Ubuntu, run the following commands to install pip3 and fedml.
+```
+sudo apt install python3-pip
+pip3 install fedml
+export PATH=$HOME/.local/bin:$PATH
+fedml env
+```
+
+### Installing with pip on the CentOS
+On CentOS, run the following commands to install pip3 and fedml.
+```
+yum –y install python3-pip
+pip3 install fedml
+export PATH=$HOME/.local/bin:$PATH
+fedml env
+```
+
 The default machine learning engine is `PyTorch`. FedML also supports `TensorFlow`, `Jax`, and `MXNet`.
-You can install related engine as follows:
+You can install related engines as follows:
 ```
 pip install "fedml[MPI]"
 pip install "fedml[tensorflow]"
@@ -61,7 +82,7 @@ cd ./FedML/python && \
 python setup.py install
 ```
 
-If you want to run examples with tensforflow, jax or mxnet, you need to install optional dependencies:
+If you want to run examples with TensorFlow, Jax or MxNet, you need to install optional dependencies:
 ```
 git clone https://github.com/FedML-AI/FedML.git && \
 cd ./FedML/python && \
