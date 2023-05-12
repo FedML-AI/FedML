@@ -62,11 +62,13 @@ jobs:
       - name: pip install -e ./
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
+          cd python
           pip install -e ./
 
       - name: server - Flow
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
+          cd python
           cd fedml/core/distributed/flow
           run_id=cross-silo-ho-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
           echo ${run_id}
@@ -76,6 +78,7 @@ jobs:
       - name: client 1 - Flow
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
+          cd python
           cd fedml/core/distributed/flow
           run_id=cross-silo-ho-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
           echo ${run_id}
@@ -85,6 +88,7 @@ jobs:
       - name: client 2 - Flow
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
+          cd python
           cd fedml/core/distributed/flow
           run_id=cross-silo-ho-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
           echo ${run_id}
