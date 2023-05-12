@@ -54,3 +54,16 @@ def read_data(data_dir):
         lines = [int(line.strip()) for line in f2]
         dataset.extend(lines)
     return dataset
+
+
+def read_data_with_column_idx(file_folder_path, column_idx, seperator=","):
+    train_files = os.listdir(file_folder_path)
+    train_files = [f for f in train_files if not f.startswith(".")]
+    dataset = []
+    for f in train_files:
+        file_path = os.path.join(file_folder_path, f)
+        f2 = open(file_path, "r")
+        for line in f2:
+            if len(line.split(seperator)[column_idx].strip()) > 0:
+                dataset.append(line.split(seperator)[column_idx].strip())
+    return dataset

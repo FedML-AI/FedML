@@ -1,0 +1,18 @@
+common_args:
+  training_type: "cross_silo"
+  random_seed: 0
+
+data_args:
+  dataset: "self_defined"
+  data_cache_dir: ../../../fedml/fa/data/self_defined_data/data_files # put the datafiles in this folder
+  data_col_idx: 0
+
+
+train_args:
+  client_num_in_total: 2
+  client_num_per_round: 2
+  comm_round: 10
+  fa_task: "AVG"
+
+comm_args:
+  backend: "MQTT_S3"

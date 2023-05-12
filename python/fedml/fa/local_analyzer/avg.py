@@ -6,5 +6,5 @@ class AverageClientAnalyzer(FAClientAnalyzer):
         sample_num = len(train_data)
         average = 0.0
         for value in train_data:
-            average = average + value / sample_num
+            average = average + float(value) / float(sample_num)
         self.set_client_submission(average)
