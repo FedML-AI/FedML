@@ -62,7 +62,8 @@ jobs:
           fi
         id: working_directory
       - name: pip install -e ./
-        working-directory: ${{ steps.working_directory.outputs.dir }}
+        # working-directory: ${{ steps.working_directory.outputs.dir }}
+        working-directory: /home/fedml/FedML4GitHubAction
         run: |
           pwd
           cd python
