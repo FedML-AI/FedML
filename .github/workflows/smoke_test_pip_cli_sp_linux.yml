@@ -51,14 +51,14 @@ jobs:
           echo ${{ steps.extract_branch.outputs.branch }}
           if [[ ${{ steps.extract_branch.outputs.branch }} == "master" ]]; then
             echo "running on master"
-            cd /home/fedml/FedML4GitHubAction
+            cd /home/actions-runner/fedml-master
             git pull
-            echo "{dir}={/home/fedml/FedML4GitHubAction}" >> "$GITHUB_OUTPUT"
+            echo "{dir}={/home/actions-runner/fedml-master}" >> "$GITHUB_OUTPUT"
           else
             echo "running on dev"
-            cd /home/fedml/FedML4GitHubAction-Dev
+            cd /home/actions-runner/fedml-dev
             git pull
-            echo "{dir}={/home/fedml/FedML4GitHubAction-Dev}" >> "$GITHUB_OUTPUT"
+            echo "{dir}={/home/actions-runner/fedml-dev}" >> "$GITHUB_OUTPUT"
           fi
         id: fedml_source_code_home
       - name: pip install -e ./
