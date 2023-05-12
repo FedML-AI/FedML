@@ -357,7 +357,8 @@ class FedMLClientRunner:
 
         self.mlops_metrics.report_client_training_status(self.edge_id,
                                                          ClientConstants.MSG_MLOPS_CLIENT_STATUS_INITIALIZING,
-                                                         self.start_request_json)
+                                                         self.start_request_json,
+                                                         in_run_id=run_id)
 
         # get training params
         private_local_data_dir = data_config.get("privateLocalData", "")
