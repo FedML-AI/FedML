@@ -45,7 +45,9 @@ jobs:
       shell: bash
       run: echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >>$GITHUB_OUTPUT
       id: extract_branch
-    - name: cd to master or dev branch and git pull
+    - id: fedml_source_code_home
+      name: cd to master or dev branch and git pull
+      shell: bash
       run: |
         ls
         echo ${{ steps.extract_branch.outputs.branch }}
@@ -55,24 +57,20 @@ jobs:
           cd $path
           git config --global --add safe.directory $path
           git pull
-          echo "dir={$path}" >> $GITHUB_OUTPUT
-          echo $GITHUB_OUTPUT
+          echo "dir=$path" >> $GITHUB_OUTPUT
         else
           echo "running on dev"
           path=/home/actions-runner/fedml-dev
           cd $path
           git config --global --add safe.directory $path
           git pull
-          echo "dir={$path}" >> $GITHUB_OUTPUT
-          echo $GITHUB_OUTPUT
+          echo "dir=$path" >> $GITHUB_OUTPUT
         fi
-      id: fedml_source_code_home
     - name: pip install -e ./
       working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
       run: |
         cd python
         pip install -e ./
-        pip install mpi4py==3.1.3
 
     - name: Test package - FedAvg
       working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
