@@ -76,7 +76,7 @@ jobs:
         os: [ windows-2019 ]
         arch: [ X64 ]
         python-version: [ '3.8' ]
-    runs-on: [ self-hosted, runner-windows, devops ]
+    runs-on: [ self-hosted, runner-windows ]
     timeout-minutes: 15
     steps:
       - name: cleanup running processes
@@ -124,7 +124,7 @@ jobs:
         os: [ windows-2019 ]
         arch: [ X64 ]
         python-version: [ '3.8' ]
-    runs-on: [ self-hosted, runner-windows, devops ]
+    runs-on: [ self-hosted, runner-windows ]
     timeout-minutes: 15
     steps:
       - name: cleanup running processes
