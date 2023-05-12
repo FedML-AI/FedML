@@ -71,7 +71,8 @@ jobs:
       - name: pip install -e ./
         run: |
           pwd
-          homepath=${ format('{0}', steps.fedml_source_code_home.outputs.dir) }
+          homepath=${{ format('{0}', steps.fedml_source_code_home.outputs.dir) }}
+          echo $Homepath
           cd $homepath/python
           pip install -e ./
 
