@@ -67,11 +67,13 @@ jobs:
       - name: pip install -e ./
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
+          cd python
           pip install -e ./
 
       - name: server - cross-silo - attack
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
+          cd python
           cd examples/cross_silo/mqtt_s3_fedavg_attack_mnist_lr_example
           run_id=cross-silo-attack-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
           echo ${run_id}
@@ -81,6 +83,7 @@ jobs:
       - name: client 1 - cross-silo - attack
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
+          cd python
           cd examples/cross_silo/mqtt_s3_fedavg_attack_mnist_lr_example
           run_id=cross-silo-attack-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
           echo ${run_id}
@@ -90,6 +93,7 @@ jobs:
       - name: client 2 - cross-silo - attack
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
+          cd python
           cd examples/cross_silo/mqtt_s3_fedavg_attack_mnist_lr_example
           run_id=cross-silo-attack-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
           echo ${run_id}
@@ -99,6 +103,7 @@ jobs:
       - name: client 3 - cross-silo - attack
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
+          cd python
           cd examples/cross_silo/mqtt_s3_fedavg_attack_mnist_lr_example
           run_id=cross-silo-attack-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
           echo ${run_id}
@@ -108,6 +113,7 @@ jobs:
       - name: client 4 - cross-silo - attack
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
+          cd python
           cd examples/cross_silo/mqtt_s3_fedavg_attack_mnist_lr_example
           run_id=cross-silo-attack-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
           echo ${run_id}
