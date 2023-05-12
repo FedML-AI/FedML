@@ -41,14 +41,21 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       # https://github.com/actions/checkout/issues/116#issuecomment-644419389
+
+      - name: Extract branch name
+        shell: bash
+        run: echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >>$GITHUB_OUTPUT
+        id: extract_branch
       - name: cd to master branch and git pull
-        if: ${GITHUB_REF##*/} == "master"
+        if: ${{ steps.extract_branch.outputs.branch }} == "master"
         run: |
+          echo ${{ steps.extract_branch.outputs.branch }}
           cd /home/actions-runner/fedml-master/python
           git pull
       - name: cd to dev branch
-        if: ${GITHUB_REF##*/} == "dev/v0.7.0"
+        if: ${{ steps.extract_branch.outputs.branch }} == "dev/v0.7.0"
         run: |
+          echo ${{ steps.extract_branch.outputs.branch }}
           cd /home/actions-runner/fedml-dev/python
           git pull
       - name: pip install -e ./
