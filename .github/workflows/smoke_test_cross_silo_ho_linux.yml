@@ -64,13 +64,13 @@ jobs:
             git pull
             echo "dir=$path" >> $GITHUB_OUTPUT
           fi
-      - name: pip install -e ./
+      - name: sync git repo to local pip
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
-          run_id=${{ format('0', steps.fedml_source_code_home.outputs.dir) }}/python
-          echo ${run_id}
-          cd python
-          pip install -e ./
+          homepath=${{ format('{0}', steps.fedml_source_code_home.outputs.dir) }}
+          echo $Homepath
+          cd $homepath/python
+          bash sync-fedml-pip.sh
 
       - name: server - cross-silo - ho
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
