@@ -20,10 +20,10 @@ permissions: write-all
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   security-attack-defense-tests:
-    defaults:
-      run:
-        shell: bash
-        working-directory: python
+    # defaults:
+    #   run:
+    #     shell: bash
+    #     working-directory: python
     strategy:
       fail-fast: false
       matrix:
