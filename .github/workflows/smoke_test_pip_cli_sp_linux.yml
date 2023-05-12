@@ -49,13 +49,13 @@ jobs:
         if: ${{ steps.extract_branch.outputs.branch }} == "master"
         run: |
           echo ${{ steps.extract_branch.outputs.branch }}
-          cd /home/actions-runner/fedml-master/python
+          cd /home/fedml/FedML4GitHubAction
           git pull
       - name: cd to dev branch
         if: ${{ steps.extract_branch.outputs.branch }} == "dev/v0.7.0"
         run: |
           echo ${{ steps.extract_branch.outputs.branch }}
-          cd /home/actions-runner/fedml-dev/python
+          cd /home/fedml/FedML4GitHubAction-Dev
           git pull
       - name: pip install -e ./
         run: |
