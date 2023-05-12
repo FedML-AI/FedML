@@ -46,7 +46,6 @@ jobs:
         run: echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >>$GITHUB_OUTPUT
         id: extract_branch
       - name: cd to master or dev branch and git pull
-        if: ${{ steps.extract_branch.outputs.branch }} == "master"
         run: |
           ls
           echo ${{ steps.extract_branch.outputs.branch }}
