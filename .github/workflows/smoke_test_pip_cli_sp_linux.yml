@@ -9,7 +9,7 @@ on:
     # Nightly build at 12:12 A.M.
     - cron: "12 12 */1 * *"
   pull_request:
-    branches: [ master,  test/v0.7.0, dev/0.7.0 ]
+    branches: [ master,  test/v0.7.0, dev/v0.7.0 ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -51,33 +51,32 @@ jobs:
           echo ${{ steps.extract_branch.outputs.branch }}
           if [[ ${{ steps.extract_branch.outputs.branch }} == "master" ]]; then
             echo "running on master"
-            cd /home/fedml/FedML4GitHubAction
+            cd /home/actions-runner/fedml-master
             git pull
-            echo "{dir}={/home/fedml/FedML4GitHubAction}" >> "$GITHUB_OUTPUT"
+            echo "{dir}={/home/actions-runner/fedml-master}" >> "$GITHUB_OUTPUT"
           else
             echo "running on dev"
-            cd /home/fedml/FedML4GitHubAction-Dev
+            cd /home/actions-runner/fedml-dev
             git pull
-            echo "{dir}={/home/fedml/FedML4GitHubAction-Dev}" >> "$GITHUB_OUTPUT"
+            echo "{dir}={/home/actions-runner/fedml-dev}" >> "$GITHUB_OUTPUT"
           fi
-        id: working_directory
+        id: fedml_source_code_home
       - name: pip install -e ./
-        # working-directory: ${{ steps.working_directory.outputs.dir }}
-        working-directory: /home/fedml/FedML4GitHubAction
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           pwd
           cd python
           pip install -e ./
 
       - name: test "fedml login" and "fedml build"
-        working-directory: /home/fedml/FedML4GitHubAction
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd python
           cd tests/smoke_test/cli
           bash login.sh
           bash build.sh
       - name: test simulation-sp
-        working-directory: /home/fedml/FedML4GitHubAction
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd python
           cd quick_start/parrot
@@ -85,42 +84,42 @@ jobs:
           python torch_fedavg_mnist_lr_custum_data_and_model_example.py --cf fedml_config.yaml
 
       - name: test sp - sp_decentralized_mnist_lr_example
-        working-directory: /home/fedml/FedML4GitHubAction
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd python
           cd examples/simulation/sp_decentralized_mnist_lr_example
           python torch_fedavg_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
 
       - name: test sp - sp_fednova_mnist_lr_example
-        working-directory: /home/fedml/FedML4GitHubAction
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd python
           cd examples/simulation/sp_fednova_mnist_lr_example
           python torch_fednova_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
           
       - name: test sp - sp_fedopt_mnist_lr_example
-        working-directory: /home/fedml/FedML4GitHubAction
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd python
           cd examples/simulation/sp_fedopt_mnist_lr_example
           python torch_fedopt_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
 
       - name: test sp - sp_hierarchicalfl_mnist_lr_example
-        working-directory: /home/fedml/FedML4GitHubAction
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd python
           cd examples/simulation/sp_hierarchicalfl_mnist_lr_example
           python torch_hierarchicalfl_mnist_lr_step_by_step_example.py --cf fedml_config.yaml
 
       - name: test sp - sp_turboaggregate_mnist_lr_example
-        working-directory: /home/fedml/FedML4GitHubAction
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd python
           cd examples/simulation/sp_turboaggregate_mnist_lr_example
           python torch_turboaggregate_mnist_lr_step_by_step_example.py --cf fedml_config.yaml 
 
       - name: test sp - sp_vertical_mnist_lr_example
-        working-directory: /home/fedml/FedML4GitHubAction
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd python
           cd examples/simulation/sp_vertical_mnist_lr_example

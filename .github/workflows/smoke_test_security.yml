@@ -9,7 +9,7 @@ on:
     # Nightly build at 12:12 A.M.
     - cron: "12 12 */1 * *"
   pull_request:
-    branches: [ master,  test/v0.7.0 ]
+    branches: [ master,  test/v0.7.0, dev/v0.7.0 ]
     types: [opened, reopened]
 
   # Allows you to run this workflow manually from the Actions tab
@@ -42,18 +42,43 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       # https://github.com/actions/checkout/issues/116#issuecomment-644419389
-      - uses: actions/checkout@v3
-      - name: pip install -e ./
+      - name: Extract branch name
+        shell: bash
+        run: echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >>$GITHUB_OUTPUT
+        id: extract_branch
+      - name: cd to master or dev branch and git pull
         run: |
+          ls
+          echo ${{ steps.extract_branch.outputs.branch }}
+          if [[ ${{ steps.extract_branch.outputs.branch }} == "master" ]]; then
+            echo "running on master"
+            cd /home/actions-runner/fedml-master
+            git pull
+            echo "{dir}={/home/actions-runner/fedml-master}" >> "$GITHUB_OUTPUT"
+          else
+            echo "running on dev"
+            cd /home/actions-runner/fedml-dev
+            git pull
+            echo "{dir}={/home/actions-runner/fedml-dev}" >> "$GITHUB_OUTPUT"
+          fi
+        id: fedml_source_code_home
+      - name: pip install -e ./
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
+        run: |
+          cd python
           pip install -e ./
           pip install sklearn
 
       - name: attack tests
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
+          cd python
           cd tests/security
           sh run_attacker_tests.sh
 
       - name: defense tests
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
+          cd python
           cd tests/security
           sh run_defender_tests.sh
