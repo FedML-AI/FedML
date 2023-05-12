@@ -56,3 +56,13 @@ PROMPT_WITH_INPUT_FORMAT = f"""{INTRO_BLURB}
 {{response}}
 
 {END_KEY}"""
+
+# This is the prompt that is used for generating responses using an already trained model. It ends with the response
+# key, where the job of the model is to provide the completion that follows it (i.e. the response itself).
+PROMPT_FOR_GENERATION_FORMAT = f"""{INTRO_BLURB}
+
+{INSTRUCTION_KEY}
+{{instruction}}
+
+{RESPONSE_KEY}
+"""
