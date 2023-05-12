@@ -12,8 +12,29 @@ FedML supports Linux, MacOS, Windows, and Android.
 pip install fedml
 ```
 
+if your machine has not installed python, please install one version of the following pythons: 3.8, 3.9, 3.10.
+
+### Installing with pip on the Ubuntu
+
+On Ubuntu, run the following commands to install pip3 and fedml.
+```
+sudo apt install python3-pip
+pip3 install fedml
+export PATH=$HOME/.local/bin:$PATH
+fedml env
+```
+
+### Installing with pip on the CentOS
+On CentOS, run the following commands to install pip3 and fedml.
+```
+yum –y install python3-pip
+pip3 install fedml
+export PATH=$HOME/.local/bin:$PATH
+fedml env
+```
+
 The default machine learning engine is `PyTorch`. FedML also supports `TensorFlow`, `Jax`, and `MXNet`.
-You can install related engine as follows:
+You can install related engines as follows:
 ```
 pip install "fedml[MPI]"
 pip install "fedml[tensorflow]"
@@ -25,11 +46,11 @@ For MPI installation, it's used for local distributed simulation with MPI (https
 conda install mpi4py openmpi
 ```
 About OpenMPI library installation for MPI, the reference is as follows: [https://docs.open-mpi.org/en/v5.0.x/installing-open-mpi/quickstart.html](https://docs.open-mpi.org/en/v5.0.x/installing-open-mpi/quickstart.html,)
-For OpenMPI on MacOS, please review the following links: 
+For OpenMPI on MacOS, please review the following links:
 [https://betterprogramming.pub/integrating-open-mpi-with-clion-on-apple-m1-76b7815c27f2](https://formulae.brew.sh/formula/open-mpi)
 [https://formulae.brew.sh/formula/open-mpi](https://formulae.brew.sh/formula/open-mpi)
 
-The above commands work properly in Linux environment. 
+The above commands work properly in Linux environment.
 For Windows/Mac OS (Intel)/Mac OS (M1), you may need to follow TensorFlow/Jax/MXNet official guidance to fix related installation issues.
 
 ## Installing FedML with Anaconda
@@ -61,7 +82,7 @@ cd ./FedML/python && \
 python setup.py install
 ```
 
-If you want to run examples with tensforflow, jax or mxnet, you need to install optional dependencies:
+If you want to run examples with TensorFlow, Jax or MxNet, you need to install optional dependencies:
 ```
 git clone https://github.com/FedML-AI/FedML.git && \
 cd ./FedML/python && \
