@@ -37,7 +37,7 @@ def test_attack_cifar10():
 
 def test_attack_cifar100():
     args = add_args()
-    dataset = load_partition_data_cifar100(dataset='cifar100', data_dir='~/fedml_data', partition_method='homo', partition_alpha=0.5, client_number=CLIENT_NUM, batch_size=BATCH_SIZE)
+    dataset = load_partition_data_cifar100(dataset='cifar100', data_dir='~/fedml_data/cifar100', partition_method='homo', partition_alpha=0.5, client_number=CLIENT_NUM, batch_size=BATCH_SIZE)
     # replace class 3 with class 9; replace class 2 with class 1
     label_flipping_attack = LabelFlippingAttack(args)
     label_flipping_attack.poison_data(dataset[5][0])

@@ -8,11 +8,11 @@ import pickle
 class AttackDefenseDataLoader:
     @classmethod
     def load_cifar10_data(
-        cls, client_num, batch_size, partition_method="homo", partition_alpha=None
+        cls, client_num, batch_size, data_dir="../../../../../data/cifar10", partition_method="homo", partition_alpha=None
     ):
         return load_partition_data_cifar10(
             "cifar10",
-            data_dir="../../../../../data/cifar10",
+            data_dir=data_dir,
             partition_method=partition_method,
             partition_alpha=partition_alpha,
             client_number=client_num,
