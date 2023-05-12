@@ -51,14 +51,19 @@ jobs:
           echo ${{ steps.extract_branch.outputs.branch }}
           cd /home/fedml/FedML4GitHubAction
           git pull
+          echo "{value}={/home/fedml/FedML4GitHubAction}" >> "$GITHUB_OUTPUT"
+        id: working_directory
       - name: cd to dev branch
         if: ${{ steps.extract_branch.outputs.branch }} == "dev/v0.7.0"
         run: |
           echo ${{ steps.extract_branch.outputs.branch }}
           cd /home/fedml/FedML4GitHubAction-Dev
           git pull
+          echo "{value}={/home/fedml/FedML4GitHubAction-Dev}" >> "$GITHUB_OUTPUT"
       - name: pip install -e ./
+        working_directory: ${{ steps.working_directory.outputs.working_directory }}
         run: |
+          cd python
           pip install -e ./
 
       - name: test "fedml login" and "fedml build"
