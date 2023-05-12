@@ -21,10 +21,10 @@ jobs:
   mpi_run:
     runs-on: [self-hosted, Linux]
     timeout-minutes: 15
-    defaults:
-      run:
-        shell: bash
-        working-directory: python
+    # defaults:
+    #   run:
+    #     shell: bash
+    #     working-directory: python
     strategy:
       matrix:
         python-version: [3.8]
@@ -41,55 +41,68 @@ jobs:
 #          mpi: openmpi
 #          install-mpi: sudo apt install -y openmpi-bin libopenmpi-dev
     steps:
-    - uses: actions/checkout@v3
-    - name: Install MPI
-      run: ${{ matrix.install-mpi }}
-    - name: Use Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install packaging tools
-      run:  python -m pip install --upgrade setuptools pip wheel
-    - name: Install build dependencies
-      run:  python -m pip install --upgrade cython
-    - name: Build package
-      run:  python -m pip wheel -vvv --wheel-dir=dist .
-    - name: Install test dependencies
-      run:  python -m pip install --upgrade numpy
+    - name: Extract branch name
+      shell: bash
+      run: echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >>$GITHUB_OUTPUT
+      id: extract_branch
+    - name: cd to master or dev branch and git pull
+      run: |
+        ls
+        echo ${{ steps.extract_branch.outputs.branch }}
+        if [[ ${{ steps.extract_branch.outputs.branch }} == "master" ]]; then
+          echo "running on master"
+          cd /home/actions-runner/fedml-master
+          git pull
+          echo "{dir}={/home/actions-runner/fedml-master}" >> "$GITHUB_OUTPUT"
+        else
+          echo "running on dev"
+          cd /home/actions-runner/fedml-dev
+          git pull
+          echo "{dir}={/home/actions-runner/fedml-dev}" >> "$GITHUB_OUTPUT"
+        fi
+      id: fedml_source_code_home
     - name: pip install -e ./
+      working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
       run: |
         pip install -e ./
         pip install mpi4py==3.1.3
 
     - name: Test package - FedAvg
+      working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
       run: |
         cd examples/simulation/mpi_torch_fedavg_mnist_lr_example
         sh run_custom_data_and_model_example.sh 4
 
     - name: Test package - Base
+      working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
       run: |
         cd examples/simulation/mpi_base_framework_example
         sh run.sh 4
 
     - name: Test package - Decentralized
+      working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
       run: |
         cd examples/simulation/mpi_decentralized_fl_example
         sh run.sh 4
 
     - name: Test package - FedOPT
+      working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
       run: |
         cd examples/simulation/mpi_fedopt_datasets_and_models_example
         sh run_step_by_step_example.sh 4 config/mnist_lr/fedml_config.yaml
 
     - name: Test package - FedProx
+      working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
       run: |
         cd examples/simulation/mpi_fedprox_datasets_and_models_example
         sh run_step_by_step_example.sh 4 config/mnist_lr/fedml_config.yaml
 
     - name: Test package - FedGAN
+      working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
       run: |
         cd examples/simulation/mpi_torch_fedgan_mnist_gan_example
         sh run_step_by_step_example.sh 4
 
     - name: Uninstall package after testing
+      working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
       run:  python -m pip uninstall --yes mpi4py

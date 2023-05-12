@@ -18,10 +18,10 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   tf-ml-engines-test:
-    defaults:
-      run:
-        shell: bash
-        working-directory: python
+    # defaults:
+    #   run:
+    #     shell: bash
+    #     working-directory: python
     strategy:
       fail-fast: false
       matrix:
@@ -40,13 +40,34 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: actions/checkout@v3
+      - name: Extract branch name
+        shell: bash
+        run: echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >>$GITHUB_OUTPUT
+        id: extract_branch
+      - name: cd to master or dev branch and git pull
+        run: |
+          ls
+          echo ${{ steps.extract_branch.outputs.branch }}
+          if [[ ${{ steps.extract_branch.outputs.branch }} == "master" ]]; then
+            echo "running on master"
+            cd /home/actions-runner/fedml-master
+            git pull
+            echo "{dir}={/home/actions-runner/fedml-master}" >> "$GITHUB_OUTPUT"
+          else
+            echo "running on dev"
+            cd /home/actions-runner/fedml-dev
+            git pull
+            echo "{dir}={/home/actions-runner/fedml-dev}" >> "$GITHUB_OUTPUT"
+          fi
+        id: fedml_source_code_home
       - name: pip install -e ./
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           pip install -e ./
           pip install -e '.[tensorflow]'
 
       - name: server - tensorflow - fedavg
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd examples/cross_silo/tf_mqtt_s3_fedavg_mnist_lr_example
           run_id=tf-ml-engine-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
@@ -55,6 +76,7 @@ jobs:
         if:   ${{ matrix.client-index == '0' }}
 
       - name: client 1 - tensorflow - fedavg
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd examples/cross_silo/tf_mqtt_s3_fedavg_mnist_lr_example
           run_id=tf-ml-engine-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
@@ -63,6 +85,7 @@ jobs:
         if:   ${{ matrix.client-index == '1' }}
 
       - name: client 2 - tensorflow - fedavg
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd examples/cross_silo/tf_mqtt_s3_fedavg_mnist_lr_example
           run_id=tf-ml-engine-${{ format('{0}{1}{2}{3}', github.run_id, matrix.os, matrix.arch, matrix.python-version) }}
