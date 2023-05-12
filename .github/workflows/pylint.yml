@@ -13,7 +13,7 @@ jobs:
       run:
         shell: bash
         working-directory: python
-    runs-on: [self-hosted, runner-linux, devops]
+    runs-on: [self-hosted, Linux]
     strategy:
       matrix:
         os: [ ubuntu-latest ]

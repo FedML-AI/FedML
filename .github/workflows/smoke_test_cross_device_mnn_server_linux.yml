@@ -18,10 +18,10 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   cross-device-mnn-server:
-    defaults:
-      run:
-        shell: bash
-        working-directory: python
+    # defaults:
+    #   run:
+    #     shell: bash
+    #     working-directory: python
     strategy:
       fail-fast: false
       matrix:
@@ -39,15 +39,37 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: actions/checkout@v3
+      - name: Extract branch name
+        shell: bash
+        run: echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >>$GITHUB_OUTPUT
+        id: extract_branch
+      - name: cd to master or dev branch and git pull
+        run: |
+          ls
+          echo ${{ steps.extract_branch.outputs.branch }}
+          if [[ ${{ steps.extract_branch.outputs.branch }} == "master" ]]; then
+            echo "running on master"
+            cd /home/actions-runner/fedml-master
+            git pull
+            echo "{dir}={/home/actions-runner/fedml-master}" >> "$GITHUB_OUTPUT"
+          else
+            echo "running on dev"
+            cd /home/actions-runner/fedml-dev
+            git pull
+            echo "{dir}={/home/actions-runner/fedml-dev}" >> "$GITHUB_OUTPUT"
+          fi
+        id: fedml_source_code_home
       - name: pip install -e ./
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           pip install -e ./
       - name: Install MNN
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           pip install mnn==1.1.6
 
       - name: test server of cross-device
+        working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
           cd quick_start/beehive
           timeout 60 bash run_server.sh || code=$?; if [[ $code -ne 124 && $code -ne 0 ]]; then exit $code; fi

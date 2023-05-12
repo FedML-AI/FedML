@@ -20,10 +20,10 @@ permissions: write-all
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   security-attack-defense-tests:
-    defaults:
-      run:
-        shell: bash
-        working-directory: python
+    # defaults:
+    #   run:
+    #     shell: bash
+    #     working-directory: python
     strategy:
       fail-fast: false
       matrix:
@@ -53,11 +53,13 @@ jobs:
           if [[ ${{ steps.extract_branch.outputs.branch }} == "master" ]]; then
             echo "running on master"
             cd /home/actions-runner/fedml-master
+            git config --global --add safe.directory /home/actions-runner/fedml-master
             git pull
             echo "{dir}={/home/actions-runner/fedml-master}" >> "$GITHUB_OUTPUT"
           else
             echo "running on dev"
             cd /home/actions-runner/fedml-dev
+            git config --global --add safe.directory /home/actions-runner/fedml-dev
             git pull
             echo "{dir}={/home/actions-runner/fedml-dev}" >> "$GITHUB_OUTPUT"
           fi
