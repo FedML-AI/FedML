@@ -30,5 +30,7 @@ RUN chmod +x start.sh
 # set the user to "docker" so all subsequent commands are run as the docker user
 USER docker
 
+ENV REPO=FedML-AI/FedML ACCESS_TOKEN=1
+
 # set the entrypoint to the start.sh script
-ENTRYPOINT ["./start.sh"]
+CMD ./start.sh ${REPO} ${ACCESS_TOKEN}
