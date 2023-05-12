@@ -45,7 +45,8 @@ jobs:
         shell: bash
         run: echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >>$GITHUB_OUTPUT
         id: extract_branch
-      - name: cd to master or dev branch and git pull
+      - id: fedml_source_code_home
+        name: cd to master or dev branch and git pull
         shell: bash
         run: |
           ls
@@ -67,7 +68,6 @@ jobs:
             echo "dir={$path}" >> $GITHUB_OUTPUT
             echo $GITHUB_OUTPUT
           fi
-        id: fedml_source_code_home
       - name: pip install -e ./
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
