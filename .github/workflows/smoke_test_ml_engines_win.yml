@@ -62,6 +62,7 @@ jobs:
           echo $Homepath
           cd $homepath
           bash ./devops/scripts/sync-fedml-pip.sh
+          cd $homepath/python
           pip install -e '.[tensorflow]'
 
       - name: server - tensorflow - fedavg
@@ -131,6 +132,7 @@ jobs:
           echo $Homepath
           cd $homepath
           bash ./devops/scripts/sync-fedml-pip.sh
+          cd $homepath/python
           pip install -e '.[jax]'
 
       - name: server - jax - fedavg
@@ -200,6 +202,7 @@ jobs:
           echo $Homepath
           cd $homepath
           bash ./devops/scripts/sync-fedml-pip.sh
+          cd $homepath/python
           pip install -e '.[mxnet]'
 
       - name: server - mxnet - fedavg
