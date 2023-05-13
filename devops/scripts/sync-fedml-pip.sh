@@ -10,7 +10,7 @@ if [ -z ${python_site_dir} ]; then
 else
   if [ -z ${exist_python_conda_env} ]; then
     echo "Have conda env"
-    cp -Rf ./fedml/* ${python_site_dir}/fedml > /dev/null 2>&1
+    cp -Rf ./python/fedml/* ${python_site_dir}/fedml > /dev/null 2>&1
   fi
 fi
 
@@ -20,7 +20,7 @@ if [ -z ${python_site_dir_pip} ]; then
 else
   if [ -z ${exist_python_pip} ]; then
     echo "Have fedml pip"
-    cp -Rf ./fedml/* ${python_site_dir_pip}/fedml > /dev/null 2>&1
+    cp -Rf ./python/fedml/* ${python_site_dir_pip}/fedml > /dev/null 2>&1
   fi
 fi
 

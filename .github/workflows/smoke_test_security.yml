@@ -67,8 +67,8 @@ jobs:
         run: |
           homepath=${{ format('{0}', steps.fedml_source_code_home.outputs.dir) }}
           echo $Homepath
-          cd $homepath/devops/scripts
-          bash sync-fedml-pip.sh
+          cd $homepath
+          bash ./devops/scripts/sync-fedml-pip.sh
 
       - name: attack tests
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
