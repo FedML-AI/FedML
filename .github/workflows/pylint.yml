@@ -9,10 +9,6 @@ on:
 
 jobs:
   build:
-    defaults:
-      run:
-        shell: bash
-        working-directory: python
     runs-on: [self-hosted, Linux]
     strategy:
       matrix:
