@@ -327,7 +327,7 @@ def train() -> None:
 
     if training_args.do_train:
         print("Training")
-        trainer.train()
+        trainer.train(resume_from_checkpoint=training_args.resume_from_checkpoint)
 
         print(f"Saving model to \"{training_args.output_dir}\"")
         trainer.save_state()
