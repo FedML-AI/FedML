@@ -22,7 +22,7 @@ from train import (
     SavePeftModelCallback,
     TokenizerType,
 )
-from utils import to_device, process_state_dict
+from src.utils import to_device, process_state_dict
 
 
 def _parse_args(args: Arguments) -> Arguments:
@@ -31,6 +31,7 @@ def _parse_args(args: Arguments) -> Arguments:
             args.dataset_path = args.client_dataset_path
         # disable logging for client
         setattr(args, "report_to", "none")
+        setattr(args, "disable_tqdm", True)
 
     if isinstance(args.dataset_path, (tuple, list)):
         args.dataset_path = [
@@ -46,6 +47,7 @@ def get_hf_trainer(args: Arguments, model: ModelType, tokenizer: TokenizerType, 
     # TODO: scrutinize
     if not args.using_gpu or torch.cuda.device_count() == 1:
         args_dict.pop("local_rank", None)
+        args_dict.pop("device", None)
     training_args, *_ = HfArgumentParser(TrainingArguments).parse_dict(args_dict, allow_extra_keys=True)
 
     return HfTrainer(
