@@ -9,7 +9,7 @@ on:
     # Nightly build at 12:12 A.M.
     - cron: "12 12 */1 * *"
   pull_request:
-    branches: [ master,  test/v0.7.0 ]
+    branches: [ master,  test/v0.7.0, dev/v0.7.0  ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -37,10 +37,6 @@ jobs:
     runs-on: [self-hosted, Linux]
     timeout-minutes: 15
     steps:
-      - uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-      # https://github.com/actions/checkout/issues/116#issuecomment-644419389
       - name: Extract branch name
         shell: bash
         run: echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >>$GITHUB_OUTPUT
@@ -66,12 +62,13 @@ jobs:
             git pull
             echo "dir=$path" >> $GITHUB_OUTPUT
           fi
-      - name: pip install -e ./
+      - name: sync git repo to local pip
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
-          cd python
-          pip install -e ./
-          pip install sklearn
+          homepath=${{ format('{0}', steps.fedml_source_code_home.outputs.dir) }}
+          echo $Homepath
+          cd $homepath
+          bash ./devops/scripts/sync-fedml-pip.sh
 
       - name: attack tests
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
