@@ -35,9 +35,6 @@ jobs:
     runs-on: [ self-hosted, Linux ]
     timeout-minutes: 15
     steps:
-      - uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
       - name: Extract branch name
         shell: bash
         run: echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >>$GITHUB_OUTPUT
