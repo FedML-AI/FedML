@@ -9,8 +9,7 @@ on:
     # Nightly build at 12:12 A.M.
     - cron: "12 12 */1 * *"
   pull_request:
-    branches: [ master,  test/v0.7.0, dev/v0.7.0 ]
-    types: [opened, reopened]
+    branches: [ master,  test/v0.7.0 ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -36,9 +35,6 @@ jobs:
     runs-on: [ self-hosted, Linux ]
     timeout-minutes: 15
     steps:
-      - uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
       - name: Extract branch name
         shell: bash
         run: echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >>$GITHUB_OUTPUT
@@ -53,22 +49,21 @@ jobs:
             echo "running on master"
             path=/home/actions-runner/fedml-master
             cd $path
-            git config --global --add safe.directory $path
-            git pull
             echo "dir=$path" >> $GITHUB_OUTPUT
           else
             echo "running on dev"
             path=/home/actions-runner/fedml-dev
             cd $path
-            git config --global --add safe.directory $path
-            git pull
             echo "dir=$path" >> $GITHUB_OUTPUT
           fi
-      - name: pip install -e ./
+      - name: sync git repo to local pip
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |
-          cd python
-          pip install -e ./
+          homepath=${{ format('{0}', steps.fedml_source_code_home.outputs.dir) }}
+          echo $Homepath
+          cd $homepath
+          bash ./devops/scripts/sync-fedml-pip.sh
+
       - name: Install MNN
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
         run: |

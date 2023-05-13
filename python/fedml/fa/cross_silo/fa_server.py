@@ -20,6 +20,5 @@ class FACrossSiloServer:
             server_aggregator,
         )
 
-
     def run(self):
         pass

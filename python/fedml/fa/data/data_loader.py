@@ -3,6 +3,7 @@ import logging
 import os
 from fedml.fa.constants import FA_TASK_HEAVY_HITTER_TRIEHH
 from fedml.fa.data.fake_numeric_data.data_loader import generate_fake_data, load_partition_data_fake
+from fedml.fa.data.self_defined_data.data_loader import load_partition_self_defined_data
 from fedml.fa.data.twitter_Sentiment140.data_loader import download_twitter_Sentiment140, \
     load_partition_data_twitter_sentiment140, load_partition_data_twitter_sentiment140_heavy_hitter
 from fedml.fa.data.twitter_Sentiment140.twitter_data_processing import preprocess_twitter_data, \
@@ -19,7 +20,6 @@ def load_synthetic_data(args):
         data_cache_dir = os.path.join(args.data_cache_dir, "fake_numeric_data")
         if not os.path.exists(data_cache_dir):
             os.makedirs(data_cache_dir)
-        print(f"---data_cache_dir={data_cache_dir}")
         generate_fake_data(data_cache_dir)
         logging.info("load_data. dataset_name = %s" % dataset_name)
         (
@@ -62,6 +62,31 @@ def load_synthetic_data(args):
                 train_data_local_num_dict,
                 local_data_dict,
             ]
+    elif dataset_name == "self_defined":
+        data_cache_dir = args.data_cache_dir
+        if not os.path.exists(data_cache_dir):
+            os.makedirs(data_cache_dir)
+        if hasattr(args, "data_col_idx") and isinstance(args.data_col_idx, int) and args.data_col_idx >= 0:
+            if hasattr(args, "seperator"):
+                separator = args.seperator
+            else:
+                separator = ","  # default seperator = ","
+            (
+                datasize,
+                train_data_local_num_dict,
+                local_data_dict,
+            ) = load_partition_self_defined_data(file_folder_path=data_cache_dir,
+                                                 client_num=int(args.client_num_in_total),
+                                                 data_col_idx=int(args.data_col_idx),
+                                                 separator=separator)
+            dataset = [
+                datasize,
+                train_data_local_num_dict,
+                local_data_dict,
+            ]
+
+        else:
+            raise Exception("illegal data column index (data_col_idx) in the data file(s)")
     else:
         raise "Not Implemented Error"
     return dataset

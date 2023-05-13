@@ -32,21 +32,13 @@ class FARunner:
 
         return runner
 
-    def _init_cross_silo_runner(
-            self, args, dataset, client_analyzer=None, server_analyzer=None
-    ):
+    def _init_cross_silo_runner(self, args, dataset, client_analyzer=None, server_analyzer=None):
         if args.role == "client":
             from fedml.fa.cross_silo.fa_client import FACrossSiloClient as Client
-
-            runner = Client(
-                args, dataset, client_analyzer
-            )
+            runner = Client(args, dataset, client_analyzer)
         elif args.role == "server":
             from fedml.fa.cross_silo.fa_server import FACrossSiloServer as Server
-
-            runner = Server(
-                args, dataset, server_analyzer
-            )
+            runner = Server(args, dataset, server_analyzer)
         else:
             raise Exception("no such role")
 
