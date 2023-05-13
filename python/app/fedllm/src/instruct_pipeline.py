@@ -1,7 +1,7 @@
 """
 Adapted from https://github.com/databrickslabs/dolly/blob/master/training/generate.py
 """
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import logging
 import re
@@ -66,25 +66,38 @@ def get_special_token_id(tokenizer: PreTrainedTokenizer, key: str) -> int:
 
 class InstructionTextGenerationPipeline(Pipeline):
     def __init__(
-            self, *args, do_sample: bool = True, max_new_tokens: int = 256, top_p: float = 0.92, top_k: int = 0,
+            self,
+            *args,
+            do_sample: bool = True,
+            max_new_tokens: int = 256,
+            top_p: float = 0.92,
+            top_k: int = 0,
             **kwargs
     ):
         """Initialize the pipeline
 
         Args:
-            do_sample (bool, optional): Whether or not to use sampling. Defaults to True.
+            do_sample (bool, optional): Whether to use sampling. Defaults to True.
             max_new_tokens (int, optional): Max new tokens after the prompt to generate. Defaults to 128.
             top_p (float, optional): If set to float < 1, only the smallest set of most probable tokens with
                 probabilities that add up to top_p or higher are kept for generation. Defaults to 0.92.
             top_k (int, optional): The number of highest probability vocabulary tokens to keep for top-k-filtering.
                 Defaults to 0.
         """
-        super().__init__(*args, do_sample=do_sample, max_new_tokens=max_new_tokens, top_p=top_p, top_k=top_k,
-                         **kwargs)
+        super().__init__(
+            *args,
+            do_sample=do_sample,
+            max_new_tokens=max_new_tokens,
+            top_p=top_p,
+            top_k=top_k,
+            **kwargs
+        )
 
-    def _sanitize_parameters(self,
-                             return_full_text: bool = None,
-                             **generate_kwargs):
+    def _sanitize_parameters(
+            self,
+            return_full_text: bool = None,
+            **generate_kwargs
+    ):
         preprocess_params = {}
 
         # newer versions of the tokenizer configure the response key as a special token.  newer versions still may
@@ -138,7 +151,7 @@ class InstructionTextGenerationPipeline(Pipeline):
             in_b = input_ids.shape[0]
 
         generated_sequence = self.model.generate(
-            input_ids=input_ids.to(self.model.device),
+            input_ids=input_ids,
             attention_mask=attention_mask,
             pad_token_id=self.tokenizer.pad_token_id,
             **generate_kwargs,
@@ -153,12 +166,17 @@ class InstructionTextGenerationPipeline(Pipeline):
         instruction_text = model_inputs.pop("instruction_text")
         return {"generated_sequence": generated_sequence, "input_ids": input_ids, "instruction_text": instruction_text}
 
-    def postprocess(self, model_outputs, response_key_token_id, end_key_token_id, return_full_text: bool = False):
-
-        generated_sequence = model_outputs["generated_sequence"][0]
+    def postprocess(
+            self,
+            model_outputs,
+            response_key_token_id: Optional[int] = None,
+            end_key_token_id: Optional[int] = None,
+            return_full_text: bool = False
+    ):
+        generated_sequence: torch.Tensor = model_outputs["generated_sequence"][0]
         instruction_text = model_outputs["instruction_text"]
 
-        generated_sequence: List[List[int]] = generated_sequence.numpy().tolist()
+        generated_sequence: List[List[int]] = generated_sequence.tolist()
         records = []
         for sequence in generated_sequence:
 
@@ -172,14 +190,14 @@ class InstructionTextGenerationPipeline(Pipeline):
                 try:
                     response_pos = sequence.index(response_key_token_id)
                 except ValueError:
-                    logger.warn(f"Could not find response key {response_key_token_id} in: {sequence}")
+                    logger.warning(f"Could not find response key {response_key_token_id} in: {sequence}")
                     response_pos = None
 
                 if response_pos:
                     # Next find where "### End" is located.  The model has been trained to end its responses with this
                     # sequence (or actually, the token ID it maps to, since it is a special token).  We may not find
                     # this token, as the response could be truncated.  If we don't find it then just return everything
-                    # to the end.  Note that even though we set eos_token_id, we still see the this token at the end.
+                    # to the end. Note that even though we set eos_token_id, we still see this token at the end.
                     try:
                         end_pos = sequence.index(end_key_token_id)
                     except ValueError:
@@ -199,13 +217,13 @@ class InstructionTextGenerationPipeline(Pipeline):
                 if m:
                     decoded = m.group(1).strip()
                 else:
-                    # The model might not generate the "### End" sequence before reaching the max tokens.  In this case,
+                    # The model might not generate the "### End" sequence before reaching the max tokens. In this case,
                     # return everything after "### Response:".
                     m = re.search(r"#+\s*Response:\s*(.+)", fully_decoded, flags=re.DOTALL)
                     if m:
                         decoded = m.group(1).strip()
                     else:
-                        logger.warn(f"Failed to find response in:\n{fully_decoded}")
+                        logger.warning(f"Failed to find response in:\n{fully_decoded}")
 
             # If the full text is requested, then append the decoded text to the original instruction.
             # This technically isn't the full text, as we format the instruction in the prompt the model has been

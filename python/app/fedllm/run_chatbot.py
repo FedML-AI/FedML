@@ -19,9 +19,18 @@ if __name__ == '__main__':
         "--model_name_or_path",
         dest="model_name_or_path",
         type=str,
-        required=True,
+        default="EleutherAI/pythia-70m",
         help="model name or path to model checkpoint directory"
     )
+    parser.add_argument(
+        "--max_new_tokens",
+        dest="max_new_tokens",
+        type=int,
+        default=256,
+        help="The maximum numbers of tokens to generate, ignoring the number of tokens in the prompt."
+    )
+    parser.add_argument("--do-sample", "--do_sample", dest="do_sample", action="store_true", default=True)
+    parser.add_argument("--no-sample", "--no_sample", dest='do_sample', action="store_false")
     args = parser.parse_args()
 
     print("Initializing...")
@@ -41,9 +50,11 @@ if __name__ == '__main__':
         model=model,
         tokenizer=tokenizer,
         config=config,
-        pipeline_class=InstructionTextGenerationPipeline
+        pipeline_class=InstructionTextGenerationPipeline,
+        torch_dtype=torch.bfloat16,
+        do_sample=args.do_sample,
+        max_new_tokens=args.max_new_tokens
     )
-    print(type(instruct_pipeline))
     print(f"Initialization took {timer() - init_st_time:,.2f}s")
 
     print("Running...")
