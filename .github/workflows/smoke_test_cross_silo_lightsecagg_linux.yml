@@ -50,15 +50,11 @@ jobs:
             echo "running on master"
             path=/home/actions-runner/fedml-master
             cd $path
-            git config --global --add safe.directory $path
-            git pull
             echo "dir=$path" >> $GITHUB_OUTPUT
           else
             echo "running on dev"
             path=/home/actions-runner/fedml-dev
             cd $path
-            git config --global --add safe.directory $path
-            git pull
             echo "dir=$path" >> $GITHUB_OUTPUT
           fi
       - name: sync git repo to local pip
