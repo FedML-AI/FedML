@@ -25,6 +25,8 @@ COPY start.sh start.sh
 # make the script executable
 RUN chmod +x start.sh
 
+RUN cp -f /usr/bin/python /usr/bin/python-backup && ln -s /usr/bin/python3 python
+
 # since the config and run script for actions are not allowed to be run by root,
 # set the user to "docker" so all subsequent commands are run as the docker user
 #USER docker
