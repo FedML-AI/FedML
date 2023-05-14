@@ -106,7 +106,6 @@ def __login_as_client(args, userid, version):
             edge_id = runner.bind_account_and_device_id(
                 service_config["ml_ops_config"]["EDGE_BINDING_URL"], args.account_id, unique_device_id, args.os_name
             )
-            print("edge_id = {}".format(edge_id))
             if edge_id > 0:
                 runner.edge_id = edge_id
                 break
