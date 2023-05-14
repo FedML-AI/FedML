@@ -100,9 +100,13 @@ class MLOpsRuntimeLogProcessor:
 
     def log_upload(self, run_id, device_id):
         # read log data from local log file
-        log_file_obj = open(os.path.join(expanduser("~"), "fedml-client", "log.txt"), "a")
+        log_trace_dir = os.path.join(expanduser("~"), "fedml-client")
+        if not os.path.exists(log_trace_dir):
+            os.makedirs(log_trace_dir)
+        log_file_obj = open(os.path.join(log_trace_dir, "log.txt"), "a")
         log_lines = self.log_read()
         if log_lines is None or len(log_lines) <= 0:
+            log_file_obj.close()
             return
 
         line_count = 0
