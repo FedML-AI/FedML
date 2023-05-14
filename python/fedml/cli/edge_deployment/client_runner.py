@@ -918,7 +918,6 @@ class FedMLClientRunner:
 
     def bind_account_and_device_id(self, url, account_id, device_id, os_name, role="client"):
         ip = requests.get('https://checkip.amazonaws.com').text.strip()
-        print("ip = {}".format(ip))
         fedml_ver, exec_path, os_ver, cpu_info, python_ver, torch_ver, mpi_installed, \
             cpu_usage, available_mem, total_mem, gpu_info, gpu_available_mem, gpu_total_mem = get_sys_runner_info()
         json_params = {
