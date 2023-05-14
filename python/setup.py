@@ -29,7 +29,7 @@ requirements = [
     "boto3",
     "pynvml",
     "scikit-learn",
-    "networkx",
+    "networkx<3.0",
     "click",
     "torch>=1.13.1",
     "torchvision>=0.14.1",
@@ -89,7 +89,7 @@ requirements_extra_mxnet = [
 
 setup(
     name="fedml",
-    version="0.8.4a18",
+    version="0.8.4a19",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "
