@@ -67,6 +67,7 @@ def __login_as_client(args, userid, version):
             service_config["ml_ops_config"] = mlops_config
             service_config["docker_config"] = docker_config
             runner.agent_config = service_config
+            click.echo("service_config = {}".format(service_config))
             log_server_url = mlops_config.get("LOG_SERVER_URL", None)
             if log_server_url is not None:
                 setattr(args, "log_server_url", log_server_url)
@@ -79,7 +80,7 @@ def __login_as_client(args, userid, version):
 
     if config_try_count >= 5:
         click.echo("")
-        click.echo("Oops, you failed to login the FedML MLOps platform.")
+        click.echo("[1] Oops, you failed to login the FedML MLOps platform.")
         click.echo("Please check whether your network is normal!")
         return
 
@@ -105,6 +106,7 @@ def __login_as_client(args, userid, version):
             edge_id = runner.bind_account_and_device_id(
                 service_config["ml_ops_config"]["EDGE_BINDING_URL"], args.account_id, unique_device_id, args.os_name
             )
+            print("edge_id = {}".format(edge_id))
             if edge_id > 0:
                 runner.edge_id = edge_id
                 break
@@ -115,7 +117,7 @@ def __login_as_client(args, userid, version):
 
     if edge_id <= 0:
         click.echo("")
-        click.echo("Oops, you failed to login the FedML MLOps platform.")
+        click.echo("[2] Oops, you failed to login the FedML MLOps platform.")
         click.echo("Please check whether your network is normal!")
         return
 
@@ -181,7 +183,7 @@ def __login_as_simulator(args, userid, version, mqtt_connection=True):
 
     if config_try_count >= 5:
         click.echo("")
-        click.echo("Oops, you failed to login the FedML MLOps platform.")
+        click.echo("[3] Oops, you failed to login the FedML MLOps platform.")
         click.echo("Please check whether your network is normal!")
         return False, edge_id, args
 
@@ -208,7 +210,7 @@ def __login_as_simulator(args, userid, version, mqtt_connection=True):
 
     if edge_id <= 0:
         click.echo("")
-        click.echo("Oops, you failed to login the FedML MLOps platform.")
+        click.echo("[4] Oops, you failed to login the FedML MLOps platform.")
         click.echo("Please check whether your network is normal!")
         return False, edge_id, args
 
