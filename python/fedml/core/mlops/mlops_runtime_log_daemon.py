@@ -100,13 +100,8 @@ class MLOpsRuntimeLogProcessor:
 
     def log_upload(self, run_id, device_id):
         # read log data from local log file
-        log_trace_dir = os.path.join(expanduser("~"), "fedml-client")
-        if not os.path.exists(log_trace_dir):
-            os.makedirs(log_trace_dir)
-        log_file_obj = open(os.path.join(log_trace_dir, "log.txt"), "a")
         log_lines = self.log_read()
         if log_lines is None or len(log_lines) <= 0:
-            log_file_obj.close()
             return
 
         line_count = 0
@@ -176,41 +171,30 @@ class MLOpsRuntimeLogProcessor:
 
             log_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
 
-            try:
-                # send log data to the log server
-                _, cert_path = MLOpsConfigs.get_instance(self.args).get_request_params()
-                if cert_path is not None:
-                    try:
-                        requests.session().verify = cert_path
-                        response = requests.post(
-                            self.log_server_url, json=log_upload_request, verify=True, headers=log_headers
-                        )
-                    except requests.exceptions.SSLError as err:
-                        MLOpsConfigs.install_root_ca_file()
-                        response = requests.post(
-                            self.log_server_url, json=log_upload_request, verify=True, headers=log_headers
-                        )
-                else:
-                    response = requests.post(self.log_server_url, headers=log_headers, json=log_upload_request)
-                if response.status_code != 200:
-                    log_file_obj.write("log request failed, code {}, content {}.\n".format(
-                        response.status_code, str(response.content)))
-                    pass
-                else:
-                    self.log_line_index += (line_end_req - line_start_req)
-                    self.log_uploaded_line_index += len(upload_lines)
-                    line_count += (line_end_req - line_start_req)
-                    line_start_req = line_end_req
-                    self.save_log_config()
-                    resp_data = response.json()
-
-                    log_file_obj.write("log request {}, response {}, url {}, \n".format(
-                        log_upload_request, resp_data, self.log_server_url))
-            except Exception as e:
-                log_file_obj.write("request exception, stack {}, url {}.\n".format(
-                    traceback.format_exc(), self.log_server_url))
-
-        log_file_obj.close()
+            # send log data to the log server
+            _, cert_path = MLOpsConfigs.get_instance(self.args).get_request_params()
+            if cert_path is not None:
+                try:
+                    requests.session().verify = cert_path
+                    response = requests.post(
+                        self.log_server_url, json=log_upload_request, verify=True, headers=log_headers
+                    )
+                except requests.exceptions.SSLError as err:
+                    MLOpsConfigs.install_root_ca_file()
+                    response = requests.post(
+                        self.log_server_url, json=log_upload_request, verify=True, headers=log_headers
+                    )
+            else:
+                response = requests.post(self.log_server_url, headers=log_headers, json=log_upload_request)
+            if response.status_code != 200:
+                pass
+            else:
+                self.log_line_index += (line_end_req - line_start_req)
+                self.log_uploaded_line_index += len(upload_lines)
+                line_count += (line_end_req - line_start_req)
+                line_start_req = line_end_req
+                self.save_log_config()
+                resp_data = response.json()
 
     @staticmethod
     def should_ignore_log_line(log_line):
