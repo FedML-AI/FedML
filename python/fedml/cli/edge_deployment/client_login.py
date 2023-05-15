@@ -67,7 +67,7 @@ def __login_as_client(args, userid, version):
             service_config["ml_ops_config"] = mlops_config
             service_config["docker_config"] = docker_config
             runner.agent_config = service_config
-            click.echo("service_config = {}".format(service_config))
+            # click.echo("service_config = {}".format(service_config))
             log_server_url = mlops_config.get("LOG_SERVER_URL", None)
             if log_server_url is not None:
                 setattr(args, "log_server_url", log_server_url)
@@ -271,6 +271,7 @@ def __login_as_simulator(args, userid, version, mqtt_connection=True):
 
 
 def login(args):
+    print("login")
     if args.role == ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_CLIEN_INDEX]:
         __login_as_client(args, args.user, args.version)
     elif args.role == ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_EDGE_SIMULATOR_INDEX]:
@@ -295,6 +296,7 @@ if __name__ == "__main__":
     parser.add_argument("--device_id", "-id", type=str, default="0")
     parser.add_argument("--os_name", "-os", type=str, default="")
     args = parser.parse_args()
+    
     args.user = args.user
     if args.type == 'login':
         login(args)
