@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: ML-Engines-Linux
+name: ML-Engines-Linux-JAX
 
 # Controls when the workflow will run
 on:
@@ -10,6 +10,11 @@ on:
     - cron: "12 12 */1 * *"
   pull_request:
     branches: [ master,  test/v0.7.0, dev/v0.7.0 ]
+
+  workflow_run:
+    workflows: [ LightSecAgg-Linux ]
+    types:
+      - completed
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -65,7 +70,6 @@ jobs:
           cd $homepath
           bash ./devops/scripts/sync-fedml-pip.sh
           cd $homepath/python
-          pip install -e '.[jax]'
 
       - name: server - jax - fedavg
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}

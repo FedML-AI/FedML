@@ -50,4 +50,5 @@ jobs:
           pip install mxnet
           pip install jax
           pip install ptflops
+          cd python
           pylint --rcfile=build_tools/lint/.pylintrc --disable=C,R,W,I ./

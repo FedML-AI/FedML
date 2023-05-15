@@ -57,8 +57,8 @@ class MqttManager(object):
         self._client.disable_logger()
         self._client.username_pw_set(self.user, self.pwd)
         self._client._connect_timeout = 15
-        logging.info("MQTT Connection timeout: {}, client id {}.".format(
-            self._client._connect_timeout, self.mqtt_connection_id))
+        # logging.info("MQTT Connection timeout: {}, client id {}.".format(
+        #     self._client._connect_timeout, self.mqtt_connection_id))
 
     def connect(self):
         if self.last_will_topic is not None:
@@ -125,7 +125,7 @@ class MqttManager(object):
         if rc == 0:
             client.connected_flag = True
             client.bad_conn_flag = False
-            logging.info("MQTT Connection is OK, client id {}.".format(self.mqtt_connection_id))
+            # logging.info("MQTT Connection is OK, client id {}.".format(self.mqtt_connection_id))
 
             # Callback connected listeners
             self.callback_connected_listener(client)

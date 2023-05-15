@@ -5,6 +5,11 @@ on:
   push:
     branches: [ dev/v0.7.0 ]
 
+  workflow_run:
+    workflows: [ LightSecAgg-Linux ]
+    types:
+      - completed
+
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 

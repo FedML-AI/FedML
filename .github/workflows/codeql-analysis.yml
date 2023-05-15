@@ -20,6 +20,11 @@ on:
   schedule:
     - cron: '34 20 * * 4'
 
+  workflow_run:
+    workflows: [ Pylint - FedML ]
+    types:
+      - completed
+
 jobs:
   analyze:
     name: Analyze

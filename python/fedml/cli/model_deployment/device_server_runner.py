@@ -945,11 +945,11 @@ class FedMLServerRunner:
         if self.client_mqtt_lock is None:
             self.client_mqtt_lock = threading.Lock()
 
-        logging.info(
-            "server agent config: {},{}".format(
-                self.agent_config["mqtt_config"]["BROKER_HOST"], self.agent_config["mqtt_config"]["BROKER_PORT"]
-            )
-        )
+        # logging.info(
+        #     "server agent config: {},{}".format(
+        #         self.agent_config["mqtt_config"]["BROKER_HOST"], self.agent_config["mqtt_config"]["BROKER_PORT"]
+        #     )
+        # )
 
         self.client_mqtt_mgr = MqttManager(
             self.agent_config["mqtt_config"]["BROKER_HOST"],
@@ -1352,10 +1352,12 @@ class FedMLServerRunner:
         self.send_agent_active_msg()
 
         # Echo results
-        click.echo("")
-        click.echo("Congratulations, you have logged into the FedML ModelOps platform successfully!")
-        click.echo("Your server unique device id is " + str(self.unique_device_id))
-
+        print("\n\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
+        print(
+            "Your FedML Edge ID is " + str(self.edge_id) + ", unique device ID is "
+            + str(self.unique_device_id)
+            + "\n"
+        )
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
         MLOpsStatus.get_instance().set_server_agent_status(
             self.edge_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE

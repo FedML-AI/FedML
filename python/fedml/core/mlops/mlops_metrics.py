@@ -39,7 +39,7 @@ class MLOpsMetrics(Singleton):
         if args is not None:
             self.args = args
             self.run_id = args.run_id
-            if args.rank == 0:
+            if args.role == "server":
                 if hasattr(args, "server_id"):
                     self.edge_id = args.server_id
                 else:
@@ -131,7 +131,7 @@ class MLOpsMetrics(Singleton):
         topic_name = "fl_run/fl_client/mlops/status"
         msg = {"edge_id": edge_id, "run_id": run_id, "status": status}
         message_json = json.dumps(msg)
-        logging.info("report_client_training_status. message_json = %s" % message_json)
+        # logging.info("report_client_training_status. message_json = %s" % message_json)
         MLOpsStatus.get_instance().set_client_status(edge_id, status)
         self.messenger.send_message_json(topic_name, message_json)
 
@@ -203,7 +203,7 @@ class MLOpsMetrics(Singleton):
         topic_name = "fl_client/flclient_agent_" + str(edge_id) + "/status"
         msg = {"run_id": run_id, "edge_id": edge_id, "status": status}
         message_json = json.dumps(msg)
-        logging.info("report_client_id_status. message_json = %s" % message_json)
+        # logging.info("report_client_id_status. message_json = %s" % message_json)
         self.messenger.send_message_json(topic_name, message_json)
 
     def report_server_training_status(self, run_id, status, role=None, running_json=None, is_from_model=False):
@@ -254,7 +254,7 @@ class MLOpsMetrics(Singleton):
             "status": status,
             "role": role,
         }
-        logging.info("report_server_training_status. msg = %s" % msg)
+        # logging.info("report_server_training_status. msg = %s" % msg)
         message_json = json.dumps(msg)
         MLOpsStatus.get_instance().set_server_status(self.edge_id, status)
         self.messenger.send_message_json(topic_name, message_json)
