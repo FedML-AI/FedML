@@ -95,10 +95,13 @@ def login_with_docker_mode(userid, version, docker_rank):
             is_deployment_ok = True
 
     if is_deployment_ok:
-        click.echo("Congratulations, you have deployed the FedML client agent successfully!")
-        click.echo("Your device id is " + env_current_device_id + ".")
-        click.echo("You may review the device in the ModelOps edge device list.")
-
+        print("\n\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
+        print(
+            "Your unique device ID is "
+            + str(env_current_device_id)
+            + "\n"
+        )
+        
         logs_with_docker_mode(docker_rank)
     else:
         click.echo("Oops, you failed to deploy the FedML client agent.")

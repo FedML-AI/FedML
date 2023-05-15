@@ -61,7 +61,7 @@ class MLOpsRuntimeLog:
         self.log_file_dir = args.log_file_dir
         self.log_file = None
         self.run_id = args.run_id
-        if args.rank == 0:
+        if args.role == "server":
             if hasattr(args, "server_id"):
                 self.edge_id = args.server_id
             else:
@@ -144,7 +144,7 @@ class MLOpsRuntimeLog:
 
     @staticmethod
     def build_log_file_path(in_args):
-        if in_args.rank == 0:
+        if in_args.role == "server":
             if hasattr(in_args, "server_id"):
                 edge_id = in_args.server_id
             else:
@@ -152,7 +152,7 @@ class MLOpsRuntimeLog:
                     edge_id = in_args.edge_id
                 else:
                     edge_id = 0
-            program_prefix = "FedML-Server({}) @device-id-{}".format(in_args.rank, edge_id)
+            program_prefix = "FedML-Server @device-id-{}".format(edge_id)
         else:
             if hasattr(in_args, "client_id"):
                 edge_id = in_args.client_id

@@ -802,7 +802,7 @@ class FedMLClientRunner:
             logging.info("received to finished status.")
             self.cleanup_run_when_finished()
         elif self.device_status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED:
-            logging.error("received to failed status.")
+            logging.error("received to failed status from the server agent")
             self.cleanup_run_when_starting_failed()
 
     def callback_runner_id_status(self, topic, payload):
@@ -938,7 +938,6 @@ class FedMLClientRunner:
                             "mpi_installed": mpi_installed, "cpu_sage": cpu_usage,
                             "available_mem": available_mem, "total_mem": total_mem}
         }
-        print("json_params = {}".format(json_params))
         if gpu_info is not None:
             if gpu_total_mem is not None:
                 json_params["gpu"] = gpu_info + ", Total GPU Memory: " + gpu_total_mem
@@ -968,7 +967,7 @@ class FedMLClientRunner:
                 )
         else:
             response = requests.post(url, json=json_params, headers={"Connection": "close"})
-        print("url = {}, response = {}".format(url, response))
+        # print("url = {}, response = {}".format(url, response))
         status_code = response.json().get("code")
         if status_code == "SUCCESS":
             edge_id = response.json().get("data").get("id")
@@ -1055,12 +1054,11 @@ class FedMLClientRunner:
         self.send_agent_active_msg()
 
         # Echo results
-        click.echo("")
-        click.echo("Congratulations, you have logged into the FedML MLOps platform successfully!")
-        click.echo(
-            "Your device id is "
+        print("\n\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
+        print(
+            "Your FedML Edge ID is " + str(self.edge_id) + ", unique device ID is "
             + str(self.unique_device_id)
-            + ". You may review the device in the MLOps edge device list."
+            + "\n"
         )
 
     def on_agent_mqtt_disconnected(self, mqtt_client_object):

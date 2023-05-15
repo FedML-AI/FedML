@@ -123,8 +123,8 @@ def __login_as_edge_server_and_agent(args, userid, version):
     init_logs(edge_id)
 
     # Log arguments and binding results.
-    logging.info("login: unique_device_id = %s" % str(unique_device_id))
-    logging.info("login: server_id = %s" % str(edge_id))
+    # logging.info("login: unique_device_id = %s" % str(unique_device_id))
+    # logging.info("login: server_id = %s" % str(edge_id))
     runner.unique_device_id = unique_device_id
     ServerConstants.save_runner_infos(args.current_device_id + "." + args.os_name, edge_id)
 
@@ -326,9 +326,13 @@ def __login_as_cloud_server(args, userid, version):
     ServerConstants.save_runner_infos(args.current_device_id + "." + args.os_name, edge_id)
 
     # Echo results
-    logging.info("Congratulations, you have logged into the FedML ModelOps platform successfully!")
-    logging.info("Your server unique device id is " + str(unique_device_id))
-
+    print("\n\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
+    print(
+        "Your unique device ID is "
+        + str(unique_device_id)
+        + "\n"
+    )
+        
     # Start the FedML server
     runner.callback_start_train(payload=args.runner_cmd)
 
@@ -337,11 +341,11 @@ def init_logs(edge_id):
     # Init runtime logs
     args.log_file_dir = ServerConstants.get_log_file_dir()
     args.run_id = 0
-    args.rank = 0
+    args.role = "server"
     args.edge_id = edge_id
     setattr(args, "using_mlops", True)
     setattr(args, "server_agent_id", edge_id)
-    MLOpsRuntimeLog.get_instance(args).init_logs(show_stdout_log=True)
+    # MLOpsRuntimeLog.get_instance(args).init_logs(show_stdout_log=True)
 
 
 def login(args):

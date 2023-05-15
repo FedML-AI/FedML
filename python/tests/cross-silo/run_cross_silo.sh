@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 WORKSPACE=$(pwd)
 PROJECT_HOME=$WORKSPACE/../../
 cd $PROJECT_HOME
@@ -17,3 +18,12 @@ nohup bash run_server.sh "$RUN_ID" 1 > $WORKSPACE/server_out.log 2>&1 &
 
 # after execution, we can query the progress id (pid) with: ps -ef | grep "fedml_config"
 # kill the processes with: kill -9 <pid>
+
+wait
+
+if [ "$?" = "0" ]; then
+  echo "successfully run cross-silo example"
+else
+  echo "failed on cross-silo example"
+  exit 1
+fi
