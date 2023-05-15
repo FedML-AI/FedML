@@ -155,7 +155,7 @@ class FedMLServerRunner:
         model_storage_url = model_config["model_storage_url"]
         scale_min = model_config["instance_scale_min"]
         scale_max = model_config["instance_scale_max"]
-        inference_engine = model_config["inference_engine"]
+        inference_engine = model_config.get("inference_engine", 0)
         inference_end_point_id = run_id
 
         # Copy config file from the client
@@ -213,7 +213,7 @@ class FedMLServerRunner:
         model_storage_url = model_config["model_storage_url"]
         scale_min = model_config["instance_scale_min"]
         scale_max = model_config["instance_scale_max"]
-        inference_engine = model_config["inference_engine"]
+        inference_engine = model_config.get("inference_engine", 0)
         model_is_from_open = model_config["is_from_open"]
         inference_end_point_id = run_id
         use_gpu = "gpu"  # TODO: Get GPU from device infos
@@ -695,7 +695,7 @@ class FedMLServerRunner:
         model_storage_url = model_config["model_storage_url"]
         scale_min = model_config["instance_scale_min"]
         scale_max = model_config["instance_scale_max"]
-        inference_engine = model_config["inference_engine"]
+        inference_engine = model_config.get("inference_engine", 0)
         inference_end_point_id = run_id
 
         # Start log processor for current run
@@ -1358,6 +1358,9 @@ class FedMLServerRunner:
             + str(self.unique_device_id)
             + "\n"
         )
+
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
+
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
         MLOpsStatus.get_instance().set_server_agent_status(
             self.edge_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_OFFLINE

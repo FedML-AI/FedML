@@ -163,7 +163,7 @@ class FedMLClientRunner:
         model_storage_url = model_config["model_storage_url"]
         scale_min = model_config["instance_scale_min"]
         scale_max = model_config["instance_scale_max"]
-        inference_engine = model_config["inference_engine"]
+        inference_engine = model_config.get("inference_engine", 0)
         inference_end_point_id = run_id
 
         # Retrieve model package or model binary file.
@@ -249,7 +249,7 @@ class FedMLClientRunner:
         model_storage_url = model_config["model_storage_url"]
         scale_min = model_config["instance_scale_min"]
         scale_max = model_config["instance_scale_max"]
-        inference_engine = model_config["inference_engine"]
+        inference_engine = model_config.get("inference_engine", 0)
         self.model_is_from_open = True if model_config.get("is_from_open", 0) == 1 else False
         if self.model_is_from_open:
             model_net_url = model_config["model_net_url"]
@@ -566,7 +566,7 @@ class FedMLClientRunner:
         model_storage_url = model_config["model_storage_url"]
         scale_min = model_config["instance_scale_min"]
         scale_max = model_config["instance_scale_max"]
-        inference_engine = model_config["inference_engine"]
+        inference_engine = model_config.get("inference_engine", 0)
         inference_end_point_id = run_id
 
         # Terminate previous process about starting or stopping run command
@@ -924,6 +924,8 @@ class FedMLClientRunner:
             + str(self.unique_device_id)
             + "\n"
         )
+
+        MLOpsRuntimeLog.get_instance(self.args).init_logs(show_stdout_log=True)
 
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
         MLOpsStatus.get_instance().set_client_agent_status(
