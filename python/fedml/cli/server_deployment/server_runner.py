@@ -548,7 +548,7 @@ class FedMLServerRunner:
 
     def stop_run_when_starting_failed(self):
         edge_id_list = self.request_json["edgeids"]
-        logging.info("edge ids {}".format(str(edge_id_list)))
+        logging.error("edge ids {}".format(str(edge_id_list)))
         self.send_exit_train_with_exception_request_to_edges(edge_id_list, json.dumps(self.request_json))
 
         # logging.info("Stop run successfully when starting failed.")
@@ -1016,7 +1016,7 @@ class FedMLServerRunner:
     def send_exit_train_with_exception_request_to_edges(self, edge_id_list, payload):
         for edge_id in edge_id_list:
             topic_exit_train = "flserver_agent/" + str(edge_id) + "/exit_train_with_exception"
-            logging.info("exit_train_with_exception: send topic " + topic_exit_train)
+            logging.error("exit_train_with_exception: send topic " + topic_exit_train)
             self.client_mqtt_mgr.send_message(topic_exit_train, payload)
             self.mlops_metrics.common_broadcast_client_training_status(edge_id,
                                                                        ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
@@ -1093,7 +1093,7 @@ class FedMLServerRunner:
             self.release_client_mqtt_mgr()
 
     def exit_run_with_exception(self):
-        logging.info("Exit run successfully.")
+        logging.error("Exit run successfully.")
 
         ServerConstants.cleanup_learning_process()
         ServerConstants.cleanup_run_process()

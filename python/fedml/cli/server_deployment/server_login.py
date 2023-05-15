@@ -61,7 +61,7 @@ def __login_as_edge_server_and_agent(args, userid, version):
 
     if config_try_count >= 5:
         click.echo("")
-        click.echo("Oops, you failed to login the FedML MLOps platform.")
+        click.echo("[5] Oops, you failed to login the FedML MLOps platform.")
         click.echo("Please check whether your network is normal!")
         return
 
@@ -98,7 +98,7 @@ def __login_as_edge_server_and_agent(args, userid, version):
 
     if edge_id <= 0:
         click.echo("")
-        click.echo("Oops, you failed to login the FedML MLOps platform.")
+        click.echo("[6] Oops, you failed to login the FedML MLOps platform.")
         click.echo("Please check whether your network is normal!")
         return
     setattr(args, "server_id", edge_id)
@@ -164,7 +164,7 @@ def __login_as_cloud_agent(args, userid, version):
 
     if config_try_count >= 5:
         click.echo("")
-        click.echo("Oops, you failed to login the FedML MLOps platform.")
+        click.echo("[7] Oops, you failed to login the FedML MLOps platform.")
         click.echo("Please check whether your network is normal!")
         return
 
@@ -193,7 +193,7 @@ def __login_as_cloud_agent(args, userid, version):
 
     if edge_id <= 0:
         click.echo("")
-        click.echo("Oops, you failed to login the FedML MLOps platform.")
+        click.echo("[8] Oops, you failed to login the FedML MLOps platform.")
         click.echo("Please check whether your network is normal!")
         return
     setattr(args, "server_id", edge_id)
@@ -260,7 +260,7 @@ def __login_as_cloud_server(args, userid, version):
 
     if config_try_count >= 5:
         click.echo("")
-        click.echo("Oops, you failed to login the FedML MLOps platform.")
+        click.echo("[9] Oops, you failed to login the FedML MLOps platform.")
         click.echo("Please check whether your network is normal!")
         return
 
@@ -288,7 +288,7 @@ def __login_as_cloud_server(args, userid, version):
 
     if edge_id <= 0:
         click.echo("")
-        click.echo("Oops, you failed to login the FedML MLOps platform.")
+        click.echo("[10] Oops, you failed to login the FedML MLOps platform.")
         click.echo("Please check whether your network is normal!")
         return
     setattr(args, "server_id", edge_id)

@@ -537,7 +537,7 @@ class FedMLClientRunner:
         time.sleep(1)
 
     def cleanup_run_when_starting_failed(self):
-        logging.info("Cleanup run successfully when starting failed.")
+        logging.error("Cleanup run successfully when starting failed.")
 
         self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
 
@@ -801,7 +801,7 @@ class FedMLClientRunner:
             logging.info("received to finished status.")
             self.cleanup_run_when_finished()
         elif self.device_status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED:
-            logging.info("received to failed status.")
+            logging.error("received to failed status.")
             self.cleanup_run_when_starting_failed()
 
     def callback_runner_id_status(self, topic, payload):
@@ -937,6 +937,7 @@ class FedMLClientRunner:
                             "mpi_installed": mpi_installed, "cpu_sage": cpu_usage,
                             "available_mem": available_mem, "total_mem": total_mem}
         }
+        print("json_params = {}".format(json_params))
         if gpu_info is not None:
             if gpu_total_mem is not None:
                 json_params["gpu"] = gpu_info + ", Total GPU Memory: " + gpu_total_mem
@@ -966,6 +967,7 @@ class FedMLClientRunner:
                 )
         else:
             response = requests.post(url, json=json_params, headers={"Connection": "close"})
+        print("url = {}, response = {}".format(url, response))
         status_code = response.json().get("code")
         if status_code == "SUCCESS":
             edge_id = response.json().get("data").get("id")
