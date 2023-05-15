@@ -339,7 +339,7 @@ def mlops_logout(client, server, docker, docker_rank):
         sys_utils.cleanup_all_fedml_server_login_processes("server_login.py")
         sys_utils.cleanup_all_fedml_server_api_processes(kill_all=True)
         sys_utils.cleanup_all_fedml_server_login_processes("server_daemon.py")
-
+    print("\nlogout successfully!\n")
 
 @cli.command("build", help="Build packages for MLOps platform (open.fedml.ai)")
 @click.option(
@@ -990,7 +990,7 @@ def login_as_model_device_agent(
 )
 def logout_from_model_ops(slave, master, docker, docker_rank):
     device_login_entry.logout_from_model_ops(slave, master, docker, docker_rank)
-
+    print("\nlogout successfully!\n")
 
 @model.command("create", help="Create local model repository.")
 @click.option(
