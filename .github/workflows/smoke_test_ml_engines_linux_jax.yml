@@ -70,7 +70,6 @@ jobs:
           cd $homepath
           bash ./devops/scripts/sync-fedml-pip.sh
           cd $homepath/python
-          pip install -e '.[jax]'
 
       - name: server - jax - fedavg
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}

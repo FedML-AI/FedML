@@ -697,22 +697,22 @@ class FedMLServerRunner:
             self.ota_upgrade(payload, request_json)
 
         self.start_request_json = payload
-        if self.run_as_edge_server_and_agent:
-            if self.run_process is not None and \
-                    sys_utils.get_process_running_count(ServerConstants.SERVER_LOGIN_PROGRAM) >= 2:
-                logging.info("There is a running job {}.".format(
-                    self.run_process.pid
-                ))
-                try:
-                    if self.run_process_event is not None:
-                        self.run_process_event.set()
-                    ClientConstants.cleanup_run_process()
-                    self.stop_run()
-                    sys_utils.cleanup_all_fedml_server_login_processes(
-                        ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
-                except Exception as e:
-                    logging.info("Error for cleanup the previous run.")
-                    pass
+        # if self.run_as_edge_server_and_agent:
+        #     if self.run_process is not None and \
+        #             sys_utils.get_process_running_count(ServerConstants.SERVER_LOGIN_PROGRAM) >= 2:
+        #         logging.info("There is a running job {}.".format(
+        #             self.run_process.pid
+        #         ))
+        #         try:
+        #             if self.run_process_event is not None:
+        #                 self.run_process_event.set()
+        #             ClientConstants.cleanup_run_process()
+        #             self.stop_run()
+        #             sys_utils.cleanup_all_fedml_server_login_processes(
+        #                 ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
+        #         except Exception as e:
+        #             logging.info("Error for cleanup the previous run.")
+        #             pass
 
         logging.info("save runner information")
 

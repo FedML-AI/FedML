@@ -33,6 +33,7 @@ from ...core.mlops.mlops_status import MLOpsStatus
 from ..comm_utils.sys_utils import get_sys_runner_info, get_python_program
 from .client_data_interface import FedMLClientDataInterface
 from ..comm_utils import sys_utils
+from ...core.mlops.mlops_utils import MLOpsUtils
 
 
 class RunnerError(Exception):
@@ -699,19 +700,19 @@ class FedMLClientRunner:
         self.start_request_json = payload
         run_id = request_json["runId"]
 
-        if self.run_process is not None and \
-                sys_utils.get_process_running_count(ClientConstants.CLIENT_LOGIN_PROGRAM) >= 2:
-            logging.info("There is a running job {}.".format(
-                self.run_process.pid
-            ))
-            try:
-                if self.run_process_event is not None:
-                    self.run_process_event.set()
-                self.stop_run_with_killed_status()
-                sys_utils.cleanup_all_fedml_client_login_processes(
-                    ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
-            except Exception as e:
-                pass
+        # if self.run_process is not None and \
+        #         sys_utils.get_process_running_count(ClientConstants.CLIENT_LOGIN_PROGRAM) >= 2:
+        #     logging.info("There is a running job {}.".format(
+        #         self.run_process.pid
+        #     ))
+        #     try:
+        #         if self.run_process_event is not None:
+        #             self.run_process_event.set()
+        #         self.stop_run_with_killed_status()
+        #         sys_utils.cleanup_all_fedml_client_login_processes(
+        #             ClientConstants.CLIENT_LOGIN_PROGRAM, clean_process_group=False)
+        #     except Exception as e:
+        #         pass
 
         logging.info("cleanup and save runner information")
 
@@ -1090,7 +1091,7 @@ class FedMLClientRunner:
         local_api_process = ClientConstants.exec_console_with_script(
             "{} -m uvicorn fedml.cli.edge_deployment.client_api:api --host 0.0.0.0 --port {} "
             "--log-level critical".format(python_program,
-                                                   ClientConstants.LOCAL_CLIENT_API_PORT),
+                                          ClientConstants.LOCAL_CLIENT_API_PORT),
             should_capture_stdout=False,
             should_capture_stderr=False
         )
