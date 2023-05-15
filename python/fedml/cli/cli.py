@@ -94,11 +94,13 @@ def display_client_logs():
     log_file = "{}/{}/fedml/logs/fedml-run-{}-edge-{}.log".format(
         home_dir, ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME, str(run_id), str(edge_id)
     )
+
     if os.path.exists(log_file):
         with open(log_file) as file_handle:
             log_lines = file_handle.readlines()
         for log_line in log_lines:
-            click.echo(log_line)
+            click.echo(log_line, nl=False)
+    print("\nconsole log file path = {}".format(log_file))
 
 
 def display_server_logs():
