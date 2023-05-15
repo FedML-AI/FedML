@@ -71,7 +71,7 @@ jobs:
           bash ./devops/scripts/sync-fedml-pip.sh
           cd $homepath/python
           pip install numpy==1.18.0
-          pip install -e '.[mxnet]'
+          pip install mxnet==2.0.0b1
 
       - name: server - mxnet - fedavg
         working-directory: ${{ steps.fedml_source_code_home.outputs.dir }}
