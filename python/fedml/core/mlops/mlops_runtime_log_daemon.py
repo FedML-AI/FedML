@@ -342,7 +342,7 @@ class MLOpsRuntimeLogDaemon:
     def __init__(self, in_args):
         self.args = in_args
 
-        if in_args.rank == 0:
+        if in_args.role == "server":
             if hasattr(in_args, "server_id"):
                 self.edge_id = in_args.server_id
             else:

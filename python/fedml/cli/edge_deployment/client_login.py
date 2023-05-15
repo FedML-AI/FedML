@@ -21,13 +21,13 @@ def init_logs(args, edge_id):
     # Init runtime logs
     args.log_file_dir = ClientConstants.get_log_file_dir()
     args.run_id = 0
-    args.rank = 1
+    args.role = "client"
     client_ids = list()
     client_ids.append(edge_id)
     args.client_id_list = json.dumps(client_ids)
     setattr(args, "using_mlops", True)
-    MLOpsRuntimeLog.get_instance(args).init_logs(show_stdout_log=True)
-    logging.info("client ids:{}".format(args.client_id_list))
+    # MLOpsRuntimeLog.get_instance(args).init_logs(show_stdout_log=True)
+    # logging.info("client ids:{}".format(args.client_id_list))
 
 
 def __login_as_client(args, userid, version):
@@ -124,11 +124,11 @@ def __login_as_client(args, userid, version):
     setattr(args, "client_id", edge_id)
     runner.args = args
     init_logs(args, edge_id)
-    logging.info("args {}".format(args))
+    # logging.info("args {}".format(args))
 
     # Log arguments and binding results.
-    logging.info("login: unique_device_id = %s" % str(unique_device_id))
-    logging.info("login: edge_id = %s" % str(edge_id))
+    # logging.info("login: unique_device_id = %s" % str(unique_device_id))
+    # logging.info("login: edge_id = %s" % str(edge_id))
     runner.unique_device_id = unique_device_id
     ClientConstants.save_runner_infos(args.current_device_id + "." + args.os_name, edge_id, run_id=0)
 
@@ -271,7 +271,6 @@ def __login_as_simulator(args, userid, version, mqtt_connection=True):
 
 
 def login(args):
-    print("login")
     if args.role == ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_CLIEN_INDEX]:
         __login_as_client(args, args.user, args.version)
     elif args.role == ClientConstants.login_role_list[ClientConstants.LOGIN_MODE_EDGE_SIMULATOR_INDEX]:

@@ -918,12 +918,11 @@ class FedMLClientRunner:
         self.send_agent_active_msg()
 
         # Echo results
-        click.echo("")
-        click.echo("Congratulations, you have logged into the FedML ModelOps platform successfully!")
-        click.echo(
-            "Your device id is "
+        print("\n\nCongratulations, your device is connected to the FedML MLOps platform successfully!")
+        print(
+            "Your FedML Edge ID is " + str(self.edge_id) + ", unique device ID is "
             + str(self.unique_device_id)
-            + ". You may review the device in the ModelOps edge device list."
+            + "\n"
         )
 
     def on_agent_mqtt_disconnected(self, mqtt_client_object):
