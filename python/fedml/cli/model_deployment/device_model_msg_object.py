@@ -55,7 +55,7 @@ class FedMLModelMsgObject(object):
         self.model_storage_url = self.model_config["model_storage_url"]
         self.scale_min = self.model_config["instance_scale_min"]
         self.scale_max = self.model_config["instance_scale_max"]
-        self.inference_engine = self.model_config["inference_engine"]
+        self.inference_engine = self.model_config.get("inference_engine", 0)
         self.inference_end_point_id = self.run_id
 
         self. request_json["run_id"] = self.run_id
