@@ -87,7 +87,7 @@ requirements_extra_mxnet = [
 
 setup(
     name="fedml",
-    version="0.8.4a22",
+    version="0.8.4a23",
     author="FedML Team",
     author_email="ch@fedml.ai",
     description="A research and production integrated edge-cloud library for "

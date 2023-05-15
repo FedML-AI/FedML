@@ -207,7 +207,7 @@ LOCAL_WORKSPACE=$PleaseUseYourLocalDirectory
 DOCKER_WORKSPACE=/home/fedml/fedml_source
 YOUR_FEDML_USER_ID=1606
 
-docker run -v $LOCAL_WORKSPACE:$DOCKER_WORKSPACE --shm-size=64g --ulimit nofile=65535 --ulimit memlock=-1 --privileged --network=host --env WORKSPACE=$DOCKER_WORKSPACE -d $FEDML_DOCKER_IMAGE bash -c 'fedml login '$YOUR_FEDML_USER_ID';sleep 100000'
+docker run -v $LOCAL_WORKSPACE:$DOCKER_WORKSPACE --shm-size=64g --ulimit nofile=65535 --ulimit memlock=-1 --privileged --network=host --env WORKSPACE=$DOCKER_WORKSPACE -d $FEDML_DOCKER_IMAGE bash -c 'fedml login '$YOUR_FEDML_USER_ID';sleep 1000000000'
 ```
 
 You may run the light docker as the daemon mode and automatically log into the MLOps platform as the server with the option '-s'.

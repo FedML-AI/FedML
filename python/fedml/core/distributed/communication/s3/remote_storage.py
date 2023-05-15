@@ -4,6 +4,8 @@ import logging
 import os
 import pickle
 import time
+import uuid
+from os.path import expanduser
 
 import boto3
 # for multi-processing, we need to create a global variable for AWS S3 client:
@@ -188,7 +190,10 @@ class S3Storage:
 
         kwargs = {"Bucket": self.bucket_name, "Key": message_key}
         object_size = aws_s3_client.head_object(**kwargs)["ContentLength"]
-        temp_base_file_path = './cache/S3_DOWNLOADED_MODEL' + "_P" + str(os.getpid())
+        cache_dir = os.path.join(expanduser("~"), "fedml_cache")
+        if not os.path.exists(cache_dir):
+            os.makedirs(cache_dir)
+        temp_base_file_path = os.path.join(cache_dir, str(os.getpid()) + "@" + str(uuid.uuid4()))
         if not os.path.exists(temp_base_file_path):
             os.makedirs(temp_base_file_path)
         temp_file_path = temp_base_file_path + "/" + str(message_key)

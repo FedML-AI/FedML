@@ -1,5 +1,8 @@
 
 import logging
+import os
+from os.path import expanduser
+
 import ntplib
 import time
 import datetime
@@ -47,3 +50,13 @@ class MLOpsUtils:
                 if cnt >= 3:
                     break
         return None
+
+    @staticmethod
+    def write_log_trace(log_trace):
+        log_trace_dir = os.path.join(expanduser("~"), "fedml_log")
+        if not os.path.exists(log_trace_dir):
+            os.makedirs(log_trace_dir)
+
+        log_file_obj = open(os.path.join(log_trace_dir, "logs.txt"), "a")
+        log_file_obj.write("{}\n".format(log_trace))
+        log_file_obj.close()
