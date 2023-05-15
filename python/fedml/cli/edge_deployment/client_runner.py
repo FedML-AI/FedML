@@ -802,7 +802,7 @@ class FedMLClientRunner:
             logging.info("received to finished status.")
             self.cleanup_run_when_finished()
         elif self.device_status == ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED:
-            logging.error("received to failed status.")
+            logging.error("received to failed status from the server agent")
             self.cleanup_run_when_starting_failed()
 
     def callback_runner_id_status(self, topic, payload):
