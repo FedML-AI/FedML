@@ -29,6 +29,8 @@ RUN cp -f /usr/bin/python /usr/bin/python-backup && ln -s /usr/bin/python3 pytho
 
 RUN pip install scikit-learn
 
+RUN pip install tensorflow && pip install tensorflow_datasets && pip install jax[cpu] && pip install dm-haiku && pip install optax && pip install jaxlib
+
 # since the config and run script for actions are not allowed to be run by root,
 # set the user to "docker" so all subsequent commands are run as the docker user
 #USER docker
