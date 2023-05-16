@@ -93,7 +93,7 @@ class FedMLAttacker:
     # --------------- for data poisoning attacks --------------- #
 
     # --------------- for data reconstructing attacks --------------- #
-    def is_reconstruct_data_attack(self):
+    def is_data_reconstruction_attack(self):
         if self.is_attack_enabled() and self.attack_type in [ATTACK_METHOD_DLG]:
             return True
         return False

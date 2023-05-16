@@ -41,7 +41,7 @@ class ServerAggregator(ABC):
     ):
         if FedMLDifferentialPrivacy.get_instance().is_global_dp_enabled() and FedMLDifferentialPrivacy.get_instance().is_clipping():
             raw_client_model_or_grad_list = FedMLDifferentialPrivacy.get_instance().global_clip(raw_client_model_or_grad_list)
-        if FedMLAttacker.get_instance().is_reconstruct_data_attack():
+        if FedMLAttacker.get_instance().is_data_reconstruction_attack():
             FedMLAttacker.get_instance().reconstruct_data(
                 raw_client_grad_list=raw_client_model_or_grad_list,
                 extra_auxiliary_info=self.get_model_params(),
