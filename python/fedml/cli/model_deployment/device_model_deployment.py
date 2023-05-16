@@ -111,13 +111,9 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                     os.system(sudo_prefix + "apt-get install -y nvidia-docker2")
                     os.system(sudo_prefix + "systemctl restart docker")
 
+    test_llm = True
     # Convert models from pytorch to onnx format
     if model_is_from_open:
-        logging.info("convert the onnx model when the mode is from the MLOps platform...")
-
-        logging.info("Input size {}, input types {}".format(model_params["input_size"],
-                                                            model_params["input_types"]))
-
         running_model_name = ClientConstants.get_running_model_name(end_point_name,
                                                                     inference_model_name,
                                                                     model_version, end_point_id, model_id)
@@ -137,61 +133,75 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             model_from_open.load_state_dict(open_model_params)
             model_from_open.eval()
 
-        input_size = model_params["input_size"]
-        input_types = model_params["input_types"]
+        if not test_llm:    
+            logging.info("convert the onnx model when the mode is from the MLOps platform...")
+            logging.info("Input size {}, input types {}".format(model_params["input_size"],
+                                                                model_params["input_types"]))
+            input_size = model_params["input_size"]
+            input_types = model_params["input_types"]
 
-        dummy_input_list = []
-        for index, input_i in enumerate(input_size):
-            if input_types[index] == "int":
-                this_input = torch.randint(0, 1, input_i).clone().detach()
-            else:
-                this_input = torch.zeros(input_i).clone().detach()
-            dummy_input_list.append(this_input)
+            dummy_input_list = []
+            for index, input_i in enumerate(input_size):
+                if input_types[index] == "int":
+                    this_input = torch.randint(0, 1, input_i).clone().detach()
+                else:
+                    this_input = torch.zeros(input_i).clone().detach()
+                dummy_input_list.append(this_input)
 
-        onnx_model_path = os.path.join(model_storage_local_path,
-                                       ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME,
-                                       running_model_name, ClientConstants.INFERENCE_MODEL_VERSION)
-        if not os.path.exists(onnx_model_path):
-            os.makedirs(onnx_model_path)
-        onnx_model_path = os.path.join(onnx_model_path, "model.onnx")
+            onnx_model_path = os.path.join(model_storage_local_path,
+                                        ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME,
+                                        running_model_name, ClientConstants.INFERENCE_MODEL_VERSION)
+            if not os.path.exists(onnx_model_path):
+                os.makedirs(onnx_model_path)
+            onnx_model_path = os.path.join(onnx_model_path, "model.onnx")
 
-        convert_model_to_onnx(model_from_open, onnx_model_path, dummy_input_list, input_size)
-    else:
-        logging.info("convert the onnx model when the mode is from the general PyTorch...")
-        logging.info("Input size {}, input types {}".format(model_params["input_size"],
-                                                            model_params["input_types"]))
-
+            convert_model_to_onnx(model_from_open, onnx_model_path, dummy_input_list, input_size)
+        else:       # we do not convert the model to onnx in llm
+            logging.info("LLM model loaded from the open")
+    else:           
+        # not from open
         running_model_name = ClientConstants.get_running_model_name(end_point_name,
                                                                     inference_model_name,
                                                                     model_version, end_point_id, model_id)
-        # configuration passed by user in the Cli
         model_location = os.path.join(model_storage_local_path, "fedml_model.bin")
-        input_size = model_params["input_size"]
-        input_types = model_params["input_types"]
-
-        model = torch.jit.load(model_location)  # model def + params
-        try:
-            model.eval()
+        try:        
+            model = torch.jit.load(model_location)  # model def + params
+            model.eval()            
         except Exception as e:
-            pass
+            logging.info("Cannot locate the .bin file, will read it from the fedml_model_cofig.yaml with the key [local_model_dir] ")
+            import yaml
+            local_model_location = os.path.join(model_storage_local_path, "fedml_model_config.yaml")
 
-        dummy_input_list = []
-        for index, input_i in enumerate(input_size):
-            if input_types[index] == "int":
-                this_input = torch.randint(0, 1, input_i).clone().detach()
-            else:
-                this_input = torch.zeros(input_i).clone().detach()
-            dummy_input_list.append(this_input)
+            with open(local_model_location, 'r') as file:
+                config = yaml.safe_load(file)
+                local_model_dir = config.get('local_model_dir')
 
-        onnx_model_path = os.path.join(model_storage_local_path,
-                                       ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME,
-                                       running_model_name, ClientConstants.INFERENCE_MODEL_VERSION)
-        logging.info("converted onnx model path: {}".format(onnx_model_path))
-        if not os.path.exists(onnx_model_path):
-            os.makedirs(onnx_model_path)
-        onnx_model_path = os.path.join(onnx_model_path, "model.onnx")
+            local_model_dir_from_config = local_model_dir
+        
+        if not test_llm:
+            # configuration passed by user in the Cli
+            input_size = model_params["input_size"]
+            input_types = model_params["input_types"]
+            logging.info("convert the onnx model when the mode is from the general PyTorch...")
+            logging.info("Input size {}, input types {}".format(model_params["input_size"],
+                                                                model_params["input_types"]))
+            dummy_input_list = []
+            for index, input_i in enumerate(input_size):
+                if input_types[index] == "int":
+                    this_input = torch.randint(0, 1, input_i).clone().detach()
+                else:
+                    this_input = torch.zeros(input_i).clone().detach()
+                dummy_input_list.append(this_input)
 
-        convert_model_to_onnx(model, onnx_model_path, dummy_input_list, input_size)
+            onnx_model_path = os.path.join(model_storage_local_path,
+                                        ClientConstants.FEDML_CONVERTED_MODEL_DIR_NAME,
+                                        running_model_name, ClientConstants.INFERENCE_MODEL_VERSION)
+            logging.info("converted onnx model path: {}".format(onnx_model_path))
+            if not os.path.exists(onnx_model_path):
+                os.makedirs(onnx_model_path)
+            onnx_model_path = os.path.join(onnx_model_path, "model.onnx")
+
+            convert_model_to_onnx(model, onnx_model_path, dummy_input_list, input_size)
 
         # convert_model_container_name = "{}_{}_{}".format(ClientConstants.FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX,
         #                                                  str(end_point_id),
@@ -238,58 +248,99 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                 if not os.path.exists(dst_model_file):
                     shutil.copyfile(src_model_file, dst_model_file)
 
-    # Run triton server
-    logging.info("prepare to run triton server...")
-    if not use_simulation_test_without_triton:
-        if not triton_server_is_running and not ClientConstants.is_running_on_k8s():
-            triton_server_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} {} -p{}:8000 " \
-                                "-p{}:8001 -p{}:8002 " \
-                                "--shm-size {} " \
-                                "-v {}:/models {} " \
-                                "bash -c \"pip install transformers && tritonserver --strict-model-config=false " \
-                                "--model-control-mode=poll --repository-poll-secs={} " \
-                                "--model-repository=/models\" ".format(sudo_prefix, triton_server_container_name,
-                                                                       sudo_prefix, triton_server_container_name,
-                                                                       sudo_prefix, triton_server_container_name,
-                                                                       gpu_attach_cmd,
-                                                                       inference_http_port,
-                                                                       inference_grpc_port,
-                                                                       inference_metric_port,
-                                                                       inference_memory_size,
-                                                                       model_serving_dir,
-                                                                       inference_server_image,
-                                                                       ClientConstants.FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL)
-            logging.info("Run triton inference server: {}".format(triton_server_cmd))
-            triton_server_process = ClientConstants.exec_console_with_script(triton_server_cmd,
-                                                                             should_capture_stdout=False,
-                                                                             should_capture_stderr=False,
-                                                                             no_sys_out_err=True)
-            log_deployment_result(end_point_id, model_id, triton_server_container_name,
-                                  ClientConstants.CMD_TYPE_RUN_TRITON_SERVER, triton_server_process.pid,
-                                  running_model_name, inference_engine, inference_http_port)
-
+    if test_llm:
+        logging.info(f"local_model_dir: {local_model_dir_from_config}")
+        inference_server_image = "myimage"              # TODO:download from dockerhub
+        inference_http_port = 2345
+        local_model_dir = local_model_dir_from_config
+        llm_server_container_name = "{}".format(ClientConstants.FEDML_LLM_SERVER_CONTAINER_NAME_PREFIX)
+        volume_dst_loc = "code/model_and_config"
+        llm_server_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} -p{}:2345 " \
+                                    "-v {}:/{} {}".format(sudo_prefix, llm_server_container_name,
+                                                                        sudo_prefix, llm_server_container_name,
+                                                                        sudo_prefix, llm_server_container_name,
+                                                                        inference_http_port,
+                                                                        local_model_dir,
+                                                                        volume_dst_loc,
+                                                                        inference_server_image)
+        logging.info("Run llm inference server: {}".format(llm_server_cmd))
+        llm_server = ClientConstants.exec_console_with_script(llm_server_cmd,
+                                                                should_capture_stdout=False,
+                                                                should_capture_stderr=False,
+                                                                no_sys_out_err=True)
+        # report the status
+        log_deployment_result(end_point_id, model_id, llm_server_container_name,
+                                    ClientConstants.CMD_TYPE_RUN_TRITON_SERVER, llm_server.pid,
+                                    running_model_name, inference_engine, inference_http_port, inference_type = "llm")
         inference_output_url, running_model_version, ret_model_metadata, ret_model_config = \
-            get_model_info(running_model_name, inference_engine, inference_http_port, infer_host)
+            get_model_info(running_model_name, inference_engine, inference_http_port, infer_host, inference_type = "llm")
+        
+        # testing
+        test_input = {"text" : "hello world"}
         if inference_output_url != "":
-            # Send the test request to the inference backend and check if the response is normal
-            input_json, output_json = build_inference_req(end_point_name, inference_model_name,
-                                                          token, ret_model_metadata)
             try:
-                inference_response = run_http_inference_with_curl_request(inference_output_url, input_json["inputs"],
-                                                                          input_json["outputs"])
+                inference_response = run_http_inference_with_curl_request(inference_output_url, test_input, [], inference_type = "llm")
                 logging.info("Tested the inference backend, the response is {}".format(inference_response))
             except Exception as e:
                 logging.info("Tested the inference backend, exceptions occurred: {}".format(traceback.format_exc()))
                 inference_output_url = ""
+        model_metadata = ret_model_metadata
+        
+        # metadata to report
+        logging.info(model_metadata)
+    else:               
+        # Run triton server
+        logging.info("prepare to run triton server...")
+        if not use_simulation_test_without_triton:
+            if not triton_server_is_running and not ClientConstants.is_running_on_k8s():
+                triton_server_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} {} -p{}:8000 " \
+                                    "-p{}:8001 -p{}:8002 " \
+                                    "--shm-size {} " \
+                                    "-v {}:/models {} " \
+                                    "bash -c \"pip install transformers && tritonserver --strict-model-config=false " \
+                                    "--model-control-mode=poll --repository-poll-secs={} " \
+                                    "--model-repository=/models\" ".format(sudo_prefix, triton_server_container_name,
+                                                                        sudo_prefix, triton_server_container_name,
+                                                                        sudo_prefix, triton_server_container_name,
+                                                                        gpu_attach_cmd,
+                                                                        inference_http_port,
+                                                                        inference_grpc_port,
+                                                                        inference_metric_port,
+                                                                        inference_memory_size,
+                                                                        model_serving_dir,
+                                                                        inference_server_image,
+                                                                        ClientConstants.FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL)
+                logging.info("Run triton inference server: {}".format(triton_server_cmd))
+                triton_server_process = ClientConstants.exec_console_with_script(triton_server_cmd,
+                                                                                should_capture_stdout=False,
+                                                                                should_capture_stderr=False,
+                                                                                no_sys_out_err=True)
+                log_deployment_result(end_point_id, model_id, triton_server_container_name,
+                                    ClientConstants.CMD_TYPE_RUN_TRITON_SERVER, triton_server_process.pid,
+                                    running_model_name, inference_engine, inference_http_port)
 
+            inference_output_url, running_model_version, ret_model_metadata, ret_model_config = \
+                get_model_info(running_model_name, inference_engine, inference_http_port, infer_host)
             if inference_output_url != "":
-                logging.info(
-                    "Deploy model successfully, inference url: {}, model metadata: {}, model config: {}".format(
-                        inference_output_url, model_metadata, model_config))
-                model_metadata = ret_model_metadata
-                model_config = ret_model_config
-    else:
-        inference_output_url = f"http://localhost:{inference_http_port}/v2/models/{running_model_name}/versions/1/infer"
+                # Send the test request to the inference backend and check if the response is normal
+                input_json, output_json = build_inference_req(end_point_name, inference_model_name,
+                                                            token, ret_model_metadata)
+                try:
+                    inference_response = run_http_inference_with_curl_request(inference_output_url, input_json["inputs"],
+                                                                            input_json["outputs"])
+                    logging.info("Tested the inference backend, the response is {}".format(inference_response))
+                except Exception as e:
+                    logging.info("Tested the inference backend, exceptions occurred: {}".format(traceback.format_exc()))
+                    inference_output_url = ""
+
+                if inference_output_url != "":
+                    logging.info(
+                        "Deploy model successfully, inference url: {}, model metadata: {}, model config: {}".format(
+                            inference_output_url, model_metadata, model_config))
+                    model_metadata = ret_model_metadata
+                    model_config = ret_model_config
+        else:
+            inference_output_url = f"http://localhost:{inference_http_port}/v2/models/{running_model_name}/versions/1/infer"
 
     return running_model_name, inference_output_url, model_version, model_metadata, model_config
 
@@ -324,7 +375,7 @@ def build_inference_req(end_point_name, model_name, token, in_model_metadata):
     return input_json, output_json
 
 
-def should_exit_logs(end_point_id, model_id, cmd_type, cmd_process_id, model_name, inference_engine, inference_port):
+def should_exit_logs(end_point_id, model_id, cmd_type, cmd_process_id, model_name, inference_engine, inference_port, inference_type=None):
     sudo_prefix = "sudo "
     sys_name = platform.system()
     if sys_name == "Darwin":
@@ -350,7 +401,7 @@ def should_exit_logs(end_point_id, model_id, cmd_type, cmd_process_id, model_nam
     elif cmd_type == ClientConstants.CMD_TYPE_RUN_TRITON_SERVER:
         try:
             inference_output_url, model_version, model_metadata, model_config = \
-                get_model_info(model_name, inference_engine, inference_port)
+                get_model_info(model_name, inference_engine, inference_port, inference_type = inference_type)
             logging.info("Log test for deploying model successfully, inference url: {}, "
                          "model metadata: {}, model config: {}".
                          format(inference_output_url, model_metadata, model_config))
@@ -363,7 +414,7 @@ def should_exit_logs(end_point_id, model_id, cmd_type, cmd_process_id, model_nam
 
 def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
                           cmd_process_id, inference_model_name, inference_engine,
-                          inference_http_port):
+                          inference_http_port, inference_type = None):
     sudo_prefix = "sudo "
     sys_name = platform.system()
     if sys_name == "Darwin":
@@ -398,16 +449,35 @@ def log_deployment_result(end_point_id, model_id, cmd_container_name, cmd_type,
             break
 
         if should_exit_logs(end_point_id, model_id, cmd_type, cmd_process_id,
-                            inference_model_name, inference_engine, inference_http_port):
+                            inference_model_name, inference_engine, inference_http_port, inference_type):
             break
 
 
-def get_model_info(model_name, inference_engine, inference_http_port, infer_host=None, is_hg_model=False):
+def get_model_info(model_name, inference_engine, inference_http_port, infer_host=None, is_hg_model=False, inference_type=None):
     local_ip = ClientConstants.get_local_ip()
     if infer_host is not None and infer_host != "127.0.0.1":
         infer_url_host = infer_host
     else:
         infer_url_host = local_ip
+    logging.info(f"The infer_url_host is {infer_url_host}")
+    if inference_type == "llm":
+        llm_server_test_ready_url = "http://{}:{}/ready".format(infer_url_host, inference_http_port)
+        wait_count = 0
+        while True:
+            response = requests.get(llm_server_test_ready_url)
+            if response.status_code != 200:
+                logging.info(f"model {model_name} not yet ready")
+                time.sleep(1)
+                wait_count += 1
+                if wait_count >= 15:
+                    return "", model_version, {}, {}
+            else:
+                break
+        model_metadata = {}
+        model_metadata["inputs"] = {"text":"Hello World"}
+        model_metadata["outputs"] = []
+        model_metadata["type"] = "llm"
+        return "http://{}:{}/predict".format(infer_url_host, inference_http_port), None, model_metadata, None
     local_infer_url = "{}:{}".format(infer_url_host, inference_http_port)
     model_version = ""
     logging.info("triton infer url: {}.".format(local_infer_url))
@@ -446,13 +516,19 @@ def get_model_info(model_name, inference_engine, inference_http_port, infer_host
     return inference_output_url, model_version, model_metadata, model_config
 
 
-def run_http_inference_with_curl_request(inference_url, inference_input_list, inference_output_list):
+def run_http_inference_with_curl_request(inference_url, inference_input_list, inference_output_list, inference_type=None):
     model_inference_result = {}
     model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
-    model_inference_json = {
-        "inputs": inference_input_list,
+    if inference_type == "llm":
+        model_inference_json = {
+        "text": inference_input_list,
         "outputs": inference_output_list
-    }
+        }
+    else:   # triton
+        model_inference_json = {
+            "inputs": inference_input_list,
+            "outputs": inference_output_list
+        }
 
     response = requests.post(inference_url, headers=model_api_headers, json=model_inference_json)
     if response.status_code == 200:
