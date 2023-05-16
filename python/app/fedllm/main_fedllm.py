@@ -1,4 +1,6 @@
 from collections import OrderedDict
+import logging
+import math
 from pathlib import Path
 
 import fedml
@@ -10,6 +12,13 @@ import torch.cuda
 from transformers import HfArgumentParser, Trainer as HfTrainer, TrainingArguments
 
 from src.constants import DEFAULT_MAX_SEQ_LENGTH
+from src.trainer_callback import PauseResumeCallback
+from src.utils import (
+    process_state_dict,
+    save_config,
+    should_process_save,
+    to_device,
+)
 from train import (
     DataArguments,
     get_data_collator,
@@ -22,7 +31,6 @@ from train import (
     SavePeftModelCallback,
     TokenizerType,
 )
-from src.utils import to_device, process_state_dict
 
 
 def _parse_args(args: Arguments) -> Arguments:
@@ -80,22 +88,48 @@ class LLMTrainer(ClientTrainer):
         self.model_args = model_args
         self.trainer = get_hf_trainer(self.args, self.model, self.tokenizer)
 
+        max_steps = self.trainer.args.max_steps
+        num_train_epochs = self.trainer.args.num_train_epochs
+        comm_round = int(self.args.comm_round)
+        assert max_steps > 0 or num_train_epochs > 0, \
+            f"at least 1 of max_steps and num_train_epochs should be positive, " \
+            f"but got {max_steps} and {num_train_epochs}"
+        assert max_steps <= 0 or max_steps >= comm_round, \
+            f"max_steps = {max_steps} > 0 must be greater than comm_round = {comm_round}"
+
+        if max_steps > 0:
+            assert max_steps >= comm_round, f"required max_steps >= comm_round, but got {max_steps} < {comm_round}"
+            step_threshold = int(math.ceil(max_steps / comm_round))
+            epoch_threshold = math.inf
+            logging.info(f"step_threshold = {step_threshold}")
+        elif num_train_epochs > 0:
+            # TODO: verify
+            step_threshold = math.inf
+            epoch_threshold = num_train_epochs / comm_round
+            logging.info(f"epoch_threshold = {epoch_threshold}")
+        else:
+            raise ValueError(
+                f"at least one of the `max_steps` and `num_train_epochs` should be positive, "
+                f"but got {max_steps} and {num_train_epochs}"
+            )
+
+        self.trainer.add_callback(PauseResumeCallback(
+            step_threshold=step_threshold,
+            epoch_threshold=epoch_threshold
+        ))
+
         self.temp_ckpt_dir = Path(self.trainer.args.output_dir) / f"node{self.args.rank}_tmp"
         # this is required for DeepSpeed
         self.trainer.save_model(str(self.temp_ckpt_dir))
 
     def get_model_params(self) -> OrderedDict:
         state_dict = get_model_state_dict(self.trainer, self.temp_ckpt_dir)
-        return OrderedDict(get_peft_model_state_dict(self.model, state_dict=state_dict))
+        peft_state_dict = to_device(get_peft_model_state_dict(self.model, state_dict=state_dict), device="cpu")
+        return OrderedDict(peft_state_dict)
 
     def set_model_params(self, model_parameters) -> None:
-        # rebuild model
-        del self.model
-        self.model = get_model(
-            self.model_args,
-            tokenizer_length=len(self.tokenizer),
-            use_cache=not getattr(self.args, "gradient_checkpointing", False)
-        )
+        model_parameters = to_device(model_parameters, device="cpu")
+        model_parameters = process_state_dict(model_parameters, get_peft_model_state_dict(self.model))
 
         set_peft_model_state_dict(self.model, model_parameters)
 
@@ -107,9 +141,12 @@ class LLMTrainer(ClientTrainer):
         if hasattr(args, "round_idx"):
             setattr(self.args, "round_idx", args.round_idx)
 
-        # rebuild trainer
-        del self.trainer
-        self.trainer = get_hf_trainer(self.args, self.model, self.tokenizer, train_dataset=train_data)
+        self.trainer.train_dataset = train_data
+
+        if getattr(self.args, "round_idx", -1) > 0:
+            # TODO: verify model, model_wrapped, deepspeed, optimizer, lr_scheduler after reset
+            # turn off TrainingArguments.deepspeed to avoid duplicated initializations
+            self.trainer.args.deepspeed = None
 
     def train(self, train_data, device, args: Arguments) -> None:
         self.trainer.train()
@@ -117,6 +154,8 @@ class LLMTrainer(ClientTrainer):
     def on_after_local_training(self, train_data, device, args: Arguments) -> None:
         super().on_after_local_training(train_data, device, args)
         self.trainer.save_model(str(self.temp_ckpt_dir))
+        # recover TrainingArguments.deepspeed
+        self.trainer.args.deepspeed = self.args.deepspeed
 
 
 class LLMAggregator(ServerAggregator):
@@ -139,6 +178,11 @@ class LLMAggregator(ServerAggregator):
             callbacks=[SavePeftModelCallback]
         )
         self.temp_ckpt_dir = Path(self.trainer.args.output_dir) / f"node{self.args.rank}_tmp"
+
+        # save config
+        if should_process_save(self.trainer):
+            # save model config before training
+            save_config(model, self.trainer.args.output_dir)
 
     def get_model_params(self) -> OrderedDict:
         state_dict = get_model_state_dict(self.trainer, self.temp_ckpt_dir)

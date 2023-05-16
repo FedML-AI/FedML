@@ -1,3 +1,4 @@
+import math
 from pathlib import Path
 
 from peft import PeftModel
@@ -31,5 +32,84 @@ class SavePeftModelCallback(TrainerCallback):
 
                 peft_model_path = checkpoint_dir / "adapter_model"
                 model.save_pretrained(str(peft_model_path), state_dict=checkpoint)
+
+        return control
+
+
+class PauseResumeCallback(TrainerCallback):
+    def __init__(
+            self,
+            start_global_step: int = -1,
+            start_epoch: float = -1,
+            step_threshold: float = math.inf,
+            epoch_threshold: float = math.inf
+    ):
+        if (start_epoch < 0) != (start_global_step < 0):
+            raise ValueError(
+                f"start_epoch and start_global_step must both be negative or both be non-negative,"
+                f" but received start_epoch = {start_epoch}, start_global_step = {start_global_step}."
+            )
+
+        self.start_global_step = start_global_step
+        self.start_epoch = start_epoch
+        self.step_threshold = step_threshold
+        self.epoch_threshold = epoch_threshold
+
+    def on_train_begin(
+            self,
+            args: TrainingArguments,
+            state: TrainerState,
+            control: TrainerControl,
+            **kwargs
+    ):
+        if self.start_global_step < 0 and self.start_epoch < 0:
+            # if both values are unset
+            self.start_epoch = state.epoch
+            self.start_global_step = state.global_step
+        else:
+            # recover from previous run
+            state.epoch = self.start_epoch
+            state.global_step = self.start_global_step
+
+        return control
+
+    def on_step_end(
+            self,
+            args: TrainingArguments,
+            state: TrainerState,
+            control: TrainerControl,
+            **kwargs
+    ):
+        if state.global_step - self.start_global_step >= self.step_threshold:
+            control.should_training_stop = True
+        return control
+
+    def on_epoch_end(
+            self,
+            args: TrainingArguments,
+            state: TrainerState,
+            control: TrainerControl,
+            **kwargs
+    ):
+        if state.epoch - self.start_epoch >= self.epoch_threshold:
+            control.should_training_stop = True
+        return control
+
+    def on_train_end(
+            self,
+            args: TrainingArguments,
+            state: TrainerState,
+            control: TrainerControl,
+            **kwargs
+    ):
+        if args.max_steps is not None and state.global_step < args.max_steps:
+            control.should_training_stop = False
+
+        elif args.max_steps is None and args.num_train_epochs is not None and state.epoch < args.num_train_epochs:
+            control.should_training_stop = False
+
+        # save training progress for resuming
+        self.start_global_step = state.global_step
+        self.start_epoch = state.epoch
 
         return control
