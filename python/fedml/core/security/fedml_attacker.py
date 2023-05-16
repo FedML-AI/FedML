@@ -76,7 +76,7 @@ class FedMLAttacker:
     # --------------- for model poisoning attacks --------------- #
 
     # --------------- for data poisoning attacks --------------- #
-    def is_poison_data_attack(self):
+    def is_data_poisoning_attack(self):
         if self.is_attack_enabled() and self.attack_type in [ATTACK_LABEL_FLIPPING]:
             return True
         return False
