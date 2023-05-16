@@ -708,7 +708,13 @@ def init_logs(args, edge_id):
     # Init runtime logs
     args.log_file_dir = ClientConstants.get_log_file_dir()
     args.run_id = MLOpsStore.mlops_run_id
-    args.rank = 1
+    if hasattr(args, "rank") and args.rank is not None:
+        if str(args.rank) == "0":
+            args.role = "server"
+        else:
+            args.role = "client"
+    else:
+        args.role = "client"
     client_ids = list()
     client_ids.append(edge_id)
     args.client_id_list = json.dumps(client_ids)
