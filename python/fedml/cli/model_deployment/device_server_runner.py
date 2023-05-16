@@ -767,7 +767,7 @@ class FedMLServerRunner:
             self.model_runner_mapping[run_id] = server_runner
             server_process = Process(target=server_runner.run, args=(self.run_process_event,))
             server_process.start()
-            ServerConstants.save_run_process(server_process.pid)
+            ServerConstants.save_run_process(run_id, server_process.pid)
 
             # Send stage: MODEL_DEPLOYMENT_STAGE3 = "StartRunner"
             self.send_deployment_stages(self.run_id, model_name, model_id,
@@ -1021,8 +1021,8 @@ class FedMLServerRunner:
     def exit_run_with_exception(self):
         logging.info("Exit run successfully.")
 
-        ServerConstants.cleanup_learning_process()
-        ServerConstants.cleanup_run_process()
+        ServerConstants.cleanup_learning_process(self.run_id)
+        ServerConstants.cleanup_run_process(self.run_id)
 
         self.mlops_metrics.report_server_id_status(self.run_id,
                                                    ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
@@ -1196,7 +1196,8 @@ class FedMLServerRunner:
                     device_id = hex(uuid.getnode())
             else:
                 device_id = subprocess.Popen(
-                    "hal-get-property --udi /org/freedesktop/Hal/devices/computer --key system.hardware.uuid".split()
+                    "hal-get-property --udi /org/freedesktop/Hal/devices/computer --key system.hardware.uuid".split(),
+                    preexec_fn=os.setsid
                 )
                 device_id = hex(device_id)
 

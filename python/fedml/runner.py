@@ -1,3 +1,6 @@
+import os
+from os.path import expanduser
+
 from torch import nn
 
 from .constants import (
@@ -202,5 +205,17 @@ class FedMLRunner:
             )
         return runner
 
+    @staticmethod
+    def log_runner_result():
+        log_runner_result_dir = os.path.join(expanduser("~"), "fedml_trace")
+        if not os.path.exists(log_runner_result_dir):
+            os.makedirs(log_runner_result_dir)
+
+        log_file_obj = open(os.path.join(log_runner_result_dir, str(os.getpid())), "w")
+        log_file_obj.write("{}".format(str(os.getpid())))
+        log_file_obj.close()
+
     def run(self):
         self.runner.run()
+        FedMLRunner.log_runner_result()
+
