@@ -498,29 +498,36 @@ class FedMLServerRunner:
             model_metadata = payload_json["model_metadata"]
             model_inputs = model_metadata["inputs"]
             ret_inputs = list()
-
-            for input_item in model_inputs:
-                ret_item = input_item
-                shape = ret_item["shape"]
-                data_type = ret_item["datatype"]
-                if ServerConstants.MODEL_DATA_TYPE_MAPPING[data_type] == ServerConstants.MODEL_DATA_TYPE_INT:
-                    for i in range(len(shape)):
-                        if shape[i] == -1:  # if input shape is dynamic, we set a default value 1
-                            shape[i] = 1
-                    ret_item["data"] = torch.randint(0, 1, shape).tolist()
-                else:
-                    for i in range(len(shape)):
-                        if shape[i] == -1:  # if input shape is dynamic, we set a default value 1
-                            shape[i] = 1
-                    ret_item["data"] = torch.zeros(shape).tolist()
-                ret_inputs.append(ret_item)
-
-            payload_json["input_json"] = {"end_point_name": end_point_name,
-                                          "model_name": model_name,
-                                          "token": str(token),
-                                          "inputs": ret_inputs,
-                                          "outputs": model_metadata["outputs"]}
-            payload_json["output_json"] = model_metadata["outputs"]
+            if "type" in model_metadata and model_metadata["type"] == "llm":
+                payload_json["input_json"] = {"end_point_name": end_point_name,
+                                            "model_name": model_name,
+                                            "token": str(token),
+                                            "inputs": model_inputs,
+                                            "outputs": []}
+                payload_json["output_json"] = model_metadata["outputs"]
+            else:
+                for input_item in model_inputs:
+                    ret_item = input_item
+                    shape = ret_item["shape"]
+                    data_type = ret_item["datatype"]
+                    if ServerConstants.MODEL_DATA_TYPE_MAPPING[data_type] == ServerConstants.MODEL_DATA_TYPE_INT:
+                        for i in range(len(shape)):
+                            if shape[i] == -1:  # if input shape is dynamic, we set a default value 1
+                                shape[i] = 1
+                        ret_item["data"] = torch.randint(0, 1, shape).tolist()
+                    else:
+                        for i in range(len(shape)):
+                            if shape[i] == -1:  # if input shape is dynamic, we set a default value 1
+                                shape[i] = 1
+                        ret_item["data"] = torch.zeros(shape).tolist()
+                    ret_inputs.append(ret_item)
+                
+                payload_json["input_json"] = {"end_point_name": end_point_name,
+                                            "model_name": model_name,
+                                            "token": str(token),
+                                            "inputs": ret_inputs,
+                                            "outputs": model_metadata["outputs"]}
+                payload_json["output_json"] = model_metadata["outputs"]
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
                 set_deployment_result(end_point_id, end_point_name,
                                       model_name, model_version,

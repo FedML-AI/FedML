@@ -98,6 +98,7 @@ class ClientConstants(object):
     CMD_TYPE_RUN_TRITON_SERVER = "run_triton_server"
     FEDML_CONVERT_MODEL_CONTAINER_NAME_PREFIX = "fedml_convert_model_container"
     FEDML_TRITON_SERVER_CONTAINER_NAME_PREFIX = "fedml_triton_server_container"
+    FEDML_LLM_SERVER_CONTAINER_NAME_PREFIX = "fedml_llm_server_container"
     FEDML_CONVERTED_MODEL_DIR_NAME = "triton_models"
     FEDML_MODEL_SERVING_REPO_SCAN_INTERVAL = 3
 
