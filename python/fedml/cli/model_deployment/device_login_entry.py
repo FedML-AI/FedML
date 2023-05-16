@@ -95,7 +95,7 @@ def login_as_model_device_agent(
                 os_name,
                 "-ih",
                 infer_host
-            ]
+            ], preexec_fn=os.setsid
         ).pid
         sys_utils.save_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
                                      ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
@@ -145,7 +145,7 @@ def login_as_model_device_agent(
                 redis_port,
                 "-rpw",
                 redis_password
-            ]
+            ], preexec_fn=os.setsid
         ).pid
         sys_utils.save_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME,
                                      ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)

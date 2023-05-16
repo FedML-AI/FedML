@@ -570,8 +570,7 @@ class FedMLClientRunner:
         inference_end_point_id = run_id
 
         # Terminate previous process about starting or stopping run command
-        ClientConstants.exit_process(self.process)
-        ClientConstants.cleanup_run_process()
+        ClientConstants.cleanup_run_process(run_id)
         ClientConstants.save_runner_infos(self.args.device_id + "." + self.args.os_name, self.edge_id, run_id=run_id)
 
         # Start log processor for current run
@@ -601,7 +600,7 @@ class FedMLClientRunner:
         self.process = Process(target=client_runner.run, args=(self.run_process_event,))
         # client_runner.run()
         self.process.start()
-        ClientConstants.save_run_process(self.process.pid)
+        ClientConstants.save_run_process(run_id, self.process.pid)
 
     def set_runner_stopped_event(self, run_id):
         client_runner = self.model_runner_mapping.get(run_id, None)
@@ -636,8 +635,8 @@ class FedMLClientRunner:
     def exit_run_with_exception(self):
         logging.info("Exit run successfully.")
 
-        ClientConstants.cleanup_learning_process()
-        ClientConstants.cleanup_run_process()
+        ClientConstants.cleanup_learning_process(self.run_id)
+        ClientConstants.cleanup_run_process(self.run_id)
 
         self.mlops_metrics.report_client_id_status(self.run_id, self.edge_id,
                                                    ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
@@ -770,7 +769,8 @@ class FedMLClientRunner:
                     device_id = hex(uuid.getnode())
             else:
                 device_id = subprocess.Popen(
-                    "hal-get-property --udi /org/freedesktop/Hal/devices/computer --key system.hardware.uuid".split()
+                    "hal-get-property --udi /org/freedesktop/Hal/devices/computer --key system.hardware.uuid".split(),
+                    preexec_fn=os.setsid
                 )
                 device_id = hex(device_id)
 

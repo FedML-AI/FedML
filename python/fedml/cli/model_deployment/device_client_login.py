@@ -153,7 +153,7 @@ def login(args):
 
 
 def logout():
-    ClientConstants.cleanup_run_process()
+    ClientConstants.cleanup_run_process(None)
 
 
 if __name__ == "__main__":

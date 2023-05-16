@@ -333,7 +333,7 @@ def login(args):
 
 
 def logout():
-    ServerConstants.cleanup_run_process()
+    ServerConstants.cleanup_run_process(None)
     sys_utils.cleanup_all_fedml_server_api_processes()
 
 
