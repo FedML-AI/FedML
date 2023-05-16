@@ -242,11 +242,17 @@ def get_tokenizer(model_name: str) -> TokenizerType:
 
 
 def get_model(model_args: ModelArguments, tokenizer_length: Optional[int] = None, **kwargs) -> ModelType:
-    model = AutoModelForCausalLM.from_pretrained(model_args.model_name, trust_remote_code=True, **kwargs)
+    kwargs.setdefault("trust_remote_code", True)
+    model = AutoModelForCausalLM.from_pretrained(model_args.model_name, **kwargs)
 
-    print(f"Resize embedding to tokenizer length: {tokenizer_length:,}")
-    # TODO: resize when tokenizer_length < model embedding size?
-    model.resize_token_embeddings(tokenizer_length)
+    if tokenizer_length is not None:
+        print(f"Resize embedding to tokenizer length: {tokenizer_length:,}")
+        # TODO: resize when tokenizer_length < model embedding size?
+        model.resize_token_embeddings(tokenizer_length)
+
+        # update model configurations
+        if hasattr(model.config, "vocab_size"):
+            model.config.vocab_size = tokenizer_length
 
     if model_args.use_lora:
         # apply LoRA
