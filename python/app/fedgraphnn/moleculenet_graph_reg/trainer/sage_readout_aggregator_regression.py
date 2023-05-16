@@ -65,7 +65,7 @@ class SageMoleculeNetAggregator(ServerAggregator):
         avg_score = np.mean(np.array(score_list))
         logging.info("Test {} score = {}".format(args.metric.upper(), avg_score))
         if args.enable_wandb:
-            wandb.log({"Test/{}}".format(args.metric.upper()): avg_score})
+            wandb.log({"Test/{}".format(args.metric.upper()): avg_score})
 
         return True
 
