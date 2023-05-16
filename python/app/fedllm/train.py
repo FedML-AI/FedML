@@ -303,8 +303,9 @@ def train() -> None:
     )
 
     if training_args.do_train:
-        # save model config before training
-        save_config(model, training_args.output_dir)
+        if trainer.is_world_process_zero() or (trainer.is_local_process_zero() and trainer.args.save_on_each_node):
+            # save model config before training
+            save_config(model, training_args.output_dir)
 
         print("Training")
         trainer.train(resume_from_checkpoint=training_args.resume_from_checkpoint)

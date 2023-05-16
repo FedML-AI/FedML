@@ -8,7 +8,7 @@ import torch
 from torch import Tensor
 from torch.nn import Module
 from transformers import PreTrainedModel
-from peft import PeftModel
+from peft import PeftModel, PromptLearningConfig
 
 T = TypeVar("T")
 
@@ -64,6 +64,23 @@ def save_config(model: Union[PreTrainedModel, PeftModel], output_dir: PathLike) 
     output_dir.mkdir(parents=True, exist_ok=True)
 
     if isinstance(model, PeftModel):
-        model.get_base_model().config.save_pretrained(output_dir)
+        """
+        adapted from peft.PeftModel.save_pretrained()
+        """
+        peft_model = model
+        model = peft_model.get_base_model()
 
-    model.config.save_pretrained(output_dir)
+        for adapter_name, peft_config in peft_model.peft_config.items():
+            # save the config and change the inference mode to `True`
+            if peft_config.base_model_name_or_path is None:
+                peft_config.base_model_name_or_path = (
+                    peft_model.base_model.__dict__.get("name_or_path", None)
+                    if isinstance(peft_config, PromptLearningConfig)
+                    else peft_model.base_model.model.__dict__.get("name_or_path", None)
+                )
+            inference_mode = peft_config.inference_mode
+            peft_config.inference_mode = True
+            peft_config.save_pretrained(str(output_dir))
+            peft_config.inference_mode = inference_mode
+
+    model.config.save_pretrained(str(output_dir))
