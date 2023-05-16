@@ -261,7 +261,7 @@ def __login_as_simulator(args, userid, version, mqtt_connection=True):
                 args.config_version,
                 "-ci",
                 str(edge_id)
-            ]
+            ], preexec_fn=os.setsid
         ).pid
 
         # Start mqtt looper
@@ -278,7 +278,7 @@ def login(args):
 
 
 def logout():
-    ClientConstants.cleanup_run_process()
+    ClientConstants.cleanup_run_process(None)
     sys_utils.cleanup_all_fedml_client_api_processes()
 
 

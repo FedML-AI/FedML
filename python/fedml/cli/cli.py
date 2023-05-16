@@ -235,7 +235,8 @@ def mlops_login(
                 device_id,
                 "-os",
                 os_name
-            ]
+            ],
+            preexec_fn=os.setsid
         ).pid
         sys_utils.save_login_process(ClientConstants.LOCAL_HOME_RUNNER_DIR_NAME,
                                      ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
@@ -285,7 +286,8 @@ def mlops_login(
                 device_id,
                 "-os",
                 os_name
-            ]
+            ],
+            preexec_fn=os.setsid
         ).pid
         sys_utils.save_login_process(ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME,
                                      ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME, login_pid)
@@ -677,7 +679,7 @@ def mlops_diagnosis(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend_server, mqtt_s3
             "server",
             "-r",
             run_id
-        ]
+        ], preexec_fn=os.setsid
         ).pid
 
     if check_mqtt_s3_backend_client:
@@ -690,7 +692,7 @@ def mlops_diagnosis(open, s3, mqtt, mqtt_daemon, mqtt_s3_backend_server, mqtt_s3
             "client",
             "-r",
             run_id
-        ]
+        ], preexec_fn=os.setsid
         ).pid
 
 

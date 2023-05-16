@@ -247,12 +247,12 @@ class FedMLServerRunner:
         ServerConstants.generate_yaml_doc(package_conf_object, fedml_updated_config_file)
 
         # Build dynamic arguments and set arguments to fedml config object
-        if not self.build_dynamic_args(run_config, package_conf_object, unzip_package_path):
+        if not self.build_dynamic_args(run_id, run_config, package_conf_object, unzip_package_path):
             return None, None
 
         return unzip_package_path, package_conf_object
 
-    def build_dynamic_args(self, run_config, package_conf_object, base_dir):
+    def build_dynamic_args(self, run_id, run_config, package_conf_object, base_dir):
         fedml_conf_file = package_conf_object["entry_config"]["conf_file"]
         fedml_conf_file_processed = str(fedml_conf_file).replace('\\', os.sep).replace('/', os.sep)
         fedml_conf_path = os.path.join(base_dir, "fedml", "config",
@@ -320,6 +320,7 @@ class FedMLServerRunner:
                     process = ServerConstants.exec_console_with_script(bootstrap_scripts,
                                                                        should_capture_stdout=True,
                                                                        should_capture_stderr=True)
+                    ServerConstants.save_bootstrap_process(run_id, process.pid)
                     ret_code, out, err = ServerConstants.get_console_pipe_out_err_results(process)
                     if ret_code is None or ret_code <= 0:
                         if out is not None:
@@ -368,11 +369,11 @@ class FedMLServerRunner:
                                                              ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED)
         except Exception as e:
             logging.info("Runner exits with exceptions.")
-            sys_utils.cleanup_all_fedml_server_login_processes(ServerConstants.SERVER_LOGIN_PROGRAM,
-                                                               clean_process_group=False)
-            sys.exit(1)
         finally:
             logging.info("Release resources.")
+            ServerConstants.cleanup_run_process(self.run_id)
+            ServerConstants.cleanup_learning_process(self.run_id)
+            ServerConstants.cleanup_bootstrap_process(self.run_id)
             if not self.run_as_cloud_server:
                 self.release_client_mqtt_mgr()
 
@@ -438,7 +439,7 @@ class FedMLServerRunner:
         entry_file = os.path.basename(entry_file)
         conf_file = entry_file_config["conf_file"]
         conf_file = str(conf_file).replace('\\', os.sep).replace('/', os.sep)
-        ServerConstants.cleanup_learning_process()
+        ServerConstants.cleanup_learning_process(run_id)
         self.check_runner_stop_event()
         if not os.path.exists(unzip_package_path):
             logging.info("failed to unzip file.")
@@ -472,16 +473,21 @@ class FedMLServerRunner:
             should_capture_stderr=True
         )
         logging.info("waiting the aggregation process to aggregate models...")
-        ServerConstants.save_learning_process(process.pid)
+        ServerConstants.save_learning_process(run_id, process.pid)
         ret_code, out, err = ServerConstants.get_console_pipe_out_err_results(process)
+        is_run_ok = sys_utils.is_runner_finished_normally(process.pid)
         if ret_code is None or ret_code <= 0:
-            if out is not None:
-                out_str = out.decode(encoding="utf-8")
-                if out_str != "":
-                    logging.info("{}".format(out_str))
+            if is_run_ok:
+                if out is not None:
+                    out_str = out.decode(encoding="utf-8")
+                    if out_str != "":
+                        logging.info("{}".format(out_str))
 
-            sys_utils.log_return_info(entry_file, 0)
+                sys_utils.log_return_info(entry_file, 0)
         else:
+            is_run_ok = False
+
+        if not is_run_ok:
             # If the run status is killed or finished, then return with the normal state.
             current_job = FedMLServerDataInterface.get_instance().get_job_by_id(run_id)
             if current_job is not None and (current_job.status == ServerConstants.MSG_MLOPS_SERVER_STATUS_FINISHED or
@@ -521,17 +527,14 @@ class FedMLServerRunner:
             #     logging.info("Run will be stopped, waiting...")
             #     self.run_process.join()
         except Exception as e:
-            sys_utils.cleanup_all_fedml_server_login_processes(
-                ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
-            sys.exit(1)
+            pass
 
     def stop_run(self):
         edge_id_list = self.request_json["edgeids"]
 
-        ServerConstants.cleanup_learning_process()
-        sys_utils.cleanup_all_bootstrap_processes(
-            ServerConstants.SERVER_BOOTSTRAP_WIN_PROGRAM if platform.system() == "Windows" else
-            ServerConstants.SERVER_BOOTSTRAP_LINUX_PROGRAM, clean_process_group=False)
+        ServerConstants.cleanup_learning_process(self.run_id)
+        ServerConstants.cleanup_bootstrap_process(self.run_id)
+        ServerConstants.cleanup_run_process(self.run_id)
 
         self.send_training_stop_request_to_edges(edge_id_list, json.dumps(self.request_json))
         self.mlops_metrics.report_server_training_status(self.run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED)
@@ -574,10 +577,8 @@ class FedMLServerRunner:
 
         time.sleep(1)
 
-        ServerConstants.cleanup_learning_process()
-        sys_utils.cleanup_all_bootstrap_processes(
-            ServerConstants.SERVER_BOOTSTRAP_WIN_PROGRAM if platform.system() == "Windows" else
-            ServerConstants.SERVER_BOOTSTRAP_LINUX_PROGRAM, clean_process_group=False)
+        ServerConstants.cleanup_learning_process(self.run_id)
+        ServerConstants.cleanup_bootstrap_process(self.run_id)
 
         try:
             local_package_path = ServerConstants.get_package_download_dir()
@@ -602,10 +603,8 @@ class FedMLServerRunner:
 
         time.sleep(1)
 
-        ServerConstants.cleanup_learning_process()
-        sys_utils.cleanup_all_bootstrap_processes(
-            ServerConstants.SERVER_BOOTSTRAP_WIN_PROGRAM if platform.system() == "Windows" else
-            ServerConstants.SERVER_BOOTSTRAP_LINUX_PROGRAM, clean_process_group=False)
+        ServerConstants.cleanup_learning_process(self.run_id)
+        ServerConstants.cleanup_bootstrap_process(self.run_id)
 
         try:
             local_package_path = ServerConstants.get_package_download_dir()
@@ -671,9 +670,7 @@ class FedMLServerRunner:
 
     def callback_start_train(self, topic=None, payload=None):
         logging.info("callback_start_train payload: {}".format(payload))
-        logging.info(
-            f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
-        )
+
         # get training params
         if self.run_as_cloud_server:
             message_bytes = payload.encode("ascii")
@@ -699,22 +696,6 @@ class FedMLServerRunner:
             self.ota_upgrade(payload, request_json)
 
         self.start_request_json = payload
-        # if self.run_as_edge_server_and_agent:
-        #     if self.run_process is not None and \
-        #             sys_utils.get_process_running_count(ServerConstants.SERVER_LOGIN_PROGRAM) >= 2:
-        #         logging.info("There is a running job {}.".format(
-        #             self.run_process.pid
-        #         ))
-        #         try:
-        #             if self.run_process_event is not None:
-        #                 self.run_process_event.set()
-        #             ClientConstants.cleanup_run_process()
-        #             self.stop_run()
-        #             sys_utils.cleanup_all_fedml_server_login_processes(
-        #                 ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
-        #         except Exception as e:
-        #             logging.info("Error for cleanup the previous run.")
-        #             pass
 
         logging.info("save runner information")
 
@@ -751,7 +732,7 @@ class FedMLServerRunner:
             logging.info("start the runner process.")
             self.run_process = Process(target=server_runner.run, args=(self.run_process_event,))
             self.run_process.start()
-            ServerConstants.save_run_process(self.run_process.pid)
+            ServerConstants.save_run_process(run_id, self.run_process.pid)
         elif self.run_as_cloud_agent:
             # Start log processor for current run
             MLOpsRuntimeLogDaemon.get_instance(self.args).start_log_processor(
@@ -768,7 +749,7 @@ class FedMLServerRunner:
             server_runner.run_process_event = self.run_process_event
             self.run_process = Process(target=server_runner.start_cloud_server_process_entry)
             self.run_process.start()
-            ServerConstants.save_run_process(self.run_process.pid)
+            ServerConstants.save_run_process(run_id, self.run_process.pid)
         elif self.run_as_cloud_server:
             self.server_agent_id = self.request_json.get("cloud_agent_id", self.edge_id)
             self.start_request_json = json.dumps(self.request_json)
@@ -789,9 +770,7 @@ class FedMLServerRunner:
         try:
             self.start_cloud_server_process()
         except Exception as e:
-            sys_utils.cleanup_all_fedml_server_login_processes(
-                ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
-            sys.exit(1)
+            pass
 
     def start_cloud_server_process(self):
         run_config = self.request_json["run_config"]
@@ -1025,9 +1004,7 @@ class FedMLServerRunner:
 
     def callback_stop_train(self, topic, payload):
         # logging.info("callback_stop_train: topic = %s, payload = %s" % (topic, payload))
-        logging.info(
-            f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
-        )
+
         request_json = json.loads(payload)
         is_retain = request_json.get("is_retain", False)
         if is_retain:
@@ -1035,6 +1012,7 @@ class FedMLServerRunner:
         run_id = request_json.get("runId", None)
         if run_id is None:
             run_id = request_json.get("id", None)
+
         edge_id_list = request_json["edgeids"]
         server_id = request_json.get("serverId", None)
         if server_id is None:
@@ -1090,20 +1068,16 @@ class FedMLServerRunner:
             self.exit_run_with_exception()
         except Exception as e:
             self.release_client_mqtt_mgr()
-            sys_utils.cleanup_all_fedml_server_login_processes(
-                ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
-            sys.exit(1)
+
         finally:
             self.release_client_mqtt_mgr()
 
     def exit_run_with_exception(self):
         logging.error("Exit run successfully.")
 
-        ServerConstants.cleanup_learning_process()
-        ServerConstants.cleanup_run_process()
-        sys_utils.cleanup_all_bootstrap_processes(
-            ServerConstants.SERVER_BOOTSTRAP_WIN_PROGRAM if platform.system() == "Windows" else
-            ServerConstants.SERVER_BOOTSTRAP_LINUX_PROGRAM, clean_process_group=False)
+        ServerConstants.cleanup_learning_process(self.run_id)
+        ServerConstants.cleanup_run_process(self.run_id)
+        ServerConstants.cleanup_bootstrap_process(self.run_id)
 
         self.mlops_metrics.report_server_id_status(self.run_id,
                                                    ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
@@ -1112,9 +1086,7 @@ class FedMLServerRunner:
 
     def callback_exit_train_with_exception(self, topic, payload):
         # logging.info("callback_exit_train_with_exception: topic = %s, payload = %s" % (topic, payload))
-        logging.info(
-            f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
-        )
+
         request_json = json.loads(payload)
         is_retain = request_json.get("is_retain", False)
         if is_retain:
@@ -1163,15 +1135,9 @@ class FedMLServerRunner:
 
             self.exit_run_with_exception()
 
-            if not self.run_as_cloud_server:
-                sys_utils.cleanup_all_fedml_server_login_processes(
-                    ServerConstants.SERVER_LOGIN_PROGRAM, clean_process_group=False)
-
     def callback_runner_id_status(self, topic, payload):
         # logging.info("callback_runner_id_status: topic = %s, payload = %s" % (topic, payload))
-        logging.info(
-            f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
-        )
+
         request_json = json.loads(payload)
         is_retain = request_json.get("is_retain", False)
         if is_retain:
@@ -1228,9 +1194,6 @@ class FedMLServerRunner:
             self.cleanup_run_when_starting_failed()
 
     def callback_report_current_status(self, topic, payload):
-        logging.info(
-            f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
-        )
         request_json = json.loads(payload)
         if self.run_as_edge_server_and_agent:
             self.send_agent_active_msg()
@@ -1244,9 +1207,6 @@ class FedMLServerRunner:
         os.system("pip install -U fedml")
 
     def callback_server_ota_msg(self, topic, payload):
-        logging.info(
-            f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
-        )
         request_json = json.loads(payload)
         cmd = request_json["cmd"]
 
@@ -1302,7 +1262,8 @@ class FedMLServerRunner:
                     device_id = hex(uuid.getnode())
             else:
                 device_id = subprocess.Popen(
-                    "hal-get-property --udi /org/freedesktop/Hal/devices/computer --key system.hardware.uuid".split()
+                    "hal-get-property --udi /org/freedesktop/Hal/devices/computer --key system.hardware.uuid".split(),
+                    preexec_fn=os.setsid
                 )
                 device_id = hex(device_id)
 

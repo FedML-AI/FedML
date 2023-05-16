@@ -654,6 +654,15 @@ def do_upgrade(config_version, upgrade_version, show_local_console=False):
     return upgrade_result
 
 
+def is_runner_finished_normally(process_id):
+    log_runner_result_file = os.path.join(expanduser("~"), "fedml_trace", str(process_id))
+    if os.path.exists(log_runner_result_file):
+        os.remove(log_runner_result_file)
+        return True
+
+    return False
+
+
 if __name__ == '__main__':
     fedml_is_latest_version, local_ver, remote_ver = check_fedml_is_latest_version("dev")
     print("FedML is latest version: {}, local version {}, remote version {}".format(

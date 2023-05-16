@@ -369,7 +369,7 @@ def login(args):
 
 
 def logout():
-    ServerConstants.cleanup_run_process()
+    ServerConstants.cleanup_run_process(None)
 
 
 if __name__ == "__main__":

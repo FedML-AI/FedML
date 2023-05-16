@@ -29,9 +29,9 @@ if __name__ == "__main__":
 
     while True:
         try:
-            ServerConstants.cleanup_run_process()
+            ServerConstants.cleanup_run_process(None)
             cleanup_all_fedml_server_api_processes()
-            cleanup_all_fedml_server_learning_processes()
+            cleanup_all_fedml_server_learning_processes(None)
             cleanup_all_fedml_server_login_processes("server_login.py", clean_process_group=False)
         except Exception as e:
             pass
