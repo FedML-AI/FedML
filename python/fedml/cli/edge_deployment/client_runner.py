@@ -747,13 +747,14 @@ class FedMLClientRunner:
         logging.info("start the runner process.")
         self.run_process = Process(target=client_runner.run, args=(self.run_process_event,))
         self.run_process.start()
-        ClientConstants.save_run_process(self.run_process.pid)
+        ClientConstants.save_run_process(run_id, self.run_process.pid)
 
     def callback_stop_train(self, topic, payload):
         # logging.info("callback_stop_train: topic = %s, payload = %s" % (topic, payload))
         logging.info(
             f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
         )
+
         request_json = json.loads(payload)
         is_retain = request_json.get("is_retain", False)
         if is_retain:
