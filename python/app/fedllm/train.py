@@ -41,7 +41,7 @@ from src.constants import (
     RESPONSE_KEY_NL,
 )
 from src.trainer_callback import SavePeftModelCallback
-from src.utils import save_config
+from src.utils import save_config, should_process_save
 
 ModelType = Union[GPTJModel, GPTNeoXForCausalLM, PeftModelForCausalLM]
 TokenizerType = Union[GPTNeoXTokenizerFast]
@@ -303,7 +303,7 @@ def train() -> None:
     )
 
     if training_args.do_train:
-        if trainer.is_world_process_zero() or (trainer.is_local_process_zero() and trainer.args.save_on_each_node):
+        if should_process_save(trainer):
             # save model config before training
             save_config(model, training_args.output_dir)
 

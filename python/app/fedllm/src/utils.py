@@ -7,7 +7,7 @@ from pathlib import Path
 import torch
 from torch import Tensor
 from torch.nn import Module
-from transformers import PreTrainedModel
+from transformers import PreTrainedModel, Trainer
 from peft import PeftModel, PromptLearningConfig
 
 T = TypeVar("T")
@@ -59,7 +59,7 @@ def process_state_dict(state_dict: dict, reference_state_dict: dict) -> OrderedD
     return output_state_dict
 
 
-def save_config(model: Union[PreTrainedModel, PeftModel], output_dir: PathLike) -> None:
+def save_config(model: Union[PreTrainedModel, PeftModel], output_dir: Union[str, PathLike]) -> None:
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -84,3 +84,11 @@ def save_config(model: Union[PreTrainedModel, PeftModel], output_dir: PathLike) 
             peft_config.inference_mode = inference_mode
 
     model.config.save_pretrained(str(output_dir))
+
+
+def is_main_process(trainer: Trainer, local: bool = True) -> bool:
+    return trainer.is_local_process_zero() if local else trainer.is_world_process_zero()
+
+
+def should_process_save(trainer: Trainer) -> bool:
+    return is_main_process(trainer, trainer.args.save_on_each_node)
