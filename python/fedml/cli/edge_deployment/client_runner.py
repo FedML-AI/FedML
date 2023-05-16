@@ -692,6 +692,9 @@ class FedMLClientRunner:
             raise Exception("Restarting after upgraded...")
 
     def callback_start_train(self, topic, payload):
+        logging.info(
+            f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
+        )
         # Get training params
         request_json = json.loads(payload)
         is_retain = request_json.get("is_retain", False)
@@ -748,7 +751,9 @@ class FedMLClientRunner:
 
     def callback_stop_train(self, topic, payload):
         # logging.info("callback_stop_train: topic = %s, payload = %s" % (topic, payload))
-
+        logging.info(
+            f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
+        )
         request_json = json.loads(payload)
         is_retain = request_json.get("is_retain", False)
         if is_retain:
@@ -774,6 +779,9 @@ class FedMLClientRunner:
         MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, self.edge_id)
 
     def callback_exit_train_with_exception(self, topic, payload):
+        logging.info(
+            f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
+        )
         request_json = json.loads(payload)
         is_retain = request_json.get("is_retain", False)
         if is_retain:
@@ -807,7 +815,9 @@ class FedMLClientRunner:
 
     def callback_runner_id_status(self, topic, payload):
         # logging.info("callback_runner_id_status: topic = %s, payload = %s" % (topic, payload))
-
+        logging.info(
+            f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
+        )
         request_json = json.loads(payload)
         is_retain = request_json.get("is_retain", False)
         if is_retain:
@@ -838,6 +848,9 @@ class FedMLClientRunner:
             MLOpsRuntimeLogDaemon.get_instance(self.args).stop_log_processor(run_id, edge_id)
 
     def callback_report_current_status(self, topic, payload):
+        logging.info(
+            f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
+        )
         self.send_agent_active_msg()
 
     @staticmethod
@@ -845,6 +858,9 @@ class FedMLClientRunner:
         os.system("pip install -U fedml")
 
     def callback_client_ota_msg(self, topic, payload):
+        logging.info(
+            f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
+        )
         request_json = json.loads(payload)
         cmd = request_json["cmd"]
 

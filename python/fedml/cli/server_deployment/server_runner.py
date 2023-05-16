@@ -671,7 +671,9 @@ class FedMLServerRunner:
 
     def callback_start_train(self, topic=None, payload=None):
         logging.info("callback_start_train payload: {}".format(payload))
-
+        logging.info(
+            f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
+        )
         # get training params
         if self.run_as_cloud_server:
             message_bytes = payload.encode("ascii")
@@ -1023,7 +1025,9 @@ class FedMLServerRunner:
 
     def callback_stop_train(self, topic, payload):
         # logging.info("callback_stop_train: topic = %s, payload = %s" % (topic, payload))
-
+        logging.info(
+            f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
+        )
         request_json = json.loads(payload)
         is_retain = request_json.get("is_retain", False)
         if is_retain:
@@ -1108,7 +1112,9 @@ class FedMLServerRunner:
 
     def callback_exit_train_with_exception(self, topic, payload):
         # logging.info("callback_exit_train_with_exception: topic = %s, payload = %s" % (topic, payload))
-
+        logging.info(
+            f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
+        )
         request_json = json.loads(payload)
         is_retain = request_json.get("is_retain", False)
         if is_retain:
@@ -1163,7 +1169,9 @@ class FedMLServerRunner:
 
     def callback_runner_id_status(self, topic, payload):
         # logging.info("callback_runner_id_status: topic = %s, payload = %s" % (topic, payload))
-
+        logging.info(
+            f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
+        )
         request_json = json.loads(payload)
         is_retain = request_json.get("is_retain", False)
         if is_retain:
@@ -1220,6 +1228,9 @@ class FedMLServerRunner:
             self.cleanup_run_when_starting_failed()
 
     def callback_report_current_status(self, topic, payload):
+        logging.info(
+            f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
+        )
         request_json = json.loads(payload)
         if self.run_as_edge_server_and_agent:
             self.send_agent_active_msg()
@@ -1233,6 +1244,9 @@ class FedMLServerRunner:
         os.system("pip install -U fedml")
 
     def callback_server_ota_msg(self, topic, payload):
+        logging.info(
+            f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
+        )
         request_json = json.loads(payload)
         cmd = request_json["cmd"]
 

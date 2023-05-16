@@ -90,6 +90,9 @@ class MqttManager(object):
         self._client.loop_forever(retry_first_connection=True)
 
     def send_message(self, topic, message, publish_single_message=False):
+        logging.info(
+            f"FedMLDebug - Send: topic ({topic}), message ({message})"
+        )
         self.check_connection()
 
         mqtt_send_start_time = time.time()
@@ -107,6 +110,9 @@ class MqttManager(object):
         return True
 
     def send_message_json(self, topic, message, publish_single_message=False):
+        logging.info(
+            f"FedMLDebug - Send: topic ({topic}), message ({message})"
+        )
         self.check_connection()
 
         if publish_single_message:
@@ -182,7 +188,9 @@ class MqttManager(object):
         if _listener is not None and callable(_listener):
             payload_obj = json.loads(msg.payload)
             payload_obj["is_retain"] = msg.retain
-            _listener(msg.topic, json.dumps(payload_obj))
+            payload = json.dumps(payload_obj)
+            _listener(msg.topic, payload)
+
         MLOpsProfilerEvent.log_to_wandb({"BusyTime": time.time() - message_handler_start_time})
 
     def on_publish(self, client, obj, mid):
