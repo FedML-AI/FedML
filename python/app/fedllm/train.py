@@ -9,18 +9,15 @@ from typing import (
 )
 
 from dataclasses import dataclass, field
-from pathlib import Path
 
 from datasets import Dataset, load_dataset
 import numpy as np
 from peft import (
     get_peft_model,
     LoraConfig,
-    PeftModel,
     PeftModelForCausalLM,
     TaskType,
 )
-import torch
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -30,12 +27,8 @@ from transformers import (
     GPTNeoXTokenizerFast,
     HfArgumentParser,
     Trainer,
-    TrainerCallback,
-    TrainerControl,
-    TrainerState,
     TrainingArguments,
 )
-from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
 
 from src.constants import (
     DEFAULT_MAX_SEQ_LENGTH,
@@ -47,6 +40,7 @@ from src.constants import (
     PROMPT_WITH_INPUT_FORMAT,
     RESPONSE_KEY_NL,
 )
+from src.trainer_callback import SavePeftModelCallback
 from src.utils import save_config
 
 ModelType = Union[GPTJModel, GPTNeoXForCausalLM, PeftModelForCausalLM]
@@ -115,30 +109,6 @@ class DataCollatorForCompletionOnlyLM(DataCollatorForLanguageModeling):
         batch["labels"] = labels
 
         return batch
-
-
-class SavePeftModelCallback(TrainerCallback):
-    def on_save(
-            self,
-            args: TrainingArguments,
-            state: TrainerState,
-            control: TrainerControl,
-            **kwargs
-    ) -> TrainerControl:
-        if state.is_world_process_zero or (state.is_local_process_zero and args.save_on_each_node):
-            # see https://github.com/huggingface/peft/issues/96#issuecomment-1460080427
-            checkpoint_dir = Path(args.output_dir) / f"{PREFIX_CHECKPOINT_DIR}-{state.global_step}"
-            model = kwargs.get("model", None)
-
-            if isinstance(model, PeftModel):
-                # when using DeepSpeed Zero 3, model weights need to be converted.
-                # conversion is done by Trainer, we need to load the saved weights manually
-                checkpoint = torch.load(str(checkpoint_dir / "pytorch_model.bin"), map_location="cpu")
-
-                peft_model_path = checkpoint_dir / "adapter_model"
-                model.save_pretrained(str(peft_model_path), state_dict=checkpoint)
-
-        return control
 
 
 def _add_text(rec):
