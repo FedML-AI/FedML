@@ -47,6 +47,7 @@ from src.constants import (
     PROMPT_WITH_INPUT_FORMAT,
     RESPONSE_KEY_NL,
 )
+from src.utils import save_config
 
 ModelType = Union[GPTJModel, GPTNeoXForCausalLM, PeftModelForCausalLM]
 TokenizerType = Union[GPTNeoXTokenizerFast]
@@ -332,6 +333,9 @@ def train() -> None:
     )
 
     if training_args.do_train:
+        # save model config before training
+        save_config(model, training_args.output_dir)
+
         print("Training")
         trainer.train(resume_from_checkpoint=training_args.resume_from_checkpoint)
 

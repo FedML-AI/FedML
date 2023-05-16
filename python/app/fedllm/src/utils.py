@@ -1,13 +1,16 @@
 from typing import TypeVar, MutableMapping, Union
 
 from collections import OrderedDict
+from os import PathLike
+from pathlib import Path
 
 import torch
 from torch import Tensor
 from torch.nn import Module
+from transformers import PreTrainedModel
+from peft import PeftModel
 
 T = TypeVar("T")
-M = TypeVar("M", bound=Module)
 
 
 def to_device(data: T, device: Union[torch.device, str], non_blocking: bool = True) -> T:
@@ -27,7 +30,7 @@ def to_device(data: T, device: Union[torch.device, str], non_blocking: bool = Tr
     return data
 
 
-def get_device(inputs: Union[Tensor, M]) -> torch.device:
+def get_device(inputs: Union[Tensor, Module]) -> torch.device:
     if hasattr(inputs, "device"):
         return inputs.device
     else:
@@ -54,3 +57,13 @@ def process_state_dict(state_dict: dict, reference_state_dict: dict) -> OrderedD
             output_state_dict.pop(k, None)
 
     return output_state_dict
+
+
+def save_config(model: Union[PreTrainedModel, PeftModel], output_dir: PathLike) -> None:
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    if isinstance(model, PeftModel):
+        model.get_base_model().config.save_pretrained(output_dir)
+
+    model.config.save_pretrained(output_dir)
