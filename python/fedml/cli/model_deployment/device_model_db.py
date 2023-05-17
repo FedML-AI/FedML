@@ -100,12 +100,12 @@ class FedMLModelDatabase(object):
                             model_name, model_version,
                             total_latency, avg_latency,
                             total_request_num, current_qps,
-                            avg_qps, timestamp):
+                            avg_qps, timestamp, device_id):
         self.set_end_point_metrics(end_point_id, end_point_name,
                                    model_name, model_version,
                                    total_latency=total_latency, avg_latency=avg_latency,
                                    total_request_num=total_request_num, current_qps=current_qps,
-                                   avg_qps=avg_qps, timestamp=timestamp)
+                                   avg_qps=avg_qps, timestamp=timestamp, device_id=device_id)
 
     def get_latest_monitor_metrics(self, end_point_name, model_name, model_version):
         endpoint_metrics = self.get_latest_end_point_metrics(end_point_name, model_name, model_version)
@@ -272,7 +272,7 @@ class FedMLModelDatabase(object):
                               model_name, model_version,
                               total_latency=None, avg_latency=None,
                               total_request_num=None, current_qps=None,
-                              avg_qps=None, timestamp=None):
+                              avg_qps=None, timestamp=None, device_id=None):
         self.open_job_db()
         endpoint_metric = self.db_connection.query(FedMLEndPointMetricsModel). \
             filter(and_(FedMLEndPointMetricsModel.end_point_name == f'{end_point_name}',
@@ -284,7 +284,7 @@ class FedMLModelDatabase(object):
                                                         model_name=model_name, model_version=model_version,
                                                         total_latency=total_latency, avg_latency=avg_latency,
                                                         total_request_num=total_request_num, current_qps=current_qps,
-                                                        avg_qps=avg_qps, timestamp=timestamp)
+                                                        avg_qps=avg_qps, timestamp=timestamp, device_id=device_id)
             self.db_connection.add(endpoint_metric)
             self.db_connection.commit()
             return
@@ -301,6 +301,8 @@ class FedMLModelDatabase(object):
             endpoint_metric.avg_qps = avg_qps
         if timestamp is not None:
             endpoint_metric.timestamp = timestamp
+        if device_id is not None:
+            endpoint_metric.device_id = device_id
 
         self.db_connection.commit()
 
@@ -354,6 +356,7 @@ class FedMLEndPointMetricsModel(Base):
     current_qps = Column(Float)
     avg_qps = Column(Float)
     timestamp = Column(Integer)
+    device_id = Column(TEXT)
 
 
 def test_deployment_result():
@@ -487,13 +490,14 @@ def test_end_point_monitor_metrics():
     current_qps = 1
     avg_qps = 1
     timestamp = time.time()
+    device_id = 100
     FedMLModelDatabase.get_instance().set_monitor_metrics(test_end_point_id,
                                                           test_end_point_name,
                                                           test_model_name,
                                                           test_model_version,
                                                           total_latency, avg_latency,
                                                           total_request_num, current_qps,
-                                                          avg_qps, timestamp)
+                                                          avg_qps, timestamp, device_id)
 
     ret_latest_metrics = FedMLModelDatabase.get_instance().get_latest_monitor_metrics(test_end_point_name,
                                                                                       test_model_name,

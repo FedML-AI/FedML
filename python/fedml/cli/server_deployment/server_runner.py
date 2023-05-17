@@ -285,14 +285,15 @@ class FedMLServerRunner:
         env_args = fedml_conf_object.get("environment_args", None)
         if env_args is not None:
             bootstrap_script_file = env_args.get("bootstrap", None)
-            bootstrap_script_file = str(bootstrap_script_file).replace('\\', os.sep).replace('/', os.sep)
-            if platform.system() == 'Windows':
-                bootstrap_script_file = bootstrap_script_file.replace('.sh', '.bat')
             if bootstrap_script_file is not None:
-                bootstrap_script_dir = os.path.join(base_dir, "fedml", os.path.dirname(bootstrap_script_file))
-                bootstrap_script_path = os.path.join(
-                    bootstrap_script_dir, bootstrap_script_dir, os.path.basename(bootstrap_script_file)
-                )
+                bootstrap_script_file = str(bootstrap_script_file).replace('\\', os.sep).replace('/', os.sep)
+                if platform.system() == 'Windows':
+                    bootstrap_script_file = bootstrap_script_file.replace('.sh', '.bat')
+                if bootstrap_script_file is not None:
+                    bootstrap_script_dir = os.path.join(base_dir, "fedml", os.path.dirname(bootstrap_script_file))
+                    bootstrap_script_path = os.path.join(
+                        bootstrap_script_dir, bootstrap_script_dir, os.path.basename(bootstrap_script_file)
+                    )
         # try:
         #     os.makedirs(package_dynamic_args["data_cache_dir"])
         # except Exception as e:
@@ -368,7 +369,9 @@ class FedMLServerRunner:
             self.mlops_metrics.report_server_training_status(self.run_id,
                                                              ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED)
         except Exception as e:
-            logging.info("Runner exits with exceptions.")
+            logging.error("Runner exits with exceptions. {}".format(traceback.format_exc()))
+            self.mlops_metrics.report_server_training_status(self.run_id,
+                                                             ServerConstants.MSG_MLOPS_SERVER_STATUS_KILLED)
         finally:
             logging.info("Release resources.")
             ServerConstants.cleanup_run_process(self.run_id)
