@@ -263,14 +263,19 @@ class FedMLClientRunner:
         fedml_conf_object["tracking_args"]["log_server_url"] = package_dynamic_args["log_server_url"]
         if hasattr(self.args, "local_server") and self.args.local_server is not None:
             fedml_conf_object["comm_args"]["local_server"] = self.args.local_server
-        bootstrap_script_file = fedml_conf_object["environment_args"]["bootstrap"]
-        bootstrap_script_file = str(bootstrap_script_file).replace('\\', os.sep).replace('/', os.sep)
-        if platform.system() == 'Windows':
-            bootstrap_script_file = bootstrap_script_file.replace('.sh', '.bat')
-        bootstrap_script_dir = os.path.join(base_dir, "fedml", os.path.dirname(bootstrap_script_file))
-        bootstrap_script_path = os.path.join(
-            bootstrap_script_dir, bootstrap_script_dir, os.path.basename(bootstrap_script_file)
-        )
+        bootstrap_script_path = None
+        env_args = fedml_conf_object.get("environment_args", None)
+        if env_args is not None:
+            bootstrap_script_file = env_args.get("bootstrap", None)
+            if bootstrap_script_file is not None:
+                bootstrap_script_file = str(bootstrap_script_file).replace('\\', os.sep).replace('/', os.sep)
+                if platform.system() == 'Windows':
+                    bootstrap_script_file = bootstrap_script_file.replace('.sh', '.bat')
+                if bootstrap_script_file is not None:
+                    bootstrap_script_dir = os.path.join(base_dir, "fedml", os.path.dirname(bootstrap_script_file))
+                    bootstrap_script_path = os.path.join(
+                        bootstrap_script_dir, bootstrap_script_dir, os.path.basename(bootstrap_script_file)
+                    )
         # try:
         #     os.makedirs(package_dynamic_args["data_cache_dir"])
         # except Exception as e:
@@ -335,7 +340,8 @@ class FedMLClientRunner:
             logging.info("Runner stopped.")
             self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_KILLED)
         except Exception as e:
-            logging.info("Runner exits with exceptions.")
+            logging.error("Runner exits with exceptions. {}".format(traceback.format_exc()))
+            self.reset_devices_status(self.edge_id, ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED)
         finally:
             logging.info("Release resources.")
             ClientConstants.cleanup_learning_process(self.run_id)

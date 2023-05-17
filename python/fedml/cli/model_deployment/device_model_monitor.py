@@ -35,7 +35,7 @@ class FedMLModelMetrics:
 
     def calc_metrics(self, end_point_id, end_point_name,
                      model_id, model_name, model_version,
-                     inference_output_url):
+                     inference_output_url, device_id):
         total_latency, avg_latency, total_request_num, current_qps, timestamp = 0, 0, 0, 0, 0
         FedMLModelCache.get_instance().set_redis_params(self.redis_addr, self.redis_port, self.redis_password)
         metrics_item = FedMLModelCache.get_instance(self.redis_addr, self.redis_port).\
@@ -62,7 +62,8 @@ class FedMLModelMetrics:
                                                                                            avg_latency,
                                                                                            total_request_num,
                                                                                            current_qps, avg_qps,
-                                                                                           timestamp)
+                                                                                           timestamp,
+                                                                                           str(device_id))
 
     def start_monitoring_metrics_center(self):
         self.build_metrics_report_channel()
@@ -101,7 +102,7 @@ class FedMLModelMetrics:
                                      self.current_model_version, index)
         if metrics_item is None:
             return index
-        total_latency, avg_latency, total_request_num, current_qps, avg_qps, timestamp = \
+        total_latency, avg_latency, total_request_num, current_qps, avg_qps, timestamp, device_id = \
             FedMLModelCache.get_instance(self.redis_addr, self.redis_port).get_metrics_item_info(metrics_item)
         deployment_monitoring_topic_prefix = "model_ops/model_device/return_inference_monitoring"
         deployment_monitoring_topic = "{}/{}".format(deployment_monitoring_topic_prefix, self.current_end_point_id)
@@ -112,7 +113,8 @@ class FedMLModelMetrics:
                                          "latency": float(avg_latency),
                                          "qps": int(avg_qps),
                                          "total_request_num": int(total_request_num),
-                                         "timestamp": timestamp}
+                                         "timestamp": timestamp,
+                                         "edgeId": device_id}
         # print("send monitor metrics {}".format(json.dumps(deployment_monitoring_payload)))
 
         self.monitor_mqtt_mgr.send_message_json(deployment_monitoring_topic, json.dumps(deployment_monitoring_payload))
