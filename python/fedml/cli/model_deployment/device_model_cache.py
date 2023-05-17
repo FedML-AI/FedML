@@ -240,17 +240,17 @@ class FedMLModelCache(object):
                             model_name, model_version,
                             total_latency, avg_latency,
                             total_request_num, current_qps,
-                            avg_qps, timestamp):
+                            avg_qps, timestamp, device_id):
         metrics_dict = {"total_latency": total_latency, "avg_latency": avg_latency,
                         "total_request_num": total_request_num, "current_qps": current_qps,
-                        "avg_qps": avg_qps, "timestamp": timestamp}
+                        "avg_qps": avg_qps, "timestamp": timestamp, "device_id": device_id}
         self.redis_connection.rpush(self.get_monitor_metrics_key(end_point_name, model_name, model_version),
                                     json.dumps(metrics_dict))
         self.model_deployment_db.set_monitor_metrics(end_point_id, end_point_name,
                                                      model_name, model_version,
                                                      total_latency, avg_latency,
                                                      total_request_num, current_qps,
-                                                     avg_qps, timestamp)
+                                                     avg_qps, timestamp, device_id)
 
     def get_latest_monitor_metrics(self, end_point_name, model_name, model_version):
         if not self.redis_connection.exists(self.get_monitor_metrics_key(end_point_name, model_name, model_version)):
@@ -283,7 +283,8 @@ class FedMLModelCache(object):
         current_qps = metrics_item_json["current_qps"]
         avg_qps = metrics_item_json["avg_qps"]
         timestamp = metrics_item_json["timestamp"]
-        return total_latency, avg_latency, total_request_num, current_qps, avg_qps, timestamp
+        device_id = metrics_item_json["device_id"]
+        return total_latency, avg_latency, total_request_num, current_qps, avg_qps, timestamp, device_id
 
     def get_monitor_metrics_key(self, end_point_name, model_name, model_version):
         return "{}{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_DEPLOYMENT_MONITOR_TAG,
