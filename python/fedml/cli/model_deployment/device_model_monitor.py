@@ -42,7 +42,7 @@ class FedMLModelMetrics:
             get_latest_monitor_metrics(end_point_name, model_name, model_version)
         print(f"calc metrics_item {metrics_item}")
         if metrics_item is not None:
-            total_latency, avg_latency, total_request_num, current_qps, avg_qps, timestamp = \
+            total_latency, avg_latency, total_request_num, current_qps, avg_qps, timestamp, _ = \
                 FedMLModelCache.get_instance(self.redis_addr, self.redis_port).get_metrics_item_info(metrics_item)
         cost_time = (time.time_ns() - self.start_time) / self.ns_per_ms
         total_latency += cost_time

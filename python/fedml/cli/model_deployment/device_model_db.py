@@ -114,7 +114,8 @@ class FedMLModelDatabase(object):
         metrics_dict = {"total_latency": endpoint_metrics.total_latency, "avg_latency": endpoint_metrics.avg_latency,
                         "total_request_num": endpoint_metrics.total_request_num,
                         "current_qps": endpoint_metrics.current_qps,
-                        "avg_qps": endpoint_metrics.avg_qps, "timestamp": endpoint_metrics.timestamp}
+                        "avg_qps": endpoint_metrics.avg_qps, "timestamp": endpoint_metrics.timestamp,
+                        "device_id": endpoint_metrics.device_id}
         return json.dumps(metrics_dict)
 
     def get_monitor_metrics_item(self, end_point_name, model_name, model_version, index):
@@ -124,7 +125,8 @@ class FedMLModelDatabase(object):
         metrics_dict = {"total_latency": endpoint_metrics.total_latency, "avg_latency": endpoint_metrics.avg_latency,
                         "total_request_num": endpoint_metrics.total_request_num,
                         "current_qps": endpoint_metrics.current_qps,
-                        "avg_qps": endpoint_metrics.avg_qps, "timestamp": endpoint_metrics.timestamp}
+                        "avg_qps": endpoint_metrics.avg_qps, "timestamp": endpoint_metrics.timestamp,
+                        "device_id": endpoint_metrics.device_id}
         return json.dumps(metrics_dict)
 
     def open_job_db(self):
