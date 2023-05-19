@@ -15,14 +15,8 @@ from flamby.datasets.fed_heart_disease.dataset import FedHeartDisease
 
 def load_partition_fed_heart_disease(args):
     if args.download:
-        from flamby.datasets.fed_heart_disease.dataset_creation_scripts.download import (
-            main as download_main,
-        )
-
-        if (not os.path.exists(args.data_cache_dir)) or len(
-            os.listdir(args.data_cache_dir)
-        ) == 0:
-            download_main(args.data_cache_dir, args.debug)
+        from .data_downloader import main as download_main
+        download_main(args.data_cache_dir, args.debug)
 
     train_data_num = 0
     test_data_num = 0
