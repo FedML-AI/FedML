@@ -324,8 +324,8 @@ class ServerConstants(object):
         stderr_flag = subprocess.PIPE if should_capture_stderr else sys.stderr
 
         if platform.system() == 'Windows':
-            script_process = subprocess.Popen(script_path, stdout=stdout_flag, stderr=stderr_flag,
-                                              preexec_fn=os.setsid)
+            script_process = subprocess.Popen("dir", stdout=stdout_flag, stderr=stderr_flag,
+                                              creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
         else:
             script_process = subprocess.Popen(['bash', '-c', script_path], stdout=stdout_flag, stderr=stderr_flag,
                                               preexec_fn=os.setsid)
@@ -337,8 +337,12 @@ class ServerConstants(object):
         stdout_flag = subprocess.PIPE if should_capture_stdout else sys.stdout
         stderr_flag = subprocess.PIPE if should_capture_stderr else sys.stderr
 
-        script_process = subprocess.Popen([shell, script_path], stdout=stdout_flag, stderr=stderr_flag,
-                                          preexec_fn=os.setsid)
+        if platform.system() == 'Windows':
+            script_process = subprocess.Popen([shell, script_path], stdout=stdout_flag, stderr=stderr_flag,
+                                              creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
+        else:
+            script_process = subprocess.Popen([shell, script_path], stdout=stdout_flag, stderr=stderr_flag,
+                                              preexec_fn=os.setsid)
 
         return script_process
 
@@ -348,8 +352,12 @@ class ServerConstants(object):
         stdout_flag = subprocess.PIPE if should_capture_stdout else sys.stdout
         stderr_flag = subprocess.PIPE if should_capture_stderr else sys.stderr
 
-        script_process = subprocess.Popen(shell_script_list, stdout=stdout_flag, stderr=stderr_flag,
-                                          preexec_fn=os.setsid)
+        if platform.system() == 'Windows':
+            script_process = subprocess.Popen(shell_script_list, stdout=stdout_flag, stderr=stderr_flag,
+                                              creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
+        else:
+            script_process = subprocess.Popen(shell_script_list, stdout=stdout_flag, stderr=stderr_flag,
+                                              preexec_fn=os.setsid)
 
         return script_process
 
