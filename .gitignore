@@ -230,3 +230,5 @@ android/fedmlsdk/MobileNN2/src/train/FedMLMNNTrainer.cpp
 android/fedmlsdk/MobileNN2/src/train/FedMLTorchTrainer.cpp
 android/fedmlsdk/MobileNN2/src/train/FedMLTrainer.cpp
 android/fedmlsdk/MobileNN2/src/train/FedMLTrainerSA.cpp
+
+devops/aws-account2

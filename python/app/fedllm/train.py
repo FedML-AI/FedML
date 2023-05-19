@@ -9,18 +9,15 @@ from typing import (
 )
 
 from dataclasses import dataclass, field
-from pathlib import Path
 
 from datasets import Dataset, load_dataset
 import numpy as np
 from peft import (
     get_peft_model,
     LoraConfig,
-    PeftModel,
     PeftModelForCausalLM,
     TaskType,
 )
-import torch
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -30,54 +27,21 @@ from transformers import (
     GPTNeoXTokenizerFast,
     HfArgumentParser,
     Trainer,
-    TrainerCallback,
-    TrainerControl,
-    TrainerState,
     TrainingArguments,
 )
-from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
 
-MODEL_NAMES = [
-    "EleutherAI/pythia-70m",
-    "EleutherAI/pythia-160m",
-    "EleutherAI/pythia-2.8b",
-    "EleutherAI/pythia-6.9b",
-    "EleutherAI/pythia-12b",
-    "EleutherAI/gpt-j-6B",
-]
-DEFAULT_MAX_SEQ_LENGTH = 1024
-
-INSTRUCTION_KEY = "### Instruction:"
-INPUT_KEY = "Input:"
-RESPONSE_KEY = "### Response:"
-END_KEY = "### End"
-RESPONSE_KEY_NL = f"{RESPONSE_KEY}\n"
-
-INTRO_BLURB = (
-    "Below is an instruction that describes a task. Write a response that appropriately completes the request."
+from src.constants import (
+    DEFAULT_MAX_SEQ_LENGTH,
+    END_KEY,
+    IGNORE_INDEX,
+    INSTRUCTION_KEY,
+    MODEL_NAMES,
+    PROMPT_NO_INPUT_FORMAT,
+    PROMPT_WITH_INPUT_FORMAT,
+    RESPONSE_KEY_NL,
 )
-PROMPT_NO_INPUT_FORMAT = f"""{INTRO_BLURB}
-
-{INSTRUCTION_KEY}
-{{instruction}}
-
-{RESPONSE_KEY}
-{{response}}
-
-{END_KEY}"""
-
-PROMPT_WITH_INPUT_FORMAT = f"""{INTRO_BLURB}
-
-{INSTRUCTION_KEY}
-{{instruction}}
-
-{INPUT_KEY}
-{{input}}
-
-{RESPONSE_KEY}
-{{response}}
-
-{END_KEY}"""
+from src.trainer_callback import SavePeftModelCallback
+from src.utils import save_config, should_process_save
 
 ModelType = Union[GPTJModel, GPTNeoXForCausalLM, PeftModelForCausalLM]
 TokenizerType = Union[GPTNeoXTokenizerFast]
@@ -140,35 +104,11 @@ class DataCollatorForCompletionOnlyLM(DataCollatorForLanguageModeling):
             response_token_ids_end_idx = response_token_ids_start_idx + 1
 
             # Make pytorch loss function ignore all tokens up through the end of the response key
-            labels[i, :response_token_ids_end_idx] = -100
+            labels[i, :response_token_ids_end_idx] = IGNORE_INDEX
 
         batch["labels"] = labels
 
         return batch
-
-
-class SavePeftModelCallback(TrainerCallback):
-    def on_save(
-            self,
-            args: TrainingArguments,
-            state: TrainerState,
-            control: TrainerControl,
-            **kwargs
-    ) -> TrainerControl:
-        if state.is_world_process_zero or (state.is_local_process_zero and args.save_on_each_node):
-            # see https://github.com/huggingface/peft/issues/96#issuecomment-1460080427
-            checkpoint_dir = Path(args.output_dir) / f"{PREFIX_CHECKPOINT_DIR}-{state.global_step}"
-            model = kwargs.get("model", None)
-
-            if isinstance(model, PeftModel):
-                # when using DeepSpeed Zero 3, model weights need to be converted.
-                # conversion is done by Trainer, we need to load the saved weights manually
-                checkpoint = torch.load(str(checkpoint_dir / "pytorch_model.bin"), map_location="cpu")
-
-                peft_model_path = checkpoint_dir / "adapter_model"
-                model.save_pretrained(str(peft_model_path), state_dict=checkpoint)
-
-        return control
 
 
 def _add_text(rec):
@@ -273,11 +213,17 @@ def get_tokenizer(model_name: str) -> TokenizerType:
 
 
 def get_model(model_args: ModelArguments, tokenizer_length: Optional[int] = None, **kwargs) -> ModelType:
-    model = AutoModelForCausalLM.from_pretrained(model_args.model_name, trust_remote_code=True, **kwargs)
+    kwargs.setdefault("trust_remote_code", True)
+    model = AutoModelForCausalLM.from_pretrained(model_args.model_name, **kwargs)
 
-    print(f"Resize embedding to tokenizer length: {tokenizer_length:,}")
-    # TODO: resize when tokenizer_length < model embedding size?
-    model.resize_token_embeddings(tokenizer_length)
+    if tokenizer_length is not None:
+        print(f"Resize embedding to tokenizer length: {tokenizer_length:,}")
+        # TODO: resize when tokenizer_length < model embedding size?
+        model.resize_token_embeddings(tokenizer_length)
+
+        # update model configurations
+        if hasattr(model.config, "vocab_size"):
+            model.config.vocab_size = tokenizer_length
 
     if model_args.use_lora:
         # apply LoRA
@@ -310,12 +256,12 @@ def get_max_seq_length(model: ModelType, default_max_seq_length: int = DEFAULT_M
     return embedding_size
 
 
-def get_data_collator(tokenizer: TokenizerType) -> DataCollatorForCompletionOnlyLM:
+def get_data_collator(tokenizer: TokenizerType, pad_to_multiple_of: int = 8) -> DataCollatorForCompletionOnlyLM:
     return DataCollatorForCompletionOnlyLM(
         tokenizer=tokenizer,
         mlm=False,
         return_tensors="pt",
-        pad_to_multiple_of=8
+        pad_to_multiple_of=pad_to_multiple_of
     )
 
 
@@ -349,19 +295,28 @@ def train() -> None:
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=test_dataset,
-        data_collator=get_data_collator(tokenizer),
+        data_collator=get_data_collator(tokenizer, pad_to_multiple_of=dataset_args.max_seq_length),
         callbacks=[
             # save peft adapted model weights
             SavePeftModelCallback,
         ]
     )
 
-    print("Training")
-    trainer.train()
+    if training_args.do_train:
+        if should_process_save(trainer):
+            # save model config before training
+            save_config(model, training_args.output_dir)
 
-    print(f"Saving model to \"{training_args.output_dir}\"")
-    trainer.save_state()
-    trainer.save_model()
+        print("Training")
+        trainer.train(resume_from_checkpoint=training_args.resume_from_checkpoint)
+
+        print(f"Saving model to \"{training_args.output_dir}\"")
+        trainer.save_state()
+        trainer.save_model()
+
+    if training_args.do_eval:
+        print("Evaluating")
+        print(trainer.evaluate())
 
 
 if __name__ == '__main__':

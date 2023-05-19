@@ -1,14 +1,24 @@
 from collections import OrderedDict
+import logging
+import math
 from pathlib import Path
 
 import fedml
-from fedml import FedMLRunner
+from fedml import FedMLRunner, mlops
 from fedml.arguments import Arguments
 from fedml.core import ClientTrainer, ServerAggregator
 from peft import get_peft_model_state_dict, set_peft_model_state_dict
 import torch.cuda
 from transformers import HfArgumentParser, Trainer as HfTrainer, TrainingArguments
 
+from src.constants import DEFAULT_MAX_SEQ_LENGTH
+from src.trainer_callback import PauseResumeCallback
+from src.utils import (
+    process_state_dict,
+    save_config,
+    should_process_save,
+    to_device,
+)
 from train import (
     DataArguments,
     get_data_collator,
@@ -23,18 +33,36 @@ from train import (
 )
 
 
+def _parse_args(args: Arguments) -> Arguments:
+    if args.role == "client":
+        if hasattr(args, "client_dataset_path"):
+            args.dataset_path = args.client_dataset_path
+        # disable logging for client
+        setattr(args, "report_to", "none")
+        setattr(args, "disable_tqdm", True)
+
+    if isinstance(args.dataset_path, (tuple, list)):
+        args.dataset_path = [
+            p.format(rank=args.rank, client_num_in_total=args.client_num_in_total)
+            for p in args.dataset_path
+        ]
+
+    return args
+
+
 def get_hf_trainer(args: Arguments, model: ModelType, tokenizer: TokenizerType, **kwargs) -> HfTrainer:
     args_dict = dict(args.__dict__)
     # TODO: scrutinize
     if not args.using_gpu or torch.cuda.device_count() == 1:
         args_dict.pop("local_rank", None)
+        args_dict.pop("device", None)
     training_args, *_ = HfArgumentParser(TrainingArguments).parse_dict(args_dict, allow_extra_keys=True)
 
     return HfTrainer(
         model=model,
         tokenizer=tokenizer,
         args=training_args,
-        data_collator=get_data_collator(tokenizer),
+        data_collator=get_data_collator(tokenizer, getattr(args, "max_seq_length", DEFAULT_MAX_SEQ_LENGTH)),
         **kwargs
     )
 
@@ -60,22 +88,48 @@ class LLMTrainer(ClientTrainer):
         self.model_args = model_args
         self.trainer = get_hf_trainer(self.args, self.model, self.tokenizer)
 
+        max_steps = self.trainer.args.max_steps
+        num_train_epochs = self.trainer.args.num_train_epochs
+        comm_round = int(self.args.comm_round)
+        assert max_steps > 0 or num_train_epochs > 0, \
+            f"at least 1 of max_steps and num_train_epochs should be positive, " \
+            f"but got {max_steps} and {num_train_epochs}"
+        assert max_steps <= 0 or max_steps >= comm_round, \
+            f"max_steps = {max_steps} > 0 must be greater than comm_round = {comm_round}"
+
+        if max_steps > 0:
+            assert max_steps >= comm_round, f"required max_steps >= comm_round, but got {max_steps} < {comm_round}"
+            step_threshold = int(math.ceil(max_steps / comm_round))
+            epoch_threshold = math.inf
+            logging.info(f"step_threshold = {step_threshold}")
+        elif num_train_epochs > 0:
+            # TODO: verify
+            step_threshold = math.inf
+            epoch_threshold = num_train_epochs / comm_round
+            logging.info(f"epoch_threshold = {epoch_threshold}")
+        else:
+            raise ValueError(
+                f"at least one of the `max_steps` and `num_train_epochs` should be positive, "
+                f"but got {max_steps} and {num_train_epochs}"
+            )
+
+        self.trainer.add_callback(PauseResumeCallback(
+            step_threshold=step_threshold,
+            epoch_threshold=epoch_threshold
+        ))
+
         self.temp_ckpt_dir = Path(self.trainer.args.output_dir) / f"node{self.args.rank}_tmp"
         # this is required for DeepSpeed
         self.trainer.save_model(str(self.temp_ckpt_dir))
 
     def get_model_params(self) -> OrderedDict:
         state_dict = get_model_state_dict(self.trainer, self.temp_ckpt_dir)
-        return OrderedDict(get_peft_model_state_dict(self.model, state_dict=state_dict))
+        peft_state_dict = to_device(get_peft_model_state_dict(self.model, state_dict=state_dict), device="cpu")
+        return OrderedDict(peft_state_dict)
 
     def set_model_params(self, model_parameters) -> None:
-        # rebuild model
-        del self.model
-        self.model = get_model(
-            self.model_args,
-            tokenizer_length=len(self.tokenizer),
-            use_cache=not getattr(self.args, "gradient_checkpointing", False)
-        )
+        model_parameters = to_device(model_parameters, device="cpu")
+        model_parameters = process_state_dict(model_parameters, get_peft_model_state_dict(self.model))
 
         set_peft_model_state_dict(self.model, model_parameters)
 
@@ -87,9 +141,12 @@ class LLMTrainer(ClientTrainer):
         if hasattr(args, "round_idx"):
             setattr(self.args, "round_idx", args.round_idx)
 
-        # rebuild trainer
-        del self.trainer
-        self.trainer = get_hf_trainer(self.args, self.model, self.tokenizer, train_dataset=train_data)
+        self.trainer.train_dataset = train_data
+
+        if getattr(self.args, "round_idx", -1) > 0:
+            # TODO: verify model, model_wrapped, deepspeed, optimizer, lr_scheduler after reset
+            # turn off TrainingArguments.deepspeed to avoid duplicated initializations
+            self.trainer.args.deepspeed = None
 
     def train(self, train_data, device, args: Arguments) -> None:
         self.trainer.train()
@@ -97,6 +154,8 @@ class LLMTrainer(ClientTrainer):
     def on_after_local_training(self, train_data, device, args: Arguments) -> None:
         super().on_after_local_training(train_data, device, args)
         self.trainer.save_model(str(self.temp_ckpt_dir))
+        # recover TrainingArguments.deepspeed
+        self.trainer.args.deepspeed = self.args.deepspeed
 
 
 class LLMAggregator(ServerAggregator):
@@ -112,7 +171,7 @@ class LLMAggregator(ServerAggregator):
         self.model = model
 
         self.trainer = get_hf_trainer(
-            args=args,
+            args=self.args,
             model=self.model,
             tokenizer=self.tokenizer,
             # save peft adapted model weights
@@ -120,16 +179,29 @@ class LLMAggregator(ServerAggregator):
         )
         self.temp_ckpt_dir = Path(self.trainer.args.output_dir) / f"node{self.args.rank}_tmp"
 
+        # save config
+        if should_process_save(self.trainer):
+            # save model config before training
+            save_config(model, self.trainer.args.output_dir)
+
     def get_model_params(self) -> OrderedDict:
         state_dict = get_model_state_dict(self.trainer, self.temp_ckpt_dir)
-        return OrderedDict(get_peft_model_state_dict(self.model, state_dict=state_dict))
+        peft_state_dict = to_device(get_peft_model_state_dict(self.model, state_dict=state_dict), device="cpu")
+        return OrderedDict(peft_state_dict)
 
     def set_model_params(self, model_parameters) -> None:
         # TODO: verify DeepSpeed support
+        model_parameters = to_device(model_parameters, device="cpu")
+        model_parameters = process_state_dict(model_parameters, get_peft_model_state_dict(self.model))
+
         set_peft_model_state_dict(self.model, model_parameters)
 
     def test(self, test_data, device, args: Arguments) -> None:
-        self.trainer.evaluate(eval_dataset=test_data)
+        # update epoch, global_step for logging
+        self.trainer.state.epoch = self.args.round_idx
+        self.trainer.state.global_step = self.args.round_idx
+        metrics = self.trainer.evaluate(eval_dataset=test_data)
+        mlops.log({**metrics, "round_idx": args.round_idx})
 
 
 def transform_data_to_fedml_format(args: Arguments, dataset):
@@ -179,6 +251,7 @@ def main(args: Arguments) -> None:
 
     if dataset_args.max_seq_length is None:
         dataset_args.max_seq_length = get_max_seq_length(model)
+        setattr(args, "max_seq_length", dataset_args.max_seq_length)
 
     train_dataset, test_dataset = get_dataset(
         dataset_path=dataset_args.dataset_path,
@@ -208,4 +281,4 @@ def main(args: Arguments) -> None:
 
 if __name__ == "__main__":
     # init FedML framework
-    main(args=fedml.init())
+    main(args=_parse_args(fedml.init()))

@@ -14,7 +14,7 @@ DATASET_PATHS=(
   # add your datasets here
 )
 
-python train.py \
+python3 train.py \
   --model_name "EleutherAI/pythia-6.9b" \
   --dataset_path "${DATASET_PATHS[@]}" \
   --test_dataset_size 200 \
@@ -37,5 +37,5 @@ python train.py \
   --evaluation_strategy "steps" \
   --save_strategy "steps" \
   --eval_accumulation_steps 4 \
-  --report_to "tensorboard" \
+  --do_train "True" \
   "${@}"
