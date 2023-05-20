@@ -30,7 +30,7 @@ train_args:
   client_id_list:
   client_num_in_total: 2  # set number of clients
   client_num_per_round: 2  # choose from 1~client_num_in_total
-  comm_round: 20
+  comm_round: 5
   # below copied from scripts/train_deepspeed.sh
   deepspeed: "configs/ds_z3_bf16_config.json"
   seed: 1234
@@ -41,12 +41,12 @@ train_args:
   per_device_eval_batch_size: 2
   learning_rate: 1.0e-5
   warmup_steps: 50
-  num_train_epochs: 1   # number of training epoch for client on each round
+  num_train_epochs: 5  # number of training epoch for client in each round
   output_dir: "~/fedml_logs/MLOps/dolly_pythia-70m"
   logging_steps: 50
   eval_steps: 200
   save_steps: 200
-  max_steps: 4
+  max_steps: 17500   # number of training steps for the entire training, should >= comm_round, this option overwrites `num_train_epochs`
   save_total_limit: 20
   logging_strategy: "no"
   evaluation_strategy: "no"  # should be turned off
