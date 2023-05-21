@@ -1,6 +1,7 @@
 package ai.fedml.edge.service.component;
 
 import android.os.Handler;
+import android.util.Log;
 
 import java.util.List;
 
@@ -40,6 +41,9 @@ public class RuntimeLogger {
     private void uploadLog(final List<String> logs) {
         if (logs == null || logs.size() == 0) {
             return;
+        }
+        for (String log: logs ) {
+            Log.e("MY_DEBUG", log);
         }
         RequestManager.uploadLog(mRunId, mEdgeId, logs, new OnLogUploadListener() {
             private int retryCnt = 3;

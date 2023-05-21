@@ -27,7 +27,7 @@ public class LogHelper {
     private static final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
     private static final Lock rLock = rwl.readLock();
     private static final Lock wLock = rwl.writeLock();
-    private static List<String> sLogLines = new LinkedList<>();
+    private static volatile List<String> sLogLines = new LinkedList<>();
 
     public static void v(Object arg) {
         if (DEBUG) {
@@ -99,7 +99,7 @@ public class LogHelper {
                 Thread.currentThread().getId(), caller, msg);
     }
 
-    private static void print(int priority, String tag, String msg) {
+    private static void print(int priority, final String tag, final String msg) {
         Date currentDate = new Date();
         SimpleDateFormat sdf = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss", Locale.ENGLISH);
         String formattedDate = sdf.format(currentDate);
