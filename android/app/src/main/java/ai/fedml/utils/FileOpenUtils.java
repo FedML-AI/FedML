@@ -128,7 +128,7 @@ public class FileOpenUtils {
      * open the file
      * @param file
      */
-    public static void openFile(Context context ,File file) {
+    public static void openFile(Context context, File file) {
 
         Intent intent = new Intent();
         if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.N)

@@ -13,22 +13,28 @@ public class RuntimeLogger {
     private final Handler mBgHandler;
     private final long mEdgeId;
     private final long mRunId;
+    private final Runnable mRunnable;
 
     public RuntimeLogger(final long edgeId, final long runId) {
         mEdgeId = edgeId;
         mRunId = runId;
         mBgHandler = new BackgroundHandler("LogUploader");
-    }
-
-    public void initial() {
-        mBgHandler.postDelayed(new Runnable() {
+        mRunnable = new Runnable() {
             @Override
             public void run() {
                 List<String> logs = LogHelper.getLogLines();
                 uploadLog(logs);
                 mBgHandler.postDelayed(this, 10000L);
             }
-        }, 10000L);
+        };
+    }
+
+    public void start() {
+        mBgHandler.postDelayed(mRunnable, 10000L);
+    }
+
+    public void release() {
+        mBgHandler.removeCallbacksAndMessages(null);
     }
 
     private void uploadLog(final List<String> logs) {

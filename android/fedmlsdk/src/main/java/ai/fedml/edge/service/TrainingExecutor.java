@@ -110,7 +110,9 @@ public class TrainingExecutor implements MessageDefine {
         runStateMap.put(runId + "_" + clientRunIndex, false);
         mBgHandler.removeCallbacks(currentRunnable);
         if (mNativeFedMLClientManager != null){
+            mNativeFedMLClientManager.stopTraining();
             mNativeFedMLClientManager = null;
+            LogHelper.d("FedMLDebug. mNativeFedMLClientManager is released.");
         }
     }
 
@@ -118,7 +120,9 @@ public class TrainingExecutor implements MessageDefine {
         runStateMap.clear();
         mBgHandler.removeCallbacks(currentRunnable);
         if (mNativeFedMLClientManager != null){
+            mNativeFedMLClientManager.stopTraining();
             mNativeFedMLClientManager = null;
+            LogHelper.d("FedMLDebug. mNativeFedMLClientManager is released.");
         }
     }
 }

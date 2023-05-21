@@ -97,6 +97,7 @@ public class EdgeService extends Service implements EdgeMessageDefine {
                 callbackMessage(msg.replyTo, message);
             } else if (MSG_BIND_EDGE == msg.what) {
                 String bindId = msg.getData().getString(BIND_EDGE_ID);
+                LogHelper.d("FedMLDebug. bindId = " + bindId);
                 fedEdgeTrainApi.bindEdge(bindId);
             }
         }

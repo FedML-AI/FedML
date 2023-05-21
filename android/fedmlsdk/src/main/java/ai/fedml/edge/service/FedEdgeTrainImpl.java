@@ -1,7 +1,6 @@
 package ai.fedml.edge.service;
 
 import android.content.Context;
-import android.text.TextUtils;
 
 import ai.fedml.edge.OnTrainProgressListener;
 import ai.fedml.edge.OnTrainingStatusListener;
@@ -11,8 +10,10 @@ import androidx.annotation.NonNull;
 
 class FedEdgeTrainImpl implements FedEdgeTrainApi {
     private ClientAgentManager mClientAgent;
-    private volatile boolean isBound = false;
     private volatile String mBindEdgeId;
+
+    private OnTrainingStatusListener mOnTrainingStatusListener;
+    private OnTrainProgressListener mOnTrainProgressListener;
 
     public FedEdgeTrainImpl() {
     }
@@ -21,23 +22,19 @@ class FedEdgeTrainImpl implements FedEdgeTrainApi {
     public void init(@NonNull Context context, @NonNull final OnTrainingStatusListener onTrainingStatusListener,
                      @NonNull final OnTrainProgressListener onTrainProgressListener) {
         ContextHolder.initialize(context);
-        Initializer.getInstance().initial(() -> {
-            LogHelper.d("Initializer initial finished");
-            mClientAgent = new ClientAgentManager(onTrainingStatusListener, onTrainProgressListener);
-            if (!isBound && !TextUtils.isEmpty(mBindEdgeId)) {
-                mClientAgent.bindCommunicator(mBindEdgeId);
-            }
-        });
+        mOnTrainingStatusListener = onTrainingStatusListener;
+        mOnTrainProgressListener = onTrainProgressListener;
     }
 
     @Override
     public void bindEdge(String bindEdgeId) {
+        LogHelper.d("FedMLDebug. bindEdge(), bindEdgeId = " + bindEdgeId);
         mBindEdgeId = bindEdgeId;
-        if (mClientAgent != null) {
-            LogHelper.d("bindEdge finished");
-            mClientAgent.bindCommunicator(bindEdgeId);
-            isBound = true;
-        }
+        Initializer.getInstance().initial(() -> {
+            LogHelper.d("FedMLDebug. Initializer initial finished. mBindEdgeId = " + mBindEdgeId);
+            mClientAgent = new ClientAgentManager(mBindEdgeId, mOnTrainingStatusListener, mOnTrainProgressListener);
+            mClientAgent.start();
+        });
     }
 
     @Override

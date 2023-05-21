@@ -90,7 +90,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
         mReporter = MetricsReporter.getInstance();
         remoteStorage = RemoteStorage.getInstance();
         mRuntimeLogger = new RuntimeLogger(edgeId, runId);
-        mRuntimeLogger.initial();
+        mRuntimeLogger.start();
         registerMessageReceiveHandlers(strServerId);
     }
 
@@ -110,13 +110,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
     @Override
     public void handle_message_finish(JSONObject params) {
         LogHelper.d("====================cleanup ====================");
-        cleanup();
-    }
-
-    private void cleanup() {
-        mReporter.reportEdgeFinished(mRunId, mEdgeId);
-        finish();
-        mRunId = 0;
+        finishRun();
     }
 
     @Override
@@ -190,7 +184,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
             mClientRound += 1;
         } else {
             downloadLastAggregatedModel(topic, modelParams, mClientRound);
-            cleanup();
+            finishRun();
         }
     }
 
@@ -354,25 +348,34 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
         LogHelper.i("stop train");
         mReporter.reportTrainingStatus(mRunId, mEdgeId, KEY_CLIENT_STATUS_KILLED);
         mTrainer.stopTrain();
+        cleanUpRun();
     }
 
     public void stopTrainWithoutReportStatus() {
         LogHelper.i("stop train without status reporting.");
         mTrainer.stopTrain();
+        cleanUpRun();
     }
 
-    private void finish() {
+    private void finishRun() {
+        mReporter.reportEdgeFinished(mRunId, mEdgeId);
+
         LogHelper.i("Training finished for master client");
         mReporter.reportClientStatus(mRunId, mEdgeId, KEY_CLIENT_STATUS_FINISHED);
 
         // Notify MLOps with the finished message
         mReporter.reportTrainingStatus(mRunId, mEdgeId, KEY_CLIENT_STATUS_FINISHED);
+        mRunId = 0;
     }
 
     private void reportError() {
         LogHelper.i("Report training error!");
         stopTrain();
         mReporter.reportTrainingStatus(mRunId, mEdgeId, KEY_CLIENT_STATUS_FAILED);
+    }
+
+    private void cleanUpRun() {
+        mRuntimeLogger.release();
     }
 
 }

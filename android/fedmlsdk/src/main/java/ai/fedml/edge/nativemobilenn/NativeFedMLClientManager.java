@@ -30,6 +30,7 @@ public final class NativeFedMLClientManager {
     @Override
     protected void finalize() throws Throwable {
         // call automatically
+        Log.d("NativeFedMLClientManager", "FedMLDebug. finalize");
         release(mTrainerPtr);
     }
 

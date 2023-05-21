@@ -12,7 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
 
 public class MetricsReporter implements MessageDefine {
-    private final EdgeCommunicator edgeCommunicator;
+    private EdgeCommunicator edgeCommunicator;
     private int mClientStatus = KEY_CLIENT_STATUS_IDLE;
     private OnTrainingStatusListener mOnTrainingStatusListener;
 
@@ -25,7 +25,11 @@ public class MetricsReporter implements MessageDefine {
     }
 
     public MetricsReporter() {
-        edgeCommunicator = EdgeCommunicator.getInstance();
+        edgeCommunicator = null;
+    }
+
+    public void setEdgeCommunicator(EdgeCommunicator communicator) {
+        edgeCommunicator = communicator;
     }
 
     public void setTrainingStatusListener(@NonNull final OnTrainingStatusListener onTrainingStatusListener) {

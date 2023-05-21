@@ -52,6 +52,9 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
+
+        // android.os.Build.VERSION.SDK_INT: 33
+        LogHelper.d("android.os.Build.VERSION.SDK_INT: %d", android.os.Build.VERSION.SDK_INT);
         initView();
         loadDate();
 

@@ -3,12 +3,21 @@ package ai.fedml.edge;
 import android.content.Context;
 
 public interface FedEdgeApi {
+    /**
+     * Init
+     */
     void init(Context appContext);
 
+    /**
+     * Edge ID
+     */
     String getBoundEdgeId();
 
     void bindEdge(String bindId);
 
+    /**
+     * Training
+     */
     void train();
 
     void getTrainingStatus();
@@ -21,6 +30,9 @@ public interface FedEdgeApi {
 
     String getHyperParameters();
 
+    /**
+     * Data
+     */
     void setPrivatePath(final String path);
 
     String getPrivatePath();
