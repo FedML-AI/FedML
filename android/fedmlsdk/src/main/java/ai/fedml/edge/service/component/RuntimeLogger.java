@@ -42,9 +42,6 @@ public class RuntimeLogger {
         if (logs == null || logs.size() == 0) {
             return;
         }
-        for (String log: logs ) {
-            Log.e("MY_DEBUG", log);
-        }
         RequestManager.uploadLog(mRunId, mEdgeId, logs, new OnLogUploadListener() {
             private int retryCnt = 3;
 
