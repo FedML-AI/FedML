@@ -48,6 +48,7 @@ android {
     dataBinding{
         enabled = true
     }
+    namespace 'ai.fedml'
 
 }
 
@@ -72,7 +73,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:logging-interceptor:5.0.0-alpha.7'
 
     // zxing
-    implementation 'com.github.yuzhiqiang1993:zxing:2.2.5'
+    implementation 'com.github.yuzhiqiang1993:zxing:2.2.9'
     // aria file download
     implementation 'me.laoyuyu.aria:core:3.8.16'
     annotationProcessor 'me.laoyuyu.aria:compiler:3.8.16'
@@ -80,7 +81,7 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.24'
     compileOnly 'org.projectlombok:lombok:1.18.24'
 
-    implementation 'com.amazonaws:aws-android-sdk-s3:2.45.0'
+    implementation 'com.amazonaws:aws-android-sdk-s3:2.65.0'
     implementation 'com.github.bumptech.glide:glide:4.13.2'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.13.2'
 }

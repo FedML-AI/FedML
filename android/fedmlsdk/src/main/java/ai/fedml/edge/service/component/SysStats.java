@@ -16,7 +16,7 @@ import java.io.RandomAccessFile;
 import java.util.Arrays;
 
 import ai.fedml.edge.service.ContextHolder;
-import ai.fedml.edge.utils.CpuUtil;
+import ai.fedml.edge.utils.CpuUtils;
 import ai.fedml.edge.utils.LogHelper;
 import lombok.Builder;
 import lombok.Data;
@@ -47,7 +47,7 @@ public class SysStats {
     }
 
     public float getCpuUtilization() {
-        return CpuUtil.INSTANCE.getCpuUsage();
+        return CpuUtils.getInstance().getCpuUsage();
     }
 
     public MemoryStats getMemoryInfo() {
