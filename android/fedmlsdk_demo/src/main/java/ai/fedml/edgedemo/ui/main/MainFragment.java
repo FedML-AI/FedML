@@ -49,7 +49,7 @@ public class MainFragment extends Fragment {
         mViewModel = new ViewModelProvider(this).get(MainViewModel.class);
         View view = inflater.inflate(R.layout.main_fragment, container, false);
         initView(view);
-        loadDate();
+        loadData();
         return view;
     }
 
@@ -63,17 +63,17 @@ public class MainFragment extends Fragment {
         mEmailTextView = view.findViewById(R.id.tv_email);
         mGroupTextView = view.findViewById(R.id.tv_group);
         mAvatarImageView = view.findViewById(R.id.iv_avatar);
-        mUnInitButton = view.findViewById(R.id.btn_uninit);
-        mInitButton = view.findViewById(R.id.btn_init);
+//        mUnInitButton = view.findViewById(R.id.btn_uninit);
+//        mInitButton = view.findViewById(R.id.btn_init);
     }
 
-    private void loadDate() {
-        mInitButton.setOnClickListener((view)->{
-            FedEdgeManager.getFedEdgeApi().init(getContext());
-        });
-        mUnInitButton.setOnClickListener((view) -> {
-            FedEdgeManager.getFedEdgeApi().unInit();
-        });
+    private void loadData() {
+//        mInitButton.setOnClickListener((view)->{
+//            FedEdgeManager.getFedEdgeApi().init(getContext());
+//        });
+//        mUnInitButton.setOnClickListener((view) -> {
+//            FedEdgeManager.getFedEdgeApi().unInit();
+//        });
         getUserInfo();
         mDeviceAccountInfoTextView.setText(getString(R.string.account_information, FedEdgeManager.getFedEdgeApi().getBoundEdgeId()));
         mProgressView.setProgress(0);
