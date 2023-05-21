@@ -49,6 +49,8 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
 
     private boolean mHasSentOnlineMsg = false;
 
+    private boolean mIsTrainingStopped = false;
+
     private final Map<Long, Boolean> initStateMap;
     private final OnTrainProgressListener mOnTrainProgressListener;
 
@@ -158,6 +160,10 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
     @Override
     public synchronized void handleMessageReceiveModelFromServer(JSONObject params) {
         LogHelper.d("handleMessageReceiveModelFromServer: %s", params.toString());
+        if (mIsTrainingStopped) {
+            LogHelper.d("FedMLDebug. handleMessageReceiveModelFromServer() training run (%s) is already stopped", mRunId);
+            return ;
+        }
         if (mEdgeId == 0) {
             return;
         }
@@ -194,6 +200,11 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
     }
 
     private void handleTraining(final String topic, final String modelParams, final int clientRound) {
+        LogHelper.d("FedMLDebug. handleTraining topic（%s）", topic);
+        if (mIsTrainingStopped) {
+            LogHelper.d("FedMLDebug. handleTraining() training run (%s) is already stopped", mRunId);
+            return ;
+        }
         eventLogger.logEventStarted("train", String.valueOf(clientRound));
         final String uuidKey = topic + "-" + UUID.randomUUID().toString().replace("-", "");
         final String trainModelPath = StorageUtils.getModelPath() + File.separator + uuidKey;
@@ -245,6 +256,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
     }
 
     private void downloadLastAggregatedModel(final String topic, final String modelParams, final int clientRound) {
+        LogHelper.d("FedMLDebug. downloadLastAggregatedModel topic（%s）", topic);
         final String uuidKey = topic + "-" + UUID.randomUUID().toString().replace("-", "");
         final String trainModelPath = StorageUtils.getModelPath() + File.separator + uuidKey;
         LogHelper.d("modelParams（%s）", modelParams);
@@ -297,9 +309,13 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
      */
     public void sendModelToServer(@NonNull final String trainModelPath, final long edgeId, final int clientIdx,
                                   final long trainSamples, final int clientRound, @NonNull final OnUploadedListener listener) {
+        if (mIsTrainingStopped) {
+            LogHelper.d("FedMLDebug. sendModelToServer() training run (%s) is already stopped", mRunId);
+            return ;
+        }
         eventLogger.logEventStarted("comm_c2s", String.valueOf(clientRound));
         final String uuidS3Key = trainModelPath.substring(trainModelPath.lastIndexOf(File.separator) + 1);
-        LogHelper.d("sendModelToServer uuidS3Key（%s）", uuidS3Key);
+        LogHelper.d("FedMLDebug. sendModelToServer uuidS3Key（%s）", uuidS3Key);
         remoteStorage.upload(uuidS3Key, new File(trainModelPath), new TransferListener() {
             private int reTryCnt = 3;
 
@@ -345,16 +361,18 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
     }
 
     public void stopTrain() {
-        LogHelper.i("stop train");
+        LogHelper.i("FedMLDebug. stop train");
         mReporter.reportTrainingStatus(mRunId, mEdgeId, KEY_CLIENT_STATUS_KILLED);
         mTrainer.stopTrain();
         cleanUpRun();
+        mIsTrainingStopped = true;
     }
 
     public void stopTrainWithoutReportStatus() {
-        LogHelper.i("stop train without status reporting.");
+        LogHelper.i("FedMLDebug. stop train without status reporting.");
         mTrainer.stopTrain();
         cleanUpRun();
+        mIsTrainingStopped = true;
     }
 
     private void finishRun() {

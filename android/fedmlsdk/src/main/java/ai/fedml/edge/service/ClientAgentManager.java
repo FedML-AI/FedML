@@ -66,7 +66,6 @@ public final class ClientAgentManager implements MessageDefine {
     public void registerMessageReceiveHandlers(final long edgeId) {
         LogHelper.d("FedMLDebug. registerMessageReceiveHandlers. mReporter = " + mReporter + ", edgeId = " + edgeId);
 
-        LogHelper.d("FedMLDebug. registerMessageReceiveHandlers 2");
         final String startTrainTopic = "flserver_agent/" + edgeId + "/start_train";
         edgeCommunicator.subscribe(startTrainTopic, (OnTrainStartListener) this::handleTrainStart);
 
@@ -122,8 +121,6 @@ public final class ClientAgentManager implements MessageDefine {
 
     private void handleTrainStop(JSONObject msgParams) {
         LogHelper.d("handleTrainStop :%s", msgParams.toString());
-//        edgeCommunicator.unsubscribe("flserver_agent/" + mEdgeId + "/start_train");
-//        edgeCommunicator.unsubscribe("flserver_agent/" + mEdgeId + "/stop_train");
         // Stop Training Client
         if (mClientManager != null) {
             mClientManager.stopTrain();

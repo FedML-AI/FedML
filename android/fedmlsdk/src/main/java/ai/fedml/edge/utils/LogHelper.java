@@ -100,6 +100,9 @@ public class LogHelper {
         String log = "[" + getLevel(priority) + "] " + tag + " " + msg;
         wLock.lock();
         try {
+            if (msg.equals("")) {
+                Log.println(priority, "chaoyang", msg);
+            }
             sLogLines.add(log);
         } finally {
             wLock.unlock();

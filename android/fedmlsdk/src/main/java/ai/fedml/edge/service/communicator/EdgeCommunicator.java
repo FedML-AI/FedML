@@ -162,10 +162,6 @@ public class EdgeCommunicator implements MqttCallbackExtended {
         if (client != null && client.isConnected()) {
             try {
                 client.subscribe(topic, QOS);
-                // finish subscribe "fedml_{runId}_{server_id}_{edgeId}, connection is Ready
-                if (topic.startsWith("fedml_")) {
-                    notifyConnectionReady(topic, listener);
-                }
             } catch (MqttException e) {
                 LogHelper.e(e, "subscribe exception.");
             }

@@ -66,7 +66,6 @@ public interface MessageDefine {
     int KEY_CLIENT_STATUS_TRAINING = 5;
     int KEY_CLIENT_STATUS_KILLED = 6;
     int KEY_CLIENT_STATUS_FINISHED = 7;
-
     int KEY_CLIENT_STATUS_FAILED = 8;
 
     Map<Integer, String> CLIENT_STATUS_MAP = Collections.unmodifiableMap(new HashMap<Integer, String>() {

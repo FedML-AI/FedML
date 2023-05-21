@@ -112,6 +112,13 @@ public class EdgeService extends Service implements EdgeMessageDefine {
         super.onCreate();
         fedEdgeTrainApi.init(getApplicationContext(), onTrainingStatusListener, onAccuracyLossListener);
         LogHelper.d("onCreate privatePath:%s", SharePreferencesData.getPrivatePath());
+        LogHelper.d("FedMLDebug. EdgeService onCreate()");
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        LogHelper.d("FedMLDebug. EdgeService onDestroy()");
     }
 
     @Override
@@ -125,12 +132,6 @@ public class EdgeService extends Service implements EdgeMessageDefine {
     @Override
     public IBinder onBind(Intent intent) {
         return mServiceMessenger.getBinder();
-    }
-
-    @Override
-    public void onDestroy() {
-        LogHelper.d("FedMLDebug  onDestroy");
-        super.onDestroy();
     }
 
     private void callbackMessage(@NonNull final Messenger clientMessenger, @NonNull final Message message) {

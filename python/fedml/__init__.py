@@ -385,6 +385,7 @@ def update_client_id_list(args):
 
 def init_cross_device(args):
     args.rank = 0  # only server runs on Python package
+    args.role = "server"
     return args
 
 
