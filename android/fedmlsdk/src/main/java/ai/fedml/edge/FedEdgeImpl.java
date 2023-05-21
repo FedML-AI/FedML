@@ -216,14 +216,14 @@ class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
         try {
             ApplicationInfo appInfo = context.getPackageManager()
                     .getApplicationInfo(context.getPackageName(), PackageManager.GET_META_DATA);
-            int accountIdInt = appInfo.metaData.getInt(META_ACCOUNT_KEY, 0);
-            if (accountIdInt != 0) {
-                return String.valueOf(accountIdInt);
+            String accountId = appInfo.metaData.getString(META_ACCOUNT_KEY, "");
+            if (!accountId.isEmpty()) {
+                return accountId;
             }
             String cipherAccountId = appInfo.metaData.getString(META_ACCOUNT_KEY);
-            String accountId = AesUtil.decrypt(cipherAccountId, SECRET_KEY);
-            LogHelper.d("accountId=%s", accountId);
-            return accountId;
+            String accountIdString = AesUtil.decrypt(cipherAccountId, SECRET_KEY);
+            LogHelper.d("accountId=%s", accountIdString);
+            return accountIdString;
         } catch (PackageManager.NameNotFoundException e) {
             LogHelper.e(e, "metaData get failed.");
         }
