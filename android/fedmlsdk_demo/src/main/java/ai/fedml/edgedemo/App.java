@@ -1,9 +1,6 @@
 package ai.fedml.edgedemo;
 
 import android.app.Application;
-import android.content.Context;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;

@@ -20,7 +20,6 @@ import ai.fedml.R;
 import ai.fedml.base.BaseActivity;
 import ai.fedml.edge.FedEdgeManager;
 import ai.fedml.edge.OnTrainProgressListener;
-import ai.fedml.edge.request.RequestManager;
 import ai.fedml.edge.service.communicator.message.MessageDefine;
 import ai.fedml.edge.utils.LogHelper;
 import ai.fedml.utils.ToastUtils;
@@ -191,7 +190,7 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
     }
 
     private void getUserInfo() {
-        RequestManager.getUserInfo(userInfo -> {
+        FedEdgeManager.getFedEdgeApi().getUserInfo(userInfo -> {
             if (userInfo != null) {
                 runOnUiThread(() -> {
                     mNameTextView.setText(String.format("%s %s", userInfo.getLastname(), userInfo.getFirstName()));
@@ -211,7 +210,7 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
     private void unbound() {
         String bindingId = FedEdgeManager.getFedEdgeApi().getBoundEdgeId();
         LogHelper.d("unbound bindingId:%s", bindingId);
-        RequestManager.unboundAccount(bindingId, isSuccess -> runOnUiThread(() -> {
+        FedEdgeManager.getFedEdgeApi().unboundAccount(bindingId, isSuccess -> runOnUiThread(() -> {
             if (isSuccess) {
                 // Jump to scanning page
                 Intent intent = new Intent();

@@ -58,6 +58,7 @@ android {
         unitTests {
             returnDefaultValues true
             all {
+                useJUnitPlatform()
                 // Sets JVM argument(s) for the test JVM(s).
                 jvmArgs '-XX:MaxPermSize=256m'
 

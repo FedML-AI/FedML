@@ -2,7 +2,6 @@ package ai.fedml.edgedemo.ui.main;
 
 import ai.fedml.edge.FedEdgeManager;
 import ai.fedml.edge.OnTrainProgressListener;
-import ai.fedml.edge.request.RequestManager;
 import ai.fedml.edge.service.communicator.message.MessageDefine;
 import ai.fedml.edgedemo.App;
 import ai.fedml.edgedemo.GlideApp;
@@ -92,7 +91,7 @@ public class MainFragment extends Fragment {
             }
 
             @Override
-            public void onProgressChanged(int round, int progress) {
+            public void onProgressChanged(int round, float progress) {
                 App.runOnUiThread(() ->
                         mProgressView.setProgress(Math.round(progress)));
             }
@@ -107,7 +106,7 @@ public class MainFragment extends Fragment {
     }
 
     private void getUserInfo() {
-        RequestManager.getUserInfo(userInfo -> {
+        FedEdgeManager.getFedEdgeApi().getUserInfo(userInfo -> {
             if (userInfo != null) {
                 App.runOnUiThread(() -> {
                     mNameTextView.setText(String.format("%s %s", userInfo.getLastname(), userInfo.getFirstName()));

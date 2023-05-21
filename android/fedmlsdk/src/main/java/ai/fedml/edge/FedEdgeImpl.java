@@ -17,16 +17,32 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import ai.fedml.edge.request.RequestManager;
+import ai.fedml.edge.request.listener.OnBindingListener;
+import ai.fedml.edge.request.listener.OnUnboundListener;
+import ai.fedml.edge.request.listener.OnUserInfoListener;
 import ai.fedml.edge.request.parameter.BindingAccountReq;
 import ai.fedml.edge.service.ContextHolder;
 import ai.fedml.edge.service.EdgeService;
+import ai.fedml.edge.utils.AesUtil;
 import ai.fedml.edge.utils.DeviceUtils;
 import ai.fedml.edge.utils.LogHelper;
+import ai.fedml.edge.utils.ObfuscatedString;
 import ai.fedml.edge.utils.preference.SharePreferencesData;
 import androidx.annotation.NonNull;
 
 class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
     private static final String TAG = "FedEdgeManager";
+
+    /**
+     * mainfest meata key "fedml_key"
+     */
+    private static final String META_ACCOUNT_KEY = new ObfuscatedString(new long[]{0x78DA743E5BE2970DL,
+            0x380F3AEE359ADEEEL, 0x77E0C41263DBC235L}).toString();
+    /**
+     * SecretKey: ks-FedML-beehive
+     */
+    private static final String SECRET_KEY = new ObfuscatedString(new long[]{0xBA683391111A600DL, 0x84924D54717A16E1L,
+            0xBE985554215915ACL}).toString();
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
@@ -86,6 +102,18 @@ class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
     }
 
     @Override
+    public void bindingAccount(@NonNull String accountId, @NonNull String deviceId, @NonNull OnBindingListener listener) {
+        BindingAccountReq req = BindingAccountReq.builder()
+                .accountId(accountId).deviceId(deviceId).build();
+        RequestManager.bindingAccount(req, listener);
+    }
+
+    @Override
+    public void unboundAccount(@NonNull String edgeId, @NonNull OnUnboundListener listener) {
+        RequestManager.unboundAccount(edgeId, listener);
+    }
+
+    @Override
     public String getBoundEdgeId() {
         return SharePreferencesData.getBindingId();
     }
@@ -95,6 +123,11 @@ class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
         Bundle bundle = new Bundle();
         bundle.putString(BIND_EDGE_ID, bindId);
         sendMessage(MSG_BIND_EDGE, bundle);
+    }
+
+    @Override
+    public void getUserInfo(@NonNull OnUserInfoListener listener) {
+        RequestManager.getUserInfo(listener);
     }
 
     public void train() {
@@ -160,11 +193,14 @@ class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
         try {
             ApplicationInfo appInfo = context.getPackageManager()
                     .getApplicationInfo(context.getPackageName(), PackageManager.GET_META_DATA);
-            int accountId = appInfo.metaData.getInt("fedml_account", 0);
-            if (accountId != 0) {
-                return String.valueOf(accountId);
+            int accountIdInt = appInfo.metaData.getInt(META_ACCOUNT_KEY, 0);
+            if (accountIdInt != 0) {
+                return String.valueOf(accountIdInt);
             }
-            return appInfo.metaData.getString("fedml_account");
+            String cipherAccountId = appInfo.metaData.getString(META_ACCOUNT_KEY);
+            String accountId = AesUtil.decrypt(cipherAccountId, SECRET_KEY);
+            LogHelper.d("accountId=%s", accountId);
+            return accountId;
         } catch (PackageManager.NameNotFoundException e) {
             LogHelper.e(e, "metaData get failed.");
         }
@@ -174,6 +210,7 @@ class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
     private void initBindingState(@NonNull final Context context) {
         final String bindingId = SharePreferencesData.getBindingId();
         LogHelper.d("initBindingState bindingId: %s", bindingId);
+        // TODO: Whether there is no need to rebind if it is already bound？
         String accountId = getAccountFromMeta(context);
         final String deviceId = DeviceUtils.getDeviceId();
         LogHelper.d("initBindingState AccountFromMeta: %s, deviceId: %s", accountId, deviceId);
