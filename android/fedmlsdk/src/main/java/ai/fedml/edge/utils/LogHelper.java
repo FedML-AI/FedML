@@ -4,6 +4,9 @@ import android.util.Log;
 
 import com.google.common.collect.ImmutableMap;
 
+import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -92,12 +95,15 @@ public class LogHelper {
                 break;
             }
         }
-        return String.format(Locale.US, "[@device-id-%s][thread-%d]%s: %s", SharePreferencesData.getBindingId(),
+        return String.format(Locale.US, "[thread-%d-%s] %s",
                 Thread.currentThread().getId(), caller, msg);
     }
 
     private static void print(int priority, String tag, String msg) {
-        String log = "[" + getLevel(priority) + "] " + tag + " " + msg;
+        Date currentDate = new Date();
+        SimpleDateFormat sdf = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss", Locale.ENGLISH);
+        String formattedDate = sdf.format(currentDate);
+        String log = "[" + tag + " @device-id-" + SharePreferencesData.getBindingId() + "]" + " [" + formattedDate + "]" + " [" + priority + "] " + msg;
         wLock.lock();
         try {
             if (msg.equals("")) {
