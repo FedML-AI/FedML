@@ -89,9 +89,11 @@ class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
     private Messenger mServiceMessenger;
     private OnTrainingStatusListener onTrainingStatusListener;
     private OnTrainProgressListener onTrainProgressListener;
+    private volatile boolean canInit = false;
 
 
     public void init(Context appContext) {
+        canInit = true;
         ContextHolder.initialize(appContext);
         final String processName = DeviceUtils.getProcessName();
         Log.i(TAG, "init " + processName);
@@ -171,7 +173,28 @@ class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
         return SharePreferencesData.getPrivatePath();
     }
 
+    @Override
+    public void unInit() {
+        final String processName = DeviceUtils.getProcessName();
+        Log.i(TAG, "init " + processName);
+        Context appContext = ContextHolder.getAppContext();
+        // Only the main process can unInit
+        if (!TextUtils.isEmpty(processName) && appContext.getPackageName().equals(processName)) {
+            canInit = false;
+            sendMessage(MSG_STOP_EDGE_SERVICE, null);
+            // if a stopped service still has ServiceConnection objects bound to it with the BIND_AUTO_CREATE set,
+            // it will not be destroyed until all of these bindings are removed.
+            appContext.unbindService(mServiceConnection);
+            // EdgeService will call onDestroy()
+            Intent intent = new Intent(appContext, EdgeService.class);
+            appContext.stopService(intent);
+        }
+    }
+
     private void bindService() {
+        if (!canInit){
+            LogHelper.wtf("The service is already uninit and cannot start edge Service!");
+        }
         Context appContext = ContextHolder.getAppContext();
         Intent intent = new Intent(appContext, EdgeService.class);
         appContext.bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);

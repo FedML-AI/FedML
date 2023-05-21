@@ -17,6 +17,7 @@ import androidx.fragment.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -34,6 +35,8 @@ public class MainFragment extends Fragment {
     private TextView mGroupTextView;
     private ImageView mAvatarImageView;
     private TextView mDeviceAccountInfoTextView;
+    private TextView mUnInitButton;
+    private TextView mInitButton;
 
     public static MainFragment newInstance() {
         return new MainFragment();
@@ -60,9 +63,17 @@ public class MainFragment extends Fragment {
         mEmailTextView = view.findViewById(R.id.tv_email);
         mGroupTextView = view.findViewById(R.id.tv_group);
         mAvatarImageView = view.findViewById(R.id.iv_avatar);
+        mUnInitButton = view.findViewById(R.id.btn_uninit);
+        mInitButton = view.findViewById(R.id.btn_init);
     }
 
     private void loadDate() {
+        mInitButton.setOnClickListener((view)->{
+            FedEdgeManager.getFedEdgeApi().init(getContext());
+        });
+        mUnInitButton.setOnClickListener((view) -> {
+            FedEdgeManager.getFedEdgeApi().unInit();
+        });
         getUserInfo();
         mDeviceAccountInfoTextView.setText(getString(R.string.account_information, FedEdgeManager.getFedEdgeApi().getBoundEdgeId()));
         mProgressView.setProgress(0);

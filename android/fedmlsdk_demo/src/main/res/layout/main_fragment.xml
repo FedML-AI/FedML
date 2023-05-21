@@ -177,9 +177,33 @@
                         app:layout_constraintLeft_toLeftOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/textView18" />
                 </androidx.constraintlayout.widget.ConstraintLayout>
-
             </LinearLayout>
 
+            <TextView
+                android:id="@+id/btn_init"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="8dp"
+                android:layout_marginHorizontal="10dp"
+                android:gravity="center"
+                android:background="@color/color_54A158"
+                android:text="@string/init"
+                android:textAllCaps="false"
+                android:textColor="@color/white"
+                android:textSize="14sp" />
+            <TextView
+                android:id="@+id/btn_uninit"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="8dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginHorizontal="10dp"
+                android:gravity="center"
+                android:background="@color/color_31708F"
+                android:text="@string/unInit"
+                android:textAllCaps="false"
+                android:textColor="@color/white"
+                android:textSize="14sp" />
         </LinearLayout>
     </ScrollView>
 
