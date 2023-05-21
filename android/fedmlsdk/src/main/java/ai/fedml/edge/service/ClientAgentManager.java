@@ -113,7 +113,7 @@ public final class ClientAgentManager implements MessageDefine {
             } else {
                 SharePreferencesData.clearHyperParameters();
             }
-            onTrainingStatusListener.onStatusChanged(KEY_CLIENT_STATUS_INITIALIZING);
+            this.onTrainingStatusListener.onStatusChanged(KEY_CLIENT_STATUS_INITIALIZING);
         }
         // Launch Training Client
         mClientManager = new ClientManager(mEdgeId, runId, strServerId, hyperParameters, onTrainProgressListener);
@@ -121,6 +121,9 @@ public final class ClientAgentManager implements MessageDefine {
 
     private void handleTrainStop(JSONObject msgParams) {
         LogHelper.d("handleTrainStop :%s", msgParams.toString());
+        mReporter.reportTrainingStatus(0, mEdgeId, KEY_CLIENT_STATUS_IDLE);
+        mRunId = 0;
+
         // Stop Training Client
         if (mClientManager != null) {
             mClientManager.stopTrain();
@@ -128,8 +131,7 @@ public final class ClientAgentManager implements MessageDefine {
             LogHelper.d("FedMLDebug mClientManager is killed");
         }
 
-        mReporter.reportTrainingStatus(0, mEdgeId, KEY_CLIENT_STATUS_IDLE);
-        mRunId = 0;
+
     }
 
     private void handleMLOpsMsg(JSONObject msgParams) {

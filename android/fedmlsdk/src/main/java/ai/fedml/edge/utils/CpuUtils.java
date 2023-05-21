@@ -121,11 +121,11 @@ public class CpuUtils {
     }
 
     private int getCPUIndex(String line) {
-        LogHelper.i("getCPUIndex,%s", line);
+//        LogHelper.i("getCPUIndex,%s", line);
         if (line.contains("CPU")) {
             String[] titles = line.split("\\s+");
             for (int i=0; i<titles.length; i++) {
-                LogHelper.i("getCPUIndex title, %s", titles[i]);
+//                LogHelper.i("getCPUIndex title, %s", titles[i]);
                 if (titles[i].contains("CPU")) {
                     return i;
                 }

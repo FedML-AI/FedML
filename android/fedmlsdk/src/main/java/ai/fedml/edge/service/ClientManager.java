@@ -218,7 +218,6 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
                 LogHelper.d("download onStateChanged（%d, %s）", id, state);
                 if (TransferState.COMPLETED == state) {
                     mReporter.reportTrainingStatus(mRunId, mEdgeId, KEY_CLIENT_STATUS_TRAINING);
-//                    mReporter.reportSystemMetric(mRunId, mEdgeId); // TODO: @zongchang.jie
                     final TrainingParams params = TrainingParams.builder()
                             .trainModelPath(trainModelPath).edgeId(mEdgeId).runId(mRunId)
                             .clientIdx(mClientIndex).dataSet(mDataset).clientRound(clientRound)
@@ -363,6 +362,8 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
     public void stopTrain() {
         LogHelper.i("FedMLDebug. stop train");
         mReporter.reportTrainingStatus(mRunId, mEdgeId, KEY_CLIENT_STATUS_KILLED);
+
+
         mTrainer.stopTrain();
         cleanUpRun();
         mIsTrainingStopped = true;

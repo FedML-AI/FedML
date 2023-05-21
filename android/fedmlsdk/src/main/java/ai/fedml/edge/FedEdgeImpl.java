@@ -63,6 +63,7 @@ class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
         public void handleMessage(Message msg) {
             Log.d(TAG, "receive message from service:" + msg.toString());
             if (MSG_TRAIN_STATUS == msg.what) {
+                Log.d(TAG, "MSG_TRAIN_STATUS. msg.arg1 = " + msg.arg1);
                 if (onTrainingStatusListener != null) {
                     onTrainingStatusListener.onStatusChanged(msg.arg1);
                 }

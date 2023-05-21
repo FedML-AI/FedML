@@ -3,6 +3,7 @@ package ai.fedml.edgedemo.ui.main;
 import ai.fedml.edge.FedEdgeManager;
 import ai.fedml.edge.OnTrainProgressListener;
 import ai.fedml.edge.service.communicator.message.MessageDefine;
+import ai.fedml.edge.utils.LogHelper;
 import ai.fedml.edgedemo.App;
 import ai.fedml.edgedemo.GlideApp;
 import ai.fedml.edgedemo.widget.CompletedProgressView;
@@ -14,6 +15,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -109,10 +111,17 @@ public class MainFragment extends Fragment {
         });
         FedEdgeManager.getFedEdgeApi().setTrainingStatusListener((status) ->
                 App.runOnUiThread(() -> {
-                    if (status == MessageDefine.KEY_CLIENT_STATUS_INITIALIZING) {
+                    Log.d("setTrainingStatusListener", "FedMLDebug status = " + status);
+                    if (status == MessageDefine.KEY_CLIENT_STATUS_INITIALIZING ||
+                            status == MessageDefine.KEY_CLIENT_STATUS_KILLED ||
+                            status == MessageDefine.KEY_CLIENT_STATUS_IDLE ) {
+                        LogHelper.d("FedEdgeManager", "FedMLDebug. status = " + status);
                         mHyperTextView.setText(FedEdgeManager.getFedEdgeApi().getHyperParameters());
+                        mProgressView.setProgress(0);
+                        mAccLossTextView.setText(getString(R.string.acc_loss_txt, 0, 0, 0.0, 0.0));
                     }
                     mStatusTextView.setText(MessageDefine.CLIENT_STATUS_MAP.get(status));
+
                 }));
     }
 

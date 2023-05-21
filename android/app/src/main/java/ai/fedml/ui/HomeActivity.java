@@ -124,7 +124,10 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
         });
         FedEdgeManager.getFedEdgeApi().setTrainingStatusListener((status) ->
                 runOnUiThread(() -> {
-                    if (status == MessageDefine.KEY_CLIENT_STATUS_INITIALIZING) {
+                    if (status == MessageDefine.KEY_CLIENT_STATUS_INITIALIZING ||
+                            status == MessageDefine.KEY_CLIENT_STATUS_KILLED ||
+                            status == MessageDefine.KEY_CLIENT_STATUS_IDLE ) {
+                        LogHelper.d("FedEdgeManager", "FedMLDebug. status = " + status);
                         mHyperTextView.setText(FedEdgeManager.getFedEdgeApi().getHyperParameters());
                         mProgressView.setProgress(0);
                         mAccLossTextView.setText(getString(R.string.acc_loss_txt, 0, 0, 0.0, 0.0));
@@ -132,7 +135,6 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
                     mStatusTextView.setText(MessageDefine.CLIENT_STATUS_MAP.get(status));
                 }));
     }
-
 
     @SuppressLint("NonConstantResourceId")
     @Override
