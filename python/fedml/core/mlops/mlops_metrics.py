@@ -170,9 +170,9 @@ class MLOpsMetrics(Singleton):
         logging.info("report_client_training_status. message_json = %s" % message_json)
         self.messenger.send_message_json(topic_name, message_json)
 
-    def client_send_exit_train_msg(self, run_id, edge_id, status):
+    def client_send_exit_train_msg(self, run_id, edge_id, status, msg=None):
         topic_exit_train_with_exception = "flserver_agent/" + str(run_id) + "/client_exit_train_with_exception"
-        msg = {"run_id": run_id, "edge_id": edge_id, "status": status}
+        msg = {"run_id": run_id, "edge_id": edge_id, "status": status, "msg": msg if msg is not None else ""}
         message_json = json.dumps(msg)
         logging.info("client_send_exit_train_msg.")
         self.messenger.send_message_json(topic_exit_train_with_exception, message_json)

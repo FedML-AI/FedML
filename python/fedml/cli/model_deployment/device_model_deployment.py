@@ -111,7 +111,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                     os.system(sudo_prefix + "apt-get install -y nvidia-docker2")
                     os.system(sudo_prefix + "systemctl restart docker")
 
-    test_llm = True
+    test_llm = False
     # Convert models from pytorch to onnx format
     if model_is_from_open:
         running_model_name = ClientConstants.get_running_model_name(end_point_name,
