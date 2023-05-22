@@ -5,7 +5,6 @@ import android.util.Log;
 import com.google.common.collect.ImmutableMap;
 
 import java.text.SimpleDateFormat;
-import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -19,11 +18,11 @@ import ai.fedml.edge.utils.preference.SharePreferencesData;
 
 public class LogHelper {
     private static final String TAG = "FedML-Mobile-Client";
+    private static final String DATE_FORMAT_PATTER = "EEE, dd MMM yyyy HH:mm:ss";
     private static final int LOG_LINE_NUMBER = 100;
-
     private static final boolean DEBUG = true;
-    private static final Map<Integer, String> LEVEL_MAP = ImmutableMap.of(Log.VERBOSE, "VERBOSE", Log.DEBUG, "DEBUG",
-            Log.INFO, "INFO", Log.WARN, "WARN", Log.ERROR, "ERROR");
+    private static final Map<Integer, String> LEVEL_MAP = ImmutableMap.of(Log.VERBOSE, "VERBOSE",
+            Log.DEBUG, "DEBUG",Log.INFO, "INFO", Log.WARN, "WARN", Log.ERROR, "ERROR");
     private static final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
     private static final Lock rLock = rwl.readLock();
     private static final Lock wLock = rwl.writeLock();
@@ -100,9 +99,8 @@ public class LogHelper {
     }
 
     private static void print(int priority, final String tag, final String msg) {
-        Date currentDate = new Date();
-        SimpleDateFormat sdf = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss", Locale.ENGLISH);
-        String formattedDate = sdf.format(currentDate);
+        SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT_PATTER, Locale.ENGLISH);
+        String formattedDate = sdf.format(new Date());
         String log = "[" + tag + " @device-id-" + SharePreferencesData.getBindingId() + "]" + " [" + formattedDate + "]" + " [" + priority + "] " + msg;
         wLock.lock();
         try {

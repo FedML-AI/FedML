@@ -227,10 +227,6 @@ class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
         try {
             ApplicationInfo appInfo = context.getPackageManager()
                     .getApplicationInfo(context.getPackageName(), PackageManager.GET_META_DATA);
-            String accountId = appInfo.metaData.getString(META_ACCOUNT_KEY, "");
-            if (!accountId.isEmpty()) {
-                return accountId;
-            }
             String cipherAccountId = appInfo.metaData.getString(META_ACCOUNT_KEY);
             String accountIdString = AesUtil.decrypt(cipherAccountId, SECRET_KEY);
             LogHelper.d("accountId=%s", accountIdString);

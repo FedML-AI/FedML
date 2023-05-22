@@ -21,7 +21,6 @@ import android.os.PowerManager;
 import android.os.RemoteException;
 
 import ai.fedml.edge.EdgeMessageDefine;
-import ai.fedml.edge.OnAccuracyLossListener;
 import ai.fedml.edge.OnTrainProgressListener;
 import ai.fedml.edge.OnTrainingStatusListener;
 import ai.fedml.edge.R;
@@ -144,8 +143,6 @@ public class EdgeService extends Service implements EdgeMessageDefine {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Intent innerIntent = new Intent(this, GrayInnerService.class);
-        startService(innerIntent);
         startForeground(GRAY_SERVICE_ID, buildNotification());
         if (mMediaPlayer != null) {
             mMediaPlayer.start();
@@ -220,7 +217,7 @@ public class EdgeService extends Service implements EdgeMessageDefine {
         } else {
             builder = new Notification.Builder( appContext.getApplicationContext());
         }
-        builder.setSmallIcon(R.mipmap.ic_launcher)
+        builder.setSmallIcon(R.mipmap.ic_logo)
                 .setContentTitle(appContext.getPackageName())
                 .setContentText("Running in background")
                 .setContentIntent(PendingIntent.getActivity(this, 0,
@@ -228,22 +225,5 @@ public class EdgeService extends Service implements EdgeMessageDefine {
                         PendingIntent.FLAG_UPDATE_CURRENT))
                 .setWhen(System.currentTimeMillis());
         return builder.build();
-    }
-
-    public static class GrayInnerService extends Service {
-
-        @Override
-        public int onStartCommand(Intent intent, int flags, int startId) {
-            startForeground(GRAY_SERVICE_ID, new Notification());
-            stopForeground(true);
-            stopSelf();
-            return super.onStartCommand(intent, flags, startId);
-        }
-
-        @Nullable
-        @Override
-        public IBinder onBind(Intent intent) {
-            return null;
-        }
     }
 }

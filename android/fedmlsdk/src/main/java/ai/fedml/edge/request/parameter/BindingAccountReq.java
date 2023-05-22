@@ -27,15 +27,12 @@ public class BindingAccountReq {
     private final String role = "client";
 
     @SerializedName("core_type")
-    @Builder.Default
     private String cpuAbi;
 
     @SerializedName("os_ver")
-    @Builder.Default
     private String osVersion;
 
     @SerializedName("memory")
-    @Builder.Default
     private String memory;
 
     public String getAccountId() {
