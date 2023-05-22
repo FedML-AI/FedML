@@ -1132,6 +1132,7 @@ class FedMLServerRunner:
         request_json = json.loads(payload)
         run_id = request_json.get("run_id", None)
         edge_id = request_json.get("edge_id", None)
+        msg = request_json.get("msg", None)
         if run_id is None:
             logging.info("callback_client_exit_train_with_exception run id is none")
             return
@@ -1140,6 +1141,9 @@ class FedMLServerRunner:
         if job is not None and job.running_json is not None and job.running_json != "":
             job_json_obj = json.loads(job.running_json)
             edge_ids = job_json_obj.get("edgeids", None)
+
+            if msg is not None:
+                logging.error(f"{msg}")
 
             self.mlops_metrics.broadcast_server_training_status(run_id, ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED)
 

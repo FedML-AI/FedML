@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+    xmlns:tools="http://schemas.android.com/tools"
+    package="ai.fedml.edgedemo">
 
     <application
         android:name=".App"
@@ -12,9 +13,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.FedMLEdgeAndroidDemo"
         tools:ignore="HardcodedDebugMode">
-        <meta-data
-            android:name="fedml_key"
-            android:value="EiBhfvvY/i1WVKFbJUnSRQ==" />
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -24,7 +22,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <meta-data
+            android:name="fedml_key"
+            android:value="EiBhfvvY/i1WVKFbJUnSRQ==" />
     </application>
+
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         tools:ignore="ScopedStorage" />

@@ -10,7 +10,7 @@ import ai.fedml.edge.utils.preference.SharePreferencesData;
 
 import androidx.annotation.NonNull;
 
-class FedEdgeTrainImpl implements FedEdgeTrainApi {
+final class FedEdgeTrainImpl implements FedEdgeTrainApi {
     private ClientAgentManager mClientAgent;
     private volatile String mBindEdgeId = null;
 

@@ -2,11 +2,15 @@ package ai.fedml.edge.utils;
 
 import android.os.Build;
 import android.text.TextUtils;
+import android.util.Log;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
+import java.util.regex.Pattern;
 
 public class CpuUtils {
 
@@ -132,6 +136,33 @@ public class CpuUtils {
             }
         }
         return -1;
+    }
+
+    public int getCores() {
+        int cores;
+        try {
+            cores = new File("/sys/devices/system/cpu/").listFiles(CPU_FILTER).length;
+        } catch (SecurityException e) {
+            cores = 0;
+        }
+        return cores;
+    }
+
+    private final FileFilter CPU_FILTER = new FileFilter() {
+        @Override
+        public boolean accept(File pathname) {
+            return Pattern.matches("cpu[0-9]", pathname.getName());
+        }
+    };
+
+    public String getCpuAbi() {
+        String cpuAbi;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            cpuAbi = Build.SUPPORTED_ABIS[0];
+        } else {
+            cpuAbi = Build.CPU_ABI;
+        }
+        return cpuAbi;
     }
 
 }
