@@ -3,6 +3,7 @@
 
 #include <cstring>
 #include <iostream>
+#include <functional>
 
 typedef std::function<void(float)> progressCallback;
 

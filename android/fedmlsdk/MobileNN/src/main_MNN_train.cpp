@@ -6,11 +6,14 @@
 
 
 static void onProgressCallback(float progress) {
-    printf("callback. progress = %f\n", progress);
+    // printf("callback. progress = %f\n", progress);
+    // printf("")
+    return ;
 }
 
 static void onLossCallback(int epoch, float loss) {
-    printf("callback. epoch = %d, loss = %f\n", epoch, loss);
+    // printf("callback. epoch = %d, loss = %f\n", epoch, loss);
+    return ;
 }
 
 static void onAccuracyCallback(int epoch, float accuracy) {

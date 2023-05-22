@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
 
     /*
      * usage:
-     *  ./build_x86_linux/main_fedml_client_mangaer.out mnist ../../../../data/lenet_mnist.mnn ../../../../data/MNIST/raw
+     *  ./build_x86_linux/main_fedml_client_manager.out mnist "../../../../data/mnn_model/lenet_mnist.mnn" "../../../../data/MNIST/raw"
      */
     const char* datasetName = argv[1];
     const char* modelPath = argv[2];
@@ -34,8 +34,7 @@ int main(int argc, char *argv[]) {
     double learningRate = 0.01;
     int epochNum = 1;
 
-    MobileNNBackend backend = USE_TORCH;
-    FedMLClientManager *mFedMLClientManager = new FedMLClientManager(backend);
+    FedMLClientManager *mFedMLClientManager = new FedMLClientManager();
 
     mFedMLClientManager->init(modelPath, dataPath, datasetName,
                               trainSize, testSize, batchSize, learningRate, epochNum,
