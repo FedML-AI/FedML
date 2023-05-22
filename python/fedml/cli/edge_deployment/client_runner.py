@@ -689,6 +689,22 @@ class FedMLClientRunner:
             raise Exception("Restarting after upgraded...")
 
     def callback_start_train(self, topic, payload):
+        if not FedMLClientDataInterface.get_instance().get_agent_status():
+            request_json = json.loads(payload)
+            run_id = request_json["runId"]
+            logging.error(
+                "FedMLDebug - Receive: topic ({}), payload ({}), but the client agent is disabled. {}".format(
+                    topic, payload, traceback.format_exc()
+                )
+            )
+            self.mlops_metrics.client_send_exit_train_msg(run_id, self.edge_id,
+                                                          ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
+                                                          msg=f"the client agent {self.edge_id} is disabled")
+            self.mlops_metrics.report_client_training_status(self.edge_id,
+                                                             ClientConstants.MSG_MLOPS_CLIENT_STATUS_FAILED,
+                                                             in_run_id=run_id)
+            return
+
         logging.info(
             f"FedMLDebug - Receive: topic ({topic}), payload ({payload})"
         )
