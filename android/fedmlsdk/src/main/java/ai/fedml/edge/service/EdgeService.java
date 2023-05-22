@@ -1,20 +1,30 @@
 package ai.fedml.edge.service;
 
+import android.annotation.SuppressLint;
 import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
+import android.media.MediaPlayer;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 import android.os.Messenger;
+import android.os.PowerManager;
 import android.os.RemoteException;
 
 import ai.fedml.edge.EdgeMessageDefine;
 import ai.fedml.edge.OnAccuracyLossListener;
 import ai.fedml.edge.OnTrainProgressListener;
 import ai.fedml.edge.OnTrainingStatusListener;
+import ai.fedml.edge.R;
 import ai.fedml.edge.service.entity.TrainProgress;
 import ai.fedml.edge.utils.LogHelper;
 import ai.fedml.edge.utils.preference.SharePreferencesData;
@@ -22,8 +32,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 public class EdgeService extends Service implements EdgeMessageDefine {
-    private final static int GRAY_SERVICE_ID = 1001;
-    private static final String NOTIFY_CHANNEL_ID = "Channel_Id";
+    private static final int GRAY_SERVICE_ID = 1001;
+    private static final String NOTIFY_CHANNEL_ID = "FedML-Edge";
     private final FedEdgeTrainApi fedEdgeTrainApi = new FedEdgeTrainImpl();
     private final OnTrainProgressListener onAccuracyLossListener = new OnTrainProgressListener() {
         @Override
@@ -106,10 +116,20 @@ public class EdgeService extends Service implements EdgeMessageDefine {
         }
     };
     private final Messenger mServiceMessenger = new Messenger(serviceHandler);
+    private PowerManager.WakeLock mWakeLock;
+    private MediaPlayer mMediaPlayer;
 
     @Override
     public void onCreate() {
         super.onCreate();
+        // Add power control and use the PowerManager.WakeLock object to keep CPU running.
+        PowerManager pm = (PowerManager) getSystemService (this.POWER_SERVICE);
+        mWakeLock = pm.newWakeLock (PowerManager.PARTIAL_WAKE_LOCK, EdgeService.class.getName ());
+        mWakeLock.acquire ();
+        // Play silent music to prevent resources from being released
+        mMediaPlayer = MediaPlayer.create(getApplicationContext(), R.raw.no_kill);
+        mMediaPlayer.setLooping(true);
+        // Train init
         fedEdgeTrainApi.init(getApplicationContext(), onTrainingStatusListener, onAccuracyLossListener);
         LogHelper.d("onCreate privatePath:%s", SharePreferencesData.getPrivatePath());
         LogHelper.d("FedMLDebug. EdgeService onCreate()");
@@ -117,6 +137,7 @@ public class EdgeService extends Service implements EdgeMessageDefine {
 
     @Override
     public void onDestroy() {
+        exitService();
         super.onDestroy();
         LogHelper.d("FedMLDebug. EdgeService onDestroy()");
     }
@@ -125,7 +146,10 @@ public class EdgeService extends Service implements EdgeMessageDefine {
     public int onStartCommand(Intent intent, int flags, int startId) {
         Intent innerIntent = new Intent(this, GrayInnerService.class);
         startService(innerIntent);
-        startForeground(GRAY_SERVICE_ID, new Notification());
+        startForeground(GRAY_SERVICE_ID, buildNotification());
+        if (mMediaPlayer != null) {
+            mMediaPlayer.start();
+        }
         return START_STICKY;
     }
 
@@ -152,6 +176,58 @@ public class EdgeService extends Service implements EdgeMessageDefine {
         } catch (RemoteException e) {
             LogHelper.e(e, "sendMessageToClient RemoteException");
         }
+    }
+
+    public void exitService() {
+        stopForeground(true);
+        if (mMediaPlayer != null) {
+            mMediaPlayer.stop();
+        }
+        if (mWakeLock != null) {
+            mWakeLock.release();
+            mWakeLock = null;
+        }
+        this.stopSelf();
+    }
+
+    private static final String NOTIFICATION_CHANNEL_NAME = "LBSbackgroundLocation";
+    private NotificationManager notificationManager = null;
+    boolean isCreateChannel = false;
+    @SuppressLint("NewApi")
+    private Notification buildNotification() {
+        Context appContext = ContextHolder.getAppContext();
+        Notification.Builder builder = null;
+        Notification notification = null;
+        if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // Android O Notification need NotificationChannel
+            if (null == notificationManager) {
+                notificationManager = (NotificationManager) appContext.getSystemService(Context.NOTIFICATION_SERVICE);
+            }
+            final String channelId =  NOTIFY_CHANNEL_ID;
+            if(!isCreateChannel) {
+                NotificationChannel notificationChannel = new NotificationChannel(channelId,
+                        NOTIFICATION_CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT);
+                // Whether to display small dots in the upper right corner of the desktop icon
+                notificationChannel.enableLights(false);
+                // dot color
+                notificationChannel.setLightColor(Color.TRANSPARENT);
+                // whether to display the notification of this channel when you long press the desktop icon
+                notificationChannel.setShowBadge(false);
+                notificationManager.createNotificationChannel(notificationChannel);
+                isCreateChannel = true;
+            }
+            builder = new Notification.Builder( appContext.getApplicationContext(), channelId);
+        } else {
+            builder = new Notification.Builder( appContext.getApplicationContext());
+        }
+        builder.setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle(appContext.getPackageName())
+                .setContentText("Running in background")
+                .setContentIntent(PendingIntent.getActivity(this, 0,
+                        this.getPackageManager().getLaunchIntentForPackage(this.getPackageName()),
+                        PendingIntent.FLAG_UPDATE_CURRENT))
+                .setWhen(System.currentTimeMillis());
+        return builder.build();
     }
 
     public static class GrayInnerService extends Service {

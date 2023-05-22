@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -198,6 +199,10 @@ class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
         }
         Context appContext = ContextHolder.getAppContext();
         Intent intent = new Intent(appContext, EdgeService.class);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // The foreground service can only be started through startForegroundService above android8.0.
+            appContext.startForegroundService (intent);
+        }
         appContext.bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
     }
 
