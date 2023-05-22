@@ -11,10 +11,6 @@ import java.math.BigDecimal;
 
 public class AppUtils {
 
-
-
-
-
     /**
      * Get local version number
      */

@@ -1,6 +1,6 @@
 <resources>
-    <string name="app_name">FedML Demo</string>
-    <string name="fed_ml_account">61</string>
+    <string name="app_name">FedML.ai Android SDK</string>
+    <string name="fed_ml_account">1606</string>
     <string name="app_guide_title">FedML</string>
     <string name="mlops_platform">FedML MLOps Cloud Platform</string>
     <string name="fedml_url">https://fedml.ai</string>
@@ -14,6 +14,8 @@
     <string name="number_of_rounds">number of rounds</string>
     <string name="local_iteration_number">local iteration number</string>
     <string name="unbind_account">Unbind Account</string>
+    <string name="unInit">UnInit</string>
+    <string name="init">Init</string>
     <string name="exit">Exit</string>
     <string name="acc_loss_txt">Round:%1$d Epoch:%2$d \nAcc:%3$.4f Loss:%4$.4f</string>
     <string name="fedml">FedML</string>

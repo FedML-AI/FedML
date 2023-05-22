@@ -13,6 +13,7 @@ def init(args):
 
 
 def event(event_name, event_started=True, event_value=None, event_edge_id=None):
+    logging.info(f"FedMLDebug edge_id = {event_edge_id}, event_name = {event_name}, START = {event_started}")
     mlops.event(event_name, event_started, event_value, event_edge_id)
 
 

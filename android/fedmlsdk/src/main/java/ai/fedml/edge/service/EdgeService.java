@@ -97,7 +97,11 @@ public class EdgeService extends Service implements EdgeMessageDefine {
                 callbackMessage(msg.replyTo, message);
             } else if (MSG_BIND_EDGE == msg.what) {
                 String bindId = msg.getData().getString(BIND_EDGE_ID);
+                LogHelper.d("FedMLDebug. bindId = " + bindId);
                 fedEdgeTrainApi.bindEdge(bindId);
+            } else if (MSG_STOP_EDGE_SERVICE == msg.what) {
+                LogHelper.d("FedMLDebug. STOP_EDGE_SERVICE");
+                android.os.Process.killProcess(android.os.Process.myPid());
             }
         }
     };
@@ -108,6 +112,13 @@ public class EdgeService extends Service implements EdgeMessageDefine {
         super.onCreate();
         fedEdgeTrainApi.init(getApplicationContext(), onTrainingStatusListener, onAccuracyLossListener);
         LogHelper.d("onCreate privatePath:%s", SharePreferencesData.getPrivatePath());
+        LogHelper.d("FedMLDebug. EdgeService onCreate()");
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        LogHelper.d("FedMLDebug. EdgeService onDestroy()");
     }
 
     @Override
@@ -122,7 +133,6 @@ public class EdgeService extends Service implements EdgeMessageDefine {
     public IBinder onBind(Intent intent) {
         return mServiceMessenger.getBinder();
     }
-
 
     private void callbackMessage(@NonNull final Messenger clientMessenger, @NonNull final Message message) {
         try {

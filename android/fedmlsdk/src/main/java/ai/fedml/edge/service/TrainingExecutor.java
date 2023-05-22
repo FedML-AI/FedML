@@ -9,7 +9,7 @@ import ai.fedml.edge.OnTrainProgressListener;
 import ai.fedml.edge.nativemobilenn.NativeFedMLClientManager;
 import ai.fedml.edge.nativemobilenn.TrainingCallback;
 import ai.fedml.edge.service.communicator.message.MessageDefine;
-import ai.fedml.edge.service.component.OnTrainCompletedListener;
+import ai.fedml.edge.service.communicator.OnTrainCompletedListener;
 import ai.fedml.edge.service.component.MetricsReporter;
 import ai.fedml.edge.service.entity.TrainProgress;
 import ai.fedml.edge.service.entity.TrainingParams;
@@ -110,7 +110,9 @@ public class TrainingExecutor implements MessageDefine {
         runStateMap.put(runId + "_" + clientRunIndex, false);
         mBgHandler.removeCallbacks(currentRunnable);
         if (mNativeFedMLClientManager != null){
+            mNativeFedMLClientManager.stopTraining();
             mNativeFedMLClientManager = null;
+            LogHelper.d("FedMLDebug. mNativeFedMLClientManager is released.");
         }
     }
 
@@ -118,7 +120,9 @@ public class TrainingExecutor implements MessageDefine {
         runStateMap.clear();
         mBgHandler.removeCallbacks(currentRunnable);
         if (mNativeFedMLClientManager != null){
+            mNativeFedMLClientManager.stopTraining();
             mNativeFedMLClientManager = null;
+            LogHelper.d("FedMLDebug. mNativeFedMLClientManager is released.");
         }
     }
 }

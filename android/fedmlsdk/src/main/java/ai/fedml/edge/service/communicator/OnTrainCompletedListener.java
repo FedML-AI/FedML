@@ -1,4 +1,4 @@
-package ai.fedml.edge.service.component;
+package ai.fedml.edge.service.communicator;
 
 /**
  * Training Completed Listener

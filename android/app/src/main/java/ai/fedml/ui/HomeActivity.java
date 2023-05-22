@@ -20,7 +20,6 @@ import ai.fedml.R;
 import ai.fedml.base.BaseActivity;
 import ai.fedml.edge.FedEdgeManager;
 import ai.fedml.edge.OnTrainProgressListener;
-import ai.fedml.edge.request.RequestManager;
 import ai.fedml.edge.service.communicator.message.MessageDefine;
 import ai.fedml.edge.utils.LogHelper;
 import ai.fedml.utils.ToastUtils;
@@ -52,6 +51,9 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
+
+        // android.os.Build.VERSION.SDK_INT: 33
+        LogHelper.d("android.os.Build.VERSION.SDK_INT: %d", android.os.Build.VERSION.SDK_INT);
         initView();
         loadDate();
 
@@ -122,7 +124,10 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
         });
         FedEdgeManager.getFedEdgeApi().setTrainingStatusListener((status) ->
                 runOnUiThread(() -> {
-                    if (status == MessageDefine.KEY_CLIENT_STATUS_INITIALIZING) {
+                    if (status == MessageDefine.KEY_CLIENT_STATUS_INITIALIZING ||
+                            status == MessageDefine.KEY_CLIENT_STATUS_KILLED ||
+                            status == MessageDefine.KEY_CLIENT_STATUS_IDLE ) {
+                        LogHelper.d("FedEdgeManager", "FedMLDebug. status = " + status);
                         mHyperTextView.setText(FedEdgeManager.getFedEdgeApi().getHyperParameters());
                         mProgressView.setProgress(0);
                         mAccLossTextView.setText(getString(R.string.acc_loss_txt, 0, 0, 0.0, 0.0));
@@ -130,7 +135,6 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
                     mStatusTextView.setText(MessageDefine.CLIENT_STATUS_MAP.get(status));
                 }));
     }
-
 
     @SuppressLint("NonConstantResourceId")
     @Override
@@ -188,7 +192,7 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
     }
 
     private void getUserInfo() {
-        RequestManager.getUserInfo(userInfo -> {
+        FedEdgeManager.getFedEdgeApi().getUserInfo(userInfo -> {
             if (userInfo != null) {
                 runOnUiThread(() -> {
                     mNameTextView.setText(String.format("%s %s", userInfo.getLastname(), userInfo.getFirstName()));
@@ -208,7 +212,7 @@ public class HomeActivity extends BaseActivity implements View.OnClickListener {
     private void unbound() {
         String bindingId = FedEdgeManager.getFedEdgeApi().getBoundEdgeId();
         LogHelper.d("unbound bindingId:%s", bindingId);
-        RequestManager.unboundAccount(bindingId, isSuccess -> runOnUiThread(() -> {
+        FedEdgeManager.getFedEdgeApi().unboundAccount(bindingId, isSuccess -> runOnUiThread(() -> {
             if (isSuccess) {
                 // Jump to scanning page
                 Intent intent = new Intent();

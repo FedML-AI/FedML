@@ -12,7 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
 
 public class MetricsReporter implements MessageDefine {
-    private final EdgeCommunicator edgeCommunicator;
+    private EdgeCommunicator edgeCommunicator;
     private int mClientStatus = KEY_CLIENT_STATUS_IDLE;
     private OnTrainingStatusListener mOnTrainingStatusListener;
 
@@ -25,7 +25,11 @@ public class MetricsReporter implements MessageDefine {
     }
 
     public MetricsReporter() {
-        edgeCommunicator = EdgeCommunicator.getInstance();
+        edgeCommunicator = null;
+    }
+
+    public void setEdgeCommunicator(EdgeCommunicator communicator) {
+        edgeCommunicator = communicator;
     }
 
     public void setTrainingStatusListener(@NonNull final OnTrainingStatusListener onTrainingStatusListener) {
@@ -157,7 +161,13 @@ public class MetricsReporter implements MessageDefine {
     }
 
     private void notifyClientStatus(final int status) {
-        LogHelper.d("notifyClientStatus [%d]", status);
+        LogHelper.d("FedMLDebug. notifyClientStatus [%s]", CLIENT_STATUS_MAP.get(status));
+//        LogHelper.d("FedMLDebug. Printing stack trace:");
+//        StackTraceElement[] elements = Thread.currentThread().getStackTrace();
+//        for (int i = 1; i < elements.length; i++) {
+//            StackTraceElement s = elements[i];
+//            LogHelper.d("\tFedMLDebug. at " + s.getClassName() + "." + s.getMethodName() + "(" + s.getFileName() + ":" + s.getLineNumber() + ")");
+//        }
         mClientStatus = status;
         if (mOnTrainingStatusListener != null) {
             mOnTrainingStatusListener.onStatusChanged(status);
