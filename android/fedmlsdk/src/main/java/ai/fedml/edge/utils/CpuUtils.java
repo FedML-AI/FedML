@@ -2,11 +2,15 @@ package ai.fedml.edge.utils;
 
 import android.os.Build;
 import android.text.TextUtils;
+import android.util.Log;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
+import java.util.regex.Pattern;
 
 public class CpuUtils {
 
@@ -132,6 +136,45 @@ public class CpuUtils {
             }
         }
         return -1;
+    }
+
+    public int getCores() {
+        int cores;
+        try {
+            cores = new File("/sys/devices/system/cpu/").listFiles(CPU_FILTER).length;
+        } catch (SecurityException e) {
+            cores = 0;
+        }
+        return cores;
+    }
+
+    private final FileFilter CPU_FILTER = new FileFilter() {
+        @Override
+        public boolean accept(File pathname) {
+            return Pattern.matches("cpu[0-9]", pathname.getName());
+        }
+    };
+
+    public String getCpuAbi() {
+        String[] abis;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            abis = Build.SUPPORTED_ABIS;
+        } else {
+            abis = new String[]{Build.CPU_ABI, Build.CPU_ABI2};
+        }
+        StringBuilder stringBuilder = new StringBuilder();
+        for (String abi : abis) {
+            stringBuilder.append(abi);
+            stringBuilder.append(",");
+        }
+
+        try {
+            return stringBuilder.toString().substring(0, stringBuilder.toString().length() - 1);
+        } catch (Exception e) {
+            LogHelper.i(e.toString());
+        }
+        return null;
+
     }
 
 }
