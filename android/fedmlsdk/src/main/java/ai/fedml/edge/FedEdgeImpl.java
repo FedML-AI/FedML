@@ -25,8 +25,10 @@ import ai.fedml.edge.request.parameter.BindingAccountReq;
 import ai.fedml.edge.service.ContextHolder;
 import ai.fedml.edge.service.EdgeService;
 import ai.fedml.edge.utils.AesUtil;
+import ai.fedml.edge.utils.CpuUtils;
 import ai.fedml.edge.utils.DeviceUtils;
 import ai.fedml.edge.utils.LogHelper;
+import ai.fedml.edge.utils.MemoryUtils;
 import ai.fedml.edge.utils.ObfuscatedString;
 import ai.fedml.edge.utils.preference.SharePreferencesData;
 import androidx.annotation.NonNull;
@@ -108,7 +110,10 @@ class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
     @Override
     public void bindingAccount(@NonNull String accountId, @NonNull String deviceId, @NonNull OnBindingListener listener) {
         BindingAccountReq req = BindingAccountReq.builder()
-                .accountId(accountId).deviceId(deviceId).build();
+                .accountId(accountId).deviceId(deviceId)
+                .cpuAbi(CpuUtils.getInstance().getCpuAbi())
+                .osVersion(Build.VERSION.RELEASE).memory(MemoryUtils.getMemory(ContextHolder.getAppContext()).getRamMemoryTotal())
+                .build();
         RequestManager.bindingAccount(req, listener);
     }
 
@@ -249,8 +254,12 @@ class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
         if (TextUtils.isEmpty(accountId)) {
             return;
         }
+
         BindingAccountReq req = BindingAccountReq.builder()
-                .accountId(accountId).deviceId(deviceId).build();
+                .accountId(accountId).deviceId(deviceId)
+                .cpuAbi(CpuUtils.getInstance().getCpuAbi())
+                .osVersion(Build.VERSION.RELEASE).memory(MemoryUtils.getMemory(ContextHolder.getAppContext()).getRamMemoryTotal())
+                .build();
         RequestManager.bindingAccount(req, data -> {
             LogHelper.d("initBindingState bindingData.getBindingId() = %s", data);
             if (data != null) {

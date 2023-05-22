@@ -156,25 +156,13 @@ public class CpuUtils {
     };
 
     public String getCpuAbi() {
-        String[] abis;
+        String cpuAbi;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            abis = Build.SUPPORTED_ABIS;
+            cpuAbi = Build.SUPPORTED_ABIS[0];
         } else {
-            abis = new String[]{Build.CPU_ABI, Build.CPU_ABI2};
+            cpuAbi = Build.CPU_ABI;
         }
-        StringBuilder stringBuilder = new StringBuilder();
-        for (String abi : abis) {
-            stringBuilder.append(abi);
-            stringBuilder.append(",");
-        }
-
-        try {
-            return stringBuilder.toString().substring(0, stringBuilder.toString().length() - 1);
-        } catch (Exception e) {
-            LogHelper.i(e.toString());
-        }
-        return null;
-
+        return cpuAbi;
     }
 
 }
