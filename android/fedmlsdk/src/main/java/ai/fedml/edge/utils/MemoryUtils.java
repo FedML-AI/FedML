@@ -4,11 +4,11 @@ import android.app.ActivityManager;
 import android.content.Context;
 import android.os.Environment;
 import android.os.StatFs;
-import android.text.format.Formatter;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.text.DecimalFormat;
 
 import ai.fedml.edge.utils.entity.Memory;
 
@@ -48,7 +48,7 @@ public class MemoryUtils {
         } catch (Exception e) {
             LogHelper.i(e.toString());
         }
-        return Formatter.formatFileSize(context, initial_memory);
+        return convertBytesToGB(initial_memory);
     }
 
     private static String getMemoryAvailable(Context context) {
@@ -57,7 +57,7 @@ public class MemoryUtils {
         if (am != null) {
             am.getMemoryInfo(mi);
         }
-        return Formatter.formatFileSize(context, mi.availMem);
+        return convertBytesToGB(mi.availMem);
     }
 
     private static String getRomSpaceAvailable(Context context) {
@@ -65,7 +65,7 @@ public class MemoryUtils {
         StatFs stat = new StatFs(path.getPath());
         long blockSize = stat.getBlockSize();
         long availableBlocks = stat.getAvailableBlocks();
-        return Formatter.formatFileSize(context, availableBlocks * blockSize);
+        return convertBytesToGB(availableBlocks * blockSize);
     }
 
     private static String getRomSpaceTotal(Context context) {
@@ -73,7 +73,14 @@ public class MemoryUtils {
         StatFs stat = new StatFs(path.getPath());
         long blockSize = stat.getBlockSize();
         long totalBlocks = stat.getBlockCount();
-        return Formatter.formatFileSize(context, totalBlocks * blockSize);
+        return convertBytesToGB(totalBlocks * blockSize);
+    }
+
+    public static String convertBytesToGB(long bytes) {
+        // stay the same as Formatter.formatFileSize
+        double gigabytes = bytes / (1000.0 * 1000.0 * 1000.0);
+        DecimalFormat df = new DecimalFormat("#.##");
+        return df.format(gigabytes);
     }
 
 }
