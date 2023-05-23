@@ -69,6 +69,11 @@ public class TrainingExecutor implements MessageDefine {
 
         currentRunnable = () -> {
             mNativeFedMLClientManager = new NativeFedMLClientManager();
+            LogHelper.d("FedMLDebug. Training Engine Hyperparameters: trainModelPath = %s, " +
+                    "trainDataPath = %s, dataSet = %s, trainSize = %d, testSize = %d,\n" +
+                    "batchSize = %d, lr = %f, epochNum = %d", trainModelPath,
+                    trainDataPath, dataSet, trainSize, testSize,
+                    batchSize, lr, epochNum);
 
             mNativeFedMLClientManager.init(trainModelPath, trainDataPath, dataSet, trainSize, testSize,
                     batchSize, lr, epochNum, new TrainingCallback() {
@@ -82,6 +87,7 @@ public class TrainingExecutor implements MessageDefine {
                         @Override
                         public void onAccuracy(int epoch, float accuracy) {
                             if (mOnTrainProgressListener != null) {
+                                LogHelper.d("epoch = %d, accuracy = %f", epoch, accuracy);
                                 mOnTrainProgressListener.onEpochAccuracy(clientRunIdx, epoch, accuracy);
                             }
                         }

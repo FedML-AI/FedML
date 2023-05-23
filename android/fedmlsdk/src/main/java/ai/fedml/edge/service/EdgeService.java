@@ -50,6 +50,7 @@ public class EdgeService extends Service implements EdgeMessageDefine {
 
         @Override
         public void onEpochAccuracy(int round, int epoch, float accuracy) {
+            LogHelper.d("FedMLDebug. round = %d, epoch = %d, accuracy = %f", round, epoch, accuracy);
             Message message = Message.obtain();
             message.what = MSG_TRAIN_ACCURACY;
             message.arg1 = round;

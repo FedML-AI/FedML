@@ -33,13 +33,13 @@ public class DeviceInfoReporter {
             @Override
             public void run() {
                 sendDeviceInfo();
-                mBgHandler.postDelayed(this, 3000L);
+                mBgHandler.postDelayed(this, 10000L);
             }
         };
     }
 
     public void start() {
-        mBgHandler.postDelayed(mRunnable, 3000L);
+        mBgHandler.postDelayed(mRunnable, 10000L);
     }
 
     public void release() {
