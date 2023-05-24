@@ -174,6 +174,7 @@ class FedMLServerManager(FedMLCommManager):
                 self.data_silo_index_list[client_idx_in_this_round],
                 global_model_url, global_model_key
             )
+            logging.info(f"global_model_url = {global_model_url}, global_model_key = {global_model_key}")
             client_idx_in_this_round += 1
 
         mlops.event("server.wait", event_started=True, event_value=str(self.args.round_idx))
@@ -302,13 +303,18 @@ class FedMLServerManager(FedMLCommManager):
             mlops.event("server.agg_and_eval", event_started=True, event_value=str(self.args.round_idx))
 
             global_model_params = self.aggregator.aggregate()
+            
+            # self.aggregator.test_on_server_for_all_clients(
+            #     self.args.round_idx, self.global_model_file_path
+            # )
+            
             write_tensor_dict_to_mnn(self.global_model_file_path, global_model_params)
-
-            mlops.event("server.agg_and_eval", event_started=False, event_value=str(self.args.round_idx))
-
-            self.aggregator.test_on_server_for_all_clients(
+            self.aggregator.test_on_server_for_all_clients_mnn(
                 self.global_model_file_path, self.args.round_idx
             )
+            
+            mlops.event("server.agg_and_eval", event_started=False, event_value=str(self.args.round_idx))
+
 
             # send round info to the MQTT backend
             mlops.log_round_info(self.round_num, self.args.round_idx)

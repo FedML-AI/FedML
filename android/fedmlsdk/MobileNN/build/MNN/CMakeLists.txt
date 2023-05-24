@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
+project("FedML Mobile MNN")
 
 set (CMAKE_CXX_STANDARD 11)
 set (TARGET "main_mnn_train.out")

@@ -1,17 +1,17 @@
+import logging
+from .utils import read_mnn_as_tensor_dict
+import copy
 import time
 
 import MNN
 import numpy as np
+import torch
 import wandb
 
-import fedml
 from fedml import mlops
 
 F = MNN.expr
 nn = MNN.nn
-
-from .utils import read_mnn_as_tensor_dict
-import logging
 
 
 class FedMLAggregator(object):
@@ -39,6 +39,7 @@ class FedMLAggregator(object):
         return self.aggregator.get_model_params_file()
 
     def set_global_model_params(self, model_parameters):
+        logging.info("FedDebug. model_parameters = {}".format(model_parameters))
         self.aggregator.set_model_params(model_parameters)
 
     def add_local_trained_result(self, index, model_params, sample_num):
@@ -56,7 +57,16 @@ class FedMLAggregator(object):
             self.flag_client_model_uploaded_dict[idx] = False
         return True
 
+    def _test_individual_model_perf_before_agg(self, model_file_path, round_idx):
+        self.test_on_server_for_all_clients_mnn(model_file_path, round_idx)
+
     def aggregate(self):
+        logging.info("FedMLDebug. Individual model performance:")
+        for idx in range(self.worker_num):
+            logging.info("self.model_dict[idx] = {}".format(self.model_dict[idx]))
+            mnn_file_path = self.model_dict[idx]
+            self._test_individual_model_perf_before_agg(mnn_file_path, self.args.round_idx)
+
         start_time = time.time()
         model_list = []
         training_num = 0
@@ -71,15 +81,7 @@ class FedMLAggregator(object):
         logging.info("len of self.model_dict[idx] = " + str(len(self.model_dict)))
 
         # logging.info("################aggregate: %d" % len(model_list))
-        (num0, averaged_params) = model_list[0]
-        for k in averaged_params.keys():
-            for i in range(0, len(model_list)):
-                local_sample_number, local_model_params = model_list[i]
-                w = local_sample_number / training_num
-                if i == 0:
-                    averaged_params[k] = local_model_params[k] * w
-                else:
-                    averaged_params[k] += local_model_params[k] * w
+        averaged_params = self.aggregator.aggregate(model_list)
 
         end_time = time.time()
         logging.info("aggregate time cost: %d" % (end_time - start_time))
@@ -138,7 +140,83 @@ class FedMLAggregator(object):
         logging.info("client_indexes = %s" % str(client_indexes))
         return client_indexes
 
-    def test_on_server_for_all_clients(self, mnn_file_path, round_idx):
+    def _test(self, test_data, device, args):
+        model = self.model
+
+        model.to(device)
+        model.eval()
+
+        metrics = {"test_correct": 0, "test_loss": 0, "test_total": 0}
+
+        criterion = nn.CrossEntropyLoss().to(device)
+
+        with torch.no_grad():
+            for batch_idx, (x, target) in enumerate(test_data):
+                x = x.to(device)
+                target = target.to(device)
+                pred = model(x)
+                loss = criterion(pred, target)  # pylint: disable=E1102
+
+                _, predicted = torch.max(pred, -1)
+                correct = predicted.eq(target).sum()
+
+                metrics["test_correct"] += correct.item()
+                metrics["test_loss"] += loss.item() * target.size(0)
+                metrics["test_total"] += target.size(0)
+        return metrics
+
+    def test(self, test_data, device, args):
+        # test data
+        test_num_samples = []
+        test_tot_corrects = []
+        test_losses = []
+
+        metrics = self._test(test_data, device, args)
+
+        test_tot_correct, test_num_sample, test_loss = (
+            metrics["test_correct"],
+            metrics["test_total"],
+            metrics["test_loss"],
+        )
+        test_tot_corrects.append(copy.deepcopy(test_tot_correct))
+        test_num_samples.append(copy.deepcopy(test_num_sample))
+        test_losses.append(copy.deepcopy(test_loss))
+
+        # test on test dataset
+        test_acc = sum(test_tot_corrects) / sum(test_num_samples)
+        test_loss = sum(test_losses) / sum(test_num_samples)
+        if self.args.enable_wandb:
+            wandb.log({"Test/Acc": test_acc, "round": args.round_idx})
+            wandb.log({"Test/Loss": test_loss, "round": args.round_idx})
+
+        mlops.log({"Test/Acc": test_acc, "round": args.round_idx})
+        mlops.log({"Test/Loss": test_loss, "round": args.round_idx})
+
+        stats = {"test_acc": test_acc, "test_loss": test_loss}
+        logging.info(stats)
+
+        return (test_acc, test_loss, None, None)
+
+    def test_on_server_for_all_clients(self, round_idx, global_model_file=None):
+        if round_idx % self.args.frequency_of_the_test == 0 or round_idx == self.args.comm_round - 1:
+            logging.info("################test_on_server_for_all_clients : {}".format(round_idx))
+            self.aggregator.test_all(
+                self.train_data_local_dict,
+                self.test_data_local_dict,
+                self.device,
+                self.args,
+            )
+
+            if round_idx == self.args.comm_round - 1:
+                # we allow to return four metrics, such as accuracy, AUC, loss, etc.
+                metric_result_in_current_round = self.aggregator.test(self.test_global, self.device, self.args)
+            else:
+                metric_result_in_current_round = self.aggregator.test(self.val_global, self.device, self.args)
+            logging.info("metric_result_in_current_round = {}".format(metric_result_in_current_round))
+        else:
+            mlops.log({"round_idx": round_idx})
+
+    def test_on_server_for_all_clients_mnn(self, mnn_file_path, round_idx):
         # load global model from MNN
         var_map = F.load_as_dict(mnn_file_path)
         input_dicts, output_dicts = F.get_inputs_and_outputs(var_map)
@@ -169,10 +247,11 @@ class FedMLAggregator(object):
             target = F.one_hot(F.cast(label, F.int), 10, 1, 0)
             loss = nn.loss.cross_entropy(result, target)
 
-        test_accuracy = correct * 100.0 / self.test_global.size
+        logging.info(f"correct = {correct}, self.test_global.size = {self.test_global.size}")
+        test_accuracy = correct / self.test_global.size
         test_loss = loss.read()
-        fedml.logging.info("test acc = {}".format(test_accuracy))
-        fedml.logging.info("test loss = {}".format(test_loss))
+        logging.info("test acc = {}".format(test_accuracy))
+        logging.info("test loss = {}".format(test_loss))
 
         mlops.log(
             {
@@ -184,5 +263,5 @@ class FedMLAggregator(object):
 
         if self.args.enable_wandb:
             wandb.log(
-                {"round idx": round_idx, "test acc": test_accuracy, "test loss": test_loss,}
+                {"round idx": round_idx, "test acc": test_accuracy, "test loss": test_loss, }
             )
