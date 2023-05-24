@@ -7,6 +7,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -143,7 +144,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
         try {
             topic = params.getString(TOPIC);
             modelParams = params.getString(MSG_ARG_KEY_MODEL_PARAMS);
-            LogHelper.e("handleMessageInit modelParams (key) = %s", modelParams);
+            LogHelper.e("FedMLDebug. handleMessageInit modelParams (key) = %s", modelParams);
             mClientIndex = Integer.parseInt(params.getString(MSG_ARG_KEY_CLIENT_INDEX));
         } catch (JSONException e) {
             LogHelper.e(e, "handleTraining JSONException.");
@@ -227,13 +228,18 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
                             .batchSize(mBatchSize).learningRate(mLearningRate).trainSize(mTrainSize).testSize(mTestSize).epochNum(mEpochNum)
                             .listener((modelPath, edgeId, clientIdx, trainSamples) -> {
                                         eventLogger.logEventEnd("train", String.valueOf(clientRound));
-                                        LogHelper.d("training is complete and start to sendModelToServer()");
+                                        LogHelper.d("FedMLDebug. training is complete and start to sendModelToServer() modelPath = " + modelPath);
                                         sendModelToServer(modelPath, edgeId, clientIdx, trainSamples, clientRound,
                                                 () -> mOnTrainProgressListener.onProgressChanged(clientRound, 100.0f)
                                         );
                                     }
                             ).build();
-                    mTrainer.training(params);
+                    try {
+                        mTrainer.training(params);
+                    } catch (IOException e) {
+                        reportError();
+                        e.printStackTrace();
+                    }
                 } else if (TransferState.FAILED == state ) {
                     if ( reTryCnt > 0 ) {
                         remoteStorage.download(modelParams, new File(trainModelPath), this);
@@ -317,7 +323,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
         }
         eventLogger.logEventStarted("comm_c2s", String.valueOf(clientRound));
         final String uuidS3Key = trainModelPath.substring(trainModelPath.lastIndexOf(File.separator) + 1);
-        LogHelper.d("FedMLDebug. sendModelToServer uuidS3Key（%s）", uuidS3Key);
+        LogHelper.d("FedMLDebug. sendModelToServer uuidS3Key（%s), trainModelPath (%s)", uuidS3Key, trainModelPath);
         remoteStorage.upload(uuidS3Key, new File(trainModelPath), new TransferListener() {
             private int reTryCnt = 3;
 

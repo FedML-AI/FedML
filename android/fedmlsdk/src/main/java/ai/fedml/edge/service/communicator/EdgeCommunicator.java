@@ -157,6 +157,7 @@ public class EdgeCommunicator implements MqttCallbackExtended {
     }
 
     public void subscribe(@NonNull String topic, @NonNull OnReceivedListener listener) {
+        // TODO: try three times
         subscribeTopics.put(topic, listener);
         LogHelper.d("FedMLDebug. EdgeCommunicator subscribe topic:%s", topic);
         if (client != null && client.isConnected()) {
@@ -187,6 +188,7 @@ public class EdgeCommunicator implements MqttCallbackExtended {
     }
 
     public boolean sendMessage(@NonNull String topic, @NonNull String msg) {
+        // TODO: try three times
         if (client == null) {
             LogHelper.e("mqtt client is not initial, when sendMessage(%s, %s)", topic, msg);
             return false;

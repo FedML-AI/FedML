@@ -2,6 +2,7 @@ package ai.fedml.edge.service;
 
 import android.os.Handler;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -14,6 +15,7 @@ import ai.fedml.edge.service.component.MetricsReporter;
 import ai.fedml.edge.service.entity.TrainProgress;
 import ai.fedml.edge.service.entity.TrainingParams;
 import ai.fedml.edge.utils.BackgroundHandler;
+import ai.fedml.edge.utils.FileUtils;
 import ai.fedml.edge.utils.LogHelper;
 import ai.fedml.edge.utils.preference.SharePreferencesData;
 import androidx.annotation.NonNull;
@@ -21,7 +23,6 @@ import androidx.annotation.NonNull;
 public class TrainingExecutor implements MessageDefine {
     private static final Handler mBgHandler = new BackgroundHandler("TrainingExecutor");
     private OnTrainProgressListener mOnTrainProgressListener = null;
-    private final MetricsReporter mReporter;
     private Runnable currentRunnable;
     private final Map<String, Boolean> runStateMap;
 
@@ -29,7 +30,6 @@ public class TrainingExecutor implements MessageDefine {
 
     public TrainingExecutor(@NonNull final OnTrainProgressListener onTrainProgressListener) {
         mOnTrainProgressListener = onTrainProgressListener;
-        mReporter = MetricsReporter.getInstance();
         runStateMap = new ConcurrentHashMap<>();
     }
 
@@ -45,7 +45,7 @@ public class TrainingExecutor implements MessageDefine {
         }
     }
 
-    public void training(final TrainingParams params) {
+    public void training(final TrainingParams params) throws IOException {
         final long edgeId = params.getEdgeId();
         final long runId = params.getRunId();
         final int clientIdx = params.getClientIdx();
@@ -55,10 +55,21 @@ public class TrainingExecutor implements MessageDefine {
             LogHelper.d("training(%d, %d) stop by user", runId, clientRunIdx);
             return;
         }
-        final String trainDataPath = SharePreferencesData.getPrivatePath();
-        final String trainModelPath = params.getTrainModelPath();
-        final OnTrainCompletedListener listener = params.getListener();
         final String dataSet = params.getDataSet();
+
+        // a must check to see whether the dataset path has dataset,
+        // otherwise the C++ training engine may not report errors,
+        // which would lead to abnormal training accuracy/loss.
+        final String trainDataPath = SharePreferencesData.getPrivatePath() + "/" + dataSet;
+        if (FileUtils.isEmptyDirectory(trainDataPath)){
+            IOException tr = new IOException("The following path does not have dataset for training");
+            LogHelper.e(tr, "[ERROR] trainDataPath is empty. Please set the data path correctly: " +
+                    trainDataPath + ". Please see the guidance at GitHub FedML/android/data/README.md");
+            throw tr;
+        }
+
+        final String trainModelPath = params.getTrainModelPath();
+        final OnTrainCompletedListener onTrainCompletedListener = params.getListener();
         final int batchSize = params.getBatchSize();
         final double lr = params.getLearningRate();
         final int epochNum = params.getEpochNum();
@@ -104,8 +115,8 @@ public class TrainingExecutor implements MessageDefine {
             if (result != null) {
                 long trainSamples = Long.parseLong(result);
                 LogHelper.d("trainSamples(%d)", trainSamples);
-                if (listener != null) {
-                    listener.onTrainCompleted(trainModelPath, edgeId, clientIdx, trainSamples);
+                if (onTrainCompletedListener != null) {
+                    onTrainCompletedListener.onTrainCompleted(trainModelPath, edgeId, clientIdx, trainSamples);
                 }
             }
         };

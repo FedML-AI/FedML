@@ -6,6 +6,7 @@ import android.os.Handler;
 import android.os.Looper;
 
 import ai.fedml.edge.FedEdgeManager;
+import ai.fedml.edge.utils.StorageUtils;
 
 public class App extends Application {
     private static final Handler sHandler = new Handler(Looper.getMainLooper());
@@ -18,8 +19,8 @@ public class App extends Application {
         FedEdgeManager.getFedEdgeApi().init(this);
 
         // set data path (to prepare data, please check this script `android/data/prepare.sh`)
-        FedEdgeManager.getFedEdgeApi().setPrivatePath(Environment.getExternalStorageDirectory().getPath()
-                + "/ai.fedml/user_0");
+        // e.g., /storage/emulated/0/Android/data/ai.fedml.edgedemo/files/
+        FedEdgeManager.getFedEdgeApi().setPrivatePath(StorageUtils.getDatasetPath());
     }
 
     public static void runOnUiThread(Runnable runnable) {
