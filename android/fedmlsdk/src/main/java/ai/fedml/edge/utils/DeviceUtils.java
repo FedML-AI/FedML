@@ -1,14 +1,10 @@
 package ai.fedml.edge.utils;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.os.BatteryManager;
 import android.provider.Settings;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
@@ -17,15 +13,12 @@ import android.os.Process;
 
 import androidx.core.app.ActivityCompat;
 
-import org.json.JSONObject;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 
 import ai.fedml.edge.service.ContextHolder;
-import ai.fedml.edge.utils.entity.Battery;
 
 /**
  * Used to obtain the unique identity of the device

@@ -1,7 +1,6 @@
 package ai.fedml.edge.service.component;
 
 import android.os.Handler;
-import android.util.Log;
 
 import java.util.List;
 

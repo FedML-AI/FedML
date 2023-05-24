@@ -28,7 +28,6 @@ import ai.fedml.edge.service.entity.TrainProgress;
 import ai.fedml.edge.utils.LogHelper;
 import ai.fedml.edge.utils.preference.SharePreferencesData;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 public class EdgeService extends Service implements EdgeMessageDefine {
     private static final int GRAY_SERVICE_ID = 1001;

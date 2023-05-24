@@ -2,7 +2,6 @@ package ai.fedml.edge.utils;
 
 import android.os.Build;
 import android.text.TextUtils;
-import android.util.Log;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -80,7 +79,6 @@ public class CpuUtils {
     }
 
     private Float getCpuUsageForHigherVersion() {
-        LogHelper.i("getCpuUsageForHigherVersion");
         Process process = null;
         try {
             process = Runtime.getRuntime().exec("top -n 1");
@@ -125,7 +123,6 @@ public class CpuUtils {
     }
 
     private int getCPUIndex(String line) {
-//        LogHelper.i("getCPUIndex,%s", line);
         if (line.contains("CPU")) {
             String[] titles = line.split("\\s+");
             for (int i=0; i<titles.length; i++) {
@@ -156,13 +153,7 @@ public class CpuUtils {
     };
 
     public String getCpuAbi() {
-        String cpuAbi;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            cpuAbi = Build.SUPPORTED_ABIS[0];
-        } else {
-            cpuAbi = Build.CPU_ABI;
-        }
-        return cpuAbi;
+        return Build.SUPPORTED_ABIS[0];
     }
 
 }

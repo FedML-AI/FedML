@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import ai.fedml.edge.BuildConfig;
 import ai.fedml.edge.utils.preference.SharePreferencesData;
 
 public class LogHelper {

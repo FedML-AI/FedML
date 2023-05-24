@@ -8,8 +8,8 @@ import ai.fedml.edge.service.communicator.EdgeCommunicator;
 import ai.fedml.edge.service.communicator.message.MessageDefine;
 import ai.fedml.edge.service.communicator.message.TrainStatusMessage;
 import ai.fedml.edge.utils.LogHelper;
+
 import androidx.annotation.NonNull;
-import androidx.annotation.StringRes;
 
 public class MetricsReporter implements MessageDefine {
     private EdgeCommunicator edgeCommunicator;

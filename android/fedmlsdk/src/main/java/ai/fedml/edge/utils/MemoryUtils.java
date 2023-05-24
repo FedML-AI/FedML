@@ -17,17 +17,17 @@ public class MemoryUtils {
     public static Memory getMemory(Context context) {
         Memory memory = new Memory();
         try {
-            memory.setRamMemoryTotal(getTotalMemory(context));
+            memory.setRamMemoryTotal(getTotalMemory());
             memory.setRamMemoryAvailable(getMemoryAvailable(context));
-            memory.setRomMemoryAvailable(getRomSpaceAvailable(context));
-            memory.setRomMemoryTotal(getRomSpaceTotal(context));
+            memory.setRomMemoryAvailable(getRomSpaceAvailable());
+            memory.setRomMemoryTotal(getRomSpaceTotal());
         } catch (Exception e) {
             LogHelper.i(e.toString());
         }
         return memory;
     }
 
-    private static String getTotalMemory(Context context) {
+    private static String getTotalMemory() {
         String str1 = "/proc/meminfo";
         String str2;
         String[] arrayOfString;
@@ -60,7 +60,7 @@ public class MemoryUtils {
         return convertBytesToGB(mi.availMem);
     }
 
-    private static String getRomSpaceAvailable(Context context) {
+    private static String getRomSpaceAvailable() {
         File path = Environment.getDataDirectory();
         StatFs stat = new StatFs(path.getPath());
         long blockSize = stat.getBlockSize();
@@ -68,7 +68,7 @@ public class MemoryUtils {
         return convertBytesToGB(availableBlocks * blockSize);
     }
 
-    private static String getRomSpaceTotal(Context context) {
+    private static String getRomSpaceTotal() {
         File path = Environment.getDataDirectory();
         StatFs stat = new StatFs(path.getPath());
         long blockSize = stat.getBlockSize();

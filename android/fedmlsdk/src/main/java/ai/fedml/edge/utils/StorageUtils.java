@@ -36,7 +36,6 @@ public class StorageUtils {
      *
      * @return Bytes
      */
-    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
     public static long getAvailableSize(@NonNull final String dir) {
         StatFs sf = new StatFs(dir);
         return sf.getAvailableBytes();
