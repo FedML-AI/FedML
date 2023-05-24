@@ -73,7 +73,7 @@ public class CpuUtils {
             lastCpuTime = cpuTime;
             lastAppCpuTime = appTime;
         } catch (Exception e) {
-            e.printStackTrace();
+            LogHelper.e(e, "getCpuUsageForHigherVersion error:%s", e.getMessage());
         }
         return value;
     }
@@ -112,7 +112,7 @@ public class CpuUtils {
                 }
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            LogHelper.e(e, "getCpuUsageForHigherVersion error:%s", e.getMessage());
         } finally {
             if (null != process) {
                 process.destroy();
@@ -126,7 +126,6 @@ public class CpuUtils {
         if (line.contains("CPU")) {
             String[] titles = line.split("\\s+");
             for (int i=0; i<titles.length; i++) {
-//                LogHelper.i("getCPUIndex title, %s", titles[i]);
                 if (titles[i].contains("CPU")) {
                     return i;
                 }

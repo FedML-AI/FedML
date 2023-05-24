@@ -63,7 +63,10 @@ public class DeviceInfoReporter {
             jsonObject.put("ramMemoryAvailable", memory.getRamMemoryAvailable());
             jsonObject.put("romMemoryAvailable", memory.getRomMemoryAvailable());
             jsonObject.put("romMemoryTotal", memory.getRomMemoryTotal());
-            jsonObject.put("cpu_utilization", sysStats.getCpuUtilization());
+            Float cpuUtilization = sysStats.getCpuUtilization();
+            if (null != cpuUtilization) {
+                jsonObject.put("cpu_utilization", cpuUtilization);
+            }
         } catch (JSONException e) {
             LogHelper.e(e, "sendDeviceInfo(%s)", mEdgeId);
         }

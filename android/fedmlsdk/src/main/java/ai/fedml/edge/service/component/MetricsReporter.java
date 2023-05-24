@@ -143,7 +143,11 @@ public class MetricsReporter implements MessageDefine {
         try {
             jsonObject.put("run_id", runId);
             jsonObject.put("edge_id", edgeId);
-            jsonObject.put("cpu_utilization", sysStats.getCpuUtilization());
+            Float cpuUtilization = sysStats.getCpuUtilization();
+            if (null != cpuUtilization) {
+                jsonObject.put("cpu_utilization", cpuUtilization);
+            }
+
             jsonObject.put("process_cpu_threads_in_use", sysStats.getProcessCpuThreadsInUse());
             SysStats.MemoryStats memoryStats = sysStats.getMemoryInfo();
             if (memoryStats != null) {
