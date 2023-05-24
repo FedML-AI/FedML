@@ -27,6 +27,17 @@ public class LogHelper {
     private static final Lock wLock = rwl.writeLock();
     private static volatile List<String> sLogLines = new LinkedList<>();
 
+    private static int lineNumber = 1;
+
+    public static void resetLog() {
+        sLogLines = new LinkedList<>();
+        lineNumber = 1;
+    }
+
+    public static int getLineNumber() {
+        return lineNumber;
+    }
+
     public static void v(Object arg) {
         if (DEBUG) {
             String message = arg == null ? "null" : arg.toString();
@@ -100,12 +111,10 @@ public class LogHelper {
     private static void print(int priority, final String tag, final String msg) {
         SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT_PATTER, Locale.ENGLISH);
         String formattedDate = sdf.format(new Date());
-        String log = "[" + tag + " @device-id-" + SharePreferencesData.getBindingId() + "]" + " [" + formattedDate + "]" + " [" + priority + "] " + msg;
+
+        String log = "[" + tag + " @device-id-" + SharePreferencesData.getBindingId() + "]" + " [" + formattedDate + "]" + " [" + getLevel(priority) + "] " + msg;
         wLock.lock();
         try {
-            if (msg.equals("")) {
-                Log.println(priority, "chaoyang", msg);
-            }
             sLogLines.add(log);
         } finally {
             wLock.unlock();
@@ -130,4 +139,5 @@ public class LogHelper {
             rLock.unlock();
         }
     }
+
 }

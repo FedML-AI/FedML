@@ -4,6 +4,7 @@ import ai.fedml.edge.request.listener.OnConfigListener;
 import ai.fedml.edge.request.listener.OnLogUploadListener;
 import ai.fedml.edge.request.parameter.BindingAccountReq;
 import ai.fedml.edge.request.parameter.ConfigReq;
+import ai.fedml.edge.request.parameter.EdgesError;
 import ai.fedml.edge.request.parameter.LogUploadReq;
 
 import ai.fedml.edge.request.response.ConfigResponse;
@@ -157,10 +158,10 @@ public final class RequestManager {
     }
 
     public static void uploadLog(final long runId, final long edgeId, final List<String> logLines,
-                                 @NonNull final OnLogUploadListener listener) {
+                                 final List<EdgesError> errorLines, @NonNull final OnLogUploadListener listener) {
         long currentTimeSecond = System.currentTimeMillis() / 1000;
         LogUploadReq req = LogUploadReq.builder()
-                .runId(runId).edgeId(edgeId).logLines(logLines)
+                .runId(runId).edgeId(edgeId).logLines(logLines).errorLines(errorLines)
                 .createTime(currentTimeSecond).updateTime(currentTimeSecond)
                 .createdBy(String.valueOf(edgeId)).updatedBy(String.valueOf(edgeId))
                 .build();

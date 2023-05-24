@@ -144,7 +144,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
         try {
             topic = params.getString(TOPIC);
             modelParams = params.getString(MSG_ARG_KEY_MODEL_PARAMS);
-            LogHelper.e("FedMLDebug. handleMessageInit modelParams (key) = %s", modelParams);
+            LogHelper.d("FedMLDebug. handleMessageInit modelParams (key) = %s", modelParams);
             mClientIndex = Integer.parseInt(params.getString(MSG_ARG_KEY_CLIENT_INDEX));
         } catch (JSONException e) {
             LogHelper.e(e, "handleTraining JSONException.");

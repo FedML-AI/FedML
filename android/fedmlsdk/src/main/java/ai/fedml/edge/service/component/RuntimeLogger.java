@@ -2,10 +2,12 @@ package ai.fedml.edge.service.component;
 
 import android.os.Handler;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import ai.fedml.edge.request.RequestManager;
 import ai.fedml.edge.request.listener.OnLogUploadListener;
+import ai.fedml.edge.request.parameter.EdgesError;
 import ai.fedml.edge.utils.BackgroundHandler;
 import ai.fedml.edge.utils.LogHelper;
 
@@ -19,6 +21,7 @@ public class RuntimeLogger {
         mEdgeId = edgeId;
         mRunId = runId;
         mBgHandler = new BackgroundHandler("LogUploader");
+        LogHelper.resetLog();
         mRunnable = new Runnable() {
             @Override
             public void run() {
@@ -41,14 +44,30 @@ public class RuntimeLogger {
         if (logs == null || logs.size() == 0) {
             return;
         }
-        RequestManager.uploadLog(mRunId, mEdgeId, logs, new OnLogUploadListener() {
+
+        List<EdgesError> errorLines = new ArrayList<>();
+        EdgesError error;
+        for (int i = 0; i < logs.size(); ++i) {
+            error = new EdgesError();
+            String log = logs.get(i);
+            if (log == null) {
+                continue;
+            }
+            if (log.contains(" [ERROR] ")) {
+                error.setErrLine(i + LogHelper.getLineNumber());
+                error.setErrMsg(log);
+                errorLines.add(error);
+            }
+        }
+
+        RequestManager.uploadLog(mRunId, mEdgeId, logs, errorLines, new OnLogUploadListener() {
             private int retryCnt = 3;
 
             @Override
             public void onLogUploaded(boolean success) {
                 if (!success && retryCnt < 0) {
                     retryCnt--;
-                    RequestManager.uploadLog(mRunId, mEdgeId, logs, this);
+                    RequestManager.uploadLog(mRunId, mEdgeId, logs, errorLines,this);
                 }
             }
         });
