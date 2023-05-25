@@ -20,6 +20,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 
+import ai.fedml.edge.constants.FedMqttTopic;
 import ai.fedml.edge.request.response.ConfigResponse;
 import ai.fedml.edge.service.Initializer;
 import ai.fedml.edge.service.communicator.message.BaseMessage;
@@ -70,7 +71,7 @@ public class EdgeCommunicator implements MqttCallbackExtended {
         connOpts.setKeepAliveInterval(mqttConfig.getKeepAlive());
         connOpts.setAutomaticReconnect(true);
         String edge_id = SharePreferencesData.getBindingId();
-        connOpts.setWill(MessageDefine.MQTT_LAST_WILL_TOPIC,
+        connOpts.setWill(FedMqttTopic.MQTT_LAST_WILL_TOPIC,
                 // {"ID": "EDGE_ID", "status": "OFFLINE"}
                 ("{\"ID\":\"" + edge_id + "\",\"status\":\"" +
                         MessageDefine.MSG_MLOPS_CLIENT_STATUS_OFFLINE + "\"}").getBytes(),

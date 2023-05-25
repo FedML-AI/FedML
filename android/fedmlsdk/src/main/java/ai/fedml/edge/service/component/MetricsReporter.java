@@ -45,21 +45,18 @@ public class MetricsReporter implements MessageDefine {
         TrainStatusMessage trainStatus = TrainStatusMessage.builder().sender(edgeId).receiver(0)
                 .messageType(TrainStatusMessage.MSG_TYPE_C2S_CLIENT_STATUS)
                 .status("ONLINE").os(MSG_CLIENT_OS_ANDROID).build();
-        final String onLineTopic = "fedml_" + runId + "_" + edgeId;
-        return edgeCommunicator.sendMessage(onLineTopic, trainStatus);
+        return edgeCommunicator.sendMessage(FedMqttTopic.online(runId, edgeId), trainStatus);
     }
 
     public boolean reportEdgeFinished(final long runId, final long edgeId) {
         TrainStatusMessage trainStatus = TrainStatusMessage.builder().sender(edgeId).receiver(0)
                 .messageType(TrainStatusMessage.MSG_TYPE_C2S_CLIENT_STATUS)
                 .status("FINISHED").os(MSG_CLIENT_OS_ANDROID).build();
-        final String onLineTopic = "fedml_" + runId + "_" + edgeId;
-        return edgeCommunicator.sendMessage(onLineTopic, trainStatus);
+        return edgeCommunicator.sendMessage(FedMqttTopic.online(runId, edgeId), trainStatus);
     }
 
     public void reportClientStatus(final long runId, final long edgeId, final int status) {
         notifyClientStatus(status);
-        final String topic = "fl_client/mlops/" + edgeId + "/status";
         JSONObject jsonObject = new JSONObject();
         try {
             jsonObject.put(RUN_ID, runId);
@@ -68,7 +65,7 @@ public class MetricsReporter implements MessageDefine {
         } catch (JSONException e) {
             LogHelper.e(e, "reportClientStatus(%d, %d, %d)", runId, edgeId, status);
         }
-        edgeCommunicator.sendMessage(topic, jsonObject.toString());
+        edgeCommunicator.sendMessage(FedMqttTopic.flcientStatus(edgeId), jsonObject.toString());
     }
 
     public void reportTrainingStatus(final long runId, final long edgeId, final int status) {

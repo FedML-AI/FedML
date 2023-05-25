@@ -18,7 +18,21 @@ public class FedMqttTopic {
 
     public static final String TRAINING_PROGRESS_AND_EVAL = "fl_client/mlops/training_progress_and_eval";
 
+    public static final String MQTT_LAST_WILL_TOPIC = "flclient_agent/last_will_msg";
+
     public static String exitTrainWithException(final long runId) {
         return "flserver_agent/" + runId + "/client_exit_train_with_exception";
+    }
+
+    public static String flcientStatus(final long edgeId) {
+        return "fl_client/mlops/" + edgeId + "/status";
+    }
+
+    public static String modelUpload(final long runId, final long edgeId) {
+        return "fedml_" + runId + "_" + edgeId;
+    }
+
+    public static String online(final long runId, final long edgeId) {
+        return "fedml_" + runId + "_" + edgeId;
     }
 }

@@ -13,6 +13,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import ai.fedml.edge.OnTrainProgressListener;
+import ai.fedml.edge.constants.FedMqttTopic;
 import ai.fedml.edge.service.communicator.EdgeCommunicator;
 import ai.fedml.edge.service.communicator.OnTrainListener;
 import ai.fedml.edge.service.communicator.message.BackModelMessage;
@@ -357,9 +358,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
                         .numSamples(trainSamples)
                         .modelParams(uuidS3Key)
                         .clientIdx(String.valueOf(clientIdx)).build();
-                final String modelUploadTopic = "fedml_" + mRunId + "_" + edgeId;
-                edgeCommunicator.sendMessage(modelUploadTopic, modelEntity);
-                LogHelper.d("sendModelMessage is done.");
+                edgeCommunicator.sendMessage(FedMqttTopic.modelUpload(mRunId, mEdgeId), modelEntity);
                 mReporter.reportClientModelInfo(mRunId, edgeId, clientRound+1, uuidS3Key);
             }
         });

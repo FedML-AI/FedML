@@ -44,8 +44,6 @@ public interface MessageDefine {
 
 
     // Client Status
-    String MQTT_LAST_WILL_TOPIC = "flclient_agent/last_will_msg";
-
     String MSG_MLOPS_CLIENT_STATUS_OFFLINE = "OFFLINE";
     String MSG_MLOPS_CLIENT_STATUS_IDLE = "IDLE";
     String MSG_MLOPS_CLIENT_STATUS_UPGRADING = "UPGRADING";
