@@ -61,7 +61,7 @@ public class MetricsReporter implements MessageDefine, MessageDefine.ClientStatu
         } catch (JSONException e) {
             LogHelper.e(e, "reportClientStatus(%d, %d, %d)", runId, edgeId, status);
         }
-        edgeCommunicator.sendMessage(FedMqttTopic.flcientStatus(edgeId), jsonObject.toString());
+        edgeCommunicator.sendMessage(FedMqttTopic.flclientStatus(edgeId), jsonObject.toString());
     }
 
     public void reportTrainingStatus(final long runId, final long edgeId, final int status) {
@@ -94,7 +94,7 @@ public class MetricsReporter implements MessageDefine, MessageDefine.ClientStatu
         } catch (JSONException e) {
             LogHelper.e(e, "reportTrainingStatus(%d, %s)", edgeId, MSG_MLOPS_CLIENT_STATUS_IDLE);
         }
-        edgeCommunicator.sendMessage(FedMqttTopic.flcientStatus(edgeId), jsonObject.toString());
+        edgeCommunicator.sendMessage(FedMqttTopic.flclientStatus(edgeId), jsonObject.toString());
         edgeCommunicator.sendMessage(FedMqttTopic.STATUS, jsonObject.toString());
         edgeCommunicator.sendMessage(FedMqttTopic.RUN_STATUS, jsonObject.toString());
     }

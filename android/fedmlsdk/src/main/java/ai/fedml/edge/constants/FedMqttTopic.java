@@ -24,7 +24,7 @@ public final class FedMqttTopic {
         return "flserver_agent/" + runId + "/client_exit_train_with_exception";
     }
 
-    public static String flcientStatus(final long edgeId) {
+    public static String flclientStatus(final long edgeId) {
         return "fl_client/mlops/" + edgeId + "/status";
     }
 
