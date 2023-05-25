@@ -91,12 +91,12 @@ public class StorageUtils {
         BufferedOutputStream bos = null;
         final String dataDir = getDatasetPath();
         final String filePath = dataDir + File.separator + fileName;
-        Log.d("StorageUtils", "saveToLabelDataPath: " + filePath);
+        LogHelper.d("StorageUtils saveToLabelDataPath: %s", filePath);
         try {
             writeToFile(data, filePath);
             return filePath;
         } catch (IOException e) {
-            Log.e("StorageUtils", "saveToLabelDataPath", e);
+            LogHelper.e(e, "StorageUtils saveToLabelDataPath failed");
         }
         return null;
     }
@@ -113,7 +113,7 @@ public class StorageUtils {
             }
             bos.flush();
         } catch (IOException e) {
-            Log.e(TAG, "writeToFile: ", e);
+            LogHelper.e(e, "StorageUtils writeToFile failed");
             throw e;
         }
     }

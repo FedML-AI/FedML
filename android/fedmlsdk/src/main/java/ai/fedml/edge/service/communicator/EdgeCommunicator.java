@@ -136,7 +136,7 @@ public class EdgeCommunicator implements MqttCallbackExtended {
 
     @Override
     public void connectionLost(Throwable cause) {
-        LogHelper.wtf(cause, "connection Lost can re-connect!");
+        LogHelper.w(cause, "connection Lost can re-connect!");
     }
 
     @Override
@@ -198,10 +198,10 @@ public class EdgeCommunicator implements MqttCallbackExtended {
         message.setRetained(true);
         try {
             client.publish(topic, message);
-            LogHelper.d("FedMLDebug. sendMessage(%s, %s)", topic, msg);
+            LogHelper.d("FedMLDebug. sendMessage(%s)", topic);
             return true;
         } catch (MqttException e) {
-            LogHelper.e(e, "FedMLDebug. Mqtt publish failed！");
+            LogHelper.e(e, "FedMLDebug. Mqtt publish failed！(%s, %s)", topic, msg);
         }
         return false;
     }

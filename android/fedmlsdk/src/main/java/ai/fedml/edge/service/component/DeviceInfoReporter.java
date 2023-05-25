@@ -5,6 +5,7 @@ import android.os.Handler;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import ai.fedml.edge.constants.FedMqttTopic;
 import ai.fedml.edge.service.ContextHolder;
 import ai.fedml.edge.service.communicator.EdgeCommunicator;
 import ai.fedml.edge.utils.BackgroundHandler;
@@ -47,7 +48,6 @@ public class DeviceInfoReporter {
     }
 
     private void sendDeviceInfo() {
-        final String topicMetrics = "fl_client/mlops/device_info";
         Battery battery = BatteryUtils.getBattery(ContextHolder.getAppContext());
         Memory memory = MemoryUtils.getMemory(ContextHolder.getAppContext());
         final SysStats sysStats = SysStats.getInstance();
@@ -70,6 +70,6 @@ public class DeviceInfoReporter {
         } catch (JSONException e) {
             LogHelper.e(e, "sendDeviceInfo(%s)", mEdgeId);
         }
-        mEdgeCommunicator.sendMessage(topicMetrics, jsonObject.toString());
+        mEdgeCommunicator.sendMessage(FedMqttTopic.DEVICE_INFO, jsonObject.toString());
     }
 }

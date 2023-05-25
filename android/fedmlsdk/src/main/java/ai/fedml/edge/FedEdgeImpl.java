@@ -15,7 +15,6 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
 import android.text.TextUtils;
-import android.util.Log;
 
 import ai.fedml.edge.request.RequestManager;
 import ai.fedml.edge.request.listener.OnBindingListener;
@@ -64,9 +63,9 @@ class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
     private final Handler mClientHandler = new Handler(Looper.getMainLooper()) {
         @Override
         public void handleMessage(Message msg) {
-            Log.d(TAG, "receive message from service:" + msg.toString());
+            LogHelper.d("FedEdge receive message from service:%s", msg.toString());
             if (MSG_TRAIN_STATUS == msg.what) {
-                Log.d(TAG, "MSG_TRAIN_STATUS. msg.arg1 = " + msg.arg1);
+                LogHelper.d("FedEdge MSG_TRAIN_STATUS. msg.arg1:%i" + msg.arg1);
                 if (onTrainingStatusListener != null) {
                     onTrainingStatusListener.onStatusChanged(msg.arg1);
                 }
@@ -100,7 +99,7 @@ class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
         canInit = true;
         ContextHolder.initialize(appContext);
         final String processName = DeviceUtils.getProcessName();
-        Log.i(TAG, "init " + processName);
+        LogHelper.i("FedEdge init, processName:%s", processName);
         if (!TextUtils.isEmpty(processName) && appContext.getPackageName().equals(processName)) {
             bindService();
             initBindingState(appContext);
@@ -183,7 +182,7 @@ class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
     @Override
     public void unInit() {
         final String processName = DeviceUtils.getProcessName();
-        Log.i(TAG, "init " + processName);
+        LogHelper.i("FedEdge unInit, processName:%s", processName);
         Context appContext = ContextHolder.getAppContext();
         // Only the main process can unInit
         if (!TextUtils.isEmpty(processName) && appContext.getPackageName().equals(processName)) {
@@ -200,7 +199,7 @@ class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
 
     private void bindService() {
         if (!canInit){
-            LogHelper.wtf("The service is already uninit and cannot start edge Service!");
+            LogHelper.w("The service is already uninit and cannot start edge Service!");
         }
         Context appContext = ContextHolder.getAppContext();
         Intent intent = new Intent(appContext, EdgeService.class);
@@ -219,7 +218,7 @@ class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
         try {
             mServiceMessenger.send(message);
         } catch (RemoteException e) {
-            Log.e(TAG, "sendMessage failed!", e);
+            LogHelper.e(e, "FedEdge sendMessage failed!");
         }
     }
 

@@ -165,7 +165,7 @@ public class EdgeService extends Service implements EdgeMessageDefine {
 
     private void sendMessageToClient(@NonNull final Message message) {
         if (mClientMessenger == null) {
-            LogHelper.wtf("sendMessageToClient mClientMessenger is null.");
+            LogHelper.w("sendMessageToClient mClientMessenger is null.");
             return;
         }
         try {

@@ -18,7 +18,6 @@ import ai.fedml.edge.utils.preference.SharePreferencesData;
 public class LogHelper {
     private static final String TAG = "FedML-Mobile-Client";
     private static final String DATE_FORMAT_PATTER = "EEE, dd MMM yyyy HH:mm:ss";
-    private static final int LOG_LINE_NUMBER = 100;
     private static final boolean DEBUG = true;
     private static final Map<Integer, String> LEVEL_MAP = ImmutableMap.of(Log.VERBOSE, "VERBOSE",
             Log.DEBUG, "DEBUG",Log.INFO, "INFO", Log.WARN, "WARN", Log.ERROR, "ERROR");
@@ -81,11 +80,11 @@ public class LogHelper {
         print(Log.ERROR, TAG, buildMessage(format, args) + '\n' + Log.getStackTraceString(tr));
     }
 
-    public static void wtf(String format, Object... args) {
+    public static void w(String format, Object... args) {
         print(Log.WARN, TAG, buildMessage(format, args));
     }
 
-    public static void wtf(Throwable tr, String format, Object... args) {
+    public static void w(Throwable tr, String format, Object... args) {
         print(Log.WARN, TAG, buildMessage(format, args) + '\n' + Log.getStackTraceString(tr));
     }
 

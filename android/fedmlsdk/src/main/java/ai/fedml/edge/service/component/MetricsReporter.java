@@ -4,6 +4,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import ai.fedml.edge.OnTrainingStatusListener;
+import ai.fedml.edge.constants.FedMqttTopic;
 import ai.fedml.edge.service.communicator.EdgeCommunicator;
 import ai.fedml.edge.service.communicator.message.MessageDefine;
 import ai.fedml.edge.service.communicator.message.TrainStatusMessage;
@@ -72,7 +73,6 @@ public class MetricsReporter implements MessageDefine {
 
     public void reportTrainingStatus(final long runId, final long edgeId, final int status) {
         notifyClientStatus(status);
-        final String topicName4WebUI = "fl_client/mlops/status";
         JSONObject jsonObject = new JSONObject();
         try {
             jsonObject.put(RUN_ID, runId);
@@ -81,10 +81,9 @@ public class MetricsReporter implements MessageDefine {
         } catch (JSONException e) {
             LogHelper.e(e, "reportTrainingStatus(%d, %d)", edgeId, status);
         }
-        edgeCommunicator.sendMessage(topicName4WebUI, jsonObject.toString());
+        edgeCommunicator.sendMessage(FedMqttTopic.STATUS, jsonObject.toString());
 
-        final String topicName4Run = "fl_run/fl_client/mlops/status";
-        edgeCommunicator.sendMessage(topicName4Run, jsonObject.toString());
+        edgeCommunicator.sendMessage(FedMqttTopic.RUN_STATUS, jsonObject.toString());
 
         if (status == KEY_CLIENT_STATUS_FAILED) {
             reportClientException(runId, edgeId, status);
@@ -105,11 +104,10 @@ public class MetricsReporter implements MessageDefine {
         } catch (JSONException e) {
             LogHelper.e(e, "reportTrainingStatus(%d, %s)", edgeId, MSG_MLOPS_CLIENT_STATUS_IDLE);
         }
-        edgeCommunicator.sendMessage(MQTT_REPORT_ACTIVE_STATUS_TOPIC, jsonObject.toString());
+        edgeCommunicator.sendMessage(FedMqttTopic.FL_CLIENT_ACTIVE, jsonObject.toString());
     }
 
     public void reportClientModelInfo(final long runId, final long edgeId, final int clientRound, final String model) {
-        final String topicName = "fl_server/mlops/client_model";
         JSONObject jsonObject = new JSONObject();
         try {
             jsonObject.put(RUN_ID, runId);
@@ -119,11 +117,10 @@ public class MetricsReporter implements MessageDefine {
         } catch (JSONException e) {
             LogHelper.e(e, "reportTrainingStatus(%d, %s, %s)", edgeId, clientRound, model);
         }
-        edgeCommunicator.sendMessage(topicName, jsonObject.toString());
+        edgeCommunicator.sendMessage(FedMqttTopic.CLIENT_MODEL, jsonObject.toString());
     }
 
     public void reportTrainingMetric(long edgeId, long runId, float accuracy, float loss) {
-        final String topicMetrics = "fl_client/mlops/training_progress_and_eval";
         JSONObject jsonObject = new JSONObject();
         try {
             jsonObject.put("run_id", runId);
@@ -133,11 +130,10 @@ public class MetricsReporter implements MessageDefine {
         } catch (JSONException e) {
             LogHelper.e(e, "reportTrainingMetric(%s)", edgeId);
         }
-        edgeCommunicator.sendMessage(topicMetrics, jsonObject.toString());
+        edgeCommunicator.sendMessage(FedMqttTopic.TRAINING_PROGRESS_AND_EVAL, jsonObject.toString());
     }
 
     public void reportSystemMetric(final long runId, final long edgeId) {
-        final String topicSysMetrics = "fl_client/mlops/system_performance";
         JSONObject jsonObject = new JSONObject();
         final SysStats sysStats = SysStats.getInstance();
         try {
@@ -161,7 +157,7 @@ public class MetricsReporter implements MessageDefine {
         } catch (JSONException e) {
             LogHelper.e(e, "reportSystemMetric(%s)", edgeId);
         }
-        edgeCommunicator.sendMessage(topicSysMetrics, jsonObject.toString());
+        edgeCommunicator.sendMessage(FedMqttTopic.SYSTEM_PERFORMANCE, jsonObject.toString());
     }
 
     private void notifyClientStatus(final int status) {
@@ -180,7 +176,6 @@ public class MetricsReporter implements MessageDefine {
 
     public void reportClientException(final long runId, final long edgeId, int status) {
         notifyClientStatus(status);
-        final String topicException = "flserver_agent/" + runId + "/client_exit_train_with_exception";
         JSONObject jsonObject = new JSONObject();
         try {
             jsonObject.put(RUN_ID, runId);
@@ -189,6 +184,6 @@ public class MetricsReporter implements MessageDefine {
         } catch (JSONException e) {
             LogHelper.e(e, "reportTrainingStatus(%d, %d)", edgeId, status);
         }
-        edgeCommunicator.sendMessage(topicException, jsonObject.toString());
+        edgeCommunicator.sendMessage(FedMqttTopic.exitTrainWithException(runId), jsonObject.toString());
     }
 }

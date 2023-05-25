@@ -372,7 +372,6 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
         LogHelper.i("FedMLDebug. stop train");
         mReporter.reportTrainingStatus(mRunId, mEdgeId, KEY_CLIENT_STATUS_KILLED);
 
-
         mTrainer.stopTrain();
         cleanUpRun();
         mIsTrainingStopped = true;

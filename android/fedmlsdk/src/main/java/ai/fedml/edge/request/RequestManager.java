@@ -174,7 +174,7 @@ public final class RequestManager {
 
             @Override
             public void onFailure(@NonNull Call<BaseResponse> call, @NonNull Throwable t) {
-                LogHelper.e(t, "uploadLog failed.");
+                LogHelper.w(t, "uploadLog failed.");
                 listener.onLogUploaded(false);
             }
         });
