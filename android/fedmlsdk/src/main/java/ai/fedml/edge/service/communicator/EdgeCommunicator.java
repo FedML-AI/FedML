@@ -226,7 +226,7 @@ public class EdgeCommunicator implements MqttCallbackExtended {
     }
 
     private void notifyConnectionReady(final String topic, final OnReceivedListener receivedListener) {
-        if (receivedListener != null) {
+        if (receivedListener instanceof OnMqttConnectionReadyListener) {
             JSONObject jsonObject = new JSONObject();
             try {
                 jsonObject.put(MessageDefine.MSG_TYPE, MessageDefine.MSG_TYPE_CONNECTION_IS_READY);

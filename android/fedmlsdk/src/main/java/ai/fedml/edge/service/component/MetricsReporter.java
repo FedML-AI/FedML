@@ -9,12 +9,12 @@ import ai.fedml.edge.service.communicator.EdgeCommunicator;
 import ai.fedml.edge.service.communicator.message.MessageDefine;
 import ai.fedml.edge.service.communicator.message.TrainStatusMessage;
 import ai.fedml.edge.utils.LogHelper;
-
 import androidx.annotation.NonNull;
 
-public class MetricsReporter implements MessageDefine {
+public class MetricsReporter implements MessageDefine, MessageDefine.ClientStatus {
     private EdgeCommunicator edgeCommunicator;
     private int mClientStatus = KEY_CLIENT_STATUS_IDLE;
+    private long mRunId = 0;
     private OnTrainingStatusListener mOnTrainingStatusListener;
 
     private final static class LazyHolder {
@@ -37,10 +37,6 @@ public class MetricsReporter implements MessageDefine {
         mOnTrainingStatusListener = onTrainingStatusListener;
     }
 
-    public int getClientStatus() {
-        return mClientStatus;
-    }
-
     public boolean reportEdgeOnLine(final long runId, final long edgeId) {
         TrainStatusMessage trainStatus = TrainStatusMessage.builder().sender(edgeId).receiver(0)
                 .messageType(TrainStatusMessage.MSG_TYPE_C2S_CLIENT_STATUS)
@@ -56,7 +52,7 @@ public class MetricsReporter implements MessageDefine {
     }
 
     public void reportClientStatus(final long runId, final long edgeId, final int status) {
-        notifyClientStatus(status);
+        notifyClientStatus(runId, status);
         JSONObject jsonObject = new JSONObject();
         try {
             jsonObject.put(RUN_ID, runId);
@@ -69,7 +65,7 @@ public class MetricsReporter implements MessageDefine {
     }
 
     public void reportTrainingStatus(final long runId, final long edgeId, final int status) {
-        notifyClientStatus(status);
+        notifyClientStatus(runId, status);
         JSONObject jsonObject = new JSONObject();
         try {
             jsonObject.put(RUN_ID, runId);
@@ -87,6 +83,22 @@ public class MetricsReporter implements MessageDefine {
         }
     }
 
+    @Override
+    public void syncClientStatus(final long edgeId) {
+        JSONObject jsonObject = new JSONObject();
+        try {
+            jsonObject.put(RUN_ID, mRunId);
+            jsonObject.put(EDGE_ID, edgeId);
+            jsonObject.put(EDGE_ID_ALIAS, edgeId);
+            jsonObject.put(REPORT_STATUS, CLIENT_STATUS_MAP.get(mClientStatus));
+        } catch (JSONException e) {
+            LogHelper.e(e, "reportTrainingStatus(%d, %s)", edgeId, MSG_MLOPS_CLIENT_STATUS_IDLE);
+        }
+        edgeCommunicator.sendMessage(FedMqttTopic.flcientStatus(edgeId), jsonObject.toString());
+        edgeCommunicator.sendMessage(FedMqttTopic.STATUS, jsonObject.toString());
+        edgeCommunicator.sendMessage(FedMqttTopic.RUN_STATUS, jsonObject.toString());
+    }
+
     public void reportClientActiveStatus(final long edgeId) {
         JSONObject jsonObject = new JSONObject();
         if (mClientStatus != KEY_CLIENT_STATUS_OFFLINE &&
@@ -95,8 +107,8 @@ public class MetricsReporter implements MessageDefine {
             return;
         }
         try {
-            notifyClientStatus(KEY_CLIENT_STATUS_IDLE);
-            jsonObject.put("ID", edgeId);
+            notifyClientStatus(mRunId, KEY_CLIENT_STATUS_IDLE);
+            jsonObject.put(EDGE_ID_ALIAS, edgeId);
             jsonObject.put(REPORT_STATUS, MSG_MLOPS_CLIENT_STATUS_IDLE);
         } catch (JSONException e) {
             LogHelper.e(e, "reportTrainingStatus(%d, %s)", edgeId, MSG_MLOPS_CLIENT_STATUS_IDLE);
@@ -157,16 +169,21 @@ public class MetricsReporter implements MessageDefine {
         edgeCommunicator.sendMessage(FedMqttTopic.SYSTEM_PERFORMANCE, jsonObject.toString());
     }
 
-    private void notifyClientStatus(final int status) {
+    private void notifyClientStatus(final long runId, final int status) {
         LogHelper.d("FedMLDebug. notifyClientStatus [%s]", CLIENT_STATUS_MAP.get(status));
         mClientStatus = status;
+        if (status == KEY_CLIENT_STATUS_IDLE || status == KEY_CLIENT_STATUS_KILLED ||
+                status == KEY_CLIENT_STATUS_FINISHED || status == KEY_CLIENT_STATUS_FAILED) {
+            mRunId = 0;
+        } else {
+            mRunId = runId;
+        }
         if (mOnTrainingStatusListener != null) {
             mOnTrainingStatusListener.onStatusChanged(status);
         }
     }
 
     public void reportClientException(final long runId, final long edgeId, int status) {
-        notifyClientStatus(status);
         JSONObject jsonObject = new JSONObject();
         try {
             jsonObject.put(RUN_ID, runId);

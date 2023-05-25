@@ -1,6 +1,6 @@
 package ai.fedml.edge.constants;
 
-public class FedMqttTopic {
+public final class FedMqttTopic {
 
     public static final String SYSTEM_PERFORMANCE = "fl_client/mlops/system_performance";
 
