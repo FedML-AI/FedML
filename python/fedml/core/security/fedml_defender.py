@@ -136,13 +136,14 @@ class FedMLDefender:
             DEFENSE_THREESIGMA_GEOMEDIAN,
             DEFENSE_THREESIGMA_KRUM,
             DEFENSE_KRUM,
+            DEFENSE_CCLIP,
             DEFENSE_MULTIKRUM,
             DEFENSE_TRIMMED_MEAN,
             ANOMALY_DETECTION
         ]
 
     def is_defense_after_aggregation(self):
-        return self.is_defense_enabled() and self.defense_type in [DEFENSE_CRFL]
+        return self.is_defense_enabled() and self.defense_type in [DEFENSE_CRFL, DEFENSE_CCLIP]
 
     def defend_before_aggregation(
         self,
