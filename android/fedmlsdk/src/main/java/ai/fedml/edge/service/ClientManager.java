@@ -36,7 +36,6 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
     private final RemoteStorage remoteStorage;
     private final ProfilerEventLogger eventLogger;
     private final RuntimeLogger mRuntimeLogger;
-    private final DeviceInfoReporter mDeviceInfoReporter;
     private final long mEdgeId;
     private long mRunId;
     private final int mNumRounds;
@@ -95,8 +94,6 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
         remoteStorage = RemoteStorage.getInstance();
         mRuntimeLogger = new RuntimeLogger(edgeId, runId);
         mRuntimeLogger.start();
-        mDeviceInfoReporter = new DeviceInfoReporter(edgeId, edgeCommunicator);
-        mDeviceInfoReporter.start();
         registerMessageReceiveHandlers(strServerId);
     }
 
@@ -403,7 +400,6 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
 
     private void cleanUpRun() {
         mRuntimeLogger.release();
-        mDeviceInfoReporter.release();
     }
 
 }

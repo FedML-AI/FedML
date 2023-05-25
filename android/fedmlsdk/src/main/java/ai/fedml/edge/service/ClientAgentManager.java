@@ -15,6 +15,7 @@ import ai.fedml.edge.service.communicator.OnMqttConnectionReadyListener;
 import ai.fedml.edge.service.communicator.OnTrainStartListener;
 import ai.fedml.edge.service.communicator.OnTrainStopListener;
 import ai.fedml.edge.service.communicator.message.MessageDefine;
+import ai.fedml.edge.service.component.DeviceInfoReporter;
 import ai.fedml.edge.service.component.TokenChecker;
 import ai.fedml.edge.service.component.MetricsReporter;
 import ai.fedml.edge.utils.LogHelper;
@@ -29,6 +30,8 @@ public final class ClientAgentManager implements MessageDefine {
     private final TokenChecker mTokenChecker;
     private final MetricsReporter mReporter;
     private long mEdgeId = 0;
+
+    private final DeviceInfoReporter mDeviceInfoReporter;
 
     private volatile long mRunId = 0;
     private final Gson mGson;
@@ -52,6 +55,9 @@ public final class ClientAgentManager implements MessageDefine {
         SharePreferencesData.clearHyperParameters();
 
         edgeCommunicator.addListener((OnMqttConnectionReadyListener) this::handleMqttConnectionReady);
+
+        mDeviceInfoReporter = new DeviceInfoReporter(mEdgeId, edgeCommunicator);
+        mDeviceInfoReporter.start();
     }
 
     public void start() {
