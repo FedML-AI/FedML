@@ -54,11 +54,14 @@ public class RuntimeLogger {
                 continue;
             }
             if (log.contains(" [ERROR] ")) {
-                error.setErrLine(i + LogHelper.getLineNumber());
+                int errorLine = i + 1 + LogHelper.getLineNumber();
+                error.setErrLine(errorLine);
                 error.setErrMsg(log);
                 errorLines.add(error);
             }
         }
+
+        LogHelper.addLineNumber(logs.size());
 
         RequestManager.uploadLog(mRunId, mEdgeId, logs, errorLines, new OnLogUploadListener() {
             private int retryCnt = 3;

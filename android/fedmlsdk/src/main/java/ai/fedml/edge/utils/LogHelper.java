@@ -20,21 +20,25 @@ public class LogHelper {
     private static final String DATE_FORMAT_PATTER = "EEE, dd MMM yyyy HH:mm:ss";
     private static final boolean DEBUG = true;
     private static final Map<Integer, String> LEVEL_MAP = ImmutableMap.of(Log.VERBOSE, "VERBOSE",
-            Log.DEBUG, "DEBUG",Log.INFO, "INFO", Log.WARN, "WARN", Log.ERROR, "ERROR");
+            Log.DEBUG, "DEBUG", Log.INFO, "INFO", Log.WARN, "WARN", Log.ERROR, "ERROR");
     private static final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
     private static final Lock rLock = rwl.readLock();
     private static final Lock wLock = rwl.writeLock();
     private static volatile List<String> sLogLines = new LinkedList<>();
 
-    private static int lineNumber = 1;
+    private static int lineNumber = 0;
 
     public static void resetLog() {
         sLogLines = new LinkedList<>();
-        lineNumber = 1;
+        lineNumber = 0;
     }
 
     public static int getLineNumber() {
         return lineNumber;
+    }
+
+    public static void addLineNumber(int count) {
+        lineNumber += count;
     }
 
     public static void v(Object arg) {

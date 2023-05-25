@@ -33,7 +33,6 @@ import ai.fedml.edge.utils.preference.SharePreferencesData;
 import androidx.annotation.NonNull;
 
 class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
-    private static final String TAG = "FedEdgeManager";
 
     /**
      * mainfest meata key "fedml_key"

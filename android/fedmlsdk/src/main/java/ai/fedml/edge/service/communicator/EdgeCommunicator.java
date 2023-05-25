@@ -153,7 +153,7 @@ public class EdgeCommunicator implements MqttCallbackExtended {
 
     @Override
     public void deliveryComplete(IMqttDeliveryToken token) {
-        LogHelper.d("EdgeCommunicator deliveryComplete---------" + token.isComplete());
+        //LogHelper.d("EdgeCommunicator deliveryComplete---------" + token.isComplete());
     }
 
     public void subscribe(@NonNull String topic, @NonNull OnReceivedListener listener) {
