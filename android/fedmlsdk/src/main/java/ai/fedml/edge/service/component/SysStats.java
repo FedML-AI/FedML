@@ -119,7 +119,7 @@ public class SysStats {
             cpuInfo[1] += arrayOfString[2];
             return cpuInfo;
         } catch (IOException e) {
-            LogHelper.e(e, "getCpuInfo failed.");
+            LogHelper.w(e, "getCpuInfo failed.");
         }
         return null;
     }
@@ -130,7 +130,7 @@ public class SysStats {
             try {
                 return Float.parseFloat(cpuInfo[1]);
             } catch (NumberFormatException e) {
-                LogHelper.e(e, "parseFloat CpuInfo failed." + Arrays.toString(cpuInfo));
+                LogHelper.w(e, "parseFloat CpuInfo failed." + Arrays.toString(cpuInfo));
             }
         }
         return 0.1f;

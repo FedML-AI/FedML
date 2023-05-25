@@ -73,7 +73,7 @@ public class CpuUtils {
             lastCpuTime = cpuTime;
             lastAppCpuTime = appTime;
         } catch (Exception e) {
-            LogHelper.e(e, "getCpuUsageForHigherVersion error:%s", e.getMessage());
+            LogHelper.w(e, "getCpuUsageForHigherVersion error:%s", e.getMessage());
         }
         return value;
     }
@@ -112,7 +112,7 @@ public class CpuUtils {
                 }
             }
         } catch (IOException e) {
-            LogHelper.e(e, "getCpuUsageForHigherVersion error:%s", e.getMessage());
+            LogHelper.w(e, "getCpuUsageForHigherVersion error:%s", e.getMessage());
         } finally {
             if (null != process) {
                 process.destroy();

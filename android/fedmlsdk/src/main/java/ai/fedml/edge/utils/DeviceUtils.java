@@ -46,7 +46,7 @@ public class DeviceUtils {
         try (BufferedReader mBufferedReader = new BufferedReader(new FileReader(file))) {
             return mBufferedReader.readLine().trim();
         } catch (IOException e) {
-            LogHelper.e(e, "getProcessName failed!");
+            LogHelper.w(e, "getProcessName failed!");
         }
         return null;
     }

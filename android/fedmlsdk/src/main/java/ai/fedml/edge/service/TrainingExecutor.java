@@ -63,7 +63,7 @@ public class TrainingExecutor implements MessageDefine {
         final String trainDataPath = SharePreferencesData.getPrivatePath() + "/" + dataSet;
         if (FileUtils.isEmptyDirectory(trainDataPath)){
             IOException tr = new IOException("The following path does not have dataset for training");
-            LogHelper.e(tr, "[ERROR] trainDataPath is empty. Please set the data path correctly: " +
+            LogHelper.e(tr, "trainDataPath is empty. Please set the data path correctly: " +
                     trainDataPath + ". Please see the guidance at GitHub FedML/android/data/README.md");
             throw tr;
         }
