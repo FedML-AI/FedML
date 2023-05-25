@@ -70,6 +70,7 @@ public class EdgeCommunicator implements MqttCallbackExtended {
         connOpts.setConnectionTimeout(30);
         connOpts.setKeepAliveInterval(mqttConfig.getKeepAlive());
         connOpts.setAutomaticReconnect(true);
+        connOpts.setMaxInflight(10000);
         String edge_id = SharePreferencesData.getBindingId();
         connOpts.setWill(FedMqttTopic.MQTT_LAST_WILL_TOPIC,
                 // {"ID": "EDGE_ID", "status": "OFFLINE"}
