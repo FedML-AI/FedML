@@ -1,6 +1,5 @@
-import logging
 from collections import OrderedDict
-from typing import Callable, List, Tuple, Any
+from typing import List, Tuple, Any
 import numpy as np
 from .defense_base import BaseDefenseMethod
 from ..common import utils
@@ -50,8 +49,6 @@ class CClipDefense(BaseDefenseMethod):
             for k in bucket_params.keys():
                 tuple[k] = (bucket_params[k] - self.initial_guess[k]) * cclip_score[i]
             new_grad_list.append((sample_num, tuple))
-        # logging.info(f"new_grad_list[0]={new_grad_list[0]}")
-        # logging.info(f"cclip_score = {cclip_score}")
         return new_grad_list
 
     def defend_after_aggregation(self, global_model):
