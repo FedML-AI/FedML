@@ -19,7 +19,6 @@ import ai.fedml.edge.service.communicator.OnTrainListener;
 import ai.fedml.edge.service.communicator.message.BackModelMessage;
 import ai.fedml.edge.service.communicator.message.MessageDefine;
 import ai.fedml.edge.service.communicator.message.TrainStatusMessage;
-import ai.fedml.edge.service.component.DeviceInfoReporter;
 import ai.fedml.edge.service.component.ProfilerEventLogger;
 import ai.fedml.edge.service.component.RemoteStorage;
 import ai.fedml.edge.service.component.MetricsReporter;
@@ -217,7 +216,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
 
             @Override
             public void onStateChanged(int id, TransferState state) {
-                LogHelper.d("download onStateChanged（%d, %s）", id, state);
+//                LogHelper.d("download onStateChanged（%d, %s）", id, state);
                 if (TransferState.COMPLETED == state) {
                     mReporter.reportTrainingStatus(mRunId, mEdgeId, KEY_CLIENT_STATUS_TRAINING);
                     final TrainingParams params = TrainingParams.builder()
@@ -236,7 +235,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
                         mTrainer.training(params);
                     } catch (IOException e) {
                         reportError();
-                        e.printStackTrace();
+                        LogHelper.e(e, "FedMLDebug. training failed.");
                     }
                 } else if (TransferState.FAILED == state ) {
                     if ( reTryCnt > 0 ) {
@@ -250,7 +249,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
 
             @Override
             public void onProgressChanged(int id, long bytesCurrent, long bytesTotal) {
-                LogHelper.d("download onProgressChanged(%d, %d, %d)", id, bytesCurrent, bytesTotal);
+//                LogHelper.d("download onProgressChanged(%d, %d, %d)", id, bytesCurrent, bytesTotal);
             }
 
             @Override
@@ -272,7 +271,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
 
             @Override
             public void onStateChanged(int id, TransferState state) {
-                LogHelper.d("download onStateChanged（%d, %s）", id, state);
+//                LogHelper.d("download onStateChanged（%d, %s）", id, state);
                 if (TransferState.COMPLETED == state) {
                     final TrainingParams params = TrainingParams.builder()
                             .trainModelPath(trainModelPath).edgeId(mEdgeId).runId(mRunId)
@@ -293,7 +292,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
 
             @Override
             public void onProgressChanged(int id, long bytesCurrent, long bytesTotal) {
-                LogHelper.d("download onProgressChanged(%d, %d, %d)", id, bytesCurrent, bytesTotal);
+//                LogHelper.d("download onProgressChanged(%d, %d, %d)", id, bytesCurrent, bytesTotal);
             }
 
             @Override
@@ -327,7 +326,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
 
             @Override
             public void onStateChanged(int id, TransferState state) {
-                LogHelper.d("upload onStateChanged（%d, %s）", id, state);
+//                LogHelper.d("upload onStateChanged（%d, %s）", id, state);
                 if (state == TransferState.COMPLETED) {
                     sendModelMessage();
                     listener.onUploaded();
@@ -343,7 +342,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
 
             @Override
             public void onProgressChanged(int id, long bytesCurrent, long bytesTotal) {
-                LogHelper.d("upload onProgressChanged(%d, %d, %d)", id, bytesCurrent, bytesTotal);
+//                LogHelper.d("upload onProgressChanged(%d, %d, %d)", id, bytesCurrent, bytesTotal);
             }
 
             @Override
@@ -389,6 +388,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
         // Notify MLOps with the finished message
         mReporter.reportTrainingStatus(mRunId, mEdgeId, KEY_CLIENT_STATUS_FINISHED);
         mRunId = 0;
+        cleanUpRun();
     }
 
     private void reportError() {

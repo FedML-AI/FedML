@@ -67,6 +67,18 @@ public class LogHelper {
         }
     }
 
+    public static void i(String format, Object... args) {
+        print(Log.INFO, TAG, buildMessage(format, args));
+    }
+
+    public static void w(String format, Object... args) {
+        print(Log.WARN, TAG, buildMessage(format, args));
+    }
+
+    public static void w(Throwable tr, String format, Object... args) {
+        print(Log.WARN, TAG, buildMessage(format, args) + '\n' + Log.getStackTraceString(tr));
+    }
+
     public static void e(Object arg) {
         String message = arg == null ? "null" : arg.toString();
         print(Log.ERROR, TAG, buildMessage("%s", message));
@@ -76,20 +88,8 @@ public class LogHelper {
         print(Log.ERROR, TAG, buildMessage(format, args));
     }
 
-    public static void i(String format, Object... args) {
-        print(Log.INFO, TAG, buildMessage(format, args));
-    }
-
     public static void e(Throwable tr, String format, Object... args) {
         print(Log.ERROR, TAG, buildMessage(format, args) + '\n' + Log.getStackTraceString(tr));
-    }
-
-    public static void w(String format, Object... args) {
-        print(Log.WARN, TAG, buildMessage(format, args));
-    }
-
-    public static void w(Throwable tr, String format, Object... args) {
-        print(Log.WARN, TAG, buildMessage(format, args) + '\n' + Log.getStackTraceString(tr));
     }
 
     /**

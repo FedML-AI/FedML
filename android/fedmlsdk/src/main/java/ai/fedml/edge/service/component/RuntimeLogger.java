@@ -25,8 +25,7 @@ public class RuntimeLogger {
         mRunnable = new Runnable() {
             @Override
             public void run() {
-                List<String> logs = LogHelper.getLogLines();
-                uploadLog(logs);
+                flush();
                 mBgHandler.postDelayed(this, 10000L);
             }
         };
@@ -37,7 +36,13 @@ public class RuntimeLogger {
     }
 
     public void release() {
+        flush();
         mBgHandler.removeCallbacksAndMessages(null);
+    }
+
+    public void flush() {
+        List<String> logs = LogHelper.getLogLines();
+        uploadLog(logs);
     }
 
     private void uploadLog(final List<String> logs) {

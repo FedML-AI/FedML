@@ -16,19 +16,19 @@ public interface OnTrainListener extends OnJsonReceivedListener, MessageDefine {
         }
         int msgType = jsonMsg.optInt(MSG_TYPE, 0);
         if(MSG_TYPE_CONNECTION_IS_READY == msgType){
-            LogHelper.d("OnTrainListener", "FedMLDebug. handleMessageConnectionReady: " + jsonMsg);
+            LogHelper.d("OnTrainListener %s", "FedMLDebug. handleMessageConnectionReady: " + jsonMsg);
             handleMessageConnectionReady(jsonMsg);
         } else if (MSG_TYPE_S2C_INIT_CONFIG == msgType) {
-            LogHelper.d("OnTrainListener", "FedMLDebug. handleMessageInit: " + jsonMsg);
+            LogHelper.d("OnTrainListener %s", "FedMLDebug. handleMessageInit: " + jsonMsg);
             handleMessageInit(jsonMsg);
         } else if (MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT == msgType) {
-            LogHelper.d("OnTrainListener", "FedMLDebug. handleMessageReceiveModelFromServer: " + jsonMsg);
+            LogHelper.d("OnTrainListener %s", "FedMLDebug. handleMessageReceiveModelFromServer: " + jsonMsg);
             handleMessageReceiveModelFromServer(jsonMsg);
         } else if (MSG_TYPE_S2C_CHECK_CLIENT_STATUS == msgType) {
-            LogHelper.d("OnTrainListener", "FedMLDebug. handle_message_check_status: " + jsonMsg);
+            LogHelper.d("OnTrainListener %s", "FedMLDebug. handle_message_check_status: " + jsonMsg);
             handle_message_check_status(jsonMsg);
         } else if (MSG_TYPE_S2C_FINISH == msgType) {
-            LogHelper.d("OnTrainListener", "FedMLDebug. handle_message_finish: " + jsonMsg);
+            LogHelper.d("OnTrainListener %s", "FedMLDebug. handle_message_finish: " + jsonMsg);
             handle_message_finish(jsonMsg);
         }
     }

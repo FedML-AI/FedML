@@ -136,8 +136,6 @@ public final class ClientAgentManager implements MessageDefine {
             mClientManager = null;
             LogHelper.d("FedMLDebug mClientManager is killed");
         }
-
-
     }
 
     private void handleMLOpsMsg(JSONObject msgParams) {
