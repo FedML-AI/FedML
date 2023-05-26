@@ -53,19 +53,20 @@ public class DeviceInfoReporter {
         final SysStats sysStats = SysStats.getInstance();
         JSONObject jsonObject = new JSONObject();
         try {
-            jsonObject.put("edge_id", mEdgeId);
-            jsonObject.put("network_type", DeviceUtils.getNetworkType(ContextHolder.getAppContext()));
-            jsonObject.put("battery_status", battery.getStatus());
-            jsonObject.put("battery_power", battery.getPower());
-            jsonObject.put("battery_percent", battery.getPercentage());
-            jsonObject.put("battery_health", battery.getHealth());
+            jsonObject.put("edgeId", mEdgeId);
+            jsonObject.put("networkType", DeviceUtils.getNetworkType(ContextHolder.getAppContext()));
+            jsonObject.put("batteryStatus", battery.getStatus());
+            jsonObject.put("batteryPower", battery.getPower());
+            jsonObject.put("batteryPercent", battery.getPercentage());
+            jsonObject.put("batteryHealth", battery.getHealth());
             jsonObject.put("ramMemoryTotal", memory.getRamMemoryTotal());
             jsonObject.put("ramMemoryAvailable", memory.getRamMemoryAvailable());
             jsonObject.put("romMemoryAvailable", memory.getRomMemoryAvailable());
             jsonObject.put("romMemoryTotal", memory.getRomMemoryTotal());
+            jsonObject.put("updateTime", System.currentTimeMillis());
             Float cpuUtilization = sysStats.getCpuUtilization();
             if (null != cpuUtilization) {
-                jsonObject.put("cpu_utilization", cpuUtilization);
+                jsonObject.put("cpuUtilization", cpuUtilization);
             }
         } catch (JSONException e) {
             LogHelper.e(e, "sendDeviceInfo(%s)", mEdgeId);
