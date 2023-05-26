@@ -1,8 +1,6 @@
 import json
 import logging
 import time
-import traceback
-
 from fedml import mlops
 
 from .message_define import MyMessage
@@ -127,7 +125,7 @@ class FedMLServerManager(FedMLCommManager):
             self.send_init_msg()
             self.is_initialized = True
 
-    def process_finished_status(self, client_status, msg_params):
+    def process_finished_status(self, client_status, msg_params): # todo: for async
         self.client_finished_mapping[str(msg_params.get_sender_id())] = True
 
         all_client_is_finished = True
@@ -159,77 +157,82 @@ class FedMLServerManager(FedMLCommManager):
 
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         local_sample_number = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
+        local_model_round_idx = msg_params.get(MyMessage.MSG_ARG_KEY_ROUND_INDEX)
+        logging.info(f"===========local_model_round_idx={local_model_round_idx}, current index = {self.args.round_idx}")
 
-        self.aggregator.add_local_trained_result(
-            self.client_real_ids.index(sender_id), model_params, local_sample_number
-        )
-        b_all_received = self.aggregator.check_whether_all_receive()
-        logging.info("b_all_received = " + str(b_all_received))
-        if b_all_received:
-            mlops.event("server.wait", event_started=False, event_value=str(self.args.round_idx))
-            mlops.event("server.agg_and_eval", event_started=True, event_value=str(self.args.round_idx))
-            tick = time.time()
-            global_model_params, model_list, model_list_idxes = self.aggregator.aggregate()
-
-            logging.info("self.client_id_list_in_this_round = {}".format(self.client_id_list_in_this_round))
-            new_client_id_list_in_this_round = []
-            for client_idx in model_list_idxes:
-                new_client_id_list_in_this_round.append(self.client_id_list_in_this_round[client_idx])
-            logging.info("new_client_id_list_in_this_round = {}".format(new_client_id_list_in_this_round))
-            Context().add(Context.KEY_CLIENT_ID_LIST_IN_THIS_ROUND, new_client_id_list_in_this_round)
-
-            MLOpsProfilerEvent.log_to_wandb({"AggregationTime": time.time() - tick, "round": self.args.round_idx})
-
-            self.aggregator.test_on_server_for_all_clients(self.args.round_idx)
-
-            self.aggregator.assess_contribution()
-
-            mlops.event("server.agg_and_eval", event_started=False, event_value=str(self.args.round_idx))
-
-            # send round info to the MQTT backend
-            mlops.log_round_info(self.round_num, self.args.round_idx)
-
-            self.client_id_list_in_this_round = self.aggregator.client_selection(
-                self.args.round_idx, self.client_real_ids, self.args.client_num_per_round
+        if self.aggregator.is_participated(self.args.round_idx, local_model_round_idx):
+            self.aggregator.add_local_trained_result(
+                self.client_real_ids.index(sender_id), model_params, local_sample_number
             )
-            self.data_silo_index_list = self.aggregator.data_silo_selection(
-                self.args.round_idx, self.args.client_num_in_total, len(self.client_id_list_in_this_round),
-            )
-            Context().add(Context.KEY_CLIENT_ID_LIST_IN_THIS_ROUND, self.client_id_list_in_this_round)
+            flag = self.aggregator.is_to_aggregate()
+            logging.info("==========is_to_aggregate = %s " % str(flag))
+            if flag:
+                mlops.event("server.wait", event_started=False, event_value=str(self.args.round_idx))
+                mlops.event("server.agg_and_eval", event_started=True, event_value=str(self.args.round_idx))
+                tick = time.time()
+                global_model_params, model_list, model_list_idxes = self.aggregator.aggregate()
 
-            if self.args.round_idx == 0:
-                MLOpsProfilerEvent.log_to_wandb({"BenchmarkStart": time.time()})
+                logging.info("self.client_id_list_in_this_round = {}".format(self.client_id_list_in_this_round))
 
-            client_idx_in_this_round = 0
-            global_model_url = None
-            global_model_key = None
-            for receiver_id in self.client_id_list_in_this_round:
-                client_index = self.data_silo_index_list[client_idx_in_this_round]
-                if type(global_model_params) is dict:
-                    # compatible with the old version that, user did not give {-1 : global_parms_dict}
+                ############# todo: for async???
+                new_client_id_list_in_this_round = []
+                for client_idx in model_list_idxes:
+                    new_client_id_list_in_this_round.append(self.client_id_list_in_this_round[client_idx])
+                logging.info("new_client_id_list_in_this_round = {}".format(new_client_id_list_in_this_round))
+                Context().add(Context.KEY_CLIENT_ID_LIST_IN_THIS_ROUND, new_client_id_list_in_this_round)
+
+                MLOpsProfilerEvent.log_to_wandb({"AggregationTime": time.time() - tick, "round": self.args.round_idx})
+
+                self.aggregator.test_on_server_for_all_clients(self.args.round_idx)
+
+                self.aggregator.assess_contribution()
+
+                mlops.event("server.agg_and_eval", event_started=False, event_value=str(self.args.round_idx))
+
+                # send round info to the MQTT backend
+                mlops.log_round_info(self.round_num, self.args.round_idx)
+
+                self.client_id_list_in_this_round = self.aggregator.client_selection(
+                    self.args.round_idx, self.client_real_ids, self.args.client_num_per_round
+                )
+                self.data_silo_index_list = self.aggregator.data_silo_selection(
+                    self.args.round_idx, self.args.client_num_in_total, len(self.client_id_list_in_this_round),
+                )
+                Context().add(Context.KEY_CLIENT_ID_LIST_IN_THIS_ROUND, self.client_id_list_in_this_round)
+
+                if self.args.round_idx == 0:
+                    MLOpsProfilerEvent.log_to_wandb({"BenchmarkStart": time.time()})
+
+                client_idx_in_this_round = 0
+                global_model_url = None
+                global_model_key = None
+                for receiver_id in self.client_id_list_in_this_round:
+                    client_index = self.data_silo_index_list[client_idx_in_this_round]
+                    if type(global_model_params) is dict:
+                        # compatible with the old version that, user did not give {-1 : global_parms_dict}
+                        global_model_url, global_model_key = self.send_message_diff_sync_model_to_client(
+                            receiver_id, global_model_params[client_index], client_index
+                        )
+                    else:
+                        global_model_url, global_model_key = self.send_message_sync_model_to_client(
+                            receiver_id, global_model_params, client_index, global_model_url, global_model_key
+                        )
+                    client_idx_in_this_round += 1
+
+                # if user give {-1 : global_parms_dict}, then record global_model url separately
+                if type(global_model_params) is dict and (-1 in global_model_params.keys()):
                     global_model_url, global_model_key = self.send_message_diff_sync_model_to_client(
-                        receiver_id, global_model_params[client_index], client_index
+                        -1, global_model_params[-1], -1
                     )
-                else:
-                    global_model_url, global_model_key = self.send_message_sync_model_to_client(
-                        receiver_id, global_model_params, client_index, global_model_url, global_model_key
+
+                self.args.round_idx += 1
+                mlops.log_aggregated_model_info(
+                    self.args.round_idx, model_url=global_model_url,
                     )
-                client_idx_in_this_round += 1
 
-            # if user give {-1 : global_parms_dict}, then record global_model url separately
-            if type(global_model_params) is dict and (-1 in global_model_params.keys()):
-                global_model_url, global_model_key = self.send_message_diff_sync_model_to_client(
-                    -1, global_model_params[-1], -1
-                )
-
-            self.args.round_idx += 1
-            mlops.log_aggregated_model_info(
-                self.args.round_idx, model_url=global_model_url,
-                )
-
-            logging.info("\n\n==========end {}-th round training===========\n".format(self.args.round_idx))
-            if self.args.round_idx < self.round_num:
-                mlops.event("server.wait", event_started=True, event_value=str(self.args.round_idx))
+                logging.info("\n\n==========end {}-th round training===========\n".format(self.args.round_idx))
+                if self.args.round_idx < self.round_num:
+                    mlops.event("server.wait", event_started=True, event_value=str(self.args.round_idx))
 
     def cleanup(self):
         client_idx_in_this_round = 0
@@ -250,6 +253,7 @@ class FedMLServerManager(FedMLCommManager):
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")
+        message.add_params(MyMessage.MSG_ARG_KEY_ROUND_INDEX, self.args.round_idx)
         self.send_message(message)
         global_model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
         global_model_key = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY)
@@ -275,11 +279,13 @@ class FedMLServerManager(FedMLCommManager):
         logging.info("send_message_sync_model_to_client. receive_id = %d" % receive_id)
         message = Message(MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT, self.get_sender_id(), receive_id, )
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
+
         if global_model_url is not None:
             message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL, global_model_url)
         if global_model_key is not None:
             message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY, global_model_key)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(client_index))
+        message.add_params(MyMessage.MSG_ARG_KEY_ROUND_INDEX, str(self.args.round_idx))
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")
         self.send_message(message)
 
@@ -303,5 +309,5 @@ class FedMLServerManager(FedMLCommManager):
 
         global_model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
         global_model_key = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY)
-        
+
         return global_model_url, global_model_key

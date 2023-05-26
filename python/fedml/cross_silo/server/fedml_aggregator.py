@@ -1,11 +1,10 @@
 import logging
 import random
 import time
-
 import numpy as np
 import torch
-
 from fedml import mlops
+from .fedml_async_manager import FedMLAsyncManager
 from ...core import Context
 from ...ml.engine import ml_engine_adapter
 
@@ -47,6 +46,9 @@ class FedMLAggregator(object):
         self.flag_client_model_uploaded_dict = dict()
         for idx in range(self.client_num):
             self.flag_client_model_uploaded_dict[idx] = False
+        FedMLAsyncManager.get_instance().init(args)
+        if FedMLAsyncManager.get_instance().is_enabled():
+            self.client_num = FedMLAsyncManager.get_instance().batch_size
 
     def get_global_model_params(self):
         return self.aggregator.get_model_params()
@@ -61,8 +63,11 @@ class FedMLAggregator(object):
         if type(model_params) is not dict:
             model_params = ml_engine_adapter.model_params_to_device(self.args, model_params, self.device)
 
+        if FedMLAsyncManager.get_instance().is_enabled():
+            index = FedMLAsyncManager.get_instance().get_local_model_counter()
+            FedMLAsyncManager.get_instance().add_local_model_counter()
         self.model_dict[index] = model_params
-        self.sample_num_dict[index] = sample_num
+        self.sample_num_dict[index] = sample_num * self.calc_aggregate_weight()
         self.flag_client_model_uploaded_dict[index] = True
 
     def check_whether_all_receive(self):
@@ -74,9 +79,28 @@ class FedMLAggregator(object):
             self.flag_client_model_uploaded_dict[idx] = False
         return True
 
+    @staticmethod
+    def is_participated(current_round_idx, local_model_round_idx):
+        if not FedMLAsyncManager.get_instance().is_enabled():
+            return True
+        staleness = FedMLAsyncManager.get_instance().find_staleness(current_round_idx, local_model_round_idx)
+        FedMLAsyncManager.get_instance().set_staleness_factor(staleness)
+        return staleness < FedMLAsyncManager.get_instance().max_staleness
+
+    def is_to_aggregate(self):
+        if FedMLAsyncManager.get_instance().is_enabled():
+            return FedMLAsyncManager.get_instance().is_to_aggregate()
+        else:
+            return self.check_whether_all_receive()
+
+    @staticmethod
+    def calc_aggregate_weight():
+        if not FedMLAsyncManager.get_instance().is_enabled():
+            return 1
+        return FedMLAsyncManager.get_instance().get_stalness_factor()
+
     def aggregate(self):
         start_time = time.time()
-
         model_list = []
         for idx in range(self.client_num):
             model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
