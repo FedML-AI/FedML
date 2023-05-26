@@ -77,7 +77,7 @@ public class EdgeCommunicator implements MqttCallbackExtended {
                 ("{\"ID\":\"" + edge_id + "\",\"status\":\"" +
                         MessageDefine.MSG_MLOPS_CLIENT_STATUS_OFFLINE + "\"}").getBytes(),
                 2, true);
-        client = createMqttClient(MQTT_BROKER, deviceId);
+        client = createMqttClient(MQTT_BROKER, deviceId + "_" + System.currentTimeMillis());
     }
 
     private void connectMqtt() {
