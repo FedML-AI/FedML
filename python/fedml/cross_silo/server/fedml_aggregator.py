@@ -48,7 +48,7 @@ class FedMLAggregator(object):
             self.flag_client_model_uploaded_dict[idx] = False
         FedMLAsyncManager.get_instance().init(args)
         if FedMLAsyncManager.get_instance().is_enabled():
-            self.client_num = FedMLAsyncManager.get_instance().batch_size
+            self.client_num = FedMLAsyncManager.get_instance().async_buffer_size
 
     def get_global_model_params(self):
         return self.aggregator.get_model_params()
