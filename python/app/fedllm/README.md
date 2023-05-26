@@ -22,6 +22,16 @@ The repo contains:
 
 ## Getting Started
 
+Clone the repo then go to FedLLM directory:
+
+```shell
+# clone the top-level repo
+git clone https://github.com/FedML-AI/FedML.git
+
+# go to the FedLLM directory
+cd python/app/fedllm
+```
+
 Install dependencies with the following command:
 
 ```shell
@@ -36,7 +46,7 @@ Run the following command to
 download [`databricks-dolly-15k`](https://github.com/databrickslabs/dolly/tree/master/data).
 
 ```shell
-bash script/setup.sh
+bash scripts/setup.sh
 ```
 
 ### Conventional/Centralized Training
@@ -81,10 +91,9 @@ pip install fedml
 #### 2. Run FedML
 
 To train/fine-tune in federated setting, you need to provide a FedML config file.
-An example can be found in [fedml_config.yaml](fedml_config/fedml_config.yaml).
-You can use different config file for each client or server.
+An example can be found in [fedml_config/fedml_config.yaml](fedml_config/fedml_config.yaml).
 To launch an experiment, a `RUN_ID` should be provided. For each experiment, the same `RUN_ID` should be used across all
-the client(s) and server.
+the client(s) and aggregator server.
 
 **_Notice_**: since we use `RUN_ID` to uniquely identify experiments,
 we recommend that you carefully choose the `RUN_ID`.
@@ -94,7 +103,7 @@ e.g. use `RUN_ID="$(python3 -c "import uuid; print(uuid.uuid4().hex)")"` in your
 Example scripts:
 
 ```shell
-# run server
+# run aggregator server
 bash scripts/run_fedml_server.sh "$RUN_ID"
 
 # run client(s)
@@ -121,30 +130,35 @@ _Skip this step if you already have a FedML account._
 
 #### 2. Build package
 
-Use the following command to build client and server package for MLOps.
+Use the following command to build client and aggregator server package for MLOps.
 
 ```shell
 fedml build -t $TARGET_TYPE -sf $SOURCE -ep $ENTRY -cf $CONFIG -df $DEST
 ```
 
-```
-Usage: fedml build [OPTIONS]
+> Usage: fedml build [OPTIONS]
+>
+> Commands for open.fedml.ai MLOps platform
+>
+> Options:
+>
+>   - `-t`, --type TEXT client or aggregator server? (value: client; server)
+>
+>   - `-sf`, --source_folder TEXT the source code folder path
+>
+>   - `-ep`, --entry_point TEXT the entry point (a .py file) of the source code
+>
+>   - `-cf`, --config_folder TEXT the config folder path
+>
+>   - `-df`, --dest_folder TEXT the destination package folder path
+>
+>   - `--help`, Show this message and exit.
 
-  Commands for open.fedml.ai MLOps platform
 
-Options:
-  -t, --type TEXT            client or server? (value: client; server)
-  -sf, --source_folder TEXT  the source code folder path
-  -ep, --entry_point TEXT    the entry point (a .py file) of the source code
-  -cf, --config_folder TEXT  the config folder path
-  -df, --dest_folder TEXT    the destination package folder path
-  --help                     Show this message and exit.
-```
-
-To compile an example package, use the following command in the **FedLLM root**:
+To compile an example package, use the following command in the **FedLLM root directory**:
 
 ```shell
-# build server package
+# build aggregator server package
 fedml build -t server -sf . -ep main_mlops.py -df build -cf "mlops_config" -ig "build"
 
 # build client package
@@ -154,50 +168,54 @@ fedml build -t client -sf . -ep main_mlops.py -df build -cf "mlops_config" -ig "
 #### 2. Create an Octopus Application
 
 1. Once logged in, go to [FedML Octopus](https://open.fedml.ai/octopus/userGuides/index).
-![FedML Home](assets/MLOps/FedML_Home.png)
+   ![FedML Home](assets/MLOps/FedML_Home.png)
 
-2. Go to [My Applications](https://open.fedml.ai/octopus/applications/index), then click `+ New Application` to 
-create a new application.
-![Octopus Application Page](assets/MLOps/Octopus_Application_Step_1.png)
+2. Go to [My Applications](https://open.fedml.ai/octopus/applications/index), then click `+ New Application` to
+   create a new application.
+   ![Octopus Application Page](assets/MLOps/Octopus_Application_Step_1.png)
 
-3. Enter `Application name` and upload `server` and `client` packages.
-![Octopus Create Application 1](assets/MLOps/Octopus_Create_Application_1.png)
-![Octopus Create Application 2](assets/MLOps/Octopus_Create_Application_2.png)
+3. Enter `Application name` and upload `Server` and `Client` packages.
+   ![Octopus Create Application 1](assets/MLOps/Octopus_Create_Application_1.png)
+   If you followed the tutorial, the packages should be located at `build/dist-packages`.
+   ![Octopus Create Application 2](assets/MLOps/Octopus_Create_Application_2.png)
 
 #### 3. Create an Octopus Project
 
 1. Navigate to [Project](https://open.fedml.ai/octopus/project/index) page and click `+ Create new project`.
-![Octopus New Project 1](assets/MLOps/Octopus_New_Project_1.png)
+   ![Octopus New Project 1](assets/MLOps/Octopus_New_Project_1.png)
 
 2. Enter `Group` and select a project group from `Group Name` dropdown menu; there should a default group available.
-![Octopus New Project 2](assets/MLOps/Octopus_New_Project_2.png)
+   ![Octopus New Project 2](assets/MLOps/Octopus_New_Project_2.png)
 
-#### 4. Login from Your Device(s) and 
+#### 4. Login from Your Device(s)
 
 1. Find your account ID from the top-right corner of the page.
-![FedML Home AccountID](assets/MLOps/FedML_Home_AccountID.png)
+   ![FedML Home AccountID](assets/MLOps/FedML_Home_AccountID.png)
 
 2. On your device, login as a client with command `fedml login $account_id`.
 
-3. On your device (preferably a different physical device), login as a server with command `fedml login -s $account_id`.
+3. On your device (preferably a different physical device), login as a aggregator server with
+   command `fedml login -s $account_id`.
 
 4. You should be able to find your devices in [Edge Devices](https://open.fedml.ai/octopus/edgeDevice/edgeApp) page
-![Edge Devices](assets/MLOps/Octopus_Edge_Devices.png)
+   ![Edge Devices](assets/MLOps/Octopus_Edge_Devices.png)
 
 5. In the [Project](https://open.fedml.ai/octopus/project/index) page, select the project you just created.
-![Octopus Project Run 1](assets/MLOps/Octopus_Project_Run_1.png)
+   ![Octopus Project Run 1](assets/MLOps/Octopus_Project_Run_1.png)
 
 #### 5. Start Training
 
 1. Select `+ Create new run` to create a new experiment.
-![Octopus Project Run 2](assets/MLOps/Octopus_Project_Run_2.png)
+   ![Octopus Project Run 2](assets/MLOps/Octopus_Project_Run_2.png)
 
-2. Select your **client** and **server** devices and select **application** from the `Application` dropdown menu.
-![Octopus_Project_Run_3.png](assets/MLOps/Octopus_Project_Run_3.png)
+2. Select your **client** and **aggregator server** devices and select **application** from the `Application` dropdown
+   menu.
+   ![Octopus_Project_Run_3.png](assets/MLOps/Octopus_Project_Run_3.png)
 
 3. Select and existing Hyper-parameter Configuration. You can also `Add` and `Delete` configurations.
+
 4. Click `Start` to start your experiment.
-![Octopus_Project_Run_4.png](assets/MLOps/Octopus_Project_Run_4.png)
+   ![Octopus_Project_Run_4.png](assets/MLOps/Octopus_Project_Run_4.png)
 
 ### Experiment Tracking and More with FedML Octopus
 
@@ -206,7 +224,10 @@ You can easily monitor system performance,and visualize training/evaluation metr
 ![MLOps Experimental Tracking Visualization](assets/MLOps/MLOps_Experimental_Tracking_Visualization.png)
 ![MLOps Experimental Tracking System](assets/MLOps/MLOps_Experimental_Tracking_System.png)
 
-Check out [FedML Octopus](https://open.fedml.ai/octopus/index) and our [Video Tutorial](https://youtu.be/Xgm0XEaMlVQ) for detail.
+**Congratulations! You've completed the FedLLM tutorial on FedML!!!**
+
+Check out [FedML Octopus](https://open.fedml.ai/octopus/index) and our [Video Tutorial](https://youtu.be/Xgm0XEaMlVQ)
+for detail.
 
 ### Dependencies
 

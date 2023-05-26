@@ -47,6 +47,10 @@ def _parse_args(args: Arguments) -> Arguments:
             for p in args.dataset_path
         ]
 
+    if torch.cuda.device_count() == 0:
+        logging.warning(f"{args.role} rank {args.rank} does not have GPU! Fallback to CPU mode.")
+        setattr(args, "deepspeed", None)
+
     return args
 
 
