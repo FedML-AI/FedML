@@ -12,7 +12,8 @@ FedML Open Source: https://github.com/FedML-AI \
 FedML Platform: https://open.fedml.ai \
 FedML Use Cases: https://open.fedml.ai/platform/appStore \
 FedML Documentation: https://doc.fedml.ai \
-FedML Blog: https://medium.com/@FedML \
+FedML Blog: https://blog.fedml.ai/ \
+FedML Medium: https://medium.com/@FedML \
 FedML Research: https://fedml.ai/research-papers/ \
 FedML Product Overview: https://medium.com/@FedML/fedml-ai-platform-releases-the-worlds-federated-learning-open-platform-on-public-cloud-with-an-8024e68a70b6
 
@@ -37,6 +38,8 @@ Discord: https://discord.gg/9xkW8ae6RV
 
 
 # News
+* <b>[2023/04/27] (Product Introduction)</b> FedML AI Releases FedLLM: Build Your Own Large Language Models on Proprietary Data using the FedML Platform! Please visit <a href="https://blog.fedml.ai/releasing-fedllm-build-your-own-large-language-models-on-proprietary-data-using-the-fedml-platform/">this blog</a> and <a href="https://github.com/FedML-AI/FedML/tree/master/python/app/fedllm">GitHub repo</a>for details.
+
 * <b>[2022/08/01] (Product Introduction)</b> FedML AI platform releases the world’s federated learning open platform on the public cloud with an in-depth introduction of products and technologies! Please visit <a href="https://medium.com/@FedML/fedml-ai-platform-releases-the-worlds-federated-learning-open-platform-on-public-cloud-with-an-8024e68a70b6">this blog</a> for details. 
 
 * <b>[2022/03/15] (Fundraising)</b>: FedML, Inc. has finished the 1st-round fundraising. We are backed by top VCs who focus on AI, SaaS, and Blockchain/Web3/Crypto from the Bay Area, California of the USA.
