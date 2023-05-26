@@ -129,7 +129,7 @@ class FedMLDefender:
         )
 
     def is_defense_on_aggregation(self):
-        return self.is_defense_enabled() and self.defense_type in [DEFENSE_SLSGD, DEFENSE_RFA, DEFENSE_WISE_MEDIAN]
+        return self.is_defense_enabled() and self.defense_type in [DEFENSE_SLSGD, DEFENSE_RFA, DEFENSE_WISE_MEDIAN, DEFENSE_GEO_MEDIAN]
 
     def is_defense_before_aggregation(self):
         return self.is_defense_enabled() and self.defense_type in [
