@@ -56,6 +56,8 @@ train_args:
 
 validation_args:
   frequency_of_the_test: 1
+  is_aggregator_test: true
+  is_client_test: false
 
 device_args:
   using_gpu: True

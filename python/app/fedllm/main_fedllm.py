@@ -1,8 +1,11 @@
+from typing import Optional
+
 from collections import OrderedDict
 import logging
 import math
 from pathlib import Path
 
+from datasets import Dataset
 import fedml
 from fedml import FedMLRunner, mlops
 from fedml.arguments import Arguments
@@ -37,8 +40,9 @@ def _parse_args(args: Arguments) -> Arguments:
     if args.role == "client":
         if hasattr(args, "client_dataset_path"):
             args.dataset_path = args.client_dataset_path
-        # disable logging for client
-        setattr(args, "report_to", "none")
+        if not getattr(args, "is_client_test", False):
+            # disable logging for client when not testing on client
+            setattr(args, "report_to", "none")
         setattr(args, "disable_tqdm", True)
 
     if isinstance(args.dataset_path, (tuple, list)):
@@ -84,13 +88,14 @@ class LLMTrainer(ClientTrainer):
             model: ModelType,
             args: Arguments,
             tokenizer: TokenizerType,
-            model_args: ModelArguments
+            model_args: ModelArguments,
+            test_dataset: Optional[Dataset] = None
     ):
         super().__init__(model, args)
 
         self.tokenizer = tokenizer
         self.model_args = model_args
-        self.trainer = get_hf_trainer(self.args, self.model, self.tokenizer)
+        self.trainer = get_hf_trainer(self.args, self.model, self.tokenizer, eval_dataset=test_dataset)
 
         max_steps = self.trainer.args.max_steps
         num_train_epochs = self.trainer.args.num_train_epochs
@@ -140,17 +145,19 @@ class LLMTrainer(ClientTrainer):
     def on_before_local_training(self, train_data, device, args: Arguments) -> None:
         super().on_before_local_training(train_data, device, args)
 
-        # TODO: replace args?
         # update round_idx
         if hasattr(args, "round_idx"):
-            setattr(self.args, "round_idx", args.round_idx)
+            self.round_idx = args.round_idx
 
         self.trainer.train_dataset = train_data
 
-        if getattr(self.args, "round_idx", -1) > 0:
+        if self.round_idx > 0:
             # TODO: verify model, model_wrapped, deepspeed, optimizer, lr_scheduler after reset
             # turn off TrainingArguments.deepspeed to avoid duplicated initializations
             self.trainer.args.deepspeed = None
+
+            # TODO: remove once FedML integrated the change
+            self.test(self.trainer.eval_dataset, device, args)
 
     def train(self, train_data, device, args: Arguments) -> None:
         self.trainer.train()
@@ -160,6 +167,25 @@ class LLMTrainer(ClientTrainer):
         self.trainer.save_model(str(self.temp_ckpt_dir))
         # recover TrainingArguments.deepspeed
         self.trainer.args.deepspeed = self.args.deepspeed
+
+    def test(self, test_data, device, args) -> None:
+        if not self.is_run_test:
+            return
+
+        metrics = self.trainer.evaluate(eval_dataset=test_data, metric_key_prefix=f"client{self.args.rank}_eval")
+        mlops.log({**metrics, "round_idx": self.round_idx})
+
+    @property
+    def is_run_test(self) -> bool:
+        return getattr(self.args, "is_client_test", False)
+
+    @property
+    def round_idx(self) -> int:
+        return getattr(self.args, "round_idx", -1)
+
+    @round_idx.setter
+    def round_idx(self, round_idx: int) -> None:
+        setattr(self.args, "round_idx", round_idx)
 
 
 class LLMAggregator(ServerAggregator):
@@ -201,11 +227,26 @@ class LLMAggregator(ServerAggregator):
         set_peft_model_state_dict(self.model, model_parameters)
 
     def test(self, test_data, device, args: Arguments) -> None:
+        if not self.is_run_test:
+            return
+
         # update epoch, global_step for logging
-        self.trainer.state.epoch = self.args.round_idx
-        self.trainer.state.global_step = self.args.round_idx
+        self.trainer.state.epoch = self.round_idx
+        self.trainer.state.global_step = self.round_idx
         metrics = self.trainer.evaluate(eval_dataset=test_data)
-        mlops.log({**metrics, "round_idx": args.round_idx})
+        mlops.log({**metrics, "round_idx": self.round_idx})
+
+    @property
+    def is_run_test(self) -> bool:
+        return getattr(self.args, "is_aggregator_test", True)
+
+    @property
+    def round_idx(self) -> int:
+        return getattr(self.args, "round_idx", -1)
+
+    @round_idx.setter
+    def round_idx(self, round_idx: int) -> None:
+        setattr(self.args, "round_idx", round_idx)
 
 
 def transform_data_to_fedml_format(args: Arguments, dataset):
@@ -275,7 +316,7 @@ def main(args: Arguments) -> None:
     dataset = transform_data_to_fedml_format(args, dataset)
 
     # FedML trainer
-    trainer = LLMTrainer(model=model, args=args, tokenizer=tokenizer, model_args=model_args)
+    trainer = LLMTrainer(model=model, args=args, tokenizer=tokenizer, model_args=model_args, test_dataset=test_dataset)
     aggregator = LLMAggregator(model=model, args=args, tokenizer=tokenizer)
 
     # start training
