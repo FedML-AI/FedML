@@ -63,7 +63,6 @@ public class DeviceInfoReporter {
             jsonObject.put("ramMemoryAvailable", memory.getRamMemoryAvailable());
             jsonObject.put("romMemoryAvailable", memory.getRomMemoryAvailable());
             jsonObject.put("romMemoryTotal", memory.getRomMemoryTotal());
-            jsonObject.put("updateTime", System.currentTimeMillis());
             Float cpuUtilization = sysStats.getCpuUtilization();
             if (null != cpuUtilization) {
                 jsonObject.put("cpuUtilization", cpuUtilization);
