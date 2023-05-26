@@ -1,4 +1,5 @@
 import logging
+from .fedml_async_manager import FedMLAsyncManager
 from .utils import read_mnn_as_tensor_dict
 import copy
 import time
@@ -16,20 +17,23 @@ nn = MNN.nn
 
 class FedMLAggregator(object):
     def __init__(
-        self, test_dataloader, worker_num, device, args, aggregator,
+        self, test_dataloader, client_num, device, args, aggregator,
     ):
         self.aggregator = aggregator
 
         self.args = args
         self.test_global = test_dataloader
 
-        self.worker_num = worker_num
+        self.client_num = client_num
         self.device = device
         self.model_dict = dict()
         self.sample_num_dict = dict()
         self.flag_client_model_uploaded_dict = dict()
-        for idx in range(self.worker_num):
+        for idx in range(self.client_num):
             self.flag_client_model_uploaded_dict[idx] = False
+        FedMLAsyncManager.get_instance().init(args)
+        if FedMLAsyncManager.get_instance().is_enabled():
+            self.client_num = FedMLAsyncManager.get_instance().batch_size
 
     def get_global_model_params(self):
         return self.aggregator.get_model_params()
@@ -44,16 +48,39 @@ class FedMLAggregator(object):
 
     def add_local_trained_result(self, index, model_params, sample_num):
         logging.info("add_model. index = %d" % index)
+        if FedMLAsyncManager.get_instance().is_enabled():
+            index = FedMLAsyncManager.get_instance().get_local_model_counter()
+            FedMLAsyncManager.get_instance().add_local_model_counter()
         self.model_dict[index] = model_params
-        self.sample_num_dict[index] = sample_num
+        self.sample_num_dict[index] = sample_num * self.calc_aggregate_weight()
         self.flag_client_model_uploaded_dict[index] = True
 
+    @staticmethod
+    def is_participated(current_round_idx, local_model_round_idx):
+        if not FedMLAsyncManager.get_instance().is_enabled():
+            return True
+        staleness = FedMLAsyncManager.get_instance().find_staleness(current_round_idx, local_model_round_idx)
+        FedMLAsyncManager.get_instance().set_staleness_factor(staleness)
+        return staleness < FedMLAsyncManager.get_instance().max_staleness
+
+    def is_to_aggregate(self):
+        if FedMLAsyncManager.get_instance().is_enabled():
+            return FedMLAsyncManager.get_instance().is_to_aggregate()
+        else:
+            return self.check_whether_all_receive()
+
+    @staticmethod
+    def calc_aggregate_weight():
+        if not FedMLAsyncManager.get_instance().is_enabled():
+            return 1
+        return FedMLAsyncManager.get_instance().get_stalness_factor()
+
     def check_whether_all_receive(self):
-        logging.info("worker_num = {}".format(self.worker_num))
-        for idx in range(self.worker_num):
+        logging.info("client_num = {}".format(self.client_num))
+        for idx in range(self.client_num):
             if not self.flag_client_model_uploaded_dict[idx]:
                 return False
-        for idx in range(self.worker_num):
+        for idx in range(self.client_num):
             self.flag_client_model_uploaded_dict[idx] = False
         return True
 
@@ -62,7 +89,7 @@ class FedMLAggregator(object):
 
     def aggregate(self):
         logging.info("FedMLDebug. Individual model performance:")
-        for idx in range(self.worker_num):
+        for idx in range(self.client_num):
             logging.info("self.model_dict[idx] = {}".format(self.model_dict[idx]))
             mnn_file_path = self.model_dict[idx]
             self._test_individual_model_perf_before_agg(mnn_file_path, self.args.round_idx)
@@ -71,7 +98,7 @@ class FedMLAggregator(object):
         model_list = []
         training_num = 0
 
-        for idx in range(self.worker_num):
+        for idx in range(self.client_num):
             logging.info("self.model_dict[idx] = {}".format(self.model_dict[idx]))
             mnn_file_path = self.model_dict[idx]
             tensor_params_dict = read_mnn_as_tensor_dict(mnn_file_path)

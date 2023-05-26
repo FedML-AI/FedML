@@ -2,9 +2,7 @@ import json
 import logging
 import time
 import traceback
-
 from fedml import mlops
-
 from .message_define import MyMessage
 from .utils import write_tensor_dict_to_mnn
 from ...core.distributed.communication.message import Message
@@ -42,12 +40,9 @@ class FedMLServerManager(FedMLCommManager):
         logging.info(
             "self.model_file_cache_folder = {}".format(self.model_file_cache_folder)
         )
-
         self.client_online_mapping = {}
         self.client_real_ids = json.loads(args.client_id_list)
-
         self.client_finished_mapping = {}
-
         self.is_initialized = False
         self.client_id_list_in_this_round = None
         self.data_silo_index_list = None
@@ -200,19 +195,15 @@ class FedMLServerManager(FedMLCommManager):
 
     def process_online_status(self, client_status, msg_params):
         self.client_online_mapping[str(msg_params.get_sender_id())] = True
-
         logging.info("self.client_online_mapping = {}".format(self.client_online_mapping))
-
         all_client_is_online = True
         for client_id in self.client_id_list_in_this_round:
             if not self.client_online_mapping.get(str(client_id), False):
                 all_client_is_online = False
                 break
-
         logging.info(
             "sender_id = %d, all_client_is_online = %s" % (msg_params.get_sender_id(), str(all_client_is_online))
         )
-
         if all_client_is_online:
             mlops.log_aggregation_status(MyMessage.MSG_MLOPS_SERVER_STATUS_RUNNING)
 
@@ -222,17 +213,14 @@ class FedMLServerManager(FedMLCommManager):
 
     def process_finished_status(self, client_status, msg_params):
         self.client_finished_mapping[str(msg_params.get_sender_id())] = True
-
         all_client_is_finished = True
         for client_id in self.client_id_list_in_this_round:
             if not self.client_finished_mapping.get(str(client_id), False):
                 all_client_is_finished = False
                 break
-
         logging.info(
             "sender_id = %d, all_client_is_finished = %s" % (msg_params.get_sender_id(), str(all_client_is_finished))
         )
-
         if all_client_is_finished:
             mlops.log_aggregation_finished_status()
             time.sleep(5)
@@ -283,76 +271,63 @@ class FedMLServerManager(FedMLCommManager):
 
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         local_sample_number = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
+        local_model_round_idx = msg_params.get(MyMessage.MSG_ARG_KEY_ROUND_INDEX)
 
-        self.aggregator.add_local_trained_result(
-            self.client_real_ids.index(sender_id), model_params, local_sample_number
-        )
-        b_all_received = self.aggregator.check_whether_all_receive()
-        logging.info("b_all_received = %s " % str(b_all_received))
-        if b_all_received:
-            logging.info("=================================================")
-            logging.info(
-                "=========== ROUND {} IS FINISHED!!! =============".format(
-                    self.args.round_idx
+        if self.aggregator.is_participated(self.args.round_idx, local_model_round_idx):
+            self.aggregator.add_local_trained_result(
+                self.client_real_ids.index(sender_id), model_params, local_sample_number
+            )
+            flag = self.aggregator.is_to_aggregate()
+            logging.info("is_to_aggregate = %s " % str(flag))
+            if flag:
+                mlops.event("server.wait", event_started=False, event_value=str(self.args.round_idx))
+                mlops.event("server.agg_and_eval", event_started=True, event_value=str(self.args.round_idx))
+                global_model_params = self.aggregator.aggregate()
+                write_tensor_dict_to_mnn(self.global_model_file_path, global_model_params)
+
+                self.aggregator.test_on_server_for_all_clients(
+                    self.global_model_file_path, self.args.round_idx
                 )
-            )
-            logging.info("=================================================")
 
-            mlops.event("server.wait", event_started=False, event_value=str(self.args.round_idx))
+                mlops.event("server.agg_and_eval", event_started=False, event_value=str(self.args.round_idx))
 
-            mlops.event("server.agg_and_eval", event_started=True, event_value=str(self.args.round_idx))
+                # send round info to the MQTT backend
+                mlops.log_round_info(self.round_num, self.args.round_idx)
 
-            global_model_params = self.aggregator.aggregate()
-            
-            # self.aggregator.test_on_server_for_all_clients(
-            #     self.args.round_idx, self.global_model_file_path
-            # )
-            
-            write_tensor_dict_to_mnn(self.global_model_file_path, global_model_params)
-            self.aggregator.test_on_server_for_all_clients_mnn(
-                self.global_model_file_path, self.args.round_idx
-            )
-            
-            mlops.event("server.agg_and_eval", event_started=False, event_value=str(self.args.round_idx))
+                self.client_id_list_in_this_round = self.aggregator.client_selection(
+                    self.args.round_idx, self.client_real_ids, self.args.client_num_per_round)
 
-
-            # send round info to the MQTT backend
-            mlops.log_round_info(self.round_num, self.args.round_idx)
-
-            self.client_id_list_in_this_round = self.aggregator.client_selection(
-                self.args.round_idx, self.client_real_ids, self.args.client_num_per_round
-            )
-            self.data_silo_index_list = self.aggregator.data_silo_selection(
-                self.args.round_idx,
-                self.args.client_num_in_total,
-                len(self.client_id_list_in_this_round),
-            )
-
-            client_idx_in_this_round = 0
-            global_model_url = None
-            global_model_key = None
-            logging.info("round idx {}, client_num_in_total {}, data_silo_index_list length {},"
-                         "client_id_list_in_this_round length {}.".format(
-                self.args.round_idx, self.args.client_num_in_total,
-                len(self.data_silo_index_list), len(self.client_id_list_in_this_round)))
-            for receiver_id in self.client_id_list_in_this_round:
-                global_model_url, global_model_key = self.send_message_sync_model_to_client(
-                    receiver_id,
-                    self.global_model_file_path,
-                    self.data_silo_index_list[client_idx_in_this_round],
-                    global_model_url,
-                    global_model_key
+                self.data_silo_index_list = self.aggregator.data_silo_selection(
+                    self.args.round_idx,
+                    self.args.client_num_in_total,
+                    len(self.client_id_list_in_this_round),
                 )
-                client_idx_in_this_round += 1
 
-            self.args.round_idx += 1
-            mlops.log_aggregated_model_info(
-                self.args.round_idx, model_url=global_model_url,
-            )
+                client_idx_in_this_round = 0
+                global_model_url = None
+                global_model_key = None
+                logging.info("round idx {}, client_num_in_total {}, data_silo_index_list length {},"
+                             "client_id_list_in_this_round length {}.".format(
+                    self.args.round_idx, self.args.client_num_in_total,
+                    len(self.data_silo_index_list), len(self.client_id_list_in_this_round)))
+                for receiver_id in self.client_id_list_in_this_round:
+                    global_model_url, global_model_key = self.send_message_sync_model_to_client(
+                        receiver_id,
+                        self.global_model_file_path,
+                        self.data_silo_index_list[client_idx_in_this_round],
+                        global_model_url,
+                        global_model_key
+                    )
+                    client_idx_in_this_round += 1
 
-            logging.info("\n\n==========end {}-th round training===========\n".format(self.args.round_idx))
-            if self.args.round_idx < self.round_num:
-                mlops.event("server.wait", event_started=True, event_value=str(self.args.round_idx))
+                self.args.round_idx += 1
+                mlops.log_aggregated_model_info(
+                    self.args.round_idx, model_url=global_model_url,
+                )
+
+                logging.info("\n\n==========end {}-th round training===========\n".format(self.args.round_idx))
+                if self.args.round_idx < self.round_num:
+                    mlops.event("server.wait", event_started=True, event_value=str(self.args.round_idx))
 
     def cleanup(self):
         client_idx_in_this_round = 0
@@ -383,6 +358,7 @@ class FedMLServerManager(FedMLCommManager):
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(client_index))
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "AndroidClient")
+        message.add_params(MyMessage.MSG_ARG_KEY_ROUND_INDEX, self.args.round_idx)
         self.send_message(message)
 
         global_model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
@@ -412,6 +388,7 @@ class FedMLServerManager(FedMLCommManager):
         if global_model_key is not None:
             message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY, global_model_key)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(data_silo_index))
+        message.add_params(MyMessage.MSG_ARG_KEY_ROUND_INDEX, self.args.round_idx)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "AndroidClient")
         self.send_message(message)
 
