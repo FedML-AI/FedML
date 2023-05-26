@@ -11,7 +11,7 @@ class FedMLAsyncManager:
 
     def __init__(self):
         self.is_async = False
-        self.batch_size = 0
+        self.async_buffer_size = 0
         self.local_model_counter = 0
         self.max_staleness = 0
         self.stalness_factor = 0
@@ -20,11 +20,11 @@ class FedMLAsyncManager:
         self.is_async = False
         if hasattr(config, "is_async") and isinstance(config.is_async, bool) and config.is_async:
             self.is_async = True
-        if hasattr(config, "batch_size") and isinstance(config.batch_size, int) and config.batch_size > 0:
-            if config.batch_size > config.client_num_per_round:
-                self.batch_size = config.client_num_per_round
+        if hasattr(config, "async_buffer_size") and isinstance(config.async_buffer_size, int) and config.async_buffer_size > 0:
+            if config.async_buffer_size > config.client_num_per_round:
+                self.async_buffer_size = config.client_num_per_round
             else:
-                self.batch_size = config.batch_size
+                self.async_buffer_size = config.async_buffer_size
         if hasattr(config, "max_staleness") and isinstance(config.max_staleness, int) and config.max_staleness > 0:
             self.max_staleness = config.max_staleness
         else:
@@ -50,7 +50,7 @@ class FedMLAsyncManager:
         return self.local_model_counter
 
     def is_to_aggregate(self):
-        if self.local_model_counter == self.batch_size:
+        if self.local_model_counter == self.async_buffer_size:
             self.local_model_counter = 0
             return True
         return False
