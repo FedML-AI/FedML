@@ -130,7 +130,7 @@ class FedBuffAsyncAggStrategy(BaseAggStrategy):
     def get_weight_scaling_ratio(
         self, current_global_step_on_server, current_global_step_on_client
     ):
-        staleness = current_global_step_on_server, current_global_step_on_client
+        staleness = current_global_step_on_server - current_global_step_on_client
         return 1 / (1 + staleness) ** 0.5
 
 
