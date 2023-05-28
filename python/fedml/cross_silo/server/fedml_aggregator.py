@@ -62,8 +62,7 @@ class FedMLAggregator(object):
         # for dictionary model_params, we let the user level code to control the device
         if type(model_params) is not dict:
             model_params = ml_engine_adapter.model_params_to_device(
-                self.args, model_params, self.device
-            )
+                self.args, model_params, self.device)
 
         self.agg_strategy.add_client_update_index_to_buffer(client_index)
         self.model_dict[client_index] = model_params
@@ -72,21 +71,18 @@ class FedMLAggregator(object):
             current_global_step_on_server, current_global_step_on_client)
         self.flag_client_model_uploaded_dict[client_index] = True
 
+    def whether_to_accept(self, current_global_step_on_server, current_global_step_on_client):
+        return self.agg_strategy.whether_to_accept(current_global_step_on_server, current_global_step_on_client)
+
     def whether_to_aggregate(self):
         return self.agg_strategy.whether_to_aggregate()
-
-    def whether_to_accept(
-        self, current_global_step_on_server, current_global_step_on_client
-    ):
-        return self.agg_strategy.whether_to_accept(
-            current_global_step_on_server, current_global_step_on_client
-        )
 
     def aggregate(self):
         start_time = time.time()
         model_list = []
         for idx in range(self.buffer_size):
             model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
+
         # model_list is the list after outlier removal
         model_list, model_list_idxes = self.aggregator.on_before_aggregation(model_list)
         Context().add(Context.KEY_CLIENT_MODEL_LIST, model_list)

@@ -160,21 +160,22 @@ class FedMLServerManager(FedMLCommManager):
         local_model_round_idx = msg_params.get(MyMessage.MSG_ARG_KEY_ROUND_INDEX)
         logging.info(f"===========local_model_round_idx={local_model_round_idx}, current index = {self.args.round_idx}")
 
-        if self.aggregator.is_participated(self.args.round_idx, local_model_round_idx):
+        if self.aggregator.whether_to_accept(self.args.round_idx, local_model_round_idx):
             self.aggregator.add_local_trained_result(
+                self.args.round_idx, local_model_round_idx,
                 self.client_real_ids.index(sender_id), model_params, local_sample_number
             )
-            flag = self.aggregator.is_to_aggregate()
-            logging.info("==========is_to_aggregate = %s " % str(flag))
-            if flag:
+            
+            if self.aggregator.whether_to_aggregate():
+                logging.info("==========start to aggregate============")
                 mlops.event("server.wait", event_started=False, event_value=str(self.args.round_idx))
                 mlops.event("server.agg_and_eval", event_started=True, event_value=str(self.args.round_idx))
+                
                 tick = time.time()
                 global_model_params, model_list, model_list_idxes = self.aggregator.aggregate()
-
+                
+                # used by security-enabled setting (e.g., outlier removal algorithm)
                 logging.info("self.client_id_list_in_this_round = {}".format(self.client_id_list_in_this_round))
-
-                ############# todo: for async???
                 new_client_id_list_in_this_round = []
                 for client_idx in model_list_idxes:
                     new_client_id_list_in_this_round.append(self.client_id_list_in_this_round[client_idx])
@@ -184,7 +185,6 @@ class FedMLServerManager(FedMLCommManager):
                 MLOpsProfilerEvent.log_to_wandb({"AggregationTime": time.time() - tick, "round": self.args.round_idx})
 
                 self.aggregator.test_on_server_for_all_clients(self.args.round_idx)
-
                 self.aggregator.assess_contribution()
 
                 mlops.event("server.agg_and_eval", event_started=False, event_value=str(self.args.round_idx))
