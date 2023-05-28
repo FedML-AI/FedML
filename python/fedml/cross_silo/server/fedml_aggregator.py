@@ -55,6 +55,9 @@ class FedMLAggregator(object):
     def set_global_model_params(self, model_parameters):
         self.aggregator.set_model_params(model_parameters)
 
+    def whether_to_accept(self, current_global_step_on_server, current_global_step_on_client):
+        return self.agg_strategy.whether_to_accept(current_global_step_on_server, current_global_step_on_client)
+
     def add_local_trained_result(self, current_global_step_on_server, current_global_step_on_client,
                                  client_index, model_params, sample_num):
         logging.info(f"client_index = {client_index}")
@@ -70,9 +73,6 @@ class FedMLAggregator(object):
         self.sample_num_dict[client_index] = sample_num * self.agg_strategy.get_weight_scaling_ratio(
             current_global_step_on_server, current_global_step_on_client)
         self.flag_client_model_uploaded_dict[client_index] = True
-
-    def whether_to_accept(self, current_global_step_on_server, current_global_step_on_client):
-        return self.agg_strategy.whether_to_accept(current_global_step_on_server, current_global_step_on_client)
 
     def whether_to_aggregate(self):
         return self.agg_strategy.whether_to_aggregate()
