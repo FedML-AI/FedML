@@ -22,11 +22,13 @@ model_args:
   global_model_file_path: "./model_file_cache/global_model.mnn"
 
 train_args:
-  federated_optimizer: "FedAvg"
-  client_id_list: "[138]"
-  client_num_in_total: 1
-  client_num_per_round: 1
-  comm_round: 3
+  federated_optimizer: "FedBuff" # Options: FedAvg, FedBuff
+  is_async: True
+  buffer_size: 3
+  max_acceptable_staleness: 3
+  client_num_in_total: 5
+  client_num_per_round: 5
+  comm_round: 50
   epochs: 1
   batch_size: 100
   client_optimizer: sgd

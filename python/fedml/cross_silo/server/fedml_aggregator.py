@@ -1,11 +1,13 @@
 import logging
 import random
 import time
+
 import numpy as np
 import torch
 from fedml import mlops
-from .fedml_async_manager import FedMLAsyncManager
+
 from ...core import Context
+from ...ml.aggregator.sync_async_strategy import create_agg_strategy
 from ...ml.engine import ml_engine_adapter
 
 
@@ -18,12 +20,12 @@ class FedMLAggregator(object):
         train_data_local_dict,
         test_data_local_dict,
         train_data_local_num_dict,
-        client_num,
         device,
         args,
         server_aggregator,
     ):
         self.aggregator = server_aggregator
+        self.agg_strategy = create_agg_strategy(args)
 
         self.args = args
         self.train_global = train_global
@@ -37,18 +39,15 @@ class FedMLAggregator(object):
         self.test_data_local_dict = test_data_local_dict
         self.train_data_local_num_dict = train_data_local_num_dict
 
-        self.client_num = client_num
         self.device = device
         self.args.device = device
         logging.info("self.device = {}".format(self.device))
         self.model_dict = dict()
         self.sample_num_dict = dict()
         self.flag_client_model_uploaded_dict = dict()
-        for idx in range(self.client_num):
-            self.flag_client_model_uploaded_dict[idx] = False
-        FedMLAsyncManager.get_instance().init(args)
-        if FedMLAsyncManager.get_instance().is_enabled():
-            self.client_num = FedMLAsyncManager.get_instance().async_buffer_size
+
+        self.buffer_size = self.agg_strategy.get_buffer_size()
+        logging.info("buffer_size = {}".format(self.buffer_size))
 
     def get_global_model_params(self):
         return self.aggregator.get_model_params()
@@ -56,53 +55,37 @@ class FedMLAggregator(object):
     def set_global_model_params(self, model_parameters):
         self.aggregator.set_model_params(model_parameters)
 
-    def add_local_trained_result(self, index, model_params, sample_num):
-        logging.info("add_model. index = %d" % index)
+    def add_local_trained_result(self, current_global_step_on_server, current_global_step_on_client,
+                                 client_index, model_params, sample_num):
+        logging.info(f"client_index = {client_index}")
 
         # for dictionary model_params, we let the user level code to control the device
         if type(model_params) is not dict:
-            model_params = ml_engine_adapter.model_params_to_device(self.args, model_params, self.device)
+            model_params = ml_engine_adapter.model_params_to_device(
+                self.args, model_params, self.device
+            )
 
-        if FedMLAsyncManager.get_instance().is_enabled():
-            index = FedMLAsyncManager.get_instance().get_local_model_counter()
-            FedMLAsyncManager.get_instance().add_local_model_counter()
-        self.model_dict[index] = model_params
-        self.sample_num_dict[index] = sample_num * self.calc_aggregate_weight()
-        self.flag_client_model_uploaded_dict[index] = True
+        self.agg_strategy.add_client_update_index_to_buffer(client_index)
+        self.model_dict[client_index] = model_params
+        # TODO: change the name of "sample_num_dict"
+        self.sample_num_dict[client_index] = sample_num * self.agg_strategy.get_weight_scaling_ratio(
+            current_global_step_on_server, current_global_step_on_client)
+        self.flag_client_model_uploaded_dict[client_index] = True
 
-    def check_whether_all_receive(self):
-        logging.debug("client_num = {}".format(self.client_num))
-        for idx in range(self.client_num):
-            if not self.flag_client_model_uploaded_dict[idx]:
-                return False
-        for idx in range(self.client_num):
-            self.flag_client_model_uploaded_dict[idx] = False
-        return True
+    def whether_to_aggregate(self):
+        return self.agg_strategy.whether_to_aggregate()
 
-    @staticmethod
-    def is_participated(current_round_idx, local_model_round_idx):
-        if not FedMLAsyncManager.get_instance().is_enabled():
-            return True
-        staleness = FedMLAsyncManager.get_instance().find_staleness(current_round_idx, local_model_round_idx)
-        FedMLAsyncManager.get_instance().set_staleness_factor(staleness)
-        return staleness < FedMLAsyncManager.get_instance().max_staleness
-
-    def is_to_aggregate(self):
-        if FedMLAsyncManager.get_instance().is_enabled():
-            return FedMLAsyncManager.get_instance().is_to_aggregate()
-        else:
-            return self.check_whether_all_receive()
-
-    @staticmethod
-    def calc_aggregate_weight():
-        if not FedMLAsyncManager.get_instance().is_enabled():
-            return 1
-        return FedMLAsyncManager.get_instance().get_stalness_factor()
+    def whether_to_accept(
+        self, current_global_step_on_server, current_global_step_on_client
+    ):
+        return self.agg_strategy.whether_to_accept(
+            current_global_step_on_server, current_global_step_on_client
+        )
 
     def aggregate(self):
         start_time = time.time()
         model_list = []
-        for idx in range(self.client_num):
+        for idx in range(self.buffer_size):
             model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
         # model_list is the list after outlier removal
         model_list, model_list_idxes = self.aggregator.on_before_aggregation(model_list)
@@ -111,13 +94,16 @@ class FedMLAggregator(object):
         averaged_params = self.aggregator.aggregate(model_list)
 
         if type(averaged_params) is dict:
-            if len(averaged_params) == self.client_num + 1: # aggregator pass extra {-1 : global_parms_dict}  as global_params
-                itr_count = len(averaged_params) - 1        # do not apply on_after_aggregation to client -1
+            # aggregator pass extra {-1 : global_parms_dict}  as global_params
+            if (len(averaged_params) == self.buffer_size + 1):
+                # do not apply on_after_aggregation to client -1
+                itr_count = (len(averaged_params) - 1)
             else:
                 itr_count = len(averaged_params)
 
             for client_index in range(itr_count):
-                averaged_params[client_index] = self.aggregator.on_after_aggregation(averaged_params[client_index])
+                averaged_params[client_index] = self.aggregator.on_after_aggregation(
+                    averaged_params[client_index])
         else:
             averaged_params = self.aggregator.on_after_aggregation(averaged_params)
 
@@ -128,8 +114,10 @@ class FedMLAggregator(object):
         return averaged_params, model_list, model_list_idxes
 
     def assess_contribution(self):
-        if hasattr(self.args, "enable_contribution") and \
-                self.args.enable_contribution is not None and self.args.enable_contribution:
+        if (hasattr(self.args, "enable_contribution")
+            and self.args.enable_contribution is not None
+                and self.args.enable_contribution):
+
             self.aggregator.assess_contribution()
 
     def data_silo_selection(self, round_idx, client_num_in_total, client_num_per_round):
@@ -147,18 +135,25 @@ class FedMLAggregator(object):
 
         """
         logging.info(
-            "client_num_in_total = %d, client_num_per_round = %d" % (client_num_in_total, client_num_per_round)
+            "client_num_in_total = %d, client_num_per_round = %d"
+            % (client_num_in_total, client_num_per_round)
         )
         assert client_num_in_total >= client_num_per_round
 
         if client_num_in_total == client_num_per_round:
             return [i for i in range(client_num_per_round)]
         else:
-            np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round
-            data_silo_index_list = np.random.choice(range(client_num_in_total), client_num_per_round, replace=False)
+            np.random.seed(
+                round_idx
+            )  # make sure for each comparison, we are selecting the same clients each round
+            data_silo_index_list = np.random.choice(
+                range(client_num_in_total), client_num_per_round, replace=False
+            )
             return data_silo_index_list
 
-    def client_selection(self, round_idx, client_id_list_in_total, client_num_per_round):
+    def client_selection(
+        self, round_idx, client_id_list_in_total, client_num_per_round
+    ):
         """
         Args:
             round_idx: round index, starting from 0
@@ -172,8 +167,11 @@ class FedMLAggregator(object):
         """
         if client_num_per_round == len(client_id_list_in_total):
             return client_id_list_in_total
-        np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round
-        client_id_list_in_this_round = np.random.choice(client_id_list_in_total, client_num_per_round, replace=False)
+        # make sure for each comparison, we are selecting the same clients each round
+        np.random.seed(round_idx)
+        client_id_list_in_this_round = np.random.choice(
+            client_id_list_in_total, client_num_per_round, replace=False
+        )
         return client_id_list_in_this_round
 
     def client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
@@ -181,24 +179,37 @@ class FedMLAggregator(object):
             client_indexes = [client_index for client_index in range(client_num_in_total)]
         else:
             num_clients = min(client_num_per_round, client_num_in_total)
-            np.random.seed(round_idx)  # make sure for each comparison, we are selecting the same clients each round
-            client_indexes = np.random.choice(range(client_num_in_total), num_clients, replace=False)
+            np.random.seed(
+                round_idx
+            )  # make sure for each comparison, we are selecting the same clients each round
+            client_indexes = np.random.choice(
+                range(client_num_in_total), num_clients, replace=False
+            )
         logging.info("client_indexes = %s" % str(client_indexes))
         return client_indexes
 
     def _generate_validation_set(self, num_samples=10000):
         if self.args.dataset.startswith("stackoverflow"):
             test_data_num = len(self.test_global.dataset)
-            sample_indices = random.sample(range(test_data_num), min(num_samples, test_data_num))
+            sample_indices = random.sample(
+                range(test_data_num), min(num_samples, test_data_num)
+            )
             subset = torch.utils.data.Subset(self.test_global.dataset, sample_indices)
-            sample_testset = torch.utils.data.DataLoader(subset, batch_size=self.args.batch_size)
+            sample_testset = torch.utils.data.DataLoader(
+                subset, batch_size=self.args.batch_size
+            )
             return sample_testset
         else:
             return self.test_global
 
     def test_on_server_for_all_clients(self, round_idx):
-        if round_idx % self.args.frequency_of_the_test == 0 or round_idx == self.args.comm_round - 1:
-            logging.info("################test_on_server_for_all_clients : {}".format(round_idx))
+        if (
+            round_idx % self.args.frequency_of_the_test == 0
+            or round_idx == self.args.comm_round - 1
+        ):
+            logging.info(
+                "################test_on_server_for_all_clients : {}".format(round_idx)
+            )
             self.aggregator.test_all(
                 self.train_data_local_dict,
                 self.test_data_local_dict,
@@ -208,36 +219,56 @@ class FedMLAggregator(object):
 
             if round_idx == self.args.comm_round - 1:
                 # we allow to return four metrics, such as accuracy, AUC, loss, etc.
-                metric_result_in_current_round = self.aggregator.test(self.test_global, self.device, self.args)
+                metric_result_in_current_round = self.aggregator.test(
+                    self.test_global, self.device, self.args
+                )
             else:
-                metric_result_in_current_round = self.aggregator.test(self.val_global, self.device, self.args)
-            logging.info("metric_result_in_current_round = {}".format(metric_result_in_current_round))
-            metric_results_in_the_last_round = Context().get(Context.KEY_METRICS_ON_AGGREGATED_MODEL)
-            Context().add(Context.KEY_METRICS_ON_AGGREGATED_MODEL, metric_result_in_current_round)
+                metric_result_in_current_round = self.aggregator.test(
+                    self.val_global, self.device, self.args
+                )
+            logging.info(
+                "metric_result_in_current_round = {}".format(
+                    metric_result_in_current_round
+                )
+            )
+            metric_results_in_the_last_round = Context().get(
+                Context.KEY_METRICS_ON_AGGREGATED_MODEL
+            )
+            Context().add(
+                Context.KEY_METRICS_ON_AGGREGATED_MODEL, metric_result_in_current_round
+            )
             if metric_results_in_the_last_round is not None:
-                Context().add(Context.KEY_METRICS_ON_LAST_ROUND, metric_results_in_the_last_round)
+                Context().add(
+                    Context.KEY_METRICS_ON_LAST_ROUND, metric_results_in_the_last_round
+                )
             else:
-                Context().add(Context.KEY_METRICS_ON_LAST_ROUND, metric_result_in_current_round)
+                Context().add(
+                    Context.KEY_METRICS_ON_LAST_ROUND, metric_result_in_current_round
+                )
             key_metrics_on_last_round = Context().get(Context.KEY_METRICS_ON_LAST_ROUND)
-            logging.info("key_metrics_on_last_round = {}".format(key_metrics_on_last_round))
+            logging.info(
+                "key_metrics_on_last_round = {}".format(key_metrics_on_last_round)
+            )
         else:
             mlops.log({"round_idx": round_idx})
-    
+
     def get_dummy_input_tensor(self):
         test_data = None
         if self.test_global:
             test_data = self.test_global
-        else:   # if test_global is None, then we use the first non-empty test_data_local_dict
+        else:  # if test_global is None, then we use the first non-empty test_data_local_dict
             for k, v in self.test_data_local_dict.items():
                 if v:
                     test_data = v
-                    break 
-        
+                    break
+
         with torch.no_grad():
-            batch_idx, features_label_tensors = next(enumerate(test_data))  # test_data -> dataloader obj
+            batch_idx, features_label_tensors = next(
+                enumerate(test_data)
+            )  # test_data -> dataloader obj
             dummy_list = []
             for tensor in features_label_tensors:
-                dummy_tensor = tensor[:1] # only take the first element as dummy input
+                dummy_tensor = tensor[:1]  # only take the first element as dummy input
                 dummy_list.append(dummy_tensor)
         features = dummy_list[:-1]  # Can adapt Process Multi-Label
         return features
@@ -246,36 +277,47 @@ class FedMLAggregator(object):
         test_data = None
         if self.test_global:
             test_data = self.test_global
-        else:   # if test_global is None, then we use the first non-empty test_data_local_dict
+        else:  # if test_global is None, then we use the first non-empty test_data_local_dict
             for k, v in self.test_data_local_dict.items():
                 if v:
                     test_data = v
                     break
-        
+
         with torch.no_grad():
-            batch_idx, features_label_tensors = next(enumerate(test_data))  # test_data -> dataloader obj
+            batch_idx, features_label_tensors = next(
+                enumerate(test_data)
+            )  # test_data -> dataloader obj
             dummy_list = []
             for tensor in features_label_tensors:
-                dummy_tensor = tensor[:1] # only take the first element as dummy input
+                dummy_tensor = tensor[:1]  # only take the first element as dummy input
                 dummy_list.append(dummy_tensor)
         features = dummy_list[:-1]  # Can adapt Multi-Label
 
         input_shape, input_type = [], []
         for feature in features:
             input_shape.append(list(feature.shape))
-            if feature.dtype == torch.int or feature.dtype == torch.int8 or feature.dtype == torch.int16 or \
-                    feature.dtype == torch.int32 or feature.dtype == torch.int64 or feature.dtype == torch.uint8 or \
-                    feature.dtype == torch.short or feature.dtype == torch.long or feature.dtype == torch.bool:
+            if (
+                feature.dtype == torch.int
+                or feature.dtype == torch.int8
+                or feature.dtype == torch.int16
+                or feature.dtype == torch.int32
+                or feature.dtype == torch.int64
+                or feature.dtype == torch.uint8
+                or feature.dtype == torch.short
+                or feature.dtype == torch.long
+                or feature.dtype == torch.bool
+            ):
                 input_type.append("int")
             else:
                 input_type.append("float")
-            
+
         return input_shape, input_type
-    
+
     def save_dummy_input_tensor(self):
         import pickle
+
         features = self.get_input_size_type()
-        with open('dummy_input_tensor.pkl', 'wb') as handle:
+        with open("dummy_input_tensor.pkl", "wb") as handle:
             pickle.dump(features, handle)
 
         # TODO: save the dummy_input_tensor.pkl to s3, and transfer when click "Create Model Card"

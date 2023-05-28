@@ -30,7 +30,6 @@ def init_server(
         train_data_local_dict,
         test_data_local_dict,
         train_data_local_num_dict,
-        worker_num,
         device,
         args,
         server_aggregator,
