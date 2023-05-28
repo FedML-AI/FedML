@@ -24,7 +24,7 @@ model_args:
 train_args:
   federated_optimizer: "FedBuff" # Options: FedAvg, FedBuff
   is_async: True
-  buffer_size: 3
+  buffer_size: 2
   max_acceptable_staleness: 3
   client_num_in_total: 5
   client_num_per_round: 5

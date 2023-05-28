@@ -63,6 +63,16 @@ def torch_aggregator(args, raw_grad_list, training_num):
                     avg_params[k] += local_model_params[k]
     elif args.federated_optimizer == "FedOpt":
         pass
+    elif args.federated_optimizer == "FedBuff":
+        (num0, avg_params) = raw_grad_list[0]
+        for k in avg_params.keys():
+            for i in range(0, len(raw_grad_list)):
+                local_sample_number, local_model_params = raw_grad_list[i]
+                w = local_sample_number / training_num
+                if i == 0:
+                    avg_params[k] = local_model_params[k] * w
+                else:
+                    avg_params[k] += local_model_params[k] * w
     elif args.federated_optimizer == "FedNova":
         pass
     elif args.federated_optimizer == "FedDyn":
@@ -131,6 +141,8 @@ def torch_aggregator(args, raw_grad_list, training_num):
                     avg_params[k] += local_model_params[k] * w
                     avg_local_grad[k] += local_grad[k] * w
         avg_params = (avg_params, avg_local_grad)
+    else:
+        raise Exception(f"args.federated_optimizer {args.federated_optimizer} doesn't exist")
     return avg_params
 
 
@@ -156,7 +168,8 @@ def tf_aggregator(args, raw_grad_list, training_num):
                     avg_params[k] += local_model_params[k]
     elif args.federated_optimizer == "FedOpt":
         pass
-
+    else:
+        raise Exception(f"args.federated_optimizer {args.federated_optimizer} doesn't exist")
     return avg_params
 
 
@@ -186,6 +199,8 @@ def jax_aggregator(args, raw_grad_list, training_num):
                     avg_params[k]["w"] += local_model_params[k]["w"]
     elif args.federated_optimizer == "FedOpt":
         pass
+    else:
+        raise Exception(f"args.federated_optimizer {args.federated_optimizer} doesn't exist")
 
     return avg_params
 
@@ -216,6 +231,8 @@ def mxnet_aggregator(args, raw_grad_list, training_num):
                         avg_params[k][j] += local_model_params[k][j]
     elif args.federated_optimizer == "FedOpt":
         pass
+    else:
+        raise Exception(f"args.federated_optimizer {args.federated_optimizer} doesn't exist")
 
     return avg_params
 

@@ -10,16 +10,17 @@ If you want to use your customized MQTT or s3 server as training backends, you s
 
 At the server side, run the following script:
 ```
-bash run_server.sh your_run_id
+RUN_ID="fedml_mnist_lr_example"
+bash run_server.sh $RUN_ID
 ```
 
 For client 1, run the following script:
 ```
-bash run_client.sh 1 your_run_id
+bash run_client.sh 1 $RUN_ID
 ```
 For client 2, run the following script:
 ```
-bash run_client.sh 2 your_run_id
+bash run_client.sh 2 $RUN_ID
 ```
 Note: please run the server first.
 

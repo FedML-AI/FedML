@@ -3,7 +3,7 @@ from fedml.core import ServerAggregator
 
 class FedMLCrossSiloServer:
     def __init__(self, args, device, dataset, model, server_aggregator: ServerAggregator = None):
-        if args.federated_optimizer == "FedAvg":
+        if args.federated_optimizer == "FedAvg" or args.federated_optimizer == "FedBuff":
             from fedml.cross_silo.server import server_initializer
 
             [

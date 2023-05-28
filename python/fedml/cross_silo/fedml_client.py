@@ -4,7 +4,7 @@ from ..core import ClientTrainer
 
 class FedMLCrossSiloClient:
     def __init__(self, args, device, dataset, model, model_trainer: ClientTrainer = None):
-        if args.federated_optimizer == "FedAvg":
+        if args.federated_optimizer == "FedAvg" or args.federated_optimizer == "FedBuff":
             [
                 train_data_num,
                 test_data_num,

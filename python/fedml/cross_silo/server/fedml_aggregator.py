@@ -44,7 +44,6 @@ class FedMLAggregator(object):
         logging.info("self.device = {}".format(self.device))
         self.model_dict = dict()
         self.sample_num_dict = dict()
-        self.flag_client_model_uploaded_dict = dict()
 
         self.buffer_size = self.agg_strategy.get_buffer_size()
         logging.info("buffer_size = {}".format(self.buffer_size))
@@ -64,15 +63,13 @@ class FedMLAggregator(object):
 
         # for dictionary model_params, we let the user level code to control the device
         if type(model_params) is not dict:
-            model_params = ml_engine_adapter.model_params_to_device(
-                self.args, model_params, self.device)
+            model_params = ml_engine_adapter.model_params_to_device(self.args, model_params, self.device)
 
         self.agg_strategy.add_client_update_index_to_buffer(client_index)
         self.model_dict[client_index] = model_params
         # TODO: change the name of "sample_num_dict"
         self.sample_num_dict[client_index] = sample_num * self.agg_strategy.get_weight_scaling_ratio(
             current_global_step_on_server, current_global_step_on_client)
-        self.flag_client_model_uploaded_dict[client_index] = True
 
     def whether_to_aggregate(self):
         return self.agg_strategy.whether_to_aggregate()
@@ -80,7 +77,9 @@ class FedMLAggregator(object):
     def aggregate(self):
         start_time = time.time()
         model_list = []
-        for idx in range(self.buffer_size):
+        client_index_set = self.agg_strategy.get_client_update_index_in_buffer()
+        logging.info(f"client_index_set = {client_index_set}")
+        for idx in client_index_set:
             model_list.append((self.sample_num_dict[idx], self.model_dict[idx]))
 
         # model_list is the list after outlier removal
@@ -104,11 +103,18 @@ class FedMLAggregator(object):
             averaged_params = self.aggregator.on_after_aggregation(averaged_params)
 
         self.set_global_model_params(averaged_params)
-
+        
+        self._reset_buffer()
+        
         end_time = time.time()
         logging.info("aggregate time cost: %d" % (end_time - start_time))
         return averaged_params, model_list, model_list_idxes
 
+    def _reset_buffer(self):
+        self.agg_strategy.reset_buffer()
+        self.sample_num_dict.clear()
+        self.model_dict.clear()
+        
     def assess_contribution(self):
         if (hasattr(self.args, "enable_contribution")
             and self.args.enable_contribution is not None

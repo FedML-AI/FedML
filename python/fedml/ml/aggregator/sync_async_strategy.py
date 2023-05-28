@@ -27,38 +27,25 @@ class BaseAggStrategy(ABC):
         self.config = config
 
         self.is_async = False
-        if (
-            hasattr(config, "is_async")
-            and isinstance(config.is_async, bool)
-            and config.is_async
-        ):
+        if (hasattr(config, "is_async") and isinstance(config.is_async, bool) and config.is_async):
             self.is_async = True
 
         if self.is_async:
             # set the config.buffer_size
             if hasattr(config, "buffer_size") and isinstance(config.buffer_size, int):
-                if (
-                    config.buffer_size >= config.client_num_per_round
-                    or config.buffer_size <= 0
-                ):
+                if (config.buffer_size >= config.client_num_per_round or config.buffer_size <= 0):
                     raise AttributeError(
-                        f"config.buffer_size ({config.buffer_size}) is abnormal."
-                    )
+                        f"config.buffer_size ({config.buffer_size}) is abnormal. In async optimization, buffer_size should be < config.client_num_per_round")
                 else:
                     self.buffer_size = config.buffer_size
             else:
-                raise AttributeError(
-                    f"config.buffer_size ({config.buffer_size}) is not set."
-                )
+                raise AttributeError(f"config.buffer_size ({config.buffer_size}) is not set.")
 
             # set the config.max_acceptable_staleness
-            if hasattr(config, "max_acceptable_staleness") and isinstance(
-                config.max_acceptable_staleness, int
-            ):
+            if hasattr(config, "max_acceptable_staleness") and isinstance(config.max_acceptable_staleness, int):
                 if config.max_acceptable_staleness < 0:
                     raise AttributeError(
-                        f"config.max_acceptable_staleness ({config.max_acceptable_staleness}) is abnormal."
-                    )
+                        f"config.max_acceptable_staleness ({config.max_acceptable_staleness}) is abnormal.")
                 else:
                     self.max_acceptable_staleness = config.max_acceptable_staleness
             else:
@@ -91,8 +78,6 @@ class BaseAggStrategy(ABC):
     def whether_to_aggregate(self):
         if len(self.client_update_index_in_buffer) < self.buffer_size:
             return False
-        # reset
-        self.client_update_index_in_buffer.clear()
         return True
 
     @abstractmethod
@@ -100,6 +85,12 @@ class BaseAggStrategy(ABC):
         self, current_global_step_on_server, current_global_step_on_client
     ):
         pass
+    
+    def get_client_update_index_in_buffer(self):
+        return self.client_update_index_in_buffer
+    
+    def reset_buffer(self):
+        self.client_update_index_in_buffer.clear()
 
 
 class SyncAggStrategy(BaseAggStrategy):
@@ -135,7 +126,9 @@ class FedBuffAsyncAggStrategy(BaseAggStrategy):
 
 
 def create_agg_strategy(config):
-    if config.is_async and config.federated_optimizer == "FedBuff":
+    if config.federated_optimizer == "FedBuff":
+        config.is_async = True
         return FedBuffAsyncAggStrategy(config)
     else:
+        config.is_async = False
         return SyncAggStrategy(config)

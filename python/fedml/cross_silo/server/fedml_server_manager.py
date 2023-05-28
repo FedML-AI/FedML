@@ -158,11 +158,13 @@ class FedMLServerManager(FedMLCommManager):
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         local_sample_number = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
         local_model_round_idx = msg_params.get(MyMessage.MSG_ARG_KEY_ROUND_INDEX)
-        logging.info(f"===========local_model_round_idx={local_model_round_idx}, current index = {self.args.round_idx}")
+        logging.info(f"===========local_model_round_idx = {local_model_round_idx}, current index = {self.args.round_idx}")
 
-        if self.aggregator.whether_to_accept(self.args.round_idx, local_model_round_idx):
+        current_global_step_on_server = int(self.args.round_idx)
+        current_global_step_on_client = int(local_model_round_idx)
+        if self.aggregator.whether_to_accept(current_global_step_on_server, current_global_step_on_client):
             self.aggregator.add_local_trained_result(
-                self.args.round_idx, local_model_round_idx,
+                current_global_step_on_server, current_global_step_on_client,
                 self.client_real_ids.index(sender_id), model_params, local_sample_number
             )
             
@@ -230,7 +232,7 @@ class FedMLServerManager(FedMLCommManager):
                     self.args.round_idx, model_url=global_model_url,
                     )
 
-                logging.info("\n\n==========end {}-th round training===========\n".format(self.args.round_idx))
+                logging.info(f"\n\n==========end {self.args.round_idx}-th/{self.round_num} round training===========\n")
                 if self.args.round_idx < self.round_num:
                     mlops.event("server.wait", event_started=True, event_value=str(self.args.round_idx))
 
