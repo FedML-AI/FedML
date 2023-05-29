@@ -105,8 +105,8 @@ class ClientMasterManager(FedMLCommManager):
         if self.round_idx < self.num_rounds:
             self.__train()
             self.round_idx += 1
-        else:
-            self.cleanup()
+            if self.round_idx == self.num_rounds:
+                self.cleanup()
 
     def handle_message_finish(self, msg_params):
         logging.info(" ====================cleanup ====================")
