@@ -42,9 +42,9 @@ public class CpuUtils {
     }
 
     private Float getCpuUsageForLowerVersion() {
-        Long cpuTime = 0L;
-        Long appTime = 0L;
-        Float value = 0.0f;
+        long cpuTime = 0L;
+        long appTime = 0L;
+        float value = 0.0f;
         try {
             if (procStatFile == null || appStatFile == null) {
                 procStatFile = new RandomAccessFile("/proc/stat", "r");

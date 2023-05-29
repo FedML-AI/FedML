@@ -8,7 +8,6 @@ import android.net.NetworkInfo;
 import android.provider.Settings;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
-import android.util.Log;
 import android.os.Process;
 
 import androidx.core.app.ActivityCompat;

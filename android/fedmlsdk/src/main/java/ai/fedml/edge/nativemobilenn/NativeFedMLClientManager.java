@@ -1,7 +1,5 @@
 package ai.fedml.edge.nativemobilenn;
 
-import android.util.Log;
-
 import ai.fedml.edge.utils.LogHelper;
 
 public final class NativeFedMLClientManager {

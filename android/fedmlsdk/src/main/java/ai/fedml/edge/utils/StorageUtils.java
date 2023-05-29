@@ -1,10 +1,8 @@
 package ai.fedml.edge.utils;
 
 import android.content.Context;
-import android.os.Build;
 import android.os.Environment;
 import android.os.StatFs;
-import android.util.Log;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -15,7 +13,6 @@ import java.io.InputStream;
 
 import ai.fedml.edge.service.ContextHolder;
 import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
 
 public class StorageUtils {
     private static final String TAG = "StorageUtils";
