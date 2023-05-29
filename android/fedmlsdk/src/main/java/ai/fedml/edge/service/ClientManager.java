@@ -118,7 +118,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
 
     @Override
     public void handleMessageConnectionReady(JSONObject params) {
-        LogHelper.d("handleMessageConnectionReady: %d", mHasSentOnlineMsg?1:0);
+        LogHelper.d("handleMessageConnectionReady: %d", mHasSentOnlineMsg ? 1 : 0);
 
         if (!mHasSentOnlineMsg) {
             mHasSentOnlineMsg = true;
@@ -133,7 +133,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
             return;
         }
         Boolean isInited = initStateMap.get(mRunId);
-        if ( isInited != null && isInited ) {
+        if (isInited != null && isInited) {
             return;
         }
         String topic;
@@ -163,7 +163,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
         LogHelper.d("handleMessageReceiveModelFromServer: %s", params.toString());
         if (mIsTrainingStopped) {
             LogHelper.d("FedMLDebug. handleMessageReceiveModelFromServer() training run (%s) is already stopped", mRunId);
-            return ;
+            return;
         }
         if (mEdgeId == 0) {
             return;
@@ -204,7 +204,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
         LogHelper.d("FedMLDebug. handleTraining topic（%s）", topic);
         if (mIsTrainingStopped) {
             LogHelper.d("FedMLDebug. handleTraining() training run (%s) is already stopped", mRunId);
-            return ;
+            return;
         }
         eventLogger.logEventStarted("train", String.valueOf(clientRound));
         final String uuidKey = topic + "-" + UUID.randomUUID().toString().replace("-", "");
@@ -237,8 +237,8 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
                         reportError();
                         LogHelper.e(e, "FedMLDebug. training failed.");
                     }
-                } else if (TransferState.FAILED == state ) {
-                    if ( reTryCnt > 0 ) {
+                } else if (TransferState.FAILED == state) {
+                    if (reTryCnt > 0) {
                         remoteStorage.download(modelParams, new File(trainModelPath), this);
                         reTryCnt--;
                     } else {
@@ -254,8 +254,14 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
 
             @Override
             public void onError(int id, Exception ex) {
-                LogHelper.e(ex, "download onError(%d)", id);
-                reportError();
+                if (reTryCnt > 0) {
+                    LogHelper.w(ex, "download onError(%d)", id);
+                    remoteStorage.download(modelParams, new File(trainModelPath), this);
+                    reTryCnt--;
+                } else {
+                    LogHelper.e(ex, "download onError(%d)", id);
+                    reportError();
+                }
             }
         });
     }
@@ -282,8 +288,8 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
                             ).build();
                     // Todo: save the last aggregated model into the local training engine.
                     // mTrainer.training(params);
-                } else if (TransferState.FAILED == state ) {
-                    if ( reTryCnt > 0 ) {
+                } else if (TransferState.FAILED == state) {
+                    if (reTryCnt > 0) {
                         remoteStorage.download(modelParams, new File(trainModelPath), this);
                         reTryCnt--;
                     }
@@ -297,7 +303,14 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
 
             @Override
             public void onError(int id, Exception ex) {
-                LogHelper.e(ex, "download onError(%d)", id);
+                if (reTryCnt > 0) {
+                    LogHelper.w(ex, "download onError(%d)", id);
+                    remoteStorage.download(modelParams, new File(trainModelPath), this);
+                    reTryCnt--;
+                } else {
+                    LogHelper.e(ex, "download onError(%d)", id);
+                    reportError();
+                }
             }
         });
     }
@@ -316,7 +329,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
                                   final long trainSamples, final int clientRound, @NonNull final OnUploadedListener listener) {
         if (mIsTrainingStopped) {
             LogHelper.d("FedMLDebug. sendModelToServer() training run (%s) is already stopped", mRunId);
-            return ;
+            return;
         }
         eventLogger.logEventStarted("comm_c2s", String.valueOf(clientRound));
         final String uuidS3Key = trainModelPath.substring(trainModelPath.lastIndexOf(File.separator) + 1);
@@ -334,7 +347,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
                     if (reTryCnt > 0) {
                         remoteStorage.upload(uuidS3Key, new File(trainModelPath), this);
                         reTryCnt--;
-                    }else {
+                    } else {
                         reportError();
                     }
                 }
@@ -358,7 +371,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
                         .modelParams(uuidS3Key)
                         .clientIdx(String.valueOf(clientIdx)).build();
                 edgeCommunicator.sendMessage(FedMqttTopic.modelUpload(mRunId, mEdgeId), modelEntity);
-                mReporter.reportClientModelInfo(mRunId, edgeId, clientRound+1, uuidS3Key);
+                mReporter.reportClientModelInfo(mRunId, edgeId, clientRound + 1, uuidS3Key);
             }
         });
     }

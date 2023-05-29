@@ -73,7 +73,6 @@ public class EdgeCommunicator implements MqttCallbackExtended {
         connOpts.setMaxInflight(10000);
         String edge_id = SharePreferencesData.getBindingId();
         connOpts.setWill(FedMqttTopic.MQTT_LAST_WILL_TOPIC,
-                // {"ID": "EDGE_ID", "status": "OFFLINE"}
                 ("{\"ID\":\"" + edge_id + "\",\"status\":\"" +
                         MessageDefine.MSG_MLOPS_CLIENT_STATUS_OFFLINE + "\"}").getBytes(),
                 2, true);
