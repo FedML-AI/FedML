@@ -28,8 +28,8 @@ import ai.fedml.edge.request.response.UserInfoResponse;
 import ai.fedml.edge.utils.LogHelper;
 import ai.fedml.edge.utils.preference.SharePreferencesData;
 import okhttp3.OkHttpClient;
-import okhttp3.logging.HttpLoggingInterceptor;
-import okhttp3.logging.HttpLoggingInterceptor.Level;
+//import okhttp3.logging.HttpLoggingInterceptor;
+//import okhttp3.logging.HttpLoggingInterceptor.Level;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -43,13 +43,13 @@ public final class RequestManager {
 
     private static Retrofit retrofit() {
         if (retrofit == null) {
-            HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor().setLevel(Level.NONE);
+//            HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor().setLevel(Level.NONE);
 
             OkHttpClient okHttpClient = new OkHttpClient.Builder()
                     .writeTimeout(30_1000, TimeUnit.MILLISECONDS)
                     .readTimeout(20_1000, TimeUnit.MILLISECONDS)
                     .connectTimeout(15_1000, TimeUnit.MILLISECONDS)
-                    .addInterceptor(loggingInterceptor)
+//                    .addInterceptor(loggingInterceptor)
                     .build();
 
             retrofit = new Retrofit.Builder()

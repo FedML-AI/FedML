@@ -16,7 +16,6 @@ import ai.fedml.edge.service.communicator.OnTrainStartListener;
 import ai.fedml.edge.service.communicator.OnTrainStopListener;
 import ai.fedml.edge.service.communicator.message.MessageDefine;
 import ai.fedml.edge.service.component.DeviceInfoReporter;
-import ai.fedml.edge.service.component.TokenChecker;
 import ai.fedml.edge.service.component.MetricsReporter;
 import ai.fedml.edge.utils.LogHelper;
 import ai.fedml.edge.utils.preference.SharePreferencesData;
@@ -27,7 +26,6 @@ public final class ClientAgentManager implements MessageDefine {
     private final OnTrainProgressListener onTrainProgressListener;
     private final OnTrainingStatusListener onTrainingStatusListener;
     private final EdgeCommunicator edgeCommunicator;
-    private final TokenChecker mTokenChecker;
     private final MetricsReporter mReporter;
     private long mEdgeId = 0;
 
@@ -44,8 +42,6 @@ public final class ClientAgentManager implements MessageDefine {
         this.onTrainingStatusListener = onTrainingStatusListener;
         this.onTrainProgressListener = onTrainProgressListener;
         edgeCommunicator = EdgeCommunicator.getInstance();
-
-        mTokenChecker = new TokenChecker(edgeID);
 
         mReporter = MetricsReporter.getInstance();
         mReporter.setEdgeCommunicator(edgeCommunicator);
@@ -96,13 +92,7 @@ public final class ClientAgentManager implements MessageDefine {
         if (mEdgeId == 0) {
             return;
         }
-        //TODO: authentic
-        final String groupId = msgParams.optString(GROUP_ID, "");
-        boolean isAuth = mTokenChecker.authentic(groupId);
-        if (!isAuth) {
-            LogHelper.d("handleTrainStart authentic failed.");
-            return;
-        }
+
         // TODO: waiting dataset split, then download the dataset package and Training Client App
 
         long runId = msgParams.optLong("runId", 0);
