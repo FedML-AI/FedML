@@ -78,10 +78,12 @@ class FedMLServerManager(FedMLCommManager):
             self.start_new_round()
 
     def callback_on_check_client_status(self, client_real_id, datasilo_index):
+        print(f"client_real_id = {client_real_id}, datasilo_index = {datasilo_index}")
         self.send_message_check_client_status(client_real_id, datasilo_index)
     
     def callback_on_exception(self):
-        raise Exception(f"failed to find enough reliable clients to join round {self.args.round_idx}")
+        self.finish()
+        raise Exception(f"Timeout: failed to find enough reliable clients to join round {self.args.round_idx}")
         
     def send_init_msg(self):
         global_model_params = self.aggregator.get_global_model_params()
@@ -172,7 +174,7 @@ class FedMLServerManager(FedMLCommManager):
 
         if all_client_is_finished:
             mlops.log_aggregation_finished_status()
-            time.sleep(5)
+            time.sleep(3)
             self.finish()
 
     def handle_message_client_status_update(self, msg_params):
@@ -263,7 +265,7 @@ class FedMLServerManager(FedMLCommManager):
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, global_model_params)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(datasilo_index))
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")
-        message.add_params(MyMessage.MSG_ARG_KEY_ROUND_INDEX, self.args.round_idx)
+        message.add_params(MyMessage.MSG_ARG_KEY_ROUND_INDEX, int(self.args.round_idx))
         self.send_message(message)
         global_model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
         global_model_key = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY)
@@ -298,7 +300,7 @@ class FedMLServerManager(FedMLCommManager):
         if global_model_key is not None:
             message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY, global_model_key)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_INDEX, str(client_index))
-        message.add_params(MyMessage.MSG_ARG_KEY_ROUND_INDEX, str(self.args.round_idx))
+        message.add_params(MyMessage.MSG_ARG_KEY_ROUND_INDEX, self.args.round_idx)
         message.add_params(MyMessage.MSG_ARG_KEY_CLIENT_OS, "PythonClient")
         self.send_message(message)
 

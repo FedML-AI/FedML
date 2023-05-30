@@ -1,3 +1,4 @@
+import copy
 import logging
 import time
 
@@ -29,57 +30,89 @@ class FedMLClientSelector(threading.Thread):
         self.client_num_in_total = client_num_in_total
         self.client_num_per_round = client_num_per_round
         self.dropout_rate = 0.1
-        self.timeout = 120 # 2 minutes timeout
+        self.timeout = 20 # 20 * 15 seconds = 5 minutes timeout
         
         self.client_online_status_mapping = client_online_status_mapping
         self.client_real_ids = client_real_ids
         
     def run(self):
-        # while True:
-            # select and check
-            
-            # wait for 5 seconds
-            
-            # if all_client_is_online = False
-        selected_client_in_this_round = self.client_selection(
-            self.round_idx, self.client_real_ids, self.client_num_per_round
-        )
-        data_silo_index_list = self.data_silo_selection(
-            self.round_idx, self.client_num_in_total, len(selected_client_in_this_round),
-        )
-        client_idx_in_this_round = 0
-        for client_id in selected_client_in_this_round:
-            try:
-                # call back to message thread
-                self.callback_on_check_client_status(
-                    client_id, data_silo_index_list[client_idx_in_this_round],
-                )
-                logging.info("Connection ready for client" + str(client_id))
-            except Exception as e:
-                logging.info("Connection not ready for client" + str(client_id))
-            client_idx_in_this_round += 1
-            
-        print("thread start successfully and sleep for 5 seconds")
-        all_client_is_online = False
-        while not all_client_is_online:
-            logging.info("self.client_online_status_mapping = {}".format(self.client_online_status_mapping))
-            all_client_is_online = True
-            
-            for client_id in selected_client_in_this_round:
-                if not self.client_online_status_mapping.get(str(client_id), False):
-                    all_client_is_online = False
-                    break
+        selected_client_in_this_round = []
+        selected_data_silo_index_list = []
+                
+        to_be_selected_client_real_id_list = copy.deepcopy(self.client_real_ids)
+        to_be_selected_client_num = self.client_num_per_round
 
-            logging.info(
-                f"online clients = {self.client_online_status_mapping}, all_client_is_online = {str(all_client_is_online)}"
+        
+        while self.timeout > 0:
+            """
+            select and pull client status
+            """
+            print(f"to_be_selected_client_real_id_list = {to_be_selected_client_real_id_list}")
+            random_seed = self.round_idx + self.timeout # avoid repeat the same selected devices
+            selected_client_list = self.client_selection(
+                random_seed, to_be_selected_client_real_id_list, to_be_selected_client_num
             )
-            time.sleep(1)
-        # if all_client_is_online:
-        self.callback_on_success(selected_client_in_this_round, data_silo_index_list)
+            client_idx = 0
+            for client_id in selected_client_list:
+                self.callback_on_check_client_status(
+                    int(client_id), self.client_real_ids.index(int(client_id)),
+                )
+                client_idx += 1
+
+            """
+            wait for 15 seconds
+            """
+            times_wait_for_online_clients = 15
+            is_selected_client_all_onlne = False
+            while not is_selected_client_all_onlne and times_wait_for_online_clients > 0:
+                is_selected_client_all_onlne = True
+                for client_id in selected_client_list:
+                    if not self.client_online_status_mapping.get(str(client_id), False):
+                        is_selected_client_all_onlne = False
+                        break
+
+                logging.info(
+                    f"need to select {selected_client_list} clients. Current online clients = {self.client_online_status_mapping}"
+                )
+                time.sleep(1)
+                times_wait_for_online_clients -= 1
+
+            for client_id in selected_client_list:
+                client_online_status = self.client_online_status_mapping.get(str(client_id), False)
+                if client_online_status:
+                    # add online clients to selected_client_in_this_round
+                    selected_client_in_this_round.append(int(client_id))
+                    
+                    # only remove online clients
+                    to_be_selected_client_real_id_list.remove(int(client_id))
+            
+            logging.info(f"selected_client_in_this_round = {selected_client_in_this_round}")
+            if len(selected_client_in_this_round) == self.client_num_per_round:
+                # find the connected clients and notify the message queue thread
+                selected_data_silo_index_list = self.data_silo_selection(
+                    self.round_idx, self.client_num_in_total, len(selected_client_in_this_round),
+                )
+                self.callback_on_success(selected_client_in_this_round, selected_data_silo_index_list)
+                break
+            else:              
+                # update to_be_selected_client_real_id_list and try again
+                to_be_selected_client_num = self.client_num_per_round - len(selected_client_in_this_round)  
+                # edge case: if there aren't enough client left, we will try again but use the full client real id list
+                if len(to_be_selected_client_real_id_list) < to_be_selected_client_num:
+                    logging.info("not enough online client left, we still try again but use the full client real id list")
+                    to_be_selected_client_real_id_list = copy.deepcopy(self.client_real_ids)
+                    to_be_selected_client_num = self.client_num_per_round
+                    selected_client_in_this_round.clear()
+                    
+            self.timeout -= 1
+        
+        # still cannot find enough connected clients, notify exception
+        if len(selected_client_in_this_round) != self.client_num_per_round:
+            self.callback_on_exception()
         print("thread ended successfully!")
     
     def client_selection(
-        self, round_idx, client_id_list_in_total, client_num_per_round
+        self, random_seed, client_id_list_in_total, client_num_per_round
     ):
         """
         Args:
@@ -95,17 +128,15 @@ class FedMLClientSelector(threading.Thread):
         if client_num_per_round == len(client_id_list_in_total):
             return client_id_list_in_total
         # make sure for each comparison, we are selecting the same clients each round
-        np.random.seed(round_idx)
-        client_id_list_in_this_round = np.random.choice(
-            client_id_list_in_total, client_num_per_round, replace=False
-        )
+        np.random.seed(random_seed)
+        client_id_list_in_this_round = np.random.choice(client_id_list_in_total, client_num_per_round, replace=False)
         return client_id_list_in_this_round
 
-    def data_silo_selection(self, round_idx, client_num_in_total, client_num_per_round):
+    def data_silo_selection(self, random_seed, client_num_in_total, client_num_per_round):
         """
 
         Args:
-            round_idx: round index, starting from 0
+            random_seed: random seed
             client_num_in_total: this is equal to the users in a synthetic data,
                                     e.g., in synthetic_1_1, this value is 30
             client_num_per_round: the number of edge devices that can train
@@ -124,24 +155,7 @@ class FedMLClientSelector(threading.Thread):
         if client_num_in_total == client_num_per_round:
             return [i for i in range(client_num_per_round)]
         else:
-            np.random.seed(
-                round_idx
-            )  # make sure for each comparison, we are selecting the same clients each round
-            data_silo_index_list = np.random.choice(
-                range(client_num_in_total), client_num_per_round, replace=False
-            )
+            # make sure for each comparison, we are selecting the same clients each round
+            np.random.seed(random_seed)  
+            data_silo_index_list = np.random.choice(range(client_num_in_total), client_num_per_round, replace=False)
             return data_silo_index_list
-        
-    def client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
-        if client_num_in_total == client_num_per_round:
-            client_indexes = [client_index for client_index in range(client_num_in_total)]
-        else:
-            num_clients = min(client_num_per_round, client_num_in_total)
-            np.random.seed(
-                round_idx
-            )  # make sure for each comparison, we are selecting the same clients each round
-            client_indexes = np.random.choice(
-                range(client_num_in_total), num_clients, replace=False
-            )
-        logging.info("client_indexes = %s" % str(client_indexes))
-        return client_indexes

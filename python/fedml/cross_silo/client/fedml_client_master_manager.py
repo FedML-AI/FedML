@@ -33,7 +33,6 @@ class ClientMasterManager(FedMLCommManager):
 
         self.has_sent_online_msg = False
         self.is_inited = False
-        self.server_iteration_round_idx = 0
 
     def register_message_receive_handlers(self):
         self.register_message_receive_handler(
@@ -71,7 +70,7 @@ class ClientMasterManager(FedMLCommManager):
 
         global_model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         data_silo_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
-        self.server_iteration_round_idx = msg_params.get(MyMessage.MSG_ARG_KEY_ROUND_INDEX)
+        self.round_idx = msg_params.get(MyMessage.MSG_ARG_KEY_ROUND_INDEX)
 
         logging.info("data_silo_index = %s" % str(data_silo_index))
 
@@ -84,16 +83,14 @@ class ClientMasterManager(FedMLCommManager):
 
         self.trainer_dist_adapter.update_dataset(int(data_silo_index))
         self.trainer_dist_adapter.update_model(global_model_params)
-        self.round_idx = 0
 
         self.__train()
-        self.round_idx += 1
 
     def handle_message_receive_model_from_server(self, msg_params):
         logging.info("handle_message_receive_model_from_server.")
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
-        self.server_iteration_round_idx = msg_params.get(MyMessage.MSG_ARG_KEY_ROUND_INDEX)
+        self.round_idx = msg_params.get(MyMessage.MSG_ARG_KEY_ROUND_INDEX)
 
         if self.args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
             model_params = convert_model_params_to_ddp(model_params)
@@ -104,9 +101,8 @@ class ClientMasterManager(FedMLCommManager):
         self.trainer_dist_adapter.update_model(model_params)
         if self.round_idx < self.num_rounds:
             self.__train()
-            self.round_idx += 1
-            if self.round_idx == self.num_rounds:
-                self.cleanup()
+        else: 
+            self.cleanup()
 
     def handle_message_finish(self, msg_params):
         logging.info(" ====================cleanup ====================")
@@ -115,6 +111,7 @@ class ClientMasterManager(FedMLCommManager):
     def cleanup(self):
         self.send_client_status(0, ClientMasterManager.RUN_FINISHED_STATUS_FLAG)
         mlops.log_training_finished_status()
+        time.sleep(3)
         self.finish()
 
     def send_model_to_server(self, receive_id, weights, local_sample_num):
@@ -123,7 +120,7 @@ class ClientMasterManager(FedMLCommManager):
         message = Message(MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER, self.client_real_id, receive_id,)
         message.add_params(MyMessage.MSG_ARG_KEY_MODEL_PARAMS, weights)
         message.add_params(MyMessage.MSG_ARG_KEY_NUM_SAMPLES, local_sample_num)
-        message.add_params(MyMessage.MSG_ARG_KEY_ROUND_INDEX, self.server_iteration_round_idx)
+        message.add_params(MyMessage.MSG_ARG_KEY_ROUND_INDEX, self.round_idx)
         self.send_message(message)
 
         MLOpsProfilerEvent.log_to_wandb({"Communication/Send_Total": time.time() - tick})
