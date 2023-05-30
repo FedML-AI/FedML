@@ -31,6 +31,7 @@ int main(int argc, char *argv[]) {
     /*
      * usage:
      *  ./build_x86_linux/main_mnn_train.out mnist ../../../../data/mnn_model/lenet_mnist.mnn ../../../../data/MNIST/raw/client1
+     *  ./main_mnn_train.out tabular ../../../../data/mnn_model/lenet_mnist.mnn ../../../../data/tabular
      */
     const char* datasetName = argv[1];
     const char* modelPath = argv[2];
