@@ -19,12 +19,12 @@ model_args:
   global_model_file_path: "./model_file_cache/global_model.pt"
 
 train_args:
-  federated_optimizer: "FedBuff" # Options: FedAvg, FedBuff
+  federated_optimizer: "FedAvg" # Options: FedAvg, FedBuff
   is_async: True
-  buffer_size: 2
+  buffer_size: 4
   max_acceptable_staleness: 3
   client_num_in_total: 4
-  client_num_per_round: 3
+  client_num_per_round: 4
   comm_round: 3
   epochs: 1
   batch_size: 10

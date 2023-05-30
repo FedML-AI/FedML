@@ -30,7 +30,7 @@ class FedMLClientSelector(threading.Thread):
         self.client_num_in_total = client_num_in_total
         self.client_num_per_round = client_num_per_round
         self.dropout_rate = 0.1
-        self.timeout = 20 # 20 * 15 seconds = 5 minutes timeout
+        self.timeout = 60 # 20 * 5 seconds = 5 minutes timeout
         
         self.client_online_status_mapping = client_online_status_mapping
         self.client_real_ids = client_real_ids
@@ -41,7 +41,6 @@ class FedMLClientSelector(threading.Thread):
                 
         to_be_selected_client_real_id_list = copy.deepcopy(self.client_real_ids)
         to_be_selected_client_num = self.client_num_per_round
-
         
         while self.timeout > 0:
             """
@@ -60,9 +59,9 @@ class FedMLClientSelector(threading.Thread):
                 client_idx += 1
 
             """
-            wait for 15 seconds
+            wait for 5 seconds
             """
-            times_wait_for_online_clients = 15
+            times_wait_for_online_clients = 5
             is_selected_client_all_onlne = False
             while not is_selected_client_all_onlne and times_wait_for_online_clients > 0:
                 is_selected_client_all_onlne = True
@@ -99,7 +98,7 @@ class FedMLClientSelector(threading.Thread):
                 to_be_selected_client_num = self.client_num_per_round - len(selected_client_in_this_round)  
                 # edge case: if there aren't enough client left, we will try again but use the full client real id list
                 if len(to_be_selected_client_real_id_list) < to_be_selected_client_num:
-                    logging.info("not enough online client left, we still try again but use the full client real id list")
+                    logging.info("not enough client left, we still try again but use the full client real id list")
                     to_be_selected_client_real_id_list = copy.deepcopy(self.client_real_ids)
                     to_be_selected_client_num = self.client_num_per_round
                     selected_client_in_this_round.clear()
