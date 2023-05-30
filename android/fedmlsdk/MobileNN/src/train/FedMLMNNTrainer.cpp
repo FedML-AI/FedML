@@ -48,7 +48,13 @@ std::string FedMLMNNTrainer::train() {
         dataset = Cifar10Dataset::create(dataCachePath, Cifar10Dataset::Mode::TRAIN, m_trainSize, m_testSize);
         testDataset = Cifar10Dataset::create(dataCachePath, Cifar10Dataset::Mode::TEST, m_trainSize, m_testSize);
         forwardInput = _Input({1, 3, 32, 32}, NC4HW4);
+    }   else if (strcmp(dataSet, "tabular") == 0) {
+        printf("loading tabular\n");
+        dataset = TabularDataset::create(dataCachePath, TabularDataset::Mode::TRAIN, m_trainSize, m_testSize);
+        testDataset = TabularDataset::create(dataCachePath, TabularDataset::Mode::TEST, m_trainSize, m_testSize);
+        forwardInput = _Input({1, 1, 28, 28}, NC4HW4);
     }
+    // stack: true, shuffle: true, drop_last: False, num_workers: 0
     auto dataLoader = std::shared_ptr<DataLoader>(dataset.createLoader(m_batchSizeNum, true, true, 0));
     size_t iterations = dataLoader->iterNumber();
     size_t trainSamples = dataLoader->size();
@@ -87,8 +93,20 @@ std::string FedMLMNNTrainer::train() {
                 auto newTarget = _OneHot(_Cast<int32_t>(example.second[0]), _Scalar<int>(10), _Scalar<float>(1.0f),
                                          _Scalar<float>(0.0f));
 
+                // // Debug Model Input
+                // auto f_outputSize = example.first[0]->getInfo()->size;
+                // auto l_outputSize = example.second[0]->getInfo()->size;
+                // const float *f_outputPtr = example.first[0]->readMap<float>();
+                // for (int i=0; i<f_outputSize; ++i) {
+                //     printf("%f, ", f_outputPtr[i]);
+                // }
+                // std::cout << "Feature Size: " << f_outputSize << std::endl;
+                // std::cout << "Label Size: " << l_outputSize << std::endl;
+
                 auto predict = model->forward(example.first[0]);
+                // std::cout << "Predict: " << predict->readMap<float>()[0] << std::endl;
                 auto loss    = _CrossEntropy(predict, newTarget);
+                // std::cout << "Loss: " << loss->readMap<float>()[0] << std::endl;                
                 sgd->step(loss);
 
                 curLoss = loss->readMap<float>()[0];
