@@ -28,11 +28,13 @@ class MLOpsMetrics(Singleton):
         self.is_sys_perf_reporting = False
         self.current_device_status = ClientConstants.MSG_MLOPS_CLIENT_STATUS_OFFLINE
         self.current_run_status = ServerConstants.MSG_MLOPS_SERVER_STATUS_FAILED
-        self.sys_perf_running_file = os.path.join(
+        running_info_dir = os.path.join(
             ClientConstants.get_data_dir(),
-            ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
-            MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME,
-        )
+            ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
+        if not os.path.exists(running_info_dir):
+            os.makedirs(running_info_dir)
+        self.sys_perf_running_file = os.path.join(running_info_dir,
+                                                  MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME)
 
     def set_messenger(self, msg_messenger, args=None):
         self.messenger = msg_messenger
@@ -408,17 +410,22 @@ class MLOpsMetrics(Singleton):
 
     def set_sys_reporting_status(self, enable, is_client=True):
         if is_client:
-            self.sys_perf_running_file = os.path.join(
+            running_info_dir = os.path.join(
                 ClientConstants.get_data_dir(),
-                ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME,
-                MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME,
-            )
+                ClientConstants.LOCAL_RUNNER_INFO_DIR_NAME)
+            if not os.path.exists(running_info_dir):
+                os.makedirs(running_info_dir)
+            self.sys_perf_running_file = os.path.join(running_info_dir,
+                                                      MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME)
         else:
-            self.sys_perf_running_file = os.path.join(
+            running_info_dir = os.path.join(
                 ServerConstants.get_data_dir(),
-                ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME,
-                MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME,
-            )
+                ServerConstants.LOCAL_RUNNER_INFO_DIR_NAME)
+            if not os.path.exists(running_info_dir):
+                os.makedirs(running_info_dir)
+            self.sys_perf_running_file = os.path.join(running_info_dir,
+                                                      MLOpsMetrics.FEDML_SYS_PERF_RUNNING_FILE_NAME)
+
         self.is_sys_perf_reporting = enable
         sys_perf_file_handle = open(self.sys_perf_running_file, "w")
         if sys_perf_file_handle is not None:
