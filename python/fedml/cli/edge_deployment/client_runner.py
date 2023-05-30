@@ -1069,7 +1069,6 @@ class FedMLClientRunner:
         mqtt_client_object.subscribe(topic_report_status, qos=2)
         mqtt_client_object.subscribe(topic_exit_train_with_exception, qos=2)
         mqtt_client_object.subscribe(topic_ota_msg, qos=2)
-        mqtt_client_object.subscribe(topic_exit_train_with_exception, qos=2)
 
         # Broadcast the first active message.
         self.send_agent_active_msg()
