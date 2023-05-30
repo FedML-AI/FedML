@@ -24,7 +24,7 @@ public class DeviceInfoReporter {
 
     private final Runnable mRunnable;
 
-    private EdgeCommunicator mEdgeCommunicator;
+    private final EdgeCommunicator mEdgeCommunicator;
 
     public DeviceInfoReporter(final long edgeId, EdgeCommunicator edgeCommunicator) {
         mEdgeId = edgeId;
@@ -65,7 +65,7 @@ public class DeviceInfoReporter {
             jsonObject.put("romMemoryTotal", memory.getRomMemoryTotal());
             Float cpuUtilization = sysStats.getCpuUtilization();
             if (null != cpuUtilization) {
-                jsonObject.put("cpuUtilization", cpuUtilization);
+                jsonObject.put("cpuUtilization", String.valueOf(cpuUtilization));
             }
         } catch (JSONException e) {
             LogHelper.e(e, "sendDeviceInfo(%s)", mEdgeId);

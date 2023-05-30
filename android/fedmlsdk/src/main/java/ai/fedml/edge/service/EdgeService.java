@@ -122,7 +122,7 @@ public class EdgeService extends Service implements EdgeMessageDefine {
     public void onCreate() {
         super.onCreate();
         // Add power control and use the PowerManager.WakeLock object to keep CPU running.
-        PowerManager pm = (PowerManager) getSystemService (this.POWER_SERVICE);
+        PowerManager pm = (PowerManager) getSystemService (POWER_SERVICE);
         mWakeLock = pm.newWakeLock (PowerManager.PARTIAL_WAKE_LOCK, EdgeService.class.getName ());
         mWakeLock.acquire ();
         // Play silent music to prevent resources from being released
