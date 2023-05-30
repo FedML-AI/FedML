@@ -1,6 +1,6 @@
 package ai.fedml.edge.nativemobilenn;
 
-import android.util.Log;
+import ai.fedml.edge.utils.LogHelper;
 
 public final class NativeFedMLClientManager {
     // load libraries
@@ -8,7 +8,7 @@ public final class NativeFedMLClientManager {
         try {
             System.loadLibrary(name);
         } catch (Throwable ce) {
-            Log.w("NativeFedMLUniTrainer", "load MNNTrain " + name + " GPU so exception.", ce);
+            LogHelper.e(ce, "load MNNTrain %s GPU so exception.", name);
         }
     }
 
@@ -30,7 +30,7 @@ public final class NativeFedMLClientManager {
     @Override
     protected void finalize() throws Throwable {
         // call automatically
-        Log.d("NativeFedMLClientManager", "FedMLDebug. finalize");
+        LogHelper.d("NativeFedMLClientManager FedMLDebug. finalize");
         release(mTrainerPtr);
     }
 

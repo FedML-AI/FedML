@@ -3,7 +3,8 @@ package ai.fedml.edge.service;
 import android.annotation.SuppressLint;
 import android.app.Application;
 import android.content.Context;
-import android.util.Log;
+
+import ai.fedml.edge.utils.LogHelper;
 
 public class ContextHolder {
 
@@ -46,7 +47,7 @@ public class ContextHolder {
         try {
             sContext = getApplicationUsingAppGlobalsReflection().getApplicationContext();
         } catch (Exception e) {
-            Log.e("ContextHolder", "getApplicationUsingAppGlobalsReflection failed! ", e);
+            LogHelper.e(e, "ContextHolder, getApplicationUsingAppGlobalsReflection failed!");
         }
         if (sContext != null) {
             return sContext;
@@ -54,7 +55,7 @@ public class ContextHolder {
         try {
             sContext = getApplicationUsingReflection().getApplicationContext();
         } catch (Exception e) {
-            Log.e("ContextHolder", "getApplicationUsingReflection failed! ", e);
+            LogHelper.e(e, "ContextHolder, getApplicationUsingReflection failed!");
         }
         if (sContext != null) {
             return sContext;

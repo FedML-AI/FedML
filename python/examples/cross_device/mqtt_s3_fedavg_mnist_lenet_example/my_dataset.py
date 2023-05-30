@@ -8,12 +8,12 @@ class MnistDataset(MNN.data.Dataset):
     def __init__(self, datapath, training_dataset=True):
         super(MnistDataset, self).__init__()
         self.is_training_dataset = training_dataset
-        trainset = MNIST(root=datapath, train=True, download=True)
-        testset = MNIST(root=datapath, train=False, download=True)
         if self.is_training_dataset:
+            trainset = MNIST(root=datapath, train=True, download=True)
             self.data = trainset.data / 255.0
             self.labels = trainset.targets
         else:
+            testset = MNIST(root=datapath, train=False, download=True)
             self.data = testset.data / 255.0
             self.labels = testset.targets
 

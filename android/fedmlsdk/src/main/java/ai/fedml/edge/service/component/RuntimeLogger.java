@@ -1,12 +1,13 @@
 package ai.fedml.edge.service.component;
 
 import android.os.Handler;
-import android.util.Log;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import ai.fedml.edge.request.RequestManager;
 import ai.fedml.edge.request.listener.OnLogUploadListener;
+import ai.fedml.edge.request.parameter.EdgesError;
 import ai.fedml.edge.utils.BackgroundHandler;
 import ai.fedml.edge.utils.LogHelper;
 
@@ -20,11 +21,11 @@ public class RuntimeLogger {
         mEdgeId = edgeId;
         mRunId = runId;
         mBgHandler = new BackgroundHandler("LogUploader");
+        LogHelper.resetLog();
         mRunnable = new Runnable() {
             @Override
             public void run() {
-                List<String> logs = LogHelper.getLogLines();
-                uploadLog(logs);
+                flush();
                 mBgHandler.postDelayed(this, 10000L);
             }
         };
@@ -35,21 +36,46 @@ public class RuntimeLogger {
     }
 
     public void release() {
+        flush();
         mBgHandler.removeCallbacksAndMessages(null);
+    }
+
+    public void flush() {
+        List<String> logs = LogHelper.getLogLines();
+        uploadLog(logs);
     }
 
     private void uploadLog(final List<String> logs) {
         if (logs == null || logs.size() == 0) {
             return;
         }
-        RequestManager.uploadLog(mRunId, mEdgeId, logs, new OnLogUploadListener() {
+
+        List<EdgesError> errorLines = new ArrayList<>();
+        EdgesError error;
+        for (int i = 0; i < logs.size(); ++i) {
+            error = new EdgesError();
+            String log = logs.get(i);
+            if (log == null) {
+                continue;
+            }
+            if (log.contains(" [ERROR] ")) {
+                int errorLine = i + 1 + LogHelper.getLineNumber();
+                error.setErrLine(errorLine);
+                error.setErrMsg(log);
+                errorLines.add(error);
+            }
+        }
+
+        LogHelper.addLineNumber(logs.size());
+
+        RequestManager.uploadLog(mRunId, mEdgeId, logs, errorLines, new OnLogUploadListener() {
             private int retryCnt = 3;
 
             @Override
             public void onLogUploaded(boolean success) {
                 if (!success && retryCnt < 0) {
                     retryCnt--;
-                    RequestManager.uploadLog(mRunId, mEdgeId, logs, this);
+                    RequestManager.uploadLog(mRunId, mEdgeId, logs, errorLines,this);
                 }
             }
         });

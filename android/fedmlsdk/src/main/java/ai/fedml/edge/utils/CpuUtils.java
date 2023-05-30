@@ -2,7 +2,6 @@ package ai.fedml.edge.utils;
 
 import android.os.Build;
 import android.text.TextUtils;
-import android.util.Log;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -43,9 +42,9 @@ public class CpuUtils {
     }
 
     private Float getCpuUsageForLowerVersion() {
-        Long cpuTime = 0L;
-        Long appTime = 0L;
-        Float value = 0.0f;
+        long cpuTime = 0L;
+        long appTime = 0L;
+        float value = 0.0f;
         try {
             if (procStatFile == null || appStatFile == null) {
                 procStatFile = new RandomAccessFile("/proc/stat", "r");
@@ -74,13 +73,12 @@ public class CpuUtils {
             lastCpuTime = cpuTime;
             lastAppCpuTime = appTime;
         } catch (Exception e) {
-            e.printStackTrace();
+            LogHelper.w(e, "getCpuUsageForHigherVersion error:%s", e.getMessage());
         }
         return value;
     }
 
     private Float getCpuUsageForHigherVersion() {
-        LogHelper.i("getCpuUsageForHigherVersion");
         Process process = null;
         try {
             process = Runtime.getRuntime().exec("top -n 1");
@@ -114,7 +112,7 @@ public class CpuUtils {
                 }
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            LogHelper.w(e, "getCpuUsageForHigherVersion error:%s", e.getMessage());
         } finally {
             if (null != process) {
                 process.destroy();
@@ -125,11 +123,9 @@ public class CpuUtils {
     }
 
     private int getCPUIndex(String line) {
-//        LogHelper.i("getCPUIndex,%s", line);
         if (line.contains("CPU")) {
             String[] titles = line.split("\\s+");
             for (int i=0; i<titles.length; i++) {
-//                LogHelper.i("getCPUIndex title, %s", titles[i]);
                 if (titles[i].contains("CPU")) {
                     return i;
                 }
@@ -156,13 +152,7 @@ public class CpuUtils {
     };
 
     public String getCpuAbi() {
-        String cpuAbi;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            cpuAbi = Build.SUPPORTED_ABIS[0];
-        } else {
-            cpuAbi = Build.CPU_ABI;
-        }
-        return cpuAbi;
+        return Build.SUPPORTED_ABIS[0];
     }
 
 }

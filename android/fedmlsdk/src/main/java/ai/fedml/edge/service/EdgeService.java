@@ -28,7 +28,6 @@ import ai.fedml.edge.service.entity.TrainProgress;
 import ai.fedml.edge.utils.LogHelper;
 import ai.fedml.edge.utils.preference.SharePreferencesData;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 public class EdgeService extends Service implements EdgeMessageDefine {
     private static final int GRAY_SERVICE_ID = 1001;
@@ -50,6 +49,7 @@ public class EdgeService extends Service implements EdgeMessageDefine {
 
         @Override
         public void onEpochAccuracy(int round, int epoch, float accuracy) {
+            LogHelper.d("FedMLDebug. round = %d, epoch = %d, accuracy = %f", round, epoch, accuracy);
             Message message = Message.obtain();
             message.what = MSG_TRAIN_ACCURACY;
             message.arg1 = round;
@@ -122,7 +122,7 @@ public class EdgeService extends Service implements EdgeMessageDefine {
     public void onCreate() {
         super.onCreate();
         // Add power control and use the PowerManager.WakeLock object to keep CPU running.
-        PowerManager pm = (PowerManager) getSystemService (this.POWER_SERVICE);
+        PowerManager pm = (PowerManager) getSystemService (POWER_SERVICE);
         mWakeLock = pm.newWakeLock (PowerManager.PARTIAL_WAKE_LOCK, EdgeService.class.getName ());
         mWakeLock.acquire ();
         // Play silent music to prevent resources from being released
@@ -165,7 +165,7 @@ public class EdgeService extends Service implements EdgeMessageDefine {
 
     private void sendMessageToClient(@NonNull final Message message) {
         if (mClientMessenger == null) {
-            LogHelper.wtf("sendMessageToClient mClientMessenger is null.");
+            LogHelper.w("sendMessageToClient mClientMessenger is null.");
             return;
         }
         try {

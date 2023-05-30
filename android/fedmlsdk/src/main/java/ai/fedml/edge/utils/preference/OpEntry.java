@@ -46,7 +46,7 @@ class OpEntry {
     static final String KEY_OP_TYPE = "key_op_type";
 
     @NonNull
-    private Bundle bundle;
+    private final Bundle bundle;
 
     private OpEntry() {
         this.bundle = new Bundle();

@@ -15,7 +15,7 @@ import ai.fedml.edge.service.communicator.OnMqttConnectionReadyListener;
 import ai.fedml.edge.service.communicator.OnTrainStartListener;
 import ai.fedml.edge.service.communicator.OnTrainStopListener;
 import ai.fedml.edge.service.communicator.message.MessageDefine;
-import ai.fedml.edge.service.component.TokenChecker;
+import ai.fedml.edge.service.component.DeviceInfoReporter;
 import ai.fedml.edge.service.component.MetricsReporter;
 import ai.fedml.edge.utils.LogHelper;
 import ai.fedml.edge.utils.preference.SharePreferencesData;
@@ -26,9 +26,10 @@ public final class ClientAgentManager implements MessageDefine {
     private final OnTrainProgressListener onTrainProgressListener;
     private final OnTrainingStatusListener onTrainingStatusListener;
     private final EdgeCommunicator edgeCommunicator;
-    private final TokenChecker mTokenChecker;
     private final MetricsReporter mReporter;
     private long mEdgeId = 0;
+
+    private final DeviceInfoReporter mDeviceInfoReporter;
 
     private volatile long mRunId = 0;
     private final Gson mGson;
@@ -42,8 +43,6 @@ public final class ClientAgentManager implements MessageDefine {
         this.onTrainProgressListener = onTrainProgressListener;
         edgeCommunicator = EdgeCommunicator.getInstance();
 
-        mTokenChecker = new TokenChecker(edgeID);
-
         mReporter = MetricsReporter.getInstance();
         mReporter.setEdgeCommunicator(edgeCommunicator);
         mReporter.setTrainingStatusListener(onTrainingStatusListener);
@@ -52,6 +51,9 @@ public final class ClientAgentManager implements MessageDefine {
         SharePreferencesData.clearHyperParameters();
 
         edgeCommunicator.addListener((OnMqttConnectionReadyListener) this::handleMqttConnectionReady);
+
+        mDeviceInfoReporter = new DeviceInfoReporter(mEdgeId, edgeCommunicator);
+        mDeviceInfoReporter.start();
     }
 
     public void start() {
@@ -81,7 +83,7 @@ public final class ClientAgentManager implements MessageDefine {
 
     private void handleMqttConnectionReady(JSONObject msgParams) {
         LogHelper.d("FedMLDebug. handleMqttConnectionReady");
-        mReporter.reportTrainingStatus(0, mEdgeId, KEY_CLIENT_STATUS_IDLE);
+        mReporter.syncClientStatus(mEdgeId);
         registerMessageReceiveHandlers(mEdgeId);
     }
 
@@ -90,13 +92,7 @@ public final class ClientAgentManager implements MessageDefine {
         if (mEdgeId == 0) {
             return;
         }
-        //TODO: authentic
-        final String groupId = msgParams.optString(GROUP_ID, "");
-        boolean isAuth = mTokenChecker.authentic(groupId);
-        if (!isAuth) {
-            LogHelper.d("handleTrainStart authentic failed.");
-            return;
-        }
+
         // TODO: waiting dataset split, then download the dataset package and Training Client App
 
         long runId = msgParams.optLong("runId", 0);
@@ -113,7 +109,9 @@ public final class ClientAgentManager implements MessageDefine {
             } else {
                 SharePreferencesData.clearHyperParameters();
             }
-            this.onTrainingStatusListener.onStatusChanged(KEY_CLIENT_STATUS_INITIALIZING);
+            if(this.onTrainingStatusListener != null) {
+                this.onTrainingStatusListener.onStatusChanged(KEY_CLIENT_STATUS_INITIALIZING);
+            }
         }
         // Launch Training Client
         mClientManager = new ClientManager(mEdgeId, runId, strServerId, hyperParameters, onTrainProgressListener);
@@ -121,17 +119,17 @@ public final class ClientAgentManager implements MessageDefine {
 
     private void handleTrainStop(JSONObject msgParams) {
         LogHelper.d("handleTrainStop :%s", msgParams.toString());
-        mReporter.reportTrainingStatus(0, mEdgeId, KEY_CLIENT_STATUS_IDLE);
-        mRunId = 0;
-
+        if(this.onTrainingStatusListener != null) {
+            this.onTrainingStatusListener.onStatusChanged(KEY_CLIENT_STATUS_KILLED);
+        }
         // Stop Training Client
         if (mClientManager != null) {
             mClientManager.stopTrain();
             mClientManager = null;
             LogHelper.d("FedMLDebug mClientManager is killed");
         }
-
-
+        mReporter.reportTrainingStatus(0, mEdgeId, KEY_CLIENT_STATUS_IDLE);
+        mRunId = 0;
     }
 
     private void handleMLOpsMsg(JSONObject msgParams) {

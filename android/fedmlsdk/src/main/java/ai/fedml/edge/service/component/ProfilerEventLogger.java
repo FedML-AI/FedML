@@ -3,11 +3,12 @@ package ai.fedml.edge.service.component;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import ai.fedml.edge.constants.FedMqttTopic;
 import ai.fedml.edge.service.communicator.EdgeCommunicator;
 import ai.fedml.edge.utils.LogHelper;
 
 public class ProfilerEventLogger {
-    private static final String EVENT_TOPIC = "mlops/events";
+
     private static final int EVENT_TYPE_STARTED = 0;
     private static final int EVENT_TYPE_ENDED = 1;
 
@@ -32,13 +33,13 @@ public class ProfilerEventLogger {
     public void logEventStarted(final String eventName, final String value, final Long eventEdgeId) {
         final long edgeId = eventEdgeId == null ? mEdgeId : eventEdgeId;
         JSONObject jsonObject = buildEventMessage(mRunId, edgeId, EVENT_TYPE_STARTED, eventName, value);
-        edgeCommunicator.sendMessage(EVENT_TOPIC, jsonObject.toString());
+        edgeCommunicator.sendMessage(FedMqttTopic.EVENT, jsonObject.toString());
     }
 
     public void logEventEnd(final String eventName, final String value, final Long eventEdgeId) {
         final long edgeId = eventEdgeId == null ? mEdgeId : eventEdgeId;
         JSONObject jsonObject = buildEventMessage(mRunId, edgeId, EVENT_TYPE_ENDED, eventName, value);
-        edgeCommunicator.sendMessage(EVENT_TOPIC, jsonObject.toString());
+        edgeCommunicator.sendMessage(FedMqttTopic.EVENT, jsonObject.toString());
     }
 
     private static JSONObject buildEventMessage(final long runId, final long edgeId, final int event_type,

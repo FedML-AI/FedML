@@ -132,22 +132,30 @@ class ServerConstants(object):
     def get_fedml_home_dir():
         home_dir = expanduser("~")
         fedml_home_dir = os.path.join(home_dir, ServerConstants.LOCAL_HOME_RUNNER_DIR_NAME)
+        if not os.path.exists(fedml_home_dir):
+            os.makedirs(fedml_home_dir)
         return fedml_home_dir
 
     @staticmethod
     def get_log_file_dir():
         log_file_dir = os.path.join(ServerConstants.get_fedml_home_dir(), "fedml", "logs")
+        if not os.path.exists(log_file_dir):
+            os.makedirs(log_file_dir)
         return log_file_dir
 
     @staticmethod
     def get_data_dir():
         data_dir = os.path.join(ServerConstants.get_fedml_home_dir(), "fedml", "data")
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir)
         return data_dir
 
     @staticmethod
     def get_package_download_dir():
         package_download_dir = os.path.join(ServerConstants.get_fedml_home_dir(),
                                             ServerConstants.LOCAL_PACKAGE_HOME_DIR_NAME)
+        if not os.path.exists(package_download_dir):
+            os.makedirs(package_download_dir)
         return package_download_dir
 
     @staticmethod
@@ -156,6 +164,8 @@ class ServerConstants(object):
                                                     str(os.path.basename(package_url)).split('.')[0])
         package_unzip_dir = os.path.join(ServerConstants.get_package_download_dir(),
                                          package_unzip_dir_name)
+        if not os.path.exists(package_unzip_dir):
+            os.makedirs(package_unzip_dir)
         return package_unzip_dir
 
     @staticmethod
@@ -163,21 +173,29 @@ class ServerConstants(object):
         package_file_no_extension = str(package_name).split('.')[0]
         package_run_dir = os.path.join(ServerConstants.get_package_unzip_dir(run_id, package_url),
                                        package_file_no_extension)
+        if not os.path.exists(package_run_dir):
+            os.makedirs(package_run_dir)
         return package_run_dir
 
     @staticmethod
     def get_database_dir():
         database_dir = os.path.join(ServerConstants.get_data_dir(), "database")
+        if not os.path.exists(database_dir):
+            os.makedirs(database_dir)
         return database_dir
 
     @staticmethod
     def get_model_dir():
         model_file_dir = os.path.join(ServerConstants.get_fedml_home_dir(), "fedml", "models")
+        if not os.path.exists(model_file_dir):
+            os.makedirs(model_file_dir)
         return model_file_dir
 
     @staticmethod
     def get_model_package_dir():
         model_packages_dir = os.path.join(ServerConstants.get_fedml_home_dir(), "fedml", "model_packages")
+        if not os.path.exists(model_packages_dir):
+            os.makedirs(model_packages_dir)
         return model_packages_dir
 
     @staticmethod
@@ -210,6 +228,8 @@ class ServerConstants(object):
     @staticmethod
     def get_model_serving_dir():
         model_file_dir = os.path.join(ServerConstants.get_fedml_home_dir(), "fedml", "models_serving")
+        if not os.path.exists(model_file_dir):
+            os.makedirs(model_file_dir)
         return model_file_dir
 
     @staticmethod
