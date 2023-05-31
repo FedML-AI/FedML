@@ -111,7 +111,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
                     os.system(sudo_prefix + "apt-get install -y nvidia-docker2")
                     os.system(sudo_prefix + "systemctl restart docker")
 
-    test_llm = False
+    test_llm = True
     # Convert models from pytorch to onnx format
     if model_is_from_open:
         running_model_name = ClientConstants.get_running_model_name(end_point_name,
@@ -255,7 +255,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
         local_model_dir = local_model_dir_from_config
         llm_server_container_name = "{}".format(ClientConstants.FEDML_LLM_SERVER_CONTAINER_NAME_PREFIX)
         volume_dst_loc = "code/model_and_config"
-        llm_server_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --name {} -p{}:2345 " \
+        llm_server_cmd = "{}docker stop {}; {}docker rm {}; {}docker run --gpus all --name {} -p{}:2345 " \
                                     "-v {}:/{} {}".format(sudo_prefix, llm_server_container_name,
                                                                         sudo_prefix, llm_server_container_name,
                                                                         sudo_prefix, llm_server_container_name,
@@ -276,7 +276,7 @@ def start_deployment(end_point_id, end_point_name, model_id, model_version,
             get_model_info(running_model_name, inference_engine, inference_http_port, infer_host, inference_type = "llm")
         
         # testing
-        test_input = {"text" : "hello world"}
+        test_input = {"inputs": {"text" : "What is a good cure for hiccups?"}}
         if inference_output_url != "":
             try:
                 inference_response = run_http_inference_with_curl_request(inference_output_url, test_input, [], inference_type = "llm")
@@ -464,17 +464,21 @@ def get_model_info(model_name, inference_engine, inference_http_port, infer_host
         llm_server_test_ready_url = "http://{}:{}/ready".format(infer_url_host, inference_http_port)
         wait_count = 0
         while True:
-            response = requests.get(llm_server_test_ready_url)
-            if response.status_code != 200:
+            response = None
+            try:
+                response = requests.get(llm_server_test_ready_url)
+            except:
+                pass
+            if not response or response.status_code != 200:
                 logging.info(f"model {model_name} not yet ready")
-                time.sleep(1)
+                time.sleep(10)
                 wait_count += 1
                 if wait_count >= 15:
                     return "", model_version, {}, {}
             else:
                 break
         model_metadata = {}
-        model_metadata["inputs"] = {"text":"Hello World"}
+        model_metadata["inputs"] = {"text":"What is a good cure for hiccups?"}
         model_metadata["outputs"] = []
         model_metadata["type"] = "llm"
         return "http://{}:{}/predict".format(infer_url_host, inference_http_port), None, model_metadata, None
@@ -519,20 +523,22 @@ def get_model_info(model_name, inference_engine, inference_http_port, infer_host
 def run_http_inference_with_curl_request(inference_url, inference_input_list, inference_output_list, inference_type=None):
     model_inference_result = {}
     model_api_headers = {'Content-Type': 'application/json', 'Connection': 'close'}
-    if inference_type == "llm":
-        model_inference_json = {
-        "text": inference_input_list,
-        "outputs": inference_output_list
-        }
+    print("inference_url: {}".format(inference_url))
+    print("inference_input_list: {}".format(inference_input_list))
+    if inference_output_list == []:
+        model_inference_json = inference_input_list
     else:   # triton
         model_inference_json = {
             "inputs": inference_input_list,
             "outputs": inference_output_list
         }
 
-    response = requests.post(inference_url, headers=model_api_headers, json=model_inference_json)
-    if response.status_code == 200:
-        model_inference_result = response.json()
+    try:
+        response = requests.post(inference_url, headers=model_api_headers, json=model_inference_json)
+        if response.status_code == 200:
+            model_inference_result = response.json()
+    except Exception as e:
+        print("Error in running inference: {}".format(e))
 
     return model_inference_result
 

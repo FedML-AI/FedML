@@ -14,6 +14,7 @@ class FedMLModelCache(object):
     FEDML_MODEL_END_POINT_STATUS_TAG = "FEDML_MODEL_END_POINT_STATUS-"
     FEDML_MODEL_DEVICE_INFO_TAG = "FEDML_MODEL_DEVICE_INFO_TAG-"
     FEDML_MODEL_END_POINT_TOKEN_TAG = "FEDML_MODEL_END_POINT_TOKEN_TAG-"
+    FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG = "FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG-"
     FEDML_KEY_COUNT_PER_SCAN = 1000
 
     def __init__(self):
@@ -109,19 +110,17 @@ class FedMLModelCache(object):
                         model_name, model_version,
                         check_end_point_status=True):
         # Find all deployed devices
-        status_list = self.get_deployment_status_list(end_point_name, model_name)
+        status_list = self.get_deployment_status_list(end_point_name, model_name)   # get from redis
         if len(status_list) == 0:
             return None, None
 
         idle_device_list = list()
         if model_version == "latest":
-            device_id, status_payload = self.get_status_item_info(status_list[-1])
-            model_status = status_payload["model_status"]
-            end_point_id_cache = status_payload["end_point_id"]
-            if model_status != ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
-                return None, None
-            idle_device_list.append({"device_id": device_id, "end_point_id": end_point_id_cache})
-        else:
+            _, status_payload = self.get_status_item_info(status_list[-1])
+            model_version = status_payload["model_version"]
+
+        # find all devices
+        try:
             for status_item in status_list:
                 device_id, status_payload = self.get_status_item_info(status_item)
                 print(f"status_payload {status_payload}")
@@ -132,29 +131,54 @@ class FedMLModelCache(object):
                 if model_version == model_version_cache and \
                         model_status == ServerConstants.MSG_MODELOPS_DEPLOYMENT_STATUS_DEPLOYED:
                     idle_device_list.append({"device_id": device_id, "end_point_id": end_point_id_cache})
-
+        except Exception as e:
+            print("Get idel device list Failed:")
+            print(e)
         print(f"idle device list {idle_device_list}")
-        # Randomly shuffle the list of deployed devices and get the first one as the target idle device.
-        if len(idle_device_list) <= 0:
-            return None, None
-        shuffle(idle_device_list)
-        idle_device_dict = idle_device_list[0]
+        # Randomly shuffle 
+        # shuffle the list of deployed devices and get the first one as the target idle device.
+        # if len(idle_device_list) <= 0:
+        #     return None, None
+        # shuffle(idle_device_list)
+        # idle_device_dict = idle_device_list[0]
 
+        # Round Robin
+        total_device_num = len(idle_device_list)
+        redis_round_robin_key = self.get_round_robin_prev_device(end_point_name, model_name, model_version)
+
+        try:
+            if self.redis_connection.exists(redis_round_robin_key):
+                selected_device_index = int(self.redis_connection.get(redis_round_robin_key))
+                selected_device_index %= total_device_num
+            else:
+                selected_device_index = 0
+            next_selected_device_index = (selected_device_index + 1) % total_device_num
+            self.redis_connection.set(redis_round_robin_key, str(next_selected_device_index))
+        except Exception as e:
+            print("Inference Device selection Failed:")
+            print(str(e))
+
+        print(f"Using Round Robin, the device index is {selected_device_index}")
+        idle_device_dict = idle_device_list[selected_device_index]
         # Find deployment result from the target idle device.
-        result_list = self.get_deployment_result_list(end_point_name, model_name)
-        for result_item in result_list:
-            device_id, result_payload = self.get_result_item_info(result_item)
-            found_end_point_id = result_payload["end_point_id"]
-            found_end_point_name = result_payload["end_point_name"]
-            # Check whether the end point is activated.
-            if check_end_point_status:
-                end_point_activated = self.get_end_point_activation(found_end_point_id)
-                if not end_point_activated:
-                    continue
+        try:
+            result_list = self.get_deployment_result_list(end_point_name, model_name)
+            for result_item in result_list:
+                device_id, result_payload = self.get_result_item_info(result_item)
+                found_end_point_id = result_payload["end_point_id"]
+                found_end_point_name = result_payload["end_point_name"]
+                # Check whether the end point is activated.
+                if check_end_point_status:
+                    end_point_activated = self.get_end_point_activation(found_end_point_id)
+                    if not end_point_activated:
+                        continue
 
-            if found_end_point_id == idle_device_dict["end_point_id"] \
-                    and device_id == idle_device_dict["device_id"]:
-                return result_payload, device_id
+                if found_end_point_id == idle_device_dict["end_point_id"] \
+                        and device_id == idle_device_dict["device_id"]:
+                    print(f"The chosen device is {device_id}")
+                    return result_payload, device_id
+        except Exception as e:
+            print(e)
 
         return None, None
 
@@ -176,6 +200,10 @@ class FedMLModelCache(object):
         status = 1 if activate_status else 0
         self.redis_connection.set(self.get_end_point_activation_key(end_point_id), status)
         self.model_deployment_db.set_end_point_activation(end_point_id, end_point_name, status)
+        
+    def delete_end_point(self, end_point_name, model_name, model_version):
+        self.redis_connection.delete(self.get_deployment_status_key(end_point_name, model_name))
+        # TODO: Delete related KV Pair        
 
     def get_end_point_activation(self, end_point_id):
         if not self.redis_connection.exists(self.get_end_point_activation_key(end_point_id)):
@@ -235,6 +263,9 @@ class FedMLModelCache(object):
 
     def get_deployment_token_key(self, end_point_name, model_name):
         return "{}{}-{}".format(FedMLModelCache.FEDML_MODEL_END_POINT_TOKEN_TAG, end_point_name, model_name)
+
+    def get_round_robin_prev_device(self, end_point_name, model_name, version):
+        return "{}{}-{}-{}".format(FedMLModelCache.FEDML_MODEL_ROUND_ROBIN_PREVIOUS_DEVICE_TAG, end_point_name, model_name, version)
 
     def set_monitor_metrics(self, end_point_id, end_point_name,
                             model_name, model_version,
