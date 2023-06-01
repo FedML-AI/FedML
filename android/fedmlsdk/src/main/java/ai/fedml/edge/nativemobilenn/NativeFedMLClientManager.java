@@ -5,11 +5,7 @@ import ai.fedml.edge.utils.LogHelper;
 public final class NativeFedMLClientManager {
     // load libraries
     static void loadGpuLibrary(String name) {
-        try {
-            System.loadLibrary(name);
-        } catch (Throwable ce) {
-            LogHelper.e(ce, "load MNNTrain %s GPU so exception.", name);
-        }
+        System.loadLibrary(name);
     }
 
     // load mnn library

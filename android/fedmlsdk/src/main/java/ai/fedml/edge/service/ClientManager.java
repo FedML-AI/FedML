@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import ai.fedml.edge.OnTrainProgressListener;
 import ai.fedml.edge.constants.FedMqttTopic;
 import ai.fedml.edge.service.communicator.EdgeCommunicator;
+import ai.fedml.edge.service.communicator.OnTrainErrorListener;
 import ai.fedml.edge.service.communicator.OnTrainListener;
 import ai.fedml.edge.service.communicator.message.BackModelMessage;
 import ai.fedml.edge.service.communicator.message.MessageDefine;
@@ -29,7 +30,7 @@ import ai.fedml.edge.utils.StorageUtils;
 
 import androidx.annotation.NonNull;
 
-public final class ClientManager implements MessageDefine, OnTrainListener {
+public final class ClientManager implements MessageDefine, OnTrainListener, OnTrainErrorListener {
     private final EdgeCommunicator edgeCommunicator;
     private final TrainingExecutor mTrainer;
     private final MetricsReporter mReporter;
@@ -223,6 +224,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
                             .trainModelPath(trainModelPath).edgeId(mEdgeId).runId(mRunId)
                             .clientIdx(mClientIndex).dataSet(mDataset).clientRound(clientRound)
                             .batchSize(mBatchSize).learningRate(mLearningRate).trainSize(mTrainSize).testSize(mTestSize).epochNum(mEpochNum)
+                            .errorListener(ClientManager.this)
                             .listener((modelPath, edgeId, clientIdx, trainSamples) -> {
                                         eventLogger.logEventEnd("train", String.valueOf(clientRound));
                                         LogHelper.d("FedMLDebug. training is complete and start to sendModelToServer() modelPath = " + modelPath);
@@ -390,6 +392,12 @@ public final class ClientManager implements MessageDefine, OnTrainListener {
         mTrainer.stopTrain();
         cleanUpRun();
         mIsTrainingStopped = true;
+    }
+
+    @Override
+    public void onTrainError(Throwable throwable) {
+        LogHelper.e(throwable, "onTrainError");
+        reportError();
     }
 
     private void finishRun() {

@@ -1,6 +1,7 @@
 package ai.fedml.edge.service.entity;
 
 import ai.fedml.edge.service.communicator.OnTrainCompletedListener;
+import ai.fedml.edge.service.communicator.OnTrainErrorListener;
 import lombok.Builder;
 import lombok.Data;
 
@@ -22,4 +23,5 @@ public class TrainingParams {
     private int trainSize;
     private int testSize;
     private OnTrainCompletedListener listener;
+    private OnTrainErrorListener errorListener;
 }

@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import ai.fedml.edge.OnTrainProgressListener;
 import ai.fedml.edge.nativemobilenn.NativeFedMLClientManager;
 import ai.fedml.edge.nativemobilenn.TrainingCallback;
+import ai.fedml.edge.service.communicator.OnTrainErrorListener;
 import ai.fedml.edge.service.communicator.message.MessageDefine;
 import ai.fedml.edge.service.communicator.OnTrainCompletedListener;
 import ai.fedml.edge.service.entity.TrainProgress;
@@ -69,6 +70,7 @@ public class TrainingExecutor implements MessageDefine {
 
         final String trainModelPath = params.getTrainModelPath();
         final OnTrainCompletedListener onTrainCompletedListener = params.getListener();
+        final OnTrainErrorListener onTrainErrorListener = params.getErrorListener();
         final int batchSize = params.getBatchSize();
         final double lr = params.getLearningRate();
         final int epochNum = params.getEpochNum();
@@ -78,7 +80,14 @@ public class TrainingExecutor implements MessageDefine {
         mBgHandler.removeCallbacks(currentRunnable);
 
         currentRunnable = () -> {
-            mNativeFedMLClientManager = new NativeFedMLClientManager();
+            try {
+                mNativeFedMLClientManager = new NativeFedMLClientManager();
+            } catch (Throwable throwable) {
+                if (null != onTrainErrorListener) {
+                    onTrainErrorListener.onTrainError(throwable);
+                }
+            }
+
             LogHelper.d("FedMLDebug. Training Engine Hyperparameters: trainModelPath = %s, " +
                     "trainDataPath = %s, dataSet = %s, trainSize = %d, testSize = %d,\n" +
                     "batchSize = %d, lr = %f, epochNum = %d", trainModelPath,
