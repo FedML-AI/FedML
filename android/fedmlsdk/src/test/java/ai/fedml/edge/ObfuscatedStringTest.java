@@ -108,4 +108,11 @@ final class ObfuscatedStringTest {
         ObfuscatedString obfuscatedString = new ObfuscatedString(new long[]{0xE2BE96BEEDEC6530L, 0x3796829F9366063DL, 0x373AE7940877B1E0L});
         System.out.println(obfuscatedString);
     }
+
+    public static void main(String[] args) {
+        String key = "X-Sign-Signature";
+        ObfuscatedString obfuscatedString = new ObfuscatedString(new long[]{0xE2BE96BEEDEC6530L, 0x3796829F9366063DL, 0x373AE7940877B1E0L});
+        String obfuscateKey = obfuscate(key);
+        System.out.println(obfuscateKey);
+    }
 }

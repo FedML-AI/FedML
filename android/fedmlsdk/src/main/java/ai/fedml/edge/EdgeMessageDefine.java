@@ -9,6 +9,7 @@ public interface EdgeMessageDefine {
     int MSG_BIND_EDGE = 6;
     int MSG_TRAIN_ACCURACY = 7;
     int MSG_TRAIN_LOSS = 8;
+    int MSG_STOP_EDGE_SERVICE = 11;
 
     String TRAIN_ARGS = "train_args";
     String TRAIN_EPOCH = "train_epoch";

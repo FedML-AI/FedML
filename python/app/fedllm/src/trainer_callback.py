@@ -55,6 +55,14 @@ class PauseResumeCallback(TrainerCallback):
         self.step_threshold = step_threshold
         self.epoch_threshold = epoch_threshold
 
+    @property
+    def use_step_threshold(self) -> bool:
+        return not math.isinf(self.step_threshold)
+
+    @property
+    def use_epoch_threshold(self) -> bool:
+        return not self.use_step_threshold and not math.isinf(self.epoch_threshold)
+
     def on_train_begin(
             self,
             args: TrainingArguments,
@@ -81,6 +89,9 @@ class PauseResumeCallback(TrainerCallback):
             **kwargs
     ):
         if state.global_step - self.start_global_step >= self.step_threshold:
+            control.should_training_stop = True
+        elif self.use_epoch_threshold and state.epoch - self.start_epoch >= self.epoch_threshold:
+            # epoch is a float; partial epoch is allowed which means it needs to be checked every step
             control.should_training_stop = True
         return control
 

@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from typing import Callable, List, Tuple, Any
+from typing import List, Tuple, Any
 import numpy as np
 from .defense_base import BaseDefenseMethod
 from ..common import utils
@@ -15,20 +15,23 @@ https://arxiv.org/pdf/2006.09365.pdf
 class CClipDefense(BaseDefenseMethod):
     def __init__(self, config):
         self.config = config
-        self.tau = config.tau  # clipping raduis
+        if hasattr(config, "tau") and type(config.tau) in [int, float] and config.tau > 0:
+            self.tau = config.tau  # clipping raduis; tau = 10 / (1-beta), beta is the coefficient of momentum
+        else:
+            self.tau = 10  # default: no momentum, beta = 0
         # element # in each bucket; a grad_list is partitioned into floor(len(grad_list)/bucket_size) buckets
         self.bucket_size = config.bucket_size
+        self.initial_guess = None
 
-    def run(
-        self,
-        raw_client_grad_list: List[Tuple[float, OrderedDict]],
-        base_aggregation_func: Callable = None,
-        extra_auxiliary_info: Any = None,
-    ) -> OrderedDict:
+    def defend_before_aggregation(
+            self,
+            raw_client_grad_list: List[Tuple[float, OrderedDict]],
+            extra_auxiliary_info: Any = None,
+    ):
         client_grad_buckets = Bucket.bucketization(
             raw_client_grad_list, self.bucket_size
         )
-        initial_guess = self._compute_an_initial_guess(client_grad_buckets)
+        self.initial_guess = self._compute_an_initial_guess(client_grad_buckets)
         bucket_num = len(client_grad_buckets)
         vec_local_w = [
             (
@@ -37,21 +40,21 @@ class CClipDefense(BaseDefenseMethod):
             )
             for i in range(bucket_num)
         ]
-        vec_refs = utils.vectorize_weight(initial_guess)
+        vec_refs = utils.vectorize_weight(self.initial_guess)
         cclip_score = self._compute_cclip_score(vec_local_w, vec_refs)
         new_grad_list = []
         for i in range(bucket_num):
-            tuple = dict()
+            tuple = OrderedDict()
             sample_num, bucket_params = client_grad_buckets[i]
             for k in bucket_params.keys():
-                tuple[k] = (bucket_params[k] - initial_guess[k]) * cclip_score[i]
+                tuple[k] = (bucket_params[k] - self.initial_guess[k]) * cclip_score[i]
             new_grad_list.append((sample_num, tuple))
-        print(f"cclip_score = {cclip_score}")
+        return new_grad_list
 
-        avg_params = base_aggregation_func(self.config, new_grad_list)
-        for k in avg_params.keys():
-            avg_params[k] = initial_guess[k] + avg_params[k]
-        return avg_params
+    def defend_after_aggregation(self, global_model):
+        for k in global_model.keys():
+            global_model[k] = self.initial_guess[k] + global_model[k]
+        return global_model
 
     @staticmethod
     def _compute_an_initial_guess(client_grad_list):

@@ -3,12 +3,6 @@ package ai.fedml.edge;
 import org.junit.Test;
 
 import ai.fedml.edge.service.component.AuthenticTool;
-import ai.fedml.edge.request.AccessTokenService;
-import ai.fedml.edge.request.response.TokenResponse;
-import retrofit2.Call;
-import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

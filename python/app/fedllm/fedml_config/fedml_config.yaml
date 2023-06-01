@@ -13,7 +13,10 @@ data_args:
   dataset_path:
     - ".data/dolly_niid_full/train_databricks-dolly-15k-seed=1234.jsonl"
     - ".data/dolly_niid_full/test_databricks-dolly-15k-seed=1234.jsonl"
-  test_dataset_size: 200  # this is ignored when *dataset_path has more than 1 elements
+  client_dataset_path:
+    - ".data/dolly_niid_full/train_databricks-dolly-15k-seed=1234.jsonl"
+    - ".data/dolly_niid_full/test_databricks-dolly-15k-seed=1234.jsonl"
+  test_dataset_size: 200  # this is ignored when *dataset_path has more than 1 element
 
 model_args:
   # below copied from scripts/train_deepspeed.sh

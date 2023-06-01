@@ -25,7 +25,7 @@ from .core.common.ml_engine_backend import MLEngineBackend
 _global_training_type = None
 _global_comm_backend = None
 
-__version__ = "0.8.4a29"
+__version__ = "0.8.4a32"
 
 
 def init(args=None):
@@ -385,6 +385,7 @@ def update_client_id_list(args):
 
 def init_cross_device(args):
     args.rank = 0  # only server runs on Python package
+    args.role = "server"
     return args
 
 

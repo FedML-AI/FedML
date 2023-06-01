@@ -1,17 +1,24 @@
-MNIST_DIR=mnist
-CIFAR10_DIR=cifar10
-ANDROID_DIR=/sdcard/ai.fedml
+#!/bin/bash
 
-rm -rf $MNIST_DIR
-mkdir $MNIST_DIR
-wget http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz -P $MNIST_DIR
-wget http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz -P $MNIST_DIR
-
-rm -rf $CIFAR10_DIR
-rm -rf cifar-10-binary.tar.gz
-wget https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz
-tar -xzvf cifar-10-binary.tar.gz
-mv cifar-10-batches-bin $CIFAR10_DIR
+if [ "$1" = "0" ]
+then
+   MNIST_DIR=client0/mnist/
+elif [ "$1" = "1" ]
+then
+   MNIST_DIR=client0/mnist/
+elif [ "$1" = "2" ]
+then
+   MNIST_DIR=client0/mnist/
+elif [ "$1" = "3" ]
+then
+   MNIST_DIR=client0/mnist/
+else
+   MNIST_DIR=client/mnist/
+fi
+ANDROID_DIR=/storage/emulated/0/Android/data/ai.fedml.edgedemo/files/dataset
 
 adb push $MNIST_DIR $ANDROID_DIR
-adb push $CIFAR10_DIR $ANDROID_DIR
+#rm -rf mnist
+
+
+#adb push $CIFAR10_DIR $ANDROID_DIR

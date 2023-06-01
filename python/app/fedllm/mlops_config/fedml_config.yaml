@@ -16,7 +16,7 @@ data_args:
   client_dataset_path:
     - ".data/dolly_niid_full/train_databricks-dolly-15k-seed=1234.jsonl"
     - ".data/dolly_niid_full/test_databricks-dolly-15k-seed=1234.jsonl"
-  test_dataset_size: 200  # this is ignored when *dataset_path has more than 1 elements
+  test_dataset_size: 200  # this is ignored when `dataset_path` has more than 1 element
 
 model_args:
   # below copied from scripts/train_deepspeed.sh
@@ -41,7 +41,7 @@ train_args:
   per_device_eval_batch_size: 2
   learning_rate: 1.0e-5
   warmup_steps: 50
-  num_train_epochs: 5  # number of training epoch for client in each round
+  num_train_epochs: 5  # number of training epoch for the entire training, should >= comm_round
   output_dir: "~/fedml_logs/MLOps/dolly_pythia-70m"
   logging_steps: 50
   eval_steps: 200

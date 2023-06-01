@@ -19,6 +19,9 @@ public class LogUploadReq {
     @SerializedName("logs")
     private List<String> logLines;
 
+    @SerializedName("errors")
+    private List<EdgesError> errorLines;
+
     /**
      * create time in seconds since the Epoch.
      */

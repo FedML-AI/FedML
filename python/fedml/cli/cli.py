@@ -115,6 +115,7 @@ def display_server_logs():
             log_lines = file_handle.readlines()
         for log_line in log_lines:
             click.echo(log_line)
+    print("\nconsole log file path = {}".format(log_file))
 
 
 @cli.command("login", help="Login to MLOps platform")

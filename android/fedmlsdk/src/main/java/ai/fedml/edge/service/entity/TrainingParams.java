@@ -1,6 +1,6 @@
 package ai.fedml.edge.service.entity;
 
-import ai.fedml.edge.service.component.OnTrainCompletedListener;
+import ai.fedml.edge.service.communicator.OnTrainCompletedListener;
 import lombok.Builder;
 import lombok.Data;
 

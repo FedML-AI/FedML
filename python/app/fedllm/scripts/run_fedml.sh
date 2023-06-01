@@ -18,21 +18,28 @@ NUM_NODES="${3:-1}"
 echo "CUDA_VISIBLE_DEVICES=\"${CUDA_VISIBLE_DEVICES}\""
 echo "${MASTER_ADDR}:${MASTER_PORT},${NUM_GPU},${NUM_NODES}"
 
-# DeepSpeed setting
-DS_ARGS=(
-  --master_addr="${MASTER_ADDR}"
-  --master_port="${MASTER_PORT}"
-)
-if [[ -z "${CUDA_VISIBLE_DEVICES}" ]]; then
-  DS_ARGS+=(
-    --num_nodes="${NUM_NODES}"
-    --num_gpus="${NUM_GPU}"
+if [ "${NUM_GPU}" -gt 0 ]; then
+  CMD=(
+    deepspeed
+    --master_addr="${MASTER_ADDR}"
+    --master_port="${MASTER_PORT}"
   )
-#else
-#  # see https://github.com/microsoft/DeepSpeed/issues/662
-#  DS_ARGS+=(
-#    --include "${localhost}:${CUDA_VISIBLE_DEVICES}"
-#  )
+
+  if [[ -z "${CUDA_VISIBLE_DEVICES}" ]]; then
+    CMD+=(
+      --num_nodes="${NUM_NODES}"
+      --num_gpus="${NUM_GPU}"
+    )
+  #else
+  #  # see https://github.com/microsoft/DeepSpeed/issues/662
+  #  CMD+=(
+  #    --include "${localhost}:${CUDA_VISIBLE_DEVICES}"
+  #  )
+  fi
+else
+  CMD=(
+    python3
+  )
 fi
 
-deepspeed "${DS_ARGS[@]}" "${@:4}"
+"${CMD[@]}" "${@:4}"

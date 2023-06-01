@@ -33,15 +33,6 @@ class ResidualBasedReweightingDefense(BaseDefenseMethod):
     ):
         return self.IRLS_other_split_restricted(raw_client_grad_list)
 
-    def defend_on_aggregation(
-        self,
-        raw_client_grad_list: List[Tuple[float, OrderedDict]],
-        base_aggregation_func: Callable = None,
-        extra_auxiliary_info: Any = None,
-    ):
-
-        return base_aggregation_func(raw_client_grad_list)
-
     def IRLS_other_split_restricted(self, raw_client_grad_list):
         reweight_algorithm = median_reweight_algorithm_restricted
         if self.mode == "median":

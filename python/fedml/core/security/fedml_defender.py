@@ -2,6 +2,7 @@ import logging
 from collections import OrderedDict
 from typing import List, Tuple, Any, Callable
 from .defense.RFA_defense import RFADefense
+from .defense.coordinate_wise_median_defense import CoordinateWiseMedianDefense
 from .defense.coordinate_wise_trimmed_mean_defense import CoordinateWiseTrimmedMeanDefense
 from .defense.crfl_defense import CRFLDefense
 from .defense.outlier_detection import OutlierDetection
@@ -32,7 +33,7 @@ from ...core.security.constants import (
     DEFENSE_MULTIKRUM,
     DEFENSE_TRIMMED_MEAN,
     DEFENSE_THREESIGMA_GEOMEDIAN,
-    DEFENSE_THREESIGMA_KRUM, ANOMALY_DETECTION,
+    DEFENSE_THREESIGMA_KRUM, ANOMALY_DETECTION, DEFENSE_WISE_MEDIAN,
 )
 
 
@@ -73,6 +74,8 @@ class FedMLDefender:
                 self.defender = WeakDPDefense(args)
             elif self.defense_type == DEFENSE_CCLIP:
                 self.defender = CClipDefense(args)
+            elif self.defense_type == DEFENSE_WISE_MEDIAN:
+                self.defender = CoordinateWiseMedianDefense(args)
             elif self.defense_type == DEFENSE_RFA:
                 self.defender = RFADefense(args)
             elif self.defense_type == DEFENSE_FOOLSGOLD:
@@ -126,7 +129,7 @@ class FedMLDefender:
         )
 
     def is_defense_on_aggregation(self):
-        return self.is_defense_enabled() and self.defense_type in [DEFENSE_SLSGD, DEFENSE_RFA]
+        return self.is_defense_enabled() and self.defense_type in [DEFENSE_SLSGD, DEFENSE_RFA, DEFENSE_WISE_MEDIAN, DEFENSE_GEO_MEDIAN]
 
     def is_defense_before_aggregation(self):
         return self.is_defense_enabled() and self.defense_type in [
@@ -136,13 +139,14 @@ class FedMLDefender:
             DEFENSE_THREESIGMA_GEOMEDIAN,
             DEFENSE_THREESIGMA_KRUM,
             DEFENSE_KRUM,
+            DEFENSE_CCLIP,
             DEFENSE_MULTIKRUM,
             DEFENSE_TRIMMED_MEAN,
             ANOMALY_DETECTION
         ]
 
     def is_defense_after_aggregation(self):
-        return self.is_defense_enabled() and self.defense_type in [DEFENSE_CRFL]
+        return self.is_defense_enabled() and self.defense_type in [DEFENSE_CRFL, DEFENSE_CCLIP]
 
     def defend_before_aggregation(
         self,

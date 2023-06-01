@@ -98,8 +98,6 @@ def load_cifar10_data(datadir, process_id, synthetic_data_url, private_local_dat
     train_transform, test_transform = _data_transforms_cifar10()
 
     is_download = True;
-    if process_id != 0:
-        is_download = False if (len(synthetic_data_url) != 0 or len(private_local_data) != 0) else True;
 
     if data_efficient_load:
         cifar10_train_ds = CIFAR10(datadir, train=True, download=True, transform=train_transform)
