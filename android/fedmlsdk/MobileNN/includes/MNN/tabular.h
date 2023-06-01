@@ -30,4 +30,4 @@ private:
 }
 
 
-#endif // MnistDataset_hpp
+#endif // TabularDataset_hpp

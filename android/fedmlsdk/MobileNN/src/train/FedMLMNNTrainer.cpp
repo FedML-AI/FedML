@@ -1,12 +1,12 @@
 #include "FedMLMNNTrainer.h"
 
 std::string FedMLMNNTrainer::train() {
-    LOGD("FedMLMNNTrainer::train() 1 ");
+//    LOGD("FedMLMNNTrainer::train() 1 ");
     const char* modelCachePath = m_modelCachePath.c_str();
     const char* dataCachePath = m_dataCachePath.c_str();
     const char* dataSet = m_dataSet.c_str();
 
-    LOGD("dataCachePath = %s", dataCachePath);
+//    LOGD("dataCachePath = %s", dataCachePath);
 
     // load model
     auto varMap = Variable::loadMap(modelCachePath);
@@ -14,7 +14,6 @@ std::string FedMLMNNTrainer::train() {
     auto inputs = Variable::mapToSequence(inputOutputs.first);
     auto outputs = Variable::mapToSequence(inputOutputs.second);
 
-    LOGD("FedMLMNNTrainer::train() 2 ");
     std::shared_ptr <Module> model(NN::extract(inputs, outputs, true));
 
     // set executor
@@ -35,21 +34,16 @@ std::string FedMLMNNTrainer::train() {
     DatasetPtr testDataset;
     VARP forwardInput;
 
-    LOGD("FedMLMNNTrainer::train() 3 ");
     if (strcmp(dataSet, "mnist") == 0) {
-        LOGD("loading mnist train\n");
         // Error opening images file at
         dataset = MnistDataset::create(dataCachePath, MnistDataset::Mode::TRAIN, m_trainSize, m_testSize);
-        LOGD("loading mnist test\n");
         testDataset = MnistDataset::create(dataCachePath, MnistDataset::Mode::TEST, m_trainSize, m_testSize);
         forwardInput = _Input({1, 1, 28, 28}, NC4HW4);
     } else if (strcmp(dataSet, "cifar10") == 0) {
-        LOGD("loading cifar10\n");
         dataset = Cifar10Dataset::create(dataCachePath, Cifar10Dataset::Mode::TRAIN, m_trainSize, m_testSize);
         testDataset = Cifar10Dataset::create(dataCachePath, Cifar10Dataset::Mode::TEST, m_trainSize, m_testSize);
         forwardInput = _Input({1, 3, 32, 32}, NC4HW4);
     }   else if (strcmp(dataSet, "tabular") == 0) {
-        printf("loading tabular\n");
         dataset = TabularDataset::create(dataCachePath, TabularDataset::Mode::TRAIN, m_trainSize, m_testSize);
         testDataset = TabularDataset::create(dataCachePath, TabularDataset::Mode::TEST, m_trainSize, m_testSize);
         forwardInput = _Input({1, 1, 28, 28}, NC4HW4);
@@ -59,12 +53,10 @@ std::string FedMLMNNTrainer::train() {
     size_t iterations = dataLoader->iterNumber();
     size_t trainSamples = dataLoader->size();
 
-    LOGD("FedMLMNNTrainer::train() 4 ");
     auto testDataLoader = std::shared_ptr<DataLoader>(testDataset.createLoader(m_batchSizeNum, true, false, 0));
     size_t testIterations = testDataLoader->iterNumber();
     size_t testSamples = testDataLoader->size();
 
-    LOGD("FedMLMNNTrainer::train() 5 ");
     m_progress_callback(20.0f);
     if (bRunStopFlag) {printf("Training Stop By User."); return nullptr;}
 
@@ -127,7 +119,10 @@ std::string FedMLMNNTrainer::train() {
         model->setIsTraining(false);
         int moveBatchSize = 0;
         for (int i = 0; i < testIterations; i++) {
-            if (bRunStopFlag) {LOGD("Training Stop By User."); return nullptr;}
+            if (bRunStopFlag) {
+                printf("Training Stop By User.");
+                return nullptr;
+            }
 
             auto data = testDataLoader->next();
             auto example = data[0];
@@ -146,8 +141,8 @@ std::string FedMLMNNTrainer::train() {
 
         // get accuracy
         auto accu = (float) correct / (float) testSamples;
-        LOGD("FedMLDebug. correct: %d, testSamples: %f", correct, (float)testSamples);
-        LOGD("FedMLDebug. epoch: %d, accuracy: %f", epoch, accu);
+//        LOGD("FedMLDebug. correct: %d, testSamples: %f", correct, (float)testSamples);
+//        LOGD("FedMLDebug. epoch: %d, accuracy: %f", epoch, accu);
         m_accuracy_callback(epoch, accu);
         exe->dumpProfile();
     }
@@ -158,7 +153,7 @@ std::string FedMLMNNTrainer::train() {
     auto inputPredict = model->forward(forwardInput);
     inputPredict->setName("prob");
     Variable::save({inputPredict}, modelCachePath);
-    LOGD("FedMLDebug. model save done\n");
+//    LOGD("FedMLDebug. model save done\n");
 
     std::string result = std::to_string(trainSamples);
     return result;
