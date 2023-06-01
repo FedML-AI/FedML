@@ -33,7 +33,7 @@ from ...core.security.constants import (
     DEFENSE_MULTIKRUM,
     DEFENSE_TRIMMED_MEAN,
     DEFENSE_THREESIGMA_GEOMEDIAN,
-    DEFENSE_THREESIGMA_KRUM, ANOMALY_DETECTION, DEFENSE_WISE_MEDIAN,
+    DEFENSE_THREESIGMA_KRUM, ANOMALY_DETECTION, DEFENSE_WISE_MEDIAN, DEFENSE_DIFF_CLIPPING,
 )
 
 
@@ -92,6 +92,8 @@ class FedMLDefender:
                 self.defender = CoordinateWiseTrimmedMeanDefense(args)
             elif self.defense_type == ANOMALY_DETECTION:
                 self.defender = OutlierDetection(args)
+            elif self.defense_type == DEFENSE_DIFF_CLIPPING:
+                self.defender = NormDiffClippingDefense(args)
             else:
                 raise Exception("args.defense_type is not defined!")
         else:
@@ -142,7 +144,8 @@ class FedMLDefender:
             DEFENSE_CCLIP,
             DEFENSE_MULTIKRUM,
             DEFENSE_TRIMMED_MEAN,
-            ANOMALY_DETECTION
+            ANOMALY_DETECTION,
+            DEFENSE_NORM_DIFF_CLIPPING
         ]
 
     def is_defense_after_aggregation(self):
