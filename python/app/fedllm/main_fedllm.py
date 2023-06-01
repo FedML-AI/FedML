@@ -17,6 +17,7 @@ from transformers import HfArgumentParser, Trainer as HfTrainer, TrainingArgumen
 from src.constants import DEFAULT_MAX_SEQ_LENGTH
 from src.trainer_callback import PauseResumeCallback
 from src.utils import (
+    is_main_process,
     process_state_dict,
     save_config,
     should_process_save,
@@ -173,7 +174,8 @@ class LLMTrainer(ClientTrainer):
             return
 
         metrics = self.trainer.evaluate(eval_dataset=test_data, metric_key_prefix=f"client{self.args.rank}_eval")
-        mlops.log({**metrics, "round_idx": self.round_idx})
+        if is_main_process(self.trainer):
+            mlops.log({**metrics, "round_idx": self.round_idx})
 
     @property
     def is_run_test(self) -> bool:
@@ -234,7 +236,8 @@ class LLMAggregator(ServerAggregator):
         self.trainer.state.epoch = self.round_idx
         self.trainer.state.global_step = self.round_idx
         metrics = self.trainer.evaluate(eval_dataset=test_data)
-        mlops.log({**metrics, "round_idx": self.round_idx})
+        if is_main_process(self.trainer):
+            mlops.log({**metrics, "round_idx": self.round_idx})
 
     @property
     def is_run_test(self) -> bool:
