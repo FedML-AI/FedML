@@ -59,7 +59,7 @@ public class RuntimeLogger {
                 continue;
             }
             if (log.contains(" [ERROR] ")) {
-                int errorLine = i + 1 + LogHelper.getLineNumber();
+                int errorLine = i + LogHelper.getLineNumber();
                 error.setErrLine(errorLine);
                 error.setErrMsg(log);
                 errorLines.add(error);
