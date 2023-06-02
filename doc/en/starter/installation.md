@@ -68,6 +68,20 @@ then run the command to install fedml again: pip install fedml)
 
 After installation, please use "pip list | grep fedml" to check whether `fedml` is installed.
 
+## Compatibility with HomeBrew-Installed Python On Apple Silicon Mac
+If you are using Apple Silicon MAC, we suggest using Conda to install python 3.8+ and related lib on your device.
+
+But if you have used HomeBrew to install python, and having problem with running "pip install fedml" command, in this case you need to ensure:
+
+a. Two environment path on your device need to be specify to use Conda not HomeBrew:
+
+(1)  In ~/.bash_profile and ~/.zprofile, the path to python bin file, need to be Conda python file location.
+
+(2)  In ~/.bash_profile and ~/.zprofile, the path to pip bin file, need to be Conda pip file location.
+
+b. When you encounter with C/C++ compiler issue, try:
+
+(3) conda install …
 
 ## Installing FedML from Debugging and Editable Mode
 ```
