@@ -49,7 +49,7 @@ public class EdgeService extends Service implements EdgeMessageDefine {
 
         @Override
         public void onEpochAccuracy(int round, int epoch, float accuracy) {
-            LogHelper.d("FedMLDebug. round = %d, epoch = %d, accuracy = %f", round, epoch, accuracy);
+            LogHelper.i("FedMLDebug. round = %d, epoch = %d, accuracy = %f", round, epoch, accuracy);
             Message message = Message.obtain();
             message.what = MSG_TRAIN_ACCURACY;
             message.arg1 = round;
@@ -82,8 +82,8 @@ public class EdgeService extends Service implements EdgeMessageDefine {
 
         @Override
         public void handleMessage(Message msg) {
-            LogHelper.d("receive message from client:%d", msg.what);
-            LogHelper.d("ClientMessenger=" + msg.replyTo);
+            LogHelper.i("receive message from client:%d", msg.what);
+            LogHelper.i("ClientMessenger=" + msg.replyTo);
             mClientMessenger = msg.replyTo;
             if (msg.what == MSG_START_TRAIN) {
                 LogHelper.d("receive message from client:%s", msg.getData().getString(TRAIN_ARGS));
@@ -106,10 +106,10 @@ public class EdgeService extends Service implements EdgeMessageDefine {
                 callbackMessage(msg.replyTo, message);
             } else if (MSG_BIND_EDGE == msg.what) {
                 String bindId = msg.getData().getString(BIND_EDGE_ID);
-                LogHelper.d("FedMLDebug. bindId = " + bindId);
+                LogHelper.i("FedMLDebug. bindId = " + bindId);
                 fedEdgeTrainApi.bindEdge(bindId);
             } else if (MSG_STOP_EDGE_SERVICE == msg.what) {
-                LogHelper.d("FedMLDebug. STOP_EDGE_SERVICE");
+                LogHelper.i("FedMLDebug. STOP_EDGE_SERVICE");
                 android.os.Process.killProcess(android.os.Process.myPid());
             }
         }
@@ -130,8 +130,8 @@ public class EdgeService extends Service implements EdgeMessageDefine {
         mMediaPlayer.setLooping(true);
         // Train init
         fedEdgeTrainApi.init(getApplicationContext(), onTrainingStatusListener, onAccuracyLossListener);
-        LogHelper.d("onCreate privatePath:%s", SharePreferencesData.getPrivatePath());
-        LogHelper.d("FedMLDebug. EdgeService onCreate()");
+        LogHelper.i("onCreate privatePath:%s", SharePreferencesData.getPrivatePath());
+        LogHelper.i("FedMLDebug. EdgeService onCreate()");
     }
 
     @Override

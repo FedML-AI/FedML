@@ -66,7 +66,7 @@ public final class ClientAgentManager implements MessageDefine {
      * @param edgeId edge id
      */
     public void registerMessageReceiveHandlers(final long edgeId) {
-        LogHelper.d("FedMLDebug. registerMessageReceiveHandlers. mReporter = " + mReporter + ", edgeId = " + edgeId);
+        LogHelper.i("FedMLDebug. registerMessageReceiveHandlers. mReporter = " + mReporter + ", edgeId = " + edgeId);
 
         final String startTrainTopic = "flserver_agent/" + edgeId + "/start_train";
         edgeCommunicator.subscribe(startTrainTopic, (OnTrainStartListener) this::handleTrainStart);
@@ -82,13 +82,13 @@ public final class ClientAgentManager implements MessageDefine {
     }
 
     private void handleMqttConnectionReady(JSONObject msgParams) {
-        LogHelper.d("FedMLDebug. handleMqttConnectionReady");
+        LogHelper.i("FedMLDebug. handleMqttConnectionReady");
         mReporter.syncClientStatus(mEdgeId);
         registerMessageReceiveHandlers(mEdgeId);
     }
 
     private void handleTrainStart(JSONObject msgParams) {
-        LogHelper.d("onStartTrain: %s", msgParams.toString());
+        LogHelper.i("onStartTrain: %s", msgParams.toString());
         if (mEdgeId == 0) {
             return;
         }
@@ -118,7 +118,7 @@ public final class ClientAgentManager implements MessageDefine {
     }
 
     private void handleTrainStop(JSONObject msgParams) {
-        LogHelper.d("handleTrainStop :%s", msgParams.toString());
+        LogHelper.i("handleTrainStop :%s", msgParams.toString());
         if(this.onTrainingStatusListener != null) {
             this.onTrainingStatusListener.onStatusChanged(KEY_CLIENT_STATUS_KILLED);
         }
@@ -126,19 +126,19 @@ public final class ClientAgentManager implements MessageDefine {
         if (mClientManager != null) {
             mClientManager.stopTrain();
             mClientManager = null;
-            LogHelper.d("FedMLDebug mClientManager is killed");
+            LogHelper.i("FedMLDebug mClientManager is killed");
         }
         mReporter.reportTrainingStatus(0, mEdgeId, KEY_CLIENT_STATUS_IDLE);
         mRunId = 0;
     }
 
     private void handleMLOpsMsg(JSONObject msgParams) {
-        LogHelper.d("handleMLOpsMsg :%s", msgParams.toString());
+        LogHelper.i("handleMLOpsMsg :%s", msgParams.toString());
         mReporter.reportClientActiveStatus(mEdgeId);
     }
 
     private void handleTrainException(JSONObject msgParams) {
-        LogHelper.d("handleTrainException :%s", msgParams.toString());
+        LogHelper.i("handleTrainException :%s", msgParams.toString());
         mReporter.reportTrainingStatus(mRunId, mEdgeId, KEY_CLIENT_STATUS_FAILED);
 
         if (mClientManager != null) {

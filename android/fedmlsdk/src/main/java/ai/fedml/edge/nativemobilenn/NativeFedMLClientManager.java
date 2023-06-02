@@ -26,7 +26,7 @@ public final class NativeFedMLClientManager {
     @Override
     protected void finalize() throws Throwable {
         // call automatically
-        LogHelper.d("NativeFedMLClientManager FedMLDebug. finalize");
+        LogHelper.i("NativeFedMLClientManager FedMLDebug. finalize");
         release(mTrainerPtr);
     }
 

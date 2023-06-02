@@ -52,7 +52,7 @@ public class TrainingExecutor implements MessageDefine {
         final int clientRunIdx = params.getClientRound();
         Boolean state = runStateMap.get(runId + "_" + clientRunIdx);
         if (state != null && !state) {
-            LogHelper.d("training(%d, %d) stop by user", runId, clientRunIdx);
+            LogHelper.i("training(%d, %d) stop by user", runId, clientRunIdx);
             return;
         }
         final String dataSet = params.getDataSet();
@@ -88,7 +88,7 @@ public class TrainingExecutor implements MessageDefine {
                 }
             }
 
-            LogHelper.d("FedMLDebug. Training Engine Hyperparameters: trainModelPath = %s, " +
+            LogHelper.i("FedMLDebug. Training Engine Hyperparameters: trainModelPath = %s, " +
                     "trainDataPath = %s, dataSet = %s, trainSize = %d, testSize = %d,\n" +
                     "batchSize = %d, lr = %f, epochNum = %d", trainModelPath,
                     trainDataPath, dataSet, trainSize, testSize,
@@ -106,7 +106,7 @@ public class TrainingExecutor implements MessageDefine {
                         @Override
                         public void onAccuracy(int epoch, float accuracy) {
                             if (mOnTrainProgressListener != null) {
-                                LogHelper.d("epoch = %d, accuracy = %f", epoch, accuracy);
+                                LogHelper.i("epoch = %d, accuracy = %f", epoch, accuracy);
                                 mOnTrainProgressListener.onEpochAccuracy(clientRunIdx, epoch, accuracy);
                             }
                         }
@@ -119,10 +119,10 @@ public class TrainingExecutor implements MessageDefine {
                         }
                     });
             final String result = mNativeFedMLClientManager.train();
-            LogHelper.d("result(%s)", result);
+            LogHelper.i("result(%s)", result);
             if (result != null) {
                 long trainSamples = Long.parseLong(result);
-                LogHelper.d("trainSamples(%d)", trainSamples);
+                LogHelper.i("trainSamples(%d)", trainSamples);
                 if (onTrainCompletedListener != null) {
                     onTrainCompletedListener.onTrainCompleted(trainModelPath, edgeId, clientIdx, trainSamples);
                 }
@@ -137,7 +137,7 @@ public class TrainingExecutor implements MessageDefine {
         if (mNativeFedMLClientManager != null){
             mNativeFedMLClientManager.stopTraining();
             mNativeFedMLClientManager = null;
-            LogHelper.d("FedMLDebug. mNativeFedMLClientManager is released.");
+            LogHelper.i("FedMLDebug. mNativeFedMLClientManager is released.");
         }
     }
 
@@ -147,7 +147,7 @@ public class TrainingExecutor implements MessageDefine {
         if (mNativeFedMLClientManager != null){
             mNativeFedMLClientManager.stopTraining();
             mNativeFedMLClientManager = null;
-            LogHelper.d("FedMLDebug. mNativeFedMLClientManager is released.");
+            LogHelper.i("FedMLDebug. mNativeFedMLClientManager is released.");
         }
     }
 }

@@ -103,7 +103,7 @@ public final class RequestManager {
                 Gson gson = new Gson();
                 UserInfoResponse response = gson.fromJson(result, UserInfoResponse.class);
                 if (response == null || !"SUCCESS".equals(response.getCode()) || response.getData() == null) {
-                    LogHelper.d("getUserInfo response is null or not SUCCESS");
+                    LogHelper.w("getUserInfo response is null or not SUCCESS");
                     listener.onGetUserInfo(null);
                     return;
                 }
