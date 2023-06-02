@@ -226,6 +226,15 @@ Now you are ready to start the training. Enjoy! We provide the following experim
 ![image](../_static/image/MLOps_experimental_tracking_system.png)
 
 - model downloading/serving
+![image](../_static/image/model_download.jpg)
+  The model file are in binary format, it record the parameter of the model. To load it, you need to use your original model network defination to initialize the model, then using pickle to load the parameters.
+
+  ```python3
+    model = YourModelNetwork()
+    with open(path_to_download_file, 'rb') as model_params_file_obj:
+      model_params = pickle.load(model_params_file_obj)
+      model.load_state_dict(model_params)
+  ``` 
 
 - distributed logging
 ![image](../_static/image/MLOps_experimental_tracking_logging.png)
