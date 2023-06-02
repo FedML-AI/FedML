@@ -172,6 +172,12 @@ class ClientMasterManager(FedMLCommManager):
         if self.args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
             weights = convert_model_params_from_ddp(weights)
 
+        if getattr(self.trainer_dist_adapter, "trainer", None) is not None and \
+                getattr(self.trainer_dist_adapter.trainer, "trainer", None) is not None and \
+                getattr(self.trainer_dist_adapter.trainer.trainer, "is_main_process", None) is not None and \
+                not self.trainer_dist_adapter.trainer.trainer.is_main_process():
+            return
+
         self.send_model_to_server(0, weights, local_sample_num)
 
     def run(self):

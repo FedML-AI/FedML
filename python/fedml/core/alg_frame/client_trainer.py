@@ -25,6 +25,9 @@ class ClientTrainer(ABC):
     def set_id(self, trainer_id):
         self.id = trainer_id
 
+    def is_main_process(self):
+        return True
+
     def update_dataset(self, local_train_dataset, local_test_dataset, local_sample_number):
         if FedMLAttacker.get_instance().is_data_poisoning_attack() and FedMLAttacker.get_instance().is_to_poison_data():
             self.local_train_dataset = FedMLAttacker.get_instance().poison_data(local_train_dataset)
