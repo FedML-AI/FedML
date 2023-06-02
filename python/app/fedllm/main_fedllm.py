@@ -18,6 +18,7 @@ from src.constants import DEFAULT_MAX_SEQ_LENGTH
 from src.trainer_callback import PauseResumeCallback
 from src.utils import (
     is_main_process,
+    log_helper,
     process_state_dict,
     save_config,
     should_process_save,
@@ -111,12 +112,12 @@ class LLMTrainer(ClientTrainer):
             assert max_steps >= comm_round, f"required max_steps >= comm_round, but got {max_steps} < {comm_round}"
             step_threshold = int(math.ceil(max_steps / comm_round))
             epoch_threshold = math.inf
-            logging.info(f"step_threshold = {step_threshold}")
+            self.log(f"step_threshold = {step_threshold}")
         elif num_train_epochs > 0:
             # TODO: verify
             step_threshold = math.inf
             epoch_threshold = num_train_epochs / comm_round
-            logging.info(f"epoch_threshold = {epoch_threshold}")
+            self.log(f"epoch_threshold = {epoch_threshold}")
         else:
             raise ValueError(
                 f"at least one of the `max_steps` and `num_train_epochs` should be positive, "
@@ -132,6 +133,16 @@ class LLMTrainer(ClientTrainer):
         # this is required for DeepSpeed
         self.trainer.save_model(str(self.temp_ckpt_dir))
 
+    def log(self, message: str, stack_level: int = 1) -> None:
+        log_helper(
+            message,
+            prefix=f"{{{{rank={self.args.rank}, world_rank={self.trainer.args.process_index}, "
+                   f"local_rank={self.args.local_rank}}}}}",
+            suffix=f"@ round={self.round_idx}",
+            stack_prefix=f"{type(self).__name__}.",
+            stack_level=stack_level + 1
+        )
+
     def get_model_params(self) -> OrderedDict:
         state_dict = get_model_state_dict(self.trainer, self.temp_ckpt_dir)
         peft_state_dict = to_device(get_peft_model_state_dict(self.model, state_dict=state_dict), device="cpu")
@@ -144,6 +155,8 @@ class LLMTrainer(ClientTrainer):
         set_peft_model_state_dict(self.model, model_parameters)
 
     def on_before_local_training(self, train_data, device, args: Arguments) -> None:
+        self.log("start")
+
         super().on_before_local_training(train_data, device, args)
 
         # update round_idx
@@ -160,22 +173,37 @@ class LLMTrainer(ClientTrainer):
             # TODO: remove once FedML integrated the change
             self.test(self.trainer.eval_dataset, device, args)
 
+        self.log("finished")
+
     def train(self, train_data, device, args: Arguments) -> None:
+        self.log("start")
+
         self.trainer.train()
 
+        self.log("finished")
+
     def on_after_local_training(self, train_data, device, args: Arguments) -> None:
+        self.log("start")
+
         super().on_after_local_training(train_data, device, args)
         self.trainer.save_model(str(self.temp_ckpt_dir))
         # recover TrainingArguments.deepspeed
         self.trainer.args.deepspeed = self.args.deepspeed
 
+        self.log("finished")
+
     def test(self, test_data, device, args) -> None:
+        self.log("start")
+
         if not self.is_run_test:
+            self.log("skipped")
             return
 
         metrics = self.trainer.evaluate(eval_dataset=test_data, metric_key_prefix=f"client{self.args.rank}_eval")
         if is_main_process(self.trainer):
             mlops.log({**metrics, "round_idx": self.round_idx})
+
+        self.log("finished")
 
     @property
     def is_run_test(self) -> bool:
@@ -216,20 +244,41 @@ class LLMAggregator(ServerAggregator):
             # save model config before training
             save_config(model, self.trainer.args.output_dir)
 
+    def log(self, message: str, stack_level: int = 1) -> None:
+        log_helper(
+            message,
+            prefix=f"{{{{rank={self.args.rank}, world_rank={self.trainer.args.process_index}, "
+                   f"local_rank={self.args.local_rank}}}}}",
+            suffix=f"@ round={self.round_idx}",
+            stack_prefix=f"{type(self).__name__}.",
+            stack_level=stack_level + 1
+        )
+
     def get_model_params(self) -> OrderedDict:
+        self.log("start")
+
         state_dict = get_model_state_dict(self.trainer, self.temp_ckpt_dir)
         peft_state_dict = to_device(get_peft_model_state_dict(self.model, state_dict=state_dict), device="cpu")
+
+        self.log("finished")
         return OrderedDict(peft_state_dict)
 
     def set_model_params(self, model_parameters) -> None:
+        self.log("start")
+
         # TODO: verify DeepSpeed support
         model_parameters = to_device(model_parameters, device="cpu")
         model_parameters = process_state_dict(model_parameters, get_peft_model_state_dict(self.model))
 
         set_peft_model_state_dict(self.model, model_parameters)
 
+        self.log("finished")
+
     def test(self, test_data, device, args: Arguments) -> None:
+        self.log("start")
+
         if not self.is_run_test:
+            self.log("skipped")
             return
 
         # update epoch, global_step for logging
@@ -238,6 +287,8 @@ class LLMAggregator(ServerAggregator):
         metrics = self.trainer.evaluate(eval_dataset=test_data)
         if is_main_process(self.trainer):
             mlops.log({**metrics, "round_idx": self.round_idx})
+
+        self.log("finished")
 
     @property
     def is_run_test(self) -> bool:
