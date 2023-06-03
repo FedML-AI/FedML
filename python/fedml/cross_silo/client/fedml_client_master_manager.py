@@ -34,6 +34,11 @@ class ClientMasterManager(FedMLCommManager):
         self.has_sent_online_msg = False
         self.is_inited = False
 
+    def is_main_process(self):
+        return getattr(self.trainer_dist_adapter, "trainer", None) is None or \
+            getattr(self.trainer_dist_adapter.trainer, "trainer", None) is None or \
+            self.trainer_dist_adapter.trainer.trainer.is_main_process()
+
     def register_message_receive_handlers(self):
         self.register_message_receive_handler(
             MyMessage.MSG_TYPE_CONNECTION_IS_READY, self.handle_message_connection_ready
@@ -103,8 +108,9 @@ class ClientMasterManager(FedMLCommManager):
             self.__train()
             self.round_idx += 1
         else:
-            self.send_client_status(0, ClientMasterManager.RUN_FINISHED_STATUS_FLAG)
-            mlops.log_training_finished_status()
+            if self.is_main_process():
+                self.send_client_status(0, ClientMasterManager.RUN_FINISHED_STATUS_FLAG)
+                mlops.log_training_finished_status()
             self.finish()
 
     def handle_message_finish(self, msg_params):
@@ -172,13 +178,8 @@ class ClientMasterManager(FedMLCommManager):
         if self.args.scenario == FEDML_CROSS_SILO_SCENARIO_HIERARCHICAL:
             weights = convert_model_params_from_ddp(weights)
 
-        if getattr(self.trainer_dist_adapter, "trainer", None) is not None and \
-                getattr(self.trainer_dist_adapter.trainer, "trainer", None) is not None and \
-                getattr(self.trainer_dist_adapter.trainer.trainer, "is_main_process", None) is not None and \
-                not self.trainer_dist_adapter.trainer.trainer.is_main_process():
-            return
-
-        self.send_model_to_server(0, weights, local_sample_num)
+        if self.is_main_process():
+            self.send_model_to_server(0, weights, local_sample_num)
 
     def run(self):
         super().run()

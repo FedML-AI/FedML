@@ -34,6 +34,9 @@ class FedMLServerManager(FedMLCommManager):
         self.client_id_list_in_this_round = None
         self.data_silo_index_list = None
 
+    def is_main_process(self):
+        return getattr(self.aggregator, "aggregator", None) is None or self.aggregator.aggregator.is_main_process()
+
     def run(self):
         super().run()
 
@@ -141,7 +144,8 @@ class FedMLServerManager(FedMLCommManager):
         )
 
         if all_client_is_finished:
-            mlops.log_aggregation_finished_status()
+            if self.is_main_process():
+                mlops.log_aggregation_finished_status()
             time.sleep(5)
             self.finish()
 
@@ -200,32 +204,35 @@ class FedMLServerManager(FedMLCommManager):
             if self.args.round_idx == 0:
                 MLOpsProfilerEvent.log_to_wandb({"BenchmarkStart": time.time()})
 
-            client_idx_in_this_round = 0
-            global_model_url = None
-            global_model_key = None
-            for receiver_id in self.client_id_list_in_this_round:
-                client_index = self.data_silo_index_list[client_idx_in_this_round]
-                if type(global_model_params) is dict:
-                    # compatible with the old version that, user did not give {-1 : global_parms_dict}
+            if self.is_main_process():
+                client_idx_in_this_round = 0
+                global_model_url = None
+                global_model_key = None
+                for receiver_id in self.client_id_list_in_this_round:
+                    client_index = self.data_silo_index_list[client_idx_in_this_round]
+                    if type(global_model_params) is dict:
+                        # compatible with the old version that, user did not give {-1 : global_params_dict}
+                        global_model_url, global_model_key = self.send_message_diff_sync_model_to_client(
+                            receiver_id, global_model_params[client_index], client_index
+                        )
+                    else:
+                        global_model_url, global_model_key = self.send_message_sync_model_to_client(
+                            receiver_id, global_model_params, client_index, global_model_url, global_model_key
+                        )
+                    client_idx_in_this_round += 1
+
+                # if user give {-1 : global_params_dict}, then record global_model url separately
+                if type(global_model_params) is dict and (-1 in global_model_params.keys()):
                     global_model_url, global_model_key = self.send_message_diff_sync_model_to_client(
-                        receiver_id, global_model_params[client_index], client_index
+                        -1, global_model_params[-1], -1
                     )
-                else:
-                    global_model_url, global_model_key = self.send_message_sync_model_to_client(
-                        receiver_id, global_model_params, client_index, global_model_url, global_model_key
-                    )
-                client_idx_in_this_round += 1
 
-            # if user give {-1 : global_parms_dict}, then record global_model url separately
-            if type(global_model_params) is dict and (-1 in global_model_params.keys()):
-                global_model_url, global_model_key = self.send_message_diff_sync_model_to_client(
-                    -1, global_model_params[-1], -1
+                self.args.round_idx += 1
+                mlops.log_aggregated_model_info(
+                    self.args.round_idx, model_url=global_model_url,
                 )
-
-            self.args.round_idx += 1
-            mlops.log_aggregated_model_info(
-                self.args.round_idx, model_url=global_model_url,
-                )
+            else:
+                self.args.round_idx += 1
 
             logging.info("\n\n==========end {}-th round training===========\n".format(self.args.round_idx))
             if self.args.round_idx < self.round_num:
@@ -303,5 +310,5 @@ class FedMLServerManager(FedMLCommManager):
 
         global_model_url = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_URL)
         global_model_key = message.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS_KEY)
-        
+
         return global_model_url, global_model_key

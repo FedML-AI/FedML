@@ -25,6 +25,9 @@ class ServerAggregator(ABC):
 
         self.eval_data = None
 
+    def is_main_process(self):
+        return True
+
     def set_id(self, aggregator_id):
         self.id = aggregator_id
 
