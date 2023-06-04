@@ -10,16 +10,17 @@ import fedml
 from fedml import FedMLRunner, mlops
 from fedml.arguments import Arguments
 from fedml.core import ClientTrainer, ServerAggregator
-from peft import get_peft_model_state_dict, set_peft_model_state_dict
+from peft import get_peft_model_state_dict
 import torch.cuda
 from transformers import HfArgumentParser, Trainer as HfTrainer, TrainingArguments
 
 from src.constants import DEFAULT_MAX_SEQ_LENGTH
+from src.peft_utils import set_peft_model_state_dict
 from src.trainer_callback import PauseResumeCallback
 from src.utils import (
+    barrier,
     is_main_process,
     log_helper,
-    process_state_dict,
     save_config,
     should_process_save,
     to_device,
@@ -147,15 +148,24 @@ class LLMTrainer(ClientTrainer):
         )
 
     def get_model_params(self) -> OrderedDict:
+        self.log("start")
+
         state_dict = get_model_state_dict(self.trainer, self.temp_ckpt_dir)
         peft_state_dict = to_device(get_peft_model_state_dict(self.model, state_dict=state_dict), device="cpu")
+
+        self.log("finished")
         return OrderedDict(peft_state_dict)
 
     def set_model_params(self, model_parameters) -> None:
-        model_parameters = to_device(model_parameters, device="cpu")
-        model_parameters = process_state_dict(model_parameters, get_peft_model_state_dict(self.model))
+        self.log("start")
 
+        model_parameters = to_device(model_parameters, device="cpu")
+
+        barrier()
         set_peft_model_state_dict(self.model, model_parameters)
+        barrier()
+
+        self.log("finished")
 
     def on_before_local_training(self, train_data, device, args: Arguments) -> None:
         self.log("start")
@@ -272,11 +282,11 @@ class LLMAggregator(ServerAggregator):
     def set_model_params(self, model_parameters) -> None:
         self.log("start")
 
-        # TODO: verify DeepSpeed support
         model_parameters = to_device(model_parameters, device="cpu")
-        model_parameters = process_state_dict(model_parameters, get_peft_model_state_dict(self.model))
 
+        barrier()
         set_peft_model_state_dict(self.model, model_parameters)
+        barrier()
 
         self.log("finished")
 
