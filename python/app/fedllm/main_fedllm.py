@@ -133,6 +133,9 @@ class LLMTrainer(ClientTrainer):
         # this is required for DeepSpeed
         self.trainer.save_model(str(self.temp_ckpt_dir))
 
+    def is_main_process(self) -> bool:
+        return is_main_process(self.trainer)
+
     def log(self, message: str, stack_level: int = 1) -> None:
         log_helper(
             message,
@@ -200,7 +203,7 @@ class LLMTrainer(ClientTrainer):
             return
 
         metrics = self.trainer.evaluate(eval_dataset=test_data, metric_key_prefix=f"client{self.args.rank}_eval")
-        if is_main_process(self.trainer):
+        if self.is_main_process():
             mlops.log({**metrics, "round_idx": self.round_idx})
 
         self.log("finished")
@@ -244,6 +247,9 @@ class LLMAggregator(ServerAggregator):
             # save model config before training
             save_config(model, self.trainer.args.output_dir)
 
+    def is_main_process(self) -> bool:
+        return is_main_process(self.trainer)
+
     def log(self, message: str, stack_level: int = 1) -> None:
         log_helper(
             message,
@@ -285,7 +291,7 @@ class LLMAggregator(ServerAggregator):
         self.trainer.state.epoch = self.round_idx
         self.trainer.state.global_step = self.round_idx
         metrics = self.trainer.evaluate(eval_dataset=test_data)
-        if is_main_process(self.trainer):
+        if self.is_main_process():
             mlops.log({**metrics, "round_idx": self.round_idx})
 
         self.log("finished")
