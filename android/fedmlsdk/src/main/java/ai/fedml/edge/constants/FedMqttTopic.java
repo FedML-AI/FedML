@@ -28,8 +28,10 @@ public final class FedMqttTopic {
     // TODO: change to "flclient_agent/mlops/last_will_msg"
     public static final String MQTT_LAST_WILL_TOPIC = "flclient_agent/last_will_msg";
 
+    public static final String REPORT_DEVICE_STATUS = "mlops/report_device_status";
+
     // TODO: change to "flclient_agent/flserver_agent/$run_id/client_exit_train_with_exception"
-    public static String exitTrainWithException(final long runId) {
+    public static String clientExitTrainWithException(final long runId) {
         return "flserver_agent/" + runId + "/client_exit_train_with_exception";
     }
 
@@ -43,5 +45,25 @@ public final class FedMqttTopic {
 
     public static String online(final long runId, final long edgeId) {
         return "fedml_" + runId + "_" + edgeId;
+    }
+
+    public static String startTrain(final long edgeId) {
+        return "flserver_agent/" + edgeId + "/start_train";
+    }
+
+    public static String stopTrain(final long edgeId) {
+        return "flserver_agent/" + edgeId + "/stop_train";
+    }
+
+    public static String exitTrainWithException(final long edgeId) {
+        return "flserver_agent/" + edgeId + "/exit_train_with_exception";
+    }
+
+    public static String ntpRequest(final long edgeId) {
+        return "mlops/ntp/" + edgeId + "/request";
+    }
+
+    public static String ntpResponse(final long edgeId) {
+        return "mlops/ntp/" + edgeId + "/response";
     }
 }

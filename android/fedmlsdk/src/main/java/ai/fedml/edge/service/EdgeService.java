@@ -27,6 +27,7 @@ import ai.fedml.edge.R;
 import ai.fedml.edge.service.entity.TrainProgress;
 import ai.fedml.edge.utils.LogHelper;
 import ai.fedml.edge.utils.preference.SharePreferencesData;
+
 import androidx.annotation.NonNull;
 
 public class EdgeService extends Service implements EdgeMessageDefine {
@@ -66,7 +67,7 @@ public class EdgeService extends Service implements EdgeMessageDefine {
             Message message = Message.obtain();
             message.what = MSG_TRAIN_PROGRESS;
             message.arg1 = round;
-            message.arg2 = (int)progress;
+            message.arg2 = (int) progress;
             sendMessageToClient(message);
         }
     };
@@ -122,9 +123,9 @@ public class EdgeService extends Service implements EdgeMessageDefine {
     public void onCreate() {
         super.onCreate();
         // Add power control and use the PowerManager.WakeLock object to keep CPU running.
-        PowerManager pm = (PowerManager) getSystemService (POWER_SERVICE);
-        mWakeLock = pm.newWakeLock (PowerManager.PARTIAL_WAKE_LOCK, EdgeService.class.getName ());
-        mWakeLock.acquire ();
+        PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+        mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, EdgeService.class.getName());
+        mWakeLock.acquire();
         // Play silent music to prevent resources from being released
         mMediaPlayer = MediaPlayer.create(getApplicationContext(), R.raw.no_kill);
         mMediaPlayer.setLooping(true);
@@ -190,18 +191,19 @@ public class EdgeService extends Service implements EdgeMessageDefine {
     private static final String NOTIFICATION_CHANNEL_NAME = "LBSbackgroundLocation";
     private NotificationManager notificationManager = null;
     boolean isCreateChannel = false;
+
     @SuppressLint("NewApi")
     private Notification buildNotification() {
         Context appContext = ContextHolder.getAppContext();
         Notification.Builder builder = null;
         Notification notification = null;
-        if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             // Android O Notification need NotificationChannel
             if (null == notificationManager) {
                 notificationManager = (NotificationManager) appContext.getSystemService(Context.NOTIFICATION_SERVICE);
             }
-            final String channelId =  NOTIFY_CHANNEL_ID;
-            if(!isCreateChannel) {
+            final String channelId = NOTIFY_CHANNEL_ID;
+            if (!isCreateChannel) {
                 NotificationChannel notificationChannel = new NotificationChannel(channelId,
                         NOTIFICATION_CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT);
                 // Whether to display small dots in the upper right corner of the desktop icon
@@ -213,9 +215,9 @@ public class EdgeService extends Service implements EdgeMessageDefine {
                 notificationManager.createNotificationChannel(notificationChannel);
                 isCreateChannel = true;
             }
-            builder = new Notification.Builder( appContext.getApplicationContext(), channelId);
+            builder = new Notification.Builder(appContext.getApplicationContext(), channelId);
         } else {
-            builder = new Notification.Builder( appContext.getApplicationContext());
+            builder = new Notification.Builder(appContext.getApplicationContext());
         }
         builder.setSmallIcon(R.mipmap.ic_logo)
                 .setContentTitle(appContext.getPackageName())

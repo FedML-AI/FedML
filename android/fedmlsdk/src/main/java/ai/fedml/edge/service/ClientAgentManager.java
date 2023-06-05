@@ -5,10 +5,12 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import ai.fedml.edge.OnTrainProgressListener;
 import ai.fedml.edge.OnTrainingStatusListener;
+import ai.fedml.edge.constants.FedMqttTopic;
 import ai.fedml.edge.service.communicator.EdgeCommunicator;
 import ai.fedml.edge.service.communicator.OnMLOpsMsgListener;
 import ai.fedml.edge.service.communicator.OnMqttConnectionReadyListener;
@@ -18,6 +20,7 @@ import ai.fedml.edge.service.communicator.message.MessageDefine;
 import ai.fedml.edge.service.component.DeviceInfoReporter;
 import ai.fedml.edge.service.component.MetricsReporter;
 import ai.fedml.edge.utils.LogHelper;
+import ai.fedml.edge.utils.TimeUtils;
 import ai.fedml.edge.utils.preference.SharePreferencesData;
 
 import androidx.annotation.NonNull;
@@ -68,17 +71,11 @@ public final class ClientAgentManager implements MessageDefine {
     public void registerMessageReceiveHandlers(final long edgeId) {
         LogHelper.i("FedMLDebug. registerMessageReceiveHandlers. mReporter = " + mReporter + ", edgeId = " + edgeId);
 
-        final String startTrainTopic = "flserver_agent/" + edgeId + "/start_train";
-        edgeCommunicator.subscribe(startTrainTopic, (OnTrainStartListener) this::handleTrainStart);
-
-        final String stopTrainTopic = "flserver_agent/" + edgeId + "/stop_train";
-        edgeCommunicator.subscribe(stopTrainTopic, (OnTrainStopListener) this::handleTrainStop);
-
-        final String MLOpsQueryStatusTopic = "mlops/report_device_status";
-        edgeCommunicator.subscribe(MLOpsQueryStatusTopic, (OnMLOpsMsgListener) this::handleMLOpsMsg);
-
-        final String exitTrainWithExceptionTopic = "flserver_agent/" + edgeId + "/exit_train_with_exception";
-        edgeCommunicator.subscribe(exitTrainWithExceptionTopic, (OnMLOpsMsgListener) this::handleTrainException);
+        edgeCommunicator.subscribe(FedMqttTopic.startTrain(edgeId), (OnTrainStartListener) this::handleTrainStart);
+        edgeCommunicator.subscribe(FedMqttTopic.stopTrain(edgeId), (OnTrainStopListener) this::handleTrainStop);
+        edgeCommunicator.subscribe(FedMqttTopic.REPORT_DEVICE_STATUS, (OnMLOpsMsgListener) this::handleMLOpsMsg);
+        edgeCommunicator.subscribe(FedMqttTopic.exitTrainWithException(edgeId), (OnMLOpsMsgListener) this::handleTrainException);
+        edgeCommunicator.subscribe(FedMqttTopic.ntpResponse(edgeId), (OnMLOpsMsgListener) this::handleNtpResponse);
     }
 
     private void handleMqttConnectionReady(JSONObject msgParams) {
@@ -92,6 +89,8 @@ public final class ClientAgentManager implements MessageDefine {
         if (mEdgeId == 0) {
             return;
         }
+
+        sendNtpRequest();
 
         // TODO: waiting dataset split, then download the dataset package and Training Client App
 
@@ -146,5 +145,27 @@ public final class ClientAgentManager implements MessageDefine {
             mClientManager = null;
         }
         mRunId = 0;
+    }
+
+    private void sendNtpRequest() {
+        JSONObject msgParams = new JSONObject();
+        try {
+            msgParams.put("deviceSendTime", System.currentTimeMillis());
+            edgeCommunicator.sendMessage(FedMqttTopic.ntpRequest(mEdgeId), msgParams.toString());
+        } catch (JSONException e) {
+            LogHelper.w(e, "sendNtpRequest failed");
+        }
+    }
+
+    private void handleNtpResponse(JSONObject msgParams) {
+        LogHelper.i("handleNtpResponse :%s", msgParams.toString());
+        try {
+            long serverSendTime = msgParams.getLong("serverSendTime");
+            long serverRecvTime = msgParams.getLong("serverRecvTime");
+            long deviceSendTime = msgParams.getLong("deviceSendTime");
+            TimeUtils.fillTime(serverSendTime, serverRecvTime, deviceSendTime);
+        } catch (JSONException e) {
+            LogHelper.w(e, "handleNtpResponse failed");
+        }
     }
 }

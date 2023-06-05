@@ -33,7 +33,7 @@ public class Initializer {
                 throw new RuntimeException("fetch mqtt config failed!");
             }
             s3Config = config.getS3Config();
-            if (config.getS3Config() == null) {
+            if (s3Config == null) {
                 throw new RuntimeException("fetch s3 config failed!");
             }
             listener.onInitialized();

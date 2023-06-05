@@ -6,6 +6,7 @@ import org.json.JSONObject;
 import ai.fedml.edge.constants.FedMqttTopic;
 import ai.fedml.edge.service.communicator.EdgeCommunicator;
 import ai.fedml.edge.utils.LogHelper;
+import ai.fedml.edge.utils.TimeUtils;
 
 public class ProfilerEventLogger {
 
@@ -56,7 +57,7 @@ public class ProfilerEventLogger {
             } else if (EVENT_TYPE_ENDED == event_type) {
                 timeKey = "ended_time";
             }
-            jsonObject.put(timeKey, System.currentTimeMillis()/1000);
+            jsonObject.put(timeKey, TimeUtils.getAccurateTime() / 1000);
         } catch (JSONException e) {
             LogHelper.e(e, "buildEventMessage(%d, %s, %s)", event_type, name, value);
         }

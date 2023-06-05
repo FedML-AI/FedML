@@ -192,6 +192,6 @@ public class MetricsReporter implements MessageDefine, MessageDefine.ClientStatu
         } catch (JSONException e) {
             LogHelper.e(e, "reportTrainingStatus(%d, %d)", edgeId, status);
         }
-        edgeCommunicator.sendMessage(FedMqttTopic.exitTrainWithException(runId), jsonObject.toString());
+        edgeCommunicator.sendMessage(FedMqttTopic.clientExitTrainWithException(runId), jsonObject.toString());
     }
 }
