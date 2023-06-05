@@ -13,6 +13,7 @@ import ai.fedml.edge.utils.BatteryUtils;
 import ai.fedml.edge.utils.DeviceUtils;
 import ai.fedml.edge.utils.LogHelper;
 import ai.fedml.edge.utils.MemoryUtils;
+import ai.fedml.edge.utils.TimeUtils;
 import ai.fedml.edge.utils.entity.Battery;
 import ai.fedml.edge.utils.entity.Memory;
 
@@ -63,6 +64,7 @@ public class DeviceInfoReporter {
             jsonObject.put("ramMemoryAvailable", memory.getRamMemoryAvailable());
             jsonObject.put("romMemoryAvailable", memory.getRomMemoryAvailable());
             jsonObject.put("romMemoryTotal", memory.getRomMemoryTotal());
+            jsonObject.put("updateTime", TimeUtils.getAccurateTime());
             Float cpuUtilization = sysStats.getCpuUtilization();
             if (null != cpuUtilization) {
                 jsonObject.put("cpuUtilization", String.valueOf(cpuUtilization));

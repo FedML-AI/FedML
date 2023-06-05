@@ -19,7 +19,6 @@ public class TimeUtils {
 
     public static long getAccurateTime() {
         if (sync) {
-            LogHelper.i("TimeUtils", "sync");
             return (serverRecvTime + serverSendTime + System.currentTimeMillis() - deviceSendTime) / 2;
         }
         return System.currentTimeMillis();

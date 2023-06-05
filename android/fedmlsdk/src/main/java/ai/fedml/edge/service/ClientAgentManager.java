@@ -46,6 +46,8 @@ public final class ClientAgentManager implements MessageDefine {
         this.onTrainProgressListener = onTrainProgressListener;
         edgeCommunicator = EdgeCommunicator.getInstance();
 
+        sendNtpRequest();
+
         mReporter = MetricsReporter.getInstance();
         mReporter.setEdgeCommunicator(edgeCommunicator);
         mReporter.setTrainingStatusListener(onTrainingStatusListener);
