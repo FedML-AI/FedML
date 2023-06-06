@@ -134,13 +134,19 @@ def log_helper(
     )
 
 
+def is_deepspeed_module(model: Module) -> bool:
+    # TODO: verify
+    return any(hasattr(p, "ds_numel") for n, p in model.named_parameters())
+
+
 def load_state_dict(
         model: Module,
         state_dict: Dict[str, Any],
         strict: bool = True,
         force_recursive_load: bool = False
 ) -> None:
-    if (is_deepspeed_initialized() and is_deepspeed_zero3_enabled()) or force_recursive_load:
+    if (is_deepspeed_initialized() and is_deepspeed_zero3_enabled() and is_deepspeed_module(model)) \
+            or force_recursive_load:
         metadata = getattr(state_dict, "_metadata", None)
         state_dict = state_dict.copy()
         if metadata is not None:
@@ -190,7 +196,7 @@ def load_state_dict_helper(
 
     # Parameters of module and children will start with prefix. We can exit early if there are none in this state_dict
     if any(key.startswith(prefix) for key in state_dict):
-        if is_deepspeed_initialized() and is_deepspeed_zero3_enabled():
+        if is_deepspeed_initialized() and is_deepspeed_zero3_enabled() and is_deepspeed_module(module):
             # In sharded models, each shard has only part of the full state_dict, so only gather
             # parameters that are in the current state_dict.
             named_parameters = dict(module.named_parameters(prefix=prefix[:-1], recurse=False))

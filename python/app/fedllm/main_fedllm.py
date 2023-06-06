@@ -141,7 +141,7 @@ class LLMTrainer(ClientTrainer):
         log_helper(
             message,
             prefix=f"{{{{rank={self.args.rank}, world_rank={self.trainer.args.process_index}, "
-                   f"local_rank={self.args.local_rank}}}}}",
+                   f"local_rank={self.args.local_rank}, hf_local_rank={self.trainer.args.local_process_index}}}}}",
             suffix=f"@ round={self.round_idx}",
             stack_prefix=f"{type(self).__name__}.",
             stack_level=stack_level + 1
@@ -241,8 +241,6 @@ class LLMAggregator(ServerAggregator):
         super().__init__(model, args)
 
         self.tokenizer = tokenizer
-        self.model = model
-
         self.trainer = get_hf_trainer(
             args=self.args,
             model=self.model,
@@ -251,6 +249,8 @@ class LLMAggregator(ServerAggregator):
             callbacks=[SavePeftModelCallback]
         )
         self.temp_ckpt_dir = Path(self.trainer.args.output_dir) / f"node{self.args.rank}_tmp"
+        # this is required for DeepSpeed zero3
+        self.trainer.save_model(str(self.temp_ckpt_dir))
 
         # save config
         if should_process_save(self.trainer):
@@ -264,7 +264,7 @@ class LLMAggregator(ServerAggregator):
         log_helper(
             message,
             prefix=f"{{{{rank={self.args.rank}, world_rank={self.trainer.args.process_index}, "
-                   f"local_rank={self.args.local_rank}}}}}",
+                   f"local_rank={self.args.local_rank}, hf_local_rank={self.trainer.args.local_process_index}}}}}",
             suffix=f"@ round={self.round_idx}",
             stack_prefix=f"{type(self).__name__}.",
             stack_level=stack_level + 1
