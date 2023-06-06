@@ -29,6 +29,7 @@ import ai.fedml.edge.utils.DeviceUtils;
 import ai.fedml.edge.utils.GsonUtils;
 import ai.fedml.edge.utils.LogHelper;
 import ai.fedml.edge.utils.preference.SharePreferencesData;
+
 import androidx.annotation.NonNull;
 
 public class EdgeCommunicator implements MqttCallbackExtended {
@@ -59,7 +60,8 @@ public class EdgeCommunicator implements MqttCallbackExtended {
         if (mqttConfig == null) {
             throw new EdgeCommunicatorException("fetch Mqtt Config failed!");
         }
-        String MQTT_BROKER = String.format(Locale.US, "tcp://%s:%d",
+
+        String serverURI = String.format(Locale.US, "tcp://%s:%d",
                 mqttConfig.getHost(), mqttConfig.getPort());
         // EMQX Connect Options
         connOpts = new MqttConnectOptions();
@@ -71,20 +73,21 @@ public class EdgeCommunicator implements MqttCallbackExtended {
         connOpts.setKeepAliveInterval(mqttConfig.getKeepAlive());
         connOpts.setAutomaticReconnect(true);
         connOpts.setMaxInflight(10000);
-        String edge_id = SharePreferencesData.getBindingId();
-        connOpts.setWill(FedMqttTopic.MQTT_LAST_WILL_TOPIC,
-                ("{\"ID\":\"" + edge_id + "\",\"status\":\"" +
-                        MessageDefine.MSG_MLOPS_CLIENT_STATUS_OFFLINE + "\"}").getBytes(),
+        connOpts.setWill(FedMqttTopic.MQTT_LAST_WILL_TOPIC, buildLastWillPayload(),
                 2, true);
-        client = createMqttClient(MQTT_BROKER, deviceId + "_" + System.currentTimeMillis());
+        client = createMqttClient(serverURI, deviceId + "_" + System.currentTimeMillis());
+    }
+
+    private byte[] buildLastWillPayload() {
+        String edgeId = SharePreferencesData.getBindingId();
+        return ("{\"ID\":\"" + edgeId + "\",\"status\":\"" +
+                MessageDefine.MSG_MLOPS_CLIENT_STATUS_OFFLINE + "\"}").getBytes();
     }
 
     private void connectMqtt() {
         try {
-            // connect
             LogHelper.i("EdgeCommunicator Connecting to broker:" + client.getServerURI());
             client.connect(connOpts);
-            LogHelper.i("EdgeCommunicator Connecting to broker (END)");
         } catch (MqttException e) {
             LogHelper.e(e, "mqtt connect exception.");
             disconnect();
@@ -93,14 +96,14 @@ public class EdgeCommunicator implements MqttCallbackExtended {
         }
     }
 
-    public void connect(){
+    public void connect() {
         connectMqtt();
     }
 
-    private MqttClient createMqttClient(@NonNull final String broker, @NonNull final String deviceId) {
+    private MqttClient createMqttClient(@NonNull final String serverURI, @NonNull final String clientId) {
         MqttClient mqttClient;
         try {
-            mqttClient = new MqttClient(broker, deviceId, persistence);
+            mqttClient = new MqttClient(serverURI, clientId, persistence);
             mqttClient.setCallback(this);
             mqttClient.setTimeToWait(5000);
         } catch (MqttException e) {
@@ -126,7 +129,7 @@ public class EdgeCommunicator implements MqttCallbackExtended {
                 }
             }
             if (!receivedListeners.isEmpty()) {
-                for (OnReceivedListener listener: receivedListeners){
+                for (OnReceivedListener listener : receivedListeners) {
                     notifyConnectionReady("connectionReady", listener);
                 }
             }

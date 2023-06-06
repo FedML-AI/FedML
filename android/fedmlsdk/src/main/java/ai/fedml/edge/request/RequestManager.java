@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import ai.fedml.edge.BuildConfig;
 import ai.fedml.edge.request.listener.OnBindingListener;
 import ai.fedml.edge.request.listener.OnUnboundListener;
 import ai.fedml.edge.request.listener.OnUserInfoListener;
@@ -32,13 +31,12 @@ import ai.fedml.edge.utils.LogHelper;
 import ai.fedml.edge.utils.preference.SharePreferencesData;
 
 public final class RequestManager {
-    private static final String BASE_API_SERVER_URL = BuildConfig.MLOPS_SVR;
 
     public static void bindingAccount(@NonNull BindingAccountReq req, @NonNull OnBindingListener listener) {
         Gson gson = new Gson();
         String json = gson.toJson(req);
 
-        HttpUtils.doPost(BASE_API_SERVER_URL + UrlPath.PATH_EDGE_BINDING, json, new HttpUtils.CallBack() {
+        HttpUtils.doPost(UrlPath.PATH_EDGE_BINDING, json, new HttpUtils.CallBack() {
             @Override
             public void onRequestComplete(String result) {
                 LogHelper.i("bindingAccount result: " + result);
@@ -68,7 +66,7 @@ public final class RequestManager {
     public static void unboundAccount(@NonNull final String edgeId, @NonNull final OnUnboundListener listener) {
         Map<String, String> params = new HashMap<>();
         params.put("id", edgeId);
-        HttpUtils.doPost(BASE_API_SERVER_URL + UrlPath.PATH_EDGE_UNBINDING, params, new HttpUtils.CallBack() {
+        HttpUtils.doPost(UrlPath.PATH_EDGE_UNBINDING, params, new HttpUtils.CallBack() {
             @Override
             public void onRequestComplete(String result) {
                 LogHelper.i("unboundAccount result: " + result);
@@ -96,7 +94,7 @@ public final class RequestManager {
         final String deviceId = DeviceUtils.getDeviceId();
         Map<String, String> params = new HashMap<>();
         params.put("id", deviceId);
-        HttpUtils.doGet(BASE_API_SERVER_URL + UrlPath.PATH_USER_INFO, params, new HttpUtils.CallBack() {
+        HttpUtils.doGet(UrlPath.PATH_USER_INFO, params, new HttpUtils.CallBack() {
             @Override
             public void onRequestComplete(String result) {
                 LogHelper.i("getUserInfo result: " + result);
@@ -128,7 +126,7 @@ public final class RequestManager {
                 .build();
         Gson gson = new Gson();
         String json = gson.toJson(req);
-        HttpUtils.doPost(BASE_API_SERVER_URL + UrlPath.PATH_LOG_UPLOAD, json, new HttpUtils.CallBack() {
+        HttpUtils.doPost(UrlPath.PATH_LOG_UPLOAD, json, new HttpUtils.CallBack() {
 
             @Override
             public void onRequestComplete(String result) {
@@ -155,7 +153,7 @@ public final class RequestManager {
         Gson gson = new Gson();
         String json = gson.toJson(req);
 
-        HttpUtils.doPost(BASE_API_SERVER_URL + UrlPath.PATH_FETCH_CONFIG, json, new HttpUtils.CallBack() {
+        HttpUtils.doPost(UrlPath.PATH_FETCH_CONFIG, json, new HttpUtils.CallBack() {
             @Override
             public void onRequestComplete(String result) {
                 LogHelper.i("fetchConfig result: " + result);

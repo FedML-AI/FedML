@@ -103,7 +103,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener, OnTr
         edgeCommunicator.subscribe(runTopic, this);
     }
 
-    private void send_init_online_msg(JSONObject params) {
+    private void sendInitOnlineMsg(JSONObject params) {
         LogHelper.i("handle_message_check_status: %s", params.toString());
         // report MLOps that edge is OnLine now.
         mReporter.reportEdgeOnLine(mRunId, mEdgeId);
@@ -112,7 +112,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener, OnTr
     }
 
     @Override
-    public void handle_message_finish(JSONObject params) {
+    public void handleMessageFinish(JSONObject params) {
         LogHelper.i("====================cleanup ====================");
         finishRun();
     }
@@ -123,7 +123,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener, OnTr
 
         if (!mHasSentOnlineMsg) {
             mHasSentOnlineMsg = true;
-            send_init_online_msg(params);
+            sendInitOnlineMsg(params);
         }
     }
 
@@ -196,8 +196,8 @@ public final class ClientManager implements MessageDefine, OnTrainListener, OnTr
     }
 
     @Override
-    public void handle_message_check_status(JSONObject params) {
-        send_init_online_msg(params);
+    public void handleMessageCheckStatus(JSONObject params) {
+        sendInitOnlineMsg(params);
     }
 
     private void handleTraining(final String topic, final String modelParams, final int clientRound) {

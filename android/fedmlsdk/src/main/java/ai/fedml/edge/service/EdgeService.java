@@ -188,7 +188,7 @@ public class EdgeService extends Service implements EdgeMessageDefine {
         this.stopSelf();
     }
 
-    private static final String NOTIFICATION_CHANNEL_NAME = "LBSbackgroundLocation";
+    private static final String NOTIFICATION_CHANNEL_NAME = "FedMLEdge";
     private NotificationManager notificationManager = null;
     boolean isCreateChannel = false;
 
