@@ -7,7 +7,7 @@ import ai.fedml.edge.utils.LogHelper;
 public interface OnMqttConnectionReadyListener extends OnJsonReceivedListener {
     @Override
     default void onJsonReceived(String topic, JSONObject jsonMsg) {
-        LogHelper.i("OnMqttConnectionReadyListener", "FedMLDebug. handleConnectionReady: " + jsonMsg.toString());
+        LogHelper.i("FedMLDebug. OnMqttConnectionReadyListener handleConnectionReady:%s", jsonMsg.toString());
         handleConnectionReady(jsonMsg);
     }
 
