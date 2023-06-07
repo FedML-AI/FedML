@@ -849,6 +849,8 @@ class FedMLServerRunner:
         FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
             set_end_point_activation(model_msg_object.inference_end_point_id,
                                      model_msg_object.end_point_name, False)
+        FedMLModelCache.get_instance(self.redis_addr, self.redis_port). \
+            delete_end_point(model_msg_object.end_point_name, model_msg_object.model_name, model_msg_object.model_version)                                     
 
         self.send_deployment_delete_request_to_edges(payload, model_msg_object)
 
