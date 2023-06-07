@@ -170,7 +170,7 @@ class LLMTrainer(ClientTrainer):
     def on_before_local_training(self, train_data, device, args: Arguments) -> None:
         self.log("start")
 
-        super().on_before_local_training(train_data, device, args)
+        outputs = super().on_before_local_training(train_data, device, args)
 
         # update round_idx
         if hasattr(args, "round_idx"):
@@ -187,6 +187,7 @@ class LLMTrainer(ClientTrainer):
             self.test(self.trainer.eval_dataset, device, args)
 
         self.log("finished")
+        return outputs
 
     def train(self, train_data, device, args: Arguments) -> None:
         self.log("start")
@@ -198,12 +199,15 @@ class LLMTrainer(ClientTrainer):
     def on_after_local_training(self, train_data, device, args: Arguments) -> None:
         self.log("start")
 
-        super().on_after_local_training(train_data, device, args)
+        outputs = super().on_after_local_training(train_data, device, args)
+
+        self.log(f"saving model to \"{self.temp_ckpt_dir}\"")
         self.trainer.save_model(str(self.temp_ckpt_dir))
         # recover TrainingArguments.deepspeed
         self.trainer.args.deepspeed = self.args.deepspeed
 
         self.log("finished")
+        return outputs
 
     def test(self, test_data, device, args) -> None:
         self.log("start")
