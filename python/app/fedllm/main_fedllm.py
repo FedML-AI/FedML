@@ -44,7 +44,7 @@ def _parse_args(args: Arguments) -> Arguments:
         if hasattr(args, "client_dataset_path"):
             args.dataset_path = args.client_dataset_path
         if not getattr(args, "is_client_test", False):
-            # disable logging for client when not testing on client
+            # disable huggingface Trainer's logging when not testing on client
             setattr(args, "report_to", "none")
         setattr(args, "disable_tqdm", True)
 

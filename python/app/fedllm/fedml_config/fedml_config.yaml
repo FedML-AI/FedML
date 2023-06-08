@@ -20,7 +20,7 @@ data_args:
 
 model_args:
   # below copied from scripts/train_deepspeed.sh
-  model_name: "EleutherAI/pythia-70m" # EleutherAI/pythia-70m; EleutherAI/pythia-6.9b
+  model_name: "EleutherAI/pythia-70m"  # choose from `MODEL_NAMES` in `src/constants.py`
   use_lora: True
 
 train_args:
@@ -56,8 +56,8 @@ train_args:
 
 validation_args:
   frequency_of_the_test: 1
-  is_aggregator_test: true
-  is_client_test: false
+  is_aggregator_test: True  # set to `True` to enable testing on aggregator after each aggregation
+  is_client_test: False  # set to `True` to enable testing on client after each local training round
 
 device_args:
   using_gpu: True
