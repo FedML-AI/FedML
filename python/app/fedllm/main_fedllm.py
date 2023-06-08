@@ -323,7 +323,7 @@ class LLMAggregator(ServerAggregator):
         setattr(self.args, "round_idx", round_idx)
 
 
-def transform_data_to_fedml_format(args: Arguments, dataset):
+def transform_data_to_fedml_format(args: Arguments, train_dataset: Dataset, test_dataset: Dataset):
     # TODO: scrutinize
     train_data_num = 0
     test_data_num = 0
@@ -335,12 +335,12 @@ def transform_data_to_fedml_format(args: Arguments, dataset):
 
     if args.rank == 0:
         # server data
-        test_data_global = dataset
+        test_data_global = test_dataset
     else:
         # client data
-        train_data_local_num_dict[args.rank - 1] = len(dataset)
-        train_data_local_dict[args.rank - 1] = dataset
-        test_data_local_dict[args.rank - 1] = None  # we do not do test on the client
+        train_data_local_num_dict[args.rank - 1] = len(train_dataset)
+        train_data_local_dict[args.rank - 1] = train_dataset
+        test_data_local_dict[args.rank - 1] = test_dataset
     return (
         train_data_num,
         test_data_num,
@@ -381,13 +381,7 @@ def main(args: Arguments) -> None:
     )
 
     # load data
-    if args.rank == 0:
-        dataset = test_dataset
-        print(f"Test data size: {dataset.num_rows:,}")
-    else:
-        dataset = train_dataset
-        print(f"Train data size: {dataset.num_rows:,}")
-    dataset = transform_data_to_fedml_format(args, dataset)
+    dataset = transform_data_to_fedml_format(args, train_dataset, test_dataset)
 
     # FedML trainer
     trainer = LLMTrainer(model=model, args=args, tokenizer=tokenizer, model_args=model_args, test_dataset=test_dataset)
