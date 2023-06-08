@@ -52,6 +52,8 @@ class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
             Bundle bundle = new Bundle();
             bundle.putString("msg", "how are you?");
             sendMessage(MSG_FROM_CLIENT, bundle);
+
+            initBindingState(ContextHolder.getAppContext());
         }
 
         @Override
@@ -102,7 +104,6 @@ class FedEdgeImpl implements EdgeMessageDefine, FedEdgeApi {
         LogHelper.i("FedEdge init, processName:%s", processName);
         if (!TextUtils.isEmpty(processName) && appContext.getPackageName().equals(processName)) {
             bindService();
-            initBindingState(appContext);
         }
     }
 
