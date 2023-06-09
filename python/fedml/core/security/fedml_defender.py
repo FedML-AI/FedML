@@ -92,8 +92,6 @@ class FedMLDefender:
                 self.defender = CoordinateWiseTrimmedMeanDefense(args)
             elif self.defense_type == ANOMALY_DETECTION:
                 self.defender = OutlierDetection(args)
-            elif self.defense_type == DEFENSE_DIFF_CLIPPING:
-                self.defender = NormDiffClippingDefense(args)
             else:
                 raise Exception("args.defense_type is not defined!")
         else:

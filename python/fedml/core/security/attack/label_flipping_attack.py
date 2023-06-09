@@ -5,6 +5,7 @@ import torch
 from torch.utils.data import DataLoader
 from torch.utils.data import TensorDataset
 from .attack_base import BaseAttackMethod
+import numpy as np
 from ..common.utils import (
     replace_original_class_with_target_class,
     get_client_data_stat,
@@ -37,7 +38,7 @@ class LabelFlippingAttack(BaseAttackMethod):
             self.ratio_of_poisoned_client = args.ratio_of_poisoned_client
         else:
             raise Exception("unknown poisoned client number")
-        
+
         self.client_num_per_round = args.client_num_per_round
         self.counter = 0
 
@@ -48,7 +49,9 @@ class LabelFlippingAttack(BaseAttackMethod):
         self.counter += 1
         if self.get_ite_num() < self.poison_start_round_id or self.get_ite_num() > self.poison_end_round_id:
             return False
-        rand = random.random()
+        np.random.seed(self.counter)
+        rand = np.random.random()
+        # rand = random.random()
         return rand < self.ratio_of_poisoned_client
 
     def print_dataset(self, dataset):
@@ -58,7 +61,7 @@ class LabelFlippingAttack(BaseAttackMethod):
 
     def poison_data(self, local_dataset):
         get_client_data_stat(local_dataset)
-        print("=======================1 end ")
+        # print("=======================1 end ")
         # self.print_dataset(local_dataset)
         # get_client_data_stat(local_dataset)
         # print("======================= 2 end")
@@ -76,11 +79,11 @@ class LabelFlippingAttack(BaseAttackMethod):
                     targets_set[t] = 1
         total_counter = 0
         for item in targets_set.items():
-            print("------target:{} num:{}".format(item[0], item[1]))
+            # print("------target:{} num:{}".format(item[0], item[1]))
             total_counter += item[1]
-        print(f"total counter = {total_counter}")
+        # print(f"total counter = {total_counter}")
 
-####################### below are correct ###############################3
+        ####################### below are correct ###############################3
 
         tmp_y = replace_original_class_with_target_class(
             data_labels=tmp_local_dataset_y,
