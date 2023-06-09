@@ -99,8 +99,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener, OnTr
     }
 
     public void registerMessageReceiveHandlers(final String serverId) {
-        final String runTopic = "fedml_" + mRunId + "_" + serverId + "_" + mEdgeId;
-        edgeCommunicator.subscribe(runTopic, this);
+        edgeCommunicator.subscribe(FedMqttTopic.run(mRunId, serverId, mEdgeId), this);
     }
 
     private void sendInitOnlineMsg(JSONObject params) {

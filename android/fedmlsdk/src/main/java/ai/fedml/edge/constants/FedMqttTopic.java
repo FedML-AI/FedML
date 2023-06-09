@@ -66,4 +66,8 @@ public final class FedMqttTopic {
     public static String ntpResponse(final long edgeId) {
         return "mlops/ntp/" + edgeId + "/response";
     }
+
+    public static String run(final long runId, final String serverId, final long edgeId) {
+        return "fedml_" + runId + "_" + serverId + "_" + edgeId;
+    }
 }
