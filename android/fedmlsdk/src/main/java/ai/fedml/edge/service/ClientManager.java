@@ -62,7 +62,6 @@ public final class ClientManager implements MessageDefine, OnTrainListener, OnTr
 
     public ClientManager(final long edgeId, final long runId, final String strServerId, JSONObject hyperParameters,
                          @NonNull final OnTrainProgressListener onTrainProgressListener) {
-
         mEdgeId = edgeId;
         mRunId = runId;
         initStateMap = new ConcurrentHashMap<>();
@@ -144,11 +143,11 @@ public final class ClientManager implements MessageDefine, OnTrainListener, OnTr
             LogHelper.i("FedMLDebug. handleMessageInit modelParams (key) = %s", modelParams);
             mClientIndex = Integer.parseInt(params.getString(MSG_ARG_KEY_CLIENT_INDEX));
         } catch (JSONException e) {
-            LogHelper.e(e, "handleTraining JSONException.");
+            LogHelper.e(e, "handleMessageInit failed");
             reportError();
             return;
         } catch (NumberFormatException e) {
-            LogHelper.e(e, "handleTraining CLIENT_INDEX parseLong failed.");
+            LogHelper.e(e, "handleTraining CLIENT_INDEX parseLong failed");
             reportError();
             return;
         }
@@ -176,7 +175,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener, OnTr
             modelParams = params.getString(MSG_ARG_KEY_MODEL_PARAMS);
             mClientIndex = Integer.parseInt(params.getString(MSG_ARG_KEY_CLIENT_INDEX));
         } catch (JSONException e) {
-            LogHelper.e(e, "handleTraining JSONException.");
+            LogHelper.e(e, "handleMessageReceiveModelFromServer failed.");
             reportError();
             return;
         } catch (NumberFormatException e) {
@@ -233,14 +232,15 @@ public final class ClientManager implements MessageDefine, OnTrainListener, OnTr
                     try {
                         mTrainer.training(params);
                     } catch (IOException e) {
-                        reportError();
                         LogHelper.e(e, "FedMLDebug. training failed.");
+                        reportError();
                     }
                 } else if (TransferState.FAILED == state) {
                     if (reTryCnt > 0) {
                         remoteStorage.download(modelParams, new File(trainModelPath), this);
                         reTryCnt--;
                     } else {
+                        LogHelper.e("download transfer state is failed");
                         reportError();
                     }
                 }
@@ -336,7 +336,6 @@ public final class ClientManager implements MessageDefine, OnTrainListener, OnTr
 
             @Override
             public void onStateChanged(int id, TransferState state) {
-//                LogHelper.d("upload onStateChanged（%d, %s）", id, state);
                 if (state == TransferState.COMPLETED) {
                     sendModelMessage();
                     listener.onUploaded();
@@ -345,6 +344,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener, OnTr
                         remoteStorage.upload(uuidS3Key, new File(trainModelPath), this);
                         reTryCnt--;
                     } else {
+                        LogHelper.e("send model to server failed");
                         reportError();
                     }
                 }
@@ -357,8 +357,14 @@ public final class ClientManager implements MessageDefine, OnTrainListener, OnTr
 
             @Override
             public void onError(int id, Exception ex) {
-                LogHelper.e(ex, "upload onError(%d)", id);
-                reportError();
+                if (reTryCnt > 0) {
+                    LogHelper.w(ex, "upload onError(%d)", id);
+                    remoteStorage.upload(uuidS3Key, new File(trainModelPath), this);
+                    reTryCnt--;
+                } else {
+                    LogHelper.e(ex, "upload onError(%d)", id);
+                    reportError();
+                }
             }
 
             private void sendModelMessage() {
@@ -408,7 +414,6 @@ public final class ClientManager implements MessageDefine, OnTrainListener, OnTr
     }
 
     private void reportError() {
-        LogHelper.i("Report training error!");
         stopTrain();
         mReporter.reportTrainingStatus(mRunId, mEdgeId, KEY_CLIENT_STATUS_FAILED);
     }
