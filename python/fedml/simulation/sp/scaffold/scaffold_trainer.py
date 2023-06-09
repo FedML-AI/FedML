@@ -128,7 +128,12 @@ class ScaffoldTrainer(object):
             self.c_model_global.load_state_dict(c_global_para)
 
             for key in w_global.keys():
-                w_global[key] += total_weights_delta[key] * self.args.server_lr
+                if w_global[key].type() == 'torch.LongTensor':
+                    w_global[key] += (total_weights_delta[key] * self.args.server_lr).type(torch.LongTensor)
+                elif w_global[key].type() == 'torch.cuda.LongTensor':
+                    w_global[key] += (total_weights_delta[key] * self.args.server_lr).type(torch.cuda.LongTensor)
+                else:
+                    w_global[key] += total_weights_delta[key] * self.args.server_lr
 
             self.model_trainer.set_model_params(w_global)
             mlops.event("agg", event_started=False, event_value=str(round_idx))
