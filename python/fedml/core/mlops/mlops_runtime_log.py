@@ -13,7 +13,7 @@ from datetime import timezone
 from logging import handlers
 
 from fedml import mlops
-from .mlops_utils import MLOpsUtils
+from .mlops_profiler_event import MLOpsProfilerEvent
 
 
 class MLOpsRuntimeLog:
@@ -92,7 +92,6 @@ class MLOpsRuntimeLog:
                                                  + "-edge-"
                                                  + str(self.edge_id)
                                                  + ".log")
-        self.ntp_offset = None
         sys.excepthook = MLOpsRuntimeLog.handle_exception
 
     @staticmethod
@@ -110,13 +109,9 @@ class MLOpsRuntimeLog:
                                                                   "[%(filename)s:%(lineno)d:%(funcName)s] %("
                                                                   "message)s",
                                        datefmt="%a, %d %b %Y %H:%M:%S")
-        if self.ntp_offset is None:
-            self.ntp_offset = MLOpsUtils.get_ntp_offset()
         def log_ntp_time(sec, what):
-            if self.ntp_offset is not None:
-                ntp_time_seconds = time.time() + self.ntp_offset
-            else:
-                ntp_time_seconds = time.time()
+            ntp_time_milli_seconds = MLOpsProfilerEvent.get_ntp_time()     # int type
+            ntp_time_seconds = ntp_time_milli_seconds / 1000.0
             ntp_time = datetime.datetime.fromtimestamp(ntp_time_seconds)
             return ntp_time.timetuple()
         logging.Formatter.converter = log_ntp_time

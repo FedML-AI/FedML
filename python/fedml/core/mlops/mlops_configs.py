@@ -1,5 +1,6 @@
 
 import os
+import time
 import certifi
 import requests
 
@@ -182,7 +183,10 @@ class MLOpsConfigs(Singleton):
 
     def fetch_all_configs(self):
         url, cert_path = self.get_request_params()
-        json_params = {"config_name": ["mqtt_config", "s3_config", "ml_ops_config", "docker_config"]}
+        json_params = {
+            "config_name": ["mqtt_config", "s3_config", "ml_ops_config", "docker_config"],
+            "device_send_time": int(time.time() * 1000)
+        }
 
         if cert_path is not None:
             try:
