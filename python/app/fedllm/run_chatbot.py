@@ -1,3 +1,5 @@
+import re
+import readline  # required for better input handling
 from timeit import default_timer as timer
 
 import torch
@@ -31,7 +33,17 @@ if __name__ == '__main__':
     )
     parser.add_argument("--do-sample", "--do_sample", dest="do_sample", action="store_true", default=True)
     parser.add_argument("--no-sample", "--no_sample", dest='do_sample', action="store_false")
+    parser.add_argument(
+        "--max_retry",
+        dest="max_retry",
+        type=int,
+        default=10,
+        help="The maximum number of retry when the model does not generate meaningful answers."
+    )
     args = parser.parse_args()
+
+    args.max_new_tokens = max(args.max_new_tokens, 1)
+    args.max_retry = max(args.max_retry, 0)
 
     print("Initializing...")
     st_time = init_st_time = timer()
@@ -59,15 +71,25 @@ if __name__ == '__main__':
 
     print("Running...")
     while True:
-        question = input("Enter your question or enter \"exit\" to quit: ")
+        question = input("Enter your question or enter \"exit\" or \"quit\" to exit the program: ")
 
-        if question.lower().strip() == "exit":
+        if question.lower().strip() in ("exit", "quit"):
             break
 
         print(f"Trying to answer your question:\n\"{question}\"\n")
         gen_st_time = timer()
-        response = instruct_pipeline(question)
-        print(f"Response:\n\"{response[0]['generated_text']}\"\n")
+
+        questions = [question] * (args.max_retry + 1)
+        responses = instruct_pipeline(questions)
+
+        response_text = ""
+        for resp in responses:
+            response_text = resp[0]["generated_text"].strip()
+
+            if len(re.findall(r"\w+", response_text)) > 0:
+                break
+
+        print(f"Response:\n\"{response_text}\"\n")
         gen_end_time = timer()
 
         print(f"Inference took {gen_end_time - gen_st_time:,.2f}s\n")

@@ -10,6 +10,7 @@ IGNORE_INDEX = -100
 MODEL_NAMES = [
     "EleutherAI/pythia-70m",
     "EleutherAI/pythia-160m",
+    "EleutherAI/pythia-1b",
     "EleutherAI/pythia-2.8b",
     "EleutherAI/pythia-6.9b",
     "EleutherAI/pythia-12b",
@@ -63,6 +64,17 @@ PROMPT_FOR_GENERATION_FORMAT = f"""{INTRO_BLURB}
 
 {INSTRUCTION_KEY}
 {{instruction}}
+
+{RESPONSE_KEY}
+"""
+
+PROMPT_FOR_GENERATION_WITH_INPUT_FORMAT = f"""{INTRO_BLURB}
+
+{INSTRUCTION_KEY}
+{{instruction}}
+
+{INPUT_KEY}
+{{input}}
 
 {RESPONSE_KEY}
 """
