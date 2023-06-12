@@ -35,7 +35,7 @@ final class FedEdgeTrainImpl implements FedEdgeTrainApi {
                 if (mClientAgent == null) {
                     mClientAgent = new ClientAgentManager(mBindEdgeId, mOnTrainingStatusListener, mOnTrainProgressListener);
                     mClientAgent.start();
-                    LogHelper.i("FedMLDebug. init() ClientAgentManager = " + mClientAgent);
+                    LogHelper.i("FedMLDebug. init() ClientAgentManager started");
                 }
             });
         }
@@ -49,7 +49,7 @@ final class FedEdgeTrainImpl implements FedEdgeTrainApi {
             if (mClientAgent == null) {
                 mClientAgent = new ClientAgentManager(mBindEdgeId, mOnTrainingStatusListener, mOnTrainProgressListener);
                 mClientAgent.start();
-                LogHelper.i("FedMLDebug. bindEdge() ClientAgentManager = " + mClientAgent);
+                LogHelper.i("FedMLDebug. bindEdge() ClientAgentManager started");
             }
         });
     }

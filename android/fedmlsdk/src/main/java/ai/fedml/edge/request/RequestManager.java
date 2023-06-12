@@ -150,6 +150,7 @@ public final class RequestManager {
 
     public static void fetchConfig(@NonNull final OnConfigListener listener) {
         ConfigReq req = new ConfigReq();
+        req.setDeviceSendTime(System.currentTimeMillis());
         Gson gson = new Gson();
         String json = gson.toJson(req);
 

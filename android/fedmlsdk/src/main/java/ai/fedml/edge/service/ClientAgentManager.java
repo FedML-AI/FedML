@@ -46,8 +46,6 @@ public final class ClientAgentManager implements MessageDefine {
         this.onTrainProgressListener = onTrainProgressListener;
         edgeCommunicator = EdgeCommunicator.getInstance();
 
-        sendNtpRequest();
-
         mReporter = MetricsReporter.getInstance();
         mReporter.setEdgeCommunicator(edgeCommunicator);
         mReporter.setTrainingStatusListener(onTrainingStatusListener);
@@ -77,7 +75,6 @@ public final class ClientAgentManager implements MessageDefine {
         edgeCommunicator.subscribe(FedMqttTopic.stopTrain(edgeId), (OnTrainStopListener) this::handleTrainStop);
         edgeCommunicator.subscribe(FedMqttTopic.REPORT_DEVICE_STATUS, (OnMLOpsMsgListener) this::handleMLOpsMsg);
         edgeCommunicator.subscribe(FedMqttTopic.exitTrainWithException(edgeId), (OnMLOpsMsgListener) this::handleTrainException);
-        edgeCommunicator.subscribe(FedMqttTopic.ntpResponse(edgeId), (OnMLOpsMsgListener) this::handleNtpResponse);
     }
 
     private void handleMqttConnectionReady(JSONObject msgParams) {
@@ -91,8 +88,6 @@ public final class ClientAgentManager implements MessageDefine {
         if (mEdgeId == 0) {
             return;
         }
-
-        sendNtpRequest();
 
         // TODO: waiting dataset split, then download the dataset package and Training Client App
 
@@ -149,25 +144,4 @@ public final class ClientAgentManager implements MessageDefine {
         mRunId = 0;
     }
 
-    private void sendNtpRequest() {
-        JSONObject msgParams = new JSONObject();
-        try {
-            msgParams.put("deviceSendTime", System.currentTimeMillis());
-            edgeCommunicator.sendMessage(FedMqttTopic.ntpRequest(mEdgeId), msgParams.toString());
-        } catch (JSONException e) {
-            LogHelper.w(e, "sendNtpRequest failed");
-        }
-    }
-
-    private void handleNtpResponse(JSONObject msgParams) {
-        LogHelper.i("handleNtpResponse :%s", msgParams.toString());
-        try {
-            long serverSendTime = msgParams.getLong("serverSendTime");
-            long serverRecvTime = msgParams.getLong("serverRecvTime");
-            long deviceSendTime = msgParams.getLong("deviceSendTime");
-            TimeUtils.fillTime(serverSendTime, serverRecvTime, deviceSendTime);
-        } catch (JSONException e) {
-            LogHelper.w(e, "handleNtpResponse failed");
-        }
-    }
 }
