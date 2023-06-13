@@ -59,14 +59,6 @@ public final class FedMqttTopic {
         return "flserver_agent/" + edgeId + "/exit_train_with_exception";
     }
 
-//    public static String ntpRequest(final long edgeId) {
-//        return "mlops/ntp/" + edgeId + "/request";
-//    }
-//
-//    public static String ntpResponse(final long edgeId) {
-//        return "mlops/ntp/" + edgeId + "/response";
-//    }
-
     public static String run(final long runId, final String serverId, final long edgeId) {
         return "fedml_" + runId + "_" + serverId + "_" + edgeId;
     }

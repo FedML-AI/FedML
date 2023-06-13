@@ -86,6 +86,7 @@ public final class ClientAgentManager implements MessageDefine {
     private void handleTrainStart(JSONObject msgParams) {
         LogHelper.i("onStartTrain: %s", msgParams.toString());
         if (mEdgeId == 0) {
+            LogHelper.w("handleTrainStart but mEdgeId is 0");
             return;
         }
 

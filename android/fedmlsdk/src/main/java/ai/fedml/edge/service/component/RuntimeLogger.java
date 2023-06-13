@@ -37,6 +37,7 @@ public class RuntimeLogger {
 
     public void release() {
         flush();
+        LogHelper.resetLog();
         mBgHandler.removeCallbacksAndMessages(null);
     }
 

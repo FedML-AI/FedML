@@ -386,6 +386,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener, OnTr
         mTrainer.stopTrain();
         cleanUpRun();
         mIsTrainingStopped = true;
+        mRunId = 0;
     }
 
     public void stopTrainWithoutReportStatus() {
@@ -393,6 +394,7 @@ public final class ClientManager implements MessageDefine, OnTrainListener, OnTr
         mTrainer.stopTrain();
         cleanUpRun();
         mIsTrainingStopped = true;
+        mRunId = 0;
     }
 
     @Override
@@ -414,8 +416,8 @@ public final class ClientManager implements MessageDefine, OnTrainListener, OnTr
     }
 
     private void reportError() {
-        stopTrain();
         mReporter.reportTrainingStatus(mRunId, mEdgeId, KEY_CLIENT_STATUS_FAILED);
+        stopTrain();
     }
 
     private void cleanUpRun() {
