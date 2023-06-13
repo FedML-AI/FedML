@@ -108,26 +108,26 @@ class MLOpsProfilerEvent:
         logging.info("Event ended, {}".format(event_msg_str))
         self.com_manager.send_message_json(event_topic, event_msg_str)
         self.com_manager.send_message_json(event_topic, event_msg_str)
+    @staticmethod
+    def set_ntp_offset(ntp_offset):
+        MLOpsProfilerEvent._ntp_offset = ntp_offset
 
     @staticmethod
     def get_ntp_time():
-        if MLOpsProfilerEvent._ntp_offset is None:
-            MLOpsProfilerEvent._ntp_offset = MLOpsUtils.get_ntp_offset()
-
         if MLOpsProfilerEvent._ntp_offset is not None:
-            ntp_time_seconds = time.time() + MLOpsProfilerEvent._ntp_offset
-            return ntp_time_seconds
-
-        return time.time()
+            return int(time.time() * 1000) + MLOpsProfilerEvent._ntp_offset
+        return int(time.time() * 1000)
 
     @staticmethod
     def __build_event_mqtt_msg(run_id, edge_id, event_type, event_name, event_value):
         event_topic = "mlops/events"
         event_msg = {}
         if event_type == MLOpsProfilerEvent.EVENT_TYPE_STARTED:
-            current_time = MLOpsProfilerEvent.get_ntp_time()
-            if current_time is None:
-                current_time = time.time()
+            current_time_ms = MLOpsProfilerEvent.get_ntp_time()
+            if current_time_ms is None:
+                current_time = int(time.time())
+            else:
+                current_time = int(current_time_ms / 1000)
             event_msg = {
                 "run_id": run_id,
                 "edge_id": edge_id,
@@ -136,9 +136,11 @@ class MLOpsProfilerEvent:
                 "started_time": int(current_time),
             }
         elif event_type == MLOpsProfilerEvent.EVENT_TYPE_ENDED:
-            current_time = MLOpsProfilerEvent.get_ntp_time()
-            if current_time is None:
-                current_time = time.time()
+            current_time_ms = MLOpsProfilerEvent.get_ntp_time()
+            if current_time_ms is None:
+                current_time = int(time.time())
+            else:
+                current_time = int(current_time_ms / 1000)
             event_msg = {
                 "run_id": run_id,
                 "edge_id": edge_id,
