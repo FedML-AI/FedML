@@ -24,9 +24,10 @@ def download_mnist(data_cache_dir):
     if not os.path.exists(file_path):
         wget.download(FEDML_DATA_MNIST_URL, out=file_path)
 
-    with zipfile.ZipFile(file_path, "r") as zip_ref:
-        zip_ref.extractall(data_cache_dir)
-
+    file_extracted_path = os.path.join(data_cache_dir, "MNIST")
+    if not os.path.exists(file_extracted_path):
+        with zipfile.ZipFile(file_path, "r") as zip_ref:
+            zip_ref.extractall(data_cache_dir)
 
 def read_data(train_data_dir, test_data_dir):
     """parses data in given train and test data directories
